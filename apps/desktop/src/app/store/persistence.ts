@@ -11,7 +11,11 @@ import {
 import reduxStorageModule from "redux-persist/lib/storage";
 
 import { isLayoutDensity } from "@/app/layout/lib/layout-density";
-import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
+import {
+  DEFAULT_PLAYBACK_VOLUME_PERCENT,
+  DEFAULT_PREFERENCES,
+  type Preferences,
+} from "@/app/preferences";
 import { isCustomPrimaryColor, isPrimaryColor, isThemePreference } from "@/app/theme/theme";
 
 interface LegacyThemeState {
@@ -85,6 +89,11 @@ const preferencesTransform = createTransform(
       customPrimaryColor: isCustomPrimaryColor(persistedPreferences.customPrimaryColor)
         ? persistedPreferences.customPrimaryColor
         : DEFAULT_PREFERENCES.customPrimaryColor,
+      playbackVolumePercent:
+        typeof persistedPreferences.playbackVolumePercent === "number" &&
+        Number.isFinite(persistedPreferences.playbackVolumePercent)
+          ? Math.max(0, Math.min(100, persistedPreferences.playbackVolumePercent))
+          : DEFAULT_PLAYBACK_VOLUME_PERCENT,
       primaryColor: isPrimaryColor(persistedPreferences.primaryColor)
         ? persistedPreferences.primaryColor
         : DEFAULT_PREFERENCES.primaryColor,

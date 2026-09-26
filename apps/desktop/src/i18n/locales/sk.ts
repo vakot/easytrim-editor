@@ -408,6 +408,7 @@ export const sk = {
     labels: {
       compatible: "Kompatibilný náhľad",
       loopPlayback: "Opakovať prehrávanie",
+      playbackVolume: "Hlasitosť prehrávania",
       playbackSpeed: "Rýchlosť prehrávania",
       segmentPlayback: "Prehrávanie segmentu",
       shortcutMarkInOut: "Začiatok / Koniec",

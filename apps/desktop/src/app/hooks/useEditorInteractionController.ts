@@ -11,10 +11,11 @@ import {
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
   selectLoopPlaybackEnabled,
-  selectPlaybackSpeed,
   selectSegmentPlaybackEnabled,
   selectSnapPlaybackEnabled,
 } from "@/app/store/slices/editor-tools-slice";
+import { selectPlaybackSpeed } from "@/app/store/slices/playback-controls-slice";
+import { selectPlaybackVolumePercent } from "@/app/store/slices/preferences-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
@@ -114,6 +115,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const loopPlaybackEnabled = useAppSelector(selectLoopPlaybackEnabled);
   const segmentPlaybackEnabled = useAppSelector(selectSegmentPlaybackEnabled);
   const playbackSpeed = useAppSelector(selectPlaybackSpeed);
+  const playbackVolumePercent = useAppSelector(selectPlaybackVolumePercent);
   const sourceSelection = useAppSelector(selectSourceSelection);
   const media = useAppSelector(selectSourceMedia);
   const trim = useAppSelector(selectTrim) ?? EMPTY_TRIM;
@@ -186,6 +188,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   } | null>(null);
 
   const masterGainRef = useRef<GainNode | null>(null);
+  const playbackOutputGainRef = useRef<GainNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
   const audioPlayheadRef = useRef<HTMLDivElement>(null);
   const playbackFrameRef = useRef<PlaybackFrameHandle | null>(null);
@@ -294,6 +297,8 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     disconnectCurrentNativeAudioRoute();
     masterGainRef.current?.disconnect();
     masterGainRef.current = null;
+    playbackOutputGainRef.current?.disconnect();
+    playbackOutputGainRef.current = null;
   }, [disconnectCurrentNativeAudioRoute, removeAudioRuntime]);
 
   useEffect(() => {
@@ -368,7 +373,10 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     if (!masterGain) {
       masterGain = context.createGain();
       masterGainRef.current = masterGain;
-      masterGain.connect(context.destination);
+      const playbackOutputGain = context.createGain();
+      playbackOutputGainRef.current = playbackOutputGain;
+      masterGain.connect(playbackOutputGain);
+      playbackOutputGain.connect(context.destination);
     }
 
     const activeExternalAudioUrls = usesExternalAudio
@@ -443,8 +451,17 @@ function useEditorInteractionController(): EditorInteractionRuntime {
 
   useEffect(() => {
     const masterGain = masterGainRef.current;
+    const playbackOutputGain = playbackOutputGainRef.current;
     if (masterGain)
       masterGain.gain.value = masterAudio.enabled ? masterAudio.volumePercent / 50 : 0;
+    if (playbackOutputGain && audioContextRef.current) {
+      const context = audioContextRef.current;
+      const now = context.currentTime;
+      const gain = playbackOutputGain.gain;
+      gain.cancelScheduledValues(now);
+      gain.setValueAtTime(gain.value, now);
+      gain.linearRampToValueAtTime(playbackVolumePercent / 100, now + 0.025);
+    }
     for (const track of audioTracks) {
       const node = audioNodesRef.current.get(track.streamIndex);
       if (node) node.gain.gain.value = track.enabled ? track.volumePercent / 50 : 0;
@@ -453,10 +470,15 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       nativeAudioBindingRef.current.binding.gain.gain.value = nativeAudioTrack?.enabled
         ? nativeAudioTrack.volumePercent / 50
         : 0;
-    } else if (videoRef.current && nativeAudioTrack) {
-      const combinedGain =
-        (masterAudio.enabled ? masterAudio.volumePercent / 50 : 0) *
-        (nativeAudioTrack.enabled ? nativeAudioTrack.volumePercent / 50 : 0);
+    } else if (videoRef.current) {
+      const masterGain = masterAudio.enabled ? masterAudio.volumePercent / 50 : 0;
+      const trackGain = nativeAudioTrack
+        ? nativeAudioTrack.enabled
+          ? nativeAudioTrack.volumePercent / 50
+          : 0
+        : 1;
+
+      const combinedGain = (playbackVolumePercent / 100) * masterGain * trackGain;
 
       videoRef.current.volume = Math.min(1, combinedGain);
     }
@@ -467,6 +489,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     readyPreviewKey,
     masterAudio.enabled,
     masterAudio.volumePercent,
+    playbackVolumePercent,
   ]);
 
   useEffect(() => {

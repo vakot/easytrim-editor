@@ -410,6 +410,7 @@ export const ru = {
     labels: {
       compatible: "Совместимый предпросмотр",
       loopPlayback: "Повтор воспроизведения",
+      playbackVolume: "Громкость воспроизведения",
       playbackSpeed: "Скорость воспроизведения",
       segmentPlayback: "Воспроизведение сегмента",
       shortcutMarkInOut: "Начало / Конец",

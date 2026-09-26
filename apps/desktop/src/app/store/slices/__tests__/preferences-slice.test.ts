@@ -122,6 +122,7 @@ describe("preferences Redux domain", () => {
         layoutDensity: "compact",
         theme: "dark",
         primaryColor: "#123456",
+        playbackVolumePercent: 100,
         customPrimaryColor: "#123456",
       },
       preferencesReset(),
@@ -168,6 +169,7 @@ describe("preferences Redux domain", () => {
       layoutDensity: "default",
       theme: "system",
       primaryColor: "amber",
+      playbackVolumePercent: 100,
       customPrimaryColor: "#efbf04",
     };
 

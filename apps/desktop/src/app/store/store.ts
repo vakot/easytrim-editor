@@ -24,6 +24,7 @@ import {
 import { exportPresetsReducer } from "@/app/store/slices/export-presets-slice";
 import { exportReducer } from "@/app/store/slices/export-slice";
 import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
+import { playbackControlsReducer } from "@/app/store/slices/playback-controls-slice";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 import { previewReducer } from "@/app/store/slices/preview-slice";
 import { sourceReducer } from "@/app/store/slices/source-slice";
@@ -34,6 +35,7 @@ const combinedReducer = combineReducers({
   crop: cropReducer,
   editingInstances: editingInstancesReducer,
   editorTools: editorToolsReducer,
+  playbackControls: playbackControlsReducer,
   export: exportReducer,
   exportPresets: exportPresetsReducer,
   importWorkflow: importWorkflowReducer,

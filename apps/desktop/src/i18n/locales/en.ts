@@ -408,6 +408,7 @@ export const en = {
     labels: {
       compatible: "Compatible preview",
       loopPlayback: "Loop playback",
+      playbackVolume: "Playback volume",
       playbackSpeed: "Playback speed",
       segmentPlayback: "Segment playback",
       shortcutMarkInOut: "Mark In / Mark Out",

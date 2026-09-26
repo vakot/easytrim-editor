@@ -1,4 +1,4 @@
-import { Gauge, Volume2, VolumeOff } from "lucide-react";
+import { Gauge } from "lucide-react";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
@@ -8,12 +8,20 @@ import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { playbackSpeedChanged, selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
+import {
+  playbackSpeedChanged,
+  selectPlaybackSpeed,
+} from "@/app/store/slices/playback-controls-slice";
+import {
+  playbackVolumeChanged,
+  selectPlaybackVolumePercent,
+} from "@/app/store/slices/preferences-slice";
 import {
   DEFAULT_PLAYBACK_SPEED,
   PLAYBACK_SPEED_STEPS,
   type PlaybackSpeed,
 } from "@/domain/playback-speed";
+import { VolumeButton } from "@/features/audio";
 import { cn } from "@/lib/class-names.utils";
 
 import { PlaybackControls } from "./PlaybackControls";
@@ -147,35 +155,45 @@ function PlaybackSpeedControl() {
 }
 
 function PlaybackVolumeControl() {
-  const enabled = true;
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const volumePercent = useAppSelector(selectPlaybackVolumePercent);
+  const enabled = volumePercent > 0;
 
   return (
     <motion.div className="flex" initial="collapsed" whileHover="expanded">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            aria-pressed={enabled}
-            className="text-primary"
-            size="icon-sm"
-            type="button"
-            variant="secondary"
-          >
-            {enabled ? <Volume2 /> : <VolumeOff />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Playback Volume</TooltipContent>
-      </Tooltip>
+      <VolumeButton
+        className={enabled ? "text-primary" : undefined}
+        enabled={enabled}
+        onClick={() => dispatch(playbackVolumeChanged(enabled ? 0 : 100))}
+        variant="secondary"
+      />
 
       <motion.div
         className="flex h-full items-center overflow-hidden"
         transition={{ duration: 0.12 }}
         variants={{
           collapsed: { maxWidth: 0, opacity: 0 },
-          expanded: { maxWidth: 136, opacity: 1 },
+          expanded: { maxWidth: 184, opacity: 1 },
         }}
       >
         <div className="px-2">
-          <Slider aria-label="Playback volume" className="w-30" value={[100]} />
+          <div className="flex items-center gap-2">
+            <Slider
+              aria-label={t("preview.labels.playbackVolume")}
+              className="w-30"
+              max={100}
+              min={0}
+              onValueChange={([value]) => {
+                if (value !== undefined) dispatch(playbackVolumeChanged(value));
+              }}
+              step={1}
+              value={[volumePercent]}
+            />
+            <output className="w-9 shrink-0 text-right font-mono text-xs text-muted-foreground">
+              {volumePercent}%
+            </output>
+          </div>
         </div>
       </motion.div>
     </motion.div>

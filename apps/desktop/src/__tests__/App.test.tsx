@@ -147,10 +147,16 @@ function installAudioMocks(initiallyReady = true) {
 
   const audioContext = {
     destination: {},
+    currentTime: 0,
     resume: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
     createGain: vi.fn(() => ({
-      gain: { value: 1 },
+      gain: {
+        value: 1,
+        cancelScheduledValues: vi.fn(),
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+      },
       connect: vi.fn(),
       disconnect: vi.fn(),
     })),
@@ -978,12 +984,12 @@ describe("App", () => {
     expect(
       within(videoToolbar).getByRole("button", { name: "Reset tools" }).parentElement,
     ).toHaveClass("shrink-0", "self-start");
-    expect(within(videoToolbar).getByRole("button", { name: "Playback speed" })).toHaveAttribute(
-      "data-variant",
-      "secondary",
-    );
+    const timelineFixedContent = screen.getByTestId("timeline-fixed-content");
+    expect(
+      within(timelineFixedContent).getByRole("button", { name: "Playback speed" }),
+    ).toHaveAttribute("data-variant", "secondary");
     expect(videoToolbar.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
-    const playbackSpeedButton = within(videoToolbar).getByRole("button", {
+    const playbackSpeedButton = within(timelineFixedContent).getByRole("button", {
       name: "Playback speed",
     });
 
@@ -1424,10 +1430,16 @@ describe("App", () => {
 
     const audioContext = {
       destination: {},
+      currentTime: 0,
       resume: vi.fn().mockResolvedValue(undefined),
       close: vi.fn().mockResolvedValue(undefined),
       createGain: vi.fn(() => ({
-        gain: { value: 1 },
+        gain: {
+          value: 1,
+          cancelScheduledValues: vi.fn(),
+          setValueAtTime: vi.fn(),
+          linearRampToValueAtTime: vi.fn(),
+        },
         connect: vi.fn(),
         disconnect: vi.fn(),
       })),

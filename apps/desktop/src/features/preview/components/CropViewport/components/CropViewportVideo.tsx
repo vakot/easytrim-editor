@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
+import { selectPlaybackSpeed } from "@/app/store/slices/playback-controls-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { diagnostics } from "@/lib/diagnostics";
 
