@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReactNode } from "react";
 
 import { DEFAULT_PREFERENCES } from "../app/preferences";
 import { editingInstanceActivated } from "../app/store/actions/editing-instance-actions";
@@ -22,6 +23,7 @@ import { store } from "../app/store/store";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
 import type { EditorSnapshot } from "../domain/editor-snapshot";
 import type { SourceRef } from "../domain/source";
+import type { EditingInstanceListEntry } from "../domain/editing-instance";
 import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri/media.types";
 
 const mocks = vi.hoisted(() => ({
@@ -52,6 +54,29 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
     prepareWaveforms: mocks.prepareWaveforms,
+  };
+});
+
+vi.mock("react-virtuoso", async () => {
+  const React = await import("react");
+  return {
+    Virtuoso: (props: {
+      context?: unknown;
+      data?: readonly EditingInstanceListEntry[];
+      itemContent?: (
+        index: number,
+        source: EditingInstanceListEntry,
+        context: unknown,
+      ) => ReactNode;
+    }) => (
+      <div>
+        {props.data?.map((source, index) => (
+          <React.Fragment key={source.id}>
+            {props.itemContent?.(index, source, props.context)}
+          </React.Fragment>
+        ))}
+      </div>
+    ),
   };
 });
 

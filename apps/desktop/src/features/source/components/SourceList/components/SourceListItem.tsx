@@ -1,5 +1,4 @@
 import { MoreVertical } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
 import { Highlight } from "@/components/ui/highlight";
@@ -17,7 +16,6 @@ import {
   SourceCardThumbnail,
   SourceCardTitle,
 } from "../../SourceCard";
-import { useSourceListData } from "../contexts/SourceListContext";
 
 function SourceListItem({
   match,
@@ -26,22 +24,10 @@ function SourceListItem({
   match: SourceSearchResult | undefined;
   source: EditingInstanceListEntry;
 }) {
-  const { registerThumbnailDemand } = useSourceListData();
-  const shouldReduceMotion = useReducedMotion() === true;
-  const duration = shouldReduceMotion ? 0 : 0.16;
-
   return (
-    <motion.li
-      animate={{ opacity: 1, y: 0 }}
-      className="flex w-full min-w-0 flex-col"
-      exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
-      initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
-      layout={shouldReduceMotion ? false : "position"}
-      ref={(element) => registerThumbnailDemand(source, element)}
-      transition={{ duration, ease: "easeOut" }}
-    >
+    <div className="flex w-full min-w-0 flex-col" role="listitem">
       <SourceListItemCard match={match} source={source} />
-    </motion.li>
+    </div>
   );
 }
 
