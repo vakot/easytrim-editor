@@ -10,13 +10,13 @@ const commandRuntime = vi.hoisted(() => ({
       enabled: true,
       label: "Next source",
       pending: false,
-      shortcut: { code: "ArrowRight", key: "ArrowRight", modifier: "alt" },
+      shortcut: { code: "ArrowRight", key: "RightArrow", modifier: "alt" },
     },
     "previous-source": {
       enabled: false,
       label: "Previous source",
       pending: false,
-      shortcut: { code: "ArrowLeft", key: "ArrowLeft", modifier: "alt" },
+      shortcut: { code: "ArrowLeft", key: "LeftArrow", modifier: "alt" },
     },
   },
   executeCommand: vi.fn(),
@@ -46,7 +46,7 @@ describe("SourceNavigation", () => {
     expect(nextButton).not.toBeDisabled();
 
     await user.hover(nextButton);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Next source (Alt+ArrowRight)");
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Next source (Alt+RightArrow)");
 
     await user.click(nextButton);
     expect(commandRuntime.executeCommand).toHaveBeenCalledWith("next-source", "button");

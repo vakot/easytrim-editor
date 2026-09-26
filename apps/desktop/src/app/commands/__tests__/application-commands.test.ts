@@ -162,7 +162,7 @@ describe("application command search", () => {
 describe("application command shortcuts", () => {
   const sourceNavigationShortcut = {
     code: "ArrowLeft",
-    key: "ArrowLeft",
+    key: "LeftArrow",
     modifier: "alt",
   } as const;
 
@@ -191,8 +191,8 @@ describe("application command shortcuts", () => {
       code: "ArrowLeft",
     });
 
-    expect(getShortcutDisplayKeys(sourceNavigationShortcut)).toEqual(["Alt", "ArrowLeft"]);
-    expect(getShortcutAriaValue(sourceNavigationShortcut)).toBe("Alt+ArrowLeft");
+    expect(getShortcutDisplayKeys(sourceNavigationShortcut)).toEqual(["Alt", "LeftArrow"]);
+    expect(getShortcutAriaValue(sourceNavigationShortcut)).toBe("Alt+LeftArrow");
     expect(isShortcutEvent(altArrowLeft, sourceNavigationShortcut)).toBe(true);
     expect(
       isShortcutEvent(

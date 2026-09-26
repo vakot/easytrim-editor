@@ -33,7 +33,7 @@ function useSourceNavigationCommands() {
       instances,
       label: labels.previous,
       offset: -1,
-      shortcut: { code: "ArrowLeft", key: "ArrowLeft", modifier: "alt" } as const,
+      shortcut: { code: "ArrowLeft", key: "LeftArrow", modifier: "alt" } as const,
     }),
     createSourceNavigationCommand({
       activeIndex,
@@ -43,7 +43,7 @@ function useSourceNavigationCommands() {
       instances,
       label: labels.next,
       offset: 1,
-      shortcut: { code: "ArrowRight", key: "ArrowRight", modifier: "alt" } as const,
+      shortcut: { code: "ArrowRight", key: "RightArrow", modifier: "alt" } as const,
     }),
   ] as const;
 }
