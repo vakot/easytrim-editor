@@ -74,11 +74,13 @@ const preferencesTransform = createTransform(
     const persistedPreferences = Object.fromEntries(
       Object.entries(state).filter(([key]) => key !== "editorSourceCollapsibleState"),
     ) as Partial<Preferences>;
+
     const playbackVolumePercent =
       typeof persistedPreferences.playbackVolumePercent === "number" &&
       Number.isFinite(persistedPreferences.playbackVolumePercent)
         ? Math.max(0, Math.min(100, persistedPreferences.playbackVolumePercent))
         : DEFAULT_PLAYBACK_VOLUME_PERCENT;
+
     const lastAudiblePlaybackVolumePercent =
       typeof persistedPreferences.lastAudiblePlaybackVolumePercent === "number" &&
       Number.isFinite(persistedPreferences.lastAudiblePlaybackVolumePercent) &&

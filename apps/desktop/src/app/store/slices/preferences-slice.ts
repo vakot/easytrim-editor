@@ -40,6 +40,7 @@ const preferencesSlice = createSlice({
       const volumePercent = Number.isFinite(action.payload)
         ? Math.max(0, Math.min(100, action.payload))
         : DEFAULT_PLAYBACK_VOLUME_PERCENT;
+
       state.playbackVolumePercent = volumePercent;
       if (volumePercent > 0) state.lastAudiblePlaybackVolumePercent = volumePercent;
     },

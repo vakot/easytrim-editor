@@ -15,11 +15,11 @@ interface Preferences {
   autoStartQueueEnabled: boolean;
   customPrimaryColor: CustomPrimaryColor;
   deleteSourceOnRenderFinish: boolean;
+  lastAudiblePlaybackVolumePercent: number;
   lastSeenChangelogVersion: string | null;
   layoutDensity: LayoutDensity;
   loopPlaybackEnabledDefault: boolean;
   mergeAudioEnabledDefault: boolean;
-  lastAudiblePlaybackVolumePercent: number;
   playbackVolumePercent: number;
   primaryColor: PrimaryColor;
   segmentPlaybackEnabledDefault: boolean;
