@@ -24,7 +24,7 @@ type AppCommandCenterStoryArgs = {
 };
 
 const meta = {
-  component: AppCommandCenter,
+  component: AppCommandCenterStory,
   args: { state: "checking" },
   argTypes: {
     state: {

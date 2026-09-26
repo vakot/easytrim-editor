@@ -23,9 +23,10 @@ function AppLayoutHeader() {
         <MenuBar />
       </div>
 
-      <div className="flex max-w-md flex-1/2 items-center gap-1">
-        <SourceNavigation />
-        <AppCommandCenter />
+      <div className="flex max-w-lg flex-1/2 justify-center px-15">
+        <AppCommandCenter>
+          <SourceNavigation className="-mx-15 mr-1" />
+        </AppCommandCenter>
       </div>
 
       <div className="flex h-full flex-1 justify-end gap-3">
