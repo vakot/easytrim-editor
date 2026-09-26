@@ -7,6 +7,8 @@ import {
   Virtuoso,
 } from "react-virtuoso";
 
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { useAppDispatch } from "@/app/store/redux-hooks";
 import {
   prepareImportedSourceThumbnailsRequested,
@@ -78,7 +80,7 @@ function SourceListContent({ className }: SourceListContentProps) {
   const rangeRef = useRef<ListRange | null>(null);
   const scrollSeekingRef = useRef(false);
   const settleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [scrollerElement, setScrollerElement] = useState<HTMLElement | null>(null);
+  const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
 
   const sourceEntriesById = useMemo(
     () => new Map(sources.map((source) => [source.id, source])),
@@ -132,21 +134,17 @@ function SourceListContent({ className }: SourceListContentProps) {
     releaseDemand(demandedIdsRef.current);
   }, [releaseDemand]);
 
-  const handleScrollerRef = useCallback((element: HTMLElement | Window | null) => {
-    setScrollerElement(element instanceof HTMLElement ? element : null);
-  }, []);
-
   useEffect(() => {
-    if (!scrollerElement) return;
+    if (!scrollParent) return;
 
-    let previousScrollTop = scrollerElement.scrollTop;
+    let previousScrollTop = scrollParent.scrollTop;
     let previousTime = performance.now();
 
     const handleScroll = () => {
       const now = performance.now();
       const elapsed = Math.max(1, now - previousTime);
-      const velocity = ((scrollerElement.scrollTop - previousScrollTop) / elapsed) * 1000;
-      previousScrollTop = scrollerElement.scrollTop;
+      const velocity = ((scrollParent.scrollTop - previousScrollTop) / elapsed) * 1000;
+      previousScrollTop = scrollParent.scrollTop;
       previousTime = now;
 
       if (Math.abs(velocity) >= SCROLL_SEEK_ENTER_VELOCITY) handleScrollSeekChange();
@@ -157,9 +155,9 @@ function SourceListContent({ className }: SourceListContentProps) {
       }, SCROLL_SETTLE_DELAY_MS);
     };
 
-    scrollerElement.addEventListener("scroll", handleScroll, { passive: true });
-    return () => scrollerElement.removeEventListener("scroll", handleScroll);
-  }, [handleScrollSeekChange, scrollerElement, updateDemandForRange]);
+    scrollParent.addEventListener("scroll", handleScroll, { passive: true });
+    return () => scrollParent.removeEventListener("scroll", handleScroll);
+  }, [handleScrollSeekChange, scrollParent, updateDemandForRange]);
 
   useEffect(() => {
     const filteredSourceIds = new Set(sources.map(({ id }) => id));
@@ -174,37 +172,36 @@ function SourceListContent({ className }: SourceListContentProps) {
     [releaseDemand],
   );
 
-  if (search.trim() && sources.length === 0) {
-    return (
-      <div className="text-center text-sm text-muted-foreground" role="status">
-        {t("source.messages.noSearchResults")}
-      </div>
-    );
-  }
-
   return (
-    <Virtuoso
-      className={cn("size-full min-h-0", className)}
-      components={virtuosoComponents}
-      computeItemKey={(_, source) => source.id}
-      data={sources}
-      defaultItemHeight={112}
-      increaseViewportBy={{
-        bottom: THUMBNAIL_VIEWPORT_EXPANSION,
-        top: THUMBNAIL_VIEWPORT_EXPANSION,
-      }}
-      itemContent={(_, source) => (
-        <SourceListItem match={matchesBySourceId.get(source.id)} source={source} />
-      )}
-      rangeChanged={handleRangeChanged}
-      scrollerRef={handleScrollerRef}
-      scrollSeekConfiguration={{
-        change: handleScrollSeekChange,
-        enter: (velocity) => Math.abs(velocity) >= SCROLL_SEEK_ENTER_VELOCITY,
-        exit: (velocity) => Math.abs(velocity) <= SCROLL_SEEK_EXIT_VELOCITY,
-      }}
-      style={{ height: "100%" }}
-    />
+    <ScrollArea className={cn("min-h-0 flex-1", className)} viewportRef={setScrollParent}>
+      {search.trim() && sources.length === 0 ? (
+        <div className="text-center text-sm text-muted-foreground" role="status">
+          {t("source.messages.noSearchResults")}
+        </div>
+      ) : scrollParent ? (
+        <Virtuoso
+          className="w-full"
+          components={virtuosoComponents}
+          computeItemKey={(_, source) => source.id}
+          customScrollParent={scrollParent}
+          data={sources}
+          defaultItemHeight={112}
+          increaseViewportBy={{
+            bottom: THUMBNAIL_VIEWPORT_EXPANSION,
+            top: THUMBNAIL_VIEWPORT_EXPANSION,
+          }}
+          itemContent={(_, source) => (
+            <SourceListItem match={matchesBySourceId.get(source.id)} source={source} />
+          )}
+          rangeChanged={handleRangeChanged}
+          scrollSeekConfiguration={{
+            change: handleScrollSeekChange,
+            enter: (velocity) => Math.abs(velocity) >= SCROLL_SEEK_ENTER_VELOCITY,
+            exit: (velocity) => Math.abs(velocity) <= SCROLL_SEEK_EXIT_VELOCITY,
+          }}
+        />
+      ) : null}
+    </ScrollArea>
   );
 }
 

@@ -18,11 +18,13 @@ function ScrollArea({
   orientation = "vertical",
   scrollbarClassName,
   style,
+  viewportRef: viewportRefProp,
   ...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
   fadeColor?: string;
   orientation?: ScrollAreaOrientation;
   scrollbarClassName?: string;
+  viewportRef?: (element: HTMLDivElement | null) => void;
 }) {
   const viewportRef = React.useRef<HTMLDivElement>(null);
 
@@ -61,6 +63,14 @@ function ScrollArea({
       return nextScrollState;
     });
   }, [orientation]);
+
+  const setViewportRef = React.useCallback(
+    (element: HTMLDivElement | null) => {
+      viewportRef.current = element;
+      viewportRefProp?.(element);
+    },
+    [viewportRefProp],
+  );
 
   React.useEffect(() => {
     const viewport = viewportRef.current;
@@ -107,7 +117,7 @@ function ScrollArea({
         )}
         data-slot="scroll-area-viewport"
         onScroll={updateScrollState}
-        ref={viewportRef}
+        ref={setViewportRef}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>

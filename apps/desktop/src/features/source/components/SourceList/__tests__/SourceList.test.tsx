@@ -21,6 +21,7 @@ const virtuosoHarness = vi.hoisted(() => ({
       ScrollSeekPlaceholder: (props: { height: number; index: number; type: "item" }) => ReactNode;
     };
     computeItemKey: (index: number, source: EditingInstanceListEntry) => string;
+    customScrollParent: HTMLElement;
     data: EditingInstanceListEntry[];
     increaseViewportBy: { bottom: number; top: number };
     itemContent: (index: number, source: EditingInstanceListEntry) => ReactNode;
@@ -50,11 +51,7 @@ vi.mock("react-virtuoso", async () => {
 
       const visibleSources = data.slice(0, 3);
       return (
-        <div
-          data-count={data.length}
-          data-testid="virtuoso"
-          ref={(element) => props.scrollerRef(element)}
-        >
+        <div data-count={data.length} data-testid="virtuoso">
           <button
             onClick={() => {
               const range = { endIndex: 10, startIndex: 8 };
@@ -70,11 +67,8 @@ vi.mock("react-virtuoso", async () => {
               const range = { endIndex: 10, startIndex: 8 };
               setScrollSeeking(false);
               props.rangeChanged(range);
-              const scroller = document.querySelector<HTMLElement>('[data-testid="virtuoso"]');
-              if (scroller) {
-                scroller.scrollTop += 1;
-                scroller.dispatchEvent(new Event("scroll"));
-              }
+              props.customScrollParent.scrollTop += 1;
+              props.customScrollParent.dispatchEvent(new Event("scroll"));
             }}
             type="button"
           >
@@ -325,6 +319,9 @@ describe("source queue controls", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
     expect(screen.getByTestId("virtuoso")).toHaveAttribute("data-count", "1400");
     expect(virtuosoHarness.props?.increaseViewportBy).toEqual({ bottom: 600, top: 600 });
+    expect(virtuosoHarness.props?.customScrollParent).toBe(
+      document.querySelector('[data-slot="scroll-area-viewport"]'),
+    );
   });
 
   it("updates virtualized data when search changes and shows the no-results state", async () => {
