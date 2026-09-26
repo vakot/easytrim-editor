@@ -259,9 +259,9 @@ export const sk = {
     labels: {
       deleteSource: "Odstrániť zdroj",
       onFinish: "Po dokončení frontu",
-      ExportQueue: "Front vykresľovania",
+      renderQueue: "Front vykresľovania",
       routeFastCut: "Rýchly strih",
-      routeOptimized: "Optimalizované vykreslenie",
+      routeOptimized: "Optimalizované",
       title: "Front",
     },
     status: {
@@ -273,6 +273,24 @@ export const sk = {
     },
     messages: {
       empty: "Exporty sa zobrazia tu.",
+      summary: {
+        canceled_one: "{{count}} zrušený",
+        canceled_other: "{{count}} zrušených",
+        completed_one: "{{count}} dokončený",
+        completed_other: "{{count}} dokončených",
+        failed_one: "{{count}} zlyhaný",
+        failed_other: "{{count}} zlyhaných",
+        jobs_one: "{{count}} úloha",
+        jobs_other: "{{count}} úloh",
+        queued_one: "{{count}} vo fronte",
+        queued_other: "{{count}} vo fronte",
+        rendering_one: "{{count}} sa vykresľuje",
+        rendering_other: "{{count}} sa vykresľuje",
+      },
+      elapsed: "{{value}} uplynulo",
+      error: "Chyba exportu: {{message}}",
+      fps: "{{value}} FPS",
+      remaining: "zostáva {{value}}",
     },
     tooltips: {
       deleteSourceOnRenderFinish: "Po úspešnom vykreslení odstráni zdroj",

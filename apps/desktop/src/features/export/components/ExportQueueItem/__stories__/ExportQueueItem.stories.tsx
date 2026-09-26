@@ -1,10 +1,15 @@
+import "@/i18n/config";
+
+import type { Meta, StoryObj } from "@storybook/react";
 import { Film } from "lucide-react";
+import { Provider } from "react-redux";
 
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
-import { cn } from "@/lib/class-names.utils";
-
+import {
+  createStoryStore,
+  type ExportQueueStoryStatus,
+} from "../../ExportQueue/__stories__/export-queue.stories.fixtures";
 import {
   ExportQueueItem,
   ExportQueueItemCancel,
@@ -20,43 +25,46 @@ import {
   ExportQueueItemSourceName,
   ExportQueueItemStatus,
   useExportQueueItem,
-} from "../../ExportQueueItem";
-import { useExportQueue } from "../contexts/ExportQueueContext";
+} from "../";
 
-import { ExportQueueEmpty } from "./ExportQueueEmpty";
+const meta = {
+  component: ExportQueueItem,
+  args: { attemptId: "story-queued", children: null, instanceId: "story-source" },
+  parameters: { layout: "centered" },
+  tags: ["autodocs"],
+  title: "Features/Export Queue Item",
+} satisfies Meta<typeof ExportQueueItem>;
 
-function ExportQueueContent({ className }: { className?: string }) {
-  const { queue } = useExportQueue();
+export default meta;
 
-  if (!queue.length) return <ExportQueueEmpty />;
+type Story = StoryObj<typeof meta>;
+
+function ExportQueueItemStory({ status }: { status: ExportQueueStoryStatus }) {
+  const store = createStoryStore([
+    {
+      id: `story-${status}`,
+      label: `travel-highlights-${status}`,
+      progressPercent: status === "rendering" ? 64 : undefined,
+      route: status === "rendering" ? "optimized" : "fast",
+      status,
+    },
+  ]);
 
   return (
-    <ul className={cn("flex w-full flex-col gap-2", className)}>
-      {queue.map((item, index) => (
-        <ExportQueueItem
-          attemptId={item.attempt.id}
-          instanceId={item.instance.id}
-          key={item.attempt.id}
-        >
-          <ExportQueueListItem />
-          {index < queue.length - 1 ? (
-            <li aria-hidden="true">
-              <Separator />
-            </li>
-          ) : null}
-        </ExportQueueItem>
-      ))}
-    </ul>
+    <Provider store={store}>
+      <ExportQueueItem attemptId={`story-${status}`} instanceId="story-source">
+        <ExportQueueItemView />
+      </ExportQueueItem>
+    </Provider>
   );
 }
 
-function ExportQueueListItem() {
+function ExportQueueItemView() {
   const { attempt } = useExportQueueItem();
-
   const status = attempt.state.status;
 
   return (
-    <ExportQueueItemContent className="text-xs">
+    <ExportQueueItemContent className="w-100 max-w-[calc(100vw-2rem)] rounded-lg border bg-card text-xs">
       <Card className="size-10 shrink-0 items-center justify-center bg-primary/5 p-0 ring-primary/10">
         <Film className="size-6 text-muted-foreground" />
       </Card>
@@ -97,4 +105,22 @@ function ExportQueueListItem() {
   );
 }
 
-export { ExportQueueContent };
+export const Queued: Story = {
+  render: () => <ExportQueueItemStory status="queued" />,
+};
+
+export const Rendering: Story = {
+  render: () => <ExportQueueItemStory status="rendering" />,
+};
+
+export const Completed: Story = {
+  render: () => <ExportQueueItemStory status="completed" />,
+};
+
+export const Failed: Story = {
+  render: () => <ExportQueueItemStory status="failed" />,
+};
+
+export const Canceled: Story = {
+  render: () => <ExportQueueItemStory status="canceled" />,
+};

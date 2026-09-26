@@ -22,11 +22,11 @@ function AppLayout() {
           className="ml-1.5 overflow-hidden!"
           collapsedSize={0}
           collapsible
-          defaultSize="30.75rem"
+          defaultSize="400px"
           groupResizeBehavior="preserve-pixel-size"
           id="workspace-sidebar"
-          maxSize="48rem"
-          minSize="30.75rem"
+          maxSize="500px"
+          minSize="350px"
         >
           <AppLayoutPanel className="layout-compact:rounded-l-xl layout-compact:border-r-0">
             <AppLayoutSidebar />
@@ -43,7 +43,7 @@ function AppLayout() {
           className="mr-1.5 overflow-hidden!"
           groupResizeBehavior="preserve-relative-size"
           id="workspace-content"
-          minSize="40rem"
+          minSize="60rem"
         >
           <AppLayoutMain />
         </ResizablePanel>

@@ -25,6 +25,15 @@ export type ExportQueueItem = {
   instance: EditingInstance;
 };
 
+export interface ExportQueueSummary {
+  canceled: number;
+  completed: number;
+  failed: number;
+  queued: number;
+  rendering: number;
+  total: number;
+}
+
 export const initialEditingInstancesState: EditingInstancesState = {
   activeInstanceId: null,
   entities: {},
@@ -585,6 +594,33 @@ const selectExportQueue = createSelector([selectEditingInstances], (instances): 
     .sort((left, right) => left.attempt.capturedAt - right.attempt.capturedAt),
 );
 
+const selectExportQueueSummary = createSelector(
+  [selectExportQueue],
+  (queue): ExportQueueSummary => {
+    const summary: ExportQueueSummary = {
+      canceled: 0,
+      completed: 0,
+      failed: 0,
+      queued: 0,
+      rendering: 0,
+      total: queue.length,
+    };
+
+    for (const { attempt } of queue) summary[attempt.state.status] += 1;
+    return summary;
+  },
+);
+
+const selectExportQueueItem = (
+  state: RootState,
+  instanceId: EditingInstanceId,
+  attemptId: string,
+): ExportQueueItem | undefined => {
+  const instance = selectEditingInstanceById(state, instanceId);
+  const attempt = instance?.exportAttempts.find(({ id }) => id === attemptId);
+  return instance && attempt ? { attempt, instance } : undefined;
+};
+
 const selectExportQueueById = createSelector(
   [selectExportQueue, (_state: RootState, id: EditingInstanceId) => id],
   (queue, id) => queue.filter(({ instance }) => instance.id === id),
@@ -648,6 +684,8 @@ export {
   selectEditingInstanceTopologyEntries,
   selectExportQueue,
   selectExportQueueById,
+  selectExportQueueItem,
+  selectExportQueueSummary,
   selectHasProcessableExports,
   selectHasQueuedOrRenderingExportByInstanceId,
   selectImportedEditingInstances,
