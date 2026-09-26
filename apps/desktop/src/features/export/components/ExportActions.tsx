@@ -47,16 +47,16 @@ function ExportActions() {
     >
       <Dialog>
         <ExportQueue>
-          <ExportActionTooltip tooltip="Export queue">
+          <ExportActionTooltip tooltip={t("queue.labels.ExportQueue")}>
             <DialogTrigger asChild>
               <ExportActionButton icon={<List aria-hidden="true" />} variant="default">
-                <span className="truncate">Export Queue</span>
+                <span className="truncate">{t("queue.labels.ExportQueue")}</span>
               </ExportActionButton>
             </DialogTrigger>
           </ExportActionTooltip>
           <DialogContent className="w-full sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>Export Queue</DialogTitle>
+              <DialogTitle>{t("queue.labels.ExportQueue")}</DialogTitle>
               <DialogDescription>3 jobs · 1 rendering · 2 queued</DialogDescription>
             </DialogHeader>
 

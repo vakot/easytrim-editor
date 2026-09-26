@@ -39,6 +39,7 @@ function ExportQueueItemCancel() {
 }
 
 function ExportQueueItemRestore() {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { attempt, instance } = useExportQueueItem();
 
@@ -51,6 +52,7 @@ function ExportQueueItemRestore() {
 
   return (
     <Button
+      aria-label={t("queue.actions.restore")}
       onClick={() =>
         void dispatch(
           restoreExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
