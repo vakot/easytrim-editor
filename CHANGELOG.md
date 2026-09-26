@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Improved imported source thumbnail loading with bounded background work and reusable cached previews.
 - Improved Source List and Command Palette search to handle partial queries and misspellings, with highlights on matched text.
 - Smoothed Activity Feed entry appearance, removal, and reflow in default, compact, and branch views.
 - Animated source tab additions and removals, and kept the selected tab visible when switching sources.

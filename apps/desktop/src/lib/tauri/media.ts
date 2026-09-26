@@ -62,14 +62,6 @@ async function inspectMedia(sourcePath: string): Promise<MediaInfo> {
   }
 }
 
-async function inspectImportedSource(sourcePath: string): Promise<MediaInfo> {
-  try {
-    return parseMediaInfo(await invoke<unknown>("inspect_imported_source", { sourcePath }));
-  } catch (error: unknown) {
-    throw normalizeAppError(error);
-  }
-}
-
 async function activateSourcePath(sourcePath: string, media?: MediaInfo): Promise<SourceRef> {
   try {
     return parseSourceRef(
@@ -230,6 +222,14 @@ async function prepareImportedSourceThumbnail(sourcePath: string): Promise<Thumb
   }
 }
 
+async function releaseImportedSourceThumbnail(mediaToken: number): Promise<void> {
+  try {
+    await invoke("release_imported_source_thumbnail", { mediaToken });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 async function prepareAudioPreviews(
   sourcePath: string,
   streamIndexes: number[],
@@ -342,7 +342,6 @@ export {
   checkMediaCapabilities,
   chooseOutputPath,
   chooseSource,
-  inspectImportedSource,
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,
@@ -354,6 +353,7 @@ export {
   prepareSourcePreview,
   prepareWaveforms,
   releaseExportSource,
+  releaseImportedSourceThumbnail,
   renderFast,
   renderOptimized,
   reserveExportSource,

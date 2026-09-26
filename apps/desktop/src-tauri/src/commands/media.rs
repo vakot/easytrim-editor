@@ -1,6 +1,5 @@
 use crate::{
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
-    domain::source::validate_source,
     error::AppError,
     media::{
         audio::generate_audio_previews,
@@ -13,8 +12,7 @@ use crate::{
 };
 use serde::Serialize;
 use std::{path::PathBuf, sync::Arc};
-use tauri::State;
-use uuid::Uuid;
+use tauri::{AppHandle, Manager, State};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -131,54 +129,35 @@ pub async fn inspect_media(
 }
 
 #[tauri::command]
-pub async fn inspect_imported_source(
-    source_path: PathBuf,
-    diagnostics: State<'_, Arc<DiagnosticsState>>,
-) -> Result<MediaInfo, AppError> {
-    let source = validate_source(&source_path)?;
-    let operation_id = format!("ffprobe-imported-{}", Uuid::new_v4());
-    record_ffprobe_event(&diagnostics, "ffprobe.process.spawned", &operation_id, None);
-
-    let result = tauri::async_runtime::spawn_blocking(move || probe_media(&source.path, || false))
-    .await
-    .map_err(|_| AppError::internal("Video inspection stopped unexpectedly."))?;
-
-    match result {
-        Ok(media) => {
-            record_ffprobe_event(
-                &diagnostics,
-                "ffprobe.process.exited",
-                &operation_id,
-                Some("success"),
-            );
-            Ok(media)
-        }
-        Err(error) => {
-            record_ffprobe_event(
-                &diagnostics,
-                "ffprobe.process.exited",
-                &operation_id,
-                Some("failed"),
-            );
-            Err(error)
-        }
-    }
-}
-
-#[tauri::command]
 pub async fn prepare_imported_source_thumbnail(
+    app: AppHandle,
     source_path: PathBuf,
     state: State<'_, AppState>,
 ) -> Result<ThumbnailDescriptor, AppError> {
-    let source = validate_source(&source_path)?;
-    let thumbnail = tauri::async_runtime::spawn_blocking(move || generate_thumbnail(&source.path))
-        .await
-        .map_err(|_| AppError::internal("Thumbnail preparation stopped unexpectedly."))??;
+    let source = crate::domain::source::validate_source(&source_path)?;
+    let cache_directory = app
+        .path()
+        .app_cache_dir()
+        .map_err(|_| AppError::io_failed("The thumbnail cache is unavailable."))?
+        .join("thumbnails");
+    let thumbnail = tauri::async_runtime::spawn_blocking(move || {
+        generate_thumbnail(&source.path, &cache_directory)
+    })
+    .await
+    .map_err(|_| AppError::internal("Thumbnail preparation stopped unexpectedly."))??;
     let media_token = state.register_imported_thumbnail(thumbnail)?;
     Ok(ThumbnailDescriptor {
         media_token,
         url: thumbnail_url(media_token),
     })
+}
+
+#[tauri::command]
+pub fn release_imported_source_thumbnail(
+    media_token: u64,
+    state: State<'_, AppState>,
+) -> Result<(), AppError> {
+    state.release_imported_thumbnail(media_token)
 }
 
 fn record_ffprobe_event(

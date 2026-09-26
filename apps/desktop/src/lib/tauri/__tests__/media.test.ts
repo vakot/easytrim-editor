@@ -19,7 +19,6 @@ import {
   activateSourcePath,
   checkMediaCapabilities,
   chooseSource,
-  inspectImportedSource,
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,
@@ -28,6 +27,7 @@ import {
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
+  releaseImportedSourceThumbnail,
   renderFast,
 } from "../media";
 import type { MediaInfo } from "../media.types";
@@ -69,12 +69,14 @@ describe("media IPC adapter", () => {
       parseSourceRef({
         createdAtMicros: 1_735_804_800_000_000,
         displayName: "clip.mp4",
+        fileSizeBytes: 128,
         sourcePath: "C:/Media/clip.mp4",
         updatedAtMicros: 1_735_804_900_000_000,
       }),
     ).toEqual({
       createdAtMicros: 1_735_804_800_000_000,
       displayName: "clip.mp4",
+      fileSizeBytes: 128,
       sourcePath: "C:/Media/clip.mp4",
       updatedAtMicros: 1_735_804_900_000_000,
     });
@@ -190,28 +192,6 @@ describe("media IPC adapter", () => {
     });
   });
 
-  it("inspects an imported source without activating it", async () => {
-    const importedMedia = {
-      audioStreams: [],
-      chapters: [],
-      durationMicros: 1,
-      formatName: "mp4",
-      video: {
-        codecName: "h264",
-        height: 1,
-        streamIndex: 0,
-        width: 1,
-      },
-    } satisfies MediaInfo;
-
-    mocks.invoke.mockResolvedValue(importedMedia);
-
-    await expect(inspectImportedSource("C:/Media/second.mp4")).resolves.toEqual(importedMedia);
-    expect(mocks.invoke).toHaveBeenCalledWith("inspect_imported_source", {
-      sourcePath: "C:/Media/second.mp4",
-    });
-  });
-
   it("parses a path-redacted optimized export plan", async () => {
     mocks.invoke.mockResolvedValue({
       commandPreview: "ffmpeg -i <source> -c:v hevc_nvenc <output>",
@@ -298,6 +278,16 @@ describe("media IPC adapter", () => {
     });
     expect(mocks.invoke).toHaveBeenNthCalledWith(3, "prepare_proxy_preview", {
       sourcePath: "C:/Media/clip.mp4",
+    });
+  });
+
+  it("releases an imported thumbnail token through its narrow command", async () => {
+    mocks.invoke.mockResolvedValue(undefined);
+
+    await releaseImportedSourceThumbnail(9);
+
+    expect(mocks.invoke).toHaveBeenCalledWith("release_imported_source_thumbnail", {
+      mediaToken: 9,
     });
   });
 

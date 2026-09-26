@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const native = vi.hoisted(() => ({
   activateSourcePath: vi.fn(),
-  inspectImportedSource: vi.fn(),
   inspectMedia: vi.fn(),
+  prepareImportedSourceThumbnail: vi.fn(),
   prepareSourcePreview: vi.fn(),
 }));
 
@@ -27,7 +27,6 @@ beforeEach(() => {
     displayName: sourcePath.split("/").at(-1) ?? sourcePath,
     sourcePath,
   }));
-  native.inspectImportedSource.mockResolvedValue(media(firstSource.sourcePath));
   native.inspectMedia.mockResolvedValue(media(firstSource.sourcePath));
   native.prepareSourcePreview.mockResolvedValue({
     kind: "source",
@@ -37,12 +36,12 @@ beforeEach(() => {
 });
 
 describe("source import workflow", () => {
-  it("defers imported metadata preparation until the source list requests it", () => {
+  it("does not inspect media when imported sources are added", () => {
     const store = createAppStore();
 
     store.dispatch(ingestSources([firstSource, secondSource]));
 
-    expect(native.inspectImportedSource).not.toHaveBeenCalled();
+    expect(native.inspectMedia).not.toHaveBeenCalled();
   });
 
   it("activates the first source from every newly imported batch", () => {

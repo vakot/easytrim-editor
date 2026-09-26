@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
-import {
-  prepareImportedSourceMetadataRequested,
-  prepareImportedSourceThumbnailsRequested,
-} from "@/app/store/thunks/source-media-thunks";
+import { prepareImportedSourceThumbnailsRequested } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 
 function usePrepareSources(instances: EditingInstance[]) {
@@ -29,10 +26,9 @@ function usePrepareSources(instances: EditingInstance[]) {
 
     let isMounted = true;
 
-    void Promise.all([
-      dispatch(prepareImportedSourceMetadataRequested(preparedInstances)),
+    void Promise.resolve(
       dispatch(prepareImportedSourceThumbnailsRequested(preparedInstances)),
-    ]).finally(() => {
+    ).finally(() => {
       if (isMounted) setCompletedPreparationKey(preparationKey);
     });
 

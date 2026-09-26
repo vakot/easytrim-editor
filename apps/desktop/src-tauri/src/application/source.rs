@@ -60,6 +60,7 @@ fn source_ref_from_path(path: PathBuf) -> Result<SourceRef, AppError> {
             .and_then(|metadata| metadata.created().ok())
             .and_then(system_time_to_micros),
         display_name,
+        file_size_bytes: metadata.as_ref().map(fs::Metadata::len),
         source_path: path.display().to_string(),
         updated_at_micros: metadata
             .as_ref()

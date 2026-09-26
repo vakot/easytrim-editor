@@ -5,6 +5,8 @@ import { sourceCleared } from "@/app/store/actions/source-actions";
 import {
   type EditingInstance,
   type EditingInstanceId,
+  type EditingInstanceListEntry,
+  type EditingInstanceSearchEntry,
   type EditingInstancesState,
   EMPTY_EXPORT_METRICS,
   type ExportAttempt,
@@ -18,21 +20,19 @@ import type { AppError, ExportProgress, ExportResult, MediaInfo } from "@/lib/ta
 
 import type { RootState } from "../store";
 
-interface EditingInstanceTopologyEntry {
-  displayName: string;
-  id: EditingInstanceId;
-  sourcePath: string;
-}
-
 export type ExportQueueItem = {
   attempt: ExportAttempt;
   instance: EditingInstance;
 };
 
+type EditingInstanceTopologyEntry = EditingInstanceSearchEntry;
+
 export const initialEditingInstancesState: EditingInstancesState = {
   activeInstanceId: null,
   entities: {},
   ids: [],
+  sourceListEntries: [],
+  sourceSearchEntries: [],
 };
 
 function getInstance(state: EditingInstancesState, id: EditingInstanceId) {
@@ -41,6 +41,79 @@ function getInstance(state: EditingInstancesState, id: EditingInstanceId) {
 
 function getAttempt(instance: EditingInstance, attemptId: string): ExportAttempt | undefined {
   return instance.exportAttempts.find((attempt) => attempt.id === attemptId);
+}
+
+function makeListEntry(instance: EditingInstance): EditingInstanceListEntry {
+  const source = instance.snapshot.source;
+  return {
+    displayName: source.displayName,
+    ...(source.fileSizeBytes === undefined ? {} : { fileSizeBytes: source.fileSizeBytes }),
+    id: instance.id,
+    ...(instance.importedAtMicros === undefined
+      ? {}
+      : { importedAtMicros: instance.importedAtMicros }),
+    sourceAvailability: instance.sourceAvailability,
+    sourcePath: source.sourcePath,
+    ...(source.updatedAtMicros === undefined ? {} : { updatedAtMicros: source.updatedAtMicros }),
+  };
+}
+
+function makeSearchEntry(instance: EditingInstance): EditingInstanceSearchEntry {
+  return {
+    displayName: instance.snapshot.source.displayName,
+    id: instance.id,
+    sourcePath: instance.snapshot.source.sourcePath,
+  };
+}
+
+function addSourceListEntry(state: EditingInstancesState, instance: EditingInstance) {
+  if (instance.draftAvailable === false) return;
+  state.sourceListEntries.push(makeListEntry(instance));
+  state.sourceSearchEntries.push(makeSearchEntry(instance));
+}
+
+function removeSourceListEntry(state: EditingInstancesState, id: EditingInstanceId) {
+  const listIndex = state.sourceListEntries.findIndex((entry) => entry.id === id);
+  if (listIndex !== -1) state.sourceListEntries.splice(listIndex, 1);
+  const searchIndex = state.sourceSearchEntries.findIndex((entry) => entry.id === id);
+  if (searchIndex !== -1) state.sourceSearchEntries.splice(searchIndex, 1);
+}
+
+function sameListSourceMetadata(
+  left: EditingInstance["snapshot"]["source"],
+  right: EditingInstance["snapshot"]["source"],
+) {
+  return (
+    left.displayName === right.displayName &&
+    left.sourcePath === right.sourcePath &&
+    left.fileSizeBytes === right.fileSizeBytes &&
+    left.updatedAtMicros === right.updatedAtMicros
+  );
+}
+
+function updateSourceListEntry(
+  state: EditingInstancesState,
+  instance: EditingInstance,
+  searchMetadataChanged: boolean,
+) {
+  const index = state.sourceListEntries.findIndex((entry) => entry.id === instance.id);
+  if (instance.draftAvailable === false) {
+    if (index !== -1) removeSourceListEntry(state, instance.id);
+    return;
+  }
+
+  const next = makeListEntry(instance);
+  if (index === -1) {
+    state.sourceListEntries.push(next);
+    state.sourceSearchEntries.push(makeSearchEntry(instance));
+    return;
+  }
+
+  state.sourceListEntries[index] = next;
+  if (searchMetadataChanged) {
+    const searchIndex = state.sourceSearchEntries.findIndex((entry) => entry.id === instance.id);
+    if (searchIndex !== -1) state.sourceSearchEntries[searchIndex] = makeSearchEntry(instance);
+  }
 }
 
 const editingInstancesSlice = createSlice({
@@ -52,12 +125,14 @@ const editingInstancesSlice = createSlice({
         if (state.entities[instance.id]) continue;
         state.ids.push(instance.id);
         state.entities[instance.id] = instance;
+        addSourceListEntry(state, instance);
       }
     },
     editingInstanceDuplicated: (state, action: PayloadAction<EditingInstance>) => {
       if (state.entities[action.payload.id]) return;
       state.ids.push(action.payload.id);
       state.entities[action.payload.id] = action.payload;
+      addSourceListEntry(state, action.payload);
     },
     editingInstanceMediaUpdated: (
       state,
@@ -77,10 +152,20 @@ const editingInstancesSlice = createSlice({
     ) => {
       const instance = getInstance(state, action.payload.id);
       if (!instance) return;
+      const listMetadataChanged = !sameListSourceMetadata(
+        instance.snapshot.source,
+        action.payload.snapshot.source,
+      );
+
+      const searchMetadataChanged =
+        instance.snapshot.source.displayName !== action.payload.snapshot.source.displayName ||
+        instance.snapshot.source.sourcePath !== action.payload.snapshot.source.sourcePath;
+
       instance.snapshot = action.payload.snapshot;
       if (action.payload.optimizedArguments !== undefined)
         instance.optimizedArguments = action.payload.optimizedArguments;
       if (action.payload.media) instance.media = action.payload.media;
+      if (listMetadataChanged) updateSourceListEntry(state, instance, searchMetadataChanged);
     },
     activeEditingInstanceChanged: (state, action: PayloadAction<EditingInstanceId | null>) => {
       state.activeInstanceId = action.payload;
@@ -149,6 +234,7 @@ const editingInstancesSlice = createSlice({
       }
       state.ids.push(restored.id);
       state.entities[restored.id] = restored;
+      addSourceListEntry(state, restored);
       if (attempt.state.status === "queued") {
         instance.exportAttempts = instance.exportAttempts.filter(({ id }) => id !== attempt.id);
       }
@@ -279,6 +365,13 @@ const editingInstancesSlice = createSlice({
           instance.sourceAvailability = action.payload.availability;
         }
       }
+      for (const entry of state.sourceListEntries) {
+        if (
+          normalizeSourceKey(entry.sourcePath) === normalizeSourceKey(action.payload.sourcePath)
+        ) {
+          entry.sourceAvailability = action.payload.availability;
+        }
+      }
     },
     editingInstanceExportHistoryCleared: (
       state,
@@ -301,17 +394,20 @@ const editingInstancesSlice = createSlice({
       if (index < 0 || !instance) return;
       if (hasProcessableExport(instance)) {
         instance.draftAvailable = false;
+        removeSourceListEntry(state, action.payload);
         if (state.activeInstanceId === action.payload) state.activeInstanceId = null;
         return;
       }
       state.ids.splice(index, 1);
       delete state.entities[action.payload];
+      removeSourceListEntry(state, action.payload);
       if (state.activeInstanceId === action.payload) {
         state.activeInstanceId = null;
       }
     },
     editingInstancesClosed: (state, action: PayloadAction<EditingInstanceId[]>) => {
-      const closingIds = new Set(action.payload);
+      const closingIds = new Set(action.payload.filter((id) => state.entities[id]));
+      if (closingIds.size === 0) return;
       const retainedQueueOwners = new Set<EditingInstanceId>();
       for (const id of closingIds) {
         const instance = state.entities[id];
@@ -323,6 +419,12 @@ const editingInstancesSlice = createSlice({
         }
       }
       state.ids = state.ids.filter((id) => !closingIds.has(id) || retainedQueueOwners.has(id));
+      state.sourceListEntries = state.sourceListEntries.filter(
+        (entry) => !closingIds.has(entry.id),
+      );
+      state.sourceSearchEntries = state.sourceSearchEntries.filter(
+        (entry) => !closingIds.has(entry.id),
+      );
       if (state.activeInstanceId && closingIds.has(state.activeInstanceId)) {
         state.activeInstanceId = null;
       }
@@ -334,8 +436,18 @@ const editingInstancesSlice = createSlice({
         const instance = getInstance(state, action.payload.id);
         if (!instance) return;
         state.activeInstanceId = action.payload.id;
+        const listMetadataChanged = !sameListSourceMetadata(
+          instance.snapshot.source,
+          action.payload.snapshot.source,
+        );
+
+        const searchMetadataChanged =
+          instance.snapshot.source.displayName !== action.payload.snapshot.source.displayName ||
+          instance.snapshot.source.sourcePath !== action.payload.snapshot.source.sourcePath;
+
         instance.snapshot = action.payload.snapshot;
         if (action.payload.media) instance.media = action.payload.media;
+        if (listMetadataChanged) updateSourceListEntry(state, instance, searchMetadataChanged);
       })
       .addCase(sourceCleared, (state) => {
         state.activeInstanceId = null;
@@ -374,40 +486,20 @@ const selectEditingInstanceEntities = (state: RootState) =>
 const selectEditingInstanceIds = (state: RootState): EditingInstanceId[] =>
   selectEditingInstancesState(state).ids;
 
-let lastTopologyEntries: EditingInstanceTopologyEntry[] = [];
-const selectEditingInstanceTopologyEntries = (state: RootState): EditingInstanceTopologyEntry[] => {
-  const ids = selectImportedEditingInstances(state).map(({ id }) => id);
-  const entities = selectEditingInstanceEntities(state);
-  if (
-    lastTopologyEntries.length === ids.length &&
-    ids.every((id, index) => {
-      const instance = entities[id];
-      const previous = lastTopologyEntries[index];
-      const source = instance?.snapshot.source;
-      return (
-        instance?.id === previous?.id &&
-        source?.displayName === previous?.displayName &&
-        source?.sourcePath === previous?.sourcePath
-      );
-    })
-  ) {
-    return lastTopologyEntries;
-  }
+const selectSourceListEntries = (state: RootState): EditingInstanceListEntry[] =>
+  selectEditingInstancesState(state).sourceListEntries;
 
-  lastTopologyEntries = ids.flatMap((id) => {
-    const instance = entities[id];
-    return instance
-      ? [
-          {
-            displayName: instance.snapshot.source.displayName,
-            id,
-            sourcePath: instance.snapshot.source.sourcePath,
-          },
-        ]
-      : [];
-  });
-  return lastTopologyEntries;
-};
+const selectSourceSearchEntries = (state: RootState): EditingInstanceSearchEntry[] =>
+  selectEditingInstancesState(state).sourceSearchEntries;
+
+const selectEditingInstanceTopologyEntries = createSelector(
+  [selectSourceSearchEntries],
+  (entries) => entries.map(({ displayName, id, sourcePath }) => ({ displayName, id, sourcePath })),
+);
+
+const selectImportedEditingInstanceIds = createSelector([selectSourceSearchEntries], (entries) =>
+  entries.map(({ id }) => id),
+);
 
 const selectEditingInstances = createSelector([selectEditingInstancesState], (state) =>
   state.ids
@@ -538,9 +630,12 @@ export {
   selectExportQueueById,
   selectHasProcessableExports,
   selectHasQueuedOrRenderingExportByInstanceId,
+  selectImportedEditingInstanceIds,
   selectImportedEditingInstances,
   selectInstanceIdsBySourceKey,
   selectRenderingAttempt,
+  selectSourceListEntries,
+  selectSourceSearchEntries,
 };
 
 export type { EditingInstanceTopologyEntry };

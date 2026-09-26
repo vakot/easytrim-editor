@@ -41,6 +41,8 @@ pub struct SourceRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub created_at_micros: Option<i64>,
     pub display_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_size_bytes: Option<u64>,
     pub source_path: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub updated_at_micros: Option<i64>,
@@ -266,6 +268,7 @@ fn source_ref_from_path(path: PathBuf) -> Result<SourceRef, AppError> {
             .and_then(|metadata| metadata.created().ok())
             .and_then(system_time_to_micros),
         display_name,
+        file_size_bytes: metadata.as_ref().map(fs::Metadata::len),
         source_path: path.display().to_string(),
         updated_at_micros: metadata
             .as_ref()
@@ -376,13 +379,21 @@ mod tests {
         file(&first);
         file(&second);
 
-        let result = collect_source_import(&[first, second]);
+        fs::write(&first, b"first source").expect("write source contents");
+        let result = collect_source_import(&[first.clone(), second]);
 
         assert_eq!(result.direct_file_count, 2);
         assert_eq!(result.folder_count, 0);
         assert_eq!(result.discovered_file_count, 0);
         assert_eq!(result.accepted_file_count, 2);
         assert!(!result.recursive);
+        let first_source = result
+            .sources
+            .iter()
+            .find(|source| source.display_name == "first.mp4")
+            .expect("first source metadata is collected");
+        assert_eq!(first_source.file_size_bytes, Some(12));
+        assert!(first_source.updated_at_micros.is_some());
     }
 
     #[test]

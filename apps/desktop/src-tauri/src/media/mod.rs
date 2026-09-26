@@ -6,3 +6,5 @@ pub mod probe;
 pub mod proxy;
 pub mod thumbnail;
 pub mod waveform;
+#[cfg(windows)]
+mod windows_thumbnail;
