@@ -1,5 +1,5 @@
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectExportQueueById } from "@/app/store/slices/editing-instances-slice";
+import { selectExportQueueItem } from "@/app/store/slices/editing-instances-slice";
 import { cn } from "@/lib/class-names.utils";
 
 import { ExportQueueItemContext } from "./contexts/ExportQueueItemContext";
@@ -13,9 +13,7 @@ function ExportQueueItem({
   children: React.ReactNode;
   instanceId: string;
 }) {
-  const item = useAppSelector((state) =>
-    selectExportQueueById(state, instanceId).find(({ attempt }) => attempt.id === attemptId),
-  );
+  const item = useAppSelector((state) => selectExportQueueItem(state, instanceId, attemptId));
 
   if (!item) return null;
 

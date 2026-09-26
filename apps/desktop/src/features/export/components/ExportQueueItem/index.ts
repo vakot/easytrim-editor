@@ -10,7 +10,6 @@ export {
   ExportQueueItemSourceName,
 } from "./components/ExportQueueItemName";
 export {
-  ExportQueueItemProgress,
   ExportQueueItemProgressBar,
   ExportQueueItemProgressPercent,
 } from "./components/ExportQueueItemProgress";

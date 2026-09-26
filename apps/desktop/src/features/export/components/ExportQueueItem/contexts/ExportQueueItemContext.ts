@@ -7,7 +7,7 @@ const ExportQueueItemContext = React.createContext<ExportQueueItem | null>(null)
 function useExportQueueItem() {
   const context = React.useContext(ExportQueueItemContext);
   if (!context) {
-    throw new Error("");
+    throw new Error("useExportQueueItem must be used within an ExportQueueItem provider");
   }
   return context;
 }

@@ -27,7 +27,8 @@ import {
 } from "@/app/store/thunks/export-thunks";
 import { cn } from "@/lib/class-names.utils";
 
-import { ExportQueue, ExportQueueContent } from "../components/ExportQueue";
+import { ExportQueue, ExportQueueContent, ExportQueueSummary } from "../components/ExportQueue";
+import { useExportQueue } from "../components/ExportQueue/contexts/ExportQueueContext";
 
 function ExportActions() {
   const { t } = useTranslation();
@@ -47,34 +48,37 @@ function ExportActions() {
     >
       <Dialog>
         <ExportQueue>
-          <ExportActionTooltip tooltip={t("queue.labels.ExportQueue")}>
+          <ExportActionTooltip tooltip={t("queue.labels.renderQueue")}>
             <DialogTrigger asChild>
               <ExportActionButton icon={<List aria-hidden="true" />} variant="default">
-                <span className="truncate">{t("queue.labels.ExportQueue")}</span>
+                <span className="truncate">{t("queue.labels.renderQueue")}</span>
               </ExportActionButton>
             </DialogTrigger>
           </ExportActionTooltip>
-          <DialogContent className="w-full sm:max-w-lg">
+          <DialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>{t("queue.labels.ExportQueue")}</DialogTitle>
-              <DialogDescription>3 jobs · 1 rendering · 2 queued</DialogDescription>
+              <DialogTitle>{t("queue.labels.renderQueue")}</DialogTitle>
+              <DialogDescription>
+                <ExportQueueSummary />
+              </DialogDescription>
             </DialogHeader>
 
             <div className="-mx-4">
               <Separator />
             </div>
 
-            <ScrollArea className="-mx-1">
+            <ScrollArea
+              className="-mx-1 max-h-[calc(100dvh-14rem)] min-h-0"
+              data-testid="export-queue-scroll-area"
+            >
               <ExportQueueContent />
             </ScrollArea>
 
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline">Close</Button>
+                <Button variant="outline">{t("common.actions.close")}</Button>
               </DialogClose>
-              <Button onClick={() => void dispatch(startExportQueue())}>
-                {t("queue.actions.start")}
-              </Button>
+              <ExportQueueStartButton />
             </DialogFooter>
           </DialogContent>
         </ExportQueue>
@@ -115,6 +119,22 @@ function ExportActions() {
         </ExportActionButton>
       </ExportActionTooltip>
     </div>
+  );
+}
+
+function ExportQueueStartButton() {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const { summary } = useExportQueue();
+
+  return (
+    <Button
+      disabled={summary.queued === 0}
+      onClick={() => void dispatch(startExportQueue())}
+      type="button"
+    >
+      {t("queue.actions.start")}
+    </Button>
   );
 }
 

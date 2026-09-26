@@ -31,6 +31,8 @@ function ExportQueueItemCancel() {
         )
       }
       size="icon-xs"
+      title={t("queue.actions.cancel")}
+      type="button"
       variant="outline"
     >
       <X aria-hidden="true" />
@@ -59,6 +61,8 @@ function ExportQueueItemRestore() {
         )
       }
       size="icon-xs"
+      title={t("queue.actions.restore")}
+      type="button"
       variant="outline"
     >
       <RotateCcw aria-hidden="true" />
@@ -78,6 +82,7 @@ function ExportQueueItemReveal() {
     <Button
       onClick={() => void openFileLocation(outputPath).catch(() => undefined)}
       size="xs"
+      type="button"
       variant="outline"
     >
       <ExternalLink aria-hidden="true" />
@@ -103,6 +108,7 @@ function ExportQueueItemRetry() {
         )
       }
       size="xs"
+      type="button"
       variant="ghost"
     >
       <RotateCcw aria-hidden="true" />

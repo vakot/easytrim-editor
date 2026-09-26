@@ -1,13 +1,17 @@
 export { ExportActions } from "./components/ExportActions";
 export { ExportDialog } from "./components/ExportDialog";
-export { ExportQueue, ExportQueueActions, ExportQueueContent } from "./components/ExportQueue";
+export {
+  ExportQueue,
+  ExportQueueActions,
+  ExportQueueContent,
+  ExportQueueSummary,
+} from "./components/ExportQueue";
 export {
   ExportQueueItem,
   ExportQueueItemCancel,
   ExportQueueItemContent,
   ExportQueueItemMetrics,
   ExportQueueItemOutputName,
-  ExportQueueItemProgress,
   ExportQueueItemProgressBar,
   ExportQueueItemProgressPercent,
   ExportQueueItemRestore,

@@ -258,7 +258,7 @@ export const en = {
     labels: {
       deleteSource: "Delete source",
       onFinish: "On queue finished",
-      ExportQueue: "Render Queue",
+      renderQueue: "Render Queue",
       routeFastCut: "Fast Cut",
       routeOptimized: "Optimized",
       title: "Queue",
@@ -272,6 +272,24 @@ export const en = {
     },
     messages: {
       empty: "Export attempts will appear here.",
+      summary: {
+        canceled_one: "{{count}} canceled",
+        canceled_other: "{{count}} canceled",
+        completed_one: "{{count}} completed",
+        completed_other: "{{count}} completed",
+        failed_one: "{{count}} failed",
+        failed_other: "{{count}} failed",
+        jobs_one: "{{count}} job",
+        jobs_other: "{{count}} jobs",
+        queued_one: "{{count}} queued",
+        queued_other: "{{count}} queued",
+        rendering_one: "{{count}} rendering",
+        rendering_other: "{{count}} rendering",
+      },
+      elapsed: "{{value}} elapsed",
+      error: "Export error: {{message}}",
+      fps: "{{value}} FPS",
+      remaining: "{{value}} remaining",
     },
     tooltips: {
       deleteSourceOnRenderFinish: "Delete the source after a successful render",

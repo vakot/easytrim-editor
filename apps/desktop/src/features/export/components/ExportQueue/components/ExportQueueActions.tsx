@@ -9,16 +9,14 @@ import { useExportQueue } from "../contexts/ExportQueueContext";
 
 function ExportQueueActions() {
   const { t } = useTranslation();
-  const { queue } = useExportQueue();
+  const { summary } = useExportQueue();
 
   const dispatch = useAppDispatch();
-
-  const hasQueued = queue.some(({ attempt }) => attempt.state.status === "queued");
 
   return (
     <Button
       className="w-full"
-      disabled={!hasQueued}
+      disabled={summary.queued === 0}
       onClick={() => void dispatch(startExportQueue())}
       size="sm"
     >

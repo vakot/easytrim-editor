@@ -260,7 +260,7 @@ export const ru = {
     labels: {
       deleteSource: "Удалить источник",
       onFinish: "После завершения очереди",
-      ExportQueue: "Очередь рендеринга",
+      renderQueue: "Очередь рендеринга",
       routeFastCut: "Быстрая нарезка",
       routeOptimized: "Оптимизированный",
       title: "Очередь",
@@ -274,6 +274,24 @@ export const ru = {
     },
     messages: {
       empty: "Экспорты появятся здесь.",
+      summary: {
+        canceled_one: "Отменено: {{count}}",
+        canceled_other: "Отменено: {{count}}",
+        completed_one: "Завершено: {{count}}",
+        completed_other: "Завершено: {{count}}",
+        failed_one: "Ошибок: {{count}}",
+        failed_other: "Ошибок: {{count}}",
+        jobs_one: "Задание: {{count}}",
+        jobs_other: "Заданий: {{count}}",
+        queued_one: "В очереди: {{count}}",
+        queued_other: "В очереди: {{count}}",
+        rendering_one: "Рендеринг: {{count}}",
+        rendering_other: "Рендеринг: {{count}}",
+      },
+      elapsed: "{{value}} прошло",
+      error: "Ошибка экспорта: {{message}}",
+      fps: "{{value}} FPS",
+      remaining: "осталось {{value}}",
     },
     tooltips: {
       deleteSourceOnRenderFinish: "Удалить источник после успешного рендеринга",

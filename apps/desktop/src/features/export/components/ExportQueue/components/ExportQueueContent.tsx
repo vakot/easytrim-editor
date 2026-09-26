@@ -31,7 +31,7 @@ function ExportQueueContent({ className }: { className?: string }) {
   if (!queue.length) return <ExportQueueEmpty />;
 
   return (
-    <ul className={cn("flex w-full flex-col gap-2", className)}>
+    <ul className={cn("flex w-full flex-col", className)}>
       {queue.map((item, index) => (
         <ExportQueueItem
           attemptId={item.attempt.id}
@@ -39,7 +39,11 @@ function ExportQueueContent({ className }: { className?: string }) {
           key={item.attempt.id}
         >
           <ExportQueueListItem />
-          {index < queue.length - 1 ? <Separator /> : null}
+          {index < queue.length - 1 ? (
+            <li aria-hidden="true" className="px-1">
+              <Separator />
+            </li>
+          ) : null}
         </ExportQueueItem>
       ))}
     </ul>
@@ -68,7 +72,7 @@ function ExportQueueListItem() {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex shrink-0 items-center gap-1">
             <ExportQueueItemStatus />
             <ExportQueueItemCancel />
             <ExportQueueItemRestore />
@@ -77,13 +81,7 @@ function ExportQueueListItem() {
 
         {status === "rendering" && <ExportQueueItemProgressBar />}
 
-        {status !== "queued" && (
-          <div className="flex gap-1">
-            <ExportQueueItemProgressPercent />
-            ·
-            <ExportQueueItemMetrics />
-          </div>
-        )}
+        <ExportQueueItemDetails />
 
         <div className="flex gap-1">
           <ExportQueueItemRetry />
@@ -91,6 +89,29 @@ function ExportQueueListItem() {
         </div>
       </div>
     </ExportQueueItemContent>
+  );
+}
+
+function ExportQueueItemDetails() {
+  const { attempt } = useExportQueueItem();
+  const { metrics, state } = attempt;
+
+  const hasDetails =
+    state.status !== "queued" &&
+    (state.status === "rendering" ||
+      state.status === "completed" ||
+      metrics.progressPercent > 0 ||
+      metrics.durationMs !== null ||
+      metrics.fileSizeBytes !== undefined ||
+      metrics.fps !== undefined);
+
+  if (!hasDetails) return null;
+
+  return (
+    <div className="flex min-w-0 items-center gap-1 text-muted-foreground">
+      <ExportQueueItemProgressPercent />
+      <ExportQueueItemMetrics />
+    </div>
   );
 }
 

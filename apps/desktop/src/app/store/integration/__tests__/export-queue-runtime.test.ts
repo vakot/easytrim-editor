@@ -46,7 +46,7 @@ import {
 import { selectSourceQueueStarted } from "../../slices/export-slice";
 import { preferenceChanged } from "../../slices/preferences-slice";
 import { createAppStore } from "../../store";
-import { startSourceExportQueue } from "../../thunks/export-thunks";
+import { startExportQueue, startSourceExportQueue } from "../../thunks/export-thunks";
 import { createDefaultEditorSnapshot } from "../editor-snapshot";
 import {
   cancelAndRequeueExport,
@@ -165,6 +165,30 @@ describe("export queue runtime", () => {
     expect(store.getState().editingInstances.entities.a?.exportAttempts[0]?.state.status).toBe(
       "queued",
     );
+  });
+
+  it("starts all queued exports when the global queue is started", async () => {
+    const store = createAppStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(editingInstancesAdded([createInstance("a"), createInstance("b")]));
+    const attempts = [createAttempt("a"), createAttempt("b", secondSource.sourcePath)];
+
+    for (const [index, attempt] of attempts.entries()) {
+      const instanceId = index === 0 ? "a" : "b";
+      store.dispatch(editingInstanceExportAttemptQueued({ id: instanceId, attempt }));
+      enqueueExport(instanceId, attempt, store.dispatch, store.getState);
+    }
+
+    mocks.renderFast.mockResolvedValue({
+      displayName: "out",
+      displayPath: "out",
+      operationId: "op",
+    });
+
+    store.dispatch(startExportQueue());
+
+    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
+    expect(mocks.renderFast.mock.calls.map((call) => call[1])).toEqual(["a", "b"]);
   });
 
   it("cancels a waiting source without interrupting another source's render", async () => {

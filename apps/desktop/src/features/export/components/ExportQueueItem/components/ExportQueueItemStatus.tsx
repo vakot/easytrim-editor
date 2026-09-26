@@ -1,3 +1,4 @@
+import { CircleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,14 @@ function ExportQueueItemStatus() {
   const { attempt } = useExportQueueItem();
 
   const status = attempt.state.status;
+  const statusVariants = {
+    canceled: "secondary",
+    completed: "success",
+    failed: "destructive",
+    queued: "outline",
+    rendering: "default",
+  } as const;
+
   const statusLabels = {
     canceled: t("queue.status.canceled"),
     completed: t("queue.status.completed"),
@@ -17,8 +26,22 @@ function ExportQueueItemStatus() {
     rendering: t("queue.status.rendering"),
   } satisfies Record<typeof status, string>;
 
+  const error = status === "failed" ? attempt.state.error : undefined;
+
   return (
-    <Badge variant={status === "failed" ? "destructive" : "outline"}>{statusLabels[status]}</Badge>
+    <div className="flex shrink-0 items-center gap-1">
+      <Badge variant={statusVariants[status]}>{statusLabels[status]}</Badge>
+      {error ? (
+        <span
+          aria-label={t("queue.messages.error", { message: error.message })}
+          className="text-destructive"
+          role="img"
+          title={error.message}
+        >
+          <CircleAlert aria-hidden="true" className="size-3.5" />
+        </span>
+      ) : null}
+    </div>
   );
 }
 
