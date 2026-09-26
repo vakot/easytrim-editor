@@ -46,7 +46,7 @@ function ChangelogDialog({ mode, onClose, releases }: ChangelogDialogProps) {
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={mode !== null}>
       <DialogContent className="grid max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-2xl">
-        <DialogHeader className="border-b pb-4">
+        <DialogHeader className="-mx-4 border-b px-4 pb-4">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
