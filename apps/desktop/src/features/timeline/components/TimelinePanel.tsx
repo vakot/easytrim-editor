@@ -14,6 +14,7 @@ import {
 } from "@/app/store/slices/playback-controls-slice";
 import {
   playbackVolumeChanged,
+  playbackVolumeToggled,
   selectPlaybackVolumePercent,
 } from "@/app/store/slices/preferences-slice";
 import {
@@ -161,11 +162,21 @@ function PlaybackVolumeControl() {
   const enabled = volumePercent > 0;
 
   return (
-    <motion.div className="flex" initial="collapsed" whileHover="expanded">
+    <motion.div
+      className="flex"
+      initial="collapsed"
+      onWheel={(event) => {
+        if (event.deltaY === 0) return;
+
+        event.preventDefault();
+        dispatch(playbackVolumeChanged(volumePercent + (event.deltaY < 0 ? 1 : -1)));
+      }}
+      whileHover="expanded"
+    >
       <VolumeButton
         className={enabled ? "text-primary" : undefined}
         enabled={enabled}
-        onClick={() => dispatch(playbackVolumeChanged(enabled ? 0 : 100))}
+        onClick={() => dispatch(playbackVolumeToggled())}
         variant="secondary"
       />
 

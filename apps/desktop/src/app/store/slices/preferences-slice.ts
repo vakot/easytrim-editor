@@ -37,9 +37,15 @@ const preferencesSlice = createSlice({
       state[action.payload.key] = action.payload.enabled;
     },
     playbackVolumeChanged: (state, action: PayloadAction<number>) => {
-      state.playbackVolumePercent = Number.isFinite(action.payload)
+      const volumePercent = Number.isFinite(action.payload)
         ? Math.max(0, Math.min(100, action.payload))
         : DEFAULT_PLAYBACK_VOLUME_PERCENT;
+      state.playbackVolumePercent = volumePercent;
+      if (volumePercent > 0) state.lastAudiblePlaybackVolumePercent = volumePercent;
+    },
+    playbackVolumeToggled: (state) => {
+      state.playbackVolumePercent =
+        state.playbackVolumePercent > 0 ? 0 : state.lastAudiblePlaybackVolumePercent;
     },
     activityFeedViewChanged: (state, action: PayloadAction<ActivityFeedView>) => {
       state.activityFeedView = action.payload;
@@ -104,6 +110,7 @@ const {
   layoutDensityChanged,
   layoutReset,
   playbackVolumeChanged,
+  playbackVolumeToggled,
   preferenceChanged,
   preferencesReset,
   primaryColorChanged,
@@ -169,6 +176,7 @@ export {
   layoutDensityChanged,
   layoutReset,
   playbackVolumeChanged,
+  playbackVolumeToggled,
   preferenceChanged,
   preferencesReducer,
   preferencesReset,

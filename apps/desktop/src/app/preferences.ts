@@ -19,6 +19,7 @@ interface Preferences {
   layoutDensity: LayoutDensity;
   loopPlaybackEnabledDefault: boolean;
   mergeAudioEnabledDefault: boolean;
+  lastAudiblePlaybackVolumePercent: number;
   playbackVolumePercent: number;
   primaryColor: PrimaryColor;
   segmentPlaybackEnabledDefault: boolean;
@@ -41,6 +42,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   layoutDensity: DEFAULT_LAYOUT_DENSITY,
   theme: "system",
   primaryColor: DEFAULT_PRIMARY_COLOR,
+  lastAudiblePlaybackVolumePercent: DEFAULT_PLAYBACK_VOLUME_PERCENT,
   playbackVolumePercent: DEFAULT_PLAYBACK_VOLUME_PERCENT,
   customPrimaryColor: DEFAULT_CUSTOM_PRIMARY_COLOR,
   lastSeenChangelogVersion: null,

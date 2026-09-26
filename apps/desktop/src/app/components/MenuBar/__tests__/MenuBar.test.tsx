@@ -58,6 +58,7 @@ const menuState = vi.hoisted(() => ({
     mergeAudioEnabledDefault: false,
     theme: "system",
     primaryColor: "amber",
+    lastAudiblePlaybackVolumePercent: 100,
     playbackVolumePercent: 100,
     customPrimaryColor: "#efbf04",
   } as Preferences,
@@ -634,6 +635,7 @@ describe("MenuBarTest", () => {
             preferences={{
               theme: "system",
               primaryColor: "amber",
+              lastAudiblePlaybackVolumePercent: 100,
               playbackVolumePercent: 100,
               customPrimaryColor: "#efbf04",
               activityFeedView: "default",
