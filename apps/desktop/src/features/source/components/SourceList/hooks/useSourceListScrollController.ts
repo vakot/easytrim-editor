@@ -97,13 +97,20 @@ function useSourceListScrollController(sources: EditingInstanceListEntry[]) {
       if (Math.abs(velocity) >= SCROLL_SEEK_ENTER_VELOCITY) handleScrollSeekChange();
       if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
       settleTimeoutRef.current = setTimeout(() => {
+        settleTimeoutRef.current = null;
         scrollSeekingRef.current = false;
         if (rangeRef.current) updateDemandForRange(rangeRef.current);
       }, SCROLL_SETTLE_DELAY_MS);
     };
 
     scrollParent.addEventListener("scroll", handleScroll, { passive: true });
-    return () => scrollParent.removeEventListener("scroll", handleScroll);
+    return () => {
+      scrollParent.removeEventListener("scroll", handleScroll);
+      if (settleTimeoutRef.current) {
+        clearTimeout(settleTimeoutRef.current);
+        settleTimeoutRef.current = null;
+      }
+    };
   }, [handleScrollSeekChange, scrollParent, updateDemandForRange]);
 
   useEffect(() => {
