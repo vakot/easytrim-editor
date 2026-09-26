@@ -15,6 +15,7 @@ import {
   type SourceAvailability,
 } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
+import type { OutputSelection } from "@/domain/media";
 import { normalizeSourceKey } from "@/domain/source";
 import type { AppError, ExportProgress, ExportResult, MediaInfo } from "@/lib/tauri/media.types";
 
@@ -24,6 +25,15 @@ export type ExportQueueItem = {
   attempt: ExportAttempt;
   instance: EditingInstance;
 };
+
+export interface ExportQueueSummary {
+  canceled: number;
+  completed: number;
+  failed: number;
+  queued: number;
+  rendering: number;
+  total: number;
+}
 
 export const initialEditingInstancesState: EditingInstancesState = {
   activeInstanceId: null,
@@ -288,6 +298,39 @@ const editingInstancesSlice = createSlice({
       };
       attempt.state = { queuedAt: Date.now(), status: "queued" };
     },
+    editingInstanceExportRetried: (
+      state,
+      action: PayloadAction<{
+        attemptId: string;
+        id: EditingInstanceId;
+        output: OutputSelection;
+      }>,
+    ) => {
+      const instance = getInstance(state, action.payload.id);
+      const attempt = instance && getAttempt(instance, action.payload.attemptId);
+      if (!attempt || attempt.state.status !== "failed") return;
+      attempt.output = action.payload.output;
+      attempt.metrics = {
+        ...EMPTY_EXPORT_METRICS,
+        ...(attempt.metrics.totalFrames === undefined
+          ? {}
+          : { totalFrames: attempt.metrics.totalFrames }),
+      };
+      attempt.state = { queuedAt: Date.now(), status: "queued" };
+    },
+    editingInstanceExportRetryFailed: (
+      state,
+      action: PayloadAction<{
+        attemptId: string;
+        error: AppError;
+        id: EditingInstanceId;
+      }>,
+    ) => {
+      const instance = getInstance(state, action.payload.id);
+      const attempt = instance && getAttempt(instance, action.payload.attemptId);
+      if (!attempt || attempt.state.status !== "failed") return;
+      attempt.state.error = action.payload.error;
+    },
     editingInstanceExportProgressReceived: (
       state,
       action: PayloadAction<{
@@ -492,6 +535,8 @@ const {
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
   editingInstanceExportRestored,
+  editingInstanceExportRetried,
+  editingInstanceExportRetryFailed,
   editingInstanceExportStarted,
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
@@ -585,10 +630,32 @@ const selectExportQueue = createSelector([selectEditingInstances], (instances): 
     .sort((left, right) => left.attempt.capturedAt - right.attempt.capturedAt),
 );
 
-const selectExportQueueById = createSelector(
-  [selectExportQueue, (_state: RootState, id: EditingInstanceId) => id],
-  (queue, id) => queue.filter(({ instance }) => instance.id === id),
+const selectExportQueueSummary = createSelector(
+  [selectExportQueue],
+  (queue): ExportQueueSummary => {
+    const summary: ExportQueueSummary = {
+      canceled: 0,
+      completed: 0,
+      failed: 0,
+      queued: 0,
+      rendering: 0,
+      total: queue.length,
+    };
+
+    for (const { attempt } of queue) summary[attempt.state.status] += 1;
+    return summary;
+  },
 );
+
+const selectExportQueueItem = (
+  state: RootState,
+  instanceId: EditingInstanceId,
+  attemptId: string,
+): ExportQueueItem | undefined => {
+  const instance = selectEditingInstanceById(state, instanceId);
+  const attempt = instance?.exportAttempts.find(({ id }) => id === attemptId);
+  return instance && attempt ? { attempt, instance } : undefined;
+};
 
 const selectInstanceIdsBySourceKey = createSelector(
   [selectEditingInstanceEntities, selectEditingInstanceIds],
@@ -631,6 +698,8 @@ export {
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
   editingInstanceExportRestored,
+  editingInstanceExportRetried,
+  editingInstanceExportRetryFailed,
   editingInstanceExportStarted,
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
@@ -647,7 +716,8 @@ export {
   selectEditingInstances,
   selectEditingInstanceTopologyEntries,
   selectExportQueue,
-  selectExportQueueById,
+  selectExportQueueItem,
+  selectExportQueueSummary,
   selectHasProcessableExports,
   selectHasQueuedOrRenderingExportByInstanceId,
   selectImportedEditingInstances,

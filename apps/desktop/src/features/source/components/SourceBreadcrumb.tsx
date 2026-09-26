@@ -40,7 +40,7 @@ function SourceBreadcrumb({ className }: SourceBreadcrumbProps) {
 
   return (
     <Breadcrumb className={className}>
-      <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden text-xs">
+      <BreadcrumbList className="flex-nowrap">
         <SourceBreadcrumbList>
           {directories.map((directory) => (
             <SourceBreadcrumbDirectory directory={directory} key={directory.path} />
@@ -56,12 +56,8 @@ function SourceBreadcrumb({ className }: SourceBreadcrumbProps) {
 
 function SourceBreadcrumbDirectory({ directory }: { directory: { name: string; path: string } }) {
   return (
-    <BreadcrumbItem className="min-w-0">
-      <SourceBreadcrumbAction
-        className="max-w-32 truncate"
-        path={directory.path}
-        title={directory.path}
-      >
+    <BreadcrumbItem>
+      <SourceBreadcrumbAction path={directory.path} title={directory.path}>
         {directory.name}
       </SourceBreadcrumbAction>
     </BreadcrumbItem>
@@ -77,8 +73,8 @@ function SourceBreadcrumbPage({
   const sourcePath = formatSourcePath(instance.sourcePath);
 
   return (
-    <BreadcrumbItem className="min-w-0">
-      <SourceBreadcrumbAction className="max-w-56" path={instance.sourcePath} title={sourcePath}>
+    <BreadcrumbItem>
+      <SourceBreadcrumbAction path={instance.sourcePath} title={sourcePath}>
         {displayName}
       </SourceBreadcrumbAction>
     </BreadcrumbItem>
@@ -87,10 +83,9 @@ function SourceBreadcrumbPage({
 
 function SourceBreadcrumbAction({
   children,
-  className,
   path,
   title,
-}: PropsWithChildren<{ className: string; path: string; title: string }>) {
+}: PropsWithChildren<{ path: string; title: string }>) {
   const { t } = useTranslation();
   const revealLabel = getRevealLabel(t);
 
@@ -98,7 +93,7 @@ function SourceBreadcrumbAction({
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          className={`text-foreground-muted h-auto min-w-0 justify-baseline rounded-none p-0 font-normal hover:text-foreground ${className}`}
+          className="text-foreground-muted h-auto justify-baseline truncate rounded-none p-0 font-normal hover:text-foreground"
           onClick={() => void openFileLocation(path)}
           size="xs"
           title={title}
@@ -124,9 +119,9 @@ function SourceBreadcrumbMore() {
             <PopoverTrigger asChild>
               <Button
                 aria-label={t("source.labels.technicalDetails")}
-                className="h-auto max-w-56 min-w-0 gap-0 p-0"
+                className="h-auto gap-0 p-0"
                 size="xs"
-                variant="link"
+                variant="ghost"
               >
                 <BreadcrumbEllipsis />
               </Button>

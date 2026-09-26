@@ -4,9 +4,12 @@ import {
   editingInstanceExportFailed,
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
+  editingInstanceExportRetried,
+  editingInstanceExportRetryFailed,
   editingInstanceExportStarted,
   editingInstancesSourceAvailabilityChanged,
   selectEditingInstanceAttempts,
+  selectEditingInstanceById,
 } from "@/app/store/slices/editing-instances-slice";
 import {
   queuePaused,
@@ -25,10 +28,13 @@ import { normalizeSourceKey } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import {
   cancelOperation,
+  chooseOutputPath,
   moveSourceToTrash,
   releaseExportSource,
   renderFast,
   renderOptimized,
+  reserveExportSource,
+  resolveOutputSelection,
 } from "@/lib/tauri/media";
 import type { ExportProgress, OptimizedExportRequest } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
@@ -57,6 +63,7 @@ interface RuntimeState {
   jobsBySourceKey: Map<string, Set<RuntimeExportJob>>;
   pendingJobs: RuntimeExportJob[];
   queueCycle: "idle" | "running" | "finishing";
+  retryingAttemptIds: Set<string>;
   suppressQueueFinishAction: boolean;
 }
 
@@ -70,6 +77,7 @@ function runtimeFor(getState: () => RootState): RuntimeState {
     jobsByAttemptId: new Map(),
     jobsBySourceKey: new Map(),
     pendingJobs: [],
+    retryingAttemptIds: new Set(),
     deferredSourceDeletes: new Map(),
     queueCycle: "idle",
     suppressQueueFinishAction: false,
@@ -208,6 +216,72 @@ async function cancelAndRequeueExport(
   });
   if (job.operationId) void cancelOperation(job.operationId).catch(() => undefined);
   await job.completion;
+}
+
+async function retryFailedExport(
+  instanceId: EditingInstanceId,
+  attemptId: string,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+) {
+  const runtime = runtimeFor(getState);
+  if (runtime.jobsByAttemptId.has(attemptId) || runtime.retryingAttemptIds.has(attemptId))
+    return false;
+
+  const attempt = selectEditingInstanceAttempts(getState()).find(
+    ({ attempt, instance }) => instance.id === instanceId && attempt.id === attemptId,
+  )?.attempt;
+
+  if (!attempt || attempt.state.status !== "failed") return false;
+  const instance = selectEditingInstanceById(getState(), instanceId);
+  if (!instance) return false;
+
+  runtime.retryingAttemptIds.add(attemptId);
+  let reserved = false;
+  try {
+    await reserveExportSource(attempt.request.sourcePath, instance.media);
+    reserved = true;
+
+    const current = selectEditingInstanceAttempts(getState()).find(
+      ({ attempt: candidate, instance }) =>
+        instance.id === instanceId && candidate.id === attemptId,
+    )?.attempt;
+
+    if (!current || current.state.status !== "failed") return false;
+
+    const output =
+      (await resolveOutputSelection(attempt.output.outputId)) ??
+      (await chooseOutputPath(attempt.output.displayName));
+
+    if (!output) return false;
+    dispatch(editingInstanceExportRetried({ id: instanceId, attemptId, output }));
+    const queued = selectEditingInstanceAttempts(getState()).find(
+      ({ attempt: candidate, instance }) =>
+        instance.id === instanceId && candidate.id === attemptId,
+    )?.attempt;
+
+    if (
+      !queued ||
+      queued.state.status !== "queued" ||
+      !enqueueExport(instanceId, queued, dispatch, getState)
+    )
+      return false;
+
+    reserved = false;
+    return true;
+  } catch (error: unknown) {
+    dispatch(
+      editingInstanceExportRetryFailed({
+        id: instanceId,
+        attemptId,
+        error: normalizeAppError(error),
+      }),
+    );
+    return false;
+  } finally {
+    runtime.retryingAttemptIds.delete(attemptId);
+    if (reserved) await releaseExportSource(attempt.request.sourcePath).catch(() => undefined);
+  }
 }
 
 function hasActiveExportForSource(sourcePath: string, getState: () => RootState): boolean {
@@ -528,6 +602,7 @@ export {
   cancelQueuedExport,
   enqueueExport,
   hasActiveExportForSource,
+  retryFailedExport,
   setExportQueueExecutionEnabled,
   withdrawPendingExport,
 };

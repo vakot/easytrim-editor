@@ -2,6 +2,7 @@ import {
   cancelAndRequeueExport,
   cancelQueuedExport,
   enqueueExport,
+  retryFailedExport,
   setExportQueueExecutionEnabled,
 } from "@/app/store/integration/export-queue-runtime";
 import { outputDefaults } from "@/app/store/lib/export-defaults";
@@ -60,7 +61,10 @@ import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
 import type { AppThunk } from "./source-media-thunks";
-import { commitActiveEditingInstanceDraft } from "./source-media-thunks";
+import {
+  activateEditingInstanceRequested,
+  commitActiveEditingInstanceDraft,
+} from "./source-media-thunks";
 
 let optimizedPlanRequestSequence = 0;
 let exportAttemptSequence = 0;
@@ -104,10 +108,23 @@ const cancelExportAttemptRequested =
     await cancelQueuedExport(instanceId, attemptId, getState);
   };
 
-const requeueExportAttemptRequested =
+const retryExportAttemptRequested =
   ({ attemptId, instanceId }: { attemptId: string; instanceId: string }): AppThunk =>
-  async (_dispatch, getState) => {
-    await cancelAndRequeueExport(instanceId, attemptId, getState);
+  async (dispatch, getState) => {
+    const attempt = selectEditingInstanceById(getState(), instanceId)?.exportAttempts.find(
+      (candidate) => candidate.id === attemptId,
+    );
+
+    if (attempt?.state.status === "failed") {
+      const instance = selectEditingInstanceById(getState(), instanceId);
+      if (!instance) return;
+      if (!instance.media) {
+        if (!(await dispatch(activateEditingInstanceRequested(instance)))) return;
+      }
+      await retryFailedExport(instanceId, attemptId, dispatch, getState);
+    } else {
+      await cancelAndRequeueExport(instanceId, attemptId, getState);
+    }
   };
 
 const openOptimizedExportDialog =
@@ -356,7 +373,7 @@ export {
   openOptimizedExportDialog,
   optimizedExportSettingsChangedRequested,
   refreshOptimizedExportPlan,
-  requeueExportAttemptRequested,
+  retryExportAttemptRequested,
   startExportQueue,
   startFastCutRequested,
   startOptimizedExportRequested,

@@ -20,6 +20,7 @@ use crate::{
         FastExportRequest, OptimizedExportRequest, build_fast_arguments, build_optimized_arguments,
         optimized_command_preview,
     },
+    media::probe::MediaInfo,
     process::{ProcessOutput, run_progress_cancellable},
     state::AppState,
 };
@@ -110,6 +111,23 @@ pub async fn choose_output_path(
         .to_owned();
     let display_path = path.display().to_string();
     let output_id = state.register_output(path)?;
+    Ok(Some(OutputSelection {
+        output_id,
+        display_name,
+        display_path,
+    }))
+}
+
+#[tauri::command]
+pub fn resolve_output_selection(
+    output_id: String,
+    state: State<'_, AppState>,
+) -> Result<Option<OutputSelection>, AppError> {
+    let Some(path) = state.resolve_registered_output(&output_id)? else {
+        return Ok(None);
+    };
+    let display_name = output_display_name(&path)?;
+    let display_path = path.display().to_string();
     Ok(Some(OutputSelection {
         output_id,
         display_name,
@@ -216,9 +234,10 @@ pub fn cancel_operation(operation_id: String, state: State<'_, AppState>) -> Res
 #[tauri::command]
 pub fn reserve_export_source(
     source_path: String,
+    media: Option<MediaInfo>,
     state: State<'_, AppState>,
 ) -> Result<(), AppError> {
-    state.reserve_export_source(&source_path)
+    state.reserve_export_source(&source_path, media)
 }
 
 #[tauri::command]
@@ -291,7 +310,11 @@ async fn run_export(
         None,
         diagnostic_parent_operation_id.as_deref(),
         diagnostic_snapshot_id.as_deref(),
-        Some(ffmpeg_arguments_data(&arguments, &source_path, &output_path)),
+        Some(ffmpeg_arguments_data(
+            &arguments,
+            &source_path,
+            &output_path,
+        )),
         "info",
     );
     let _ = on_progress.send(ExportProgress {
@@ -508,7 +531,11 @@ fn record_ffmpeg_event(
         parent_operation_id,
         snapshot_id,
         None,
-        if event.ends_with(".failed") { "error" } else { "info" },
+        if event.ends_with(".failed") {
+            "error"
+        } else {
+            "info"
+        },
     );
 }
 

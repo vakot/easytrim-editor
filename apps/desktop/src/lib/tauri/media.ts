@@ -100,6 +100,15 @@ async function chooseOutputPath(defaultName: string): Promise<OutputSelection | 
   }
 }
 
+async function resolveOutputSelection(outputId: string): Promise<OutputSelection | null> {
+  try {
+    const value = await invoke<unknown>("resolve_output_selection", { outputId });
+    return value === null ? null : parseOutputSelection(value);
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 async function renderFast(
   request: FastExportRequest,
   outputId: string,
@@ -150,9 +159,9 @@ async function cancelOperation(operationId: string): Promise<void> {
   }
 }
 
-async function reserveExportSource(sourcePath: string): Promise<void> {
+async function reserveExportSource(sourcePath: string, media?: MediaInfo): Promise<void> {
   try {
-    await invoke("reserve_export_source", { sourcePath });
+    await invoke("reserve_export_source", { sourcePath, ...(media ? { media } : {}) });
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -357,5 +366,6 @@ export {
   renderFast,
   renderOptimized,
   reserveExportSource,
+  resolveOutputSelection,
   restoreSourceFromTrash,
 };
