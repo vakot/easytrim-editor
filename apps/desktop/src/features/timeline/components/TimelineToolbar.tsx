@@ -23,7 +23,7 @@ function TimelineToolbar() {
   return (
     <div
       aria-label={t("timeline.accessibility.tools")}
-      className="flex w-full items-stretch"
+      className="flex w-full items-stretch gap-1"
       data-slot="timeline-toolbar"
       role="toolbar"
     >
@@ -32,6 +32,11 @@ function TimelineToolbar() {
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
         <ResetToolsTool />
+      </div>
+
+      <div className="flex flex-1 flex-col gap-1">
+        <div className="flex-1 bg-secondary">L</div>
+        <div className="flex-1 bg-secondary">R</div>
       </div>
     </div>
   );
