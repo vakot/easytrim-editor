@@ -64,7 +64,7 @@ export const en = {
         previewTransform: "Preview / Transform",
         queueOnFinishedApplication: "Queue / On finished / Application",
         queueOnFinishedSource: "Queue / On finished / Source",
-        source: "Source",
+        go: "Go",
       },
       explorer: "Explorer",
       activityFeed: "Activity Feed",

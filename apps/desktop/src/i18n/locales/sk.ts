@@ -66,7 +66,7 @@ export const sk = {
         previewTransform: "Náhľad / Transformácia",
         queueOnFinishedApplication: "Front / Po dokončení / Aplikácia",
         queueOnFinishedSource: "Front / Po dokončení / Zdroj",
-        source: "Zdroj",
+        go: "Prejsť",
       },
       explorer: "Prieskumník",
       activityFeed: "Prehľad aktivít",

@@ -64,7 +64,7 @@ export const ru = {
         previewTransform: "Предпросмотр / Трансформация",
         queueOnFinishedApplication: "Очередь / После завершения / Приложение",
         queueOnFinishedSource: "Очередь / После завершения / Источник",
-        source: "Источник",
+        go: "Перейти",
       },
       explorer: "Проводник",
       activityFeed: "Лента активности",
