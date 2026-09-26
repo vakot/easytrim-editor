@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Added Activity Feed rows that combine consecutive file-close activities and show the latest activity time.
+- Added an export queue dialog with per-job status, progress, metrics, and actions to start, cancel, retry, restore, or reveal outputs.
 
 ### Changed
 
