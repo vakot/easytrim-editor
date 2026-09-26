@@ -5,6 +5,7 @@ import { useLayoutCommandGroups } from "./layout";
 import { usePreferencesCommandGroups } from "./preferences";
 import { usePreviewCommandGroups } from "./preview";
 import { useQueueCommandGroups } from "./queue";
+import { useSourceCommandGroups } from "./source";
 
 function useApplicationCommandGroups() {
   const file = useFileCommandGroups();
@@ -14,6 +15,7 @@ function useApplicationCommandGroups() {
   const queue = useQueueCommandGroups();
   const layout = useLayoutCommandGroups();
   const preview = usePreviewCommandGroups();
+  const source = useSourceCommandGroups();
   return [
     ...file,
     ...help,
@@ -22,6 +24,7 @@ function useApplicationCommandGroups() {
     ...queue,
     ...layout,
     ...preview,
+    ...source,
   ] as const;
 }
 

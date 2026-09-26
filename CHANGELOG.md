@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Added Activity Feed rows that combine consecutive file-close activities and show the latest activity time.
+- Added previous and next source controls for switching between imported sources.
 
 ### Changed
 

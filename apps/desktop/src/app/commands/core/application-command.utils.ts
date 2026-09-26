@@ -75,14 +75,27 @@ function getShortcutDisplayKeys(
   shortcut: ApplicationShortcut,
   platform = getShortcutPlatform(),
 ): readonly string[] {
-  return [shortcut.modifier === "primary" && platform === "macos" ? "Cmd" : "Ctrl", shortcut.key];
+  const modifier =
+    shortcut.modifier === "alt"
+      ? "Alt"
+      : shortcut.modifier === "primary" && platform === "macos"
+        ? "Cmd"
+        : "Ctrl";
+
+  return [modifier, shortcut.key];
 }
 
 function getShortcutAriaValue(
   shortcut: ApplicationShortcut,
   platform = getShortcutPlatform(),
 ): string {
-  const modifier = shortcut.modifier === "primary" && platform === "macos" ? "Meta" : "Control";
+  const modifier =
+    shortcut.modifier === "alt"
+      ? "Alt"
+      : shortcut.modifier === "primary" && platform === "macos"
+        ? "Meta"
+        : "Control";
+
   return `${modifier}+${shortcut.key}`;
 }
 
@@ -92,14 +105,23 @@ function isShortcutEvent(
   platform = getShortcutPlatform(),
 ): boolean {
   const usesMeta = shortcut.modifier === "primary" && platform === "macos";
-  const requiredModifierPressed = usesMeta ? event.metaKey : event.ctrlKey;
-  const otherModifierPressed = usesMeta ? event.ctrlKey : event.metaKey;
+  const requiredModifierPressed =
+    shortcut.modifier === "alt" ? event.altKey : usesMeta ? event.metaKey : event.ctrlKey;
+
+  const otherModifierPressed =
+    shortcut.modifier === "alt"
+      ? event.ctrlKey || event.metaKey
+      : usesMeta
+        ? event.ctrlKey
+        : event.metaKey;
+
+  const unexpectedAltPressed = shortcut.modifier !== "alt" && event.altKey;
 
   return (
     event.code === shortcut.code &&
     requiredModifierPressed &&
     !otherModifierPressed &&
-    !event.altKey &&
+    !unexpectedAltPressed &&
     !event.shiftKey
   );
 }

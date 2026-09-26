@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
 import { checkMediaCapabilitiesRequested } from "@/app/store/thunks/source-media-thunks";
+import { cn } from "@/lib/class-names.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import { openFileLocation } from "@/lib/tauri/media";
 import type { BinaryCapability, MediaCapabilities } from "@/lib/tauri/media.types";
@@ -61,7 +62,13 @@ function MediaToolsStatus({ children }: MediaToolsStatusProps) {
   );
 }
 
-function MediaToolsStatusTrigger({ presentation }: { presentation: "compact" | "default" }) {
+function MediaToolsStatusTrigger({
+  className,
+  presentation,
+}: {
+  className?: string;
+  presentation: "compact" | "default";
+}) {
   const { t } = useTranslation();
 
   const { capabilities, state } = useMediaToolsStatus();
@@ -89,7 +96,7 @@ function MediaToolsStatusTrigger({ presentation }: { presentation: "compact" | "
     <PopoverTrigger asChild>
       <Button
         aria-label={iconOnly ? t("app.status.toolsReady") : statusText}
-        className={triggerButtonVariants({ variant })}
+        className={cn(triggerButtonVariants({ variant }), className)}
         data-no-drag="true"
         size="xs"
         variant={variant}
