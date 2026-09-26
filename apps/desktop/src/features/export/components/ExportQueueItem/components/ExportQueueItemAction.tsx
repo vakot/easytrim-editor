@@ -1,4 +1,4 @@
-import { ExternalLink, RotateCcw, X } from "lucide-react";
+import { ArrowLeftFromLine, ExternalLink, RotateCcw, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { openFileLocation } from "@/lib/tauri/media";
 
 import { useExportQueueItem } from "../contexts/ExportQueueItemContext";
 
-function ExportQueueItemCancel() {
+function ExportQueueItemCancel({ className }: { className?: string }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { attempt, instance } = useExportQueueItem();
@@ -25,6 +25,7 @@ function ExportQueueItemCancel() {
   return (
     <Button
       aria-label={t("queue.actions.cancel")}
+      className={className}
       onClick={() =>
         void dispatch(
           cancelExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
@@ -40,7 +41,7 @@ function ExportQueueItemCancel() {
   );
 }
 
-function ExportQueueItemRestore() {
+function ExportQueueItemRestore({ className }: { className?: string }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { attempt, instance } = useExportQueueItem();
@@ -55,6 +56,7 @@ function ExportQueueItemRestore() {
   return (
     <Button
       aria-label={t("queue.actions.restore")}
+      className={className}
       onClick={() =>
         void dispatch(
           restoreExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
@@ -65,12 +67,12 @@ function ExportQueueItemRestore() {
       type="button"
       variant="outline"
     >
-      <RotateCcw aria-hidden="true" />
+      <ArrowLeftFromLine aria-hidden="true" />
     </Button>
   );
 }
 
-function ExportQueueItemReveal() {
+function ExportQueueItemReveal({ className }: { className?: string }) {
   const { t } = useTranslation();
   const { attempt } = useExportQueueItem();
 
@@ -80,6 +82,7 @@ function ExportQueueItemReveal() {
 
   return (
     <Button
+      className={className}
       onClick={() => void openFileLocation(outputPath).catch(() => undefined)}
       size="xs"
       type="button"
@@ -91,7 +94,7 @@ function ExportQueueItemReveal() {
   );
 }
 
-function ExportQueueItemRetry() {
+function ExportQueueItemRetry({ className }: { className?: string }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { attempt, instance } = useExportQueueItem();
@@ -102,6 +105,7 @@ function ExportQueueItemRetry() {
 
   return (
     <Button
+      className={className}
       onClick={() =>
         void dispatch(
           requeueExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
@@ -109,7 +113,7 @@ function ExportQueueItemRetry() {
       }
       size="xs"
       type="button"
-      variant="ghost"
+      variant="outline"
     >
       <RotateCcw aria-hidden="true" />
       {t("queue.actions.retry")}

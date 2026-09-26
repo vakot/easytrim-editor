@@ -14,7 +14,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -51,27 +50,21 @@ function ExportActions() {
           <ExportActionTooltip tooltip={t("queue.labels.renderQueue")}>
             <DialogTrigger asChild>
               <ExportActionButton icon={<List aria-hidden="true" />} variant="default">
-                <span className="truncate">{t("queue.labels.renderQueue")}</span>
+                {t("queue.labels.renderQueue")}
               </ExportActionButton>
             </DialogTrigger>
           </ExportActionTooltip>
-          <DialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-lg">
-            <DialogHeader>
+
+          <DialogContent className="max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
+            <DialogHeader className="-mx-4 border-b px-4 pb-4">
               <DialogTitle>{t("queue.labels.renderQueue")}</DialogTitle>
               <DialogDescription>
                 <ExportQueueSummary />
               </DialogDescription>
             </DialogHeader>
 
-            <div className="-mx-4">
-              <Separator />
-            </div>
-
-            <ScrollArea
-              className="-mx-1 max-h-[calc(100dvh-14rem)] min-h-0"
-              data-testid="export-queue-scroll-area"
-            >
-              <ExportQueueContent />
+            <ScrollArea className="-mx-4 min-h-0 px-4" data-testid="export-queue-scroll-area">
+              <ExportQueueContent className="py-2" />
             </ScrollArea>
 
             <DialogFooter>
@@ -147,14 +140,17 @@ function ExportActionButton({
 }: ComponentProps<typeof Button> & { icon?: React.ReactNode }) {
   return (
     <Button
-      className={cn("max-w-44", className)}
+      className={cn(
+        "max-w-44 max-2xl:size-7 max-2xl:gap-0 max-2xl:rounded-[min(var(--radius-md),12px)] max-2xl:p-0",
+        className,
+      )}
       size="sm"
       type="button"
       variant={variant}
       {...props}
     >
       {icon}
-      <span className="truncate">{children}</span>
+      <span className="truncate max-2xl:hidden">{children}</span>
     </Button>
   );
 }

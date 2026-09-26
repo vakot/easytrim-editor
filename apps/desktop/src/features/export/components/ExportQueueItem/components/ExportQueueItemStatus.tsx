@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 
+import { cn } from "@/lib/class-names.utils";
+
 import { useExportQueueItem } from "../contexts/ExportQueueItemContext";
 
 function ExportQueueItemStatus() {
@@ -30,17 +32,15 @@ function ExportQueueItemStatus() {
 
   return (
     <div className="flex shrink-0 items-center gap-1">
-      <Badge variant={statusVariants[status]}>{statusLabels[status]}</Badge>
-      {error ? (
-        <span
-          aria-label={t("queue.messages.error", { message: error.message })}
-          className="text-destructive"
-          role="img"
-          title={error.message}
-        >
-          <CircleAlert aria-hidden="true" className="size-3.5" />
-        </span>
-      ) : null}
+      <Badge
+        aria-label={error ? t("queue.messages.error", { message: error.message }) : undefined}
+        className={cn(status === "rendering" && "bg-primary/20 text-primary")}
+        title={error ? error.message : undefined}
+        variant={statusVariants[status]}
+      >
+        {error ? <CircleAlert aria-hidden="true" /> : null}
+        {statusLabels[status]}
+      </Badge>
     </div>
   );
 }
