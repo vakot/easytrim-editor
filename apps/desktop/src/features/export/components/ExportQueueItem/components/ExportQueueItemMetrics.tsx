@@ -2,11 +2,10 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { formatBytes, formatDuration } from "@/features/source";
-import { cn } from "@/lib/class-names.utils";
 
 import { useExportQueueItem } from "../contexts/ExportQueueItemContext";
 
-function ExportQueueItemMetrics({ className }: { className?: string }) {
+function ExportQueueItemMetrics() {
   const { t } = useTranslation();
   const { attempt } = useExportQueueItem();
 
@@ -19,12 +18,17 @@ function ExportQueueItemMetrics({ className }: { className?: string }) {
       values.push(formatBytes(attempt.metrics.fileSizeBytes, t("common.status.unknown")));
     }
     if (attempt.metrics.fps !== undefined) values.push(`${attempt.metrics.fps.toFixed(1)} fps`);
-    return values.join(" · ");
+    return values;
   }, [attempt, t]);
 
-  if (!metrics) return null;
+  if (!metrics.length) return null;
 
-  return <span className={cn("truncate", className)}>{metrics}</span>;
+  return metrics.flatMap((metric, index) => [
+    index > 0 ? "·" : null,
+    <span className="truncate" key={metric}>
+      {metric}
+    </span>,
+  ]);
 }
 
 export { ExportQueueItemMetrics };

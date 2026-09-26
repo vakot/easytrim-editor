@@ -3,21 +3,24 @@ import { Film } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
+import { cn } from "@/lib/class-names.utils";
+
 import {
+  ExportQueueItem,
   ExportQueueItemCancel,
+  ExportQueueItemContent,
   ExportQueueItemMetrics,
   ExportQueueItemOutputName,
-  ExportQueueItemProgress,
+  ExportQueueItemProgressBar,
+  ExportQueueItemProgressPercent,
   ExportQueueItemRestore,
   ExportQueueItemRetry,
   ExportQueueItemReveal,
   ExportQueueItemRoute,
   ExportQueueItemSourceName,
   ExportQueueItemStatus,
-} from "@/features/export";
-import { cn } from "@/lib/class-names.utils";
-
-import { ExportQueueItem, ExportQueueItemContent } from "../../ExportQueueItem/ExportQueueItem";
+  useExportQueueItem,
+} from "../../ExportQueueItem";
 import { useExportQueue } from "../contexts/ExportQueueContext";
 
 import { ExportQueueEmpty } from "./ExportQueueEmpty";
@@ -44,6 +47,10 @@ function ExportQueueContent({ className }: { className?: string }) {
 }
 
 function ExportQueueListItem() {
+  const { attempt } = useExportQueueItem();
+
+  const status = attempt.state.status;
+
   return (
     <ExportQueueItemContent className="text-xs">
       <Card className="size-10 shrink-0 items-center justify-center p-0" size="sm">
@@ -68,8 +75,16 @@ function ExportQueueListItem() {
           </div>
         </div>
 
-        <ExportQueueItemProgress />
-        <ExportQueueItemMetrics />
+        {status === "rendering" && <ExportQueueItemProgressBar />}
+
+        {status !== "queued" && (
+          <div className="flex gap-1">
+            <ExportQueueItemProgressPercent />
+            ·
+            <ExportQueueItemMetrics />
+          </div>
+        )}
+
         <div className="flex gap-1">
           <ExportQueueItemRetry />
           <ExportQueueItemReveal />

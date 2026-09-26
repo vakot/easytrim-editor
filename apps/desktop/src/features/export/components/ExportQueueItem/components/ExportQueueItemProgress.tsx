@@ -5,12 +5,6 @@ import { Progress } from "@/components/ui/progress";
 import { useExportQueueItem } from "../contexts/ExportQueueItemContext";
 
 function ExportQueueItemProgress() {
-  const { attempt } = useExportQueueItem();
-
-  const status = attempt.state.status;
-
-  if (status !== "rendering") return null;
-
   return (
     <div className="flex items-center gap-2">
       <ExportQueueItemProgressBar />
@@ -23,10 +17,6 @@ function ExportQueueItemProgressBar() {
   const { t } = useTranslation();
   const { attempt } = useExportQueueItem();
 
-  const status = attempt.state.status;
-
-  if (status !== "rendering") return null;
-
   return (
     <Progress
       aria-label={t("queue.accessibility.progress")}
@@ -38,15 +28,7 @@ function ExportQueueItemProgressBar() {
 function ExportQueueItemProgressPercent() {
   const { attempt } = useExportQueueItem();
 
-  const status = attempt.state.status;
-
-  if (status !== "rendering") return null;
-
-  return (
-    <span className="w-10 text-right tabular-nums">
-      {Math.round(attempt.metrics.progressPercent)}%
-    </span>
-  );
+  return <span>{Math.round(attempt.metrics.progressPercent)}%</span>;
 }
 
 export { ExportQueueItemProgress, ExportQueueItemProgressBar, ExportQueueItemProgressPercent };
