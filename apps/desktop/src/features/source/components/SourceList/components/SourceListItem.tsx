@@ -72,7 +72,7 @@ function SourceListItemCard({
 
         <SourceCardMetadata />
 
-        <SourceCardActions className="absolute right-0 bottom-0">
+        <SourceCardActions className="pointer-events-none absolute right-0 bottom-0 opacity-0 transition-opacity group-focus-within/source-card:pointer-events-auto group-focus-within/source-card:opacity-100 group-hover/source-card:pointer-events-auto group-hover/source-card:opacity-100">
           <Button size="icon-sm" variant="ghost">
             <MoreVertical aria-hidden="true" className="mx-auto size-4" />
           </Button>

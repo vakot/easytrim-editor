@@ -41,7 +41,7 @@ function SourceCardActions({
 
   return (
     <CardAction
-      className={cn(className, menuOpen ? "visible" : undefined)}
+      className={cn(className, menuOpen ? "pointer-events-auto visible opacity-100" : undefined)}
       onClick={(event) => event.stopPropagation()}
     >
       <DropdownMenu onOpenChange={setMenuOpen}>
