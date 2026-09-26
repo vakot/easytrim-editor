@@ -17,12 +17,7 @@ import { createAppStore } from "@/app/store/store";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
 import { firstSource } from "@/test/source.fixtures";
 
-import {
-  ExportQueue,
-  ExportQueueActions,
-  ExportQueueContent,
-  ExportQueueSummary,
-} from "../ExportQueue";
+import { ExportQueue, ExportQueueContent, ExportQueueSummary } from "../ExportQueue";
 
 function createSource(): EditingInstance {
   const snapshot = createDefaultEditorSnapshot(firstSource, false);
@@ -196,7 +191,6 @@ describe("ExportQueue", () => {
       <Provider store={store}>
         <ExportQueue>
           <ExportQueueSummary />
-          <ExportQueueActions />
           <ExportQueueContent />
         </ExportQueue>
       </Provider>,
@@ -205,7 +199,6 @@ describe("ExportQueue", () => {
     expect(
       screen.getByText("5 jobs · 1 rendering · 1 queued · 1 failed · 1 canceled · 1 completed"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Start queue" })).not.toBeDisabled();
     expect(screen.getByText("Rendering…")).toHaveAttribute("data-variant", "default");
     expect(screen.getByText("Completed")).toHaveAttribute("data-variant", "success");
     expect(screen.getByText("100%")).toBeInTheDocument();
@@ -214,24 +207,6 @@ describe("ExportQueue", () => {
     expect(screen.getByText("Queued")).toHaveAttribute("data-variant", "outline");
     expect(screen.getAllByRole("button", { name: "Restore edit" })).toHaveLength(3);
     expect(screen.getByRole("button", { name: "Reveal output" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Export error: Render failed" })).toBeInTheDocument();
-  });
-
-  it("disables Start queue when only terminal jobs remain", () => {
-    const store = createAppStore();
-    const { attempt, source } = addAttempt(store);
-    completeAttempt(store, attempt.id, source.id);
-
-    render(
-      <Provider store={store}>
-        <ExportQueue>
-          <ExportQueueSummary />
-          <ExportQueueActions />
-        </ExportQueue>
-      </Provider>,
-    );
-
-    expect(screen.getByText("1 job · 1 completed")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Start queue" })).toBeDisabled();
+    expect(screen.getByLabelText("Export error: Render failed")).toHaveTextContent("Failed");
   });
 });
