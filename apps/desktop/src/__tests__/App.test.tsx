@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_PREFERENCES } from "../app/preferences";
 import { editingInstanceActivated } from "../app/store/actions/editing-instance-actions";
@@ -21,9 +21,9 @@ import { previewReady } from "../app/store/slices/preview-slice";
 import { selectHasSource, selectSourceSelection } from "../app/store/slices/source-slice";
 import { store } from "../app/store/store";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
+import type { EditingInstanceListEntry } from "../domain/editing-instance";
 import type { EditorSnapshot } from "../domain/editor-snapshot";
 import type { SourceRef } from "../domain/source";
-import type { EditingInstanceListEntry } from "../domain/editing-instance";
 import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri/media.types";
 
 const mocks = vi.hoisted(() => ({
