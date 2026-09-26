@@ -201,7 +201,11 @@ describe("editing instances slice", () => {
       editingInstanceExportRetried({
         id: "source",
         attemptId: failed.id,
-        output: { outputId: "retry-output" },
+        output: {
+          displayName: "retry.mp4",
+          displayPath: "C:/Exports/retry.mp4",
+          outputId: "retry-output",
+        },
       }),
     );
 

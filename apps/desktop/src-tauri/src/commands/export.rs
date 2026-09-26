@@ -119,19 +119,20 @@ pub async fn choose_output_path(
 }
 
 #[tauri::command]
-pub fn register_output_path(
-    display_path: String,
+pub fn resolve_output_selection(
+    output_id: String,
     state: State<'_, AppState>,
-) -> Result<OutputSelection, AppError> {
-    let path = PathBuf::from(display_path);
+) -> Result<Option<OutputSelection>, AppError> {
+    let Some(path) = state.resolve_registered_output(&output_id)? else {
+        return Ok(None);
+    };
     let display_name = output_display_name(&path)?;
     let display_path = path.display().to_string();
-    let output_id = state.register_output(path)?;
-    Ok(OutputSelection {
+    Ok(Some(OutputSelection {
         output_id,
         display_name,
         display_path,
-    })
+    }))
 }
 
 #[tauri::command]

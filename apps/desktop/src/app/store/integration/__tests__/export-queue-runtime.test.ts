@@ -2,24 +2,26 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   cancelOperation: vi.fn().mockResolvedValue(undefined),
+  chooseOutputPath: vi.fn(),
   moveSourceToTrash: vi.fn().mockResolvedValue(undefined),
   performQueueFinishAction: vi.fn().mockResolvedValue(undefined),
-  registerOutputPath: vi.fn(),
   reserveExportSource: vi.fn().mockResolvedValue(undefined),
   releaseExportSource: vi.fn().mockResolvedValue(undefined),
   renderFast: vi.fn(),
   renderOptimized: vi.fn(),
+  resolveOutputSelection: vi.fn(),
   startOperation: vi.fn(),
 }));
 
 vi.mock("@/lib/tauri/media", () => ({
   cancelOperation: mocks.cancelOperation,
+  chooseOutputPath: mocks.chooseOutputPath,
   moveSourceToTrash: mocks.moveSourceToTrash,
-  registerOutputPath: mocks.registerOutputPath,
   reserveExportSource: mocks.reserveExportSource,
   releaseExportSource: mocks.releaseExportSource,
   renderFast: mocks.renderFast,
   renderOptimized: mocks.renderOptimized,
+  resolveOutputSelection: mocks.resolveOutputSelection,
 }));
 vi.mock("@/lib/tauri/queue", () => ({
   performQueueFinishAction: mocks.performQueueFinishAction,
@@ -112,11 +114,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.releaseExportSource.mockResolvedValue(undefined);
   mocks.reserveExportSource.mockResolvedValue(undefined);
-  mocks.registerOutputPath.mockImplementation(async (displayPath: string) => ({
-    displayName: displayPath.split("/").pop() ?? displayPath,
-    displayPath,
+  mocks.chooseOutputPath.mockImplementation(async (defaultName: string) => ({
+    displayName: defaultName,
+    displayPath: `C:/Exports/${defaultName}`,
     outputId: "retry-output",
   }));
+  mocks.resolveOutputSelection.mockResolvedValue(null);
   mocks.moveSourceToTrash.mockResolvedValue(undefined);
   mocks.startOperation.mockClear();
 });
@@ -478,7 +481,7 @@ describe("export queue runtime", () => {
     await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(1));
   });
 
-  it("retries a failed attempt by reserving and registering it again", async () => {
+  it("retries a failed attempt by reserving and reacquiring its output", async () => {
     const store = createAppStore();
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
     const getState = store.getState;
@@ -507,6 +510,8 @@ describe("export queue runtime", () => {
       firstSource.sourcePath,
       undefined,
     );
+    expect(mocks.resolveOutputSelection).toHaveBeenCalledExactlyOnceWith(attempt.output.outputId);
+    expect(mocks.chooseOutputPath).toHaveBeenCalledExactlyOnceWith(attempt.output.displayName);
     expect(
       store.getState().editingInstances.entities["instance-failed-retry"]?.exportAttempts[0]?.state
         .status,
@@ -523,6 +528,36 @@ describe("export queue runtime", () => {
       store.getState().editingInstances.entities["instance-failed-retry"]?.exportAttempts[0]?.state
         .status,
     ).toBe("completed");
+  });
+
+  it("surfaces retry preparation failures while keeping the attempt failed", async () => {
+    const store = createAppStore();
+    const getState = store.getState;
+    const attempt = createAttempt("attempt-retry-failure");
+    store.dispatch(editingInstancesAdded([createInstance("instance-retry-failure")]));
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "instance-retry-failure", attempt }));
+    mocks.renderFast.mockRejectedValueOnce(new Error("initial render failed"));
+
+    enqueueExport("instance-retry-failure", attempt, store.dispatch, getState);
+    setExportQueueExecutionEnabled(true, store.dispatch, getState);
+    await vi.waitFor(() =>
+      expect(
+        store.getState().editingInstances.entities["instance-retry-failure"]?.exportAttempts[0]
+          ?.state.status,
+      ).toBe("failed"),
+    );
+
+    mocks.reserveExportSource.mockRejectedValueOnce(new Error("source is unavailable"));
+    await expect(
+      retryFailedExport("instance-retry-failure", attempt.id, store.dispatch, getState),
+    ).resolves.toBe(false);
+    const failedAttempt =
+      store.getState().editingInstances.entities["instance-retry-failure"]?.exportAttempts[0];
+
+    expect(failedAttempt?.state.status).toBe("failed");
+    expect(failedAttempt?.state.status === "failed" && failedAttempt.state.error.message).toBe(
+      "source is unavailable",
+    );
   });
 
   it("auto-starts a failed retry when queue auto-start is enabled", async () => {

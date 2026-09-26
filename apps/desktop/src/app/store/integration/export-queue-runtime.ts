@@ -5,6 +5,7 @@ import {
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
   editingInstanceExportRetried,
+  editingInstanceExportRetryFailed,
   editingInstanceExportStarted,
   editingInstancesSourceAvailabilityChanged,
   selectEditingInstanceAttempts,
@@ -27,12 +28,13 @@ import { normalizeSourceKey } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import {
   cancelOperation,
+  chooseOutputPath,
   moveSourceToTrash,
-  registerOutputPath,
   releaseExportSource,
   renderFast,
   renderOptimized,
   reserveExportSource,
+  resolveOutputSelection,
 } from "@/lib/tauri/media";
 import type { ExportProgress, OptimizedExportRequest } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
@@ -247,7 +249,11 @@ async function retryFailedExport(
 
     if (!current || current.state.status !== "failed") return false;
 
-    const output = await registerOutputPath(attempt.output.displayPath);
+    const output =
+      (await resolveOutputSelection(attempt.output.outputId)) ??
+      (await chooseOutputPath(attempt.output.displayName));
+
+    if (!output) return false;
     dispatch(editingInstanceExportRetried({ id: instanceId, attemptId, output }));
     const queued = selectEditingInstanceAttempts(getState()).find(
       ({ attempt: candidate, instance }) =>
@@ -263,6 +269,15 @@ async function retryFailedExport(
 
     reserved = false;
     return true;
+  } catch (error: unknown) {
+    dispatch(
+      editingInstanceExportRetryFailed({
+        id: instanceId,
+        attemptId,
+        error: normalizeAppError(error),
+      }),
+    );
+    return false;
   } finally {
     runtime.retryingAttemptIds.delete(attemptId);
     if (reserved) await releaseExportSource(attempt.request.sourcePath).catch(() => undefined);

@@ -303,13 +303,13 @@ const editingInstancesSlice = createSlice({
       action: PayloadAction<{
         attemptId: string;
         id: EditingInstanceId;
-        output: Pick<OutputSelection, "outputId">;
+        output: OutputSelection;
       }>,
     ) => {
       const instance = getInstance(state, action.payload.id);
       const attempt = instance && getAttempt(instance, action.payload.attemptId);
       if (!attempt || attempt.state.status !== "failed") return;
-      attempt.output.outputId = action.payload.output.outputId;
+      attempt.output = action.payload.output;
       attempt.metrics = {
         ...EMPTY_EXPORT_METRICS,
         ...(attempt.metrics.totalFrames === undefined
@@ -317,6 +317,19 @@ const editingInstancesSlice = createSlice({
           : { totalFrames: attempt.metrics.totalFrames }),
       };
       attempt.state = { queuedAt: Date.now(), status: "queued" };
+    },
+    editingInstanceExportRetryFailed: (
+      state,
+      action: PayloadAction<{
+        attemptId: string;
+        error: AppError;
+        id: EditingInstanceId;
+      }>,
+    ) => {
+      const instance = getInstance(state, action.payload.id);
+      const attempt = instance && getAttempt(instance, action.payload.attemptId);
+      if (!attempt || attempt.state.status !== "failed") return;
+      attempt.state.error = action.payload.error;
     },
     editingInstanceExportProgressReceived: (
       state,
@@ -523,6 +536,7 @@ const {
   editingInstanceExportRequeued,
   editingInstanceExportRestored,
   editingInstanceExportRetried,
+  editingInstanceExportRetryFailed,
   editingInstanceExportStarted,
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
@@ -685,6 +699,7 @@ export {
   editingInstanceExportRequeued,
   editingInstanceExportRestored,
   editingInstanceExportRetried,
+  editingInstanceExportRetryFailed,
   editingInstanceExportStarted,
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,

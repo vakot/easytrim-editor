@@ -215,6 +215,15 @@ impl AppState {
             .ok_or_else(|| AppError::invalid_request("The output location is no longer available."))
     }
 
+    pub fn resolve_registered_output(&self, output_id: &str) -> Result<Option<PathBuf>, AppError> {
+        Ok(self
+            .outputs
+            .lock()
+            .map_err(|_| AppError::internal("The in-memory output registry is unavailable."))?
+            .get(output_id)
+            .cloned())
+    }
+
     pub fn begin_operation(&self) -> Result<(String, Arc<AtomicBool>), AppError> {
         let id = format!(
             "operation-{}",
