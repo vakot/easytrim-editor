@@ -46,7 +46,7 @@ describe("SourceNavigation", () => {
     expect(nextButton).not.toBeDisabled();
 
     await user.hover(nextButton);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Next source");
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Next source (Alt+ArrowRight)");
 
     await user.click(nextButton);
     expect(commandRuntime.executeCommand).toHaveBeenCalledWith("next-source", "button");

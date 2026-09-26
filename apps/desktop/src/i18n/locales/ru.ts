@@ -345,6 +345,9 @@ export const ru = {
       restorePreviousSession_other: "Восстановить предыдущий сеанс · источников: {{count}}",
       previewUnavailable: "Предпросмотр недоступен",
     },
+    tooltips: {
+      withShortcut: "{{label}} ({{shortcut}})",
+    },
     dialogs: {
       close: {
         description:

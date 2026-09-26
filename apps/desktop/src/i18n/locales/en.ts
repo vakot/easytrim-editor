@@ -343,6 +343,9 @@ export const en = {
       restorePreviousSession_other: "Restore previous session · {{count}} sources",
       previewUnavailable: "Preview unavailable",
     },
+    tooltips: {
+      withShortcut: "{{label}} ({{shortcut}})",
+    },
     dialogs: {
       close: {
         description:

@@ -343,6 +343,9 @@ export const sk = {
       restorePreviousSession_other: "Obnoviť predchádzajúcu reláciu · {{count}} zdrojov",
       previewUnavailable: "Náhľad nie je dostupný",
     },
+    tooltips: {
+      withShortcut: "{{label}} ({{shortcut}})",
+    },
     dialogs: {
       close: {
         description:
