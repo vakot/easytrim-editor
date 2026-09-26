@@ -29,7 +29,6 @@ import {
   selectEditingInstanceIds,
   selectEditingInstanceTopologyEntries,
   selectExportQueue,
-  selectExportQueueById,
   selectHasProcessableExports,
   selectHasQueuedOrRenderingExportByInstanceId,
   selectImportedEditingInstances,
@@ -130,7 +129,6 @@ describe("editing instances slice", () => {
         .filter(({ attempt }) => attempt.state.status === "queued")
         .map(({ attempt }) => attempt.id),
     ).toEqual(["two", "three"]);
-    expect(selectExportQueueById(root, "source")).toEqual(queue);
   });
 
   it("returns a rendering attempt to queued state without changing its position", () => {

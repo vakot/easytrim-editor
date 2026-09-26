@@ -41,7 +41,7 @@ import { firstSource, secondSource } from "@/test/source.fixtures";
 import {
   editingInstanceExportAttemptQueued,
   editingInstancesAdded,
-  selectExportQueueById,
+  selectExportQueue,
 } from "../../slices/editing-instances-slice";
 import { selectSourceQueueStarted } from "../../slices/export-slice";
 import { preferenceChanged } from "../../slices/preferences-slice";
@@ -86,9 +86,9 @@ function createInstance(id: string, sourcePath: string = firstSource.sourcePath)
 
 async function stopSourceQueue(store: ReturnType<typeof createAppStore>, instanceId: string) {
   setExportQueueExecutionEnabled(false, store.dispatch, store.getState, instanceId);
-  const active = selectExportQueueById(store.getState(), instanceId).find(
-    ({ attempt }) => attempt.state.status === "rendering",
-  );
+  const active = selectExportQueue(store.getState())
+    .filter(({ instance }) => instance.id === instanceId)
+    .find(({ attempt }) => attempt.state.status === "rendering");
 
   if (active) await cancelAndRequeueExport(instanceId, active.attempt.id, store.getState);
 }

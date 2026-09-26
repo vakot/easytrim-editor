@@ -48,9 +48,7 @@ describe("ExportActions", () => {
     expect(
       within(screen.getByRole("dialog")).getAllByRole("button", { name: "Close" }),
     ).toHaveLength(2);
-    expect(screen.getByTestId("export-queue-scroll-area")).toHaveClass(
-      "max-h-[calc(100dvh-14rem)]",
-    );
+    expect(screen.getByRole("dialog")).toHaveClass("max-h-[min(80dvh,48rem)]");
   });
 
   it("enables Start queue when queued work exists", async () => {

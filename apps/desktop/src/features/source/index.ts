@@ -7,6 +7,7 @@ export {
   SourceListSearch,
 } from "./components/SourceList";
 export { RestoreSource } from "./components/SourceMenuActions";
+export { SourceNavigation } from "./components/SourceNavigation";
 export { useSourceDelete } from "./contexts/source-delete-context";
-export { formatBytes, formatDuration, formatSourcePath } from "./lib/media-formatters.utils";
+export { formatBytes, formatSourcePath } from "./lib/media-formatters.utils";
 export { SourceDeleteProvider } from "./SourceDeleteProvider";

@@ -18,7 +18,9 @@ function useSourceNavigationCommands() {
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const instances = useAppSelector(selectImportedEditingInstances);
+
   const activeIndex = instances.findIndex((instance) => instance.id === activeInstanceId);
+
   const labels = {
     next: t("source.labels.nextSource"),
     previous: t("source.labels.previousSource"),

@@ -621,11 +621,6 @@ const selectExportQueueItem = (
   return instance && attempt ? { attempt, instance } : undefined;
 };
 
-const selectExportQueueById = createSelector(
-  [selectExportQueue, (_state: RootState, id: EditingInstanceId) => id],
-  (queue, id) => queue.filter(({ instance }) => instance.id === id),
-);
-
 const selectInstanceIdsBySourceKey = createSelector(
   [selectEditingInstanceEntities, selectEditingInstanceIds],
   (entities, ids) => {
@@ -683,7 +678,6 @@ export {
   selectEditingInstances,
   selectEditingInstanceTopologyEntries,
   selectExportQueue,
-  selectExportQueueById,
   selectExportQueueItem,
   selectExportQueueSummary,
   selectHasProcessableExports,
