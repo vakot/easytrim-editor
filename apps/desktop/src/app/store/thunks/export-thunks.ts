@@ -2,6 +2,7 @@ import {
   cancelAndRequeueExport,
   cancelQueuedExport,
   enqueueExport,
+  retryFailedExport,
   setExportQueueExecutionEnabled,
 } from "@/app/store/integration/export-queue-runtime";
 import { outputDefaults } from "@/app/store/lib/export-defaults";
@@ -104,10 +105,18 @@ const cancelExportAttemptRequested =
     await cancelQueuedExport(instanceId, attemptId, getState);
   };
 
-const requeueExportAttemptRequested =
+const retryExportAttemptRequested =
   ({ attemptId, instanceId }: { attemptId: string; instanceId: string }): AppThunk =>
-  async (_dispatch, getState) => {
-    await cancelAndRequeueExport(instanceId, attemptId, getState);
+  async (dispatch, getState) => {
+    const attempt = selectEditingInstanceById(getState(), instanceId)?.exportAttempts.find(
+      (candidate) => candidate.id === attemptId,
+    );
+
+    if (attempt?.state.status === "failed") {
+      await retryFailedExport(instanceId, attemptId, dispatch, getState);
+    } else {
+      await cancelAndRequeueExport(instanceId, attemptId, getState);
+    }
   };
 
 const openOptimizedExportDialog =
@@ -356,7 +365,7 @@ export {
   openOptimizedExportDialog,
   optimizedExportSettingsChangedRequested,
   refreshOptimizedExportPlan,
-  requeueExportAttemptRequested,
+  retryExportAttemptRequested,
   startExportQueue,
   startFastCutRequested,
   startOptimizedExportRequested,

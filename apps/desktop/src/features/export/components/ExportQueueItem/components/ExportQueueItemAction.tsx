@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/app/store/redux-hooks";
 import {
   cancelExportAttemptRequested,
-  requeueExportAttemptRequested,
+  retryExportAttemptRequested,
 } from "@/app/store/thunks/export-thunks";
 import { restoreExportAttemptRequested } from "@/app/store/thunks/source-media-thunks";
 import { openFileLocation } from "@/lib/tauri/media";
@@ -108,7 +108,7 @@ function ExportQueueItemRetry({ className }: { className?: string }) {
       className={className}
       onClick={() =>
         void dispatch(
-          requeueExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
+          retryExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
         )
       }
       size="xs"

@@ -4,6 +4,7 @@ import {
   editingInstanceExportFailed,
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
+  editingInstanceExportRetried,
   editingInstanceExportStarted,
   editingInstancesSourceAvailabilityChanged,
   selectEditingInstanceAttempts,
@@ -29,6 +30,7 @@ import {
   releaseExportSource,
   renderFast,
   renderOptimized,
+  reserveExportSource,
 } from "@/lib/tauri/media";
 import type { ExportProgress, OptimizedExportRequest } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
@@ -57,6 +59,7 @@ interface RuntimeState {
   jobsBySourceKey: Map<string, Set<RuntimeExportJob>>;
   pendingJobs: RuntimeExportJob[];
   queueCycle: "idle" | "running" | "finishing";
+  retryingAttemptIds: Set<string>;
   suppressQueueFinishAction: boolean;
 }
 
@@ -70,6 +73,7 @@ function runtimeFor(getState: () => RootState): RuntimeState {
     jobsByAttemptId: new Map(),
     jobsBySourceKey: new Map(),
     pendingJobs: [],
+    retryingAttemptIds: new Set(),
     deferredSourceDeletes: new Map(),
     queueCycle: "idle",
     suppressQueueFinishAction: false,
@@ -208,6 +212,56 @@ async function cancelAndRequeueExport(
   });
   if (job.operationId) void cancelOperation(job.operationId).catch(() => undefined);
   await job.completion;
+}
+
+async function retryFailedExport(
+  instanceId: EditingInstanceId,
+  attemptId: string,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+) {
+  const runtime = runtimeFor(getState);
+  if (runtime.jobsByAttemptId.has(attemptId) || runtime.retryingAttemptIds.has(attemptId))
+    return false;
+
+  const attempt = selectEditingInstanceAttempts(getState()).find(
+    ({ attempt, instance }) => instance.id === instanceId && attempt.id === attemptId,
+  )?.attempt;
+
+  if (!attempt || attempt.state.status !== "failed") return false;
+
+  runtime.retryingAttemptIds.add(attemptId);
+  let reserved = false;
+  try {
+    await reserveExportSource(attempt.request.sourcePath);
+    reserved = true;
+
+    const current = selectEditingInstanceAttempts(getState()).find(
+      ({ attempt: candidate, instance }) =>
+        instance.id === instanceId && candidate.id === attemptId,
+    )?.attempt;
+
+    if (!current || current.state.status !== "failed") return false;
+
+    dispatch(editingInstanceExportRetried({ id: instanceId, attemptId }));
+    const queued = selectEditingInstanceAttempts(getState()).find(
+      ({ attempt: candidate, instance }) =>
+        instance.id === instanceId && candidate.id === attemptId,
+    )?.attempt;
+
+    if (
+      !queued ||
+      queued.state.status !== "queued" ||
+      !enqueueExport(instanceId, queued, dispatch, getState)
+    )
+      return false;
+
+    reserved = false;
+    return true;
+  } finally {
+    runtime.retryingAttemptIds.delete(attemptId);
+    if (reserved) await releaseExportSource(attempt.request.sourcePath).catch(() => undefined);
+  }
 }
 
 function hasActiveExportForSource(sourcePath: string, getState: () => RootState): boolean {
@@ -528,6 +582,7 @@ export {
   cancelQueuedExport,
   enqueueExport,
   hasActiveExportForSource,
+  retryFailedExport,
   setExportQueueExecutionEnabled,
   withdrawPendingExport,
 };

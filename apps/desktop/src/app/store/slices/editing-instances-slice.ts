@@ -297,6 +297,21 @@ const editingInstancesSlice = createSlice({
       };
       attempt.state = { queuedAt: Date.now(), status: "queued" };
     },
+    editingInstanceExportRetried: (
+      state,
+      action: PayloadAction<{ attemptId: string; id: EditingInstanceId }>,
+    ) => {
+      const instance = getInstance(state, action.payload.id);
+      const attempt = instance && getAttempt(instance, action.payload.attemptId);
+      if (!attempt || attempt.state.status !== "failed") return;
+      attempt.metrics = {
+        ...EMPTY_EXPORT_METRICS,
+        ...(attempt.metrics.totalFrames === undefined
+          ? {}
+          : { totalFrames: attempt.metrics.totalFrames }),
+      };
+      attempt.state = { queuedAt: Date.now(), status: "queued" };
+    },
     editingInstanceExportProgressReceived: (
       state,
       action: PayloadAction<{
@@ -501,6 +516,7 @@ const {
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
   editingInstanceExportRestored,
+  editingInstanceExportRetried,
   editingInstanceExportStarted,
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
@@ -662,6 +678,7 @@ export {
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
   editingInstanceExportRestored,
+  editingInstanceExportRetried,
   editingInstanceExportStarted,
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,

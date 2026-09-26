@@ -16,6 +16,7 @@ import {
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
   editingInstanceExportRestored,
+  editingInstanceExportRetried,
   editingInstanceExportStarted,
   editingInstanceMediaUpdated,
   editingInstancesAdded,
@@ -165,6 +166,47 @@ describe("editing instances slice", () => {
     expect(state.entities.source?.exportAttempts.map(({ id }) => id)).toEqual(["first", "second"]);
     expect(state.entities.source?.exportAttempts[0]?.state.status).toBe("queued");
     expect(state.entities.source?.exportAttempts[0]?.metrics.progressPercent).toBe(0);
+  });
+
+  it("returns a failed attempt to queued state while preserving its frame count", () => {
+    const failed = attempt("failed");
+    failed.metrics = {
+      ...failed.metrics,
+      currentFrame: 42,
+      durationMs: 250,
+      progressPercent: 60,
+      totalFrames: 100,
+    };
+    let state = editingInstancesReducer(undefined, editingInstancesAdded([instance("source")]));
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportAttemptQueued({ id: "source", attempt: failed }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportStarted({ id: "source", attemptId: failed.id, startedAt: 30 }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportFailed({
+        attemptId: failed.id,
+        durationMs: 250,
+        error: { code: "render-failed", message: "Render failed" },
+        id: "source",
+      }),
+    );
+
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportRetried({ id: "source", attemptId: failed.id }),
+    );
+
+    expect(state.entities.source?.exportAttempts[0]?.state.status).toBe("queued");
+    expect(state.entities.source?.exportAttempts[0]?.metrics).toEqual({
+      durationMs: null,
+      progressPercent: 0,
+      totalFrames: 100,
+    });
   });
 
   it("restores a pending snapshot as an independent draft and refuses active exports", () => {
