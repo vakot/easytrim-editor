@@ -198,7 +198,11 @@ describe("editing instances slice", () => {
 
     state = editingInstancesReducer(
       state,
-      editingInstanceExportRetried({ id: "source", attemptId: failed.id }),
+      editingInstanceExportRetried({
+        id: "source",
+        attemptId: failed.id,
+        output: { outputId: "retry-output" },
+      }),
     );
 
     expect(state.entities.source?.exportAttempts[0]?.state.status).toBe("queued");
@@ -207,6 +211,7 @@ describe("editing instances slice", () => {
       progressPercent: 0,
       totalFrames: 100,
     });
+    expect(state.entities.source?.exportAttempts[0]?.output.outputId).toBe("retry-output");
   });
 
   it("restores a pending snapshot as an independent draft and refuses active exports", () => {

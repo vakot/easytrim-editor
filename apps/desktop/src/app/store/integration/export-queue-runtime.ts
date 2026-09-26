@@ -8,6 +8,7 @@ import {
   editingInstanceExportStarted,
   editingInstancesSourceAvailabilityChanged,
   selectEditingInstanceAttempts,
+  selectEditingInstanceById,
 } from "@/app/store/slices/editing-instances-slice";
 import {
   queuePaused,
@@ -27,6 +28,7 @@ import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import {
   cancelOperation,
   moveSourceToTrash,
+  registerOutputPath,
   releaseExportSource,
   renderFast,
   renderOptimized,
@@ -229,11 +231,13 @@ async function retryFailedExport(
   )?.attempt;
 
   if (!attempt || attempt.state.status !== "failed") return false;
+  const instance = selectEditingInstanceById(getState(), instanceId);
+  if (!instance) return false;
 
   runtime.retryingAttemptIds.add(attemptId);
   let reserved = false;
   try {
-    await reserveExportSource(attempt.request.sourcePath);
+    await reserveExportSource(attempt.request.sourcePath, instance.media);
     reserved = true;
 
     const current = selectEditingInstanceAttempts(getState()).find(
@@ -243,7 +247,8 @@ async function retryFailedExport(
 
     if (!current || current.state.status !== "failed") return false;
 
-    dispatch(editingInstanceExportRetried({ id: instanceId, attemptId }));
+    const output = await registerOutputPath(attempt.output.displayPath);
+    dispatch(editingInstanceExportRetried({ id: instanceId, attemptId, output }));
     const queued = selectEditingInstanceAttempts(getState()).find(
       ({ attempt: candidate, instance }) =>
         instance.id === instanceId && candidate.id === attemptId,

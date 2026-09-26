@@ -150,7 +150,7 @@ function ExportActionButton({
       {...props}
     >
       {icon}
-      <span className="truncate max-2xl:hidden">{children}</span>
+      <span className="truncate max-2xl:sr-only">{children}</span>
     </Button>
   );
 }

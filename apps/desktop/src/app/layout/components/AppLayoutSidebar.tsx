@@ -66,8 +66,8 @@ function AppLayoutSidebar() {
             )}
           </ResizablePanelControl>
 
-          <SourceList>
-            <div className="mt-1 grid min-h-0 px-3">
+          <div className="mt-1 grid min-h-0 flex-1 px-3">
+            <SourceList>
               <div className="flex gap-2">
                 <SourceListSearch />
                 <SourceListCloseAll />
@@ -76,8 +76,8 @@ function AppLayoutSidebar() {
               <ScrollArea className="-mx-2.5 min-h-0 flex-1 px-2.5">
                 <SourceListContent className="py-2" />
               </ScrollArea>
-            </div>
-          </SourceList>
+            </SourceList>
+          </div>
         </ResizablePanel>
 
         <ResizableHandle className="bg-transparent px-3">
@@ -109,7 +109,7 @@ function AppLayoutSidebar() {
             )}
           </ResizablePanelControl>
 
-          <div className="mt-1 grid min-h-0 px-3">
+          <div className="mt-1 grid min-h-0 flex-1 px-3">
             <ScrollArea className="-mx-2.5 flex-1 px-2.5 before:top-2">
               <ActivityFeed className="pb-2" />
             </ScrollArea>

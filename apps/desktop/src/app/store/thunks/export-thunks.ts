@@ -61,7 +61,10 @@ import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
 import type { AppThunk } from "./source-media-thunks";
-import { commitActiveEditingInstanceDraft } from "./source-media-thunks";
+import {
+  activateEditingInstanceRequested,
+  commitActiveEditingInstanceDraft,
+} from "./source-media-thunks";
 
 let optimizedPlanRequestSequence = 0;
 let exportAttemptSequence = 0;
@@ -113,6 +116,11 @@ const retryExportAttemptRequested =
     );
 
     if (attempt?.state.status === "failed") {
+      const instance = selectEditingInstanceById(getState(), instanceId);
+      if (!instance) return;
+      if (!instance.media) {
+        if (!(await dispatch(activateEditingInstanceRequested(instance)))) return;
+      }
       await retryFailedExport(instanceId, attemptId, dispatch, getState);
     } else {
       await cancelAndRequeueExport(instanceId, attemptId, getState);

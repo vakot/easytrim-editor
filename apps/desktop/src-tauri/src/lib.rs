@@ -83,6 +83,7 @@ pub fn run() {
             commands::export::release_export_source,
             commands::export::reserve_export_source,
             commands::export::choose_output_path,
+            commands::export::register_output_path,
             commands::export::plan_optimized_export,
             commands::export::open_file_location,
             commands::export::render_fast,

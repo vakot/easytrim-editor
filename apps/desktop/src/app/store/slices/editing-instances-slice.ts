@@ -15,6 +15,7 @@ import {
   type SourceAvailability,
 } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
+import type { OutputSelection } from "@/domain/media";
 import { normalizeSourceKey } from "@/domain/source";
 import type { AppError, ExportProgress, ExportResult, MediaInfo } from "@/lib/tauri/media.types";
 
@@ -299,11 +300,16 @@ const editingInstancesSlice = createSlice({
     },
     editingInstanceExportRetried: (
       state,
-      action: PayloadAction<{ attemptId: string; id: EditingInstanceId }>,
+      action: PayloadAction<{
+        attemptId: string;
+        id: EditingInstanceId;
+        output: Pick<OutputSelection, "outputId">;
+      }>,
     ) => {
       const instance = getInstance(state, action.payload.id);
       const attempt = instance && getAttempt(instance, action.payload.attemptId);
       if (!attempt || attempt.state.status !== "failed") return;
+      attempt.output.outputId = action.payload.output.outputId;
       attempt.metrics = {
         ...EMPTY_EXPORT_METRICS,
         ...(attempt.metrics.totalFrames === undefined

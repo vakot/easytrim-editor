@@ -7,6 +7,7 @@ import {
   editingInstanceExportCompleted,
   editingInstanceExportFailed,
   editingInstanceExportRestored,
+  editingInstanceExportRetried,
   selectHasQueuedOrRenderingExportByInstanceId,
 } from "@/app/store/slices/editing-instances-slice";
 import { selectAutoStartQueueEnabled } from "@/app/store/slices/preferences-slice";
@@ -17,6 +18,16 @@ import { listenerMiddleware } from "../listener-middleware";
 
 listenerMiddleware.startListening({
   actionCreator: editingInstanceExportAttemptQueued,
+  effect: (action, listenerApi) => {
+    if (selectAutoStartQueueEnabled(listenerApi.getState())) {
+      const dispatch = listenerApi.dispatch as unknown as AppDispatch;
+      dispatch(startSourceExportQueue(action.payload.id));
+    }
+  },
+});
+
+listenerMiddleware.startListening({
+  actionCreator: editingInstanceExportRetried,
   effect: (action, listenerApi) => {
     if (selectAutoStartQueueEnabled(listenerApi.getState())) {
       const dispatch = listenerApi.dispatch as unknown as AppDispatch;

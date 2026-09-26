@@ -22,11 +22,11 @@ function AppLayout() {
           className="ml-1.5 overflow-hidden!"
           collapsedSize={0}
           collapsible
-          defaultSize="400px"
+          defaultSize="30rem"
           groupResizeBehavior="preserve-pixel-size"
           id="workspace-sidebar"
-          maxSize="500px"
-          minSize="350px"
+          maxSize="30rem"
+          minSize="25rem"
         >
           <AppLayoutPanel className="layout-compact:rounded-l-xl layout-compact:border-r-0">
             <AppLayoutSidebar />

@@ -100,6 +100,14 @@ async function chooseOutputPath(defaultName: string): Promise<OutputSelection | 
   }
 }
 
+async function registerOutputPath(displayPath: string): Promise<OutputSelection> {
+  try {
+    return parseOutputSelection(await invoke<unknown>("register_output_path", { displayPath }));
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 async function renderFast(
   request: FastExportRequest,
   outputId: string,
@@ -150,9 +158,9 @@ async function cancelOperation(operationId: string): Promise<void> {
   }
 }
 
-async function reserveExportSource(sourcePath: string): Promise<void> {
+async function reserveExportSource(sourcePath: string, media?: MediaInfo): Promise<void> {
   try {
-    await invoke("reserve_export_source", { sourcePath });
+    await invoke("reserve_export_source", { sourcePath, ...(media ? { media } : {}) });
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -352,6 +360,7 @@ export {
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
+  registerOutputPath,
   releaseExportSource,
   releaseImportedSourceThumbnail,
   renderFast,

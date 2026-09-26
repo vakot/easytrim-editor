@@ -9,7 +9,10 @@ use std::{
 };
 
 use crate::media::probe::MediaInfo;
-use crate::{domain::source::ValidatedSource, error::AppError};
+use crate::{
+    domain::source::{ValidatedSource, validate_source},
+    error::AppError,
+};
 
 const STALE_ARTIFACT_AGE: std::time::Duration = std::time::Duration::from_secs(60 * 60);
 
@@ -287,8 +290,28 @@ impl AppState {
             .ok_or_else(AppError::source_replaced)
     }
 
-    pub fn reserve_export_source(&self, source_path: &str) -> Result<(), AppError> {
-        let source = self.resolve_source_by_path(source_path)?;
+    pub fn reserve_export_source(
+        &self,
+        source_path: &str,
+        media: Option<MediaInfo>,
+    ) -> Result<(), AppError> {
+        let source = match self.resolve_source_by_path(source_path) {
+            Ok(source) => source,
+            Err(error) => {
+                let Some(media) = media else {
+                    return Err(error);
+                };
+                let validated = validate_source(Path::new(source_path))?;
+                ActiveSource {
+                    load_token: 0,
+                    path: validated.path,
+                    cancellation: Arc::new(AtomicBool::new(false)),
+                    media: Some(media),
+                    preview_streams: None,
+                    audio_stream_indexes: Vec::new(),
+                }
+            }
+        };
         let mut export_sources = self
             .export_sources
             .lock()
@@ -850,7 +873,7 @@ mod tests {
             .complete_source_replacement(generation, source("queued.mp4"))
             .expect("source installs");
         state
-            .reserve_export_source("queued.mp4")
+            .reserve_export_source("queued.mp4", None)
             .expect("queue reserves the source");
 
         state
