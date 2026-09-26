@@ -28,7 +28,6 @@ const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
   activateSourcePath: vi.fn(),
-  inspectImportedSource: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
@@ -46,7 +45,6 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
     activateSourcePath: mocks.activateSourcePath,
-    inspectImportedSource: mocks.inspectImportedSource,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
@@ -201,7 +199,6 @@ beforeEach(() => {
     sourcePath === replacementSelection.sourcePath ? replacementSelection : selection,
   );
   mocks.inspectMedia.mockResolvedValue(media);
-  mocks.inspectImportedSource.mockResolvedValue(media);
   mocks.prepareAudioPreviews.mockResolvedValue([
     {
       mediaToken: 1,
@@ -545,89 +542,6 @@ describe("App", () => {
       "aria-valuenow",
       "1000000",
     );
-  });
-
-  it("closes into the next source without publishing an empty transition", async () => {
-    const firstSnapshot: EditorSnapshot = {
-      source: selection,
-      trim: { startMicros: 0, endMicros: media.durationMicros },
-      crop: null,
-      audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
-    };
-
-    const replacementSnapshot: EditorSnapshot = {
-      source: replacementSelection,
-      trim: { startMicros: 1_000_000, endMicros: 20_000_000 },
-      crop: null,
-      audio: { master: { enabled: true, volumePercent: 40 }, tracks: [], mergeAudio: false },
-    };
-
-    const firstItem = {
-      exportAttempts: [],
-      id: "close-transition-a",
-      media,
-      origin: "source-import" as const,
-      snapshot: firstSnapshot,
-      sourceAvailability: "available" as const,
-    };
-
-    const replacementItem = {
-      exportAttempts: [],
-      id: "close-transition-b",
-      media,
-      origin: "source-import" as const,
-      snapshot: replacementSnapshot,
-      sourceAvailability: "available" as const,
-    };
-
-    store.dispatch(editingInstancesAdded([firstItem, replacementItem]));
-    store.dispatch(
-      editingInstanceActivated({
-        id: firstItem.id,
-        loadToken: 200,
-        media,
-        snapshot: firstSnapshot,
-      }),
-    );
-    store.dispatch(sourceReady({ loadToken: 200, media, snapshot: firstSnapshot }));
-    store.dispatch(
-      previewReady({
-        preview: {
-          mediaToken: 2,
-          url: "http://easytrim-media.localhost/close-transition-a?variant=source",
-          kind: "source",
-        },
-      }),
-    );
-
-    const transitions: Array<{ audioStreamsCount: number; sourcePath: string | null }> = [];
-    const unsubscribe = store.subscribe(() => {
-      const state = store.getState();
-      transitions.push({
-        audioStreamsCount: state.source.audioPanelStreamCount,
-        sourcePath: state.source.source?.sourcePath ?? null,
-      });
-    });
-
-    try {
-      const user = userEvent.setup();
-      render(<App />);
-      await waitFor(() => expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled());
-
-      await user.click(
-        screen.getAllByRole("button", { name: `Close ${selection.displayName}` })[0]!,
-      );
-
-      await waitFor(() =>
-        expect(selectActiveInstanceId(store.getState())).toBe(replacementItem.id),
-      );
-
-      expect(transitions).not.toContainEqual({ audioStreamsCount: 0, sourcePath: null });
-      expect(transitions.some(({ sourcePath }) => sourcePath === null)).toBe(false);
-      expect(screen.getByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
-    } finally {
-      unsubscribe();
-    }
   });
 
   it("starts video playback and waveforms without waiting for multi-track audio previews", async () => {
@@ -981,7 +895,7 @@ describe("App", () => {
     expect(audioPlayhead).toBeInTheDocument();
     const audioPlayheadGrid = audioPlayhead?.closest('[data-slot="audio-playhead-grid"]');
     expect(audioPlayheadGrid).toHaveAttribute("aria-hidden", "true");
-    expect(audioPlayheadGrid).toHaveClass("grid-cols-(--editor-audio-track-grid-columns)");
+    expect(audioPlayheadGrid).toHaveClass("grid-cols-(--editor-timeline-track-grid-columns)");
     expect(audioPlayhead?.parentElement).toHaveAttribute("data-slot", "audio-playhead-track");
     expect(
       screen.getByRole("button", { name: "Set segment start to current position" }),
@@ -1134,7 +1048,6 @@ describe("App", () => {
 
     await openSourcePicker(user);
     await waitFor(() => expect(selectEditingInstances(store.getState())).toHaveLength(2));
-    await waitFor(() => expect(mocks.prepareImportedSourceThumbnail).toHaveBeenCalledTimes(2));
     await waitFor(() =>
       expect(mocks.inspectMedia).toHaveBeenCalledWith(replacementSelection.sourcePath),
     );

@@ -1,7 +1,6 @@
 import { type RefObject, useCallback, useLayoutEffect, useRef } from "react";
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";
@@ -12,7 +11,7 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import { AudioPanel } from "@/features/audio";
 import { ExportActions } from "@/features/export";
 import { Preview } from "@/features/preview";
-import { SourceBreadcrumb, SourceTabs } from "@/features/source";
+import { SourceBreadcrumb } from "@/features/source";
 import { TimelinePanel } from "@/features/timeline";
 import { syncTimelineGeometry } from "@/lib/interaction/timeline-geometry.utils";
 
@@ -40,13 +39,12 @@ const getTimelinePanelSize = (lines: number = 0, isCompact = false): PanelSizes 
     };
   }
 
-  const audioPanelSizeMin = isCompact ? AUDIO_PANEL_SIZE_MIN - 1 : AUDIO_PANEL_SIZE_MIN;
-  const audioPanelSizeMax = audioPanelSizeMin + (lines - 1) * AUDIO_PANEL_SIZE_LINE;
+  const audioPanelSizeMax = AUDIO_PANEL_SIZE_MIN + (lines - 1) * AUDIO_PANEL_SIZE_LINE;
 
   return {
     collapsedSize: minSize,
-    minSize: minSize + audioPanelSizeMin,
-    defaultSize: minSize + audioPanelSizeMin,
+    minSize: minSize + AUDIO_PANEL_SIZE_MIN,
+    defaultSize: minSize + AUDIO_PANEL_SIZE_MIN,
     maxSize: minSize + audioPanelSizeMax,
   };
 };
@@ -81,20 +79,13 @@ function AppLayoutMain() {
             className="flex flex-col bg-preview-surface layout-compact:rounded-tr-xl layout-compact:border-b-0 layout-compact:border-l-0"
             layoutRegion="workspace-preview"
           >
-            <div className="grid h-16 min-w-0 shrink-0 px-1">
-              <div className="flex h-9 min-w-0 items-center gap-1.5">
-                <ScrollArea
-                  className="mt-0.5 min-w-0 flex-1 pb-0.5"
-                  fadeColor="var(--preview-surface)"
-                  orientation="horizontal"
-                  scrollbarClassName="data-horizontal:h-1.25"
-                >
-                  <SourceTabs />
-                </ScrollArea>
-                <ExportActions />
+            <div className="flex items-center justify-between gap-2 p-1">
+              <div className="pl-2">
+                <SourceBreadcrumb />
               </div>
-              <SourceBreadcrumb />
+              <ExportActions />
             </div>
+
             <Separator className="bg-foreground/10" />
             <Preview />
           </AppLayoutPanel>

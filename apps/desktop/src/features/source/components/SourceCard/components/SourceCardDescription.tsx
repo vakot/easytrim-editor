@@ -14,7 +14,7 @@ function SourceCardDescription({
   className?: string;
 }) {
   const source = useSourceCardData();
-  const { sourcePath } = source.snapshot.source;
+  const { sourcePath } = source;
   const content = children ? children({ source }) : formatSourcePath(sourcePath);
 
   return (

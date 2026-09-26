@@ -48,7 +48,7 @@ function AudioPanel() {
   return (
     <section
       aria-labelledby="timeline-audio-title"
-      className="relative flex size-full min-h-0 flex-col"
+      className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
     >
       <h3
         className="mx-3 mb-2 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
@@ -57,8 +57,8 @@ function AudioPanel() {
         {t("audio.labels.title")} ({audioTracks.length})
       </h3>
 
-      <div className="grid min-w-0 grid-cols-(--editor-audio-track-grid-columns) items-center gap-3 pr-3 pl-1">
-        <div className="flex min-w-0 items-center gap-2 px-1 pr-2">
+      <div className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-2 px-3">
+        <div className="flex min-w-0 items-center gap-2 pr-2">
           <VolumeButton
             enabled={masterAudio.enabled}
             label={t("audio.labels.allTracks")}
@@ -118,8 +118,8 @@ function AudioPanel() {
         <Separator className="absolute bg-foreground/10" />
       </div>
 
-      <ScrollArea className="min-h-0 flex-1 pr-3 pl-1" data-testid="audio-tracks-scroll">
-        <div className="my-2">
+      <ScrollArea className="min-h-0 flex-1 pr-3" data-testid="audio-tracks-scroll">
+        <div className="my-2 pl-3">
           <AudioTracks
             onCommit={() => dispatch(commitActiveEditingInstanceDraft())}
             onPrepareWaveforms={(streamIndexes, width) =>

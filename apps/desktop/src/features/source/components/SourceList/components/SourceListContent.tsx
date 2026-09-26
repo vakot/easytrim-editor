@@ -1,20 +1,19 @@
+import { AnimatePresence } from "motion/react";
 import { useTranslation } from "react-i18next";
 
-import { TabsContent } from "@/components/ui/tabs";
-
 import { InfiniteScroll } from "@/components/infinite-scroll";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 
 import { useSourceListData } from "../contexts/SourceListContext";
 
-import {
-  SourceListFolder,
-  SourceListImported,
-  SourceListNone,
-  SourceListTime,
-} from "./SourceListGroups";
+import { SourceListItem } from "./SourceListItem";
 
-function SourceListContent() {
-  const { hasMore, isLoading, next, search, sources, visibleSources } = useSourceListData();
+interface SourceListContentProps {
+  className?: string;
+}
+
+function SourceListContent({ className }: SourceListContentProps) {
+  const { hasMore, next, search, sources, visibleSources } = useSourceListData();
   const { t } = useTranslation();
 
   if (search.trim() && sources.length === 0) {
@@ -26,20 +25,27 @@ function SourceListContent() {
   }
 
   return (
-    <InfiniteScroll hasMore={hasMore} isLoading={isLoading} next={next}>
-      <TabsContent className="min-w-0" value="none">
-        <SourceListNone sources={visibleSources} />
-      </TabsContent>
-      <TabsContent className="min-w-0" value="folder">
-        <SourceListFolder sources={visibleSources} />
-      </TabsContent>
-      <TabsContent className="min-w-0" value="time">
-        <SourceListTime sources={visibleSources} />
-      </TabsContent>
-      <TabsContent className="min-w-0" value="imported">
-        <SourceListImported sources={visibleSources} />
-      </TabsContent>
+    <InfiniteScroll className={className} hasMore={hasMore} next={next}>
+      <SourceListItems sources={visibleSources} />
     </InfiniteScroll>
+  );
+}
+
+function SourceListItems({ sources }: { sources: EditingInstanceListEntry[] }) {
+  const { matchesBySourceId } = useSourceListData();
+
+  return (
+    <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
+      <AnimatePresence initial={false}>
+        {sources.map((source) => (
+          <SourceListItem
+            key={source.id}
+            match={matchesBySourceId.get(source.id)}
+            source={source}
+          />
+        ))}
+      </AnimatePresence>
+    </ul>
   );
 }
 

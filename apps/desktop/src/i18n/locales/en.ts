@@ -249,14 +249,30 @@ export const en = {
   },
   queue: {
     actions: {
-      cancel: "Cancel",
-      skip: "Skip",
+      cancel: "Cancel export",
+      restore: "Restore edit",
+      revealOutput: "Reveal output",
+      retry: "Retry",
       start: "Start queue",
+      skip: "Skip",
     },
     labels: {
       deleteSource: "Delete source",
       onFinish: "On queue finished",
+      ExportQueue: "Render Queue",
+      routeFastCut: "Fast Cut",
+      routeOptimized: "Optimized render",
       title: "Queue",
+    },
+    status: {
+      canceled: "Canceled",
+      completed: "Completed",
+      failed: "Failed",
+      queued: "Queued",
+      rendering: "Rendering…",
+    },
+    messages: {
+      empty: "Export attempts will appear here.",
     },
     tooltips: {
       deleteSourceOnRenderFinish: "Delete the source after a successful render",
@@ -286,7 +302,6 @@ export const en = {
   source: {
     actions: {
       closeAllSources: "Close all open sources",
-      closeGroup: "Close group",
       revealInFileExplorer: "Reveal in File Explorer",
       revealInFileManager: "Reveal in File Manager",
       revealInFinder: "Reveal in Finder",
@@ -295,11 +310,6 @@ export const en = {
     labels: {
       drop: "Drop video to open",
       explorer: "Source explorer",
-      groupBy: "Group by:",
-      groupByFolder: "Folder",
-      groupByImportedAt: "Imported at",
-      groupByNone: "None",
-      groupByUpdatedAt: "Updated at",
       importedSources: "Imported Sources",
       nextSource: "Next source",
       previousSource: "Previous source",
@@ -318,14 +328,8 @@ export const en = {
       technicalDetails: "Technical details",
     },
     status: {
-      canceled: "Canceled",
-      completed: "Completed",
       deleted: "Deleted",
-      failed: "Failed",
       loading: "Loading…",
-      queued: "Queued",
-      ready: "Ready",
-      rendering: "Rendering…",
       missing: "Missing",
     },
     messages: {

@@ -12,7 +12,7 @@ function SourceCardMetadata({ className }: { className?: string }) {
   const source = useSourceCardData();
   const { t } = useTranslation();
   const unknown = t("common.status.unknown");
-  const fileSize = formatBytes(source.media?.sizeBytes, unknown);
+  const fileSize = formatBytes(source.fileSizeBytes, unknown);
 
   return (
     <div className={cn("flex items-center gap-1 text-xs text-muted-foreground", className)}>
@@ -29,7 +29,7 @@ function SourceCardMetadata({ className }: { className?: string }) {
       <span aria-hidden="true">·</span>
       <RelativeTimestamp
         label={t("source.labels.metadata.updatedAt")}
-        timestamp={source.snapshot.source.updatedAtMicros}
+        timestamp={source.updatedAtMicros}
       />
     </div>
   );

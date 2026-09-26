@@ -22,6 +22,7 @@ export type SourceAvailability = "available" | "deleted" | "missing";
 
 interface EditingInstanceListEntry {
   displayName: string;
+  durationMicros?: number;
   fileSizeBytes?: number;
   id: EditingInstanceId;
   importedAtMicros?: number;

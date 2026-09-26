@@ -79,7 +79,7 @@ function AudioPlayhead() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 inset-x-0 grid min-w-0 grid-cols-(--editor-audio-track-grid-columns) gap-3"
+      className="pointer-events-none absolute inset-0 inset-x-0 grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-2"
       data-slot="audio-playhead-grid"
     >
       <div className="relative col-start-2 mx-px" data-slot="audio-playhead-track">

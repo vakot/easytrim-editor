@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceSearchEntry } from "@/domain/editing-instance";
 
 import { createSourceSearcher } from "../source-search.utils";
 
@@ -8,19 +8,11 @@ function source(
   id: string,
   displayName: string,
   sourcePath = `C:/Media/${displayName}`,
-): EditingInstance {
+): EditingInstanceSearchEntry {
   return {
-    exportAttempts: [],
+    displayName,
     id,
-    origin: "source-import",
-    snapshot: {
-      audio: { master: { enabled: true, volumePercent: 100 }, mergeAudio: false, tracks: [] },
-      crop: null,
-      rotation: 0,
-      source: { displayName, sourcePath },
-      trim: { kind: "full-source" },
-    },
-    sourceAvailability: "available",
+    sourcePath,
   };
 }
 

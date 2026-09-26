@@ -13,14 +13,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
-import { cancelSourceExportQueue, startSourceExportQueue } from "@/app/store/thunks/export-thunks";
+import { useAppDispatch } from "@/app/store/redux-hooks";
 import {
   closeEditingInstancesRequested,
   restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
-import type { EditingInstance } from "@/domain/editing-instance";
 
 import { useSourceDelete } from "../contexts/source-delete-context";
 
@@ -30,15 +27,21 @@ type ActionElement = ReactElement<{
   onSelect?: (event: Event) => void;
 }>;
 
+interface SourceActionSource {
+  id: string;
+  sourceAvailability: "available" | "deleted" | "missing";
+  sourcePath: string;
+}
+
 interface SourceActionProps {
   children: ActionElement;
   event?: "click" | "select";
   itemId?: string;
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
-  source?: EditingInstance;
+  source?: SourceActionSource;
   sourcePath?: string;
-  sources?: EditingInstance[];
+  sources?: Array<Pick<SourceActionSource, "id">>;
 }
 
 /**
@@ -102,36 +105,6 @@ function CloseSources({ children, sources = [] }: SourceActionProps) {
 }
 
 /**
- * @name StartSourceExport
- * @description Adds per-source queue start behavior and disables the trigger when no export is queued.
- */
-function StartSourceExport({ children, event = "select", source }: SourceActionProps) {
-  const dispatch = useAppDispatch();
-  const queue = useAppSelector((state) => selectSourceExportQueueState(state, source?.id ?? ""));
-
-  return withAction(
-    withDisabled(children, !source || !queue.hasQueuedExports || queue.isRunning),
-    event,
-    () => {
-      if (source) void dispatch(startSourceExportQueue(source.id));
-    },
-  );
-}
-
-/**
- * @name CancelSourceExport
- * @description Adds per-source queue cancellation behavior and disables the trigger when the source is idle.
- */
-function CancelSourceExport({ children, event = "select", source }: SourceActionProps) {
-  const dispatch = useAppDispatch();
-  const queue = useAppSelector((state) => selectSourceExportQueueState(state, source?.id ?? ""));
-
-  return withAction(withDisabled(children, !source || !queue.isRunning), event, () => {
-    if (source) void dispatch(cancelSourceExportQueue(source.id));
-  });
-}
-
-/**
  * @name RestoreSource
  * @description Adds source restoration behavior to a compatible action trigger for a deleted source or a source path without an open instance.
  */
@@ -144,7 +117,7 @@ function RestoreSource({
 }: SourceActionProps) {
   const dispatch = useAppDispatch();
   const targetId = source?.id ?? itemId;
-  const targetPath = source?.snapshot.source.sourcePath ?? sourcePath;
+  const targetPath = source?.sourcePath ?? sourcePath;
 
   if (!targetPath || (source && source.sourceAvailability !== "deleted")) return null;
 
@@ -189,11 +162,4 @@ function withPreventedSelect(children: ActionElement) {
   });
 }
 
-export {
-  CancelSourceExport,
-  CloseSource,
-  CloseSources,
-  DeleteSource,
-  RestoreSource,
-  StartSourceExport,
-};
+export { CloseSource, CloseSources, DeleteSource, RestoreSource };

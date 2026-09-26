@@ -8,7 +8,7 @@ import type { ActivityAction } from "../../lib/activity-projection";
 
 import { ActivityFeedView } from "./components/ActivityFeedView";
 
-function ActivityFeed() {
+function ActivityFeed({ className }: { className?: string }) {
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const { currentSessionId, entries, sessions } = useActivityFeed();
 
@@ -24,6 +24,7 @@ function ActivityFeed() {
 
   return (
     <ActivityFeedView
+      className={className}
       currentAppVersion={getCurrentVersion()}
       currentSessionId={currentSessionId}
       entries={entries}

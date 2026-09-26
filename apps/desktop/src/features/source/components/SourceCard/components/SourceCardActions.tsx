@@ -35,7 +35,7 @@ function SourceCardActions({
   const [menuOpen, setMenuOpen] = useState(false);
   const { t } = useTranslation();
 
-  const { sourcePath } = source.snapshot.source;
+  const { sourcePath } = source;
   const showRestore = source.sourceAvailability === "deleted";
   const revealLabel = getRevealLabel(t);
 
@@ -54,7 +54,7 @@ function SourceCardActions({
 
         <DropdownMenuContent align="end">
           <DropdownMenuItem
-            disabled={showRestore}
+            disabled={source.sourceAvailability !== "available"}
             inset
             onSelect={() => void openFileLocation(sourcePath)}
           >

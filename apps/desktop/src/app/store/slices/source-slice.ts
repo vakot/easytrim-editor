@@ -19,7 +19,7 @@ type CapabilityState =
   | { status: "ready"; value: MediaCapabilities }
   | { error: AppError; status: "failed" };
 
-export type SourceStatus = "idle" | "loading-source" | "ready" | "failed";
+type SourceStatus = "idle" | "loading-source" | "ready" | "failed";
 
 interface SourceState {
   audioPanelStreamCount: number;
@@ -120,8 +120,6 @@ const selectSourceReady = (state: RootState): boolean =>
   state.source.status === "ready" && state.source.media !== null;
 
 const selectSourceLoadToken = (state: RootState): number => state.source.loadToken;
-const selectSourceStatus = (state: RootState): SourceStatus => state.source.status;
-
 export {
   capabilitiesChecking,
   capabilitiesFailed,
@@ -133,6 +131,5 @@ export {
   selectSourceMedia,
   selectSourceReady,
   selectSourceSelection,
-  selectSourceStatus,
   sourceReducer,
 };

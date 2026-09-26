@@ -2,46 +2,25 @@ import { createEvent, fireEvent, render, screen, within } from "@testing-library
 import userEvent from "@testing-library/user-event";
 import type { PropsWithChildren } from "react";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
-
-const openFileLocation = vi.hoisted(() => vi.fn());
-
-vi.mock("@/lib/tauri/media", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/tauri/media")>()),
-  openFileLocation,
-}));
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
-import { enqueueExport } from "@/app/store/integration/export-queue-runtime";
 import {
-  editingInstanceExportAttemptQueued,
-  editingInstanceExportCompleted,
-  editingInstanceExportStarted,
   editingInstancesAdded,
-  selectImportedEditingInstances,
+  selectSourceListEntries,
 } from "@/app/store/slices/editing-instances-slice";
-import { selectSourceQueueStarted } from "@/app/store/slices/export-slice";
-import { preferenceChanged } from "@/app/store/slices/preferences-slice";
-import { importedThumbnailLoading } from "@/app/store/slices/preview-slice";
 import { createAppStore } from "@/app/store/store";
-import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 import { firstSource, secondSource } from "@/test/source.fixtures";
 
-import { SourceDeleteProvider } from "../../../SourceDeleteProvider";
-import {
-  SourceList,
-  SourceListCloseAll,
-  SourceListContent,
-  SourceListSearch,
-  SourceListTabs,
-} from "../SourceList";
+import { SourceList, SourceListCloseAll, SourceListContent, SourceListSearch } from "../SourceList";
 
 vi.mock("../../SourceCard", () => {
   const Container = ({ children }: PropsWithChildren) => <div>{children}</div>;
   return {
-    SourceCard: ({ children, source }: PropsWithChildren<{ source: EditingInstance }>) => (
+    SourceCard: ({ children, source }: PropsWithChildren<{ source: EditingInstanceListEntry }>) => (
       <div data-testid={source.id}>{children}</div>
     ),
     SourceCardActions: Container,
@@ -54,6 +33,10 @@ vi.mock("../../SourceCard", () => {
 });
 
 describe("source queue controls", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("renders file, folder, and drag-and-drop actions when no sources are imported", () => {
     render(
       <Provider store={createAppStore()}>
@@ -197,225 +180,91 @@ describe("source queue controls", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Close all open sources" }));
-    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
+    expect(selectSourceListEntries(store.getState())).toHaveLength(2);
 
     const dialog = screen.getByRole("alertdialog");
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
-    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
+    expect(selectSourceListEntries(store.getState())).toHaveLength(2);
 
     await user.click(screen.getByRole("button", { name: "Close all open sources" }));
     await user.click(
       within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }),
     );
 
-    expect(selectImportedEditingInstances(store.getState())).toHaveLength(0);
+    expect(selectSourceListEntries(store.getState())).toHaveLength(0);
   });
 
-  it("closes every source in a grouped source list action", async () => {
-    const user = userEvent.setup();
-    const store = createAppStore();
-    store.dispatch(
-      editingInstancesAdded(
-        [firstSource, secondSource].map((source, index) => ({
-          id: `source-${index}`,
-          origin: "source-import" as const,
-          snapshot: createDefaultEditorSnapshot(source, false),
-          sourceAvailability: "available" as const,
-          exportAttempts: [],
-        })),
-      ),
-    );
+  it("uses one near-viewport observer to request and release thumbnail demand", () => {
+    type ObserverRecord = {
+      callback: IntersectionObserverCallback;
+      observed: Element[];
+      rootMargin?: string;
+      trigger: (element: Element, isIntersecting: boolean) => void;
+    };
+    const observers: ObserverRecord[] = [];
+    class FakeIntersectionObserver {
+      readonly observed: Element[] = [];
+      readonly rootMargin = "600px 0px";
 
-    render(
-      <TooltipProvider>
-        <Provider store={store}>
-          <SourceList>
-            {() => (
-              <>
-                <SourceListTabs />
-                <SourceListContent />
-              </>
-            )}
-          </SourceList>
-        </Provider>
-      </TooltipProvider>,
-    );
+      constructor(readonly callback: IntersectionObserverCallback) {
+        observers.push(this);
+      }
 
-    await user.click(screen.getByRole("tab", { name: "Folder" }));
-    await user.click(screen.getByRole("button", { name: "Close group" }));
-    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
-    await user.click(
-      within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }),
-    );
+      observe(element: Element) {
+        this.observed.push(element);
+      }
 
-    expect(selectImportedEditingInstances(store.getState())).toHaveLength(0);
-  });
+      unobserve(element: Element) {
+        const index = this.observed.indexOf(element);
+        if (index !== -1) this.observed.splice(index, 1);
+      }
 
-  it("starts and cancels only the chosen source without removing pending attempts", async () => {
-    const user = userEvent.setup();
-    const store = createAppStore();
-    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
-    const snapshot = createDefaultEditorSnapshot(firstSource, false);
-    for (const id of ["a", "b"]) {
-      store.dispatch(
-        editingInstancesAdded([
-          {
-            id,
-            origin: "source-import",
-            snapshot,
-            sourceAvailability: "available",
-            exportAttempts: [],
-          },
-        ]),
-      );
-      store.dispatch(importedThumbnailLoading({ instanceId: id }));
-      store.dispatch(
-        editingInstanceExportAttemptQueued({
-          id,
-          attempt: createExportAttempt({
-            id: `export-${id}`,
-            capturedAt: 1,
-            snapshot,
-            route: "fast",
-            request: {
-              sourcePath: firstSource.sourcePath,
-              trim: { startMicros: 0, endMicros: 1_000_000 },
-              audioTracks: [],
-              mergeAudio: false,
-              rotationDegrees: 0,
-            },
-            output: { outputId: id, displayName: `${id}.mp4`, displayPath: `C:/Exports/${id}.mp4` },
-          }),
-        }),
-      );
+      disconnect() {
+        this.observed.length = 0;
+      }
+
+      trigger(element: Element, isIntersecting: boolean) {
+        this.callback(
+          [{ isIntersecting, target: element } as IntersectionObserverEntry],
+          this as unknown as IntersectionObserver,
+        );
+      }
     }
-    render(
-      <Provider store={store}>
-        <SourceDeleteProvider>
-          <SourceList />
-        </SourceDeleteProvider>
-      </Provider>,
-    );
-    const sourceA = within(screen.getByTestId("a").closest("li")!);
-    const sourceB = within(screen.getByTestId("b").closest("li")!);
-    await user.click(sourceB.getByRole("button", { name: "Start queue" }));
-    expect(selectSourceQueueStarted(store.getState(), "b")).toBe(true);
-    expect(selectSourceQueueStarted(store.getState(), "a")).toBe(false);
-    expect(sourceA.getByRole("button", { name: "Start queue" })).toBeEnabled();
-    await user.click(sourceB.getByText("Cancel", { selector: "button" }));
-    expect(selectSourceQueueStarted(store.getState(), "b")).toBe(false);
-    expect(sourceB.getByRole("button", { name: "Start queue" })).toBeEnabled();
-    expect(store.getState().editingInstances.entities.b?.exportAttempts[0]?.state.status).toBe(
-      "queued",
-    );
-  });
+    vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
 
-  it("cancels an individual queued export", async () => {
-    const user = userEvent.setup();
     const store = createAppStore();
-    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
-    const snapshot = createDefaultEditorSnapshot(firstSource, false);
-    const attempt = createExportAttempt({
-      id: "export-first",
-      capturedAt: 1,
-      snapshot,
-      route: "fast",
-      request: {
-        sourcePath: firstSource.sourcePath,
-        trim: { startMicros: 0, endMicros: 1_000_000 },
-        audioTracks: [],
-        mergeAudio: false,
-        rotationDegrees: 0,
-      },
-      output: { outputId: "first", displayName: "first.mp4", displayPath: "C:/Exports/first.mp4" },
-    });
-
     store.dispatch(
       editingInstancesAdded([
         {
-          id: "first",
+          id: "source",
           origin: "source-import",
-          snapshot,
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
           sourceAvailability: "available",
           exportAttempts: [],
         },
       ]),
     );
-    store.dispatch(importedThumbnailLoading({ instanceId: "first" }));
-    store.dispatch(editingInstanceExportAttemptQueued({ id: "first", attempt }));
-    enqueueExport("first", attempt, store.dispatch, store.getState);
+    const dispatchSpy = vi.spyOn(store, "dispatch");
 
     render(
       <Provider store={store}>
-        <SourceDeleteProvider>
-          <SourceList />
-        </SourceDeleteProvider>
+        <SourceList>
+          <SourceListContent />
+        </SourceList>
       </Provider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(store.getState().editingInstances.entities.first?.exportAttempts[0]?.state.status).toBe(
-      "canceled",
-    );
-  });
+    expect(observers).toHaveLength(1);
+    expect(observers[0]?.rootMargin).toBe("600px 0px");
+    const cardElement = screen.getByTestId("source");
+    const row = cardElement.parentElement;
+    if (!row) throw new Error("Expected source row");
+    expect(observers[0]?.observed).toContain(row);
 
-  it("reveals the output for a completed export", async () => {
-    const user = userEvent.setup();
-    const store = createAppStore();
-    const snapshot = createDefaultEditorSnapshot(firstSource, false);
-    const attempt = createExportAttempt({
-      id: "export-first",
-      capturedAt: 1,
-      snapshot,
-      route: "fast",
-      request: {
-        sourcePath: firstSource.sourcePath,
-        trim: { startMicros: 0, endMicros: 1_000_000 },
-        audioTracks: [],
-        mergeAudio: false,
-        rotationDegrees: 0,
-      },
-      output: { outputId: "first", displayName: "first.mp4", displayPath: "C:/Exports/first.mp4" },
-    });
-
-    store.dispatch(
-      editingInstancesAdded([
-        {
-          id: "first",
-          origin: "source-import",
-          snapshot,
-          sourceAvailability: "available",
-          exportAttempts: [],
-        },
-      ]),
+    observers[0]?.trigger(row, true);
+    observers[0]?.trigger(row, false);
+    expect(dispatchSpy.mock.calls.filter(([action]) => typeof action === "function")).toHaveLength(
+      2,
     );
-    store.dispatch(importedThumbnailLoading({ instanceId: "first" }));
-    store.dispatch(editingInstanceExportAttemptQueued({ id: "first", attempt }));
-    store.dispatch(
-      editingInstanceExportStarted({ attemptId: attempt.id, id: "first", startedAt: 2 }),
-    );
-    store.dispatch(
-      editingInstanceExportCompleted({
-        attemptId: attempt.id,
-        durationMs: 1,
-        id: "first",
-        result: {
-          displayName: "first.mp4",
-          displayPath: "C:/Exports/first.mp4",
-          operationId: "operation-1",
-        },
-      }),
-    );
-
-    render(
-      <Provider store={store}>
-        <SourceDeleteProvider>
-          <SourceList />
-        </SourceDeleteProvider>
-      </Provider>,
-    );
-
-    await user.click(screen.getByRole("button", { name: /Reveal in/ }));
-    expect(openFileLocation).toHaveBeenCalledWith("C:/Exports/first.mp4");
   });
 });

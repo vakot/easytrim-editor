@@ -25,7 +25,6 @@ import {
   selectActiveEditingInstance,
   selectActiveInstanceId,
   selectEditingInstanceById,
-  selectExportQueueById,
 } from "@/app/store/slices/editing-instances-slice";
 import {
   exportLaunchFailed,
@@ -95,21 +94,20 @@ const startSourceExportQueue =
     setExportQueueExecutionEnabled(true, dispatch, getState, instanceId);
   };
 
-const cancelSourceExportQueue =
-  (instanceId: string): AppThunk =>
-  async (dispatch, getState) => {
-    setExportQueueExecutionEnabled(false, dispatch, getState, instanceId);
-    const active = selectExportQueueById(getState(), instanceId).find(
-      ({ attempt }) => attempt.state.status === "rendering",
-    );
-
-    if (active) await cancelAndRequeueExport(instanceId, active.attempt.id, getState);
-  };
+const startExportQueue = (): AppThunk => (dispatch, getState) => {
+  setExportQueueExecutionEnabled(true, dispatch, getState);
+};
 
 const cancelExportAttemptRequested =
   ({ attemptId, instanceId }: { attemptId: string; instanceId: string }): AppThunk =>
   async (_dispatch, getState) => {
     await cancelQueuedExport(instanceId, attemptId, getState);
+  };
+
+const requeueExportAttemptRequested =
+  ({ attemptId, instanceId }: { attemptId: string; instanceId: string }): AppThunk =>
+  async (_dispatch, getState) => {
+    await cancelAndRequeueExport(instanceId, attemptId, getState);
   };
 
 const openOptimizedExportDialog =
@@ -354,11 +352,12 @@ function getTotalFrames(
 
 export {
   cancelExportAttemptRequested,
-  cancelSourceExportQueue,
   loadQueueFinishActions,
   openOptimizedExportDialog,
   optimizedExportSettingsChangedRequested,
   refreshOptimizedExportPlan,
+  requeueExportAttemptRequested,
+  startExportQueue,
   startFastCutRequested,
   startOptimizedExportRequested,
   startSourceExportQueue,

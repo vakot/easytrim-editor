@@ -249,14 +249,30 @@ export const sk = {
   },
   queue: {
     actions: {
-      cancel: "Zrušiť",
-      skip: "Preskočiť",
+      cancel: "Zrušiť export",
+      restore: "Obnoviť úpravu",
+      revealOutput: "Zobraziť výstup",
+      retry: "Opakovať",
       start: "Spustiť front",
+      skip: "Preskočiť",
     },
     labels: {
       deleteSource: "Odstrániť zdroj",
       onFinish: "Po dokončení frontu",
+      ExportQueue: "Front vykresľovania",
+      routeFastCut: "Rýchly strih",
+      routeOptimized: "Optimalizované vykreslenie",
       title: "Front",
+    },
+    status: {
+      canceled: "Zrušené",
+      completed: "Dokončené",
+      failed: "Zlyhalo",
+      queued: "Vo fronte",
+      rendering: "Vykresľuje sa…",
+    },
+    messages: {
+      empty: "Exporty sa zobrazia tu.",
     },
     tooltips: {
       deleteSourceOnRenderFinish: "Po úspešnom vykreslení odstráni zdroj",
@@ -286,7 +302,6 @@ export const sk = {
   source: {
     actions: {
       closeAllSources: "Zavrieť všetky otvorené zdroje",
-      closeGroup: "Zavrieť skupinu",
       revealInFileExplorer: "Zobraziť v Prieskumníkovi súborov",
       revealInFileManager: "Zobraziť v správcovi súborov",
       revealInFinder: "Zobraziť vo Finderi",
@@ -295,11 +310,6 @@ export const sk = {
     labels: {
       drop: "Pustením otvoríte video",
       explorer: "Prieskumník zdrojov",
-      groupBy: "Zoskupiť podľa:",
-      groupByFolder: "Priečinok",
-      groupByImportedAt: "Importované",
-      groupByNone: "Žiadne",
-      groupByUpdatedAt: "Aktualizované",
       importedSources: "Importované zdroje",
       nextSource: "Nasledujúci zdroj",
       previousSource: "Predchádzajúci zdroj",
@@ -318,14 +328,8 @@ export const sk = {
       technicalDetails: "Technické podrobnosti",
     },
     status: {
-      canceled: "Zrušené",
-      completed: "Dokončené",
       deleted: "Odstránené",
-      failed: "Zlyhalo",
       loading: "Načítava sa…",
-      queued: "Vo fronte",
-      ready: "Pripravené",
-      rendering: "Vykresľuje sa…",
       missing: "Chýba",
     },
     messages: {
