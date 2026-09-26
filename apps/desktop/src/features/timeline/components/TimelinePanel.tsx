@@ -185,11 +185,11 @@ function PlaybackVolumeControl() {
         transition={{ duration: 0.12 }}
         variants={{
           collapsed: { maxWidth: 0, opacity: 0 },
-          expanded: { maxWidth: 184, opacity: 1 },
+          expanded: { maxWidth: 176, opacity: 1 },
         }}
       >
         <div className="px-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <Slider
               aria-label={t("preview.labels.playbackVolume")}
               className="w-30"
