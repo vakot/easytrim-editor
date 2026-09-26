@@ -59,12 +59,12 @@ const AudioTrackRow = memo(function AudioTrackRow({
         onPointerLeave={() => setHovered(false)}
       >
         <VolumeButton
-          enabled={track.enabled}
-          label={
+          aria-label={
             track.enabled
               ? t("audio.actions.muteTrack", { title })
               : t("audio.actions.enableTrack", { title })
           }
+          enabled={track.enabled}
           onClick={() => onToggle(stream.streamIndex)}
         />
         <div className="relative min-w-0 flex-1">

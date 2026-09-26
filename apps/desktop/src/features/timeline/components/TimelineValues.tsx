@@ -4,13 +4,14 @@ import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { cn } from "@/lib/class-names.utils";
 
 import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
 
 import styles from "./TimelinePanel.module.css";
 import { TimelineTimeValue } from "./TimelineTimeValue";
 
-function TimelineValues() {
+function TimelineValues({ className }: { className?: string }) {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
   const playback = usePlayback();
@@ -22,7 +23,7 @@ function TimelineValues() {
   return (
     <dl
       aria-label={t("timeline.accessibility.trimValues")}
-      className={`${styles.timelineValues} m-0 flex gap-5 justify-self-end`}
+      className={cn(styles.timelineValues, "m-0 flex gap-5 justify-self-end", className)}
       data-slot="timeline-values"
     >
       <TimelineTimeValue

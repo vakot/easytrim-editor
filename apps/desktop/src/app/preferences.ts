@@ -8,16 +8,19 @@ import {
 } from "@/app/theme/theme";
 
 export type ActivityFeedView = "default" | "compact" | "branch";
+export const DEFAULT_PLAYBACK_VOLUME_PERCENT = 100;
 
 interface Preferences {
   activityFeedView: ActivityFeedView;
   autoStartQueueEnabled: boolean;
   customPrimaryColor: CustomPrimaryColor;
   deleteSourceOnRenderFinish: boolean;
+  lastAudiblePlaybackVolumePercent: number;
   lastSeenChangelogVersion: string | null;
   layoutDensity: LayoutDensity;
   loopPlaybackEnabledDefault: boolean;
   mergeAudioEnabledDefault: boolean;
+  playbackVolumePercent: number;
   primaryColor: PrimaryColor;
   segmentPlaybackEnabledDefault: boolean;
   snapPlaybackEnabledDefault: boolean;
@@ -39,6 +42,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   layoutDensity: DEFAULT_LAYOUT_DENSITY,
   theme: "system",
   primaryColor: DEFAULT_PRIMARY_COLOR,
+  lastAudiblePlaybackVolumePercent: DEFAULT_PLAYBACK_VOLUME_PERCENT,
+  playbackVolumePercent: DEFAULT_PLAYBACK_VOLUME_PERCENT,
   customPrimaryColor: DEFAULT_CUSTOM_PRIMARY_COLOR,
   lastSeenChangelogVersion: null,
 };

@@ -7,19 +7,15 @@ import {
   editorToolsReducer,
   editorToolsReset,
   loopPlaybackToggled,
-  playbackSpeedChanged,
   segmentPlaybackToggled,
   selectEditorTools,
   selectLoopPlaybackEnabled,
-  selectPlaybackSpeed,
   selectSegmentPlaybackEnabled,
   selectSnapPlaybackEnabled,
   snapPlaybackChanged,
   snapPlaybackToggled,
 } from "@/app/store/slices/editor-tools-slice";
 import type { RootState } from "@/app/store/store";
-import { DEFAULT_PLAYBACK_SPEED, type PlaybackSpeed } from "@/domain/playback-speed";
-
 describe("editor tools Redux domain", () => {
   it("initializes active tools from supplied Preferences defaults", () => {
     const defaults: Preferences = {
@@ -31,7 +27,6 @@ describe("editor tools Redux domain", () => {
       snapPlaybackEnabled: true,
       loopPlaybackEnabled: false,
       segmentPlaybackEnabled: true,
-      playbackSpeed: DEFAULT_PLAYBACK_SPEED,
     });
   });
 
@@ -46,7 +41,6 @@ describe("editor tools Redux domain", () => {
     expect(nextState.snapPlaybackEnabled).toBe(false);
     expect(nextState.loopPlaybackEnabled).toBe(initialState.loopPlaybackEnabled);
     expect(nextState.segmentPlaybackEnabled).toBe(initialState.segmentPlaybackEnabled);
-    expect(nextState.playbackSpeed).toBe(initialState.playbackSpeed);
   });
 
   it("keeps active tools independent from Preference actions", () => {
@@ -71,10 +65,9 @@ describe("editor tools Redux domain", () => {
     expect(nextState.snapPlaybackEnabled).toBe(false);
     expect(nextState.loopPlaybackEnabled).toBe(initialState.loopPlaybackEnabled);
     expect(nextState.segmentPlaybackEnabled).toBe(initialState.segmentPlaybackEnabled);
-    expect(nextState.playbackSpeed).toBe(initialState.playbackSpeed);
   });
 
-  it("supports mode toggles and the allowed playback-speed values", () => {
+  it("supports mode toggles", () => {
     const initialState = editorToolsReducer(
       undefined,
       editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
@@ -85,11 +78,8 @@ describe("editor tools Redux domain", () => {
       segmentPlaybackToggled(),
     );
 
-    const speed: PlaybackSpeed = 2;
-
     expect(modeState.loopPlaybackEnabled).toBe(false);
     expect(modeState.segmentPlaybackEnabled).toBe(false);
-    expect(editorToolsReducer(modeState, playbackSpeedChanged(speed)).playbackSpeed).toBe(speed);
   });
 
   it("resets active tools from the supplied current Preferences values", () => {
@@ -109,7 +99,7 @@ describe("editor tools Redux domain", () => {
 
     expect(
       editorToolsReducer(
-        editorToolsReducer(activeState, playbackSpeedChanged(3)),
+        activeState,
         editorToolsReset(createEditorToolsStateFromPreferences(currentDefaults)),
       ),
     ).toEqual(createEditorToolsStateFromPreferences(currentDefaults));
@@ -120,7 +110,6 @@ describe("editor tools Redux domain", () => {
       snapPlaybackEnabled: false,
       loopPlaybackEnabled: true,
       segmentPlaybackEnabled: false,
-      playbackSpeed: 1.5 as PlaybackSpeed,
     };
 
     const state = { editorTools } as RootState;
@@ -129,6 +118,5 @@ describe("editor tools Redux domain", () => {
     expect(selectSnapPlaybackEnabled(state)).toBe(false);
     expect(selectLoopPlaybackEnabled(state)).toBe(true);
     expect(selectSegmentPlaybackEnabled(state)).toBe(false);
-    expect(selectPlaybackSpeed(state)).toBe(1.5);
   });
 });

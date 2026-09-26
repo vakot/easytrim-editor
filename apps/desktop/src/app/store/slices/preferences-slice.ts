@@ -7,6 +7,7 @@ import {
 } from "@/app/layout/lib/layout-density";
 import {
   type ActivityFeedView,
+  DEFAULT_PLAYBACK_VOLUME_PERCENT,
   DEFAULT_PREFERENCES,
   type PreferenceKey,
   type Preferences,
@@ -34,6 +35,18 @@ const preferencesSlice = createSlice({
   reducers: {
     preferenceChanged: (state, action: PayloadAction<{ enabled: boolean; key: PreferenceKey }>) => {
       state[action.payload.key] = action.payload.enabled;
+    },
+    playbackVolumeChanged: (state, action: PayloadAction<number>) => {
+      const volumePercent = Number.isFinite(action.payload)
+        ? Math.max(0, Math.min(100, action.payload))
+        : DEFAULT_PLAYBACK_VOLUME_PERCENT;
+
+      state.playbackVolumePercent = volumePercent;
+      if (volumePercent > 0) state.lastAudiblePlaybackVolumePercent = volumePercent;
+    },
+    playbackVolumeToggled: (state) => {
+      state.playbackVolumePercent =
+        state.playbackVolumePercent > 0 ? 0 : state.lastAudiblePlaybackVolumePercent;
     },
     activityFeedViewChanged: (state, action: PayloadAction<ActivityFeedView>) => {
       state.activityFeedView = action.payload;
@@ -97,6 +110,8 @@ const {
   customPrimaryColorChanged,
   layoutDensityChanged,
   layoutReset,
+  playbackVolumeChanged,
+  playbackVolumeToggled,
   preferenceChanged,
   preferencesReset,
   primaryColorChanged,
@@ -107,6 +122,9 @@ const {
 const preferencesReducer = preferencesSlice.reducer;
 
 const selectPreferences = (state: RootState): Preferences => state.preferences;
+const selectPlaybackVolumePercent = (state: RootState): number =>
+  selectPreferences(state).playbackVolumePercent;
+
 const selectMergeAudioEnabledDefault = (state: RootState): boolean =>
   selectPreferences(state).mergeAudioEnabledDefault;
 
@@ -158,6 +176,8 @@ export {
   customPrimaryColorChanged,
   layoutDensityChanged,
   layoutReset,
+  playbackVolumeChanged,
+  playbackVolumeToggled,
   preferenceChanged,
   preferencesReducer,
   preferencesReset,
@@ -170,6 +190,7 @@ export {
   selectLayoutDensity,
   selectLoopPlaybackEnabledDefault,
   selectMergeAudioEnabledDefault,
+  selectPlaybackVolumePercent,
   selectPreferences,
   selectPrimaryColor,
   selectPrimaryColorKey,

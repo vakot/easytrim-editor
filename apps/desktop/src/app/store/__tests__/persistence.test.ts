@@ -7,12 +7,12 @@ import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persisten
 import {
   createEditorToolsStateFromPreferences,
   editorToolsReset,
-  playbackSpeedChanged,
 } from "@/app/store/slices/editor-tools-slice";
 import {
   optimizedExportDialogOpened,
   queueFinishActionChanged,
 } from "@/app/store/slices/export-slice";
+import { playbackSpeedChanged } from "@/app/store/slices/playback-controls-slice";
 import {
   activityFeedViewChanged,
   customPrimaryColorChanged,
@@ -144,7 +144,7 @@ describe("Redux Persist store integration", () => {
       customPrimaryColor: "#123456",
     });
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(false);
-    expect(store.getState().editorTools.playbackSpeed).toBe(1);
+    expect(store.getState().playbackControls.playbackSpeed).toBe(1);
     expect(store.getState()).not.toHaveProperty("theme");
     expect(store.getState().preferences.activityFeedView).toBe("compact");
 
@@ -182,6 +182,7 @@ describe("Redux Persist store integration", () => {
         loopPlaybackEnabledDefault: false,
       }),
     });
+    expect(store.getState().playbackControls.playbackSpeed).toBe(3);
   });
 
   it("never persists active editor tools", async () => {
@@ -192,6 +193,7 @@ describe("Redux Persist store integration", () => {
 
     const persistedRoot = await readPersistedRoot(storage);
     expect(persistedRoot).not.toHaveProperty("editorTools");
+    expect(persistedRoot).not.toHaveProperty("playbackControls");
     expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
       ...DEFAULT_PREFERENCES,
     });

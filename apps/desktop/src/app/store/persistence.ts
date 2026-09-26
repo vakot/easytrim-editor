@@ -11,7 +11,11 @@ import {
 import reduxStorageModule from "redux-persist/lib/storage";
 
 import { isLayoutDensity } from "@/app/layout/lib/layout-density";
-import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
+import {
+  DEFAULT_PLAYBACK_VOLUME_PERCENT,
+  DEFAULT_PREFERENCES,
+  type Preferences,
+} from "@/app/preferences";
 import { isCustomPrimaryColor, isPrimaryColor, isThemePreference } from "@/app/theme/theme";
 
 interface LegacyThemeState {
@@ -71,6 +75,19 @@ const preferencesTransform = createTransform(
       Object.entries(state).filter(([key]) => key !== "editorSourceCollapsibleState"),
     ) as Partial<Preferences>;
 
+    const playbackVolumePercent =
+      typeof persistedPreferences.playbackVolumePercent === "number" &&
+      Number.isFinite(persistedPreferences.playbackVolumePercent)
+        ? Math.max(0, Math.min(100, persistedPreferences.playbackVolumePercent))
+        : DEFAULT_PLAYBACK_VOLUME_PERCENT;
+
+    const lastAudiblePlaybackVolumePercent =
+      typeof persistedPreferences.lastAudiblePlaybackVolumePercent === "number" &&
+      Number.isFinite(persistedPreferences.lastAudiblePlaybackVolumePercent) &&
+      persistedPreferences.lastAudiblePlaybackVolumePercent > 0
+        ? Math.min(100, persistedPreferences.lastAudiblePlaybackVolumePercent)
+        : playbackVolumePercent || DEFAULT_PLAYBACK_VOLUME_PERCENT;
+
     return {
       ...DEFAULT_PREFERENCES,
       ...persistedPreferences,
@@ -85,6 +102,8 @@ const preferencesTransform = createTransform(
       customPrimaryColor: isCustomPrimaryColor(persistedPreferences.customPrimaryColor)
         ? persistedPreferences.customPrimaryColor
         : DEFAULT_PREFERENCES.customPrimaryColor,
+      lastAudiblePlaybackVolumePercent,
+      playbackVolumePercent,
       primaryColor: isPrimaryColor(persistedPreferences.primaryColor)
         ? persistedPreferences.primaryColor
         : DEFAULT_PREFERENCES.primaryColor,
