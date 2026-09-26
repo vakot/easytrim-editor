@@ -260,7 +260,7 @@ export const en = {
       onFinish: "On queue finished",
       ExportQueue: "Render Queue",
       routeFastCut: "Fast Cut",
-      routeOptimized: "Optimized render",
+      routeOptimized: "Optimized",
       title: "Queue",
     },
     status: {

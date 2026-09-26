@@ -262,7 +262,7 @@ export const ru = {
       onFinish: "После завершения очереди",
       ExportQueue: "Очередь рендеринга",
       routeFastCut: "Быстрая нарезка",
-      routeOptimized: "Оптимизированный рендер",
+      routeOptimized: "Оптимизированный",
       title: "Очередь",
     },
     status: {

@@ -260,7 +260,7 @@ export const sk = {
       onFinish: "Po dokončení frontu",
       ExportQueue: "Front vykresľovania",
       routeFastCut: "Rýchly strih",
-      routeOptimized: "Optimalizované vykreslenie",
+      routeOptimized: "Optimalizované",
       title: "Front",
     },
     status: {
