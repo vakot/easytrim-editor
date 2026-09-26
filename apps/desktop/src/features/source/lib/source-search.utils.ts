@@ -22,13 +22,15 @@ const sourceSearchOptions = {
 } satisfies IFuseOptions<EditingInstanceSearchEntry>;
 
 function createSourceSearcher(sources: EditingInstanceSearchEntry[]) {
-  const fuse = new Fuse(sources, sourceSearchOptions);
+  let fuse: Fuse<EditingInstanceSearchEntry> | undefined;
 
   return (query: string): SourceSearchResult[] => {
     const normalizedQuery = query.trim();
     if (!normalizedQuery) {
       return sources.map((source) => ({ displayNameRanges: [], source, sourcePathRanges: [] }));
     }
+
+    fuse ??= new Fuse(sources, sourceSearchOptions);
 
     return fuse.search(normalizedQuery).map((result) => {
       const nameMatch = result.matches?.find(({ key }) => key === "displayName");

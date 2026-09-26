@@ -313,6 +313,7 @@ describe("source queue controls", () => {
     );
 
     expect(virtuosoHarness.props?.data).toHaveLength(1_400);
+    expect(virtuosoHarness.props?.data).toBe(selectSourceListEntries(store.getState()));
     expect(virtuosoHarness.props?.computeItemKey(1399, virtuosoHarness.props.data[1399]!)).toBe(
       "source-1399",
     );
