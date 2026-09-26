@@ -66,6 +66,7 @@ export const sk = {
         previewTransform: "Náhľad / Transformácia",
         queueOnFinishedApplication: "Front / Po dokončení / Aplikácia",
         queueOnFinishedSource: "Front / Po dokončení / Zdroj",
+        go: "Prejsť",
       },
       explorer: "Prieskumník",
       activityFeed: "Prehľad aktivít",
@@ -310,6 +311,8 @@ export const sk = {
       drop: "Pustením otvoríte video",
       explorer: "Prieskumník zdrojov",
       importedSources: "Importované zdroje",
+      nextSource: "Nasledujúci zdroj",
+      previousSource: "Predchádzajúci zdroj",
       metadata: {
         bitrate: "Dátový tok",
         container: "Kontajner",
@@ -343,6 +346,9 @@ export const sk = {
       restorePreviousSession_one: "Obnoviť predchádzajúcu reláciu · {{count}} zdroj",
       restorePreviousSession_other: "Obnoviť predchádzajúcu reláciu · {{count}} zdrojov",
       previewUnavailable: "Náhľad nie je dostupný",
+    },
+    tooltips: {
+      withShortcut: "{{label}} ({{shortcut}})",
     },
     dialogs: {
       close: {

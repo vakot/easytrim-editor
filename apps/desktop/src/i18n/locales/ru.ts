@@ -64,6 +64,7 @@ export const ru = {
         previewTransform: "Предпросмотр / Трансформация",
         queueOnFinishedApplication: "Очередь / После завершения / Приложение",
         queueOnFinishedSource: "Очередь / После завершения / Источник",
+        go: "Перейти",
       },
       explorer: "Проводник",
       activityFeed: "Лента активности",
@@ -312,6 +313,8 @@ export const ru = {
       drop: "Перетащите видео, чтобы открыть",
       explorer: "Проводник",
       importedSources: "Импортированные источники",
+      nextSource: "Следующий источник",
+      previousSource: "Предыдущий источник",
       metadata: {
         bitrate: "Битрейт",
         container: "Контейнер",
@@ -345,6 +348,9 @@ export const ru = {
       restorePreviousSession_one: "Восстановить предыдущий сеанс · {{count}} источник",
       restorePreviousSession_other: "Восстановить предыдущий сеанс · источников: {{count}}",
       previewUnavailable: "Предпросмотр недоступен",
+    },
+    tooltips: {
+      withShortcut: "{{label}} ({{shortcut}})",
     },
     dialogs: {
       close: {

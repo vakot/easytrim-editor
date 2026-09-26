@@ -11,7 +11,7 @@ type ShortcutPlatform = "macos" | "other";
 interface ApplicationShortcut {
   code: string;
   key: string;
-  modifier: "control" | "primary";
+  modifier: "alt" | "control" | "primary";
 }
 
 interface ApplicationCommandGroupMetadata {

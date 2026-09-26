@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { AppCommandCenter } from "@/app/components/AppCommandCenter";
 import { MenuBar } from "@/app/components/MenuBar";
 import { TitleBar, TitleBarWindowActions } from "@/app/components/TitleBar";
+import { SourceNavigation } from "@/features/source";
 
 import { AppLayoutControls } from "./AppLayoutControls";
 
@@ -22,8 +23,10 @@ function AppLayoutHeader() {
         <MenuBar />
       </div>
 
-      <div className="max-w-md flex-1/2">
-        <AppCommandCenter />
+      <div className="flex max-w-lg flex-1/2 justify-center px-15">
+        <AppCommandCenter>
+          <SourceNavigation className="-mx-15 mr-1" />
+        </AppCommandCenter>
       </div>
 
       <div className="flex h-full flex-1 justify-end gap-3">

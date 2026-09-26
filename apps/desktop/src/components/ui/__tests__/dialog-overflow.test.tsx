@@ -8,13 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "../dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../dialog";
 
 const longFilename =
   "render-output-2026-09-25-super-high-resolution-source-with-a-very-long-filename.mp4";
