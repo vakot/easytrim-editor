@@ -25,7 +25,7 @@ import { cn } from "@/lib/class-names.utils";
 
 const MotionButton = motion.create(Button);
 
-function AppCommandCenter() {
+function AppCommandCenter({ children }: { children?: React.ReactNode }) {
   const capabilities = useAppSelector(selectCapabilities);
   const [startupComplete, setStartupComplete] = useState(false);
   const shouldReduceMotion = useReducedMotion();
@@ -44,10 +44,14 @@ function AppCommandCenter() {
   return (
     <MediaToolsStatus>
       <PopoverAnchor asChild>
-        <ButtonGroup className="w-full max-w-lg justify-center">
+        <ButtonGroup className="flex-1 items-center justify-center transition-[flex-grow,flex-basis] duration-300 ease-out motion-reduce:transition-none">
+          {children}
           {startupComplete && <AppCommandCenterTrigger />}
-          <MediaToolsStatusTrigger presentation={startupComplete ? "compact" : "default"} />
-          <MediaToolsStatusContent className="w-(--radix-popover-trigger-width) max-w-lg" />
+          <MediaToolsStatusTrigger
+            className={cn(!startupComplete && "rounded-lg!")}
+            presentation={startupComplete ? "compact" : "default"}
+          />
+          <MediaToolsStatusContent className="w-(--radix-popover-trigger-width)" />
         </ButtonGroup>
       </PopoverAnchor>
     </MediaToolsStatus>
@@ -67,10 +71,7 @@ function AppCommandCenterTrigger() {
         borderWidth: 1,
       }}
       aria-label={t("app.messages.commandPalettePlaceholder")}
-      className={cn(
-        "min-w-0 basis-0 overflow-hidden px-0 whitespace-nowrap text-muted-foreground",
-        "transition-colors",
-      )}
+      className="min-w-0 basis-0 overflow-hidden rounded-l-lg! px-0 whitespace-nowrap text-muted-foreground transition-colors"
       data-no-drag="true"
       initial={
         shouldReduceMotion

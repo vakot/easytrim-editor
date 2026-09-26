@@ -160,6 +160,12 @@ describe("application command search", () => {
 });
 
 describe("application command shortcuts", () => {
+  const sourceNavigationShortcut = {
+    code: "ArrowLeft",
+    key: "LeftArrow",
+    modifier: "alt",
+  } as const;
+
   it("formats the primary modifier for Windows/Linux and macOS", () => {
     expect(getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT, "other")).toEqual(["Ctrl", "H"]);
     expect(getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT, "other")).toBe("Control+H");
@@ -177,6 +183,23 @@ describe("application command shortcuts", () => {
     expect(isShortcutEvent(commandH, COMMAND_PALETTE_SHORTCUT, "other")).toBe(false);
     expect(isShortcutEvent(commandH, COMMAND_PALETTE_SHORTCUT, "macos")).toBe(true);
     expect(isShortcutEvent(controlH, COMMAND_PALETTE_SHORTCUT, "macos")).toBe(false);
+  });
+
+  it("formats and matches alt shortcuts", () => {
+    const altArrowLeft = new KeyboardEvent("keydown", {
+      altKey: true,
+      code: "ArrowLeft",
+    });
+
+    expect(getShortcutDisplayKeys(sourceNavigationShortcut)).toEqual(["Alt", "LeftArrow"]);
+    expect(getShortcutAriaValue(sourceNavigationShortcut)).toBe("Alt+LeftArrow");
+    expect(isShortcutEvent(altArrowLeft, sourceNavigationShortcut)).toBe(true);
+    expect(
+      isShortcutEvent(
+        new KeyboardEvent("keydown", { code: "ArrowLeft", ctrlKey: true }),
+        sourceNavigationShortcut,
+      ),
+    ).toBe(false);
   });
 
   it("detects duplicate command ids while aggregating groups", () => {
