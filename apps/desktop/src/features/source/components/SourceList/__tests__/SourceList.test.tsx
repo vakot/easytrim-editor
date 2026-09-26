@@ -282,7 +282,7 @@ describe("source queue controls", () => {
       within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }),
     );
 
-    expect(selectSourceListEntries(store.getState())).toHaveLength(0);
+    await waitFor(() => expect(selectSourceListEntries(store.getState())).toHaveLength(0));
   });
 
   it("passes the full filtered dataset with stable source ID keys", () => {
