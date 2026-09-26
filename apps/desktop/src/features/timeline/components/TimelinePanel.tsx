@@ -1,5 +1,6 @@
 import { Gauge } from "lucide-react";
 import { motion } from "motion/react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -160,11 +161,17 @@ function PlaybackVolumeControl() {
   const dispatch = useAppDispatch();
   const volumePercent = useAppSelector(selectPlaybackVolumePercent);
   const enabled = volumePercent > 0;
+  const [focusWithin, setFocusWithin] = useState(false);
 
   return (
     <motion.div
+      animate={focusWithin ? "expanded" : "collapsed"}
       className="flex"
       initial="collapsed"
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setFocusWithin(false);
+      }}
+      onFocusCapture={() => setFocusWithin(true)}
       onWheel={(event) => {
         if (event.deltaY === 0) return;
 
@@ -174,6 +181,7 @@ function PlaybackVolumeControl() {
       whileHover="expanded"
     >
       <VolumeButton
+        aria-label={enabled ? t("audio.actions.mute") : t("audio.actions.unmute")}
         className={enabled ? "text-primary" : undefined}
         enabled={enabled}
         onClick={() => dispatch(playbackVolumeToggled())}
