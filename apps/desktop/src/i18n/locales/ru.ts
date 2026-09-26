@@ -64,6 +64,7 @@ export const ru = {
         previewTransform: "Предпросмотр / Трансформация",
         queueOnFinishedApplication: "Очередь / После завершения / Приложение",
         queueOnFinishedSource: "Очередь / После завершения / Источник",
+        source: "Источник",
       },
       explorer: "Проводник",
       activityFeed: "Лента активности",
@@ -302,6 +303,8 @@ export const ru = {
       groupByNone: "Без группировки",
       groupByUpdatedAt: "Дате изменения",
       importedSources: "Импортированные источники",
+      nextSource: "Следующий источник",
+      previousSource: "Предыдущий источник",
       metadata: {
         bitrate: "Битрейт",
         container: "Контейнер",
@@ -341,10 +344,6 @@ export const ru = {
       restorePreviousSession_one: "Восстановить предыдущий сеанс · {{count}} источник",
       restorePreviousSession_other: "Восстановить предыдущий сеанс · источников: {{count}}",
       previewUnavailable: "Предпросмотр недоступен",
-    },
-    tooltips: {
-      nextSource: "Следующий источник",
-      previousSource: "Предыдущий источник",
     },
     dialogs: {
       close: {

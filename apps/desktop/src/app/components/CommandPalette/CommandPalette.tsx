@@ -86,6 +86,7 @@ function CommandPalette() {
 
       if (command) void executeApplicationCommand(command.id, "hotkey");
     },
+    { allowAltModifier: true },
   );
 
   function handleOpenChange(nextOpen: boolean) {

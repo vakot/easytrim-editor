@@ -6,13 +6,14 @@ type KeyboardPredicate = (event: KeyboardEvent) => boolean;
 type KeyboardHandler = (event: KeyboardEvent) => void | Promise<void>;
 
 interface KeyboardShortcutOptions {
+  allowAltModifier?: boolean;
   allowEditableTarget?: boolean;
 }
 
 function useKeyboardShortcut(
   predicate: KeyboardPredicate,
   handler: KeyboardHandler,
-  { allowEditableTarget = false }: KeyboardShortcutOptions = {},
+  { allowAltModifier = false, allowEditableTarget = false }: KeyboardShortcutOptions = {},
 ) {
   const predicateRef = useRef(predicate);
   const handlerRef = useRef(handler);
@@ -26,7 +27,7 @@ function useKeyboardShortcut(
     function handleKeyDown(event: KeyboardEvent) {
       if (
         !predicateRef.current(event) ||
-        event.altKey ||
+        (!allowAltModifier && event.altKey) ||
         (!allowEditableTarget && isEditableTarget(event.target))
       ) {
         return;
@@ -39,7 +40,7 @@ function useKeyboardShortcut(
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [allowEditableTarget]);
+  }, [allowAltModifier, allowEditableTarget]);
 }
 
 export { useKeyboardShortcut };

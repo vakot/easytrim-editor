@@ -64,6 +64,7 @@ export const en = {
         previewTransform: "Preview / Transform",
         queueOnFinishedApplication: "Queue / On finished / Application",
         queueOnFinishedSource: "Queue / On finished / Source",
+        source: "Source",
       },
       explorer: "Explorer",
       activityFeed: "Activity Feed",
@@ -300,6 +301,8 @@ export const en = {
       groupByNone: "None",
       groupByUpdatedAt: "Updated at",
       importedSources: "Imported Sources",
+      nextSource: "Next source",
+      previousSource: "Previous source",
       metadata: {
         bitrate: "Bitrate",
         container: "Container",
@@ -339,10 +342,6 @@ export const en = {
       restorePreviousSession_one: "Restore previous session · {{count}} source",
       restorePreviousSession_other: "Restore previous session · {{count}} sources",
       previewUnavailable: "Preview unavailable",
-    },
-    tooltips: {
-      nextSource: "Next source",
-      previousSource: "Previous source",
     },
     dialogs: {
       close: {

@@ -1,74 +1,57 @@
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { ComponentProps } from "react";
-import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  selectActiveInstanceId,
-  selectEditingInstanceTopologyEntries,
-} from "@/app/store/slices/editing-instances-slice";
-import { navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
+import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
+import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
+import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { cn } from "@/lib/class-names.utils";
 
 function SourceNavigation({ className }: { className?: string }) {
-  const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const activeInstanceId = useAppSelector(selectActiveInstanceId);
-  const entries = useAppSelector(selectEditingInstanceTopologyEntries);
-
-  const activeIndex = entries.findIndex((entry) => entry.id === activeInstanceId);
-
-  const previousLabel = t("source.tooltips.previousSource");
-  const nextLabel = t("source.tooltips.nextSource");
-
-  const navigate = (offset: -1 | 1) => {
-    const target = entries[activeIndex + offset];
-    if (target) void dispatch(navigateToEditingInstance(target.id));
-  };
+  const { executeCommand } = useApplicationCommands();
+  const previousCommand = useApplicationCommand("previous-source");
+  const nextCommand = useApplicationCommand("next-source");
 
   return (
     <div className={cn("flex", className)}>
       <SourceNavigationButton
-        aria-label={previousLabel}
-        disabled={activeIndex <= 0}
-        onClick={() => navigate(-1)}
-        tooltip={previousLabel}
-      >
-        <ArrowLeft aria-hidden="true" />
-      </SourceNavigationButton>
+        command={previousCommand}
+        onClick={() => void executeCommand("previous-source", "button")}
+      />
 
       <SourceNavigationButton
-        aria-label={nextLabel}
-        disabled={activeIndex < 0 || activeIndex >= entries.length - 1}
-        onClick={() => navigate(1)}
-        tooltip={nextLabel}
-      >
-        <ArrowRight aria-hidden="true" />
-      </SourceNavigationButton>
+        command={nextCommand}
+        onClick={() => void executeCommand("next-source", "button")}
+      />
     </div>
   );
 }
 
 function SourceNavigationButton({
-  tooltip,
+  command,
   ...props
-}: ComponentProps<typeof Button> & {
-  tooltip: string;
+}: Omit<ComponentProps<typeof Button>, "aria-label" | "disabled"> & {
+  command: NonNullable<ReturnType<typeof useApplicationCommand>>;
 }) {
+  const shortcut = command.shortcut ? getShortcutAriaValue(command.shortcut) : undefined;
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
+          aria-keyshortcuts={shortcut}
+          aria-label={command.label}
           className="text-muted-foreground hover:text-foreground"
+          disabled={!command.enabled || command.pending}
           size="icon-sm"
           variant="ghost"
           {...props}
-        />
+        >
+          <ApplicationCommandIcon command={command} />
+        </Button>
       </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
+      <TooltipContent>{command.label}</TooltipContent>
     </Tooltip>
   );
 }
