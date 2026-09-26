@@ -17,7 +17,7 @@ function AppLayoutPanel({ children, className, layoutRegion }: AppLayoutPanelPro
   return (
     <Card
       className={cn(
-        "size-full gap-0 border border-border p-0 ring-0",
+        "size-full min-h-0 min-w-0 gap-0 border border-border p-0 ring-0",
         isCompact && "block rounded-none bg-card",
         className,
       )}

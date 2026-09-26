@@ -45,11 +45,11 @@ const AudioTrackRow = memo(function AudioTrackRow({
 
   return (
     <div
-      className="grid min-w-0 grid-cols-(--editor-audio-track-grid-columns) gap-3"
+      className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-2"
       data-slot="audio-track-row"
     >
       <Card
-        className="relative flex flex-row items-center gap-2 bg-transparent p-1 pr-2 ring-transparent transition-[background-color,box-shadow] duration-150 ring-inset data-[controls-visible=true]:bg-card data-[controls-visible=true]:ring-foreground/10"
+        className="relative -ml-1.5 flex flex-row items-center gap-2 bg-transparent p-1 pr-2 ring-transparent transition-[background-color,box-shadow] duration-150 ring-inset data-[controls-visible=true]:bg-card data-[controls-visible=true]:ring-foreground/10"
         data-controls-visible={controlsVisible}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);

@@ -895,7 +895,7 @@ describe("App", () => {
     expect(audioPlayhead).toBeInTheDocument();
     const audioPlayheadGrid = audioPlayhead?.closest('[data-slot="audio-playhead-grid"]');
     expect(audioPlayheadGrid).toHaveAttribute("aria-hidden", "true");
-    expect(audioPlayheadGrid).toHaveClass("grid-cols-(--editor-audio-track-grid-columns)");
+    expect(audioPlayheadGrid).toHaveClass("grid-cols-(--editor-timeline-track-grid-columns)");
     expect(audioPlayhead?.parentElement).toHaveAttribute("data-slot", "audio-playhead-track");
     expect(
       screen.getByRole("button", { name: "Set segment start to current position" }),

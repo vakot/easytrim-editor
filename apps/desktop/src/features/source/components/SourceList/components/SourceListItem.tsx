@@ -1,6 +1,7 @@
-import { MoreHorizontal } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
+import { Button } from "@/components/ui/button";
 import { Highlight } from "@/components/ui/highlight";
 
 import type { EditingInstanceListEntry } from "@/domain/editing-instance";
@@ -74,16 +75,13 @@ function SourceListItemCard({
         </div>
 
         <SourceCardMetadata />
+
+        <SourceCardActions className="absolute right-0 bottom-0">
+          <Button size="icon-sm" variant="ghost">
+            <MoreVertical aria-hidden="true" className="mx-auto size-4" />
+          </Button>
+        </SourceCardActions>
       </div>
-      <SourceCardActions className="absolute top-2 right-2">
-        <button
-          aria-label={`Source actions: ${source.displayName}`}
-          className="size-7 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-          type="button"
-        >
-          <MoreHorizontal aria-hidden="true" className="mx-auto size-4" />
-        </button>
-      </SourceCardActions>
     </SourceCard>
   );
 }

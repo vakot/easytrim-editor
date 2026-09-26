@@ -43,7 +43,7 @@ function AppLayoutSidebar() {
         persisted
       >
         <ResizablePanel
-          className="flex min-h-0 flex-col overflow-hidden! py-1"
+          className="flex min-h-0 flex-col overflow-hidden!"
           collapsedSize="36px"
           collapsible
           defaultSize="45"
@@ -52,7 +52,7 @@ function AppLayoutSidebar() {
         >
           <ResizablePanelControl panelId="editor-source-imported-sources">
             {({ isExpanded }) => (
-              <div className="px-3">
+              <div className="px-3 py-1">
                 <Button
                   className="w-full justify-baseline px-2 text-secondary-foreground"
                   size="sm"
@@ -68,14 +68,14 @@ function AppLayoutSidebar() {
           </ResizablePanelControl>
 
           <SourceList>
-            <div className="mt-2 grid min-h-0 px-3">
+            <div className="mt-1 grid min-h-0 px-3">
               <div className="flex gap-2">
                 <SourceListSearch />
                 <SourceListCloseAll />
               </div>
 
               <ScrollArea className="-mx-2.5 min-h-0 flex-1 px-2.5">
-                <SourceListContent className="pt-2 pb-1.5" />
+                <SourceListContent className="py-2" />
               </ScrollArea>
             </div>
           </SourceList>
@@ -86,7 +86,7 @@ function AppLayoutSidebar() {
         </ResizableHandle>
 
         <ResizablePanel
-          className="flex min-h-0 flex-col overflow-hidden! py-1"
+          className="flex min-h-0 flex-col overflow-hidden!"
           collapsedSize="36px"
           collapsible
           defaultSize="25"
@@ -125,7 +125,7 @@ function AppLayoutSidebar() {
         </ResizableHandle>
 
         <ResizablePanel
-          className="flex min-h-0 flex-col overflow-hidden! py-1"
+          className="flex min-h-0 flex-col overflow-hidden!"
           collapsedSize="36px"
           collapsible
           defaultSize="30"
@@ -134,7 +134,7 @@ function AppLayoutSidebar() {
         >
           <ResizablePanelControl panelId="editor-source-activity-feed">
             {({ isExpanded }) => (
-              <div className="px-3">
+              <div className="px-3 py-1">
                 <Button
                   className="w-full justify-baseline px-2 text-secondary-foreground"
                   size="sm"
@@ -149,9 +149,9 @@ function AppLayoutSidebar() {
             )}
           </ResizablePanelControl>
 
-          <div className="mt-2 flex min-h-0 flex-1 flex-col px-3">
+          <div className="mt-1 grid min-h-0 px-3">
             <ScrollArea className="-mx-2.5 flex-1 px-2.5 before:top-2">
-              <ActivityFeed />
+              <ActivityFeed className="pb-2" />
             </ScrollArea>
           </div>
         </ResizablePanel>

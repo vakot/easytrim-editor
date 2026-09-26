@@ -16,6 +16,7 @@ import { ActivityFeedEmpty } from "./ActivityFeedEmpty";
 import { ActivityFeedGroup } from "./ActivityFeedGroup";
 
 interface ActivityFeedViewProps {
+  className?: string;
   currentAppVersion: string;
   currentSessionId: string | null;
   entries: readonly ActivityEntry[];
@@ -25,6 +26,7 @@ interface ActivityFeedViewProps {
 }
 
 function ActivityFeedView({
+  className,
   currentAppVersion,
   currentSessionId,
   entries,
@@ -53,7 +55,9 @@ function ActivityFeedView({
   if (groups.length === 0) return <ActivityFeedEmpty />;
 
   return (
-    <div className={cn("relative grid", isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3")}>
+    <div
+      className={cn("relative grid", isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3", className)}
+    >
       {groups.map((group) => (
         <ActivityFeedGroup
           currentAppVersion={currentAppVersion}
