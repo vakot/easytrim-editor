@@ -118,7 +118,7 @@ function AudioPanel() {
         <Separator className="absolute bg-foreground/10" />
       </div>
 
-      <ScrollArea className="h-0 min-h-0 flex-1 pr-3" data-testid="audio-tracks-scroll">
+      <ScrollArea className="min-h-0 flex-1 pr-3" data-testid="audio-tracks-scroll">
         <div className="my-2 pl-3">
           <AudioTracks
             onCommit={() => dispatch(commitActiveEditingInstanceDraft())}

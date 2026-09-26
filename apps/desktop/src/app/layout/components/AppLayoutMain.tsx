@@ -39,13 +39,12 @@ const getTimelinePanelSize = (lines: number = 0, isCompact = false): PanelSizes 
     };
   }
 
-  const audioPanelSizeMin = isCompact ? AUDIO_PANEL_SIZE_MIN - 1 : AUDIO_PANEL_SIZE_MIN;
-  const audioPanelSizeMax = audioPanelSizeMin + (lines - 1) * AUDIO_PANEL_SIZE_LINE;
+  const audioPanelSizeMax = AUDIO_PANEL_SIZE_MIN + (lines - 1) * AUDIO_PANEL_SIZE_LINE;
 
   return {
     collapsedSize: minSize,
-    minSize: minSize + audioPanelSizeMin,
-    defaultSize: minSize + audioPanelSizeMin,
+    minSize: minSize + AUDIO_PANEL_SIZE_MIN,
+    defaultSize: minSize + AUDIO_PANEL_SIZE_MIN,
     maxSize: minSize + audioPanelSizeMax,
   };
 };
