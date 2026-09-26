@@ -340,6 +340,10 @@ export const en = {
       restorePreviousSession_other: "Restore previous session · {{count}} sources",
       previewUnavailable: "Preview unavailable",
     },
+    tooltips: {
+      nextSource: "Next source",
+      previousSource: "Previous source",
+    },
     dialogs: {
       close: {
         description:

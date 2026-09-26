@@ -340,6 +340,10 @@ export const sk = {
       restorePreviousSession_other: "Obnoviť predchádzajúcu reláciu · {{count}} zdrojov",
       previewUnavailable: "Náhľad nie je dostupný",
     },
+    tooltips: {
+      nextSource: "Nasledujúci zdroj",
+      previousSource: "Predchádzajúci zdroj",
+    },
     dialogs: {
       close: {
         description:

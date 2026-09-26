@@ -342,6 +342,10 @@ export const ru = {
       restorePreviousSession_other: "Восстановить предыдущий сеанс · источников: {{count}}",
       previewUnavailable: "Предпросмотр недоступен",
     },
+    tooltips: {
+      nextSource: "Следующий источник",
+      previousSource: "Предыдущий источник",
+    },
     dialogs: {
       close: {
         description:
