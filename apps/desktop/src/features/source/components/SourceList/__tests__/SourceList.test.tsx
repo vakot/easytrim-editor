@@ -1,6 +1,6 @@
-import { createEvent, fireEvent, render, screen, within } from "@testing-library/react";
+import { createEvent, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { PropsWithChildren } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -14,6 +14,94 @@ import {
 import { createAppStore } from "@/app/store/store";
 import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 import { firstSource, secondSource } from "@/test/source.fixtures";
+
+const virtuosoHarness = vi.hoisted(() => ({
+  props: null as null | {
+    components: {
+      ScrollSeekPlaceholder: (props: { height: number; index: number; type: "item" }) => ReactNode;
+    };
+    computeItemKey: (index: number, source: EditingInstanceListEntry) => string;
+    customScrollParent: HTMLElement;
+    data: EditingInstanceListEntry[];
+    increaseViewportBy: { bottom: number; top: number };
+    itemContent: (index: number, source: EditingInstanceListEntry) => ReactNode;
+    rangeChanged: (range: { endIndex: number; startIndex: number }) => void;
+    scrollerRef: (element: HTMLElement | Window | null) => void;
+    scrollSeekConfiguration: {
+      change: (velocity: number, range: { endIndex: number; startIndex: number }) => void;
+    };
+  },
+}));
+
+const thumbnailActions = vi.hoisted(() => ({
+  prepare: vi.fn<(sourceIds: string[]) => void>(),
+  release: vi.fn<(sourceId: string) => void>(),
+}));
+
+vi.mock("react-virtuoso", async () => {
+  const React = await import("react");
+  return {
+    Virtuoso: (props: NonNullable<typeof virtuosoHarness.props>) => {
+      const [scrollSeeking, setScrollSeeking] = React.useState(false);
+      const { data, rangeChanged } = props;
+      virtuosoHarness.props = props;
+      React.useEffect(() => {
+        rangeChanged({ endIndex: Math.min(2, data.length - 1), startIndex: 0 });
+      }, [data, rangeChanged]);
+
+      const visibleSources = data.slice(0, 3);
+      return (
+        <div data-count={data.length} data-testid="virtuoso">
+          <button
+            onClick={() => {
+              const range = { endIndex: 10, startIndex: 8 };
+              props.scrollSeekConfiguration.change(1200, range);
+              setScrollSeeking(true);
+            }}
+            type="button"
+          >
+            Mock enter scroll seek
+          </button>
+          <button
+            onClick={() => {
+              const range = { endIndex: 10, startIndex: 8 };
+              setScrollSeeking(false);
+              props.rangeChanged(range);
+              props.customScrollParent.scrollTop += 1;
+              props.customScrollParent.dispatchEvent(new Event("scroll"));
+            }}
+            type="button"
+          >
+            Mock finish scroll seek
+          </button>
+          {visibleSources.map((source, index) => (
+            <React.Fragment key={props.computeItemKey(index, source)}>
+              {scrollSeeking
+                ? props.components.ScrollSeekPlaceholder({ height: 112, index, type: "item" })
+                : props.itemContent(index, source)}
+            </React.Fragment>
+          ))}
+        </div>
+      );
+    },
+  };
+});
+
+vi.mock("@/app/store/thunks/source-media-thunks", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/app/store/thunks/source-media-thunks")>();
+  return {
+    ...actual,
+    prepareImportedSourceThumbnailsRequested: (sources: EditingInstanceListEntry[]) => {
+      const sourceIds = sources.map(({ id }) => id);
+      thumbnailActions.prepare(sourceIds);
+      return { payload: sourceIds, type: "test/thumbnailDemandPrepared" };
+    },
+    releaseImportedSourceThumbnailDemand: (sourceId: string) => {
+      thumbnailActions.release(sourceId);
+      return { payload: sourceId, type: "test/thumbnailDemandReleased" };
+    },
+  };
+});
 
 import { SourceList, SourceListCloseAll, SourceListContent, SourceListSearch } from "../SourceList";
 
@@ -35,6 +123,9 @@ vi.mock("../../SourceCard", () => {
 describe("source queue controls", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    thumbnailActions.prepare.mockClear();
+    thumbnailActions.release.mockClear();
+    virtuosoHarness.props = null;
   });
 
   it("renders file, folder, and drag-and-drop actions when no sources are imported", () => {
@@ -191,60 +282,27 @@ describe("source queue controls", () => {
       within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }),
     );
 
-    expect(selectSourceListEntries(store.getState())).toHaveLength(0);
+    await waitFor(() => expect(selectSourceListEntries(store.getState())).toHaveLength(0));
   });
 
-  it("uses one near-viewport observer to request and release thumbnail demand", () => {
-    type ObserverRecord = {
-      callback: IntersectionObserverCallback;
-      observed: Element[];
-      rootMargin?: string;
-      trigger: (element: Element, isIntersecting: boolean) => void;
-    };
-    const observers: ObserverRecord[] = [];
-    class FakeIntersectionObserver {
-      readonly observed: Element[] = [];
-      readonly rootMargin = "600px 0px";
-
-      constructor(readonly callback: IntersectionObserverCallback) {
-        observers.push(this);
-      }
-
-      observe(element: Element) {
-        this.observed.push(element);
-      }
-
-      unobserve(element: Element) {
-        const index = this.observed.indexOf(element);
-        if (index !== -1) this.observed.splice(index, 1);
-      }
-
-      disconnect() {
-        this.observed.length = 0;
-      }
-
-      trigger(element: Element, isIntersecting: boolean) {
-        this.callback(
-          [{ isIntersecting, target: element } as IntersectionObserverEntry],
-          this as unknown as IntersectionObserver,
-        );
-      }
-    }
-    vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
-
+  it("passes the full filtered dataset with stable source ID keys", () => {
     const store = createAppStore();
+    const sources = Array.from({ length: 1_400 }, (_, index) => ({
+      displayName: `clip-${index}.mp4`,
+      sourcePath: `C:/Media/clip-${index}.mp4`,
+    }));
+
     store.dispatch(
-      editingInstancesAdded([
-        {
-          id: "source",
-          origin: "source-import",
-          snapshot: createDefaultEditorSnapshot(firstSource, false),
-          sourceAvailability: "available",
+      editingInstancesAdded(
+        sources.map((source, index) => ({
+          id: `source-${index}`,
+          origin: "source-import" as const,
+          snapshot: createDefaultEditorSnapshot(source, false),
+          sourceAvailability: "available" as const,
           exportAttempts: [],
-        },
-      ]),
+        })),
+      ),
     );
-    const dispatchSpy = vi.spyOn(store, "dispatch");
 
     render(
       <Provider store={store}>
@@ -254,17 +312,135 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    expect(observers).toHaveLength(1);
-    expect(observers[0]?.rootMargin).toBe("600px 0px");
-    const cardElement = screen.getByTestId("source");
-    const row = cardElement.parentElement;
-    if (!row) throw new Error("Expected source row");
-    expect(observers[0]?.observed).toContain(row);
-
-    observers[0]?.trigger(row, true);
-    observers[0]?.trigger(row, false);
-    expect(dispatchSpy.mock.calls.filter(([action]) => typeof action === "function")).toHaveLength(
-      2,
+    expect(virtuosoHarness.props?.data).toHaveLength(1_400);
+    expect(virtuosoHarness.props?.computeItemKey(1399, virtuosoHarness.props.data[1399]!)).toBe(
+      "source-1399",
     );
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    expect(screen.getByTestId("virtuoso")).toHaveAttribute("data-count", "1400");
+    expect(virtuosoHarness.props?.increaseViewportBy).toEqual({ bottom: 600, top: 600 });
+    expect(virtuosoHarness.props?.customScrollParent).toBe(
+      document.querySelector('[data-slot="scroll-area-viewport"]'),
+    );
+  });
+
+  it("updates virtualized data when search changes and shows the no-results state", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded(
+        [firstSource, secondSource].map((source, index) => ({
+          id: `source-${index}`,
+          origin: "source-import" as const,
+          snapshot: createDefaultEditorSnapshot(source, false),
+          sourceAvailability: "available" as const,
+          exportAttempts: [],
+        })),
+      ),
+    );
+
+    render(
+      <Provider store={store}>
+        <SourceList>
+          <SourceListSearch />
+          <SourceListContent />
+        </SourceList>
+      </Provider>,
+    );
+
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "second");
+    await waitFor(() => {
+      expect(virtuosoHarness.props?.data.map(({ id }) => id)).toEqual(["source-1"]);
+    });
+
+    await user.clear(screen.getByRole("searchbox", { name: "Search" }));
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "missing file");
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "No imported sources match your search.",
+      );
+    });
+    expect(screen.queryByTestId("virtuoso")).not.toBeInTheDocument();
+  });
+
+  it("moves thumbnail demand with the virtualized range and releases it on unmount", () => {
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded(
+        [firstSource, secondSource].map((source, index) => ({
+          id: `source-${index}`,
+          origin: "source-import" as const,
+          snapshot: createDefaultEditorSnapshot(source, false),
+          sourceAvailability: "available" as const,
+          exportAttempts: [],
+        })),
+      ),
+    );
+
+    const view = render(
+      <Provider store={store}>
+        <SourceList>
+          <SourceListContent />
+        </SourceList>
+      </Provider>,
+    );
+
+    expect(thumbnailActions.prepare).toHaveBeenCalledWith(["source-0", "source-1"]);
+    virtuosoHarness.props?.rangeChanged({ endIndex: 0, startIndex: 0 });
+    expect(thumbnailActions.release).toHaveBeenCalledWith("source-1");
+    virtuosoHarness.props?.rangeChanged({ endIndex: 1, startIndex: 1 });
+    expect(thumbnailActions.prepare).toHaveBeenLastCalledWith(["source-1"]);
+    expect(thumbnailActions.release).toHaveBeenCalledWith("source-0");
+
+    view.unmount();
+    expect(thumbnailActions.release).toHaveBeenCalledWith("source-1");
+  });
+
+  it("releases stale demand after filtering and suppresses thumbnail work during scroll seek", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    const sources = Array.from({ length: 12 }, (_, index) => ({
+      displayName: `clip-${index}.mp4`,
+      sourcePath: `C:/Media/clip-${index}.mp4`,
+    }));
+
+    store.dispatch(
+      editingInstancesAdded(
+        sources.map((source, index) => ({
+          id: `source-${index}`,
+          origin: "source-import" as const,
+          snapshot: createDefaultEditorSnapshot(source, false),
+          sourceAvailability: "available" as const,
+          exportAttempts: [],
+        })),
+      ),
+    );
+
+    render(
+      <Provider store={store}>
+        <SourceList>
+          <SourceListSearch />
+          <SourceListContent />
+        </SourceList>
+      </Provider>,
+    );
+
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "clip-0");
+    await waitFor(() => expect(thumbnailActions.release).toHaveBeenCalledWith("source-1"));
+
+    await user.clear(screen.getByRole("searchbox", { name: "Search" }));
+    await waitFor(() => expect(virtuosoHarness.props?.data).toHaveLength(12));
+    thumbnailActions.prepare.mockClear();
+    await user.click(screen.getByRole("button", { name: "Mock enter scroll seek" }));
+    expect(document.querySelectorAll('[role="presentation"]')).toHaveLength(3);
+    expect(screen.queryByTestId("source-0")).not.toBeInTheDocument();
+    virtuosoHarness.props?.rangeChanged({ endIndex: 10, startIndex: 8 });
+    expect(thumbnailActions.prepare).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Mock finish scroll seek" }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    await waitFor(() => {
+      expect(thumbnailActions.prepare).toHaveBeenCalledWith(["source-8", "source-9", "source-10"]);
+    });
   });
 });

@@ -1,5 +1,5 @@
 import { MoreVertical } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
 import { Highlight } from "@/components/ui/highlight";
@@ -17,31 +17,27 @@ import {
   SourceCardThumbnail,
   SourceCardTitle,
 } from "../../SourceCard";
-import { useSourceListData } from "../contexts/SourceListContext";
+import { SOURCE_LIST_CLOSE_ANIMATION_DURATION_MS } from "../contexts/SourceListContext";
 
 function SourceListItem({
+  isClosing,
   match,
   source,
 }: {
+  isClosing: boolean;
   match: SourceSearchResult | undefined;
   source: EditingInstanceListEntry;
 }) {
-  const { registerThumbnailDemand } = useSourceListData();
-  const shouldReduceMotion = useReducedMotion() === true;
-  const duration = shouldReduceMotion ? 0 : 0.16;
-
   return (
-    <motion.li
-      animate={{ opacity: 1, y: 0 }}
+    <motion.div
+      animate={isClosing ? { opacity: 0, y: -4 } : { opacity: 1, y: 0 }}
       className="flex w-full min-w-0 flex-col"
-      exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
-      initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
-      layout={shouldReduceMotion ? false : "position"}
-      ref={(element) => registerThumbnailDemand(source, element)}
-      transition={{ duration, ease: "easeOut" }}
+      initial={false}
+      role="listitem"
+      transition={{ duration: SOURCE_LIST_CLOSE_ANIMATION_DURATION_MS / 1000, ease: "easeOut" }}
     >
       <SourceListItemCard match={match} source={source} />
-    </motion.li>
+    </motion.div>
   );
 }
 
@@ -76,7 +72,7 @@ function SourceListItemCard({
 
         <SourceCardMetadata />
 
-        <SourceCardActions className="absolute right-0 bottom-0">
+        <SourceCardActions className="pointer-events-none absolute right-0 bottom-0 opacity-0 transition-opacity group-focus-within/source-card:pointer-events-auto group-focus-within/source-card:opacity-100 group-hover/source-card:pointer-events-auto group-hover/source-card:opacity-100">
           <Button size="icon-sm" variant="ghost">
             <MoreVertical aria-hidden="true" className="mx-auto size-4" />
           </Button>

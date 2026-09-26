@@ -66,16 +66,14 @@ function AppLayoutSidebar() {
             )}
           </ResizablePanelControl>
 
-          <div className="mt-1 grid min-h-0 flex-1 px-3">
+          <div className="mt-1 flex min-h-0 flex-1 flex-col px-2">
             <SourceList>
-              <div className="flex gap-2">
+              <div className="flex gap-2 px-1">
                 <SourceListSearch />
                 <SourceListCloseAll />
               </div>
 
-              <ScrollArea className="-mx-2.5 min-h-0 flex-1 px-2.5">
-                <SourceListContent className="py-2" />
-              </ScrollArea>
+              <SourceListContent className="-mx-1.5 min-h-0 flex-1 px-1.5" />
             </SourceList>
           </div>
         </ResizablePanel>

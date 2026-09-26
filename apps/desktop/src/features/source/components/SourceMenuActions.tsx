@@ -21,6 +21,8 @@ import {
 
 import { useSourceDelete } from "../contexts/source-delete-context";
 
+import { useSourceListCloseRequest } from "./SourceList/contexts/SourceListContext";
+
 type ActionElement = ReactElement<{
   disabled?: boolean;
   onClick?: MouseEventHandler;
@@ -64,9 +66,12 @@ function DeleteSource({ children, event = "select", source }: SourceActionProps)
  */
 function CloseSource({ children, event = "select", source }: SourceActionProps) {
   const dispatch = useAppDispatch();
+  const requestCloseSources = useSourceListCloseRequest();
 
   return withAction(withDisabled(children, !source), event, () => {
-    if (source) void dispatch(closeEditingInstancesRequested([source.id]));
+    if (!source) return;
+    if (requestCloseSources) requestCloseSources([source.id]);
+    else void dispatch(closeEditingInstancesRequested([source.id]));
   });
 }
 
@@ -77,6 +82,7 @@ function CloseSource({ children, event = "select", source }: SourceActionProps) 
 function CloseSources({ children, sources = [] }: SourceActionProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const requestCloseSources = useSourceListCloseRequest();
   const sourceIds = sources.map(({ id }) => id);
   const trigger = withDisabled(children, sourceIds.length === 0);
 
@@ -93,7 +99,10 @@ function CloseSources({ children, sources = [] }: SourceActionProps) {
         <AlertDialogFooter>
           <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
           <AlertDialogAction
-            onClick={() => void dispatch(closeEditingInstancesRequested(sourceIds))}
+            onClick={() => {
+              if (requestCloseSources) requestCloseSources(sourceIds);
+              else void dispatch(closeEditingInstancesRequested(sourceIds));
+            }}
             variant="destructive"
           >
             {t("common.actions.close")}
