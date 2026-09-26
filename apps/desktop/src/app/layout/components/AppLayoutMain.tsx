@@ -1,6 +1,7 @@
 import { type RefObject, useCallback, useLayoutEffect, useRef } from "react";
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";
@@ -79,10 +80,16 @@ function AppLayoutMain() {
             className="flex flex-col bg-preview-surface layout-compact:rounded-tr-xl layout-compact:border-b-0 layout-compact:border-l-0"
             layoutRegion="workspace-preview"
           >
-            <div className="flex items-center justify-between gap-2 p-1">
-              <div className="pl-2">
-                <SourceBreadcrumb />
-              </div>
+            <div className="flex min-w-0 items-center justify-between p-1">
+              <ScrollArea
+                className="min-w-0 flex-1"
+                fadeColor="var(--preview-surface)"
+                orientation="horizontal"
+                scrollbarClassName="data-horizontal:h-0.75 data-horizontal:border-t-0 data-horizontal:p-0"
+              >
+                <SourceBreadcrumb className="h-full min-w-max px-2 py-1" />
+              </ScrollArea>
+
               <ExportActions />
             </div>
 
