@@ -26,14 +26,14 @@ interface SourceCardProps {
   source: SourceCardSource;
 }
 
-const sourceCardVariants = cva("group/source-card cursor-pointer border ring-0", {
+const sourceCardVariants = cva("group/source-card cursor-pointer border-0 ring-0", {
   variants: {
     variant: {
-      default: "border-foreground/10",
-      destructive: "border-destructive/45",
-      success: "border-success/45",
-      warning: "border-warning/45",
-      active: "border-primary/45",
+      default: "bg-transparent",
+      destructive: "bg-destructive/5",
+      success: "bg-success/5",
+      warning: "bg-warning/5",
+      active: "bg-primary/10",
     },
   },
   defaultVariants: {

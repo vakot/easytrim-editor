@@ -12,7 +12,7 @@ const cardVariants = cva(
         destructive: "bg-destructive/5 ring-destructive/45",
         success: "bg-success/5 ring-success/45",
         warning: "bg-warning/5 ring-warning/45",
-        active: "bg-primary/5 ring-2 ring-primary/45",
+        active: "bg-primary/10 ring-2 ring-primary/45",
       },
       hoverable: {
         false: "",
@@ -24,7 +24,7 @@ const cardVariants = cva(
       { class: "hover:bg-destructive/10", hoverable: true, variant: "destructive" },
       { class: "hover:bg-success/10", hoverable: true, variant: "success" },
       { class: "hover:bg-warning/10", hoverable: true, variant: "warning" },
-      { class: "hover:bg-primary/10", hoverable: true, variant: "active" },
+      { class: "hover:bg-primary/15", hoverable: true, variant: "active" },
     ],
     defaultVariants: {
       variant: "default",
