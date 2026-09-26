@@ -13,12 +13,11 @@ type VolumeButtonProps = Omit<
   "aria-label" | "children" | "onClick"
 > & {
   enabled: boolean;
-  label: string;
   onClick: () => void;
 };
 
 const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(function VolumeButton(
-  { className, enabled, label, onClick, ...buttonProps },
+  { className, enabled, ...buttonProps },
   ref,
 ) {
   const { t } = useTranslation();
@@ -28,15 +27,13 @@ const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(function V
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          ref={ref}
-          {...buttonProps}
-          aria-label={label}
           aria-pressed={enabled}
           className={cn("text-primary", className)}
-          onClick={onClick}
+          ref={ref}
           size="icon-sm"
           type="button"
           variant="ghost"
+          {...buttonProps}
         >
           {enabled ? <Volume2 /> : <VolumeX />}
         </Button>

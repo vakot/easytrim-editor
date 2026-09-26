@@ -19,7 +19,7 @@ import { cn } from "@/lib/class-names.utils";
 
 import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../lib/editor-shortcuts";
 
-function PlaybackControls() {
+function PlaybackControls({ className }: { className?: string }) {
   const { t } = useTranslation();
   const playback = usePlayback();
   const timeline = useTimeline();
@@ -28,7 +28,7 @@ function PlaybackControls() {
   return (
     <div
       aria-label={t("preview.accessibility.controls")}
-      className="relative flex items-center justify-center"
+      className={cn("relative flex items-center justify-center", className)}
     >
       <div className="flex items-center gap-1.5">
         <TransportButton

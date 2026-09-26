@@ -60,8 +60,8 @@ function AudioPanel() {
       <div className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-2 px-3">
         <div className="flex min-w-0 items-center gap-2 pr-2">
           <VolumeButton
+            aria-label={t("audio.labels.allTracks")}
             enabled={masterAudio.enabled}
-            label={t("audio.labels.allTracks")}
             onClick={() => {
               diagnostics.action("audio.master.toggle.requested", {
                 type: "button",
