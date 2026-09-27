@@ -437,6 +437,8 @@ export const en = {
       pause: "Pause (Space)",
       play: "Play (Space)",
       playbackSpeed: "Adjust preview playback speed",
+      playbackVolumeMute: "Playback volume (Mute)",
+      playbackVolumeUnmute: "Playback volume (Unmute)",
       previousFrame: "Previous frame (Left Arrow; hold to rewind 2×)",
       segmentDisabled: "Play the complete timeline",
       segmentEnabled: "Constrain playback to the selected segment",
