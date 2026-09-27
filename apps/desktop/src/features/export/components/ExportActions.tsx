@@ -2,6 +2,7 @@ import { List, Scissors, Settings2 } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
+import { selectExportQueueSummary } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   openOptimizedExportDialog,
@@ -36,6 +38,9 @@ function ExportActions() {
   const sourceReady = useAppSelector(selectSourceReady);
   const cropApplied = useAppSelector(selectCropApplied);
   const transformApplied = useAppSelector(selectTransformApplied);
+  const queueSummary = useAppSelector(selectExportQueueSummary);
+  const finishedExports = queueSummary.completed + queueSummary.failed;
+  const queueSize = finishedExports + queueSummary.queued + queueSummary.rendering;
 
   const fastCutAvailable = sourceReady && !cropApplied && !transformApplied;
 
@@ -50,7 +55,14 @@ function ExportActions() {
           <ExportActionTooltip tooltip={t("queue.labels.renderQueue")}>
             <DialogTrigger asChild>
               <ExportActionButton icon={<List aria-hidden="true" />} variant="default">
-                {t("queue.labels.renderQueue")}
+                <span className="inline-flex items-center gap-1">
+                  {queueSize > 0 && (
+                    <Badge size="xs" variant="secondary">
+                      {finishedExports}/{queueSize}
+                    </Badge>
+                  )}
+                  {t("queue.labels.renderQueue")}
+                </span>
               </ExportActionButton>
             </DialogTrigger>
           </ExportActionTooltip>
