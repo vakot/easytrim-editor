@@ -41,7 +41,7 @@ describe("ExportActions", () => {
       </Provider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Export Queue" }));
+    await user.click(screen.getByRole("button", { name: /Export Queue$/ }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start queue" })).toBeDisabled();
@@ -95,7 +95,7 @@ describe("ExportActions", () => {
       </Provider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Export Queue" }));
+    await user.click(screen.getByRole("button", { name: /Export Queue$/ }));
 
     expect(screen.getByRole("button", { name: "Start queue" })).not.toBeDisabled();
   });
