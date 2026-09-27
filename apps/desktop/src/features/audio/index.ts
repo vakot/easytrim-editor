@@ -7,3 +7,15 @@ export {
   disconnectNativeAudioBinding,
   getOrCreateNativeAudioBinding,
 } from "./lib/native-audio-runtime";
+export type { StereoAudioMeterNodes } from "./lib/stereo-audio-meter";
+export {
+  amplitudeToMeterLevel,
+  createStereoAudioMeterNodes,
+  disconnectStereoAudioMeterNodes,
+  isMonoAudioMix,
+  meterMixNormalization,
+  meterZoneLevels,
+  peakAmplitude,
+  smoothMeterLevel,
+  updatePeakHold,
+} from "./lib/stereo-audio-meter";

@@ -12,6 +12,7 @@ function EditorContractsProvider({ children }: { children: ReactNode }) {
   const playback = useMemo(
     () => ({
       audioPlayheadRef: interaction.audioPlayheadRef,
+      audioMeterRef: interaction.audioMeterRef,
       isPlaybackReady: interaction.isPlaybackReady,
       isPlaying: interaction.isPlaying,
       nativeLoopEnabled: interaction.nativeLoopEnabled,
@@ -37,6 +38,7 @@ function EditorContractsProvider({ children }: { children: ReactNode }) {
     }),
     [
       interaction.audioPlayheadRef,
+      interaction.audioMeterRef,
       interaction.isPlaybackReady,
       interaction.isPlaying,
       interaction.nativeLoopEnabled,

@@ -45,7 +45,7 @@ const AudioTrackRow = memo(function AudioTrackRow({
 
   return (
     <div
-      className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-2"
+      className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
       data-slot="audio-track-row"
     >
       <Card

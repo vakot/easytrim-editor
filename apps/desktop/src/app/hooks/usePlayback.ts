@@ -11,6 +11,7 @@ function usePlayback() {
     canInteract: interaction.isPlaybackReady,
     videoRef: interaction.videoRef,
     audioPlayheadRef: interaction.audioPlayheadRef,
+    audioMeterRef: interaction.audioMeterRef,
     isPlaying: interaction.isPlaying,
     isReady: interaction.isPlaybackReady,
     transportError: interaction.transportError,

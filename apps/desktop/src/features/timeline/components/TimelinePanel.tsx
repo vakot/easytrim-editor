@@ -24,7 +24,6 @@ import {
   type PlaybackSpeed,
 } from "@/domain/playback-speed";
 import { VolumeButton } from "@/features/audio";
-import { cn } from "@/lib/class-names.utils";
 
 import { PlaybackControls } from "./PlaybackControls";
 import { PlaybackTimecode } from "./PlaybackTimecode";
@@ -43,7 +42,7 @@ function TimelinePanel() {
       className="min-w-0 p-3 select-none"
       data-testid="timeline-fixed-content"
     >
-      <div className={cn(styles.timelineHeader)}>
+      <div className={styles.timelineHeader}>
         <div className="grid w-full grid-cols-(--editor-timeline-track-grid-columns) gap-2">
           <div className="min-w-0 justify-self-start">
             <h2
@@ -70,7 +69,7 @@ function TimelinePanel() {
       <TimelineScale />
 
       <div
-        className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-2"
+        className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-3"
         data-slot="timeline-row"
       >
         <TimelineToolbar />

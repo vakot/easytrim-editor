@@ -485,7 +485,10 @@ export const en = {
       trimReset: "{{label}} — hold Shift to snap — double-click to reset",
     },
     accessibility: {
+      audioLevel: "Stereo audio level",
+      leftAudioChannelLevel: "Left channel audio level",
       playbackPosition: "Playback position",
+      rightAudioChannelLevel: "Right channel audio level",
       seconds: "{{value}} seconds",
       startsAt: "Starts at {{time}}",
       tools: "Video timeline tools",

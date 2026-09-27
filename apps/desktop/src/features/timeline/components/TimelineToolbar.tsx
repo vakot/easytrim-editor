@@ -2,6 +2,7 @@ import { BetweenVerticalStart, Magnet, Repeat, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -17,13 +18,15 @@ import {
 } from "@/app/store/slices/editor-tools-slice";
 import { selectPreferences } from "@/app/store/slices/preferences-slice";
 
+import { StereoAudioMeter } from "./StereoAudioMeter";
+
 function TimelineToolbar() {
   const { t } = useTranslation();
 
   return (
     <div
       aria-label={t("timeline.accessibility.tools")}
-      className="flex w-full items-stretch"
+      className="flex w-full items-stretch gap-1"
       data-slot="timeline-toolbar"
       role="toolbar"
     >
@@ -33,6 +36,10 @@ function TimelineToolbar() {
         <SegmentPlaybackTool />
         <ResetToolsTool />
       </div>
+
+      <Separator orientation="vertical" />
+
+      <StereoAudioMeter />
     </div>
   );
 }

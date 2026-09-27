@@ -7,6 +7,7 @@ import {
   selectAudioPreviews,
   selectAudioTracks,
   selectMasterAudio,
+  selectMergeAudio,
 } from "@/app/store/slices/audio-slice";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
@@ -34,9 +35,14 @@ import {
 } from "@/domain/trim";
 import {
   connectNativeAudioBinding,
+  createStereoAudioMeterNodes,
   disconnectNativeAudioBinding,
+  disconnectStereoAudioMeterNodes,
   getOrCreateNativeAudioBinding,
+  isMonoAudioMix,
+  meterMixNormalization,
   type NativeAudioBinding,
+  type StereoAudioMeterNodes,
   synchronizeAudioPosition,
 } from "@/features/audio";
 import {
@@ -68,6 +74,7 @@ const REVERSE_SHUTTLE_SEEK_INTERVAL_MS = 50;
 const SHUTTLE_MAX_FRAME_DELTA_MS = 100;
 
 interface EditorInteractionRuntime {
+  audioMeterRef: React.RefObject<StereoAudioMeterNodes | null>;
   audioPlayheadRef: React.RefObject<HTMLDivElement | null>;
   canSetSegmentEnd: boolean;
   canSetSegmentStart: boolean;
@@ -123,6 +130,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const audioTracks = useAppSelector(selectAudioTracks);
   const masterAudio = useAppSelector(selectMasterAudio);
+  const mergeAudio = useAppSelector(selectMergeAudio);
   const audioPreviewState = useAppSelector(selectAudioPreviews);
   const audioPreviewUrls = useMemo(
     () =>
@@ -188,6 +196,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   } | null>(null);
 
   const masterGainRef = useRef<GainNode | null>(null);
+  const audioMeterRef = useRef<StereoAudioMeterNodes | null>(null);
   const playbackOutputGainRef = useRef<GainNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
   const audioPlayheadRef = useRef<HTMLDivElement>(null);
@@ -295,6 +304,8 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const cleanupAudioRuntime = useCallback(() => {
     for (const streamIndex of audioElementsRef.current.keys()) removeAudioRuntime(streamIndex);
     disconnectCurrentNativeAudioRoute();
+    disconnectStereoAudioMeterNodes(audioMeterRef.current);
+    audioMeterRef.current = null;
     masterGainRef.current?.disconnect();
     masterGainRef.current = null;
     playbackOutputGainRef.current?.disconnect();
@@ -375,6 +386,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       masterGainRef.current = masterGain;
       const playbackOutputGain = context.createGain();
       playbackOutputGainRef.current = playbackOutputGain;
+      audioMeterRef.current = createStereoAudioMeterNodes(context, masterGain);
       masterGain.connect(playbackOutputGain);
       playbackOutputGain.connect(context.destination);
     }
@@ -448,6 +460,27 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     playbackSpeed,
     usesExternalAudio,
   ]);
+
+  useEffect(() => {
+    const meter = audioMeterRef.current;
+    if (!meter) return;
+
+    const exportAudioTracks = audioTracks.filter(
+      (track) => track.enabled && track.volumePercent > 0,
+    );
+
+    const audioStreams = media?.audioStreams ?? [];
+    meter.normalizationGain.gain.value = meterMixNormalization(
+      mergeAudio && usesExternalAudio,
+      exportAudioTracks.length,
+    );
+    meter.isMono = isMonoAudioMix(
+      exportAudioTracks.map(
+        (track) =>
+          audioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.channels,
+      ),
+    );
+  }, [audioTracks, mergeAudio, media?.audioStreams, usesExternalAudio]);
 
   useEffect(() => {
     const masterGain = masterGainRef.current;
@@ -1377,6 +1410,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     audioPlayheadRef,
     displayedPlayheadMicros,
     isPlaying,
+    audioMeterRef,
     isPlaybackReady,
     transportError,
     nativeLoopEnabled,

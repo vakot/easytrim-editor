@@ -20,7 +20,7 @@ function TimelineScale() {
   return (
     <div
       aria-hidden="true"
-      className="mt-3 mb-1 grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-end gap-2"
+      className="mt-3 mb-1 grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-end gap-3"
     >
       <span
         className="text-[0.625rem] font-bold tracking-[0.08em] text-muted-foreground uppercase"
