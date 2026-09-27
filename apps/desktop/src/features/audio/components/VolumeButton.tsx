@@ -25,7 +25,7 @@ const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(function V
   const defaultTooltipText = enabled ? t("audio.actions.mute") : t("audio.actions.unmute");
 
   return (
-    <Tooltip>
+    <Tooltip preserveOnTrigger>
       <TooltipTrigger asChild>
         <Button
           aria-pressed={enabled}
