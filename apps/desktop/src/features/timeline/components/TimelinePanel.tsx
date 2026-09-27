@@ -185,7 +185,11 @@ function PlaybackVolumeControl() {
         className={enabled ? "text-primary" : undefined}
         enabled={enabled}
         onClick={() => dispatch(playbackVolumeToggled())}
-        tooltipText={t("preview.tooltips.playbackVolume")}
+        tooltipText={
+          enabled
+            ? t("preview.tooltips.playbackVolumeMute")
+            : t("preview.tooltips.playbackVolumeUnmute")
+        }
         variant="secondary"
       />
 
