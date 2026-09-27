@@ -6,6 +6,7 @@ import {
   disconnectStereoAudioMeterNodes,
   peakAmplitude,
   smoothMeterLevel,
+  updatePeakHold,
 } from "../stereo-audio-meter";
 
 describe("stereo audio meter", () => {
@@ -24,6 +25,25 @@ describe("stereo audio meter", () => {
     const decayed = smoothMeterLevel(1, 0, 240);
     expect(decayed).toBeCloseTo(Math.exp(-1));
     expect(smoothMeterLevel(1, 0, 5000)).toBe(0);
+  });
+
+  it("holds peaks, releases them smoothly, and immediately replaces them with a higher peak", () => {
+    const initial = { level: 0, holdRemainingMs: 0 };
+    const firstPeak = updatePeakHold(initial, 0.8, 16);
+    expect(firstPeak).toEqual({ level: 0.8, holdRemainingMs: 750 });
+    expect(updatePeakHold(firstPeak, 0.2, 700)).toEqual({
+      level: 0.8,
+      holdRemainingMs: 50,
+    });
+
+    const falling = updatePeakHold(firstPeak, 0.2, 850);
+    expect(falling.holdRemainingMs).toBe(0);
+    expect(falling.level).toBeCloseTo(0.6889);
+    expect(updatePeakHold(falling, 0.2, 900).level).toBe(0.2);
+    expect(updatePeakHold(falling, 0.95, 16)).toEqual({
+      level: 0.95,
+      holdRemainingMs: 750,
+    });
   });
 
   it("attaches channel analysers as a passive branch and disconnects the branch", () => {

@@ -1,6 +1,13 @@
 const METER_FLOOR_DB = -60;
 const METER_DECAY_TIME_MS = 240;
 const METER_SILENCE_LEVEL = 0.001;
+const PEAK_HOLD_DURATION_MS = 750;
+const PEAK_HOLD_RELEASE_DURATION_MS = 900;
+
+interface PeakHoldState {
+  holdRemainingMs: number;
+  level: number;
+}
 
 interface StereoAudioMeterNodes {
   left: AnalyserNode;
@@ -52,12 +59,40 @@ function smoothMeterLevel(current: number, target: number, elapsedMs: number): n
   return next < METER_SILENCE_LEVEL ? 0 : next;
 }
 
+function updatePeakHold(
+  current: PeakHoldState,
+  liveLevel: number,
+  elapsedMs: number,
+): PeakHoldState {
+  const boundedLiveLevel = Math.max(0, Math.min(1, liveLevel));
+  if (boundedLiveLevel > current.level) {
+    return { level: boundedLiveLevel, holdRemainingMs: PEAK_HOLD_DURATION_MS };
+  }
+
+  const elapsed = Math.max(0, elapsedMs);
+  const heldTime = Math.min(elapsed, current.holdRemainingMs);
+  const holdRemainingMs = Math.max(0, current.holdRemainingMs - elapsed);
+  const releaseTime = elapsed - heldTime;
+  if (releaseTime === 0) return { ...current, holdRemainingMs };
+
+  const level = Math.max(
+    boundedLiveLevel,
+    current.level - releaseTime / PEAK_HOLD_RELEASE_DURATION_MS,
+  );
+
+  return {
+    level: level - boundedLiveLevel < METER_SILENCE_LEVEL ? boundedLiveLevel : level,
+    holdRemainingMs,
+  };
+}
+
 export {
   amplitudeToMeterLevel,
   createStereoAudioMeterNodes,
   disconnectStereoAudioMeterNodes,
   peakAmplitude,
   smoothMeterLevel,
+  updatePeakHold,
 };
 
-export type { StereoAudioMeterNodes };
+export type { PeakHoldState, StereoAudioMeterNodes };
