@@ -1,5 +1,7 @@
 import { List, Scissors, Settings2 } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import type { ComponentProps } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -52,20 +54,7 @@ function ExportActions() {
     >
       <Dialog>
         <ExportQueue>
-          <ExportActionTooltip tooltip={t("queue.labels.renderQueue")}>
-            <DialogTrigger asChild>
-              <ExportActionButton icon={<List aria-hidden="true" />} variant="default">
-                <span className="inline-flex items-center gap-1">
-                  {queueSize > 0 && (
-                    <Badge size="xs" variant="secondary">
-                      {finishedExports}/{queueSize}
-                    </Badge>
-                  )}
-                  {t("queue.labels.renderQueue")}
-                </span>
-              </ExportActionButton>
-            </DialogTrigger>
-          </ExportActionTooltip>
+          <ExportQueueTrigger finishedExports={finishedExports} queueSize={queueSize} />
 
           <DialogContent className="max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
             <DialogHeader className="-mx-4 border-b px-4 pb-4">
@@ -127,6 +116,62 @@ function ExportActions() {
   );
 }
 
+function ExportQueueTrigger({
+  finishedExports,
+  queueSize,
+}: {
+  finishedExports: number;
+  queueSize: number;
+}) {
+  const { t } = useTranslation();
+  const { queue } = useExportQueue();
+  const shouldReduceMotion = useReducedMotion();
+  const previousQueueSize = useRef(queue.length);
+  const [pulseKey, setPulseKey] = useState(0);
+
+  useEffect(() => {
+    if (queue.length > previousQueueSize.current) setPulseKey((key) => key + 1);
+    previousQueueSize.current = queue.length;
+  }, [queue.length]);
+
+  const shouldPulse = pulseKey > 0 && !shouldReduceMotion;
+
+  return (
+    <ExportActionTooltip tooltip={t("queue.labels.renderQueue")}>
+      <DialogTrigger asChild>
+        <MotionExportActionButton
+          animate={
+            shouldPulse
+              ? {
+                  boxShadow: [
+                    "0 0 0 0 transparent",
+                    "0 0 0 4px color-mix(in srgb, var(--primary) 35%, transparent)",
+                    "0 0 0 8px transparent",
+                  ],
+                }
+              : { boxShadow: "0 0 0 0 transparent" }
+          }
+          className="items-center"
+          icon={<List aria-hidden="true" />}
+          initial={shouldPulse ? { boxShadow: "0 0 0 0 transparent" } : false}
+          key={pulseKey}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          variant="default"
+        >
+          <span className="inline-flex items-center gap-1">
+            {queueSize > 0 && (
+              <Badge size="xs" variant="secondary">
+                {finishedExports}/{queueSize}
+              </Badge>
+            )}
+            {t("queue.labels.renderQueue")}
+          </span>
+        </MotionExportActionButton>
+      </DialogTrigger>
+    </ExportActionTooltip>
+  );
+}
+
 function ExportQueueStartButton() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -166,6 +211,8 @@ function ExportActionButton({
     </Button>
   );
 }
+
+const MotionExportActionButton = motion.create(ExportActionButton);
 
 function ExportActionTooltip({
   children,
