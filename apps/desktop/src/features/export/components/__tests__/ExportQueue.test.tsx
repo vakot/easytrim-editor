@@ -2,6 +2,8 @@ import { render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
   editingInstanceExportAttemptQueued,
@@ -104,9 +106,11 @@ describe("ExportQueue", () => {
 
     render(
       <Provider store={store}>
-        <ExportQueue>
-          <ExportQueueContent />
-        </ExportQueue>
+        <TooltipProvider>
+          <ExportQueue>
+            <ExportQueueContent />
+          </ExportQueue>
+        </TooltipProvider>
       </Provider>,
     );
 
@@ -137,9 +141,11 @@ describe("ExportQueue", () => {
 
     render(
       <Provider store={store}>
-        <ExportQueue>
-          <ExportQueueContent />
-        </ExportQueue>
+        <TooltipProvider>
+          <ExportQueue>
+            <ExportQueueContent />
+          </ExportQueue>
+        </TooltipProvider>
       </Provider>,
     );
 
@@ -189,10 +195,12 @@ describe("ExportQueue", () => {
 
     render(
       <Provider store={store}>
-        <ExportQueue>
-          <ExportQueueSummary />
-          <ExportQueueContent />
-        </ExportQueue>
+        <TooltipProvider>
+          <ExportQueue>
+            <ExportQueueSummary />
+            <ExportQueueContent />
+          </ExportQueue>
+        </TooltipProvider>
       </Provider>,
     );
 
