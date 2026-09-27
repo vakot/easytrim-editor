@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Clarified the timeline playback volume tooltip to explain its mute and unmute controls.
 - Virtualized the Source Explorer list to keep large imported source collections responsive while scrolling.
 - Improved imported source thumbnail loading with bounded background work and reusable cached previews.
 - Improved Source List and Command Palette search to handle partial queries and misspellings, with highlights on matched text.
