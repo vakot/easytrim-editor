@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Added Activity Feed rows that combine consecutive file-close activities and show the latest activity time.
 - Added an export queue dialog with per-job status, progress, metrics, and actions to start, cancel, retry, restore, or reveal outputs.
 - Added previous and next source controls for switching between imported sources.
+- Added a live stereo audio meter to the timeline toolbar with dBFS scale markers, peak holds, and green, orange, and red level zones.
 
 ### Changed
 
