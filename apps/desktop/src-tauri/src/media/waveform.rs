@@ -1,6 +1,7 @@
 use std::{
     ffi::{OsStr, OsString},
-    fs, io,
+    fs,
+    io::{self, Read, Write},
     path::Path,
     process,
     sync::atomic::{AtomicU64, Ordering},
@@ -9,7 +10,7 @@ use std::{
 
 use crate::{
     error::AppError,
-    process::{ProcessOutput, run_bounded_cancellable},
+    process::{ProcessOutput, run_bounded_cancellable, run_stream_cancellable},
     state::{WaveformArtifact, WaveformSource},
 };
 
@@ -31,85 +32,199 @@ pub fn generate_waveforms(
     for stream_index in stream_indexes {
         validate_waveform_request(&source.source.audio_stream_indexes, *stream_index, width)?;
     }
-    let artifacts = stream_indexes
+    let mut artifacts = stream_indexes
         .iter()
         .map(|stream_index| {
-            create_artifact(*stream_index).map(|artifact| (*stream_index, artifact))
+            create_artifact(*stream_index).map(|artifact| Some((*stream_index, artifact)))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let arguments = waveform_arguments(
-        &source.source.path,
-        stream_indexes,
-        width,
-        artifacts
-            .iter()
-            .map(|(_, artifact)| artifact.path())
-            .collect::<Vec<_>>()
-            .as_slice(),
-    );
-    let output = run_bounded_cancellable(
+    // Count samples and analyze activity before the streaming render pass so each pixel
+    // receives the same sample range as showwavespic's full-rate implementation.
+    let activity_args = activity_arguments(&source.source.path, stream_indexes);
+    let activity_output = run_bounded_cancellable(
         OsStr::new("ffmpeg"),
-        &arguments,
+        &activity_args,
         WAVEFORM_TIMEOUT,
         WAVEFORM_STDOUT_LIMIT,
         WAVEFORM_STDERR_LIMIT,
-        || {
-            source
-                .source
-                .cancellation
-                .load(std::sync::atomic::Ordering::Acquire)
-                || source
-                    .cancellation
-                    .load(std::sync::atomic::Ordering::Acquire)
-        },
+        || waveform_cancelled(source),
     )
     .map_err(process_error)?;
 
-    if output.status.success() {
-        let activity = parse_audio_activity(&output.stderr, stream_indexes);
+    if !activity_output.status.success() {
+        let failure_diagnostics = diagnostics(
+            &activity_output,
+            &source.source.path,
+            artifacts
+                .iter()
+                .filter_map(Option::as_ref)
+                .map(|(_, artifact)| artifact.path()),
+        );
         return Ok(artifacts
             .into_iter()
-            .map(|(stream_index, artifact)| {
-                if artifact.path().is_file() {
-                    (
-                        stream_index,
-                        activity.get(&stream_index).copied().flatten(),
-                        Ok(artifact),
-                    )
-                } else {
-                    (
-                        stream_index,
-                        None,
-                        Err(AppError::waveform_failed(
-                            format!(
-                                "Waveform generation produced no image for audio stream #{stream_index}."
-                            ),
-                            None::<String>,
-                        )),
-                    )
-                }
+            .map(|artifact| {
+                let (stream_index, artifact) = artifact.expect("waveform artifact is present");
+                waveform_error_result(
+                    stream_index,
+                    artifact,
+                    "Waveform analysis failed",
+                    failure_diagnostics.clone(),
+                )
             })
             .collect());
     }
 
-    let diagnostics = diagnostics(
-        &output,
-        &source.source.path,
-        artifacts.iter().map(|(_, artifact)| artifact.path()),
-    );
-    Ok(artifacts
-        .into_iter()
-        .map(|(stream_index, _)| {
-            (
-                stream_index,
+    let activities = parse_audio_activity(&activity_output.stderr, stream_indexes);
+    let sample_counts = parse_audio_sample_counts(&activity_output.stderr, stream_indexes);
+    let mut results: Vec<Option<WaveformGenerationResult>> = std::iter::repeat_with(|| None)
+        .take(stream_indexes.len())
+        .collect();
+    let mut envelopes = Vec::new();
+
+    for (position, stream_index) in stream_indexes.iter().enumerate() {
+        let Some(sample_count) = sample_counts.get(stream_index).copied().flatten() else {
+            let (_, artifact) = artifacts[position]
+                .take()
+                .expect("waveform artifact is present");
+            results[position] = Some(waveform_error_result(
+                *stream_index,
+                artifact,
+                "FFmpeg did not report the audio sample count",
                 None,
-                Err(AppError::waveform_failed(
-                    format!("Waveform generation failed for audio stream #{stream_index}."),
-                    diagnostics.clone(),
-                )),
-            )
-        })
+            ));
+            continue;
+        };
+
+        if sample_count < u64::from(width) {
+            let (_, artifact) = artifacts[position]
+                .take()
+                .expect("waveform artifact is present");
+            results[position] = Some(waveform_error_result(
+                *stream_index,
+                artifact,
+                "The audio stream has too few samples for its waveform width",
+                None,
+            ));
+            continue;
+        }
+
+        let envelope = create_envelope_artifact(*stream_index)?;
+        let arguments = pcm_stream_arguments(&source.source.path, *stream_index);
+        let envelope_path = envelope.path().to_owned();
+        let sample_total = sample_count;
+        let output_width = width;
+        let ((), pcm_output) = run_stream_cancellable(
+            OsStr::new("ffmpeg"),
+            &arguments,
+            WAVEFORM_TIMEOUT,
+            WAVEFORM_STDERR_LIMIT,
+            || waveform_cancelled(source),
+            move |reader| {
+                let mut output = fs::File::create(envelope_path)?;
+                write_binned_pcm(reader, &mut output, sample_total, output_width)
+            },
+        )
+        .map_err(process_error)?;
+
+        if !pcm_output.status.success() {
+            let failure_diagnostics =
+                diagnostics(&pcm_output, &source.source.path, [envelope.path()]);
+            let (_, artifact) = artifacts[position]
+                .take()
+                .expect("waveform artifact is present");
+            results[position] = Some(waveform_error_result(
+                *stream_index,
+                artifact,
+                "Waveform sample reduction failed",
+                failure_diagnostics,
+            ));
+            continue;
+        }
+
+        envelopes.push((position, *stream_index, envelope));
+    }
+
+    if !envelopes.is_empty() {
+        let image_args = render_waveform_arguments(
+            width,
+            &envelopes
+                .iter()
+                .map(|(_, _, envelope)| envelope.path())
+                .collect::<Vec<_>>(),
+            &envelopes
+                .iter()
+                .map(|(position, _, _)| {
+                    artifacts[*position]
+                        .as_ref()
+                        .expect("waveform artifact is present")
+                        .1
+                        .path()
+                })
+                .collect::<Vec<_>>(),
+        );
+        let image_output = run_bounded_cancellable(
+            OsStr::new("ffmpeg"),
+            &image_args,
+            WAVEFORM_TIMEOUT,
+            WAVEFORM_STDOUT_LIMIT,
+            WAVEFORM_STDERR_LIMIT,
+            || waveform_cancelled(source),
+        )
+        .map_err(process_error)?;
+
+        if image_output.status.success() {
+            for (position, _, _) in envelopes {
+                let (stream_index, artifact) = artifacts[position]
+                    .take()
+                    .expect("waveform artifact is present");
+                if artifact.path().is_file() {
+                    results[position] = Some((
+                        stream_index,
+                        activities.get(&stream_index).copied().flatten(),
+                        Ok(artifact),
+                    ));
+                } else {
+                    results[position] = Some(waveform_error_result(
+                        stream_index,
+                        artifact,
+                        "Waveform generation produced no image",
+                        None,
+                    ));
+                }
+            }
+        } else {
+            let failure_diagnostics = diagnostics(
+                &image_output,
+                &source.source.path,
+                artifacts
+                    .iter()
+                    .filter_map(Option::as_ref)
+                    .map(|(_, artifact)| artifact.path())
+                    .chain(envelopes.iter().map(|(_, _, envelope)| envelope.path())),
+            );
+            for (position, stream_index, _) in envelopes {
+                let (_, artifact) = artifacts[position]
+                    .take()
+                    .expect("waveform artifact is present");
+                results[position] = Some(waveform_error_result(
+                    stream_index,
+                    artifact,
+                    "Waveform image rendering failed",
+                    failure_diagnostics.clone(),
+                ));
+            }
+        }
+    }
+
+    Ok(results
+        .into_iter()
+        .map(|result| result.expect("every waveform stream has a result"))
         .collect())
+}
+
+fn waveform_cancelled(source: &WaveformSource) -> bool {
+    source.source.cancellation.load(Ordering::Acquire)
+        || source.cancellation.load(Ordering::Acquire)
 }
 
 pub fn validate_waveform_request(
@@ -130,18 +245,13 @@ pub fn validate_waveform_request(
     Ok(())
 }
 
-fn waveform_arguments(
-    source_path: &Path,
-    stream_indexes: &[u32],
-    width: u32,
-    output_paths: &[&Path],
-) -> Vec<OsString> {
+fn activity_arguments(source_path: &Path, stream_indexes: &[u32]) -> Vec<OsString> {
     let filters = stream_indexes
         .iter()
         .enumerate()
         .map(|(index, stream_index)| {
             format!(
-                "[0:{stream_index}]aformat=channel_layouts=mono,asplit=2[wave_input{index}][activity_input{index}];[wave_input{index}]showwavespic=s={width}x{WAVEFORM_HEIGHT}:colors=0x8b5cf6:scale=sqrt[waveform{index}];[activity_input{index}]volumedetect@stream{stream_index}[activity{index}]"
+                "[0:{stream_index}]aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream{stream_index}[activity{index}]"
             )
         })
         .collect::<Vec<_>>()
@@ -160,6 +270,78 @@ fn waveform_arguments(
         OsString::from("-filter_complex"),
         OsString::from(filters),
     ];
+    for index in 0..stream_indexes.len() {
+        arguments.extend([
+            OsString::from("-map"),
+            OsString::from(format!("[activity{index}]")),
+            OsString::from("-f"),
+            OsString::from("null"),
+            OsString::from("-"),
+        ]);
+    }
+    arguments
+}
+
+fn pcm_stream_arguments(source_path: &Path, stream_index: u32) -> Vec<OsString> {
+    vec![
+        OsString::from("-hide_banner"),
+        OsString::from("-nostdin"),
+        OsString::from("-nostats"),
+        OsString::from("-threads"),
+        OsString::from("1"),
+        OsString::from("-i"),
+        source_path.as_os_str().to_owned(),
+        OsString::from("-filter_complex"),
+        OsString::from(format!(
+            "[0:{stream_index}]aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
+        )),
+        OsString::from("-map"),
+        OsString::from("[pcm]"),
+        OsString::from("-c:a"),
+        OsString::from("pcm_s16le"),
+        OsString::from("-f"),
+        OsString::from("s16le"),
+        OsString::from("pipe:1"),
+    ]
+}
+
+fn render_waveform_arguments(
+    width: u32,
+    envelope_paths: &[&Path],
+    output_paths: &[&Path],
+) -> Vec<OsString> {
+    let mut arguments = vec![
+        OsString::from("-hide_banner"),
+        OsString::from("-nostdin"),
+        OsString::from("-nostats"),
+        OsString::from("-filter_complex_threads"),
+        OsString::from("1"),
+        OsString::from("-threads"),
+        OsString::from("1"),
+        OsString::from("-n"),
+    ];
+    for envelope_path in envelope_paths {
+        arguments.extend([
+            OsString::from("-f"),
+            OsString::from("s16le"),
+            OsString::from("-ar"),
+            OsString::from(width.to_string()),
+            OsString::from("-ac"),
+            OsString::from("1"),
+            OsString::from("-i"),
+            envelope_path.as_os_str().to_owned(),
+        ]);
+    }
+
+    let filters = (0..envelope_paths.len())
+        .map(|index| {
+            format!(
+                "[{index}:a:0]showwavespic=s={width}x{WAVEFORM_HEIGHT}:colors=0x8b5cf6:scale=sqrt[waveform{index}]"
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(";");
+    arguments.extend([OsString::from("-filter_complex"), OsString::from(filters)]);
     for (index, output_path) in output_paths.iter().enumerate() {
         arguments.extend([
             OsString::from("-map"),
@@ -175,16 +357,56 @@ fn waveform_arguments(
             output_path.as_os_str().to_owned(),
         ]);
     }
-    for index in 0..stream_indexes.len() {
-        arguments.extend([
-            OsString::from("-map"),
-            OsString::from(format!("[activity{index}]")),
-            OsString::from("-f"),
-            OsString::from("null"),
-            OsString::from("-"),
-        ]);
-    }
     arguments
+}
+
+fn write_binned_pcm(
+    reader: &mut dyn Read,
+    writer: &mut dyn Write,
+    sample_count: u64,
+    width: u32,
+) -> io::Result<()> {
+    let width = u64::from(width);
+    if sample_count < width {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "audio sample count is smaller than waveform width",
+        ));
+    }
+
+    let samples_per_column = sample_count / width;
+    let remainder = sample_count % width;
+    let mut buffer = [0_u8; 16 * 1024];
+
+    // showwavespic gives every column the integer quotient, then assigns the remainder
+    // to the last column. Match that boundary rule to reproduce its image exactly.
+    for column in 0..width {
+        let mut remaining = samples_per_column + u64::from(column == width - 1) * remainder;
+        let total_samples = remaining;
+        let mut magnitude_sum = 0_u64;
+        while remaining > 0 {
+            let samples = remaining.min((buffer.len() / 2) as u64) as usize;
+            let bytes = &mut buffer[..samples * 2];
+            reader.read_exact(bytes)?;
+            for sample in bytes.chunks_exact(2) {
+                let value = i16::from_le_bytes([sample[0], sample[1]]) as i32;
+                magnitude_sum += value.unsigned_abs() as u64;
+            }
+            remaining -= samples as u64;
+        }
+
+        let average = (magnitude_sum / total_samples) as i16;
+        writer.write_all(&average.to_le_bytes())?;
+    }
+
+    let mut trailing = [0_u8; 1];
+    if reader.read(&mut trailing)? != 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "decoded audio sample count did not match the analyzed count",
+        ));
+    }
+    writer.flush()
 }
 
 fn parse_audio_activity(
@@ -207,6 +429,42 @@ fn parse_audio_activity(
         .collect()
 }
 
+fn parse_audio_sample_counts(
+    stderr: &[u8],
+    stream_indexes: &[u32],
+) -> std::collections::HashMap<u32, Option<u64>> {
+    let stderr = String::from_utf8_lossy(stderr);
+    stream_indexes
+        .iter()
+        .map(|stream_index| {
+            let marker = format!("[volumedetect@stream{stream_index} ");
+            let sample_count = stderr.lines().rev().find_map(|line| {
+                if !line.contains(&marker) {
+                    return None;
+                }
+                line.split_once("n_samples:")?.1.trim().parse().ok()
+            });
+            (*stream_index, sample_count)
+        })
+        .collect()
+}
+
+fn waveform_error_result(
+    stream_index: u32,
+    _artifact: WaveformArtifact,
+    message: &str,
+    diagnostics: Option<String>,
+) -> WaveformGenerationResult {
+    (
+        stream_index,
+        None,
+        Err(AppError::waveform_failed(
+            format!("{message} for audio stream #{stream_index}."),
+            diagnostics,
+        )),
+    )
+}
+
 fn parse_mean_volume(stderr: &[u8]) -> Option<f64> {
     String::from_utf8_lossy(stderr).lines().find_map(|line| {
         let value = line.split_once("mean_volume:")?.1.trim();
@@ -224,6 +482,17 @@ fn is_mean_volume_audible(mean_volume: f64) -> bool {
 }
 
 fn create_artifact(stream_index: u32) -> Result<WaveformArtifact, AppError> {
+    create_temporary_artifact(stream_index, "png")
+}
+
+fn create_envelope_artifact(stream_index: u32) -> Result<WaveformArtifact, AppError> {
+    create_temporary_artifact(stream_index, "s16le")
+}
+
+fn create_temporary_artifact(
+    stream_index: u32,
+    extension: &str,
+) -> Result<WaveformArtifact, AppError> {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -238,7 +507,7 @@ fn create_artifact(stream_index: u32) -> Result<WaveformArtifact, AppError> {
         ));
         match fs::create_dir(&directory) {
             Ok(()) => {
-                let path = directory.join(format!("audio-{stream_index}.png"));
+                let path = directory.join(format!("audio-{stream_index}.{extension}"));
                 return WaveformArtifact::new(directory, path);
             }
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
@@ -294,10 +563,19 @@ fn diagnostics<'a>(
 
 #[cfg(test)]
 mod tests {
-    use std::{ffi::OsString, path::Path};
+    use std::{
+        ffi::OsString,
+        io::Cursor,
+        path::Path,
+        sync::{Arc, atomic::AtomicBool},
+    };
+
+    use crate::state::{ActiveSource, WaveformSource};
 
     use super::{
-        MAX_WAVEFORM_WIDTH, MIN_WAVEFORM_WIDTH, validate_waveform_request, waveform_arguments,
+        MAX_WAVEFORM_WIDTH, MIN_WAVEFORM_WIDTH, activity_arguments, parse_audio_sample_counts,
+        pcm_stream_arguments, render_waveform_arguments, validate_waveform_request,
+        write_binned_pcm,
     };
 
     #[test]
@@ -309,79 +587,86 @@ mod tests {
     }
 
     #[test]
-    fn builds_a_shell_free_stream_specific_waveform_command() {
-        let arguments = waveform_arguments(
-            Path::new("C:\\Videos\\source clip.mkv"),
-            &[2, 4],
-            1_280,
-            &[
-                Path::new("C:\\Temp\\audio-2.png"),
-                Path::new("C:\\Temp\\audio-4.png"),
-            ],
-        );
-
-        assert!(arguments.windows(2).any(|pair| {
+    fn builds_counting_streaming_and_render_commands() {
+        let source_path = Path::new("C:\\Videos\\source clip.mkv");
+        let activity_args = activity_arguments(source_path, &[2, 4]);
+        assert!(activity_args.windows(2).any(|pair| {
             pair == [
                 OsString::from("-i"),
                 OsString::from("C:\\Videos\\source clip.mkv"),
             ]
         }));
-        assert!(arguments.iter().any(|argument| {
-            argument == "[0:2]aformat=channel_layouts=mono,asplit=2[wave_input0][activity_input0];[wave_input0]showwavespic=s=1280x56:colors=0x8b5cf6:scale=sqrt[waveform0];[activity_input0]volumedetect@stream2[activity0];[0:4]aformat=channel_layouts=mono,asplit=2[wave_input1][activity_input1];[wave_input1]showwavespic=s=1280x56:colors=0x8b5cf6:scale=sqrt[waveform1];[activity_input1]volumedetect@stream4[activity1]"
+        assert!(activity_args.iter().any(|argument| {
+            argument
+                == "[0:2]aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream2[activity0];[0:4]aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream4[activity1]"
         }));
         assert_eq!(
-            arguments
+            activity_args
                 .windows(2)
                 .filter(|pair| pair[0] == "-map")
                 .map(|pair| pair[1].clone())
                 .collect::<Vec<_>>(),
-            [
-                OsString::from("[waveform0]"),
-                OsString::from("[waveform1]"),
-                OsString::from("[activity0]"),
-                OsString::from("[activity1]"),
-            ]
+            [OsString::from("[activity0]"), OsString::from("[activity1]")]
+        );
+
+        let pcm_args = pcm_stream_arguments(source_path, 4);
+        assert!(pcm_args.iter().any(|argument| {
+            argument == "[0:4]aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
+        }));
+        assert_eq!(pcm_args.last().unwrap(), "pipe:1");
+
+        let render_args = render_waveform_arguments(
+            1_280,
+            &[Path::new("C:\\Temp\\audio-2.s16le")],
+            &[Path::new("C:\\Temp\\audio-2.png")],
+        );
+        assert!(render_args.iter().any(|argument| {
+            argument == "[0:a:0]showwavespic=s=1280x56:colors=0x8b5cf6:scale=sqrt[waveform0]"
+        }));
+        assert!(
+            render_args
+                .windows(2)
+                .any(|pair| { pair == [OsString::from("-ar"), OsString::from("1280")] })
         );
     }
 
     #[test]
     fn parses_activity_by_filter_instance_and_classifies_noise() {
-        let stderr = b"[volumedetect@stream4 @ 0x0] mean_volume: -91.0 dB\n[volumedetect@stream2 @ 0x0] mean_volume: -18.5 dB";
+        let stderr = b"[volumedetect@stream4 @ 0x0] n_samples: 0\n[volumedetect@stream4 @ 0x0] n_samples: 96000\n[volumedetect@stream4 @ 0x0] mean_volume: -91.0 dB\n[volumedetect@stream2 @ 0x0] n_samples: 0\n[volumedetect@stream2 @ 0x0] n_samples: 48000\n[volumedetect@stream2 @ 0x0] mean_volume: -18.5 dB";
         let activity = super::parse_audio_activity(stderr, &[2, 4, 6]);
+        let counts = parse_audio_sample_counts(stderr, &[2, 4, 6]);
         assert_eq!(activity.get(&2).copied(), Some(Some(true)));
         assert_eq!(activity.get(&4).copied(), Some(Some(false)));
         assert_eq!(activity.get(&6).copied(), Some(None));
+        assert_eq!(counts.get(&2).copied(), Some(Some(48_000)));
+        assert_eq!(counts.get(&4).copied(), Some(Some(96_000)));
+        assert_eq!(counts.get(&6).copied(), Some(None));
     }
 
     #[test]
-    fn waveforms_use_full_rate_samples_without_resampling() {
-        let args = waveform_arguments(
-            Path::new("source.mkv"),
-            &[1, 6],
-            4_096,
-            &[Path::new("one.png"), Path::new("six.png")],
+    fn sample_binning_matches_showwavespic_column_boundaries() {
+        let samples = [1_i16, -2, 3, -4, 5, -6, 7, -8, 9, -10, 11];
+        let mut source = Cursor::new(
+            samples
+                .iter()
+                .flat_map(|sample| sample.to_le_bytes())
+                .collect::<Vec<_>>(),
         );
-        let filters = args
-            .windows(2)
-            .find(|pair| pair[0] == "-filter_complex")
-            .unwrap()[1]
-            .to_str()
-            .unwrap();
-        assert_eq!(
-            filters
-                .matches("showwavespic=s=4096x56:colors=0x8b5cf6:scale=sqrt")
-                .count(),
-            2
-        );
-        assert!(!filters.contains("aresample"));
-        assert!(!filters.contains("asetnsamples"));
-        assert!(filters.contains("[activity_input1]volumedetect@stream6"));
-        assert!(args.iter().any(|arg| arg == "-nostats"));
+        let mut output = Vec::new();
+
+        write_binned_pcm(&mut source, &mut output, samples.len() as u64, 4)
+            .expect("samples are reduced into four buckets");
+
+        let buckets = output
+            .chunks_exact(2)
+            .map(|sample| i16::from_le_bytes([sample[0], sample[1]]))
+            .collect::<Vec<_>>();
+        assert_eq!(buckets, [1, 3, 5, 9]);
     }
 
     #[test]
     #[ignore = "requires FFmpeg; generates and verifies a two-minute six-stream fixture"]
-    fn full_rate_images_preserve_active_and_silent_streams() {
+    fn bucketed_images_match_full_rate_for_active_and_silent_streams() {
         use crate::process::run_bounded;
         use std::{ffi::OsStr, fs, time::Duration};
 
@@ -410,6 +695,8 @@ mod tests {
             "0:a",
             "-map",
             "1:a",
+            "-ac:a",
+            "2",
             "-c:a",
             "flac",
             "-threads",
@@ -435,19 +722,50 @@ mod tests {
             String::from_utf8_lossy(&fixture.stderr)
         );
 
-        let artifacts = (0..6)
+        let references = (0..6)
             .map(|index| super::create_artifact(index).unwrap())
             .collect::<Vec<_>>();
         let indexes = [0, 1, 2, 3, 4, 5];
-        let args = waveform_arguments(
-            source.path(),
-            &indexes,
-            1280,
-            &artifacts
-                .iter()
-                .map(|artifact| artifact.path())
-                .collect::<Vec<_>>(),
-        );
+        let filters = indexes
+            .iter()
+            .enumerate()
+            .map(|(position, stream_index)| {
+                format!(
+                    "[0:{stream_index}]aformat=channel_layouts=mono,showwavespic=s=1280x56:colors=0x8b5cf6:scale=sqrt[waveform{position}]"
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(";");
+        let mut args: Vec<OsString> = [
+            "-hide_banner",
+            "-nostdin",
+            "-filter_complex_threads",
+            "1",
+            "-threads",
+            "1",
+            "-n",
+            "-i",
+        ]
+        .iter()
+        .map(OsString::from)
+        .collect();
+        args.push(source.path().as_os_str().to_owned());
+        args.extend([OsString::from("-filter_complex"), OsString::from(filters)]);
+        for (position, reference) in references.iter().enumerate() {
+            args.extend([
+                OsString::from("-map"),
+                OsString::from(format!("[waveform{position}]")),
+                OsString::from("-frames:v"),
+                OsString::from("1"),
+                OsString::from("-c:v"),
+                OsString::from("png"),
+                OsString::from("-update"),
+                OsString::from("1"),
+                OsString::from("-f"),
+                OsString::from("image2"),
+                reference.path().as_os_str().to_owned(),
+            ]);
+        }
         let output = run_bounded(
             OsStr::new("ffmpeg"),
             &args,
@@ -461,14 +779,31 @@ mod tests {
             "{}",
             String::from_utf8_lossy(&output.stderr)
         );
-        let activity = super::parse_audio_activity(&output.stderr, &indexes);
-        for (index, artifact) in artifacts.iter().enumerate() {
-            assert_eq!(activity[&(index as u32)], Some(index % 2 == 0));
+        let cancellation = Arc::new(AtomicBool::new(false));
+        let waveform_source = WaveformSource {
+            source: ActiveSource {
+                load_token: 1,
+                path: source.path().to_owned(),
+                cancellation: cancellation.clone(),
+                media: None,
+                preview_streams: None,
+                audio_stream_indexes: indexes.to_vec(),
+            },
+            cancellation,
+        };
+        let generated = super::generate_waveforms(&waveform_source, &indexes, 1280).unwrap();
+        for (position, ((stream_index, has_signal, result), reference)) in
+            generated.iter().zip(&references).enumerate()
+        {
+            assert_eq!(*stream_index, position as u32);
+            assert_eq!(*has_signal, Some(position % 2 == 0));
+            let artifact = result.as_ref().expect("waveform generation succeeds");
             let image = fs::read(artifact.path()).unwrap();
+            let reference_image = fs::read(reference.path()).unwrap();
+            assert_eq!(image, reference_image);
             assert_eq!(&image[..8], b"\x89PNG\r\n\x1a\n");
             assert_eq!(u32::from_be_bytes(image[16..20].try_into().unwrap()), 1280);
             assert_eq!(u32::from_be_bytes(image[20..24].try_into().unwrap()), 56);
-            assert!(image.len() < 100_000);
         }
     }
 }

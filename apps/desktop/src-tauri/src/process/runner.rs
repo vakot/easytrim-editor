@@ -138,6 +138,147 @@ pub fn run_bounded_cancellable(
     })
 }
 
+pub fn run_stream_cancellable<T: Send + 'static>(
+    executable: &OsStr,
+    arguments: &[OsString],
+    timeout: Duration,
+    max_stderr_bytes: usize,
+    mut is_cancelled: impl FnMut() -> bool,
+    process_stdout: impl FnOnce(&mut dyn Read) -> io::Result<T> + Send + 'static,
+) -> io::Result<(T, ProcessOutput)> {
+    if is_cancelled() {
+        return Err(cancelled_error());
+    }
+
+    let executable_path = resolve_executable(executable)?;
+    let command_started_at = Instant::now();
+    media_debug(format_args!(
+        "start {} {:?}",
+        executable_path.display(),
+        arguments
+    ));
+    let mut command = Command::new(executable_path);
+    command
+        .args(arguments)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    configure_process(&mut command);
+
+    let mut child = command.spawn()?;
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| io::Error::other("child stdout was not captured"))?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| io::Error::other("child stderr was not captured"))?;
+
+    let mut stdout_reader = Some(thread::spawn(move || {
+        process_stdout(&mut BufReader::new(stdout))
+    }));
+    let stderr_reader = thread::spawn(move || read_bounded(stderr, max_stderr_bytes));
+
+    let started_at = Instant::now();
+    let mut streamed_output = None;
+    let status = loop {
+        if stdout_reader
+            .as_ref()
+            .is_some_and(thread::JoinHandle::is_finished)
+            && streamed_output.is_none()
+        {
+            let joined =
+                join_stream_reader(stdout_reader.take().expect("reader handle is present"));
+            let result = match joined {
+                Ok(result) => result,
+                Err(error) => {
+                    let _ = terminate_child(&mut child);
+                    join_reader(stderr_reader)?;
+                    return Err(error);
+                }
+            };
+            match result {
+                Ok(output) => streamed_output = Some(output),
+                Err(error) => {
+                    let _ = terminate_child(&mut child);
+                    join_reader(stderr_reader)?;
+                    return Err(error);
+                }
+            }
+        }
+
+        if is_cancelled() {
+            terminate_child(&mut child)?;
+            if streamed_output.is_none() {
+                let _ =
+                    join_stream_reader(stdout_reader.take().expect("reader handle is present"))?;
+            }
+            join_reader(stderr_reader)?;
+            return Err(cancelled_error());
+        }
+
+        let elapsed = started_at.elapsed();
+        if elapsed >= timeout {
+            terminate_child(&mut child)?;
+            if streamed_output.is_none() {
+                let _ =
+                    join_stream_reader(stdout_reader.take().expect("reader handle is present"))?;
+            }
+            join_reader(stderr_reader)?;
+            return Err(io::Error::new(
+                io::ErrorKind::TimedOut,
+                "media helper process timed out",
+            ));
+        }
+
+        match child.wait_timeout(PROCESS_POLL_INTERVAL.min(timeout - elapsed)) {
+            Ok(Some(status)) => break status,
+            Ok(None) => {}
+            Err(error) => {
+                let _ = terminate_child(&mut child);
+                if streamed_output.is_none() {
+                    let _ = join_stream_reader(
+                        stdout_reader.take().expect("reader handle is present"),
+                    )?;
+                }
+                join_reader(stderr_reader)?;
+                return Err(error);
+            }
+        }
+    };
+
+    let streamed_output = match streamed_output {
+        Some(output) => output,
+        None => match join_stream_reader(stdout_reader.take().expect("reader handle is present")) {
+            Ok(output) => output?,
+            Err(error) => {
+                join_reader(stderr_reader)?;
+                return Err(error);
+            }
+        },
+    };
+    let (stderr, stderr_truncated) = join_reader(stderr_reader)?;
+
+    media_debug(format_args!(
+        "finish {:?} status={} elapsed_ms={}",
+        executable,
+        status,
+        command_started_at.elapsed().as_millis()
+    ));
+
+    Ok((
+        streamed_output,
+        ProcessOutput {
+            status,
+            stdout: Vec::new(),
+            stderr,
+            stdout_truncated: false,
+            stderr_truncated,
+        },
+    ))
+}
+
 pub fn run_progress_cancellable(
     executable: &OsStr,
     arguments: &[OsString],
@@ -279,6 +420,12 @@ fn join_reader(
         .map_err(|_| io::Error::other("media helper output reader stopped unexpectedly"))?
 }
 
+fn join_stream_reader<T>(reader: thread::JoinHandle<io::Result<T>>) -> io::Result<io::Result<T>> {
+    reader
+        .join()
+        .map_err(|_| io::Error::other("child stdout processor stopped unexpectedly"))
+}
+
 fn resolve_executable(executable: &OsStr) -> io::Result<PathBuf> {
     let executable_path = Path::new(executable);
     if executable_path.is_absolute() || executable_path.components().count() > 1 {
@@ -375,13 +522,14 @@ fn configure_process(_command: &mut Command) {}
 #[cfg(test)]
 mod tests {
     use std::{
-        ffi::OsStr,
+        ffi::{OsStr, OsString},
         io::{self, Cursor},
         time::Duration,
     };
 
     use super::{
         read_bounded, resolve_executable, run_bounded_cancellable, run_progress_cancellable,
+        run_stream_cancellable,
     };
 
     #[test]
@@ -399,6 +547,40 @@ mod tests {
 
         assert_eq!(retained, b"0123");
         assert!(truncated);
+    }
+
+    #[test]
+    fn streaming_process_forwards_stdout_to_a_bounded_consumer() {
+        let (executable, arguments, expected) = if cfg!(windows) {
+            (
+                "cmd.exe",
+                vec![OsString::from("/C"), OsString::from("echo streamed")],
+                b"streamed\r\n".as_slice(),
+            )
+        } else {
+            (
+                "sh",
+                vec![OsString::from("-c"), OsString::from("printf streamed")],
+                b"streamed".as_slice(),
+            )
+        };
+        let (streamed, output) = run_stream_cancellable(
+            OsStr::new(executable),
+            &arguments,
+            Duration::from_secs(5),
+            1024,
+            || false,
+            |reader| {
+                let mut bytes = Vec::new();
+                reader.read_to_end(&mut bytes)?;
+                Ok(bytes)
+            },
+        )
+        .expect("streamed process succeeds");
+
+        assert!(output.status.success());
+        assert!(output.stdout.is_empty());
+        assert_eq!(streamed, expected);
     }
 
     #[test]

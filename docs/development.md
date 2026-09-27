@@ -60,9 +60,11 @@ Audio is repositioned after the final video seek, not on every pointer update. S
 disposes the scheduler and pending interaction frames. Media range reads run on a blocking worker,
 not the window thread, and each GET body is capped at 4 MiB.
 
-Waveform images are drawn from the full-rate decoded audio samples. This preserves the detail in the
-waveform image but can use more memory for long recordings. Silence detection also analyzes the
-original samples. Background media work can still take minutes. Audio extraction and
+Waveform generation counts decoded samples and analyzes activity in one pass, then streams each
+selected audio track through a bounded-memory pixel-bucket reducer. It renders one averaged absolute
+sample per image column using FFmpeg's `showwavespic` column boundaries, preserving the full-rate
+image while avoiding retention of the complete decoded track. This adds a second audio decode pass
+for each selected track. Background media work can still take minutes. Audio extraction and
 incompatible-source proxy encoding remain full-source operations. Original codec, keyframe spacing,
 disk speed, and WebView support still limit seek latency; this is not a guarantee of instantaneous
 decoding for every video.
@@ -70,7 +72,7 @@ decoding for every video.
 Run the opt-in FFmpeg fixture check (six streams, alternating sound and silence) with:
 
 ```sh
-cargo test -p easytrim-editor-desktop full_rate_images -- --ignored --nocapture
+cargo test -p easytrim-editor-desktop bucketed_images -- --ignored --nocapture
 ```
 
 Also test a real long source in the desktop app: drag rapidly in both directions, release while
