@@ -39,6 +39,16 @@ describe("resolveInitialLanguage", () => {
       "Все выбранные дорожки объединяются в одну; это требует кодирования.",
     );
   });
+
+  it("localizes accessible stereo-meter labels", () => {
+    expect(i18n.getFixedT("en")("timeline.accessibility.audioLevel")).toBe("Stereo audio level");
+    expect(i18n.getFixedT("ru")("timeline.accessibility.leftAudioChannelLevel")).toBe(
+      "Уровень звука левого канала",
+    );
+    expect(i18n.getFixedT("sk")("timeline.accessibility.rightAudioChannelLevel")).toBe(
+      "Úroveň zvuku pravého kanála",
+    );
+  });
 });
 
 describe("resolveLanguagePreference", () => {

@@ -488,7 +488,10 @@ export const ru = {
       trimReset: "{{label}} — удерживайте Shift для привязки — дважды щёлкните для сброса",
     },
     accessibility: {
+      audioLevel: "Уровень стереозвука",
+      leftAudioChannelLevel: "Уровень звука левого канала",
       playbackPosition: "Позиция воспроизведения",
+      rightAudioChannelLevel: "Уровень звука правого канала",
       seconds: "{{value}} секунд",
       startsAt: "Начинается в {{time}}",
       tools: "Инструменты временной шкалы видео",

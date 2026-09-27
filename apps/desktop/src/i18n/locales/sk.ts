@@ -485,7 +485,10 @@ export const sk = {
       trimReset: "{{label}} — podržaním Shift prichytíte — dvojitým kliknutím obnovíte",
     },
     accessibility: {
+      audioLevel: "Úroveň stereo zvuku",
+      leftAudioChannelLevel: "Úroveň zvuku ľavého kanála",
       playbackPosition: "Pozícia prehrávania",
+      rightAudioChannelLevel: "Úroveň zvuku pravého kanála",
       seconds: "{{value}} sekundy",
       startsAt: "Začína v čase {{time}}",
       tools: "Nástroje časovej osi videa",

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import { usePlayback } from "@/app/hooks/usePlayback";
 import {
@@ -35,6 +36,7 @@ const METER_MARKER_LABELS = [
 
 function StereoAudioMeter() {
   const { audioMeterRef, isPlaying } = usePlayback();
+  const { t } = useTranslation();
   const leftFillRef = useRef<HTMLDivElement>(null);
   const rightFillRef = useRef<HTMLDivElement>(null);
   const leftPeakRef = useRef<HTMLDivElement>(null);
@@ -113,13 +115,25 @@ function StereoAudioMeter() {
   }, [audioMeterRef, isPlaying]);
 
   return (
-    <div aria-label="Stereo audio level" className="flex w-full flex-col" role="group">
+    <div
+      aria-label={t("timeline.accessibility.audioLevel")}
+      className="flex w-full flex-col"
+      role="group"
+    >
       <StereoAudioMeterScale />
       <div className="relative flex flex-1 flex-col gap-1">
-        <StereoAudioMeterChannel label="Left" peakRef={leftPeakRef} ref={leftFillRef}>
+        <StereoAudioMeterChannel
+          label={t("timeline.accessibility.leftAudioChannelLevel")}
+          peakRef={leftPeakRef}
+          ref={leftFillRef}
+        >
           L
         </StereoAudioMeterChannel>
-        <StereoAudioMeterChannel label="Right" peakRef={rightPeakRef} ref={rightFillRef}>
+        <StereoAudioMeterChannel
+          label={t("timeline.accessibility.rightAudioChannelLevel")}
+          peakRef={rightPeakRef}
+          ref={rightFillRef}
+        >
           R
         </StereoAudioMeterChannel>
       </div>
