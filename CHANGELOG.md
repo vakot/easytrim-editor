@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.12.0]
+
 ### Added
 
 - Added global timeline playback volume that persists across restarts, and kept playback speed independent of source and tool resets during the app run.
