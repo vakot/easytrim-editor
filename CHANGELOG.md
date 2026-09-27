@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.12.1]
+
 ### Added
 
 - Added a file-size change metric comparing the source and output for completed exports.
