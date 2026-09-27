@@ -1,7 +1,7 @@
 import { List, Scissors, Settings2 } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion, useAnimationControls, useReducedMotion } from "motion/react";
 import type { ComponentProps } from "react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -131,10 +131,7 @@ function ExportQueueTrigger({
   const { t } = useTranslation();
   const store = useAppStore();
   const shouldReduceMotion = useReducedMotion();
-  const [pulse, setPulse] = useState<{ key: number; tone: ExportQueuePulseTone }>({
-    key: 0,
-    tone: "primary",
-  });
+  const pulseControls = useAnimationControls();
 
   useEffect(() => {
     let previousStatuses = new Map(
@@ -166,37 +163,35 @@ function ExportQueueTrigger({
       }
 
       previousStatuses = currentStatuses;
-      if (nextTone) setPulse((current) => ({ key: current.key + 1, tone: nextTone }));
+      if (nextTone && !shouldReduceMotion) {
+        const pulseColor = `var(--${nextTone})`;
+        void pulseControls.start({
+          boxShadow: [
+            "0 0 0 0 transparent",
+            `0 0 0 4px color-mix(in srgb, ${pulseColor} 35%, transparent)`,
+            "0 0 0 8px transparent",
+          ],
+          transition: { duration: 0.6, ease: "easeOut" },
+        });
+      }
     });
-  }, [store]);
-
-  const shouldPulse = pulse.key > 0 && !shouldReduceMotion;
-  const pulseColor = `var(--${pulse.tone})`;
+  }, [pulseControls, shouldReduceMotion, store]);
 
   return (
     <ExportActionTooltip tooltip={t("queue.labels.renderQueue")}>
       <DialogTrigger asChild>
         <MotionExportActionButton
-          animate={
-            shouldPulse
-              ? {
-                  boxShadow: [
-                    "0 0 0 0 transparent",
-                    `0 0 0 4px color-mix(in srgb, ${pulseColor} 35%, transparent)`,
-                    "0 0 0 8px transparent",
-                  ],
-                }
-              : { boxShadow: "0 0 0 0 transparent" }
-          }
+          animate={pulseControls}
+          className="max-2xl:size-auto max-2xl:h-7 max-2xl:gap-1"
           icon={<List aria-hidden="true" />}
-          initial={shouldPulse ? { boxShadow: "0 0 0 0 transparent" } : false}
-          key={pulse.key}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          indicator={
+            <Badge size="xs" variant="secondary">
+              {finishedExports}/{queueSize}
+            </Badge>
+          }
+          initial={false}
           variant="default"
         >
-          <Badge size="xs" variant="secondary">
-            {finishedExports}/{queueSize}
-          </Badge>
           {t("queue.labels.renderQueue")}
         </MotionExportActionButton>
       </DialogTrigger>
@@ -224,9 +219,13 @@ function ExportActionButton({
   children,
   className,
   icon,
+  indicator,
   variant = "secondary",
   ...props
-}: ComponentProps<typeof Button> & { icon?: React.ReactNode }) {
+}: ComponentProps<typeof Button> & {
+  icon?: React.ReactNode;
+  indicator?: React.ReactNode;
+}) {
   return (
     <Button
       className={cn(
@@ -239,6 +238,7 @@ function ExportActionButton({
       {...props}
     >
       {icon}
+      {indicator}
       <span className="inline-flex items-center gap-1 truncate max-2xl:sr-only">{children}</span>
     </Button>
   );

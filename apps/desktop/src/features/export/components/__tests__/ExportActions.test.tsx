@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
@@ -85,8 +85,6 @@ describe("ExportActions", () => {
         },
       ]),
     );
-    store.dispatch(editingInstanceExportAttemptQueued({ attempt, id: "source-1" }));
-
     render(
       <Provider store={store}>
         <TooltipProvider>
@@ -94,6 +92,18 @@ describe("ExportActions", () => {
         </TooltipProvider>
       </Provider>,
     );
+
+    const queueButton = screen.getByRole("button", { name: /Export Queue$/ });
+    queueButton.focus();
+    act(() => {
+      store.dispatch(editingInstanceExportAttemptQueued({ attempt, id: "source-1" }));
+    });
+
+    expect(document.activeElement).toBe(queueButton);
+    expect(queueButton).toHaveClass("max-2xl:size-auto");
+    expect(
+      within(queueButton).getByText((_, element) => element?.textContent === "0/1").parentElement,
+    ).toBe(queueButton);
 
     await user.click(screen.getByRole("button", { name: /Export Queue$/ }));
 
