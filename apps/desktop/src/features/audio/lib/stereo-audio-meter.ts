@@ -3,6 +3,14 @@ const METER_DECAY_TIME_MS = 240;
 const METER_SILENCE_LEVEL = 0.001;
 const PEAK_HOLD_DURATION_MS = 750;
 const PEAK_HOLD_RELEASE_DURATION_MS = 900;
+const METER_SAFE_ZONE_END = 2 / 3;
+const METER_WARNING_ZONE_END = 0.85;
+
+interface MeterZoneLevels {
+  clipping: number;
+  safe: number;
+  warning: number;
+}
 
 interface PeakHoldState {
   holdRemainingMs: number;
@@ -59,6 +67,15 @@ function smoothMeterLevel(current: number, target: number, elapsedMs: number): n
   return next < METER_SILENCE_LEVEL ? 0 : next;
 }
 
+function meterZoneLevels(level: number): MeterZoneLevels {
+  const boundedLevel = Math.max(0, Math.min(1, level));
+  return {
+    clipping: Math.max(0, boundedLevel - METER_WARNING_ZONE_END),
+    safe: Math.min(boundedLevel, METER_SAFE_ZONE_END),
+    warning: Math.max(0, Math.min(boundedLevel, METER_WARNING_ZONE_END) - METER_SAFE_ZONE_END),
+  };
+}
+
 function updatePeakHold(
   current: PeakHoldState,
   liveLevel: number,
@@ -90,9 +107,10 @@ export {
   amplitudeToMeterLevel,
   createStereoAudioMeterNodes,
   disconnectStereoAudioMeterNodes,
+  meterZoneLevels,
   peakAmplitude,
   smoothMeterLevel,
   updatePeakHold,
 };
 
-export type { PeakHoldState, StereoAudioMeterNodes };
+export type { MeterZoneLevels, PeakHoldState, StereoAudioMeterNodes };

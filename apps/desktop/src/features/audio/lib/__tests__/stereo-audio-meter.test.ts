@@ -4,6 +4,7 @@ import {
   amplitudeToMeterLevel,
   createStereoAudioMeterNodes,
   disconnectStereoAudioMeterNodes,
+  meterZoneLevels,
   peakAmplitude,
   smoothMeterLevel,
   updatePeakHold,
@@ -25,6 +26,25 @@ describe("stereo audio meter", () => {
     const decayed = smoothMeterLevel(1, 0, 240);
     expect(decayed).toBeCloseTo(Math.exp(-1));
     expect(smoothMeterLevel(1, 0, 5000)).toBe(0);
+  });
+
+  it("splits the live meter fill into safe, warning, and clipping zones", () => {
+    expect(meterZoneLevels(0.5)).toEqual({ safe: 0.5, warning: 0, clipping: 0 });
+    const warningLevel = meterZoneLevels(0.75);
+    expect(warningLevel.safe).toBeCloseTo(2 / 3);
+    expect(warningLevel.warning).toBeCloseTo(0.75 - 2 / 3);
+    expect(warningLevel.clipping).toBe(0);
+
+    const clippingLevel = meterZoneLevels(0.9);
+    expect(clippingLevel.safe).toBeCloseTo(2 / 3);
+    expect(clippingLevel.warning).toBeCloseTo(0.85 - 2 / 3);
+    expect(clippingLevel.clipping).toBeCloseTo(0.05);
+
+    expect(meterZoneLevels(2)).toEqual({
+      safe: 2 / 3,
+      warning: 0.85 - 2 / 3,
+      clipping: 1 - 0.85,
+    });
   });
 
   it("holds peaks, releases them smoothly, and immediately replaces them with a higher peak", () => {

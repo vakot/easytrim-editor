@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { usePlayback } from "@/app/hooks/usePlayback";
 import {
   amplitudeToMeterLevel,
+  meterZoneLevels,
   peakAmplitude,
   smoothMeterLevel,
   updatePeakHold,
@@ -47,12 +48,12 @@ function StereoAudioMeter() {
     let previousTime = performance.now();
     let frame = 0;
     const meter = audioMeterRef.current;
-    if (!meter) return;
-    const leftSamples = new Float32Array(meter.left.fftSize);
-    const rightSamples = new Float32Array(meter.right.fftSize);
-
     const updateFill = (element: HTMLDivElement | null, level: number) => {
-      element?.style.setProperty("--meter-level", `${level * 100}%`);
+      if (!element) return;
+      const zones = meterZoneLevels(level);
+      element.style.setProperty("--meter-safe-level", `${zones.safe * 100}%`);
+      element.style.setProperty("--meter-warning-level", `${zones.warning * 100}%`);
+      element.style.setProperty("--meter-clipping-level", `${zones.clipping * 100}%`);
     };
 
     const updatePeak = (element: HTMLDivElement | null, level: number) => {
@@ -60,6 +61,16 @@ function StereoAudioMeter() {
       element.style.left = `${level * 100}%`;
       element.hidden = level === 0;
     };
+
+    if (!meter) {
+      updateFill(leftFillRef.current, 0);
+      updateFill(rightFillRef.current, 0);
+      updatePeak(leftPeakRef.current, 0);
+      updatePeak(rightPeakRef.current, 0);
+      return;
+    }
+    const leftSamples = new Float32Array(meter.left.fftSize);
+    const rightSamples = new Float32Array(meter.right.fftSize);
 
     const animate = (time: number) => {
       const elapsed = Math.max(0, time - previousTime);
@@ -153,10 +164,12 @@ function StereoAudioMeterChannel({
       role="img"
     >
       <div className="relative flex flex-1 items-center overflow-hidden rounded-sm">
-        <div
-          className="absolute inset-y-0 left-0 w-(--meter-level) bg-[linear-gradient(to_right,#22c55e_0%,#22c55e_70%,#eab308_70%,#eab308_90%,#ef4444_90%,#ef4444_100%)]"
-          ref={ref}
-        />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#14532d_0%,#14532d_66.6667%,#713f12_66.6667%,#713f12_85%,#7f1d1d_85%,#7f1d1d_100%)]" />
+        <div className="absolute inset-0" ref={ref}>
+          <div className="absolute inset-y-0 left-0 w-(--meter-safe-level) bg-green-500" />
+          <div className="absolute inset-y-0 left-[66.6667%] w-(--meter-warning-level) bg-orange-500" />
+          <div className="absolute inset-y-0 left-[85%] w-(--meter-clipping-level) bg-red-500" />
+        </div>
 
         {METER_MARKERS.map(({ label: markerLabel, level }) => (
           <span
