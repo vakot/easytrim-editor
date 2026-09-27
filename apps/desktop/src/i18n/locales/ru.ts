@@ -291,11 +291,18 @@ export const ru = {
       },
       elapsed: "{{value}} прошло",
       error: "Ошибка экспорта: {{message}}",
+      fileSizeChange: "Изменение размера файла: {{value}}",
       fps: "{{value}} FPS",
       remaining: "осталось {{value}}",
     },
     tooltips: {
       deleteSourceOnRenderFinish: "Удалить источник после успешного рендеринга",
+      duration: "Длительность экспорта",
+      fileSize: "Размер выходного файла",
+      fileSizeChange: "Изменение размера файла относительно источника",
+      fps: "Количество обработанных кадров в секунду",
+      progress: "Ход экспорта",
+      remaining: "Оставшееся время (оценка)",
     },
     dialogs: {
       deleteSourceOnRenderFinish: {

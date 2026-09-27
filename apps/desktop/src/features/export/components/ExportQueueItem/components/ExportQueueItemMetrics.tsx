@@ -1,58 +1,106 @@
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { formatExportDuration, formatExportFileSize } from "@/domain/export-metrics";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+import { cn } from "@/lib/class-names.utils";
 
 import { useExportQueueItem } from "../contexts/ExportQueueItemContext";
+import {
+  getDuration,
+  getFileSize,
+  getFileSizeChange,
+  getFps,
+  getProgress,
+  getRemaining,
+} from "../lib/export-queue-item-metrics";
+import type { ExportQueueItemMetricConfig } from "../types";
 
 function ExportQueueItemMetrics() {
   const { t } = useTranslation();
   const { attempt } = useExportQueueItem();
   const status = attempt.state.status;
 
-  const metrics = useMemo(() => {
-    const values: string[] = [];
-    const durationMs = attempt.metrics.durationMs;
-
-    if (durationMs !== null && durationMs !== undefined) {
-      const duration = formatExportDuration(durationMs);
-      values.push(
-        status === "rendering" ? t("queue.messages.elapsed", { value: duration }) : duration,
-      );
-    }
-
-    if (
-      status === "rendering" &&
-      durationMs !== null &&
-      durationMs !== undefined &&
-      attempt.metrics.estimatedTotalTimeMs !== undefined
-    ) {
-      const remainingMs = attempt.metrics.estimatedTotalTimeMs - durationMs;
-      if (remainingMs > 0) {
-        values.push(t("queue.messages.remaining", { value: formatExportDuration(remainingMs) }));
-      }
-    }
-
-    if (attempt.metrics.fileSizeBytes !== undefined) {
-      values.push(formatExportFileSize(attempt.metrics.fileSizeBytes));
-    }
-    if (attempt.metrics.fps !== undefined) {
-      values.push(t("queue.messages.fps", { value: attempt.metrics.fps.toFixed(1) }));
-    }
-    return values;
-  }, [attempt, status, t]);
+  const metrics = useMemo(
+    () =>
+      [
+        withTooltip(getProgress(attempt, { status }), t("queue.tooltips.progress")),
+        withTooltip(
+          getDuration(attempt, {
+            status,
+            formatValue: (value) => t("queue.messages.elapsed", { value }),
+          }),
+          t("queue.tooltips.duration"),
+        ),
+        withTooltip(
+          getRemaining(attempt, {
+            status,
+            formatValue: (value) => t("queue.messages.remaining", { value }),
+          }),
+          t("queue.tooltips.remaining"),
+        ),
+        withTooltip(getFileSize(attempt, {}), t("queue.tooltips.fileSize")),
+        withTooltip(
+          getFps(attempt, {
+            formatValue: (value) => t("queue.messages.fps", { value }),
+          }),
+          t("queue.tooltips.fps"),
+        ),
+        withTooltip(
+          getFileSizeChange(attempt, {
+            status,
+            formatValue: (value) => t("queue.messages.fileSizeChange", { value }),
+          }),
+          t("queue.tooltips.fileSizeChange"),
+        ),
+      ].filter((metric): metric is ExportQueueItemMetricConfig => metric !== null),
+    [attempt, status, t],
+  );
 
   if (!metrics.length) return null;
 
-  const hasProgress =
-    status === "rendering" || status === "completed" || attempt.metrics.progressPercent > 0;
-
   return (
     <span className="min-w-0 truncate">
-      {hasProgress ? "· " : null}
-      {metrics.join(" · ")}
+      {metrics.map((metric, index) => (
+        <Fragment key={metric.id}>
+          {index > 0 ? " · " : null}
+          <ExportQueueItemMetric metric={metric} />
+        </Fragment>
+      ))}
     </span>
   );
+}
+
+function ExportQueueItemMetric({ metric }: { metric: ExportQueueItemMetricConfig }) {
+  const Icon = metric.icon;
+  const content = (
+    <span
+      aria-label={metric.ariaLabel}
+      className={cn(
+        "inline-flex shrink-0 items-center gap-0.5 py-1 tabular-nums",
+        metric.className,
+      )}
+    >
+      {metric.value}
+      {Icon ? <Icon aria-hidden="true" className="size-3" /> : null}
+    </span>
+  );
+
+  if (!metric.tooltip) return content;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{content}</TooltipTrigger>
+      <TooltipContent side="top">{metric.tooltip}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function withTooltip(
+  metric: ExportQueueItemMetricConfig | null,
+  tooltip: string,
+): ExportQueueItemMetricConfig | null {
+  return metric ? { ...metric, tooltip } : null;
 }
 
 export { ExportQueueItemMetrics };

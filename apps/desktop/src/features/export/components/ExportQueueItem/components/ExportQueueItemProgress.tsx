@@ -17,16 +17,4 @@ function ExportQueueItemProgressBar() {
   );
 }
 
-function ExportQueueItemProgressPercent() {
-  const { attempt } = useExportQueueItem();
-  const status = attempt.state.status;
-
-  if (status === "queued") return null;
-  if (status !== "completed" && attempt.metrics.progressPercent <= 0) return null;
-
-  return (
-    <span className="shrink-0 tabular-nums">{Math.round(attempt.metrics.progressPercent)}%</span>
-  );
-}
-
-export { ExportQueueItemProgressBar, ExportQueueItemProgressPercent };
+export { ExportQueueItemProgressBar };
