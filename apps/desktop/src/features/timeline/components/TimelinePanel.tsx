@@ -69,7 +69,7 @@ function TimelinePanel() {
       <TimelineScale />
 
       <div
-        className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-2"
+        className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-3"
         data-slot="timeline-row"
       >
         <TimelineToolbar />

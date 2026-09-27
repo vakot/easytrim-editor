@@ -57,7 +57,7 @@ function AudioPanel() {
         {t("audio.labels.title")} ({audioTracks.length})
       </h3>
 
-      <div className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-2 px-3">
+      <div className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-3 px-3">
         <div className="flex min-w-0 items-center gap-2 pr-2">
           <VolumeButton
             aria-label={t("audio.labels.allTracks")}
