@@ -261,7 +261,7 @@ export const ru = {
     labels: {
       deleteSource: "Удалить источник",
       onFinish: "После завершения очереди",
-      renderQueue: "Очередь рендеринга",
+      renderQueue: "Очередь экспорта",
       routeFastCut: "Быстрая нарезка",
       routeOptimized: "Оптимизированный",
       title: "Очередь",
