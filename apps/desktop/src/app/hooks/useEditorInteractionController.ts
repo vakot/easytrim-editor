@@ -34,9 +34,12 @@ import {
 } from "@/domain/trim";
 import {
   connectNativeAudioBinding,
+  createStereoAudioMeterNodes,
   disconnectNativeAudioBinding,
+  disconnectStereoAudioMeterNodes,
   getOrCreateNativeAudioBinding,
   type NativeAudioBinding,
+  type StereoAudioMeterNodes,
   synchronizeAudioPosition,
 } from "@/features/audio";
 import {
@@ -68,6 +71,7 @@ const REVERSE_SHUTTLE_SEEK_INTERVAL_MS = 50;
 const SHUTTLE_MAX_FRAME_DELTA_MS = 100;
 
 interface EditorInteractionRuntime {
+  audioMeterRef: React.RefObject<StereoAudioMeterNodes | null>;
   audioPlayheadRef: React.RefObject<HTMLDivElement | null>;
   canSetSegmentEnd: boolean;
   canSetSegmentStart: boolean;
@@ -188,6 +192,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   } | null>(null);
 
   const masterGainRef = useRef<GainNode | null>(null);
+  const audioMeterRef = useRef<StereoAudioMeterNodes | null>(null);
   const playbackOutputGainRef = useRef<GainNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
   const audioPlayheadRef = useRef<HTMLDivElement>(null);
@@ -295,6 +300,8 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const cleanupAudioRuntime = useCallback(() => {
     for (const streamIndex of audioElementsRef.current.keys()) removeAudioRuntime(streamIndex);
     disconnectCurrentNativeAudioRoute();
+    disconnectStereoAudioMeterNodes(audioMeterRef.current);
+    audioMeterRef.current = null;
     masterGainRef.current?.disconnect();
     masterGainRef.current = null;
     playbackOutputGainRef.current?.disconnect();
@@ -375,6 +382,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       masterGainRef.current = masterGain;
       const playbackOutputGain = context.createGain();
       playbackOutputGainRef.current = playbackOutputGain;
+      audioMeterRef.current = createStereoAudioMeterNodes(context, masterGain);
       masterGain.connect(playbackOutputGain);
       playbackOutputGain.connect(context.destination);
     }
@@ -1377,6 +1385,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     audioPlayheadRef,
     displayedPlayheadMicros,
     isPlaying,
+    audioMeterRef,
     isPlaybackReady,
     transportError,
     nativeLoopEnabled,

@@ -17,6 +17,8 @@ import {
 } from "@/app/store/slices/editor-tools-slice";
 import { selectPreferences } from "@/app/store/slices/preferences-slice";
 
+import { StereoAudioMeter } from "./StereoAudioMeter";
+
 function TimelineToolbar() {
   const { t } = useTranslation();
 
@@ -34,10 +36,7 @@ function TimelineToolbar() {
         <ResetToolsTool />
       </div>
 
-      <div className="flex flex-1 flex-col gap-1">
-        <div className="flex-1 bg-secondary">L</div>
-        <div className="flex-1 bg-secondary">R</div>
-      </div>
+      <StereoAudioMeter />
     </div>
   );
 }

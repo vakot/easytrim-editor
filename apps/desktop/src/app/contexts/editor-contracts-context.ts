@@ -5,6 +5,7 @@ import type { EditorInteractionRuntime } from "@/app/hooks/useEditorInteractionC
 export type EditorPlaybackInteraction = Pick<
   EditorInteractionRuntime,
   | "audioPlayheadRef"
+  | "audioMeterRef"
   | "isPlaybackReady"
   | "isPlaying"
   | "nativeLoopEnabled"
