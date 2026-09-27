@@ -101,6 +101,7 @@ describe("ExportActions", () => {
 
     expect(document.activeElement).toBe(queueButton);
     expect(queueButton).toHaveClass("max-2xl:size-auto");
+    expect(queueButton).toHaveClass("max-2xl:px-2");
     expect(
       within(queueButton).getByText((_, element) => element?.textContent === "0/1").parentElement,
     ).toBe(queueButton);
