@@ -299,6 +299,7 @@ export const sk = {
       fileSize: "Veľkosť výstupného súboru",
       fileSizeChange: "Zmena veľkosti súboru oproti zdroju",
       fps: "Počet vykreslených snímok za sekundu",
+      progress: "Priebeh exportu",
       remaining: "Odhadovaný zostávajúci čas",
     },
     dialogs: {

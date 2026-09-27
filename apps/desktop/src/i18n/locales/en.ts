@@ -299,6 +299,7 @@ export const en = {
       fileSize: "Output file size",
       fileSizeChange: "Output file size change from source",
       fps: "Frames rendered per second",
+      progress: "Export progress",
       remaining: "Estimated time remaining",
     },
     dialogs: {

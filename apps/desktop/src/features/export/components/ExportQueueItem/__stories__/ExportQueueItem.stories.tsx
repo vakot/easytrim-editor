@@ -17,7 +17,6 @@ import {
   ExportQueueItemMetrics,
   ExportQueueItemOutputName,
   ExportQueueItemProgressBar,
-  ExportQueueItemProgressPercent,
   ExportQueueItemRestore,
   ExportQueueItemRetry,
   ExportQueueItemReveal,
@@ -90,7 +89,6 @@ function ExportQueueItemView() {
         {status === "rendering" && <ExportQueueItemProgressBar />}
 
         <div className="flex min-w-0 items-center gap-1 text-muted-foreground">
-          <ExportQueueItemProgressPercent />
           <ExportQueueItemMetrics />
         </div>
 
