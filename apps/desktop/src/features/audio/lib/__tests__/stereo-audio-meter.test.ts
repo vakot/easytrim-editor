@@ -4,6 +4,8 @@ import {
   amplitudeToMeterLevel,
   createStereoAudioMeterNodes,
   disconnectStereoAudioMeterNodes,
+  isMonoAudioMix,
+  meterMixNormalization,
   meterZoneLevels,
   peakAmplitude,
   smoothMeterLevel,
@@ -18,6 +20,19 @@ describe("stereo audio meter", () => {
     expect(amplitudeToMeterLevel(1)).toBe(1);
     expect(amplitudeToMeterLevel(2)).toBe(1);
     expect(amplitudeToMeterLevel(Number.NaN)).toBe(0);
+  });
+
+  it("matches the export mix normalization and only mirrors known mono mixes", () => {
+    expect(meterMixNormalization(false, 3)).toBe(1);
+    expect(meterMixNormalization(true, 1)).toBe(1);
+    expect(meterMixNormalization(true, 2)).toBe(0.5);
+    expect(meterMixNormalization(true, 4)).toBe(0.25);
+
+    expect(isMonoAudioMix([])).toBe(false);
+    expect(isMonoAudioMix([1])).toBe(true);
+    expect(isMonoAudioMix([1, 1])).toBe(true);
+    expect(isMonoAudioMix([1, 2])).toBe(false);
+    expect(isMonoAudioMix([undefined])).toBe(false);
   });
 
   it("tracks peaks immediately and smoothly decays them toward silence", () => {
@@ -71,14 +86,22 @@ describe("stereo audio meter", () => {
     const right = { fftSize: 0, disconnect: vi.fn() };
     const splitter = { connect: vi.fn(), disconnect: vi.fn() };
     const source = { connect: vi.fn(), disconnect: vi.fn() };
+    const normalizationGain = {
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      gain: { value: 1 },
+    };
+
     const context = {
       createAnalyser: vi.fn().mockReturnValueOnce(left).mockReturnValueOnce(right),
       createChannelSplitter: vi.fn().mockReturnValue(splitter),
+      createGain: vi.fn().mockReturnValue(normalizationGain),
     } as unknown as AudioContext;
 
     const meter = createStereoAudioMeterNodes(context, source as unknown as AudioNode);
 
-    expect(source.connect).toHaveBeenCalledWith(splitter);
+    expect(source.connect).toHaveBeenCalledWith(normalizationGain);
+    expect(normalizationGain.connect).toHaveBeenCalledWith(splitter);
     expect(splitter.connect).toHaveBeenNthCalledWith(1, left, 0);
     expect(splitter.connect).toHaveBeenNthCalledWith(2, right, 1);
     expect(meter.left.fftSize).toBe(2048);
@@ -86,7 +109,10 @@ describe("stereo audio meter", () => {
 
     disconnectStereoAudioMeterNodes(meter);
 
-    expect(source.disconnect).toHaveBeenCalledWith(splitter);
+    normalizationGain.gain.value = meterMixNormalization(true, 2);
+    expect(normalizationGain.gain.value).toBe(0.5);
+    expect(source.disconnect).toHaveBeenCalledWith(normalizationGain);
+    expect(normalizationGain.disconnect).toHaveBeenCalledOnce();
     expect(splitter.disconnect).toHaveBeenCalledOnce();
     expect(left.disconnect).toHaveBeenCalledOnce();
     expect(right.disconnect).toHaveBeenCalledOnce();

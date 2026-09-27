@@ -82,8 +82,7 @@ function StereoAudioMeter() {
         meter.left.getFloatTimeDomainData(leftSamples);
         meter.right.getFloatTimeDomainData(rightSamples);
         const leftPeak = peakAmplitude(leftSamples);
-        let rightPeak = peakAmplitude(rightSamples);
-        if (rightPeak < 0.00001 && leftPeak >= 0.00001) rightPeak = leftPeak;
+        const rightPeak = meter.isMono ? leftPeak : peakAmplitude(rightSamples);
         leftTarget = amplitudeToMeterLevel(leftPeak);
         rightTarget = amplitudeToMeterLevel(rightPeak);
       }

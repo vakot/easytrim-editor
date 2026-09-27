@@ -12,6 +12,8 @@ export {
   amplitudeToMeterLevel,
   createStereoAudioMeterNodes,
   disconnectStereoAudioMeterNodes,
+  isMonoAudioMix,
+  meterMixNormalization,
   meterZoneLevels,
   peakAmplitude,
   smoothMeterLevel,

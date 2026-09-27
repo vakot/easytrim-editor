@@ -7,6 +7,7 @@ import {
   selectAudioPreviews,
   selectAudioTracks,
   selectMasterAudio,
+  selectMergeAudio,
 } from "@/app/store/slices/audio-slice";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
@@ -38,6 +39,8 @@ import {
   disconnectNativeAudioBinding,
   disconnectStereoAudioMeterNodes,
   getOrCreateNativeAudioBinding,
+  isMonoAudioMix,
+  meterMixNormalization,
   type NativeAudioBinding,
   type StereoAudioMeterNodes,
   synchronizeAudioPosition,
@@ -127,6 +130,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const audioTracks = useAppSelector(selectAudioTracks);
   const masterAudio = useAppSelector(selectMasterAudio);
+  const mergeAudio = useAppSelector(selectMergeAudio);
   const audioPreviewState = useAppSelector(selectAudioPreviews);
   const audioPreviewUrls = useMemo(
     () =>
@@ -456,6 +460,27 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     playbackSpeed,
     usesExternalAudio,
   ]);
+
+  useEffect(() => {
+    const meter = audioMeterRef.current;
+    if (!meter) return;
+
+    const exportAudioTracks = audioTracks.filter(
+      (track) => track.enabled && track.volumePercent > 0,
+    );
+
+    const audioStreams = media?.audioStreams ?? [];
+    meter.normalizationGain.gain.value = meterMixNormalization(
+      mergeAudio && usesExternalAudio,
+      exportAudioTracks.length,
+    );
+    meter.isMono = isMonoAudioMix(
+      exportAudioTracks.map(
+        (track) =>
+          audioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.channels,
+      ),
+    );
+  }, [audioTracks, mergeAudio, media?.audioStreams, usesExternalAudio]);
 
   useEffect(() => {
     const masterGain = masterGainRef.current;
