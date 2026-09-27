@@ -175,6 +175,16 @@ function installAudioMocks(initiallyReady = true) {
     currentTime: 0,
     resume: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
+    createAnalyser: vi.fn(() => ({
+      fftSize: 0,
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      getFloatTimeDomainData: vi.fn(),
+    })),
+    createChannelSplitter: vi.fn(() => ({
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
     createGain: vi.fn(() => ({
       gain: {
         value: 1,
@@ -1453,6 +1463,16 @@ describe("App", () => {
       currentTime: 0,
       resume: vi.fn().mockResolvedValue(undefined),
       close: vi.fn().mockResolvedValue(undefined),
+      createAnalyser: vi.fn(() => ({
+        fftSize: 0,
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        getFloatTimeDomainData: vi.fn(),
+      })),
+      createChannelSplitter: vi.fn(() => ({
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      })),
       createGain: vi.fn(() => ({
         gain: {
           value: 1,
