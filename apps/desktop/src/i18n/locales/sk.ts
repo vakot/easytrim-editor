@@ -289,11 +289,17 @@ export const sk = {
       },
       elapsed: "{{value}} uplynulo",
       error: "Chyba exportu: {{message}}",
+      fileSizeChange: "Zmena veľkosti súboru: {{value}}",
       fps: "{{value}} FPS",
       remaining: "zostáva {{value}}",
     },
     tooltips: {
       deleteSourceOnRenderFinish: "Po úspešnom vykreslení odstráni zdroj",
+      duration: "Trvanie exportu",
+      fileSize: "Veľkosť výstupného súboru",
+      fileSizeChange: "Zmena veľkosti súboru oproti zdroju",
+      fps: "Počet vykreslených snímok za sekundu",
+      remaining: "Odhadovaný zostávajúci čas",
     },
     dialogs: {
       deleteSourceOnRenderFinish: {
