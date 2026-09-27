@@ -1001,19 +1001,14 @@ describe("App", () => {
       "data-variant",
       "secondary",
     );
-    expect(videoToolbar.querySelector('[data-slot="timeline-tools-divider"]')).toHaveClass(
-      "mx-1",
-      "shrink-0",
-      "bg-border",
-    );
     expect(
-      within(videoToolbar).getByRole("button", { name: "Reset tools" }).parentElement,
-    ).toHaveClass("shrink-0", "self-start");
+      videoToolbar.querySelector('[data-slot="timeline-tools-divider"]'),
+    ).not.toBeInTheDocument();
+    expect(within(videoToolbar).getAllByRole("button")).toHaveLength(4);
     const timelineFixedContent = screen.getByTestId("timeline-fixed-content");
     expect(
       within(timelineFixedContent).getByRole("button", { name: "Playback speed" }),
     ).toHaveAttribute("data-variant", "secondary");
-    expect(videoToolbar.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
     const playbackSpeedButton = within(timelineFixedContent).getByRole("button", {
       name: "Playback speed",
     });

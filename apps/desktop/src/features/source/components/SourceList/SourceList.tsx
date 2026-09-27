@@ -31,25 +31,33 @@ function SourceList({ children }: SourceListProps) {
   const [search, setSearch] = useState("");
   const [closingSourceIds, setClosingSourceIds] = useState<ReadonlySet<string>>(() => new Set());
   const prefersReducedMotion = useReducedMotion() === true;
+  const hasSearchQuery = search.trim().length > 0;
   const searchSources = useMemo(() => createSourceSearcher(searchEntries), [searchEntries]);
-  const searchResults = useMemo(() => searchSources(search), [search, searchSources]);
+  const searchResults = useMemo(
+    () => (hasSearchQuery ? searchSources(search) : []),
+    [hasSearchQuery, search, searchSources],
+  );
+
   const sourcesById = useMemo(
     () => new Map(sources.map((source) => [source.id, source])),
     [sources],
   );
 
-  const filteredSources = useMemo(
-    () =>
-      searchResults.flatMap(({ source }) => {
-        const entry = sourcesById.get(source.id);
-        return entry ? [entry] : [];
-      }),
-    [searchResults, sourcesById],
-  );
+  const filteredSources = useMemo(() => {
+    if (!hasSearchQuery) return sources;
+
+    return searchResults.flatMap(({ source }) => {
+      const entry = sourcesById.get(source.id);
+      return entry ? [entry] : [];
+    });
+  }, [hasSearchQuery, searchResults, sources, sourcesById]);
 
   const matchesBySourceId = useMemo(
-    () => new Map(searchResults.map((result) => [result.source.id, result])),
-    [searchResults],
+    () =>
+      hasSearchQuery
+        ? new Map(searchResults.map((result) => [result.source.id, result]))
+        : new Map(),
+    [hasSearchQuery, searchResults],
   );
 
   const handleSearchChange = useCallback((value: string) => {
