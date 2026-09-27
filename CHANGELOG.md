@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed waveform images ending before their audio on long recordings.
+
 ## [1.12.1]
 
 ### Added
