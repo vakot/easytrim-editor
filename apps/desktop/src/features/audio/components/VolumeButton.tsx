@@ -14,14 +14,15 @@ type VolumeButtonProps = Omit<
 > & {
   enabled: boolean;
   onClick: () => void;
+  tooltipText?: string;
 };
 
 const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(function VolumeButton(
-  { className, enabled, ...buttonProps },
+  { className, enabled, tooltipText, ...buttonProps },
   ref,
 ) {
   const { t } = useTranslation();
-  const tooltipLabel = enabled ? t("audio.actions.mute") : t("audio.actions.unmute");
+  const defaultTooltipText = enabled ? t("audio.actions.mute") : t("audio.actions.unmute");
 
   return (
     <Tooltip>
@@ -38,7 +39,7 @@ const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(function V
           {enabled ? <Volume2 /> : <VolumeX />}
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{tooltipLabel}</TooltipContent>
+      <TooltipContent>{tooltipText ?? defaultTooltipText}</TooltipContent>
     </Tooltip>
   );
 });

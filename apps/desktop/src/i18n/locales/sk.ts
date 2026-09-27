@@ -436,6 +436,7 @@ export const sk = {
       nextFrame: "Nasledujúca snímka (šípka doprava; podržaním prehrať 2×)",
       pause: "Pozastaviť (medzerník)",
       play: "Prehrať (medzerník)",
+      playbackVolume: "Hlasitosť prehrávania (stlmiť/zrušiť stlmenie)",
       playbackSpeed: "Upraviť rýchlosť prehrávania náhľadu",
       previousFrame: "Predchádzajúca snímka (šípka doľava; podržaním pretočiť späť 2×)",
       segmentDisabled: "Prehráva sa celá časová os",

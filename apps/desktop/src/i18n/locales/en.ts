@@ -436,6 +436,7 @@ export const en = {
       nextFrame: "Next frame (Right Arrow; hold to play 2×)",
       pause: "Pause (Space)",
       play: "Play (Space)",
+      playbackVolume: "Playback volume (Mute/Unmute)",
       playbackSpeed: "Adjust preview playback speed",
       previousFrame: "Previous frame (Left Arrow; hold to rewind 2×)",
       segmentDisabled: "Play the complete timeline",
