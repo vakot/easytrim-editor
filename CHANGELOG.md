@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added a file-size change metric comparing the source and output for completed exports.
 - Added export queue progress counts and rounded pulse feedback for newly queued, completed, and failed exports.
 
 ## [1.12.0]
