@@ -2,7 +2,6 @@ import { BetweenVerticalStart, Magnet, Repeat, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -32,14 +31,6 @@ function TimelineToolbar() {
         <SnapPlaybackTool />
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
-      </div>
-      <Separator
-        aria-hidden="true"
-        className="mx-1"
-        data-slot="timeline-tools-divider"
-        orientation="vertical"
-      />
-      <div className="shrink-0 self-start">
         <ResetToolsTool />
       </div>
     </div>
