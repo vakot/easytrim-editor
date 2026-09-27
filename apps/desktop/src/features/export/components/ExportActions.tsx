@@ -1,7 +1,7 @@
 import { List, Scissors, Settings2 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import type { ComponentProps } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +19,12 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/app/store/redux-hooks";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
-import { selectExportQueueSummary } from "@/app/store/slices/editing-instances-slice";
+import {
+  selectExportQueue,
+  selectExportQueueSummary,
+} from "@/app/store/slices/editing-instances-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   openOptimizedExportDialog,
@@ -32,6 +35,8 @@ import { cn } from "@/lib/class-names.utils";
 
 import { ExportQueue, ExportQueueContent, ExportQueueSummary } from "../components/ExportQueue";
 import { useExportQueue } from "../components/ExportQueue/contexts/ExportQueueContext";
+
+type ExportQueuePulseTone = "destructive" | "primary" | "success";
 
 function ExportActions() {
   const { t } = useTranslation();
@@ -124,17 +129,49 @@ function ExportQueueTrigger({
   queueSize: number;
 }) {
   const { t } = useTranslation();
-  const { queue } = useExportQueue();
+  const store = useAppStore();
   const shouldReduceMotion = useReducedMotion();
-  const previousQueueSize = useRef(queue.length);
-  const [pulseKey, setPulseKey] = useState(0);
+  const [pulse, setPulse] = useState<{ key: number; tone: ExportQueuePulseTone }>({
+    key: 0,
+    tone: "primary",
+  });
 
   useEffect(() => {
-    if (queue.length > previousQueueSize.current) setPulseKey((key) => key + 1);
-    previousQueueSize.current = queue.length;
-  }, [queue.length]);
+    let previousStatuses = new Map(
+      selectExportQueue(store.getState()).map(({ attempt, instance }) => [
+        `${instance.id}:${attempt.id}`,
+        attempt.state.status,
+      ]),
+    );
 
-  const shouldPulse = pulseKey > 0 && !shouldReduceMotion;
+    return store.subscribe(() => {
+      let nextTone: ExportQueuePulseTone | null = null;
+      const currentStatuses = new Map(previousStatuses);
+      currentStatuses.clear();
+
+      for (const { attempt, instance } of selectExportQueue(store.getState())) {
+        const key = `${instance.id}:${attempt.id}`;
+        const status = attempt.state.status;
+        const previousStatus = previousStatuses.get(key);
+
+        if (previousStatus === undefined && (status === "queued" || status === "rendering")) {
+          nextTone ??= "primary";
+        } else if (previousStatus !== status) {
+          if (status === "failed") nextTone = "destructive";
+          else if (status === "completed" && nextTone !== "destructive") nextTone = "success";
+          else if (status === "queued") nextTone ??= "primary";
+        }
+
+        currentStatuses.set(key, status);
+      }
+
+      previousStatuses = currentStatuses;
+      if (nextTone) setPulse((current) => ({ key: current.key + 1, tone: nextTone }));
+    });
+  }, [store]);
+
+  const shouldPulse = pulse.key > 0 && !shouldReduceMotion;
+  const pulseColor = `var(--${pulse.tone})`;
 
   return (
     <ExportActionTooltip tooltip={t("queue.labels.renderQueue")}>
@@ -145,27 +182,22 @@ function ExportQueueTrigger({
               ? {
                   boxShadow: [
                     "0 0 0 0 transparent",
-                    "0 0 0 4px color-mix(in srgb, var(--primary) 35%, transparent)",
+                    `0 0 0 4px color-mix(in srgb, ${pulseColor} 35%, transparent)`,
                     "0 0 0 8px transparent",
                   ],
                 }
               : { boxShadow: "0 0 0 0 transparent" }
           }
-          className="items-center"
           icon={<List aria-hidden="true" />}
           initial={shouldPulse ? { boxShadow: "0 0 0 0 transparent" } : false}
-          key={pulseKey}
+          key={pulse.key}
           transition={{ duration: 0.6, ease: "easeOut" }}
           variant="default"
         >
-          <span className="inline-flex items-center gap-1">
-            {queueSize > 0 && (
-              <Badge size="xs" variant="secondary">
-                {finishedExports}/{queueSize}
-              </Badge>
-            )}
-            {t("queue.labels.renderQueue")}
-          </span>
+          <Badge size="xs" variant="secondary">
+            {finishedExports}/{queueSize}
+          </Badge>
+          {t("queue.labels.renderQueue")}
         </MotionExportActionButton>
       </DialogTrigger>
     </ExportActionTooltip>
@@ -207,7 +239,7 @@ function ExportActionButton({
       {...props}
     >
       {icon}
-      <span className="truncate max-2xl:sr-only">{children}</span>
+      <span className="inline-flex items-center gap-1 truncate max-2xl:sr-only">{children}</span>
     </Button>
   );
 }
