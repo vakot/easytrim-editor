@@ -41,11 +41,6 @@ pub fn generate_waveforms(
         &source.source.path,
         stream_indexes,
         width,
-        source
-            .source
-            .media
-            .as_ref()
-            .map_or(0, |media| media.duration_micros),
         artifacts
             .iter()
             .map(|(_, artifact)| artifact.path())
@@ -139,16 +134,14 @@ fn waveform_arguments(
     source_path: &Path,
     stream_indexes: &[u32],
     width: u32,
-    duration_micros: i64,
     output_paths: &[&Path],
 ) -> Vec<OsString> {
-    let envelope = waveform_envelope_filter(duration_micros, width);
     let filters = stream_indexes
         .iter()
         .enumerate()
         .map(|(index, stream_index)| {
             format!(
-                "[0:{stream_index}]aformat=channel_layouts=mono,asplit=2[wave_input{index}][activity_input{index}];[wave_input{index}]{envelope}showwavespic=s={width}x{WAVEFORM_HEIGHT}:colors=0x8b5cf6:scale=sqrt[waveform{index}];[activity_input{index}]volumedetect@stream{stream_index}[activity{index}]"
+                "[0:{stream_index}]aformat=channel_layouts=mono,asplit=2[wave_input{index}][activity_input{index}];[wave_input{index}]showwavespic=s={width}x{WAVEFORM_HEIGHT}:colors=0x8b5cf6:scale=sqrt[waveform{index}];[activity_input{index}]volumedetect@stream{stream_index}[activity{index}]"
             )
         })
         .collect::<Vec<_>>()
@@ -192,20 +185,6 @@ fn waveform_arguments(
         ]);
     }
     arguments
-}
-
-fn waveform_envelope_filter(duration_micros: i64, width: u32) -> String {
-    if duration_micros <= 60_000_000 {
-        return String::new();
-    }
-    // showwavespic retains its entire input until EOF. Feed it an amplitude envelope,
-    // not hours of PCM. Rectify BEFORE resampling so high-frequency sound is preserved.
-    // Aim for 16 samples/pixel, with a 1 Hz floor for exceptionally long recordings.
-    let rate =
-        ((u64::from(width) * 16 * 1_000_000).div_ceil(duration_micros as u64)).clamp(1, 1_000);
-    // Two stages avoid a very large resampling ratio/filter. Rebatch tiny low-rate frames
-    // to avoid retaining hundreds of thousands of AVFrame allocations. Do not pad the tail.
-    format!("aeval=abs(val(0)),aresample=1000,aresample={rate},asetnsamples=n=1024:p=0,")
 }
 
 fn parse_audio_activity(
@@ -335,7 +314,6 @@ mod tests {
             Path::new("C:\\Videos\\source clip.mkv"),
             &[2, 4],
             1_280,
-            30_000_000,
             &[
                 Path::new("C:\\Temp\\audio-2.png"),
                 Path::new("C:\\Temp\\audio-4.png"),
@@ -376,17 +354,11 @@ mod tests {
     }
 
     #[test]
-    fn long_recordings_retain_an_envelope_instead_of_full_rate_pcm() {
-        assert_eq!(super::waveform_envelope_filter(30_000_000, 1_280), "");
-        assert_eq!(
-            super::waveform_envelope_filter(14_400_000_000, MAX_WAVEFORM_WIDTH),
-            "aeval=abs(val(0)),aresample=1000,aresample=5,asetnsamples=n=1024:p=0,"
-        );
+    fn waveforms_use_full_rate_samples_without_resampling() {
         let args = waveform_arguments(
             Path::new("source.mkv"),
             &[1, 6],
             4_096,
-            14_400_000_000,
             &[Path::new("one.png"), Path::new("six.png")],
         );
         let filters = args
@@ -395,14 +367,21 @@ mod tests {
             .unwrap()[1]
             .to_str()
             .unwrap();
-        assert_eq!(filters.matches("aeval=abs(val(0))").count(), 2);
+        assert_eq!(
+            filters
+                .matches("showwavespic=s=4096x56:colors=0x8b5cf6:scale=sqrt")
+                .count(),
+            2
+        );
+        assert!(!filters.contains("aresample"));
+        assert!(!filters.contains("asetnsamples"));
         assert!(filters.contains("[activity_input1]volumedetect@stream6"));
         assert!(args.iter().any(|arg| arg == "-nostats"));
     }
 
     #[test]
     #[ignore = "requires FFmpeg; generates and verifies a two-minute six-stream fixture"]
-    fn envelope_images_preserve_active_and_silent_streams() {
+    fn full_rate_images_preserve_active_and_silent_streams() {
         use crate::process::run_bounded;
         use std::{ffi::OsStr, fs, time::Duration};
 
@@ -464,7 +443,6 @@ mod tests {
             source.path(),
             &indexes,
             1280,
-            120_000_000,
             &artifacts
                 .iter()
                 .map(|artifact| artifact.path())
