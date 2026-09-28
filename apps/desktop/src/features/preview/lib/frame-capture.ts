@@ -10,8 +10,11 @@ function frameNumberAt(currentTimeSeconds: number, frameRate: FrameRate | undefi
   const time = Number.isFinite(currentTimeSeconds) ? Math.max(0, currentTimeSeconds) : 0;
   const numerator = frameRate?.numerator ?? 10;
   const denominator = frameRate?.denominator ?? 1;
-  if (numerator <= 0 || denominator <= 0) return Math.round(time * 10);
-  return Math.round((time * numerator) / denominator);
+  const scaledTime =
+    numerator <= 0 || denominator <= 0 ? time * 10 : (time * numerator) / denominator;
+
+  const boundaryTolerance = Number.EPSILON * Math.max(1, Math.abs(scaledTime));
+  return Math.floor(scaledTime + boundaryTolerance);
 }
 
 function frameFileNameFor(displayName: string, frameNumber: number): string {

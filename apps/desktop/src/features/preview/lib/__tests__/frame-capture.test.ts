@@ -56,8 +56,16 @@ describe("frame output names", () => {
     expect(frameFileNameFor("my.clip.mp4", 18)).toBe("my.clip_18.png");
   });
 
+  it("uses the frame whose presentation interval contains the timestamp", () => {
+    const tenFramesPerSecond = { denominator: 1, numerator: 10 };
+    expect(frameNumberAt(0.06, tenFramesPerSecond)).toBe(0);
+    expect(frameNumberAt(0.09999999999999999, tenFramesPerSecond)).toBe(1);
+    expect(frameNumberAt(0.06, undefined)).toBe(0);
+    expect(frameNumberAt(0.16, undefined)).toBe(1);
+  });
+
   it("sanitizes source names and falls back when the frame rate is missing", () => {
-    expect(frameFileNameFor("clip.mp4", frameNumberAt(2.25, undefined))).toBe("clip_23.png");
+    expect(frameFileNameFor("clip.mp4", frameNumberAt(2.25, undefined))).toBe("clip_22.png");
     expect(frameFileNameFor("../clip?.mp4", 1)).toBe("clip__1.png");
   });
 });
