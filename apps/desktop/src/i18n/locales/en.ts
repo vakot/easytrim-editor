@@ -615,11 +615,13 @@ export const en = {
         frameRate: "Frame rate",
         loudness: {
           analyze: "Analyze loudness",
+          analyzed: "Analyzed",
           analyzing: "Analyzing…",
           analysisFailed: "Audio loudness analysis failed.",
           default: "Default",
           defaultWithAnalysis: "Default · {{integratedLufs}} / {{truePeakDb}}",
           label: "Loudness",
+          retry: "Retry",
           presets: {
             broadcast: "Broadcast · −23 LUFS / −2 dBTP",
             streaming: "Streaming · −16 LUFS / −1.5 dBTP",

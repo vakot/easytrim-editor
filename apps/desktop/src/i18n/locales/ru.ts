@@ -618,11 +618,13 @@ export const ru = {
         frameRate: "Частота кадров",
         loudness: {
           analyze: "Анализировать громкость",
+          analyzed: "Готово",
           analyzing: "Анализ…",
           analysisFailed: "Не удалось проанализировать громкость аудио.",
           default: "По умолчанию",
           defaultWithAnalysis: "По умолчанию · {{integratedLufs}} / {{truePeakDb}}",
           label: "Громкость",
+          retry: "Повторить",
           presets: {
             broadcast: "Вещание · −23 LUFS / −2 dBTP",
             streaming: "Стриминг · −16 LUFS / −1,5 dBTP",

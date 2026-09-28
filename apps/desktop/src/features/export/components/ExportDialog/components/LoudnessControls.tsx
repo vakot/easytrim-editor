@@ -1,3 +1,5 @@
+import { Check, LoaderCircle, RotateCw } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -27,12 +29,15 @@ import type { LoudnessAnalysis, LoudnessPreset } from "@/domain/media";
 import { analyzeAudioLoudness } from "@/lib/tauri/media";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 
+const MotionButton = motion.create(Button);
+
 interface LoudnessControlsProps {
   settings: ExportSettings;
 }
 
 type AnalysisState =
   | { requestKey: string; status: "analyzing" }
+  | { requestKey: string; result: LoudnessAnalysis; status: "success" }
   | { requestKey: string; result: LoudnessAnalysis; status: "ready" }
   | { error: string; requestKey: string; status: "failed" };
 
@@ -51,6 +56,7 @@ function formatMeasurement(value: number | undefined, unit: string, unavailable:
 
 function LoudnessControls({ settings }: LoudnessControlsProps) {
   const { t } = useTranslation();
+  const shouldReduceMotion = useReducedMotion() === true;
   const dispatch = useAppDispatch();
   const source = useAppSelector(selectSourceSelection);
   const trim = useAppSelector(selectTrim);
@@ -82,6 +88,20 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
     };
   }, [requestKey]);
 
+  useEffect(() => {
+    if (analysisState?.status !== "success" || analysisState.requestKey !== requestKey) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setAnalysisState((current) =>
+        current?.status === "success" && current.requestKey === requestKey
+          ? { ...current, status: "ready" }
+          : current,
+      );
+    }, 1_000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [analysisState, requestKey]);
+
   const updateSettings = (loudnessPreset: LoudnessPreset | undefined) => {
     void dispatch(optimizedExportSettingsChangedRequested({ ...settings, loudnessPreset }));
   };
@@ -96,7 +116,7 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
     try {
       const result = await analyzeAudioLoudness(request, controller.signal);
       if (requestId.current === currentRequestId) {
-        setAnalysisState({ requestKey, result, status: "ready" });
+        setAnalysisState({ requestKey, result, status: "success" });
       }
     } catch (cause: unknown) {
       if (requestId.current === currentRequestId) {
@@ -117,8 +137,11 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
   const isAnalyzing =
     analysisState?.requestKey === requestKey && analysisState.status === "analyzing";
 
+  const isSuccess = analysisState?.requestKey === requestKey && analysisState.status === "success";
+
   const analysis =
-    analysisState?.requestKey === requestKey && analysisState.status === "ready"
+    analysisState?.requestKey === requestKey &&
+    (analysisState.status === "success" || analysisState.status === "ready")
       ? analysisState.result
       : null;
 
@@ -126,6 +149,21 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
     analysisState?.requestKey === requestKey && analysisState.status === "failed"
       ? analysisState.error
       : null;
+
+  const buttonState = error ? "error" : isAnalyzing ? "loading" : isSuccess ? "success" : "idle";
+  const buttonLabel =
+    buttonState === "error"
+      ? t("export.dialogs.optimized.loudness.retry")
+      : buttonState === "loading"
+        ? t("export.dialogs.optimized.loudness.analyzing")
+        : buttonState === "success"
+          ? t("export.dialogs.optimized.loudness.analyzed")
+          : t("export.dialogs.optimized.loudness.analyze");
+
+  const buttonVariant =
+    buttonState === "error" ? "destructive" : buttonState === "success" ? "success" : "outline";
+
+  const showButton = analysisState?.requestKey !== requestKey || analysisState.status !== "ready";
 
   const defaultLabel = analysis
     ? t("export.dialogs.optimized.loudness.defaultWithAnalysis", {
@@ -145,7 +183,7 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
   return (
     <section className="grid gap-1.5">
       <Label htmlFor="export-loudness-preset">{t("export.dialogs.optimized.loudness.label")}</Label>
-      <div className="flex items-center gap-2">
+      <motion.div className="flex items-center gap-2" layout>
         <Select
           onValueChange={(value) =>
             updateSettings(value === "default" ? undefined : (value as LoudnessPreset))
@@ -168,26 +206,65 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
             ))}
           </SelectContent>
         </Select>
-        <Button
-          disabled={
-            !request ||
-            audioTracks.length === 0 ||
-            isAnalyzing ||
-            settings.loudnessPreset !== undefined
-          }
-          onClick={() => void analyze()}
-          variant="outline"
-        >
-          {isAnalyzing
-            ? t("export.dialogs.optimized.loudness.analyzing")
-            : t("export.dialogs.optimized.loudness.analyze")}
-        </Button>
-      </div>
-      {error ? (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : null}
+        <AnimatePresence initial={false} mode="wait">
+          {showButton ? (
+            <MotionButton
+              animate={{ opacity: 1, scale: 1 }}
+              disabled={
+                !request ||
+                audioTracks.length === 0 ||
+                isAnalyzing ||
+                isSuccess ||
+                settings.loudnessPreset !== undefined
+              }
+              exit={{ opacity: 0, scale: 0.92 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
+              layout
+              onClick={() => void analyze()}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
+              type="button"
+              variant={buttonVariant}
+            >
+              <AnimatePresence initial={false} mode="wait">
+                <motion.span
+                  animate={{ opacity: 1, y: 0 }}
+                  className="inline-flex items-center gap-1.5"
+                  exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -3 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 3 }}
+                  key={buttonState}
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
+                >
+                  {buttonState === "loading" ? (
+                    <LoaderCircle
+                      aria-hidden="true"
+                      className={shouldReduceMotion ? undefined : "animate-spin"}
+                    />
+                  ) : buttonState === "success" ? (
+                    <Check aria-hidden="true" />
+                  ) : buttonState === "error" ? (
+                    <RotateCw aria-hidden="true" />
+                  ) : null}
+                  {buttonLabel}
+                </motion.span>
+              </AnimatePresence>
+            </MotionButton>
+          ) : null}
+        </AnimatePresence>
+      </motion.div>
+      <AnimatePresence initial={false}>
+        {error ? (
+          <motion.div
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: -4 }}
+            transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
+          >
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </section>
   );
 }

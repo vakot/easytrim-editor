@@ -615,11 +615,13 @@ export const sk = {
         frameRate: "Snímková frekvencia",
         loudness: {
           analyze: "Analyzovať hlasitosť",
+          analyzed: "Analyzované",
           analyzing: "Analyzuje sa…",
           analysisFailed: "Analýza hlasitosti zvuku zlyhala.",
           default: "Predvolené",
           defaultWithAnalysis: "Predvolené · {{integratedLufs}} / {{truePeakDb}}",
           label: "Hlasitosť",
+          retry: "Skúsiť znova",
           presets: {
             broadcast: "Vysielanie · −23 LUFS / −2 dBTP",
             streaming: "Streamovanie · −16 LUFS / −1,5 dBTP",

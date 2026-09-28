@@ -173,6 +173,25 @@ describe("ExportDialog", () => {
     );
 
     await store.dispatch(openOptimizedExportDialog());
+    const presetSelect = screen.getByRole("combobox", { name: "Loudness" });
+    const analyzeButton = screen.getByRole("button", { name: "Analyze loudness" });
+    fireEvent.click(presetSelect);
+    fireEvent.click(screen.getByRole("option", { name: /Streaming/ }));
+    await waitFor(() =>
+      expect(
+        store.getState().editingInstances.entities["instance-1"]?.optimizedSettings,
+      ).toMatchObject({ loudnessPreset: "streaming" }),
+    );
+    expect(analyzeButton).toBeDisabled();
+
+    fireEvent.click(presetSelect);
+    fireEvent.click(screen.getByRole("option", { name: "Default" }));
+    await waitFor(() =>
+      expect(
+        store.getState().editingInstances.entities["instance-1"]?.optimizedSettings,
+      ).toMatchObject({ loudnessPreset: undefined }),
+    );
+    expect(analyzeButton).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "Analyze loudness" }));
 
     await waitFor(() =>
@@ -189,11 +208,9 @@ describe("ExportDialog", () => {
         expect.any(AbortSignal),
       ),
     );
-    const presetSelect = screen.getByRole("combobox", { name: "Loudness" });
     await waitFor(() => expect(presetSelect).toHaveTextContent("Default · −18.2 LUFS / −2.1 dBTP"));
 
-    const analyzeButton = screen.getByRole("button", { name: "Analyze loudness" });
-    expect(analyzeButton).toBeEnabled();
+    expect(await screen.findByRole("button", { name: "Analyzed" })).toBeDisabled();
     fireEvent.click(presetSelect);
     expect(
       screen.getByRole("option", { name: "Default · −18.2 LUFS / −2.1 dBTP" }),
@@ -224,7 +241,10 @@ describe("ExportDialog", () => {
         store.getState().editingInstances.entities["instance-1"]?.optimizedSettings,
       ).toMatchObject({ loudnessPreset: undefined }),
     );
-    expect(analyzeButton).toBeEnabled();
+    await waitFor(
+      () => expect(screen.queryByRole("button", { name: "Analyzed" })).not.toBeInTheDocument(),
+      { timeout: 2_000 },
+    );
   });
 
   it("aborts loudness analysis when the trim changes or the dialog closes", async () => {
@@ -283,5 +303,63 @@ describe("ExportDialog", () => {
     await waitFor(() => expect(analysisSignals).toHaveLength(2));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(analysisSignals[1]?.aborted).toBe(true));
+  });
+
+  it("shows a destructive retry on failure and closes the success state after one second", async () => {
+    planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg preview" });
+    let resolveAnalysis:
+      ((result: { integratedLufs: number; truePeakDb: number }) => void) | undefined;
+
+    analyzeAudioLoudness.mockRejectedValueOnce(new Error("Analysis failed")).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAnalysis = resolve;
+        }),
+    );
+    const store = createAppStore({
+      getItem: async () => null,
+      setItem: async () => undefined,
+      removeItem: async () => undefined,
+    });
+
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath) }));
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          exportAttempts: [],
+          id: "instance-1",
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
+          sourceAvailability: "available",
+        },
+      ]),
+    );
+    store.dispatch(activeEditingInstanceChanged("instance-1"));
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ExportDialog />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    await store.dispatch(openOptimizedExportDialog());
+    fireEvent.click(screen.getByRole("button", { name: "Analyze loudness" }));
+    const retryButton = await screen.findByRole("button", { name: "Retry" });
+    expect(retryButton).toHaveAttribute("data-variant", "destructive");
+
+    fireEvent.click(retryButton);
+    expect(await screen.findByRole("button", { name: "Analyzing…" })).toBeDisabled();
+    await waitFor(() => expect(resolveAnalysis).toBeDefined());
+    resolveAnalysis?.({ integratedLufs: -18, truePeakDb: -2 });
+
+    const successButton = await screen.findByRole("button", { name: "Analyzed" });
+    expect(successButton).toHaveAttribute("data-variant", "success");
+    await waitFor(
+      () => expect(screen.queryByRole("button", { name: "Analyzed" })).not.toBeInTheDocument(),
+      { timeout: 2_000 },
+    );
   });
 });
