@@ -65,7 +65,7 @@ function PreviewCommandMenuItem({
   return (
     <ApplicationCommandMenuItem asChild commandId={commandId}>
       <ContextMenuItem
-        inset={showCommandIcon}
+        inset={showCommandIcon ? true : undefined}
         keepOpen={keepOpen}
         variant={commandId === "reset-transform" ? "destructive" : "default"}
       >

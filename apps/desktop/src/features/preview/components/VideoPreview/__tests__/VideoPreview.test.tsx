@@ -513,7 +513,12 @@ describe("VideoPreview", () => {
       "Flip horizontally",
       "Flip vertically",
     ]) {
-      expect(screen.getByRole("menuitem", { name: action }).querySelector("svg")).not.toBeNull();
+      const item = screen.getByRole("menuitem", { name: action });
+      expect(item.querySelector("svg")).not.toBeNull();
+      expect(item).toHaveAttribute("data-inset", "true");
+    }
+    for (const action of ["Save frame", "Copy frame", "Crop", "Reset to default"]) {
+      expect(screen.getByRole("menuitem", { name: action })).not.toHaveAttribute("data-inset");
     }
     expect(screen.getByRole("menuitem", { name: "Crop" }).querySelector("svg")).toBeNull();
     expect(screen.getAllByRole("separator")).toHaveLength(3);
