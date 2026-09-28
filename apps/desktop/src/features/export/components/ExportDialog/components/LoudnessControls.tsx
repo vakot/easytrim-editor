@@ -149,10 +149,20 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
             <SelectContent>
               {LOUDNESS_PRESETS.map((preset) => (
                 <SelectItem key={preset.id} value={preset.id}>
-                  {t(`export.dialogs.optimized.loudness.presets.${preset.id}`, {
-                    integratedLufs: preset.integratedLufs,
-                    truePeakDb: preset.truePeakDb,
-                  })}
+                  {preset.id === "webVideo"
+                    ? t("export.dialogs.optimized.loudness.presets.webVideo", {
+                        integratedLufs: preset.integratedLufs,
+                        truePeakDb: preset.truePeakDb,
+                      })
+                    : preset.id === "streaming"
+                      ? t("export.dialogs.optimized.loudness.presets.streaming", {
+                          integratedLufs: preset.integratedLufs,
+                          truePeakDb: preset.truePeakDb,
+                        })
+                      : t("export.dialogs.optimized.loudness.presets.broadcast", {
+                          integratedLufs: preset.integratedLufs,
+                          truePeakDb: preset.truePeakDb,
+                        })}
                 </SelectItem>
               ))}
             </SelectContent>
