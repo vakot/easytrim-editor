@@ -1,4 +1,4 @@
-import { BetweenVerticalStart, Clapperboard, Repeat, RotateCcw } from "lucide-react";
+import { BetweenVerticalStart, Clapperboard, LoaderCircle, Repeat, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -79,7 +79,11 @@ function SceneDetectionTool() {
       type="button"
       variant={hasFailed ? "destructive" : "secondary"}
     >
-      <Clapperboard />
+      {isDetecting ? (
+        <LoaderCircle aria-hidden="true" className="animate-spin" />
+      ) : (
+        <Clapperboard />
+      )}
     </Button>
   );
 
