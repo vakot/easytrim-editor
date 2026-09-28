@@ -2,7 +2,6 @@ import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } fr
 
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
 import {
-  clampToTrim,
   microsFromTimelinePosition,
   moveTrimBoundary,
   moveTrimRange,
@@ -392,7 +391,7 @@ function useTrimTimelineInteractions({
       sceneBoundariesMicros,
     );
 
-    return sceneBoundary ?? clampToTrim(pointer.micros, rangeRef.current);
+    return sceneBoundary ?? pointer.micros;
   }
 
   function startScrub(event: PointerEvent<HTMLElement>, captureTarget: HTMLElement) {
