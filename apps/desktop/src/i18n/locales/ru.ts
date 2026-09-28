@@ -66,6 +66,7 @@ export const ru = {
         preferencesPlayback: "Параметры / Воспроизведение",
         previewFrame: "Предпросмотр / Кадр",
         previewTransform: "Предпросмотр / Трансформация",
+        scenes: "Сцены",
         queueOnFinishedApplication: "Очередь / После завершения / Приложение",
         queueOnFinishedSource: "Очередь / После завершения / Источник",
         go: "Перейти",
@@ -404,10 +405,12 @@ export const ru = {
   preview: {
     actions: {
       nextFrame: "Следующий кадр",
+      nextScene: "Перейти к следующей сцене",
       copyFrame: "Скопировать кадр",
       pause: "Пауза",
       play: "Воспроизвести",
       previousFrame: "Предыдущий кадр",
+      previousScene: "Перейти к предыдущей сцене",
       saveFrame: "Сохранить кадр",
       resetTools: "Сбросить инструменты",
       setEnd: "Установить конец сегмента в текущей позиции",

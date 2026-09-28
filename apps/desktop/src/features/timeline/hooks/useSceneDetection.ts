@@ -1,23 +1,26 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   editingInstanceSceneDetectionChanged,
   selectActiveEditingInstance,
 } from "@/app/store/slices/editing-instances-slice";
+import {
+  sceneDetectionFailed,
+  sceneDetectionFinished,
+  sceneDetectionStarted,
+  selectSceneDetectionOperation,
+} from "@/app/store/slices/editor-tools-slice";
 import { selectSourceLoadToken, selectSourceSelection } from "@/app/store/slices/source-slice";
 import { normalizeSourceKey } from "@/domain/source";
 import { detectScenes } from "@/lib/tauri/media";
-
-type DetectionState =
-  | { error: null; sourceKey: string; status: "loading" }
-  | { error: string | null; sourceKey: string; status: "failed" };
 
 function useSceneDetection(enabled: boolean) {
   const dispatch = useAppDispatch();
   const source = useAppSelector(selectSourceSelection);
   const loadToken = useAppSelector(selectSourceLoadToken);
   const activeInstance = useAppSelector(selectActiveEditingInstance);
+  const operation = useAppSelector(selectSceneDetectionOperation);
   const activeInstanceMatchesSource = Boolean(
     source &&
       activeInstance &&
@@ -30,7 +33,6 @@ function useSceneDetection(enabled: boolean) {
     : null;
 
   const requestId = useRef(0);
-  const [state, setState] = useState<DetectionState | null>(null);
 
   useEffect(() => {
     requestId.current += 1;
@@ -40,7 +42,7 @@ function useSceneDetection(enabled: boolean) {
     if (!source || !sourceKey || !enabled || !activeInstanceMatchesSource || !activeInstance)
       return;
     const currentRequestId = ++requestId.current;
-    setState({ error: null, sourceKey, status: "loading" });
+    dispatch(sceneDetectionStarted(sourceKey));
     dispatch(
       editingInstanceSceneDetectionChanged({
         boundariesMicros: null,
@@ -58,10 +60,10 @@ function useSceneDetection(enabled: boolean) {
           sourcePath: source.sourcePath,
         }),
       );
-      setState(null);
+      dispatch(sceneDetectionFinished(sourceKey));
     } catch (error: unknown) {
       if (requestId.current !== currentRequestId) return;
-      setState({
+      dispatch(sceneDetectionFailed({
         error:
           error instanceof Error
             ? error.message
@@ -72,12 +74,11 @@ function useSceneDetection(enabled: boolean) {
               ? error.message
               : null,
         sourceKey,
-        status: "failed",
-      });
+      }));
     }
   }, [activeInstance, activeInstanceMatchesSource, dispatch, enabled, source, sourceKey]);
 
-  const currentState = state?.sourceKey === sourceKey ? state : null;
+  const currentOperation = operation?.sourceKey === sourceKey ? operation : null;
   const sceneBoundariesMicros = activeInstanceMatchesSource
     ? activeInstance?.snapshot.sceneBoundariesMicros
     : undefined;
@@ -86,10 +87,10 @@ function useSceneDetection(enabled: boolean) {
     boundariesMicros: sceneBoundariesMicros ?? [],
     canDetect: enabled && source !== null && activeInstanceMatchesSource,
     detect,
-    error: currentState?.status === "failed" ? currentState.error : null,
-    hasFailed: currentState?.status === "failed",
+    error: currentOperation?.status === "failed" ? currentOperation.error : null,
+    hasFailed: currentOperation?.status === "failed",
     hasDetected: sceneBoundariesMicros !== undefined,
-    isDetecting: currentState?.status === "loading",
+    isDetecting: currentOperation?.status === "loading",
   };
 }
 

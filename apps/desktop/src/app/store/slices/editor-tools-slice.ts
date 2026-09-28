@@ -5,6 +5,11 @@ import type { RootState } from "@/app/store/store";
 
 type EditorToolsState = {
   loopPlaybackEnabled: boolean;
+  sceneDetection?: {
+    error: string | null;
+    sourceKey: string;
+    status: "failed" | "loading";
+  };
   sceneMarkersEnabled?: boolean;
   segmentPlaybackEnabled: boolean;
 };
@@ -34,6 +39,22 @@ const editorToolsSlice = createSlice({
     sceneMarkersToggled: (state) => {
       state.sceneMarkersEnabled = !(state.sceneMarkersEnabled ?? true);
     },
+    sceneDetectionStarted: (state, action: PayloadAction<string>) => {
+      state.sceneDetection = {
+        error: null,
+        sourceKey: action.payload,
+        status: "loading",
+      };
+    },
+    sceneDetectionFailed: (
+      state,
+      action: PayloadAction<{ error: string | null; sourceKey: string }>,
+    ) => {
+      state.sceneDetection = { ...action.payload, status: "failed" };
+    },
+    sceneDetectionFinished: (state, action: PayloadAction<string>) => {
+      if (state.sceneDetection?.sourceKey === action.payload) delete state.sceneDetection;
+    },
   },
 });
 
@@ -41,6 +62,9 @@ const {
   editorToolsInitialized,
   editorToolsReset,
   loopPlaybackToggled,
+  sceneDetectionFailed,
+  sceneDetectionFinished,
+  sceneDetectionStarted,
   sceneMarkersToggled,
   segmentPlaybackToggled,
 } = editorToolsSlice.actions;
@@ -57,16 +81,23 @@ const selectSegmentPlaybackEnabled = (state: RootState): boolean =>
 const selectSceneMarkersEnabled = (state: RootState): boolean =>
   selectEditorTools(state).sceneMarkersEnabled ?? true;
 
+const selectSceneDetectionOperation = (state: RootState): EditorToolsState["sceneDetection"] =>
+  selectEditorTools(state).sceneDetection;
+
 export {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
   editorToolsReducer,
   editorToolsReset,
   loopPlaybackToggled,
+  sceneDetectionFailed,
+  sceneDetectionFinished,
+  sceneDetectionStarted,
   sceneMarkersToggled,
   segmentPlaybackToggled,
   selectEditorTools,
   selectLoopPlaybackEnabled,
+  selectSceneDetectionOperation,
   selectSceneMarkersEnabled,
   selectSegmentPlaybackEnabled,
 };

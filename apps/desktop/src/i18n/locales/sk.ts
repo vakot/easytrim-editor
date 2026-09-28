@@ -68,6 +68,7 @@ export const sk = {
         preferencesPlayback: "Nastavenia / Prehrávanie",
         previewFrame: "Náhľad / Snímka",
         previewTransform: "Náhľad / Transformácia",
+        scenes: "Scény",
         queueOnFinishedApplication: "Front / Po dokončení / Aplikácia",
         queueOnFinishedSource: "Front / Po dokončení / Zdroj",
         go: "Prejsť",
@@ -402,10 +403,12 @@ export const sk = {
   preview: {
     actions: {
       nextFrame: "Nasledujúca snímka",
+      nextScene: "Prejsť na nasledujúcu scénu",
       copyFrame: "Kopírovať snímku",
       pause: "Pozastaviť",
       play: "Prehrať",
       previousFrame: "Predchádzajúca snímka",
+      previousScene: "Prejsť na predchádzajúcu scénu",
       saveFrame: "Uložiť snímku",
       resetTools: "Obnoviť nástroje",
       setEnd: "Nastaviť koniec segmentu na aktuálnu pozíciu",

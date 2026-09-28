@@ -66,6 +66,7 @@ export const en = {
         preferencesPlayback: "Preferences / Playback",
         previewFrame: "Preview / Frame",
         previewTransform: "Preview / Transform",
+        scenes: "Scenes",
         queueOnFinishedApplication: "Queue / On finished / Application",
         queueOnFinishedSource: "Queue / On finished / Source",
         go: "Go",
@@ -402,10 +403,12 @@ export const en = {
   preview: {
     actions: {
       nextFrame: "Next frame",
+      nextScene: "Move to next scene",
       copyFrame: "Copy frame",
       pause: "Pause",
       play: "Play",
       previousFrame: "Previous frame",
+      previousScene: "Move to previous scene",
       saveFrame: "Save frame",
       resetTools: "Reset tools",
       setEnd: "Set segment end to current position",

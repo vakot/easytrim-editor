@@ -6,15 +6,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsReset,
   loopPlaybackToggled,
-  sceneMarkersToggled,
   segmentPlaybackToggled,
   selectLoopPlaybackEnabled,
-  selectSceneMarkersEnabled,
   selectSegmentPlaybackEnabled,
 } from "@/app/store/slices/editor-tools-slice";
 import { selectPreferences } from "@/app/store/slices/preferences-slice";
@@ -51,10 +50,13 @@ function TimelineToolbar() {
 function SceneDetectionTool() {
   const { t } = useTranslation();
   const sourceReady = useAppSelector(selectSourceReady);
-  const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
-  const dispatch = useAppDispatch();
+  const detectScenesCommand = useApplicationCommand("detect-scenes");
+  const showSceneMarkersCommand = useApplicationCommand("show-scene-markers");
+  const { executeCommand } = useApplicationCommands();
   const sceneDetection = useSceneDetection(sourceReady);
-  const { canDetect, detect, error, hasDetected, hasFailed, isDetecting } = sceneDetection;
+  const { error, hasDetected, hasFailed, isDetecting } = sceneDetection;
+  const sceneMarkersEnabled = showSceneMarkersCommand.checked ?? true;
+  const loading = detectScenesCommand.pending || isDetecting;
   const label = hasDetected
     ? sceneMarkersEnabled
       ? t("timeline.actions.disableSceneMarkers")
@@ -63,23 +65,23 @@ function SceneDetectionTool() {
 
   const button = (
     <Button
-      aria-busy={isDetecting}
+      aria-busy={loading}
       aria-label={label}
       aria-pressed={hasDetected && sceneMarkersEnabled}
       className={hasDetected && sceneMarkersEnabled ? "text-primary" : undefined}
-      disabled={!canDetect || isDetecting}
+      disabled={!detectScenesCommand.enabled || loading}
       onClick={
         hasFailed
           ? undefined
           : hasDetected
-            ? () => dispatch(sceneMarkersToggled())
-            : () => void detect()
+            ? () => void executeCommand("show-scene-markers", "button")
+            : () => void executeCommand("detect-scenes", "button")
       }
       size="icon-sm"
       type="button"
       variant={hasFailed ? "destructive" : "secondary"}
     >
-      {isDetecting ? (
+      {loading ? (
         <LoaderCircle aria-hidden="true" className="animate-spin" />
       ) : (
         <Clapperboard />
@@ -93,7 +95,12 @@ function SceneDetectionTool() {
         <PopoverTrigger asChild>{button}</PopoverTrigger>
         <PopoverContent align="start" className="space-y-3">
           <p role="alert">{error || t("timeline.status.sceneDetectionFailed")}</p>
-          <Button onClick={() => void detect()} size="sm" type="button">
+          <Button
+            disabled={loading}
+            onClick={() => void executeCommand("detect-scenes", "button")}
+            size="sm"
+            type="button"
+          >
             {t("common.actions.retry")}
           </Button>
         </PopoverContent>
