@@ -254,10 +254,10 @@ export const sk = {
   queue: {
     actions: {
       cancel: "Zrušiť export",
+      editExport: "Upraviť export",
       restore: "Obnoviť úpravu",
       revealOutput: "Zobraziť výstup",
       retry: "Opakovať",
-      renameOutput: "Premenovať výstup",
       start: "Spustiť front",
       skip: "Preskočiť",
     },
@@ -559,6 +559,7 @@ export const sk = {
       copyCommand: "Kopírovať príkaz",
       fast: "Uložiť bez prekódovania",
       optimized: "Optimalizovať a exportovať",
+      saveChanges: "Uložiť zmeny",
       start: "Exportovať",
     },
     labels: {
@@ -592,6 +593,7 @@ export const sk = {
       optimized: {
         arguments: "Argumenty FFmpeg",
         description: "Pred výberom súboru nastavte optimalizované vykreslenie.",
+        editTitle: "Upraviť export vo fronte",
         frameRate: "Snímková frekvencia",
         matchSource: "Podľa zdroja",
         resolution: "Rozlíšenie",

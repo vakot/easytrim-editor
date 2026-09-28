@@ -17,14 +17,15 @@ import { selectCropResolution } from "@/app/store/slices/crop-slice";
 import { selectActiveEditingInstance } from "@/app/store/slices/editing-instances-slice";
 import { selectExportArguments } from "@/app/store/slices/export-presets-slice";
 import {
-  optimizedExportDialogClosed,
   selectExportCommandPreview,
   selectExportCommandPreviewError,
   selectExportLaunchError,
   selectOptimizedExportDialogOpen,
+  selectQueueEdit,
 } from "@/app/store/slices/export-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import {
+  cancelOptimizedExportDialogRequested,
   openOptimizedExportDialog,
   refreshOptimizedExportPlan,
   startOptimizedExportRequested,
@@ -39,6 +40,7 @@ function ExportDialog() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const open = useAppSelector(selectOptimizedExportDialogOpen);
+  const queueEdit = useAppSelector(selectQueueEdit);
   const activeInstance = useAppSelector(selectActiveEditingInstance);
   const source = useAppSelector(selectSourceMedia);
   const cropResolution = useAppSelector(selectCropResolution);
@@ -64,7 +66,7 @@ function ExportDialog() {
     if (nextOpen) {
       void dispatch(openOptimizedExportDialog());
     } else {
-      dispatch(optimizedExportDialogClosed());
+      dispatch(cancelOptimizedExportDialogRequested());
     }
   };
 
@@ -73,7 +75,9 @@ function ExportDialog() {
       <Dialog onOpenChange={onOpenChange} open={open}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{t("export.actions.start")}</DialogTitle>
+            <DialogTitle>
+              {queueEdit ? t("export.dialogs.optimized.editTitle") : t("export.actions.start")}
+            </DialogTitle>
             <DialogDescription>{t("export.dialogs.optimized.description")}</DialogDescription>
           </DialogHeader>
 
@@ -91,7 +95,7 @@ function ExportDialog() {
                 {t("common.actions.cancel")}
               </Button>
               <Button onClick={() => void dispatch(startOptimizedExportRequested())}>
-                {t("export.actions.start")}
+                {queueEdit ? t("export.actions.saveChanges") : t("export.actions.start")}
               </Button>
             </div>
           </DialogFooter>

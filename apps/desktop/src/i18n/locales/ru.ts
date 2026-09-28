@@ -256,10 +256,10 @@ export const ru = {
   queue: {
     actions: {
       cancel: "Отменить экспорт",
+      editExport: "Изменить экспорт",
       restore: "Восстановить монтаж",
       revealOutput: "Показать результат",
       retry: "Повторить",
-      renameOutput: "Переименовать результат",
       start: "Запустить очередь",
       skip: "Пропустить",
     },
@@ -562,6 +562,7 @@ export const ru = {
       copyCommand: "Копировать команду",
       fast: "Сохранить без перекодирования",
       optimized: "Оптимизировать и экспортировать",
+      saveChanges: "Сохранить изменения",
       start: "Экспортировать",
     },
     labels: {
@@ -595,6 +596,7 @@ export const ru = {
       optimized: {
         arguments: "Аргументы FFmpeg",
         description: "Настройте оптимизированный рендеринг перед выбором файла.",
+        editTitle: "Изменить экспорт в очереди",
         frameRate: "Частота кадров",
         matchSource: "Как у источника",
         resolution: "Разрешение",

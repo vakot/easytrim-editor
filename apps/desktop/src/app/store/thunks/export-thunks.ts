@@ -3,10 +3,10 @@ import { toast } from "sonner";
 import {
   cancelAndRequeueExport,
   cancelQueuedExport,
-  commitQueuedExportRename,
+  commitQueuedExportEdit,
   enqueueExport,
-  releaseQueuedExportRename,
-  reserveQueuedExportRename,
+  releaseQueuedExportEdit,
+  reserveQueuedExportEdit,
   retryFailedExport,
   setExportQueueExecutionEnabled,
 } from "@/app/store/integration/export-queue-runtime";
@@ -39,7 +39,10 @@ import {
   optimizedExportPlanFailed,
   optimizedExportPlanReceived,
   optimizedExportPlanRequested,
+  queueEditFinished,
+  queueEditStarted,
   queueFinishActionsAvailable,
+  selectQueueEdit,
 } from "@/app/store/slices/export-slice";
 import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
 import {
@@ -50,6 +53,7 @@ import {
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
+import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeTransformForExport } from "@/domain/rotation";
 import { normalizeSourceKey } from "@/domain/source";
@@ -132,31 +136,117 @@ const retryExportAttemptRequested =
     }
   };
 
-const renameExportAttemptRequested =
+const editExportAttemptRequested =
   ({ attemptId, instanceId }: { attemptId: string; instanceId: string }): AppThunk<Promise<void>> =>
   async (dispatch, getState) => {
     if (getState().importWorkflow.isNativeDialogOpen) return;
-    if (!reserveQueuedExportRename(instanceId, attemptId, getState)) return;
-
-    dispatch(nativeDialogStateChanged(true));
+    if (!reserveQueuedExportEdit(instanceId, attemptId, dispatch, getState)) return;
     try {
-      const attempt = selectEditingInstanceById(getState(), instanceId)?.exportAttempts.find(
-        (candidate) => candidate.id === attemptId,
+      const instance = selectEditingInstanceById(getState(), instanceId);
+      const attempt = instance?.exportAttempts.find((candidate) => candidate.id === attemptId);
+      if (!instance || !attempt || attempt.state.status !== "queued") return;
+
+      if (attempt.route === "fast") {
+        dispatch(queueEditStarted({ attemptId, instanceId, route: "fast" }));
+        await finishQueuedExportEdit(dispatch, getState);
+        return;
+      }
+
+      if (instance.draftAvailable === false || instance.sourceAvailability !== "available") return;
+      dispatch(commitActiveEditingInstanceDraft());
+      const optimizedRequest = attempt.request as OptimizedExportRequest;
+      dispatch(
+        editingInstanceOptimizedSettingsChanged({
+          id: instanceId,
+          settings: {
+            frameRate: optimizedRequest.frameRate,
+            resolution: optimizedRequest.resolution,
+          },
+        }),
+      );
+      const currentInstance = selectEditingInstanceById(getState(), instanceId);
+      if (!currentInstance) return;
+      const restored = await dispatch(
+        activateEditingInstanceRequested({
+          ...currentInstance,
+          optimizedArguments: optimizedRequest.arguments,
+          snapshot: attempt.snapshot,
+        }),
       );
 
-      if (!attempt || attempt.state.status !== "queued") return;
-
-      const output = await chooseOutputPath(attempt.output.displayName);
-      if (output) commitQueuedExportRename(instanceId, attemptId, output, dispatch, getState);
+      if (!restored) return;
+      dispatch(queueEditStarted({ attemptId, instanceId, route: "optimized" }));
+      dispatch(optimizedExportDialogOpened());
+      await dispatch(refreshOptimizedExportPlan());
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
-      diagnostics.error("export.queue.rename.failed", normalized, { snapshotId: instanceId });
+      diagnostics.error("export.queue.edit.failed", normalized, { snapshotId: instanceId });
       toast.error(normalized.message);
     } finally {
-      dispatch(nativeDialogStateChanged(false));
-      releaseQueuedExportRename(attemptId, dispatch, getState);
+      if (selectQueueEdit(getState())?.attemptId !== attemptId) {
+        releaseQueuedExportEdit(attemptId, dispatch, getState);
+      }
     }
   };
+
+const cancelQueuedExportEditRequested = (): AppThunk => (dispatch, getState) => {
+  const queueEdit = selectQueueEdit(getState());
+  if (!queueEdit) return;
+  dispatch(optimizedExportDialogClosed());
+  dispatch(queueEditFinished());
+  releaseQueuedExportEdit(queueEdit.attemptId, dispatch, getState);
+};
+
+async function finishQueuedExportEdit(
+  dispatch: Parameters<AppThunk>[0],
+  getState: Parameters<AppThunk>[1],
+) {
+  const queueEdit = selectQueueEdit(getState());
+  if (!queueEdit) return;
+  const { attemptId, instanceId, route } = queueEdit;
+  const attempt = selectEditingInstanceById(getState(), instanceId)?.exportAttempts.find(
+    (candidate) => candidate.id === attemptId,
+  );
+
+  if (!attempt || attempt.state.status !== "queued") {
+    dispatch(cancelQueuedExportEditRequested());
+    return;
+  }
+
+  dispatch(optimizedExportDialogClosed());
+  dispatch(nativeDialogStateChanged(true));
+  try {
+    const output = await chooseOutputPath(attempt.output.displayName);
+    if (!output) return;
+
+    let request = attempt.request;
+    let snapshot: EditorSnapshot = attempt.snapshot;
+    if (route === "optimized") {
+      if (selectActiveInstanceId(getState()) !== instanceId || !selectSourceReady(getState()))
+        return;
+      const updatedRequest = getOptimizedRequest(getState());
+      const updatedSnapshot = getCurrentExportSnapshot(getState());
+      if (!updatedRequest || !updatedSnapshot) return;
+      if (
+        normalizeSourceKey(updatedRequest.sourcePath) !==
+        normalizeSourceKey(attempt.request.sourcePath)
+      )
+        return;
+      snapshot = updatedSnapshot;
+      request = updatedRequest;
+    }
+
+    commitQueuedExportEdit(instanceId, attemptId, output, request, snapshot, dispatch, getState);
+  } catch (error: unknown) {
+    const normalized = normalizeAppError(error);
+    diagnostics.error("export.queue.edit.failed", normalized, { snapshotId: instanceId });
+    toast.error(normalized.message);
+  } finally {
+    dispatch(nativeDialogStateChanged(false));
+    dispatch(queueEditFinished());
+    releaseQueuedExportEdit(attemptId, dispatch, getState);
+  }
+}
 
 const openOptimizedExportDialog =
   (origin: DiagnosticOrigin = { id: "optimized", type: "button" }): AppThunk =>
@@ -167,6 +257,14 @@ const openOptimizedExportDialog =
     await dispatch(refreshOptimizedExportPlan());
     diagnostics.action("export.dialog.opened", origin);
   };
+
+const cancelOptimizedExportDialogRequested = (): AppThunk => (dispatch, getState) => {
+  if (selectQueueEdit(getState())) {
+    dispatch(cancelQueuedExportEditRequested());
+  } else {
+    dispatch(optimizedExportDialogClosed());
+  }
+};
 
 const optimizedExportSettingsChangedRequested =
   (settings: ExportSettings): AppThunk =>
@@ -212,6 +310,10 @@ const startFastCutRequested =
 const startOptimizedExportRequested =
   (origin: DiagnosticOrigin = { id: "optimized", type: "button" }): AppThunk =>
   (dispatch, getState) => {
+    if (selectQueueEdit(getState())) {
+      void finishQueuedExportEdit(dispatch, getState);
+      return;
+    }
     dispatch(optimizedExportDialogClosed());
     void startEditingInstanceExport("optimized", dispatch, getState, origin);
   };
@@ -231,21 +333,8 @@ async function startEditingInstanceExport(
   if (!instance || !source || !media || !trim || !request || !selectSourceReady(state)) return;
   if (instance.draftAvailable === false || state.importWorkflow.isNativeDialogOpen) return;
 
-  const snapshot = createEditorSnapshot({
-    source,
-    trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-    crop: selectCropApplied(state) ? selectCrop(state) : null,
-    flipHorizontal: selectFlipHorizontal(state),
-    flipVertical: selectFlipVertical(state),
-    rotation: selectRotationDegrees(state),
-    masterAudio: selectMasterAudio(state),
-    audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
-      enabled,
-      streamIndex,
-      volumePercent,
-    })),
-    mergeAudio: selectMergeAudio(state),
-  });
+  const snapshot = getCurrentExportSnapshot(state);
+  if (!snapshot) return;
 
   // Persist the working draft at the export boundary, while the attempt keeps
   // its own immutable snapshot for the remainder of the export lifecycle.
@@ -301,6 +390,27 @@ async function startEditingInstanceExport(
   } finally {
     dispatch(nativeDialogStateChanged(false));
   }
+}
+
+function getCurrentExportSnapshot(state: ReturnType<Parameters<AppThunk>[1]>) {
+  const source = selectSourceSelection(state);
+  const trim = selectTrim(state);
+  if (!source || !trim) return null;
+  return createEditorSnapshot({
+    source,
+    trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
+    crop: selectCropApplied(state) ? selectCrop(state) : null,
+    flipHorizontal: selectFlipHorizontal(state),
+    flipVertical: selectFlipVertical(state),
+    rotation: selectRotationDegrees(state),
+    masterAudio: selectMasterAudio(state),
+    audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
+      enabled,
+      streamIndex,
+      volumePercent,
+    })),
+    mergeAudio: selectMergeAudio(state),
+  });
 }
 
 function currentSourceKey(state: ReturnType<Parameters<AppThunk>[1]>) {
@@ -400,11 +510,12 @@ function getTotalFrames(
 
 export {
   cancelExportAttemptRequested,
+  cancelOptimizedExportDialogRequested,
+  editExportAttemptRequested,
   loadQueueFinishActions,
   openOptimizedExportDialog,
   optimizedExportSettingsChangedRequested,
   refreshOptimizedExportPlan,
-  renameExportAttemptRequested,
   retryExportAttemptRequested,
   startExportQueue,
   startFastCutRequested,

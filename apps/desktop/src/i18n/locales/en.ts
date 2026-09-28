@@ -254,10 +254,10 @@ export const en = {
   queue: {
     actions: {
       cancel: "Cancel export",
+      editExport: "Edit export",
       restore: "Restore edit",
       revealOutput: "Reveal output",
       retry: "Retry",
-      renameOutput: "Rename output",
       start: "Start queue",
       skip: "Skip",
     },
@@ -559,6 +559,7 @@ export const en = {
       copyCommand: "Copy command",
       fast: "Save Lossless Cut",
       optimized: "Optimize & Export",
+      saveChanges: "Save changes",
       start: "Export",
     },
     labels: {
@@ -592,6 +593,7 @@ export const en = {
       optimized: {
         arguments: "FFmpeg arguments",
         description: "Configure the optimized render before choosing its file.",
+        editTitle: "Edit queued export",
         frameRate: "Frame rate",
         matchSource: "Match source",
         resolution: "Resolution",

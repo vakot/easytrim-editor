@@ -57,7 +57,10 @@ import { createDefaultEditorSnapshot } from "../editor-snapshot";
 import {
   cancelAndRequeueExport,
   cancelQueuedExport,
+  commitQueuedExportEdit,
   enqueueExport,
+  releaseQueuedExportEdit,
+  reserveQueuedExportEdit,
   retryFailedExport,
   setExportQueueExecutionEnabled,
   withdrawPendingExport,
@@ -125,6 +128,68 @@ beforeEach(() => {
 });
 
 describe("export queue runtime", () => {
+  it("holds a queued attempt during edit and renders the atomically updated request", async () => {
+    const store = createAppStore();
+    const getState = store.getState;
+    const attempt = createAttempt("attempt-edit");
+    const nextAttempt = createAttempt("attempt-edit-next");
+    store.dispatch(editingInstancesAdded([createInstance("instance-edit")]));
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "instance-edit", attempt }));
+    store.dispatch(
+      editingInstanceExportAttemptQueued({ id: "instance-edit", attempt: nextAttempt }),
+    );
+    mocks.renderFast.mockResolvedValue({
+      displayName: "edited.mp4",
+      displayPath: "C:/Exports/edited.mp4",
+      operationId: "edit-op",
+    });
+
+    expect(reserveQueuedExportEdit("instance-edit", attempt.id, store.dispatch, getState)).toBe(
+      true,
+    );
+    expect(enqueueExport("instance-edit", attempt, store.dispatch, getState)).toBe(true);
+    expect(enqueueExport("instance-edit", nextAttempt, store.dispatch, getState)).toBe(true);
+    setExportQueueExecutionEnabled(true, store.dispatch, getState);
+    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(1));
+    expect(mocks.renderFast.mock.calls[0]?.[1]).toBe(nextAttempt.id);
+    expect(
+      store
+        .getState()
+        .editingInstances.entities["instance-edit"]?.exportAttempts.find(
+          (candidate) => candidate.id === attempt.id,
+        )?.state.status,
+    ).toBe("queued");
+
+    const request = { ...attempt.request, trim: { startMicros: 200_000, endMicros: 900_000 } };
+    const output = {
+      displayName: "edited.mp4",
+      displayPath: "C:/Exports/edited.mp4",
+      outputId: "edited-output",
+    };
+
+    expect(
+      commitQueuedExportEdit(
+        "instance-edit",
+        attempt.id,
+        output,
+        request,
+        attempt.snapshot,
+        store.dispatch,
+        getState,
+      ),
+    ).toBe(true);
+    releaseQueuedExportEdit(attempt.id, store.dispatch, getState);
+
+    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
+    expect(mocks.renderFast).toHaveBeenCalledWith(
+      request,
+      "edited-output",
+      expect.any(Function),
+      expect.any(String),
+      "instance-edit",
+    );
+  });
+
   it("starts only the requested instance, even when drafts share the same path", async () => {
     const store = createAppStore();
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));

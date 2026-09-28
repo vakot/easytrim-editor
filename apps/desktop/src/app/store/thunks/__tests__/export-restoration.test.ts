@@ -22,7 +22,12 @@ import { createAppStore } from "@/app/store/store";
 import { createExportAttempt } from "@/domain/editing-instance";
 import { firstSource, media } from "@/test/source.fixtures";
 
-import { startFastCutRequested } from "../export-thunks";
+import {
+  cancelOptimizedExportDialogRequested,
+  editExportAttemptRequested,
+  startFastCutRequested,
+  startOptimizedExportRequested,
+} from "../export-thunks";
 import {
   closeActiveEditingInstanceRequested,
   restoreExportAttemptRequested,
@@ -32,6 +37,7 @@ const native = vi.hoisted(() => ({
   activateSourcePath: vi.fn(),
   prepareSourcePreview: vi.fn(),
   chooseOutputPath: vi.fn(),
+  planOptimizedExport: vi.fn(),
   reserveExportSource: vi.fn(),
   releaseExportSource: vi.fn(),
   renderFast: vi.fn(),
@@ -56,6 +62,7 @@ beforeEach(() => {
     displayPath: "C:/out.mp4",
     outputId: "out",
   });
+  native.planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg ..." });
   native.reserveExportSource.mockResolvedValue(undefined);
   native.releaseExportSource.mockResolvedValue(undefined);
   native.renderFast.mockResolvedValue({
@@ -95,6 +102,167 @@ function setup() {
 }
 
 describe("export snapshot restoration", () => {
+  it("keeps optimized queue settings unchanged when the edit dialog is canceled", async () => {
+    const { snapshot, store } = setup();
+    const attempt = createExportAttempt({
+      capturedAt: 1,
+      id: "queued-optimized-cancel",
+      output: { displayName: "render.mp4", displayPath: "C:/render.mp4", outputId: "old-output" },
+      request: {
+        arguments: "-preset slow",
+        audioTracks: [],
+        mergeAudio: false,
+        resolution: { height: 720, width: 1280 },
+        rotationDegrees: 0,
+        sourcePath: firstSource.sourcePath,
+        trim: { endMicros: 1_500_000, startMicros: 250_000 },
+      },
+      route: "optimized",
+      snapshot: { ...snapshot, trim: { startMicros: 250_000, endMicros: 1_500_000 } },
+    });
+
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
+    await store.dispatch(
+      editExportAttemptRequested({ attemptId: attempt.id, instanceId: "original" }),
+    );
+
+    store.dispatch(cancelOptimizedExportDialogRequested());
+
+    expect(selectExportQueue(store.getState())[0]?.attempt).toEqual(attempt);
+    expect(store.getState().export.queueEdit).toBeNull();
+    expect(store.getState().export.optimizedDialogOpen).toBe(false);
+  });
+
+  it("reopens optimized settings and commits the same queued attempt after confirmation", async () => {
+    const { snapshot, store } = setup();
+    const capturedSnapshot = {
+      ...snapshot,
+      trim: { startMicros: 250_000, endMicros: 1_500_000 },
+    };
+
+    const attempt = createExportAttempt({
+      capturedAt: 1,
+      id: "queued-optimized-edit",
+      output: { displayName: "render.mp4", displayPath: "C:/render.mp4", outputId: "old-output" },
+      request: {
+        arguments: "-preset slow",
+        audioTracks: [],
+        mergeAudio: false,
+        resolution: { height: 720, width: 1280 },
+        rotationDegrees: 0,
+        sourcePath: firstSource.sourcePath,
+        trim: { endMicros: 1_500_000, startMicros: 250_000 },
+      },
+      route: "optimized",
+      snapshot: capturedSnapshot,
+    });
+
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
+
+    await store.dispatch(
+      editExportAttemptRequested({ attemptId: attempt.id, instanceId: "original" }),
+    );
+
+    expect(store.getState().export.queueEdit).toEqual({
+      attemptId: attempt.id,
+      instanceId: "original",
+      route: "optimized",
+    });
+    expect(store.getState().export.optimizedDialogOpen).toBe(true);
+    expect(store.getState().trim.value).toMatchObject(capturedSnapshot.trim);
+    expect(
+      store.getState().editingInstances.entities.original?.optimizedSettings?.resolution,
+    ).toEqual({
+      height: 720,
+      width: 1280,
+    });
+
+    store.dispatch(
+      trimChanged({
+        trim: { startMicros: 500_000, endMicros: 1_700_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    expect(store.getState().trim.value).toMatchObject({
+      startMicros: 500_000,
+      endMicros: 1_700_000,
+    });
+    store.dispatch(startOptimizedExportRequested());
+
+    await vi.waitFor(() => {
+      const updated = store.getState().editingInstances.entities.original?.exportAttempts[0];
+      expect(updated?.output.outputId).toBe("out");
+      expect(updated?.request.trim).toEqual({ startMicros: 500_000, endMicros: 1_700_000 });
+      expect(updated?.snapshot.trim).toEqual({ startMicros: 500_000, endMicros: 1_700_000 });
+      expect(updated?.state.status).toBe("queued");
+    });
+    expect(store.getState().editingInstances.entities.original?.exportAttempts).toHaveLength(1);
+    expect(store.getState().export.optimizedDialogOpen).toBe(false);
+  });
+
+  it("edits a queued lossless cut output in place", async () => {
+    const { snapshot, store } = setup();
+    const attempt = createExportAttempt({
+      capturedAt: 1,
+      id: "queued-fast-edit",
+      output: { displayName: "cut.mkv", displayPath: "C:/cut.mkv", outputId: "old-output" },
+      request: {
+        audioTracks: [],
+        mergeAudio: false,
+        rotationDegrees: 0,
+        sourcePath: firstSource.sourcePath,
+        trim: { endMicros: 2_000_000, startMicros: 100_000 },
+      },
+      route: "fast",
+      snapshot,
+    });
+
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
+
+    await store.dispatch(
+      editExportAttemptRequested({ attemptId: attempt.id, instanceId: "original" }),
+    );
+
+    const updated = selectExportQueue(store.getState()).find(
+      ({ attempt: candidate }) => candidate.id === attempt.id,
+    )?.attempt;
+
+    expect(updated?.output.outputId).toBe("out");
+    expect(updated?.request).toEqual(attempt.request);
+    expect(updated?.state.status).toBe("queued");
+    expect(selectExportQueue(store.getState())).toHaveLength(1);
+  });
+
+  it("leaves a queued lossless cut unchanged when output selection is canceled", async () => {
+    const { snapshot, store } = setup();
+    const attempt = createExportAttempt({
+      capturedAt: 1,
+      id: "queued-fast-cancel",
+      output: { displayName: "cut.mkv", displayPath: "C:/cut.mkv", outputId: "old-output" },
+      request: {
+        audioTracks: [],
+        mergeAudio: false,
+        rotationDegrees: 0,
+        sourcePath: firstSource.sourcePath,
+        trim: { endMicros: 2_000_000, startMicros: 100_000 },
+      },
+      route: "fast",
+      snapshot,
+    });
+
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
+    native.chooseOutputPath.mockResolvedValueOnce(null);
+
+    await store.dispatch(
+      editExportAttemptRequested({ attemptId: attempt.id, instanceId: "original" }),
+    );
+
+    const updated = selectExportQueue(store.getState()).find(
+      ({ attempt: candidate }) => candidate.id === attempt.id,
+    )?.attempt;
+
+    expect(updated).toEqual(attempt);
+  });
+
   it("queues successive edits of the retained draft without changing earlier snapshots", async () => {
     const { snapshot, store } = setup();
     store.dispatch(startFastCutRequested());

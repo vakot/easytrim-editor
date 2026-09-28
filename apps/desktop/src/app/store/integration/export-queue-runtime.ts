@@ -1,8 +1,8 @@
 import {
+  editingInstanceExportAttemptEdited,
   editingInstanceExportCanceled,
   editingInstanceExportCompleted,
   editingInstanceExportFailed,
-  editingInstanceExportOutputRenamed,
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
   editingInstanceExportRetried,
@@ -204,9 +204,10 @@ function cancelQueuedExport(
   return job.completion;
 }
 
-function reserveQueuedExportRename(
+function reserveQueuedExportEdit(
   instanceId: EditingInstanceId,
   attemptId: string,
+  dispatch: AppDispatch,
   getState: () => RootState,
 ): boolean {
   const runtime = runtimeFor(getState);
@@ -219,13 +220,16 @@ function reserveQueuedExportRename(
   if (!attempt || attempt.state.status !== "queued" || (job && job.startedAt !== null))
     return false;
   runtime.reservedAttemptIds.add(attemptId);
+  void drainQueue(runtime, dispatch, getState);
   return true;
 }
 
-function commitQueuedExportRename(
+function commitQueuedExportEdit(
   instanceId: EditingInstanceId,
   attemptId: string,
   output: ExportAttempt["output"],
+  request: ExportAttempt["request"],
+  snapshot: ExportAttempt["snapshot"],
   dispatch: AppDispatch,
   getState: () => RootState,
 ): boolean {
@@ -237,17 +241,19 @@ function commitQueuedExportRename(
 
   if (!attempt || attempt.state.status !== "queued") return false;
 
-  dispatch(editingInstanceExportOutputRenamed({ id: instanceId, attemptId, output }));
+  dispatch(
+    editingInstanceExportAttemptEdited({ id: instanceId, attemptId, output, request, snapshot }),
+  );
   const updated = selectEditingInstanceAttempts(getState()).find(
     ({ attempt: candidate, instance }) => instance.id === instanceId && candidate.id === attemptId,
   )?.attempt;
 
   const job = runtime.jobsByAttemptId.get(attemptId);
   if (updated && job) job.attempt = updated;
-  return updated?.output.outputId === output.outputId;
+  return updated?.state.status === "queued" && updated.output.outputId === output.outputId;
 }
 
-function releaseQueuedExportRename(
+function releaseQueuedExportEdit(
   attemptId: string,
   dispatch: AppDispatch,
   getState: () => RootState,
@@ -660,11 +666,11 @@ async function moveSourceToTrashAndMarkDeleted(
 export {
   cancelAndRequeueExport,
   cancelQueuedExport,
-  commitQueuedExportRename,
+  commitQueuedExportEdit,
   enqueueExport,
   hasActiveExportForSource,
-  releaseQueuedExportRename,
-  reserveQueuedExportRename,
+  releaseQueuedExportEdit,
+  reserveQueuedExportEdit,
   retryFailedExport,
   setExportQueueExecutionEnabled,
   withdrawPendingExport,
