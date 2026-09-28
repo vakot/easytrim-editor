@@ -174,15 +174,32 @@ async function planOptimizedExport(request: OptimizedExportRequest): Promise<Opt
   }
 }
 
-async function analyzeAudioLoudness(request: LoudnessAnalysisRequest): Promise<LoudnessAnalysis> {
+async function analyzeAudioLoudness(
+  request: LoudnessAnalysisRequest,
+  signal?: AbortSignal,
+): Promise<LoudnessAnalysis> {
   const { sourcePath, ...analysisRequest } = request;
   try {
-    return parseLoudnessAnalysis(
-      await invoke<unknown>("analyze_audio_loudness", {
-        request: analysisRequest,
-        sourcePath,
-      }),
-    );
+    const operationId = await invoke<string>("begin_loudness_analysis");
+    const cancel = () => cancelOperation(operationId).catch(() => undefined);
+    const onAbort = () => {
+      void cancel();
+    };
+
+    signal?.addEventListener("abort", onAbort, { once: true });
+    if (signal?.aborted) await cancel();
+
+    try {
+      return parseLoudnessAnalysis(
+        await invoke<unknown>("analyze_audio_loudness", {
+          operationId,
+          request: analysisRequest,
+          sourcePath,
+        }),
+      );
+    } finally {
+      signal?.removeEventListener("abort", onAbort);
+    }
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }

@@ -70,12 +70,15 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
 
   const requestKey = JSON.stringify(request);
   const requestId = useRef(0);
+  const analysisAbortController = useRef<AbortController | null>(null);
   const [analysisState, setAnalysisState] = useState<AnalysisState | null>(null);
 
   useEffect(() => {
     requestId.current += 1;
     return () => {
       requestId.current += 1;
+      analysisAbortController.current?.abort();
+      analysisAbortController.current = null;
     };
   }, [requestKey]);
 
@@ -85,10 +88,13 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
 
   const analyze = async () => {
     if (!request) return;
+    analysisAbortController.current?.abort();
+    const controller = new AbortController();
+    analysisAbortController.current = controller;
     const currentRequestId = ++requestId.current;
     setAnalysisState({ requestKey, status: "analyzing" });
     try {
-      const result = await analyzeAudioLoudness(request);
+      const result = await analyzeAudioLoudness(request, controller.signal);
       if (requestId.current === currentRequestId) {
         setAnalysisState({ requestKey, result, status: "ready" });
       }
@@ -100,6 +106,10 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
           error: normalized.message || t("export.dialogs.optimized.loudness.analysisFailed"),
           status: "failed",
         });
+      }
+    } finally {
+      if (analysisAbortController.current === controller) {
+        analysisAbortController.current = null;
       }
     }
   };

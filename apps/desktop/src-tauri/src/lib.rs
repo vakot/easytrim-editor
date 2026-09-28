@@ -80,6 +80,7 @@ pub fn run() {
             commands::diagnostics::reveal_diagnostic_logs,
             commands::diagnostics::reveal_diagnostic_report,
             commands::export::cancel_operation,
+            commands::export::begin_loudness_analysis,
             commands::export::analyze_audio_loudness,
             commands::export::release_export_source,
             commands::export::reserve_export_source,

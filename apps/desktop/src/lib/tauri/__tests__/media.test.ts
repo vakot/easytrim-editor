@@ -55,7 +55,9 @@ beforeEach(() => {
 
 describe("media IPC adapter", () => {
   it("analyzes the requested segment and parses unavailable measurements", async () => {
-    mocks.invoke.mockResolvedValue({ integratedLufs: -18.4, truePeakDb: null });
+    mocks.invoke
+      .mockResolvedValueOnce("operation-1")
+      .mockResolvedValueOnce({ integratedLufs: -18.4, truePeakDb: null });
     const request = {
       sourcePath: "C:/Media/clip.mp4",
       trim: { startMicros: 1_000_000, endMicros: 4_000_000 },
@@ -67,7 +69,9 @@ describe("media IPC adapter", () => {
       integratedLufs: -18.4,
       truePeakDb: undefined,
     });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(1, "begin_loudness_analysis");
     expect(mocks.invoke).toHaveBeenCalledWith("analyze_audio_loudness", {
+      operationId: "operation-1",
       sourcePath: request.sourcePath,
       request: {
         trim: request.trim,
@@ -75,6 +79,37 @@ describe("media IPC adapter", () => {
         mergeAudio: request.mergeAudio,
       },
     });
+  });
+
+  it("cancels the owned native loudness operation when its signal aborts", async () => {
+    let completeAnalysis: ((result: unknown) => void) | undefined;
+    mocks.invoke.mockImplementation((command: string) => {
+      if (command === "begin_loudness_analysis") return Promise.resolve("operation-2");
+      if (command === "analyze_audio_loudness") {
+        return new Promise((resolve) => {
+          completeAnalysis = resolve;
+        });
+      }
+      return Promise.resolve();
+    });
+    const controller = new AbortController();
+    const request = {
+      sourcePath: "C:/Media/clip.mp4",
+      trim: { startMicros: 0, endMicros: 1_000_000 },
+      audioTracks: [{ streamIndex: 2, volumePercent: 100 }],
+      mergeAudio: false,
+    };
+
+    const analysis = analyzeAudioLoudness(request, controller.signal);
+    await vi.waitFor(() => expect(completeAnalysis).toBeDefined());
+    controller.abort();
+    await vi.waitFor(() =>
+      expect(mocks.invoke).toHaveBeenCalledWith("cancel_operation", {
+        operationId: "operation-2",
+      }),
+    );
+    completeAnalysis?.({ integratedLufs: -16, truePeakDb: -1 });
+    await expect(analysis).resolves.toEqual({ integratedLufs: -16, truePeakDb: -1 });
   });
 
   it("saves captured PNG bytes through the native save dialog", async () => {

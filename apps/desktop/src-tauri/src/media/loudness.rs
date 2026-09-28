@@ -2,7 +2,7 @@ use std::{
     ffi::{OsStr, OsString},
     io,
     path::Path,
-    sync::atomic::Ordering,
+    sync::atomic::{AtomicBool, Ordering},
     time::Duration,
 };
 
@@ -40,6 +40,7 @@ pub struct LoudnessAnalysis {
 pub fn analyze_loudness(
     source: &ActiveSource,
     request: &LoudnessAnalysisRequest,
+    operation_cancellation: &AtomicBool,
 ) -> Result<LoudnessAnalysis, AppError> {
     let media = source
         .media
@@ -59,7 +60,10 @@ pub fn analyze_loudness(
         ANALYSIS_TIMEOUT,
         16 * 1024,
         ANALYSIS_STDERR_LIMIT,
-        || source.cancellation.load(Ordering::Acquire),
+        || {
+            source.cancellation.load(Ordering::Acquire)
+                || operation_cancellation.load(Ordering::Acquire)
+        },
     )
     .map_err(process_error)?;
 

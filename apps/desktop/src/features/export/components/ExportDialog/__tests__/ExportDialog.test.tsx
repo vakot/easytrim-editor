@@ -176,15 +176,18 @@ describe("ExportDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Analyze loudness" }));
 
     await waitFor(() =>
-      expect(analyzeAudioLoudness).toHaveBeenCalledWith({
-        audioTracks: [
-          { streamIndex: 2, volumePercent: 120 },
-          { streamIndex: 4, volumePercent: 80 },
-        ],
-        mergeAudio: true,
-        sourcePath: firstSource.sourcePath,
-        trim: { startMicros: 1_000_000, endMicros: 4_000_000 },
-      }),
+      expect(analyzeAudioLoudness).toHaveBeenCalledWith(
+        {
+          audioTracks: [
+            { streamIndex: 2, volumePercent: 120 },
+            { streamIndex: 4, volumePercent: 80 },
+          ],
+          mergeAudio: true,
+          sourcePath: firstSource.sourcePath,
+          trim: { startMicros: 1_000_000, endMicros: 4_000_000 },
+        },
+        expect.any(AbortSignal),
+      ),
     );
     const presetSelect = screen.getByRole("combobox", { name: "Loudness" });
     await waitFor(() => expect(presetSelect).toHaveTextContent("Default · −18.2 LUFS / −2.1 dBTP"));
@@ -222,5 +225,63 @@ describe("ExportDialog", () => {
       ).toMatchObject({ loudnessPreset: undefined }),
     );
     expect(analyzeButton).toBeEnabled();
+  });
+
+  it("aborts loudness analysis when the trim changes or the dialog closes", async () => {
+    planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg preview" });
+    const analysisSignals: AbortSignal[] = [];
+    analyzeAudioLoudness.mockImplementation(
+      (_request: unknown, signal: AbortSignal) =>
+        new Promise((resolve) => {
+          analysisSignals.push(signal);
+          signal.addEventListener("abort", () => resolve({ integratedLufs: -18, truePeakDb: -2 }), {
+            once: true,
+          });
+        }),
+    );
+    const store = createAppStore({
+      getItem: async () => null,
+      setItem: async () => undefined,
+      removeItem: async () => undefined,
+    });
+
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath) }));
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          exportAttempts: [],
+          id: "instance-1",
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
+          sourceAvailability: "available",
+        },
+      ]),
+    );
+    store.dispatch(activeEditingInstanceChanged("instance-1"));
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ExportDialog />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    await store.dispatch(openOptimizedExportDialog());
+    fireEvent.click(screen.getByRole("button", { name: "Analyze loudness" }));
+    await waitFor(() => expect(analysisSignals).toHaveLength(1));
+
+    store.dispatch(
+      trimChanged({
+        trim: { startMicros: 500_000, endMicros: 4_500_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    await waitFor(() => expect(analysisSignals[0]?.aborted).toBe(true));
+
+    fireEvent.click(screen.getByRole("button", { name: "Analyze loudness" }));
+    await waitFor(() => expect(analysisSignals).toHaveLength(2));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(analysisSignals[1]?.aborted).toBe(true));
   });
 });

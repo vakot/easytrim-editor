@@ -249,6 +249,15 @@ impl AppState {
         Ok(())
     }
 
+    pub fn operation_cancellation(&self, operation_id: &str) -> Result<Arc<AtomicBool>, AppError> {
+        self.operations
+            .lock()
+            .map_err(|_| AppError::internal("The in-memory operation registry is unavailable."))?
+            .get(operation_id)
+            .cloned()
+            .ok_or_else(|| AppError::invalid_request("The operation is no longer available."))
+    }
+
     pub fn finish_operation(&self, operation_id: &str) -> Result<(), AppError> {
         self.operations
             .lock()
@@ -881,6 +890,22 @@ mod tests {
             .expect("late cancellation is harmless");
 
         assert!(cancellation.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn operation_cancellation_resolves_the_owned_token() {
+        let state = AppState::default();
+        let (operation_id, cancellation) = state.begin_operation().expect("operation starts");
+
+        let resolved = state
+            .operation_cancellation(&operation_id)
+            .expect("operation cancellation resolves");
+        state
+            .cancel_operation(&operation_id)
+            .expect("operation cancels");
+
+        assert!(cancellation.load(Ordering::Acquire));
+        assert!(resolved.load(Ordering::Acquire));
     }
 
     #[test]
