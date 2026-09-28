@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added optional scene-change detection with timeline markers and Shift-drag snapping at scene boundaries.
+- Added optional scene-change detection with animated timeline markers and Shift-drag snapping at scene boundaries.
 - Added scene detection result states with failure details and a retry action.
 
 ### Changed

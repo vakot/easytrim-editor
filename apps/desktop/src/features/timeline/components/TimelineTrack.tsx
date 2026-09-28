@@ -1,3 +1,4 @@
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
 import { usePlayback } from "@/app/hooks/usePlayback";
@@ -148,17 +149,26 @@ function TimelineTrack() {
 function SceneMarkers({ sourceDurationMicros }: { sourceDurationMicros: number }) {
   const enabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
+  const shouldReduceMotion = useReducedMotion() === true;
 
-  if (!enabled) return null;
-
-  return sceneBoundariesMicros.map((boundaryMicros) => (
-    <div
-      aria-hidden="true"
-      className={styles.sceneMarker}
-      key={boundaryMicros}
-      style={{ left: `${timelinePercent(boundaryMicros, sourceDurationMicros)}%` }}
-    />
-  ));
+  return (
+    <AnimatePresence>
+      {enabled
+        ? sceneBoundariesMicros.map((boundaryMicros) => (
+            <motion.div
+              animate={{ opacity: 1, height: "100%" }}
+              aria-hidden="true"
+              className={styles.sceneMarker}
+              exit={{ opacity: 0, height: 0 }}
+              initial={shouldReduceMotion ? false : { opacity: 0 }}
+              key={boundaryMicros}
+              style={{ left: `${timelinePercent(boundaryMicros, sourceDurationMicros)}%` }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
+            />
+          ))
+        : null}
+    </AnimatePresence>
+  );
 }
 
 export { TimelineTrack };
