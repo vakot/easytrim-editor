@@ -257,6 +257,7 @@ export const sk = {
       restore: "Obnoviť úpravu",
       revealOutput: "Zobraziť výstup",
       retry: "Opakovať",
+      renameOutput: "Premenovať výstup",
       start: "Spustiť front",
       skip: "Preskočiť",
     },

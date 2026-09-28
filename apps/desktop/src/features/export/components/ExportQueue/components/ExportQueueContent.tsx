@@ -12,6 +12,7 @@ import {
   ExportQueueItemMetrics,
   ExportQueueItemOutputName,
   ExportQueueItemProgressBar,
+  ExportQueueItemRename,
   ExportQueueItemRestore,
   ExportQueueItemRetry,
   ExportQueueItemReveal,
@@ -63,7 +64,10 @@ function ExportQueueListItem() {
       <div className="grid min-w-0 flex-1 gap-1">
         <div className="flex justify-between gap-2">
           <div className="grid min-w-0 gap-1">
-            <ExportQueueItemOutputName />
+            <div className="flex min-w-0 items-center gap-1">
+              <ExportQueueItemOutputName className="min-w-0" />
+              <ExportQueueItemRename className="shrink-0" />
+            </div>
             <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
               <ExportQueueItemSourceName className="min-w-0" />
               ·

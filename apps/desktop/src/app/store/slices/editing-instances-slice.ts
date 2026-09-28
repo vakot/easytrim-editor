@@ -229,6 +229,19 @@ const editingInstancesSlice = createSlice({
         );
       }
     },
+    editingInstanceExportOutputRenamed: (
+      state,
+      action: PayloadAction<{
+        attemptId: string;
+        id: EditingInstanceId;
+        output: OutputSelection;
+      }>,
+    ) => {
+      const instance = getInstance(state, action.payload.id);
+      const attempt = instance && getAttempt(instance, action.payload.attemptId);
+      if (!attempt || attempt.state.status !== "queued") return;
+      attempt.output = action.payload.output;
+    },
     editingInstanceExportRestored: (
       state,
       action: PayloadAction<{
@@ -532,6 +545,7 @@ const {
   editingInstanceExportCompleted,
   editingInstanceExportFailed,
   editingInstanceExportHistoryCleared,
+  editingInstanceExportOutputRenamed,
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
   editingInstanceExportRestored,
@@ -695,6 +709,7 @@ export {
   editingInstanceExportCompleted,
   editingInstanceExportFailed,
   editingInstanceExportHistoryCleared,
+  editingInstanceExportOutputRenamed,
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
   editingInstanceExportRestored,

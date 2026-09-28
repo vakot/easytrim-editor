@@ -1,11 +1,13 @@
-import { ArrowLeftFromLine, ExternalLink, RotateCcw, X } from "lucide-react";
+import { ArrowLeftFromLine, ExternalLink, RotateCcw, SquarePen, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   cancelExportAttemptRequested,
+  renameExportAttemptRequested,
   retryExportAttemptRequested,
 } from "@/app/store/thunks/export-thunks";
 import { restoreExportAttemptRequested } from "@/app/store/thunks/source-media-thunks";
@@ -38,6 +40,40 @@ function ExportQueueItemCancel({ className }: { className?: string }) {
     >
       <X aria-hidden="true" />
     </Button>
+  );
+}
+
+function ExportQueueItemRename({ className }: { className?: string }) {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const { attempt, instance } = useExportQueueItem();
+  const isNativeDialogOpen = useAppSelector((state) => state.importWorkflow.isNativeDialogOpen);
+
+  if (attempt.state.status !== "queued") return null;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex" tabIndex={isNativeDialogOpen ? 0 : undefined}>
+          <Button
+            aria-label={t("queue.actions.renameOutput")}
+            className={className}
+            disabled={isNativeDialogOpen}
+            onClick={() =>
+              void dispatch(
+                renameExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
+              )
+            }
+            size="icon-xs"
+            type="button"
+            variant="ghost"
+          >
+            <SquarePen aria-hidden="true" />
+          </Button>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{t("queue.actions.renameOutput")}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -123,6 +159,7 @@ function ExportQueueItemRetry({ className }: { className?: string }) {
 
 export {
   ExportQueueItemCancel,
+  ExportQueueItemRename,
   ExportQueueItemRestore,
   ExportQueueItemRetry,
   ExportQueueItemReveal,
