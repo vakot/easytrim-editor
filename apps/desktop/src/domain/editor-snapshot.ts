@@ -15,6 +15,7 @@ interface EditorSnapshot {
   flipHorizontal?: boolean;
   flipVertical?: boolean;
   rotation?: RotationDegrees;
+  sceneBoundariesMicros?: number[];
   source: SourceRef;
   trim: EditorSnapshotTrim;
 }
@@ -27,6 +28,7 @@ function createEditorSnapshot(input: {
   masterAudio: EditorSnapshot["audio"]["master"];
   mergeAudio: boolean;
   rotation?: RotationDegrees;
+  sceneBoundariesMicros?: number[];
   source: SourceRef;
   trim: EditorSnapshot["trim"];
 }): EditorSnapshot {
@@ -37,6 +39,9 @@ function createEditorSnapshot(input: {
     flipHorizontal: input.flipHorizontal ?? false,
     flipVertical: input.flipVertical ?? false,
     rotation: input.rotation ?? 0,
+    ...(input.sceneBoundariesMicros === undefined
+      ? {}
+      : { sceneBoundariesMicros: [...input.sceneBoundariesMicros] }),
     audio: {
       master: { ...input.masterAudio },
       tracks: input.audioTracks.map((track) => ({ ...track })),

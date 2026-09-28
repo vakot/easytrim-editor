@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 
+import { cn } from "@/lib/class-names.utils";
+
 import { useSourceCardData } from "../hooks/useSourceCardData";
 import {
   getSourceCardBadgeVariant,
@@ -35,7 +37,7 @@ function SourceCardStatusBadge({ className }: { className?: string }) {
 
   return (
     <Badge
-      className={`gap-1 backdrop-blur-sm ${statusBadgeClassNames[variant]} ${className ?? ""}`}
+      className={cn("gap-1 backdrop-blur-sm", statusBadgeClassNames[variant], className)}
       size="xs"
       variant="outline"
     >

@@ -73,9 +73,6 @@ function shortcutDispositionFromEvent(event: globalThis.KeyboardEvent): Shortcut
   }
   if (target?.closest(INDEPENDENT_SLIDER_SELECTOR)) return "native";
 
-  const button = target?.closest('button, [role="button"]');
-  if (button && shortcut === "toggle-playback") return "native";
-
   return "timeline";
 }
 

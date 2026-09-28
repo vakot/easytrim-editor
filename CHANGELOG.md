@@ -4,9 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added optional scene-change detection with animated timeline markers and Shift-drag snapping at scene boundaries.
+- Added scene detection result states with failure details and a retry action.
+
 ### Changed
 
+- Removed automatic playhead following while trim borders move.
 - Updated desktop branding to use the square logo on macOS and the symbol on Windows, Linux, and in-app surfaces.
+
+### Fixed
+
+- Fixed Spacebar playback toggling when an editor button has focus.
 
 ## [1.12.3]
 

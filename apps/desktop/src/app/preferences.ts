@@ -27,7 +27,6 @@ interface Preferences {
   playbackVolumePercent: number;
   primaryColor: PrimaryColor;
   segmentPlaybackEnabledDefault: boolean;
-  snapPlaybackEnabledDefault: boolean;
   theme: ThemePreference;
   uiScalePercent: number;
 }
@@ -38,7 +37,6 @@ export type PreferenceKey = {
 
 export const DEFAULT_PREFERENCES: Preferences = {
   activityFeedView: "default",
-  snapPlaybackEnabledDefault: true,
   loopPlaybackEnabledDefault: true,
   segmentPlaybackEnabledDefault: true,
   autoStartQueueEnabled: true,

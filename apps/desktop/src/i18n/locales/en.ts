@@ -66,6 +66,7 @@ export const en = {
         preferencesPlayback: "Preferences / Playback",
         previewFrame: "Preview / Frame",
         previewTransform: "Preview / Transform",
+        scenes: "Scenes",
         queueOnFinishedApplication: "Queue / On finished / Application",
         queueOnFinishedSource: "Queue / On finished / Source",
         go: "Go",
@@ -217,7 +218,6 @@ export const en = {
       language: "Language",
       loop: "Loop",
       mergeAudio: "Merge audio",
-      snap: "Snap",
       theme: "Theme",
       title: "Settings",
     },
@@ -234,7 +234,6 @@ export const en = {
         followSegment: "Follow segment by default",
         loop: "Enable loop playback by default",
         mergeAudio: "Merge audio by default",
-        snap: "Enable snap playback by default",
       },
       colors: {
         amber: "Amber",
@@ -404,10 +403,12 @@ export const en = {
   preview: {
     actions: {
       nextFrame: "Next frame",
+      nextScene: "Move to next scene",
       copyFrame: "Copy frame",
       pause: "Pause",
       play: "Play",
       previousFrame: "Previous frame",
+      previousScene: "Move to previous scene",
       saveFrame: "Save frame",
       resetTools: "Reset tools",
       setEnd: "Set segment end to current position",
@@ -433,7 +434,6 @@ export const en = {
       shortcutPlayPause: "Play / Pause",
       shortcutPreviousNextFrame: "Prev / Next Frame",
       shortcuts: "Keyboard shortcuts",
-      snapPlayback: "Snap playback",
     },
     status: {
       opening: "Opening preview…",
@@ -466,8 +466,6 @@ export const en = {
       segmentEnabled: "Constrain playback to the selected segment",
       setEnd: "Set segment end to current position (O)",
       setStart: "Set segment start to current position (I)",
-      snapDisabled: "Playhead stays in place",
-      snapEnabled: "Playhead follows a trim border once caught",
     },
     dialogs: {
       reset: {
@@ -494,7 +492,12 @@ export const en = {
     },
   },
   timeline: {
-    actions: { moveSegment: "Move selected segment" },
+    actions: {
+      detectScenes: "Detect scene changes",
+      disableSceneMarkers: "Hide scene markers",
+      enableSceneMarkers: "Show scene markers",
+      moveSegment: "Move selected segment",
+    },
     labels: {
       duration: "Duration",
       end: "End",
@@ -502,7 +505,12 @@ export const en = {
       start: "Start",
       tools: "Tools",
     },
+    status: {
+      sceneDetectionFailed: "Scene detection failed. Try again.",
+    },
     tooltips: {
+      detectScenes:
+        "Analyze the source video for scene changes. Hold Shift and drag the playhead to snap to a marker.",
       moveSegment: "Drag to move the selected segment — hold Shift to snap",
       trimReset: "{{label}} — hold Shift to snap — double-click to reset",
     },

@@ -1,4 +1,6 @@
 import {
+  ChevronsLeft,
+  ChevronsRight,
   Pause,
   Play,
   SkipBack,
@@ -6,24 +8,49 @@ import {
   SquareArrowLeft,
   SquareArrowRight,
 } from "lucide-react";
-import { type PointerEvent, type ReactNode, useEffect, useRef } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { type MouseEvent, type PointerEvent, type ReactNode, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimeline } from "@/app/hooks/useTimeline";
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
 import { cn } from "@/lib/class-names.utils";
 
 import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../lib/editor-shortcuts";
+
+const MotionButton = motion.create(Button);
+const SCENE_NAVIGATION_COLLAPSED_MARGIN = "-0.375rem";
+
+function preventSceneNavigationMouseFocus(event: MouseEvent<HTMLButtonElement>) {
+  if (event.button === 0) event.preventDefault();
+}
 
 function PlaybackControls({ className }: { className?: string }) {
   const { t } = useTranslation();
   const playback = usePlayback();
   const timeline = useTimeline();
+  const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
+  const shouldReduceMotion = useReducedMotion() === true;
+  const { executeCommand } = useApplicationCommands();
+  const previousSceneCommand = useApplicationCommand("previous-scene");
+  const nextSceneCommand = useApplicationCommand("next-scene");
+  const showSceneMarkersCommand = useApplicationCommand("show-scene-markers");
   const disabled = !playback.canInteract;
+  const previousSceneDisabled =
+    disabled || !previousSceneCommand.enabled || previousSceneCommand.pending;
+
+  const nextSceneDisabled = disabled || !nextSceneCommand.enabled || nextSceneCommand.pending;
+  const showSceneNavigation =
+    showSceneMarkersCommand.enabled &&
+    showSceneMarkersCommand.checked &&
+    sceneBoundariesMicros.length > 0;
 
   return (
     <div
@@ -46,6 +73,48 @@ function PlaybackControls({ className }: { className?: string }) {
         >
           <SquareArrowRight />
         </TransportButton>
+        <AnimatePresence initial={false}>
+          {showSceneNavigation ? (
+            <Tooltip key="previous-scene-navigation">
+              <TooltipTrigger asChild>
+                <MotionButton
+                  animate={{
+                    opacity: previousSceneDisabled ? 0.5 : 1,
+                    width: "1.75rem",
+                    marginInlineStart: 0,
+                  }}
+                  aria-label={previousSceneCommand.label}
+                  className="overflow-hidden transition-colors"
+                  data-editor-keyboard="timeline-transport"
+                  disabled={previousSceneDisabled}
+                  exit={{
+                    opacity: 0,
+                    width: 0,
+                    marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                  }}
+                  initial={
+                    shouldReduceMotion
+                      ? false
+                      : {
+                          opacity: 0,
+                          width: 0,
+                          marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                        }
+                  }
+                  onClick={() => void executeCommand("previous-scene", "button")}
+                  onMouseDown={preventSceneNavigationMouseFocus}
+                  size="icon-sm"
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
+                  type="button"
+                  variant="ghost"
+                >
+                  <ChevronsLeft />
+                </MotionButton>
+              </TooltipTrigger>
+              <TooltipContent>{previousSceneCommand.label}</TooltipContent>
+            </Tooltip>
+          ) : null}
+        </AnimatePresence>
         <TransportButton
           disabled={disabled}
           hold={{
@@ -90,6 +159,48 @@ function PlaybackControls({ className }: { className?: string }) {
         >
           <SkipForward />
         </TransportButton>
+        <AnimatePresence initial={false}>
+          {showSceneNavigation ? (
+            <Tooltip key="next-scene-navigation">
+              <TooltipTrigger asChild>
+                <MotionButton
+                  animate={{
+                    opacity: nextSceneDisabled ? 0.5 : 1,
+                    width: "1.75rem",
+                    marginInlineStart: 0,
+                  }}
+                  aria-label={nextSceneCommand.label}
+                  className="overflow-hidden transition-colors"
+                  data-editor-keyboard="timeline-transport"
+                  disabled={nextSceneDisabled}
+                  exit={{
+                    opacity: 0,
+                    width: 0,
+                    marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                  }}
+                  initial={
+                    shouldReduceMotion
+                      ? false
+                      : {
+                          opacity: 0,
+                          width: 0,
+                          marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                        }
+                  }
+                  onClick={() => void executeCommand("next-scene", "button")}
+                  onMouseDown={preventSceneNavigationMouseFocus}
+                  size="icon-sm"
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
+                  type="button"
+                  variant="ghost"
+                >
+                  <ChevronsRight />
+                </MotionButton>
+              </TooltipTrigger>
+              <TooltipContent>{nextSceneCommand.label}</TooltipContent>
+            </Tooltip>
+          ) : null}
+        </AnimatePresence>
         <TransportButton
           disabled={disabled || !timeline.canSetSegmentEnd}
           label={t("preview.actions.setEnd")}

@@ -39,11 +39,10 @@ describe("preferences Redux domain", () => {
 
     const nextState = preferencesReducer(
       initialState,
-      preferenceChanged({ key: "snapPlaybackEnabledDefault", enabled: false }),
+      preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }),
     );
 
-    expect(nextState.snapPlaybackEnabledDefault).toBe(false);
-    expect(nextState.loopPlaybackEnabledDefault).toBe(initialState.loopPlaybackEnabledDefault);
+    expect(nextState.loopPlaybackEnabledDefault).toBe(false);
     expect(nextState.mergeAudioEnabledDefault).toBe(initialState.mergeAudioEnabledDefault);
   });
 
@@ -111,7 +110,6 @@ describe("preferences Redux domain", () => {
   it("resets defaults while preserving view and queue preferences", () => {
     const state = preferencesReducer(
       {
-        snapPlaybackEnabledDefault: false,
         loopPlaybackEnabledDefault: false,
         segmentPlaybackEnabledDefault: false,
         autoStartQueueEnabled: false,
@@ -160,7 +158,6 @@ describe("preferences Redux domain", () => {
 
   it("selects focused preference values", () => {
     const preferences: Preferences = {
-      snapPlaybackEnabledDefault: false,
       loopPlaybackEnabledDefault: true,
       segmentPlaybackEnabledDefault: false,
       autoStartQueueEnabled: true,
@@ -180,7 +177,6 @@ describe("preferences Redux domain", () => {
     const state = { preferences } as RootState;
 
     expect(selectPreferences(state)).toEqual(preferences);
-    expect(selectPreferences(state).snapPlaybackEnabledDefault).toBe(false);
     expect(selectPreferences(state).loopPlaybackEnabledDefault).toBe(true);
     expect(selectPreferences(state).segmentPlaybackEnabledDefault).toBe(false);
     expect(selectMergeAudioEnabledDefault(state)).toBe(true);

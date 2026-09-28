@@ -13,7 +13,6 @@ import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-sli
 import {
   selectLoopPlaybackEnabled,
   selectSegmentPlaybackEnabled,
-  selectSnapPlaybackEnabled,
 } from "@/app/store/slices/editor-tools-slice";
 import { selectPlaybackSpeed } from "@/app/store/slices/playback-controls-slice";
 import { selectPlaybackVolumePercent } from "@/app/store/slices/preferences-slice";
@@ -27,8 +26,6 @@ import {
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
 import {
   canSetTrimBoundaryAtPlayhead,
-  playheadAfterSegmentMove,
-  playheadFollowAfterTrimBoundaryMove,
   setTrimBoundaryAtPlayhead,
   type TrimBoundary,
   type TrimRange,
@@ -87,6 +84,7 @@ interface EditorInteractionRuntime {
   onEnded: () => void;
   onLoadedMetadata: () => void;
   onPause: () => void;
+  onPausePlayback: () => void;
   onPlay: () => void;
   onPreviewPlaybackError: (previewKind: "source" | "proxy") => void;
   onScrub: (micros: number) => void;
@@ -95,14 +93,14 @@ interface EditorInteractionRuntime {
   onSeek: (micros: number) => void;
   onSegmentDragEnd: () => void;
   onSegmentDragStart: () => void;
-  onSegmentMove: (nextTrim: TrimRange) => TrimBoundary | null;
+  onSegmentMove: (nextTrim: TrimRange) => void;
   onSetSegmentBoundary: (boundary: TrimBoundary, origin?: DiagnosticOrigin) => void;
   onShuttleEnd: (origin?: DiagnosticOrigin) => void;
   onShuttleStart: (direction: FrameShuttleDirection, origin?: DiagnosticOrigin) => void;
   onStepFrame: (direction: -1 | 1, origin?: DiagnosticOrigin) => void;
   onTimeUpdate: (seconds: number) => void;
   onTogglePlayback: (origin?: DiagnosticOrigin) => void;
-  onTrimBoundaryChange: (boundary: TrimBoundary, nextTrim: TrimRange) => TrimBoundary | null;
+  onTrimBoundaryChange: (boundary: TrimBoundary, nextTrim: TrimRange) => void;
   onTrimDragEnd: () => void;
   onTrimDragStart: () => void;
   playheadRef: React.RefObject<HTMLButtonElement | null>;
@@ -117,7 +115,6 @@ interface EditorInteractionRuntime {
 function useEditorInteractionController(): EditorInteractionRuntime {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const snapPlaybackEnabled = useAppSelector(selectSnapPlaybackEnabled);
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const loopPlaybackEnabled = useAppSelector(selectLoopPlaybackEnabled);
   const segmentPlaybackEnabled = useAppSelector(selectSegmentPlaybackEnabled);
@@ -223,8 +220,6 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const lastAudioSyncAtRef = useRef(0);
   const trimRef = useRef(trim);
   const currentPlayheadMicrosRef = useRef(trim.startMicros);
-  const segmentDragActiveRef = useRef(false);
-  const segmentFollowBoundaryRef = useRef<TrimBoundary | null>(null);
   const playbackRateRef = useRef<number>(playbackSpeed);
   const isPlaybackReady =
     previewKey !== null &&
@@ -1130,6 +1125,20 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     [commitSeek, handleShuttleEnd, playbackModes, startMediaPlayback],
   );
 
+  const handlePausePlayback = useCallback(() => {
+    if (shuttleDirectionRef.current !== 0) {
+      handleShuttleEnd({ type: "internal", id: "scene-navigation" });
+    }
+    playbackStartSequenceRef.current += 1;
+    playbackRequestedRef.current = false;
+    isPlayingRef.current = false;
+    resumeAfterScrubRef.current = false;
+    videoRef.current?.pause();
+    pauseAudioPlayback();
+    setIsPlaying(false);
+    stopPlayheadAnimation();
+  }, [handleShuttleEnd, pauseAudioPlayback, stopPlayheadAnimation]);
+
   const handleStepFrame = useCallback(
     (direction: -1 | 1, origin: DiagnosticOrigin = { type: "internal" }) => {
       if (shuttleDirectionRef.current !== 0) handleShuttleEnd(origin);
@@ -1179,52 +1188,27 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   );
 
   const handleTrimBoundaryChange = useCallback(
-    (boundary: TrimBoundary, nextTrim: TrimRange) => {
-      const currentMicros = currentPlayheadMicrosRef.current;
-      const follow = snapPlaybackEnabled
-        ? playheadFollowAfterTrimBoundaryMove(trimRef.current, nextTrim, boundary, currentMicros)
-        : { playheadMicros: currentMicros, boundary: null };
-
+    (_boundary: TrimBoundary, nextTrim: TrimRange) => {
       trimRef.current = nextTrim;
       queueTrimCommit(nextTrim);
-      if (follow.playheadMicros !== currentMicros) queueScrubSeek(follow.playheadMicros);
-      return follow.boundary;
     },
-    [queueScrubSeek, queueTrimCommit, snapPlaybackEnabled],
+    [queueTrimCommit],
   );
 
   const handleSegmentMove = useCallback(
     (nextTrim: TrimRange) => {
-      const currentMicros = currentPlayheadMicrosRef.current;
-      const follow =
-        snapPlaybackEnabled && segmentDragActiveRef.current
-          ? playheadAfterSegmentMove(
-              trimRef.current,
-              nextTrim,
-              currentMicros,
-              segmentFollowBoundaryRef.current,
-            )
-          : { playheadMicros: currentMicros, boundary: null };
-
-      segmentFollowBoundaryRef.current = follow.boundary;
       trimRef.current = nextTrim;
       queueTrimCommit(nextTrim);
-      if (follow.playheadMicros !== currentMicros) queueScrubSeek(follow.playheadMicros);
-      return follow.boundary;
     },
-    [queueScrubSeek, queueTrimCommit, snapPlaybackEnabled],
+    [queueTrimCommit],
   );
 
   const handleSegmentDragStart = useCallback(() => {
     trimInteractionActiveRef.current = true;
-    segmentDragActiveRef.current = true;
-    segmentFollowBoundaryRef.current = null;
     handleScrubStart();
   }, [handleScrubStart]);
 
   const handleSegmentDragEnd = useCallback(() => {
-    segmentDragActiveRef.current = false;
-    segmentFollowBoundaryRef.current = null;
     flushTrimCommit();
     dispatch(commitActiveEditingInstanceDraft());
     handleScrubEnd();
@@ -1420,6 +1404,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     onCanPlay,
     onPlay,
     onPause,
+    onPausePlayback: handlePausePlayback,
     onTimeUpdate,
     onEnded,
     onTogglePlayback: handleTogglePlayback,

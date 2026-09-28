@@ -59,7 +59,6 @@ const state = {
     mergeAudioEnabledDefault: false,
     primaryColor: "amber",
     segmentPlaybackEnabledDefault: true,
-    snapPlaybackEnabledDefault: true,
     theme: "system",
   },
   export: { availableQueueFinishActions: ["exit", "nothing"], queueFinishAction: "nothing" },

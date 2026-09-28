@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { ExportSettings } from "@/domain/editing-instance";
+import { cn } from "@/lib/class-names.utils";
 
 interface ResolutionDimensionsProps {
   cropAspectRatio: number;
@@ -77,7 +78,7 @@ function ResolutionDimensions({
                   : t("export.accessibility.lockAspectRatio")
               }
               aria-pressed={isAspectRatioLocked}
-              className={isAspectRatioLocked ? "text-primary" : undefined}
+              className={cn(isAspectRatioLocked && "text-primary")}
               onClick={() => onAspectRatioLockChange(!isAspectRatioLocked)}
               size="icon"
               type="button"

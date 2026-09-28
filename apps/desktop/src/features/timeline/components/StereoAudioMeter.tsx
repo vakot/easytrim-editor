@@ -146,9 +146,14 @@ function StereoAudioMeterScale() {
     <div aria-hidden="true" className="relative h-3 text-[0.5rem] leading-3 text-muted-foreground">
       {METER_MARKER_LABELS.map(({ label, level }) => (
         <span
-          className={`absolute top-0 whitespace-nowrap ${
-            level === 0 ? "translate-x-0" : level === 100 ? "-translate-x-full" : "-translate-x-1/2"
-          }`}
+          className={cn(
+            "absolute top-0 whitespace-nowrap",
+            level === 0
+              ? "translate-x-0"
+              : level === 100
+                ? "-translate-x-full"
+                : "-translate-x-1/2",
+          )}
           key={level}
           style={{ left: `${level}%` }}
         >

@@ -31,6 +31,7 @@ import {
   parseOptimizedExportPlan,
   parseOutputSelection,
   parsePreviewDescriptor,
+  parseSceneBoundaries,
   parseSourceImportResult,
   parseSourceRef,
   parseThumbnailDescriptor,
@@ -57,6 +58,14 @@ async function checkMediaCapabilities(): Promise<MediaCapabilities> {
 async function inspectMedia(sourcePath: string): Promise<MediaInfo> {
   try {
     return parseMediaInfo(await invoke<unknown>("inspect_media", { sourcePath }));
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+async function detectScenes(sourcePath: string): Promise<number[]> {
+  try {
+    return parseSceneBoundaries(await invoke<unknown>("detect_scenes", { sourcePath }));
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -362,6 +371,7 @@ export {
   checkMediaCapabilities,
   chooseOutputPath,
   chooseSource,
+  detectScenes,
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,

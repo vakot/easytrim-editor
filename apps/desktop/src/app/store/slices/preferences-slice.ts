@@ -150,9 +150,6 @@ const selectPlaybackVolumePercent = (state: RootState): number =>
 const selectMergeAudioEnabledDefault = (state: RootState): boolean =>
   selectPreferences(state).mergeAudioEnabledDefault;
 
-const selectSnapPlaybackEnabledDefault = (state: RootState): boolean =>
-  selectPreferences(state).snapPlaybackEnabledDefault;
-
 const selectLoopPlaybackEnabledDefault = (state: RootState): boolean =>
   selectPreferences(state).loopPlaybackEnabledDefault;
 
@@ -227,7 +224,6 @@ export {
   selectPrimaryColor,
   selectPrimaryColorKey,
   selectSegmentPlaybackEnabledDefault,
-  selectSnapPlaybackEnabledDefault,
   selectThemePreference,
   selectUiScalePercent,
   themePreferenceChanged,

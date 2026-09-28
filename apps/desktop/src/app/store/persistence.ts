@@ -75,7 +75,10 @@ const preferencesTransform = createTransform(
     }
 
     const persistedPreferences = Object.fromEntries(
-      Object.entries(state).filter(([key]) => key !== "editorSourceCollapsibleState"),
+      Object.entries(state).filter(
+        ([key]) =>
+          key !== "editorSourceCollapsibleState" && key !== "snapPlaybackEnabledDefault",
+      ),
     ) as Partial<Preferences>;
 
     const playbackVolumePercent =
