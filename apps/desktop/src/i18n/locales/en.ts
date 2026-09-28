@@ -503,6 +503,7 @@ export const en = {
     status: {
       detectingScenes: "Detecting scene changes…",
       noScenes: "No scene changes found",
+      sceneDetectionFailed: "Scene detection failed. Try again.",
       sceneCount: "Scene changes found: {{count}}",
     },
     tooltips: {

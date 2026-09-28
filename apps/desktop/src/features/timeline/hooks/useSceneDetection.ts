@@ -6,7 +6,12 @@ import { detectScenes } from "@/lib/tauri/media";
 
 type DetectionState =
   | { boundariesMicros: number[]; error: null; sourceKey: string; status: "ready" }
-  | { boundariesMicros: null; error: string | null; sourceKey: string; status: "idle" | "loading" };
+  | {
+      boundariesMicros: null;
+      error: string | null;
+      sourceKey: string;
+      status: "failed" | "idle" | "loading";
+    };
 
 function useSceneDetection(enabled: boolean) {
   const source = useAppSelector(selectSourceSelection);
@@ -41,7 +46,7 @@ function useSceneDetection(enabled: boolean) {
               ? error.message
               : null,
         sourceKey,
-        status: "idle",
+        status: "failed",
       });
     }
   }, [enabled, source, sourceKey]);
@@ -51,7 +56,8 @@ function useSceneDetection(enabled: boolean) {
     boundariesMicros: currentState?.status === "ready" ? currentState.boundariesMicros : [],
     canDetect: enabled && source !== null,
     detect,
-    error: currentState?.status === "idle" ? currentState.error : null,
+    error: currentState?.status === "failed" ? currentState.error : null,
+    hasFailed: currentState?.status === "failed",
     hasDetected: currentState?.status === "ready",
     isDetecting: currentState?.status === "loading",
   };

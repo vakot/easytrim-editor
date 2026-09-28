@@ -2,6 +2,7 @@ import { BetweenVerticalStart, Clapperboard, Repeat, RotateCcw } from "lucide-re
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -26,16 +27,14 @@ function TimelineToolbar({
   sceneDetection: ReturnType<typeof useSceneDetection>;
 }) {
   const { t } = useTranslation();
-  const { boundariesMicros, error, hasDetected, isDetecting } = sceneDetection;
-  const status = error
-    ? error
-    : isDetecting
-      ? t("timeline.status.detectingScenes")
-      : hasDetected
-        ? boundariesMicros.length > 0
-          ? t("timeline.status.sceneCount", { count: boundariesMicros.length })
-          : t("timeline.status.noScenes")
-        : null;
+  const { boundariesMicros, hasDetected, isDetecting } = sceneDetection;
+  const status = isDetecting
+    ? t("timeline.status.detectingScenes")
+    : hasDetected
+      ? boundariesMicros.length > 0
+        ? t("timeline.status.sceneCount", { count: boundariesMicros.length })
+        : t("timeline.status.noScenes")
+      : null;
 
   return (
     <div
@@ -52,9 +51,9 @@ function TimelineToolbar({
       </div>
       {status && (
         <span
-          aria-live={error ? "assertive" : "polite"}
+          aria-live="polite"
           className="max-w-36 self-center truncate text-xs text-muted-foreground"
-          role={error ? "alert" : "status"}
+          role="status"
           title={status}
         >
           {status}
@@ -74,22 +73,41 @@ function SceneDetectionTool({
   sceneDetection: ReturnType<typeof useSceneDetection>;
 }) {
   const { t } = useTranslation();
-  const { canDetect, detect, isDetecting } = sceneDetection;
+  const { canDetect, detect, error, hasDetected, hasFailed, isDetecting } = sceneDetection;
+  const button = (
+    <Button
+      aria-busy={isDetecting}
+      aria-label={t("timeline.actions.detectScenes")}
+      aria-pressed={hasDetected}
+      className={hasDetected ? "text-primary" : undefined}
+      disabled={!canDetect || isDetecting}
+      onClick={hasFailed ? undefined : () => void detect()}
+      size="icon-sm"
+      type="button"
+      variant={hasFailed ? "destructive" : "secondary"}
+    >
+      <Clapperboard />
+    </Button>
+  );
+
+  if (hasFailed) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>{button}</PopoverTrigger>
+        <PopoverContent align="start" className="space-y-3">
+          <p role="alert">{error || t("timeline.status.sceneDetectionFailed")}</p>
+          <Button onClick={() => void detect()} size="sm" type="button">
+            {t("common.actions.retry")}
+          </Button>
+        </PopoverContent>
+      </Popover>
+    );
+  }
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          aria-busy={isDetecting}
-          aria-label={t("timeline.actions.detectScenes")}
-          disabled={!canDetect || isDetecting}
-          onClick={() => void detect()}
-          size="icon-sm"
-          type="button"
-          variant="secondary"
-        >
-          <Clapperboard />
-        </Button>
+        {button}
       </TooltipTrigger>
       <TooltipContent>{t("timeline.tooltips.detectScenes")}</TooltipContent>
     </Tooltip>
