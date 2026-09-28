@@ -1,6 +1,6 @@
 import { Check, LoaderCircle, RotateCw } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -28,9 +28,6 @@ import type { ExportSettings } from "@/domain/editing-instance";
 import type { LoudnessAnalysis, LoudnessPreset } from "@/domain/media";
 import { analyzeAudioLoudness } from "@/lib/tauri/media";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
-
-const MotionButton = motion.create(Button);
-const LOUDNESS_BUTTON_COLLAPSED_MARGIN = "-0.5rem";
 
 interface LoudnessControlsProps {
   settings: ExportSettings;
@@ -128,22 +125,36 @@ function LoudnessAnalysisButton({ disabled, onAnalyze, state }: LoudnessAnalysis
     state === "error" ? "destructive" : state === "success" ? "success" : "outline";
 
   const compact = state === "loading" || state === "success";
+  const fullLabel = t(
+    state === "error"
+      ? "export.dialogs.optimized.loudness.retry"
+      : "export.dialogs.optimized.loudness.analyze",
+  );
+
+  const [fullWidth, setFullWidth] = useState<number>();
+  const measureLabel = useCallback((element: HTMLSpanElement | null) => {
+    if (!element) return;
+
+    // Keep a numeric width even after the visible text is replaced by an icon.
+    const measure = () => setFullWidth(element.offsetWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <AnimatePresence initial={false} mode="wait">
       {state !== "closed" ? (
-        <MotionButton
+        <motion.div
           animate={{
-            marginInlineStart: 0,
+            marginInlineStart: "0.5rem",
             opacity: 1,
-            paddingInline: compact ? 0 : "0.625rem",
-            width: compact ? "2rem" : "auto",
+            width: compact ? "2rem" : (fullWidth ?? "auto"),
           }}
-          aria-label={compact ? buttonLabel : undefined}
-          className="overflow-hidden"
-          disabled={disabled}
+          className="flex shrink-0 overflow-hidden"
           exit={{
-            marginInlineStart: LOUDNESS_BUTTON_COLLAPSED_MARGIN,
+            marginInlineStart: 0,
             opacity: 0,
             width: 0,
           }}
@@ -151,40 +162,54 @@ function LoudnessAnalysisButton({ disabled, onAnalyze, state }: LoudnessAnalysis
             shouldReduceMotion
               ? false
               : {
-                  marginInlineStart: LOUDNESS_BUTTON_COLLAPSED_MARGIN,
+                  marginInlineStart: 0,
                   opacity: 0,
                   width: 0,
                 }
           }
-          onClick={onAnalyze}
-          size="default"
           transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
-          type="button"
-          variant={buttonVariant}
         >
-          <AnimatePresence initial={false} mode="wait">
-            <motion.span
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-1.5"
-              exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -3 }}
-              initial={shouldReduceMotion ? false : { opacity: 0, y: 3 }}
-              key={state}
-              transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
+          <Button
+            aria-label={buttonLabel}
+            className="relative w-full overflow-hidden px-0 transition-colors"
+            disabled={disabled}
+            onClick={onAnalyze}
+            size="default"
+            type="button"
+            variant={buttonVariant}
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none invisible absolute inline-flex w-max items-center gap-1.5 border border-transparent px-2.5"
+              ref={measureLabel}
             >
-              {state === "loading" ? (
-                <LoaderCircle
-                  aria-hidden="true"
-                  className={shouldReduceMotion ? undefined : "animate-spin"}
-                />
-              ) : state === "success" ? (
-                <Check aria-hidden="true" />
-              ) : state === "error" ? (
-                <RotateCw aria-hidden="true" />
-              ) : null}
-              {compact ? null : buttonLabel}
-            </motion.span>
-          </AnimatePresence>
-        </MotionButton>
+              {state === "error" ? <RotateCw /> : null}
+              {fullLabel}
+            </span>
+            <AnimatePresence initial={false} mode="wait">
+              <motion.span
+                animate={{ opacity: 1, y: 0 }}
+                className="inline-flex items-center gap-1.5"
+                exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -3 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 3 }}
+                key={state}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
+              >
+                {state === "loading" ? (
+                  <LoaderCircle
+                    aria-hidden="true"
+                    className={shouldReduceMotion ? undefined : "animate-spin"}
+                  />
+                ) : state === "success" ? (
+                  <Check aria-hidden="true" />
+                ) : state === "error" ? (
+                  <RotateCw aria-hidden="true" />
+                ) : null}
+                {compact ? null : buttonLabel}
+              </motion.span>
+            </AnimatePresence>
+          </Button>
+        </motion.div>
       ) : null}
     </AnimatePresence>
   );
@@ -299,7 +324,7 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
   return (
     <section className="grid gap-1.5">
       <Label htmlFor="export-loudness-preset">{t("export.dialogs.optimized.loudness.label")}</Label>
-      <motion.div className="flex items-center gap-2">
+      <div className="flex items-center">
         <LoudnessPresetSelect
           analysis={analysis}
           onPresetChange={updateSettings}
@@ -316,7 +341,7 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
           onAnalyze={() => void analyze()}
           state={buttonState}
         />
-      </motion.div>
+      </div>
       <AnimatePresence initial={false}>
         {error ? (
           <motion.div
