@@ -116,6 +116,9 @@ describe("PlaybackControls", () => {
 
     const playButton = screen.getByRole("button", { name: "Play" });
     const previousSceneButton = screen.getByRole("button", { name: "Previous scene" });
+    const nextSceneButton = screen.getByRole("button", { name: "Next scene" });
+    expect(previousSceneButton).toHaveAttribute("data-editor-keyboard", "timeline-transport");
+    expect(nextSceneButton).toHaveAttribute("data-editor-keyboard", "timeline-transport");
     playButton.focus();
 
     await user.click(previousSceneButton);

@@ -85,6 +85,7 @@ function PlaybackControls({ className }: { className?: string }) {
                   }}
                   aria-label={previousSceneCommand.label}
                   className="overflow-hidden transition-colors"
+                  data-editor-keyboard="timeline-transport"
                   disabled={previousSceneDisabled}
                   exit={{
                     opacity: 0,
@@ -170,6 +171,7 @@ function PlaybackControls({ className }: { className?: string }) {
                   }}
                   aria-label={nextSceneCommand.label}
                   className="overflow-hidden transition-colors"
+                  data-editor-keyboard="timeline-transport"
                   disabled={nextSceneDisabled}
                   exit={{
                     opacity: 0,

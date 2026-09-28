@@ -48,7 +48,9 @@ describe("editor shortcut ownership", () => {
   });
 
   it("lets timeline transport controls own every timeline shortcut", () => {
+    const toolbar = appendElement("div", { role: "toolbar" });
     const transport = appendElement("button", { "data-editor-keyboard": "timeline-transport" });
+    toolbar.append(transport);
 
     for (const [code, key] of shortcutCases) {
       expect(dispositionFor(transport, code, key)).toBe("timeline");
