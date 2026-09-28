@@ -186,25 +186,41 @@ describe("ExportDialog", () => {
         trim: { startMicros: 1_000_000, endMicros: 4_000_000 },
       }),
     );
-    expect(await screen.findByText(/-18\.2 LUFS/)).toBeInTheDocument();
-    const normalizationToggle = screen.getByRole("checkbox", {
-      name: "Normalize loudness during export",
-    });
+    const presetSelect = screen.getByRole("combobox", { name: "Loudness" });
+    await waitFor(() => expect(presetSelect).toHaveTextContent("Default · −18.2 LUFS / −2.1 dBTP"));
 
-    expect(normalizationToggle).not.toBeChecked();
-    fireEvent.click(normalizationToggle);
+    const analyzeButton = screen.getByRole("button", { name: "Analyze loudness" });
+    expect(analyzeButton).toBeEnabled();
+    fireEvent.click(presetSelect);
+    expect(
+      screen.getByRole("option", { name: "Default · −18.2 LUFS / −2.1 dBTP" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Web video · −14 LUFS / −1 dBTP" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("option", { name: "Streaming · −16 LUFS / −1.5 dBTP" }));
     await waitFor(() =>
       expect(
         store.getState().editingInstances.entities["instance-1"]?.optimizedSettings,
       ).toMatchObject({ loudnessPreset: "streaming" }),
     );
+    expect(analyzeButton).toBeDisabled();
 
-    fireEvent.click(screen.getByRole("combobox", { name: "Loudness target" }));
+    fireEvent.click(presetSelect);
     fireEvent.click(screen.getByRole("option", { name: /Broadcast/ }));
     await waitFor(() =>
       expect(
         store.getState().editingInstances.entities["instance-1"]?.optimizedSettings,
       ).toMatchObject({ loudnessPreset: "broadcast" }),
     );
+
+    fireEvent.click(presetSelect);
+    fireEvent.click(screen.getByRole("option", { name: "Default · −18.2 LUFS / −2.1 dBTP" }));
+    await waitFor(() =>
+      expect(
+        store.getState().editingInstances.entities["instance-1"]?.optimizedSettings,
+      ).toMatchObject({ loudnessPreset: undefined }),
+    );
+    expect(analyzeButton).toBeEnabled();
   });
 });

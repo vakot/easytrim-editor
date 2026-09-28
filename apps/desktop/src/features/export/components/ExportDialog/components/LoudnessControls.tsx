@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -43,6 +42,12 @@ const LOUDNESS_PRESETS: Array<{ id: LoudnessPreset; integratedLufs: number; true
     { id: "streaming", integratedLufs: -16, truePeakDb: -1.5 },
     { id: "broadcast", integratedLufs: -23, truePeakDb: -2 },
   ];
+
+function formatMeasurement(value: number | undefined, unit: string, unavailable: string) {
+  return value === undefined
+    ? `${unavailable} ${unit}`
+    : `${value.toFixed(1).replace("-", "−")} ${unit}`;
+}
 
 function LoudnessControls({ settings }: LoudnessControlsProps) {
   const { t } = useTranslation();
@@ -99,8 +104,6 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
     }
   };
 
-  const checked = settings.loudnessPreset !== undefined;
-  const selectedPreset = LOUDNESS_PRESETS.find(({ id }) => id === settings.loudnessPreset);
   const isAnalyzing =
     analysisState?.requestKey === requestKey && analysisState.status === "analyzing";
 
@@ -114,71 +117,54 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
       ? analysisState.error
       : null;
 
+  const defaultLabel = analysis
+    ? t("export.dialogs.optimized.loudness.defaultWithAnalysis", {
+        integratedLufs: formatMeasurement(
+          analysis.integratedLufs,
+          "LUFS",
+          t("export.dialogs.optimized.loudness.unavailable"),
+        ),
+        truePeakDb: formatMeasurement(
+          analysis.truePeakDb,
+          "dBTP",
+          t("export.dialogs.optimized.loudness.unavailable"),
+        ),
+      })
+    : t("export.dialogs.optimized.loudness.default");
+
   return (
-    <section className="grid gap-2 rounded-md border p-3">
-      <div className="flex items-start gap-2">
-        <Checkbox
-          checked={checked}
-          id="export-loudness-normalization"
-          onCheckedChange={(value) =>
-            updateSettings(value === true ? (settings.loudnessPreset ?? "streaming") : undefined)
+    <section className="grid gap-1.5">
+      <Label htmlFor="export-loudness-preset">{t("export.dialogs.optimized.loudness.label")}</Label>
+      <div className="flex items-center gap-2">
+        <Select
+          onValueChange={(value) =>
+            updateSettings(value === "default" ? undefined : (value as LoudnessPreset))
           }
-        />
-        <div className="grid gap-1">
-          <Label htmlFor="export-loudness-normalization">
-            {t("export.dialogs.optimized.loudness.normalize")}
-          </Label>
-          <p className="text-xs text-muted-foreground">
-            {t("export.dialogs.optimized.loudness.description")}
-          </p>
-        </div>
-      </div>
-
-      {checked ? (
-        <div className="grid gap-1.5">
-          <Label htmlFor="export-loudness-preset">
-            {t("export.dialogs.optimized.loudness.target")}
-          </Label>
-          <Select
-            onValueChange={(value) => updateSettings(value as LoudnessPreset)}
-            value={settings.loudnessPreset}
-          >
-            <SelectTrigger className="w-full" id="export-loudness-preset">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {LOUDNESS_PRESETS.map((preset) => (
-                <SelectItem key={preset.id} value={preset.id}>
-                  {preset.id === "webVideo"
-                    ? t("export.dialogs.optimized.loudness.presets.webVideo", {
-                        integratedLufs: preset.integratedLufs,
-                        truePeakDb: preset.truePeakDb,
-                      })
-                    : preset.id === "streaming"
-                      ? t("export.dialogs.optimized.loudness.presets.streaming", {
-                          integratedLufs: preset.integratedLufs,
-                          truePeakDb: preset.truePeakDb,
-                        })
-                      : t("export.dialogs.optimized.loudness.presets.broadcast", {
-                          integratedLufs: preset.integratedLufs,
-                          truePeakDb: preset.truePeakDb,
-                        })}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            {t("export.dialogs.optimized.loudness.targetDetails", {
-              integratedLufs: selectedPreset?.integratedLufs,
-              truePeakDb: selectedPreset?.truePeakDb,
-            })}
-          </p>
-        </div>
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-3">
+          value={settings.loudnessPreset ?? "default"}
+        >
+          <SelectTrigger className="min-w-0 flex-1" id="export-loudness-preset">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="default">{defaultLabel}</SelectItem>
+            {LOUDNESS_PRESETS.map((preset) => (
+              <SelectItem key={preset.id} value={preset.id}>
+                {preset.id === "webVideo"
+                  ? t("export.dialogs.optimized.loudness.presets.webVideo")
+                  : preset.id === "streaming"
+                    ? t("export.dialogs.optimized.loudness.presets.streaming")
+                    : t("export.dialogs.optimized.loudness.presets.broadcast")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
-          disabled={!request || audioTracks.length === 0 || isAnalyzing}
+          disabled={
+            !request ||
+            audioTracks.length === 0 ||
+            isAnalyzing ||
+            settings.loudnessPreset !== undefined
+          }
           onClick={() => void analyze()}
           size="sm"
           variant="outline"
@@ -187,20 +173,6 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
             ? t("export.dialogs.optimized.loudness.analyzing")
             : t("export.dialogs.optimized.loudness.analyze")}
         </Button>
-        {analysis ? (
-          <p aria-live="polite" className="text-xs text-muted-foreground">
-            {t("export.dialogs.optimized.loudness.result", {
-              integratedLufs:
-                analysis.integratedLufs === undefined
-                  ? t("export.dialogs.optimized.loudness.unavailable")
-                  : `${analysis.integratedLufs.toFixed(1)} LUFS`,
-              truePeakDb:
-                analysis.truePeakDb === undefined
-                  ? t("export.dialogs.optimized.loudness.unavailable")
-                  : `${analysis.truePeakDb.toFixed(1)} dBTP`,
-            })}
-          </p>
-        ) : null}
       </div>
       {error ? (
         <Alert variant="destructive">
