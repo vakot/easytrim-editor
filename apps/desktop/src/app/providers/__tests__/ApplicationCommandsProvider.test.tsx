@@ -296,7 +296,7 @@ describe("ApplicationCommandsProvider", () => {
     for (const commandId of ["save-current-frame", "copy-current-frame"]) {
       expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
         "data-group",
-        "Preview / Transform",
+        "Preview / Frame",
       );
       expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
         "data-surfaces",

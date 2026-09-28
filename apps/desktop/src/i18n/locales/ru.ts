@@ -64,6 +64,7 @@ export const ru = {
         preferences: "Параметры",
         preferencesAudio: "Параметры / Аудио",
         preferencesPlayback: "Параметры / Воспроизведение",
+        previewFrame: "Предпросмотр / Кадр",
         previewTransform: "Предпросмотр / Трансформация",
         queueOnFinishedApplication: "Очередь / После завершения / Приложение",
         queueOnFinishedSource: "Очередь / После завершения / Источник",

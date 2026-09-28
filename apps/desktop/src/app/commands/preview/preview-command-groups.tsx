@@ -18,10 +18,14 @@ function usePreviewCommandGroups() {
   const flips = useFlipCommands();
   const reset = useResetTransformCommand();
   return [
+    defineApplicationCommandGroup("preview-frame", t("app.labels.commandSections.previewFrame"), [
+      saveFrame,
+      copyFrame,
+    ] as const),
     defineApplicationCommandGroup(
       "preview-transform",
       t("app.labels.commandSections.previewTransform"),
-      [saveFrame, copyFrame, crop, ...rotations, ...flips, reset] as const,
+      [crop, ...rotations, ...flips, reset] as const,
     ),
   ] as const;
 }
