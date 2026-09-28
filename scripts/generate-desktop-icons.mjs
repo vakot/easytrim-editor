@@ -1,13 +1,14 @@
 import { spawnSync } from "node:child_process";
-import { copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const source = resolve(repositoryRoot, "apps", "desktop", "public", "logo-icon.svg");
+const source = resolve(repositoryRoot, "apps", "desktop", "public", "logo-symbol.svg");
 const iconRoot = resolve(repositoryRoot, "apps", "desktop", "src-tauri", "icons");
 const temporaryDirectory = await mkdtemp(join(tmpdir(), "easytrim-desktop-icons-"));
+const squareSource = join(temporaryDirectory, "logo-symbol-square.svg");
 
 function run(command, args) {
   const result = spawnSync(command, args, {
@@ -31,12 +32,23 @@ const outputs = [
 ];
 
 try {
+  const symbol = await readFile(source, "utf8");
+  const squareSymbol = symbol.replace(
+    'width="372" height="356" viewBox="0 0 372 356"',
+    'width="372" height="372" viewBox="0 -8 372 372"',
+  );
+
+  if (squareSymbol === symbol) {
+    throw new Error("The logo symbol SVG canvas dimensions have changed; update the icon padding.");
+  }
+
+  await writeFile(squareSource, squareSymbol);
   run("pnpm", [
     "--filter",
     "@easytrim-editor/desktop",
     "tauri",
     "icon",
-    source,
+    squareSource,
     "--output",
     temporaryDirectory,
   ]);

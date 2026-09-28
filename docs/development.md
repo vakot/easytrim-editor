@@ -104,3 +104,18 @@ pnpm release:linux -- --no-upload
 
 Signing credentials are required for published bundles. Keep them in environment variables or CI
 secrets; never commit them.
+
+## Desktop icon assets
+
+Use the gradient background from `apps/desktop/public/logo-square.svg` as the full-bleed Mac icon
+background in `apps/desktop/src-tauri/icon-sources/macos/logo_mac_composer.icon/Assets/background.svg`.
+Keep the foreground mark in the separate `Assets/logo.svg` layer, and let macOS apply its system
+icon shape. The Icon Composer source has no automatic fill, shadow, or translucency effects. Use
+`apps/desktop/public/logo-symbol.svg` for generated Windows and Linux desktop icons and for in-app
+branding, including the browser favicon.
+`apps/desktop/public/logo-circle.svg` is retained as an unused asset; do not select it for a platform
+or UI surface.
+
+Regenerate the checked-in Windows and Linux icon files after changing the symbol asset with
+`pnpm icons:generate`. macOS icons are compiled from the Icon Composer source during a macOS release
+build with `pnpm icons:prepare-macos`.

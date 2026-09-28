@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Removed automatic playhead following while trim borders move.
+- Updated desktop branding to use the square logo on macOS and the symbol on Windows, Linux, and in-app surfaces.
 
 ### Fixed
 
