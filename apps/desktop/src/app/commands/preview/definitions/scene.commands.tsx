@@ -1,5 +1,4 @@
 import { ChevronsLeft, ChevronsRight, Clapperboard, Eye } from "lucide-react";
-import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
@@ -9,9 +8,13 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
 import { sceneMarkersToggled, selectSceneMarkersEnabled } from "@/app/store/slices/editor-tools-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
-import { findNextSceneBoundary, findPreviousSceneBoundary, useSceneDetection } from "@/features/timeline";
-
-const SCENE_NAVIGATION_REPEAT_WINDOW_MS = 125;
+import {
+  findNextSceneBoundary,
+  findPreviousSceneBoundary,
+  resetSceneNavigation,
+  resolvePreviousSceneNavigationTarget,
+  useSceneDetection,
+} from "@/features/timeline";
 
 function useSceneCommands() {
   const { t } = useTranslation();
@@ -22,10 +25,6 @@ function useSceneCommands() {
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const sourceReady = useAppSelector(selectSourceReady);
   const sceneDetection = useSceneDetection(sourceReady);
-  const previousSceneNavigationRef = useRef<{
-    invokedAt: number;
-    targetMicros: number;
-  } | null>(null);
 
   const previousSceneMicros = findPreviousSceneBoundary(
     sceneBoundariesMicros,
@@ -45,23 +44,12 @@ function useSceneCommands() {
   }
 
   function moveToPreviousScene() {
-    const now = performance.now();
-    const previousNavigation = previousSceneNavigationRef.current;
-    const isRapidRepeat =
-      previousNavigation !== null &&
-      now - previousNavigation.invokedAt <= SCENE_NAVIGATION_REPEAT_WINDOW_MS;
+    const targetMicros = resolvePreviousSceneNavigationTarget(
+      sceneBoundariesMicros,
+      timeline.playheadMicros,
+    );
 
-    const targetMicros = isRapidRepeat
-      ? findPreviousSceneBoundary(sceneBoundariesMicros, previousNavigation.targetMicros)
-      : previousSceneMicros;
-
-    if (targetMicros === undefined) {
-      previousSceneNavigationRef.current = null;
-      return;
-    }
-
-    previousSceneNavigationRef.current = { invokedAt: now, targetMicros };
-    moveToScene(targetMicros);
+    if (targetMicros !== undefined) moveToScene(targetMicros);
   }
 
   return [
@@ -94,7 +82,7 @@ function useSceneCommands() {
       id: "next-scene" as const,
       label: nextScene,
       run() {
-        previousSceneNavigationRef.current = null;
+        resetSceneNavigation();
         if (nextSceneMicros !== undefined) moveToScene(nextSceneMicros);
       },
       searchTerms: commandSearchTerms(`${nextScene}|scene|next`),
@@ -108,6 +96,7 @@ function useSceneCommands() {
       id: "show-scene-markers" as const,
       label: showSceneMarkers,
       run() {
+        resetSceneNavigation();
         dispatch(sceneMarkersToggled());
       },
       searchTerms: commandSearchTerms(`${showSceneMarkers}|scene|markers|show`),
