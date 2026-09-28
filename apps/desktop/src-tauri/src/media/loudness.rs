@@ -98,11 +98,9 @@ fn analysis_arguments(request: &LoudnessAnalysisRequest, source_path: &Path) -> 
             request.merge_audio,
         )),
         OsString::from("-map"),
-        OsString::from("[aout]"),
-        OsString::from("-af"),
-        OsString::from(format!(
-            "loudnorm=I={ANALYSIS_TARGET_LUFS}:TP={ANALYSIS_TRUE_PEAK_DB}:LRA=11:print_format=json"
-        )),
+        OsString::from("[measured]"),
+        OsString::from("-ac"),
+        OsString::from("2"),
         OsString::from("-vn"),
         OsString::from("-sn"),
         OsString::from("-dn"),
@@ -132,12 +130,15 @@ fn analysis_filter_graph(audio_tracks: &[AudioTrackSelection], merge_audio: bool
             audio_tracks.len()
         ));
     }
+    graph.push_str(&format!(
+        ";[aout]loudnorm=I={ANALYSIS_TARGET_LUFS}:TP={ANALYSIS_TRUE_PEAK_DB}:LRA=11:print_format=json[measured]"
+    ));
     graph
 }
 
 fn parse_loudness(stderr: &[u8]) -> Result<LoudnessAnalysis, AppError> {
     let text = String::from_utf8_lossy(stderr);
-    let Some(start) = text.rfind("{\n") else {
+    let Some(start) = text.rfind('{') else {
         return Err(AppError::render_failed_with_diagnostics(
             "FFmpeg did not return loudness measurements.",
             Some(text.trim().to_owned()),
@@ -191,8 +192,20 @@ fn diagnostics(output: &ProcessOutput, source_path: &Path) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{LoudnessAnalysis, analysis_filter_graph, parse_loudness};
-    use crate::media::export::AudioTrackSelection;
+    use std::{
+        ffi::{OsStr, OsString},
+        path::Path,
+        time::{Duration, SystemTime, UNIX_EPOCH},
+    };
+
+    use super::{
+        LoudnessAnalysis, LoudnessAnalysisRequest, analysis_arguments, analysis_filter_graph,
+        parse_loudness,
+    };
+    use crate::{
+        media::export::{AudioTrackSelection, TrimSelection},
+        process::run_bounded,
+    };
 
     #[test]
     fn parses_integrated_loudness_and_true_peak_from_ffmpeg_json() {
@@ -234,9 +247,68 @@ mod tests {
         let graph = analysis_filter_graph(&tracks, true);
         assert!(graph.contains("[0:1]volume=0.500000[audio0]"));
         assert!(graph.contains("[0:3]volume=2.000000[audio1]"));
-        assert!(graph.ends_with(
+        assert!(graph.contains(
             "[audio0][audio1]amix=inputs=2:duration=longest:dropout_transition=0:normalize=1[aout]"
         ));
-        assert!(analysis_filter_graph(&tracks, false).ends_with("normalize=0[aout]"));
+        assert!(analysis_filter_graph(&tracks, false).contains("normalize=0[aout]"));
+    }
+
+    #[test]
+    fn bundled_ffmpeg_shape_reports_measurements_for_a_selected_audio_segment() {
+        let unique_id = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time is valid")
+            .as_nanos();
+        let source_path = std::env::temp_dir().join(format!(
+            "easytrim-loudness-{}-{unique_id}.wav",
+            std::process::id()
+        ));
+        let generate_fixture = run_bounded(
+            OsStr::new("ffmpeg"),
+            &[
+                OsString::from("-hide_banner"),
+                OsString::from("-nostdin"),
+                OsString::from("-f"),
+                OsString::from("lavfi"),
+                OsString::from("-i"),
+                OsString::from("sine=frequency=440:duration=2"),
+                OsString::from("-y"),
+                source_path.as_os_str().to_owned(),
+            ],
+            Duration::from_secs(30),
+            16 * 1024,
+            16 * 1024,
+        )
+        .expect("FFmpeg creates the audio fixture");
+        assert!(generate_fixture.status.success());
+
+        let request = LoudnessAnalysisRequest {
+            trim: TrimSelection {
+                start_micros: 0,
+                end_micros: 2_000_000,
+            },
+            audio_tracks: vec![AudioTrackSelection {
+                stream_index: 0,
+                volume_percent: 50,
+            }],
+            merge_audio: false,
+        };
+        let output = run_bounded(
+            OsStr::new("ffmpeg"),
+            &analysis_arguments(&request, Path::new(&source_path)),
+            Duration::from_secs(30),
+            16 * 1024,
+            128 * 1024,
+        )
+        .expect("FFmpeg runs the loudness analysis");
+        let _ = std::fs::remove_file(&source_path);
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let result = parse_loudness(&output.stderr).expect("FFmpeg returns loudness JSON");
+        assert!(result.integrated_lufs.is_some());
+        assert!(result.true_peak_db.is_some());
     }
 }
