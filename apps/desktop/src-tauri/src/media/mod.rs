@@ -6,6 +6,7 @@ pub mod preview;
 pub mod probe;
 pub mod proxy;
 pub mod scene_detection;
+pub mod silence_detection;
 pub mod thumbnail;
 pub mod waveform;
 #[cfg(windows)]

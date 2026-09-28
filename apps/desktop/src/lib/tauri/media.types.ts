@@ -50,6 +50,16 @@ interface AudioPreviewDescriptor {
   url: string;
 }
 
+interface SilenceMixTrack {
+  streamIndex: number;
+  volumePercent: number;
+}
+
+interface SilenceRange {
+  endMicros: number;
+  startMicros: number;
+}
+
 export type WaveformResult =
   | {
       hasSignal?: boolean;
@@ -107,6 +117,8 @@ export type {
   OptimizedExportRequest,
   OutputSelection,
   PreviewDescriptor,
+  SilenceMixTrack,
+  SilenceRange,
   SourceImportResult,
   ThumbnailDescriptor,
   VideoStream,

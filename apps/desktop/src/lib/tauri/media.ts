@@ -17,6 +17,7 @@ import type {
   OptimizedExportRequest,
   OutputSelection,
   PreviewDescriptor,
+  SilenceMixTrack,
   SourceDropEvent,
   SourceImportResult,
   SourcePickerMode,
@@ -35,6 +36,7 @@ import {
   parseOutputSelection,
   parsePreviewDescriptor,
   parseSceneBoundaries,
+  parseSilenceRanges,
   parseSourceImportResult,
   parseSourceRef,
   parseThumbnailDescriptor,
@@ -69,6 +71,14 @@ async function inspectMedia(sourcePath: string): Promise<MediaInfo> {
 async function detectScenes(sourcePath: string): Promise<number[]> {
   try {
     return parseSceneBoundaries(await invoke<unknown>("detect_scenes", { sourcePath }));
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+async function detectSilence(sourcePath: string, mix: SilenceMixTrack[]) {
+  try {
+    return parseSilenceRanges(await invoke<unknown>("detect_silence", { sourcePath, mix }));
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -407,6 +417,7 @@ export {
   chooseOutputPath,
   chooseSource,
   detectScenes,
+  detectSilence,
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,

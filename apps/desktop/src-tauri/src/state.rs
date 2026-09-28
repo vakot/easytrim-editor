@@ -151,6 +151,7 @@ struct ActiveSourceRecord {
     waveform_job: Option<WaveformJobRecord>,
     waveforms: HashMap<u32, WaveformRecord>,
     scene_boundaries_micros: Option<Vec<u64>>,
+    silence_ranges: HashMap<Vec<(u32, u8)>, Vec<(u64, u64)>>,
 }
 
 #[derive(Debug, Default)]
@@ -288,6 +289,7 @@ impl AppState {
             waveform_job: None,
             waveforms: HashMap::new(),
             scene_boundaries_micros: None,
+            silence_ranges: HashMap::new(),
         });
 
         Ok(generation)
@@ -536,6 +538,33 @@ impl AppState {
             return Err(AppError::source_replaced());
         }
         source.scene_boundaries_micros = Some(boundaries_micros);
+        Ok(())
+    }
+
+    pub fn cached_silence_ranges(
+        &self,
+        load_token: u64,
+        mix: &[(u32, u8)],
+    ) -> Result<Option<Vec<(u64, u64)>>, AppError> {
+        let session = self.lock_session()?;
+        Ok(active_source(&session, load_token)?
+            .silence_ranges
+            .get(mix)
+            .cloned())
+    }
+
+    pub fn install_silence_ranges(
+        &self,
+        load_token: u64,
+        mix: Vec<(u32, u8)>,
+        ranges: Vec<(u64, u64)>,
+    ) -> Result<(), AppError> {
+        let mut session = self.lock_session()?;
+        let source = active_source_mut(&mut session, load_token)?;
+        if source.cancellation.load(Ordering::Acquire) {
+            return Err(AppError::source_replaced());
+        }
+        source.silence_ranges.insert(mix, ranges);
         Ok(())
     }
 

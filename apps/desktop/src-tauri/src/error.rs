@@ -78,6 +78,17 @@ impl AppError {
         }
     }
 
+    pub fn silence_detection_failed(
+        message: impl Into<String>,
+        diagnostics: Option<impl Into<String>>,
+    ) -> Self {
+        Self {
+            code: "silence_detection_failed",
+            message: message.into(),
+            diagnostics: diagnostics.map(Into::into),
+        }
+    }
+
     pub fn cancelled(message: impl Into<String>) -> Self {
         Self {
             code: "cancelled",

@@ -20,6 +20,7 @@ import {
   analyzeAudioLoudness,
   checkMediaCapabilities,
   chooseSource,
+  detectSilence,
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,
@@ -54,6 +55,23 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
+  it("requests silence ranges for the selected active mix", async () => {
+    const mix = [
+      { streamIndex: 2, volumePercent: 75 },
+      { streamIndex: 4, volumePercent: 50 },
+    ];
+
+    mocks.invoke.mockResolvedValueOnce([{ startMicros: 1_000_000, endMicros: 2_500_000 }]);
+
+    await expect(detectSilence("C:/Media/clip.mp4", mix)).resolves.toEqual([
+      { startMicros: 1_000_000, endMicros: 2_500_000 },
+    ]);
+    expect(mocks.invoke).toHaveBeenCalledWith("detect_silence", {
+      sourcePath: "C:/Media/clip.mp4",
+      mix,
+    });
+  });
+
   it("analyzes the requested segment and parses unavailable measurements", async () => {
     mocks.invoke
       .mockResolvedValueOnce("operation-1")
