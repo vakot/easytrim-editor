@@ -404,11 +404,11 @@ export const sk = {
   preview: {
     actions: {
       nextFrame: "Nasledujúca snímka",
-      copyFrame: "Kopírovať aktuálnu snímku",
+      copyFrame: "Kopírovať snímku",
       pause: "Pozastaviť",
       play: "Prehrať",
       previousFrame: "Predchádzajúca snímka",
-      saveFrame: "Uložiť aktuálnu snímku",
+      saveFrame: "Uložiť snímku",
       resetTools: "Obnoviť nástroje",
       setEnd: "Nastaviť koniec segmentu na aktuálnu pozíciu",
       setStart: "Nastaviť začiatok segmentu na aktuálnu pozíciu",
@@ -419,11 +419,12 @@ export const sk = {
         rotate180: "Otočiť o 180°",
         rotate90Clockwise: "Otočiť o 90° vpravo",
         rotate90Counterclockwise: "Otočiť o 90° vľavo",
-        reset: "Obnoviť",
+        reset: "Obnoviť predvolené",
       },
     },
     labels: {
       compatible: "Kompatibilný náhľad",
+      transform: "Transformácia",
       loopPlayback: "Opakovať prehrávanie",
       playbackVolume: "Hlasitosť prehrávania",
       playbackSpeed: "Rýchlosť prehrávania",

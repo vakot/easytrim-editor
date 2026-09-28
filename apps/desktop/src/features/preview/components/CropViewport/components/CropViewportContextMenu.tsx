@@ -1,13 +1,18 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
+import type { ApplicationCommandId } from "@/app/commands";
 import {
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
@@ -18,34 +23,41 @@ interface CropViewportContextMenuProps {
 }
 
 function CropViewportContextMenu({ children }: CropViewportContextMenuProps) {
+  const { t } = useTranslation();
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent>
-        {(
-          [
-            "save-current-frame",
-            "copy-current-frame",
-            "crop-preview",
-            "rotate-90-cw",
-            "rotate-90-ccw",
-            "rotate-180",
-            "flip-horizontal",
-            "flip-vertical",
-            "reset-transform",
-          ] as const
-        ).map((commandId, index) => (
-          <span key={commandId}>
-            {index === 2 || index === 5 || index === 7 ? <ContextMenuSeparator /> : null}
-            <ApplicationCommandMenuItem asChild commandId={commandId}>
-              <ContextMenuItem>
-                <ApplicationCommandLabel />
-              </ContextMenuItem>
-            </ApplicationCommandMenuItem>
-          </span>
-        ))}
+        <PreviewCommandMenuItem commandId="save-current-frame" />
+        <PreviewCommandMenuItem commandId="copy-current-frame" />
+        <ContextMenuSeparator />
+        <PreviewCommandMenuItem commandId="crop-preview" />
+        <ContextMenuSub>
+          <ContextMenuSubTrigger>{t("preview.labels.transform")}</ContextMenuSubTrigger>
+          <ContextMenuSubContent>
+            <PreviewCommandMenuItem commandId="rotate-90-cw" />
+            <PreviewCommandMenuItem commandId="rotate-90-ccw" />
+            <PreviewCommandMenuItem commandId="rotate-180" />
+            <ContextMenuSeparator />
+            <PreviewCommandMenuItem commandId="flip-horizontal" />
+            <PreviewCommandMenuItem commandId="flip-vertical" />
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+        <ContextMenuSeparator />
+        <PreviewCommandMenuItem commandId="reset-transform" />
       </ContextMenuContent>
     </ContextMenu>
+  );
+}
+
+function PreviewCommandMenuItem({ commandId }: { commandId: ApplicationCommandId }) {
+  return (
+    <ApplicationCommandMenuItem asChild commandId={commandId}>
+      <ContextMenuItem variant={commandId === "reset-transform" ? "destructive" : "default"}>
+        <ApplicationCommandLabel />
+      </ContextMenuItem>
+    </ApplicationCommandMenuItem>
   );
 }
 

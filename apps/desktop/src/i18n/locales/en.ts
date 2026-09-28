@@ -404,11 +404,11 @@ export const en = {
   preview: {
     actions: {
       nextFrame: "Next frame",
-      copyFrame: "Copy current frame",
+      copyFrame: "Copy frame",
       pause: "Pause",
       play: "Play",
       previousFrame: "Previous frame",
-      saveFrame: "Save current frame",
+      saveFrame: "Save frame",
       resetTools: "Reset tools",
       setEnd: "Set segment end to current position",
       setStart: "Set segment start to current position",
@@ -419,11 +419,12 @@ export const en = {
         rotate180: "Rotate 180",
         rotate90Clockwise: "Rotate 90 CW",
         rotate90Counterclockwise: "Rotate 90 CCW",
-        reset: "Reset",
+        reset: "Reset to default",
       },
     },
     labels: {
       compatible: "Compatible preview",
+      transform: "Transform",
       loopPlayback: "Loop playback",
       playbackVolume: "Playback volume",
       playbackSpeed: "Playback speed",

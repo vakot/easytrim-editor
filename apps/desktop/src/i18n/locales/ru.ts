@@ -406,11 +406,11 @@ export const ru = {
   preview: {
     actions: {
       nextFrame: "Следующий кадр",
-      copyFrame: "Скопировать текущий кадр",
+      copyFrame: "Скопировать кадр",
       pause: "Пауза",
       play: "Воспроизвести",
       previousFrame: "Предыдущий кадр",
-      saveFrame: "Сохранить текущий кадр",
+      saveFrame: "Сохранить кадр",
       resetTools: "Сбросить инструменты",
       setEnd: "Установить конец сегмента в текущей позиции",
       setStart: "Установить начало сегмента в текущей позиции",
@@ -421,11 +421,12 @@ export const ru = {
         rotate180: "Повернуть на 180°",
         rotate90Clockwise: "Повернуть на 90° по часовой стрелке",
         rotate90Counterclockwise: "Повернуть на 90° против часовой стрелки",
-        reset: "Сбросить",
+        reset: "Сбросить настройки",
       },
     },
     labels: {
       compatible: "Совместимый предпросмотр",
+      transform: "Преобразование",
       loopPlayback: "Повтор воспроизведения",
       playbackVolume: "Громкость воспроизведения",
       playbackSpeed: "Скорость воспроизведения",

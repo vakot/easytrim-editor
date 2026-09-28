@@ -134,6 +134,9 @@ function openCropTool(viewport: Element) {
 
 function selectTransformAction(viewport: Element, name: string) {
   openTransformMenu(viewport);
+  if (name.startsWith("Rotate ") || name.startsWith("Flip ")) {
+    fireEvent.click(screen.getByRole("menuitem", { name: "Transform" }));
+  }
   fireEvent.click(screen.getByRole("menuitem", { name }));
 }
 
@@ -484,17 +487,22 @@ describe("VideoPreview", () => {
     expect(pause).toHaveBeenCalledTimes(2);
   });
 
-  it("shows the transform menu and applies rotation to the CSS preview", () => {
+  it("shows the preview menu hierarchy and applies rotation to the CSS preview", () => {
     const store = createAppStore();
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
 
     const viewport = container.querySelector('[aria-label="Video crop preview"]');
     openTransformMenu(viewport!);
-    expect(screen.getByRole("menu")).toHaveTextContent(
-      "CropRotate 90 CWRotate 90 CCWRotate 180Flip horizontallyFlip verticallyReset",
+    expect(screen.getAllByRole("menu")[0]).toHaveTextContent(
+      "Save frameCopy frameCropTransformReset to default",
+    );
+    expect(screen.getAllByRole("separator")).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "Transform" }));
+    expect(screen.getAllByRole("menu")[1]).toHaveTextContent(
+      "Rotate 90 CWRotate 90 CCWRotate 180Flip horizontallyFlip vertically",
     );
     expect(screen.getAllByRole("separator")).toHaveLength(3);
-
     fireEvent.click(screen.getByRole("menuitem", { name: "Rotate 90 CW" }));
     expect(store.getState().crop.rotationDegrees).toBe(90);
     expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "90");
@@ -787,7 +795,7 @@ describe("VideoPreview", () => {
     selectTransformAction(viewport, "Flip horizontally");
     selectTransformAction(viewport, "Rotate 180");
     selectTransformAction(viewport, "Flip vertically");
-    selectTransformAction(viewport, "Reset");
+    selectTransformAction(viewport, "Reset to default");
 
     expect(screen.getByRole("alertdialog")).toHaveTextContent("Reset video transformations?");
     expect(store.getState().crop).toMatchObject({
@@ -796,7 +804,7 @@ describe("VideoPreview", () => {
       rotationDegrees: 180,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
 
     expect(store.getState().crop).toMatchObject({
       flipHorizontal: false,
@@ -821,8 +829,8 @@ describe("VideoPreview", () => {
     const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
 
     if (cropOpen) openCropTool(viewport);
-    selectTransformAction(viewport, "Reset");
-    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    selectTransformAction(viewport, "Reset to default");
+    fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
 
     expect(store.getState().crop).toMatchObject({
       flipHorizontal: false,
@@ -870,8 +878,8 @@ describe("VideoPreview", () => {
 
     openTransformMenu(viewport!);
 
-    expect(await screen.findByRole("menuitem", { name: "Save current frame" })).toBeVisible();
-    expect(screen.getByRole("menuitem", { name: "Copy current frame" })).toBeVisible();
+    expect(await screen.findByRole("menuitem", { name: "Save frame" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "Copy frame" })).toBeVisible();
   });
 
   it("closes crop controls with Escape or when focus leaves the preview", async () => {
