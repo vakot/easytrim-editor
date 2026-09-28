@@ -4,7 +4,12 @@ import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import { ContextMenu as ContextMenuPrimitive } from "radix-ui";
 import * as React from "react";
 
-import { menuClassNames, MenuIcon, menuItemVariants } from "@/components/ui/menu";
+import {
+  gateKeepOpenHandler,
+  menuClassNames,
+  MenuIcon,
+  menuItemVariants,
+} from "@/components/ui/menu";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -67,10 +72,13 @@ function ContextMenuContent({
 function ContextMenuItem({
   className,
   inset,
+  keepOpen,
+  onSelect,
   variant = "default",
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.Item> & {
   inset?: boolean;
+  keepOpen?: boolean;
   variant?: "default" | "destructive" | "success";
 }) {
   return (
@@ -79,6 +87,7 @@ function ContextMenuItem({
       data-inset={inset}
       data-slot="context-menu-item"
       data-variant={variant}
+      onSelect={gateKeepOpenHandler(keepOpen, onSelect)}
       {...props}
     />
   );

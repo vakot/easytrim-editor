@@ -133,11 +133,15 @@ function openCropTool(viewport: Element) {
 }
 
 function selectTransformAction(viewport: Element, name: string) {
-  openTransformMenu(viewport);
-  if (name.startsWith("Rotate ") || name.startsWith("Flip ")) {
-    fireEvent.click(screen.getByRole("menuitem", { name: "Transform" }));
+  if (screen.queryAllByRole("menu").length === 0) openTransformMenu(viewport);
+  const isTransformOption = name.startsWith("Rotate ") || name.startsWith("Flip ");
+  if (isTransformOption) {
+    if (screen.queryAllByRole("menuitem", { name }).length === 0) {
+      fireEvent.click(screen.getByRole("menuitem", { name: "Transform" }));
+    }
   }
   fireEvent.click(screen.getByRole("menuitem", { name }));
+  if (isTransformOption) expect(screen.getAllByRole("menu")).toHaveLength(2);
 }
 
 beforeAll(() => {
@@ -505,6 +509,7 @@ describe("VideoPreview", () => {
     expect(screen.getAllByRole("separator")).toHaveLength(3);
     fireEvent.click(screen.getByRole("menuitem", { name: "Rotate 90 CW" }));
     expect(store.getState().crop.rotationDegrees).toBe(90);
+    expect(screen.getAllByRole("menu")).toHaveLength(2);
     expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "90");
     expect(container.querySelector("[data-flip-layer]")).toContainElement(
       container.querySelector("[data-rotating-output]"),

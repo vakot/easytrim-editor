@@ -36,12 +36,12 @@ function CropViewportContextMenu({ children }: CropViewportContextMenuProps) {
         <ContextMenuSub>
           <ContextMenuSubTrigger>{t("preview.labels.transform")}</ContextMenuSubTrigger>
           <ContextMenuSubContent>
-            <PreviewCommandMenuItem commandId="rotate-90-cw" />
-            <PreviewCommandMenuItem commandId="rotate-90-ccw" />
-            <PreviewCommandMenuItem commandId="rotate-180" />
+            <PreviewCommandMenuItem commandId="rotate-90-cw" keepOpen />
+            <PreviewCommandMenuItem commandId="rotate-90-ccw" keepOpen />
+            <PreviewCommandMenuItem commandId="rotate-180" keepOpen />
             <ContextMenuSeparator />
-            <PreviewCommandMenuItem commandId="flip-horizontal" />
-            <PreviewCommandMenuItem commandId="flip-vertical" />
+            <PreviewCommandMenuItem commandId="flip-horizontal" keepOpen />
+            <PreviewCommandMenuItem commandId="flip-vertical" keepOpen />
           </ContextMenuSubContent>
         </ContextMenuSub>
         <ContextMenuSeparator />
@@ -51,10 +51,19 @@ function CropViewportContextMenu({ children }: CropViewportContextMenuProps) {
   );
 }
 
-function PreviewCommandMenuItem({ commandId }: { commandId: ApplicationCommandId }) {
+function PreviewCommandMenuItem({
+  commandId,
+  keepOpen = false,
+}: {
+  commandId: ApplicationCommandId;
+  keepOpen?: boolean;
+}) {
   return (
     <ApplicationCommandMenuItem asChild commandId={commandId}>
-      <ContextMenuItem variant={commandId === "reset-transform" ? "destructive" : "default"}>
+      <ContextMenuItem
+        keepOpen={keepOpen}
+        variant={commandId === "reset-transform" ? "destructive" : "default"}
+      >
         <ApplicationCommandLabel />
       </ContextMenuItem>
     </ApplicationCommandMenuItem>
