@@ -48,28 +48,6 @@
   filter: grayscale(1);
 }
 
-.sceneMarker {
-  z-index: 1;
-  position: absolute;
-  inset-block: 0;
-  width: 1.5rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  pointer-events: none;
-  transform: translateX(-50%);
-}
-
-.sceneMarker::before {
-  position: absolute;
-  inset-block: 0;
-  left: 50%;
-  width: 0.125rem;
-  background: var(--destructive);
-  content: "";
-  transform: translateX(-50%);
-}
-
 .segment {
   z-index: 4;
   position: absolute;

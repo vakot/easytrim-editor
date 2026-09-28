@@ -158,7 +158,7 @@ function SceneMarkers({ sourceDurationMicros }: { sourceDurationMicros: number }
             <motion.div
               animate={{ opacity: 1, height: "100%" }}
               aria-hidden="true"
-              className={styles.sceneMarker}
+              className="pointer-events-none absolute top-0 z-1 w-0.5 -translate-x-1/2 bg-destructive"
               exit={{ opacity: 0, height: 0 }}
               initial={shouldReduceMotion ? false : { opacity: 0 }}
               key={boundaryMicros}
