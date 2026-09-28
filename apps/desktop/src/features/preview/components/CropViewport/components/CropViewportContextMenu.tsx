@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   ContextMenu,
   ContextMenuContent,
+  ContextMenuIcon,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuSub,
@@ -14,6 +15,7 @@ import {
 
 import type { ApplicationCommandId } from "@/app/commands";
 import {
+  ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
 } from "@/app/components/ApplicationCommandMenuItem";
@@ -58,12 +60,20 @@ function PreviewCommandMenuItem({
   commandId: ApplicationCommandId;
   keepOpen?: boolean;
 }) {
+  const showCommandIcon = commandId.startsWith("rotate-") || commandId.startsWith("flip-");
+
   return (
     <ApplicationCommandMenuItem asChild commandId={commandId}>
       <ContextMenuItem
+        inset={showCommandIcon}
         keepOpen={keepOpen}
         variant={commandId === "reset-transform" ? "destructive" : "default"}
       >
+        {showCommandIcon && (
+          <ContextMenuIcon>
+            <ApplicationCommandIcon className="size-3.5" />
+          </ContextMenuIcon>
+        )}
         <ApplicationCommandLabel />
       </ContextMenuItem>
     </ApplicationCommandMenuItem>

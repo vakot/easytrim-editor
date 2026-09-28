@@ -506,6 +506,16 @@ describe("VideoPreview", () => {
     expect(screen.getAllByRole("menu")[1]).toHaveTextContent(
       "Rotate 90 CWRotate 90 CCWRotate 180Flip horizontallyFlip vertically",
     );
+    for (const action of [
+      "Rotate 90 CW",
+      "Rotate 90 CCW",
+      "Rotate 180",
+      "Flip horizontally",
+      "Flip vertically",
+    ]) {
+      expect(screen.getByRole("menuitem", { name: action }).querySelector("svg")).not.toBeNull();
+    }
+    expect(screen.getByRole("menuitem", { name: "Crop" }).querySelector("svg")).toBeNull();
     expect(screen.getAllByRole("separator")).toHaveLength(3);
     fireEvent.click(screen.getByRole("menuitem", { name: "Rotate 90 CW" }));
     expect(store.getState().crop.rotationDegrees).toBe(90);
