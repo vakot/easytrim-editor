@@ -13,6 +13,8 @@ import {
 
 import { MarkerIcon } from "@/components/ui/marker";
 
+import { cn } from "@/lib/class-names.utils";
+
 import type { ActivityEntry, ActivityKind, ActivityStatus } from "../../../lib/activity-projection";
 
 const activityIcons: Record<ActivityKind, LucideIcon> = {
@@ -47,10 +49,7 @@ function ActivityFeedEntryIcon({ entry }: ActivityFeedEntryIconProps) {
 
   return (
     <MarkerIcon className={statusPresentation.className}>
-      <Icon
-        aria-hidden="true"
-        className={entry.status === "pending" ? "animate-spin" : undefined}
-      />
+      <Icon aria-hidden="true" className={cn(entry.status === "pending" && "animate-spin")} />
     </MarkerIcon>
   );
 }

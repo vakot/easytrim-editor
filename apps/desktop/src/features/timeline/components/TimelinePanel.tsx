@@ -24,6 +24,7 @@ import {
   type PlaybackSpeed,
 } from "@/domain/playback-speed";
 import { VolumeButton } from "@/features/audio";
+import { cn } from "@/lib/class-names.utils";
 
 import { PlaybackControls } from "./PlaybackControls";
 import { PlaybackTimecode } from "./PlaybackTimecode";
@@ -104,7 +105,7 @@ function PlaybackSpeedControl() {
             <Button
               aria-label={t("preview.labels.playbackSpeed")}
               aria-pressed={enabled}
-              className={enabled ? "text-primary aria-expanded:text-primary" : undefined}
+              className={cn(enabled && "text-primary aria-expanded:text-primary")}
               size="icon-sm"
               type="button"
               variant="secondary"
@@ -181,7 +182,7 @@ function PlaybackVolumeControl() {
     >
       <VolumeButton
         aria-label={enabled ? t("audio.actions.mute") : t("audio.actions.unmute")}
-        className={enabled ? "text-primary" : undefined}
+        className={cn(enabled && "text-primary")}
         enabled={enabled}
         onClick={() => dispatch(playbackVolumeToggled())}
         tooltipText={

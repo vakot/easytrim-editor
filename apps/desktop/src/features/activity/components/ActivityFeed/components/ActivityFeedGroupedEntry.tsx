@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { Marker, MarkerContent, MarkerIcon, MarkerTitle } from "@/components/ui/marker";
 
+import { cn } from "@/lib/class-names.utils";
 import { formatRelativeTime } from "@/lib/date-time.utils";
 import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 
@@ -35,7 +36,7 @@ function ActivityFeedGroupedEntry({ compact = false, group }: ActivityFeedGroupe
   return (
     <Marker
       asChild
-      className={compact ? "h-6 items-center text-xs" : "min-h-6 items-start text-xs"}
+      className={cn(compact ? "h-6 items-center text-xs" : "min-h-6 items-start text-xs")}
     >
       <motion.div
         animate={{ opacity: 1, y: 0 }}
@@ -50,7 +51,7 @@ function ActivityFeedGroupedEntry({ compact = false, group }: ActivityFeedGroupe
           {groupLength > 2 && <Icon className="absolute top-2 opacity-20" />}
         </MarkerIcon>
 
-        <MarkerContent className={compact ? "flex-row flex-nowrap items-center gap-1" : undefined}>
+        <MarkerContent className={cn(compact && "flex-row flex-nowrap items-center gap-1")}>
           <MarkerTitle className="flex min-w-0 flex-nowrap items-center gap-1 text-foreground">
             <span className="truncate">{group.title}</span>
             <span>·</span>

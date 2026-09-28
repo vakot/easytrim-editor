@@ -9,6 +9,7 @@ import { selectSceneMarkersEnabled } from "@/app/store/slices/editor-tools-slice
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { clampPlaybackMicros } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
+import { cn } from "@/lib/class-names.utils";
 
 import { useTrimTimelineInteractions } from "../hooks/useTrimTimelineInteractions";
 import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
@@ -67,7 +68,11 @@ function TimelineTrack() {
   return (
     <div
       aria-label={t("timeline.accessibility.track")}
-      className={`${styles.track} ${disabled ? `cursor-not-allowed ${styles.trackDisabled}` : ""}`}
+      className={cn(
+        styles.track,
+        disabled && "cursor-not-allowed",
+        disabled && styles.trackDisabled,
+      )}
       onLostPointerCapture={(event) => finishScrub(event, false)}
       onPointerCancel={(event) => finishScrub(event, false)}
       onPointerDown={(event) => {
@@ -80,7 +85,7 @@ function TimelineTrack() {
       ref={trackRef}
     >
       <div
-        className={`${styles.selection} ${disabled ? styles.selectionDisabled : ""}`}
+        className={cn(styles.selection, disabled && styles.selectionDisabled)}
         style={{
           left: "var(--timeline-trim-start)",
           right: "var(--timeline-trim-end-inset)",

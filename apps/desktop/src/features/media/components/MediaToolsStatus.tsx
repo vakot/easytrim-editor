@@ -145,13 +145,13 @@ function MediaToolsStatusContent({ className }: { className?: string }) {
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-semibold">{t("app.labels.mediaTools")}</h2>
             <span
-              className={
+              className={cn(
                 ready
                   ? "text-xs text-success"
                   : unavailable || capabilities.status === "failed"
                     ? "text-xs text-destructive"
-                    : "text-xs text-muted-foreground"
-              }
+                    : "text-xs text-muted-foreground",
+              )}
             >
               {getStatusText(state, t)}
             </span>
@@ -234,7 +234,7 @@ function MediaToolsStatusContent({ className }: { className?: string }) {
             size="xs"
             variant="outline"
           >
-            <RotateCw aria-hidden="true" className={checking ? "animate-spin" : undefined} />
+            <RotateCw aria-hidden="true" className={cn(checking && "animate-spin")} />
             {checking ? t("app.status.checking") : t("app.actions.recheck")}
           </Button>
         </div>

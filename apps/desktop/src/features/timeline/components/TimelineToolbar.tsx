@@ -18,6 +18,7 @@ import {
 } from "@/app/store/slices/editor-tools-slice";
 import { selectPreferences } from "@/app/store/slices/preferences-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
+import { cn } from "@/lib/class-names.utils";
 
 import { useSceneDetection } from "../hooks/useSceneDetection";
 
@@ -57,9 +58,7 @@ function SceneDetectionTool() {
   const { error, hasDetected, hasFailed, isDetecting } = sceneDetection;
   const sceneMarkersEnabled = showSceneMarkersCommand.checked ?? true;
   const loading = detectScenesCommand.pending || isDetecting;
-  const canRunAction = hasDetected
-    ? showSceneMarkersCommand.enabled
-    : detectScenesCommand.enabled;
+  const canRunAction = hasDetected ? showSceneMarkersCommand.enabled : detectScenesCommand.enabled;
 
   const label = hasDetected
     ? sceneMarkersEnabled
@@ -72,7 +71,7 @@ function SceneDetectionTool() {
       aria-busy={loading}
       aria-label={label}
       aria-pressed={hasDetected && sceneMarkersEnabled}
-      className={hasDetected && sceneMarkersEnabled ? "text-primary" : undefined}
+      className={cn(hasDetected && sceneMarkersEnabled && "text-primary")}
       disabled={!canRunAction || loading}
       onClick={
         hasFailed
@@ -85,11 +84,7 @@ function SceneDetectionTool() {
       type="button"
       variant={hasFailed ? "destructive" : "secondary"}
     >
-      {loading ? (
-        <LoaderCircle aria-hidden="true" className="animate-spin" />
-      ) : (
-        <Clapperboard />
-      )}
+      {loading ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <Clapperboard />}
     </Button>
   );
 
@@ -193,7 +188,7 @@ function TimelineToolButton({
         <Button
           aria-label={label}
           aria-pressed={enabled}
-          className={enabled ? "text-primary" : undefined}
+          className={cn(enabled && "text-primary")}
           onClick={onClick}
           size="icon-sm"
           type="button"
