@@ -1,17 +1,29 @@
+import { useLayoutEffect } from "react";
+
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { AppLayoutFooter } from "@/app/layout/components/AppLayoutFooter";
 import { AppLayoutHeader } from "@/app/layout/components/AppLayoutHeader";
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectLayoutDensity } from "@/app/store/slices/preferences-slice";
+import { selectLayoutDensity, selectUiScalePercent } from "@/app/store/slices/preferences-slice";
 
 import { AppLayoutMain } from "./components/AppLayoutMain";
 import { AppLayoutSidebar } from "./components/AppLayoutSidebar";
 
 function AppLayout() {
   const layoutDensity = useAppSelector(selectLayoutDensity);
+  const uiScalePercent = useAppSelector(selectUiScalePercent);
   const isCompact = layoutDensity === "compact";
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const previousFontSize = root.style.fontSize;
+    root.style.fontSize = `${uiScalePercent}%`;
+    return () => {
+      root.style.fontSize = previousFontSize;
+    };
+  }, [uiScalePercent]);
 
   return (
     <main className="fixed inset-0 grid h-dvh w-screen min-w-80 grid-rows-[2.25rem_minmax(0,1fr)_auto] overflow-hidden bg-background">

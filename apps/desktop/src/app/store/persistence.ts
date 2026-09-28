@@ -14,7 +14,10 @@ import { isLayoutDensity } from "@/app/layout/lib/layout-density";
 import {
   DEFAULT_PLAYBACK_VOLUME_PERCENT,
   DEFAULT_PREFERENCES,
+  MAX_UI_SCALE_PERCENT,
+  MIN_UI_SCALE_PERCENT,
   type Preferences,
+  UI_SCALE_STEP_PERCENT,
 } from "@/app/preferences";
 import { isCustomPrimaryColor, isPrimaryColor, isThemePreference } from "@/app/theme/theme";
 
@@ -99,6 +102,14 @@ const preferencesTransform = createTransform(
       layoutDensity: isLayoutDensity(persistedPreferences.layoutDensity)
         ? persistedPreferences.layoutDensity
         : DEFAULT_PREFERENCES.layoutDensity,
+      uiScalePercent:
+        typeof persistedPreferences.uiScalePercent === "number" &&
+        Number.isFinite(persistedPreferences.uiScalePercent) &&
+        persistedPreferences.uiScalePercent >= MIN_UI_SCALE_PERCENT &&
+        persistedPreferences.uiScalePercent <= MAX_UI_SCALE_PERCENT &&
+        (persistedPreferences.uiScalePercent - MIN_UI_SCALE_PERCENT) % UI_SCALE_STEP_PERCENT === 0
+          ? persistedPreferences.uiScalePercent
+          : DEFAULT_PREFERENCES.uiScalePercent,
       customPrimaryColor: isCustomPrimaryColor(persistedPreferences.customPrimaryColor)
         ? persistedPreferences.customPrimaryColor
         : DEFAULT_PREFERENCES.customPrimaryColor,

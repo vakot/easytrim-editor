@@ -148,6 +148,7 @@ function materializeApplicationCommands<Id extends string>(
     label: definition.label,
     pending: pendingIds.has(definition.id),
     searchTerms: definition.searchTerms,
+    hint: definition.hint,
     shortcut: definition.shortcut,
     surfaces: definition.surfaces,
     variant: definition.variant,
