@@ -16,16 +16,13 @@ import {
   selectSegmentPlaybackEnabled,
 } from "@/app/store/slices/editor-tools-slice";
 import { selectPreferences } from "@/app/store/slices/preferences-slice";
+import { selectSourceReady } from "@/app/store/slices/source-slice";
 
-import type { useSceneDetection } from "../hooks/useSceneDetection";
+import { useSceneDetection } from "../hooks/useSceneDetection";
 
 import { StereoAudioMeter } from "./StereoAudioMeter";
 
-function TimelineToolbar({
-  sceneDetection,
-}: {
-  sceneDetection: ReturnType<typeof useSceneDetection>;
-}) {
+function TimelineToolbar() {
   const { t } = useTranslation();
 
   return (
@@ -38,7 +35,7 @@ function TimelineToolbar({
       <div className="grid auto-cols-7 grid-flow-col grid-rows-[repeat(2,1.75rem)] gap-1">
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
-        <SceneDetectionTool sceneDetection={sceneDetection} />
+        <SceneDetectionTool />
         <ResetToolsTool />
       </div>
 
@@ -49,12 +46,10 @@ function TimelineToolbar({
   );
 }
 
-function SceneDetectionTool({
-  sceneDetection,
-}: {
-  sceneDetection: ReturnType<typeof useSceneDetection>;
-}) {
+function SceneDetectionTool() {
   const { t } = useTranslation();
+  const sourceReady = useAppSelector(selectSourceReady);
+  const sceneDetection = useSceneDetection(sourceReady);
   const { canDetect, detect, error, hasDetected, hasFailed, isDetecting } = sceneDetection;
 
   const button = (

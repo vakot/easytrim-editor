@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { clampPlaybackMicros } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
@@ -13,9 +14,10 @@ import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
 import { Playhead, SegmentDragHandle, TrimHandle } from "./TimelineHandles";
 import styles from "./TimelinePanel.module.css";
 
-function TimelineTrack({ sceneBoundariesMicros }: { sceneBoundariesMicros: number[] }) {
+function TimelineTrack() {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
+  const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const playback = usePlayback();
   const timeline = useTimeline();
   const range = timeline.trim ?? EMPTY_TIMELINE_RANGE;
@@ -81,14 +83,7 @@ function TimelineTrack({ sceneBoundariesMicros }: { sceneBoundariesMicros: numbe
           right: "var(--timeline-trim-end-inset)",
         }}
       />
-      {sceneBoundariesMicros.map((boundaryMicros) => (
-        <div
-          aria-hidden="true"
-          className={styles.sceneMarker}
-          key={boundaryMicros}
-          style={{ left: `${timelinePercent(boundaryMicros, range.sourceDurationMicros)}%` }}
-        />
-      ))}
+      <SceneMarkers sourceDurationMicros={range.sourceDurationMicros} />
       <SegmentDragHandle
         disabled={disabled}
         dragging={segmentDragging}
@@ -146,6 +141,19 @@ function TimelineTrack({ sceneBoundariesMicros }: { sceneBoundariesMicros: numbe
       />
     </div>
   );
+}
+
+function SceneMarkers({ sourceDurationMicros }: { sourceDurationMicros: number }) {
+  const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
+
+  return sceneBoundariesMicros.map((boundaryMicros) => (
+    <div
+      aria-hidden="true"
+      className={styles.sceneMarker}
+      key={boundaryMicros}
+      style={{ left: `${timelinePercent(boundaryMicros, sourceDurationMicros)}%` }}
+    />
+  ));
 }
 
 export { TimelineTrack };

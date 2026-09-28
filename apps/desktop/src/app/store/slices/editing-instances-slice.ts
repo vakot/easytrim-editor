@@ -628,6 +628,21 @@ const selectActiveEditingInstance = createSelector([selectEditingInstancesState]
   state.activeInstanceId ? state.entities[state.activeInstanceId] : undefined,
 );
 
+const selectActiveSceneBoundariesMicros = createSelector(
+  [selectActiveEditingInstance, (state: RootState) => state.source.source],
+  (instance, source) => {
+    if (
+      !instance ||
+      !source ||
+      normalizeSourceKey(instance.snapshot.source.sourcePath) !== normalizeSourceKey(source.sourcePath)
+    ) {
+      return [];
+    }
+
+    return instance.snapshot.sceneBoundariesMicros ?? [];
+  },
+);
+
 const selectEditingInstanceAttempts = createSelector([selectEditingInstances], (instances) =>
   instances.flatMap((instance) => instancesToAttempts(instance)),
 );
@@ -754,6 +769,7 @@ export {
   editingInstancesSourceAvailabilityChanged,
   selectActiveEditingInstance,
   selectActiveInstanceId,
+  selectActiveSceneBoundariesMicros,
   selectEditingInstanceAttempts,
   selectEditingInstanceById,
   selectEditingInstanceIds,
