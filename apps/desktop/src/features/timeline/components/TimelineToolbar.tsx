@@ -57,6 +57,10 @@ function SceneDetectionTool() {
   const { error, hasDetected, hasFailed, isDetecting } = sceneDetection;
   const sceneMarkersEnabled = showSceneMarkersCommand.checked ?? true;
   const loading = detectScenesCommand.pending || isDetecting;
+  const canRunAction = hasDetected
+    ? showSceneMarkersCommand.enabled
+    : detectScenesCommand.enabled;
+
   const label = hasDetected
     ? sceneMarkersEnabled
       ? t("timeline.actions.disableSceneMarkers")
@@ -69,7 +73,7 @@ function SceneDetectionTool() {
       aria-label={label}
       aria-pressed={hasDetected && sceneMarkersEnabled}
       className={hasDetected && sceneMarkersEnabled ? "text-primary" : undefined}
-      disabled={!detectScenesCommand.enabled || loading}
+      disabled={!canRunAction || loading}
       onClick={
         hasFailed
           ? undefined
