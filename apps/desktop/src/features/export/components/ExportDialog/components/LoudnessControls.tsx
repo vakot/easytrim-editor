@@ -30,6 +30,7 @@ import { analyzeAudioLoudness } from "@/lib/tauri/media";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 
 const MotionButton = motion.create(Button);
+const LOUDNESS_BUTTON_COLLAPSED_MARGIN = "-0.5rem";
 
 interface LoudnessControlsProps {
   settings: ExportSettings;
@@ -132,13 +133,24 @@ function LoudnessAnalysisButton({ disabled, onAnalyze, state }: LoudnessAnalysis
     <AnimatePresence initial={false} mode="wait">
       {state !== "closed" ? (
         <MotionButton
-          animate={{ opacity: 1, width: compact ? "2rem" : "auto" }}
+          animate={{ marginInlineStart: 0, opacity: 1, width: compact ? "2rem" : "auto" }}
           aria-label={compact ? buttonLabel : undefined}
           className="overflow-hidden"
           disabled={disabled}
-          exit={{ marginInlineStart: "-0.5rem", opacity: 0, width: 0 }}
-          initial={shouldReduceMotion ? false : { opacity: 0, width: 0 }}
-          layout
+          exit={{
+            marginInlineStart: LOUDNESS_BUTTON_COLLAPSED_MARGIN,
+            opacity: 0,
+            width: 0,
+          }}
+          initial={
+            shouldReduceMotion
+              ? false
+              : {
+                  marginInlineStart: LOUDNESS_BUTTON_COLLAPSED_MARGIN,
+                  opacity: 0,
+                  width: 0,
+                }
+          }
           onClick={onAnalyze}
           size={compact ? "icon" : "default"}
           transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
