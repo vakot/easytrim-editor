@@ -257,6 +257,7 @@ export const en = {
       restore: "Restore edit",
       revealOutput: "Reveal output",
       retry: "Retry",
+      renameOutput: "Rename output",
       start: "Start queue",
       skip: "Skip",
     },

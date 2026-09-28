@@ -1,11 +1,12 @@
-import { ArrowLeftFromLine, ExternalLink, RotateCcw, X } from "lucide-react";
+import { ArrowLeftFromLine, ExternalLink, Pencil, RotateCcw, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   cancelExportAttemptRequested,
+  renameExportAttemptRequested,
   retryExportAttemptRequested,
 } from "@/app/store/thunks/export-thunks";
 import { restoreExportAttemptRequested } from "@/app/store/thunks/source-media-thunks";
@@ -37,6 +38,34 @@ function ExportQueueItemCancel({ className }: { className?: string }) {
       variant="outline"
     >
       <X aria-hidden="true" />
+    </Button>
+  );
+}
+
+function ExportQueueItemRename({ className }: { className?: string }) {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const { attempt, instance } = useExportQueueItem();
+  const isNativeDialogOpen = useAppSelector((state) => state.importWorkflow.isNativeDialogOpen);
+
+  if (attempt.state.status !== "queued") return null;
+
+  return (
+    <Button
+      aria-label={t("queue.actions.renameOutput")}
+      className={className}
+      disabled={isNativeDialogOpen}
+      onClick={() =>
+        void dispatch(
+          renameExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
+        )
+      }
+      size="icon-xs"
+      title={t("queue.actions.renameOutput")}
+      type="button"
+      variant="ghost"
+    >
+      <Pencil aria-hidden="true" />
     </Button>
   );
 }
@@ -123,6 +152,7 @@ function ExportQueueItemRetry({ className }: { className?: string }) {
 
 export {
   ExportQueueItemCancel,
+  ExportQueueItemRename,
   ExportQueueItemRestore,
   ExportQueueItemRetry,
   ExportQueueItemReveal,
