@@ -1,4 +1,5 @@
 import { ChevronsLeft, ChevronsRight, Clapperboard, Eye } from "lucide-react";
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
@@ -10,6 +11,8 @@ import { sceneMarkersToggled, selectSceneMarkersEnabled } from "@/app/store/slic
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { findNextSceneBoundary, findPreviousSceneBoundary, useSceneDetection } from "@/features/timeline";
 
+const SCENE_NAVIGATION_REPEAT_WINDOW_MS = 125;
+
 function useSceneCommands() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -19,6 +22,12 @@ function useSceneCommands() {
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const sourceReady = useAppSelector(selectSourceReady);
   const sceneDetection = useSceneDetection(sourceReady);
+  const previousSceneNavigationRef = useRef<{
+    invokedAt: number;
+    playbackWasActive: boolean;
+    targetMicros: number;
+  } | null>(null);
+
   const previousSceneMicros = findPreviousSceneBoundary(
     sceneBoundariesMicros,
     timeline.playheadMicros,
@@ -34,6 +43,30 @@ function useSceneCommands() {
     timeline.onScrubStart();
     timeline.onSeek(sceneMicros);
     timeline.onScrubEnd();
+  }
+
+  function moveToPreviousScene() {
+    const now = performance.now();
+    const previousNavigation = previousSceneNavigationRef.current;
+    const isRepeatWhilePlaying =
+      previousNavigation !== null &&
+      previousNavigation.playbackWasActive &&
+      now - previousNavigation.invokedAt <= SCENE_NAVIGATION_REPEAT_WINDOW_MS;
+
+    const targetMicros = isRepeatWhilePlaying
+      ? findPreviousSceneBoundary(sceneBoundariesMicros, previousNavigation.targetMicros)
+      : previousSceneMicros;
+
+    if (targetMicros === undefined) {
+      previousSceneNavigationRef.current = null;
+      return;
+    }
+
+    previousSceneNavigationRef.current =
+      playback.isPlaying || isRepeatWhilePlaying
+        ? { invokedAt: now, playbackWasActive: true, targetMicros }
+        : null;
+    moveToScene(targetMicros);
   }
 
   return [
@@ -54,7 +87,7 @@ function useSceneCommands() {
       id: "previous-scene" as const,
       label: previousScene,
       run() {
-        if (previousSceneMicros !== undefined) moveToScene(previousSceneMicros);
+        moveToPreviousScene();
       },
       searchTerms: commandSearchTerms(`${previousScene}|scene|previous`),
       surfaces: ["button", "palette"] as const,
@@ -66,6 +99,7 @@ function useSceneCommands() {
       id: "next-scene" as const,
       label: nextScene,
       run() {
+        previousSceneNavigationRef.current = null;
         if (nextSceneMicros !== undefined) moveToScene(nextSceneMicros);
       },
       searchTerms: commandSearchTerms(`${nextScene}|scene|next`),
