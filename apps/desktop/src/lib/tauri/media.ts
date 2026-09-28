@@ -375,6 +375,6 @@ export {
   renderOptimized,
   reserveExportSource,
   resolveOutputSelection,
-  saveFramePng,
   restoreSourceFromTrash,
+  saveFramePng,
 };
