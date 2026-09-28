@@ -48,7 +48,9 @@ describe("editor shortcut ownership", () => {
   });
 
   it("lets timeline transport controls own every timeline shortcut", () => {
+    const toolbar = appendElement("div", { role: "toolbar" });
     const transport = appendElement("button", { "data-editor-keyboard": "timeline-transport" });
+    toolbar.append(transport);
 
     for (const [code, key] of shortcutCases) {
       expect(dispositionFor(transport, code, key)).toBe("timeline");
@@ -101,12 +103,12 @@ describe("editor shortcut ownership", () => {
     }
   });
 
-  it("keeps Space native for ordinary buttons and assigns arrows and I/O globally", () => {
+  it("gives the global playback shortcut priority over ordinary buttons", () => {
     const button = appendElement("button");
     const customButton = appendElement("div", { role: "button" });
 
-    expect(dispositionFor(button, "Space", " ")).toBe("native");
-    expect(dispositionFor(customButton, "Space", " ")).toBe("native");
+    expect(dispositionFor(button, "Space", " ")).toBe("timeline");
+    expect(dispositionFor(customButton, "Space", " ")).toBe("timeline");
     expect(dispositionFor(button, "ArrowLeft")).toBe("timeline");
     expect(dispositionFor(button, "ArrowRight")).toBe("timeline");
     expect(dispositionFor(button, "KeyI", "i")).toBe("timeline");

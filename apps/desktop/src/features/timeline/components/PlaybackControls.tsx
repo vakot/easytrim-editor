@@ -9,7 +9,7 @@ import {
   SquareArrowRight,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type PointerEvent, type ReactNode, useEffect, useRef } from "react";
+import { type MouseEvent, type PointerEvent, type ReactNode, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -27,6 +27,10 @@ import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../lib/editor-shortcuts";
 
 const MotionButton = motion.create(Button);
 const SCENE_NAVIGATION_COLLAPSED_MARGIN = "-0.375rem";
+
+function preventSceneNavigationMouseFocus(event: MouseEvent<HTMLButtonElement>) {
+  if (event.button === 0) event.preventDefault();
+}
 
 function PlaybackControls({ className }: { className?: string }) {
   const { t } = useTranslation();
@@ -81,6 +85,7 @@ function PlaybackControls({ className }: { className?: string }) {
                   }}
                   aria-label={previousSceneCommand.label}
                   className="overflow-hidden transition-colors"
+                  data-editor-keyboard="timeline-transport"
                   disabled={previousSceneDisabled}
                   exit={{
                     opacity: 0,
@@ -97,6 +102,7 @@ function PlaybackControls({ className }: { className?: string }) {
                         }
                   }
                   onClick={() => void executeCommand("previous-scene", "button")}
+                  onMouseDown={preventSceneNavigationMouseFocus}
                   size="icon-sm"
                   transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
                   type="button"
@@ -165,6 +171,7 @@ function PlaybackControls({ className }: { className?: string }) {
                   }}
                   aria-label={nextSceneCommand.label}
                   className="overflow-hidden transition-colors"
+                  data-editor-keyboard="timeline-transport"
                   disabled={nextSceneDisabled}
                   exit={{
                     opacity: 0,
@@ -181,6 +188,7 @@ function PlaybackControls({ className }: { className?: string }) {
                         }
                   }
                   onClick={() => void executeCommand("next-scene", "button")}
+                  onMouseDown={preventSceneNavigationMouseFocus}
                   size="icon-sm"
                   transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
                   type="button"

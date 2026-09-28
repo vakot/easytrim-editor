@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file.
 
 - Removed automatic playhead following while trim borders move.
 
+### Fixed
+
+- Fixed Spacebar playback toggling when an editor button has focus.
+
 ## [1.12.3]
 
 ### Added
