@@ -17,36 +17,38 @@ import { TimelinePanel } from "@/features/timeline";
 import { syncTimelineGeometry } from "@/lib/interaction/timeline-geometry.utils";
 
 type PanelSizes = {
-  collapsedSize: number;
-  defaultSize: number;
-  maxSize: number;
-  minSize: number;
+  collapsedSize: string;
+  defaultSize: string;
+  maxSize: string;
+  minSize: string;
 };
 
-const TIMELINE_PANEL_DEFAULT_SIZE = 154;
+const TIMELINE_PANEL_DEFAULT_SIZE_REM = 9.625;
+const TIMELINE_PANEL_COMPACT_SIZE_REM = 9.5625;
 
-const AUDIO_PANEL_SIZE_LINE = 58;
-const AUDIO_PANEL_SIZE_MIN = 126;
+const AUDIO_PANEL_SIZE_LINE_REM = 3.625;
+const AUDIO_PANEL_SIZE_MIN_REM = 7.875;
 
 const getTimelinePanelSize = (lines: number = 0, isCompact = false): PanelSizes => {
-  const minSize = isCompact ? TIMELINE_PANEL_DEFAULT_SIZE - 1 : TIMELINE_PANEL_DEFAULT_SIZE;
+  const minSizeRem = isCompact ? TIMELINE_PANEL_COMPACT_SIZE_REM : TIMELINE_PANEL_DEFAULT_SIZE_REM;
 
   if (lines === 0) {
+    const size = `${minSizeRem}rem`;
     return {
-      minSize,
-      defaultSize: minSize,
-      maxSize: minSize,
-      collapsedSize: minSize,
+      minSize: size,
+      defaultSize: size,
+      maxSize: size,
+      collapsedSize: size,
     };
   }
 
-  const audioPanelSizeMax = AUDIO_PANEL_SIZE_MIN + (lines - 1) * AUDIO_PANEL_SIZE_LINE;
+  const audioPanelSizeMaxRem = AUDIO_PANEL_SIZE_MIN_REM + (lines - 1) * AUDIO_PANEL_SIZE_LINE_REM;
 
   return {
-    collapsedSize: minSize,
-    minSize: minSize + AUDIO_PANEL_SIZE_MIN,
-    defaultSize: minSize + AUDIO_PANEL_SIZE_MIN,
-    maxSize: minSize + audioPanelSizeMax,
+    collapsedSize: `${minSizeRem}rem`,
+    minSize: `${minSizeRem + AUDIO_PANEL_SIZE_MIN_REM}rem`,
+    defaultSize: `${minSizeRem + AUDIO_PANEL_SIZE_MIN_REM}rem`,
+    maxSize: `${minSizeRem + audioPanelSizeMaxRem}rem`,
   };
 };
 
@@ -101,7 +103,7 @@ function AppLayoutMain() {
         <ResizableHandle
           className="workspace-separator layout-default:bg-transparent"
           disabled={!media}
-          style={isCompact ? undefined : { height: 6 }}
+          style={isCompact ? undefined : { height: "0.375rem" }}
           withHandle={!!media && !isCompact}
         />
 

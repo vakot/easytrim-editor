@@ -43,11 +43,11 @@ function AppLayoutSidebar() {
       >
         <ResizablePanel
           className="flex min-h-0 flex-col overflow-hidden!"
-          collapsedSize="36px"
+          collapsedSize="2.25rem"
           collapsible
           defaultSize="45"
           id="editor-source-imported-sources"
-          minSize="300px"
+          minSize="18.75rem"
         >
           <ResizablePanelControl panelId="editor-source-imported-sources">
             {({ isExpanded }) => (
@@ -84,11 +84,11 @@ function AppLayoutSidebar() {
 
         <ResizablePanel
           className="flex min-h-0 flex-col overflow-hidden!"
-          collapsedSize="36px"
+          collapsedSize="2.25rem"
           collapsible
           defaultSize="30"
           id="editor-source-activity-feed"
-          minSize="200px"
+          minSize="12.5rem"
         >
           <ResizablePanelControl panelId="editor-source-activity-feed">
             {({ isExpanded }) => (
