@@ -1,7 +1,12 @@
+import { toast } from "sonner";
+
 import {
   cancelAndRequeueExport,
   cancelQueuedExport,
+  commitQueuedExportRename,
   enqueueExport,
+  releaseQueuedExportRename,
+  reserveQueuedExportRename,
   retryFailedExport,
   setExportQueueExecutionEnabled,
 } from "@/app/store/integration/export-queue-runtime";
@@ -124,6 +129,32 @@ const retryExportAttemptRequested =
       await retryFailedExport(instanceId, attemptId, dispatch, getState);
     } else {
       await cancelAndRequeueExport(instanceId, attemptId, getState);
+    }
+  };
+
+const renameExportAttemptRequested =
+  ({ attemptId, instanceId }: { attemptId: string; instanceId: string }): AppThunk<Promise<void>> =>
+  async (dispatch, getState) => {
+    if (getState().importWorkflow.isNativeDialogOpen) return;
+    if (!reserveQueuedExportRename(instanceId, attemptId, getState)) return;
+
+    dispatch(nativeDialogStateChanged(true));
+    try {
+      const attempt = selectEditingInstanceById(getState(), instanceId)?.exportAttempts.find(
+        (candidate) => candidate.id === attemptId,
+      );
+
+      if (!attempt || attempt.state.status !== "queued") return;
+
+      const output = await chooseOutputPath(attempt.output.displayName);
+      if (output) commitQueuedExportRename(instanceId, attemptId, output, dispatch, getState);
+    } catch (error: unknown) {
+      const normalized = normalizeAppError(error);
+      diagnostics.error("export.queue.rename.failed", normalized, { snapshotId: instanceId });
+      toast.error(normalized.message);
+    } finally {
+      dispatch(nativeDialogStateChanged(false));
+      releaseQueuedExportRename(attemptId, dispatch, getState);
     }
   };
 
@@ -373,6 +404,7 @@ export {
   openOptimizedExportDialog,
   optimizedExportSettingsChangedRequested,
   refreshOptimizedExportPlan,
+  renameExportAttemptRequested,
   retryExportAttemptRequested,
   startExportQueue,
   startFastCutRequested,

@@ -2,6 +2,7 @@ import {
   editingInstanceExportCanceled,
   editingInstanceExportCompleted,
   editingInstanceExportFailed,
+  editingInstanceExportOutputRenamed,
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
   editingInstanceExportRetried,
@@ -63,6 +64,7 @@ interface RuntimeState {
   jobsBySourceKey: Map<string, Set<RuntimeExportJob>>;
   pendingJobs: RuntimeExportJob[];
   queueCycle: "idle" | "running" | "finishing";
+  reservedAttemptIds: Set<string>;
   retryingAttemptIds: Set<string>;
   suppressQueueFinishAction: boolean;
 }
@@ -78,6 +80,7 @@ function runtimeFor(getState: () => RootState): RuntimeState {
     jobsBySourceKey: new Map(),
     pendingJobs: [],
     retryingAttemptIds: new Set(),
+    reservedAttemptIds: new Set(),
     deferredSourceDeletes: new Map(),
     queueCycle: "idle",
     suppressQueueFinishAction: false,
@@ -155,6 +158,7 @@ function withdrawPendingExport(
   getState: () => RootState,
 ): boolean {
   const runtime = runtimeFor(getState);
+  if (runtime.reservedAttemptIds.has(attemptId)) return false;
   const job = runtime.jobsByAttemptId.get(attemptId);
   if (!job) return true;
   if (job.instanceId !== instanceId || job.startedAt !== null || job.canceled) return false;
@@ -173,6 +177,7 @@ function cancelQueuedExport(
   getState: () => RootState,
 ) {
   const runtime = runtimeFor(getState);
+  if (runtime.reservedAttemptIds.has(attemptId)) return Promise.resolve();
   const job = runtime.jobsByAttemptId.get(attemptId);
   if (!job || job.instanceId !== instanceId) return Promise.resolve();
   if (job.canceled && !job.requeueRequested) return job.completion;
@@ -197,6 +202,59 @@ function cancelQueuedExport(
   }
   if (job.operationId) void cancelOperation(job.operationId).catch(() => undefined);
   return job.completion;
+}
+
+function reserveQueuedExportRename(
+  instanceId: EditingInstanceId,
+  attemptId: string,
+  getState: () => RootState,
+): boolean {
+  const runtime = runtimeFor(getState);
+  if (runtime.reservedAttemptIds.has(attemptId)) return false;
+  const attempt = selectEditingInstanceAttempts(getState()).find(
+    ({ attempt, instance }) => instance.id === instanceId && attempt.id === attemptId,
+  )?.attempt;
+
+  const job = runtime.jobsByAttemptId.get(attemptId);
+  if (!attempt || attempt.state.status !== "queued" || (job && job.startedAt !== null))
+    return false;
+  runtime.reservedAttemptIds.add(attemptId);
+  return true;
+}
+
+function commitQueuedExportRename(
+  instanceId: EditingInstanceId,
+  attemptId: string,
+  output: ExportAttempt["output"],
+  dispatch: AppDispatch,
+  getState: () => RootState,
+): boolean {
+  const runtime = runtimeFor(getState);
+  if (!runtime.reservedAttemptIds.has(attemptId)) return false;
+  const attempt = selectEditingInstanceAttempts(getState()).find(
+    ({ attempt, instance }) => instance.id === instanceId && attempt.id === attemptId,
+  )?.attempt;
+
+  if (!attempt || attempt.state.status !== "queued") return false;
+
+  dispatch(editingInstanceExportOutputRenamed({ id: instanceId, attemptId, output }));
+  const updated = selectEditingInstanceAttempts(getState()).find(
+    ({ attempt: candidate, instance }) => instance.id === instanceId && candidate.id === attemptId,
+  )?.attempt;
+
+  const job = runtime.jobsByAttemptId.get(attemptId);
+  if (updated && job) job.attempt = updated;
+  return updated?.output.outputId === output.outputId;
+}
+
+function releaseQueuedExportRename(
+  attemptId: string,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+) {
+  const runtime = runtimeFor(getState);
+  if (!runtime.reservedAttemptIds.delete(attemptId)) return;
+  void drainQueue(runtime, dispatch, getState);
 }
 
 async function cancelAndRequeueExport(
@@ -307,8 +365,10 @@ async function drainQueue(runtime: RuntimeState, dispatch: AppDispatch, getState
   runtime.isDraining = true;
   try {
     while (runtime.pendingJobs.length > 0) {
-      const index = runtime.pendingJobs.findIndex((job) =>
-        selectSourceQueueStarted(getState(), job.instanceId),
+      const index = runtime.pendingJobs.findIndex(
+        (job) =>
+          !runtime.reservedAttemptIds.has(job.attempt.id) &&
+          selectSourceQueueStarted(getState(), job.instanceId),
       );
 
       if (index < 0) break;
@@ -600,8 +660,11 @@ async function moveSourceToTrashAndMarkDeleted(
 export {
   cancelAndRequeueExport,
   cancelQueuedExport,
+  commitQueuedExportRename,
   enqueueExport,
   hasActiveExportForSource,
+  releaseQueuedExportRename,
+  reserveQueuedExportRename,
   retryFailedExport,
   setExportQueueExecutionEnabled,
   withdrawPendingExport,
