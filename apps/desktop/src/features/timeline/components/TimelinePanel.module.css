@@ -55,19 +55,18 @@
   width: 1.5rem;
   padding: 0;
   border: 0;
-  border-left: 0.125rem solid var(--destructive);
   background: transparent;
-  cursor: pointer;
   transform: translateX(-50%);
 }
 
-.sceneMarker:hover {
-  border-left-width: 0.2rem;
-}
-
-.sceneMarker:focus-visible {
-  outline: 0.125rem solid var(--foreground);
-  outline-offset: 0.125rem;
+.sceneMarker::before {
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: 0.125rem;
+  background: var(--destructive);
+  content: "";
+  transform: translateX(-50%);
 }
 
 .segment {

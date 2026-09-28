@@ -4,7 +4,7 @@ import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
-import { clampPlaybackMicros, formatPlaybackTime } from "@/domain/playback";
+import { clampPlaybackMicros } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
 
 import { useTrimTimelineInteractions } from "../hooks/useTrimTimelineInteractions";
@@ -56,6 +56,7 @@ function TimelineTrack({ sceneBoundariesMicros }: { sceneBoundariesMicros: numbe
     onTrimDragStart: timeline.onTrimDragStart,
     playheadMicros: timeline.playheadMicros,
     range,
+    sceneBoundariesMicros,
   });
 
   return (
@@ -80,19 +81,12 @@ function TimelineTrack({ sceneBoundariesMicros }: { sceneBoundariesMicros: numbe
           right: "var(--timeline-trim-end-inset)",
         }}
       />
-      {sceneBoundariesMicros.map((boundaryMicros, index) => (
-        <button
-          aria-label={t("timeline.accessibility.sceneMarker", {
-            number: index + 1,
-            time: formatPlaybackTime(boundaryMicros, frameRate),
-          })}
-          className={styles.sceneMarker}
-          disabled={disabled}
+      {sceneBoundariesMicros.map((boundaryMicros) => (
+        <div
+          aria-hidden="true"
+          className={`${styles.sceneMarker} my-0.5`}
           key={boundaryMicros}
-          onClick={() => timeline.onSeek(boundaryMicros)}
           style={{ left: `${timelinePercent(boundaryMicros, range.sourceDurationMicros)}%` }}
-          title={formatPlaybackTime(boundaryMicros, frameRate)}
-          type="button"
         />
       ))}
       <SegmentDragHandle

@@ -511,12 +511,12 @@ export const en = {
       sceneCount: "Scene changes found: {{count}}",
     },
     tooltips: {
-      detectScenes: "Analyze the source video for scene changes. This may take a while.",
+      detectScenes:
+        "Analyze the source video for scene changes. Hold Shift and drag the playhead to snap to a marker.",
       moveSegment: "Drag to move the selected segment — hold Shift to snap",
       trimReset: "{{label}} — hold Shift to snap — double-click to reset",
     },
     accessibility: {
-      sceneMarker: "Scene {{number}} at {{time}}",
       audioLevel: "Stereo audio level",
       leftAudioChannelLevel: "Left channel audio level",
       playbackPosition: "Playback position",

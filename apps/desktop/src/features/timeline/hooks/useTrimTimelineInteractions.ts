@@ -35,6 +35,7 @@ interface TrimTimelineInteractionOptions {
   onTrimDragStart: () => void;
   playheadMicros: number;
   range: TrimRange;
+  sceneBoundariesMicros: readonly number[];
 }
 
 interface TrimDragState {
@@ -56,6 +57,7 @@ function useTrimTimelineInteractions({
   onTrimDragStart,
   playheadMicros,
   range,
+  sceneBoundariesMicros,
 }: TrimTimelineInteractionOptions) {
   const trackRef = useRef<HTMLDivElement>(null);
   const scrubDragRef = useRef<{ bounds: DOMRect; pointerId: number } | null>(null);
@@ -380,9 +382,19 @@ function useTrimTimelineInteractions({
     onSegmentDragEnd();
   }
 
-  function scrubMicros(clientX: number, snapToTrim: boolean, bounds: DOMRect) {
+  function scrubMicros(clientX: number, snapToScene: boolean, bounds: DOMRect) {
     const pointer = pointerMicros(clientX, bounds);
-    return snapToTrim ? clampToTrim(pointer.micros, rangeRef.current) : pointer.micros;
+    if (!snapToScene) return pointer.micros;
+
+    const sourceDurationMicros = rangeRef.current.sourceDurationMicros;
+    const sceneBoundary = nearestSceneBoundaryMicros(
+      pointer.micros,
+      bounds,
+      sourceDurationMicros,
+      sceneBoundariesMicros,
+    );
+
+    return sceneBoundary ?? clampToTrim(pointer.micros, rangeRef.current);
   }
 
   function startScrub(event: PointerEvent<HTMLElement>, captureTarget: HTMLElement) {
@@ -469,6 +481,35 @@ function keyboardStepMicros(frameRate: FrameRate | undefined, coarse: boolean): 
 
 function boundaryValue(range: TrimRange, boundary: TrimBoundary): number {
   return boundary === "start" ? range.startMicros : range.endMicros;
+}
+
+function nearestSceneBoundaryMicros(
+  pointerMicros: number,
+  bounds: DOMRect,
+  sourceDurationMicros: number,
+  sceneBoundariesMicros: readonly number[],
+): number | null {
+  if (bounds.width <= 0 || sourceDurationMicros <= 0 || sceneBoundariesMicros.length === 0) {
+    return null;
+  }
+
+  let low = 0;
+  let high = sceneBoundariesMicros.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (sceneBoundariesMicros[middle]! < pointerMicros) low = middle + 1;
+    else high = middle;
+  }
+
+  const left = sceneBoundariesMicros[low - 1];
+  const right = sceneBoundariesMicros[low];
+  const leftDistance = left === undefined ? Number.POSITIVE_INFINITY : pointerMicros - left;
+  const rightDistance = right === undefined ? Number.POSITIVE_INFINITY : right - pointerMicros;
+  const nearest = leftDistance < rightDistance ? left : right;
+  if (nearest === undefined) return null;
+
+  const distancePixels = (Math.abs(pointerMicros - nearest) / sourceDurationMicros) * bounds.width;
+  return distancePixels <= TIMELINE_SNAP_REACH_PX ? nearest : null;
 }
 
 export { useTrimTimelineInteractions };

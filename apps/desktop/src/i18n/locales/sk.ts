@@ -511,12 +511,12 @@ export const sk = {
       sceneCount: "Nájdené zmeny scén: {{count}}",
     },
     tooltips: {
-      detectScenes: "Analyzovať zdrojové video a vyhľadať zmeny scén. Môže to chvíľu trvať.",
+      detectScenes:
+        "Analyzovať zdrojové video a vyhľadať zmeny scén. Podržte Shift a potiahnutím prehrávacej hlavy ju prichyťte k značke.",
       moveSegment: "Potiahnutím presuňte vybraný segment — podržaním Shift ho prichytíte",
       trimReset: "{{label}} — podržaním Shift prichytíte — dvojitým kliknutím obnovíte",
     },
     accessibility: {
-      sceneMarker: "Scéna {{number}} v čase {{time}}",
       audioLevel: "Úroveň stereo zvuku",
       leftAudioChannelLevel: "Úroveň zvuku ľavého kanála",
       playbackPosition: "Pozícia prehrávania",
