@@ -491,6 +491,8 @@ export const en = {
   timeline: {
     actions: {
       detectScenes: "Detect scene changes",
+      disableSceneMarkers: "Hide scene markers",
+      enableSceneMarkers: "Show scene markers",
       moveSegment: "Move selected segment",
     },
     labels: {

@@ -11,8 +11,10 @@ import {
   createEditorToolsStateFromPreferences,
   editorToolsReset,
   loopPlaybackToggled,
+  sceneMarkersToggled,
   segmentPlaybackToggled,
   selectLoopPlaybackEnabled,
+  selectSceneMarkersEnabled,
   selectSegmentPlaybackEnabled,
 } from "@/app/store/slices/editor-tools-slice";
 import { selectPreferences } from "@/app/store/slices/preferences-slice";
@@ -49,17 +51,30 @@ function TimelineToolbar() {
 function SceneDetectionTool() {
   const { t } = useTranslation();
   const sourceReady = useAppSelector(selectSourceReady);
+  const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
+  const dispatch = useAppDispatch();
   const sceneDetection = useSceneDetection(sourceReady);
   const { canDetect, detect, error, hasDetected, hasFailed, isDetecting } = sceneDetection;
+  const label = hasDetected
+    ? sceneMarkersEnabled
+      ? t("timeline.actions.disableSceneMarkers")
+      : t("timeline.actions.enableSceneMarkers")
+    : t("timeline.actions.detectScenes");
 
   const button = (
     <Button
       aria-busy={isDetecting}
-      aria-label={t("timeline.actions.detectScenes")}
-      aria-pressed={hasDetected}
-      className={hasDetected ? "text-primary" : undefined}
+      aria-label={label}
+      aria-pressed={hasDetected && sceneMarkersEnabled}
+      className={hasDetected && sceneMarkersEnabled ? "text-primary" : undefined}
       disabled={!canDetect || isDetecting}
-      onClick={hasFailed ? undefined : () => void detect()}
+      onClick={
+        hasFailed
+          ? undefined
+          : hasDetected
+            ? () => dispatch(sceneMarkersToggled())
+            : () => void detect()
+      }
       size="icon-sm"
       type="button"
       variant={hasFailed ? "destructive" : "secondary"}
@@ -87,7 +102,9 @@ function SceneDetectionTool() {
       <TooltipTrigger asChild>
         {button}
       </TooltipTrigger>
-      <TooltipContent>{t("timeline.tooltips.detectScenes")}</TooltipContent>
+      <TooltipContent>
+        {hasDetected ? label : t("timeline.tooltips.detectScenes")}
+      </TooltipContent>
     </Tooltip>
   );
 }

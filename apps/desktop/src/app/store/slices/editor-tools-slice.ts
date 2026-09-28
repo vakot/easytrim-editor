@@ -5,6 +5,7 @@ import type { RootState } from "@/app/store/store";
 
 type EditorToolsState = {
   loopPlaybackEnabled: boolean;
+  sceneMarkersEnabled?: boolean;
   segmentPlaybackEnabled: boolean;
 };
 
@@ -30,6 +31,9 @@ const editorToolsSlice = createSlice({
     segmentPlaybackToggled: (state) => {
       state.segmentPlaybackEnabled = !state.segmentPlaybackEnabled;
     },
+    sceneMarkersToggled: (state) => {
+      state.sceneMarkersEnabled = !(state.sceneMarkersEnabled ?? true);
+    },
   },
 });
 
@@ -37,6 +41,7 @@ const {
   editorToolsInitialized,
   editorToolsReset,
   loopPlaybackToggled,
+  sceneMarkersToggled,
   segmentPlaybackToggled,
 } = editorToolsSlice.actions;
 
@@ -49,14 +54,19 @@ const selectLoopPlaybackEnabled = (state: RootState): boolean =>
 const selectSegmentPlaybackEnabled = (state: RootState): boolean =>
   selectEditorTools(state).segmentPlaybackEnabled;
 
+const selectSceneMarkersEnabled = (state: RootState): boolean =>
+  selectEditorTools(state).sceneMarkersEnabled ?? true;
+
 export {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
   editorToolsReducer,
   editorToolsReset,
   loopPlaybackToggled,
+  sceneMarkersToggled,
   segmentPlaybackToggled,
   selectEditorTools,
   selectLoopPlaybackEnabled,
+  selectSceneMarkersEnabled,
   selectSegmentPlaybackEnabled,
 };

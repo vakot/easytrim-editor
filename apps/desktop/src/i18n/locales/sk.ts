@@ -491,6 +491,8 @@ export const sk = {
   timeline: {
     actions: {
       detectScenes: "Rozpoznať zmeny scén",
+      disableSceneMarkers: "Skryť značky scén",
+      enableSceneMarkers: "Zobraziť značky scén",
       moveSegment: "Presunúť vybraný segment",
     },
     labels: {

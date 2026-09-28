@@ -4,6 +4,7 @@ import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
+import { selectSceneMarkersEnabled } from "@/app/store/slices/editor-tools-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { clampPlaybackMicros } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
@@ -144,7 +145,10 @@ function TimelineTrack() {
 }
 
 function SceneMarkers({ sourceDurationMicros }: { sourceDurationMicros: number }) {
+  const enabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
+
+  if (!enabled) return null;
 
   return sceneBoundariesMicros.map((boundaryMicros) => (
     <div

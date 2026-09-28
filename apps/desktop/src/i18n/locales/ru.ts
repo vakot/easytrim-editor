@@ -493,6 +493,8 @@ export const ru = {
   timeline: {
     actions: {
       detectScenes: "Найти смены сцен",
+      disableSceneMarkers: "Скрыть маркеры сцен",
+      enableSceneMarkers: "Показать маркеры сцен",
       moveSegment: "Переместить выбранный сегмент",
     },
     labels: {
