@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -19,6 +20,12 @@ const mocks = vi.hoisted(() => ({
     toggle: vi.fn(),
     transportError: null as string | null,
   },
+  executeCommand: vi.fn(),
+  commands: {
+    "previous-scene": { enabled: true, label: "Previous scene", pending: false },
+    "next-scene": { enabled: true, label: "Next scene", pending: false },
+    "show-scene-markers": { checked: true, enabled: true, label: "Show scene markers" },
+  },
   timeline: {
     canSetSegmentEnd: true,
     canSetSegmentStart: true,
@@ -31,6 +38,15 @@ vi.mock("@/app/hooks/usePlayback", () => ({
 
 vi.mock("@/app/hooks/useTimeline", () => ({
   useTimeline: () => mocks.timeline,
+}));
+
+vi.mock("@/app/hooks/useApplicationCommands", () => ({
+  useApplicationCommand: (id: keyof typeof mocks.commands) => mocks.commands[id],
+  useApplicationCommands: () => ({ executeCommand: mocks.executeCommand }),
+}));
+
+vi.mock("@/app/store/redux-hooks", () => ({
+  useAppSelector: () => [5_000_000, 15_000_000],
 }));
 
 function TestProvider({ children }: { children: ReactNode }) {
@@ -92,5 +108,18 @@ describe("PlaybackControls", () => {
     });
     expect(mocks.playback.startShuttle).not.toHaveBeenCalled();
     expect(mocks.playback.stopShuttle).not.toHaveBeenCalled();
+  });
+
+  it("keeps focus on the current control after clicking a scene navigation button", async () => {
+    const user = userEvent.setup();
+    render(<PlaybackControls />, { wrapper: TestProvider });
+
+    const playButton = screen.getByRole("button", { name: "Play" });
+    const previousSceneButton = screen.getByRole("button", { name: "Previous scene" });
+    playButton.focus();
+
+    await user.click(previousSceneButton);
+
+    expect(document.activeElement).toBe(playButton);
   });
 });
