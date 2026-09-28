@@ -2,15 +2,11 @@ import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } fr
 
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
 import {
-  advanceDirectionalSnapLatch,
   clampToTrim,
-  createDirectionalSnapLatch,
-  type DirectionalSnapLatch,
   microsFromTimelinePosition,
   moveTrimBoundary,
   moveTrimRange,
   type SegmentSnapPoint,
-  settleDirectionalSnapLatch,
   snapMovedTrimRangeToPlayhead,
   type TrimBoundary,
   type TrimRange,
@@ -23,8 +19,8 @@ const TIMELINE_SNAP_REACH_PX = 12;
 
 interface TrimTimelineInteractionOptions {
   frameRate?: FrameRate;
-  onChange: (boundary: TrimBoundary, range: TrimRange) => TrimBoundary | null;
-  onMoveSegment: (range: TrimRange) => TrimBoundary | null;
+  onChange: (boundary: TrimBoundary, range: TrimRange) => void;
+  onMoveSegment: (range: TrimRange) => void;
   onScrub: (micros: number) => void;
   onScrubEnd: () => void;
   onScrubStart: () => void;
@@ -64,9 +60,7 @@ function useTrimTimelineInteractions({
   const trimDragRef = useRef<{
     boundary: TrimBoundary;
     bounds: DOMRect;
-    lastPointerMicros: number;
     pointerId: number;
-    snapLatch: DirectionalSnapLatch;
   } | null>(null);
 
   const segmentDragRef = useRef<{
@@ -74,7 +68,6 @@ function useTrimTimelineInteractions({
     grabOffsetMicros: number;
     lastPointerMicros: number;
     pointerId: number;
-    snapLatch: DirectionalSnapLatch;
     snapModifierActive: boolean;
   } | null>(null);
 
@@ -148,15 +141,7 @@ function useTrimTimelineInteractions({
       return false;
     }
     const pointer = pointerMicros(clientX, drag.bounds);
-    const snapState = advanceDirectionalSnapLatch(
-      drag.snapLatch,
-      pointer.micros - drag.lastPointerMicros,
-    );
-
-    drag.lastPointerMicros = pointer.micros;
-    drag.snapLatch = snapState.latch;
-    const snapActive =
-      snapToPlayhead && !snapState.anchorIgnored && isNearPlayhead(clientX, pointer.bounds);
+    const snapActive = snapToPlayhead && isNearPlayhead(clientX, pointer.bounds);
 
     const next = moveTrimBoundary(
       rangeRef.current,
@@ -165,12 +150,7 @@ function useTrimTimelineInteractions({
     );
 
     syncRange(next);
-    const followedBoundary = onChange(boundary, next);
-    drag.snapLatch = settleDirectionalSnapLatch(
-      drag.snapLatch,
-      snapActive,
-      followedBoundary === boundary,
-    );
+    onChange(boundary, next);
     return snapActive;
   }
 
@@ -187,8 +167,6 @@ function useTrimTimelineInteractions({
         pointerId: event.pointerId,
         boundary,
         bounds,
-        lastPointerMicros: boundaryValue(rangeRef.current, boundary),
-        snapLatch: createDirectionalSnapLatch(),
       };
       onTrimDragStart();
       event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -285,23 +263,16 @@ function useTrimTimelineInteractions({
     if (pointerDeltaMicros === 0 && !snapModifierChanged) return;
     drag.lastPointerMicros = pointerMicros;
     drag.snapModifierActive = snapToPlayhead;
-    const snapState = advanceDirectionalSnapLatch(drag.snapLatch, pointerDeltaMicros);
-    drag.snapLatch = snapState.latch;
     const requestedStartMicros = pointerMicros - drag.grabOffsetMicros - segmentDurationMicros / 2;
     const movedRange = moveTrimRange(currentRange, requestedStartMicros);
     const snapped =
-      snapToPlayhead && !snapState.anchorIgnored
+      snapToPlayhead
         ? snapMovedTrimRangeToPlayhead(movedRange, playheadMicros, snapReachMicros)
         : { range: movedRange, point: null };
 
     syncRange(snapped.range);
     setSegmentSnapPoint(snapped.point);
-    const followedBoundary = onMoveSegment(snapped.range);
-    drag.snapLatch = settleDirectionalSnapLatch(
-      drag.snapLatch,
-      snapped.point !== null,
-      followedBoundary !== null,
-    );
+    onMoveSegment(snapped.range);
   }
 
   function startSegmentDrag(event: PointerEvent<HTMLButtonElement>) {
@@ -320,7 +291,6 @@ function useTrimTimelineInteractions({
       grabOffsetMicros: pointer.pointerMicros - segmentCenterMicros,
       lastPointerMicros: pointer.pointerMicros,
       snapModifierActive: event.shiftKey,
-      snapLatch: createDirectionalSnapLatch(),
     };
     setSegmentDragging(true);
     onSegmentDragStart();

@@ -6,7 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added optional scene-change detection with clickable timeline markers for navigating to scene boundaries.
+- Added optional scene-change detection with timeline markers and Shift-drag snapping at scene boundaries.
+
+### Changed
+
+- Removed automatic playhead following while trim borders move.
 
 ## [1.12.3]
 

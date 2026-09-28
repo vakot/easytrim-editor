@@ -11,9 +11,6 @@ import {
   selectEditorTools,
   selectLoopPlaybackEnabled,
   selectSegmentPlaybackEnabled,
-  selectSnapPlaybackEnabled,
-  snapPlaybackChanged,
-  snapPlaybackToggled,
 } from "@/app/store/slices/editor-tools-slice";
 import type { RootState } from "@/app/store/store";
 describe("editor tools Redux domain", () => {
@@ -24,23 +21,9 @@ describe("editor tools Redux domain", () => {
     };
 
     expect(createEditorToolsStateFromPreferences(defaults)).toEqual({
-      snapPlaybackEnabled: true,
       loopPlaybackEnabled: false,
       segmentPlaybackEnabled: true,
     });
-  });
-
-  it("changes one active tool without changing unrelated tools", () => {
-    const initialState = editorToolsReducer(
-      undefined,
-      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
-    );
-
-    const nextState = editorToolsReducer(initialState, snapPlaybackToggled());
-
-    expect(nextState.snapPlaybackEnabled).toBe(false);
-    expect(nextState.loopPlaybackEnabled).toBe(initialState.loopPlaybackEnabled);
-    expect(nextState.segmentPlaybackEnabled).toBe(initialState.segmentPlaybackEnabled);
   });
 
   it("keeps active tools independent from Preference actions", () => {
@@ -52,19 +35,6 @@ describe("editor tools Redux domain", () => {
     expect(editorToolsReducer(initialState, { type: "preferences/preferenceChanged" })).toEqual(
       initialState,
     );
-  });
-
-  it("supports explicitly changing snap playback", () => {
-    const initialState = editorToolsReducer(
-      undefined,
-      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
-    );
-
-    const nextState = editorToolsReducer(initialState, snapPlaybackChanged(false));
-
-    expect(nextState.snapPlaybackEnabled).toBe(false);
-    expect(nextState.loopPlaybackEnabled).toBe(initialState.loopPlaybackEnabled);
-    expect(nextState.segmentPlaybackEnabled).toBe(initialState.segmentPlaybackEnabled);
   });
 
   it("supports mode toggles", () => {
@@ -84,16 +54,12 @@ describe("editor tools Redux domain", () => {
 
   it("resets active tools from the supplied current Preferences values", () => {
     const activeState = editorToolsReducer(
-      editorToolsReducer(
-        undefined,
-        editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
-      ),
-      snapPlaybackToggled(),
+      undefined,
+      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
     );
 
     const currentDefaults: Preferences = {
       ...DEFAULT_PREFERENCES,
-      snapPlaybackEnabledDefault: false,
       loopPlaybackEnabledDefault: false,
     };
 
@@ -107,7 +73,6 @@ describe("editor tools Redux domain", () => {
 
   it("exposes focused selectors", () => {
     const editorTools = {
-      snapPlaybackEnabled: false,
       loopPlaybackEnabled: true,
       segmentPlaybackEnabled: false,
     };
@@ -115,7 +80,6 @@ describe("editor tools Redux domain", () => {
     const state = { editorTools } as RootState;
 
     expect(selectEditorTools(state)).toBe(editorTools);
-    expect(selectSnapPlaybackEnabled(state)).toBe(false);
     expect(selectLoopPlaybackEnabled(state)).toBe(true);
     expect(selectSegmentPlaybackEnabled(state)).toBe(false);
   });

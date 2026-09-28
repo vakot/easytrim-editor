@@ -13,77 +13,7 @@ interface SegmentSnapResult {
   range: TrimRange;
 }
 
-type DragDirection = -1 | 1;
-
-interface DirectionalSnapLatch {
-  anchorHeld: boolean;
-  direction: DragDirection | null;
-  ignoredDirection: DragDirection | null;
-}
-
-interface DirectionalSnapState {
-  anchorIgnored: boolean;
-  latch: DirectionalSnapLatch;
-}
-
 const MIN_SELECTION_MICROS = 1_000_000;
-
-function createDirectionalSnapLatch(): DirectionalSnapLatch {
-  return {
-    direction: null,
-    ignoredDirection: null,
-    anchorHeld: false,
-  };
-}
-
-function advanceDirectionalSnapLatch(
-  latch: DirectionalSnapLatch,
-  movementMicros: number,
-): DirectionalSnapState {
-  const nextDirection: DragDirection | null =
-    movementMicros > 0 ? 1 : movementMicros < 0 ? -1 : latch.direction;
-
-  const directionChanged =
-    nextDirection !== null && latch.direction !== null && nextDirection !== latch.direction;
-
-  const ignoredDirection = directionChanged ? null : latch.ignoredDirection;
-  const anchorHeld = directionChanged ? false : latch.anchorHeld;
-
-  return {
-    latch: {
-      direction: nextDirection,
-      ignoredDirection,
-      anchorHeld,
-    },
-    anchorIgnored: nextDirection !== null && ignoredDirection === nextDirection,
-  };
-}
-
-function settleDirectionalSnapLatch(
-  latch: DirectionalSnapLatch,
-  anchorSnapped: boolean,
-  playheadFollowed: boolean,
-): DirectionalSnapLatch {
-  if (anchorSnapped && (latch.anchorHeld || playheadFollowed)) {
-    return {
-      ...latch,
-      anchorHeld: true,
-    };
-  }
-
-  if (playheadFollowed) {
-    return {
-      ...latch,
-      ignoredDirection: latch.direction,
-      anchorHeld: false,
-    };
-  }
-
-  return {
-    ...latch,
-    anchorHeld: false,
-  };
-}
 
 function createFullTrimRange(sourceDurationMicros: number): TrimRange {
   const duration = requirePositiveInteger(sourceDurationMicros, "source duration");
@@ -159,89 +89,6 @@ function snapMovedTrimRangeToPlayhead(
     range: moveTrimRange(movedRange, alignedSegmentStartMicros(movedRange, closestPoint, playhead)),
     point: closestPoint,
   };
-}
-
-interface PlayheadBoundaryFollow {
-  boundary: TrimBoundary | null;
-  playheadMicros: number;
-}
-
-function playheadAfterSegmentMove(
-  previousRange: TrimRange,
-  nextRange: TrimRange,
-  playheadMicros: number,
-  followedBoundary: TrimBoundary | null,
-): PlayheadBoundaryFollow {
-  const movementMicros = nextRange.startMicros - previousRange.startMicros;
-
-  if (followedBoundary) {
-    const followed = safeBoundaryFollowAfterMove(
-      previousRange,
-      nextRange,
-      followedBoundary,
-      playheadMicros,
-      true,
-    );
-
-    if (followed.boundary) {
-      return followed;
-    }
-  }
-
-  const approachingBoundary = movementMicros > 0 ? "start" : movementMicros < 0 ? "end" : null;
-  if (approachingBoundary) {
-    return safeBoundaryFollowAfterMove(
-      previousRange,
-      nextRange,
-      approachingBoundary,
-      playheadMicros,
-      false,
-    );
-  }
-
-  return {
-    playheadMicros: clampInteger(playheadMicros, 0, nextRange.sourceDurationMicros),
-    boundary: null,
-  };
-}
-
-function playheadFollowAfterTrimBoundaryMove(
-  previousRange: TrimRange,
-  nextRange: TrimRange,
-  boundary: TrimBoundary,
-  playheadMicros: number,
-): PlayheadBoundaryFollow {
-  return safeBoundaryFollowAfterMove(previousRange, nextRange, boundary, playheadMicros, false);
-}
-
-function safeBoundaryFollowAfterMove(
-  previousRange: TrimRange,
-  nextRange: TrimRange,
-  boundary: TrimBoundary,
-  playheadMicros: number,
-  alreadyFollowing: boolean,
-): PlayheadBoundaryFollow {
-  const playhead = clampInteger(playheadMicros, 0, nextRange.sourceDurationMicros);
-  const previousBoundaryMicros =
-    boundary === "start" ? previousRange.startMicros : previousRange.endMicros;
-
-  const nextBoundaryMicros = boundary === "start" ? nextRange.startMicros : nextRange.endMicros;
-  const movementMicros = nextBoundaryMicros - previousBoundaryMicros;
-  const movingTowardOpposite = boundary === "start" ? movementMicros > 0 : movementMicros < 0;
-
-  if (alreadyFollowing && (movingTowardOpposite || movementMicros === 0)) {
-    return { playheadMicros: nextBoundaryMicros, boundary };
-  }
-
-  const reachedPlayhead =
-    movingTowardOpposite &&
-    (boundary === "start"
-      ? previousBoundaryMicros <= playhead && nextBoundaryMicros >= playhead
-      : previousBoundaryMicros >= playhead && nextBoundaryMicros <= playhead);
-
-  return reachedPlayhead
-    ? { playheadMicros: nextBoundaryMicros, boundary }
-    : { playheadMicros: playhead, boundary: null };
 }
 
 function segmentPointMicros(range: TrimRange, point: SegmentSnapPoint): number {
@@ -375,22 +222,17 @@ function requirePositiveInteger(value: number, label: string): number {
 }
 
 export {
-  advanceDirectionalSnapLatch,
   canSetTrimBoundaryAtPlayhead,
   clampToTrim,
-  createDirectionalSnapLatch,
   createFullTrimRange,
   isValidTrimRange,
   microsFromTimelinePosition,
   minimumSelectionMicros,
   moveTrimBoundary,
   moveTrimRange,
-  playheadAfterSegmentMove,
-  playheadFollowAfterTrimBoundaryMove,
-  settleDirectionalSnapLatch,
   setTrimBoundaryAtPlayhead,
   snapMovedTrimRangeToPlayhead,
   timelinePercent,
 };
 
-export type { DirectionalSnapLatch, TrimRange };
+export type { TrimRange };

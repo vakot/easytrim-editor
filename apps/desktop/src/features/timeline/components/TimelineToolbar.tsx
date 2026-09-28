@@ -1,4 +1,4 @@
-import { BetweenVerticalStart, Clapperboard, Magnet, Repeat, RotateCcw } from "lucide-react";
+import { BetweenVerticalStart, Clapperboard, Repeat, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,6 @@ import {
   segmentPlaybackToggled,
   selectLoopPlaybackEnabled,
   selectSegmentPlaybackEnabled,
-  selectSnapPlaybackEnabled,
-  snapPlaybackToggled,
 } from "@/app/store/slices/editor-tools-slice";
 import { selectPreferences } from "@/app/store/slices/preferences-slice";
 
@@ -47,7 +45,6 @@ function TimelineToolbar({
       role="toolbar"
     >
       <div className="grid auto-cols-7 grid-flow-col grid-rows-[repeat(2,1.75rem)] gap-1">
-        <SnapPlaybackTool />
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
         <ResetToolsTool />
@@ -96,23 +93,6 @@ function SceneDetectionTool({
       </TooltipTrigger>
       <TooltipContent>{t("timeline.tooltips.detectScenes")}</TooltipContent>
     </Tooltip>
-  );
-}
-
-function SnapPlaybackTool() {
-  const { t } = useTranslation();
-  const enabled = useAppSelector(selectSnapPlaybackEnabled);
-  const dispatch = useAppDispatch();
-
-  return (
-    <TimelineToolButton
-      enabled={enabled}
-      label={t("preview.labels.snapPlayback")}
-      onClick={() => dispatch(snapPlaybackToggled())}
-      title={enabled ? t("preview.tooltips.snapEnabled") : t("preview.tooltips.snapDisabled")}
-    >
-      <Magnet />
-    </TimelineToolButton>
   );
 }
 

@@ -217,7 +217,6 @@ export const en = {
       language: "Language",
       loop: "Loop",
       mergeAudio: "Merge audio",
-      snap: "Snap",
       theme: "Theme",
       title: "Settings",
     },
@@ -234,7 +233,6 @@ export const en = {
         followSegment: "Follow segment by default",
         loop: "Enable loop playback by default",
         mergeAudio: "Merge audio by default",
-        snap: "Enable snap playback by default",
       },
       colors: {
         amber: "Amber",
@@ -433,7 +431,6 @@ export const en = {
       shortcutPlayPause: "Play / Pause",
       shortcutPreviousNextFrame: "Prev / Next Frame",
       shortcuts: "Keyboard shortcuts",
-      snapPlayback: "Snap playback",
     },
     status: {
       opening: "Opening preview…",
@@ -466,8 +463,6 @@ export const en = {
       segmentEnabled: "Constrain playback to the selected segment",
       setEnd: "Set segment end to current position (O)",
       setStart: "Set segment start to current position (I)",
-      snapDisabled: "Playhead stays in place",
-      snapEnabled: "Playhead follows a trim border once caught",
     },
     dialogs: {
       reset: {
