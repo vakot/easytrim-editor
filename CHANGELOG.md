@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added persistent UI scaling controls to the View menu and Command Center, with 25% zoom steps, a reset action, and layouts that resize with the selected scale.
+
 ## [1.12.2]
 
 ### Fixed
