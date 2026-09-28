@@ -69,6 +69,15 @@ pub struct OptimizedExportRequest {
     pub flip_vertical: bool,
     pub frame_rate: Option<FrameRateSelection>,
     pub arguments: String,
+    #[serde(default)]
+    pub loudness_normalization: Option<LoudnessNormalization>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LoudnessNormalization {
+    pub integrated_lufs: f64,
+    pub true_peak_db: f64,
 }
 
 pub fn build_fast_arguments(
@@ -162,6 +171,7 @@ pub fn build_optimized_arguments(
     validate_resolution(&request.resolution)?;
     validate_crop(request.crop.as_ref())?;
     validate_rotation(request.rotation_degrees)?;
+    validate_loudness_normalization(request.loudness_normalization, &request.audio_tracks)?;
     if let Some(frame_rate) = &request.frame_rate
         && (frame_rate.numerator == 0 || frame_rate.denominator == 0)
     {
@@ -175,7 +185,20 @@ pub fn build_optimized_arguments(
         OsString::from("-map"),
         OsString::from(format!("0:{}", source.video.stream_index)),
     ]);
-    if request.merge_audio && request.audio_tracks.len() > 1 {
+    if let Some(normalization) = request.loudness_normalization {
+        arguments.extend([
+            OsString::from("-filter_complex"),
+            OsString::from(normalized_audio_filter_graph(
+                &request.audio_tracks,
+                request.merge_audio,
+                normalization,
+            )),
+            OsString::from("-map"),
+            OsString::from("[normalized]"),
+            OsString::from("-ac"),
+            OsString::from("2"),
+        ]);
+    } else if request.merge_audio && request.audio_tracks.len() > 1 {
         arguments.extend([
             OsString::from("-filter_complex"),
             OsString::from(audio_filter_graph(&request.audio_tracks, true)),
@@ -348,6 +371,26 @@ fn validate_rotation(rotation_degrees: u16) -> Result<(), AppError> {
     }
 }
 
+fn validate_loudness_normalization(
+    normalization: Option<LoudnessNormalization>,
+    audio_tracks: &[AudioTrackSelection],
+) -> Result<(), AppError> {
+    let Some(normalization) = normalization else {
+        return Ok(());
+    };
+    if audio_tracks.is_empty()
+        || !normalization.integrated_lufs.is_finite()
+        || !(-36.0..=-5.0).contains(&normalization.integrated_lufs)
+        || !normalization.true_peak_db.is_finite()
+        || !(-9.0..=0.0).contains(&normalization.true_peak_db)
+    {
+        return Err(AppError::invalid_request(
+            "The loudness normalization target or audio selection is invalid.",
+        ));
+    }
+    Ok(())
+}
+
 fn rotation_filter(rotation_degrees: u16) -> String {
     match rotation_degrees {
         90 => "transpose=1".to_owned(),
@@ -408,6 +451,32 @@ pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bo
         ));
     }
     graph.join(";")
+}
+
+fn normalized_audio_filter_graph(
+    audio_tracks: &[AudioTrackSelection],
+    merge_audio: bool,
+    normalization: LoudnessNormalization,
+) -> String {
+    let mut graph = audio_filter_graph(audio_tracks, false);
+    if audio_tracks.len() > 1 {
+        let inputs = (0..audio_tracks.len())
+            .map(|index| format!("[audio{index}]"))
+            .collect::<String>();
+        graph.push(';');
+        graph.push_str(&format!(
+            "{inputs}amix=inputs={}:duration=longest:dropout_transition=0:normalize={}[aout]",
+            audio_tracks.len(),
+            u8::from(merge_audio)
+        ));
+    } else {
+        graph.push_str(";[audio0]anull[aout]");
+    }
+    graph.push_str(&format!(
+        ";[aout]loudnorm=I={}:TP={}:LRA=11[normalized]",
+        normalization.integrated_lufs, normalization.true_peak_db
+    ));
+    graph
 }
 
 fn parse_arguments(value: &str) -> Result<Vec<OsString>, AppError> {
@@ -543,8 +612,8 @@ mod tests {
 
     use super::{
         AudioTrackSelection, CropSelection, FastExportRequest, FrameRateSelection,
-        OptimizedExportRequest, ResolutionSelection, TrimSelection, build_fast_arguments,
-        build_optimized_arguments, optimized_command_preview,
+        LoudnessNormalization, OptimizedExportRequest, ResolutionSelection, TrimSelection,
+        build_fast_arguments, build_optimized_arguments, optimized_command_preview,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -621,6 +690,7 @@ mod tests {
             flip_vertical: false,
             frame_rate: None,
             arguments: arguments.to_owned(),
+            loudness_normalization: None,
         }
     }
 
@@ -778,6 +848,84 @@ mod tests {
     }
 
     #[test]
+    fn loudness_normalization_mixes_selected_tracks_and_adds_loudnorm_filter() {
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.merge_audio = false;
+        request.audio_tracks.push(AudioTrackSelection {
+            stream_index: 2,
+            volume_percent: 50,
+        });
+        request.loudness_normalization = Some(LoudnessNormalization {
+            integrated_lufs: -16.0,
+            true_peak_db: -1.5,
+        });
+
+        let args = build_optimized_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect("request is valid");
+        let values = args
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+        let graph_index = values
+            .iter()
+            .position(|value| value == "-filter_complex")
+            .unwrap();
+        let graph = &values[graph_index + 1];
+
+        assert!(graph.contains("[0:1]volume=1.000000[audio0]"));
+        assert!(graph.contains("[0:2]volume=1.000000[audio1]"));
+        assert!(graph.contains("normalize=0[aout]"));
+        assert!(graph.contains("loudnorm=I=-16:TP=-1.5:LRA=11[normalized]"));
+        assert!(values.contains(&"[normalized]".to_owned()));
+    }
+
+    #[test]
+    fn loudness_normalization_rejects_empty_or_out_of_range_targets() {
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.loudness_normalization = Some(LoudnessNormalization {
+            integrated_lufs: -16.0,
+            true_peak_db: -1.5,
+        });
+        request.audio_tracks.clear();
+        assert_eq!(
+            build_optimized_arguments(
+                &media(),
+                &request,
+                Path::new("source.mkv"),
+                Path::new("out.mp4")
+            )
+            .unwrap_err()
+            .code,
+            "invalid_request"
+        );
+
+        request.audio_tracks.push(AudioTrackSelection {
+            stream_index: 1,
+            volume_percent: 50,
+        });
+        request.loudness_normalization = Some(LoudnessNormalization {
+            integrated_lufs: -80.0,
+            true_peak_db: 1.0,
+        });
+        assert_eq!(
+            build_optimized_arguments(
+                &media(),
+                &request,
+                Path::new("source.mkv"),
+                Path::new("out.mp4")
+            )
+            .unwrap_err()
+            .code,
+            "invalid_request"
+        );
+    }
+
+    #[test]
     fn optimized_route_owns_trim_and_scale_while_accepting_codec_arguments() {
         let args = build_optimized_arguments(
             &media(),
@@ -805,6 +953,7 @@ mod tests {
                     denominator: 1,
                 }),
                 arguments: "-c:v hevc_nvenc -cq 24".to_owned(),
+                loudness_normalization: None,
             },
             Path::new("source.mkv"),
             Path::new("out.mp4"),
