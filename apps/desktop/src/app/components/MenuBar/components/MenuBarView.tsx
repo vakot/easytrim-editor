@@ -114,7 +114,7 @@ function MenuBarViewContent({ onClose }: { onClose: MenuBarViewProps["onClose"] 
           <MenubarSubContent>
             {(["ui-scale-zoom-in", "ui-scale-zoom-out"] as const).map((commandId) => (
               <ApplicationCommandMenuItem asChild commandId={commandId} key={commandId}>
-                <MenubarItem inset keepOpen>
+                <MenubarItem keepOpen>
                   <ApplicationCommandLabel />
                   <ApplicationCommandHint />
                 </MenubarItem>
@@ -122,7 +122,7 @@ function MenuBarViewContent({ onClose }: { onClose: MenuBarViewProps["onClose"] 
             ))}
             <MenubarSeparator />
             <ApplicationCommandMenuItem asChild commandId="ui-scale-reset">
-              <MenubarItem inset>
+              <MenubarItem variant="destructive">
                 <ApplicationCommandLabel />
               </MenubarItem>
             </ApplicationCommandMenuItem>
