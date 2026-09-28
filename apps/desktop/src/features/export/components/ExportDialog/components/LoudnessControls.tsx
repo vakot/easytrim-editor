@@ -136,7 +136,7 @@ function LoudnessAnalysisButton({ disabled, onAnalyze, state }: LoudnessAnalysis
           aria-label={compact ? buttonLabel : undefined}
           className="overflow-hidden"
           disabled={disabled}
-          exit={{ opacity: 0, width: 0 }}
+          exit={{ marginInlineStart: "-0.5rem", opacity: 0, width: 0 }}
           initial={shouldReduceMotion ? false : { opacity: 0, width: 0 }}
           layout
           onClick={onAnalyze}
