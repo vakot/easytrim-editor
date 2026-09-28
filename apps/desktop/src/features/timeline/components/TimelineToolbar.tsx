@@ -102,13 +102,9 @@ function SceneDetectionTool() {
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        {button}
-      </TooltipTrigger>
-      <TooltipContent>
-        {hasDetected ? label : t("timeline.tooltips.detectScenes")}
-      </TooltipContent>
+    <Tooltip preserveOnTrigger>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent>{hasDetected ? label : t("timeline.tooltips.detectScenes")}</TooltipContent>
     </Tooltip>
   );
 }
