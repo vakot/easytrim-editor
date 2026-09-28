@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Updated desktop branding to use the square logo on macOS and the symbol on Windows, Linux, and in-app surfaces.
+
 ## [1.12.3]
 
 ### Added
