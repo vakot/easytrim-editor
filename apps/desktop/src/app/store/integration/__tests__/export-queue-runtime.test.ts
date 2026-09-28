@@ -57,7 +57,10 @@ import { createDefaultEditorSnapshot } from "../editor-snapshot";
 import {
   cancelAndRequeueExport,
   cancelQueuedExport,
+  commitQueuedExportEdit,
   enqueueExport,
+  releaseQueuedExportEdit,
+  reserveQueuedExportEdit,
   retryFailedExport,
   setExportQueueExecutionEnabled,
   withdrawPendingExport,
@@ -125,6 +128,54 @@ beforeEach(() => {
 });
 
 describe("export queue runtime", () => {
+  it("holds a queued attempt during edit and renders the atomically updated request", async () => {
+    const store = createAppStore();
+    const getState = store.getState;
+    const attempt = createAttempt("attempt-edit");
+    store.dispatch(editingInstancesAdded([createInstance("instance-edit")]));
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "instance-edit", attempt }));
+    mocks.renderFast.mockResolvedValue({
+      displayName: "edited.mp4",
+      displayPath: "C:/Exports/edited.mp4",
+      operationId: "edit-op",
+    });
+
+    expect(reserveQueuedExportEdit("instance-edit", attempt.id, getState)).toBe(true);
+    expect(enqueueExport("instance-edit", attempt, store.dispatch, getState)).toBe(true);
+    setExportQueueExecutionEnabled(true, store.dispatch, getState);
+    await Promise.resolve();
+    expect(mocks.renderFast).not.toHaveBeenCalled();
+
+    const request = { ...attempt.request, trim: { startMicros: 200_000, endMicros: 900_000 } };
+    const output = {
+      displayName: "edited.mp4",
+      displayPath: "C:/Exports/edited.mp4",
+      outputId: "edited-output",
+    };
+
+    expect(
+      commitQueuedExportEdit(
+        "instance-edit",
+        attempt.id,
+        output,
+        request,
+        attempt.snapshot,
+        store.dispatch,
+        getState,
+      ),
+    ).toBe(true);
+    releaseQueuedExportEdit(attempt.id, store.dispatch, getState);
+
+    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(1));
+    expect(mocks.renderFast).toHaveBeenCalledWith(
+      request,
+      "edited-output",
+      expect.any(Function),
+      expect.any(String),
+      "instance-edit",
+    );
+  });
+
   it("starts only the requested instance, even when drafts share the same path", async () => {
     const store = createAppStore();
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
