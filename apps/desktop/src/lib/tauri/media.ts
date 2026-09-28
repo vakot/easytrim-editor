@@ -100,6 +100,14 @@ async function chooseOutputPath(defaultName: string): Promise<OutputSelection | 
   }
 }
 
+async function saveFramePng(pngData: Uint8Array): Promise<boolean> {
+  try {
+    return await invoke<boolean>("save_frame_png", { pngData: Array.from(pngData) });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 async function resolveOutputSelection(outputId: string): Promise<OutputSelection | null> {
   try {
     const value = await invoke<unknown>("resolve_output_selection", { outputId });
@@ -367,5 +375,6 @@ export {
   renderOptimized,
   reserveExportSource,
   resolveOutputSelection,
+  saveFramePng,
   restoreSourceFromTrash,
 };

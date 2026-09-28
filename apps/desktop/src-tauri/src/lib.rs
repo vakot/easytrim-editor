@@ -88,6 +88,7 @@ pub fn run() {
             commands::export::open_file_location,
             commands::export::render_fast,
             commands::export::render_optimized,
+            commands::frame::save_frame_png,
             commands::media::inspect_media,
             commands::media::prepare_audio_previews,
             commands::media::prepare_imported_source_thumbnail,

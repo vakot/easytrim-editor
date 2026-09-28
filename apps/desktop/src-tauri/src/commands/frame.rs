@@ -1,0 +1,84 @@
+use std::{fs, path::PathBuf};
+
+use tauri::AppHandle;
+use tauri_plugin_dialog::DialogExt;
+
+use crate::error::AppError;
+
+const MAX_FRAME_PNG_BYTES: usize = 100 * 1024 * 1024;
+const PNG_SIGNATURE: &[u8; 8] = b"\x89PNG\r\n\x1a\n";
+
+#[tauri::command]
+pub async fn save_frame_png(app: AppHandle, png_data: Vec<u8>) -> Result<bool, AppError> {
+    validate_frame_png(&png_data)?;
+
+    let (sender, receiver) = std::sync::mpsc::channel();
+    app.dialog()
+        .file()
+        .set_file_name("frame.png")
+        .add_filter("PNG Image", &["png"])
+        .save_file(move |selected| {
+            let _ = sender.send(selected);
+        });
+    let selected = tauri::async_runtime::spawn_blocking(move || receiver.recv())
+        .await
+        .map_err(|_| AppError::internal("The frame save dialog stopped unexpectedly."))?
+        .map_err(|_| AppError::internal("The frame save dialog closed unexpectedly."))?;
+
+    let Some(selected) = selected else {
+        return Ok(false);
+    };
+    let path = selected
+        .into_path()
+        .map_err(|_| AppError::invalid_request("The selected image location is not supported."))?;
+
+    tauri::async_runtime::spawn_blocking(move || write_frame_png(path, png_data))
+        .await
+        .map_err(|_| AppError::internal("The selected frame could not be saved."))??;
+    Ok(true)
+}
+
+fn validate_frame_png(png_data: &[u8]) -> Result<(), AppError> {
+    if png_data.len() < PNG_SIGNATURE.len() || !png_data.starts_with(PNG_SIGNATURE) {
+        return Err(AppError::invalid_request(
+            "The captured frame is not a PNG image.",
+        ));
+    }
+    if png_data.len() > MAX_FRAME_PNG_BYTES {
+        return Err(AppError::invalid_request(
+            "The captured frame is too large to save.",
+        ));
+    }
+    Ok(())
+}
+
+fn write_frame_png(path: PathBuf, png_data: Vec<u8>) -> Result<(), AppError> {
+    fs::write(path, png_data)
+        .map_err(|_| AppError::io_failed("The captured frame could not be saved."))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MAX_FRAME_PNG_BYTES, PNG_SIGNATURE, validate_frame_png};
+
+    #[test]
+    fn accepts_png_signature_and_payload() {
+        let mut png_data = PNG_SIGNATURE.to_vec();
+        png_data.extend_from_slice(b"image data");
+
+        assert!(validate_frame_png(&png_data).is_ok());
+    }
+
+    #[test]
+    fn rejects_non_png_payloads() {
+        assert!(validate_frame_png(b"not a png").is_err());
+    }
+
+    #[test]
+    fn rejects_oversized_png_payloads() {
+        let mut png_data = vec![0; MAX_FRAME_PNG_BYTES + 1];
+        png_data[..PNG_SIGNATURE.len()].copy_from_slice(PNG_SIGNATURE);
+
+        assert!(validate_frame_png(&png_data).is_err());
+    }
+}
