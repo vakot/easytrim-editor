@@ -51,11 +51,11 @@ import {
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
+import { selectedAudioTracks } from "@/domain/audio-export";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
-import { selectedAudioTracks } from "@/domain/audio-export";
 import { normalizeTransformForExport } from "@/domain/rotation";
 import { normalizeSourceKey } from "@/domain/source";
 import { diagnostics } from "@/lib/diagnostics";

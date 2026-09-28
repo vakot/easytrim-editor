@@ -125,8 +125,8 @@ interface MediaInfo {
 
 export type {
   AppError,
-  AudioTrackSelection,
   AudioStream,
+  AudioTrackSelection,
   ChapterInfo,
   ExportProgress,
   ExportResult,

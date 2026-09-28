@@ -32,7 +32,12 @@ interface LoudnessControlsProps {
   settings: ExportSettings;
 }
 
-const LOUDNESS_PRESETS: Array<{ integratedLufs: number; id: LoudnessPreset; truePeakDb: number }> =
+type AnalysisState =
+  | { requestKey: string; status: "analyzing" }
+  | { requestKey: string; result: LoudnessAnalysis; status: "ready" }
+  | { error: string; requestKey: string; status: "failed" };
+
+const LOUDNESS_PRESETS: Array<{ id: LoudnessPreset; integratedLufs: number; truePeakDb: number }> =
   [
     { id: "webVideo", integratedLufs: -14, truePeakDb: -1 },
     { id: "streaming", integratedLufs: -16, truePeakDb: -1.5 },
@@ -57,17 +62,13 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
           trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
         }
       : null;
+
   const requestKey = JSON.stringify(request);
   const requestId = useRef(0);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState<LoudnessAnalysis | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [analysisState, setAnalysisState] = useState<AnalysisState | null>(null);
 
   useEffect(() => {
     requestId.current += 1;
-    setIsAnalyzing(false);
-    setAnalysis(null);
-    setError(null);
     return () => {
       requestId.current += 1;
     };
@@ -80,24 +81,38 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
   const analyze = async () => {
     if (!request) return;
     const currentRequestId = ++requestId.current;
-    setIsAnalyzing(true);
-    setAnalysis(null);
-    setError(null);
+    setAnalysisState({ requestKey, status: "analyzing" });
     try {
       const result = await analyzeAudioLoudness(request);
-      if (requestId.current === currentRequestId) setAnalysis(result);
+      if (requestId.current === currentRequestId) {
+        setAnalysisState({ requestKey, result, status: "ready" });
+      }
     } catch (cause: unknown) {
       if (requestId.current === currentRequestId) {
         const normalized = normalizeAppError(cause);
-        setError(normalized.message || t("export.dialogs.optimized.loudness.analysisFailed"));
+        setAnalysisState({
+          requestKey,
+          error: normalized.message || t("export.dialogs.optimized.loudness.analysisFailed"),
+          status: "failed",
+        });
       }
-    } finally {
-      if (requestId.current === currentRequestId) setIsAnalyzing(false);
     }
   };
 
   const checked = settings.loudnessPreset !== undefined;
   const selectedPreset = LOUDNESS_PRESETS.find(({ id }) => id === settings.loudnessPreset);
+  const isAnalyzing =
+    analysisState?.requestKey === requestKey && analysisState.status === "analyzing";
+
+  const analysis =
+    analysisState?.requestKey === requestKey && analysisState.status === "ready"
+      ? analysisState.result
+      : null;
+
+  const error =
+    analysisState?.requestKey === requestKey && analysisState.status === "failed"
+      ? analysisState.error
+      : null;
 
   return (
     <section className="grid gap-2 rounded-md border p-3">

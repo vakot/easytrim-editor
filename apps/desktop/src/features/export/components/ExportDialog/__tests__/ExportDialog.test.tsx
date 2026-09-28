@@ -29,8 +29,8 @@ import {
   activeEditingInstanceChanged,
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
-import { createAppStore } from "@/app/store/store";
 import { trimChanged } from "@/app/store/slices/trim-slice";
+import { createAppStore } from "@/app/store/store";
 import { openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
 import { firstSource, media, mediaWithAudio } from "@/test/source.fixtures";
 
@@ -140,6 +140,7 @@ describe("ExportDialog", () => {
       setItem: async () => undefined,
       removeItem: async () => undefined,
     });
+
     store.dispatch(sourceSelected({ source: firstSource }));
     store.dispatch(sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath) }));
     store.dispatch(audioTrackVolumeChanged({ streamIndex: 2, volumePercent: 75 }));
@@ -189,6 +190,7 @@ describe("ExportDialog", () => {
     const normalizationToggle = screen.getByRole("checkbox", {
       name: "Normalize loudness during export",
     });
+
     expect(normalizationToggle).not.toBeChecked();
     fireEvent.click(normalizationToggle);
     await waitFor(() =>

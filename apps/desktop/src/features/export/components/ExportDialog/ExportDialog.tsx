@@ -34,8 +34,8 @@ import {
 import { CommandPreview } from "./components/CommandPreview";
 import { ExportFrameRate } from "./components/ExportFrameRate";
 import { ExportResolution } from "./components/ExportResolution";
-import { PresetManager } from "./components/PresetManager";
 import { LoudnessControls } from "./components/LoudnessControls";
+import { PresetManager } from "./components/PresetManager";
 
 function ExportDialog() {
   const { t } = useTranslation();
