@@ -39,6 +39,10 @@ function PlaybackControls({ className }: { className?: string }) {
   const nextSceneCommand = useApplicationCommand("next-scene");
   const showSceneMarkersCommand = useApplicationCommand("show-scene-markers");
   const disabled = !playback.canInteract;
+  const previousSceneDisabled =
+    disabled || !previousSceneCommand.enabled || previousSceneCommand.pending;
+
+  const nextSceneDisabled = disabled || !nextSceneCommand.enabled || nextSceneCommand.pending;
   const showSceneNavigation =
     showSceneMarkersCommand.enabled &&
     showSceneMarkersCommand.checked &&
@@ -70,12 +74,14 @@ function PlaybackControls({ className }: { className?: string }) {
             <Tooltip key="previous-scene-navigation">
               <TooltipTrigger asChild>
                 <MotionButton
-                  animate={{ opacity: 1, width: "1.75rem", marginInlineStart: 0 }}
+                  animate={{
+                    opacity: previousSceneDisabled ? 0.5 : 1,
+                    width: "1.75rem",
+                    marginInlineStart: 0,
+                  }}
                   aria-label={previousSceneCommand.label}
                   className="overflow-hidden transition-colors"
-                  disabled={
-                    disabled || !previousSceneCommand.enabled || previousSceneCommand.pending
-                  }
+                  disabled={previousSceneDisabled}
                   exit={{
                     opacity: 0,
                     width: 0,
@@ -95,8 +101,8 @@ function PlaybackControls({ className }: { className?: string }) {
                   transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
                   type="button"
                   variant="ghost"
-                  >
-                    <ChevronsLeft />
+                >
+                  <ChevronsLeft />
                 </MotionButton>
               </TooltipTrigger>
               <TooltipContent>{previousSceneCommand.label}</TooltipContent>
@@ -152,10 +158,14 @@ function PlaybackControls({ className }: { className?: string }) {
             <Tooltip key="next-scene-navigation">
               <TooltipTrigger asChild>
                 <MotionButton
-                  animate={{ opacity: 1, width: "1.75rem", marginInlineStart: 0 }}
+                  animate={{
+                    opacity: nextSceneDisabled ? 0.5 : 1,
+                    width: "1.75rem",
+                    marginInlineStart: 0,
+                  }}
                   aria-label={nextSceneCommand.label}
                   className="overflow-hidden transition-colors"
-                  disabled={disabled || !nextSceneCommand.enabled || nextSceneCommand.pending}
+                  disabled={nextSceneDisabled}
                   exit={{
                     opacity: 0,
                     width: 0,
@@ -175,8 +185,8 @@ function PlaybackControls({ className }: { className?: string }) {
                   transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
                   type="button"
                   variant="ghost"
-                  >
-                    <ChevronsRight />
+                >
+                  <ChevronsRight />
                 </MotionButton>
               </TooltipTrigger>
               <TooltipContent>{nextSceneCommand.label}</TooltipContent>
