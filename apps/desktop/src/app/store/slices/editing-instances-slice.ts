@@ -198,6 +198,29 @@ const editingInstancesSlice = createSlice({
       }
       if (listMetadataChanged) updateSourceListEntry(state, instance, searchMetadataChanged);
     },
+    editingInstanceSceneDetectionChanged: (
+      state,
+      action: PayloadAction<{
+        boundariesMicros: number[] | null;
+        id: EditingInstanceId;
+        sourcePath: string;
+      }>,
+    ) => {
+      const { boundariesMicros, id, sourcePath } = action.payload;
+      const instance = getInstance(state, id);
+      if (
+        !instance ||
+        state.activeInstanceId !== id ||
+        normalizeSourceKey(instance.snapshot.source.sourcePath) !== normalizeSourceKey(sourcePath)
+      )
+        return;
+
+      if (boundariesMicros === null) {
+        delete instance.snapshot.sceneBoundariesMicros;
+      } else {
+        instance.snapshot.sceneBoundariesMicros = [...boundariesMicros];
+      }
+    },
     activeEditingInstanceChanged: (state, action: PayloadAction<EditingInstanceId | null>) => {
       state.activeInstanceId = action.payload;
     },
@@ -559,6 +582,7 @@ const {
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
+  editingInstanceSceneDetectionChanged,
   editingInstancesClosed,
   editingInstanceSnapshotUpdated,
   editingInstancesSourceAvailabilityChanged,
@@ -723,6 +747,7 @@ export {
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
+  editingInstanceSceneDetectionChanged,
   editingInstancesClosed,
   editingInstanceSnapshotUpdated,
   editingInstancesReducer,

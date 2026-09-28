@@ -1,22 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAppSelector } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import {
+  editingInstanceSceneDetectionChanged,
+  selectActiveEditingInstance,
+} from "@/app/store/slices/editing-instances-slice";
 import { selectSourceLoadToken, selectSourceSelection } from "@/app/store/slices/source-slice";
+import { normalizeSourceKey } from "@/domain/source";
 import { detectScenes } from "@/lib/tauri/media";
 
 type DetectionState =
-  | { boundariesMicros: number[]; error: null; sourceKey: string; status: "ready" }
-  | {
-      boundariesMicros: null;
-      error: string | null;
-      sourceKey: string;
-      status: "failed" | "idle" | "loading";
-    };
+  | { error: null; sourceKey: string; status: "loading" }
+  | { error: string | null; sourceKey: string; status: "failed" };
 
 function useSceneDetection(enabled: boolean) {
+  const dispatch = useAppDispatch();
   const source = useAppSelector(selectSourceSelection);
   const loadToken = useAppSelector(selectSourceLoadToken);
-  const sourceKey = source ? `${source.sourcePath}:${loadToken}` : null;
+  const activeInstance = useAppSelector(selectActiveEditingInstance);
+  const activeInstanceMatchesSource = Boolean(
+    source &&
+      activeInstance &&
+      normalizeSourceKey(activeInstance.snapshot.source.sourcePath) ===
+        normalizeSourceKey(source.sourcePath),
+  );
+
+  const sourceKey = source
+    ? `${activeInstance?.id ?? ""}:${source.sourcePath}:${loadToken}`
+    : null;
+
   const requestId = useRef(0);
   const [state, setState] = useState<DetectionState | null>(null);
 
@@ -25,17 +37,31 @@ function useSceneDetection(enabled: boolean) {
   }, [sourceKey]);
 
   const detect = useCallback(async () => {
-    if (!source || !sourceKey || !enabled) return;
+    if (!source || !sourceKey || !enabled || !activeInstanceMatchesSource || !activeInstance)
+      return;
     const currentRequestId = ++requestId.current;
-    setState({ boundariesMicros: null, error: null, sourceKey, status: "loading" });
+    setState({ error: null, sourceKey, status: "loading" });
+    dispatch(
+      editingInstanceSceneDetectionChanged({
+        boundariesMicros: null,
+        id: activeInstance.id,
+        sourcePath: source.sourcePath,
+      }),
+    );
     try {
       const boundariesMicros = await detectScenes(source.sourcePath);
       if (requestId.current !== currentRequestId) return;
-      setState({ boundariesMicros, error: null, sourceKey, status: "ready" });
+      dispatch(
+        editingInstanceSceneDetectionChanged({
+          boundariesMicros,
+          id: activeInstance.id,
+          sourcePath: source.sourcePath,
+        }),
+      );
+      setState(null);
     } catch (error: unknown) {
       if (requestId.current !== currentRequestId) return;
       setState({
-        boundariesMicros: null,
         error:
           error instanceof Error
             ? error.message
@@ -49,16 +75,20 @@ function useSceneDetection(enabled: boolean) {
         status: "failed",
       });
     }
-  }, [enabled, source, sourceKey]);
+  }, [activeInstance, activeInstanceMatchesSource, dispatch, enabled, source, sourceKey]);
 
   const currentState = state?.sourceKey === sourceKey ? state : null;
+  const sceneBoundariesMicros = activeInstanceMatchesSource
+    ? activeInstance?.snapshot.sceneBoundariesMicros
+    : undefined;
+
   return {
-    boundariesMicros: currentState?.status === "ready" ? currentState.boundariesMicros : [],
-    canDetect: enabled && source !== null,
+    boundariesMicros: sceneBoundariesMicros ?? [],
+    canDetect: enabled && source !== null && activeInstanceMatchesSource,
     detect,
     error: currentState?.status === "failed" ? currentState.error : null,
     hasFailed: currentState?.status === "failed",
-    hasDetected: currentState?.status === "ready",
+    hasDetected: sceneBoundariesMicros !== undefined,
     isDetecting: currentState?.status === "loading",
   };
 }
