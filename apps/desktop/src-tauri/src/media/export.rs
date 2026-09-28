@@ -283,7 +283,7 @@ fn common_input_arguments(source_path: &Path, trim: &TrimSelection) -> Vec<OsStr
     ]
 }
 
-fn validate_common_request(
+pub(crate) fn validate_common_request(
     source: &MediaInfo,
     trim: &TrimSelection,
     audio_tracks: &[AudioTrackSelection],
@@ -386,7 +386,7 @@ fn audio_tracks_need_reencode(audio_tracks: &[AudioTrackSelection]) -> bool {
     audio_tracks.iter().any(|track| track.volume_percent != 50)
 }
 
-fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bool) -> String {
+pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bool) -> String {
     let mut graph = audio_tracks
         .iter()
         .enumerate()
