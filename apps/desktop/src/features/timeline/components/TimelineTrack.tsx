@@ -18,6 +18,7 @@ import styles from "./TimelinePanel.module.css";
 function TimelineTrack() {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
+  const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const playback = usePlayback();
   const timeline = useTimeline();
@@ -59,7 +60,7 @@ function TimelineTrack() {
     onTrimDragStart: timeline.onTrimDragStart,
     playheadMicros: timeline.playheadMicros,
     range,
-    sceneBoundariesMicros,
+    sceneBoundariesMicros: sceneMarkersEnabled ? sceneBoundariesMicros : [],
   });
 
   return (
