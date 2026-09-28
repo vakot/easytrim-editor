@@ -130,10 +130,11 @@ function LoudnessAnalysisButton({ disabled, onAnalyze, state }: LoudnessAnalysis
     <AnimatePresence initial={false} mode="wait">
       {state !== "closed" ? (
         <MotionButton
-          animate={{ opacity: 1, scale: 1 }}
+          animate={{ opacity: 1, width: "auto" }}
+          className="overflow-hidden"
           disabled={disabled}
-          exit={{ opacity: 0, scale: 0.92 }}
-          initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
+          exit={{ opacity: 0, width: 0 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, width: 0 }}
           layout
           onClick={onAnalyze}
           transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
