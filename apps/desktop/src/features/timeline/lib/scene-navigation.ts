@@ -1,11 +1,10 @@
-const SCENE_NAVIGATION_REPEAT_WINDOW_MS = 125;
-
-let previousSceneNavigation: { invokedAt: number; targetMicros: number } | null = null;
+const SCENE_NAVIGATION_PLAYBACK_TOLERANCE_MICROS = 150_000;
 
 function findPreviousSceneBoundary(
   boundariesMicros: readonly number[],
   playheadMicros: number,
   firstSceneStartMicros?: number,
+  playbackRate = 0,
 ) {
   let previousBoundary: number | undefined;
   for (const boundaryMicros of boundariesMicros) {
@@ -25,6 +24,19 @@ function findPreviousSceneBoundary(
     previousBoundary = firstSceneStartMicros;
   }
 
+  // Playback advances while a seek settles and between clicks. Measure the grace
+  // period in played media time so decoder latency cannot consume it.
+  if (
+    previousBoundary !== undefined &&
+    playbackRate > 0 &&
+    playheadMicros - previousBoundary <=
+      SCENE_NAVIGATION_PLAYBACK_TOLERANCE_MICROS * playbackRate &&
+    playheadMicros !== firstSceneStartMicros &&
+    !boundariesMicros.includes(playheadMicros)
+  ) {
+    return findPreviousSceneBoundary(boundariesMicros, previousBoundary, firstSceneStartMicros);
+  }
+
   return previousBoundary;
 }
 
@@ -41,35 +53,4 @@ function findNextSceneBoundary(boundariesMicros: readonly number[], playheadMicr
   return nextBoundary;
 }
 
-function resolvePreviousSceneNavigationTarget(
-  boundariesMicros: readonly number[],
-  playheadMicros: number,
-  firstSceneStartMicros?: number,
-) {
-  const now = performance.now();
-  const targetMicros =
-    previousSceneNavigation !== null &&
-    now - previousSceneNavigation.invokedAt <= SCENE_NAVIGATION_REPEAT_WINDOW_MS
-      ? findPreviousSceneBoundary(
-          boundariesMicros,
-          previousSceneNavigation.targetMicros,
-          firstSceneStartMicros,
-        )
-      : findPreviousSceneBoundary(boundariesMicros, playheadMicros, firstSceneStartMicros);
-
-  previousSceneNavigation =
-    targetMicros === undefined ? null : { invokedAt: now, targetMicros };
-
-  return targetMicros;
-}
-
-function resetSceneNavigation() {
-  previousSceneNavigation = null;
-}
-
-export {
-  findNextSceneBoundary,
-  findPreviousSceneBoundary,
-  resetSceneNavigation,
-  resolvePreviousSceneNavigationTarget,
-};
+export { findNextSceneBoundary, findPreviousSceneBoundary };

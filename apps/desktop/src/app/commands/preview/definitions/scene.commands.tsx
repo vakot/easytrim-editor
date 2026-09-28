@@ -6,13 +6,15 @@ import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
-import { sceneMarkersToggled, selectSceneMarkersEnabled } from "@/app/store/slices/editor-tools-slice";
+import {
+  sceneMarkersToggled,
+  selectSceneMarkersEnabled,
+} from "@/app/store/slices/editor-tools-slice";
+import { selectPlaybackSpeed } from "@/app/store/slices/playback-controls-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   findNextSceneBoundary,
   findPreviousSceneBoundary,
-  resetSceneNavigation,
-  resolvePreviousSceneNavigationTarget,
   useSceneDetection,
 } from "@/features/timeline";
 
@@ -21,6 +23,7 @@ function useSceneCommands() {
   const dispatch = useAppDispatch();
   const timeline = useTimeline();
   const playback = usePlayback();
+  const playbackSpeed = useAppSelector(selectPlaybackSpeed);
   const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const sourceReady = useAppSelector(selectSourceReady);
@@ -31,6 +34,7 @@ function useSceneCommands() {
     sceneBoundariesMicros,
     timeline.playheadMicros,
     firstSceneStartMicros,
+    playback.isPlaying ? playbackSpeed : 0,
   );
 
   const nextSceneMicros = findNextSceneBoundary(sceneBoundariesMicros, timeline.playheadMicros);
@@ -43,16 +47,6 @@ function useSceneCommands() {
     timeline.onScrubStart();
     timeline.onSeek(sceneMicros);
     timeline.onScrubEnd();
-  }
-
-  function moveToPreviousScene() {
-    const targetMicros = resolvePreviousSceneNavigationTarget(
-      sceneBoundariesMicros,
-      timeline.playheadMicros,
-      firstSceneStartMicros,
-    );
-
-    if (targetMicros !== undefined) moveToScene(targetMicros);
   }
 
   return [
@@ -73,7 +67,7 @@ function useSceneCommands() {
       id: "previous-scene" as const,
       label: previousScene,
       run() {
-        moveToPreviousScene();
+        if (previousSceneMicros !== undefined) moveToScene(previousSceneMicros);
       },
       searchTerms: commandSearchTerms(`${previousScene}|scene|previous`),
       surfaces: ["button", "palette"] as const,
@@ -85,7 +79,6 @@ function useSceneCommands() {
       id: "next-scene" as const,
       label: nextScene,
       run() {
-        resetSceneNavigation();
         if (nextSceneMicros !== undefined) moveToScene(nextSceneMicros);
       },
       searchTerms: commandSearchTerms(`${nextScene}|scene|next`),
@@ -99,7 +92,6 @@ function useSceneCommands() {
       id: "show-scene-markers" as const,
       label: showSceneMarkers,
       run() {
-        resetSceneNavigation();
         dispatch(sceneMarkersToggled());
       },
       searchTerms: commandSearchTerms(`${showSceneMarkers}|scene|markers|show`),

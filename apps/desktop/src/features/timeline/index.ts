@@ -7,9 +7,4 @@ export {
   shortcutDispositionFromEvent,
 } from "./lib/editor-shortcuts";
 export { cancelFrame, syncPlayheadElements } from "./lib/playhead-sync";
-export {
-  findNextSceneBoundary,
-  findPreviousSceneBoundary,
-  resetSceneNavigation,
-  resolvePreviousSceneNavigationTarget,
-} from "./lib/scene-navigation";
+export { findNextSceneBoundary, findPreviousSceneBoundary } from "./lib/scene-navigation";
