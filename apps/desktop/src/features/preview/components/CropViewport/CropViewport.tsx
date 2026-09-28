@@ -45,7 +45,7 @@ import { usePreviewPresentation } from "./hooks/usePreviewPresentation";
 function CropViewport() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { onCropToolOpenChange, videoRef } = usePlayback();
+  const { isPlaying, onCropToolOpenChange, videoRef } = usePlayback();
   const { registerHandlers } = usePreviewTransform();
   const crop = useAppSelector(selectCrop);
   const flipHorizontal = useAppSelector(selectFlipHorizontal);
@@ -139,6 +139,8 @@ function CropViewport() {
   }, [crop, flipHorizontal, flipVertical, rotationDegrees, videoRef]);
 
   const saveFrame = useCallback(async () => {
+    if (isPlaying || !videoRef.current?.paused) return;
+
     try {
       const { currentTimeSeconds, frame } = captureCurrentFrame();
       const blob = await frame;
@@ -155,7 +157,7 @@ function CropViewport() {
     } catch {
       toast.error(t("preview.messages.frameSaveFailed"));
     }
-  }, [captureCurrentFrame, sourceMedia, sourceSelection, t]);
+  }, [captureCurrentFrame, isPlaying, sourceMedia, sourceSelection, t, videoRef]);
 
   const copyFrame = useCallback(async () => {
     try {

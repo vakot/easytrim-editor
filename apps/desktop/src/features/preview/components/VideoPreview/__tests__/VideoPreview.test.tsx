@@ -39,6 +39,7 @@ const playback = vi.hoisted(() => {
   const videoRef = { current: null as HTMLVideoElement | null };
 
   return {
+    isPlaying: false,
     nativeLoopEnabled: false,
     onCanPlay: vi.fn(),
     onCropToolOpenChange: vi.fn(),
@@ -903,6 +904,21 @@ describe("VideoPreview", () => {
 
     expect(await screen.findByRole("menuitem", { name: "Save frame" })).toBeVisible();
     expect(screen.getByRole("menuitem", { name: "Copy frame" })).toBeVisible();
+  });
+
+  it("disables frame saving while preview playback is running", async () => {
+    playback.isPlaying = true;
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
+    const viewport = container.querySelector('[aria-label="Video crop preview"]');
+    expect(viewport).not.toBeNull();
+
+    openTransformMenu(viewport!);
+
+    expect(await screen.findByRole("menuitem", { name: "Save frame" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    playback.isPlaying = false;
   });
 
   it("closes crop controls with Escape or when focus leaves the preview", async () => {
