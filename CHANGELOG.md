@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added Save current frame and Copy current frame actions to the preview context menu and Command Center, including active crop, rotation, and flip transforms.
 - Added a queued export Edit action that reopens captured settings, updates the same entry, and lets later exports continue while it is being edited.
 - Added persistent UI scaling controls to the View menu and Command Center, with 25% zoom steps, a reset action, and layouts that resize with the selected scale.
 
