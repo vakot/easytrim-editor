@@ -46,8 +46,8 @@ function TimelineToolbar({
       <div className="grid auto-cols-7 grid-flow-col grid-rows-[repeat(2,1.75rem)] gap-1">
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
-        <ResetToolsTool />
         <SceneDetectionTool sceneDetection={sceneDetection} />
+        <ResetToolsTool />
       </div>
       {status && (
         <span

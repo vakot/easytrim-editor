@@ -84,7 +84,7 @@ function TimelineTrack({ sceneBoundariesMicros }: { sceneBoundariesMicros: numbe
       {sceneBoundariesMicros.map((boundaryMicros) => (
         <div
           aria-hidden="true"
-          className={`${styles.sceneMarker} my-0.5`}
+          className={styles.sceneMarker}
           key={boundaryMicros}
           style={{ left: `${timelinePercent(boundaryMicros, range.sourceDurationMicros)}%` }}
         />
