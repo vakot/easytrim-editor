@@ -10,7 +10,6 @@ import {
   sceneMarkersToggled,
   selectSceneMarkersEnabled,
 } from "@/app/store/slices/editor-tools-slice";
-import { selectPlaybackSpeed } from "@/app/store/slices/playback-controls-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   findNextSceneBoundary,
@@ -23,7 +22,6 @@ function useSceneCommands() {
   const dispatch = useAppDispatch();
   const timeline = useTimeline();
   const playback = usePlayback();
-  const playbackSpeed = useAppSelector(selectPlaybackSpeed);
   const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const sourceReady = useAppSelector(selectSourceReady);
@@ -34,7 +32,6 @@ function useSceneCommands() {
     sceneBoundariesMicros,
     timeline.playheadMicros,
     firstSceneStartMicros,
-    playback.isPlaying ? playbackSpeed : 0,
   );
 
   const nextSceneMicros = findNextSceneBoundary(sceneBoundariesMicros, timeline.playheadMicros);
@@ -44,6 +41,7 @@ function useSceneCommands() {
   const nextScene = t("preview.actions.nextScene");
 
   function moveToScene(sceneMicros: number) {
+    playback.pause();
     timeline.onScrubStart();
     timeline.onSeek(sceneMicros);
     timeline.onScrubEnd();

@@ -14,6 +14,7 @@ export type EditorPlaybackInteraction = Pick<
   | "onEnded"
   | "onLoadedMetadata"
   | "onPause"
+  | "onPausePlayback"
   | "onPlay"
   | "onPreviewPlaybackError"
   | "onSetSegmentBoundary"

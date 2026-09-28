@@ -84,6 +84,7 @@ interface EditorInteractionRuntime {
   onEnded: () => void;
   onLoadedMetadata: () => void;
   onPause: () => void;
+  onPausePlayback: () => void;
   onPlay: () => void;
   onPreviewPlaybackError: (previewKind: "source" | "proxy") => void;
   onScrub: (micros: number) => void;
@@ -1124,6 +1125,20 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     [commitSeek, handleShuttleEnd, playbackModes, startMediaPlayback],
   );
 
+  const handlePausePlayback = useCallback(() => {
+    if (shuttleDirectionRef.current !== 0) {
+      handleShuttleEnd({ type: "internal", id: "scene-navigation" });
+    }
+    playbackStartSequenceRef.current += 1;
+    playbackRequestedRef.current = false;
+    isPlayingRef.current = false;
+    resumeAfterScrubRef.current = false;
+    videoRef.current?.pause();
+    pauseAudioPlayback();
+    setIsPlaying(false);
+    stopPlayheadAnimation();
+  }, [handleShuttleEnd, pauseAudioPlayback, stopPlayheadAnimation]);
+
   const handleStepFrame = useCallback(
     (direction: -1 | 1, origin: DiagnosticOrigin = { type: "internal" }) => {
       if (shuttleDirectionRef.current !== 0) handleShuttleEnd(origin);
@@ -1389,6 +1404,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     onCanPlay,
     onPlay,
     onPause,
+    onPausePlayback: handlePausePlayback,
     onTimeUpdate,
     onEnded,
     onTogglePlayback: handleTogglePlayback,
