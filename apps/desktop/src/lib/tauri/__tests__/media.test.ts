@@ -17,6 +17,7 @@ vi.mock("@tauri-apps/api/webview", () => ({
 
 import {
   activateSourcePath,
+  analyzeAudioLoudness,
   checkMediaCapabilities,
   chooseSource,
   inspectMedia,
@@ -53,6 +54,29 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
+  it("analyzes the requested segment and parses unavailable measurements", async () => {
+    mocks.invoke.mockResolvedValue({ integratedLufs: -18.4, truePeakDb: null });
+    const request = {
+      sourcePath: "C:/Media/clip.mp4",
+      trim: { startMicros: 1_000_000, endMicros: 4_000_000 },
+      audioTracks: [{ streamIndex: 2, volumePercent: 75 }],
+      mergeAudio: true,
+    };
+
+    await expect(analyzeAudioLoudness(request)).resolves.toEqual({
+      integratedLufs: -18.4,
+      truePeakDb: undefined,
+    });
+    expect(mocks.invoke).toHaveBeenCalledWith("analyze_audio_loudness", {
+      sourcePath: request.sourcePath,
+      request: {
+        trim: request.trim,
+        audioTracks: request.audioTracks,
+        mergeAudio: request.mergeAudio,
+      },
+    });
+  });
+
   it("saves captured PNG bytes through the native save dialog", async () => {
     const pngData = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
     mocks.invoke.mockResolvedValue(true);

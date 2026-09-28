@@ -796,6 +796,9 @@ const restoreExportAttemptRequested =
           settings: {
             frameRate: attempt.request.frameRate,
             resolution: attempt.request.resolution,
+            ...(attempt.request.loudnessNormalization
+              ? { loudnessPreset: attempt.request.loudnessNormalization }
+              : {}),
           },
         }),
       );

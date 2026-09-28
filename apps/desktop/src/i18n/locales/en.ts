@@ -613,6 +613,23 @@ export const en = {
         description: "Configure the optimized render before choosing its file.",
         editTitle: "Edit queued export",
         frameRate: "Frame rate",
+        loudness: {
+          analyze: "Analyze loudness",
+          analyzing: "Analyzing…",
+          analysisFailed: "Audio loudness analysis failed.",
+          description:
+            "Analysis uses the selected segment, tracks, and volume levels. Normalization exports the selected audio as one encoded track.",
+          normalize: "Normalize loudness during export",
+          presets: {
+            broadcast: "Broadcast · −23 LUFS / −2 dBTP",
+            streaming: "Streaming · −16 LUFS / −1.5 dBTP",
+            webVideo: "Web video · −14 LUFS / −1 dBTP",
+          },
+          result: "Integrated: {{integratedLufs}} · True peak: {{truePeakDb}}",
+          target: "Loudness target",
+          targetDetails: "{{integratedLufs}} LUFS integrated · {{truePeakDb}} dBTP maximum",
+          unavailable: "Unavailable",
+        },
         matchSource: "Match source",
         resolution: "Resolution",
         saveNotice: "The native save dialog opens after confirmation.",

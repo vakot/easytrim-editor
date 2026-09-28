@@ -9,6 +9,8 @@ import type {
   ExportProgress,
   ExportResult,
   FastExportRequest,
+  LoudnessAnalysis,
+  LoudnessAnalysisRequest,
   MediaCapabilities,
   MediaInfo,
   OptimizedExportPlan,
@@ -28,6 +30,7 @@ import {
   parseExportResult,
   parseMediaCapabilities,
   parseMediaInfo,
+  parseLoudnessAnalysis,
   parseOptimizedExportPlan,
   parseOutputSelection,
   parsePreviewDescriptor,
@@ -166,6 +169,20 @@ async function renderOptimized(
 async function planOptimizedExport(request: OptimizedExportRequest): Promise<OptimizedExportPlan> {
   try {
     return parseOptimizedExportPlan(await invoke<unknown>("plan_optimized_export", { request }));
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+async function analyzeAudioLoudness(request: LoudnessAnalysisRequest): Promise<LoudnessAnalysis> {
+  const { sourcePath, ...analysisRequest } = request;
+  try {
+    return parseLoudnessAnalysis(
+      await invoke<unknown>("analyze_audio_loudness", {
+        request: analysisRequest,
+        sourcePath,
+      }),
+    );
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -367,6 +384,7 @@ async function importDroppedSources(paths: string[]): Promise<SourceImportResult
 
 export {
   activateSourcePath,
+  analyzeAudioLoudness,
   cancelOperation,
   checkMediaCapabilities,
   chooseOutputPath,

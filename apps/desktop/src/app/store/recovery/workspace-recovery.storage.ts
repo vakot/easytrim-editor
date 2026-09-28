@@ -117,7 +117,11 @@ function isBackup(value: unknown): value is WorkspaceRecoveryBackup {
           isFiniteNumber(instance.optimizedSettings.resolution.width) &&
           (instance.optimizedSettings.frameRate === undefined ||
             instance.optimizedSettings.frameRate === null ||
-            isRecord(instance.optimizedSettings.frameRate)))) &&
+            isRecord(instance.optimizedSettings.frameRate)) &&
+          (instance.optimizedSettings.loudnessPreset === undefined ||
+            ["webVideo", "streaming", "broadcast"].includes(
+              String(instance.optimizedSettings.loudnessPreset),
+            )))) &&
       Array.isArray(instance.exportAttempts) &&
       instance.exportAttempts.every(isExportAttempt),
   );

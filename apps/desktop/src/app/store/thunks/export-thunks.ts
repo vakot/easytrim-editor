@@ -55,6 +55,7 @@ import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
+import { selectedAudioTracks } from "@/domain/audio-export";
 import { normalizeTransformForExport } from "@/domain/rotation";
 import { normalizeSourceKey } from "@/domain/source";
 import { diagnostics } from "@/lib/diagnostics";
@@ -160,6 +161,7 @@ const editExportAttemptRequested =
           id: instanceId,
           settings: {
             frameRate: optimizedRequest.frameRate,
+            loudnessPreset: optimizedRequest.loudnessNormalization,
             resolution: optimizedRequest.resolution,
           },
         }),
@@ -421,7 +423,11 @@ function getInitialSettings(state: ReturnType<Parameters<AppThunk>[1]>): ExportS
   const instance = selectActiveEditingInstance(state);
   if (!instance) return null;
   return (
-    instance.optimizedSettings ?? { resolution: selectCropResolution(state), frameRate: undefined }
+    instance.optimizedSettings ?? {
+      frameRate: undefined,
+      loudnessPreset: undefined,
+      resolution: selectCropResolution(state),
+    }
   );
 }
 
@@ -433,7 +439,7 @@ function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportR
   return {
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-    audioTracks: selectedAudioTracks(state),
+    audioTracks: exportAudioTracks(state),
     mergeAudio: selectMergeAudio(state),
     rotationDegrees: transform.rotationDegrees,
   };
@@ -451,7 +457,7 @@ function getOptimizedRequest(
   return {
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-    audioTracks: selectedAudioTracks(state),
+    audioTracks: exportAudioTracks(state),
     mergeAudio: selectMergeAudio(state),
     rotationDegrees: transform.rotationDegrees,
     resolution: settings.resolution,
@@ -462,6 +468,7 @@ function getOptimizedRequest(
       ? { numerator: settings.frameRate.numerator, denominator: settings.frameRate.denominator }
       : undefined,
     arguments: state.exportPresets.argumentsText,
+    ...(settings.loudnessPreset ? { loudnessNormalization: settings.loudnessPreset } : {}),
   };
 }
 
@@ -474,16 +481,8 @@ function exportTransform(state: ReturnType<Parameters<AppThunk>[1]>) {
   );
 }
 
-function selectedAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
-  const master = selectMasterAudio(state);
-  const masterGain = master.enabled ? master.volumePercent / 50 : 0;
-  return selectAudioTracks(state)
-    .filter((track) => track.enabled && track.volumePercent > 0 && masterGain > 0)
-    .map((track) => ({
-      streamIndex: track.streamIndex,
-      volumePercent: Math.min(200, Math.round(track.volumePercent * masterGain)),
-    }))
-    .filter((track) => track.volumePercent > 0);
+function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
+  return selectedAudioTracks(selectAudioTracks(state), selectMasterAudio(state));
 }
 
 function getTotalFrames(

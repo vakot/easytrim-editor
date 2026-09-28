@@ -51,7 +51,22 @@ interface OptimizedExportRequest extends FastExportRequest {
   flipHorizontal?: boolean;
   flipVertical?: boolean;
   frameRate?: { denominator: number; numerator: number };
+  loudnessNormalization?: LoudnessPreset;
   resolution: { height: number; width: number };
+}
+
+type LoudnessPreset = "webVideo" | "streaming" | "broadcast";
+
+interface LoudnessAnalysisRequest extends Pick<
+  FastExportRequest,
+  "audioTracks" | "mergeAudio" | "trim"
+> {
+  sourcePath: string;
+}
+
+interface LoudnessAnalysis {
+  integratedLufs?: number;
+  truePeakDb?: number;
 }
 
 interface FrameRate {
@@ -110,12 +125,16 @@ interface MediaInfo {
 
 export type {
   AppError,
+  AudioTrackSelection,
   AudioStream,
   ChapterInfo,
   ExportProgress,
   ExportResult,
   FastExportRequest,
   FrameRate,
+  LoudnessAnalysis,
+  LoudnessAnalysisRequest,
+  LoudnessPreset,
   MediaInfo,
   OptimizedExportRequest,
   OutputSelection,

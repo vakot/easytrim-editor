@@ -616,6 +616,23 @@ export const ru = {
         description: "Настройте оптимизированный рендеринг перед выбором файла.",
         editTitle: "Изменить экспорт в очереди",
         frameRate: "Частота кадров",
+        loudness: {
+          analyze: "Анализировать громкость",
+          analyzing: "Анализ…",
+          analysisFailed: "Не удалось проанализировать громкость аудио.",
+          description:
+            "Анализ учитывает выбранный фрагмент, дорожки и уровни громкости. Нормализация экспортирует выбранное аудио одной перекодированной дорожкой.",
+          normalize: "Нормализовать громкость при экспорте",
+          presets: {
+            broadcast: "Вещание · −23 LUFS / −2 dBTP",
+            streaming: "Стриминг · −16 LUFS / −1,5 dBTP",
+            webVideo: "Веб-видео · −14 LUFS / −1 dBTP",
+          },
+          result: "Интегральная: {{integratedLufs}} · Пиковая: {{truePeakDb}}",
+          target: "Целевой уровень",
+          targetDetails: "{{integratedLufs}} LUFS интегрально · максимум {{truePeakDb}} dBTP",
+          unavailable: "Недоступно",
+        },
         matchSource: "Как у источника",
         resolution: "Разрешение",
         saveNotice: "После подтверждения откроется системный диалог сохранения.",

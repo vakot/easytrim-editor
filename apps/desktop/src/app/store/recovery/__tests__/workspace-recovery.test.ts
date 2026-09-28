@@ -35,7 +35,11 @@ function instance(id: string, source = firstSource) {
     id,
     importedAtMicros: 1234,
     optimizedArguments: "-crf 22",
-    optimizedSettings: { frameRate: undefined, resolution: { height: 720, width: 1280 } },
+    optimizedSettings: {
+      frameRate: undefined,
+      loudnessPreset: "broadcast" as const,
+      resolution: { height: 720, width: 1280 },
+    },
     origin: "source-import" as const,
     snapshot: createDefaultEditorSnapshot(source, false),
     sourceAvailability: "available" as const,
@@ -166,7 +170,7 @@ describe("workspace recovery contract", () => {
     expect(backup.instances[1]).toMatchObject({
       importedAtMicros: 1234,
       optimizedArguments: "-crf 18",
-      optimizedSettings: { resolution: { height: 1344, width: 864 } },
+      optimizedSettings: { loudnessPreset: "broadcast", resolution: { height: 1344, width: 864 } },
     });
     expect(backup.instances[1]?.exportAttempts[0]).toMatchObject({
       output: { displayPath: "C:/Exports/result.mp4" },

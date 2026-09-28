@@ -35,6 +35,7 @@ import { CommandPreview } from "./components/CommandPreview";
 import { ExportFrameRate } from "./components/ExportFrameRate";
 import { ExportResolution } from "./components/ExportResolution";
 import { PresetManager } from "./components/PresetManager";
+import { LoudnessControls } from "./components/LoudnessControls";
 
 function ExportDialog() {
   const { t } = useTranslation();
@@ -45,7 +46,11 @@ function ExportDialog() {
   const source = useAppSelector(selectSourceMedia);
   const cropResolution = useAppSelector(selectCropResolution);
   const settings = activeInstance
-    ? (activeInstance.optimizedSettings ?? { frameRate: undefined, resolution: cropResolution })
+    ? (activeInstance.optimizedSettings ?? {
+        frameRate: undefined,
+        loudnessPreset: undefined,
+        resolution: cropResolution,
+      })
     : null;
 
   const argumentsText = useAppSelector(selectExportArguments);
@@ -84,6 +89,7 @@ function ExportDialog() {
           <PresetManager />
           <ExportResolution cropResolution={cropResolution} settings={settings} />
           <ExportFrameRate settings={settings} />
+          <LoudnessControls settings={settings} />
           <CommandPreview command={commandPreview} error={commandPreviewError?.message} />
 
           <DialogFooter className="min-w-0 items-center sm:justify-between">

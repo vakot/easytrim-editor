@@ -613,6 +613,23 @@ export const sk = {
         description: "Pred výberom súboru nastavte optimalizované vykreslenie.",
         editTitle: "Upraviť export vo fronte",
         frameRate: "Snímková frekvencia",
+        loudness: {
+          analyze: "Analyzovať hlasitosť",
+          analyzing: "Analyzuje sa…",
+          analysisFailed: "Analýza hlasitosti zvuku zlyhala.",
+          description:
+            "Analýza použije vybraný úsek, stopy a úrovne hlasitosti. Normalizácia exportuje vybraný zvuk ako jednu prekódovanú stopu.",
+          normalize: "Normalizovať hlasitosť pri exporte",
+          presets: {
+            broadcast: "Vysielanie · −23 LUFS / −2 dBTP",
+            streaming: "Streamovanie · −16 LUFS / −1,5 dBTP",
+            webVideo: "Webové video · −14 LUFS / −1 dBTP",
+          },
+          result: "Integrovaná hlasitosť: {{integratedLufs}} · Skutočná špička: {{truePeakDb}}",
+          target: "Cieľ hlasitosti",
+          targetDetails: "{{integratedLufs}} LUFS integrovane · najviac {{truePeakDb}} dBTP",
+          unavailable: "Nedostupné",
+        },
         matchSource: "Podľa zdroja",
         resolution: "Rozlíšenie",
         saveNotice: "Po potvrdení sa otvorí systémové okno na uloženie.",
