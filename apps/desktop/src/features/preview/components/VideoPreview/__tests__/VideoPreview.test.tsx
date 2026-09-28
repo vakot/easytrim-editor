@@ -517,6 +517,9 @@ describe("VideoPreview", () => {
       expect(item.querySelector("svg")).not.toBeNull();
       expect(item).toHaveAttribute("data-inset", "true");
     }
+    expect(screen.getByRole("menuitem", { name: "Rotate 180" }).querySelector("svg")).toHaveClass(
+      "lucide-refresh-cw",
+    );
     for (const action of ["Save frame", "Copy frame", "Crop", "Reset to default"]) {
       expect(screen.getByRole("menuitem", { name: action })).not.toHaveAttribute("data-inset");
     }

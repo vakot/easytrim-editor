@@ -1,4 +1,4 @@
-import { RotateCcw, RotateCw, RotateCwSquare } from "lucide-react";
+import { RefreshCw, RotateCcw, RotateCw } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -50,7 +50,7 @@ function useRotationCommands() {
       ) : id === "rotate-90-ccw" ? (
         <RotateCcw aria-hidden="true" />
       ) : (
-        <RotateCwSquare aria-hidden="true" />
+        <RefreshCw aria-hidden="true" />
       ),
     run() {
       const visualDelta = reflectedRef.current && Math.abs(delta) === 90 ? -delta : delta;
