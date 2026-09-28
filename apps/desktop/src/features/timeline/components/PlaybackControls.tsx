@@ -26,6 +26,7 @@ import { cn } from "@/lib/class-names.utils";
 import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../lib/editor-shortcuts";
 
 const MotionButton = motion.create(Button);
+const SCENE_NAVIGATION_COLLAPSED_MARGIN = "-0.375rem";
 
 function PlaybackControls({ className }: { className?: string }) {
   const { t } = useTranslation();
@@ -69,14 +70,26 @@ function PlaybackControls({ className }: { className?: string }) {
             <Tooltip key="previous-scene-navigation">
               <TooltipTrigger asChild>
                 <MotionButton
-                  animate={{ opacity: 1, width: "1.75rem" }}
+                  animate={{ opacity: 1, width: "1.75rem", marginInlineStart: 0 }}
                   aria-label={previousSceneCommand.label}
                   className="overflow-hidden transition-colors"
                   disabled={
                     disabled || !previousSceneCommand.enabled || previousSceneCommand.pending
                   }
-                  exit={{ opacity: 0, width: 0 }}
-                  initial={shouldReduceMotion ? false : { opacity: 0, width: 0 }}
+                  exit={{
+                    opacity: 0,
+                    width: 0,
+                    marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                  }}
+                  initial={
+                    shouldReduceMotion
+                      ? false
+                      : {
+                          opacity: 0,
+                          width: 0,
+                          marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                        }
+                  }
                   onClick={() => void executeCommand("previous-scene", "button")}
                   size="icon-sm"
                   transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
@@ -139,12 +152,24 @@ function PlaybackControls({ className }: { className?: string }) {
             <Tooltip key="next-scene-navigation">
               <TooltipTrigger asChild>
                 <MotionButton
-                  animate={{ opacity: 1, width: "1.75rem" }}
+                  animate={{ opacity: 1, width: "1.75rem", marginInlineStart: 0 }}
                   aria-label={nextSceneCommand.label}
                   className="overflow-hidden transition-colors"
                   disabled={disabled || !nextSceneCommand.enabled || nextSceneCommand.pending}
-                  exit={{ opacity: 0, width: 0 }}
-                  initial={shouldReduceMotion ? false : { opacity: 0, width: 0 }}
+                  exit={{
+                    opacity: 0,
+                    width: 0,
+                    marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                  }}
+                  initial={
+                    shouldReduceMotion
+                      ? false
+                      : {
+                          opacity: 0,
+                          width: 0,
+                          marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                        }
+                  }
                   onClick={() => void executeCommand("next-scene", "button")}
                   size="icon-sm"
                   transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
