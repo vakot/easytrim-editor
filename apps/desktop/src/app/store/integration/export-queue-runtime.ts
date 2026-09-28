@@ -207,6 +207,7 @@ function cancelQueuedExport(
 function reserveQueuedExportEdit(
   instanceId: EditingInstanceId,
   attemptId: string,
+  dispatch: AppDispatch,
   getState: () => RootState,
 ): boolean {
   const runtime = runtimeFor(getState);
@@ -219,6 +220,7 @@ function reserveQueuedExportEdit(
   if (!attempt || attempt.state.status !== "queued" || (job && job.startedAt !== null))
     return false;
   runtime.reservedAttemptIds.add(attemptId);
+  void drainQueue(runtime, dispatch, getState);
   return true;
 }
 

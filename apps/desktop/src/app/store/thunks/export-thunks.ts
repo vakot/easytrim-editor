@@ -140,7 +140,7 @@ const editExportAttemptRequested =
   ({ attemptId, instanceId }: { attemptId: string; instanceId: string }): AppThunk<Promise<void>> =>
   async (dispatch, getState) => {
     if (getState().importWorkflow.isNativeDialogOpen) return;
-    if (!reserveQueuedExportEdit(instanceId, attemptId, getState)) return;
+    if (!reserveQueuedExportEdit(instanceId, attemptId, dispatch, getState)) return;
     try {
       const instance = selectEditingInstanceById(getState(), instanceId);
       const attempt = instance?.exportAttempts.find((candidate) => candidate.id === attemptId);

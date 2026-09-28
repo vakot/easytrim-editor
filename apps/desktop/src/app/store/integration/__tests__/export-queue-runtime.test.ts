@@ -132,19 +132,33 @@ describe("export queue runtime", () => {
     const store = createAppStore();
     const getState = store.getState;
     const attempt = createAttempt("attempt-edit");
+    const nextAttempt = createAttempt("attempt-edit-next");
     store.dispatch(editingInstancesAdded([createInstance("instance-edit")]));
     store.dispatch(editingInstanceExportAttemptQueued({ id: "instance-edit", attempt }));
+    store.dispatch(
+      editingInstanceExportAttemptQueued({ id: "instance-edit", attempt: nextAttempt }),
+    );
     mocks.renderFast.mockResolvedValue({
       displayName: "edited.mp4",
       displayPath: "C:/Exports/edited.mp4",
       operationId: "edit-op",
     });
 
-    expect(reserveQueuedExportEdit("instance-edit", attempt.id, getState)).toBe(true);
+    expect(reserveQueuedExportEdit("instance-edit", attempt.id, store.dispatch, getState)).toBe(
+      true,
+    );
     expect(enqueueExport("instance-edit", attempt, store.dispatch, getState)).toBe(true);
+    expect(enqueueExport("instance-edit", nextAttempt, store.dispatch, getState)).toBe(true);
     setExportQueueExecutionEnabled(true, store.dispatch, getState);
-    await Promise.resolve();
-    expect(mocks.renderFast).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(1));
+    expect(mocks.renderFast.mock.calls[0]?.[1]).toBe(nextAttempt.id);
+    expect(
+      store
+        .getState()
+        .editingInstances.entities["instance-edit"]?.exportAttempts.find(
+          (candidate) => candidate.id === attempt.id,
+        )?.state.status,
+    ).toBe("queued");
 
     const request = { ...attempt.request, trim: { startMicros: 200_000, endMicros: 900_000 } };
     const output = {
@@ -166,7 +180,7 @@ describe("export queue runtime", () => {
     ).toBe(true);
     releaseQueuedExportEdit(attempt.id, store.dispatch, getState);
 
-    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
     expect(mocks.renderFast).toHaveBeenCalledWith(
       request,
       "edited-output",
