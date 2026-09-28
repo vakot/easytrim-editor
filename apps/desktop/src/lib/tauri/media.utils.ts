@@ -9,6 +9,7 @@ import type {
   ExportProgress,
   ExportResult,
   FrameRate,
+  LoudnessAnalysis,
   MediaCapabilities,
   MediaInfo,
   OptimizedExportPlan,
@@ -146,6 +147,14 @@ function parseOptimizedExportPlan(value: unknown): OptimizedExportPlan {
   const plan = requireRecord(value, "optimized export plan");
   return {
     commandPreview: requireString(plan.commandPreview, "optimized command preview"),
+  };
+}
+
+function parseLoudnessAnalysis(value: unknown): LoudnessAnalysis {
+  const result = requireRecord(value, "loudness analysis");
+  return {
+    integratedLufs: optionalFiniteNumber(result.integratedLufs, "integrated loudness"),
+    truePeakDb: optionalFiniteNumber(result.truePeakDb, "true peak"),
   };
 }
 
@@ -393,6 +402,7 @@ export {
   parseAudioPreviewDescriptors,
   parseExportProgress,
   parseExportResult,
+  parseLoudnessAnalysis,
   parseMediaCapabilities,
   parseMediaInfo,
   parseOptimizedExportPlan,

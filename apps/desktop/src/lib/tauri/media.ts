@@ -9,6 +9,8 @@ import type {
   ExportProgress,
   ExportResult,
   FastExportRequest,
+  LoudnessAnalysis,
+  LoudnessAnalysisRequest,
   MediaCapabilities,
   MediaInfo,
   OptimizedExportPlan,
@@ -26,6 +28,7 @@ import {
   parseAudioPreviewDescriptors,
   parseExportProgress,
   parseExportResult,
+  parseLoudnessAnalysis,
   parseMediaCapabilities,
   parseMediaInfo,
   parseOptimizedExportPlan,
@@ -166,6 +169,37 @@ async function renderOptimized(
 async function planOptimizedExport(request: OptimizedExportRequest): Promise<OptimizedExportPlan> {
   try {
     return parseOptimizedExportPlan(await invoke<unknown>("plan_optimized_export", { request }));
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+async function analyzeAudioLoudness(
+  request: LoudnessAnalysisRequest,
+  signal?: AbortSignal,
+): Promise<LoudnessAnalysis> {
+  const { sourcePath, ...analysisRequest } = request;
+  try {
+    const operationId = await invoke<string>("begin_loudness_analysis");
+    const cancel = () => cancelOperation(operationId).catch(() => undefined);
+    const onAbort = () => {
+      void cancel();
+    };
+
+    signal?.addEventListener("abort", onAbort, { once: true });
+    if (signal?.aborted) await cancel();
+
+    try {
+      return parseLoudnessAnalysis(
+        await invoke<unknown>("analyze_audio_loudness", {
+          operationId,
+          request: analysisRequest,
+          sourcePath,
+        }),
+      );
+    } finally {
+      signal?.removeEventListener("abort", onAbort);
+    }
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -367,6 +401,7 @@ async function importDroppedSources(paths: string[]): Promise<SourceImportResult
 
 export {
   activateSourcePath,
+  analyzeAudioLoudness,
   cancelOperation,
   checkMediaCapabilities,
   chooseOutputPath,

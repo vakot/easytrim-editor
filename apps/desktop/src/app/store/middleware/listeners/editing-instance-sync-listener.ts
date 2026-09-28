@@ -71,6 +71,7 @@ listenerMiddleware.startListening({
         id: instance.id,
         settings: {
           frameRate: instance.optimizedSettings?.frameRate,
+          loudnessPreset: instance.optimizedSettings?.loudnessPreset,
           resolution: action.payload.resolution,
         },
       }),
@@ -88,6 +89,7 @@ listenerMiddleware.startListening({
         id: instance.id,
         settings: {
           frameRate: instance.optimizedSettings?.frameRate,
+          loudnessPreset: instance.optimizedSettings?.loudnessPreset,
           resolution: selectCropResolution(listenerApi.getState()),
         },
       }),

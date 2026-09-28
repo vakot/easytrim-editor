@@ -20,6 +20,7 @@ use crate::{
         FastExportRequest, OptimizedExportRequest, build_fast_arguments, build_optimized_arguments,
         optimized_command_preview,
     },
+    media::loudness::{LoudnessAnalysis, LoudnessAnalysisRequest, analyze_loudness},
     media::probe::MediaInfo,
     process::{ProcessOutput, run_progress_cancellable},
     state::AppState,
@@ -74,6 +75,37 @@ struct ExportDiagnosticContext {
 #[serde(rename_all = "camelCase")]
 pub struct OptimizedExportPlan {
     pub command_preview: String,
+}
+
+#[tauri::command]
+pub fn begin_loudness_analysis(state: State<'_, AppState>) -> Result<String, AppError> {
+    state
+        .begin_operation()
+        .map(|(operation_id, _)| operation_id)
+}
+
+#[tauri::command]
+pub async fn analyze_audio_loudness(
+    request: LoudnessAnalysisRequest,
+    operation_id: String,
+    source_path: String,
+    state: State<'_, AppState>,
+) -> Result<LoudnessAnalysis, AppError> {
+    let cancellation = state.operation_cancellation(&operation_id)?;
+    let source = match state.resolve_source_by_path(&source_path) {
+        Ok(source) => source,
+        Err(error) => {
+            state.finish_operation(&operation_id)?;
+            return Err(error);
+        }
+    };
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        analyze_loudness(&source, &request, &cancellation)
+    })
+    .await
+    .map_err(|_| AppError::internal("Loudness analysis stopped unexpectedly."));
+    state.finish_operation(&operation_id)?;
+    result?
 }
 
 #[tauri::command]

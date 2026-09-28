@@ -301,6 +301,9 @@ const editingInstancesSlice = createSlice({
         restored.optimizedSettings = {
           resolution: attempt.request.resolution,
           frameRate: attempt.request.frameRate,
+          ...(attempt.request.loudnessNormalization
+            ? { loudnessPreset: attempt.request.loudnessNormalization }
+            : {}),
         };
       }
       state.ids.push(restored.id);
