@@ -33,7 +33,7 @@ Do not perform implementation work directly on protected primary branches such a
 Use:
 
 ```text
-<type>/<username>/<optional_ticket_id>/<title>
+<type>/<username>/<title>
 ```
 
 Examples without a ticket:
@@ -43,15 +43,6 @@ feature/johndoe/user-preferences
 fix/johndoe/session-expiration
 refactor/johndoe/request-handler
 ```
-
-Examples with a ticket:
-
-```text
-feature/johndoe/PROJ-142/user-preferences
-fix/johndoe/PROJ-231/session-expiration
-```
-
-If there is no ticket, omit the segment completely.
 
 Use the GitHub username of the person whose development workflow the branch belongs to. Do not use an automated-agent identity such as `codex`, `chatgpt`, or `bot`.
 

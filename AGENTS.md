@@ -92,7 +92,7 @@ Never perform implementation work directly on protected primary branches such as
 Branch names must follow:
 
 ```text
-<type>/<username>/<optional_ticket_id>/<title>
+<type>/<username>/<title>
 ```
 
 Examples without a ticket:
@@ -102,15 +102,6 @@ feature/johndoe/user-preferences
 fix/johndoe/session-expiration
 refactor/johndoe/request-handler
 ```
-
-Examples with a ticket:
-
-```text
-feature/johndoe/PROJ-142/user-preferences
-fix/johndoe/PROJ-231/session-expiration
-```
-
-If there is no ticket ID, omit that segment completely.
 
 Do not push automatically.
 
@@ -163,10 +154,8 @@ Create a pull request only when explicitly requested by the user.
 Pull request titles must follow:
 
 ```text
-<type>(<context>): [<optional_ticket_id>] <title>
+<type>(<context>): <title>
 ```
-
-The ticket segment is optional and must be omitted completely when no ticket exists.
 
 Pull requests must strictly use the current repository template:
 
