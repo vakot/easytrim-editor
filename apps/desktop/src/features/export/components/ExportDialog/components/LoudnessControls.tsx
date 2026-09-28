@@ -126,17 +126,21 @@ function LoudnessAnalysisButton({ disabled, onAnalyze, state }: LoudnessAnalysis
   const buttonVariant =
     state === "error" ? "destructive" : state === "success" ? "success" : "outline";
 
+  const compact = state === "loading" || state === "success";
+
   return (
     <AnimatePresence initial={false} mode="wait">
       {state !== "closed" ? (
         <MotionButton
-          animate={{ opacity: 1, width: "auto" }}
+          animate={{ opacity: 1, width: compact ? "2rem" : "auto" }}
+          aria-label={compact ? buttonLabel : undefined}
           className="overflow-hidden"
           disabled={disabled}
           exit={{ opacity: 0, width: 0 }}
           initial={shouldReduceMotion ? false : { opacity: 0, width: 0 }}
           layout
           onClick={onAnalyze}
+          size={compact ? "icon" : "default"}
           transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
           type="button"
           variant={buttonVariant}
@@ -160,7 +164,7 @@ function LoudnessAnalysisButton({ disabled, onAnalyze, state }: LoudnessAnalysis
               ) : state === "error" ? (
                 <RotateCw aria-hidden="true" />
               ) : null}
-              {buttonLabel}
+              {compact ? null : buttonLabel}
             </motion.span>
           </AnimatePresence>
         </MotionButton>
