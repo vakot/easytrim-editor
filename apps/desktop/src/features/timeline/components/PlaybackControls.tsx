@@ -25,6 +25,8 @@ import { cn } from "@/lib/class-names.utils";
 
 import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../lib/editor-shortcuts";
 
+const MotionButton = motion.create(Button);
+
 function PlaybackControls({ className }: { className?: string }) {
   const { t } = useTranslation();
   const playback = usePlayback();
@@ -64,29 +66,28 @@ function PlaybackControls({ className }: { className?: string }) {
         </TransportButton>
         <AnimatePresence initial={false}>
           {showSceneNavigation ? (
-            <motion.div
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              initial={shouldReduceMotion ? false : { opacity: 0 }}
-              key="previous-scene-navigation"
-              transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
-            >
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    aria-label={previousSceneCommand.label}
-                    disabled={disabled || !previousSceneCommand.enabled || previousSceneCommand.pending}
-                    onClick={() => void executeCommand("previous-scene", "button")}
-                    size="icon-sm"
-                    type="button"
-                    variant="ghost"
+            <Tooltip key="previous-scene-navigation">
+              <TooltipTrigger asChild>
+                <MotionButton
+                  animate={{ opacity: 1, width: "1.75rem" }}
+                  aria-label={previousSceneCommand.label}
+                  className="overflow-hidden transition-colors"
+                  disabled={
+                    disabled || !previousSceneCommand.enabled || previousSceneCommand.pending
+                  }
+                  exit={{ opacity: 0, width: 0 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, width: 0 }}
+                  onClick={() => void executeCommand("previous-scene", "button")}
+                  size="icon-sm"
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
+                  type="button"
+                  variant="ghost"
                   >
                     <ChevronsLeft />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{previousSceneCommand.label}</TooltipContent>
-              </Tooltip>
-            </motion.div>
+                </MotionButton>
+              </TooltipTrigger>
+              <TooltipContent>{previousSceneCommand.label}</TooltipContent>
+            </Tooltip>
           ) : null}
         </AnimatePresence>
         <TransportButton
@@ -135,29 +136,26 @@ function PlaybackControls({ className }: { className?: string }) {
         </TransportButton>
         <AnimatePresence initial={false}>
           {showSceneNavigation ? (
-            <motion.div
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              initial={shouldReduceMotion ? false : { opacity: 0 }}
-              key="next-scene-navigation"
-              transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
-            >
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    aria-label={nextSceneCommand.label}
-                    disabled={disabled || !nextSceneCommand.enabled || nextSceneCommand.pending}
-                    onClick={() => void executeCommand("next-scene", "button")}
-                    size="icon-sm"
-                    type="button"
-                    variant="ghost"
+            <Tooltip key="next-scene-navigation">
+              <TooltipTrigger asChild>
+                <MotionButton
+                  animate={{ opacity: 1, width: "1.75rem" }}
+                  aria-label={nextSceneCommand.label}
+                  className="overflow-hidden transition-colors"
+                  disabled={disabled || !nextSceneCommand.enabled || nextSceneCommand.pending}
+                  exit={{ opacity: 0, width: 0 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, width: 0 }}
+                  onClick={() => void executeCommand("next-scene", "button")}
+                  size="icon-sm"
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
+                  type="button"
+                  variant="ghost"
                   >
                     <ChevronsRight />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{nextSceneCommand.label}</TooltipContent>
-              </Tooltip>
-            </motion.div>
+                </MotionButton>
+              </TooltipTrigger>
+              <TooltipContent>{nextSceneCommand.label}</TooltipContent>
+            </Tooltip>
           ) : null}
         </AnimatePresence>
         <TransportButton
