@@ -1,4 +1,4 @@
-const SCENE_NAVIGATION_PLAYBACK_TOLERANCE_MICROS = 150_000;
+const SCENE_NAVIGATION_PLAYBACK_TOLERANCE_MICROS = 300_000;
 
 function findPreviousSceneBoundary(
   boundariesMicros: readonly number[],
