@@ -218,6 +218,15 @@ describe("ApplicationCommandsProvider", () => {
       "data-checked",
       "true",
     );
+    for (const commandId of [
+      "flip-horizontal",
+      "flip-vertical",
+      "rotate-180",
+      "rotate-90-ccw",
+      "rotate-90-cw",
+    ]) {
+      expect(screen.getByRole("button", { name: commandId })).not.toHaveAttribute("data-checked");
+    }
     expect(screen.getByRole("button", { name: "reset-view-settings" })).toHaveAttribute(
       "data-group",
       "Appearance / Theme",

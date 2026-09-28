@@ -43,7 +43,6 @@ function useRotationCommands() {
       ["rotate-180", "rotate180", 180],
     ] as const
   ).map(([id, labelKey, delta]) => ({
-    checked: degrees === (rotationDeltaForVisualDirection(delta, reflected) + 360) % 360,
     enabled: isAvailable,
     icon:
       id === "rotate-90-cw" ? (
@@ -65,10 +64,6 @@ function useRotationCommands() {
     searchTerms: commandSearchTerms(`${labels[labelKey]}|rotate|transform`),
     variant: "default" as const,
   }));
-}
-
-function rotationDeltaForVisualDirection(delta: number, reflected: boolean): number {
-  return reflected && Math.abs(delta) === 90 ? -delta : delta;
 }
 
 export { useRotationCommands };
