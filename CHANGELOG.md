@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.12.3]
+
 ### Added
 
 - Added Save frame and Copy frame actions to the preview context menu and Command Center, with source-based frame filenames and active crop, rotation, and flip transforms; grouped crop and reset actions in the menu and moved rotation and flip options into a Transform submenu.
