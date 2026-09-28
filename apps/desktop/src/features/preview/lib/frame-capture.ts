@@ -1,9 +1,42 @@
 import type { CropRect } from "@/domain/crop";
+import type { FrameRate } from "@/domain/media";
 import type { RotationDegrees } from "@/domain/rotation";
 
 import { sourceCropForRotation } from "./preview-geometry";
 
 const QUARTER_TURN_DEGREES = [90, 270] as const;
+
+function frameNumberAt(currentTimeSeconds: number, frameRate: FrameRate | undefined): number {
+  const time = Number.isFinite(currentTimeSeconds) ? Math.max(0, currentTimeSeconds) : 0;
+  const numerator = frameRate?.numerator ?? 10;
+  const denominator = frameRate?.denominator ?? 1;
+  if (numerator <= 0 || denominator <= 0) return Math.round(time * 10);
+  return Math.round((time * numerator) / denominator);
+}
+
+function frameFileNameFor(displayName: string, frameNumber: number): string {
+  const baseName = displayName.split(/[\\/]/).at(-1) ?? "";
+  const extensionIndex = baseName.lastIndexOf(".");
+  const withoutExtension = extensionIndex > 0 ? baseName.slice(0, extensionIndex) : baseName;
+  const cleanedBase = Array.from(withoutExtension, (character) =>
+    character.charCodeAt(0) < 32 ? "_" : character,
+  )
+    .join("")
+    .replace(/[<>:"/\\|?*]/g, "_")
+    .replace(/[ .]+$/g, "")
+    .trim();
+
+  const suffix = `_${Math.max(0, Math.round(frameNumber))}.png`;
+  const safeBase = cleanedBase || "frame";
+  let truncatedBase = "";
+
+  for (const character of safeBase) {
+    if (truncatedBase.length + character.length + suffix.length > 255) break;
+    truncatedBase += character;
+  }
+
+  return `${truncatedBase || "frame"}${suffix}`;
+}
 
 function capturePreviewFrame(
   video: HTMLVideoElement,
@@ -55,4 +88,4 @@ function capturePreviewFrame(
   });
 }
 
-export { capturePreviewFrame };
+export { capturePreviewFrame, frameFileNameFor, frameNumberAt };

@@ -9,13 +9,18 @@ const MAX_FRAME_PNG_BYTES: usize = 100 * 1024 * 1024;
 const PNG_SIGNATURE: &[u8; 8] = b"\x89PNG\r\n\x1a\n";
 
 #[tauri::command]
-pub async fn save_frame_png(app: AppHandle, png_data: Vec<u8>) -> Result<bool, AppError> {
+pub async fn save_frame_png(
+    app: AppHandle,
+    png_data: Vec<u8>,
+    default_name: String,
+) -> Result<bool, AppError> {
     validate_frame_png(&png_data)?;
+    validate_default_name(&default_name)?;
 
     let (sender, receiver) = std::sync::mpsc::channel();
     app.dialog()
         .file()
-        .set_file_name("frame.png")
+        .set_file_name(default_name)
         .add_filter("PNG Image", &["png"])
         .save_file(move |selected| {
             let _ = sender.send(selected);
@@ -36,6 +41,23 @@ pub async fn save_frame_png(app: AppHandle, png_data: Vec<u8>) -> Result<bool, A
         .await
         .map_err(|_| AppError::internal("The selected frame could not be saved."))??;
     Ok(true)
+}
+
+fn validate_default_name(default_name: &str) -> Result<(), AppError> {
+    if default_name.trim().is_empty()
+        || default_name.chars().count() > 255
+        || default_name.contains('/')
+        || default_name.contains('\\')
+        || default_name.chars().any(|character| {
+            character.is_control() || matches!(character, ':' | '<' | '>' | '"' | '|' | '?' | '*')
+        })
+        || !default_name.to_ascii_lowercase().ends_with(".png")
+    {
+        return Err(AppError::invalid_request(
+            "The suggested frame filename is invalid.",
+        ));
+    }
+    Ok(())
 }
 
 fn validate_frame_png(png_data: &[u8]) -> Result<(), AppError> {
@@ -59,7 +81,24 @@ fn write_frame_png(path: PathBuf, png_data: Vec<u8>) -> Result<(), AppError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{MAX_FRAME_PNG_BYTES, PNG_SIGNATURE, validate_frame_png};
+    use super::{MAX_FRAME_PNG_BYTES, PNG_SIGNATURE, validate_default_name, validate_frame_png};
+
+    #[test]
+    fn accepts_a_png_filename_suggestion() {
+        assert!(validate_default_name("clip_42.png").is_ok());
+    }
+
+    #[test]
+    fn rejects_path_components_in_the_filename_suggestion() {
+        assert!(validate_default_name("../clip_42.png").is_err());
+        assert!(validate_default_name("folder\\clip_42.png").is_err());
+        assert!(validate_default_name("C:clip_42.png").is_err());
+    }
+
+    #[test]
+    fn rejects_non_png_filename_suggestions() {
+        assert!(validate_default_name("clip_42.jpg").is_err());
+    }
 
     #[test]
     fn accepts_png_signature_and_payload() {

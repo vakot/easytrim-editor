@@ -13,14 +13,18 @@ import {
   selectRotationDegrees,
 } from "@/app/store/slices/crop-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
-import { selectSourceLoadToken, selectSourceMedia } from "@/app/store/slices/source-slice";
+import {
+  selectSourceLoadToken,
+  selectSourceMedia,
+  selectSourceSelection,
+} from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { isQuarterTurn } from "@/domain/rotation";
 import { usePreviewTransform } from "@/features/preview";
 import { saveFramePng } from "@/lib/tauri/media";
 
 import type { CropHandle } from "../../lib/crop-geometry.utils";
-import { capturePreviewFrame } from "../../lib/frame-capture";
+import { capturePreviewFrame, frameFileNameFor, frameNumberAt } from "../../lib/frame-capture";
 import { previewGeometryFor, sourceCropForRotation } from "../../lib/preview-geometry";
 import {
   previewOutputAspectFor,
@@ -48,6 +52,7 @@ function CropViewport() {
   const flipVertical = useAppSelector(selectFlipVertical);
   const rotationDegrees = useAppSelector(selectRotationDegrees);
   const sourceMedia = useAppSelector(selectSourceMedia);
+  const sourceSelection = useAppSelector(selectSourceSelection);
   const sourceLoadToken = useAppSelector(selectSourceLoadToken);
   const preview = useAppSelector(selectPreview);
   const reduceMotion = useReducedMotion() === true;
@@ -126,22 +131,36 @@ function CropViewport() {
   const captureCurrentFrame = useCallback(() => {
     const video = videoRef.current;
     if (!video) throw new Error("The preview frame is not available.");
-    return capturePreviewFrame(video, crop, rotationDegrees, flipHorizontal, flipVertical);
+
+    return {
+      currentTimeSeconds: video.currentTime,
+      frame: capturePreviewFrame(video, crop, rotationDegrees, flipHorizontal, flipVertical),
+    };
   }, [crop, flipHorizontal, flipVertical, rotationDegrees, videoRef]);
 
   const saveFrame = useCallback(async () => {
     try {
-      const blob = await captureCurrentFrame();
-      const saved = await saveFramePng(new Uint8Array(await blob.arrayBuffer()));
+      const { currentTimeSeconds, frame } = captureCurrentFrame();
+      const blob = await frame;
+      const defaultName = frameFileNameFor(
+        sourceSelection?.displayName ?? "frame",
+        frameNumberAt(
+          currentTimeSeconds,
+          sourceMedia?.video.averageFrameRate ?? sourceMedia?.video.realFrameRate,
+        ),
+      );
+
+      const saved = await saveFramePng(new Uint8Array(await blob.arrayBuffer()), defaultName);
       if (saved) toast.success(t("preview.messages.frameSaved"));
     } catch {
       toast.error(t("preview.messages.frameSaveFailed"));
     }
-  }, [captureCurrentFrame, t]);
+  }, [captureCurrentFrame, sourceMedia, sourceSelection, t]);
 
   const copyFrame = useCallback(async () => {
     try {
-      const blob = await captureCurrentFrame();
+      const { frame } = captureCurrentFrame();
+      const blob = await frame;
       if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined")
         throw new Error("Image clipboard access is unavailable.");
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);

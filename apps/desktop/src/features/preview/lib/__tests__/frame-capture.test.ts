@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { capturePreviewFrame } from "../frame-capture";
+import { capturePreviewFrame, frameFileNameFor, frameNumberAt } from "../frame-capture";
 
 describe("capturePreviewFrame", () => {
   const context = {
@@ -47,5 +47,17 @@ describe("capturePreviewFrame", () => {
     await expect(
       capturePreviewFrame(unavailableVideo, { height: 1, width: 1, x: 0, y: 0 }, 0, false, false),
     ).rejects.toThrow("The preview frame is not ready.");
+  });
+});
+
+describe("frame output names", () => {
+  it("uses a source basename and rational source frame rate", () => {
+    expect(frameNumberAt(1.5, { denominator: 2, numerator: 24 })).toBe(18);
+    expect(frameFileNameFor("my.clip.mp4", 18)).toBe("my.clip_18.png");
+  });
+
+  it("sanitizes source names and falls back when the frame rate is missing", () => {
+    expect(frameFileNameFor("clip.mp4", frameNumberAt(2.25, undefined))).toBe("clip_23.png");
+    expect(frameFileNameFor("../clip?.mp4", 1)).toBe("clip__1.png");
   });
 });
