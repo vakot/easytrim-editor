@@ -88,7 +88,13 @@ vi.mock("@/features/export", () => ({
   useQueueDeleteSource: () => ({ requestEnableSourceDeletion: vi.fn() }),
 }));
 vi.mock("@/features/preview", () => ({
-  usePreviewTransform: () => ({ isAvailable: false, requestCrop: vi.fn(), requestReset: vi.fn() }),
+  usePreviewTransform: () => ({
+    isAvailable: false,
+    requestCopyFrame: vi.fn(),
+    requestCrop: vi.fn(),
+    requestReset: vi.fn(),
+    requestSaveFrame: vi.fn(),
+  }),
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
@@ -189,7 +195,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(53);
+    ).toHaveLength(58);
     expect(
       screen
         .getAllByRole("button")
@@ -287,6 +293,16 @@ describe("ApplicationCommandsProvider", () => {
       "data-group",
       "Preview / Transform",
     );
+    for (const commandId of ["save-current-frame", "copy-current-frame"]) {
+      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
+        "data-group",
+        "Preview / Transform",
+      );
+      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
+        "data-surfaces",
+        "menu,palette",
+      );
+    }
     expect(screen.getByRole("button", { name: "reset-layout" })).toHaveAttribute(
       "data-variant",
       "destructive",

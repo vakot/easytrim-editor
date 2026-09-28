@@ -24,6 +24,8 @@ function CropViewportContextMenu({ children }: CropViewportContextMenuProps) {
       <ContextMenuContent>
         {(
           [
+            "save-current-frame",
+            "copy-current-frame",
             "crop-preview",
             "rotate-90-cw",
             "rotate-90-ccw",
@@ -34,7 +36,7 @@ function CropViewportContextMenu({ children }: CropViewportContextMenuProps) {
           ] as const
         ).map((commandId, index) => (
           <span key={commandId}>
-            {index === 1 || index === 4 || index === 6 ? <ContextMenuSeparator /> : null}
+            {index === 2 || index === 5 || index === 7 ? <ContextMenuSeparator /> : null}
             <ApplicationCommandMenuItem asChild commandId={commandId}>
               <ContextMenuItem>
                 <ApplicationCommandLabel />

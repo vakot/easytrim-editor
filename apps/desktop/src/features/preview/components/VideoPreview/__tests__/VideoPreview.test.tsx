@@ -863,6 +863,17 @@ describe("VideoPreview", () => {
     );
   });
 
+  it("offers frame save and copy from the preview context menu", async () => {
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
+    const viewport = container.querySelector('[aria-label="Video crop preview"]');
+    expect(viewport).not.toBeNull();
+
+    openTransformMenu(viewport!);
+
+    expect(await screen.findByRole("menuitem", { name: "Save current frame" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "Copy current frame" })).toBeVisible();
+  });
+
   it("closes crop controls with Escape or when focus leaves the preview", async () => {
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 

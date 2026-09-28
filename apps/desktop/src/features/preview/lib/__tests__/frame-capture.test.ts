@@ -1,0 +1,51 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { capturePreviewFrame } from "../frame-capture";
+
+describe("capturePreviewFrame", () => {
+  const context = {
+    drawImage: vi.fn(),
+    rotate: vi.fn(),
+    scale: vi.fn(),
+    translate: vi.fn(),
+  };
+
+  const video = {
+    readyState: HTMLMediaElement.HAVE_CURRENT_DATA,
+    videoHeight: 1080,
+    videoWidth: 1920,
+  } as HTMLVideoElement;
+
+  beforeEach(() => {
+    context.drawImage.mockClear();
+    context.rotate.mockClear();
+    context.scale.mockClear();
+    context.translate.mockClear();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      context as unknown as CanvasRenderingContext2D,
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((callback) => {
+      callback(new Blob(["png"]));
+    });
+  });
+
+  it("captures the selected source region with its active rotation and flips", async () => {
+    const crop = { height: 0.5, width: 0.25, x: 0.1, y: 0.2 };
+    const blob = await capturePreviewFrame(video, crop, 90, true, false);
+    expect(blob.type).toBe("");
+    expect(context.rotate).toHaveBeenCalledWith(Math.PI / 2);
+    expect(context.scale).toHaveBeenCalledWith(-1, 1);
+    expect(context.drawImage).toHaveBeenCalledWith(video, 384, 702, 960, 270, -480, -135, 960, 270);
+  });
+
+  it("rejects capture until the video has a decoded frame", async () => {
+    const unavailableVideo = {
+      ...video,
+      readyState: HTMLMediaElement.HAVE_METADATA,
+    } as HTMLVideoElement;
+
+    await expect(
+      capturePreviewFrame(unavailableVideo, { height: 1, width: 1, x: 0, y: 0 }, 0, false, false),
+    ).rejects.toThrow("The preview frame is not ready.");
+  });
+});

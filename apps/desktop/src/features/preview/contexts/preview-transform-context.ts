@@ -1,15 +1,19 @@
 import { createContext, useContext } from "react";
 
 interface PreviewTransformHandlers {
+  copyFrame: () => Promise<void>;
   openCrop: () => void;
   resetTransform: () => void;
+  saveFrame: () => Promise<void>;
 }
 
 interface PreviewTransformContextValue {
   isAvailable: boolean;
   registerHandlers: (handlers: PreviewTransformHandlers) => () => void;
+  requestCopyFrame: () => Promise<void>;
   requestCrop: () => void;
   requestReset: () => void;
+  requestSaveFrame: () => Promise<void>;
 }
 
 const PreviewTransformContext = createContext<PreviewTransformContextValue | null>(null);

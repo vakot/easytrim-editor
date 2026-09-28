@@ -35,6 +35,16 @@ function PreviewTransformProvider({ children }: PropsWithChildren) {
   }, []);
 
   const requestCrop = useCallback(() => handlersRef.current?.openCrop(), []);
+  const requestSaveFrame = useCallback(
+    () => handlersRef.current?.saveFrame() ?? Promise.resolve(),
+    [],
+  );
+
+  const requestCopyFrame = useCallback(
+    () => handlersRef.current?.copyFrame() ?? Promise.resolve(),
+    [],
+  );
+
   const requestReset = useCallback(() => setResetRequested(true), []);
   const cancelReset = useCallback(() => setResetRequested(false), []);
   const confirmReset = useCallback(() => {
@@ -46,9 +56,11 @@ function PreviewTransformProvider({ children }: PropsWithChildren) {
     <PreviewTransformContext.Provider
       value={{
         isAvailable,
+        requestCopyFrame,
         registerHandlers,
         requestCrop,
         requestReset,
+        requestSaveFrame,
       }}
     >
       {children}

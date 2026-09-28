@@ -196,11 +196,13 @@ export const sk = {
     options: {
       commandSearchTerms: {
         closeFile: "odstrániť|zdroj",
+        copyCurrentFrame: "kopírovať|snímka|obrázok|schránka",
         deleteFile: "odstrániť|kôš|zdroj",
         openFile: "importovať|video|zdroj",
         openFolder: "adresár|importovať|zdroj",
         optimizedExport: "kódovať|vykresliť|prekódovať",
         saveLosslessCut: "rýchly strih|bezstratový|vykresliť",
+        saveCurrentFrame: "uložiť|snímka|obrázok|png",
       },
       layoutDensities: { compact: "Kompaktné", default: "Predvolené" },
     },
@@ -401,9 +403,11 @@ export const sk = {
   preview: {
     actions: {
       nextFrame: "Nasledujúca snímka",
+      copyFrame: "Kopírovať aktuálnu snímku",
       pause: "Pozastaviť",
       play: "Prehrať",
       previousFrame: "Predchádzajúca snímka",
+      saveFrame: "Uložiť aktuálnu snímku",
       resetTools: "Obnoviť nástroje",
       setEnd: "Nastaviť koniec segmentu na aktuálnu pozíciu",
       setStart: "Nastaviť začiatok segmentu na aktuálnu pozíciu",
@@ -435,6 +439,10 @@ export const sk = {
     },
     messages: {
       error: "Náhľad videa sa nepodarilo zobraziť",
+      frameCopied: "Snímka bola skopírovaná do schránky",
+      frameCopyFailed: "Snímku sa nepodarilo skopírovať do schránky.",
+      frameSaveFailed: "Snímku sa nepodarilo uložiť.",
+      frameSaved: "Snímka bola uložená",
       playbackFailed: "Prehrávanie sa nepodarilo spustiť.",
       proxy:
         "Pôvodný zdroj nebolo možné prehrať priamo, preto EasyTrim pripravil kompatibilný náhľad, ktorý môže mať nižšiu kvalitu. Export stále používa pôvodný súbor.",
