@@ -125,6 +125,7 @@ describe("preferences Redux domain", () => {
         lastAudiblePlaybackVolumePercent: 100,
         playbackVolumePercent: 100,
         customPrimaryColor: "#123456",
+        uiScalePercent: 100,
       },
       preferencesReset(),
     );
@@ -173,6 +174,7 @@ describe("preferences Redux domain", () => {
       lastAudiblePlaybackVolumePercent: 100,
       playbackVolumePercent: 100,
       customPrimaryColor: "#efbf04",
+      uiScalePercent: 100,
     };
 
     const state = { preferences } as RootState;

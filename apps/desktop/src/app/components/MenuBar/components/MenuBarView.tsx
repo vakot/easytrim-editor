@@ -1,4 +1,4 @@
-import { Check, Monitor, Moon, Sun } from "lucide-react";
+import { Check, Monitor, Moon, Sun, ZoomIn } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -23,6 +23,7 @@ import {
 
 import { getPrimaryColorCommandId, getThemeCommandId } from "@/app/commands/appearance";
 import {
+  ApplicationCommandHint,
   ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
@@ -35,6 +36,7 @@ import {
   selectPrimaryColor,
   selectPrimaryColorKey,
   selectThemePreference,
+  selectUiScalePercent,
 } from "@/app/store/slices/preferences-slice";
 import {
   CUSTOM_PRIMARY_COLOR,
@@ -82,6 +84,7 @@ function MenuBarViewContent({ onClose }: { onClose: MenuBarViewProps["onClose"] 
   const primaryColor = useAppSelector(selectPrimaryColor);
   const primaryColorKey = useAppSelector(selectPrimaryColorKey);
   const customPrimaryColor = useAppSelector(selectCustomPrimaryColor);
+  const uiScalePercent = useAppSelector(selectUiScalePercent);
 
   const currentThemeIcon = themeIcons[preference];
   const displayedPrimaryColor = previewColor ?? primaryColor;
@@ -100,6 +103,31 @@ function MenuBarViewContent({ onClose }: { onClose: MenuBarViewProps["onClose"] 
   return (
     <>
       <MenubarGroup>
+        <MenubarSub>
+          <MenubarSubTrigger inset>
+            <MenubarIcon>
+              <ZoomIn aria-hidden="true" />
+            </MenubarIcon>
+            {t("app.labels.uiScaling")}
+            <MenubarShortcut>{uiScalePercent}%</MenubarShortcut>
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            {(["ui-scale-zoom-in", "ui-scale-zoom-out"] as const).map((commandId) => (
+              <ApplicationCommandMenuItem asChild commandId={commandId} key={commandId}>
+                <MenubarItem keepOpen>
+                  <ApplicationCommandLabel />
+                  <ApplicationCommandHint />
+                </MenubarItem>
+              </ApplicationCommandMenuItem>
+            ))}
+            <MenubarSeparator />
+            <ApplicationCommandMenuItem asChild commandId="ui-scale-reset">
+              <MenubarItem variant="destructive">
+                <ApplicationCommandLabel />
+              </MenubarItem>
+            </ApplicationCommandMenuItem>
+          </MenubarSubContent>
+        </MenubarSub>
         <MenubarSub>
           <MenubarSubTrigger inset>
             <MenubarIcon>{currentThemeIcon}</MenubarIcon>

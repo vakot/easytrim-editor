@@ -68,7 +68,7 @@ function SourceCardThumbnail({
         <span className="grid size-full place-items-center bg-linear-to-br from-muted to-background">
           <span className="grid justify-items-center gap-2">
             <FileVideo aria-hidden="true" className="size-8 opacity-40" />
-            <span className="text-[10px]">{t("source.messages.previewUnavailable")}</span>
+            <span className="text-[0.625rem]">{t("source.messages.previewUnavailable")}</span>
           </span>
         </span>
       )}

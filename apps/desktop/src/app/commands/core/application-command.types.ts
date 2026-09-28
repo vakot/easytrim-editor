@@ -23,6 +23,7 @@ interface ApplicationCommand<Id extends string = string> {
   checked?: boolean;
   enabled: boolean;
   group: ApplicationCommandGroupMetadata;
+  hint?: string;
   icon: ReactNode;
   id: Id;
   /** Checked configuration commands stay open by default; this overrides that behavior. */

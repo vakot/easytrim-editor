@@ -92,12 +92,18 @@ function CropViewport() {
   const startCropDrag = useCallback(
     (event: PointerEvent<HTMLElement>, handle: CropHandle) => {
       const viewportBounds = previewRef.current?.getBoundingClientRect();
+
+      const rootFontSizePx = Number.parseFloat(
+        window.getComputedStyle(document.documentElement).fontSize,
+      );
+
       const outputBounds = viewportBounds
         ? previewOutputBoundsFor(
             viewportBounds.width,
             viewportBounds.height,
             previewAspect,
             cropIsOpen,
+            rootFontSizePx,
           )
         : undefined;
 

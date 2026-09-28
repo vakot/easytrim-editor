@@ -182,7 +182,9 @@ function CommandPaletteItem({ match }: { match: ApplicationCommandMatch<Applicat
       <span>
         <Highlight ranges={match.labelMatchRanges}>{command.label}</Highlight>
       </span>
-      {command.shortcut ? (
+      {command.hint ? (
+        <CommandShortcut>{command.hint}</CommandShortcut>
+      ) : command.shortcut ? (
         <CommandShortcut aria-label={getShortcutAriaValue(command.shortcut)}>
           <KbdGroup>
             {getShortcutDisplayKeys(command.shortcut).map((key) => (

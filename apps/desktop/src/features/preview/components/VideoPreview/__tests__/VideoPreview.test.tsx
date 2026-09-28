@@ -298,7 +298,7 @@ describe("VideoPreview", () => {
     expect(output).toHaveAttribute("data-output-aspect-ratio", "1.7777777777777777");
     expect(output).toHaveAttribute(
       "data-output-width-target",
-      "min(max(0px, calc(100cqw - 0px)), max(0px, calc(177.77777777777777cqh - 0px)))",
+      "min(max(0rem, calc(100cqw - 0rem)), max(0rem, calc(177.77777777777777cqh - 0rem)))",
     );
     expect(container.querySelector("[data-crop-clip]")).toBeInTheDocument();
     expect(container.querySelector("[data-full-rotated-source]")).toHaveAttribute(
@@ -311,7 +311,7 @@ describe("VideoPreview", () => {
     expect(output).toHaveAttribute("data-crop-editing", "true");
     expect(output).toHaveAttribute(
       "data-output-width-target",
-      "min(max(0px, calc(100cqw - 56px)), max(0px, calc(177.77777777777777cqh - 99.55555555555554px)))",
+      "min(max(0rem, calc(100cqw - 3.5rem)), max(0rem, calc(177.77777777777777cqh - 6.222222222222221rem)))",
     );
     expect(output).toHaveAttribute("data-output-aspect-ratio", "1.7777777777777777");
     expect(container.querySelector("[data-full-rotated-source]")).toHaveAttribute(
@@ -462,7 +462,7 @@ describe("VideoPreview", () => {
     expect(output).toHaveAttribute("data-crop-editing", "true");
     expect(output).toHaveAttribute(
       "data-output-width-target",
-      `min(max(0px, calc(100cqw - 56px)), max(0px, calc(${(16 / 9) * 100}cqh - ${(16 / 9) * 56}px)))`,
+      `min(max(0rem, calc(100cqw - 3.5rem)), max(0rem, calc(${(16 / 9) * 100}cqh - ${(16 / 9) * 3.5}rem)))`,
     );
     expect(container.querySelector("[data-preview-viewport]")).toHaveClass("overflow-hidden");
   });
@@ -660,7 +660,7 @@ describe("VideoPreview", () => {
     );
     expect(container.querySelector("[data-preview-output]")).toHaveAttribute(
       "data-output-width-target",
-      "min(max(0px, calc(88.88888888888889cqw - 0px)), max(0px, calc(100cqh - 0px)))",
+      "min(max(0rem, calc(88.88888888888889cqw - 0rem)), max(0rem, calc(100cqh - 0rem)))",
     );
     expect(container.querySelector("[data-preview-output]")).toHaveAttribute(
       "data-output-coordinate-aspect-ratio",

@@ -9,6 +9,10 @@ import {
 
 export type ActivityFeedView = "default" | "compact" | "branch";
 export const DEFAULT_PLAYBACK_VOLUME_PERCENT = 100;
+export const DEFAULT_UI_SCALE_PERCENT = 100;
+export const MAX_UI_SCALE_PERCENT = 200;
+export const MIN_UI_SCALE_PERCENT = 50;
+export const UI_SCALE_STEP_PERCENT = 25;
 
 interface Preferences {
   activityFeedView: ActivityFeedView;
@@ -25,6 +29,7 @@ interface Preferences {
   segmentPlaybackEnabledDefault: boolean;
   snapPlaybackEnabledDefault: boolean;
   theme: ThemePreference;
+  uiScalePercent: number;
 }
 
 export type PreferenceKey = {
@@ -41,6 +46,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   mergeAudioEnabledDefault: false,
   layoutDensity: DEFAULT_LAYOUT_DENSITY,
   theme: "system",
+  uiScalePercent: DEFAULT_UI_SCALE_PERCENT,
   primaryColor: DEFAULT_PRIMARY_COLOR,
   lastAudiblePlaybackVolumePercent: DEFAULT_PLAYBACK_VOLUME_PERCENT,
   playbackVolumePercent: DEFAULT_PLAYBACK_VOLUME_PERCENT,

@@ -61,6 +61,7 @@ const menuState = vi.hoisted(() => ({
     lastAudiblePlaybackVolumePercent: 100,
     playbackVolumePercent: 100,
     customPrimaryColor: "#efbf04",
+    uiScalePercent: 100,
   } as Preferences,
 }));
 
@@ -647,6 +648,7 @@ describe("MenuBarTest", () => {
               mergeAudioEnabledDefault: false,
               deleteSourceOnRenderFinish: false,
               lastSeenChangelogVersion: null,
+              uiScalePercent: 100,
             }}
           />
         </ThemeProvider>

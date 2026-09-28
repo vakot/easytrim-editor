@@ -5,7 +5,7 @@ interface PreviewOutputBounds {
   width: number;
 }
 
-const PREVIEW_CROP_INSET_PX = 56;
+const PREVIEW_CROP_INSET_REM = 3.5;
 
 function previewOutputAspectFor(geometry: PreviewGeometry, cropIsOpen: boolean): number {
   return cropIsOpen ? geometry.rotatedAspect : geometry.outputAspect;
@@ -20,12 +20,12 @@ function previewOutputWidthTargetFor(
   cropIsOpen: boolean,
   quarterTurn: boolean,
 ): string {
-  const inset = cropIsOpen ? PREVIEW_CROP_INSET_PX : 0;
+  const insetRem = cropIsOpen ? PREVIEW_CROP_INSET_REM : 0;
   const widthScale = quarterTurn ? 100 / aspectRatio : 100;
-  const widthInset = quarterTurn ? inset / aspectRatio : inset;
+  const widthInsetRem = quarterTurn ? insetRem / aspectRatio : insetRem;
   const heightScale = quarterTurn ? 100 : aspectRatio * 100;
-  const heightInset = quarterTurn ? inset : aspectRatio * inset;
-  return `min(max(0px, calc(${widthScale}cqw - ${widthInset}px)), max(0px, calc(${heightScale}cqh - ${heightInset}px)))`;
+  const heightInsetRem = quarterTurn ? insetRem : aspectRatio * insetRem;
+  return `min(max(0rem, calc(${widthScale}cqw - ${widthInsetRem}rem)), max(0rem, calc(${heightScale}cqh - ${heightInsetRem}rem)))`;
 }
 
 function previewOutputBoundsFor(
@@ -33,11 +33,13 @@ function previewOutputBoundsFor(
   viewportHeight: number,
   aspectRatio: number,
   cropIsOpen: boolean,
+  rootFontSizePx = 16,
 ): PreviewOutputBounds {
+  const insetPx = cropIsOpen ? PREVIEW_CROP_INSET_REM * rootFontSizePx : 0;
   const width = cropIsOpen
     ? Math.min(
-        Math.max(0, viewportWidth - PREVIEW_CROP_INSET_PX),
-        Math.max(0, aspectRatio * viewportHeight - aspectRatio * PREVIEW_CROP_INSET_PX),
+        Math.max(0, viewportWidth - insetPx),
+        Math.max(0, aspectRatio * viewportHeight - aspectRatio * insetPx),
       )
     : Math.min(viewportWidth, aspectRatio * viewportHeight);
 

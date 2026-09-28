@@ -21,7 +21,7 @@
 [data-layout-density="compact"]
   #workspace:has(> .workspace-separator[aria-valuenow="0"])
   > .workspace-separator {
-  width: 6px;
+  width: 0.375rem;
   background-color: transparent;
 }
 
@@ -38,7 +38,7 @@
 [data-layout-density="compact"]
   #workspace:has(> .workspace-separator[aria-valuenow="0"])
   [data-layout-region="workspace-timeline"] {
-  border-left-width: 1px;
+  border-left-width: 0.0625rem;
 }
 
 [data-layout-density="compact"]

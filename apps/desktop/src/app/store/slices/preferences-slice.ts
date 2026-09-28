@@ -9,8 +9,12 @@ import {
   type ActivityFeedView,
   DEFAULT_PLAYBACK_VOLUME_PERCENT,
   DEFAULT_PREFERENCES,
+  DEFAULT_UI_SCALE_PERCENT,
+  MAX_UI_SCALE_PERCENT,
+  MIN_UI_SCALE_PERCENT,
   type PreferenceKey,
   type Preferences,
+  UI_SCALE_STEP_PERCENT,
 } from "@/app/preferences";
 import { queueSettingsReset } from "@/app/store/actions/queue-actions";
 import {
@@ -53,6 +57,21 @@ const preferencesSlice = createSlice({
     },
     layoutDensityChanged: (state, action: PayloadAction<LayoutDensity>) => {
       state.layoutDensity = action.payload;
+    },
+    uiScaleIncreased: (state) => {
+      state.uiScalePercent = Math.min(
+        MAX_UI_SCALE_PERCENT,
+        state.uiScalePercent + UI_SCALE_STEP_PERCENT,
+      );
+    },
+    uiScaleDecreased: (state) => {
+      state.uiScalePercent = Math.max(
+        MIN_UI_SCALE_PERCENT,
+        state.uiScalePercent - UI_SCALE_STEP_PERCENT,
+      );
+    },
+    uiScalingReset: (state) => {
+      state.uiScalePercent = DEFAULT_UI_SCALE_PERCENT;
     },
     layoutReset: (state) => {
       state.activityFeedView = DEFAULT_PREFERENCES.activityFeedView;
@@ -116,6 +135,9 @@ const {
   preferencesReset,
   primaryColorChanged,
   themePreferenceChanged,
+  uiScaleDecreased,
+  uiScaleIncreased,
+  uiScalingReset,
   viewSettingsReset,
 } = preferencesSlice.actions;
 
@@ -156,6 +178,16 @@ const selectLayoutDensity = (state: RootState): LayoutDensity => {
 };
 
 const selectThemePreference = (state: RootState): ThemePreference => selectPreferences(state).theme;
+const selectUiScalePercent = (state: RootState): number => {
+  const uiScalePercent = selectPreferences(state).uiScalePercent;
+  return Number.isFinite(uiScalePercent) &&
+    uiScalePercent >= MIN_UI_SCALE_PERCENT &&
+    uiScalePercent <= MAX_UI_SCALE_PERCENT &&
+    (uiScalePercent - MIN_UI_SCALE_PERCENT) % UI_SCALE_STEP_PERCENT === 0
+    ? uiScalePercent
+    : DEFAULT_UI_SCALE_PERCENT;
+};
+
 const selectPrimaryColor = (state: RootState): PrimaryColor =>
   selectPreferences(state).primaryColor;
 
@@ -197,6 +229,10 @@ export {
   selectSegmentPlaybackEnabledDefault,
   selectSnapPlaybackEnabledDefault,
   selectThemePreference,
+  selectUiScalePercent,
   themePreferenceChanged,
+  uiScaleDecreased,
+  uiScaleIncreased,
+  uiScalingReset,
   viewSettingsReset,
 };

@@ -8,7 +8,7 @@
   opacity: 0;
   pointer-events: none;
   content: "";
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(0.125rem);
   transition: opacity 200ms ease-out;
 }
 
