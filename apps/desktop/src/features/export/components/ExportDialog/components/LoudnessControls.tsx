@@ -158,7 +158,7 @@ function LoudnessAnalysisButton({ disabled, onAnalyze, state }: LoudnessAnalysis
           <MotionButton
             animate={{ paddingInline: compact ? "0.4375rem" : "0.625rem" }}
             aria-label={buttonLabel}
-            className="gap-0 overflow-hidden transition-colors"
+            className={`gap-0 overflow-hidden transition-colors ${compact ? "disabled:opacity-100" : ""}`}
             disabled={disabled}
             initial={false}
             onClick={onAnalyze}
