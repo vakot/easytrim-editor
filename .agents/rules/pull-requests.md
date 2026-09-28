@@ -27,26 +27,15 @@ Use the same type, context, and title conventions defined in `.agents/rules/comm
 Format:
 
 ```text
-<type>(<context>): [<optional_ticket_id>] <title>
+<type>(<context>): <title>
 ```
 
-Examples with a ticket:
-
-```text
-feat(settings): [PROJ-123] add notification preferences
-fix(auth): [PROJ-456] handle expired sessions
-```
-
-Examples without a ticket:
+Examples:
 
 ```text
 feat(settings): add notification preferences
 fix(auth): handle expired sessions
 ```
-
-The ticket segment is optional. If no ticket exists, omit the entire bracketed segment.
-
-Do not invent ticket IDs.
 
 The PR title should describe the complete logical change represented by the branch and does not need to match any individual commit title.
 
