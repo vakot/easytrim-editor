@@ -1,6 +1,6 @@
 import { Check, LoaderCircle, RotateCw } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -28,6 +28,8 @@ import type { ExportSettings } from "@/domain/editing-instance";
 import type { LoudnessAnalysis, LoudnessPreset } from "@/domain/media";
 import { analyzeAudioLoudness } from "@/lib/tauri/media";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
+
+const MotionButton = motion.create(Button);
 
 interface LoudnessControlsProps {
   settings: ExportSettings;
@@ -125,23 +127,7 @@ function LoudnessAnalysisButton({ disabled, onAnalyze, state }: LoudnessAnalysis
     state === "error" ? "destructive" : state === "success" ? "success" : "outline";
 
   const compact = state === "loading" || state === "success";
-  const fullLabel = t(
-    state === "error"
-      ? "export.dialogs.optimized.loudness.retry"
-      : "export.dialogs.optimized.loudness.analyze",
-  );
-
-  const [fullWidth, setFullWidth] = useState<number>();
-  const measureLabel = useCallback((element: HTMLSpanElement | null) => {
-    if (!element) return;
-
-    // Keep a numeric width even after the visible text is replaced by an icon.
-    const measure = () => setFullWidth(element.offsetWidth);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
+  const transition = { duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" } as const;
 
   return (
     <AnimatePresence initial={false} mode="wait">
@@ -150,7 +136,7 @@ function LoudnessAnalysisButton({ disabled, onAnalyze, state }: LoudnessAnalysis
           animate={{
             marginInlineStart: "0.5rem",
             opacity: 1,
-            width: compact ? "2rem" : (fullWidth ?? "auto"),
+            width: "auto",
           }}
           className="flex shrink-0 overflow-hidden"
           exit={{
@@ -167,48 +153,73 @@ function LoudnessAnalysisButton({ disabled, onAnalyze, state }: LoudnessAnalysis
                   width: 0,
                 }
           }
-          transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
+          transition={transition}
         >
-          <Button
+          <MotionButton
+            animate={{ paddingInline: compact ? "0.4375rem" : "0.625rem" }}
             aria-label={buttonLabel}
-            className="relative w-full overflow-hidden px-0 transition-colors"
+            className="gap-0 overflow-hidden transition-colors"
             disabled={disabled}
+            initial={false}
             onClick={onAnalyze}
             size="default"
+            transition={transition}
             type="button"
             variant={buttonVariant}
           >
-            <span
+            <motion.span
+              animate={{
+                width: state === "idle" ? 0 : "1rem",
+                opacity: state === "idle" ? 0 : 1,
+                marginInlineEnd: state === "error" ? "0.375rem" : 0,
+              }}
               aria-hidden="true"
-              className="pointer-events-none invisible absolute inline-flex w-max items-center gap-1.5 border border-transparent px-2.5"
-              ref={measureLabel}
+              className="flex shrink-0 items-center overflow-hidden"
+              initial={false}
+              transition={transition}
             >
-              {state === "error" ? <RotateCw /> : null}
-              {fullLabel}
-            </span>
-            <AnimatePresence initial={false} mode="wait">
+              <AnimatePresence initial={false} mode="wait">
+                <motion.span
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex size-4 shrink-0 items-center justify-center"
+                  exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -3 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 3 }}
+                  key={state}
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
+                >
+                  {state === "loading" ? (
+                    <LoaderCircle
+                      aria-hidden="true"
+                      className={shouldReduceMotion ? undefined : "animate-spin"}
+                    />
+                  ) : state === "success" ? (
+                    <Check aria-hidden="true" />
+                  ) : state === "error" ? (
+                    <RotateCw aria-hidden="true" />
+                  ) : null}
+                </motion.span>
+              </AnimatePresence>
+            </motion.span>
+            {(["idle", "error"] as const).map((labelState) => (
               <motion.span
-                animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-1.5"
-                exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -3 }}
-                initial={shouldReduceMotion ? false : { opacity: 0, y: 3 }}
-                key={state}
-                transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
+                animate={{
+                  opacity: state === labelState ? 1 : 0,
+                  width: state === labelState ? "auto" : 0,
+                }}
+                aria-hidden={state !== labelState}
+                className="min-w-0 shrink-0 overflow-hidden whitespace-nowrap"
+                initial={false}
+                key={labelState}
+                transition={transition}
               >
-                {state === "loading" ? (
-                  <LoaderCircle
-                    aria-hidden="true"
-                    className={shouldReduceMotion ? undefined : "animate-spin"}
-                  />
-                ) : state === "success" ? (
-                  <Check aria-hidden="true" />
-                ) : state === "error" ? (
-                  <RotateCw aria-hidden="true" />
-                ) : null}
-                {compact ? null : buttonLabel}
+                {t(
+                  labelState === "error"
+                    ? "export.dialogs.optimized.loudness.retry"
+                    : "export.dialogs.optimized.loudness.analyze",
+                )}
               </motion.span>
-            </AnimatePresence>
-          </Button>
+            ))}
+          </MotionButton>
         </motion.div>
       ) : null}
     </AnimatePresence>
