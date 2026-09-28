@@ -14,6 +14,7 @@ interface ExportUiState {
   launchError: AppError | null;
   optimizedDialogOpen: boolean;
   optimizedPlanRequestId: number | null;
+  queueEdit: { attemptId: string; instanceId: string; route: "fast" | "optimized" } | null;
   queueFinishAction: QueueFinishAction;
   startedSourceIds: string[];
 }
@@ -26,6 +27,7 @@ export const initialExportState: ExportUiState = {
   optimizedDialogOpen: false,
   optimizedPlanRequestId: null,
   queueFinishAction: "nothing",
+  queueEdit: null,
   startedSourceIds: [],
 };
 
@@ -82,6 +84,15 @@ const exportSlice = createSlice({
           : (action.payload[0] ?? "nothing");
       }
     },
+    queueEditStarted: (
+      state,
+      action: PayloadAction<{ attemptId: string; instanceId: string; route: "fast" | "optimized" }>,
+    ) => {
+      state.queueEdit = action.payload;
+    },
+    queueEditFinished: (state) => {
+      state.queueEdit = null;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(queueSettingsReset, (state) => {
@@ -106,6 +117,8 @@ const {
   optimizedExportPlanFailed,
   optimizedExportPlanReceived,
   optimizedExportPlanRequested,
+  queueEditFinished,
+  queueEditStarted,
   queueFinishActionChanged,
   queueFinishActionsAvailable,
   queuePaused,
@@ -131,6 +144,7 @@ const selectExportCommandPreviewError = (state: RootState): AppError | null =>
   state.export.commandPreviewError;
 
 const selectExportLaunchError = (state: RootState): AppError | null => state.export.launchError;
+const selectQueueEdit = (state: RootState): ExportUiState["queueEdit"] => state.export.queueEdit;
 
 export {
   exportLaunchFailed,
@@ -140,6 +154,8 @@ export {
   optimizedExportPlanFailed,
   optimizedExportPlanReceived,
   optimizedExportPlanRequested,
+  queueEditFinished,
+  queueEditStarted,
   queueFinishActionChanged,
   queueFinishActionsAvailable,
   queuePaused,
@@ -149,6 +165,7 @@ export {
   selectExportCommandPreviewError,
   selectExportLaunchError,
   selectOptimizedExportDialogOpen,
+  selectQueueEdit,
   selectQueueFinishAction,
   selectSourceQueueStarted,
 };

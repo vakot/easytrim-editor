@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added a rename action for queued exports so their output file name can be changed before rendering.
+- Added queued export Edit action that reopens captured settings and updates the same queue entry.
 - Added persistent UI scaling controls to the View menu and Command Center, with 25% zoom steps, a reset action, and layouts that resize with the selected scale.
 
 ## [1.12.2]

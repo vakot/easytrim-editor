@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   cancelExportAttemptRequested,
-  renameExportAttemptRequested,
+  editExportAttemptRequested,
   retryExportAttemptRequested,
 } from "@/app/store/thunks/export-thunks";
 import { restoreExportAttemptRequested } from "@/app/store/thunks/source-media-thunks";
@@ -43,7 +43,7 @@ function ExportQueueItemCancel({ className }: { className?: string }) {
   );
 }
 
-function ExportQueueItemRename({ className }: { className?: string }) {
+function ExportQueueItemEdit({ className }: { className?: string }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { attempt, instance } = useExportQueueItem();
@@ -56,12 +56,12 @@ function ExportQueueItemRename({ className }: { className?: string }) {
       <TooltipTrigger asChild>
         <span className="inline-flex" tabIndex={isNativeDialogOpen ? 0 : undefined}>
           <Button
-            aria-label={t("queue.actions.renameOutput")}
+            aria-label={t("queue.actions.editExport")}
             className={className}
             disabled={isNativeDialogOpen}
             onClick={() =>
               void dispatch(
-                renameExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
+                editExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
               )
             }
             size="icon-xs"
@@ -72,7 +72,7 @@ function ExportQueueItemRename({ className }: { className?: string }) {
           </Button>
         </span>
       </TooltipTrigger>
-      <TooltipContent>{t("queue.actions.renameOutput")}</TooltipContent>
+      <TooltipContent>{t("queue.actions.editExport")}</TooltipContent>
     </Tooltip>
   );
 }
@@ -159,7 +159,7 @@ function ExportQueueItemRetry({ className }: { className?: string }) {
 
 export {
   ExportQueueItemCancel,
-  ExportQueueItemRename,
+  ExportQueueItemEdit,
   ExportQueueItemRestore,
   ExportQueueItemRetry,
   ExportQueueItemReveal,

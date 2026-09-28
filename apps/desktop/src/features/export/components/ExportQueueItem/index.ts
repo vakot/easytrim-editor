@@ -1,6 +1,6 @@
 export {
   ExportQueueItemCancel,
-  ExportQueueItemRename,
+  ExportQueueItemEdit,
   ExportQueueItemRestore,
   ExportQueueItemRetry,
   ExportQueueItemReveal,

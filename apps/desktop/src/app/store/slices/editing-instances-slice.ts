@@ -229,18 +229,22 @@ const editingInstancesSlice = createSlice({
         );
       }
     },
-    editingInstanceExportOutputRenamed: (
+    editingInstanceExportAttemptEdited: (
       state,
       action: PayloadAction<{
         attemptId: string;
         id: EditingInstanceId;
         output: OutputSelection;
+        request: ExportAttempt["request"];
+        snapshot: EditorSnapshot;
       }>,
     ) => {
       const instance = getInstance(state, action.payload.id);
       const attempt = instance && getAttempt(instance, action.payload.attemptId);
       if (!attempt || attempt.state.status !== "queued") return;
       attempt.output = action.payload.output;
+      attempt.request = structuredClone(action.payload.request);
+      attempt.snapshot = structuredClone(action.payload.snapshot);
     },
     editingInstanceExportRestored: (
       state,
@@ -539,13 +543,13 @@ const {
   activeEditingInstanceChanged,
   editingInstanceClosed,
   editingInstanceDuplicated,
+  editingInstanceExportAttemptEdited,
   editingInstanceExportAttemptQueued,
   editingInstanceExportAttemptRemoved,
   editingInstanceExportCanceled,
   editingInstanceExportCompleted,
   editingInstanceExportFailed,
   editingInstanceExportHistoryCleared,
-  editingInstanceExportOutputRenamed,
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
   editingInstanceExportRestored,
@@ -703,13 +707,13 @@ export {
   activeEditingInstanceChanged,
   editingInstanceClosed,
   editingInstanceDuplicated,
+  editingInstanceExportAttemptEdited,
   editingInstanceExportAttemptQueued,
   editingInstanceExportAttemptRemoved,
   editingInstanceExportCanceled,
   editingInstanceExportCompleted,
   editingInstanceExportFailed,
   editingInstanceExportHistoryCleared,
-  editingInstanceExportOutputRenamed,
   editingInstanceExportProgressReceived,
   editingInstanceExportRequeued,
   editingInstanceExportRestored,
