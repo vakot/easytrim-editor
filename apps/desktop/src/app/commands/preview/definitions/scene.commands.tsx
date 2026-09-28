@@ -24,7 +24,6 @@ function useSceneCommands() {
   const sceneDetection = useSceneDetection(sourceReady);
   const previousSceneNavigationRef = useRef<{
     invokedAt: number;
-    playbackWasActive: boolean;
     targetMicros: number;
   } | null>(null);
 
@@ -48,12 +47,11 @@ function useSceneCommands() {
   function moveToPreviousScene() {
     const now = performance.now();
     const previousNavigation = previousSceneNavigationRef.current;
-    const isRepeatWhilePlaying =
+    const isRapidRepeat =
       previousNavigation !== null &&
-      previousNavigation.playbackWasActive &&
       now - previousNavigation.invokedAt <= SCENE_NAVIGATION_REPEAT_WINDOW_MS;
 
-    const targetMicros = isRepeatWhilePlaying
+    const targetMicros = isRapidRepeat
       ? findPreviousSceneBoundary(sceneBoundariesMicros, previousNavigation.targetMicros)
       : previousSceneMicros;
 
@@ -62,10 +60,7 @@ function useSceneCommands() {
       return;
     }
 
-    previousSceneNavigationRef.current =
-      playback.isPlaying || isRepeatWhilePlaying
-        ? { invokedAt: now, playbackWasActive: true, targetMicros }
-        : null;
+    previousSceneNavigationRef.current = { invokedAt: now, targetMicros };
     moveToScene(targetMicros);
   }
 
