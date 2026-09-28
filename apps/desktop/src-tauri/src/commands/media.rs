@@ -5,6 +5,7 @@ use crate::{
         audio::generate_audio_previews,
         probe::{MediaInfo, inspect_media_cancellable as probe_media},
         proxy::generate_preview,
+        scene_detection::detect_scene_boundaries,
         thumbnail::generate_thumbnail,
         waveform::{generate_waveforms, validate_waveform_request},
     },
@@ -126,6 +127,25 @@ pub async fn inspect_media(
         audio_stream_indexes,
     )?;
     Ok(result)
+}
+
+#[tauri::command]
+pub async fn detect_scenes(
+    source_path: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<u64>, AppError> {
+    let source = state.resolve_source_by_path(&source_path)?;
+    if let Some(boundaries_micros) = state.cached_scene_boundaries(source.load_token)? {
+        return Ok(boundaries_micros);
+    }
+
+    let load_token = source.load_token;
+    let boundaries_micros =
+        tauri::async_runtime::spawn_blocking(move || detect_scene_boundaries(&source))
+            .await
+            .map_err(|_| AppError::internal("Scene detection stopped unexpectedly."))??;
+    state.install_scene_boundaries(load_token, boundaries_micros.clone())?;
+    Ok(boundaries_micros)
 }
 
 #[tauri::command]
