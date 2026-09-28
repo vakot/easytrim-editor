@@ -55,13 +55,7 @@ function SceneDetectionTool({
   sceneDetection: ReturnType<typeof useSceneDetection>;
 }) {
   const { t } = useTranslation();
-  const { boundariesMicros, canDetect, detect, error, hasDetected, hasFailed, isDetecting } =
-    sceneDetection;
-
-  const resultMessage =
-    boundariesMicros.length > 0
-      ? t("timeline.status.sceneCount", { count: boundariesMicros.length })
-      : t("timeline.status.noScenes");
+  const { canDetect, detect, error, hasDetected, hasFailed, isDetecting } = sceneDetection;
 
   const button = (
     <Button
@@ -70,7 +64,7 @@ function SceneDetectionTool({
       aria-pressed={hasDetected}
       className={hasDetected ? "text-primary" : undefined}
       disabled={!canDetect || isDetecting}
-      onClick={hasFailed || hasDetected ? undefined : () => void detect()}
+      onClick={hasFailed ? undefined : () => void detect()}
       size="icon-sm"
       type="button"
       variant={hasFailed ? "destructive" : "secondary"}
@@ -79,21 +73,15 @@ function SceneDetectionTool({
     </Button>
   );
 
-  if (hasFailed || hasDetected) {
+  if (hasFailed) {
     return (
       <Popover>
         <PopoverTrigger asChild>{button}</PopoverTrigger>
         <PopoverContent align="start" className="space-y-3">
-          {hasFailed ? (
-            <>
-              <p role="alert">{error || t("timeline.status.sceneDetectionFailed")}</p>
-              <Button onClick={() => void detect()} size="sm" type="button">
-                {t("common.actions.retry")}
-              </Button>
-            </>
-          ) : (
-            <p role="status">{resultMessage}</p>
-          )}
+          <p role="alert">{error || t("timeline.status.sceneDetectionFailed")}</p>
+          <Button onClick={() => void detect()} size="sm" type="button">
+            {t("common.actions.retry")}
+          </Button>
         </PopoverContent>
       </Popover>
     );

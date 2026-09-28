@@ -501,9 +501,7 @@ export const sk = {
       tools: "Nástroje",
     },
     status: {
-      noScenes: "Nenašli sa žiadne zmeny scén",
       sceneDetectionFailed: "Rozpoznávanie scén zlyhalo. Skúste to znova.",
-      sceneCount: "Nájdené zmeny scén: {{count}}",
     },
     tooltips: {
       detectScenes:
