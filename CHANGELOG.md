@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added queued export Edit action that reopens captured settings and updates the same queue entry.
+- Added a queued export Edit action that reopens captured settings, updates the same entry, and lets later exports continue while it is being edited.
 - Added persistent UI scaling controls to the View menu and Command Center, with 25% zoom steps, a reset action, and layouts that resize with the selected scale.
 
 ## [1.12.2]
