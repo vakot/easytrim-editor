@@ -166,7 +166,6 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
             settings.loudnessPreset !== undefined
           }
           onClick={() => void analyze()}
-          size="sm"
           variant="outline"
         >
           {isAnalyzing
