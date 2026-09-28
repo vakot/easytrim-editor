@@ -70,14 +70,25 @@ pub struct OptimizedExportRequest {
     pub frame_rate: Option<FrameRateSelection>,
     pub arguments: String,
     #[serde(default)]
-    pub loudness_normalization: Option<LoudnessNormalization>,
+    pub loudness_normalization: Option<LoudnessPreset>,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct LoudnessNormalization {
-    pub integrated_lufs: f64,
-    pub true_peak_db: f64,
+pub enum LoudnessPreset {
+    WebVideo,
+    Streaming,
+    Broadcast,
+}
+
+impl LoudnessPreset {
+    fn targets(self) -> (f64, f64) {
+        match self {
+            Self::WebVideo => (-14.0, -1.0),
+            Self::Streaming => (-16.0, -1.5),
+            Self::Broadcast => (-23.0, -2.0),
+        }
+    }
 }
 
 pub fn build_fast_arguments(
@@ -372,20 +383,15 @@ fn validate_rotation(rotation_degrees: u16) -> Result<(), AppError> {
 }
 
 fn validate_loudness_normalization(
-    normalization: Option<LoudnessNormalization>,
+    preset: Option<LoudnessPreset>,
     audio_tracks: &[AudioTrackSelection],
 ) -> Result<(), AppError> {
-    let Some(normalization) = normalization else {
+    let Some(_) = preset else {
         return Ok(());
     };
-    if audio_tracks.is_empty()
-        || !normalization.integrated_lufs.is_finite()
-        || !(-36.0..=-5.0).contains(&normalization.integrated_lufs)
-        || !normalization.true_peak_db.is_finite()
-        || !(-9.0..=0.0).contains(&normalization.true_peak_db)
-    {
+    if audio_tracks.is_empty() {
         return Err(AppError::invalid_request(
-            "The loudness normalization target or audio selection is invalid.",
+            "Select at least one audio track for loudness normalization.",
         ));
     }
     Ok(())
@@ -456,8 +462,9 @@ pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bo
 fn normalized_audio_filter_graph(
     audio_tracks: &[AudioTrackSelection],
     merge_audio: bool,
-    normalization: LoudnessNormalization,
+    preset: LoudnessPreset,
 ) -> String {
+    let (integrated_lufs, true_peak_db) = preset.targets();
     let mut graph = audio_filter_graph(audio_tracks, false);
     if audio_tracks.len() > 1 {
         let inputs = (0..audio_tracks.len())
@@ -474,7 +481,7 @@ fn normalized_audio_filter_graph(
     }
     graph.push_str(&format!(
         ";[aout]loudnorm=I={}:TP={}:LRA=11[normalized]",
-        normalization.integrated_lufs, normalization.true_peak_db
+        integrated_lufs, true_peak_db
     ));
     graph
 }
@@ -611,9 +618,9 @@ mod tests {
     use std::path::Path;
 
     use super::{
-        AudioTrackSelection, CropSelection, FastExportRequest, FrameRateSelection,
-        LoudnessNormalization, OptimizedExportRequest, ResolutionSelection, TrimSelection,
-        build_fast_arguments, build_optimized_arguments, optimized_command_preview,
+        AudioTrackSelection, CropSelection, FastExportRequest, FrameRateSelection, LoudnessPreset,
+        OptimizedExportRequest, ResolutionSelection, TrimSelection, build_fast_arguments,
+        build_optimized_arguments, optimized_command_preview,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -855,10 +862,7 @@ mod tests {
             stream_index: 2,
             volume_percent: 50,
         });
-        request.loudness_normalization = Some(LoudnessNormalization {
-            integrated_lufs: -16.0,
-            true_peak_db: -1.5,
-        });
+        request.loudness_normalization = Some(LoudnessPreset::Streaming);
 
         let args = build_optimized_arguments(
             &media(),
@@ -885,33 +889,10 @@ mod tests {
     }
 
     #[test]
-    fn loudness_normalization_rejects_empty_or_out_of_range_targets() {
+    fn loudness_normalization_rejects_empty_audio_selection() {
         let mut request = optimized_request("-c:v libx264 -crf 20");
-        request.loudness_normalization = Some(LoudnessNormalization {
-            integrated_lufs: -16.0,
-            true_peak_db: -1.5,
-        });
+        request.loudness_normalization = Some(LoudnessPreset::Streaming);
         request.audio_tracks.clear();
-        assert_eq!(
-            build_optimized_arguments(
-                &media(),
-                &request,
-                Path::new("source.mkv"),
-                Path::new("out.mp4")
-            )
-            .unwrap_err()
-            .code,
-            "invalid_request"
-        );
-
-        request.audio_tracks.push(AudioTrackSelection {
-            stream_index: 1,
-            volume_percent: 50,
-        });
-        request.loudness_normalization = Some(LoudnessNormalization {
-            integrated_lufs: -80.0,
-            true_peak_db: 1.0,
-        });
         assert_eq!(
             build_optimized_arguments(
                 &media(),
