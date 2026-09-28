@@ -282,7 +282,7 @@ function LoudnessControls({ settings }: LoudnessControlsProps) {
   return (
     <section className="grid gap-1.5">
       <Label htmlFor="export-loudness-preset">{t("export.dialogs.optimized.loudness.label")}</Label>
-      <motion.div className="flex items-center gap-2" layout>
+      <motion.div className="flex items-center gap-2">
         <LoudnessPresetSelect
           analysis={analysis}
           onPresetChange={updateSettings}
