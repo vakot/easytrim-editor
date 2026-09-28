@@ -90,6 +90,7 @@ pub fn run() {
             commands::export::render_optimized,
             commands::frame::save_frame_png,
             commands::media::inspect_media,
+            commands::media::detect_scenes,
             commands::media::prepare_audio_previews,
             commands::media::prepare_imported_source_thumbnail,
             commands::media::release_imported_source_thumbnail,

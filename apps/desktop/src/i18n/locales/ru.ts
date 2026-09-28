@@ -66,6 +66,7 @@ export const ru = {
         preferencesPlayback: "Параметры / Воспроизведение",
         previewFrame: "Предпросмотр / Кадр",
         previewTransform: "Предпросмотр / Трансформация",
+        scenes: "Сцены",
         queueOnFinishedApplication: "Очередь / После завершения / Приложение",
         queueOnFinishedSource: "Очередь / После завершения / Источник",
         go: "Перейти",
@@ -218,7 +219,6 @@ export const ru = {
       language: "Язык",
       loop: "Повтор",
       mergeAudio: "Объединять аудио",
-      snap: "Привязка",
       theme: "Тема",
       title: "Настройки",
     },
@@ -236,7 +236,6 @@ export const ru = {
         followSegment: "Следовать за сегментом по умолчанию",
         loop: "Включать повтор по умолчанию",
         mergeAudio: "Объединять аудио по умолчанию",
-        snap: "Включать привязку по умолчанию",
       },
       colors: {
         amber: "Янтарный",
@@ -406,10 +405,12 @@ export const ru = {
   preview: {
     actions: {
       nextFrame: "Следующий кадр",
+      nextScene: "Перейти к следующей сцене",
       copyFrame: "Скопировать кадр",
       pause: "Пауза",
       play: "Воспроизвести",
       previousFrame: "Предыдущий кадр",
+      previousScene: "Перейти к предыдущей сцене",
       saveFrame: "Сохранить кадр",
       resetTools: "Сбросить инструменты",
       setEnd: "Установить конец сегмента в текущей позиции",
@@ -435,7 +436,6 @@ export const ru = {
       shortcutPlayPause: "Пуск / Пауза",
       shortcutPreviousNextFrame: "Пред. / След. кадр",
       shortcuts: "Клавиатурные сочетания",
-      snapPlayback: "Привязка воспроизведения",
     },
     status: {
       opening: "Открытие предпросмотра…",
@@ -468,8 +468,6 @@ export const ru = {
       segmentEnabled: "Ограничить воспроизведение выбранным сегментом",
       setEnd: "Установить конец сегмента в текущей позиции (O)",
       setStart: "Установить начало сегмента в текущей позиции (I)",
-      snapDisabled: "Индикатор воспроизведения остаётся на месте",
-      snapEnabled: "Индикатор следует за границей сегмента после привязки",
     },
     dialogs: {
       reset: {
@@ -496,7 +494,12 @@ export const ru = {
     },
   },
   timeline: {
-    actions: { moveSegment: "Переместить выбранный сегмент" },
+    actions: {
+      detectScenes: "Найти смены сцен",
+      disableSceneMarkers: "Скрыть маркеры сцен",
+      enableSceneMarkers: "Показать маркеры сцен",
+      moveSegment: "Переместить выбранный сегмент",
+    },
     labels: {
       duration: "Длительность",
       end: "Конец",
@@ -504,7 +507,12 @@ export const ru = {
       start: "Начало",
       tools: "Инструменты",
     },
+    status: {
+      sceneDetectionFailed: "Не удалось распознать сцены. Попробуйте ещё раз.",
+    },
     tooltips: {
+      detectScenes:
+        "Анализировать исходное видео на смены сцен. Удерживайте Shift и перетащите курсор воспроизведения к маркеру.",
       moveSegment:
         "Перетащите, чтобы переместить выбранный сегмент — удерживайте Shift для привязки",
       trimReset: "{{label}} — удерживайте Shift для привязки — дважды щёлкните для сброса",

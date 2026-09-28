@@ -473,6 +473,7 @@ async function prepareSelectedSource(
         flipHorizontal: snapshot.flipHorizontal,
         flipVertical: snapshot.flipVertical,
         rotation: snapshot.rotation,
+        sceneBoundariesMicros: snapshot.sceneBoundariesMicros,
         masterAudio: snapshot.audio.master,
         audioTracks: snapshot.audio.tracks,
         mergeAudio: snapshot.audio.mergeAudio,

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added optional scene-change detection with animated timeline markers and Shift-drag snapping at scene boundaries.
+- Added scene detection result states with failure details and a retry action.
+
+### Changed
+
+- Removed automatic playhead following while trim borders move.
+
 ## [1.12.3]
 
 ### Added

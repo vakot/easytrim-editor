@@ -1,11 +1,15 @@
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
+import { selectSceneMarkersEnabled } from "@/app/store/slices/editor-tools-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { clampPlaybackMicros } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
+import { cn } from "@/lib/class-names.utils";
 
 import { useTrimTimelineInteractions } from "../hooks/useTrimTimelineInteractions";
 import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
@@ -16,6 +20,8 @@ import styles from "./TimelinePanel.module.css";
 function TimelineTrack() {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
+  const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
+  const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const playback = usePlayback();
   const timeline = useTimeline();
   const range = timeline.trim ?? EMPTY_TIMELINE_RANGE;
@@ -56,12 +62,17 @@ function TimelineTrack() {
     onTrimDragStart: timeline.onTrimDragStart,
     playheadMicros: timeline.playheadMicros,
     range,
+    sceneBoundariesMicros: sceneMarkersEnabled ? sceneBoundariesMicros : [],
   });
 
   return (
     <div
       aria-label={t("timeline.accessibility.track")}
-      className={`${styles.track} ${disabled ? `cursor-not-allowed ${styles.trackDisabled}` : ""}`}
+      className={cn(
+        styles.track,
+        disabled && "cursor-not-allowed",
+        disabled && styles.trackDisabled,
+      )}
       onLostPointerCapture={(event) => finishScrub(event, false)}
       onPointerCancel={(event) => finishScrub(event, false)}
       onPointerDown={(event) => {
@@ -74,12 +85,13 @@ function TimelineTrack() {
       ref={trackRef}
     >
       <div
-        className={`${styles.selection} ${disabled ? styles.selectionDisabled : ""}`}
+        className={cn(styles.selection, disabled && styles.selectionDisabled)}
         style={{
           left: "var(--timeline-trim-start)",
           right: "var(--timeline-trim-end-inset)",
         }}
       />
+      <SceneMarkers sourceDurationMicros={range.sourceDurationMicros} />
       <SegmentDragHandle
         disabled={disabled}
         dragging={segmentDragging}
@@ -136,6 +148,31 @@ function TimelineTrack() {
         value={range.endMicros}
       />
     </div>
+  );
+}
+
+function SceneMarkers({ sourceDurationMicros }: { sourceDurationMicros: number }) {
+  const enabled = useAppSelector(selectSceneMarkersEnabled);
+  const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
+  const shouldReduceMotion = useReducedMotion() === true;
+
+  return (
+    <AnimatePresence>
+      {enabled
+        ? sceneBoundariesMicros.map((boundaryMicros) => (
+            <motion.div
+              animate={{ opacity: 1, height: "100%" }}
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 z-1 w-0.5 -translate-1/2 bg-destructive"
+              exit={{ opacity: 0, height: 0 }}
+              initial={shouldReduceMotion ? false : { opacity: 0 }}
+              key={boundaryMicros}
+              style={{ left: `${timelinePercent(boundaryMicros, sourceDurationMicros)}%` }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
+            />
+          ))
+        : null}
+    </AnimatePresence>
   );
 }
 

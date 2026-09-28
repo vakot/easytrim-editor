@@ -198,6 +198,29 @@ const editingInstancesSlice = createSlice({
       }
       if (listMetadataChanged) updateSourceListEntry(state, instance, searchMetadataChanged);
     },
+    editingInstanceSceneDetectionChanged: (
+      state,
+      action: PayloadAction<{
+        boundariesMicros: number[] | null;
+        id: EditingInstanceId;
+        sourcePath: string;
+      }>,
+    ) => {
+      const { boundariesMicros, id, sourcePath } = action.payload;
+      const instance = getInstance(state, id);
+      if (
+        !instance ||
+        state.activeInstanceId !== id ||
+        normalizeSourceKey(instance.snapshot.source.sourcePath) !== normalizeSourceKey(sourcePath)
+      )
+        return;
+
+      if (boundariesMicros === null) {
+        delete instance.snapshot.sceneBoundariesMicros;
+      } else {
+        instance.snapshot.sceneBoundariesMicros = [...boundariesMicros];
+      }
+    },
     activeEditingInstanceChanged: (state, action: PayloadAction<EditingInstanceId | null>) => {
       state.activeInstanceId = action.payload;
     },
@@ -559,6 +582,7 @@ const {
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
+  editingInstanceSceneDetectionChanged,
   editingInstancesClosed,
   editingInstanceSnapshotUpdated,
   editingInstancesSourceAvailabilityChanged,
@@ -602,6 +626,21 @@ const selectEditingInstanceById = (state: RootState, id: EditingInstanceId) =>
 
 const selectActiveEditingInstance = createSelector([selectEditingInstancesState], (state) =>
   state.activeInstanceId ? state.entities[state.activeInstanceId] : undefined,
+);
+
+const selectActiveSceneBoundariesMicros = createSelector(
+  [selectActiveEditingInstance, (state: RootState) => state.source.source],
+  (instance, source) => {
+    if (
+      !instance ||
+      !source ||
+      normalizeSourceKey(instance.snapshot.source.sourcePath) !== normalizeSourceKey(source.sourcePath)
+    ) {
+      return [];
+    }
+
+    return instance.snapshot.sceneBoundariesMicros ?? [];
+  },
 );
 
 const selectEditingInstanceAttempts = createSelector([selectEditingInstances], (instances) =>
@@ -723,12 +762,14 @@ export {
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
+  editingInstanceSceneDetectionChanged,
   editingInstancesClosed,
   editingInstanceSnapshotUpdated,
   editingInstancesReducer,
   editingInstancesSourceAvailabilityChanged,
   selectActiveEditingInstance,
   selectActiveInstanceId,
+  selectActiveSceneBoundariesMicros,
   selectEditingInstanceAttempts,
   selectEditingInstanceById,
   selectEditingInstanceIds,

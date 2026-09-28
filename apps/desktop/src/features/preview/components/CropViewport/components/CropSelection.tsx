@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import type { CropRect } from "@/domain/crop";
 import type { RotationDegrees } from "@/domain/rotation";
+import { cn } from "@/lib/class-names.utils";
 
 import type { CropHandle } from "../../../lib/crop-geometry.utils";
 import { sourceCropForRotation } from "../../../lib/preview-geometry";
@@ -105,7 +106,11 @@ function CropSelection({
         return (
           <button
             aria-label={handleLabels[visualHandle]}
-            className={`absolute z-10 size-4 rounded-full border-2 border-background bg-primary shadow-sm ${className} ${resizeCursor(visualHandle)}`}
+            className={cn(
+              "absolute z-10 size-4 rounded-full border-2 border-background bg-primary shadow-sm",
+              className,
+              resizeCursor(visualHandle),
+            )}
             key={handle}
             onPointerDown={(event) => onPointerDown(event, modelHandle)}
             type="button"

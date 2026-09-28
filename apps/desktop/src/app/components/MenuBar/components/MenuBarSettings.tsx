@@ -96,9 +96,6 @@ function MenuBarSettingsContent() {
       </MenubarGroup>
       <MenubarSeparator />
       <MenubarGroup>
-        <PreferenceMenuItem commandId="preference-snap-playback">
-          {t("settings.labels.snap")}
-        </PreferenceMenuItem>
         <PreferenceMenuItem commandId="preference-loop-playback">
           {t("settings.labels.loop")}
         </PreferenceMenuItem>

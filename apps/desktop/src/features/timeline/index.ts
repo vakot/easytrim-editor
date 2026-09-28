@@ -1,4 +1,5 @@
 export { TimelinePanel } from "./components/TimelinePanel";
+export { useSceneDetection } from "./hooks/useSceneDetection";
 export {
   editorShortcutFromEvent,
   FRAME_SHUTTLE_PLAYBACK_RATE,
@@ -6,3 +7,4 @@ export {
   shortcutDispositionFromEvent,
 } from "./lib/editor-shortcuts";
 export { cancelFrame, syncPlayheadElements } from "./lib/playhead-sync";
+export { findNextSceneBoundary, findPreviousSceneBoundary } from "./lib/scene-navigation";

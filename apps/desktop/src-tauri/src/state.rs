@@ -150,6 +150,7 @@ struct ActiveSourceRecord {
     audio_stream_indexes: Vec<u32>,
     waveform_job: Option<WaveformJobRecord>,
     waveforms: HashMap<u32, WaveformRecord>,
+    scene_boundaries_micros: Option<Vec<u64>>,
 }
 
 #[derive(Debug, Default)]
@@ -277,6 +278,7 @@ impl AppState {
             audio_stream_indexes: Vec::new(),
             waveform_job: None,
             waveforms: HashMap::new(),
+            scene_boundaries_micros: None,
         });
 
         Ok(generation)
@@ -505,6 +507,27 @@ impl AppState {
             .get(&stream_index)
             .map(|waveform| waveform.artifact.path().to_owned())
             .ok_or_else(|| AppError::invalid_request("The waveform is not available."))
+    }
+
+    pub fn cached_scene_boundaries(&self, load_token: u64) -> Result<Option<Vec<u64>>, AppError> {
+        let session = self.lock_session()?;
+        Ok(active_source(&session, load_token)?
+            .scene_boundaries_micros
+            .clone())
+    }
+
+    pub fn install_scene_boundaries(
+        &self,
+        load_token: u64,
+        boundaries_micros: Vec<u64>,
+    ) -> Result<(), AppError> {
+        let mut session = self.lock_session()?;
+        let source = active_source_mut(&mut session, load_token)?;
+        if source.cancellation.load(Ordering::Acquire) {
+            return Err(AppError::source_replaced());
+        }
+        source.scene_boundaries_micros = Some(boundaries_micros);
+        Ok(())
     }
 
     pub fn install_preview(

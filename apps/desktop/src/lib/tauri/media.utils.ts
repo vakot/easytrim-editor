@@ -57,6 +57,21 @@ function parseSourceRefs(value: unknown): SourceRef[] {
   return requireArray(value, "source references").map(parseSourceRef);
 }
 
+function parseSceneBoundaries(value: unknown): number[] {
+  const boundaries = requireArray(value, "scene boundaries").map((entry) =>
+    requireInteger(entry, "scene boundary"),
+  );
+
+  if (
+    boundaries.some(
+      (boundary, index) => boundary < 0 || (index > 0 && boundary <= boundaries[index - 1]!),
+    )
+  ) {
+    throw invalidResponse("scene boundaries");
+  }
+  return boundaries;
+}
+
 function parseSourceImportResult(value: unknown): SourceImportResult | null {
   if (value === null) return null;
   if (Array.isArray(value)) {
@@ -383,6 +398,7 @@ export {
   parseOptimizedExportPlan,
   parseOutputSelection,
   parsePreviewDescriptor,
+  parseSceneBoundaries,
   parseSourceImportResult,
   parseSourceRef,
   parseSourceRefs,

@@ -1,4 +1,4 @@
-import { BetweenVerticalStart, Magnet, Play, Repeat } from "lucide-react";
+import { BetweenVerticalStart, Play, Repeat } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
@@ -8,19 +8,16 @@ import {
   selectAutoStartQueueEnabled,
   selectLoopPlaybackEnabledDefault,
   selectSegmentPlaybackEnabledDefault,
-  selectSnapPlaybackEnabledDefault,
 } from "@/app/store/slices/preferences-slice";
 
 function usePlaybackPreferenceCommands() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const autoStart = useAppSelector(selectAutoStartQueueEnabled);
-  const snap = useAppSelector(selectSnapPlaybackEnabledDefault);
   const loop = useAppSelector(selectLoopPlaybackEnabledDefault);
   const followSegment = useAppSelector(selectSegmentPlaybackEnabledDefault);
   const labels = {
     autoStartQueueEnabled: t("settings.labels.autoStartQueue"),
-    snapPlaybackEnabledDefault: t("settings.options.commandLabels.snap"),
     loopPlaybackEnabledDefault: t("settings.options.commandLabels.loop"),
     segmentPlaybackEnabledDefault: t("settings.options.commandLabels.followSegment"),
   };
@@ -32,12 +29,6 @@ function usePlaybackPreferenceCommands() {
         icon: <Play aria-hidden="true" />,
         key: "autoStartQueueEnabled",
         id: "preference-auto-start-queue" as const,
-      },
-      {
-        checked: snap,
-        icon: <Magnet aria-hidden="true" />,
-        key: "snapPlaybackEnabledDefault",
-        id: "preference-snap-playback" as const,
       },
       {
         checked: loop,

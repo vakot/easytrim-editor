@@ -68,6 +68,7 @@ export const sk = {
         preferencesPlayback: "Nastavenia / Prehrávanie",
         previewFrame: "Náhľad / Snímka",
         previewTransform: "Náhľad / Transformácia",
+        scenes: "Scény",
         queueOnFinishedApplication: "Front / Po dokončení / Aplikácia",
         queueOnFinishedSource: "Front / Po dokončení / Zdroj",
         go: "Prejsť",
@@ -217,7 +218,6 @@ export const sk = {
       language: "Jazyk",
       loop: "Opakovanie",
       mergeAudio: "Zlúčiť zvuk",
-      snap: "Prichytenie",
       theme: "Téma",
       title: "Nastavenia",
     },
@@ -234,7 +234,6 @@ export const sk = {
         followSegment: "Predvolene sledovať segment",
         loop: "Predvolene zapnúť opakovanie",
         mergeAudio: "Predvolene zlúčiť zvuk",
-        snap: "Predvolene zapnúť prichytenie",
       },
       colors: {
         amber: "Jantárová",
@@ -404,10 +403,12 @@ export const sk = {
   preview: {
     actions: {
       nextFrame: "Nasledujúca snímka",
+      nextScene: "Prejsť na nasledujúcu scénu",
       copyFrame: "Kopírovať snímku",
       pause: "Pozastaviť",
       play: "Prehrať",
       previousFrame: "Predchádzajúca snímka",
+      previousScene: "Prejsť na predchádzajúcu scénu",
       saveFrame: "Uložiť snímku",
       resetTools: "Obnoviť nástroje",
       setEnd: "Nastaviť koniec segmentu na aktuálnu pozíciu",
@@ -433,7 +434,6 @@ export const sk = {
       shortcutPlayPause: "Prehrať / Pauza",
       shortcutPreviousNextFrame: "Pred. / Nasl. snímka",
       shortcuts: "Klávesové skratky",
-      snapPlayback: "Prichytávanie prehrávania",
     },
     status: {
       opening: "Otvára sa náhľad…",
@@ -466,8 +466,6 @@ export const sk = {
       segmentEnabled: "Prehrávanie je obmedzené na vybraný segment",
       setEnd: "Nastaviť koniec segmentu na aktuálnu pozíciu (O)",
       setStart: "Nastaviť začiatok segmentu na aktuálnu pozíciu (I)",
-      snapDisabled: "Prehrávacia hlava zostáva na mieste",
-      snapEnabled: "Prehrávacia hlava po prichytení sleduje hranicu strihu",
     },
     dialogs: {
       reset: {
@@ -494,7 +492,12 @@ export const sk = {
     },
   },
   timeline: {
-    actions: { moveSegment: "Presunúť vybraný segment" },
+    actions: {
+      detectScenes: "Rozpoznať zmeny scén",
+      disableSceneMarkers: "Skryť značky scén",
+      enableSceneMarkers: "Zobraziť značky scén",
+      moveSegment: "Presunúť vybraný segment",
+    },
     labels: {
       duration: "Trvanie",
       end: "Koniec",
@@ -502,7 +505,12 @@ export const sk = {
       start: "Začiatok",
       tools: "Nástroje",
     },
+    status: {
+      sceneDetectionFailed: "Rozpoznávanie scén zlyhalo. Skúste to znova.",
+    },
     tooltips: {
+      detectScenes:
+        "Analyzovať zdrojové video a vyhľadať zmeny scén. Podržte Shift a potiahnutím prehrávacej hlavy ju prichyťte k značke.",
       moveSegment: "Potiahnutím presuňte vybraný segment — podržaním Shift ho prichytíte",
       trimReset: "{{label}} — podržaním Shift prichytíte — dvojitým kliknutím obnovíte",
     },

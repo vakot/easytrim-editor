@@ -18,8 +18,7 @@ function useResetPreferencesCommand() {
       preferences.loopPlaybackEnabledDefault !== DEFAULT_PREFERENCES.loopPlaybackEnabledDefault ||
       preferences.mergeAudioEnabledDefault !== DEFAULT_PREFERENCES.mergeAudioEnabledDefault ||
       preferences.segmentPlaybackEnabledDefault !==
-        DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault ||
-      preferences.snapPlaybackEnabledDefault !== DEFAULT_PREFERENCES.snapPlaybackEnabledDefault,
+        DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault,
     icon: <RotateCcw aria-hidden="true" />,
     surfaces: ["menu"] as const,
     run() {
