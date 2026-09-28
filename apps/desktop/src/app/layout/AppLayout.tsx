@@ -47,7 +47,7 @@ function AppLayout() {
 
         <ResizableHandle
           className="workspace-separator self-start layout-default:bg-transparent"
-          style={isCompact ? undefined : { width: 6 }}
+          style={isCompact ? undefined : { width: "0.375rem" }}
           withHandle
         />
 

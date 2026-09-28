@@ -143,7 +143,7 @@ function StereoAudioMeter() {
 
 function StereoAudioMeterScale() {
   return (
-    <div aria-hidden="true" className="relative h-3 text-[8px] leading-3 text-muted-foreground">
+    <div aria-hidden="true" className="relative h-3 text-[0.5rem] leading-3 text-muted-foreground">
       {METER_MARKER_LABELS.map(({ label, level }) => (
         <span
           className={`absolute top-0 whitespace-nowrap ${
@@ -205,7 +205,7 @@ function StereoAudioMeterChannel({
         />
         <span
           aria-hidden="true"
-          className="relative z-10 px-1 text-[10px] leading-none text-shadow-accent"
+          className="relative z-10 px-1 text-[0.625rem] leading-none text-shadow-accent"
         >
           {children}
         </span>

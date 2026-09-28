@@ -23,13 +23,13 @@ describe("preview output presentation", () => {
 
   it("uses one interpolable relative width expression for normal and crop targets", () => {
     expect(previewOutputWidthTargetFor(16 / 9, false, false)).toBe(
-      "min(max(0px, calc(100cqw - 0px)), max(0px, calc(177.77777777777777cqh - 0px)))",
+      "min(max(0rem, calc(100cqw - 0rem)), max(0rem, calc(177.77777777777777cqh - 0rem)))",
     );
     expect(previewOutputWidthTargetFor(9 / 16, true, false)).toBe(
-      "min(max(0px, calc(100cqw - 56px)), max(0px, calc(56.25cqh - 31.5px)))",
+      "min(max(0rem, calc(100cqw - 3.5rem)), max(0rem, calc(56.25cqh - 1.96875rem)))",
     );
     expect(previewOutputWidthTargetFor(9 / 16, true, true)).toBe(
-      "min(max(0px, calc(177.77777777777777cqw - 99.55555555555556px)), max(0px, calc(100cqh - 56px)))",
+      "min(max(0rem, calc(177.77777777777777cqw - 6.222222222222222rem)), max(0rem, calc(100cqh - 3.5rem)))",
     );
   });
 

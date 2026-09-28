@@ -197,7 +197,7 @@ function PlaybackVolumeControl() {
         transition={{ duration: 0.12 }}
         variants={{
           collapsed: { maxWidth: 0, opacity: 0 },
-          expanded: { maxWidth: 176, opacity: 1 },
+          expanded: { maxWidth: "11rem", opacity: 1 },
         }}
       >
         <div className="px-2">

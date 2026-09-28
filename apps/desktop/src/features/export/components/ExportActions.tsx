@@ -168,8 +168,8 @@ function ExportQueueTrigger({
         void pulseControls.start({
           boxShadow: [
             "0 0 0 0 transparent",
-            `0 0 0 4px color-mix(in srgb, ${pulseColor} 35%, transparent)`,
-            "0 0 0 8px transparent",
+            `0 0 0 0.25rem color-mix(in srgb, ${pulseColor} 35%, transparent)`,
+            "0 0 0 0.5rem transparent",
           ],
           transition: { duration: 0.6, ease: "easeOut" },
         });
@@ -229,7 +229,7 @@ function ExportActionButton({
   return (
     <Button
       className={cn(
-        "max-w-44 max-2xl:size-7 max-2xl:gap-0 max-2xl:rounded-[min(var(--radius-md),12px)] max-2xl:p-0",
+        "max-w-44 max-2xl:size-7 max-2xl:gap-0 max-2xl:rounded-[min(var(--radius-md),0.75rem)] max-2xl:p-0",
         className,
       )}
       size="sm"
