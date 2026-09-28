@@ -27,14 +27,6 @@ function TimelineToolbar({
   sceneDetection: ReturnType<typeof useSceneDetection>;
 }) {
   const { t } = useTranslation();
-  const { boundariesMicros, hasDetected, isDetecting } = sceneDetection;
-  const status = isDetecting
-    ? t("timeline.status.detectingScenes")
-    : hasDetected
-      ? boundariesMicros.length > 0
-        ? t("timeline.status.sceneCount", { count: boundariesMicros.length })
-        : t("timeline.status.noScenes")
-      : null;
 
   return (
     <div
@@ -49,16 +41,6 @@ function TimelineToolbar({
         <SceneDetectionTool sceneDetection={sceneDetection} />
         <ResetToolsTool />
       </div>
-      {status && (
-        <span
-          aria-live="polite"
-          className="max-w-36 self-center truncate text-xs text-muted-foreground"
-          role="status"
-          title={status}
-        >
-          {status}
-        </span>
-      )}
 
       <Separator orientation="vertical" />
 
@@ -73,7 +55,14 @@ function SceneDetectionTool({
   sceneDetection: ReturnType<typeof useSceneDetection>;
 }) {
   const { t } = useTranslation();
-  const { canDetect, detect, error, hasDetected, hasFailed, isDetecting } = sceneDetection;
+  const { boundariesMicros, canDetect, detect, error, hasDetected, hasFailed, isDetecting } =
+    sceneDetection;
+
+  const resultMessage =
+    boundariesMicros.length > 0
+      ? t("timeline.status.sceneCount", { count: boundariesMicros.length })
+      : t("timeline.status.noScenes");
+
   const button = (
     <Button
       aria-busy={isDetecting}
@@ -81,7 +70,7 @@ function SceneDetectionTool({
       aria-pressed={hasDetected}
       className={hasDetected ? "text-primary" : undefined}
       disabled={!canDetect || isDetecting}
-      onClick={hasFailed ? undefined : () => void detect()}
+      onClick={hasFailed || hasDetected ? undefined : () => void detect()}
       size="icon-sm"
       type="button"
       variant={hasFailed ? "destructive" : "secondary"}
@@ -90,15 +79,21 @@ function SceneDetectionTool({
     </Button>
   );
 
-  if (hasFailed) {
+  if (hasFailed || hasDetected) {
     return (
       <Popover>
         <PopoverTrigger asChild>{button}</PopoverTrigger>
         <PopoverContent align="start" className="space-y-3">
-          <p role="alert">{error || t("timeline.status.sceneDetectionFailed")}</p>
-          <Button onClick={() => void detect()} size="sm" type="button">
-            {t("common.actions.retry")}
-          </Button>
+          {hasFailed ? (
+            <>
+              <p role="alert">{error || t("timeline.status.sceneDetectionFailed")}</p>
+              <Button onClick={() => void detect()} size="sm" type="button">
+                {t("common.actions.retry")}
+              </Button>
+            </>
+          ) : (
+            <p role="status">{resultMessage}</p>
+          )}
         </PopoverContent>
       </Popover>
     );

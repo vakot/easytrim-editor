@@ -503,7 +503,6 @@ export const ru = {
       tools: "Инструменты",
     },
     status: {
-      detectingScenes: "Поиск смен сцен…",
       noScenes: "Смены сцен не найдены",
       sceneDetectionFailed: "Не удалось распознать сцены. Попробуйте ещё раз.",
       sceneCount: "Найдено смен сцен: {{count}}",
