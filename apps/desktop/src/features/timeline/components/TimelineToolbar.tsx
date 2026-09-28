@@ -1,4 +1,4 @@
-import { BetweenVerticalStart, Magnet, Repeat, RotateCcw } from "lucide-react";
+import { BetweenVerticalStart, Clapperboard, Magnet, Repeat, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,26 @@ import {
 } from "@/app/store/slices/editor-tools-slice";
 import { selectPreferences } from "@/app/store/slices/preferences-slice";
 
+import type { useSceneDetection } from "../hooks/useSceneDetection";
+
 import { StereoAudioMeter } from "./StereoAudioMeter";
 
-function TimelineToolbar() {
+function TimelineToolbar({
+  sceneDetection,
+}: {
+  sceneDetection: ReturnType<typeof useSceneDetection>;
+}) {
   const { t } = useTranslation();
+  const { boundariesMicros, error, hasDetected, isDetecting } = sceneDetection;
+  const status = error
+    ? error
+    : isDetecting
+      ? t("timeline.status.detectingScenes")
+      : hasDetected
+        ? boundariesMicros.length > 0
+          ? t("timeline.status.sceneCount", { count: boundariesMicros.length })
+          : t("timeline.status.noScenes")
+        : null;
 
   return (
     <div
@@ -35,12 +51,51 @@ function TimelineToolbar() {
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
         <ResetToolsTool />
+        <SceneDetectionTool sceneDetection={sceneDetection} />
       </div>
+      {status && (
+        <span
+          aria-live={error ? "assertive" : "polite"}
+          className="max-w-36 self-center truncate text-xs text-muted-foreground"
+          role={error ? "alert" : "status"}
+          title={status}
+        >
+          {status}
+        </span>
+      )}
 
       <Separator orientation="vertical" />
 
       <StereoAudioMeter />
     </div>
+  );
+}
+
+function SceneDetectionTool({
+  sceneDetection,
+}: {
+  sceneDetection: ReturnType<typeof useSceneDetection>;
+}) {
+  const { t } = useTranslation();
+  const { canDetect, detect, isDetecting } = sceneDetection;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          aria-busy={isDetecting}
+          aria-label={t("timeline.actions.detectScenes")}
+          disabled={!canDetect || isDetecting}
+          onClick={() => void detect()}
+          size="icon-sm"
+          type="button"
+          variant="secondary"
+        >
+          <Clapperboard />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{t("timeline.tooltips.detectScenes")}</TooltipContent>
+    </Tooltip>
   );
 }
 

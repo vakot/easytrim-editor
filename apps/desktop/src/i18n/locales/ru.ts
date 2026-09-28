@@ -496,7 +496,10 @@ export const ru = {
     },
   },
   timeline: {
-    actions: { moveSegment: "Переместить выбранный сегмент" },
+    actions: {
+      detectScenes: "Найти смены сцен",
+      moveSegment: "Переместить выбранный сегмент",
+    },
     labels: {
       duration: "Длительность",
       end: "Конец",
@@ -504,12 +507,19 @@ export const ru = {
       start: "Начало",
       tools: "Инструменты",
     },
+    status: {
+      detectingScenes: "Поиск смен сцен…",
+      noScenes: "Смены сцен не найдены",
+      sceneCount: "Найдено смен сцен: {{count}}",
+    },
     tooltips: {
+      detectScenes: "Анализировать исходное видео на смены сцен. Это может занять время.",
       moveSegment:
         "Перетащите, чтобы переместить выбранный сегмент — удерживайте Shift для привязки",
       trimReset: "{{label}} — удерживайте Shift для привязки — дважды щёлкните для сброса",
     },
     accessibility: {
+      sceneMarker: "Сцена {{number}} в {{time}}",
       audioLevel: "Уровень стереозвука",
       leftAudioChannelLevel: "Уровень звука левого канала",
       playbackPosition: "Позиция воспроизведения",

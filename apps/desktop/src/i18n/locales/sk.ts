@@ -494,7 +494,10 @@ export const sk = {
     },
   },
   timeline: {
-    actions: { moveSegment: "Presunúť vybraný segment" },
+    actions: {
+      detectScenes: "Rozpoznať zmeny scén",
+      moveSegment: "Presunúť vybraný segment",
+    },
     labels: {
       duration: "Trvanie",
       end: "Koniec",
@@ -502,11 +505,18 @@ export const sk = {
       start: "Začiatok",
       tools: "Nástroje",
     },
+    status: {
+      detectingScenes: "Rozpoznávajú sa zmeny scén…",
+      noScenes: "Nenašli sa žiadne zmeny scén",
+      sceneCount: "Nájdené zmeny scén: {{count}}",
+    },
     tooltips: {
+      detectScenes: "Analyzovať zdrojové video a vyhľadať zmeny scén. Môže to chvíľu trvať.",
       moveSegment: "Potiahnutím presuňte vybraný segment — podržaním Shift ho prichytíte",
       trimReset: "{{label}} — podržaním Shift prichytíte — dvojitým kliknutím obnovíte",
     },
     accessibility: {
+      sceneMarker: "Scéna {{number}} v čase {{time}}",
       audioLevel: "Úroveň stereo zvuku",
       leftAudioChannelLevel: "Úroveň zvuku ľavého kanála",
       playbackPosition: "Pozícia prehrávania",

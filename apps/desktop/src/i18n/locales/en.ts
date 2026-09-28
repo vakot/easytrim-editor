@@ -494,7 +494,10 @@ export const en = {
     },
   },
   timeline: {
-    actions: { moveSegment: "Move selected segment" },
+    actions: {
+      detectScenes: "Detect scene changes",
+      moveSegment: "Move selected segment",
+    },
     labels: {
       duration: "Duration",
       end: "End",
@@ -502,11 +505,18 @@ export const en = {
       start: "Start",
       tools: "Tools",
     },
+    status: {
+      detectingScenes: "Detecting scene changes…",
+      noScenes: "No scene changes found",
+      sceneCount: "Scene changes found: {{count}}",
+    },
     tooltips: {
+      detectScenes: "Analyze the source video for scene changes. This may take a while.",
       moveSegment: "Drag to move the selected segment — hold Shift to snap",
       trimReset: "{{label}} — hold Shift to snap — double-click to reset",
     },
     accessibility: {
+      sceneMarker: "Scene {{number}} at {{time}}",
       audioLevel: "Stereo audio level",
       leftAudioChannelLevel: "Left channel audio level",
       playbackPosition: "Playback position",

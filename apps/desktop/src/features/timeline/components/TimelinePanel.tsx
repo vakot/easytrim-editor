@@ -18,12 +18,15 @@ import {
   playbackVolumeToggled,
   selectPlaybackVolumePercent,
 } from "@/app/store/slices/preferences-slice";
+import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   DEFAULT_PLAYBACK_SPEED,
   PLAYBACK_SPEED_STEPS,
   type PlaybackSpeed,
 } from "@/domain/playback-speed";
 import { VolumeButton } from "@/features/audio";
+
+import { useSceneDetection } from "../hooks/useSceneDetection";
 
 import { PlaybackControls } from "./PlaybackControls";
 import { PlaybackTimecode } from "./PlaybackTimecode";
@@ -35,6 +38,7 @@ import { TimelineValues } from "./TimelineValues";
 
 function TimelinePanel() {
   const { t } = useTranslation();
+  const sceneDetection = useSceneDetection(useAppSelector(selectSourceReady));
 
   return (
     <section
@@ -72,8 +76,8 @@ function TimelinePanel() {
         className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-3"
         data-slot="timeline-row"
       >
-        <TimelineToolbar />
-        <TimelineTrack />
+        <TimelineToolbar sceneDetection={sceneDetection} />
+        <TimelineTrack sceneBoundariesMicros={sceneDetection.boundariesMicros} />
       </div>
     </section>
   );

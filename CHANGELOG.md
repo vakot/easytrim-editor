@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added optional scene-change detection with clickable timeline markers for navigating to scene boundaries.
+
 ## [1.12.3]
 
 ### Added
