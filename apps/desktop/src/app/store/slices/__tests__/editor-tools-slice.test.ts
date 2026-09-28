@@ -11,6 +11,8 @@ import {
   selectEditorTools,
   selectLoopPlaybackEnabled,
   selectSegmentPlaybackEnabled,
+  silenceDetectionFinished,
+  silenceMarkersToggled,
 } from "@/app/store/slices/editor-tools-slice";
 import type { RootState } from "@/app/store/store";
 describe("editor tools Redux domain", () => {
@@ -50,6 +52,24 @@ describe("editor tools Redux domain", () => {
 
     expect(modeState.loopPlaybackEnabled).toBe(false);
     expect(modeState.segmentPlaybackEnabled).toBe(false);
+  });
+
+  it("stores silence ranges and supports hiding their timeline markers", () => {
+    const ranges = [{ startMicros: 1_000_000, endMicros: 2_000_000 }];
+    const detected = editorToolsReducer(
+      undefined,
+      silenceDetectionFinished({ mixKey: "mix", ranges, sourceKey: "source" }),
+    );
+
+    const hidden = editorToolsReducer(detected, silenceMarkersToggled());
+
+    expect(detected.silenceDetection).toMatchObject({
+      mixKey: "mix",
+      ranges,
+      sourceKey: "source",
+      status: "ready",
+    });
+    expect(hidden.silenceMarkersEnabled).toBe(false);
   });
 
   it("resets active tools from the supplied current Preferences values", () => {

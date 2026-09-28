@@ -1,4 +1,11 @@
-import { BetweenVerticalStart, Clapperboard, LoaderCircle, Repeat, RotateCcw } from "lucide-react";
+import {
+  AudioLines,
+  BetweenVerticalStart,
+  Clapperboard,
+  LoaderCircle,
+  Repeat,
+  RotateCcw,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +28,7 @@ import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { cn } from "@/lib/class-names.utils";
 
 import { useSceneDetection } from "../hooks/useSceneDetection";
+import { useSilenceDetection } from "../hooks/useSilenceDetection";
 
 import { StereoAudioMeter } from "./StereoAudioMeter";
 
@@ -38,6 +46,7 @@ function TimelineToolbar() {
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
         <SceneDetectionTool />
+        <SilenceDetectionTool />
         <ResetToolsTool />
       </div>
 
@@ -45,6 +54,74 @@ function TimelineToolbar() {
 
       <StereoAudioMeter />
     </div>
+  );
+}
+
+function SilenceDetectionTool() {
+  const { t } = useTranslation();
+  const sourceReady = useAppSelector(selectSourceReady);
+  const detectCommand = useApplicationCommand("detect-silence");
+  const showMarkersCommand = useApplicationCommand("show-silence-markers");
+  const { executeCommand } = useApplicationCommands();
+  const detection = useSilenceDetection(sourceReady);
+  const loading = detectCommand.pending || detection.isDetecting;
+  const hasFailed = detection.error !== null;
+  const error = detection.error;
+  const markersEnabled = showMarkersCommand.checked ?? true;
+  const label = detection.hasDetected
+    ? markersEnabled
+      ? t("timeline.actions.disableSilenceMarkers")
+      : t("timeline.actions.enableSilenceMarkers")
+    : t("timeline.actions.detectSilence");
+
+  const button = (
+    <Button
+      aria-busy={loading}
+      aria-label={label}
+      aria-pressed={detection.hasDetected && markersEnabled}
+      className={cn(detection.hasDetected && markersEnabled && "text-primary")}
+      disabled={
+        loading || !(detection.hasDetected ? showMarkersCommand.enabled : detectCommand.enabled)
+      }
+      onClick={() =>
+        void executeCommand(
+          detection.hasDetected ? "show-silence-markers" : "detect-silence",
+          "button",
+        )
+      }
+      size="icon-sm"
+      type="button"
+      variant={hasFailed ? "destructive" : "secondary"}
+    >
+      {loading ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <AudioLines />}
+    </Button>
+  );
+
+  if (hasFailed) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>{button}</PopoverTrigger>
+        <PopoverContent align="start" className="space-y-3">
+          <p role="alert">{error || t("timeline.status.silenceDetectionFailed")}</p>
+          <Button
+            disabled={loading}
+            onClick={() => void executeCommand("detect-silence", "button")}
+            size="sm"
+            type="button"
+          >
+            {t("common.actions.retry")}
+          </Button>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+  return (
+    <Tooltip preserveOnTrigger>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent>
+        {detection.hasDetected ? label : t("timeline.tooltips.detectSilence")}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

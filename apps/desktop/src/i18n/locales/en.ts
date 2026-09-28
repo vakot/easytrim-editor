@@ -409,6 +409,8 @@ export const en = {
       play: "Play",
       previousFrame: "Previous frame",
       previousScene: "Move to previous scene",
+      nextSilence: "Move to next silent range",
+      previousSilence: "Move to previous silent range",
       saveFrame: "Save frame",
       resetTools: "Reset tools",
       setEnd: "Set segment end to current position",
@@ -494,6 +496,9 @@ export const en = {
   timeline: {
     actions: {
       detectScenes: "Detect scene changes",
+      detectSilence: "Detect silence in active audio mix",
+      disableSilenceMarkers: "Hide silent ranges",
+      enableSilenceMarkers: "Show silent ranges",
       disableSceneMarkers: "Hide scene markers",
       enableSceneMarkers: "Show scene markers",
       moveSegment: "Move selected segment",
@@ -507,10 +512,12 @@ export const en = {
     },
     status: {
       sceneDetectionFailed: "Scene detection failed. Try again.",
+      silenceDetectionFailed: "Silence detection failed. Try again.",
     },
     tooltips: {
       detectScenes:
         "Analyze the source video for scene changes. Hold Shift and drag the playhead to snap to a marker.",
+      detectSilence: "Analyze enabled audio tracks and mark silent ranges on the timeline.",
       moveSegment: "Drag to move the selected segment — hold Shift to snap",
       trimReset: "{{label}} — hold Shift to snap — double-click to reset",
     },

@@ -42,6 +42,9 @@ function PlaybackControls({ className }: { className?: string }) {
   const previousSceneCommand = useApplicationCommand("previous-scene");
   const nextSceneCommand = useApplicationCommand("next-scene");
   const showSceneMarkersCommand = useApplicationCommand("show-scene-markers");
+  const previousSilenceCommand = useApplicationCommand("previous-silence");
+  const nextSilenceCommand = useApplicationCommand("next-silence");
+  const showSilenceMarkersCommand = useApplicationCommand("show-silence-markers");
   const disabled = !playback.canInteract;
   const previousSceneDisabled =
     disabled || !previousSceneCommand.enabled || previousSceneCommand.pending;
@@ -51,6 +54,9 @@ function PlaybackControls({ className }: { className?: string }) {
     showSceneMarkersCommand.enabled &&
     showSceneMarkersCommand.checked &&
     sceneBoundariesMicros.length > 0;
+
+  const showSilenceNavigation =
+    showSilenceMarkersCommand.enabled && showSilenceMarkersCommand.checked;
 
   return (
     <div
@@ -74,6 +80,26 @@ function PlaybackControls({ className }: { className?: string }) {
           <SquareArrowRight />
         </TransportButton>
         <AnimatePresence initial={false}>
+          {showSilenceNavigation ? (
+            <Tooltip key="previous-silence-navigation">
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label={previousSilenceCommand.label}
+                  className="overflow-hidden"
+                  data-editor-keyboard="timeline-transport"
+                  disabled={disabled || !previousSilenceCommand.enabled}
+                  onClick={() => void executeCommand("previous-silence", "button")}
+                  onMouseDown={preventSceneNavigationMouseFocus}
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <ChevronsLeft />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{previousSilenceCommand.label}</TooltipContent>
+            </Tooltip>
+          ) : null}
           {showSceneNavigation ? (
             <Tooltip key="previous-scene-navigation">
               <TooltipTrigger asChild>
@@ -198,6 +224,26 @@ function PlaybackControls({ className }: { className?: string }) {
                 </MotionButton>
               </TooltipTrigger>
               <TooltipContent>{nextSceneCommand.label}</TooltipContent>
+            </Tooltip>
+          ) : null}
+          {showSilenceNavigation ? (
+            <Tooltip key="next-silence-navigation">
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label={nextSilenceCommand.label}
+                  className="overflow-hidden"
+                  data-editor-keyboard="timeline-transport"
+                  disabled={disabled || !nextSilenceCommand.enabled}
+                  onClick={() => void executeCommand("next-silence", "button")}
+                  onMouseDown={preventSceneNavigationMouseFocus}
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <ChevronsRight />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{nextSilenceCommand.label}</TooltipContent>
             </Tooltip>
           ) : null}
         </AnimatePresence>

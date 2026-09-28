@@ -25,6 +25,9 @@ const mocks = vi.hoisted(() => ({
     "previous-scene": { enabled: true, label: "Previous scene", pending: false },
     "next-scene": { enabled: true, label: "Next scene", pending: false },
     "show-scene-markers": { checked: true, enabled: true, label: "Show scene markers" },
+    "previous-silence": { enabled: false, label: "Previous silent range", pending: false },
+    "next-silence": { enabled: false, label: "Next silent range", pending: false },
+    "show-silence-markers": { checked: true, enabled: false, label: "Show silent ranges" },
   },
   timeline: {
     canSetSegmentEnd: true,

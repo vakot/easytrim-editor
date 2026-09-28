@@ -406,11 +406,13 @@ export const ru = {
     actions: {
       nextFrame: "Следующий кадр",
       nextScene: "Перейти к следующей сцене",
+      nextSilence: "Перейти к следующему тихому фрагменту",
       copyFrame: "Скопировать кадр",
       pause: "Пауза",
       play: "Воспроизвести",
       previousFrame: "Предыдущий кадр",
       previousScene: "Перейти к предыдущей сцене",
+      previousSilence: "Перейти к предыдущему тихому фрагменту",
       saveFrame: "Сохранить кадр",
       resetTools: "Сбросить инструменты",
       setEnd: "Установить конец сегмента в текущей позиции",
@@ -496,6 +498,9 @@ export const ru = {
   timeline: {
     actions: {
       detectScenes: "Найти смены сцен",
+      detectSilence: "Найти тишину в активном аудиомиксе",
+      disableSilenceMarkers: "Скрыть тихие фрагменты",
+      enableSilenceMarkers: "Показать тихие фрагменты",
       disableSceneMarkers: "Скрыть маркеры сцен",
       enableSceneMarkers: "Показать маркеры сцен",
       moveSegment: "Переместить выбранный сегмент",
@@ -509,10 +514,13 @@ export const ru = {
     },
     status: {
       sceneDetectionFailed: "Не удалось распознать сцены. Попробуйте ещё раз.",
+      silenceDetectionFailed: "Не удалось распознать тишину. Попробуйте ещё раз.",
     },
     tooltips: {
       detectScenes:
         "Анализировать исходное видео на смены сцен. Удерживайте Shift и перетащите курсор воспроизведения к маркеру.",
+      detectSilence:
+        "Анализировать включённые аудиодорожки и отмечать тихие фрагменты на шкале времени.",
       moveSegment:
         "Перетащите, чтобы переместить выбранный сегмент — удерживайте Shift для привязки",
       trimReset: "{{label}} — удерживайте Shift для привязки — дважды щёлкните для сброса",

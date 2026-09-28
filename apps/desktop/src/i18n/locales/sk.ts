@@ -409,6 +409,8 @@ export const sk = {
       play: "Prehrať",
       previousFrame: "Predchádzajúca snímka",
       previousScene: "Prejsť na predchádzajúcu scénu",
+      nextSilence: "Prejsť na ďalšie tiché miesto",
+      previousSilence: "Prejsť na predchádzajúce tiché miesto",
       saveFrame: "Uložiť snímku",
       resetTools: "Obnoviť nástroje",
       setEnd: "Nastaviť koniec segmentu na aktuálnu pozíciu",
@@ -494,6 +496,9 @@ export const sk = {
   timeline: {
     actions: {
       detectScenes: "Rozpoznať zmeny scén",
+      detectSilence: "Rozpoznať ticho v aktívnom mixe",
+      disableSilenceMarkers: "Skryť tiché úseky",
+      enableSilenceMarkers: "Zobraziť tiché úseky",
       disableSceneMarkers: "Skryť značky scén",
       enableSceneMarkers: "Zobraziť značky scén",
       moveSegment: "Presunúť vybraný segment",
@@ -507,10 +512,12 @@ export const sk = {
     },
     status: {
       sceneDetectionFailed: "Rozpoznávanie scén zlyhalo. Skúste to znova.",
+      silenceDetectionFailed: "Rozpoznávanie ticha zlyhalo. Skúste to znova.",
     },
     tooltips: {
       detectScenes:
         "Analyzovať zdrojové video a vyhľadať zmeny scén. Podržte Shift a potiahnutím prehrávacej hlavy ju prichyťte k značke.",
+      detectSilence: "Analyzovať zapnuté zvukové stopy a označiť tiché úseky na časovej osi.",
       moveSegment: "Potiahnutím presuňte vybraný segment — podržaním Shift ho prichytíte",
       trimReset: "{{label}} — podržaním Shift prichytíte — dvojitým kliknutím obnovíte",
     },

@@ -2,6 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import type { RootState } from "@/app/store/store";
+import type { SilenceRange } from "@/lib/tauri/media.types";
 
 type EditorToolsState = {
   loopPlaybackEnabled: boolean;
@@ -12,6 +13,14 @@ type EditorToolsState = {
   };
   sceneMarkersEnabled?: boolean;
   segmentPlaybackEnabled: boolean;
+  silenceDetection?: {
+    error: string | null;
+    mixKey: string;
+    ranges?: SilenceRange[];
+    sourceKey: string;
+    status: "failed" | "loading" | "ready";
+  };
+  silenceMarkersEnabled?: boolean;
 };
 
 const createInitialState = (): EditorToolsState =>
@@ -55,6 +64,27 @@ const editorToolsSlice = createSlice({
     sceneDetectionFinished: (state, action: PayloadAction<string>) => {
       if (state.sceneDetection?.sourceKey === action.payload) delete state.sceneDetection;
     },
+    silenceMarkersToggled: (state) => {
+      state.silenceMarkersEnabled = !(state.silenceMarkersEnabled ?? true);
+    },
+    silenceDetectionStarted: (
+      state,
+      action: PayloadAction<{ mixKey: string; sourceKey: string }>,
+    ) => {
+      state.silenceDetection = { ...action.payload, error: null, status: "loading" };
+    },
+    silenceDetectionFailed: (
+      state,
+      action: PayloadAction<{ error: string | null; mixKey: string; sourceKey: string }>,
+    ) => {
+      state.silenceDetection = { ...action.payload, status: "failed" };
+    },
+    silenceDetectionFinished: (
+      state,
+      action: PayloadAction<{ mixKey: string; ranges: SilenceRange[]; sourceKey: string }>,
+    ) => {
+      state.silenceDetection = { ...action.payload, error: null, status: "ready" };
+    },
   },
 });
 
@@ -67,6 +97,10 @@ const {
   sceneDetectionStarted,
   sceneMarkersToggled,
   segmentPlaybackToggled,
+  silenceDetectionFailed,
+  silenceDetectionFinished,
+  silenceDetectionStarted,
+  silenceMarkersToggled,
 } = editorToolsSlice.actions;
 
 const editorToolsReducer = editorToolsSlice.reducer;
@@ -84,6 +118,12 @@ const selectSceneMarkersEnabled = (state: RootState): boolean =>
 const selectSceneDetectionOperation = (state: RootState): EditorToolsState["sceneDetection"] =>
   selectEditorTools(state).sceneDetection;
 
+const selectSilenceDetectionOperation = (state: RootState): EditorToolsState["silenceDetection"] =>
+  selectEditorTools(state).silenceDetection;
+
+const selectSilenceMarkersEnabled = (state: RootState): boolean =>
+  selectEditorTools(state).silenceMarkersEnabled ?? true;
+
 export {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
@@ -100,4 +140,10 @@ export {
   selectSceneDetectionOperation,
   selectSceneMarkersEnabled,
   selectSegmentPlaybackEnabled,
+  selectSilenceDetectionOperation,
+  selectSilenceMarkersEnabled,
+  silenceDetectionFailed,
+  silenceDetectionFinished,
+  silenceDetectionStarted,
+  silenceMarkersToggled,
 };

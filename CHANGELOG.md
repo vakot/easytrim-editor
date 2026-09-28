@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added optional silence detection for the enabled audio mix, with timeline ranges and previous/next navigation.
 - Added optional scene-change detection with animated timeline markers and Shift-drag snapping at scene boundaries.
 - Added scene detection result states with failure details and a retry action.
 - Added offline integrated LUFS and true-peak analysis for the selected audio mix, with optional optimized-export normalization presets.

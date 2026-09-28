@@ -5,12 +5,16 @@ import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
-import { selectSceneMarkersEnabled } from "@/app/store/slices/editor-tools-slice";
+import {
+  selectSceneMarkersEnabled,
+  selectSilenceMarkersEnabled,
+} from "@/app/store/slices/editor-tools-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { clampPlaybackMicros } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
 import { cn } from "@/lib/class-names.utils";
 
+import { useSilenceDetection } from "../hooks/useSilenceDetection";
 import { useTrimTimelineInteractions } from "../hooks/useTrimTimelineInteractions";
 import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
 
@@ -22,8 +26,10 @@ function TimelineTrack() {
   const media = useAppSelector(selectSourceMedia);
   const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
+  const silenceMarkersEnabled = useAppSelector(selectSilenceMarkersEnabled);
   const playback = usePlayback();
   const timeline = useTimeline();
+  const silenceDetection = useSilenceDetection(playback.canInteract);
   const range = timeline.trim ?? EMPTY_TIMELINE_RANGE;
   const disabled = !playback.canInteract;
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
@@ -92,6 +98,11 @@ function TimelineTrack() {
         }}
       />
       <SceneMarkers sourceDurationMicros={range.sourceDurationMicros} />
+      <SilenceMarkers
+        enabled={silenceMarkersEnabled && silenceDetection.hasDetected}
+        ranges={silenceDetection.ranges}
+        sourceDurationMicros={range.sourceDurationMicros}
+      />
       <SegmentDragHandle
         disabled={disabled}
         dragging={segmentDragging}
@@ -148,6 +159,35 @@ function TimelineTrack() {
         value={range.endMicros}
       />
     </div>
+  );
+}
+
+function SilenceMarkers({
+  enabled,
+  ranges,
+  sourceDurationMicros,
+}: {
+  enabled: boolean;
+  ranges: readonly { endMicros: number; startMicros: number }[];
+  sourceDurationMicros: number;
+}) {
+  return (
+    <>
+      {enabled
+        ? ranges.map((range) => {
+            const startPercent = timelinePercent(range.startMicros, sourceDurationMicros);
+            const endPercent = timelinePercent(range.endMicros, sourceDurationMicros);
+            return (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 z-0 bg-sky-400/20 ring-1 ring-sky-300/50 ring-inset"
+                key={`${range.startMicros}-${range.endMicros}`}
+                style={{ left: `${startPercent}%`, width: `${endPercent - startPercent}%` }}
+              />
+            );
+          })
+        : null}
+    </>
   );
 }
 
