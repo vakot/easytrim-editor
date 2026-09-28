@@ -29,6 +29,7 @@ import {
   prepareWaveforms,
   releaseImportedSourceThumbnail,
   renderFast,
+  saveFramePng,
 } from "../media";
 import type { MediaInfo } from "../media.types";
 import { parseSourceRef } from "../media.utils";
@@ -52,6 +53,18 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
+  it("saves captured PNG bytes through the native save dialog", async () => {
+    const pngData = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+    mocks.invoke.mockResolvedValue(true);
+
+    await expect(saveFramePng(pngData, "clip_42.png")).resolves.toBe(true);
+
+    expect(mocks.invoke).toHaveBeenCalledWith("save_frame_png", {
+      defaultName: "clip_42.png",
+      pngData: [137, 80, 78, 71, 13, 10, 26, 10],
+    });
+  });
+
   it("parses resolved binary paths and accepts an omitted optional path", async () => {
     mocks.invoke.mockResolvedValue({
       ffmpeg: { available: true, path: "C:/Tools/ffmpeg.exe", version: "ffmpeg version 7.1" },

@@ -64,6 +64,7 @@ export const en = {
         preferences: "Preferences",
         preferencesAudio: "Preferences / Audio",
         preferencesPlayback: "Preferences / Playback",
+        previewFrame: "Preview / Frame",
         previewTransform: "Preview / Transform",
         queueOnFinishedApplication: "Queue / On finished / Application",
         queueOnFinishedSource: "Queue / On finished / Source",
@@ -196,11 +197,13 @@ export const en = {
     options: {
       commandSearchTerms: {
         closeFile: "remove|source",
+        copyCurrentFrame: "copy|frame|screenshot|image|clipboard",
         deleteFile: "remove|trash|source",
         openFile: "import|video|source",
         openFolder: "directory|import|source",
         optimizedExport: "encode|render|transcode",
         saveLosslessCut: "fast cut|lossless|render",
+        saveCurrentFrame: "save|frame|screenshot|image|png",
       },
       layoutDensities: { compact: "Compact", default: "Default" },
     },
@@ -401,9 +404,11 @@ export const en = {
   preview: {
     actions: {
       nextFrame: "Next frame",
+      copyFrame: "Copy frame",
       pause: "Pause",
       play: "Play",
       previousFrame: "Previous frame",
+      saveFrame: "Save frame",
       resetTools: "Reset tools",
       setEnd: "Set segment end to current position",
       setStart: "Set segment start to current position",
@@ -414,11 +419,12 @@ export const en = {
         rotate180: "Rotate 180",
         rotate90Clockwise: "Rotate 90 CW",
         rotate90Counterclockwise: "Rotate 90 CCW",
-        reset: "Reset",
+        reset: "Reset to default",
       },
     },
     labels: {
       compatible: "Compatible preview",
+      transform: "Transform",
       loopPlayback: "Loop playback",
       playbackVolume: "Playback volume",
       playbackSpeed: "Playback speed",
@@ -435,6 +441,10 @@ export const en = {
     },
     messages: {
       error: "Could not preview this video",
+      frameCopied: "Frame copied to clipboard",
+      frameCopyFailed: "Could not copy the frame to the clipboard.",
+      frameSaveFailed: "Could not save the frame.",
+      frameSaved: "Frame saved",
       playbackFailed: "Playback could not start.",
       proxy:
         "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file.",

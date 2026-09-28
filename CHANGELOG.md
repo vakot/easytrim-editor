@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added Save frame and Copy frame actions to the preview context menu and Command Center, with source-based frame filenames and active crop, rotation, and flip transforms; grouped crop and reset actions in the menu and moved rotation and flip options into a Transform submenu.
 - Added a queued export Edit action that reopens captured settings, updates the same entry, and lets later exports continue while it is being edited.
 - Added persistent UI scaling controls to the View menu and Command Center, with 25% zoom steps, a reset action, and layouts that resize with the selected scale.
 

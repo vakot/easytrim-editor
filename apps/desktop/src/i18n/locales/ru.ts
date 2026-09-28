@@ -64,6 +64,7 @@ export const ru = {
         preferences: "Параметры",
         preferencesAudio: "Параметры / Аудио",
         preferencesPlayback: "Параметры / Воспроизведение",
+        previewFrame: "Предпросмотр / Кадр",
         previewTransform: "Предпросмотр / Трансформация",
         queueOnFinishedApplication: "Очередь / После завершения / Приложение",
         queueOnFinishedSource: "Очередь / После завершения / Источник",
@@ -197,11 +198,13 @@ export const ru = {
     options: {
       commandSearchTerms: {
         closeFile: "убрать|источник",
+        copyCurrentFrame: "копировать|кадр|изображение|буфер обмена",
         deleteFile: "удалить|корзина|источник",
         openFile: "импорт|видео|источник",
         openFolder: "каталог|импорт|источник",
         optimizedExport: "кодировать|рендер|перекодировать",
         saveLosslessCut: "быстрая обрезка|без потерь|рендер",
+        saveCurrentFrame: "сохранить|кадр|изображение|png",
       },
       layoutDensities: { compact: "Компактная", default: "Обычная" },
     },
@@ -403,9 +406,11 @@ export const ru = {
   preview: {
     actions: {
       nextFrame: "Следующий кадр",
+      copyFrame: "Скопировать кадр",
       pause: "Пауза",
       play: "Воспроизвести",
       previousFrame: "Предыдущий кадр",
+      saveFrame: "Сохранить кадр",
       resetTools: "Сбросить инструменты",
       setEnd: "Установить конец сегмента в текущей позиции",
       setStart: "Установить начало сегмента в текущей позиции",
@@ -416,11 +421,12 @@ export const ru = {
         rotate180: "Повернуть на 180°",
         rotate90Clockwise: "Повернуть на 90° по часовой стрелке",
         rotate90Counterclockwise: "Повернуть на 90° против часовой стрелки",
-        reset: "Сбросить",
+        reset: "Сбросить настройки",
       },
     },
     labels: {
       compatible: "Совместимый предпросмотр",
+      transform: "Преобразование",
       loopPlayback: "Повтор воспроизведения",
       playbackVolume: "Громкость воспроизведения",
       playbackSpeed: "Скорость воспроизведения",
@@ -437,6 +443,10 @@ export const ru = {
     },
     messages: {
       error: "Не удалось просмотреть это видео",
+      frameCopied: "Кадр скопирован в буфер обмена",
+      frameCopyFailed: "Не удалось скопировать кадр в буфер обмена.",
+      frameSaveFailed: "Не удалось сохранить кадр.",
+      frameSaved: "Кадр сохранён",
       playbackFailed: "Не удалось начать воспроизведение.",
       proxy:
         "Исходный файл нельзя воспроизвести напрямую, поэтому EasyTrim подготовил совместимый прокси-файл с возможным снижением качества. Для экспорта используется исходный файл.",

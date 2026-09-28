@@ -39,6 +39,7 @@ const playback = vi.hoisted(() => {
   const videoRef = { current: null as HTMLVideoElement | null };
 
   return {
+    isPlaying: false,
     nativeLoopEnabled: false,
     onCanPlay: vi.fn(),
     onCropToolOpenChange: vi.fn(),
@@ -133,8 +134,15 @@ function openCropTool(viewport: Element) {
 }
 
 function selectTransformAction(viewport: Element, name: string) {
-  openTransformMenu(viewport);
+  if (screen.queryAllByRole("menu").length === 0) openTransformMenu(viewport);
+  const isTransformOption = name.startsWith("Rotate ") || name.startsWith("Flip ");
+  if (isTransformOption) {
+    if (screen.queryAllByRole("menuitem", { name }).length === 0) {
+      fireEvent.click(screen.getByRole("menuitem", { name: "Transform" }));
+    }
+  }
   fireEvent.click(screen.getByRole("menuitem", { name }));
+  if (isTransformOption) expect(screen.getAllByRole("menu")).toHaveLength(2);
 }
 
 beforeAll(() => {
@@ -484,19 +492,43 @@ describe("VideoPreview", () => {
     expect(pause).toHaveBeenCalledTimes(2);
   });
 
-  it("shows the transform menu and applies rotation to the CSS preview", () => {
+  it("shows the preview menu hierarchy and applies rotation to the CSS preview", () => {
     const store = createAppStore();
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
 
     const viewport = container.querySelector('[aria-label="Video crop preview"]');
     openTransformMenu(viewport!);
-    expect(screen.getByRole("menu")).toHaveTextContent(
-      "CropRotate 90 CWRotate 90 CCWRotate 180Flip horizontallyFlip verticallyReset",
+    expect(screen.getAllByRole("menu")[0]).toHaveTextContent(
+      "Save frameCopy frameCropTransformReset to default",
     );
-    expect(screen.getAllByRole("separator")).toHaveLength(3);
+    expect(screen.getAllByRole("separator")).toHaveLength(2);
 
+    fireEvent.click(screen.getByRole("menuitem", { name: "Transform" }));
+    expect(screen.getAllByRole("menu")[1]).toHaveTextContent(
+      "Rotate 90 CWRotate 90 CCWRotate 180Flip horizontallyFlip vertically",
+    );
+    for (const action of [
+      "Rotate 90 CW",
+      "Rotate 90 CCW",
+      "Rotate 180",
+      "Flip horizontally",
+      "Flip vertically",
+    ]) {
+      const item = screen.getByRole("menuitem", { name: action });
+      expect(item.querySelector("svg")).not.toBeNull();
+      expect(item).toHaveAttribute("data-inset", "true");
+    }
+    expect(screen.getByRole("menuitem", { name: "Rotate 180" }).querySelector("svg")).toHaveClass(
+      "lucide-refresh-cw",
+    );
+    for (const action of ["Save frame", "Copy frame", "Crop", "Reset to default"]) {
+      expect(screen.getByRole("menuitem", { name: action })).not.toHaveAttribute("data-inset");
+    }
+    expect(screen.getByRole("menuitem", { name: "Crop" }).querySelector("svg")).toBeNull();
+    expect(screen.getAllByRole("separator")).toHaveLength(3);
     fireEvent.click(screen.getByRole("menuitem", { name: "Rotate 90 CW" }));
     expect(store.getState().crop.rotationDegrees).toBe(90);
+    expect(screen.getAllByRole("menu")).toHaveLength(2);
     expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "90");
     expect(container.querySelector("[data-flip-layer]")).toContainElement(
       container.querySelector("[data-rotating-output]"),
@@ -787,7 +819,7 @@ describe("VideoPreview", () => {
     selectTransformAction(viewport, "Flip horizontally");
     selectTransformAction(viewport, "Rotate 180");
     selectTransformAction(viewport, "Flip vertically");
-    selectTransformAction(viewport, "Reset");
+    selectTransformAction(viewport, "Reset to default");
 
     expect(screen.getByRole("alertdialog")).toHaveTextContent("Reset video transformations?");
     expect(store.getState().crop).toMatchObject({
@@ -796,7 +828,7 @@ describe("VideoPreview", () => {
       rotationDegrees: 180,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
 
     expect(store.getState().crop).toMatchObject({
       flipHorizontal: false,
@@ -821,8 +853,8 @@ describe("VideoPreview", () => {
     const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
 
     if (cropOpen) openCropTool(viewport);
-    selectTransformAction(viewport, "Reset");
-    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    selectTransformAction(viewport, "Reset to default");
+    fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
 
     expect(store.getState().crop).toMatchObject({
       flipHorizontal: false,
@@ -861,6 +893,32 @@ describe("VideoPreview", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Resize crop from top left" })).toBeVisible(),
     );
+  });
+
+  it("offers frame save and copy from the preview context menu", async () => {
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
+    const viewport = container.querySelector('[aria-label="Video crop preview"]');
+    expect(viewport).not.toBeNull();
+
+    openTransformMenu(viewport!);
+
+    expect(await screen.findByRole("menuitem", { name: "Save frame" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "Copy frame" })).toBeVisible();
+  });
+
+  it("disables frame saving while preview playback is running", async () => {
+    playback.isPlaying = true;
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
+    const viewport = container.querySelector('[aria-label="Video crop preview"]');
+    expect(viewport).not.toBeNull();
+
+    openTransformMenu(viewport!);
+
+    expect(await screen.findByRole("menuitem", { name: "Save frame" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    playback.isPlaying = false;
   });
 
   it("closes crop controls with Escape or when focus leaves the preview", async () => {

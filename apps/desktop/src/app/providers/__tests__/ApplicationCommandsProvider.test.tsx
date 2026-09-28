@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   diagnosticsError: vi.fn(),
   availableVersion: null as string | null,
   updateStatus: "idle" as "idle" | "checking" | "available" | "up-to-date" | "error",
+  isPlaying: false,
+  previewAvailable: false,
   openOptimizedExportDialog: vi.fn((origin: unknown) => ({
     origin,
     type: "export/optimized",
@@ -88,7 +90,16 @@ vi.mock("@/features/export", () => ({
   useQueueDeleteSource: () => ({ requestEnableSourceDeletion: vi.fn() }),
 }));
 vi.mock("@/features/preview", () => ({
-  usePreviewTransform: () => ({ isAvailable: false, requestCrop: vi.fn(), requestReset: vi.fn() }),
+  usePreviewTransform: () => ({
+    isAvailable: mocks.previewAvailable,
+    requestCopyFrame: vi.fn(),
+    requestCrop: vi.fn(),
+    requestReset: vi.fn(),
+    requestSaveFrame: vi.fn(),
+  }),
+}));
+vi.mock("@/app/hooks/usePlayback", () => ({
+  usePlayback: () => ({ isPlaying: mocks.isPlaying }),
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
@@ -178,6 +189,8 @@ describe("ApplicationCommandsProvider", () => {
     mocks.requestSourceDelete.mockClear();
     mocks.availableVersion = null;
     mocks.updateStatus = "idle";
+    mocks.isPlaying = false;
+    mocks.previewAvailable = false;
     state.importWorkflow.isNativeDialogOpen = false;
     state.preferences.activityFeedView = "default";
     state.preferences.layoutDensity = "default";
@@ -189,7 +202,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(53);
+    ).toHaveLength(58);
     expect(
       screen
         .getAllByRole("button")
@@ -212,6 +225,15 @@ describe("ApplicationCommandsProvider", () => {
       "data-checked",
       "true",
     );
+    for (const commandId of [
+      "flip-horizontal",
+      "flip-vertical",
+      "rotate-180",
+      "rotate-90-ccw",
+      "rotate-90-cw",
+    ]) {
+      expect(screen.getByRole("button", { name: commandId })).not.toHaveAttribute("data-checked");
+    }
     expect(screen.getByRole("button", { name: "reset-view-settings" })).toHaveAttribute(
       "data-group",
       "Appearance / Theme",
@@ -287,6 +309,16 @@ describe("ApplicationCommandsProvider", () => {
       "data-group",
       "Preview / Transform",
     );
+    for (const commandId of ["save-current-frame", "copy-current-frame"]) {
+      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
+        "data-group",
+        "Preview / Frame",
+      );
+      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
+        "data-surfaces",
+        "menu,palette",
+      );
+    }
     expect(screen.getByRole("button", { name: "reset-layout" })).toHaveAttribute(
       "data-variant",
       "destructive",
@@ -305,6 +337,23 @@ describe("ApplicationCommandsProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 
     expect(mocks.requestSourceDelete).toHaveBeenCalledWith({ sourceIds: ["source-1"] });
+  });
+
+  it("allows saving a frame only while playback is paused", () => {
+    mocks.previewAvailable = true;
+    mocks.isPlaying = true;
+    const view = renderRuntime();
+
+    expect(screen.getByRole("button", { name: "save-current-frame" })).toBeDisabled();
+
+    mocks.isPlaying = false;
+    view.rerender(
+      <ApplicationCommandsProvider>
+        <RuntimeProbe />
+      </ApplicationCommandsProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: "save-current-frame" })).toBeEnabled();
   });
 
   it("keeps update state label, variant, and icon synchronized in the owning command group", () => {

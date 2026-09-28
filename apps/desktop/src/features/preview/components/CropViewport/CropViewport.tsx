@@ -1,5 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type PointerEvent, useCallback, useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -11,12 +13,18 @@ import {
   selectRotationDegrees,
 } from "@/app/store/slices/crop-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
-import { selectSourceLoadToken, selectSourceMedia } from "@/app/store/slices/source-slice";
+import {
+  selectSourceLoadToken,
+  selectSourceMedia,
+  selectSourceSelection,
+} from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { isQuarterTurn } from "@/domain/rotation";
 import { usePreviewTransform } from "@/features/preview";
+import { saveFramePng } from "@/lib/tauri/media";
 
 import type { CropHandle } from "../../lib/crop-geometry.utils";
+import { capturePreviewFrame, frameFileNameFor, frameNumberAt } from "../../lib/frame-capture";
 import { previewGeometryFor, sourceCropForRotation } from "../../lib/preview-geometry";
 import {
   previewOutputAspectFor,
@@ -35,14 +43,16 @@ import { useCropSelection } from "./hooks/useCropSelection";
 import { usePreviewPresentation } from "./hooks/usePreviewPresentation";
 
 function CropViewport() {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { onCropToolOpenChange, videoRef } = usePlayback();
+  const { isPlaying, onCropToolOpenChange, videoRef } = usePlayback();
   const { registerHandlers } = usePreviewTransform();
   const crop = useAppSelector(selectCrop);
   const flipHorizontal = useAppSelector(selectFlipHorizontal);
   const flipVertical = useAppSelector(selectFlipVertical);
   const rotationDegrees = useAppSelector(selectRotationDegrees);
   const sourceMedia = useAppSelector(selectSourceMedia);
+  const sourceSelection = useAppSelector(selectSourceSelection);
   const sourceLoadToken = useAppSelector(selectSourceLoadToken);
   const preview = useAppSelector(selectPreview);
   const reduceMotion = useReducedMotion() === true;
@@ -118,9 +128,53 @@ function CropViewport() {
     dispatch(commitActiveEditingInstanceDraft());
   }, [clearDrag, dispatch]);
 
+  const captureCurrentFrame = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) throw new Error("The preview frame is not available.");
+
+    return {
+      currentTimeSeconds: video.currentTime,
+      frame: capturePreviewFrame(video, crop, rotationDegrees, flipHorizontal, flipVertical),
+    };
+  }, [crop, flipHorizontal, flipVertical, rotationDegrees, videoRef]);
+
+  const saveFrame = useCallback(async () => {
+    if (isPlaying || !videoRef.current?.paused) return;
+
+    try {
+      const { currentTimeSeconds, frame } = captureCurrentFrame();
+      const blob = await frame;
+      const defaultName = frameFileNameFor(
+        sourceSelection?.displayName ?? "frame",
+        frameNumberAt(
+          currentTimeSeconds,
+          sourceMedia?.video.averageFrameRate ?? sourceMedia?.video.realFrameRate,
+        ),
+      );
+
+      const saved = await saveFramePng(new Uint8Array(await blob.arrayBuffer()), defaultName);
+      if (saved) toast.success(t("preview.messages.frameSaved"));
+    } catch {
+      toast.error(t("preview.messages.frameSaveFailed"));
+    }
+  }, [captureCurrentFrame, isPlaying, sourceMedia, sourceSelection, t, videoRef]);
+
+  const copyFrame = useCallback(async () => {
+    try {
+      const { frame } = captureCurrentFrame();
+      const blob = await frame;
+      if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined")
+        throw new Error("Image clipboard access is unavailable.");
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toast.success(t("preview.messages.frameCopied"));
+    } catch {
+      toast.error(t("preview.messages.frameCopyFailed"));
+    }
+  }, [captureCurrentFrame, t]);
+
   const transformHandlers = useMemo(
-    () => ({ openCrop: open, resetTransform }),
-    [open, resetTransform],
+    () => ({ copyFrame, openCrop: open, resetTransform, saveFrame }),
+    [copyFrame, open, resetTransform, saveFrame],
   );
 
   useEffect(() => registerHandlers(transformHandlers), [registerHandlers, transformHandlers]);
