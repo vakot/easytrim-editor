@@ -180,6 +180,7 @@ function useTrimTimelineInteractions({
     capture: boolean,
   ) {
     if (capture) {
+      if (event.button !== 0 || event.isPrimary === false) return;
       const bounds = trackRef.current?.getBoundingClientRect();
       if (!bounds) return;
       trimDragRef.current = {
@@ -304,6 +305,7 @@ function useTrimTimelineInteractions({
   }
 
   function startSegmentDrag(event: PointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0 || event.isPrimary === false) return;
     event.stopPropagation();
     const bounds = trackRef.current?.getBoundingClientRect();
     if (!bounds) return;
@@ -398,6 +400,7 @@ function useTrimTimelineInteractions({
   }
 
   function startScrub(event: PointerEvent<HTMLElement>, captureTarget: HTMLElement) {
+    if (event.button !== 0 || event.isPrimary === false) return;
     event.stopPropagation();
     const bounds = trackRef.current?.getBoundingClientRect();
     if (!bounds) return;
