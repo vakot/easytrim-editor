@@ -2,7 +2,11 @@ const SCENE_NAVIGATION_REPEAT_WINDOW_MS = 125;
 
 let previousSceneNavigation: { invokedAt: number; targetMicros: number } | null = null;
 
-function findPreviousSceneBoundary(boundariesMicros: readonly number[], playheadMicros: number) {
+function findPreviousSceneBoundary(
+  boundariesMicros: readonly number[],
+  playheadMicros: number,
+  firstSceneStartMicros?: number,
+) {
   let previousBoundary: number | undefined;
   for (const boundaryMicros of boundariesMicros) {
     if (
@@ -12,6 +16,15 @@ function findPreviousSceneBoundary(boundariesMicros: readonly number[], playhead
       previousBoundary = boundaryMicros;
     }
   }
+
+  if (
+    firstSceneStartMicros !== undefined &&
+    firstSceneStartMicros < playheadMicros &&
+    (previousBoundary === undefined || firstSceneStartMicros > previousBoundary)
+  ) {
+    previousBoundary = firstSceneStartMicros;
+  }
+
   return previousBoundary;
 }
 
@@ -31,13 +44,18 @@ function findNextSceneBoundary(boundariesMicros: readonly number[], playheadMicr
 function resolvePreviousSceneNavigationTarget(
   boundariesMicros: readonly number[],
   playheadMicros: number,
+  firstSceneStartMicros?: number,
 ) {
   const now = performance.now();
   const targetMicros =
     previousSceneNavigation !== null &&
     now - previousSceneNavigation.invokedAt <= SCENE_NAVIGATION_REPEAT_WINDOW_MS
-      ? findPreviousSceneBoundary(boundariesMicros, previousSceneNavigation.targetMicros)
-      : findPreviousSceneBoundary(boundariesMicros, playheadMicros);
+      ? findPreviousSceneBoundary(
+          boundariesMicros,
+          previousSceneNavigation.targetMicros,
+          firstSceneStartMicros,
+        )
+      : findPreviousSceneBoundary(boundariesMicros, playheadMicros, firstSceneStartMicros);
 
   previousSceneNavigation =
     targetMicros === undefined ? null : { invokedAt: now, targetMicros };

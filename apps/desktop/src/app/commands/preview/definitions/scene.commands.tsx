@@ -25,10 +25,12 @@ function useSceneCommands() {
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const sourceReady = useAppSelector(selectSourceReady);
   const sceneDetection = useSceneDetection(sourceReady);
+  const firstSceneStartMicros = timeline.trim?.startMicros ?? 0;
 
   const previousSceneMicros = findPreviousSceneBoundary(
     sceneBoundariesMicros,
     timeline.playheadMicros,
+    firstSceneStartMicros,
   );
 
   const nextSceneMicros = findNextSceneBoundary(sceneBoundariesMicros, timeline.playheadMicros);
@@ -47,6 +49,7 @@ function useSceneCommands() {
     const targetMicros = resolvePreviousSceneNavigationTarget(
       sceneBoundariesMicros,
       timeline.playheadMicros,
+      firstSceneStartMicros,
     );
 
     if (targetMicros !== undefined) moveToScene(targetMicros);
