@@ -620,7 +620,7 @@ export const sk = {
           analysisFailed: "Analýza hlasitosti zvuku zlyhala.",
           default: "Predvolené",
           defaultWithAnalysis: "Predvolené · {{integratedLufs}} / {{truePeakDb}}",
-          label: "Hlasitosť",
+          label: "Normalizovať hlasitosť",
           retry: "Skúsiť znova",
           presets: {
             broadcast: "Vysielanie · −23 LUFS / −2 dBTP",

@@ -623,7 +623,7 @@ export const ru = {
           analysisFailed: "Не удалось проанализировать громкость аудио.",
           default: "По умолчанию",
           defaultWithAnalysis: "По умолчанию · {{integratedLufs}} / {{truePeakDb}}",
-          label: "Громкость",
+          label: "Нормализовать громкость",
           retry: "Повторить",
           presets: {
             broadcast: "Вещание · −23 LUFS / −2 dBTP",

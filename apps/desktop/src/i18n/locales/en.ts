@@ -620,7 +620,7 @@ export const en = {
           analysisFailed: "Audio loudness analysis failed.",
           default: "Default",
           defaultWithAnalysis: "Default · {{integratedLufs}} / {{truePeakDb}}",
-          label: "Loudness",
+          label: "Normalize loudness",
           retry: "Retry",
           presets: {
             broadcast: "Broadcast · −23 LUFS / −2 dBTP",
