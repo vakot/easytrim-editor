@@ -31,44 +31,46 @@ function ResolutionDimensions({
       <Label className="sr-only" htmlFor="export-width">
         {t("export.labels.width")}
       </Label>
-      <div className="flex flex-1 items-center gap-1.5">
-        <Input
-          className="flex-1"
-          id="export-width"
-          inputMode="numeric"
-          min={1}
-          onChange={(event) => {
-            const width = Number(event.target.value);
-            if (!Number.isInteger(width) || width <= 0) return;
-            onResolutionChange({
-              width,
-              height: isAspectRatioLocked
-                ? Math.max(1, Math.round(width / cropAspectRatio))
-                : settings.resolution.height,
-            });
-          }}
-          type="number"
-          value={settings.resolution.width}
-        />
-        <span aria-hidden="true">×</span>
-        <Input
-          aria-label={t("export.labels.height")}
-          className="flex-1"
-          inputMode="numeric"
-          min={1}
-          onChange={(event) => {
-            const height = Number(event.target.value);
-            if (!Number.isInteger(height) || height <= 0) return;
-            onResolutionChange({
-              width: isAspectRatioLocked
-                ? Math.max(1, Math.round(height * cropAspectRatio))
-                : settings.resolution.width,
-              height,
-            });
-          }}
-          type="number"
-          value={settings.resolution.height}
-        />
+      <div className="flex flex-1 items-center gap-2">
+        <div className="flex flex-1 items-center gap-1">
+          <Input
+            className="flex-1"
+            id="export-width"
+            inputMode="numeric"
+            min={1}
+            onChange={(event) => {
+              const width = Number(event.target.value);
+              if (!Number.isInteger(width) || width <= 0) return;
+              onResolutionChange({
+                width,
+                height: isAspectRatioLocked
+                  ? Math.max(1, Math.round(width / cropAspectRatio))
+                  : settings.resolution.height,
+              });
+            }}
+            type="number"
+            value={settings.resolution.width}
+          />
+          <span aria-hidden="true">×</span>
+          <Input
+            aria-label={t("export.labels.height")}
+            className="flex-1"
+            inputMode="numeric"
+            min={1}
+            onChange={(event) => {
+              const height = Number(event.target.value);
+              if (!Number.isInteger(height) || height <= 0) return;
+              onResolutionChange({
+                width: isAspectRatioLocked
+                  ? Math.max(1, Math.round(height * cropAspectRatio))
+                  : settings.resolution.width,
+                height,
+              });
+            }}
+            type="number"
+            value={settings.resolution.height}
+          />
+        </div>
         <Tooltip preserveOnTrigger>
           <TooltipTrigger asChild>
             <Button
