@@ -1,4 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { usePlayback } from "@/app/hooks/usePlayback";
@@ -13,13 +14,17 @@ import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { clampPlaybackMicros } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
 import { cn } from "@/lib/class-names.utils";
+import type { SilenceRange } from "@/lib/tauri/media.types";
 
 import { useSilenceDetection } from "../hooks/useSilenceDetection";
 import { useTrimTimelineInteractions } from "../hooks/useTrimTimelineInteractions";
 import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
+import { createTimelineSnapTargets } from "../lib/timeline-snap";
 
 import { Playhead, SegmentDragHandle, TrimHandle } from "./TimelineHandles";
 import styles from "./TimelinePanel.module.css";
+
+const EMPTY_SILENCE_RANGES: readonly SilenceRange[] = [];
 
 function TimelineTrack() {
   const { t } = useTranslation();
@@ -30,6 +35,19 @@ function TimelineTrack() {
   const playback = usePlayback();
   const timeline = useTimeline();
   const silenceDetection = useSilenceDetection(playback.canInteract);
+  const detectedSilenceRanges = silenceDetection.hasDetected
+    ? silenceDetection.ranges
+    : EMPTY_SILENCE_RANGES;
+
+  const snapTargetsMicros = useMemo(
+    () =>
+      createTimelineSnapTargets(
+        sceneMarkersEnabled ? sceneBoundariesMicros : [],
+        silenceMarkersEnabled ? detectedSilenceRanges : EMPTY_SILENCE_RANGES,
+      ),
+    [detectedSilenceRanges, sceneBoundariesMicros, sceneMarkersEnabled, silenceMarkersEnabled],
+  );
+
   const range = timeline.trim ?? EMPTY_TIMELINE_RANGE;
   const disabled = !playback.canInteract;
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
@@ -68,7 +86,7 @@ function TimelineTrack() {
     onTrimDragStart: timeline.onTrimDragStart,
     playheadMicros: timeline.playheadMicros,
     range,
-    sceneBoundariesMicros: sceneMarkersEnabled ? sceneBoundariesMicros : [],
+    snapTargetsMicros,
   });
 
   return (

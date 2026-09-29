@@ -516,7 +516,7 @@ export const en = {
     },
     tooltips: {
       detectScenes:
-        "Analyze the source video for scene changes. Hold Shift and drag the playhead to snap to a marker.",
+        "Analyze the source video for scene changes. Hold Shift while dragging to snap to scene markers or either edge of a silent range.",
       detectSilence: "Analyze enabled audio tracks and mark silent ranges on the timeline.",
       moveSegment: "Drag to move the selected segment — hold Shift to snap",
       trimReset: "{{label}} — hold Shift to snap — double-click to reset",

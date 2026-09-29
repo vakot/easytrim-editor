@@ -516,7 +516,7 @@ export const sk = {
     },
     tooltips: {
       detectScenes:
-        "Analyzovať zdrojové video a vyhľadať zmeny scén. Podržte Shift a potiahnutím prehrávacej hlavy ju prichyťte k značke.",
+        "Analyzovať zdrojové video a vyhľadať zmeny scén. Podržte Shift počas ťahania a prichyťte sa k značke scény alebo k okraju tichého úseku.",
       detectSilence: "Analyzovať zapnuté zvukové stopy a označiť tiché úseky na časovej osi.",
       moveSegment: "Potiahnutím presuňte vybraný segment — podržaním Shift ho prichytíte",
       trimReset: "{{label}} — podržaním Shift prichytíte — dvojitým kliknutím obnovíte",
