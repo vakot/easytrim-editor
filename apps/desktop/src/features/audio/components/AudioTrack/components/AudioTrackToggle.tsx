@@ -6,26 +6,22 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
-import { type AudioTrackState, audioTrackToggled } from "@/app/store/slices/audio-slice";
-import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { cn } from "@/lib/class-names.utils";
 import { diagnostics } from "@/lib/diagnostics";
-import type { AudioStream } from "@/lib/tauri/media.types";
+
+import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 
 type AudioTrackToggleProps = ComponentPropsWithoutRef<typeof Button> & {
-  stream: AudioStream;
-  track: AudioTrackState;
+  controller: AudioTrackController;
 };
 
 const AudioTrackToggle = forwardRef<HTMLButtonElement, AudioTrackToggleProps>(
-  function AudioTrackToggle({ className, onClick, stream, track, ...props }, ref) {
+  function AudioTrackToggle({ className, controller, onClick, ...props }, ref) {
     const { t } = useTranslation();
-    const dispatch = useAppDispatch();
+    const { setEnabled, stream, track, trackNumber } = controller;
+    if (!stream || !track) return null;
     const title =
-      stream.title ??
-      stream.language ??
-      t("audio.labels.defaultTrack", { number: stream.streamIndex });
+      stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
 
     const label = track.enabled
       ? t("audio.actions.muteTrack", { title })
@@ -44,8 +40,7 @@ const AudioTrackToggle = forwardRef<HTMLButtonElement, AudioTrackToggleProps>(
                 { type: "button", id: "track-toggle" },
                 { streamIndex: stream.streamIndex },
               );
-              dispatch(audioTrackToggled(stream));
-              dispatch(commitActiveEditingInstanceDraft());
+              setEnabled();
               onClick?.(event);
             }}
             ref={ref}

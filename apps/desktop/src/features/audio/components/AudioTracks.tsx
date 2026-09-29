@@ -1,41 +1,25 @@
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimelineState } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
-import type { AudioTrackState } from "@/app/store/slices/audio-slice";
+import { selectAudioTracks } from "@/app/store/slices/audio-slice";
+import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { timelinePercent, type TrimRange } from "@/domain/trim";
-import type { AudioStream } from "@/lib/tauri/media.types";
 
 import { useWaveformPreparation } from "../hooks/useWaveformPreparation";
-import { audioTrackColor } from "../lib/audio-track-color";
 
 import { AudioTrackRow } from "./AudioTrack/AudioTrackRow";
 
-interface AudioTracksProps {
-  streams: AudioStream[];
-  tracks: AudioTrackState[];
-}
-
-function AudioTracks({ streams, tracks }: AudioTracksProps) {
+function AudioTracks() {
+  const streams = useAppSelector((state) => selectSourceMedia(state)?.audioStreams ?? []);
+  const tracks = useAppSelector(selectAudioTracks);
   useWaveformPreparation(tracks);
 
   return (
     <div className="relative grid min-w-0 gap-2">
-      {streams.map((stream) => {
-        const trackNumber = streams.indexOf(stream) + 1;
-        const track = tracks.find((candidate) => candidate.streamIndex === stream.streamIndex);
-        if (!track) return null;
-        const trackColor = audioTrackColor(stream.streamIndex);
-        return (
-          <AudioTrackRow
-            key={stream.streamIndex}
-            stream={stream}
-            track={track}
-            trackColor={trackColor}
-            trackNumber={trackNumber}
-          />
-        );
-      })}
+      {streams.map((stream) => (
+        <AudioTrackRow key={stream.streamIndex} streamIndex={stream.streamIndex} />
+      ))}
       <AudioPlayhead />
     </div>
   );

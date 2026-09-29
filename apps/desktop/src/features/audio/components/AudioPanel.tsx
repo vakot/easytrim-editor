@@ -13,7 +13,6 @@ import {
   selectAudioTracks,
   selectMergeAudio,
 } from "@/app/store/slices/audio-slice";
-import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { diagnostics } from "@/lib/diagnostics";
 
@@ -22,7 +21,6 @@ import { audioOutputSummary } from "../lib/audio-level.utils";
 import { AudioTracks } from "./AudioTracks";
 
 function AudioPanel() {
-  const media = useAppSelector(selectSourceMedia);
   const audioTracks = useAppSelector(selectAudioTracks);
   const mergeAudio = useAppSelector(selectMergeAudio);
   const dispatch = useAppDispatch();
@@ -74,7 +72,7 @@ function AudioPanel() {
 
       <ScrollArea className="min-h-0 flex-1 pr-3" data-testid="audio-tracks-scroll">
         <div className="my-2 pl-3">
-          <AudioTracks streams={media?.audioStreams ?? []} tracks={audioTracks} />
+          <AudioTracks />
         </div>
       </ScrollArea>
     </section>

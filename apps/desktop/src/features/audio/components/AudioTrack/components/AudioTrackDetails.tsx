@@ -1,24 +1,42 @@
-function AudioTrackDetails({
-  controller,
-  stream,
-  track,
-  trackNumber,
-}: Omit<AudioTrackRowProps, "trackColor"> & {
-  controller: AudioTrackController;
-  liveGainDb: number;
-  onLiveGainChange: (gainDb: number | null) => void;
-}) {
+import { MoreVertical } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Slider } from "@/components/ui/slider";
+
+import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
+import { formatChannels } from "../../../lib/audio-level.utils";
+
+import { AudioTrackDropdownMenuContent } from "./AudioTrackActions";
+import { AudioTrackToggle } from "./AudioTrackToggle";
+
+function AudioTrackDetails({ controller }: { controller: AudioTrackController }) {
   const { t } = useTranslation();
-  const { clearLiveAudioTrackGain, setLiveAudioTrackGain } = usePlayback();
+  const shouldReduceMotion = useReducedMotion() === true;
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const { stream, track, trackNumber } = controller;
+  if (!stream || !track) return null;
 
   const title =
     stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
 
   return (
-    <div className="flex items-center gap-1">
-      <AudioTrackToggle stream={stream} track={track} />
+    <div
+      className="flex items-center gap-1"
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsFocused(false);
+      }}
+      onFocusCapture={() => setIsFocused(true)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <AudioTrackToggle controller={controller} />
 
-      <div className="grid min-w-0 flex-1 gap-0.5">
+      <div className="relative grid min-w-0 flex-1 gap-0.5">
         <div className="leading-tight">
           <p
             className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
@@ -30,16 +48,23 @@ function AudioTrackDetails({
             #{trackNumber} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
           </p>
         </div>
-        <AudioTrackGainControl
-          clearLiveAudioTrackGain={clearLiveAudioTrackGain}
-          liveGainDb={liveGainDb}
-          onCommit={controller.commitGain}
-          onLiveGainChange={onLiveGainChange}
-          setLiveAudioTrackGain={setLiveAudioTrackGain}
-          streamIndex={stream.streamIndex}
-          trackGainDb={track.processing.gainDb}
-          trackNumber={trackNumber}
-        />
+
+        <AnimatePresence initial={false}>
+          {isHovered || isFocused ? (
+            <motion.div
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute inset-0 z-1 flex items-center bg-card"
+              exit={{ opacity: 0, scale: 0.96 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96 }}
+              key="gain-control"
+              transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
+            >
+              <div className="w-full">
+                <AudioTrackGainControl controller={controller} />
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
 
       <DropdownMenu>
@@ -53,93 +78,25 @@ function AudioTrackDetails({
             <MoreVertical aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
-
-        <AudioTrackDropdownMenuContent
-          controller={controller}
-          stream={stream}
-          trackNumber={trackNumber}
-        />
+        <AudioTrackDropdownMenuContent controller={controller} />
       </DropdownMenu>
     </div>
   );
 }
 
-function AudioTrackGainControl({
-  clearLiveAudioTrackGain,
-  liveGainDb,
-  onCommit,
-  onLiveGainChange,
-  setLiveAudioTrackGain,
-  streamIndex,
-  trackGainDb,
-  trackNumber,
-}: {
-  clearLiveAudioTrackGain: (streamIndex: number, committedGainDb: number) => void;
-  liveGainDb: number;
-  onCommit: (gainDb: number) => void;
-  onLiveGainChange: (gainDb: number | null) => void;
-  setLiveAudioTrackGain: (streamIndex: number, gainDb: number) => void;
-  streamIndex: number;
-  trackGainDb: number;
-  trackNumber: number;
-}) {
+function AudioTrackGainControl({ controller }: { controller: AudioTrackController }) {
   const { i18n, t } = useTranslation();
-  const liveGainRef = useRef(trackGainDb);
-  const initialGainRef = useRef(trackGainDb);
-  const interactionKindRef = useRef<"keyboard" | "pointer" | null>(null);
-  const commitTimerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (interactionKindRef.current === null) {
-      liveGainRef.current = liveGainDb;
-      initialGainRef.current = liveGainDb;
-    }
-  }, [liveGainDb]);
-
-  const finishInteraction = useCallback(
-    (gainDb = liveGainRef.current) => {
-      if (interactionKindRef.current === null) return;
-      interactionKindRef.current = null;
-      if (commitTimerRef.current !== null) {
-        window.clearTimeout(commitTimerRef.current);
-        commitTimerRef.current = null;
-      }
-      if (gainDb !== initialGainRef.current) onCommit(gainDb);
-      clearLiveAudioTrackGain(streamIndex, gainDb);
-      onLiveGainChange(null);
-      initialGainRef.current = gainDb;
-    },
-    [clearLiveAudioTrackGain, onCommit, onLiveGainChange, streamIndex],
-  );
-
-  useEffect(
-    () => () => {
-      if (commitTimerRef.current !== null) window.clearTimeout(commitTimerRef.current);
-      if (interactionKindRef.current !== null) {
-        clearLiveAudioTrackGain(streamIndex, liveGainRef.current);
-      }
-    },
-    [clearLiveAudioTrackGain, streamIndex],
-  );
-
-  const startInteraction = (kind: "keyboard" | "pointer") => {
-    if (interactionKindRef.current === null) initialGainRef.current = liveGainRef.current;
-    interactionKindRef.current = kind;
-  };
-
-  const updateGain = (values: number[]) => {
-    const nextGain = values[0];
-    if (nextGain === undefined) return;
-    if (interactionKindRef.current === null) startInteraction("pointer");
-    liveGainRef.current = nextGain;
-    onLiveGainChange(nextGain);
-    setLiveAudioTrackGain(streamIndex, nextGain);
-
-    if (interactionKindRef.current === "keyboard") {
-      if (commitTimerRef.current !== null) window.clearTimeout(commitTimerRef.current);
-      commitTimerRef.current = window.setTimeout(() => finishInteraction(), 300);
-    }
-  };
+  const {
+    cancelGainInteraction,
+    commitPointerGain,
+    finishGainInteraction,
+    handleGainKeyDown,
+    handleGainKeyUp,
+    liveGainDb,
+    startPointerGainInteraction,
+    trackNumber,
+    updateLiveGain,
+  } = controller;
 
   return (
     <div className="flex h-4 min-w-0 items-center gap-1.5">
@@ -148,33 +105,13 @@ function AudioTrackGainControl({
         className="min-w-0 flex-1 py-0 **:data-[slot=slider-thumb]:size-2.5"
         max={12}
         min={-24}
-        onBlur={() => finishInteraction()}
-        onKeyDownCapture={(event) => {
-          if (event.key === "Enter") finishInteraction();
-          else if (
-            [
-              "ArrowDown",
-              "ArrowLeft",
-              "ArrowRight",
-              "ArrowUp",
-              "End",
-              "Home",
-              "PageDown",
-              "PageUp",
-            ].includes(event.key)
-          )
-            startInteraction("keyboard");
-        }}
-        onKeyUpCapture={(event) => {
-          if (interactionKindRef.current === "keyboard" && event.key.startsWith("Arrow"))
-            finishInteraction();
-        }}
-        onPointerCancelCapture={() => finishInteraction()}
-        onPointerDownCapture={() => startInteraction("pointer")}
-        onValueChange={updateGain}
-        onValueCommit={(values) => {
-          if (interactionKindRef.current === "pointer") finishInteraction(values[0]);
-        }}
+        onBlur={() => finishGainInteraction()}
+        onKeyDownCapture={(event) => handleGainKeyDown(event.key)}
+        onKeyUpCapture={(event) => handleGainKeyUp(event.key)}
+        onPointerCancelCapture={cancelGainInteraction}
+        onPointerDownCapture={startPointerGainInteraction}
+        onValueChange={updateLiveGain}
+        onValueCommit={commitPointerGain}
         step={0.5}
         value={[liveGainDb]}
       />

@@ -1,19 +1,30 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import { type AudioTrackState, audioTrackToggled } from "@/app/store/slices/audio-slice";
+import {
+  audioTrackActivityAnalysisReady,
+  audioTrackActivityAnalysisStarted,
+  audioTrackToggled,
+} from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 import { audioTrackColor } from "@/features/audio";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
 
-function renderRow(trackOverride?: AudioTrackState, enabled = true) {
+vi.mock("@/app/hooks/usePlayback", () => ({
+  usePlayback: () => ({
+    clearLiveAudioTrackGain: () => undefined,
+    setLiveAudioTrackGain: () => undefined,
+  }),
+}));
+
+function renderRow(enabled = true) {
   const store = createAppStore({
     getItem: async () => null,
     setItem: async () => undefined,
@@ -25,24 +36,16 @@ function renderRow(trackOverride?: AudioTrackState, enabled = true) {
   store.dispatch(sourceReady({ loadToken: 1, media }));
   const stream = media.audioStreams[0]!;
   if (!enabled) store.dispatch(audioTrackToggled({ streamIndex: stream.streamIndex }));
-  const track = trackOverride ?? store.getState().audio.tracks[0]!;
 
-  const view = render(
+  render(
     <Provider store={store}>
       <TooltipProvider>
-        <AudioTrackRow
-          clearLiveAudioTrackGain={() => undefined}
-          setLiveAudioTrackGain={() => undefined}
-          stream={stream}
-          track={track}
-          trackColor="var(--chart-1)"
-          trackNumber={1}
-        />
+        <AudioTrackRow streamIndex={stream.streamIndex} />
       </TooltipProvider>
     </Provider>,
   );
 
-  return { store, view, stream };
+  return { store };
 }
 
 describe("AudioTrackRow", () => {
@@ -70,7 +73,7 @@ describe("AudioTrackRow", () => {
 
   it("applies the effects draft once and shows the committed processing on its waveform", async () => {
     const user = userEvent.setup();
-    const { store, stream, view } = renderRow();
+    const { store } = renderRow();
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
@@ -85,20 +88,6 @@ describe("AudioTrackRow", () => {
       gainDb: 0,
       loudnessNormalization: "streaming",
     });
-    view.rerender(
-      <Provider store={store}>
-        <TooltipProvider>
-          <AudioTrackRow
-            clearLiveAudioTrackGain={() => undefined}
-            setLiveAudioTrackGain={() => undefined}
-            stream={stream}
-            track={store.getState().audio.tracks[0]!}
-            trackColor="var(--chart-1)"
-            trackNumber={1}
-          />
-        </TooltipProvider>
-      </Provider>,
-    );
     expect(screen.getByRole("note")).toHaveTextContent(/normalize/i);
     expect(screen.queryByRole("spinbutton", { name: /gain/i })).not.toBeInTheDocument();
   });
@@ -153,29 +142,25 @@ describe("AudioTrackRow", () => {
     store.dispatch(sourceSelected({ source: firstSource }));
     const media = mediaWithAudio(firstSource.sourcePath);
     store.dispatch(sourceReady({ loadToken: 1, media }));
-    const baseTrack = store.getState().audio.tracks[0]!;
-    const track: AudioTrackState = {
-      ...baseTrack,
-      activityAnalysis: {
-        operationId: "activity-2",
-        status: "ready",
-        value: [{ startMicros: 1_000_000, endMicros: 2_000_000 }],
-      },
-    };
-
     const stream = media.audioStreams[0]!;
+    store.dispatch(
+      audioTrackActivityAnalysisStarted({
+        operationId: "activity-2",
+        streamIndex: stream.streamIndex,
+      }),
+    );
+    store.dispatch(
+      audioTrackActivityAnalysisReady({
+        operationId: "activity-2",
+        result: [{ startMicros: 1_000_000, endMicros: 2_000_000 }],
+        streamIndex: stream.streamIndex,
+      }),
+    );
 
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <AudioTrackRow
-            clearLiveAudioTrackGain={() => undefined}
-            setLiveAudioTrackGain={() => undefined}
-            stream={stream}
-            track={track}
-            trackColor={audioTrackColor(stream.streamIndex)}
-            trackNumber={1}
-          />
+          <AudioTrackRow streamIndex={stream.streamIndex} />
         </TooltipProvider>
       </Provider>,
     );
@@ -187,7 +172,7 @@ describe("AudioTrackRow", () => {
 
   it("allows muted tracks to run loudness and activity analysis", async () => {
     const user = userEvent.setup();
-    renderRow(undefined, false);
+    renderRow(false);
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
 

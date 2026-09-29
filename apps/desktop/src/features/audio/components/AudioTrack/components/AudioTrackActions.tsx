@@ -17,16 +17,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Slot } from "@/components/ui/slot";
 
-import type { AudioStream } from "@/lib/tauri/media.types";
-
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 
-import { useAudioTrackEffectsDialog } from "./AudioTrackEffectsDialog";
+import { useAudioTrackEffectsDialog } from "./audio-track-effects-dialog-context";
 
 interface AudioTrackActionsProps {
   controller: AudioTrackController;
-  stream: AudioStream;
-  trackNumber: number;
 }
 
 function activityActionLabel(
@@ -42,11 +38,10 @@ function activityActionLabel(
 function AudioTrackToggleMenuCheckboxItem({
   children,
   controller,
-  stream,
-  trackNumber,
 }: { children?: React.ReactNode } & AudioTrackActionsProps) {
   const { t } = useTranslation();
-  const track = controller.track!;
+  const { stream, track, trackNumber } = controller;
+  if (!track || !stream) return null;
 
   const streamTitle =
     stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
@@ -67,7 +62,8 @@ function AudioTrackToggleActivityCheckboxMenuItem({
   controller,
 }: { children?: React.ReactNode } & AudioTrackActionsProps) {
   const { t } = useTranslation();
-  const track = controller.track!;
+  const track = controller.track;
+  if (!track) return null;
   const hasActivity = track.activityAnalysis.status === "ready";
 
   const handleCheckedChange = () => {
@@ -103,34 +99,22 @@ function AudioTrackEffectsMenuItem({
   return <Slot {...commandProps}>{children}</Slot>;
 }
 
-function AudioTrackDropdownMenuContent({
-  controller,
-  stream,
-  trackNumber,
-}: AudioTrackActionsProps) {
+function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
   return (
     <DropdownMenuContent>
-      <AudioTrackToggleMenuCheckboxItem
-        controller={controller}
-        stream={stream}
-        trackNumber={trackNumber}
-      >
+      <AudioTrackToggleMenuCheckboxItem controller={controller}>
         <DropdownMenuCheckboxItem keepOpen>Enabled</DropdownMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
 
       <DropdownMenuSeparator />
 
-      <AudioTrackToggleActivityCheckboxMenuItem
-        controller={controller}
-        stream={stream}
-        trackNumber={trackNumber}
-      >
+      <AudioTrackToggleActivityCheckboxMenuItem controller={controller}>
         <DropdownMenuCheckboxItem keepOpen>Show Activity</DropdownMenuCheckboxItem>
       </AudioTrackToggleActivityCheckboxMenuItem>
 
       <DropdownMenuSeparator />
 
-      <AudioTrackEffectsMenuItem controller={controller} stream={stream} trackNumber={trackNumber}>
+      <AudioTrackEffectsMenuItem controller={controller}>
         <DropdownMenuItem inset>
           <DropdownMenuIcon side="left">
             <WandSparkles />
@@ -145,30 +129,22 @@ function AudioTrackDropdownMenuContent({
   );
 }
 
-function AudioTrackContextMenuContent({ controller, stream, trackNumber }: AudioTrackActionsProps) {
+function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
   return (
     <ContextMenuContent>
-      <AudioTrackToggleMenuCheckboxItem
-        controller={controller}
-        stream={stream}
-        trackNumber={trackNumber}
-      >
+      <AudioTrackToggleMenuCheckboxItem controller={controller}>
         <ContextMenuCheckboxItem keepOpen>Toggle</ContextMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
 
       <ContextMenuSeparator />
 
-      <AudioTrackToggleActivityCheckboxMenuItem
-        controller={controller}
-        stream={stream}
-        trackNumber={trackNumber}
-      >
+      <AudioTrackToggleActivityCheckboxMenuItem controller={controller}>
         <ContextMenuCheckboxItem keepOpen>Show Activity</ContextMenuCheckboxItem>
       </AudioTrackToggleActivityCheckboxMenuItem>
 
       <ContextMenuSeparator />
 
-      <AudioTrackEffectsMenuItem controller={controller} stream={stream} trackNumber={trackNumber}>
+      <AudioTrackEffectsMenuItem controller={controller}>
         <ContextMenuItem inset>
           <ContextMenuIcon side="left">
             <WandSparkles />
