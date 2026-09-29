@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -12,36 +12,44 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import {
   type AudioTrackProcessing,
   cloneAudioTrackProcessing,
   type CustomLoudnessNormalization,
+  DEFAULT_AUDIO_TRACK_PROCESSING,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 
+import { AudioTrackEffectsDialogContext } from "./audio-track-effects-dialog-context";
+
 interface AudioTrackEffectsDialogProps {
   children: ReactNode;
   controller: AudioTrackController;
-  title: string;
-  track: AudioTrackState;
 }
 
 type NormalizationOption = "none" | "webVideo" | "streaming" | "broadcast" | "custom";
 
-function AudioTrackEffectsDialog({
-  children,
-  controller,
-  title,
-  track,
-}: AudioTrackEffectsDialogProps) {
+function AudioTrackEffectsDialog({ children, controller }: AudioTrackEffectsDialogProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(() => cloneAudioTrackProcessing(track.processing));
+  const track = controller.track;
+  const stream = controller.stream;
+  const [draft, setDraft] = useState(() =>
+    cloneAudioTrackProcessing(track?.processing ?? DEFAULT_AUDIO_TRACK_PROCESSING),
+  );
+
   const [targetLufsDraft, setTargetLufsDraft] = useState(
     String(DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION.targetLufs),
   );
@@ -49,6 +57,13 @@ function AudioTrackEffectsDialog({
   const [maxTruePeakDraft, setMaxTruePeakDraft] = useState(
     String(DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION.maxTruePeakDb),
   );
+
+  if (!track || !stream) return children;
+
+  const title =
+    stream.title ??
+    stream.language ??
+    t("audio.labels.defaultTrack", { number: controller.trackNumber });
 
   const normalization = draft.loudnessNormalization;
   const customNormalization =
@@ -133,9 +148,7 @@ function AudioTrackEffectsDialog({
   const analysisActionLabel =
     analysis.status === "loading"
       ? t("audio.actions.analyzingLoudness")
-      : analysis.status === "ready"
-        ? t("audio.actions.reanalyzeLoudness")
-        : t("audio.actions.analyzeLoudness");
+      : t("audio.actions.analyzeLoudness");
 
   return (
     <AudioTrackEffectsDialogContext.Provider value={{ openEffects }}>
@@ -153,31 +166,37 @@ function AudioTrackEffectsDialog({
               <Label htmlFor={`track-normalization-${track.streamIndex}`}>
                 {t("audio.labels.loudnessNormalization")}
               </Label>
-              <select
-                aria-label={t("audio.accessibility.trackNormalization", { title })}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                id={`track-normalization-${track.streamIndex}`}
-                onChange={(event) =>
-                  changeNormalization(event.currentTarget.value as NormalizationOption)
-                }
+              <Select
+                onValueChange={changeNormalization}
                 value={normalizationOption(normalization)}
               >
-                <option value="none">{t("audio.options.normalizationNone")}</option>
-                <option value="webVideo">
-                  {t("export.dialogs.optimized.loudness.presets.webVideo")}
-                </option>
-                <option value="streaming">
-                  {t("export.dialogs.optimized.loudness.presets.streaming")}
-                </option>
-                <option value="broadcast">
-                  {t("export.dialogs.optimized.loudness.presets.broadcast")}
-                </option>
-                <option value="custom">{t("audio.options.normalizationCustom")}</option>
-              </select>
+                <SelectTrigger
+                  aria-label={t("audio.accessibility.trackNormalization", { title })}
+                  className="w-full"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="none">{t("audio.options.normalizationNone")}</SelectItem>
+                    <SelectItem value="webVideo">
+                      {t("export.dialogs.optimized.loudness.presets.webVideo")}
+                    </SelectItem>
+                    <SelectItem value="streaming">
+                      {t("export.dialogs.optimized.loudness.presets.streaming")}
+                    </SelectItem>
+                    <SelectItem value="broadcast">
+                      {t("export.dialogs.optimized.loudness.presets.broadcast")}
+                    </SelectItem>
+                    <SelectItem value="custom">{t("audio.options.normalizationCustom")}</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
 
             {customNormalization ? (
-              <div className="grid gap-3 rounded-md border border-border/70 p-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="grid gap-1.5">
                   <Label htmlFor={`track-custom-lufs-${track.streamIndex}`}>
                     {t("audio.labels.targetLufs")}
@@ -216,13 +235,26 @@ function AudioTrackEffectsDialog({
             ) : null}
 
             <section aria-label={t("audio.labels.loudnessAnalysis")} className="grid gap-2">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="text-sm font-medium">{t("audio.labels.loudnessAnalysis")}</h3>
+              <h3 className="text-sm font-medium">{t("audio.labels.loudnessAnalysis")}</h3>
+              <div className="flex flex-1 justify-between gap-3">
+                <div className="grig">
                   <p className="text-xs text-muted-foreground">
                     {t("audio.messages.analysisUsesAppliedEffects")}
                   </p>
+
+                  {analysis.status === "ready" ? (
+                    <p className="text-xs text-muted-foreground" role="status">
+                      {formatLoudness(analysis.value)}
+                    </p>
+                  ) : null}
+
+                  {analysis.status === "failed" ? (
+                    <p className="text-xs text-destructive" role="alert">
+                      {analysis.error.message}
+                    </p>
+                  ) : null}
                 </div>
+
                 <Button
                   disabled={analysis.status === "loading"}
                   onClick={controller.analyzeLoudness}
@@ -233,16 +265,6 @@ function AudioTrackEffectsDialog({
                   {analysisActionLabel}
                 </Button>
               </div>
-              {analysis.status === "ready" ? (
-                <p className="text-xs text-muted-foreground" role="status">
-                  {formatLoudness(analysis.value)}
-                </p>
-              ) : null}
-              {analysis.status === "failed" ? (
-                <p className="text-xs text-destructive" role="alert">
-                  {analysis.error.message}
-                </p>
-              ) : null}
             </section>
 
             {track.preview.status === "loading" ? (
@@ -297,14 +319,4 @@ function formatLoudness(analysis: { integratedLufs?: number; truePeakDb?: number
   return `${loudness} · ${peak}`;
 }
 
-const AudioTrackEffectsDialogContext = createContext<{ openEffects: () => void } | null>(null);
-
-function useAudioTrackEffectsDialog() {
-  const context = useContext(AudioTrackEffectsDialogContext);
-  if (!context) {
-    throw new Error("useAudioTrackEffectsDialog must be used within AudioTrackEffectsDialog");
-  }
-  return context;
-}
-
-export { AudioTrackEffectsDialog, useAudioTrackEffectsDialog };
+export { AudioTrackEffectsDialog };
