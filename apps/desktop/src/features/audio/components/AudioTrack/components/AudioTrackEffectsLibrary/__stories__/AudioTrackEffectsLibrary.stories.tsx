@@ -94,7 +94,7 @@ function EffectsLibraryStory({
 
   return (
     <div className="-mx-4 flex min-h-80 min-w-0 flex-1">
-      <nav aria-label="Audio effects" className="w-52 shrink-0 border-r px-2 py-3">
+      <nav aria-label="Audio effects" className="w-64 shrink-0 border-r px-2 py-3">
         {effects.map((effect) => {
           const state = effectStates[effect];
           const enabled =
@@ -111,7 +111,10 @@ function EffectsLibraryStory({
           return (
             <button
               aria-current={selected === effect ? "page" : undefined}
-              className={cn(menuItemVariants({ kind: "checkbox" }), "w-full justify-start")}
+              className={cn(
+                menuItemVariants({ kind: "checkbox" }),
+                "w-full min-w-0 justify-start whitespace-nowrap",
+              )}
               data-inset
               data-selected={selected === effect}
               key={effect}
@@ -123,7 +126,7 @@ function EffectsLibraryStory({
                   <Check />
                 </MenuIcon>
               ) : null}
-              {effect}
+              <span className="min-w-0 truncate">{effect}</span>
               <MenuIcon aria-hidden="true" className={dirty ? undefined : "opacity-0"} side="right">
                 <span className="size-1.5 rounded-full bg-current" />
               </MenuIcon>

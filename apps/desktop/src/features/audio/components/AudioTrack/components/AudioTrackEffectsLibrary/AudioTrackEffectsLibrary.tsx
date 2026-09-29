@@ -38,11 +38,14 @@ function AudioTrackEffectsLibrary({ streamIndex }: AudioTrackEffectsLibraryProps
 
   return (
     <div className="-mx-4 flex min-h-72 min-w-0 flex-1">
-      <nav aria-label={t("audio.actions.effects")} className="w-52 shrink-0 border-r px-2 py-3">
+      <nav aria-label={t("audio.actions.effects")} className="w-64 shrink-0 border-r px-2 py-3">
         {EFFECTS.map((effect) => (
           <button
             aria-current={selectedEffect === effect ? "page" : undefined}
-            className={cn(menuItemVariants({ kind: "checkbox" }), "w-full justify-start")}
+            className={cn(
+              menuItemVariants({ kind: "checkbox" }),
+              "w-full min-w-0 justify-start whitespace-nowrap",
+            )}
             data-inset
             data-selected={selectedEffect === effect}
             key={effect}
@@ -54,7 +57,7 @@ function AudioTrackEffectsLibrary({ streamIndex }: AudioTrackEffectsLibraryProps
                 <Check />
               </MenuIcon>
             ) : null}
-            {t("audio.labels.loudnessNormalization")}
+            <span className="min-w-0 truncate">{t("audio.labels.loudnessNormalization")}</span>
             <MenuIcon
               aria-hidden="true"
               className={isNormalizationDirty ? undefined : "opacity-0"}
