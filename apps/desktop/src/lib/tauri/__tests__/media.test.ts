@@ -27,6 +27,7 @@ import {
   planOptimizedExport,
   prepareAudioPreviews,
   prepareImportedSourceThumbnail,
+  prepareAudioPreviews,
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
