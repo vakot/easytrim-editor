@@ -17,7 +17,7 @@ function findPreviousSegment(
   };
 
   sceneBoundariesMicros.forEach(considerBoundary);
-  silenceRanges.forEach(({ startMicros }) => considerBoundary(startMicros));
+  silenceRanges.forEach(({ endMicros }) => considerBoundary(endMicros));
   if (firstSceneStartMicros !== undefined) considerBoundary(firstSceneStartMicros);
 
   return previousBoundary;
@@ -39,7 +39,7 @@ function findNextSegment(
   };
 
   sceneBoundariesMicros.forEach(considerBoundary);
-  silenceRanges.forEach(({ startMicros }) => considerBoundary(startMicros));
+  silenceRanges.forEach(({ endMicros }) => considerBoundary(endMicros));
 
   return nextBoundary;
 }
