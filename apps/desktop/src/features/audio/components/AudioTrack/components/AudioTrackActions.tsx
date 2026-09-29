@@ -77,6 +77,8 @@ function AudioTrackToggleActivityCheckboxMenuItem({
   const { t } = useTranslation();
   const track = controller.track;
   if (!track) return null;
+  const streamTitle =
+    stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
 
   const hasActivity = track.activityAnalysis.status === "ready";
 
