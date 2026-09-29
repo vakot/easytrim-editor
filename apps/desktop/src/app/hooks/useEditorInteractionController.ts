@@ -70,6 +70,7 @@ function applyAudioTrackGain(
   streamIndex: number,
   gainDb: number,
   runtime: LiveAudioTrackGainRuntime,
+  allowMutedTrackPreview = false,
 ): void {
   const linearGain = 10 ** (gainDb / 20);
   const externalAudioNode = runtime.audioNodes.get(streamIndex);
@@ -78,7 +79,7 @@ function applyAudioTrackGain(
   if (runtime.nativeAudioTrack?.streamIndex !== streamIndex || runtime.requiresProcessedPreview)
     return;
 
-  const nativeGain = runtime.nativeAudioTrack.enabled ? linearGain : 0;
+  const nativeGain = runtime.nativeAudioTrack.enabled || allowMutedTrackPreview ? linearGain : 0;
   if (runtime.nativeAudioBinding) {
     runtime.nativeAudioBinding.binding.gain.gain.value = nativeGain;
   } else if (runtime.videoElement) {
@@ -253,24 +254,34 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     const runtime = liveAudioTrackGainRuntimeRef.current;
     if (!runtime) return;
     liveAudioTrackGainsRef.current.set(streamIndex, gainDb);
-    applyAudioTrackGain(streamIndex, gainDb, {
-      ...runtime,
-      audioNodes: audioNodesRef.current,
-      nativeAudioBinding: nativeAudioBindingRef.current,
-      videoElement: videoRef.current,
-    });
+    applyAudioTrackGain(
+      streamIndex,
+      gainDb,
+      {
+        ...runtime,
+        audioNodes: audioNodesRef.current,
+        nativeAudioBinding: nativeAudioBindingRef.current,
+        videoElement: videoRef.current,
+      },
+      true,
+    );
   }, []);
 
   const clearLiveAudioTrackGain = useCallback((streamIndex: number, committedGainDb: number) => {
     const runtime = liveAudioTrackGainRuntimeRef.current;
     if (!runtime) return;
     liveAudioTrackGainsRef.current.delete(streamIndex);
-    applyAudioTrackGain(streamIndex, committedGainDb, {
-      ...runtime,
-      audioNodes: audioNodesRef.current,
-      nativeAudioBinding: nativeAudioBindingRef.current,
-      videoElement: videoRef.current,
-    });
+    applyAudioTrackGain(
+      streamIndex,
+      committedGainDb,
+      {
+        ...runtime,
+        audioNodes: audioNodesRef.current,
+        nativeAudioBinding: nativeAudioBindingRef.current,
+        videoElement: videoRef.current,
+      },
+      true,
+    );
   }, []);
 
   const playbackFrameRef = useRef<PlaybackFrameHandle | null>(null);

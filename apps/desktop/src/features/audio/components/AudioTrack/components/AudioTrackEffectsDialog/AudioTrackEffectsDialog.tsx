@@ -1,6 +1,7 @@
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,9 +31,8 @@ import {
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 
-import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
-
-import { AudioTrackEffectsDialogContext } from "./audio-track-effects-dialog-context";
+import type { AudioTrackController } from "../../../../hooks/useAudioTrackController";
+import { AudioTrackEffectsDialogContext } from "./contexts/audio-track-effects-dialog-context";
 
 interface AudioTrackEffectsDialogProps {
   children: ReactNode;
@@ -273,9 +273,9 @@ function AudioTrackEffectsDialog({ children, controller }: AudioTrackEffectsDial
               </p>
             ) : null}
             {track.preview.status === "failed" ? (
-              <p className="text-xs text-destructive" role="alert">
-                {track.preview.error.message}
-              </p>
+              <Alert role="alert" variant="destructive">
+                <AlertDescription>{track.preview.error.message}</AlertDescription>
+              </Alert>
             ) : null}
           </div>
 

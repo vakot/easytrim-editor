@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu
 import { Slider } from "@/components/ui/slider";
 
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
-import { formatChannels } from "../../../lib/audio-level.utils";
+import { formatChannels, formatGain, MIN_SLIDER_DECIBELS } from "../../../lib/audio-level.utils";
 
 import { AudioTrackDropdownMenuContent } from "./AudioTrackActions";
 import { AudioTrackToggle } from "./AudioTrackToggle";
@@ -90,9 +90,9 @@ function AudioTrackGainControl({ controller }: { controller: AudioTrackControlle
     cancelGainInteraction,
     commitPointerGain,
     finishGainInteraction,
+    gainSliderDb,
     handleGainKeyDown,
     handleGainKeyUp,
-    liveGainDb,
     startPointerGainInteraction,
     trackNumber,
     updateLiveGain,
@@ -103,9 +103,17 @@ function AudioTrackGainControl({ controller }: { controller: AudioTrackControlle
       <Slider
         aria-label={t("audio.accessibility.trackGain", { number: trackNumber })}
         className="min-w-0 flex-1 py-0 **:data-[slot=slider-thumb]:size-2.5"
+        markers={[
+          { label: "−∞", value: MIN_SLIDER_DECIBELS },
+          { label: "0 dB", value: 0 },
+        ]}
         max={12}
-        min={-24}
+        min={MIN_SLIDER_DECIBELS}
         onBlur={() => finishGainInteraction()}
+        onDoubleClick={() => {
+          updateLiveGain([0]);
+          finishGainInteraction(0);
+        }}
         onKeyDownCapture={(event) => handleGainKeyDown(event.key)}
         onKeyUpCapture={(event) => handleGainKeyUp(event.key)}
         onPointerCancelCapture={cancelGainInteraction}
@@ -113,22 +121,13 @@ function AudioTrackGainControl({ controller }: { controller: AudioTrackControlle
         onValueChange={updateLiveGain}
         onValueCommit={commitPointerGain}
         step={0.5}
-        value={[liveGainDb]}
+        value={[gainSliderDb]}
       />
       <output className="w-10 shrink-0 text-right text-[10px] leading-none text-muted-foreground">
-        {formatGain(liveGainDb, i18n.language)}
+        {formatGain(gainSliderDb, i18n.language)}
       </output>
     </div>
   );
-}
-
-function formatGain(gainDb: number, language: string): string {
-  const value = new Intl.NumberFormat(language, {
-    maximumFractionDigits: 1,
-    minimumFractionDigits: 1,
-  }).format(gainDb);
-
-  return `${value.replace(/-/g, "−")} dB`;
 }
 
 export { AudioTrackDetails };

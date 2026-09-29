@@ -22,6 +22,7 @@ import {
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 
+import { MIN_SLIDER_DECIBELS } from "../lib/audio-level.utils";
 import { audioTrackColor } from "../lib/audio-track-color";
 
 const GAIN_KEYBOARD_COMMIT_DELAY_MS = 300;
@@ -53,6 +54,11 @@ function useAudioTrackController(streamIndex: number) {
   const trackColor = audioTrackColor(streamIndex);
   const [liveGainDraftDb, setLiveGainDraftDb] = useState<number | null>(null);
   const liveGainDb = liveGainDraftDb ?? track?.processing.gainDb ?? 0;
+  const gainSliderDb = liveGainDraftDb ?? (track?.enabled ? liveGainDb : MIN_SLIDER_DECIBELS);
+
+  const isEnabled =
+    liveGainDraftDb === null ? (track?.enabled ?? false) : gainSliderDb > MIN_SLIDER_DECIBELS;
+
   const liveGainRef = useRef(track?.processing.gainDb ?? 0);
   const initialGainRef = useRef(track?.processing.gainDb ?? 0);
   const gainInteractionKindRef = useRef<"keyboard" | "pointer" | null>(null);
@@ -62,10 +68,11 @@ function useAudioTrackController(streamIndex: number) {
 
   useEffect(() => {
     if (gainInteractionKindRef.current === null) {
-      liveGainRef.current = liveGainDb;
-      initialGainRef.current = liveGainDb;
+      const sliderGainDb = track?.enabled ? liveGainDb : MIN_SLIDER_DECIBELS;
+      liveGainRef.current = sliderGainDb;
+      initialGainRef.current = sliderGainDb;
     }
-  }, [liveGainDb]);
+  }, [liveGainDb, track?.enabled]);
 
   const finishGainInteraction = useCallback(
     (gainDb = liveGainRef.current) => {
@@ -77,13 +84,19 @@ function useAudioTrackController(streamIndex: number) {
       }
       if (gainDb !== initialGainRef.current) {
         dispatch(audioTrackGainChanged({ gainDb, streamIndex }));
+      }
+      const shouldEnableTrack = gainDb > MIN_SLIDER_DECIBELS;
+      if (track && track.enabled !== shouldEnableTrack) {
+        dispatch(audioTrackToggled({ streamIndex }));
+      }
+      if (track && (gainDb !== initialGainRef.current || track.enabled !== shouldEnableTrack)) {
         dispatch(commitActiveEditingInstanceDraft());
       }
-      clearLiveAudioTrackGain(streamIndex, gainDb);
+      clearLiveAudioTrackGain(streamIndex, shouldEnableTrack ? gainDb : Number.NEGATIVE_INFINITY);
       setLiveGainDraftDb(null);
-      initialGainRef.current = gainDb;
+      initialGainRef.current = shouldEnableTrack ? gainDb : MIN_SLIDER_DECIBELS;
     },
-    [clearLiveAudioTrackGain, dispatch, streamIndex],
+    [clearLiveAudioTrackGain, dispatch, streamIndex, track],
   );
 
   const startGainInteraction = useCallback((kind: "keyboard" | "pointer") => {
@@ -98,7 +111,10 @@ function useAudioTrackController(streamIndex: number) {
       if (gainInteractionKindRef.current === null) startGainInteraction("pointer");
       liveGainRef.current = nextGainDb;
       setLiveGainDraftDb(nextGainDb);
-      setLiveAudioTrackGain(streamIndex, nextGainDb);
+      setLiveAudioTrackGain(
+        streamIndex,
+        nextGainDb <= MIN_SLIDER_DECIBELS ? Number.NEGATIVE_INFINITY : nextGainDb,
+      );
 
       if (gainInteractionKindRef.current === "keyboard") {
         if (gainCommitTimerRef.current !== null) window.clearTimeout(gainCommitTimerRef.current);
@@ -166,10 +182,19 @@ function useAudioTrackController(streamIndex: number) {
     [],
   );
 
-  const setEnabled = useCallback(() => {
-    dispatch(audioTrackToggled({ streamIndex }));
-    dispatch(commitActiveEditingInstanceDraft());
-  }, [dispatch, streamIndex]);
+  const setEnabled = useCallback(
+    (enabled?: boolean) => {
+      if (!track) return;
+      const nextEnabled = enabled ?? !track.enabled;
+      if (nextEnabled === track.enabled) return;
+      if (nextEnabled && track.processing.gainDb <= MIN_SLIDER_DECIBELS) {
+        dispatch(audioTrackGainChanged({ gainDb: 0, streamIndex }));
+      }
+      dispatch(audioTrackToggled({ streamIndex }));
+      dispatch(commitActiveEditingInstanceDraft());
+    },
+    [dispatch, streamIndex, track],
+  );
 
   const applyProcessing = useCallback(
     (processing: AudioTrackProcessing) => {
@@ -205,6 +230,8 @@ function useAudioTrackController(streamIndex: number) {
     commitPointerGain,
     detectActivity,
     finishGainInteraction,
+    gainSliderDb,
+    isEnabled,
     handleGainKeyDown,
     handleGainKeyUp,
     liveGainDb,

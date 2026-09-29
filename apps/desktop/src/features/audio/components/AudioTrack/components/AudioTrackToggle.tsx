@@ -18,12 +18,12 @@ type AudioTrackToggleProps = ComponentPropsWithoutRef<typeof Button> & {
 const AudioTrackToggle = forwardRef<HTMLButtonElement, AudioTrackToggleProps>(
   function AudioTrackToggle({ className, controller, onClick, ...props }, ref) {
     const { t } = useTranslation();
-    const { setEnabled, stream, track, trackNumber } = controller;
+    const { isEnabled, setEnabled, stream, track, trackNumber } = controller;
     if (!stream || !track) return null;
     const title =
       stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
 
-    const label = track.enabled
+    const label = isEnabled
       ? t("audio.actions.muteTrack", { title })
       : t("audio.actions.unmuteTrack", { title });
 
@@ -32,7 +32,7 @@ const AudioTrackToggle = forwardRef<HTMLButtonElement, AudioTrackToggleProps>(
         <TooltipTrigger asChild>
           <Button
             aria-label={label}
-            aria-pressed={track.enabled}
+            aria-pressed={isEnabled}
             className={cn("text-primary", className)}
             onClick={(event) => {
               diagnostics.action(
@@ -40,7 +40,7 @@ const AudioTrackToggle = forwardRef<HTMLButtonElement, AudioTrackToggleProps>(
                 { type: "button", id: "track-toggle" },
                 { streamIndex: stream.streamIndex },
               );
-              setEnabled();
+              setEnabled(!isEnabled);
               onClick?.(event);
             }}
             ref={ref}
@@ -49,7 +49,7 @@ const AudioTrackToggle = forwardRef<HTMLButtonElement, AudioTrackToggleProps>(
             variant="ghost"
             {...props}
           >
-            {track.enabled ? <Volume2 /> : <VolumeOff />}
+            {isEnabled ? <Volume2 /> : <VolumeOff />}
           </Button>
         </TooltipTrigger>
         <TooltipContent>{label}</TooltipContent>

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
@@ -49,6 +49,61 @@ function renderRow(enabled = true) {
 }
 
 describe("AudioTrackRow", () => {
+  it("marks gain levels, resets to unity on double-click, and mutes at negative infinity", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    await user.hover(screen.getByText(/#1 ·/));
+
+    const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
+    expect(screen.getByText("−∞", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("0 dB", { exact: true })).toBeInTheDocument();
+
+    fireEvent.doubleClick(gainSlider);
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: true,
+      processing: { gainDb: 0 },
+    });
+
+    gainSlider.focus();
+    for (let step = 0; step < 48; step += 1) await user.keyboard("{ARROWLEFT}");
+    await waitFor(() => {
+      expect(store.getState().audio.tracks[0]).toMatchObject({
+        enabled: false,
+        processing: { gainDb: -24 },
+      });
+    });
+
+    gainSlider.focus();
+    fireEvent.keyDown(gainSlider, { key: "ArrowRight" });
+    expect(gainSlider).toHaveAttribute("aria-valuenow", "-23.5");
+    expect(screen.getByRole("button", { name: /mute eng/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: false,
+      processing: { gainDb: -24 },
+    });
+
+    fireEvent.keyUp(gainSlider, { key: "ArrowRight" });
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: true,
+      processing: { gainDb: -23.5 },
+    });
+
+    await user.click(screen.getByRole("button", { name: /mute eng/i }));
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: false,
+      processing: { gainDb: -23.5 },
+    });
+
+    await user.click(screen.getByRole("button", { name: /unmute eng/i }));
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: true,
+      processing: { gainDb: -23.5 },
+    });
+  });
+
   it("keeps the menu action-only and discards an unsubmitted effects draft", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();
@@ -84,7 +139,9 @@ describe("AudioTrackRow", () => {
       gainDb: 0,
       loudnessNormalization: "streaming",
     });
-    expect(screen.getByRole("note")).toHaveTextContent(/normalize/i);
+    expect(document.querySelector('[data-slot="audio-track-effects-indicator"]')).toHaveTextContent(
+      /normalize/i,
+    );
     expect(screen.queryByRole("spinbutton", { name: /gain/i })).not.toBeInTheDocument();
   });
 
@@ -95,7 +152,9 @@ describe("AudioTrackRow", () => {
     await user.pointer({ keys: "[MouseRight]", target: screen.getByText(/#1 ·/) });
 
     expect(screen.getByRole("menuitemcheckbox", { name: /mute eng/i })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: /detect audio activity/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: /detect audio activity/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: /effects/i })).toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
@@ -170,7 +229,7 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
 
-    expect(screen.getByRole("menuitem", { name: /detect audio activity/i })).toBeEnabled();
+    expect(screen.getByRole("menuitemcheckbox", { name: /detect audio activity/i })).toBeEnabled();
     expect(screen.queryByRole("menuitem", { name: /analyze loudness/i })).not.toBeInTheDocument();
   });
 });

@@ -2,6 +2,7 @@ import { WandSparkles } from "lucide-react";
 import { type CSSProperties, memo } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Badge } from "@/components/ui/badge";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
@@ -9,11 +10,15 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AudioTrackProcessing } from "@/domain/audio-processing";
 import { timelinePercent } from "@/domain/trim";
 
-import { useAudioTrackController } from "../../hooks/useAudioTrackController";
+import {
+  type AudioTrackController,
+  useAudioTrackController,
+} from "../../hooks/useAudioTrackController";
+import { formatGain } from "../../lib/audio-level.utils";
 
 import { AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
-import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog";
+import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog/AudioTrackEffectsDialog";
 import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
 
 interface AudioTrackRowProps {
@@ -88,7 +93,25 @@ function AudioTrackRowWaveform({
         }}
       />
       <AudioTrackEffectsIndicator processing={track.processing} />
+      <AudioTrackGainIndicator controller={controller} />
     </div>
+  );
+}
+
+function AudioTrackGainIndicator({ controller }: { controller: AudioTrackController }) {
+  const { i18n, t } = useTranslation();
+
+  return (
+    <Badge
+      aria-label={t("audio.accessibility.trackGain")}
+      className="pointer-events-none absolute bottom-1 left-1 z-3 max-w-[calc(100%-0.75rem)]"
+      data-slot="audio-track-gain-indicator"
+      role="note"
+      size="xs"
+      variant="outline"
+    >
+      {formatGain(controller.liveGainDb, i18n.language)}
+    </Badge>
   );
 }
 
@@ -116,15 +139,17 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
   const summary = summaries.join(" · ");
 
   return (
-    <div
+    <Badge
       aria-label={t("audio.accessibility.appliedEffects", { summary })}
-      className="pointer-events-none absolute top-1.5 left-1.5 z-3 inline-flex max-w-[calc(100%-0.75rem)] items-center gap-1 rounded bg-background/85 px-1.5 py-0.5 text-[10px] leading-tight text-foreground/80 shadow-sm backdrop-blur-xs"
+      className="pointer-events-none absolute top-1 left-1 z-3 max-w-[calc(100%-0.75rem)]"
       data-slot="audio-track-effects-indicator"
       role="note"
+      size="xs"
+      variant="secondary"
     >
       <WandSparkles aria-hidden="true" className="size-3 shrink-0" />
       <span className="truncate">{summary}</span>
-    </div>
+    </Badge>
   );
 }
 
