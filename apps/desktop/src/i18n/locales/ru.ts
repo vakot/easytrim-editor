@@ -551,7 +551,6 @@ export const ru = {
     },
     labels: {
       defaultTrack: "Аудио {{number}}",
-      loudnessAnalysis: "Анализ громкости",
       loudnessNormalization: "Нормализация громкости",
       maximumTruePeak: "Максимальный истинный пик (дБTP)",
       targetLufs: "Целевая громкость (LUFS)",

@@ -548,7 +548,6 @@ export const en = {
     },
     labels: {
       defaultTrack: "Audio {{number}}",
-      loudnessAnalysis: "Loudness analysis",
       loudnessNormalization: "Loudness normalization",
       maximumTruePeak: "Maximum true peak (dBTP)",
       targetLufs: "Target loudness (LUFS)",
