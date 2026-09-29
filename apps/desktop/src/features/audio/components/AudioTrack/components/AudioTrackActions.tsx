@@ -81,12 +81,18 @@ function AudioTrackToggleActivityCheckboxMenuItem({
     stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
 
   const hasActivity = track.activityAnalysis.status === "ready";
+  const label = hasActivity
+    ? track.activityVisible
+      ? t("audio.actions.hideActivity")
+      : t("audio.actions.showActivity")
+    : activityActionLabel(track.activityAnalysis.status, t);
 
   const commandProps = {
     "aria-label": activityActionLabel(track.activityAnalysis.status, track.activityVisible, t),
     checked: hasActivity && track.activityVisible,
     onCheckedChange: hasActivity ? controller.toggleActivityVisibility : controller.detectActivity,
     disabled: track.activityAnalysis.status === "loading",
+    onSelect: controller.detectActivity,
   };
 
   return <Slot {...commandProps}>{children}</Slot>;
