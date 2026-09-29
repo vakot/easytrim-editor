@@ -223,8 +223,8 @@ mod tests {
             },
         };
         let graph = analysis_filter_graph(&track);
-        assert!(graph.contains("[0:3]volume=-6.000000dB[track0_gain]"));
-        assert!(graph.contains("[track0_gain]loudnorm=I=-23:TP=-2:LRA=11[audio0]"));
+        assert!(graph.contains("[0:3]loudnorm=I=-23:TP=-2:LRA=11[track0_normalized]"));
+        assert!(graph.contains("[track0_normalized]volume=-6.000000dB[audio0]"));
         assert!(graph.contains("[audio0]aformat=channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json[measured]"));
     }
 
