@@ -1,5 +1,6 @@
 import { LoaderCircle } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -43,6 +44,8 @@ const PRESETS = [
   "broadcast",
 ] as const satisfies ReadonlyArray<LoudnessPreset>;
 
+const NORMALIZATION_PRESETS = ["default", ...PRESETS, "custom"] as const;
+
 function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
   const { i18n, t } = useTranslation();
   const shouldReduceMotion = useReducedMotion() === true;
@@ -53,16 +56,27 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
 
   const { dispatch: dispatchDraft, draft } = useAudioTrackEffectsDraft();
 
-  if (!track) return null;
-
-  const normalization = draft.processing.loudnessNormalization;
-  const customNormalization = typeof normalization === "object";
-  const analysis = track.loudnessAnalysis;
-  const selectedPreset = customNormalization ? "custom" : normalization;
-  const analysisReady = analysis.status === "ready";
-  const analysisLoading = analysis.status === "loading";
-  const analysisFailed = analysis.status === "failed";
+  const analysis = track?.loudnessAnalysis;
+  const analysisValue = analysis?.status === "ready" ? analysis.value : undefined;
+  const selectedPreset = draft.normalizationPreset;
+  const analysisReady = analysisValue !== undefined;
+  const analysisLoading = analysis?.status === "loading";
+  const analysisFailed = analysis?.status === "failed";
   const motionTransition = { duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" } as const;
+
+  useEffect(() => {
+    if (!analysisValue) return;
+
+    dispatchDraft({
+      type: "analysisValuesReceived",
+      value: {
+        integratedLufs: analysisValue.integratedLufs,
+        truePeakDb: analysisValue.truePeakDb,
+      },
+    });
+  }, [analysisValue, dispatchDraft, selectedPreset]);
+
+  if (!track) return null;
 
   return (
     <AudioTrackEffectsLibraryPage>
@@ -92,10 +106,12 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
           <div className="flex items-center">
             <Select
               onValueChange={(value) => {
-                if (value === "custom" || PRESETS.includes(value as LoudnessPreset)) {
+                if (
+                  NORMALIZATION_PRESETS.includes(value as (typeof NORMALIZATION_PRESETS)[number])
+                ) {
                   dispatchDraft({
                     type: "normalizationSelected",
-                    value: value as "custom" | LoudnessPreset,
+                    value: value as (typeof NORMALIZATION_PRESETS)[number],
                   });
                 }
               }}
@@ -109,36 +125,60 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem className="whitespace-nowrap" value="default">
+                  {formatDefaultPreset(
+                    analysisValue?.integratedLufs,
+                    analysisValue?.truePeakDb,
+                    i18n.language,
+                    t,
+                  )}
+                </SelectItem>
                 {PRESETS.map((preset) => (
                   <SelectItem className="whitespace-nowrap" key={preset} value={preset}>
                     {formatNormalizationPreset(preset, i18n.language, t)}
                   </SelectItem>
                 ))}
-                <SelectItem value="custom">{t("audio.options.normalizationCustom")}</SelectItem>
+                <SelectItem className="whitespace-nowrap" value="custom">
+                  {t("audio.options.normalizationCustom")}
+                </SelectItem>
               </SelectContent>
             </Select>
-            <Button
-              aria-label={
-                analysisLoading
-                  ? t("audio.actions.analyzingLoudness")
-                  : t("audio.actions.analyzeLoudness")
-              }
-              className="ms-2 shrink-0 gap-1.5"
-              disabled={analysisLoading}
-              onClick={() => void dispatch(analyzeTrackLoudness(streamIndex))}
-              type="button"
-              variant={analysisFailed ? "destructive" : analysisReady ? "success" : "outline"}
-            >
-              {analysisLoading ? (
-                <LoaderCircle
-                  aria-hidden="true"
-                  className={shouldReduceMotion ? undefined : "animate-spin"}
-                />
+            <AnimatePresence initial={false}>
+              {!analysisReady ? (
+                <motion.div
+                  animate={{ opacity: 1, width: "auto", marginInlineStart: 8 }}
+                  className="overflow-hidden"
+                  exit={{ opacity: 0, width: 0, marginInlineStart: 0 }}
+                  initial={
+                    shouldReduceMotion ? false : { opacity: 0, width: 0, marginInlineStart: 0 }
+                  }
+                  transition={motionTransition}
+                >
+                  <Button
+                    aria-label={
+                      analysisLoading
+                        ? t("audio.actions.analyzingLoudness")
+                        : t("audio.actions.analyzeLoudness")
+                    }
+                    className="shrink-0 gap-1.5"
+                    disabled={analysisLoading}
+                    onClick={() => void dispatch(analyzeTrackLoudness(streamIndex))}
+                    type="button"
+                    variant={analysisFailed ? "destructive" : "outline"}
+                  >
+                    {analysisLoading ? (
+                      <LoaderCircle
+                        aria-hidden="true"
+                        className={shouldReduceMotion ? undefined : "animate-spin"}
+                      />
+                    ) : null}
+                    {analysisLoading
+                      ? t("audio.actions.analyzingLoudness")
+                      : t("audio.actions.analyzeLoudness")}
+                  </Button>
+                </motion.div>
               ) : null}
-              {analysisLoading
-                ? t("audio.actions.analyzingLoudness")
-                : t("audio.actions.analyzeLoudness")}
-            </Button>
+            </AnimatePresence>
           </div>
         </div>
       </AudioTrackEffectsLibraryPageBasic>
@@ -190,7 +230,7 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
         </div>
 
         <AnimatePresence initial={false}>
-          {analysisReady && analysis.value ? (
+          {analysisValue ? (
             <motion.p
               animate={{ opacity: 1, y: 0 }}
               className="text-xs text-muted-foreground"
@@ -199,7 +239,7 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
               role="status"
               transition={motionTransition}
             >
-              {formatAnalysis(analysis.value, i18n.language)}
+              {formatAnalysis(analysisValue, i18n.language)}
             </motion.p>
           ) : null}
         </AnimatePresence>
@@ -236,6 +276,28 @@ function formatNormalizationPreset(
     peak: format(maxTruePeakDb),
     target: format(targetLufs),
   })}`;
+}
+
+function formatDefaultPreset(
+  targetLufs: number | undefined,
+  maxTruePeakDb: number | undefined,
+  language: string,
+  t: ReturnType<typeof useTranslation>["t"],
+): string {
+  if (targetLufs === undefined || maxTruePeakDb === undefined) {
+    return t("audio.options.normalizationDefault");
+  }
+
+  const format = (value: number) =>
+    new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(value).replace(/-/g, "−");
+
+  return `${t("audio.options.normalizationDefault")} · ${t(
+    "audio.messages.normalizedLevelSummary",
+    {
+      peak: format(maxTruePeakDb),
+      target: format(targetLufs),
+    },
+  )}`;
 }
 
 function formatAnalysis(analysis: LoudnessAnalysis, language: string): string {

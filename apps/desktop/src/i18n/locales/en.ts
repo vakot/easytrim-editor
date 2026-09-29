@@ -603,6 +603,7 @@ export const en = {
       channels_one: "{{count}} channel",
       channels_few: "{{count}} channels",
       channels_other: "{{count}} channels",
+      normalizationDefault: "Default",
       normalizationCustom: "Custom",
       normalizationWebVideo: "Web Video",
       normalizationStreaming: "Streaming",

@@ -2,11 +2,12 @@ import { createContext, type Dispatch, useContext } from "react";
 
 import type { AudioTrackProcessing } from "@/domain/audio-processing";
 
-type NormalizationOption = "webVideo" | "streaming" | "broadcast" | "custom";
+type NormalizationOption = "default" | "webVideo" | "streaming" | "broadcast" | "custom";
 
 interface AudioTrackEffectsDraft {
   maxTruePeakDbInput: string;
   normalizationEnabled: boolean;
+  normalizationPreset: NormalizationOption;
   processing: AudioTrackProcessing;
   targetLufsInput: string;
 }
@@ -16,6 +17,10 @@ type AudioTrackEffectsDraftAction =
       field: "targetLufs" | "maxTruePeakDb";
       type: "customValueChanged";
       value: string;
+    }
+  | {
+      type: "analysisValuesReceived";
+      value: { integratedLufs?: number; truePeakDb?: number };
     }
   | { type: "normalizationEnabledChanged"; value: boolean }
   | { type: "normalizationSelected"; value: NormalizationOption };

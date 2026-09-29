@@ -603,6 +603,7 @@ export const sk = {
       channels_one: "{{count}} kanál",
       channels_few: "{{count}} kanály",
       channels_other: "{{count}} kanálov",
+      normalizationDefault: "Predvolené",
       normalizationCustom: "Vlastné",
       normalizationWebVideo: "Webové video",
       normalizationStreaming: "Streamovanie",

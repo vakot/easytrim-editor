@@ -9,9 +9,11 @@ function getAudioTrackEffectsDraftProcessing(draft: AudioTrackEffectsDraft): Aud
 }
 
 function isAudioTrackEffectsDraftValid(draft: AudioTrackEffectsDraft): boolean {
-  if (!draft.normalizationEnabled || typeof draft.processing.loudnessNormalization !== "object") {
-    return true;
-  }
+  if (!draft.normalizationEnabled) return true;
+
+  const normalization = draft.processing.loudnessNormalization;
+  if (typeof normalization === "string") return true;
+  if (normalization === undefined) return false;
 
   return isInRange(draft.targetLufsInput, -36, -5) && isInRange(draft.maxTruePeakDbInput, -9, 0);
 }

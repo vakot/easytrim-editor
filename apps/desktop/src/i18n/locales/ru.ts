@@ -606,6 +606,7 @@ export const ru = {
       channels_one: "{{count}} канал",
       channels_few: "{{count}} канала",
       channels_other: "{{count}} каналов",
+      normalizationDefault: "По умолчанию",
       normalizationCustom: "Своя настройка",
       normalizationWebVideo: "Веб-видео",
       normalizationStreaming: "Стриминг",

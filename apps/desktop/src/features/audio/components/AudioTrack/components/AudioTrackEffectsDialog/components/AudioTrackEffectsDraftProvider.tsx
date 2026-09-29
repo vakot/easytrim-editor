@@ -5,6 +5,7 @@ import {
   cloneAudioTrackProcessing,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
   loudnessNormalizationTargets,
+  sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 
 import {
@@ -36,15 +37,23 @@ function AudioTrackEffectsDraftProvider({
 function createAudioTrackEffectsDraft(processing: AudioTrackProcessing): AudioTrackEffectsDraft {
   const clonedProcessing = cloneAudioTrackProcessing(processing);
   const normalizationEnabled = clonedProcessing.loudnessNormalization !== undefined;
-  const normalization = clonedProcessing.loudnessNormalization ?? "webVideo";
-  clonedProcessing.loudnessNormalization = normalization;
-  const targets = loudnessNormalizationTargets(normalization);
+  const normalization = clonedProcessing.loudnessNormalization;
+  const normalizationPreset =
+    normalization === undefined
+      ? "default"
+      : typeof normalization === "object"
+        ? "custom"
+        : normalization;
+
+  const targets =
+    typeof normalization === "string" ? loudnessNormalizationTargets(normalization) : normalization;
 
   return {
-    maxTruePeakDbInput: String(targets.maxTruePeakDb),
+    maxTruePeakDbInput: targets === undefined ? "" : String(targets.maxTruePeakDb),
+    normalizationPreset,
     normalizationEnabled,
     processing: clonedProcessing,
-    targetLufsInput: String(targets.targetLufs),
+    targetLufsInput: targets === undefined ? "" : String(targets.targetLufs),
   };
 }
 
@@ -56,7 +65,53 @@ function audioTrackEffectsDraftReducer(
     return { ...state, normalizationEnabled: action.value };
   }
 
+  if (action.type === "analysisValuesReceived") {
+    if (state.normalizationPreset !== "default") return state;
+
+    const targetLufsInput =
+      state.targetLufsInput.trim() === "" && action.value.integratedLufs !== undefined
+        ? String(action.value.integratedLufs)
+        : state.targetLufsInput;
+
+    const maxTruePeakDbInput =
+      state.maxTruePeakDbInput.trim() === "" && action.value.truePeakDb !== undefined
+        ? String(action.value.truePeakDb)
+        : state.maxTruePeakDbInput;
+
+    const targetLufs = parseInput(targetLufsInput);
+    const maxTruePeakDb = parseInput(maxTruePeakDbInput);
+    const processing = cloneAudioTrackProcessing(state.processing);
+
+    if (targetLufs !== undefined && maxTruePeakDb !== undefined) {
+      processing.loudnessNormalization = { maxTruePeakDb, mode: "custom", targetLufs };
+    } else {
+      delete processing.loudnessNormalization;
+    }
+
+    if (
+      targetLufsInput === state.targetLufsInput &&
+      maxTruePeakDbInput === state.maxTruePeakDbInput &&
+      sameAudioTrackProcessing(processing, state.processing)
+    ) {
+      return state;
+    }
+
+    return { ...state, maxTruePeakDbInput, processing, targetLufsInput };
+  }
+
   if (action.type === "normalizationSelected") {
+    if (action.value === "default") {
+      const processing = cloneAudioTrackProcessing(state.processing);
+      delete processing.loudnessNormalization;
+      return {
+        ...state,
+        maxTruePeakDbInput: "",
+        normalizationPreset: "default",
+        processing,
+        targetLufsInput: "",
+      };
+    }
+
     const normalization =
       action.value === "custom"
         ? typeof state.processing.loudnessNormalization === "object"
@@ -69,13 +124,14 @@ function audioTrackEffectsDraftReducer(
     return {
       ...state,
       maxTruePeakDbInput: String(targets.maxTruePeakDb),
+      normalizationPreset: action.value,
       processing: { ...state.processing, loudnessNormalization: normalization },
       targetLufsInput: String(targets.targetLufs),
     };
   }
 
   const inputKey = action.field === "targetLufs" ? "targetLufsInput" : "maxTruePeakDbInput";
-  const nextState = { ...state, [inputKey]: action.value };
+  const nextState = { ...state, normalizationPreset: "custom" as const, [inputKey]: action.value };
   const value = Number(action.value);
 
   const currentNormalization = state.processing.loudnessNormalization;
@@ -97,6 +153,12 @@ function audioTrackEffectsDraftReducer(
       loudnessNormalization: { ...custom, [action.field]: customValue },
     },
   };
+}
+
+function parseInput(value: string): number | undefined {
+  if (value.trim() === "") return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 export { AudioTrackEffectsDraftProvider };
