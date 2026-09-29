@@ -11,7 +11,7 @@ import {
   sceneMarkersToggled,
   selectSceneMarkersEnabled,
 } from "@/app/store/slices/editor-tools-slice";
-import { selectSourceMedia, selectSourceReady } from "@/app/store/slices/source-slice";
+import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { audioTrackColor } from "@/features/audio";
 import {
   createTimelineMarkers,
@@ -31,17 +31,8 @@ function useSceneCommands() {
   const sourceReady = useAppSelector(selectSourceReady);
   const sceneDetection = useSceneDetection(sourceReady);
   const audioTracks = useAppSelector(selectAudioTracks);
-  const media = useAppSelector(selectSourceMedia);
   const visibleSceneBoundaries = sceneMarkersEnabled ? sceneBoundariesMicros : [];
-  const markers = createTimelineMarkers(
-    visibleSceneBoundaries,
-    audioTracks,
-    audioTrackColor,
-    (media?.chapters ?? []).map((chapter) => ({
-      chapterId: String(chapter.id),
-      timeMicros: chapter.startMicros,
-    })),
-  );
+  const markers = createTimelineMarkers(visibleSceneBoundaries, audioTracks, audioTrackColor);
 
   const visibleMarkersMicros = timelineMarkerTimes(markers);
 
