@@ -7,6 +7,7 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import { timelinePercent, type TrimRange } from "@/domain/trim";
 
 import { useWaveformPreparation } from "../hooks/useWaveformPreparation";
+import { audioTrackColor } from "../lib/audio-track-color";
 
 import { AudioTrackRow } from "./AudioTrack/AudioTrackRow";
 
