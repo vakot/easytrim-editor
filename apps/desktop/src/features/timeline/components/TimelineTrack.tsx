@@ -189,23 +189,29 @@ function SilenceMarkers({
   ranges: readonly { endMicros: number; startMicros: number }[];
   sourceDurationMicros: number;
 }) {
+  const shouldReduceMotion = useReducedMotion() === true;
+
   return (
-    <>
+    <AnimatePresence>
       {enabled
         ? ranges.map((range) => {
             const startPercent = timelinePercent(range.startMicros, sourceDurationMicros);
             const endPercent = timelinePercent(range.endMicros, sourceDurationMicros);
             return (
-              <div
+              <motion.div
+                animate={{ opacity: 1, height: "100%" }}
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-y-0 z-0 bg-sky-400/20 ring-1 ring-sky-300/50 ring-inset"
+                exit={{ opacity: 0, height: 0 }}
+                initial={shouldReduceMotion ? false : { opacity: 0 }}
                 key={`${range.startMicros}-${range.endMicros}`}
                 style={{ left: `${startPercent}%`, width: `${endPercent - startPercent}%` }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
               />
             );
           })
         : null}
-    </>
+    </AnimatePresence>
   );
 }
 
