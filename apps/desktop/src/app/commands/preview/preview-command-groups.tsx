@@ -18,17 +18,12 @@ function usePreviewCommandGroups() {
   const rotations = useRotationCommands();
   const flips = useFlipCommands();
   const reset = useResetTransformCommand();
-  const { audioActivityCommands, markerCommands, sceneCommands } = useSceneCommands();
+  const { markerCommands, sceneCommands } = useSceneCommands();
   return [
     defineApplicationCommandGroup(
       "preview-markers-scene",
       t("app.labels.commandSections.markersScene"),
       sceneCommands,
-    ),
-    defineApplicationCommandGroup(
-      "preview-markers-audio-activity",
-      t("app.labels.commandSections.markersAudioActivity"),
-      audioActivityCommands,
     ),
     defineApplicationCommandGroup(
       "preview-markers-navigation",

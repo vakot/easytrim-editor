@@ -19,7 +19,6 @@ import {
   audioPreviewsReady,
   audioPreviewsUnavailable,
   selectAudioTracks,
-  selectMasterAudio,
   selectMergeAudio,
   waveformReady,
   waveformsFailed,
@@ -474,7 +473,6 @@ async function prepareSelectedSource(
         flipVertical: snapshot.flipVertical,
         rotation: snapshot.rotation,
         sceneBoundariesMicros: snapshot.sceneBoundariesMicros,
-        masterAudio: snapshot.audio.master,
         audioTracks: snapshot.audio.tracks,
         mergeAudio: snapshot.audio.mergeAudio,
       })
@@ -562,11 +560,10 @@ async function prepareSelectedSource(
       trim: { kind: "full-source" },
       crop: null,
       rotation: 0,
-      masterAudio: selectMasterAudio(getState()),
-      audioTracks: selectAudioTracks(getState()).map(({ enabled, streamIndex, volumePercent }) => ({
+      audioTracks: selectAudioTracks(getState()).map(({ enabled, processing, streamIndex }) => ({
         enabled,
         streamIndex,
-        volumePercent,
+        processing: { ...processing },
       })),
       mergeAudio: selectMergeAudio(getState()),
     });
@@ -796,9 +793,6 @@ const restoreExportAttemptRequested =
           settings: {
             frameRate: attempt.request.frameRate,
             resolution: attempt.request.resolution,
-            ...(attempt.request.loudnessNormalization
-              ? { loudnessPreset: attempt.request.loudnessNormalization }
-              : {}),
           },
         }),
       );

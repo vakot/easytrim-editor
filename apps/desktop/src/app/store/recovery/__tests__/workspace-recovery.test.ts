@@ -4,8 +4,8 @@ import { editingInstanceActivated } from "@/app/store/actions/editing-instance-a
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
   audioMergeToggled,
-  audioTrackVolumeChanged,
-  masterVolumeChanged,
+  audioTrackGainChanged,
+  audioTrackLoudnessNormalizationChanged,
 } from "@/app/store/slices/audio-slice";
 import { cropChanged, flipToggled, rotationChanged } from "@/app/store/slices/crop-slice";
 import {
@@ -37,7 +37,6 @@ function instance(id: string, source = firstSource) {
     optimizedArguments: "-crf 22",
     optimizedSettings: {
       frameRate: undefined,
-      loudnessPreset: "broadcast" as const,
       resolution: { height: 720, width: 1280 },
     },
     origin: "source-import" as const,
@@ -60,9 +59,8 @@ describe("workspace recovery contract", () => {
     const secondSnapshot = {
       ...second.snapshot,
       audio: {
-        master: { enabled: true, volumePercent: 80 },
         mergeAudio: false,
-        tracks: [{ enabled: true, streamIndex: 2, volumePercent: 75 }],
+        tracks: [{ enabled: true, streamIndex: 2, processing: { gainDb: -2.5 } }],
       },
     };
 
@@ -87,8 +85,8 @@ describe("workspace recovery contract", () => {
     );
     store.dispatch(flipToggled("horizontal"));
     store.dispatch(rotationChanged(90));
-    store.dispatch(masterVolumeChanged({ volumePercent: 64 }));
-    store.dispatch(audioTrackVolumeChanged({ streamIndex: 2, volumePercent: 35 }));
+    store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -4 }));
+    store.dispatch(audioTrackLoudnessNormalizationChanged({ preset: "broadcast", streamIndex: 2 }));
     store.dispatch(audioMergeToggled());
     store.dispatch(exportArgumentsChanged("-crf 18"));
 
@@ -155,11 +153,14 @@ describe("workspace recovery contract", () => {
     expect(backup.activeInstanceId).toBe("second");
     expect(backup.instances[1]?.snapshot).toMatchObject({
       audio: {
-        master: { enabled: true, volumePercent: 64 },
         mergeAudio: true,
         tracks: [
-          { enabled: true, streamIndex: 2, volumePercent: 35 },
-          { enabled: true, streamIndex: 4, volumePercent: 50 },
+          {
+            enabled: true,
+            streamIndex: 2,
+            processing: { gainDb: -4, loudnessNormalization: "broadcast" },
+          },
+          { enabled: true, streamIndex: 4, processing: { gainDb: 0 } },
         ],
       },
       crop: { height: 0.7, width: 0.8, x: 0, y: 0.1 },
@@ -170,7 +171,7 @@ describe("workspace recovery contract", () => {
     expect(backup.instances[1]).toMatchObject({
       importedAtMicros: 1234,
       optimizedArguments: "-crf 18",
-      optimizedSettings: { loudnessPreset: "broadcast", resolution: { height: 1344, width: 864 } },
+      optimizedSettings: { resolution: { height: 1344, width: 864 } },
     });
     expect(backup.instances[1]?.exportAttempts[0]).toMatchObject({
       output: { displayPath: "C:/Exports/result.mp4" },

@@ -8,6 +8,7 @@ import {
   setExportQueueExecutionEnabled,
   withdrawPendingExport,
 } from "@/app/store/integration/export-queue-runtime";
+import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import {
   editingInstanceExportAttemptQueued,
   editingInstanceExportCompleted,
@@ -20,7 +21,7 @@ import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt } from "@/domain/editing-instance";
-import { firstSource, media } from "@/test/source.fixtures";
+import { firstSource, media, mediaWithAudio } from "@/test/source.fixtures";
 
 import {
   cancelOptimizedExportDialogRequested,
@@ -72,7 +73,7 @@ beforeEach(() => {
   });
 });
 
-function setup() {
+function setup(sourceMedia = media(firstSource.sourcePath)) {
   const store = createAppStore();
   store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
   const snapshot = createDefaultEditorSnapshot(firstSource, false);
@@ -83,7 +84,7 @@ function setup() {
         id: "original",
         origin: "source-import",
         snapshot,
-        media: media(firstSource.sourcePath),
+        media: sourceMedia,
         sourceAvailability: "available",
         exportAttempts: [],
       },
@@ -93,15 +94,73 @@ function setup() {
     editingInstanceActivated({
       id: "original",
       snapshot,
-      media: media(firstSource.sourcePath),
+      media: sourceMedia,
       loadToken: 1,
     }),
   );
-  store.dispatch(sourceReady({ media: media(firstSource.sourcePath), loadToken: 1, snapshot }));
+  store.dispatch(sourceReady({ media: sourceMedia, loadToken: 1, snapshot }));
   return { store, snapshot };
 }
 
 describe("export snapshot restoration", () => {
+  it("keeps queued per-track processing immutable and restores it with the export", async () => {
+    const { snapshot, store } = setup(mediaWithAudio(firstSource.sourcePath));
+    const processing = { gainDb: -4.5, loudnessNormalization: "streaming" as const };
+    const audioTracks = [{ enabled: true, processing: { ...processing }, streamIndex: 2 }];
+    const queuedSnapshot = {
+      ...snapshot,
+      audio: { ...snapshot.audio, tracks: [{ ...audioTracks[0]!, processing: { ...processing } }] },
+    };
+
+    const attempt = createExportAttempt({
+      capturedAt: 1,
+      id: "queued-audio-settings",
+      output: { displayName: "render.mp4", displayPath: "C:/render.mp4", outputId: "audio" },
+      request: {
+        arguments: "-preset slow",
+        audioTracks: audioTracks.map(({ processing: value, streamIndex }) => ({
+          processing: { ...value },
+          streamIndex,
+        })),
+        mergeAudio: false,
+        resolution: { height: 720, width: 1280 },
+        rotationDegrees: 0,
+        sourcePath: firstSource.sourcePath,
+        trim: { endMicros: 1_500_000, startMicros: 250_000 },
+      },
+      route: "optimized",
+      snapshot: queuedSnapshot,
+    });
+
+    audioTracks[0]!.processing.gainDb = 8;
+    queuedSnapshot.audio.tracks[0]!.processing.gainDb = 8;
+    expect(attempt.request.audioTracks[0]?.processing.gainDb).toBe(-4.5);
+    expect(attempt.snapshot.audio.tracks[0]?.processing).toEqual(processing);
+
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
+    store.dispatch(
+      editingInstanceExportStarted({ id: "original", attemptId: attempt.id, startedAt: 2 }),
+    );
+    store.dispatch(
+      editingInstanceExportCompleted({
+        id: "original",
+        attemptId: attempt.id,
+        durationMs: 1,
+        result: { displayName: "render.mp4", displayPath: "C:/render.mp4", operationId: "op" },
+      }),
+    );
+
+    await store.dispatch(
+      restoreExportAttemptRequested({ instanceId: "original", attemptId: attempt.id }),
+    );
+
+    expect(selectAudioTracks(store.getState())).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ enabled: true, processing, streamIndex: 2 }),
+      ]),
+    );
+  });
+
   it("keeps optimized queue settings unchanged when the edit dialog is canceled", async () => {
     const { snapshot, store } = setup();
     const attempt = createExportAttempt({

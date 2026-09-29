@@ -70,7 +70,6 @@ export const sk = {
         previewTransform: "Náhľad / Transformácia",
         markers: "Značky",
         markersScene: "Značky / Scéna",
-        markersAudioActivity: "Značky / Aktivita zvuku",
         queueOnFinishedApplication: "Front / Po dokončení / Aplikácia",
         queueOnFinishedSource: "Front / Po dokončení / Zdroj",
         go: "Prejsť",
@@ -495,9 +494,6 @@ export const sk = {
   timeline: {
     actions: {
       detectScenes: "Rozpoznať zmeny scén",
-      detectAudioActivity: "Rozpoznať aktivitu zvuku v aktívnom mixe",
-      disableAudioActivityMarkers: "Skryť rozsahy aktivity zvuku",
-      enableAudioActivityMarkers: "Zobraziť rozsahy aktivity zvuku",
       disableSceneMarkers: "Skryť značky scén",
       enableSceneMarkers: "Zobraziť značky scén",
       moveSegment: "Presunúť vybraný segment",
@@ -511,13 +507,10 @@ export const sk = {
     },
     status: {
       sceneDetectionFailed: "Rozpoznávanie scén zlyhalo. Skúste to znova.",
-      audioActivityDetectionFailed: "Rozpoznávanie aktivity zvuku zlyhalo. Skúste to znova.",
     },
     tooltips: {
       detectScenes:
         "Analyzovať zdrojové video a vyhľadať zmeny scén. Podržte Shift počas ťahania a prichyťte sa k značke scény alebo k okraju rozsahu aktivity zvuku.",
-      detectAudioActivity:
-        "Analyzovať aktívny zvukový mix a označiť rozsahy aktivity zvuku na časovej osi.",
       moveSegment: "Potiahnutím presuňte vybraný segment — podržaním Shift ho prichytíte",
       trimReset: "{{label}} — podržaním Shift prichytíte — dvojitým kliknutím obnovíte",
     },
@@ -537,15 +530,26 @@ export const sk = {
   },
   audio: {
     actions: {
-      enableTrack: "Povoliť {{title}}",
+      analyzeLoudness: "Analyzovať hlasitosť",
+      analyzingLoudness: "Analyzuje sa hlasitosť…",
+      detectActivity: "Rozpoznať aktivitu zvuku",
+      detectingActivity: "Rozpoznáva sa aktivita zvuku…",
+      hideActivity: "Skryť rozpoznané úseky",
       merge: "Zlúčiť vybrané stopy",
       mute: "Stlmiť",
       muteTrack: "Stlmiť {{title}}",
+      reanalyzeLoudness: "Znova analyzovať hlasitosť",
+      resetGain: "Obnoviť",
+      resetTrackGain: "Obnoviť zosilnenie stopy na 0 dB",
+      retryActivityDetection: "Zopakovať rozpoznávanie aktivity",
+      showActivity: "Zobraziť rozpoznané úseky",
       unmute: "Zrušiť stlmenie",
+      unmuteTrack: "Zrušiť stlmenie: {{title}}",
     },
     labels: {
-      allTracks: "Všetky zvukové stopy",
       defaultTrack: "Zvuk {{number}}",
+      loudnessNormalization: "Normalizácia hlasitosti",
+      trackGain: "Zosilnenie stopy",
       title: "Zvukové stopy",
     },
     status: {
@@ -563,18 +567,21 @@ export const sk = {
         separate_other: "{{count}} vybraných stôp zostane samostatných",
         videoOnly: "Výstup iba s videom",
       },
+      activityRanges: "Rozpoznané úseky aktivity zvuku",
     },
     tooltips: {
       merge: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
     },
     accessibility: {
-      allTracksVolume: "Hlasitosť všetkých zvukových stôp",
-      trackVolume: "Hlasitosť: {{title}}",
+      trackActions: "Akcie zvukovej stopy {{number}}",
+      trackGain: "Zosilnenie {{title}} v decibeloch",
+      trackNormalization: "Normalizácia hlasitosti: {{title}}",
     },
     options: {
       channels_one: "{{count}} kanál",
       channels_few: "{{count}} kanály",
       channels_other: "{{count}} kanálov",
+      normalizationNone: "Vypnuté",
       unknownLayout: "neznáme rozloženie",
     },
   },
@@ -621,20 +628,11 @@ export const sk = {
         editTitle: "Upraviť export vo fronte",
         frameRate: "Snímková frekvencia",
         loudness: {
-          analyze: "Analyzovať hlasitosť",
-          analyzed: "Analyzované",
-          analyzing: "Analyzuje sa…",
-          analysisFailed: "Analýza hlasitosti zvuku zlyhala.",
-          default: "Predvolené",
-          defaultWithAnalysis: "Predvolené · {{integratedLufs}} / {{truePeakDb}}",
-          label: "Normalizovať hlasitosť",
-          retry: "Skúsiť znova",
           presets: {
             broadcast: "Vysielanie · −23 LUFS / −2 dBTP",
             streaming: "Streamovanie · −16 LUFS / −1,5 dBTP",
             webVideo: "Webové video · −14 LUFS / −1 dBTP",
           },
-          unavailable: "Nedostupné",
         },
         matchSource: "Podľa zdroja",
         resolution: "Rozlíšenie",

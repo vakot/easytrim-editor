@@ -24,5 +24,5 @@ export interface WorkspaceRecoveryBackup {
   instances: WorkspaceRecoveryInstance[];
   sessionId: string;
   updatedAt: string;
-  version: 1;
+  version: 2;
 }

@@ -55,22 +55,18 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
-  it("converts detected silence to audio activity ranges for the selected mix", async () => {
-    const mix = [
-      { streamIndex: 2, volumePercent: 75 },
-      { streamIndex: 4, volumePercent: 50 },
-    ];
+  it("converts detected silence to activity ranges for one track", async () => {
+    const track = { streamIndex: 2, processing: { gainDb: -3 } };
 
     mocks.invoke.mockResolvedValueOnce([{ startMicros: 1_000_000, endMicros: 2_500_000 }]);
 
-    await expect(detectAudioActivity("C:/Media/clip.mp4", mix, true, 5_000_000)).resolves.toEqual([
+    await expect(detectAudioActivity("C:/Media/clip.mp4", track, 5_000_000)).resolves.toEqual([
       { startMicros: 0, endMicros: 1_000_000 },
       { startMicros: 2_500_000, endMicros: 5_000_000 },
     ]);
     expect(mocks.invoke).toHaveBeenCalledWith("detect_silence", {
       sourcePath: "C:/Media/clip.mp4",
-      mix,
-      mergeAudio: true,
+      track,
     });
   });
 
@@ -80,8 +76,7 @@ describe("media IPC adapter", () => {
     await expect(
       detectAudioActivity(
         "C:/Media/clip.mp4",
-        [{ streamIndex: 2, volumePercent: 50 }],
-        false,
+        { streamIndex: 2, processing: { gainDb: 0 } },
         5_000_000,
       ),
     ).resolves.toEqual([]);
@@ -94,8 +89,10 @@ describe("media IPC adapter", () => {
     const request = {
       sourcePath: "C:/Media/clip.mp4",
       trim: { startMicros: 1_000_000, endMicros: 4_000_000 },
-      audioTracks: [{ streamIndex: 2, volumePercent: 75 }],
-      mergeAudio: true,
+      audioTrack: {
+        streamIndex: 2,
+        processing: { gainDb: -2, loudnessNormalization: "webVideo" as const },
+      },
     };
 
     await expect(analyzeAudioLoudness(request)).resolves.toEqual({
@@ -108,8 +105,7 @@ describe("media IPC adapter", () => {
       sourcePath: request.sourcePath,
       request: {
         trim: request.trim,
-        audioTracks: request.audioTracks,
-        mergeAudio: request.mergeAudio,
+        audioTrack: request.audioTrack,
       },
     });
   });
@@ -129,8 +125,7 @@ describe("media IPC adapter", () => {
     const request = {
       sourcePath: "C:/Media/clip.mp4",
       trim: { startMicros: 0, endMicros: 1_000_000 },
-      audioTracks: [{ streamIndex: 2, volumePercent: 100 }],
-      mergeAudio: false,
+      audioTrack: { streamIndex: 2, processing: { gainDb: 0 } },
     };
 
     const analysis = analyzeAudioLoudness(request, controller.signal);

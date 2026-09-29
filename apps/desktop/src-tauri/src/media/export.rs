@@ -36,7 +36,7 @@ pub struct CropSelection {
     pub height: f64,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FastExportRequest {
     pub source_path: String,
@@ -46,11 +46,40 @@ pub struct FastExportRequest {
     pub rotation_degrees: u16,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioTrackSelection {
     pub stream_index: u32,
-    pub volume_percent: u16,
+    pub processing: AudioTrackProcessing,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioTrackProcessing {
+    pub gain_db: f64,
+    #[serde(default)]
+    pub loudness_normalization: Option<LoudnessPreset>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct AudioTrackCacheKey {
+    pub stream_index: u32,
+    gain_db_bits: u64,
+    pub loudness_normalization: Option<LoudnessPreset>,
+}
+
+impl From<&AudioTrackSelection> for AudioTrackCacheKey {
+    fn from(track: &AudioTrackSelection) -> Self {
+        Self {
+            stream_index: track.stream_index,
+            gain_db_bits: if track.processing.gain_db == 0.0 {
+                0.0_f64.to_bits()
+            } else {
+                track.processing.gain_db.to_bits()
+            },
+            loudness_normalization: track.processing.loudness_normalization,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -69,11 +98,9 @@ pub struct OptimizedExportRequest {
     pub flip_vertical: bool,
     pub frame_rate: Option<FrameRateSelection>,
     pub arguments: String,
-    #[serde(default)]
-    pub loudness_normalization: Option<LoudnessPreset>,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Hash, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum LoudnessPreset {
     WebVideo,
@@ -82,7 +109,7 @@ pub enum LoudnessPreset {
 }
 
 impl LoudnessPreset {
-    fn targets(self) -> (f64, f64) {
+    pub(crate) fn targets(self) -> (f64, f64) {
         match self {
             Self::WebVideo => (-14.0, -1.0),
             Self::Streaming => (-16.0, -1.5),
@@ -182,7 +209,6 @@ pub fn build_optimized_arguments(
     validate_resolution(&request.resolution)?;
     validate_crop(request.crop.as_ref())?;
     validate_rotation(request.rotation_degrees)?;
-    validate_loudness_normalization(request.loudness_normalization, &request.audio_tracks)?;
     if let Some(frame_rate) = &request.frame_rate
         && (frame_rate.numerator == 0 || frame_rate.denominator == 0)
     {
@@ -196,20 +222,7 @@ pub fn build_optimized_arguments(
         OsString::from("-map"),
         OsString::from(format!("0:{}", source.video.stream_index)),
     ]);
-    if let Some(normalization) = request.loudness_normalization {
-        arguments.extend([
-            OsString::from("-filter_complex"),
-            OsString::from(normalized_audio_filter_graph(
-                &request.audio_tracks,
-                request.merge_audio,
-                normalization,
-            )),
-            OsString::from("-map"),
-            OsString::from("[normalized]"),
-            OsString::from("-ac"),
-            OsString::from("2"),
-        ]);
-    } else if request.merge_audio && request.audio_tracks.len() > 1 {
+    if request.merge_audio && request.audio_tracks.len() > 1 {
         arguments.extend([
             OsString::from("-filter_complex"),
             OsString::from(audio_filter_graph(&request.audio_tracks, true)),
@@ -330,19 +343,25 @@ pub(crate) fn validate_common_request(
             "The selected export range is invalid.",
         ));
     }
+    validate_audio_track_selections(source, audio_tracks)
+}
+
+pub(crate) fn validate_audio_track_selections(
+    source: &MediaInfo,
+    audio_tracks: &[AudioTrackSelection],
+) -> Result<(), AppError> {
     let mut selected_streams = HashSet::new();
     for track in audio_tracks {
         let is_known_stream = source
             .audio_streams
             .iter()
             .any(|stream| stream.stream_index == track.stream_index);
-        if track.volume_percent == 0
-            || track.volume_percent > 200
+        if !track.processing.gain_db.is_finite()
             || !is_known_stream
             || !selected_streams.insert(track.stream_index)
         {
             return Err(AppError::invalid_request(
-                "An audio stream selection or volume is invalid.",
+                "An audio stream selection or gain is invalid.",
             ));
         }
     }
@@ -382,21 +401,6 @@ fn validate_rotation(rotation_degrees: u16) -> Result<(), AppError> {
     }
 }
 
-fn validate_loudness_normalization(
-    preset: Option<LoudnessPreset>,
-    audio_tracks: &[AudioTrackSelection],
-) -> Result<(), AppError> {
-    let Some(_) = preset else {
-        return Ok(());
-    };
-    if audio_tracks.is_empty() {
-        return Err(AppError::invalid_request(
-            "Select at least one audio track for loudness normalization.",
-        ));
-    }
-    Ok(())
-}
-
 fn rotation_filter(rotation_degrees: u16) -> String {
     match rotation_degrees {
         90 => "transpose=1".to_owned(),
@@ -432,19 +436,34 @@ fn effective_transform(
 }
 
 fn audio_tracks_need_reencode(audio_tracks: &[AudioTrackSelection]) -> bool {
-    audio_tracks.iter().any(|track| track.volume_percent != 50)
+    audio_tracks.iter().any(|track| {
+        track.processing.gain_db != 0.0 || track.processing.loudness_normalization.is_some()
+    })
 }
 
 pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bool) -> String {
+    // Process each track in canonical order: gain first, optional loudness normalization second.
     let mut graph = audio_tracks
         .iter()
         .enumerate()
         .map(|(index, track)| {
-            format!(
-                "[0:{}]volume={:.6}[audio{index}]",
-                track.stream_index,
-                f64::from(track.volume_percent) / 50.0
-            )
+            let (integrated_lufs, true_peak_db) = track
+                .processing
+                .loudness_normalization
+                .map(LoudnessPreset::targets)
+                .unwrap_or((0.0, 0.0));
+            let mut filters = format!(
+                "[0:{}]volume={:.6}dB[track{index}_gain]",
+                track.stream_index, track.processing.gain_db
+            );
+            if track.processing.loudness_normalization.is_some() {
+                filters.push_str(&format!(
+                    ";[track{index}_gain]loudnorm=I={integrated_lufs}:TP={true_peak_db}:LRA=11[audio{index}]"
+                ));
+            } else {
+                filters.push_str(&format!(";[track{index}_gain]anull[audio{index}]"));
+            }
+            filters
         })
         .collect::<Vec<_>>();
     if merge {
@@ -457,33 +476,6 @@ pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bo
         ));
     }
     graph.join(";")
-}
-
-fn normalized_audio_filter_graph(
-    audio_tracks: &[AudioTrackSelection],
-    merge_audio: bool,
-    preset: LoudnessPreset,
-) -> String {
-    let (integrated_lufs, true_peak_db) = preset.targets();
-    let mut graph = audio_filter_graph(audio_tracks, false);
-    if audio_tracks.len() > 1 {
-        let inputs = (0..audio_tracks.len())
-            .map(|index| format!("[audio{index}]"))
-            .collect::<String>();
-        graph.push(';');
-        graph.push_str(&format!(
-            "{inputs}amix=inputs={}:duration=longest:dropout_transition=0:normalize={}[aout]",
-            audio_tracks.len(),
-            u8::from(merge_audio)
-        ));
-    } else {
-        graph.push_str(";[audio0]anull[aout]");
-    }
-    graph.push_str(&format!(
-        ";[aout]loudnorm=I={}:TP={}:LRA=11[normalized]",
-        integrated_lufs, true_peak_db
-    ));
-    graph
 }
 
 fn parse_arguments(value: &str) -> Result<Vec<OsString>, AppError> {
@@ -618,9 +610,9 @@ mod tests {
     use std::path::Path;
 
     use super::{
-        AudioTrackSelection, CropSelection, FastExportRequest, FrameRateSelection, LoudnessPreset,
-        OptimizedExportRequest, ResolutionSelection, TrimSelection, build_fast_arguments,
-        build_optimized_arguments, optimized_command_preview,
+        AudioTrackProcessing, AudioTrackSelection, CropSelection, FastExportRequest,
+        FrameRateSelection, LoudnessPreset, OptimizedExportRequest, ResolutionSelection,
+        TrimSelection, build_fast_arguments, build_optimized_arguments, optimized_command_preview,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -684,7 +676,10 @@ mod tests {
             },
             audio_tracks: vec![AudioTrackSelection {
                 stream_index: 1,
-                volume_percent: 50,
+                processing: AudioTrackProcessing {
+                    gain_db: 0.0,
+                    loudness_normalization: None,
+                },
             }],
             merge_audio: false,
             rotation_degrees: 0,
@@ -697,7 +692,6 @@ mod tests {
             flip_vertical: false,
             frame_rate: None,
             arguments: arguments.to_owned(),
-            loudness_normalization: None,
         }
     }
 
@@ -713,7 +707,10 @@ mod tests {
                 },
                 audio_tracks: vec![AudioTrackSelection {
                     stream_index: 2,
-                    volume_percent: 50,
+                    processing: AudioTrackProcessing {
+                        gain_db: 0.0,
+                        loudness_normalization: None,
+                    },
                 }],
                 merge_audio: false,
                 rotation_degrees: 0,
@@ -729,6 +726,8 @@ mod tests {
         assert!(values.windows(2).any(|pair| pair == ["-map", "0:0"]));
         assert!(values.windows(2).any(|pair| pair == ["-map", "0:2"]));
         assert!(values.contains(&"-c".to_owned()));
+        assert!(values.windows(2).any(|pair| pair == ["-c", "copy"]));
+        assert!(!values.contains(&"-filter_complex".to_owned()));
         assert!(!values.contains(&"0:1".to_owned()));
     }
 
@@ -793,11 +792,17 @@ mod tests {
                 audio_tracks: vec![
                     AudioTrackSelection {
                         stream_index: 1,
-                        volume_percent: 50,
+                        processing: AudioTrackProcessing {
+                            gain_db: 0.0,
+                            loudness_normalization: None,
+                        },
                     },
                     AudioTrackSelection {
                         stream_index: 2,
-                        volume_percent: 50,
+                        processing: AudioTrackProcessing {
+                            gain_db: 0.0,
+                            loudness_normalization: None,
+                        },
                     },
                 ],
                 merge_audio: true,
@@ -819,7 +824,7 @@ mod tests {
     }
 
     #[test]
-    fn fast_volume_adjustment_filters_only_selected_audio() {
+    fn fast_gain_processing_filters_only_selected_audio() {
         let args = build_fast_arguments(
             &media(),
             &FastExportRequest {
@@ -830,7 +835,10 @@ mod tests {
                 },
                 audio_tracks: vec![AudioTrackSelection {
                     stream_index: 2,
-                    volume_percent: 100,
+                    processing: AudioTrackProcessing {
+                        gain_db: 6.0,
+                        loudness_normalization: None,
+                    },
                 }],
                 merge_audio: false,
                 rotation_degrees: 0,
@@ -846,7 +854,12 @@ mod tests {
         assert!(
             values
                 .iter()
-                .any(|value| value.contains("0:2]volume=2.000000[audio0]"))
+                .any(|value| value.contains("0:2]volume=6.000000dB[track0_gain]"))
+        );
+        assert!(
+            values
+                .iter()
+                .any(|value| value.contains("[track0_gain]anull[audio0]"))
         );
         assert!(values.windows(2).any(|pair| pair == ["-map", "[audio0]"]));
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
@@ -855,14 +868,16 @@ mod tests {
     }
 
     #[test]
-    fn loudness_normalization_mixes_selected_tracks_and_adds_loudnorm_filter() {
+    fn optimized_export_normalizes_each_track_independently_after_gain() {
         let mut request = optimized_request("-c:v libx264 -crf 20");
         request.merge_audio = false;
         request.audio_tracks.push(AudioTrackSelection {
             stream_index: 2,
-            volume_percent: 50,
+            processing: AudioTrackProcessing {
+                gain_db: -3.0,
+                loudness_normalization: Some(LoudnessPreset::Streaming),
+            },
         });
-        request.loudness_normalization = Some(LoudnessPreset::Streaming);
 
         let args = build_optimized_arguments(
             &media(),
@@ -881,29 +896,10 @@ mod tests {
             .unwrap();
         let graph = &values[graph_index + 1];
 
-        assert!(graph.contains("[0:1]volume=1.000000[audio0]"));
-        assert!(graph.contains("[0:2]volume=1.000000[audio1]"));
-        assert!(graph.contains("normalize=0[aout]"));
-        assert!(graph.contains("loudnorm=I=-16:TP=-1.5:LRA=11[normalized]"));
-        assert!(values.contains(&"[normalized]".to_owned()));
-    }
-
-    #[test]
-    fn loudness_normalization_rejects_empty_audio_selection() {
-        let mut request = optimized_request("-c:v libx264 -crf 20");
-        request.loudness_normalization = Some(LoudnessPreset::Streaming);
-        request.audio_tracks.clear();
-        assert_eq!(
-            build_optimized_arguments(
-                &media(),
-                &request,
-                Path::new("source.mkv"),
-                Path::new("out.mp4")
-            )
-            .unwrap_err()
-            .code,
-            "invalid_request"
-        );
+        assert!(graph.contains("[0:1]volume=0.000000dB[track0_gain];[track0_gain]anull[audio0]"));
+        assert!(graph.contains("[0:2]volume=-3.000000dB[track1_gain];[track1_gain]loudnorm=I=-16:TP=-1.5:LRA=11[audio1]"));
+        assert!(values.contains(&"[audio0]".to_owned()));
+        assert!(values.contains(&"[audio1]".to_owned()));
     }
 
     #[test]
@@ -918,7 +914,10 @@ mod tests {
                 },
                 audio_tracks: vec![AudioTrackSelection {
                     stream_index: 1,
-                    volume_percent: 50,
+                    processing: AudioTrackProcessing {
+                        gain_db: 0.0,
+                        loudness_normalization: None,
+                    },
                 }],
                 merge_audio: false,
                 rotation_degrees: 0,
@@ -934,7 +933,6 @@ mod tests {
                     denominator: 1,
                 }),
                 arguments: "-c:v hevc_nvenc -cq 24".to_owned(),
-                loudness_normalization: None,
             },
             Path::new("source.mkv"),
             Path::new("out.mp4"),
@@ -1115,6 +1113,60 @@ mod tests {
         .expect_err("a stream can only be selected once");
 
         assert_eq!(error.code, "invalid_request");
+    }
+
+    #[test]
+    fn export_rejects_non_finite_track_gain() {
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.audio_tracks[0].processing.gain_db = f64::NAN;
+        let error = build_optimized_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect_err("non-finite values cannot become FFmpeg filter arguments");
+
+        assert_eq!(error.code, "invalid_request");
+    }
+
+    #[test]
+    fn fast_cut_reencodes_when_only_track_normalization_is_enabled() {
+        let track = AudioTrackSelection {
+            stream_index: 1,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: Some(LoudnessPreset::WebVideo),
+            },
+        };
+        let args = build_fast_arguments(
+            &media(),
+            &FastExportRequest {
+                source_path: "source.mkv".to_owned(),
+                trim: TrimSelection {
+                    start_micros: 0,
+                    end_micros: 2_000_000,
+                },
+                audio_tracks: vec![track.clone()],
+                merge_audio: false,
+                rotation_degrees: 0,
+            },
+            Path::new("source.mkv"),
+            Path::new("out.mkv"),
+        )
+        .expect("normalization is a valid processing setting");
+        let values = args
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
+        assert!(values.windows(2).any(|pair| pair == ["-c:a", "aac"]));
+        assert!(
+            values
+                .iter()
+                .any(|value| value.contains("loudnorm=I=-14:TP=-1:LRA=11"))
+        );
     }
 
     #[test]

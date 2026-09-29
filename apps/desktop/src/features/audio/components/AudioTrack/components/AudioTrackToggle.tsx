@@ -22,11 +22,20 @@ const AudioTrackToggle = forwardRef<HTMLButtonElement, AudioTrackToggleProps>(
   function AudioTrackToggle({ className, onClick, stream, track, ...props }, ref) {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
+    const title =
+      stream.title ??
+      stream.language ??
+      t("audio.labels.defaultTrack", { number: stream.streamIndex });
+
+    const label = track.enabled
+      ? t("audio.actions.muteTrack", { title })
+      : t("audio.actions.unmuteTrack", { title });
 
     return (
       <Tooltip preserveOnTrigger>
         <TooltipTrigger asChild>
           <Button
+            aria-label={label}
             aria-pressed={track.enabled}
             className={cn("text-primary", className)}
             onClick={(event) => {
@@ -48,9 +57,7 @@ const AudioTrackToggle = forwardRef<HTMLButtonElement, AudioTrackToggleProps>(
             {track.enabled ? <Volume2 /> : <VolumeOff />}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>
-          {track.enabled ? t("audio.actions.mute") : t("audio.actions.unmute")}
-        </TooltipContent>
+        <TooltipContent>{label}</TooltipContent>
       </Tooltip>
     );
   },

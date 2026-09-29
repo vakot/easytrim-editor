@@ -398,7 +398,6 @@ describe("editing instances slice", () => {
     const editedSnapshot = createEditorSnapshot({
       audioTracks: baseSnapshot.audio.tracks,
       crop: baseSnapshot.crop,
-      masterAudio: baseSnapshot.audio.master,
       mergeAudio: baseSnapshot.audio.mergeAudio,
       source: baseSnapshot.source,
       trim: { endMicros: 3_000_000, startMicros: 1_000_000 },

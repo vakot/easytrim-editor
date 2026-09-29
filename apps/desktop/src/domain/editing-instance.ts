@@ -3,7 +3,6 @@ import type {
   ExportResult,
   FastExportRequest,
   FrameRate,
-  LoudnessPreset,
   MediaInfo,
   OptimizedExportRequest,
   OutputSelection,
@@ -16,7 +15,6 @@ export type ExportRequest = FastExportRequest | OptimizedExportRequest;
 
 interface ExportSettings {
   frameRate: FrameRate | undefined;
-  loudnessPreset?: LoudnessPreset;
   resolution: { height: number; width: number };
 }
 

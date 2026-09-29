@@ -3,7 +3,7 @@ use crate::{
     error::AppError,
     media::{
         audio::generate_audio_previews,
-        export::AudioTrackSelection,
+        export::{AudioTrackCacheKey, AudioTrackSelection, validate_audio_track_selections},
         probe::{MediaInfo, inspect_media_cancellable as probe_media},
         proxy::generate_preview,
         scene_detection::detect_scene_boundaries,
@@ -153,48 +153,16 @@ pub async fn detect_scenes(
 #[tauri::command]
 pub async fn detect_silence(
     source_path: String,
-    mix: Vec<AudioTrackSelection>,
-    merge_audio: bool,
+    track: AudioTrackSelection,
     state: State<'_, AppState>,
 ) -> Result<Vec<SilenceRange>, AppError> {
-    if mix.is_empty() || mix.len() > 32 {
-        return Err(AppError::invalid_request(
-            "Select between one and 32 audio tracks for audio activity detection.",
-        ));
-    }
-
-    let mut unique_stream_indexes = mix
-        .iter()
-        .map(|track| track.stream_index)
-        .collect::<Vec<_>>();
-    unique_stream_indexes.sort_unstable();
-    unique_stream_indexes.dedup();
-    if unique_stream_indexes.len() != mix.len()
-        || mix
-            .iter()
-            .any(|track| track.volume_percent == 0 || track.volume_percent > 200)
-    {
-        return Err(AppError::invalid_request(
-            "Audio activity tracks must be unique and have valid nonzero levels.",
-        ));
-    }
-
     let source = state.resolve_source_by_path(&source_path)?;
-    let mut mix_key = mix
-        .iter()
-        .map(|track| (track.stream_index, track.volume_percent))
-        .collect::<Vec<_>>();
-    mix_key.sort_unstable();
-    let audio_stream_indexes = source.audio_stream_indexes.clone();
-    if mix_key
-        .iter()
-        .any(|(index, _)| !audio_stream_indexes.contains(index))
-    {
-        return Err(AppError::invalid_request(
-            "Audio activity detection includes an unavailable audio track.",
-        ));
-    }
-    if let Some(ranges) = state.cached_silence_ranges(source.load_token, merge_audio, &mix_key)? {
+    let media = source.media.as_ref().ok_or_else(|| {
+        AppError::invalid_request("Inspect the video before detecting audio activity.")
+    })?;
+    validate_audio_track_selections(media, std::slice::from_ref(&track))?;
+    let cache_key = AudioTrackCacheKey::from(&track);
+    if let Some(ranges) = state.cached_silence_ranges(source.load_token, cache_key)? {
         return Ok(ranges
             .into_iter()
             .map(|(start_micros, end_micros)| SilenceRange {
@@ -205,21 +173,18 @@ pub async fn detect_silence(
     }
 
     let load_token = source.load_token;
-    let cache_merge_audio = merge_audio;
     let duration_micros = source
         .media
         .as_ref()
         .and_then(|media| u64::try_from(media.duration_micros).ok())
         .unwrap_or_default();
-    let cache_key = mix_key.clone();
     let ranges = tauri::async_runtime::spawn_blocking(move || {
-        detect_silence_ranges(&source, &mix_key, merge_audio, duration_micros)
+        detect_silence_ranges(&source, &track, duration_micros)
     })
     .await
     .map_err(|_| AppError::internal("Silence detection stopped unexpectedly."))??;
     state.install_silence_ranges(
         load_token,
-        cache_merge_audio,
         cache_key,
         ranges
             .iter()

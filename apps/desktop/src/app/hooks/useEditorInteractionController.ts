@@ -6,7 +6,6 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectAudioPreviews,
   selectAudioTracks,
-  selectMasterAudio,
   selectMergeAudio,
 } from "@/app/store/slices/audio-slice";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
@@ -126,7 +125,6 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const preview = useAppSelector(selectPreview);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const audioTracks = useAppSelector(selectAudioTracks);
-  const masterAudio = useAppSelector(selectMasterAudio);
   const mergeAudio = useAppSelector(selectMergeAudio);
   const audioPreviewState = useAppSelector(selectAudioPreviews);
   const audioPreviewUrls = useMemo(
@@ -192,7 +190,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     element: HTMLVideoElement;
   } | null>(null);
 
-  const masterGainRef = useRef<GainNode | null>(null);
+  const audioMixRef = useRef<GainNode | null>(null);
   const audioMeterRef = useRef<StereoAudioMeterNodes | null>(null);
   const playbackOutputGainRef = useRef<GainNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
@@ -301,8 +299,8 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     disconnectCurrentNativeAudioRoute();
     disconnectStereoAudioMeterNodes(audioMeterRef.current);
     audioMeterRef.current = null;
-    masterGainRef.current?.disconnect();
-    masterGainRef.current = null;
+    audioMixRef.current?.disconnect();
+    audioMixRef.current = null;
     playbackOutputGainRef.current?.disconnect();
     playbackOutputGainRef.current = null;
   }, [disconnectCurrentNativeAudioRoute, removeAudioRuntime]);
@@ -375,14 +373,14 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     }
     const context = audioContextRef.current ?? new AudioContext();
     audioContextRef.current = context;
-    let masterGain = masterGainRef.current;
-    if (!masterGain) {
-      masterGain = context.createGain();
-      masterGainRef.current = masterGain;
+    let audioMix = audioMixRef.current;
+    if (!audioMix) {
+      audioMix = context.createGain();
+      audioMixRef.current = audioMix;
       const playbackOutputGain = context.createGain();
       playbackOutputGainRef.current = playbackOutputGain;
-      audioMeterRef.current = createStereoAudioMeterNodes(context, masterGain);
-      masterGain.connect(playbackOutputGain);
+      audioMeterRef.current = createStereoAudioMeterNodes(context, audioMix);
+      audioMix.connect(playbackOutputGain);
       playbackOutputGain.connect(context.destination);
     }
 
@@ -428,7 +426,9 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       document.body.appendChild(element);
       const audioSource = context.createMediaElementSource(element);
       const gain = context.createGain();
-      audioSource.connect(gain).connect(masterGain);
+      const track = audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
+      gain.gain.value = track?.enabled ? 10 ** (track.processing.gainDb / 20) : 0;
+      audioSource.connect(gain).connect(audioMix);
       audioElementsRef.current.set(streamIndex, element);
       audioNodesRef.current.set(streamIndex, { source: audioSource, gain });
       if (element.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) markReady();
@@ -440,7 +440,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       disconnectCurrentNativeAudioRoute();
     } else {
       const binding = getOrCreateNativeAudioBinding(nativeAudioBindingsRef.current, context, video);
-      connectNativeAudioBinding(binding, masterGain);
+      connectNativeAudioBinding(binding, audioMix);
       nativeAudioBindingRef.current = { element: video, binding };
     }
   }, [
@@ -460,9 +460,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     const meter = audioMeterRef.current;
     if (!meter) return;
 
-    const exportAudioTracks = audioTracks.filter(
-      (track) => track.enabled && track.volumePercent > 0,
-    );
+    const exportAudioTracks = audioTracks.filter((track) => track.enabled);
 
     const audioStreams = media?.audioStreams ?? [];
     meter.normalizationGain.gain.value = meterMixNormalization(
@@ -478,10 +476,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   }, [audioTracks, mergeAudio, media?.audioStreams, usesExternalAudio]);
 
   useEffect(() => {
-    const masterGain = masterGainRef.current;
     const playbackOutputGain = playbackOutputGainRef.current;
-    if (masterGain)
-      masterGain.gain.value = masterAudio.enabled ? masterAudio.volumePercent / 50 : 0;
     if (playbackOutputGain && audioContextRef.current) {
       const context = audioContextRef.current;
       const now = context.currentTime;
@@ -492,33 +487,24 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     }
     for (const track of audioTracks) {
       const node = audioNodesRef.current.get(track.streamIndex);
-      if (node) node.gain.gain.value = track.enabled ? track.volumePercent / 50 : 0;
+      if (node) node.gain.gain.value = track.enabled ? 10 ** (track.processing.gainDb / 20) : 0;
     }
     if (nativeAudioBindingRef.current) {
       nativeAudioBindingRef.current.binding.gain.gain.value = nativeAudioTrack?.enabled
-        ? nativeAudioTrack.volumePercent / 50
+        ? 10 ** (nativeAudioTrack.processing.gainDb / 20)
         : 0;
     } else if (videoRef.current) {
-      const masterGain = masterAudio.enabled ? masterAudio.volumePercent / 50 : 0;
       const trackGain = nativeAudioTrack
         ? nativeAudioTrack.enabled
-          ? nativeAudioTrack.volumePercent / 50
+          ? 10 ** (nativeAudioTrack.processing.gainDb / 20)
           : 0
         : 1;
 
-      const combinedGain = (playbackVolumePercent / 100) * masterGain * trackGain;
+      const combinedGain = (playbackVolumePercent / 100) * trackGain;
 
       videoRef.current.volume = Math.min(1, combinedGain);
     }
-  }, [
-    audioPreviewUrls,
-    audioTracks,
-    nativeAudioTrack,
-    readyPreviewKey,
-    masterAudio.enabled,
-    masterAudio.volumePercent,
-    playbackVolumePercent,
-  ]);
+  }, [audioPreviewUrls, audioTracks, nativeAudioTrack, readyPreviewKey, playbackVolumePercent]);
 
   useEffect(() => {
     let heldDirection: FrameShuttleDirection | 0 = 0;

@@ -1,5 +1,6 @@
 export { AudioPanel } from "./components/AudioPanel";
 export { synchronizeAudioPosition } from "./lib/audio-sync";
+export { audioTrackColor } from "./lib/audio-track-color";
 export type { NativeAudioBinding } from "./lib/native-audio-runtime";
 export {
   connectNativeAudioBinding,

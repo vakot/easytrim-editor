@@ -11,11 +11,7 @@ import {
   setExportQueueExecutionEnabled,
 } from "@/app/store/integration/export-queue-runtime";
 import { outputDefaults } from "@/app/store/lib/export-defaults";
-import {
-  selectAudioTracks,
-  selectMasterAudio,
-  selectMergeAudio,
-} from "@/app/store/slices/audio-slice";
+import { selectAudioTracks, selectMergeAudio } from "@/app/store/slices/audio-slice";
 import {
   selectCrop,
   selectCropApplied,
@@ -161,7 +157,6 @@ const editExportAttemptRequested =
           id: instanceId,
           settings: {
             frameRate: optimizedRequest.frameRate,
-            loudnessPreset: optimizedRequest.loudnessNormalization,
             resolution: optimizedRequest.resolution,
           },
         }),
@@ -405,11 +400,10 @@ function getCurrentExportSnapshot(state: ReturnType<Parameters<AppThunk>[1]>) {
     flipHorizontal: selectFlipHorizontal(state),
     flipVertical: selectFlipVertical(state),
     rotation: selectRotationDegrees(state),
-    masterAudio: selectMasterAudio(state),
-    audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
+    audioTracks: selectAudioTracks(state).map(({ enabled, processing, streamIndex }) => ({
       enabled,
       streamIndex,
-      volumePercent,
+      processing: { ...processing },
     })),
     mergeAudio: selectMergeAudio(state),
   });
@@ -425,7 +419,6 @@ function getInitialSettings(state: ReturnType<Parameters<AppThunk>[1]>): ExportS
   return (
     instance.optimizedSettings ?? {
       frameRate: undefined,
-      loudnessPreset: undefined,
       resolution: selectCropResolution(state),
     }
   );
@@ -468,7 +461,6 @@ function getOptimizedRequest(
       ? { numerator: settings.frameRate.numerator, denominator: settings.frameRate.denominator }
       : undefined,
     arguments: state.exportPresets.argumentsText,
-    ...(settings.loudnessPreset ? { loudnessNormalization: settings.loudnessPreset } : {}),
   };
 }
 
@@ -482,7 +474,7 @@ function exportTransform(state: ReturnType<Parameters<AppThunk>[1]>) {
 }
 
 function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
-  return selectedAudioTracks(selectAudioTracks(state), selectMasterAudio(state));
+  return selectedAudioTracks(selectAudioTracks(state));
 }
 
 function getTotalFrames(

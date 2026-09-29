@@ -2,17 +2,8 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import type { RootState } from "@/app/store/store";
-import type { AudioActivityRange } from "@/domain/media";
 
 type EditorToolsState = {
-  audioActivityDetection?: {
-    error: string | null;
-    mixKey: string;
-    ranges?: AudioActivityRange[];
-    sourceKey: string;
-    status: "failed" | "loading" | "ready";
-  };
-  audioActivityMarkersEnabled?: boolean;
   loopPlaybackEnabled: boolean;
   sceneDetection?: {
     error: string | null;
@@ -63,35 +54,10 @@ const editorToolsSlice = createSlice({
     sceneDetectionFinished: (state, action: PayloadAction<string>) => {
       if (state.sceneDetection?.sourceKey === action.payload) delete state.sceneDetection;
     },
-    audioActivityMarkersToggled: (state) => {
-      state.audioActivityMarkersEnabled = !(state.audioActivityMarkersEnabled ?? true);
-    },
-    audioActivityDetectionStarted: (
-      state,
-      action: PayloadAction<{ mixKey: string; sourceKey: string }>,
-    ) => {
-      state.audioActivityDetection = { ...action.payload, error: null, status: "loading" };
-    },
-    audioActivityDetectionFailed: (
-      state,
-      action: PayloadAction<{ error: string | null; mixKey: string; sourceKey: string }>,
-    ) => {
-      state.audioActivityDetection = { ...action.payload, status: "failed" };
-    },
-    audioActivityDetectionFinished: (
-      state,
-      action: PayloadAction<{ mixKey: string; ranges: AudioActivityRange[]; sourceKey: string }>,
-    ) => {
-      state.audioActivityDetection = { ...action.payload, error: null, status: "ready" };
-    },
   },
 });
 
 const {
-  audioActivityDetectionFailed,
-  audioActivityDetectionFinished,
-  audioActivityDetectionStarted,
-  audioActivityMarkersToggled,
   editorToolsInitialized,
   loopPlaybackToggled,
   sceneDetectionFailed,
@@ -116,18 +82,7 @@ const selectSceneMarkersEnabled = (state: RootState): boolean =>
 const selectSceneDetectionOperation = (state: RootState): EditorToolsState["sceneDetection"] =>
   selectEditorTools(state).sceneDetection;
 
-const selectAudioActivityDetectionOperation = (
-  state: RootState,
-): EditorToolsState["audioActivityDetection"] => selectEditorTools(state).audioActivityDetection;
-
-const selectAudioActivityMarkersEnabled = (state: RootState): boolean =>
-  selectEditorTools(state).audioActivityMarkersEnabled ?? true;
-
 export {
-  audioActivityDetectionFailed,
-  audioActivityDetectionFinished,
-  audioActivityDetectionStarted,
-  audioActivityMarkersToggled,
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
   editorToolsReducer,
@@ -137,8 +92,6 @@ export {
   sceneDetectionStarted,
   sceneMarkersToggled,
   segmentPlaybackToggled,
-  selectAudioActivityDetectionOperation,
-  selectAudioActivityMarkersEnabled,
   selectEditorTools,
   selectLoopPlaybackEnabled,
   selectSceneDetectionOperation,

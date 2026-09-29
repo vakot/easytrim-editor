@@ -1,3 +1,5 @@
+import type { AudioTrackSelection } from "./audio-processing";
+
 interface AppError {
   code: string;
   diagnostics?: string;
@@ -40,11 +42,6 @@ interface FastExportRequest {
   trim: TrimSelection;
 }
 
-interface AudioTrackSelection {
-  streamIndex: number;
-  volumePercent: number;
-}
-
 interface AudioActivityRange {
   endMicros: number;
   startMicros: number;
@@ -56,17 +53,13 @@ interface OptimizedExportRequest extends FastExportRequest {
   flipHorizontal?: boolean;
   flipVertical?: boolean;
   frameRate?: { denominator: number; numerator: number };
-  loudnessNormalization?: LoudnessPreset;
   resolution: { height: number; width: number };
 }
 
-type LoudnessPreset = "webVideo" | "streaming" | "broadcast";
-
-interface LoudnessAnalysisRequest extends Pick<
-  FastExportRequest,
-  "audioTracks" | "mergeAudio" | "trim"
-> {
+interface LoudnessAnalysisRequest {
+  audioTrack: AudioTrackSelection;
   sourcePath: string;
+  trim: TrimSelection;
 }
 
 interface LoudnessAnalysis {
@@ -140,7 +133,6 @@ export type {
   FrameRate,
   LoudnessAnalysis,
   LoudnessAnalysisRequest,
-  LoudnessPreset,
   MediaInfo,
   OptimizedExportRequest,
   OutputSelection,

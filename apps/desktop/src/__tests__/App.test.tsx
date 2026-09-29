@@ -489,7 +489,7 @@ describe("App", () => {
       source: selection,
       trim: { startMicros: 0, endMicros: media.durationMicros },
       crop: null,
-      audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+      audio: { tracks: [], mergeAudio: false },
     };
 
     const replacementMedia: MediaInfo = {
@@ -502,7 +502,7 @@ describe("App", () => {
       source: replacementSelection,
       trim: { startMicros: 1_000_000, endMicros: 20_000_000 },
       crop: null,
-      audio: { master: { enabled: true, volumePercent: 40 }, tracks: [], mergeAudio: false },
+      audio: { tracks: [], mergeAudio: false },
     };
 
     const firstItem = {
@@ -735,7 +735,7 @@ describe("App", () => {
       expect(videoPlay).toHaveBeenCalledOnce();
       videoPause.mockClear();
 
-      await user.click(screen.getByRole("button", { name: "Enable Commentary" }));
+      await user.click(screen.getByRole("button", { name: "Unmute Commentary" }));
       await waitFor(() => expect(audioElements).toHaveLength(4));
       expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument();
       const transitionAudio = audioElements.slice(2);
@@ -764,7 +764,7 @@ describe("App", () => {
       expect(videoPause).not.toHaveBeenCalled();
 
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
-      await user.click(screen.getByRole("button", { name: "Enable Commentary" }));
+      await user.click(screen.getByRole("button", { name: "Unmute Commentary" }));
 
       await waitFor(() => expect(nativeSource.connectedGain?.gain.value).toBe(0));
       expect(video).toHaveProperty("muted", false);
@@ -827,7 +827,7 @@ describe("App", () => {
       await waitFor(() => expect(nativeSource.connectedGain?.gain.value).toBe(0));
 
       await user.click(screen.getByRole("button", { name: "Mute Mic" }));
-      await user.click(screen.getByRole("button", { name: "Enable Game" }));
+      await user.click(screen.getByRole("button", { name: "Unmute Game" }));
       await waitFor(() => expect(nativeSource.connectedGain?.gain.value).toBe(0));
     } finally {
       vi.unstubAllGlobals();
@@ -1118,28 +1118,6 @@ describe("App", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
-  it("keeps a track volume control open while its volume button is hovered", async () => {
-    mocks.chooseSource.mockResolvedValue([selection]);
-    const user = userEvent.setup();
-    render(<App />);
-
-    await openSourcePicker(user);
-    await waitForSourcePresence(true);
-    const volumeButton = screen.getByRole("button", { name: "Mute eng" });
-    expect(volumeButton).not.toHaveAttribute("title");
-
-    await user.hover(volumeButton);
-    expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
-
-    await user.click(volumeButton);
-    expect(screen.getByRole("slider", { name: "eng volume" })).toBeInTheDocument();
-
-    await user.unhover(volumeButton);
-    await waitFor(() => {
-      expect(screen.queryByRole("slider", { name: "eng volume" })).not.toBeInTheDocument();
-    });
-  });
-
   it("mutes a track with no meaningful signal and restores it at 0 dB", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.prepareWaveforms.mockImplementationOnce(
@@ -1157,15 +1135,13 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    const mutedButton = await screen.findByRole("button", { name: "Enable eng" });
+    const mutedButton = await screen.findByRole("button", { name: "Unmute eng" });
     expect(mutedButton).toHaveAttribute("aria-pressed", "false");
 
     await user.click(mutedButton);
-    const unmutedButton = screen.getByRole("button", { name: "Mute eng" });
-    await user.hover(unmutedButton);
-    expect(await screen.findByRole("slider", { name: "eng volume" })).toHaveAttribute(
-      "aria-valuenow",
-      "0",
+    expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
     );
   });
 
@@ -1218,9 +1194,6 @@ describe("App", () => {
       await openSourcePicker(user);
 
       expect(await screen.findByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
-      const allTracks = screen.getByRole("button", { name: "All audio tracks" });
-      expect(allTracks).toHaveAttribute("aria-pressed", "true");
-      expect(allTracks.parentElement).not.toHaveTextContent(/^Audio tracks/);
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
         "true",
@@ -1229,22 +1202,12 @@ describe("App", () => {
         "aria-pressed",
         "true",
       );
-      const masterVolume = screen.getByRole("slider", { name: "All audio tracks volume" });
-      const masterVolumeControl = masterVolume.closest('[data-slot="slider"]')?.parentElement;
-      expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
-      masterVolume.focus();
-      await user.keyboard("{End}");
-      await waitFor(() => expect(masterVolume).toHaveAttribute("aria-valuenow", "6"));
-      expect(masterVolumeControl).toHaveTextContent("+6.0 dB");
-      fireEvent.doubleClick(masterVolume);
-      expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
-      expect(masterVolumeControl).toHaveTextContent("+0.0 dB");
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
-      expect(screen.getByRole("button", { name: "Enable eng" })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: "Unmute eng" })).toHaveAttribute(
         "aria-pressed",
         "false",
       );
-      await user.click(screen.getByRole("button", { name: "Enable eng" }));
+      await user.click(screen.getByRole("button", { name: "Unmute eng" }));
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
         "true",
@@ -1276,7 +1239,6 @@ describe("App", () => {
       expect(mocks.prepareWaveforms).toHaveBeenCalledTimes(1);
 
       await user.click(screen.getByRole("button", { name: "Mute Commentary" }));
-      expect(allTracks).toHaveAttribute("aria-pressed", "true");
       expect(screen.getByText("1 selected track kept separately")).toBeInTheDocument();
       const mergeAudio = screen.getByRole("checkbox", { name: "Merge selected tracks" });
       await user.hover(mergeAudio);
@@ -1286,16 +1248,11 @@ describe("App", () => {
       );
       await user.click(mergeAudio);
       expect(screen.getByText("One selected track — no merge is needed")).toBeInTheDocument();
-      await user.click(allTracks);
-      expect(allTracks).toHaveAttribute("aria-pressed", "false");
-      expect(screen.getByText(/One selected track/)).toBeInTheDocument();
-      await user.click(allTracks);
-      expect(allTracks).toHaveAttribute("aria-pressed", "true");
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
-      expect(screen.getByRole("button", { name: "Enable Commentary" })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: "Unmute Commentary" })).toHaveAttribute(
         "aria-pressed",
         "false",
       );

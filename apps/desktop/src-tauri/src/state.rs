@@ -8,7 +8,7 @@ use std::{
     },
 };
 
-use crate::media::probe::MediaInfo;
+use crate::media::{export::AudioTrackCacheKey, probe::MediaInfo};
 use crate::{
     domain::source::{ValidatedSource, validate_source},
     error::AppError,
@@ -151,7 +151,7 @@ struct ActiveSourceRecord {
     waveform_job: Option<WaveformJobRecord>,
     waveforms: HashMap<u32, WaveformRecord>,
     scene_boundaries_micros: Option<Vec<u64>>,
-    silence_ranges: HashMap<(bool, Vec<(u32, u16)>), Vec<(u64, u64)>>,
+    silence_ranges: HashMap<AudioTrackCacheKey, Vec<(u64, u64)>>,
 }
 
 #[derive(Debug, Default)]
@@ -544,21 +544,19 @@ impl AppState {
     pub fn cached_silence_ranges(
         &self,
         load_token: u64,
-        merge_audio: bool,
-        mix: &[(u32, u16)],
+        track: AudioTrackCacheKey,
     ) -> Result<Option<Vec<(u64, u64)>>, AppError> {
         let session = self.lock_session()?;
         Ok(active_source(&session, load_token)?
             .silence_ranges
-            .get(&(merge_audio, mix.to_vec()))
+            .get(&track)
             .cloned())
     }
 
     pub fn install_silence_ranges(
         &self,
         load_token: u64,
-        merge_audio: bool,
-        mix: Vec<(u32, u16)>,
+        track: AudioTrackCacheKey,
         ranges: Vec<(u64, u64)>,
     ) -> Result<(), AppError> {
         let mut session = self.lock_session()?;
@@ -566,7 +564,7 @@ impl AppState {
         if source.cancellation.load(Ordering::Acquire) {
             return Err(AppError::source_replaced());
         }
-        source.silence_ranges.insert((merge_audio, mix), ranges);
+        source.silence_ranges.insert(track, ranges);
         Ok(())
     }
 

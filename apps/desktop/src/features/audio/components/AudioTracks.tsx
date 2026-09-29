@@ -7,6 +7,7 @@ import { timelinePercent, type TrimRange } from "@/domain/trim";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
 import { useWaveformPreparation } from "../hooks/useWaveformPreparation";
+import { audioTrackColor } from "../lib/audio-track-color";
 
 import { AudioTrackRow } from "./AudioTrack/AudioTrackRow";
 
@@ -21,9 +22,19 @@ function AudioTracks({ streams, tracks }: AudioTracksProps) {
   return (
     <div className="relative grid min-w-0 gap-2">
       {streams.map((stream) => {
+        const trackNumber = streams.indexOf(stream) + 1;
         const track = tracks.find((candidate) => candidate.streamIndex === stream.streamIndex);
         if (!track) return null;
-        return <AudioTrackRow key={stream.streamIndex} stream={stream} track={track} />;
+        const trackColor = audioTrackColor(stream.streamIndex);
+        return (
+          <AudioTrackRow
+            key={stream.streamIndex}
+            stream={stream}
+            track={track}
+            trackColor={trackColor}
+            trackNumber={trackNumber}
+          />
+        );
       })}
       <AudioPlayhead />
     </div>

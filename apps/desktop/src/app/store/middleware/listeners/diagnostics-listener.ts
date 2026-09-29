@@ -10,10 +10,8 @@ import {
   audioPreviewsLoading,
   audioPreviewsReady,
   audioPreviewsUnavailable,
+  audioTrackGainChanged,
   audioTrackToggled,
-  audioTrackVolumeChanged,
-  masterAudioToggled,
-  masterVolumeChanged,
   waveformDisplayFailed,
   waveformReady,
   waveformsFailed,
@@ -177,25 +175,13 @@ listenerMiddleware.startListening({
     }),
 });
 listenerMiddleware.startListening({
-  actionCreator: audioTrackVolumeChanged,
+  actionCreator: audioTrackGainChanged,
   effect: (action) =>
     diagnostics.event("audio.track.changed", {
       data: {
         streamIndex: action.payload.streamIndex,
-        volumePercent: action.payload.volumePercent,
+        gainDb: action.payload.gainDb,
       },
-      origin: internalOrigin,
-    }),
-});
-listenerMiddleware.startListening({
-  actionCreator: masterAudioToggled,
-  effect: () => diagnostics.event("audio.master.changed", { origin: internalOrigin }),
-});
-listenerMiddleware.startListening({
-  actionCreator: masterVolumeChanged,
-  effect: (action) =>
-    diagnostics.event("audio.master.changed", {
-      data: { volumePercent: action.payload.volumePercent },
       origin: internalOrigin,
     }),
 });

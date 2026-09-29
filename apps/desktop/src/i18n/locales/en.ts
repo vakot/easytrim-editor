@@ -68,7 +68,6 @@ export const en = {
         previewTransform: "Preview / Transform",
         markers: "Markers",
         markersScene: "Markers / Scene",
-        markersAudioActivity: "Markers / Audio Activity",
         queueOnFinishedApplication: "Queue / On finished / Application",
         queueOnFinishedSource: "Queue / On finished / Source",
         go: "Go",
@@ -495,9 +494,6 @@ export const en = {
   timeline: {
     actions: {
       detectScenes: "Detect scene changes",
-      detectAudioActivity: "Detect audio activity in active mix",
-      disableAudioActivityMarkers: "Hide audio activity ranges",
-      enableAudioActivityMarkers: "Show audio activity ranges",
       disableSceneMarkers: "Hide scene markers",
       enableSceneMarkers: "Show scene markers",
       moveSegment: "Move selected segment",
@@ -511,13 +507,10 @@ export const en = {
     },
     status: {
       sceneDetectionFailed: "Scene detection failed. Try again.",
-      audioActivityDetectionFailed: "Audio activity detection failed. Try again.",
     },
     tooltips: {
       detectScenes:
         "Analyze the source video for scene changes. Hold Shift while dragging to snap to scene markers or either edge of an audio activity range.",
-      detectAudioActivity:
-        "Analyze the active audio mix and mark audio activity ranges on the timeline.",
       moveSegment: "Drag to move the selected segment — hold Shift to snap",
       trimReset: "{{label}} — hold Shift to snap — double-click to reset",
     },
@@ -537,15 +530,26 @@ export const en = {
   },
   audio: {
     actions: {
-      enableTrack: "Enable {{title}}",
+      analyzeLoudness: "Analyze loudness",
+      analyzingLoudness: "Analyzing loudness…",
+      detectActivity: "Detect audio activity",
+      detectingActivity: "Detecting audio activity…",
+      hideActivity: "Hide detected ranges",
       merge: "Merge selected tracks",
       mute: "Mute",
       muteTrack: "Mute {{title}}",
+      reanalyzeLoudness: "Analyze loudness again",
+      resetGain: "Reset",
+      resetTrackGain: "Reset track gain to 0 dB",
+      retryActivityDetection: "Retry activity detection",
+      showActivity: "Show detected ranges",
       unmute: "Unmute",
+      unmuteTrack: "Unmute {{title}}",
     },
     labels: {
-      allTracks: "All audio tracks",
       defaultTrack: "Audio {{number}}",
+      loudnessNormalization: "Loudness normalization",
+      trackGain: "Track gain",
       title: "Audio tracks",
     },
     status: {
@@ -563,18 +567,21 @@ export const en = {
         separate_other: "{{count}} selected tracks kept separately",
         videoOnly: "Video-only output",
       },
+      activityRanges: "Detected audio activity ranges",
     },
     tooltips: {
       merge: "All selected tracks are merged into one track; this requires encoding.",
     },
     accessibility: {
-      allTracksVolume: "All audio tracks volume",
-      trackVolume: "{{title}} volume",
+      trackActions: "Audio {{number}} actions",
+      trackGain: "{{title}} gain in decibels",
+      trackNormalization: "{{title}} loudness normalization",
     },
     options: {
       channels_one: "{{count}} channel",
       channels_few: "{{count}} channels",
       channels_other: "{{count}} channels",
+      normalizationNone: "Off",
       unknownLayout: "unknown layout",
     },
   },
@@ -621,20 +628,11 @@ export const en = {
         editTitle: "Edit queued export",
         frameRate: "Frame rate",
         loudness: {
-          analyze: "Analyze loudness",
-          analyzed: "Analyzed",
-          analyzing: "Analyzing…",
-          analysisFailed: "Audio loudness analysis failed.",
-          default: "Default",
-          defaultWithAnalysis: "Default · {{integratedLufs}} / {{truePeakDb}}",
-          label: "Normalize loudness",
-          retry: "Retry",
           presets: {
             broadcast: "Broadcast · −23 LUFS / −2 dBTP",
             streaming: "Streaming · −16 LUFS / −1.5 dBTP",
             webVideo: "Web video · −14 LUFS / −1 dBTP",
           },
-          unavailable: "Unavailable",
         },
         matchSource: "Match source",
         resolution: "Resolution",

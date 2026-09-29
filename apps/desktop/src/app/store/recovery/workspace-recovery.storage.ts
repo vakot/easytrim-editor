@@ -16,9 +16,6 @@ function isSnapshot(value: unknown): boolean {
   if (
     typeof value.source.sourcePath !== "string" ||
     typeof value.source.displayName !== "string" ||
-    !isRecord(value.audio.master) ||
-    typeof value.audio.master.enabled !== "boolean" ||
-    !isFiniteNumber(value.audio.master.volumePercent) ||
     typeof value.audio.mergeAudio !== "boolean" ||
     !Array.isArray(value.audio.tracks) ||
     !(
@@ -47,7 +44,12 @@ function isSnapshot(value: unknown): boolean {
         isRecord(track) &&
         typeof track.enabled === "boolean" &&
         Number.isSafeInteger(track.streamIndex) &&
-        isFiniteNumber(track.volumePercent),
+        isRecord(track.processing) &&
+        isFiniteNumber(track.processing.gainDb) &&
+        (track.processing.loudnessNormalization === undefined ||
+          ["webVideo", "streaming", "broadcast"].includes(
+            String(track.processing.loudnessNormalization),
+          )),
     )
   );
 }
@@ -85,7 +87,7 @@ function isExportAttempt(value: unknown): boolean {
 function isBackup(value: unknown): value is WorkspaceRecoveryBackup {
   if (
     !isRecord(value) ||
-    value.version !== 1 ||
+    value.version !== 2 ||
     typeof value.id !== "string" ||
     typeof value.sessionId !== "string" ||
     typeof value.createdAt !== "string" ||
@@ -117,11 +119,7 @@ function isBackup(value: unknown): value is WorkspaceRecoveryBackup {
           isFiniteNumber(instance.optimizedSettings.resolution.width) &&
           (instance.optimizedSettings.frameRate === undefined ||
             instance.optimizedSettings.frameRate === null ||
-            isRecord(instance.optimizedSettings.frameRate)) &&
-          (instance.optimizedSettings.loudnessPreset === undefined ||
-            ["webVideo", "streaming", "broadcast"].includes(
-              String(instance.optimizedSettings.loudnessPreset),
-            )))) &&
+            isRecord(instance.optimizedSettings.frameRate)))) &&
       Array.isArray(instance.exportAttempts) &&
       instance.exportAttempts.every(isExportAttempt),
   );

@@ -68,7 +68,6 @@ export const ru = {
         previewTransform: "Предпросмотр / Трансформация",
         markers: "Маркеры",
         markersScene: "Маркеры / Сцена",
-        markersAudioActivity: "Маркеры / Активность аудио",
         queueOnFinishedApplication: "Очередь / После завершения / Приложение",
         queueOnFinishedSource: "Очередь / После завершения / Источник",
         go: "Перейти",
@@ -497,9 +496,6 @@ export const ru = {
   timeline: {
     actions: {
       detectScenes: "Найти смены сцен",
-      detectAudioActivity: "Найти активность аудио в текущем миксе",
-      disableAudioActivityMarkers: "Скрыть диапазоны активности аудио",
-      enableAudioActivityMarkers: "Показать диапазоны активности аудио",
       disableSceneMarkers: "Скрыть маркеры сцен",
       enableSceneMarkers: "Показать маркеры сцен",
       moveSegment: "Переместить выбранный сегмент",
@@ -513,13 +509,10 @@ export const ru = {
     },
     status: {
       sceneDetectionFailed: "Не удалось распознать сцены. Попробуйте ещё раз.",
-      audioActivityDetectionFailed: "Не удалось распознать активность аудио. Попробуйте ещё раз.",
     },
     tooltips: {
       detectScenes:
         "Анализировать исходное видео на смены сцен. Удерживайте Shift при перетаскивании, чтобы привязаться к маркеру сцены или к любому краю диапазона активности аудио.",
-      detectAudioActivity:
-        "Анализировать текущий аудиомикс и отмечать диапазоны активности аудио на шкале времени.",
       moveSegment:
         "Перетащите, чтобы переместить выбранный сегмент — удерживайте Shift для привязки",
       trimReset: "{{label}} — удерживайте Shift для привязки — дважды щёлкните для сброса",
@@ -540,15 +533,26 @@ export const ru = {
   },
   audio: {
     actions: {
-      enableTrack: "Включить {{title}}",
+      analyzeLoudness: "Анализировать громкость",
+      analyzingLoudness: "Анализ громкости…",
+      detectActivity: "Определить активность звука",
+      detectingActivity: "Определение активности звука…",
+      hideActivity: "Скрыть найденные интервалы",
       merge: "Объединить выбранные дорожки",
       mute: "Выключить звук",
       muteTrack: "Выключить звук: {{title}}",
+      reanalyzeLoudness: "Повторить анализ громкости",
+      resetGain: "Сбросить",
+      resetTrackGain: "Сбросить усиление до 0 дБ",
+      retryActivityDetection: "Повторить поиск активности",
+      showActivity: "Показать найденные интервалы",
       unmute: "Включить звук",
+      unmuteTrack: "Включить звук: {{title}}",
     },
     labels: {
-      allTracks: "Все аудиодорожки",
       defaultTrack: "Аудио {{number}}",
+      loudnessNormalization: "Нормализация громкости",
+      trackGain: "Усиление дорожки",
       title: "Аудиодорожки",
     },
     status: {
@@ -566,18 +570,21 @@ export const ru = {
         separate_other: "{{count}} выбранных дорожек сохраняются отдельно",
         videoOnly: "Только видео",
       },
+      activityRanges: "Найденные интервалы активности звука",
     },
     tooltips: {
       merge: "Все выбранные дорожки объединяются в одну; это требует кодирования.",
     },
     accessibility: {
-      allTracksVolume: "Громкость всех аудиодорожек",
-      trackVolume: "Громкость {{title}}",
+      trackActions: "Действия аудиодорожки {{number}}",
+      trackGain: "Усиление {{title}} в децибелах",
+      trackNormalization: "Нормализация громкости {{title}}",
     },
     options: {
       channels_one: "{{count}} канал",
       channels_few: "{{count}} канала",
       channels_other: "{{count}} каналов",
+      normalizationNone: "Выкл.",
       unknownLayout: "неизвестная конфигурация",
     },
   },
@@ -624,20 +631,11 @@ export const ru = {
         editTitle: "Изменить экспорт в очереди",
         frameRate: "Частота кадров",
         loudness: {
-          analyze: "Анализировать громкость",
-          analyzed: "Готово",
-          analyzing: "Анализ…",
-          analysisFailed: "Не удалось проанализировать громкость аудио.",
-          default: "По умолчанию",
-          defaultWithAnalysis: "По умолчанию · {{integratedLufs}} / {{truePeakDb}}",
-          label: "Нормализовать громкость",
-          retry: "Повторить",
           presets: {
             broadcast: "Вещание · −23 LUFS / −2 dBTP",
             streaming: "Стриминг · −16 LUFS / −1,5 dBTP",
             webVideo: "Веб-видео · −14 LUFS / −1 dBTP",
           },
-          unavailable: "Недоступно",
         },
         matchSource: "Как у источника",
         resolution: "Разрешение",

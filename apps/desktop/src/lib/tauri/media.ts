@@ -79,13 +79,12 @@ async function detectScenes(sourcePath: string): Promise<number[]> {
 
 async function detectAudioActivity(
   sourcePath: string,
-  mix: AudioTrackSelection[],
-  mergeAudio: boolean,
+  track: AudioTrackSelection,
   durationMicros: number,
 ) {
   try {
     const silenceRanges = parseSilenceRanges(
-      await invoke<unknown>("detect_silence", { sourcePath, mix, mergeAudio }),
+      await invoke<unknown>("detect_silence", { sourcePath, track }),
     );
 
     return audioActivityRangesFromSilence(silenceRanges, durationMicros);
