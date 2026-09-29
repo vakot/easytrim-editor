@@ -568,6 +568,7 @@ export const sk = {
         videoOnly: "Výstup iba s videom",
       },
       activityRanges: "Rozpoznané úseky aktivity zvuku",
+      preparingProcessedPreview: "Pripravuje sa náhľad s týmito nastaveniami stopy…",
     },
     tooltips: {
       merge: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",

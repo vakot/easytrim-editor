@@ -3,11 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { usePlaybackModes } from "@/app/hooks/usePlaybackModes";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  selectAudioPreviews,
-  selectAudioTracks,
-  selectMergeAudio,
-} from "@/app/store/slices/audio-slice";
+import { selectAudioTracks, selectMergeAudio } from "@/app/store/slices/audio-slice";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
   selectLoopPlaybackEnabled,
@@ -23,6 +19,7 @@ import {
   handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
+import { sameAudioTrackProcessing } from "@/domain/audio-processing";
 import {
   canSetTrimBoundaryAtPlayhead,
   setTrimBoundaryAtPlayhead,
@@ -126,13 +123,17 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const audioTracks = useAppSelector(selectAudioTracks);
   const mergeAudio = useAppSelector(selectMergeAudio);
-  const audioPreviewState = useAppSelector(selectAudioPreviews);
   const audioPreviewUrls = useMemo(
     () =>
       Object.fromEntries(
-        (audioPreviewState?.previews ?? []).map((preview) => [preview.streamIndex, preview.url]),
+        audioTracks.flatMap((track) =>
+          track.preview.status === "ready" &&
+          sameAudioTrackProcessing(track.processing, track.preview.descriptor.processing)
+            ? [[track.streamIndex, track.preview.descriptor.url]]
+            : [],
+        ),
       ),
-    [audioPreviewState?.previews],
+    [audioTracks],
   );
 
   const sourcePath = sourceSelection?.sourcePath ?? null;
@@ -151,11 +152,14 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const nativeAudioTrack =
     selectedAudioTrack?.streamIndex === nativeAudioStreamIndex ? selectedAudioTrack : undefined;
 
+  const requiresProcessedPreview =
+    enabledAudioTracks.length > 1 ||
+    (enabledAudioTracks.length === 1 &&
+      (nativeAudioTrack === undefined ||
+        enabledAudioTracks[0]!.processing.gainDb !== 0 ||
+        enabledAudioTracks[0]!.processing.loudnessNormalization !== undefined));
   const usesExternalAudio =
-    audioPreviewState?.status === "ready" &&
-    activeExternalAudioStreamCount === enabledAudioTracks.length &&
-    enabledAudioTracks.length > 0 &&
-    (enabledAudioTracks.length > 1 || nativeAudioTrack === undefined);
+    requiresProcessedPreview && activeExternalAudioStreamCount === enabledAudioTracks.length;
 
   const previewKey =
     sourcePath && preview.status === "ready" ? `${sourcePath}:${preview.value.url}` : null;
@@ -166,9 +170,9 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const [transportError, setTransportError] = useState<string | null>(null);
   const [readyPreviewKey, setReadyPreviewKey] = useState<string | null>(null);
   const [audioReadiness, setAudioReadiness] = useState<{
+    previewUrls: Map<number, string>;
     sourcePath: string | null;
-    streamIndexes: Set<number>;
-  }>(() => ({ sourcePath: null, streamIndexes: new Set() }));
+  }>(() => ({ sourcePath: null, previewUrls: new Map() }));
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const setVideoElement = useCallback((element: HTMLVideoElement | null) => {
@@ -222,9 +226,15 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const isPlaybackReady =
     previewKey !== null &&
     readyPreviewKey === previewKey &&
-    (!usesExternalAudio ||
-      (audioReadiness.sourcePath === sourcePath &&
-        audioReadiness.streamIndexes.size === activeExternalAudioStreamCount));
+    (!requiresProcessedPreview ||
+      (usesExternalAudio &&
+        audioReadiness.sourcePath === sourcePath &&
+        activeExternalAudioStreamCount === enabledAudioTracks.length &&
+        enabledAudioTracks.every(
+          (track) =>
+            audioReadiness.previewUrls.get(track.streamIndex) ===
+            audioPreviewUrls[track.streamIndex],
+        )));
 
   const isPlaybackReadyRef = useRef(isPlaybackReady);
   const nativeLoopEnabled =
@@ -257,10 +267,10 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     audioElementsRef.current.delete(streamIndex);
     audioReadyListenersRef.current.delete(streamIndex);
     setAudioReadiness((current) => {
-      if (!current.streamIndexes.has(streamIndex)) return current;
-      const streamIndexes = new Set(current.streamIndexes);
-      streamIndexes.delete(streamIndex);
-      return { ...current, streamIndexes };
+      if (!current.previewUrls.has(streamIndex)) return current;
+      const previewUrls = new Map(current.previewUrls);
+      previewUrls.delete(streamIndex);
+      return { ...current, previewUrls };
     });
     const node = audioNodesRef.current.get(streamIndex);
     node?.source.disconnect();
@@ -387,9 +397,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     const activeExternalAudioUrls = usesExternalAudio
       ? Object.fromEntries(
           Object.entries(audioPreviewUrls).filter(([streamIndexText]) =>
-            audioTracks.some(
-              (track) => track.streamIndex === Number(streamIndexText) && track.enabled,
-            ),
+            enabledAudioTracks.some((track) => track.streamIndex === Number(streamIndexText)),
           ),
         )
       : {};
@@ -412,12 +420,14 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       element.style.display = "none";
       const markReady = () => {
         setAudioReadiness((current) => {
-          const indexes =
-            current.sourcePath === sourcePath ? new Set(current.streamIndexes) : new Set<number>();
+          const previewUrls =
+            current.sourcePath === sourcePath
+              ? new Map(current.previewUrls)
+              : new Map<number, string>();
 
-          if (indexes.has(streamIndex)) return current;
-          indexes.add(streamIndex);
-          return { sourcePath, streamIndexes: indexes };
+          if (previewUrls.get(streamIndex) === url) return current;
+          previewUrls.set(streamIndex, url);
+          return { sourcePath, previewUrls };
         });
       };
 
@@ -426,8 +436,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       document.body.appendChild(element);
       const audioSource = context.createMediaElementSource(element);
       const gain = context.createGain();
-      const track = audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
-      gain.gain.value = track?.enabled ? 10 ** (track.processing.gainDb / 20) : 0;
+      gain.gain.value = 1;
       audioSource.connect(gain).connect(audioMix);
       audioElementsRef.current.set(streamIndex, element);
       audioNodesRef.current.set(streamIndex, { source: audioSource, gain });
@@ -436,7 +445,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
 
     const video = videoRef.current;
     cleanupStaleNativeAudioBindings(video);
-    if (!video) {
+    if (!video || requiresProcessedPreview) {
       disconnectCurrentNativeAudioRoute();
     } else {
       const binding = getOrCreateNativeAudioBinding(nativeAudioBindingsRef.current, context, video);
@@ -446,6 +455,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   }, [
     audioPreviewUrls,
     audioTracks,
+    enabledAudioTracks,
     cleanupAudioRuntime,
     cleanupStaleNativeAudioBindings,
     disconnectCurrentNativeAudioRoute,
@@ -453,6 +463,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     removeAudioRuntime,
     sourcePath,
     playbackSpeed,
+    requiresProcessedPreview,
     usesExternalAudio,
   ]);
 
@@ -490,21 +501,28 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       if (node) node.gain.gain.value = track.enabled ? 10 ** (track.processing.gainDb / 20) : 0;
     }
     if (nativeAudioBindingRef.current) {
-      nativeAudioBindingRef.current.binding.gain.gain.value = nativeAudioTrack?.enabled
-        ? 10 ** (nativeAudioTrack.processing.gainDb / 20)
-        : 0;
-    } else if (videoRef.current) {
-      const trackGain = nativeAudioTrack
-        ? nativeAudioTrack.enabled
+      nativeAudioBindingRef.current.binding.gain.gain.value =
+        nativeAudioTrack?.enabled && !requiresProcessedPreview
           ? 10 ** (nativeAudioTrack.processing.gainDb / 20)
-          : 0
-        : 1;
+          : 0;
+    } else if (videoRef.current) {
+      const trackGain =
+        nativeAudioTrack?.enabled && !requiresProcessedPreview
+          ? 10 ** (nativeAudioTrack.processing.gainDb / 20)
+          : 0;
 
       const combinedGain = (playbackVolumePercent / 100) * trackGain;
 
       videoRef.current.volume = Math.min(1, combinedGain);
     }
-  }, [audioPreviewUrls, audioTracks, nativeAudioTrack, readyPreviewKey, playbackVolumePercent]);
+  }, [
+    audioPreviewUrls,
+    audioTracks,
+    nativeAudioTrack,
+    playbackVolumePercent,
+    readyPreviewKey,
+    requiresProcessedPreview,
+  ]);
 
   useEffect(() => {
     let heldDirection: FrameShuttleDirection | 0 = 0;

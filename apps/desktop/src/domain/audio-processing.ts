@@ -18,5 +18,12 @@ interface AudioTrackSelection {
 
 const DEFAULT_AUDIO_TRACK_PROCESSING: AudioTrackProcessing = { gainDb: 0 };
 
+function sameAudioTrackProcessing(
+  left: AudioTrackProcessing,
+  right: AudioTrackProcessing,
+): boolean {
+  return left.gainDb === right.gainDb && left.loudnessNormalization === right.loudnessNormalization;
+}
+
 export type { AudioTrackProcessing, AudioTrackSelection, AudioTrackSettings, LoudnessPreset };
-export { DEFAULT_AUDIO_TRACK_PROCESSING };
+export { DEFAULT_AUDIO_TRACK_PROCESSING, sameAudioTrackProcessing };

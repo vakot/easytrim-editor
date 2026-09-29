@@ -13,119 +13,29 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  audioTrackActivityAnalysisFailed,
-  audioTrackActivityAnalysisReady,
-  audioTrackActivityAnalysisStarted,
-  audioTrackActivityVisibilityToggled,
-  audioTrackGainChanged,
-  audioTrackLoudnessAnalysisFailed,
-  audioTrackLoudnessAnalysisReady,
-  audioTrackLoudnessAnalysisStarted,
-  audioTrackLoudnessNormalizationChanged,
-  type AudioTrackState,
-  audioTrackToggled,
-} from "@/app/store/slices/audio-slice";
-import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
-import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import { type AudioTrackState } from "@/app/store/slices/audio-slice";
+import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 import type { AudioTrackProcessing, LoudnessPreset } from "@/domain/audio-processing";
-import type { AudioTrackSelection } from "@/domain/media";
-import { analyzeAudioLoudness, detectAudioActivity } from "@/lib/tauri/media";
 import type { AudioStream } from "@/lib/tauri/media.types";
-import { normalizeAppError } from "@/lib/tauri/media.utils";
 
 type MenuMode = "context" | "dropdown";
 
 interface AudioTrackActionsProps {
+  controller: AudioTrackController;
   mode?: MenuMode;
   stream: AudioStream;
-  track: AudioTrackState;
   trackNumber: number;
 }
 
 function AudioTrackActions({
+  controller,
   mode = "dropdown",
   stream,
-  track,
   trackNumber,
 }: AudioTrackActionsProps) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const source = useAppSelector(selectSourceSelection);
-  const media = useAppSelector(selectSourceMedia);
-  const trim = useAppSelector(selectTrim);
-  const trackSelection: AudioTrackSelection = {
-    processing: { ...track.processing },
-    streamIndex: stream.streamIndex,
-  };
-
-  const commit = () => dispatch(commitActiveEditingInstanceDraft());
-  const setEnabled = () => {
-    dispatch(audioTrackToggled({ streamIndex: stream.streamIndex }));
-    commit();
-  };
-
-  const setGain = (gainDb: number) => {
-    dispatch(audioTrackGainChanged({ gainDb, streamIndex: stream.streamIndex }));
-    commit();
-  };
-
-  const setNormalization = (preset: LoudnessPreset | null) => {
-    dispatch(audioTrackLoudnessNormalizationChanged({ preset, streamIndex: stream.streamIndex }));
-    commit();
-  };
-
-  const analyzeLoudness = async () => {
-    if (!source || !trim) return;
-    const operationId = crypto.randomUUID();
-    dispatch(audioTrackLoudnessAnalysisStarted({ operationId, streamIndex: stream.streamIndex }));
-    try {
-      const result = await analyzeAudioLoudness({
-        audioTrack: trackSelection,
-        sourcePath: source.sourcePath,
-        trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-      });
-
-      dispatch(
-        audioTrackLoudnessAnalysisReady({ operationId, result, streamIndex: stream.streamIndex }),
-      );
-    } catch (error: unknown) {
-      dispatch(
-        audioTrackLoudnessAnalysisFailed({
-          error: normalizeAppError(error),
-          operationId,
-          streamIndex: stream.streamIndex,
-        }),
-      );
-    }
-  };
-
-  const detectActivity = async () => {
-    if (!source || !media) return;
-    const operationId = crypto.randomUUID();
-    dispatch(audioTrackActivityAnalysisStarted({ operationId, streamIndex: stream.streamIndex }));
-    try {
-      const result = await detectAudioActivity(
-        source.sourcePath,
-        trackSelection,
-        media.durationMicros,
-      );
-
-      dispatch(
-        audioTrackActivityAnalysisReady({ operationId, result, streamIndex: stream.streamIndex }),
-      );
-    } catch (error: unknown) {
-      dispatch(
-        audioTrackActivityAnalysisFailed({
-          error: normalizeAppError(error),
-          operationId,
-          streamIndex: stream.streamIndex,
-        }),
-      );
-    }
-  };
+  const track = controller.track;
+  if (!track) return null;
 
   const content = (
     <AudioTrackActionContent
@@ -135,14 +45,12 @@ function AudioTrackActions({
       loudnessAnalysis={track.loudnessAnalysis}
       mode={mode}
       normalization={track.processing.loudnessNormalization}
-      onAnalyzeLoudness={() => void analyzeLoudness()}
-      onDetectActivity={() => void detectActivity()}
-      onGainChange={setGain}
-      onNormalizationChange={setNormalization}
-      onToggleActivity={() =>
-        dispatch(audioTrackActivityVisibilityToggled({ streamIndex: stream.streamIndex }))
-      }
-      onToggleEnabled={setEnabled}
+      onAnalyzeLoudness={controller.analyzeLoudness}
+      onDetectActivity={controller.detectActivity}
+      onGainChange={controller.setGain}
+      onNormalizationChange={controller.setNormalization}
+      onToggleActivity={controller.toggleActivityVisibility}
+      onToggleEnabled={controller.setEnabled}
       streamTitle={stream.title ?? t("audio.labels.defaultTrack", { number: trackNumber })}
       track={track}
     />
@@ -201,7 +109,6 @@ function AudioTrackActionContent({
   track,
 }: AudioTrackActionContentProps) {
   const { t } = useTranslation();
-  const canAnalyze = track.enabled;
   const isAnalyzingLoudness = loudnessAnalysis.status === "loading";
   const isDetectingActivity = activityAnalysis.status === "loading";
   const activityDetected = activityAnalysis.status === "ready";
@@ -302,7 +209,7 @@ function AudioTrackActionContent({
       </div>
 
       <TrackMenuItem
-        disabled={!canAnalyze || isAnalyzingLoudness}
+        disabled={isAnalyzingLoudness}
         label={loudnessActionLabel}
         mode={mode}
         onAction={onAnalyzeLoudness}
@@ -319,7 +226,7 @@ function AudioTrackActionContent({
       ) : null}
 
       <TrackMenuItem
-        disabled={!canAnalyze || isDetectingActivity}
+        disabled={isDetectingActivity}
         label={activityActionLabel}
         mode={mode}
         onAction={onDetectActivity}
@@ -340,6 +247,16 @@ function AudioTrackActionContent({
       {activityAnalysis.status === "failed" ? (
         <p className="px-2 text-xs text-destructive" role="alert">
           {activityAnalysis.error.message}
+        </p>
+      ) : null}
+      {track.preview.status === "loading" ? (
+        <p className="px-2 text-xs text-muted-foreground" role="status">
+          {t("audio.messages.preparingProcessedPreview")}
+        </p>
+      ) : null}
+      {track.preview.status === "failed" ? (
+        <p className="px-2 text-xs text-destructive" role="alert">
+          {track.preview.error.message}
         </p>
       ) : null}
     </div>

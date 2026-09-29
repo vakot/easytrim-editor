@@ -568,6 +568,7 @@ export const en = {
         videoOnly: "Video-only output",
       },
       activityRanges: "Detected audio activity ranges",
+      preparingProcessedPreview: "Preparing preview with these track settings…",
     },
     tooltips: {
       merge: "All selected tracks are merged into one track; this requires encoding.",

@@ -6,14 +6,14 @@ import { describe, expect, it } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import type { AudioTrackState } from "@/app/store/slices/audio-slice";
+import { audioTrackToggled, type AudioTrackState } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 import { audioTrackColor } from "@/features/audio";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
 
-function renderRow(trackOverride?: AudioTrackState) {
+function renderRow(trackOverride?: AudioTrackState, enabled = true) {
   const store = createAppStore({
     getItem: async () => null,
     setItem: async () => undefined,
@@ -24,6 +24,7 @@ function renderRow(trackOverride?: AudioTrackState) {
   store.dispatch(sourceSelected({ source: firstSource }));
   store.dispatch(sourceReady({ loadToken: 1, media }));
   const stream = media.audioStreams[0]!;
+  if (!enabled) store.dispatch(audioTrackToggled({ streamIndex: stream.streamIndex }));
   const track = trackOverride ?? store.getState().audio.tracks[0]!;
 
   const view = render(
@@ -116,5 +117,15 @@ describe("AudioTrackRow", () => {
     const range = document.querySelector('[data-slot="audio-track-activity-range"]');
     expect(range).toHaveStyle({ backgroundColor: audioTrackColor(stream.streamIndex) });
     expect(range).toHaveStyle({ left: "20%", right: "60%" });
+  });
+
+  it("allows muted tracks to run loudness and activity analysis", async () => {
+    const user = userEvent.setup();
+    renderRow(undefined, false);
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+
+    expect(screen.getByRole("menuitem", { name: /analyze loudness/i })).toBeEnabled();
+    expect(screen.getByRole("menuitem", { name: /detect audio activity/i })).toBeEnabled();
   });
 });

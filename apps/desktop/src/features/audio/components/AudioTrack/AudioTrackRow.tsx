@@ -15,6 +15,8 @@ import { formatChannels } from "../../lib/audio-level.utils";
 import { AudioTrackActions } from "./components/AudioTrackActions";
 import { AudioTrackToggle } from "./components/AudioTrackToggle";
 import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
+import { useAudioTrackController } from "../../hooks/useAudioTrackController";
+import type { AudioTrackController } from "../../hooks/useAudioTrackController";
 
 interface AudioTrackRowProps {
   stream: AudioStream;
@@ -29,6 +31,7 @@ const AudioTrackRow = memo(function AudioTrackRow({
   trackColor,
   trackNumber,
 }: AudioTrackRowProps) {
+  const controller = useAudioTrackController(stream.streamIndex);
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -38,6 +41,7 @@ const AudioTrackRow = memo(function AudioTrackRow({
           style={{ "--audio-track-color": trackColor } as CSSProperties}
         >
           <AudioTrackRowDetails
+            controller={controller}
             stream={stream}
             track={track}
             trackColor={trackColor}
@@ -52,13 +56,23 @@ const AudioTrackRow = memo(function AudioTrackRow({
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
-        <AudioTrackActions mode="context" stream={stream} track={track} trackNumber={trackNumber} />
+        <AudioTrackActions
+          controller={controller}
+          mode="context"
+          stream={stream}
+          trackNumber={trackNumber}
+        />
       </ContextMenuContent>
     </ContextMenu>
   );
 });
 
-function AudioTrackRowDetails({ stream, track, trackNumber }: AudioTrackRowProps) {
+function AudioTrackRowDetails({
+  controller,
+  stream,
+  track,
+  trackNumber,
+}: AudioTrackRowProps & { controller: AudioTrackController }) {
   const { t } = useTranslation();
 
   const title =
@@ -82,7 +96,7 @@ function AudioTrackRowDetails({ stream, track, trackNumber }: AudioTrackRowProps
         </div>
       </div>
 
-      <AudioTrackActions stream={stream} track={track} trackNumber={trackNumber} />
+      <AudioTrackActions controller={controller} stream={stream} trackNumber={trackNumber} />
     </div>
   );
 }

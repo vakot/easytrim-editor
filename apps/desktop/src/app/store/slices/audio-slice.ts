@@ -7,6 +7,7 @@ import {
   type AudioTrackProcessing,
   type AudioTrackSettings,
   DEFAULT_AUDIO_TRACK_PROCESSING,
+  sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import type { AudioActivityRange, LoudnessAnalysis } from "@/domain/media";
@@ -31,6 +32,12 @@ type AudioTrackAnalysis<T> =
   | { operationId: string; status: "ready"; value: T }
   | { error: AppError; operationId: string; status: "failed" };
 
+type AudioTrackPreviewState =
+  | { status: "idle" }
+  | { operationId: string; status: "loading" }
+  | { descriptor: AudioPreviewDescriptor; status: "ready" }
+  | { error: AppError; operationId: string; status: "failed" };
+
 type AudioPreviewState =
   | { previews: AudioPreviewDescriptor[]; status: "idle" }
   | { previews: AudioPreviewDescriptor[]; status: "loading" }
@@ -45,6 +52,7 @@ interface AudioTrackState extends AudioTrackSettings {
   activityAnalysis: AudioTrackAnalysis<AudioActivityRange[]>;
   activityVisible: boolean;
   loudnessAnalysis: AudioTrackAnalysis<LoudnessAnalysis>;
+  preview: AudioTrackPreviewState;
   waveform: WaveformState;
 }
 
@@ -66,12 +74,30 @@ const audioSlice = createSlice({
   reducers: {
     audioPreviewsLoading: (state) => {
       state.previews = { status: "loading", previews: [] };
+      for (const track of state.tracks) track.preview = { status: "idle" };
     },
     audioPreviewsReady: (state, action: PayloadAction<{ previews: AudioPreviewDescriptor[] }>) => {
       state.previews = {
         status: "ready",
         previews: action.payload.previews,
       };
+      for (const track of state.tracks) {
+        if (track.preview.status === "loading") continue;
+        const descriptor = action.payload.previews.find(
+          (preview) => preview.streamIndex === track.streamIndex,
+        );
+        if (
+          track.preview.status === "ready" &&
+          descriptor &&
+          track.preview.descriptor.previewRevision > descriptor.previewRevision
+        ) {
+          continue;
+        }
+        track.preview =
+          descriptor && sameAudioTrackProcessing(descriptor.processing, track.processing)
+            ? { descriptor, status: "ready" }
+            : { status: "idle" };
+      }
     },
     audioPreviewsUnavailable: (state, action: PayloadAction<{ error: AppError }>) => {
       state.previews = {
@@ -79,6 +105,64 @@ const audioSlice = createSlice({
         previews: [],
         error: action.payload.error,
       };
+      for (const track of state.tracks) {
+        if (track.preview.status === "loading") continue;
+        track.preview = {
+          error: action.payload.error,
+          operationId: "initial",
+          status: "failed",
+        };
+      }
+    },
+    audioTrackPreviewStarted: (
+      state,
+      action: PayloadAction<{ operationId: string; streamIndex: number }>,
+    ) => {
+      const track = state.tracks.find(
+        (candidate) => candidate.streamIndex === action.payload.streamIndex,
+      );
+      if (track) track.preview = { operationId: action.payload.operationId, status: "loading" };
+    },
+    audioTrackPreviewReady: (
+      state,
+      action: PayloadAction<{ descriptor: AudioPreviewDescriptor; operationId: string }>,
+    ) => {
+      const track = state.tracks.find(
+        (candidate) => candidate.streamIndex === action.payload.descriptor.streamIndex,
+      );
+      if (
+        !track ||
+        track.preview.status !== "loading" ||
+        track.preview.operationId !== action.payload.operationId ||
+        !sameAudioTrackProcessing(track.processing, action.payload.descriptor.processing)
+      ) {
+        return;
+      }
+      track.preview = { descriptor: action.payload.descriptor, status: "ready" };
+      const previews = state.previews?.previews ?? [];
+      state.previews = {
+        status: "ready",
+        previews: [
+          ...previews.filter(
+            (preview) => preview.streamIndex !== action.payload.descriptor.streamIndex,
+          ),
+          action.payload.descriptor,
+        ],
+      };
+    },
+    audioTrackPreviewFailed: (
+      state,
+      action: PayloadAction<{ error: AppError; operationId: string; streamIndex: number }>,
+    ) => {
+      const track = state.tracks.find(
+        (candidate) => candidate.streamIndex === action.payload.streamIndex,
+      );
+      if (
+        track?.preview.status === "loading" &&
+        track.preview.operationId === action.payload.operationId
+      ) {
+        track.preview = { ...action.payload, status: "failed" };
+      }
     },
     audioTrackToggled: (state, action: PayloadAction<{ streamIndex: number }>) => {
       const track = state.tracks.find(
@@ -101,6 +185,7 @@ const audioSlice = createSlice({
       track.processing.gainDb = action.payload.gainDb;
       track.loudnessAnalysis = { status: "idle" };
       track.activityAnalysis = { status: "idle" };
+      track.preview = { status: "idle" };
     },
     audioTrackLoudnessNormalizationChanged: (
       state,
@@ -119,6 +204,7 @@ const audioSlice = createSlice({
       else track.processing.loudnessNormalization = action.payload.preset;
       track.loudnessAnalysis = { status: "idle" };
       track.activityAnalysis = { status: "idle" };
+      track.preview = { status: "idle" };
     },
     audioTrackActivityVisibilityToggled: (
       state,
@@ -332,6 +418,7 @@ function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTr
       waveform: { status: "idle" },
       loudnessAnalysis: { status: "idle" },
       activityAnalysis: { status: "idle" },
+      preview: { status: "idle" },
       activityVisible: true,
     };
   });
@@ -366,6 +453,9 @@ const {
   audioPreviewsLoading,
   audioPreviewsReady,
   audioPreviewsUnavailable,
+  audioTrackPreviewFailed,
+  audioTrackPreviewReady,
+  audioTrackPreviewStarted,
   audioTrackActivityAnalysisFailed,
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
@@ -397,6 +487,9 @@ export {
   audioPreviewsLoading,
   audioPreviewsReady,
   audioPreviewsUnavailable,
+  audioTrackPreviewFailed,
+  audioTrackPreviewReady,
+  audioTrackPreviewStarted,
   audioReducer,
   audioTrackActivityAnalysisFailed,
   audioTrackActivityAnalysisReady,

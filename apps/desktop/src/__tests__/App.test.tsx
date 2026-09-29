@@ -128,6 +128,22 @@ const media: MediaInfo = {
   chapters: [],
 };
 
+function audioPreview(
+  streamIndex: number,
+  processing: { gainDb: number; loudnessNormalization?: "webVideo" | "streaming" | "broadcast" } = {
+    gainDb: 0,
+  },
+  previewRevision = 1,
+) {
+  return {
+    mediaToken: 1,
+    previewRevision,
+    processing,
+    streamIndex,
+    url: `http://easytrim-media.localhost/source-1?variant=audio&stream=${streamIndex}&revision=${previewRevision}`,
+  };
+}
+
 let sourceDropListener: ((event: SourceDropEvent) => void) | undefined;
 let stopSourceMediaRuntime: (() => void) | undefined;
 
@@ -240,13 +256,21 @@ beforeEach(() => {
     sourcePath === replacementSelection.sourcePath ? replacementSelection : selection,
   );
   mocks.inspectMedia.mockResolvedValue(media);
-  mocks.prepareAudioPreviews.mockResolvedValue([
-    {
-      mediaToken: 1,
-      streamIndex: 1,
-      url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
-    },
-  ]);
+  mocks.prepareAudioPreviews.mockImplementation(
+    async (
+      _sourcePath: string,
+      audioTracks: Array<{
+        processing: {
+          gainDb: number;
+          loudnessNormalization?: "webVideo" | "streaming" | "broadcast";
+        };
+        streamIndex: number;
+      }>,
+    ) =>
+      audioTracks.map(({ processing, streamIndex }, index) =>
+        audioPreview(streamIndex, processing, index + 1),
+      ),
+  );
   mocks.prepareSourcePreview.mockResolvedValue({
     mediaToken: 1,
     url: "http://easytrim-media.localhost/source-1?variant=source",
@@ -575,10 +599,8 @@ describe("App", () => {
     );
   });
 
-  it("starts video playback and waveforms without waiting for multi-track audio previews", async () => {
-    let resolveAudioPreviews!: (
-      previews: Array<{ mediaToken: number; streamIndex: number; url: string }>,
-    ) => void;
+  it("waits for processed multi-track audio previews before playback", async () => {
+    let resolveAudioPreviews!: (previews: ReturnType<typeof audioPreview>[]) => void;
 
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({
@@ -611,7 +633,7 @@ describe("App", () => {
       await openSourcePicker(user);
       await screen.findByLabelText("Source video preview");
 
-      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
+      expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
       await waitFor(() =>
         expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
           selection.sourcePath,
@@ -621,28 +643,16 @@ describe("App", () => {
         ),
       );
 
-      await user.click(screen.getByRole("button", { name: "Play" }));
-
-      expect(audioContext.resume).toHaveBeenCalledOnce();
-      expect(play).toHaveBeenCalledTimes(1);
-      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
-
       await act(async () => {
-        resolveAudioPreviews([
-          {
-            mediaToken: 1,
-            streamIndex: 1,
-            url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
-          },
-          {
-            mediaToken: 1,
-            streamIndex: 2,
-            url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
-          },
-        ]);
+        resolveAudioPreviews([audioPreview(1), audioPreview(2)]);
       });
       await waitFor(() => expect(audioElements).toHaveLength(2));
       for (const audio of audioElements) fireEvent.canPlay(audio);
+      await waitFor(() => expect(screen.getByRole("button", { name: "Play" })).toBeEnabled());
+      await user.click(screen.getByRole("button", { name: "Play" }));
+
+      expect(audioContext.resume).toHaveBeenCalledOnce();
+      expect(play).toHaveBeenCalled();
     } finally {
       play.mockRestore();
       vi.unstubAllGlobals();
@@ -662,7 +672,7 @@ describe("App", () => {
     expect(video).toHaveAttribute("crossorigin", "anonymous");
   });
 
-  it("switches between native and custom audio without interrupting video playback", async () => {
+  it("uses processed audio previews for multi-track playback", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({
       ...media,
@@ -679,18 +689,7 @@ describe("App", () => {
         },
       ],
     });
-    mocks.prepareAudioPreviews.mockResolvedValue([
-      {
-        mediaToken: 1,
-        streamIndex: 1,
-        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
-      },
-      {
-        mediaToken: 1,
-        streamIndex: 2,
-        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
-      },
-    ]);
+    mocks.prepareAudioPreviews.mockResolvedValue([audioPreview(1), audioPreview(2)]);
     const { audioElements, mediaElementSources } = installAudioMocks(false);
 
     const user = userEvent.setup();
@@ -699,84 +698,23 @@ describe("App", () => {
       render(<App />);
       await openSourcePicker(user);
       const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
-      await waitFor(() =>
-        expect(mediaElementSources.filter((source) => source.element === video)).toHaveLength(1),
-      );
-      const nativeSource = mediaElementSources.find((source) => source.element === video)!;
-      await waitFor(() => expect(nativeSource.connectedGain).not.toBeNull());
-      const nativeSourceDisconnects = nativeSource.disconnect.mock.calls.length;
-      let videoPaused = true;
-      Object.defineProperty(video, "paused", {
-        configurable: true,
-        get: () => videoPaused,
-      });
-      const videoPlay = vi.fn(async () => {
-        videoPaused = false;
-        fireEvent.play(video);
-      });
-
-      const videoPause = vi.fn(() => {
-        videoPaused = true;
-      });
-
-      Object.defineProperty(video, "pause", { configurable: true, value: videoPause });
-      Object.defineProperty(video, "play", { configurable: true, value: videoPlay });
-
-      await user.click(screen.getByRole("button", { name: "Mute Commentary" }));
-      expect(video).toHaveProperty("muted", false);
-
-      Object.defineProperty(video, "currentTime", {
-        configurable: true,
-        value: 10,
-        writable: true,
-      });
-      fireEvent.timeUpdate(video);
-      await user.click(screen.getByRole("button", { name: "Play" }));
-      expect(videoPlay).toHaveBeenCalledOnce();
-      videoPause.mockClear();
-
-      await user.click(screen.getByRole("button", { name: "Unmute Commentary" }));
-      await waitFor(() => expect(audioElements).toHaveLength(4));
-      expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument();
-      const transitionAudio = audioElements.slice(2);
-      const transitionAudioPlay = transitionAudio.map((audio) =>
-        vi.spyOn(audio, "play").mockResolvedValue(),
+      await waitFor(() => expect(audioElements).toHaveLength(2));
+      expect(mediaElementSources.some((source) => source.element === video)).toBe(false);
+      expect(audioElements.map((audio) => audio.src)).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("stream=1&revision=1"),
+          expect.stringContaining("stream=2&revision=1"),
+        ]),
       );
 
-      for (const audio of transitionAudio) fireEvent.canPlay(audio);
-      await waitFor(() =>
-        expect(transitionAudioPlay.every((play) => play.mock.calls.length === 1)).toBe(true),
-      );
-
-      expect(video).toHaveProperty("muted", false);
-      expect(nativeSource.connectedGain?.gain.value).toBe(0);
-      expect(nativeSource.disconnect).toHaveBeenCalledTimes(nativeSourceDisconnects);
-      expect(transitionAudio.every((audio) => audio.currentTime === 10)).toBe(true);
-      expect(videoPlay).toHaveBeenCalledOnce();
-      expect(videoPause).not.toHaveBeenCalled();
-
-      const transitionAudioPause = transitionAudio.map((audio) => vi.spyOn(audio, "pause"));
-      await user.click(screen.getByRole("button", { name: "Mute Commentary" }));
-
-      await waitFor(() => expect(video).toHaveProperty("muted", false));
-      expect(transitionAudioPause.every((pause) => pause.mock.calls.length > 0)).toBe(true);
-      expect(videoPlay).toHaveBeenCalledOnce();
-      expect(videoPause).not.toHaveBeenCalled();
-
-      await user.click(screen.getByRole("button", { name: "Mute eng" }));
-      await user.click(screen.getByRole("button", { name: "Unmute Commentary" }));
-
-      await waitFor(() => expect(nativeSource.connectedGain?.gain.value).toBe(0));
-      expect(video).toHaveProperty("muted", false);
-      expect(nativeSource.disconnect).toHaveBeenCalledTimes(nativeSourceDisconnects);
-      expect(videoPlay).toHaveBeenCalledOnce();
-      expect(videoPause).not.toHaveBeenCalled();
+      for (const audio of audioElements) fireEvent.canPlay(audio);
+      await waitFor(() => expect(screen.getByRole("button", { name: "Play" })).toBeEnabled());
     } finally {
       vi.unstubAllGlobals();
     }
   });
 
-  it("uses custom audio when a single non-default track is selected", async () => {
+  it("uses the processed preview for a single enabled non-default track", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({
       ...media,
@@ -804,31 +742,34 @@ describe("App", () => {
     });
     mocks.prepareAudioPreviews.mockResolvedValue(
       [1, 2, 3].map((streamIndex) => ({
-        mediaToken: 1,
-        streamIndex,
-        url: `http://easytrim-media.localhost/source-1?variant=audio&stream=${streamIndex}`,
+        ...audioPreview(streamIndex),
       })),
     );
-    const { mediaElementSources } = installAudioMocks();
+    const { audioElements, mediaElementSources } = installAudioMocks();
     const user = userEvent.setup();
 
     try {
       render(<App />);
       await openSourcePicker(user);
       const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
-      const nativeSource = await waitFor(() => {
-        const source = mediaElementSources.find((candidate) => candidate.element === video);
-        expect(source?.connectedGain).not.toBeNull();
-        return source!;
-      });
+      await waitFor(() => expect(audioElements).toHaveLength(3));
+      expect(mediaElementSources.some((source) => source.element === video)).toBe(false);
 
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       await user.click(screen.getByRole("button", { name: "Mute Game" }));
-      await waitFor(() => expect(nativeSource.connectedGain?.gain.value).toBe(0));
+      await waitFor(() =>
+        expect(audioElements.some((audio) => audio.src.includes("stream=2&revision=1"))).toBe(
+          true,
+        ),
+      );
 
       await user.click(screen.getByRole("button", { name: "Mute Mic" }));
       await user.click(screen.getByRole("button", { name: "Unmute Game" }));
-      await waitFor(() => expect(nativeSource.connectedGain?.gain.value).toBe(0));
+      await waitFor(() =>
+        expect(audioElements.some((audio) => audio.src.includes("stream=3&revision=1"))).toBe(
+          true,
+        ),
+      );
     } finally {
       vi.unstubAllGlobals();
     }
@@ -1174,18 +1115,7 @@ describe("App", () => {
         },
       ],
     });
-    mocks.prepareAudioPreviews.mockResolvedValue([
-      {
-        mediaToken: 1,
-        streamIndex: 1,
-        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
-      },
-      {
-        mediaToken: 1,
-        streamIndex: 2,
-        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
-      },
-    ]);
+    mocks.prepareAudioPreviews.mockResolvedValue([audioPreview(1), audioPreview(2)]);
     installAudioMocks();
     const user = userEvent.setup();
 
@@ -1366,18 +1296,7 @@ describe("App", () => {
         },
       ],
     });
-    mocks.prepareAudioPreviews.mockResolvedValue([
-      {
-        mediaToken: 1,
-        streamIndex: 1,
-        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
-      },
-      {
-        mediaToken: 1,
-        streamIndex: 2,
-        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
-      },
-    ]);
+    mocks.prepareAudioPreviews.mockResolvedValue([audioPreview(1), audioPreview(2)]);
     const user = userEvent.setup();
     const audioElements = [document.createElement("audio"), document.createElement("audio")];
     const audioPlay = vi
@@ -1500,18 +1419,7 @@ describe("App", () => {
         },
       ],
     });
-    mocks.prepareAudioPreviews.mockResolvedValue([
-      {
-        mediaToken: 1,
-        streamIndex: 1,
-        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
-      },
-      {
-        mediaToken: 1,
-        streamIndex: 2,
-        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
-      },
-    ]);
+    mocks.prepareAudioPreviews.mockResolvedValue([audioPreview(1), audioPreview(2)]);
     const { audioConstructor, audioElements } = installAudioMocks();
     const user = userEvent.setup();
 
@@ -2731,9 +2639,7 @@ describe("App", () => {
     });
     mocks.prepareAudioPreviews.mockResolvedValue(
       streams.map(({ streamIndex }) => ({
-        mediaToken: 1,
-        streamIndex,
-        url: `http://easytrim-media.localhost/source-1?variant=audio&stream=${streamIndex}`,
+        ...audioPreview(streamIndex),
       })),
     );
     const { audioElements } = installAudioMocks();
@@ -2743,6 +2649,7 @@ describe("App", () => {
       await openSourcePicker(user);
       const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
       await waitFor(() => expect(audioElements).toHaveLength(6));
+      for (const audio of audioElements) fireEvent.canPlay(audio);
       const audioSeeks = audioElements.map((audio) => vi.spyOn(audio, "currentTime", "set"));
       let position = 0;
       let seeking = false;
@@ -2768,16 +2675,22 @@ describe("App", () => {
         toJSON: () => ({}),
       });
       const playhead = screen.getByRole("slider", { name: "Playback position" });
-      fireEvent.pointerDown(playhead, { clientX: 100, pointerId: 9 });
+      await waitFor(() => expect(playhead).toBeEnabled());
+      fireEvent.pointerDown(playhead, {
+        button: 0,
+        clientX: 100,
+        isPrimary: true,
+        pointerId: 9,
+      });
       for (const clientX of [200, 600, 1000]) {
-        fireEvent.pointerMove(playhead, { clientX, pointerId: 9 });
+        fireEvent.pointerMove(playhead, { clientX, isPrimary: true, pointerId: 9 });
         await flushAnimationFrame();
         fireEvent.timeUpdate(video);
       }
       expect(videoSeek).toHaveBeenCalledOnce();
       expect(playhead).toHaveAttribute("aria-valuenow", "12960000000");
       for (const seek of audioSeeks) expect(seek).not.toHaveBeenCalled();
-      fireEvent.pointerUp(playhead, { clientX: 1000, pointerId: 9 });
+      fireEvent.pointerUp(playhead, { clientX: 1000, isPrimary: true, pointerId: 9 });
       seeking = false;
       fireEvent.seeked(video);
       expect(videoSeek).toHaveBeenCalledTimes(2);

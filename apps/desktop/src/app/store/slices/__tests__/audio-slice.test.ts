@@ -6,10 +6,13 @@ import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import {
   audioMergeToggled,
+  audioPreviewsReady,
   audioReducer,
   audioTrackActivityAnalysisStarted,
   audioTrackGainChanged,
   audioTrackLoudnessAnalysisStarted,
+  audioTrackPreviewReady,
+  audioTrackPreviewStarted,
   audioTrackToggled,
   initialAudioState,
   selectAudioTracks,
@@ -118,5 +121,46 @@ describe("audio slice", () => {
       "idle",
     ]);
     expect(trimmed.tracks[1]?.activityAnalysis).toMatchObject({ status: "loading" });
+  });
+
+  it("keeps a newer per-track preview when initial preparation finishes out of order", () => {
+    let state = readyAudio();
+    state = audioReducer(
+      state,
+      audioTrackPreviewStarted({ operationId: "preview-new", streamIndex: 2 }),
+    );
+    state = audioReducer(
+      state,
+      audioTrackPreviewReady({
+        operationId: "preview-new",
+        descriptor: {
+          mediaToken: 1,
+          previewRevision: 3,
+          processing: { gainDb: 0 },
+          streamIndex: 2,
+          url: "media://newer",
+        },
+      }),
+    );
+
+    state = audioReducer(
+      state,
+      audioPreviewsReady({
+        previews: [
+          {
+            mediaToken: 1,
+            previewRevision: 2,
+            processing: { gainDb: 0 },
+            streamIndex: 2,
+            url: "media://older",
+          },
+        ],
+      }),
+    );
+
+    expect(state.tracks[0]?.preview).toMatchObject({
+      descriptor: { previewRevision: 3, url: "media://newer" },
+      status: "ready",
+    });
   });
 });
