@@ -24,7 +24,15 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
 
 - Use React, strict TypeScript, Vite, semantic HTML, Tailwind, and the repository's shadcn primitives.
 - Reuse `components/ui` for buttons, dialogs, fields, tooltips, popovers, sliders, checkboxes, cards, and alerts. Add a shadcn primitive before hand-building an equivalent control.
-- Keep generated primitives generic. Put product-specific composition in the owning feature.
+- Keep generated primitives generic and unaware of Redux or product semantics. Give them broad
+  controlled-value and event APIs where useful, such as `Slider` accepting `value`,
+  `onValueChange`, `onValueCommit`, `onClick`, and `onDoubleClick`.
+- Put context-specific controls in the owning `app/` or feature module. Treat Redux as the main bus
+  for shared workflow state: the closest component that consumes the state selects it and dispatches
+  its domain actions/thunks. Keep these components' props minimal and mostly identity-based; avoid
+  passing Redux values or callback bundles through intermediate components. For example, a feature
+  `VolumeSlider` accepts `streamIndex` and connects to Redux itself, then configures the generic UI
+  `Slider`.
 - When a primitive is intentionally extracted, name dedicated type-only modules with `.types.ts`
   and use a semantic kebab-case base for module-level contracts or a matching PascalCase component
   base for non-prop component types. Keep component props in the component file rather than
@@ -55,11 +63,12 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
   the action adapter.
 - Keep FFmpeg strings, path validation, and process details out of components.
 - Load no analytics, remote assets, fonts, or network resources.
-- Let feature orchestration roots own capability state/logic orchestration and feature layout;
-  they may select and dispatch Redux state intrinsic to the capability. Move cohesive interaction
-  logic and effects to feature `hooks/` when that creates a meaningful responsibility. Keep
-  focused nested components presentational by default, and group semantic pure/internal modules
-  under `lib/` only when enough related files justify it.
+- Let feature orchestration roots own capability layout and cross-component workflow setup. Keep
+  Redux reads and writes at the closest app/feature component that semantically consumes the state,
+  rather than selecting in a root and forwarding values to presentational feature controls. Move
+  cohesive interaction logic and effects to feature `hooks/` when that creates a meaningful
+  responsibility. Keep generic primitives in `components/ui` presentational and group semantic
+  pure/internal modules under `lib/` only when enough related files justify it.
 - Keep feature business logic in its owning feature: preview media synchronization, audio
   synchronization/native-audio runtime, and timeline keyboard/playhead helpers belong under their
   respective feature `lib/` modules. Reserve `app/` for orchestration hooks, providers, contexts,

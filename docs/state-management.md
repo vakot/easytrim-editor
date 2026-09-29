@@ -3,6 +3,12 @@
 EasyTrim uses Redux Toolkit for shared, serializable application state while keeping ephemeral UI
 state and runtime resources close to their owners.
 
+Redux is the main bus for shared application and feature workflow state. Product components connect
+to it where that state is consumed: they select the state they need and dispatch domain actions or
+thunks for changes. Do not transport Redux-owned values and handlers through intermediate app or
+feature component props. A connected product control may bind those values and handlers directly to
+a generic `components/ui` primitive.
+
 ## Ownership model
 
 - **Redux** owns editor/application state shared across unrelated UI, used by multiple interaction
@@ -32,6 +38,25 @@ Reducers are pure. They do not call Tauri, FFmpeg/FFprobe, browser media APIs, s
 other effects. Components dispatch actions and read through narrow typed selectors; they do not
 manually synchronize Redux to storage or pass Redux values through intermediate components solely
 for transport.
+
+## Component state interfaces
+
+Application and feature components are product-aware. Keep their public props small and primarily
+identity-based, such as `streamIndex`, `instanceId`, or `sourceId`. A component that owns a
+context-specific control should select its Redux state and dispatch its actions itself instead of
+accepting a broad bundle of values and callbacks from its parent. Avoid forwarding Redux data or
+handlers through wrapper components.
+
+Keep UI primitives generic and presentational. They may expose the wider controlled-input and event
+API needed by different consumers, such as `value`, `onValueChange`, `onValueCommit`, `onClick`, and
+`onDoubleClick`. They must not know about feature state or import Redux selectors. For example,
+`VolumeSlider` belongs with audio feature components and can accept only `streamIndex`; the generic
+`Slider` belongs in `components/ui` and accepts values and interaction callbacks.
+
+Keep ephemeral drafts, hover/focus state, and other interaction-only state local. When nested
+controls share one draft, keep its owner inside the feature and expose a narrow local hook or context
+for that interaction. Do not put transient dialog drafts on the Redux main bus merely to avoid
+callback props, and do not mirror them in Redux and local state.
 
 Redux state is runtime-only unless a domain is explicitly persisted with `redux-persist`. Persist
 only stable, user-facing domains; never persist transient, session, native, or runtime-owned state.
