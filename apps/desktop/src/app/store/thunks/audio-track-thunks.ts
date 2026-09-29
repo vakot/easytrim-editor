@@ -254,6 +254,16 @@ function toAudioTrackPreviewSelection(
   };
 }
 
+function toAudioTrackPreviewSelection(track: {
+  processing: AudioTrackSelection["processing"];
+  streamIndex: number;
+}): AudioTrackSelection {
+  return {
+    processing: { ...track.processing, gainDb: 0 },
+    streamIndex: track.streamIndex,
+  };
+}
+
 function isCurrentTrack(
   state: ReturnType<Parameters<AppThunk>[1]>,
   sourcePath: string,

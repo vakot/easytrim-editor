@@ -548,6 +548,7 @@ export const en = {
     },
     labels: {
       defaultTrack: "Audio {{number}}",
+      loudnessAnalysis: "Loudness analysis",
       loudnessNormalization: "Loudness normalization",
       maximumTruePeak: "Maximum true peak (dBTP)",
       targetLufs: "Target loudness (LUFS)",
@@ -577,6 +578,12 @@ export const en = {
       merge: "All selected tracks are merged into one track; this requires encoding.",
       normalizationReplacesGain:
         "Normalize Loudness controls this track's level. Manual gain is ignored while normalization is enabled, preserved, and restored when normalization is turned off.",
+    },
+    dialogs: {
+      effects: {
+        description: "Changes stay unapplied until you choose Apply.",
+        title: "{{title}} — Effects",
+      },
     },
     dialogs: {
       effects: {

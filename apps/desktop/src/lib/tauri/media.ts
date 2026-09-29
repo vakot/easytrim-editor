@@ -6,6 +6,7 @@ import { audioActivityRangesFromSilence } from "@/domain/audio-activity";
 import type { AudioTrackSelection } from "@/domain/audio-processing";
 import type { SourceRef } from "@/domain/source";
 import type { AudioTrackSelection } from "@/domain/audio-processing";
+import type { SourceRef } from "@/domain/source";
 
 import type {
   AudioPreviewDescriptor,
