@@ -154,6 +154,9 @@ describe("AudioTrackRow", () => {
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
     expect(screen.getByRole("dialog", { name: /effects/i })).toBeInTheDocument();
     await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
+    expect(
+      screen.getByRole("option", { name: /streaming.*−16 LUFS.*−1.5 dBTP/i }),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole("option", { name: /broadcast/i }));
     expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
 

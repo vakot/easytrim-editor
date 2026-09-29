@@ -17,7 +17,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { analyzeTrackLoudness } from "@/app/store/thunks/audio-track-thunks";
-import type { LoudnessPreset } from "@/domain/audio-processing";
+import { loudnessNormalizationTargets, type LoudnessPreset } from "@/domain/audio-processing";
 import type { LoudnessAnalysis } from "@/domain/media";
 
 import { normalizationPresetLabel } from "../../../../../lib/audio-level.utils";
@@ -110,8 +110,8 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
               </SelectTrigger>
               <SelectContent>
                 {PRESETS.map((preset) => (
-                  <SelectItem key={preset} value={preset}>
-                    {normalizationPresetLabel(preset, t)}
+                  <SelectItem className="whitespace-nowrap" key={preset} value={preset}>
+                    {formatNormalizationPreset(preset, i18n.language, t)}
                   </SelectItem>
                 ))}
                 <SelectItem value="custom">{t("audio.options.normalizationCustom")}</SelectItem>
@@ -221,6 +221,21 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
       </AudioTrackEffectsLibraryPageAdvanced>
     </AudioTrackEffectsLibraryPage>
   );
+}
+
+function formatNormalizationPreset(
+  preset: LoudnessPreset,
+  language: string,
+  t: ReturnType<typeof useTranslation>["t"],
+): string {
+  const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(preset);
+  const format = (value: number) =>
+    new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(value).replace(/-/g, "−");
+
+  return `${normalizationPresetLabel(preset, t)} · ${t("audio.messages.normalizedLevelSummary", {
+    peak: format(maxTruePeakDb),
+    target: format(targetLufs),
+  })}`;
 }
 
 function formatAnalysis(analysis: LoudnessAnalysis, language: string): string {
