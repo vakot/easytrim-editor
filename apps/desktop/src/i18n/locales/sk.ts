@@ -548,7 +548,6 @@ export const sk = {
     },
     labels: {
       defaultTrack: "Zvuk {{number}}",
-      loudnessAnalysis: "Analýza hlasitosti",
       loudnessNormalization: "Normalizácia hlasitosti",
       maximumTruePeak: "Maximálny skutočný vrchol (dBTP)",
       targetLufs: "Cieľová hlasitosť (LUFS)",
