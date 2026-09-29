@@ -1,13 +1,12 @@
 export { TimelinePanel } from "./components/TimelinePanel";
+export { useAudioActivityDetection } from "./hooks/useAudioActivityDetection";
 export { useSceneDetection } from "./hooks/useSceneDetection";
-export { useSilenceDetection } from "./hooks/useSilenceDetection";
 export {
   editorShortcutFromEvent,
   FRAME_SHUTTLE_PLAYBACK_RATE,
   type FrameShuttleDirection,
   shortcutDispositionFromEvent,
 } from "./lib/editor-shortcuts";
+export { findNextMarker, findPreviousMarker } from "./lib/marker-navigation";
 export { cancelFrame, syncPlayheadElements } from "./lib/playhead-sync";
 export { findNextSceneBoundary, findPreviousSceneBoundary } from "./lib/scene-navigation";
-export { findNextSilence, findPreviousSilence } from "./lib/silence-navigation";
-export { findNextSegment, findPreviousSegment } from "./lib/segment-navigation";

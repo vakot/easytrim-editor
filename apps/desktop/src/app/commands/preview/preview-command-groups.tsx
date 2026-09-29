@@ -18,22 +18,22 @@ function usePreviewCommandGroups() {
   const rotations = useRotationCommands();
   const flips = useFlipCommands();
   const reset = useResetTransformCommand();
-  const { sceneCommands, segmentCommands, silenceCommands } = useSceneCommands();
+  const { audioActivityCommands, markerCommands, sceneCommands } = useSceneCommands();
   return [
     defineApplicationCommandGroup(
-      "preview-segment-scenes",
-      t("app.labels.commandSections.segmentScene"),
+      "preview-markers-scene",
+      t("app.labels.commandSections.markersScene"),
       sceneCommands,
     ),
     defineApplicationCommandGroup(
-      "preview-segment-silence",
-      t("app.labels.commandSections.segmentSilence"),
-      silenceCommands,
+      "preview-markers-audio-activity",
+      t("app.labels.commandSections.markersAudioActivity"),
+      audioActivityCommands,
     ),
     defineApplicationCommandGroup(
-      "preview-segment-navigation",
-      t("app.labels.commandSections.segment"),
-      segmentCommands,
+      "preview-markers-navigation",
+      t("app.labels.commandSections.markers"),
+      markerCommands,
     ),
     defineApplicationCommandGroup("preview-frame", t("app.labels.commandSections.previewFrame"), [
       saveFrame,

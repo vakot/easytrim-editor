@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
+  audioActivityDetectionFinished,
+  audioActivityMarkersToggled,
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
   editorToolsReducer,
@@ -10,8 +12,6 @@ import {
   selectEditorTools,
   selectLoopPlaybackEnabled,
   selectSegmentPlaybackEnabled,
-  silenceDetectionFinished,
-  silenceMarkersToggled,
 } from "@/app/store/slices/editor-tools-slice";
 import type { RootState } from "@/app/store/store";
 describe("editor tools Redux domain", () => {
@@ -53,22 +53,22 @@ describe("editor tools Redux domain", () => {
     expect(modeState.segmentPlaybackEnabled).toBe(false);
   });
 
-  it("stores silence ranges and supports hiding their timeline markers", () => {
+  it("stores audio activity ranges and supports hiding their timeline markers", () => {
     const ranges = [{ startMicros: 1_000_000, endMicros: 2_000_000 }];
     const detected = editorToolsReducer(
       undefined,
-      silenceDetectionFinished({ mixKey: "mix", ranges, sourceKey: "source" }),
+      audioActivityDetectionFinished({ mixKey: "mix", ranges, sourceKey: "source" }),
     );
 
-    const hidden = editorToolsReducer(detected, silenceMarkersToggled());
+    const hidden = editorToolsReducer(detected, audioActivityMarkersToggled());
 
-    expect(detected.silenceDetection).toMatchObject({
+    expect(detected.audioActivityDetection).toMatchObject({
       mixKey: "mix",
       ranges,
       sourceKey: "source",
       status: "ready",
     });
-    expect(hidden.silenceMarkersEnabled).toBe(false);
+    expect(hidden.audioActivityMarkersEnabled).toBe(false);
   });
 
   it("exposes focused selectors", () => {

@@ -7,17 +7,17 @@ import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
 import {
+  audioActivityMarkersToggled,
   sceneMarkersToggled,
+  selectAudioActivityMarkersEnabled,
   selectSceneMarkersEnabled,
-  selectSilenceMarkersEnabled,
-  silenceMarkersToggled,
 } from "@/app/store/slices/editor-tools-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
-  findNextSegment,
-  findPreviousSegment,
+  findNextMarker,
+  findPreviousMarker,
+  useAudioActivityDetection,
   useSceneDetection,
-  useSilenceDetection,
 } from "@/features/timeline";
 
 function useSceneCommands() {
@@ -29,29 +29,22 @@ function useSceneCommands() {
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const sourceReady = useAppSelector(selectSourceReady);
   const sceneDetection = useSceneDetection(sourceReady);
-  const silenceDetection = useSilenceDetection(sourceReady);
-  const silenceMarkersEnabled = useAppSelector(selectSilenceMarkersEnabled);
+  const audioActivityDetection = useAudioActivityDetection(sourceReady);
+  const audioActivityMarkersEnabled = useAppSelector(selectAudioActivityMarkersEnabled);
   const visibleSceneBoundaries = sceneMarkersEnabled ? sceneBoundariesMicros : [];
-  const visibleSilenceRanges = silenceMarkersEnabled ? silenceDetection.ranges : [];
-  const firstSceneStartMicros =
-    sceneMarkersEnabled && sceneDetection.hasDetected
-      ? (timeline.trim?.startMicros ?? 0)
-      : undefined;
+  const visibleAudioActivityRanges = audioActivityMarkersEnabled
+    ? audioActivityDetection.ranges
+    : [];
 
-  const previousSegmentMicros = findPreviousSegment(
-    visibleSceneBoundaries,
-    visibleSilenceRanges,
-    timeline.playheadMicros,
-    firstSceneStartMicros,
-  );
+  const visibleMarkersMicros = [
+    ...visibleSceneBoundaries,
+    ...visibleAudioActivityRanges.map(({ startMicros }) => startMicros),
+  ];
 
-  const nextSegmentMicros = findNextSegment(
-    visibleSceneBoundaries,
-    visibleSilenceRanges,
-    timeline.playheadMicros,
-  );
+  const previousMarkerMicros = findPreviousMarker(visibleMarkersMicros, timeline.playheadMicros);
+  const nextMarkerMicros = findNextMarker(visibleMarkersMicros, timeline.playheadMicros);
 
-  function moveToSegment(timeMicros: number) {
+  function moveToMarker(timeMicros: number) {
     playback.pause();
     timeline.onScrubStart();
     timeline.onSeek(timeMicros);
@@ -91,69 +84,69 @@ function useSceneCommands() {
     },
   ] as const;
 
-  const silenceCommands = [
+  const audioActivityCommands = [
     {
       enabled:
-        silenceDetection.canDetect &&
-        !silenceDetection.hasDetected &&
-        !silenceDetection.isDetecting,
+        audioActivityDetection.canDetect &&
+        !audioActivityDetection.hasDetected &&
+        !audioActivityDetection.isDetecting,
       icon: <AudioLines aria-hidden="true" />,
-      id: "detect-silence" as const,
-      label: t("timeline.actions.detectSilence"),
-      run: silenceDetection.detect,
+      id: "detect-audio-activity" as const,
+      label: t("timeline.actions.detectAudioActivity"),
+      run: audioActivityDetection.detect,
       searchTerms: commandSearchTerms(
-        `${t("timeline.actions.detectSilence")}|silence detection|find silence`,
+        `${t("timeline.actions.detectAudioActivity")}|audio activity detection|find audio`,
       ),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
     },
     {
-      checked: silenceMarkersEnabled,
-      enabled: silenceDetection.hasDetected,
+      checked: audioActivityMarkersEnabled,
+      enabled: audioActivityDetection.hasDetected,
       icon: <Eye aria-hidden="true" />,
-      id: "show-silence-markers" as const,
-      label: silenceMarkersEnabled
-        ? t("timeline.actions.disableSilenceMarkers")
-        : t("timeline.actions.enableSilenceMarkers"),
+      id: "show-audio-activity-markers" as const,
+      label: audioActivityMarkersEnabled
+        ? t("timeline.actions.disableAudioActivityMarkers")
+        : t("timeline.actions.enableAudioActivityMarkers"),
       run() {
-        dispatch(silenceMarkersToggled());
+        dispatch(audioActivityMarkersToggled());
       },
       searchTerms: commandSearchTerms(
-        `${t("timeline.actions.enableSilenceMarkers")}|silence|markers|show`,
+        `${t("timeline.actions.enableAudioActivityMarkers")}|audio activity|markers|show`,
       ),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
     },
   ] as const;
 
-  const segmentCommands = [
+  const markerCommands = [
     {
-      enabled: playback.canInteract && previousSegmentMicros !== undefined,
+      enabled: playback.canInteract && previousMarkerMicros !== undefined,
       icon: <ChevronsLeft aria-hidden="true" />,
-      id: "previous-segment" as const,
-      label: t("preview.actions.previousSegment"),
+      id: "previous-marker" as const,
+      label: t("preview.actions.previousMarker"),
       run() {
-        if (previousSegmentMicros !== undefined) moveToSegment(previousSegmentMicros);
+        if (previousMarkerMicros !== undefined) moveToMarker(previousMarkerMicros);
       },
-      searchTerms: commandSearchTerms(`${t("preview.actions.previousSegment")}|previous|segment`),
+      searchTerms: commandSearchTerms(`${t("preview.actions.previousMarker")}|previous|marker`),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
     },
     {
-      enabled: playback.canInteract && nextSegmentMicros !== undefined,
+      enabled: playback.canInteract && nextMarkerMicros !== undefined,
       icon: <ChevronsRight aria-hidden="true" />,
-      id: "next-segment" as const,
-      label: t("preview.actions.nextSegment"),
+      id: "next-marker" as const,
+      label: t("preview.actions.nextMarker"),
       run() {
-        if (nextSegmentMicros !== undefined) moveToSegment(nextSegmentMicros);
+        if (nextMarkerMicros !== undefined) moveToMarker(nextMarkerMicros);
       },
-      searchTerms: commandSearchTerms(`${t("preview.actions.nextSegment")}|next|segment`),
+      searchTerms: commandSearchTerms(`${t("preview.actions.nextMarker")}|next|marker`),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
     },
   ] as const;
 
-  return { sceneCommands, segmentCommands, silenceCommands } as const;
+  return { audioActivityCommands, markerCommands, sceneCommands } as const;
 }
 
 export { useSceneCommands };

@@ -3,6 +3,7 @@ use crate::{
     error::AppError,
     media::{
         audio::generate_audio_previews,
+        export::AudioTrackSelection,
         probe::{MediaInfo, inspect_media_cancellable as probe_media},
         proxy::generate_preview,
         scene_detection::detect_scene_boundaries,
@@ -66,13 +67,6 @@ pub struct WaveformResult {
     pub url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<AppError>,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SilenceMixTrack {
-    pub stream_index: u32,
-    pub volume_percent: u8,
 }
 
 #[tauri::command]
@@ -159,12 +153,13 @@ pub async fn detect_scenes(
 #[tauri::command]
 pub async fn detect_silence(
     source_path: String,
-    mix: Vec<SilenceMixTrack>,
+    mix: Vec<AudioTrackSelection>,
+    merge_audio: bool,
     state: State<'_, AppState>,
 ) -> Result<Vec<SilenceRange>, AppError> {
     if mix.is_empty() || mix.len() > 32 {
         return Err(AppError::invalid_request(
-            "Select between one and 32 audio tracks for silence detection.",
+            "Select between one and 32 audio tracks for audio activity detection.",
         ));
     }
 
@@ -177,10 +172,10 @@ pub async fn detect_silence(
     if unique_stream_indexes.len() != mix.len()
         || mix
             .iter()
-            .any(|track| track.volume_percent == 0 || track.volume_percent > 150)
+            .any(|track| track.volume_percent == 0 || track.volume_percent > 200)
     {
         return Err(AppError::invalid_request(
-            "Silence detection tracks must be unique and have valid nonzero levels.",
+            "Audio activity tracks must be unique and have valid nonzero levels.",
         ));
     }
 
@@ -196,10 +191,10 @@ pub async fn detect_silence(
         .any(|(index, _)| !audio_stream_indexes.contains(index))
     {
         return Err(AppError::invalid_request(
-            "Silence detection includes an unavailable audio track.",
+            "Audio activity detection includes an unavailable audio track.",
         ));
     }
-    if let Some(ranges) = state.cached_silence_ranges(source.load_token, &mix_key)? {
+    if let Some(ranges) = state.cached_silence_ranges(source.load_token, merge_audio, &mix_key)? {
         return Ok(ranges
             .into_iter()
             .map(|(start_micros, end_micros)| SilenceRange {
@@ -210,6 +205,7 @@ pub async fn detect_silence(
     }
 
     let load_token = source.load_token;
+    let cache_merge_audio = merge_audio;
     let duration_micros = source
         .media
         .as_ref()
@@ -217,12 +213,13 @@ pub async fn detect_silence(
         .unwrap_or_default();
     let cache_key = mix_key.clone();
     let ranges = tauri::async_runtime::spawn_blocking(move || {
-        detect_silence_ranges(&source, &mix_key, duration_micros)
+        detect_silence_ranges(&source, &mix_key, merge_audio, duration_micros)
     })
     .await
     .map_err(|_| AppError::internal("Silence detection stopped unexpectedly."))??;
     state.install_silence_ranges(
         load_token,
+        cache_merge_audio,
         cache_key,
         ranges
             .iter()

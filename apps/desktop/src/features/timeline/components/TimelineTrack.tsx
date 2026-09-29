@@ -7,16 +7,16 @@ import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
 import {
+  selectAudioActivityMarkersEnabled,
   selectSceneMarkersEnabled,
-  selectSilenceMarkersEnabled,
 } from "@/app/store/slices/editor-tools-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import type { AudioActivityRange } from "@/domain/media";
 import { clampPlaybackMicros } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
 import { cn } from "@/lib/class-names.utils";
-import type { SilenceRange } from "@/lib/tauri/media.types";
 
-import { useSilenceDetection } from "../hooks/useSilenceDetection";
+import { useAudioActivityDetection } from "../hooks/useAudioActivityDetection";
 import { useTrimTimelineInteractions } from "../hooks/useTrimTimelineInteractions";
 import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
 import { createTimelineSnapTargets } from "../lib/timeline-snap";
@@ -24,28 +24,37 @@ import { createTimelineSnapTargets } from "../lib/timeline-snap";
 import { Playhead, SegmentDragHandle, TrimHandle } from "./TimelineHandles";
 import styles from "./TimelinePanel.module.css";
 
-const EMPTY_SILENCE_RANGES: readonly SilenceRange[] = [];
+const EMPTY_AUDIO_ACTIVITY_RANGES: readonly AudioActivityRange[] = [];
+const TIMELINE_MARKER_STYLES = {
+  scene: "bg-destructive",
+  audioActivity: "border-x border-primary/60 bg-primary/20",
+} as const;
 
 function TimelineTrack() {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
   const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
-  const silenceMarkersEnabled = useAppSelector(selectSilenceMarkersEnabled);
+  const audioActivityMarkersEnabled = useAppSelector(selectAudioActivityMarkersEnabled);
   const playback = usePlayback();
   const timeline = useTimeline();
-  const silenceDetection = useSilenceDetection(playback.canInteract);
-  const detectedSilenceRanges = silenceDetection.hasDetected
-    ? silenceDetection.ranges
-    : EMPTY_SILENCE_RANGES;
+  const audioActivityDetection = useAudioActivityDetection(playback.canInteract);
+  const detectedAudioActivityRanges = audioActivityDetection.hasDetected
+    ? audioActivityDetection.ranges
+    : EMPTY_AUDIO_ACTIVITY_RANGES;
 
   const snapTargetsMicros = useMemo(
     () =>
       createTimelineSnapTargets(
         sceneMarkersEnabled ? sceneBoundariesMicros : [],
-        silenceMarkersEnabled ? detectedSilenceRanges : EMPTY_SILENCE_RANGES,
+        audioActivityMarkersEnabled ? detectedAudioActivityRanges : EMPTY_AUDIO_ACTIVITY_RANGES,
       ),
-    [detectedSilenceRanges, sceneBoundariesMicros, sceneMarkersEnabled, silenceMarkersEnabled],
+    [
+      detectedAudioActivityRanges,
+      sceneBoundariesMicros,
+      sceneMarkersEnabled,
+      audioActivityMarkersEnabled,
+    ],
   );
 
   const range = timeline.trim ?? EMPTY_TIMELINE_RANGE;
@@ -116,9 +125,9 @@ function TimelineTrack() {
         }}
       />
       <SceneMarkers sourceDurationMicros={range.sourceDurationMicros} />
-      <SilenceMarkers
-        enabled={silenceMarkersEnabled && silenceDetection.hasDetected}
-        ranges={silenceDetection.ranges}
+      <AudioActivityMarkers
+        enabled={audioActivityMarkersEnabled && audioActivityDetection.hasDetected}
+        ranges={audioActivityDetection.ranges}
         sourceDurationMicros={range.sourceDurationMicros}
       />
       <SegmentDragHandle
@@ -180,7 +189,7 @@ function TimelineTrack() {
   );
 }
 
-function SilenceMarkers({
+function AudioActivityMarkers({
   enabled,
   ranges,
   sourceDurationMicros,
@@ -201,7 +210,10 @@ function SilenceMarkers({
               <motion.div
                 animate={{ opacity: 1, height: "100%" }}
                 aria-hidden="true"
-                className="pointer-events-none absolute top-1/2 z-0 -translate-y-1/2 border border-y-0 border-sky-300/50 bg-sky-400/20"
+                className={cn(
+                  "pointer-events-none absolute top-1/2 z-0 -translate-y-1/2 border border-y-0",
+                  TIMELINE_MARKER_STYLES.audioActivity,
+                )}
                 exit={{ opacity: 0, height: 0 }}
                 initial={shouldReduceMotion ? false : { opacity: 0 }}
                 key={`${range.startMicros}-${range.endMicros}`}
@@ -227,7 +239,10 @@ function SceneMarkers({ sourceDurationMicros }: { sourceDurationMicros: number }
             <motion.div
               animate={{ opacity: 1, height: "100%" }}
               aria-hidden="true"
-              className="pointer-events-none absolute top-1/2 z-1 w-0.5 -translate-1/2 bg-destructive"
+              className={cn(
+                "pointer-events-none absolute top-1/2 z-1 w-0.5 -translate-1/2",
+                TIMELINE_MARKER_STYLES.scene,
+              )}
               exit={{ opacity: 0, height: 0 }}
               initial={shouldReduceMotion ? false : { opacity: 0 }}
               key={boundaryMicros}

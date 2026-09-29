@@ -1,25 +1,37 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectAudioTracks } from "@/app/store/slices/audio-slice";
+import {
+  selectAudioTracks,
+  selectMasterAudio,
+  selectMergeAudio,
+} from "@/app/store/slices/audio-slice";
 import { selectActiveEditingInstance } from "@/app/store/slices/editing-instances-slice";
 import {
-  selectSilenceDetectionOperation,
-  silenceDetectionFailed,
-  silenceDetectionFinished,
-  silenceDetectionStarted,
+  audioActivityDetectionFailed,
+  audioActivityDetectionFinished,
+  audioActivityDetectionStarted,
+  selectAudioActivityDetectionOperation,
 } from "@/app/store/slices/editor-tools-slice";
-import { selectSourceLoadToken, selectSourceSelection } from "@/app/store/slices/source-slice";
+import {
+  selectSourceLoadToken,
+  selectSourceMedia,
+  selectSourceSelection,
+} from "@/app/store/slices/source-slice";
+import { selectedAudioTracks } from "@/domain/audio-export";
 import { normalizeSourceKey } from "@/domain/source";
-import { detectSilence } from "@/lib/tauri/media";
+import { detectAudioActivity } from "@/lib/tauri/media";
 
-function useSilenceDetection(enabled: boolean) {
+function useAudioActivityDetection(enabled: boolean) {
   const dispatch = useAppDispatch();
   const source = useAppSelector(selectSourceSelection);
+  const media = useAppSelector(selectSourceMedia);
   const loadToken = useAppSelector(selectSourceLoadToken);
   const activeInstance = useAppSelector(selectActiveEditingInstance);
   const audioTracks = useAppSelector(selectAudioTracks);
-  const operation = useAppSelector(selectSilenceDetectionOperation);
+  const masterAudio = useAppSelector(selectMasterAudio);
+  const mergeAudio = useAppSelector(selectMergeAudio);
+  const operation = useAppSelector(selectAudioActivityDetectionOperation);
   const activeInstanceMatchesSource = Boolean(
     source &&
     activeInstance &&
@@ -29,14 +41,11 @@ function useSilenceDetection(enabled: boolean) {
 
   const sourceKey = source ? `${activeInstance?.id ?? ""}:${source.sourcePath}:${loadToken}` : null;
   const mix = useMemo(
-    () =>
-      audioTracks
-        .filter((track) => track.enabled && track.volumePercent > 0)
-        .map(({ streamIndex, volumePercent }) => ({ streamIndex, volumePercent })),
-    [audioTracks],
+    () => selectedAudioTracks(audioTracks, masterAudio),
+    [audioTracks, masterAudio],
   );
 
-  const mixKey = JSON.stringify(mix);
+  const mixKey = JSON.stringify({ mergeAudio, mix });
   const requestId = useRef(0);
 
   useEffect(() => {
@@ -47,6 +56,7 @@ function useSilenceDetection(enabled: boolean) {
     if (
       !source ||
       !sourceKey ||
+      !media ||
       !enabled ||
       !activeInstanceMatchesSource ||
       !activeInstance ||
@@ -54,15 +64,21 @@ function useSilenceDetection(enabled: boolean) {
     )
       return;
     const currentRequestId = ++requestId.current;
-    dispatch(silenceDetectionStarted({ mixKey, sourceKey }));
+    dispatch(audioActivityDetectionStarted({ mixKey, sourceKey }));
     try {
-      const ranges = await detectSilence(source.sourcePath, mix);
+      const ranges = await detectAudioActivity(
+        source.sourcePath,
+        mix,
+        mergeAudio,
+        media.durationMicros,
+      );
+
       if (requestId.current !== currentRequestId) return;
-      dispatch(silenceDetectionFinished({ mixKey, ranges, sourceKey }));
+      dispatch(audioActivityDetectionFinished({ mixKey, ranges, sourceKey }));
     } catch (error: unknown) {
       if (requestId.current !== currentRequestId) return;
       dispatch(
-        silenceDetectionFailed({
+        audioActivityDetectionFailed({
           error:
             error instanceof Error
               ? error.message
@@ -82,8 +98,10 @@ function useSilenceDetection(enabled: boolean) {
     activeInstanceMatchesSource,
     dispatch,
     enabled,
+    media,
     mix,
     mixKey,
+    mergeAudio,
     source,
     sourceKey,
   ]);
@@ -104,4 +122,4 @@ function useSilenceDetection(enabled: boolean) {
   };
 }
 
-export { useSilenceDetection };
+export { useAudioActivityDetection };

@@ -2,9 +2,17 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import type { RootState } from "@/app/store/store";
-import type { SilenceRange } from "@/lib/tauri/media.types";
+import type { AudioActivityRange } from "@/domain/media";
 
 type EditorToolsState = {
+  audioActivityDetection?: {
+    error: string | null;
+    mixKey: string;
+    ranges?: AudioActivityRange[];
+    sourceKey: string;
+    status: "failed" | "loading" | "ready";
+  };
+  audioActivityMarkersEnabled?: boolean;
   loopPlaybackEnabled: boolean;
   sceneDetection?: {
     error: string | null;
@@ -13,14 +21,6 @@ type EditorToolsState = {
   };
   sceneMarkersEnabled?: boolean;
   segmentPlaybackEnabled: boolean;
-  silenceDetection?: {
-    error: string | null;
-    mixKey: string;
-    ranges?: SilenceRange[];
-    sourceKey: string;
-    status: "failed" | "loading" | "ready";
-  };
-  silenceMarkersEnabled?: boolean;
 };
 
 const createInitialState = (): EditorToolsState =>
@@ -63,31 +63,35 @@ const editorToolsSlice = createSlice({
     sceneDetectionFinished: (state, action: PayloadAction<string>) => {
       if (state.sceneDetection?.sourceKey === action.payload) delete state.sceneDetection;
     },
-    silenceMarkersToggled: (state) => {
-      state.silenceMarkersEnabled = !(state.silenceMarkersEnabled ?? true);
+    audioActivityMarkersToggled: (state) => {
+      state.audioActivityMarkersEnabled = !(state.audioActivityMarkersEnabled ?? true);
     },
-    silenceDetectionStarted: (
+    audioActivityDetectionStarted: (
       state,
       action: PayloadAction<{ mixKey: string; sourceKey: string }>,
     ) => {
-      state.silenceDetection = { ...action.payload, error: null, status: "loading" };
+      state.audioActivityDetection = { ...action.payload, error: null, status: "loading" };
     },
-    silenceDetectionFailed: (
+    audioActivityDetectionFailed: (
       state,
       action: PayloadAction<{ error: string | null; mixKey: string; sourceKey: string }>,
     ) => {
-      state.silenceDetection = { ...action.payload, status: "failed" };
+      state.audioActivityDetection = { ...action.payload, status: "failed" };
     },
-    silenceDetectionFinished: (
+    audioActivityDetectionFinished: (
       state,
-      action: PayloadAction<{ mixKey: string; ranges: SilenceRange[]; sourceKey: string }>,
+      action: PayloadAction<{ mixKey: string; ranges: AudioActivityRange[]; sourceKey: string }>,
     ) => {
-      state.silenceDetection = { ...action.payload, error: null, status: "ready" };
+      state.audioActivityDetection = { ...action.payload, error: null, status: "ready" };
     },
   },
 });
 
 const {
+  audioActivityDetectionFailed,
+  audioActivityDetectionFinished,
+  audioActivityDetectionStarted,
+  audioActivityMarkersToggled,
   editorToolsInitialized,
   loopPlaybackToggled,
   sceneDetectionFailed,
@@ -95,10 +99,6 @@ const {
   sceneDetectionStarted,
   sceneMarkersToggled,
   segmentPlaybackToggled,
-  silenceDetectionFailed,
-  silenceDetectionFinished,
-  silenceDetectionStarted,
-  silenceMarkersToggled,
 } = editorToolsSlice.actions;
 
 const editorToolsReducer = editorToolsSlice.reducer;
@@ -116,13 +116,18 @@ const selectSceneMarkersEnabled = (state: RootState): boolean =>
 const selectSceneDetectionOperation = (state: RootState): EditorToolsState["sceneDetection"] =>
   selectEditorTools(state).sceneDetection;
 
-const selectSilenceDetectionOperation = (state: RootState): EditorToolsState["silenceDetection"] =>
-  selectEditorTools(state).silenceDetection;
+const selectAudioActivityDetectionOperation = (
+  state: RootState,
+): EditorToolsState["audioActivityDetection"] => selectEditorTools(state).audioActivityDetection;
 
-const selectSilenceMarkersEnabled = (state: RootState): boolean =>
-  selectEditorTools(state).silenceMarkersEnabled ?? true;
+const selectAudioActivityMarkersEnabled = (state: RootState): boolean =>
+  selectEditorTools(state).audioActivityMarkersEnabled ?? true;
 
 export {
+  audioActivityDetectionFailed,
+  audioActivityDetectionFinished,
+  audioActivityDetectionStarted,
+  audioActivityMarkersToggled,
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
   editorToolsReducer,
@@ -132,15 +137,11 @@ export {
   sceneDetectionStarted,
   sceneMarkersToggled,
   segmentPlaybackToggled,
+  selectAudioActivityDetectionOperation,
+  selectAudioActivityMarkersEnabled,
   selectEditorTools,
   selectLoopPlaybackEnabled,
   selectSceneDetectionOperation,
   selectSceneMarkersEnabled,
   selectSegmentPlaybackEnabled,
-  selectSilenceDetectionOperation,
-  selectSilenceMarkersEnabled,
-  silenceDetectionFailed,
-  silenceDetectionFinished,
-  silenceDetectionStarted,
-  silenceMarkersToggled,
 };

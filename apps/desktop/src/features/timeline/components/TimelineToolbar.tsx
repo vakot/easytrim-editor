@@ -17,8 +17,8 @@ import {
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { cn } from "@/lib/class-names.utils";
 
+import { useAudioActivityDetection } from "../hooks/useAudioActivityDetection";
 import { useSceneDetection } from "../hooks/useSceneDetection";
-import { useSilenceDetection } from "../hooks/useSilenceDetection";
 
 import { StereoAudioMeter } from "./StereoAudioMeter";
 
@@ -36,7 +36,7 @@ function TimelineToolbar() {
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
         <SceneDetectionTool />
-        <SilenceDetectionTool />
+        <AudioActivityDetectionTool />
       </div>
 
       <Separator orientation="vertical" />
@@ -46,22 +46,22 @@ function TimelineToolbar() {
   );
 }
 
-function SilenceDetectionTool() {
+function AudioActivityDetectionTool() {
   const { t } = useTranslation();
   const sourceReady = useAppSelector(selectSourceReady);
-  const detectCommand = useApplicationCommand("detect-silence");
-  const showMarkersCommand = useApplicationCommand("show-silence-markers");
+  const detectCommand = useApplicationCommand("detect-audio-activity");
+  const showMarkersCommand = useApplicationCommand("show-audio-activity-markers");
   const { executeCommand } = useApplicationCommands();
-  const detection = useSilenceDetection(sourceReady);
+  const detection = useAudioActivityDetection(sourceReady);
   const loading = detectCommand.pending || detection.isDetecting;
   const hasFailed = detection.error !== null;
   const error = detection.error;
   const markersEnabled = showMarkersCommand.checked ?? true;
   const label = detection.hasDetected
     ? markersEnabled
-      ? t("timeline.actions.disableSilenceMarkers")
-      : t("timeline.actions.enableSilenceMarkers")
-    : t("timeline.actions.detectSilence");
+      ? t("timeline.actions.disableAudioActivityMarkers")
+      : t("timeline.actions.enableAudioActivityMarkers")
+    : t("timeline.actions.detectAudioActivity");
 
   const button = (
     <Button
@@ -74,7 +74,7 @@ function SilenceDetectionTool() {
       }
       onClick={() =>
         void executeCommand(
-          detection.hasDetected ? "show-silence-markers" : "detect-silence",
+          detection.hasDetected ? "show-audio-activity-markers" : "detect-audio-activity",
           "button",
         )
       }
@@ -91,10 +91,10 @@ function SilenceDetectionTool() {
       <Popover>
         <PopoverTrigger asChild>{button}</PopoverTrigger>
         <PopoverContent align="start" className="space-y-3">
-          <p role="alert">{error || t("timeline.status.silenceDetectionFailed")}</p>
+          <p role="alert">{error || t("timeline.status.audioActivityDetectionFailed")}</p>
           <Button
             disabled={loading}
-            onClick={() => void executeCommand("detect-silence", "button")}
+            onClick={() => void executeCommand("detect-audio-activity", "button")}
             size="sm"
             type="button"
           >
@@ -108,7 +108,7 @@ function SilenceDetectionTool() {
     <Tooltip preserveOnTrigger>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
       <TooltipContent>
-        {detection.hasDetected ? label : t("timeline.tooltips.detectSilence")}
+        {detection.hasDetected ? label : t("timeline.tooltips.detectAudioActivity")}
       </TooltipContent>
     </Tooltip>
   );

@@ -2,6 +2,8 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 
+import { audioActivityRangesFromSilence } from "@/domain/audio-activity";
+import type { AudioTrackSelection } from "@/domain/media";
 import type { SourceRef } from "@/domain/source";
 
 import type {
@@ -17,7 +19,6 @@ import type {
   OptimizedExportRequest,
   OutputSelection,
   PreviewDescriptor,
-  SilenceMixTrack,
   SourceDropEvent,
   SourceImportResult,
   SourcePickerMode,
@@ -76,9 +77,18 @@ async function detectScenes(sourcePath: string): Promise<number[]> {
   }
 }
 
-async function detectSilence(sourcePath: string, mix: SilenceMixTrack[]) {
+async function detectAudioActivity(
+  sourcePath: string,
+  mix: AudioTrackSelection[],
+  mergeAudio: boolean,
+  durationMicros: number,
+) {
   try {
-    return parseSilenceRanges(await invoke<unknown>("detect_silence", { sourcePath, mix }));
+    const silenceRanges = parseSilenceRanges(
+      await invoke<unknown>("detect_silence", { sourcePath, mix, mergeAudio }),
+    );
+
+    return audioActivityRangesFromSilence(silenceRanges, durationMicros);
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -416,8 +426,8 @@ export {
   checkMediaCapabilities,
   chooseOutputPath,
   chooseSource,
+  detectAudioActivity,
   detectScenes,
-  detectSilence,
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,

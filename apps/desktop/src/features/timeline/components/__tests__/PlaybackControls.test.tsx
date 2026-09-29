@@ -22,10 +22,8 @@ const mocks = vi.hoisted(() => ({
   },
   executeCommand: vi.fn(),
   commands: {
-    "previous-segment": { enabled: true, label: "Move to previous segment", pending: false },
-    "next-segment": { enabled: true, label: "Move to next segment", pending: false },
-    "show-scene-markers": { checked: true, enabled: true, label: "Show scene markers" },
-    "show-silence-markers": { checked: true, enabled: false, label: "Show silent ranges" },
+    "previous-marker": { enabled: true, label: "Previous marker", pending: false },
+    "next-marker": { enabled: true, label: "Next marker", pending: false },
   },
   timeline: {
     canSetSegmentEnd: true,
@@ -111,26 +109,30 @@ describe("PlaybackControls", () => {
     expect(mocks.playback.stopShuttle).not.toHaveBeenCalled();
   });
 
-  it("keeps focus on the current control after clicking a segment navigation button", async () => {
+  it("keeps focus on the current control after clicking a marker navigation button", async () => {
     const user = userEvent.setup();
     render(<PlaybackControls />, { wrapper: TestProvider });
 
     const playButton = screen.getByRole("button", { name: "Play" });
-    const previousSegmentButton = screen.getByRole("button", {
-      name: "Move to previous segment",
-    });
+    const previousMarkerButton = screen.getByRole("button", { name: "Previous marker" });
 
-    const nextSegmentButton = screen.getByRole("button", { name: "Move to next segment" });
-    expect(previousSegmentButton).toHaveAttribute("data-editor-keyboard", "timeline-transport");
-    expect(nextSegmentButton).toHaveAttribute("data-editor-keyboard", "timeline-transport");
-    expect(
-      screen.getAllByRole("button", { name: /move to (previous|next) segment/i }),
-    ).toHaveLength(2);
+    const nextMarkerButton = screen.getByRole("button", { name: "Next marker" });
+    expect(previousMarkerButton).toHaveAttribute("data-editor-keyboard", "timeline-transport");
+    expect(nextMarkerButton).toHaveAttribute("data-editor-keyboard", "timeline-transport");
+    expect(screen.getAllByRole("button", { name: /marker/i })).toHaveLength(2);
     playButton.focus();
 
-    await user.click(previousSegmentButton);
+    await user.click(previousMarkerButton);
 
     expect(document.activeElement).toBe(playButton);
-    expect(mocks.executeCommand).toHaveBeenCalledWith("previous-segment", "button");
+    expect(mocks.executeCommand).toHaveBeenCalledWith("previous-marker", "button");
+  });
+
+  it("hides marker navigation when neither direction has a visible marker target", () => {
+    mocks.commands["previous-marker"].enabled = false;
+    mocks.commands["next-marker"].enabled = false;
+    render(<PlaybackControls />, { wrapper: TestProvider });
+
+    expect(screen.queryByRole("button", { name: /marker/i })).not.toBeInTheDocument();
   });
 });

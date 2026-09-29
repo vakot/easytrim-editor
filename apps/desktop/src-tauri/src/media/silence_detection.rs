@@ -30,16 +30,17 @@ pub struct SilenceRange {
 
 pub fn detect_silence_ranges(
     source: &ActiveSource,
-    mix: &[(u32, u8)],
+    mix: &[(u32, u16)],
+    merge_audio: bool,
     duration_micros: u64,
 ) -> Result<Vec<SilenceRange>, AppError> {
     if mix.is_empty() {
         return Err(AppError::invalid_request(
-            "Enable at least one audio track before detecting silence.",
+            "Enable at least one audio track before detecting audio activity.",
         ));
     }
 
-    let arguments = silence_detection_arguments(&source.path, mix);
+    let arguments = silence_detection_arguments(&source.path, mix, merge_audio);
     let output = run_bounded_cancellable(
         OsStr::new("ffmpeg"),
         &arguments,
@@ -52,13 +53,13 @@ pub fn detect_silence_ranges(
 
     if !output.status.success() {
         return Err(AppError::silence_detection_failed(
-            "FFmpeg could not detect silent ranges.",
+            "FFmpeg could not analyze audio activity.",
             diagnostics(&output, &source.path),
         ));
     }
     if output.stderr_truncated {
         return Err(AppError::silence_detection_failed(
-            "The silence detection output exceeded its safety limit.",
+            "The audio activity analysis output exceeded its safety limit.",
             None::<String>,
         ));
     }
@@ -66,7 +67,11 @@ pub fn detect_silence_ranges(
     parse_silence_ranges(&output.stderr, duration_micros)
 }
 
-fn silence_detection_arguments(source_path: &Path, mix: &[(u32, u8)]) -> Vec<OsString> {
+fn silence_detection_arguments(
+    source_path: &Path,
+    mix: &[(u32, u16)],
+    merge_audio: bool,
+) -> Vec<OsString> {
     let mut filters = Vec::with_capacity(mix.len() + 1);
     for (position, (stream_index, volume_percent)) in mix.iter().enumerate() {
         let gain = f64::from(*volume_percent) / 50.0;
@@ -78,8 +83,9 @@ fn silence_detection_arguments(source_path: &Path, mix: &[(u32, u8)]) -> Vec<OsS
         .map(|position| format!("[audio{position}]"))
         .collect::<String>();
     filters.push(format!(
-        "{inputs}amix=inputs={}:normalize=0:duration=longest,silencedetect=noise={SILENCE_THRESHOLD_DB}dB:d={MIN_SILENCE_SECONDS}[silenceout]",
-        mix.len()
+        "{inputs}amix=inputs={}:normalize={}:duration=longest,silencedetect=noise={SILENCE_THRESHOLD_DB}dB:d={MIN_SILENCE_SECONDS}[silenceout]",
+        mix.len(),
+        u8::from(merge_audio)
     ));
 
     let filter_complex = filters.join(";");
@@ -126,7 +132,7 @@ fn parse_silence_ranges(
                 });
                 if ranges.len() > MAX_SILENCE_RANGES {
                     return Err(AppError::silence_detection_failed(
-                        "The source contains too many silent ranges.",
+                        "The audio activity analysis contains too many ranges.",
                         None::<String>,
                     ));
                 }
@@ -142,7 +148,7 @@ fn parse_silence_ranges(
         });
         if ranges.len() > MAX_SILENCE_RANGES {
             return Err(AppError::silence_detection_failed(
-                "The source contains too many silent ranges.",
+                "The audio activity analysis contains too many ranges.",
                 None::<String>,
             ));
         }
@@ -161,16 +167,19 @@ fn parse_timestamp(value: &str) -> Option<u64> {
 
 fn process_error(error: io::Error) -> AppError {
     match error.kind() {
-        io::ErrorKind::Interrupted => AppError::cancelled("Silence detection was interrupted."),
+        io::ErrorKind::Interrupted => {
+            AppError::cancelled("Audio activity detection was interrupted.")
+        }
         io::ErrorKind::NotFound => AppError::silence_detection_failed(
-            "FFmpeg is required to detect silence.",
+            "FFmpeg is required to analyze audio activity.",
             None::<String>,
         ),
-        io::ErrorKind::TimedOut => {
-            AppError::silence_detection_failed("Silence detection took too long.", None::<String>)
-        }
+        io::ErrorKind::TimedOut => AppError::silence_detection_failed(
+            "Audio activity detection took too long.",
+            None::<String>,
+        ),
         _ => AppError::silence_detection_failed(
-            "FFmpeg could not detect silent ranges.",
+            "FFmpeg could not analyze audio activity.",
             None::<String>,
         ),
     }
@@ -232,7 +241,7 @@ mod tests {
 
     #[test]
     fn builds_a_filter_for_the_selected_tracks_and_gains() {
-        let args = silence_detection_arguments(Path::new("input.mp4"), &[(2, 50), (4, 25)]);
+        let args = silence_detection_arguments(Path::new("input.mp4"), &[(2, 50), (4, 25)], false);
         let args = args
             .iter()
             .map(|arg| arg.to_string_lossy())
@@ -246,5 +255,17 @@ mod tests {
         assert!(filter.contains("[0:2]aformat=channel_layouts=mono,volume=1.000[audio0]"));
         assert!(filter.contains("[0:4]aformat=channel_layouts=mono,volume=0.500[audio1]"));
         assert!(filter.contains("amix=inputs=2:normalize=0:duration=longest,silencedetect"));
+    }
+
+    #[test]
+    fn detection_uses_export_mix_normalization_when_audio_is_merged() {
+        let args = silence_detection_arguments(Path::new("input.mp4"), &[(2, 50), (4, 25)], true);
+        let filter = args
+            .windows(2)
+            .find(|pair| pair[0] == "-filter_complex")
+            .map(|pair| pair[1].to_string_lossy())
+            .expect("filter graph exists");
+
+        assert!(filter.contains("amix=inputs=2:normalize=1:duration=longest,silencedetect"));
     }
 }

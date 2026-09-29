@@ -68,9 +68,9 @@ export const sk = {
         preferencesPlayback: "Nastavenia / Prehrávanie",
         previewFrame: "Náhľad / Snímka",
         previewTransform: "Náhľad / Transformácia",
-        segment: "Segment",
-        segmentScene: "Segment / Scéna",
-        segmentSilence: "Segment / Ticho",
+        markers: "Značky",
+        markersScene: "Značky / Scéna",
+        markersAudioActivity: "Značky / Aktivita zvuku",
         queueOnFinishedApplication: "Front / Po dokončení / Aplikácia",
         queueOnFinishedSource: "Front / Po dokončení / Zdroj",
         go: "Prejsť",
@@ -405,12 +405,12 @@ export const sk = {
   preview: {
     actions: {
       nextFrame: "Nasledujúca snímka",
-      nextSegment: "Prejsť na nasledujúci segment",
+      nextMarker: "Nasledujúca značka",
       copyFrame: "Kopírovať snímku",
       pause: "Pozastaviť",
       play: "Prehrať",
       previousFrame: "Predchádzajúca snímka",
-      previousSegment: "Prejsť na predchádzajúci segment",
+      previousMarker: "Predchádzajúca značka",
       saveFrame: "Uložiť snímku",
       setEnd: "Nastaviť koniec segmentu na aktuálnu pozíciu",
       setStart: "Nastaviť začiatok segmentu na aktuálnu pozíciu",
@@ -495,9 +495,9 @@ export const sk = {
   timeline: {
     actions: {
       detectScenes: "Rozpoznať zmeny scén",
-      detectSilence: "Rozpoznať ticho v aktívnom mixe",
-      disableSilenceMarkers: "Skryť tiché úseky",
-      enableSilenceMarkers: "Zobraziť tiché úseky",
+      detectAudioActivity: "Rozpoznať aktivitu zvuku v aktívnom mixe",
+      disableAudioActivityMarkers: "Skryť rozsahy aktivity zvuku",
+      enableAudioActivityMarkers: "Zobraziť rozsahy aktivity zvuku",
       disableSceneMarkers: "Skryť značky scén",
       enableSceneMarkers: "Zobraziť značky scén",
       moveSegment: "Presunúť vybraný segment",
@@ -511,12 +511,13 @@ export const sk = {
     },
     status: {
       sceneDetectionFailed: "Rozpoznávanie scén zlyhalo. Skúste to znova.",
-      silenceDetectionFailed: "Rozpoznávanie ticha zlyhalo. Skúste to znova.",
+      audioActivityDetectionFailed: "Rozpoznávanie aktivity zvuku zlyhalo. Skúste to znova.",
     },
     tooltips: {
       detectScenes:
-        "Analyzovať zdrojové video a vyhľadať zmeny scén. Podržte Shift počas ťahania a prichyťte sa k značke scény alebo k okraju tichého úseku.",
-      detectSilence: "Analyzovať zapnuté zvukové stopy a označiť tiché úseky na časovej osi.",
+        "Analyzovať zdrojové video a vyhľadať zmeny scén. Podržte Shift počas ťahania a prichyťte sa k značke scény alebo k okraju rozsahu aktivity zvuku.",
+      detectAudioActivity:
+        "Analyzovať aktívny zvukový mix a označiť rozsahy aktivity zvuku na časovej osi.",
       moveSegment: "Potiahnutím presuňte vybraný segment — podržaním Shift ho prichytíte",
       trimReset: "{{label}} — podržaním Shift prichytíte — dvojitým kliknutím obnovíte",
     },

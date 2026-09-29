@@ -1,14 +1,14 @@
-import type { SilenceRange } from "@/lib/tauri/media.types";
+import type { AudioActivityRange } from "@/domain/media";
 
 const TIMELINE_SNAP_REACH_PX = 12;
 
 function createTimelineSnapTargets(
   sceneBoundariesMicros: readonly number[],
-  silenceRanges: readonly SilenceRange[],
+  audioActivityRanges: readonly AudioActivityRange[],
 ) {
   return [
     ...sceneBoundariesMicros,
-    ...silenceRanges.flatMap(({ endMicros, startMicros }) => [startMicros, endMicros]),
+    ...audioActivityRanges.flatMap(({ endMicros, startMicros }) => [startMicros, endMicros]),
   ].sort((left, right) => left - right);
 }
 
