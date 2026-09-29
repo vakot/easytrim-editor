@@ -146,7 +146,7 @@ struct ActiveSourceRecord {
     media: Option<MediaInfo>,
     preview_streams: Option<PreviewStreamSelection>,
     preview: Option<PreviewArtifact>,
-    audio_previews: HashMap<u32, AudioPreviewArtifact>,
+    audio_previews: HashMap<u32, (u64, AudioPreviewArtifact)>,
     audio_stream_indexes: Vec<u32>,
     waveform_job: Option<WaveformJobRecord>,
     waveforms: HashMap<u32, WaveformRecord>,
@@ -589,6 +589,7 @@ impl AppState {
         &self,
         load_token: u64,
         stream_index: u32,
+        preview_revision: u64,
         preview: AudioPreviewArtifact,
     ) -> Result<(), AppError> {
         let previous_preview = {
@@ -597,7 +598,16 @@ impl AppState {
             if source.cancellation.load(Ordering::Acquire) {
                 return Err(AppError::source_replaced());
             }
-            source.audio_previews.insert(stream_index, preview)
+            if source
+                .audio_previews
+                .get(&stream_index)
+                .is_some_and(|(revision, _)| *revision > preview_revision)
+            {
+                return Ok(());
+            }
+            source
+                .audio_previews
+                .insert(stream_index, (preview_revision, preview))
         };
         drop(previous_preview);
         Ok(())
@@ -607,6 +617,7 @@ impl AppState {
         &self,
         load_token: u64,
         stream_index: u32,
+        preview_revision: u64,
     ) -> Result<PathBuf, AppError> {
         let session = self.lock_session()?;
         let source = session
@@ -617,7 +628,8 @@ impl AppState {
         source
             .audio_previews
             .get(&stream_index)
-            .map(|preview| preview.path().to_owned())
+            .filter(|(revision, _)| *revision == preview_revision)
+            .map(|(_, preview)| preview.path().to_owned())
             .ok_or_else(|| AppError::invalid_request("The audio preview is not available."))
     }
 

@@ -245,8 +245,26 @@ function parseBinaryCapability(value: unknown): BinaryCapability {
 
 function parseAudioPreviewDescriptor(value: unknown): AudioPreviewDescriptor {
   const preview = requireRecord(value, "audio preview descriptor");
+  const processing = requireRecord(preview.processing, "audio preview processing");
+  const gainDb = optionalFiniteNumber(processing.gainDb, "audio preview gain");
+  if (gainDb === undefined) throw invalidResponse("audio preview gain");
+  const loudnessNormalization =
+    processing.loudnessNormalization === null ? undefined : processing.loudnessNormalization;
+  if (
+    loudnessNormalization !== undefined &&
+    loudnessNormalization !== "webVideo" &&
+    loudnessNormalization !== "streaming" &&
+    loudnessNormalization !== "broadcast"
+  ) {
+    throw invalidResponse("audio preview loudness normalization");
+  }
   return {
     mediaToken: requirePositiveInteger(preview.mediaToken, "audio preview media token"),
+    previewRevision: requirePositiveInteger(preview.previewRevision, "audio preview revision"),
+    processing: {
+      gainDb,
+      ...(loudnessNormalization === undefined ? {} : { loudnessNormalization }),
+    },
     streamIndex: requireInteger(preview.streamIndex, "audio preview stream index"),
     url: requireString(preview.url, "audio preview URL"),
   };

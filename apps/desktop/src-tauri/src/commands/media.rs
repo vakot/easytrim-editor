@@ -14,8 +14,16 @@ use crate::{
     state::{AppState, PreviewStreamSelection},
 };
 use serde::Serialize;
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::PathBuf,
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
+};
 use tauri::{AppHandle, Manager, State};
+
+static NEXT_AUDIO_PREVIEW_REVISION: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -39,10 +47,12 @@ pub struct ThumbnailDescriptor {
     pub url: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioPreviewDescriptor {
     pub media_token: u64,
+    pub preview_revision: u64,
+    pub processing: crate::media::export::AudioTrackProcessing,
     pub stream_index: u32,
     pub url: String,
 }
@@ -249,38 +259,45 @@ fn record_ffprobe_event(
 #[tauri::command]
 pub async fn prepare_audio_previews(
     source_path: String,
-    stream_indexes: Vec<u32>,
+    audio_tracks: Vec<AudioTrackSelection>,
     state: State<'_, AppState>,
 ) -> Result<Vec<AudioPreviewDescriptor>, AppError> {
-    if stream_indexes.is_empty() || stream_indexes.len() > 32 {
+    if audio_tracks.is_empty() || audio_tracks.len() > 32 {
         return Err(AppError::invalid_request(
             "Select between one and 32 audio streams for preview.",
         ));
     }
     let source = state.resolve_source_by_path(&source_path)?;
     let media_token = source.load_token;
-    let mut unique_stream_indexes = stream_indexes.clone();
+    let preview_revision = NEXT_AUDIO_PREVIEW_REVISION.fetch_add(1, Ordering::Relaxed);
+    let mut unique_stream_indexes = audio_tracks
+        .iter()
+        .map(|track| track.stream_index)
+        .collect::<Vec<_>>();
     unique_stream_indexes.sort_unstable();
     unique_stream_indexes.dedup();
-    if unique_stream_indexes.len() != stream_indexes.len() {
+    if unique_stream_indexes.len() != audio_tracks.len() {
         return Err(AppError::invalid_request(
             "Audio preview stream indexes must be unique.",
         ));
     }
 
     let generated = tauri::async_runtime::spawn_blocking(move || {
-        generate_audio_previews(&source, &stream_indexes)
+        generate_audio_previews(&source, &audio_tracks)
     })
     .await
     .map_err(|_| AppError::internal("Audio preview preparation stopped unexpectedly."))??;
 
     let mut results = Vec::with_capacity(generated.len());
-    for (stream_index, artifact) in generated {
-        state.install_audio_preview(media_token, stream_index, artifact)?;
+    for (track, artifact) in generated {
+        let stream_index = track.stream_index;
+        state.install_audio_preview(media_token, stream_index, preview_revision, artifact)?;
         results.push(AudioPreviewDescriptor {
             media_token,
+            preview_revision,
+            processing: track.processing,
             stream_index,
-            url: audio_preview_url(media_token, stream_index),
+            url: audio_preview_url(media_token, stream_index, preview_revision),
         });
     }
     Ok(results)
@@ -473,13 +490,17 @@ fn waveform_url(media_token: u64, stream_index: u32, width: u32) -> String {
 }
 
 #[cfg(any(target_os = "windows", target_os = "android"))]
-fn audio_preview_url(media_token: u64, stream_index: u32) -> String {
-    format!("http://easytrim-media.localhost/{media_token}?variant=audio&stream={stream_index}")
+fn audio_preview_url(media_token: u64, stream_index: u32, revision: u64) -> String {
+    format!(
+        "http://easytrim-media.localhost/{media_token}?variant=audio&stream={stream_index}&revision={revision}"
+    )
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "android")))]
-fn audio_preview_url(media_token: u64, stream_index: u32) -> String {
-    format!("easytrim-media://localhost/{media_token}?variant=audio&stream={stream_index}")
+fn audio_preview_url(media_token: u64, stream_index: u32, revision: u64) -> String {
+    format!(
+        "easytrim-media://localhost/{media_token}?variant=audio&stream={stream_index}&revision={revision}"
+    )
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "android")))]

@@ -26,6 +26,7 @@ import {
   moveSourceToTrash,
   planOptimizedExport,
   prepareImportedSourceThumbnail,
+  prepareAudioPreviews,
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
@@ -55,6 +56,28 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
+  it("prepares audio previews with the canonical per-track processing settings", async () => {
+    const audioTracks = [
+      { streamIndex: 2, processing: { gainDb: 3, loudnessNormalization: "streaming" as const } },
+    ];
+    const descriptor = {
+      mediaToken: 4,
+      previewRevision: 12,
+      processing: audioTracks[0]!.processing,
+      streamIndex: 2,
+      url: "easytrim-media://localhost/4?variant=audio&stream=2&revision=12",
+    };
+    mocks.invoke.mockResolvedValueOnce([descriptor]);
+
+    await expect(prepareAudioPreviews("C:/Media/clip.mp4", audioTracks)).resolves.toEqual([
+      descriptor,
+    ]);
+    expect(mocks.invoke).toHaveBeenCalledWith("prepare_audio_previews", {
+      sourcePath: "C:/Media/clip.mp4",
+      audioTracks,
+    });
+  });
+
   it("converts detected silence to activity ranges for one track", async () => {
     const track = { streamIndex: 2, processing: { gainDb: -3 } };
 

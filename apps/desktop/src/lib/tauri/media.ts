@@ -3,8 +3,8 @@ import type { UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 
 import { audioActivityRangesFromSilence } from "@/domain/audio-activity";
-import type { AudioTrackSelection } from "@/domain/media";
 import type { SourceRef } from "@/domain/source";
+import type { AudioTrackSelection } from "@/domain/audio-processing";
 
 import type {
   AudioPreviewDescriptor,
@@ -314,11 +314,11 @@ async function releaseImportedSourceThumbnail(mediaToken: number): Promise<void>
 
 async function prepareAudioPreviews(
   sourcePath: string,
-  streamIndexes: number[],
+  audioTracks: AudioTrackSelection[],
 ): Promise<AudioPreviewDescriptor[]> {
   try {
     return parseAudioPreviewDescriptors(
-      await invoke<unknown>("prepare_audio_previews", { sourcePath, streamIndexes }),
+      await invoke<unknown>("prepare_audio_previews", { sourcePath, audioTracks }),
     );
   } catch (error: unknown) {
     throw normalizeAppError(error);
