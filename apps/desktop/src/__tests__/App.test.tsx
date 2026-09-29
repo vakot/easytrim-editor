@@ -926,7 +926,7 @@ describe("App", () => {
     expect(
       videoToolbar.querySelector('[data-slot="timeline-tools-divider"]'),
     ).not.toBeInTheDocument();
-    expect(within(videoToolbar).getAllByRole("button")).toHaveLength(4);
+    expect(within(videoToolbar).getAllByRole("button")).toHaveLength(3);
     const timelineFixedContent = screen.getByTestId("timeline-fixed-content");
     expect(
       within(timelineFixedContent).getByRole("button", { name: "Playback speed" }),
@@ -1423,7 +1423,7 @@ describe("App", () => {
 
       fireEvent.error(screen.getByLabelText("Source video preview"));
       await screen.findByText("Compatible preview");
-      await waitFor(() => expect(audioConstructor).toHaveBeenCalledTimes(4));
+      await waitFor(() => expect(audioConstructor).toHaveBeenCalledTimes(6));
 
       expect(audioElements.slice(0, 2).every((element) => !document.body.contains(element))).toBe(
         true,

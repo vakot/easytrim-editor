@@ -188,10 +188,6 @@ function timelinePercent(micros: number, sourceDurationMicros: number): number {
   return (clampInteger(micros, 0, sourceDurationMicros) / sourceDurationMicros) * 100;
 }
 
-function clampToTrim(micros: number, range: TrimRange): number {
-  return clampInteger(micros, range.startMicros, range.endMicros);
-}
-
 function isValidTrimRange(range: TrimRange): boolean {
   const minimumDuration = minimumSelectionMicros(range.sourceDurationMicros);
   return (
@@ -223,7 +219,6 @@ function requirePositiveInteger(value: number, label: string): number {
 
 export {
   canSetTrimBoundaryAtPlayhead,
-  clampToTrim,
   createFullTrimRange,
   isValidTrimRange,
   microsFromTimelinePosition,

@@ -60,10 +60,8 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
     expect(screen.getByRole("dialog", { name: /effects/i })).toBeInTheDocument();
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: /loudness normalization/i }),
-      "broadcast",
-    );
+    await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
+    await user.click(screen.getByRole("option", { name: /broadcast/i }));
     expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
 
     await user.keyboard("{Escape}");
@@ -77,10 +75,8 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: /loudness normalization/i }),
-      "streaming",
-    );
+    await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
+    await user.click(screen.getByRole("option", { name: /streaming/i }));
     expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
     await user.click(screen.getByRole("button", { name: /apply/i }));
 
@@ -111,10 +107,8 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: /loudness normalization/i }),
-      "custom",
-    );
+    await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
+    await user.click(screen.getByRole("option", { name: /custom/i }));
     const target = screen.getByRole("spinbutton", { name: /target loudness/i });
     await user.clear(target);
     await user.type(target, "-18.5");

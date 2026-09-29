@@ -125,7 +125,6 @@ export type {
   AppError,
   AudioActivityRange,
   AudioStream,
-  AudioTrackSelection,
   ChapterInfo,
   ExportProgress,
   ExportResult,

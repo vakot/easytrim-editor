@@ -508,7 +508,6 @@ const selectAudioTracks = (state: RootState): AudioTrackState[] =>
   state.audio.tracks.length > 0 ? state.audio.tracks : EMPTY_AUDIO_TRACKS;
 
 const selectMergeAudio = (state: RootState): boolean => state.audio.mergeAudio;
-const selectAudioPreviews = (state: RootState): AudioPreviewState | null => state.audio.previews;
 
 export {
   audioMergeToggled,
@@ -530,7 +529,6 @@ export {
   audioTrackPreviewStarted,
   audioTrackProcessingChanged,
   audioTrackToggled,
-  selectAudioPreviews,
   selectAudioTracks,
   selectMergeAudio,
   waveformDisplayFailed,

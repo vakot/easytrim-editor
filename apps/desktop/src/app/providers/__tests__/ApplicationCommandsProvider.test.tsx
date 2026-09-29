@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 const state = {
+  audio: { tracks: [] },
   crop: {
     flipHorizontal: false,
     flipVertical: false,
@@ -49,6 +50,7 @@ const state = {
     },
     ids: ["source-1"],
   },
+  editorTools: { loopPlaybackEnabled: true, segmentPlaybackEnabled: true },
   importWorkflow: { isChoosingSource: false, isNativeDialogOpen: false },
   preferences: {
     activityFeedView: "default",
@@ -67,6 +69,7 @@ const state = {
     source: { displayName: "source.mp4", sourcePath: "C:/source.mp4" },
     status: "ready",
   },
+  trim: { value: null },
 };
 
 vi.mock("@/app/store/redux-hooks", () => ({
@@ -128,6 +131,7 @@ vi.mock("@/lib/diagnostics", () => ({
 }));
 
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import { EditorContractsTestProvider } from "@/test/editor-contracts-test-provider";
 
 import { ApplicationCommandsProvider } from "../ApplicationCommandsProvider";
 
@@ -170,12 +174,18 @@ function RuntimeProbe() {
   );
 }
 
-function renderRuntime() {
-  return render(
-    <ApplicationCommandsProvider>
-      <RuntimeProbe />
-    </ApplicationCommandsProvider>,
+function runtimeUi() {
+  return (
+    <EditorContractsTestProvider>
+      <ApplicationCommandsProvider>
+        <RuntimeProbe />
+      </ApplicationCommandsProvider>
+    </EditorContractsTestProvider>
   );
+}
+
+function renderRuntime() {
+  return render(runtimeUi());
 }
 
 describe("ApplicationCommandsProvider", () => {
@@ -201,7 +211,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(58);
+    ).toHaveLength(61);
     expect(
       screen
         .getAllByRole("button")
@@ -346,11 +356,7 @@ describe("ApplicationCommandsProvider", () => {
     expect(screen.getByRole("button", { name: "save-current-frame" })).toBeDisabled();
 
     mocks.isPlaying = false;
-    view.rerender(
-      <ApplicationCommandsProvider>
-        <RuntimeProbe />
-      </ApplicationCommandsProvider>,
-    );
+    view.rerender(runtimeUi());
 
     expect(screen.getByRole("button", { name: "save-current-frame" })).toBeEnabled();
   });
@@ -362,11 +368,7 @@ describe("ApplicationCommandsProvider", () => {
     expect(update).toHaveAttribute("data-keep-open", "true");
 
     mocks.updateStatus = "up-to-date";
-    view.rerender(
-      <ApplicationCommandsProvider>
-        <RuntimeProbe />
-      </ApplicationCommandsProvider>,
-    );
+    view.rerender(runtimeUi());
 
     expect(update).toHaveAttribute("data-variant", "success");
     expect(update.getAttribute("data-label")).toBeTruthy();

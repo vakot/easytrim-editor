@@ -540,7 +540,6 @@ export const en = {
       merge: "Merge selected tracks",
       mute: "Mute",
       muteTrack: "Mute {{title}}",
-      reanalyzeLoudness: "Analyze loudness again",
       redetectActivity: "Re-detect audio activity",
       retryActivityDetection: "Retry activity detection",
       showActivity: "Show detected ranges",

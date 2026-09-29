@@ -543,7 +543,6 @@ export const ru = {
       merge: "Объединить выбранные дорожки",
       mute: "Выключить звук",
       muteTrack: "Выключить звук: {{title}}",
-      reanalyzeLoudness: "Повторить анализ громкости",
       redetectActivity: "Повторно определить активность звука",
       retryActivityDetection: "Повторить поиск активности",
       showActivity: "Показать найденные интервалы",

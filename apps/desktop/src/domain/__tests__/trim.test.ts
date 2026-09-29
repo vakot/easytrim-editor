@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   canSetTrimBoundaryAtPlayhead,
-  clampToTrim,
   createFullTrimRange,
   isValidTrimRange,
   microsFromTimelinePosition,
@@ -185,8 +184,6 @@ describe("trim domain", () => {
     };
 
     expect(timelinePercent(2_500_000, range.sourceDurationMicros)).toBe(25);
-    expect(clampToTrim(500_000, range)).toBe(2_000_000);
-    expect(clampToTrim(9_000_000, range)).toBe(8_000_000);
   });
 
   it("rejects malformed ranges", () => {

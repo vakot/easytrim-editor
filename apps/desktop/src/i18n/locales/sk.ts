@@ -540,7 +540,6 @@ export const sk = {
       merge: "Zlúčiť vybrané stopy",
       mute: "Stlmiť",
       muteTrack: "Stlmiť {{title}}",
-      reanalyzeLoudness: "Znova analyzovať hlasitosť",
       redetectActivity: "Znova rozpoznať aktivitu zvuku",
       retryActivityDetection: "Zopakovať rozpoznávanie aktivity",
       showActivity: "Zobraziť rozpoznané úseky",
