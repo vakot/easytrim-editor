@@ -23,7 +23,7 @@ import { formatGain, normalizationPresetLabel } from "../../lib/audio-level.util
 
 import { AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
-import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog";
+import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog/AudioTrackEffectsDialog";
 import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
 
 interface AudioTrackRowProps {
