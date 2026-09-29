@@ -201,7 +201,7 @@ function SilenceMarkers({
               <motion.div
                 animate={{ opacity: 1, height: "100%" }}
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 z-0 bg-sky-400/20 ring-1 ring-sky-300/50 ring-inset"
+                className="pointer-events-none absolute top-1/2 z-0 -translate-y-1/2 border border-y-0 border-sky-300/50 bg-sky-400/20"
                 exit={{ opacity: 0, height: 0 }}
                 initial={shouldReduceMotion ? false : { opacity: 0 }}
                 key={`${range.startMicros}-${range.endMicros}`}
