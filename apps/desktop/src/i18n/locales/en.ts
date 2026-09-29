@@ -548,7 +548,6 @@ export const en = {
     },
     labels: {
       defaultTrack: "Audio {{number}}",
-      loudnessAnalysis: "Loudness analysis",
       loudnessNormalization: "Loudness normalization",
       maximumTruePeak: "Maximum true peak (dBTP)",
       targetLufs: "Target loudness (LUFS)",
@@ -569,12 +568,15 @@ export const en = {
         separate_other: "{{count}} selected tracks kept separately",
         videoOnly: "Video-only output",
       },
-      analysisUsesAppliedEffects: "Analysis uses the currently applied track processing.",
-      normalizeSummary: "Normalize {{target}} LUFS",
+      normalizedEffectSummary: "Normalized - {{preset}}",
+      normalizedHoverTitle: "Normalized · {{preset}}",
+      normalizedLevelSummary: "{{target}} LUFS · max {{peak}} dBTP",
       preparingProcessedPreview: "Preparing preview with these track settings…",
     },
     tooltips: {
       merge: "All selected tracks are merged into one track; this requires encoding.",
+      normalizationReplacesGain:
+        "Normalize Loudness controls this track's level. Manual gain is ignored while normalization is enabled, preserved, and restored when normalization is turned off.",
     },
     dialogs: {
       effects: {
@@ -594,6 +596,9 @@ export const en = {
       channels_other: "{{count}} channels",
       normalizationNone: "Off",
       normalizationCustom: "Custom",
+      normalizationWebVideo: "Web Video",
+      normalizationStreaming: "Streaming",
+      normalizationBroadcast: "Broadcast",
       unknownLayout: "unknown layout",
     },
   },
@@ -639,13 +644,6 @@ export const en = {
         description: "Configure the optimized render before choosing its file.",
         editTitle: "Edit queued export",
         frameRate: "Frame rate",
-        loudness: {
-          presets: {
-            broadcast: "Broadcast · −23 LUFS / −2 dBTP",
-            streaming: "Streaming · −16 LUFS / −1.5 dBTP",
-            webVideo: "Web video · −14 LUFS / −1 dBTP",
-          },
-        },
         matchSource: "Match source",
         resolution: "Resolution",
         saveNotice: "The native save dialog opens after confirmation.",

@@ -217,11 +217,9 @@ mod tests {
             .find(|pair| pair[0] == "-filter_complex")
             .map(|pair| pair[1].to_string_lossy())
             .expect("filter graph exists");
-        assert!(filter.contains("[0:2]loudnorm=I=-16:TP=-1.5:LRA=11[track0_normalized]"));
-        assert!(filter.contains("[track0_normalized]volume=3.000000dB[audio0]"));
-        assert!(filter.contains(
-            "[0:4]anull[track1_normalized];[track1_normalized]volume=0.000000dB[audio1]"
-        ));
+        assert!(filter.contains("[0:2]loudnorm=I=-16:TP=-1.5:LRA=11[audio0]"));
+        assert!(filter.contains("[0:4]volume=0.000000dB[audio1]"));
+        assert!(!filter.contains("volume=3.000000dB"));
         assert_eq!(
             arguments
                 .iter()

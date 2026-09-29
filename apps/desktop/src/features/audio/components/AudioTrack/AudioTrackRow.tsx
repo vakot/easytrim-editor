@@ -7,14 +7,14 @@ import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectTrim } from "@/app/store/slices/trim-slice";
-import type { AudioTrackProcessing } from "@/domain/audio-processing";
+import { type AudioTrackProcessing, loudnessNormalizationTargets } from "@/domain/audio-processing";
 import { timelinePercent } from "@/domain/trim";
 
 import {
   type AudioTrackController,
   useAudioTrackController,
 } from "../../hooks/useAudioTrackController";
-import { formatGain } from "../../lib/audio-level.utils";
+import { formatGain, normalizationPresetLabel } from "../../lib/audio-level.utils";
 
 import { AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
@@ -100,37 +100,42 @@ function AudioTrackRowWaveform({
 
 function AudioTrackGainIndicator({ controller }: { controller: AudioTrackController }) {
   const { i18n, t } = useTranslation();
+  const normalization = controller.track?.processing.loudnessNormalization;
+  const normalizedSummary = normalization
+    ? formatNormalizationLevel(normalization, i18n.language, t)
+    : null;
 
   return (
     <Badge
-      aria-label={t("audio.accessibility.trackGain")}
+      aria-label={
+        normalizedSummary ?? t("audio.accessibility.trackGain", { number: controller.trackNumber })
+      }
       className="pointer-events-none absolute bottom-1 left-1 z-3 max-w-[calc(100%-0.75rem)]"
       data-slot="audio-track-gain-indicator"
       role="note"
       size="xs"
       variant="outline"
     >
-      {formatGain(controller.liveGainDb, i18n.language)}
+      {normalizedSummary ?? formatGain(controller.liveGainDb, i18n.language)}
     </Badge>
   );
 }
 
 function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProcessing }) {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
   const summaries: string[] = [];
   const normalization = processing.loudnessNormalization;
 
   if (typeof normalization === "string") {
-    const targetLufs = { webVideo: -14, streaming: -16, broadcast: -23 }[normalization];
     summaries.push(
-      t("audio.messages.normalizeSummary", {
-        target: formatProcessingValue(targetLufs, i18n.language),
+      t("audio.messages.normalizedEffectSummary", {
+        preset: normalizationPresetLabel(normalization, t),
       }),
     );
   } else if (normalization) {
     summaries.push(
-      t("audio.messages.normalizeSummary", {
-        target: formatProcessingValue(normalization.targetLufs, i18n.language),
+      t("audio.messages.normalizedEffectSummary", {
+        preset: t("audio.options.normalizationCustom"),
       }),
     );
   }
@@ -157,6 +162,18 @@ function formatProcessingValue(value: number, language: string): string {
   return new Intl.NumberFormat(language, { maximumFractionDigits: 1 })
     .format(value)
     .replace(/-/g, "−");
+}
+
+function formatNormalizationLevel(
+  normalization: NonNullable<AudioTrackProcessing["loudnessNormalization"]>,
+  language: string,
+  t: ReturnType<typeof useTranslation>["t"],
+): string {
+  const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(normalization);
+  return t("audio.messages.normalizedLevelSummary", {
+    peak: formatProcessingValue(maxTruePeakDb, language),
+    target: formatProcessingValue(targetLufs, language),
+  });
 }
 
 export { AudioTrackRow };

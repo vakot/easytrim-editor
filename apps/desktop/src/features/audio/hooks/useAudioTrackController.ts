@@ -19,6 +19,7 @@ import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-medi
 import {
   type AudioTrackProcessing,
   cloneAudioTrackProcessing,
+  sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 
@@ -187,7 +188,11 @@ function useAudioTrackController(streamIndex: number) {
       if (!track) return;
       const nextEnabled = enabled ?? !track.enabled;
       if (nextEnabled === track.enabled) return;
-      if (nextEnabled && track.processing.gainDb <= MIN_SLIDER_DECIBELS) {
+      if (
+        nextEnabled &&
+        track.processing.loudnessNormalization === undefined &&
+        track.processing.gainDb <= MIN_SLIDER_DECIBELS
+      ) {
         dispatch(audioTrackGainChanged({ gainDb: 0, streamIndex }));
       }
       dispatch(audioTrackToggled({ streamIndex }));
@@ -199,6 +204,7 @@ function useAudioTrackController(streamIndex: number) {
   const applyProcessing = useCallback(
     (processing: AudioTrackProcessing) => {
       if (!track || sameAudioTrackProcessing(track.processing, processing)) return;
+      const previewSettingsChanged = !sameAudioTrackPreviewProcessing(track.processing, processing);
       dispatch(
         audioTrackProcessingChanged({
           processing: cloneAudioTrackProcessing(processing),
@@ -206,7 +212,7 @@ function useAudioTrackController(streamIndex: number) {
         }),
       );
       dispatch(commitActiveEditingInstanceDraft());
-      schedulePreviewPreparation();
+      if (previewSettingsChanged) schedulePreviewPreparation();
     },
     [dispatch, schedulePreviewPreparation, streamIndex, track],
   );

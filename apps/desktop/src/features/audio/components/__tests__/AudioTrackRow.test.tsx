@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
@@ -9,6 +9,8 @@ import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions"
 import {
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
+  audioTrackGainChanged,
+  audioTrackProcessingChanged,
   audioTrackToggled,
 } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
@@ -145,6 +147,48 @@ describe("AudioTrackRow", () => {
     expect(screen.queryByRole("spinbutton", { name: /gain/i })).not.toBeInTheDocument();
   });
 
+  it("preserves dormant manual gain and shows normalization status in both passive and hover views", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    act(() => {
+      store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -2.5 }));
+      store.dispatch(
+        audioTrackProcessingChanged({
+          streamIndex: 2,
+          processing: { gainDb: -2.5, loudnessNormalization: "streaming" },
+        }),
+      );
+    });
+
+    expect(store.getState().audio.tracks[0]?.processing).toEqual({
+      gainDb: -2.5,
+      loudnessNormalization: "streaming",
+    });
+    expect(await screen.findByText("Normalized - Streaming")).toBeInTheDocument();
+    expect(await screen.findByText("−16 LUFS · max −1.5 dBTP")).toBeInTheDocument();
+
+    await user.hover(screen.getByText(/#1 ·/));
+    expect(screen.queryByRole("slider", { name: /audio 1 gain/i })).not.toBeInTheDocument();
+    expect(screen.getByText("Normalized · Streaming")).toBeInTheDocument();
+    expect(screen.getAllByText("−16 LUFS · max −1.5 dBTP")).toHaveLength(2);
+
+    await user.hover(screen.getByText("Normalized · Streaming"));
+    expect(
+      await screen.findByText(/manual gain is ignored while normalization is enabled/i),
+    ).toBeInTheDocument();
+
+    act(() => {
+      store.dispatch(audioTrackProcessingChanged({ streamIndex: 2, processing: { gainDb: -2.5 } }));
+    });
+    await waitFor(() => {
+      expect(screen.getByRole("slider", { name: /audio 1 gain/i })).toHaveAttribute(
+        "aria-valuenow",
+        "-2.5",
+      );
+    });
+    expect(screen.getAllByText("−2.5 dB")).toHaveLength(2);
+  });
+
   it("exposes the same action-only commands in the row context menu", async () => {
     const user = userEvent.setup();
     renderRow();
@@ -158,6 +202,39 @@ describe("AudioTrackRow", () => {
     expect(screen.getByRole("menuitem", { name: /effects/i })).toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+  });
+
+  it("offers show or hide and re-detect actions after activity detection", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore({
+      getItem: async () => null,
+      setItem: async () => undefined,
+      removeItem: async () => undefined,
+    });
+
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath) }));
+    store.dispatch(
+      audioTrackActivityAnalysisStarted({ operationId: "activity-2", streamIndex: 2 }),
+    );
+    store.dispatch(
+      audioTrackActivityAnalysisReady({
+        operationId: "activity-2",
+        result: [{ startMicros: 1_000_000, endMicros: 2_000_000 }],
+        streamIndex: 2,
+      }),
+    );
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <AudioTrackRow streamIndex={2} />
+        </TooltipProvider>
+      </Provider>,
+    );
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+
+    expect(screen.getByRole("menuitemcheckbox", { name: /hide detected ranges/i })).toBeChecked();
+    expect(screen.getByRole("menuitem", { name: /re-detect audio activity/i })).toBeInTheDocument();
   });
 
   it("commits custom loudness values only when Apply is pressed", async () => {

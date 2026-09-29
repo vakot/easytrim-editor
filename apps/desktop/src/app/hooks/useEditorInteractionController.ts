@@ -18,7 +18,10 @@ import {
   commitActiveEditingInstanceDraft,
   handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested,
 } from "@/app/store/thunks/source-media-thunks";
-import { sameAudioTrackPreviewProcessing } from "@/domain/audio-processing";
+import {
+  effectiveAudioTrackGainDb,
+  sameAudioTrackPreviewProcessing,
+} from "@/domain/audio-processing";
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
 import {
   canSetTrimBoundaryAtPlayhead,
@@ -526,8 +529,11 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       const audioSource = context.createMediaElementSource(element);
       const gain = context.createGain();
       const track = audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
-      const gainDb =
-        liveAudioTrackGainsRef.current.get(streamIndex) ?? track?.processing.gainDb ?? 0;
+      const gainDb = track
+        ? track.processing.loudnessNormalization === undefined
+          ? (liveAudioTrackGainsRef.current.get(streamIndex) ?? track.processing.gainDb)
+          : effectiveAudioTrackGainDb(track.processing)
+        : 0;
 
       setGainNodeFromDb(gain, track?.enabled === false ? Number.NEGATIVE_INFINITY : gainDb);
       audioSource.connect(gain).connect(audioMix);
@@ -593,23 +599,29 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       const node = audioNodesRef.current.get(track.streamIndex);
       if (node) {
         const gainDb =
-          liveAudioTrackGainsRef.current.get(track.streamIndex) ?? track.processing.gainDb;
+          track.processing.loudnessNormalization === undefined
+            ? (liveAudioTrackGainsRef.current.get(track.streamIndex) ?? track.processing.gainDb)
+            : effectiveAudioTrackGainDb(track.processing);
 
         node.gain.gain.value = track.enabled ? 10 ** (gainDb / 20) : 0;
       }
     }
     if (nativeAudioBindingRef.current) {
       const gainDb = nativeAudioTrack
-        ? (liveAudioTrackGainsRef.current.get(nativeAudioTrack.streamIndex) ??
-          nativeAudioTrack.processing.gainDb)
+        ? nativeAudioTrack.processing.loudnessNormalization === undefined
+          ? (liveAudioTrackGainsRef.current.get(nativeAudioTrack.streamIndex) ??
+            nativeAudioTrack.processing.gainDb)
+          : effectiveAudioTrackGainDb(nativeAudioTrack.processing)
         : 0;
 
       nativeAudioBindingRef.current.binding.gain.gain.value =
         nativeAudioTrack?.enabled && !requiresProcessedPreview ? 10 ** (gainDb / 20) : 0;
     } else if (videoRef.current) {
       const gainDb = nativeAudioTrack
-        ? (liveAudioTrackGainsRef.current.get(nativeAudioTrack.streamIndex) ??
-          nativeAudioTrack.processing.gainDb)
+        ? nativeAudioTrack.processing.loudnessNormalization === undefined
+          ? (liveAudioTrackGainsRef.current.get(nativeAudioTrack.streamIndex) ??
+            nativeAudioTrack.processing.gainDb)
+          : effectiveAudioTrackGainDb(nativeAudioTrack.processing)
         : 0;
 
       const trackGain =

@@ -17,13 +17,10 @@ import {
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { analyzeTrackLoudness } from "@/app/store/thunks/audio-track-thunks";
-import {
-  type LoudnessNormalization,
-  type LoudnessPreset,
-  sameAudioTrackProcessing,
-} from "@/domain/audio-processing";
+import type { LoudnessNormalization, LoudnessPreset } from "@/domain/audio-processing";
 import type { LoudnessAnalysis } from "@/domain/media";
 
+import { normalizationPresetLabel } from "../../../../../lib/audio-level.utils";
 import {
   type NormalizationOption,
   useAudioTrackEffectsDraft,
@@ -34,10 +31,10 @@ interface LoudnessControlsProps {
 }
 
 const PRESETS = [
-  { id: "webVideo", translationKey: "export.dialogs.optimized.loudness.presets.webVideo" },
-  { id: "streaming", translationKey: "export.dialogs.optimized.loudness.presets.streaming" },
-  { id: "broadcast", translationKey: "export.dialogs.optimized.loudness.presets.broadcast" },
-] as const satisfies ReadonlyArray<{ id: LoudnessPreset; translationKey: string }>;
+  "webVideo",
+  "streaming",
+  "broadcast",
+] as const satisfies ReadonlyArray<LoudnessPreset>;
 
 const NORMALIZATION_OPTIONS: NormalizationOption[] = [
   "none",
@@ -61,7 +58,6 @@ function LoudnessControls({ streamIndex }: LoudnessControlsProps) {
 
   const normalization = draft.processing.loudnessNormalization;
   const analysis = track.loudnessAnalysis;
-  const analysisUsesAppliedSettings = !sameAudioTrackProcessing(track.processing, draft.processing);
   const targetLufsDraft = draft.targetLufsInput;
   const maxTruePeakDraft = draft.maxTruePeakDbInput;
   const selectedOption = getNormalizationOption(normalization);
@@ -90,9 +86,9 @@ function LoudnessControls({ streamIndex }: LoudnessControlsProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">{t("audio.options.normalizationNone")}</SelectItem>
-            {PRESETS.map(({ id, translationKey }) => (
-              <SelectItem key={id} value={id}>
-                {t(translationKey)}
+            {PRESETS.map((preset) => (
+              <SelectItem key={preset} value={preset}>
+                {normalizationPresetLabel(preset, t)}
               </SelectItem>
             ))}
             <SelectItem value="custom">{t("audio.options.normalizationCustom")}</SelectItem>
@@ -121,20 +117,6 @@ function LoudnessControls({ streamIndex }: LoudnessControlsProps) {
             : t("audio.actions.analyzeLoudness")}
         </Button>
       </div>
-
-      <AnimatePresence initial={false}>
-        {analysisUsesAppliedSettings ? (
-          <motion.p
-            animate={{ opacity: 1, y: 0 }}
-            className="text-xs text-muted-foreground"
-            exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -3 }}
-            initial={shouldReduceMotion ? false : { opacity: 0, y: -3 }}
-            transition={motionTransition}
-          >
-            {t("audio.messages.analysisUsesAppliedEffects")}
-          </motion.p>
-        ) : null}
-      </AnimatePresence>
 
       <AnimatePresence initial={false}>
         {customNormalization ? (

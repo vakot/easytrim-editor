@@ -551,7 +551,6 @@ export const ru = {
     },
     labels: {
       defaultTrack: "Аудио {{number}}",
-      loudnessAnalysis: "Анализ громкости",
       loudnessNormalization: "Нормализация громкости",
       maximumTruePeak: "Максимальный истинный пик (дБTP)",
       targetLufs: "Целевая громкость (LUFS)",
@@ -572,12 +571,15 @@ export const ru = {
         separate_other: "{{count}} выбранных дорожек сохраняются отдельно",
         videoOnly: "Только видео",
       },
-      analysisUsesAppliedEffects: "Анализ использует применённую обработку дорожки.",
-      normalizeSummary: "Нормализация {{target}} LUFS",
+      normalizedEffectSummary: "Нормализация - {{preset}}",
+      normalizedHoverTitle: "Нормализация · {{preset}}",
+      normalizedLevelSummary: "{{target}} LUFS · макс. {{peak}} дБTP",
       preparingProcessedPreview: "Подготовка предпросмотра с этими настройками дорожки…",
     },
     tooltips: {
       merge: "Все выбранные дорожки объединяются в одну; это требует кодирования.",
+      normalizationReplacesGain:
+        "Уровень дорожки задаёт нормализация громкости. Ручное усиление игнорируется, пока нормализация включена, сохраняется и восстанавливается после её отключения.",
     },
     dialogs: {
       effects: {
@@ -597,6 +599,9 @@ export const ru = {
       channels_other: "{{count}} каналов",
       normalizationNone: "Выкл.",
       normalizationCustom: "Своя настройка",
+      normalizationWebVideo: "Веб-видео",
+      normalizationStreaming: "Стриминг",
+      normalizationBroadcast: "Вещание",
       unknownLayout: "неизвестная конфигурация",
     },
   },
@@ -642,13 +647,6 @@ export const ru = {
         description: "Настройте оптимизированный рендеринг перед выбором файла.",
         editTitle: "Изменить экспорт в очереди",
         frameRate: "Частота кадров",
-        loudness: {
-          presets: {
-            broadcast: "Вещание · −23 LUFS / −2 dBTP",
-            streaming: "Стриминг · −16 LUFS / −1,5 dBTP",
-            webVideo: "Веб-видео · −14 LUFS / −1 dBTP",
-          },
-        },
         matchSource: "Как у источника",
         resolution: "Разрешение",
         saveNotice: "После подтверждения откроется системный диалог сохранения.",

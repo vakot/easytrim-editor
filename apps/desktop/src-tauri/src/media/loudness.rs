@@ -10,9 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::AppError,
-    media::export::{
-        AudioTrackSelection, TrimSelection, audio_filter_graph, validate_common_request,
-    },
+    media::export::{AudioTrackSelection, TrimSelection, validate_common_request},
     process::{ProcessOutput, run_bounded_cancellable},
     state::ActiveSource,
 };
@@ -110,11 +108,10 @@ fn analysis_arguments(request: &LoudnessAnalysisRequest, source_path: &Path) -> 
 }
 
 fn analysis_filter_graph(audio_track: &AudioTrackSelection) -> String {
-    let mut graph = audio_filter_graph(std::slice::from_ref(audio_track), false);
-    graph.push_str(&format!(
-        ";[audio0]aformat=channel_layouts=stereo,loudnorm=I={ANALYSIS_TARGET_LUFS}:TP={ANALYSIS_TRUE_PEAK_DB}:LRA=11:print_format=json[measured]"
-    ));
-    graph
+    format!(
+        "[0:{}]aformat=channel_layouts=stereo,loudnorm=I={ANALYSIS_TARGET_LUFS}:TP={ANALYSIS_TRUE_PEAK_DB}:LRA=11:print_format=json[measured]",
+        audio_track.stream_index
+    )
 }
 
 fn parse_loudness(stderr: &[u8]) -> Result<LoudnessAnalysis, AppError> {
@@ -217,7 +214,7 @@ mod tests {
     }
 
     #[test]
-    fn analysis_graph_uses_track_processing_before_measurement() {
+    fn analysis_graph_measures_source_independently_of_level_processing() {
         let track = AudioTrackSelection {
             stream_index: 3,
             processing: AudioTrackProcessing {
@@ -228,9 +225,10 @@ mod tests {
             },
         };
         let graph = analysis_filter_graph(&track);
-        assert!(graph.contains("[0:3]loudnorm=I=-23:TP=-2:LRA=11[track0_normalized]"));
-        assert!(graph.contains("[track0_normalized]volume=-6.000000dB[audio0]"));
-        assert!(graph.contains("[audio0]aformat=channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json[measured]"));
+        assert_eq!(
+            graph,
+            "[0:3]aformat=channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json[measured]"
+        );
     }
 
     #[test]

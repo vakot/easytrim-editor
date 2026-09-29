@@ -72,7 +72,9 @@ impl From<&AudioTrackSelection> for AudioTrackCacheKey {
     fn from(track: &AudioTrackSelection) -> Self {
         Self {
             stream_index: track.stream_index,
-            gain_db_bits: if track.processing.gain_db == 0.0 {
+            gain_db_bits: if track.processing.loudness_normalization.is_some()
+                || track.processing.gain_db == 0.0
+            {
                 0.0_f64.to_bits()
             } else {
                 track.processing.gain_db.to_bits()
@@ -510,29 +512,23 @@ fn audio_tracks_need_reencode(audio_tracks: &[AudioTrackSelection]) -> bool {
 }
 
 pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bool) -> String {
-    // Process each track in canonical order: optional normalization, then final manual gain.
+    // Manual gain and normalization are mutually exclusive level policies.
     let mut graph = audio_tracks
         .iter()
         .enumerate()
         .map(|(index, track)| {
-            let (integrated_lufs, true_peak_db) = track
-                .processing
-                .loudness_normalization
-                .as_ref()
-                .map(LoudnessNormalization::targets)
-                .unwrap_or((0.0, 0.0));
             let mut filters = format!("[0:{}]", track.stream_index);
-            if track.processing.loudness_normalization.is_some() {
+            if let Some(normalization) = track.processing.loudness_normalization.as_ref() {
+                let (integrated_lufs, true_peak_db) = normalization.targets();
                 filters.push_str(&format!(
-                    "loudnorm=I={integrated_lufs}:TP={true_peak_db}:LRA=11[track{index}_normalized]"
+                    "loudnorm=I={integrated_lufs}:TP={true_peak_db}:LRA=11[audio{index}]"
                 ));
             } else {
-                filters.push_str(&format!("anull[track{index}_normalized]"));
+                filters.push_str(&format!(
+                    "volume={:.6}dB[audio{index}]",
+                    track.processing.gain_db
+                ));
             }
-            filters.push_str(&format!(
-                ";[track{index}_normalized]volume={:.6}dB[audio{index}]",
-                track.processing.gain_db
-            ));
             filters
         })
         .collect::<Vec<_>>();
@@ -680,10 +676,10 @@ mod tests {
     use std::path::Path;
 
     use super::{
-        AudioTrackProcessing, AudioTrackSelection, CropSelection, FastExportRequest,
-        FrameRateSelection, LoudnessNormalization, LoudnessPreset, OptimizedExportRequest,
-        ResolutionSelection, TrimSelection, build_fast_arguments, build_optimized_arguments,
-        optimized_command_preview,
+        AudioTrackCacheKey, AudioTrackProcessing, AudioTrackSelection, CropSelection,
+        FastExportRequest, FrameRateSelection, LoudnessNormalization, LoudnessPreset,
+        OptimizedExportRequest, ResolutionSelection, TrimSelection, build_fast_arguments,
+        build_optimized_arguments, optimized_command_preview,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -925,12 +921,7 @@ mod tests {
         assert!(
             values
                 .iter()
-                .any(|value| value.contains("0:2]anull[track0_normalized]"))
-        );
-        assert!(
-            values
-                .iter()
-                .any(|value| value.contains("[track0_normalized]volume=6.000000dB[audio0]"))
+                .any(|value| value.contains("0:2]volume=6.000000dB[audio0]"))
         );
         assert!(values.windows(2).any(|pair| pair == ["-map", "[audio0]"]));
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
@@ -939,7 +930,7 @@ mod tests {
     }
 
     #[test]
-    fn optimized_export_normalizes_each_track_before_final_gain() {
+    fn optimized_export_uses_normalization_instead_of_manual_gain() {
         let mut request = optimized_request("-c:v libx264 -crf 20");
         request.merge_audio = false;
         request.audio_tracks.push(AudioTrackSelection {
@@ -969,12 +960,28 @@ mod tests {
             .unwrap();
         let graph = &values[graph_index + 1];
 
-        assert!(graph.contains(
-            "[0:1]anull[track0_normalized];[track0_normalized]volume=0.000000dB[audio0]"
-        ));
-        assert!(graph.contains("[0:2]loudnorm=I=-16:TP=-1.5:LRA=11[track1_normalized];[track1_normalized]volume=-3.000000dB[audio1]"));
+        assert!(graph.contains("[0:1]volume=0.000000dB[audio0]"));
+        assert!(graph.contains("[0:2]loudnorm=I=-16:TP=-1.5:LRA=11[audio1]"));
+        assert!(!graph.contains("volume=-3.000000dB"));
         assert!(values.contains(&"[audio0]".to_owned()));
         assert!(values.contains(&"[audio1]".to_owned()));
+    }
+
+    #[test]
+    fn normalized_activity_cache_key_ignores_dormant_manual_gain() {
+        let processing = |gain_db| AudioTrackSelection {
+            stream_index: 2,
+            processing: AudioTrackProcessing {
+                gain_db,
+                loudness_normalization: Some(LoudnessNormalization::Preset(
+                    LoudnessPreset::Streaming,
+                )),
+            },
+        };
+        assert_eq!(
+            AudioTrackCacheKey::from(&processing(-12.0)),
+            AudioTrackCacheKey::from(&processing(6.0))
+        );
     }
 
     #[test]

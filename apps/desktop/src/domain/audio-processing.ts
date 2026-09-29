@@ -26,6 +26,43 @@ interface AudioTrackSelection {
 
 const DEFAULT_AUDIO_TRACK_PROCESSING: AudioTrackProcessing = { gainDb: 0 };
 
+function audioTrackLevelMode(processing: AudioTrackProcessing): "manual" | "normalized" {
+  return processing.loudnessNormalization === undefined ? "manual" : "normalized";
+}
+
+function effectiveAudioTrackGainDb(processing: AudioTrackProcessing): number {
+  return audioTrackLevelMode(processing) === "manual" ? processing.gainDb : 0;
+}
+
+function audioTrackActivityProcessingChanged(
+  left: AudioTrackProcessing,
+  right: AudioTrackProcessing,
+): boolean {
+  if (left.loudnessNormalization !== undefined || right.loudnessNormalization !== undefined) {
+    return !sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization);
+  }
+  return left.gainDb !== right.gainDb;
+}
+
+function loudnessNormalizationTargets(normalization: LoudnessNormalization): {
+  maxTruePeakDb: number;
+  targetLufs: number;
+} {
+  if (typeof normalization === "object") {
+    return {
+      maxTruePeakDb: normalization.maxTruePeakDb,
+      targetLufs: normalization.targetLufs,
+    };
+  }
+  const targets = {
+    webVideo: { maxTruePeakDb: -1, targetLufs: -14 },
+    streaming: { maxTruePeakDb: -1.5, targetLufs: -16 },
+    broadcast: { maxTruePeakDb: -2, targetLufs: -23 },
+  } satisfies Record<LoudnessPreset, { maxTruePeakDb: number; targetLufs: number }>;
+
+  return targets[normalization];
+}
+
 function sameAudioTrackProcessing(
   left: AudioTrackProcessing,
   right: AudioTrackProcessing,
@@ -83,9 +120,13 @@ export type {
   LoudnessPreset,
 };
 export {
+  audioTrackActivityProcessingChanged,
+  audioTrackLevelMode,
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_PROCESSING,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
+  effectiveAudioTrackGainDb,
+  loudnessNormalizationTargets,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
 };

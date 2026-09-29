@@ -13,6 +13,7 @@ import {
   audioTrackLoudnessAnalysisStarted,
   audioTrackPreviewReady,
   audioTrackPreviewStarted,
+  audioTrackProcessingChanged,
   audioTrackToggled,
   initialAudioState,
   selectAudioTracks,
@@ -80,7 +81,7 @@ describe("audio slice", () => {
     expect(current.tracks[0]).toMatchObject({ enabled: false, processing: { gainDb: 0 } });
   });
 
-  it("invalidates only affected track analyses and clears trim-bound loudness results", () => {
+  it("keeps loudness analysis independent from manual gain and clears trim-bound results", () => {
     let state = readyAudio();
     state = audioReducer(
       state,
@@ -102,7 +103,7 @@ describe("audio slice", () => {
     const adjusted = audioReducer(state, audioTrackGainChanged({ streamIndex: 2, gainDb: -2 }));
     expect(adjusted.tracks[0]).toMatchObject({
       activityAnalysis: { status: "idle" },
-      loudnessAnalysis: { status: "idle" },
+      loudnessAnalysis: { operationId: "loudness-2", status: "loading" },
     });
     expect(adjusted.tracks[1]).toMatchObject({
       activityAnalysis: { operationId: "activity-4", status: "loading" },
@@ -121,6 +122,54 @@ describe("audio slice", () => {
       "idle",
     ]);
     expect(trimmed.tracks[1]?.activityAnalysis).toMatchObject({ status: "loading" });
+  });
+
+  it("keeps dormant manual gain changes from invalidating normalized activity or preview", () => {
+    let state = readyAudio();
+    state = audioReducer(
+      state,
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: -4, loudnessNormalization: "streaming" },
+      }),
+    );
+    state = audioReducer(
+      state,
+      audioTrackLoudnessAnalysisStarted({ operationId: "loudness-2", streamIndex: 2 }),
+    );
+    state = audioReducer(
+      state,
+      audioTrackActivityAnalysisStarted({ operationId: "activity-2", streamIndex: 2 }),
+    );
+    state = audioReducer(
+      state,
+      audioTrackPreviewStarted({ operationId: "preview-2", streamIndex: 2 }),
+    );
+    const normalized = audioReducer(
+      state,
+      audioTrackPreviewReady({
+        operationId: "preview-2",
+        descriptor: {
+          mediaToken: 1,
+          previewRevision: 2,
+          processing: { gainDb: 0, loudnessNormalization: "streaming" },
+          streamIndex: 2,
+          url: "media://normalized",
+        },
+      }),
+    );
+
+    const gainChanged = audioReducer(
+      normalized,
+      audioTrackGainChanged({ streamIndex: 2, gainDb: 7 }),
+    );
+
+    expect(gainChanged.tracks[0]).toMatchObject({
+      activityAnalysis: { operationId: "activity-2", status: "loading" },
+      loudnessAnalysis: { operationId: "loudness-2", status: "loading" },
+      preview: { status: "ready", descriptor: { url: "media://normalized" } },
+      processing: { gainDb: 7, loudnessNormalization: "streaming" },
+    });
   });
 
   it("keeps a newer per-track preview when initial preparation finishes out of order", () => {

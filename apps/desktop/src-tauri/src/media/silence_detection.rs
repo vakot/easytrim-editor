@@ -242,7 +242,7 @@ mod tests {
             .expect("filter complex argument exists")[1]
             .to_string();
 
-        assert!(filter.contains("[0:2]loudnorm=I=-16:TP=-1.5:LRA=11[track0_normalized];[track0_normalized]volume=-3.000000dB[audio0]"));
+        assert!(filter.contains("[0:2]loudnorm=I=-16:TP=-1.5:LRA=11[audio0]"));
         assert!(filter.contains("[audio0]aformat=channel_layouts=mono,silencedetect"));
     }
 }

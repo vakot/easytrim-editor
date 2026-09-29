@@ -6,15 +6,23 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+import { loudnessNormalizationTargets } from "@/domain/audio-processing";
 
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
-import { formatChannels, formatGain, MIN_SLIDER_DECIBELS } from "../../../lib/audio-level.utils";
+import {
+  formatChannels,
+  formatGain,
+  MIN_SLIDER_DECIBELS,
+  normalizationPresetLabel,
+} from "../../../lib/audio-level.utils";
 
 import { AudioTrackDropdownMenuContent } from "./AudioTrackActions";
 import { AudioTrackToggle } from "./AudioTrackToggle";
 
 function AudioTrackDetails({ controller }: { controller: AudioTrackController }) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const shouldReduceMotion = useReducedMotion() === true;
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -23,6 +31,8 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
 
   const title =
     stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
+
+  const normalization = track.processing.loudnessNormalization;
 
   return (
     <div
@@ -59,9 +69,35 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
               key="gain-control"
               transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
             >
-              <div className="w-full">
-                <AudioTrackGainControl controller={controller} />
-              </div>
+              {normalization === undefined ? (
+                <div className="w-full">
+                  <AudioTrackGainControl controller={controller} />
+                </div>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      aria-label={t("audio.accessibility.trackNormalization", { title })}
+                      className="grid w-full cursor-help gap-0.5 leading-tight"
+                      role="note"
+                      tabIndex={0}
+                    >
+                      <span className="truncate text-xs font-medium">
+                        {t("audio.messages.normalizedHoverTitle", {
+                          preset:
+                            typeof normalization === "string"
+                              ? normalizationPresetLabel(normalization, t)
+                              : t("audio.options.normalizationCustom"),
+                        })}
+                      </span>
+                      <span className="truncate text-[10px] text-muted-foreground">
+                        {formatNormalizationLevel(normalization, i18n.language, t)}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>{t("audio.tooltips.normalizationReplacesGain")}</TooltipContent>
+                </Tooltip>
+              )}
             </motion.div>
           ) : null}
         </AnimatePresence>
@@ -131,3 +167,19 @@ function AudioTrackGainControl({ controller }: { controller: AudioTrackControlle
 }
 
 export { AudioTrackDetails };
+
+function formatNormalizationLevel(
+  normalization: NonNullable<AudioTrackController["track"]>["processing"]["loudnessNormalization"],
+  language: string,
+  t: ReturnType<typeof useTranslation>["t"],
+): string {
+  if (!normalization) return "";
+  const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(normalization);
+  const format = (value: number) =>
+    new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(value).replace(/-/g, "−");
+
+  return t("audio.messages.normalizedLevelSummary", {
+    peak: format(maxTruePeakDb),
+    target: format(targetLufs),
+  });
+}

@@ -31,7 +31,7 @@ function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
 
     const operationId = crypto.randomUUID();
     const sourceLoadToken = state.source.loadToken;
-    const audioTrack = toAudioTrackSelection(track);
+    const audioTrack = { streamIndex: track.streamIndex, processing: { gainDb: 0 } };
     dispatch(audioTrackLoudnessAnalysisStarted({ operationId, streamIndex }));
     try {
       const result = await analyzeAudioLoudness({
@@ -40,7 +40,8 @@ function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
         trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
       });
 
-      if (!isCurrentTrack(getState(), source.sourcePath, sourceLoadToken, audioTrack)) return;
+      if (!isCurrentAnalysisTrack(getState(), source.sourcePath, sourceLoadToken, streamIndex))
+        return;
       dispatch(audioTrackLoudnessAnalysisReady({ operationId, result, streamIndex }));
     } catch (error: unknown) {
       dispatch(
@@ -152,6 +153,19 @@ function isCurrentTrack(
     selectSourceSelection(state)?.sourcePath === sourcePath &&
     currentTrack !== undefined &&
     processingMatches(currentTrack.processing, audioTrack.processing)
+  );
+}
+
+function isCurrentAnalysisTrack(
+  state: ReturnType<Parameters<AppThunk>[1]>,
+  sourcePath: string,
+  sourceLoadToken: number,
+  streamIndex: number,
+): boolean {
+  return (
+    state.source.loadToken === sourceLoadToken &&
+    selectSourceSelection(state)?.sourcePath === sourcePath &&
+    selectAudioTracks(state).some((track) => track.streamIndex === streamIndex)
   );
 }
 

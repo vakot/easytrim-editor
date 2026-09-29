@@ -548,7 +548,6 @@ export const sk = {
     },
     labels: {
       defaultTrack: "Zvuk {{number}}",
-      loudnessAnalysis: "Analýza hlasitosti",
       loudnessNormalization: "Normalizácia hlasitosti",
       maximumTruePeak: "Maximálny skutočný vrchol (dBTP)",
       targetLufs: "Cieľová hlasitosť (LUFS)",
@@ -569,12 +568,15 @@ export const sk = {
         separate_other: "{{count}} vybraných stôp zostane samostatných",
         videoOnly: "Výstup iba s videom",
       },
-      analysisUsesAppliedEffects: "Analýza používa aktuálne použité spracovanie stopy.",
-      normalizeSummary: "Normalizovať na {{target}} LUFS",
+      normalizedEffectSummary: "Normalizované - {{preset}}",
+      normalizedHoverTitle: "Normalizované · {{preset}}",
+      normalizedLevelSummary: "{{target}} LUFS · max {{peak}} dBTP",
       preparingProcessedPreview: "Pripravuje sa náhľad s týmito nastaveniami stopy…",
     },
     tooltips: {
       merge: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
+      normalizationReplacesGain:
+        "Úroveň tejto stopy riadi normalizácia hlasitosti. Manuálne zosilnenie sa počas normalizácie ignoruje, zachová sa a obnoví sa po vypnutí normalizácie.",
     },
     dialogs: {
       effects: {
@@ -594,6 +596,9 @@ export const sk = {
       channels_other: "{{count}} kanálov",
       normalizationNone: "Vypnuté",
       normalizationCustom: "Vlastné",
+      normalizationWebVideo: "Webové video",
+      normalizationStreaming: "Streamovanie",
+      normalizationBroadcast: "Vysielanie",
       unknownLayout: "neznáme rozloženie",
     },
   },
@@ -639,13 +644,6 @@ export const sk = {
         description: "Pred výberom súboru nastavte optimalizované vykreslenie.",
         editTitle: "Upraviť export vo fronte",
         frameRate: "Snímková frekvencia",
-        loudness: {
-          presets: {
-            broadcast: "Vysielanie · −23 LUFS / −2 dBTP",
-            streaming: "Streamovanie · −16 LUFS / −1,5 dBTP",
-            webVideo: "Webové video · −14 LUFS / −1 dBTP",
-          },
-        },
         matchSource: "Podľa zdroja",
         resolution: "Rozlíšenie",
         saveNotice: "Po potvrdení sa otvorí systémové okno na uloženie.",

@@ -17,7 +17,11 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
 });
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import { audioTrackGainChanged, audioTrackToggled } from "@/app/store/slices/audio-slice";
+import {
+  audioTrackGainChanged,
+  audioTrackProcessingChanged,
+  audioTrackToggled,
+} from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 import {
   analyzeTrackLoudness,
@@ -97,5 +101,34 @@ describe("audio track operations", () => {
     await pendingPreview;
 
     expect(store.getState().audio.tracks[0]?.preview).toMatchObject({ status: "ready" });
+  });
+
+  it("analyzes clean source audio and keeps the result across level policy edits", async () => {
+    const store = createStore();
+    let finishAnalysis!: (value: { integratedLufs: number; truePeakDb: number }) => void;
+    mocks.analyzeAudioLoudness.mockReturnValue(
+      new Promise((resolve) => {
+        finishAnalysis = resolve;
+      }),
+    );
+
+    const pendingAnalysis = store.dispatch(analyzeTrackLoudness(2));
+    store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -5 }));
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: -5, loudnessNormalization: "streaming" },
+      }),
+    );
+    finishAnalysis({ integratedLufs: -18, truePeakDb: -2 });
+    await pendingAnalysis;
+
+    expect(mocks.analyzeAudioLoudness).toHaveBeenCalledWith(
+      expect.objectContaining({ audioTrack: { streamIndex: 2, processing: { gainDb: 0 } } }),
+    );
+    expect(store.getState().audio.tracks[0]?.loudnessAnalysis).toMatchObject({
+      status: "ready",
+      value: { integratedLufs: -18 },
+    });
   });
 });

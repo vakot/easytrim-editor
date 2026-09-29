@@ -4,6 +4,7 @@ import { editingInstanceActivated } from "@/app/store/actions/editing-instance-a
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import {
+  audioTrackActivityProcessingChanged,
   type AudioTrackProcessing,
   type AudioTrackSettings,
   cloneAudioTrackProcessing,
@@ -189,8 +190,9 @@ const audioSlice = createSlice({
       if (!track) return;
       if (track.processing.gainDb === action.payload.gainDb) return;
       track.processing.gainDb = action.payload.gainDb;
-      track.loudnessAnalysis = { status: "idle" };
-      track.activityAnalysis = { status: "idle" };
+      if (track.processing.loudnessNormalization === undefined) {
+        track.activityAnalysis = { status: "idle" };
+      }
     },
     audioTrackProcessingChanged: (
       state,
@@ -201,10 +203,19 @@ const audioSlice = createSlice({
       );
 
       if (!track || sameAudioTrackProcessing(track.processing, action.payload.processing)) return;
+      const activityChanged = audioTrackActivityProcessingChanged(
+        track.processing,
+        action.payload.processing,
+      );
+
+      const previewChanged = !sameAudioTrackPreviewProcessing(
+        track.processing,
+        action.payload.processing,
+      );
+
       track.processing = cloneAudioTrackProcessing(action.payload.processing);
-      track.loudnessAnalysis = { status: "idle" };
-      track.activityAnalysis = { status: "idle" };
-      track.preview = { status: "idle" };
+      if (activityChanged) track.activityAnalysis = { status: "idle" };
+      if (previewChanged) track.preview = { status: "idle" };
     },
     audioTrackLoudnessNormalizationChanged: (
       state,
@@ -228,10 +239,11 @@ const audioSlice = createSlice({
 
       if (!track || processing === null || sameAudioTrackProcessing(track.processing, processing))
         return;
+      const activityChanged = audioTrackActivityProcessingChanged(track.processing, processing);
+      const previewChanged = !sameAudioTrackPreviewProcessing(track.processing, processing);
       track.processing = processing;
-      track.loudnessAnalysis = { status: "idle" };
-      track.activityAnalysis = { status: "idle" };
-      track.preview = { status: "idle" };
+      if (activityChanged) track.activityAnalysis = { status: "idle" };
+      if (previewChanged) track.preview = { status: "idle" };
     },
     audioTrackActivityVisibilityToggled: (
       state,

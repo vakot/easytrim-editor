@@ -1,8 +1,19 @@
 import type { TFunction } from "i18next";
 
+import type { LoudnessPreset } from "@/domain/audio-processing";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
 const MIN_SLIDER_DECIBELS = -24;
+function normalizationPresetLabel(preset: LoudnessPreset, t: TFunction): string {
+  switch (preset) {
+    case "broadcast":
+      return t("audio.options.normalizationBroadcast");
+    case "streaming":
+      return t("audio.options.normalizationStreaming");
+    case "webVideo":
+      return t("audio.options.normalizationWebVideo");
+  }
+}
 
 function formatChannels(stream: AudioStream, t: TFunction): string {
   if (stream.channelLayout) return stream.channelLayout;
@@ -31,4 +42,10 @@ function audioOutputSummary(enabledCount: number, mergeAudio: boolean, t: TFunct
   return t("audio.messages.output.separate", { count: enabledCount });
 }
 
-export { audioOutputSummary, formatChannels, formatGain, MIN_SLIDER_DECIBELS };
+export {
+  audioOutputSummary,
+  formatChannels,
+  formatGain,
+  MIN_SLIDER_DECIBELS,
+  normalizationPresetLabel,
+};
