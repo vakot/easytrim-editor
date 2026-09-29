@@ -92,7 +92,6 @@ function AudioTrackToggleActivityCheckboxMenuItem({
     checked: hasActivity && track.activityVisible,
     onCheckedChange: hasActivity ? controller.toggleActivityVisibility : controller.detectActivity,
     disabled: track.activityAnalysis.status === "loading",
-    onSelect: controller.detectActivity,
   };
 
   return <Slot {...commandProps}>{children}</Slot>;
