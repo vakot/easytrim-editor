@@ -52,7 +52,10 @@ choosing Redux.
 - Colocate selectors with the slice and test reducers/selectors at the lowest useful
   layer.
 - Connect feature/application components where the state is semantically needed.
-  Preserve presentational component APIs when they are meaningful and reusable.
+  Redux is the main bus for shared application and feature workflow state: the closest
+  app/feature component that consumes it should select it and dispatch domain actions or
+  thunks directly. Keep product-specific component props small and mostly identity-based;
+  do not pass Redux values or handlers through intermediate components.
 - Keep migration phases small. Establish one owner before removing the old provider or
   forwarding layer, then validate and stop for human review.
 
@@ -87,11 +90,13 @@ directly at the closest actual consumer. Do not mirror a Redux slice through lar
 value/handler prop contracts or continue prop-drilling Redux state through intermediate
 components.
 
-Prefer focused selectors at the leaf/actual-consumer level over selecting an entire
-domain in a parent and redistributing its fields. Keep props for genuinely reusable
-presentational components, generic UI primitives, naturally parent-owned values,
-composition, meaningful callbacks, and components intentionally independent from
-application infrastructure.
+Prefer focused selectors at the actual consumer over selecting an entire domain in a parent and
+redistributing its fields. App and feature components should usually accept only the identity needed
+to locate their subject, plus composition where needed. Keep broad configurable value/event props on
+generic `components/ui` primitives; do not turn context-specific feature controls into generic
+wrappers. For example, a feature `VolumeSlider` takes a track identity and connects to Redux, while
+the generic UI `Slider` takes a value and interaction events. Keep genuinely ephemeral shared drafts
+in a feature-local hook/context rather than Redux or a callback-heavy prop API.
 
 ## Selectors and actions
 
