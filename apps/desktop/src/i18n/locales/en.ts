@@ -66,7 +66,9 @@ export const en = {
         preferencesPlayback: "Preferences / Playback",
         previewFrame: "Preview / Frame",
         previewTransform: "Preview / Transform",
-        scenes: "Scenes",
+        markers: "Markers",
+        markersScene: "Markers / Scene",
+        markersAudioActivity: "Markers / Audio Activity",
         queueOnFinishedApplication: "Queue / On finished / Application",
         queueOnFinishedSource: "Queue / On finished / Source",
         go: "Go",
@@ -403,14 +405,13 @@ export const en = {
   preview: {
     actions: {
       nextFrame: "Next frame",
-      nextScene: "Move to next scene",
+      nextMarker: "Next marker",
       copyFrame: "Copy frame",
       pause: "Pause",
       play: "Play",
       previousFrame: "Previous frame",
-      previousScene: "Move to previous scene",
+      previousMarker: "Previous marker",
       saveFrame: "Save frame",
-      resetTools: "Reset tools",
       setEnd: "Set segment end to current position",
       setStart: "Set segment start to current position",
       transform: {
@@ -494,6 +495,9 @@ export const en = {
   timeline: {
     actions: {
       detectScenes: "Detect scene changes",
+      detectAudioActivity: "Detect audio activity in active mix",
+      disableAudioActivityMarkers: "Hide audio activity ranges",
+      enableAudioActivityMarkers: "Show audio activity ranges",
       disableSceneMarkers: "Hide scene markers",
       enableSceneMarkers: "Show scene markers",
       moveSegment: "Move selected segment",
@@ -507,10 +511,13 @@ export const en = {
     },
     status: {
       sceneDetectionFailed: "Scene detection failed. Try again.",
+      audioActivityDetectionFailed: "Audio activity detection failed. Try again.",
     },
     tooltips: {
       detectScenes:
-        "Analyze the source video for scene changes. Hold Shift and drag the playhead to snap to a marker.",
+        "Analyze the source video for scene changes. Hold Shift while dragging to snap to scene markers or either edge of an audio activity range.",
+      detectAudioActivity:
+        "Analyze the active audio mix and mark audio activity ranges on the timeline.",
       moveSegment: "Drag to move the selected segment — hold Shift to snap",
       trimReset: "{{label}} — hold Shift to snap — double-click to reset",
     },

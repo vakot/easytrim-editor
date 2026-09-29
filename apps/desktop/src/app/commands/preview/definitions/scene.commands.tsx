@@ -1,4 +1,4 @@
-import { ChevronsLeft, ChevronsRight, Clapperboard, Eye } from "lucide-react";
+import { AudioLines, ChevronsLeft, ChevronsRight, Clapperboard, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
@@ -7,13 +7,16 @@ import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
 import {
+  audioActivityMarkersToggled,
   sceneMarkersToggled,
+  selectAudioActivityMarkersEnabled,
   selectSceneMarkersEnabled,
 } from "@/app/store/slices/editor-tools-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
-  findNextSceneBoundary,
-  findPreviousSceneBoundary,
+  findNextMarker,
+  findPreviousMarker,
+  useAudioActivityDetection,
   useSceneDetection,
 } from "@/features/timeline";
 
@@ -26,60 +29,39 @@ function useSceneCommands() {
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const sourceReady = useAppSelector(selectSourceReady);
   const sceneDetection = useSceneDetection(sourceReady);
-  const firstSceneStartMicros = timeline.trim?.startMicros ?? 0;
+  const audioActivityDetection = useAudioActivityDetection(sourceReady);
+  const audioActivityMarkersEnabled = useAppSelector(selectAudioActivityMarkersEnabled);
+  const visibleSceneBoundaries = sceneMarkersEnabled ? sceneBoundariesMicros : [];
+  const visibleAudioActivityRanges = audioActivityMarkersEnabled
+    ? audioActivityDetection.ranges
+    : [];
 
-  const previousSceneMicros = findPreviousSceneBoundary(
-    sceneBoundariesMicros,
-    timeline.playheadMicros,
-    firstSceneStartMicros,
-  );
+  const visibleMarkersMicros = [
+    ...visibleSceneBoundaries,
+    ...visibleAudioActivityRanges.map(({ startMicros }) => startMicros),
+  ];
 
-  const nextSceneMicros = findNextSceneBoundary(sceneBoundariesMicros, timeline.playheadMicros);
-  const showSceneMarkers = t("timeline.actions.enableSceneMarkers");
-  const detectScenes = t("timeline.actions.detectScenes");
-  const previousScene = t("preview.actions.previousScene");
-  const nextScene = t("preview.actions.nextScene");
+  const previousMarkerMicros = findPreviousMarker(visibleMarkersMicros, timeline.playheadMicros);
+  const nextMarkerMicros = findNextMarker(visibleMarkersMicros, timeline.playheadMicros);
 
-  function moveToScene(sceneMicros: number) {
+  function moveToMarker(timeMicros: number) {
     playback.pause();
     timeline.onScrubStart();
-    timeline.onSeek(sceneMicros);
+    timeline.onSeek(timeMicros);
     timeline.onScrubEnd();
   }
 
-  return [
+  const sceneCommands = [
     {
       enabled:
         sceneDetection.canDetect && !sceneDetection.hasDetected && !sceneDetection.isDetecting,
       icon: <Clapperboard aria-hidden="true" />,
       id: "detect-scenes" as const,
-      label: detectScenes,
+      label: t("timeline.actions.detectScenes"),
       run: sceneDetection.detect,
-      searchTerms: commandSearchTerms(`${detectScenes}|scene detection|analyze scenes`),
-      surfaces: ["button", "palette"] as const,
-      variant: "default" as const,
-    },
-    {
-      enabled: sceneMarkersEnabled && playback.canInteract && previousSceneMicros !== undefined,
-      icon: <ChevronsLeft aria-hidden="true" />,
-      id: "previous-scene" as const,
-      label: previousScene,
-      run() {
-        if (previousSceneMicros !== undefined) moveToScene(previousSceneMicros);
-      },
-      searchTerms: commandSearchTerms(`${previousScene}|scene|previous`),
-      surfaces: ["button", "palette"] as const,
-      variant: "default" as const,
-    },
-    {
-      enabled: sceneMarkersEnabled && playback.canInteract && nextSceneMicros !== undefined,
-      icon: <ChevronsRight aria-hidden="true" />,
-      id: "next-scene" as const,
-      label: nextScene,
-      run() {
-        if (nextSceneMicros !== undefined) moveToScene(nextSceneMicros);
-      },
-      searchTerms: commandSearchTerms(`${nextScene}|scene|next`),
+      searchTerms: commandSearchTerms(
+        `${t("timeline.actions.detectScenes")}|scene detection|analyze scenes`,
+      ),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
     },
@@ -88,15 +70,83 @@ function useSceneCommands() {
       enabled: sceneDetection.hasDetected,
       icon: <Eye aria-hidden="true" />,
       id: "show-scene-markers" as const,
-      label: showSceneMarkers,
+      label: sceneMarkersEnabled
+        ? t("timeline.actions.disableSceneMarkers")
+        : t("timeline.actions.enableSceneMarkers"),
       run() {
         dispatch(sceneMarkersToggled());
       },
-      searchTerms: commandSearchTerms(`${showSceneMarkers}|scene|markers|show`),
+      searchTerms: commandSearchTerms(
+        `${t("timeline.actions.enableSceneMarkers")}|${t("timeline.actions.disableSceneMarkers")}|scene|markers|show`,
+      ),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
     },
   ] as const;
+
+  const audioActivityCommands = [
+    {
+      enabled:
+        audioActivityDetection.canDetect &&
+        !audioActivityDetection.hasDetected &&
+        !audioActivityDetection.isDetecting,
+      icon: <AudioLines aria-hidden="true" />,
+      id: "detect-audio-activity" as const,
+      label: t("timeline.actions.detectAudioActivity"),
+      run: audioActivityDetection.detect,
+      searchTerms: commandSearchTerms(
+        `${t("timeline.actions.detectAudioActivity")}|audio activity detection|find audio`,
+      ),
+      surfaces: ["button", "palette"] as const,
+      variant: "default" as const,
+    },
+    {
+      checked: audioActivityMarkersEnabled,
+      enabled: audioActivityDetection.hasDetected,
+      icon: <Eye aria-hidden="true" />,
+      id: "show-audio-activity-markers" as const,
+      label: audioActivityMarkersEnabled
+        ? t("timeline.actions.disableAudioActivityMarkers")
+        : t("timeline.actions.enableAudioActivityMarkers"),
+      run() {
+        dispatch(audioActivityMarkersToggled());
+      },
+      searchTerms: commandSearchTerms(
+        `${t("timeline.actions.enableAudioActivityMarkers")}|audio activity|markers|show`,
+      ),
+      surfaces: ["button", "palette"] as const,
+      variant: "default" as const,
+    },
+  ] as const;
+
+  const markerCommands = [
+    {
+      enabled: playback.canInteract && previousMarkerMicros !== undefined,
+      icon: <ChevronsLeft aria-hidden="true" />,
+      id: "previous-marker" as const,
+      label: t("preview.actions.previousMarker"),
+      run() {
+        if (previousMarkerMicros !== undefined) moveToMarker(previousMarkerMicros);
+      },
+      searchTerms: commandSearchTerms(`${t("preview.actions.previousMarker")}|previous|marker`),
+      surfaces: ["button", "palette"] as const,
+      variant: "default" as const,
+    },
+    {
+      enabled: playback.canInteract && nextMarkerMicros !== undefined,
+      icon: <ChevronsRight aria-hidden="true" />,
+      id: "next-marker" as const,
+      label: t("preview.actions.nextMarker"),
+      run() {
+        if (nextMarkerMicros !== undefined) moveToMarker(nextMarkerMicros);
+      },
+      searchTerms: commandSearchTerms(`${t("preview.actions.nextMarker")}|next|marker`),
+      surfaces: ["button", "palette"] as const,
+      variant: "default" as const,
+    },
+  ] as const;
+
+  return { audioActivityCommands, markerCommands, sceneCommands } as const;
 }
 
 export { useSceneCommands };

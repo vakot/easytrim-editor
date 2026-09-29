@@ -5,10 +5,6 @@ import { DEFAULT_PREFERENCES } from "@/app/preferences";
 import { queueSettingsReset } from "@/app/store/actions/queue-actions";
 import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persistence";
 import {
-  createEditorToolsStateFromPreferences,
-  editorToolsReset,
-} from "@/app/store/slices/editor-tools-slice";
-import {
   optimizedExportDialogOpened,
   queueFinishActionChanged,
 } from "@/app/store/slices/export-slice";
@@ -165,24 +161,6 @@ describe("Redux Persist store integration", () => {
 
     expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
-  });
-
-  it("resets active tools from current Preferences defaults", async () => {
-    const { store } = await createPersistedTestStore();
-
-    store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
-    store.dispatch(playbackSpeedChanged(3));
-    store.dispatch(
-      editorToolsReset(createEditorToolsStateFromPreferences(store.getState().preferences)),
-    );
-
-    expect(store.getState().editorTools).toEqual({
-      ...createEditorToolsStateFromPreferences({
-        ...DEFAULT_PREFERENCES,
-        loopPlaybackEnabledDefault: false,
-      }),
-    });
-    expect(store.getState().playbackControls.playbackSpeed).toBe(3);
   });
 
   it("never persists active editor tools", async () => {

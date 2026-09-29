@@ -68,7 +68,9 @@ export const sk = {
         preferencesPlayback: "Nastavenia / Prehrávanie",
         previewFrame: "Náhľad / Snímka",
         previewTransform: "Náhľad / Transformácia",
-        scenes: "Scény",
+        markers: "Značky",
+        markersScene: "Značky / Scéna",
+        markersAudioActivity: "Značky / Aktivita zvuku",
         queueOnFinishedApplication: "Front / Po dokončení / Aplikácia",
         queueOnFinishedSource: "Front / Po dokončení / Zdroj",
         go: "Prejsť",
@@ -403,14 +405,13 @@ export const sk = {
   preview: {
     actions: {
       nextFrame: "Nasledujúca snímka",
-      nextScene: "Prejsť na nasledujúcu scénu",
+      nextMarker: "Nasledujúca značka",
       copyFrame: "Kopírovať snímku",
       pause: "Pozastaviť",
       play: "Prehrať",
       previousFrame: "Predchádzajúca snímka",
-      previousScene: "Prejsť na predchádzajúcu scénu",
+      previousMarker: "Predchádzajúca značka",
       saveFrame: "Uložiť snímku",
-      resetTools: "Obnoviť nástroje",
       setEnd: "Nastaviť koniec segmentu na aktuálnu pozíciu",
       setStart: "Nastaviť začiatok segmentu na aktuálnu pozíciu",
       transform: {
@@ -494,6 +495,9 @@ export const sk = {
   timeline: {
     actions: {
       detectScenes: "Rozpoznať zmeny scén",
+      detectAudioActivity: "Rozpoznať aktivitu zvuku v aktívnom mixe",
+      disableAudioActivityMarkers: "Skryť rozsahy aktivity zvuku",
+      enableAudioActivityMarkers: "Zobraziť rozsahy aktivity zvuku",
       disableSceneMarkers: "Skryť značky scén",
       enableSceneMarkers: "Zobraziť značky scén",
       moveSegment: "Presunúť vybraný segment",
@@ -507,10 +511,13 @@ export const sk = {
     },
     status: {
       sceneDetectionFailed: "Rozpoznávanie scén zlyhalo. Skúste to znova.",
+      audioActivityDetectionFailed: "Rozpoznávanie aktivity zvuku zlyhalo. Skúste to znova.",
     },
     tooltips: {
       detectScenes:
-        "Analyzovať zdrojové video a vyhľadať zmeny scén. Podržte Shift a potiahnutím prehrávacej hlavy ju prichyťte k značke.",
+        "Analyzovať zdrojové video a vyhľadať zmeny scén. Podržte Shift počas ťahania a prichyťte sa k značke scény alebo k okraju rozsahu aktivity zvuku.",
+      detectAudioActivity:
+        "Analyzovať aktívny zvukový mix a označiť rozsahy aktivity zvuku na časovej osi.",
       moveSegment: "Potiahnutím presuňte vybraný segment — podržaním Shift ho prichytíte",
       trimReset: "{{label}} — podržaním Shift prichytíte — dvojitým kliknutím obnovíte",
     },

@@ -19,16 +19,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimeline } from "@/app/hooks/useTimeline";
-import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
 import { cn } from "@/lib/class-names.utils";
 
 import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../lib/editor-shortcuts";
 
 const MotionButton = motion.create(Button);
-const SCENE_NAVIGATION_COLLAPSED_MARGIN = "-0.375rem";
+const MARKER_NAVIGATION_COLLAPSED_MARGIN = "-0.375rem";
 
-function preventSceneNavigationMouseFocus(event: MouseEvent<HTMLButtonElement>) {
+function preventMarkerNavigationMouseFocus(event: MouseEvent<HTMLButtonElement>) {
   if (event.button === 0) event.preventDefault();
 }
 
@@ -36,21 +34,16 @@ function PlaybackControls({ className }: { className?: string }) {
   const { t } = useTranslation();
   const playback = usePlayback();
   const timeline = useTimeline();
-  const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const shouldReduceMotion = useReducedMotion() === true;
   const { executeCommand } = useApplicationCommands();
-  const previousSceneCommand = useApplicationCommand("previous-scene");
-  const nextSceneCommand = useApplicationCommand("next-scene");
-  const showSceneMarkersCommand = useApplicationCommand("show-scene-markers");
+  const previousMarkerCommand = useApplicationCommand("previous-marker");
+  const nextMarkerCommand = useApplicationCommand("next-marker");
   const disabled = !playback.canInteract;
-  const previousSceneDisabled =
-    disabled || !previousSceneCommand.enabled || previousSceneCommand.pending;
+  const previousMarkerDisabled =
+    disabled || !previousMarkerCommand.enabled || previousMarkerCommand.pending;
 
-  const nextSceneDisabled = disabled || !nextSceneCommand.enabled || nextSceneCommand.pending;
-  const showSceneNavigation =
-    showSceneMarkersCommand.enabled &&
-    showSceneMarkersCommand.checked &&
-    sceneBoundariesMicros.length > 0;
+  const nextMarkerDisabled = disabled || !nextMarkerCommand.enabled || nextMarkerCommand.pending;
+  const showMarkerNavigation = previousMarkerCommand.enabled || nextMarkerCommand.enabled;
 
   return (
     <div
@@ -74,23 +67,23 @@ function PlaybackControls({ className }: { className?: string }) {
           <SquareArrowRight />
         </TransportButton>
         <AnimatePresence initial={false}>
-          {showSceneNavigation ? (
-            <Tooltip key="previous-scene-navigation">
+          {showMarkerNavigation ? (
+            <Tooltip key="previous-marker-navigation">
               <TooltipTrigger asChild>
                 <MotionButton
                   animate={{
-                    opacity: previousSceneDisabled ? 0.5 : 1,
+                    opacity: previousMarkerDisabled ? 0.5 : 1,
                     width: "1.75rem",
                     marginInlineStart: 0,
                   }}
-                  aria-label={previousSceneCommand.label}
+                  aria-label={previousMarkerCommand.label}
                   className="overflow-hidden transition-colors"
                   data-editor-keyboard="timeline-transport"
-                  disabled={previousSceneDisabled}
+                  disabled={previousMarkerDisabled}
                   exit={{
                     opacity: 0,
                     width: 0,
-                    marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                    marginInlineStart: MARKER_NAVIGATION_COLLAPSED_MARGIN,
                   }}
                   initial={
                     shouldReduceMotion
@@ -98,11 +91,11 @@ function PlaybackControls({ className }: { className?: string }) {
                       : {
                           opacity: 0,
                           width: 0,
-                          marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                          marginInlineStart: MARKER_NAVIGATION_COLLAPSED_MARGIN,
                         }
                   }
-                  onClick={() => void executeCommand("previous-scene", "button")}
-                  onMouseDown={preventSceneNavigationMouseFocus}
+                  onClick={() => void executeCommand("previous-marker", "button")}
+                  onMouseDown={preventMarkerNavigationMouseFocus}
                   size="icon-sm"
                   transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
                   type="button"
@@ -111,7 +104,7 @@ function PlaybackControls({ className }: { className?: string }) {
                   <ChevronsLeft />
                 </MotionButton>
               </TooltipTrigger>
-              <TooltipContent>{previousSceneCommand.label}</TooltipContent>
+              <TooltipContent>{previousMarkerCommand.label}</TooltipContent>
             </Tooltip>
           ) : null}
         </AnimatePresence>
@@ -160,23 +153,23 @@ function PlaybackControls({ className }: { className?: string }) {
           <SkipForward />
         </TransportButton>
         <AnimatePresence initial={false}>
-          {showSceneNavigation ? (
-            <Tooltip key="next-scene-navigation">
+          {showMarkerNavigation ? (
+            <Tooltip key="next-marker-navigation">
               <TooltipTrigger asChild>
                 <MotionButton
                   animate={{
-                    opacity: nextSceneDisabled ? 0.5 : 1,
+                    opacity: nextMarkerDisabled ? 0.5 : 1,
                     width: "1.75rem",
                     marginInlineStart: 0,
                   }}
-                  aria-label={nextSceneCommand.label}
+                  aria-label={nextMarkerCommand.label}
                   className="overflow-hidden transition-colors"
                   data-editor-keyboard="timeline-transport"
-                  disabled={nextSceneDisabled}
+                  disabled={nextMarkerDisabled}
                   exit={{
                     opacity: 0,
                     width: 0,
-                    marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                    marginInlineStart: MARKER_NAVIGATION_COLLAPSED_MARGIN,
                   }}
                   initial={
                     shouldReduceMotion
@@ -184,11 +177,11 @@ function PlaybackControls({ className }: { className?: string }) {
                       : {
                           opacity: 0,
                           width: 0,
-                          marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                          marginInlineStart: MARKER_NAVIGATION_COLLAPSED_MARGIN,
                         }
                   }
-                  onClick={() => void executeCommand("next-scene", "button")}
-                  onMouseDown={preventSceneNavigationMouseFocus}
+                  onClick={() => void executeCommand("next-marker", "button")}
+                  onMouseDown={preventMarkerNavigationMouseFocus}
                   size="icon-sm"
                   transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
                   type="button"
@@ -197,7 +190,7 @@ function PlaybackControls({ className }: { className?: string }) {
                   <ChevronsRight />
                 </MotionButton>
               </TooltipTrigger>
-              <TooltipContent>{nextSceneCommand.label}</TooltipContent>
+              <TooltipContent>{nextMarkerCommand.label}</TooltipContent>
             </Tooltip>
           ) : null}
         </AnimatePresence>

@@ -20,6 +20,7 @@ import {
   analyzeAudioLoudness,
   checkMediaCapabilities,
   chooseSource,
+  detectAudioActivity,
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,
@@ -54,6 +55,38 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
+  it("converts detected silence to audio activity ranges for the selected mix", async () => {
+    const mix = [
+      { streamIndex: 2, volumePercent: 75 },
+      { streamIndex: 4, volumePercent: 50 },
+    ];
+
+    mocks.invoke.mockResolvedValueOnce([{ startMicros: 1_000_000, endMicros: 2_500_000 }]);
+
+    await expect(detectAudioActivity("C:/Media/clip.mp4", mix, true, 5_000_000)).resolves.toEqual([
+      { startMicros: 0, endMicros: 1_000_000 },
+      { startMicros: 2_500_000, endMicros: 5_000_000 },
+    ]);
+    expect(mocks.invoke).toHaveBeenCalledWith("detect_silence", {
+      sourcePath: "C:/Media/clip.mp4",
+      mix,
+      mergeAudio: true,
+    });
+  });
+
+  it("returns no activity ranges when the detected silence covers the source", async () => {
+    mocks.invoke.mockResolvedValueOnce([{ startMicros: 0, endMicros: 5_000_000 }]);
+
+    await expect(
+      detectAudioActivity(
+        "C:/Media/clip.mp4",
+        [{ streamIndex: 2, volumePercent: 50 }],
+        false,
+        5_000_000,
+      ),
+    ).resolves.toEqual([]);
+  });
+
   it("analyzes the requested segment and parses unavailable measurements", async () => {
     mocks.invoke
       .mockResolvedValueOnce("operation-1")

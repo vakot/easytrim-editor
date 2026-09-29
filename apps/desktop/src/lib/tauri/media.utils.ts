@@ -15,6 +15,7 @@ import type {
   OptimizedExportPlan,
   OutputSelection,
   PreviewDescriptor,
+  SilenceRange,
   SourceImportResult,
   ThumbnailDescriptor,
   VideoStream,
@@ -71,6 +72,23 @@ function parseSceneBoundaries(value: unknown): number[] {
     throw invalidResponse("scene boundaries");
   }
   return boundaries;
+}
+
+function parseSilenceRanges(value: unknown): SilenceRange[] {
+  const ranges = requireArray(value, "silence ranges").map((entry) => {
+    const record = requireRecord(entry, "silence range");
+    const startMicros = requireInteger(record.startMicros, "silence start");
+    const endMicros = requireInteger(record.endMicros, "silence end");
+    if (startMicros < 0 || endMicros <= startMicros) throw invalidResponse("silence range");
+    return { startMicros, endMicros };
+  });
+
+  if (
+    ranges.some((range, index) => index > 0 && range.startMicros < ranges[index - 1]!.endMicros)
+  ) {
+    throw invalidResponse("silence ranges");
+  }
+  return ranges;
 }
 
 function parseSourceImportResult(value: unknown): SourceImportResult | null {
@@ -409,6 +427,7 @@ export {
   parseOutputSelection,
   parsePreviewDescriptor,
   parseSceneBoundaries,
+  parseSilenceRanges,
   parseSourceImportResult,
   parseSourceRef,
   parseSourceRefs,

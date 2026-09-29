@@ -66,7 +66,9 @@ export const ru = {
         preferencesPlayback: "Параметры / Воспроизведение",
         previewFrame: "Предпросмотр / Кадр",
         previewTransform: "Предпросмотр / Трансформация",
-        scenes: "Сцены",
+        markers: "Маркеры",
+        markersScene: "Маркеры / Сцена",
+        markersAudioActivity: "Маркеры / Активность аудио",
         queueOnFinishedApplication: "Очередь / После завершения / Приложение",
         queueOnFinishedSource: "Очередь / После завершения / Источник",
         go: "Перейти",
@@ -405,14 +407,13 @@ export const ru = {
   preview: {
     actions: {
       nextFrame: "Следующий кадр",
-      nextScene: "Перейти к следующей сцене",
+      nextMarker: "Следующий маркер",
       copyFrame: "Скопировать кадр",
       pause: "Пауза",
       play: "Воспроизвести",
       previousFrame: "Предыдущий кадр",
-      previousScene: "Перейти к предыдущей сцене",
+      previousMarker: "Предыдущий маркер",
       saveFrame: "Сохранить кадр",
-      resetTools: "Сбросить инструменты",
       setEnd: "Установить конец сегмента в текущей позиции",
       setStart: "Установить начало сегмента в текущей позиции",
       transform: {
@@ -496,6 +497,9 @@ export const ru = {
   timeline: {
     actions: {
       detectScenes: "Найти смены сцен",
+      detectAudioActivity: "Найти активность аудио в текущем миксе",
+      disableAudioActivityMarkers: "Скрыть диапазоны активности аудио",
+      enableAudioActivityMarkers: "Показать диапазоны активности аудио",
       disableSceneMarkers: "Скрыть маркеры сцен",
       enableSceneMarkers: "Показать маркеры сцен",
       moveSegment: "Переместить выбранный сегмент",
@@ -509,10 +513,13 @@ export const ru = {
     },
     status: {
       sceneDetectionFailed: "Не удалось распознать сцены. Попробуйте ещё раз.",
+      audioActivityDetectionFailed: "Не удалось распознать активность аудио. Попробуйте ещё раз.",
     },
     tooltips: {
       detectScenes:
-        "Анализировать исходное видео на смены сцен. Удерживайте Shift и перетащите курсор воспроизведения к маркеру.",
+        "Анализировать исходное видео на смены сцен. Удерживайте Shift при перетаскивании, чтобы привязаться к маркеру сцены или к любому краю диапазона активности аудио.",
+      detectAudioActivity:
+        "Анализировать текущий аудиомикс и отмечать диапазоны активности аудио на шкале времени.",
       moveSegment:
         "Перетащите, чтобы переместить выбранный сегмент — удерживайте Shift для привязки",
       trimReset: "{{label}} — удерживайте Shift для привязки — дважды щёлкните для сброса",

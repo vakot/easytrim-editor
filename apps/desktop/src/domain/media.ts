@@ -45,6 +45,11 @@ interface AudioTrackSelection {
   volumePercent: number;
 }
 
+interface AudioActivityRange {
+  endMicros: number;
+  startMicros: number;
+}
+
 interface OptimizedExportRequest extends FastExportRequest {
   arguments: string;
   crop?: { height: number; width: number; x: number; y: number };
@@ -125,6 +130,7 @@ interface MediaInfo {
 
 export type {
   AppError,
+  AudioActivityRange,
   AudioStream,
   AudioTrackSelection,
   ChapterInfo,

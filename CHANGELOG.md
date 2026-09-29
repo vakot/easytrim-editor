@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added optional audio activity detection for the active audio mix, with complementary timeline ranges, marker navigation, and Shift snapping to either edge of each range.
 - Added optional scene-change detection with animated timeline markers and Shift-drag snapping at scene boundaries.
 - Added scene detection result states with failure details and a retry action.
 - Added offline integrated LUFS and true-peak analysis for the selected audio mix, with optional optimized-export normalization presets.
@@ -14,6 +15,10 @@ All notable changes to this project will be documented in this file.
 
 - Removed automatic playhead following while trim borders move.
 - Updated desktop branding to use the square logo on macOS and the symbol on Windows, Linux, and in-app surfaces.
+
+### Removed
+
+- Removed the Reset tools button from the timeline toolbar.
 
 ### Fixed
 
