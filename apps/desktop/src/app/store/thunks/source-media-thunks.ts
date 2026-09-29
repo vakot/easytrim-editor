@@ -484,9 +484,10 @@ async function prepareSelectedSource(
 
   const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
   const audioTrackSelections = selectAudioTracks(getState()).map(({ processing, streamIndex }) => ({
-    processing: { ...processing },
+    processing: { ...processing, gainDb: 0 },
     streamIndex,
   }));
+
   const audioOperation = operation.child("audio.preview", {
     data: { streamCount: audioStreamIndexes.length },
   });
@@ -495,9 +496,8 @@ async function prepareSelectedSource(
     const onlyTrack = audioTrackSelections[0];
     const requiresProcessedAudioPreview =
       audioTrackSelections.length > 1 ||
-      (onlyTrack !== undefined &&
-        (onlyTrack.processing.gainDb !== 0 ||
-          onlyTrack.processing.loudnessNormalization !== undefined));
+      (onlyTrack !== undefined && onlyTrack.processing.loudnessNormalization !== undefined);
+
     if (!requiresProcessedAudioPreview) {
       if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
         dispatch(audioPreviewsReady({ previews: [] }));

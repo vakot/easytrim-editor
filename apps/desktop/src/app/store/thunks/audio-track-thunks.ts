@@ -13,7 +13,11 @@ import {
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppThunk } from "@/app/store/thunks/source-media-thunks";
-import type { AudioTrackSelection } from "@/domain/audio-processing";
+import {
+  type AudioTrackSelection,
+  sameAudioTrackPreviewProcessing,
+  sameAudioTrackProcessing,
+} from "@/domain/audio-processing";
 import { analyzeAudioLoudness, detectAudioActivity, prepareAudioPreviews } from "@/lib/tauri/media";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 
@@ -35,6 +39,7 @@ function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
         sourcePath: source.sourcePath,
         trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
       });
+
       if (!isCurrentTrack(getState(), source.sourcePath, sourceLoadToken, audioTrack)) return;
       dispatch(audioTrackLoudnessAnalysisReady({ operationId, result, streamIndex }));
     } catch (error: unknown) {
@@ -86,13 +91,19 @@ function prepareTrackPreview(streamIndex: number): AppThunk<Promise<void>> {
 
     const operationId = crypto.randomUUID();
     const sourceLoadToken = state.source.loadToken;
-    const audioTrack = toAudioTrackSelection(track);
+    const audioTrack = toAudioTrackPreviewSelection(track);
     dispatch(audioTrackPreviewStarted({ operationId, streamIndex }));
     try {
       const [descriptor] = await prepareAudioPreviews(source.sourcePath, [audioTrack]);
       if (
         !descriptor ||
-        !isCurrentTrack(getState(), source.sourcePath, sourceLoadToken, audioTrack)
+        !isCurrentTrack(
+          getState(),
+          source.sourcePath,
+          sourceLoadToken,
+          audioTrack,
+          sameAudioTrackPreviewProcessing,
+        )
       )
         return;
       dispatch(audioTrackPreviewReady({ descriptor, operationId }));
@@ -115,21 +126,32 @@ function toAudioTrackSelection(track: {
   return { processing: { ...track.processing }, streamIndex: track.streamIndex };
 }
 
+function toAudioTrackPreviewSelection(track: {
+  processing: AudioTrackSelection["processing"];
+  streamIndex: number;
+}): AudioTrackSelection {
+  return {
+    processing: { ...track.processing, gainDb: 0 },
+    streamIndex: track.streamIndex,
+  };
+}
+
 function isCurrentTrack(
   state: ReturnType<Parameters<AppThunk>[1]>,
   sourcePath: string,
   sourceLoadToken: number,
   audioTrack: AudioTrackSelection,
+  processingMatches: typeof sameAudioTrackProcessing = sameAudioTrackProcessing,
 ): boolean {
   const currentTrack = selectAudioTracks(state).find(
     (track) => track.streamIndex === audioTrack.streamIndex,
   );
+
   return (
     state.source.loadToken === sourceLoadToken &&
     selectSourceSelection(state)?.sourcePath === sourcePath &&
     currentTrack !== undefined &&
-    currentTrack.processing.gainDb === audioTrack.processing.gainDb &&
-    currentTrack.processing.loudnessNormalization === audioTrack.processing.loudnessNormalization
+    processingMatches(currentTrack.processing, audioTrack.processing)
   );
 }
 

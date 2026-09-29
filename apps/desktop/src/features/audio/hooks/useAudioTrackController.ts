@@ -4,23 +4,28 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   audioTrackActivityVisibilityToggled,
   audioTrackGainChanged,
-  audioTrackLoudnessNormalizationChanged,
+  audioTrackProcessingChanged,
   audioTrackToggled,
   selectAudioTracks,
 } from "@/app/store/slices/audio-slice";
-import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import {
   analyzeTrackLoudness,
   detectTrackActivity,
   prepareTrackPreview,
 } from "@/app/store/thunks/audio-track-thunks";
-import type { LoudnessPreset } from "@/domain/audio-processing";
+import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import {
+  type AudioTrackProcessing,
+  cloneAudioTrackProcessing,
+  sameAudioTrackProcessing,
+} from "@/domain/audio-processing";
 
 function useAudioTrackController(streamIndex: number) {
   const dispatch = useAppDispatch();
   const track = useAppSelector((state) =>
     selectAudioTracks(state).find((candidate) => candidate.streamIndex === streamIndex),
   );
+
   const previewTimerRef = useRef<number | null>(null);
 
   const schedulePreviewPreparation = useCallback(() => {
@@ -43,20 +48,24 @@ function useAudioTrackController(streamIndex: number) {
     dispatch(commitActiveEditingInstanceDraft());
   }, [dispatch, streamIndex]);
 
-  const setGain = useCallback(
+  const commitGain = useCallback(
     (gainDb: number) => {
       if (!track || track.processing.gainDb === gainDb) return;
       dispatch(audioTrackGainChanged({ gainDb, streamIndex }));
       dispatch(commitActiveEditingInstanceDraft());
-      schedulePreviewPreparation();
     },
-    [dispatch, schedulePreviewPreparation, streamIndex, track],
+    [dispatch, streamIndex, track],
   );
 
-  const setNormalization = useCallback(
-    (preset: LoudnessPreset | null) => {
-      if (!track || track.processing.loudnessNormalization === (preset ?? undefined)) return;
-      dispatch(audioTrackLoudnessNormalizationChanged({ preset, streamIndex }));
+  const applyProcessing = useCallback(
+    (processing: AudioTrackProcessing) => {
+      if (!track || sameAudioTrackProcessing(track.processing, processing)) return;
+      dispatch(
+        audioTrackProcessingChanged({
+          processing: cloneAudioTrackProcessing(processing),
+          streamIndex,
+        }),
+      );
       dispatch(commitActiveEditingInstanceDraft());
       schedulePreviewPreparation();
     },
@@ -77,10 +86,10 @@ function useAudioTrackController(streamIndex: number) {
 
   return {
     analyzeLoudness,
+    applyProcessing,
+    commitGain,
     detectActivity,
     setEnabled,
-    setGain,
-    setNormalization,
     toggleActivityVisibility,
     track,
   };

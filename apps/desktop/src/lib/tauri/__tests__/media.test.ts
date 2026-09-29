@@ -25,8 +25,8 @@ import {
   listenForSourceDrops,
   moveSourceToTrash,
   planOptimizedExport,
-  prepareImportedSourceThumbnail,
   prepareAudioPreviews,
+  prepareImportedSourceThumbnail,
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
@@ -60,6 +60,7 @@ describe("media IPC adapter", () => {
     const audioTracks = [
       { streamIndex: 2, processing: { gainDb: 3, loudnessNormalization: "streaming" as const } },
     ];
+
     const descriptor = {
       mediaToken: 4,
       previewRevision: 12,
@@ -67,6 +68,7 @@ describe("media IPC adapter", () => {
       streamIndex: 2,
       url: "easytrim-media://localhost/4?variant=audio&stream=2&revision=12",
     };
+
     mocks.invoke.mockResolvedValueOnce([descriptor]);
 
     await expect(prepareAudioPreviews("C:/Media/clip.mp4", audioTracks)).resolves.toEqual([

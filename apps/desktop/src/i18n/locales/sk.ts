@@ -4,6 +4,7 @@ export const sk = {
   common: {
     actions: {
       back: "Späť",
+      apply: "Použiť",
       cancel: "Zrušiť",
       clear: "Vymazať",
       close: "Zavrieť",
@@ -534,13 +535,13 @@ export const sk = {
       analyzingLoudness: "Analyzuje sa hlasitosť…",
       detectActivity: "Rozpoznať aktivitu zvuku",
       detectingActivity: "Rozpoznáva sa aktivita zvuku…",
+      effects: "Efekty…",
       hideActivity: "Skryť rozpoznané úseky",
       merge: "Zlúčiť vybrané stopy",
       mute: "Stlmiť",
       muteTrack: "Stlmiť {{title}}",
       reanalyzeLoudness: "Znova analyzovať hlasitosť",
-      resetGain: "Obnoviť",
-      resetTrackGain: "Obnoviť zosilnenie stopy na 0 dB",
+      redetectActivity: "Znova rozpoznať aktivitu zvuku",
       retryActivityDetection: "Zopakovať rozpoznávanie aktivity",
       showActivity: "Zobraziť rozpoznané úseky",
       unmute: "Zrušiť stlmenie",
@@ -548,8 +549,10 @@ export const sk = {
     },
     labels: {
       defaultTrack: "Zvuk {{number}}",
+      loudnessAnalysis: "Analýza hlasitosti",
       loudnessNormalization: "Normalizácia hlasitosti",
-      trackGain: "Zosilnenie stopy",
+      maximumTruePeak: "Maximálny skutočný vrchol (dBTP)",
+      targetLufs: "Cieľová hlasitosť (LUFS)",
       title: "Zvukové stopy",
     },
     status: {
@@ -567,15 +570,23 @@ export const sk = {
         separate_other: "{{count}} vybraných stôp zostane samostatných",
         videoOnly: "Výstup iba s videom",
       },
-      activityRanges: "Rozpoznané úseky aktivity zvuku",
+      analysisUsesAppliedEffects: "Analýza používa aktuálne použité spracovanie stopy.",
+      normalizeSummary: "Normalizovať na {{target}} LUFS",
       preparingProcessedPreview: "Pripravuje sa náhľad s týmito nastaveniami stopy…",
     },
     tooltips: {
       merge: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
     },
+    dialogs: {
+      effects: {
+        description: "Zmeny sa použijú až po stlačení tlačidla Použiť.",
+        title: "{{title}} — efekty",
+      },
+    },
     accessibility: {
       trackActions: "Akcie zvukovej stopy {{number}}",
-      trackGain: "Zosilnenie {{title}} v decibeloch",
+      appliedEffects: "Použité efekty: {{summary}}",
+      trackGain: "Zosilnenie zvukovej stopy {{number}} v decibeloch",
       trackNormalization: "Normalizácia hlasitosti: {{title}}",
     },
     options: {
@@ -583,6 +594,7 @@ export const sk = {
       channels_few: "{{count}} kanály",
       channels_other: "{{count}} kanálov",
       normalizationNone: "Vypnuté",
+      normalizationCustom: "Vlastné",
       unknownLayout: "neznáme rozloženie",
     },
   },

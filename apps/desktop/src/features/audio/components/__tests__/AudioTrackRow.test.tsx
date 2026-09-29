@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import { audioTrackToggled, type AudioTrackState } from "@/app/store/slices/audio-slice";
+import { type AudioTrackState, audioTrackToggled } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 import { audioTrackColor } from "@/features/audio";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
@@ -30,7 +30,14 @@ function renderRow(trackOverride?: AudioTrackState, enabled = true) {
   const view = render(
     <Provider store={store}>
       <TooltipProvider>
-        <AudioTrackRow stream={stream} track={track} trackColor="var(--chart-1)" trackNumber={1} />
+        <AudioTrackRow
+          clearLiveAudioTrackGain={() => undefined}
+          setLiveAudioTrackGain={() => undefined}
+          stream={stream}
+          track={track}
+          trackColor="var(--chart-1)"
+          trackNumber={1}
+        />
       </TooltipProvider>
     </Provider>,
   );
@@ -39,20 +46,51 @@ function renderRow(trackOverride?: AudioTrackState, enabled = true) {
 }
 
 describe("AudioTrackRow", () => {
-  it("edits gain directly in dB and exposes the shared actions in the row menu", async () => {
+  it("keeps the menu action-only and discards an unsubmitted effects draft", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /effects/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    expect(screen.getByRole("dialog", { name: /effects/i })).toBeInTheDocument();
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /loudness normalization/i }),
+      "broadcast",
+    );
+    expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
+  });
+
+  it("applies the effects draft once and shows the committed processing on its waveform", async () => {
     const user = userEvent.setup();
     const { store, stream, view } = renderRow();
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
-    const gain = screen.getByRole("spinbutton", { name: /gain/i });
-    fireEvent.change(gain, { target: { value: "-3.5" } });
-    fireEvent.change(screen.getByRole("combobox", { name: /loudness normalization/i }), {
-      target: { value: "broadcast" },
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /loudness normalization/i }),
+      "streaming",
+    );
+    expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
+    await user.click(screen.getByRole("button", { name: /apply/i }));
+
+    expect(store.getState().audio.tracks[0]?.processing).toEqual({
+      gainDb: 0,
+      loudnessNormalization: "streaming",
     });
     view.rerender(
       <Provider store={store}>
         <TooltipProvider>
           <AudioTrackRow
+            clearLiveAudioTrackGain={() => undefined}
+            setLiveAudioTrackGain={() => undefined}
             stream={stream}
             track={store.getState().audio.tracks[0]!}
             trackColor="var(--chart-1)"
@@ -61,22 +99,48 @@ describe("AudioTrackRow", () => {
         </TooltipProvider>
       </Provider>,
     );
+    expect(screen.getByRole("note")).toHaveTextContent(/normalize/i);
+    expect(screen.queryByRole("spinbutton", { name: /gain/i })).not.toBeInTheDocument();
+  });
 
-    expect(store.getState().audio.tracks[0]?.processing).toEqual({
-      gainDb: -3.5,
-      loudnessNormalization: "broadcast",
-    });
-    expect(screen.getByRole("button", { name: /reset/i })).toBeEnabled();
-    expect(screen.getByText(/detect audio activity/i)).toBeInTheDocument();
+  it("exposes the same action-only commands in the row context menu", async () => {
+    const user = userEvent.setup();
+    renderRow();
 
-    await user.keyboard("{Escape}");
     await user.pointer({ keys: "[MouseRight]", target: screen.getByText(/#1 ·/) });
 
-    expect(screen.getByRole("spinbutton", { name: /gain/i })).toHaveValue(-3.5);
-    expect(screen.getByRole("combobox", { name: /loudness normalization/i })).toHaveValue(
-      "broadcast",
+    expect(screen.getByRole("menuitemcheckbox", { name: /mute eng/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /detect audio activity/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /effects/i })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+  });
+
+  it("commits custom loudness values only when Apply is pressed", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /loudness normalization/i }),
+      "custom",
     );
-    expect(screen.getByText(/detect audio activity/i)).toBeInTheDocument();
+    const target = screen.getByRole("spinbutton", { name: /target loudness/i });
+    await user.clear(target);
+    await user.type(target, "-18.5");
+    expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
+
+    await user.click(screen.getByRole("button", { name: /apply/i }));
+
+    expect(store.getState().audio.tracks[0]?.processing).toEqual({
+      gainDb: 0,
+      loudnessNormalization: {
+        maxTruePeakDb: -1.5,
+        mode: "custom",
+        targetLufs: -18.5,
+      },
+    });
   });
 
   it("renders detected ranges on their owning waveform in the track color", () => {
@@ -105,6 +169,8 @@ describe("AudioTrackRow", () => {
       <Provider store={store}>
         <TooltipProvider>
           <AudioTrackRow
+            clearLiveAudioTrackGain={() => undefined}
+            setLiveAudioTrackGain={() => undefined}
             stream={stream}
             track={track}
             trackColor={audioTrackColor(stream.streamIndex)}
@@ -125,7 +191,7 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
 
-    expect(screen.getByRole("menuitem", { name: /analyze loudness/i })).toBeEnabled();
     expect(screen.getByRole("menuitem", { name: /detect audio activity/i })).toBeEnabled();
+    expect(screen.queryByRole("menuitem", { name: /analyze loudness/i })).not.toBeInTheDocument();
   });
 });

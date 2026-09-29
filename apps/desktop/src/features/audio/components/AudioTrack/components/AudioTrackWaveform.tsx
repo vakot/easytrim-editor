@@ -10,6 +10,7 @@ import type { AudioStream } from "@/lib/tauri/media.types";
 import { useWaveformPrepare } from "../../../hooks/useWaveformPreparation";
 
 interface AudioTrackWaveformProps {
+  gainDb: number;
   stream: AudioStream;
   track: AudioTrackState;
 }
@@ -19,13 +20,13 @@ type WaveformWithStatus<Status extends AudioTrackState["waveform"]["status"]> = 
   { status: Status }
 >;
 
-function AudioTrackWaveform({ stream, track }: AudioTrackWaveformProps) {
+function AudioTrackWaveform({ gainDb, stream, track }: AudioTrackWaveformProps) {
   switch (track.waveform.status) {
     case "idle":
     case "loading":
       return <AudioTrackWaveformLoading />;
     case "ready":
-      return <AudioTrackWaveformImage stream={stream} waveform={track.waveform} />;
+      return <AudioTrackWaveformImage gainDb={gainDb} stream={stream} waveform={track.waveform} />;
     case "failed":
       return <AudioTrackWaveformError stream={stream} waveform={track.waveform} />;
   }
@@ -45,9 +46,11 @@ function AudioTrackWaveformLoading() {
 }
 
 function AudioTrackWaveformImage({
+  gainDb,
   stream,
   waveform,
 }: {
+  gainDb: number;
   stream: AudioStream;
   waveform: WaveformWithStatus<"ready">;
 }) {
@@ -61,8 +64,16 @@ function AudioTrackWaveformImage({
       draggable={false}
       onError={() => void dispatch(waveformDisplayFailed(stream))}
       src={waveform.url}
+      style={{
+        transform: `scaleY(${waveformVisualScale(gainDb)})`,
+        transformOrigin: "center",
+      }}
     />
   );
+}
+
+function waveformVisualScale(gainDb: number): number {
+  return Math.min(2, Math.max(0.25, 10 ** (gainDb / 20)));
 }
 
 function AudioTrackWaveformError({

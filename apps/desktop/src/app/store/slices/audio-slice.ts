@@ -6,7 +6,9 @@ import { trimChanged } from "@/app/store/slices/trim-slice";
 import {
   type AudioTrackProcessing,
   type AudioTrackSettings,
+  cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_PROCESSING,
+  sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
@@ -86,6 +88,7 @@ const audioSlice = createSlice({
         const descriptor = action.payload.previews.find(
           (preview) => preview.streamIndex === track.streamIndex,
         );
+
         if (
           track.preview.status === "ready" &&
           descriptor &&
@@ -94,7 +97,7 @@ const audioSlice = createSlice({
           continue;
         }
         track.preview =
-          descriptor && sameAudioTrackProcessing(descriptor.processing, track.processing)
+          descriptor && sameAudioTrackPreviewProcessing(descriptor.processing, track.processing)
             ? { descriptor, status: "ready" }
             : { status: "idle" };
       }
@@ -121,6 +124,7 @@ const audioSlice = createSlice({
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
+
       if (track) track.preview = { operationId: action.payload.operationId, status: "loading" };
     },
     audioTrackPreviewReady: (
@@ -130,11 +134,12 @@ const audioSlice = createSlice({
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.descriptor.streamIndex,
       );
+
       if (
         !track ||
         track.preview.status !== "loading" ||
         track.preview.operationId !== action.payload.operationId ||
-        !sameAudioTrackProcessing(track.processing, action.payload.descriptor.processing)
+        !sameAudioTrackPreviewProcessing(track.processing, action.payload.descriptor.processing)
       ) {
         return;
       }
@@ -157,6 +162,7 @@ const audioSlice = createSlice({
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
+
       if (
         track?.preview.status === "loading" &&
         track.preview.operationId === action.payload.operationId
@@ -185,6 +191,19 @@ const audioSlice = createSlice({
       track.processing.gainDb = action.payload.gainDb;
       track.loudnessAnalysis = { status: "idle" };
       track.activityAnalysis = { status: "idle" };
+    },
+    audioTrackProcessingChanged: (
+      state,
+      action: PayloadAction<{ processing: AudioTrackProcessing; streamIndex: number }>,
+    ) => {
+      const track = state.tracks.find(
+        (candidate) => candidate.streamIndex === action.payload.streamIndex,
+      );
+
+      if (!track || sameAudioTrackProcessing(track.processing, action.payload.processing)) return;
+      track.processing = cloneAudioTrackProcessing(action.payload.processing);
+      track.loudnessAnalysis = { status: "idle" };
+      track.activityAnalysis = { status: "idle" };
       track.preview = { status: "idle" };
     },
     audioTrackLoudnessNormalizationChanged: (
@@ -198,10 +217,18 @@ const audioSlice = createSlice({
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
 
-      if (!track || track.processing.loudnessNormalization === (action.payload.preset ?? undefined))
+      const processing = track
+        ? cloneAudioTrackProcessing({
+            gainDb: track.processing.gainDb,
+            ...(action.payload.preset === null
+              ? {}
+              : { loudnessNormalization: action.payload.preset }),
+          })
+        : null;
+
+      if (!track || processing === null || sameAudioTrackProcessing(track.processing, processing))
         return;
-      if (action.payload.preset === null) delete track.processing.loudnessNormalization;
-      else track.processing.loudnessNormalization = action.payload.preset;
+      track.processing = processing;
       track.loudnessAnalysis = { status: "idle" };
       track.activityAnalysis = { status: "idle" };
       track.preview = { status: "idle" };
@@ -453,9 +480,6 @@ const {
   audioPreviewsLoading,
   audioPreviewsReady,
   audioPreviewsUnavailable,
-  audioTrackPreviewFailed,
-  audioTrackPreviewReady,
-  audioTrackPreviewStarted,
   audioTrackActivityAnalysisFailed,
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
@@ -465,6 +489,10 @@ const {
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
   audioTrackLoudnessNormalizationChanged,
+  audioTrackPreviewFailed,
+  audioTrackPreviewReady,
+  audioTrackPreviewStarted,
+  audioTrackProcessingChanged,
   audioTrackToggled,
   waveformDisplayFailed,
   waveformReady,
@@ -487,9 +515,6 @@ export {
   audioPreviewsLoading,
   audioPreviewsReady,
   audioPreviewsUnavailable,
-  audioTrackPreviewFailed,
-  audioTrackPreviewReady,
-  audioTrackPreviewStarted,
   audioReducer,
   audioTrackActivityAnalysisFailed,
   audioTrackActivityAnalysisReady,
@@ -500,6 +525,10 @@ export {
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
   audioTrackLoudnessNormalizationChanged,
+  audioTrackPreviewFailed,
+  audioTrackPreviewReady,
+  audioTrackPreviewStarted,
+  audioTrackProcessingChanged,
   audioTrackToggled,
   selectAudioPreviews,
   selectAudioTracks,

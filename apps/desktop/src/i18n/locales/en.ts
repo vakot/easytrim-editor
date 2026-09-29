@@ -2,6 +2,7 @@ export const en = {
   common: {
     actions: {
       back: "Back",
+      apply: "Apply",
       cancel: "Cancel",
       clear: "Clear",
       close: "Close",
@@ -534,13 +535,13 @@ export const en = {
       analyzingLoudness: "Analyzing loudness…",
       detectActivity: "Detect audio activity",
       detectingActivity: "Detecting audio activity…",
+      effects: "Effects…",
       hideActivity: "Hide detected ranges",
       merge: "Merge selected tracks",
       mute: "Mute",
       muteTrack: "Mute {{title}}",
       reanalyzeLoudness: "Analyze loudness again",
-      resetGain: "Reset",
-      resetTrackGain: "Reset track gain to 0 dB",
+      redetectActivity: "Re-detect audio activity",
       retryActivityDetection: "Retry activity detection",
       showActivity: "Show detected ranges",
       unmute: "Unmute",
@@ -548,8 +549,10 @@ export const en = {
     },
     labels: {
       defaultTrack: "Audio {{number}}",
+      loudnessAnalysis: "Loudness analysis",
       loudnessNormalization: "Loudness normalization",
-      trackGain: "Track gain",
+      maximumTruePeak: "Maximum true peak (dBTP)",
+      targetLufs: "Target loudness (LUFS)",
       title: "Audio tracks",
     },
     status: {
@@ -567,15 +570,23 @@ export const en = {
         separate_other: "{{count}} selected tracks kept separately",
         videoOnly: "Video-only output",
       },
-      activityRanges: "Detected audio activity ranges",
+      analysisUsesAppliedEffects: "Analysis uses the currently applied track processing.",
+      normalizeSummary: "Normalize {{target}} LUFS",
       preparingProcessedPreview: "Preparing preview with these track settings…",
     },
     tooltips: {
       merge: "All selected tracks are merged into one track; this requires encoding.",
     },
+    dialogs: {
+      effects: {
+        description: "Changes stay unapplied until you choose Apply.",
+        title: "{{title}} — Effects",
+      },
+    },
     accessibility: {
       trackActions: "Audio {{number}} actions",
-      trackGain: "{{title}} gain in decibels",
+      appliedEffects: "Applied effects: {{summary}}",
+      trackGain: "Audio {{number}} gain in decibels",
       trackNormalization: "{{title}} loudness normalization",
     },
     options: {
@@ -583,6 +594,7 @@ export const en = {
       channels_few: "{{count}} channels",
       channels_other: "{{count}} channels",
       normalizationNone: "Off",
+      normalizationCustom: "Custom",
       unknownLayout: "unknown layout",
     },
   },

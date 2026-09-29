@@ -32,6 +32,7 @@ function createStore() {
     setItem: async () => undefined,
     removeItem: async () => undefined,
   });
+
   store.dispatch(sourceSelected({ source: firstSource }));
   store.dispatch(sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath) }));
   return store;
@@ -73,7 +74,7 @@ describe("audio track operations", () => {
     );
   });
 
-  it("keeps a preview generated for stale settings from replacing the current track preview", async () => {
+  it("keeps a source preview reusable across committed gain changes", async () => {
     const store = createStore();
     let finishPreview!: (value: unknown) => void;
     mocks.prepareAudioPreviews.mockReturnValue(
@@ -95,6 +96,6 @@ describe("audio track operations", () => {
     ]);
     await pendingPreview;
 
-    expect(store.getState().audio.tracks[0]?.preview).toEqual({ status: "idle" });
+    expect(store.getState().audio.tracks[0]?.preview).toMatchObject({ status: "ready" });
   });
 });

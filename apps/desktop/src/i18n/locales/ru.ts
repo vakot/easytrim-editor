@@ -2,6 +2,7 @@ export const ru = {
   common: {
     actions: {
       back: "Назад",
+      apply: "Применить",
       cancel: "Отмена",
       clear: "Очистить",
       close: "Закрыть",
@@ -537,13 +538,13 @@ export const ru = {
       analyzingLoudness: "Анализ громкости…",
       detectActivity: "Определить активность звука",
       detectingActivity: "Определение активности звука…",
+      effects: "Эффекты…",
       hideActivity: "Скрыть найденные интервалы",
       merge: "Объединить выбранные дорожки",
       mute: "Выключить звук",
       muteTrack: "Выключить звук: {{title}}",
       reanalyzeLoudness: "Повторить анализ громкости",
-      resetGain: "Сбросить",
-      resetTrackGain: "Сбросить усиление до 0 дБ",
+      redetectActivity: "Повторно определить активность звука",
       retryActivityDetection: "Повторить поиск активности",
       showActivity: "Показать найденные интервалы",
       unmute: "Включить звук",
@@ -551,8 +552,10 @@ export const ru = {
     },
     labels: {
       defaultTrack: "Аудио {{number}}",
+      loudnessAnalysis: "Анализ громкости",
       loudnessNormalization: "Нормализация громкости",
-      trackGain: "Усиление дорожки",
+      maximumTruePeak: "Максимальный истинный пик (дБTP)",
+      targetLufs: "Целевая громкость (LUFS)",
       title: "Аудиодорожки",
     },
     status: {
@@ -570,15 +573,23 @@ export const ru = {
         separate_other: "{{count}} выбранных дорожек сохраняются отдельно",
         videoOnly: "Только видео",
       },
-      activityRanges: "Найденные интервалы активности звука",
+      analysisUsesAppliedEffects: "Анализ использует применённую обработку дорожки.",
+      normalizeSummary: "Нормализация {{target}} LUFS",
       preparingProcessedPreview: "Подготовка предпросмотра с этими настройками дорожки…",
     },
     tooltips: {
       merge: "Все выбранные дорожки объединяются в одну; это требует кодирования.",
     },
+    dialogs: {
+      effects: {
+        description: "Изменения применятся только после нажатия «Применить».",
+        title: "{{title}} — эффекты",
+      },
+    },
     accessibility: {
       trackActions: "Действия аудиодорожки {{number}}",
-      trackGain: "Усиление {{title}} в децибелах",
+      appliedEffects: "Применённые эффекты: {{summary}}",
+      trackGain: "Усиление аудиодорожки {{number}} в децибелах",
       trackNormalization: "Нормализация громкости {{title}}",
     },
     options: {
@@ -586,6 +597,7 @@ export const ru = {
       channels_few: "{{count}} канала",
       channels_other: "{{count}} каналов",
       normalizationNone: "Выкл.",
+      normalizationCustom: "Своя настройка",
       unknownLayout: "неизвестная конфигурация",
     },
   },

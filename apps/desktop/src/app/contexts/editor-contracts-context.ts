@@ -23,6 +23,8 @@ export type EditorPlaybackInteraction = Pick<
   | "onStepFrame"
   | "onTimeUpdate"
   | "onTogglePlayback"
+  | "setLiveAudioTrackGain"
+  | "clearLiveAudioTrackGain"
   | "setMediaPlaybackRate"
   | "setVideoElement"
   | "shuttleDirection"
