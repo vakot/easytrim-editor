@@ -1,17 +1,23 @@
 import { createContext, type Dispatch, useContext } from "react";
 
-import type { AudioTrackProcessing, CustomLoudnessNormalization } from "@/domain/audio-processing";
+import type { AudioTrackProcessing } from "@/domain/audio-processing";
 
-type NormalizationOption = "none" | "webVideo" | "streaming" | "broadcast" | "custom";
+type NormalizationOption = "webVideo" | "streaming" | "broadcast" | "custom";
 
 interface AudioTrackEffectsDraft {
   maxTruePeakDbInput: string;
+  normalizationEnabled: boolean;
   processing: AudioTrackProcessing;
   targetLufsInput: string;
 }
 
 type AudioTrackEffectsDraftAction =
-  | { field: keyof CustomLoudnessNormalization; type: "customValueChanged"; value: string }
+  | {
+      field: "targetLufs" | "maxTruePeakDb";
+      type: "customValueChanged";
+      value: string;
+    }
+  | { type: "normalizationEnabledChanged"; value: boolean }
   | { type: "normalizationSelected"; value: NormalizationOption };
 
 interface AudioTrackEffectsDraftContextValue {

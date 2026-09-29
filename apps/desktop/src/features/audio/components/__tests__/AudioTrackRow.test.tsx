@@ -168,6 +168,7 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("switch", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("option", { name: /streaming/i }));
     expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
@@ -279,6 +280,7 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("switch", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("option", { name: /custom/i }));
     const target = screen.getByRole("spinbutton", { name: /target loudness/i });
@@ -294,6 +296,32 @@ describe("AudioTrackRow", () => {
         maxTruePeakDb: -1.5,
         mode: "custom",
         targetLufs: -18.5,
+      },
+    });
+  });
+
+  it("switches preset edits to Custom while preserving the other preset value", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("switch", { name: /loudness normalization/i }));
+    const target = screen.getByRole("spinbutton", { name: /target loudness/i });
+    expect(target).toHaveValue(-14);
+    await user.clear(target);
+    await user.type(target, "-15");
+    expect(screen.getByRole("combobox", { name: /loudness normalization/i })).toHaveTextContent(
+      /custom/i,
+    );
+    await user.click(screen.getByRole("button", { name: /apply/i }));
+
+    expect(store.getState().audio.tracks[0]?.processing).toEqual({
+      gainDb: 0,
+      loudnessNormalization: {
+        maxTruePeakDb: -1,
+        mode: "custom",
+        targetLufs: -15,
       },
     });
   });

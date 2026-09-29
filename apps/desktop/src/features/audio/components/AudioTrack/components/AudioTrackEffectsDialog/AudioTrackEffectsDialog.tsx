@@ -16,11 +16,15 @@ import {
 import { sameAudioTrackProcessing } from "@/domain/audio-processing";
 
 import type { AudioTrackController } from "../../../../hooks/useAudioTrackController";
+import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
 
 import { AudioTrackEffectsDraftProvider } from "./components/AudioTrackEffectsDraftProvider";
-import { LoudnessControls } from "./components/LoudnessControls";
 import { AudioTrackEffectsDialogContext } from "./contexts/audio-track-effects-dialog-context";
 import { useAudioTrackEffectsDraft } from "./contexts/audio-track-effects-draft-context";
+import {
+  getAudioTrackEffectsDraftProcessing,
+  isAudioTrackEffectsDraftValid,
+} from "./audio-track-effects-draft.utils";
 
 interface AudioTrackEffectsDialogProps {
   children: ReactNode;
@@ -65,34 +69,34 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
     stream.language ??
     t("audio.labels.defaultTrack", { number: controller.trackNumber });
 
-  const normalization = draft.processing.loudnessNormalization;
-  const customNormalization = typeof normalization === "object" && normalization.mode === "custom";
-  const isDirty = !sameAudioTrackProcessing(track.processing, draft.processing);
-  const hasValidCustomNormalization =
-    !customNormalization ||
-    (isInRange(draft.targetLufsInput, -36, -5) && isInRange(draft.maxTruePeakDbInput, -9, 0));
+  const draftProcessing = getAudioTrackEffectsDraftProcessing(draft);
+  const isDirty = !sameAudioTrackProcessing(track.processing, draftProcessing);
+  const isValid = isAudioTrackEffectsDraftValid(draft);
 
   return (
-    <DialogContent className="sm:max-w-lg">
-      <DialogHeader>
+    <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-hidden sm:max-w-3xl">
+      <DialogHeader className="-mx-4 border-b px-4 pb-4">
         <DialogTitle>{t("audio.dialogs.effects.title", { title })}</DialogTitle>
         <DialogDescription>{t("audio.dialogs.effects.description")}</DialogDescription>
       </DialogHeader>
 
-      <LoudnessControls streamIndex={track.streamIndex} />
+      <AudioTrackEffectsLibrary streamIndex={track.streamIndex} />
 
-      {track.preview.status === "loading" ? (
-        <p className="text-xs text-muted-foreground" role="status">
-          {t("audio.messages.preparingProcessedPreview")}
-        </p>
-      ) : null}
-      {track.preview.status === "failed" ? (
-        <Alert role="alert" variant="destructive">
-          <AlertDescription>{track.preview.error.message}</AlertDescription>
-        </Alert>
+      {track.preview.status === "loading" || track.preview.status === "failed" ? (
+        <div className="-mx-4 border-t px-4 py-2">
+          {track.preview.status === "loading" ? (
+            <p className="text-xs text-muted-foreground" role="status">
+              {t("audio.messages.preparingProcessedPreview")}
+            </p>
+          ) : (
+            <Alert role="alert" variant="destructive">
+              <AlertDescription>{track.preview.error.message}</AlertDescription>
+            </Alert>
+          )}
+        </div>
       ) : null}
 
-      <DialogFooter>
+      <DialogFooter className="-mx-4 border-t px-4 pt-4">
         <DialogClose asChild>
           <Button type="button" variant="outline">
             {t("common.actions.cancel")}
@@ -100,8 +104,8 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
         </DialogClose>
         <DialogClose asChild>
           <Button
-            disabled={!isDirty || !hasValidCustomNormalization}
-            onClick={() => controller.applyProcessing(draft.processing)}
+            disabled={!isDirty || !isValid}
+            onClick={() => controller.applyProcessing(draftProcessing)}
             type="button"
           >
             {t("common.actions.apply")}
@@ -110,12 +114,6 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
       </DialogFooter>
     </DialogContent>
   );
-}
-
-function isInRange(value: string, min: number, max: number): boolean {
-  if (value.trim() === "") return false;
-  const number = Number(value);
-  return Number.isFinite(number) && number >= min && number <= max;
 }
 
 export { AudioTrackEffectsDialog };

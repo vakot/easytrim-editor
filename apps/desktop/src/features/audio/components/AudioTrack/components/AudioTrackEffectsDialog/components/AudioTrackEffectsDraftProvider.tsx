@@ -4,6 +4,7 @@ import {
   type AudioTrackProcessing,
   cloneAudioTrackProcessing,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
+  loudnessNormalizationTargets,
 } from "@/domain/audio-processing";
 
 import {
@@ -34,15 +35,16 @@ function AudioTrackEffectsDraftProvider({
 
 function createAudioTrackEffectsDraft(processing: AudioTrackProcessing): AudioTrackEffectsDraft {
   const clonedProcessing = cloneAudioTrackProcessing(processing);
-  const normalization = clonedProcessing.loudnessNormalization;
-  const custom = typeof normalization === "object" ? normalization : null;
+  const normalizationEnabled = clonedProcessing.loudnessNormalization !== undefined;
+  const normalization = clonedProcessing.loudnessNormalization ?? "webVideo";
+  clonedProcessing.loudnessNormalization = normalization;
+  const targets = loudnessNormalizationTargets(normalization);
 
   return {
-    maxTruePeakDbInput: String(
-      custom?.maxTruePeakDb ?? DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION.maxTruePeakDb,
-    ),
+    maxTruePeakDbInput: String(targets.maxTruePeakDb),
+    normalizationEnabled,
     processing: clonedProcessing,
-    targetLufsInput: String(custom?.targetLufs ?? DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION.targetLufs),
+    targetLufsInput: String(targets.targetLufs),
   };
 }
 
@@ -50,49 +52,49 @@ function audioTrackEffectsDraftReducer(
   state: AudioTrackEffectsDraft,
   action: AudioTrackEffectsDraftAction,
 ): AudioTrackEffectsDraft {
+  if (action.type === "normalizationEnabledChanged") {
+    return { ...state, normalizationEnabled: action.value };
+  }
+
   if (action.type === "normalizationSelected") {
-    const currentNormalization = state.processing.loudnessNormalization;
-    if (action.value === "custom") {
-      const custom =
-        typeof currentNormalization === "object"
-          ? currentNormalization
-          : DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION;
+    const normalization =
+      action.value === "custom"
+        ? typeof state.processing.loudnessNormalization === "object"
+          ? state.processing.loudnessNormalization
+          : DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION
+        : action.value;
 
-      return {
-        ...state,
-        maxTruePeakDbInput: String(custom.maxTruePeakDb),
-        processing: {
-          ...state.processing,
-          loudnessNormalization: { ...custom },
-        },
-        targetLufsInput: String(custom.targetLufs),
-      };
-    }
+    const targets = loudnessNormalizationTargets(normalization);
 
-    const processing = cloneAudioTrackProcessing(state.processing);
-    if (action.value === "none") delete processing.loudnessNormalization;
-    else processing.loudnessNormalization = action.value;
-    return { ...state, processing };
+    return {
+      ...state,
+      maxTruePeakDbInput: String(targets.maxTruePeakDb),
+      processing: { ...state.processing, loudnessNormalization: normalization },
+      targetLufsInput: String(targets.targetLufs),
+    };
   }
 
   const inputKey = action.field === "targetLufs" ? "targetLufsInput" : "maxTruePeakDbInput";
   const nextState = { ...state, [inputKey]: action.value };
-  if (action.value.trim() === "") return nextState;
-
   const value = Number(action.value);
-  if (!Number.isFinite(value)) return nextState;
 
   const currentNormalization = state.processing.loudnessNormalization;
   const custom =
     typeof currentNormalization === "object"
       ? currentNormalization
-      : DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION;
+      : {
+          mode: "custom" as const,
+          ...loudnessNormalizationTargets(currentNormalization ?? "webVideo"),
+        };
+
+  const customValue =
+    action.value.trim() === "" || !Number.isFinite(value) ? custom[action.field] : value;
 
   return {
     ...nextState,
     processing: {
       ...state.processing,
-      loudnessNormalization: { ...custom, [action.field]: value },
+      loudnessNormalization: { ...custom, [action.field]: customValue },
     },
   };
 }
