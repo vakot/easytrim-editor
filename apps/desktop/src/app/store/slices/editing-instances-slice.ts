@@ -637,7 +637,8 @@ const selectActiveSceneBoundariesMicros = createSelector(
     if (
       !instance ||
       !source ||
-      normalizeSourceKey(instance.snapshot.source.sourcePath) !== normalizeSourceKey(source.sourcePath)
+      normalizeSourceKey(instance.snapshot.source.sourcePath) !==
+        normalizeSourceKey(source.sourcePath)
     ) {
       return [];
     }

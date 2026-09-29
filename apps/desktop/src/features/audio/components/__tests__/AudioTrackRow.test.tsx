@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { mediaWithAudio } from "@/test/source.fixtures";
 
-import { AudioTrackRow } from "../AudioTrackRow";
+import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
 
 describe("AudioTrackRow", () => {
   it("keeps focused volume controls available after the pointer leaves", async () => {
