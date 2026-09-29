@@ -412,7 +412,6 @@ export const sk = {
       previousFrame: "Predchádzajúca snímka",
       previousSegment: "Prejsť na predchádzajúci segment",
       saveFrame: "Uložiť snímku",
-      resetTools: "Obnoviť nástroje",
       setEnd: "Nastaviť koniec segmentu na aktuálnu pozíciu",
       setStart: "Nastaviť začiatok segmentu na aktuálnu pozíciu",
       transform: {

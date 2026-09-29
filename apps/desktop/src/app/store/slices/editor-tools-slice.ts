@@ -38,7 +38,6 @@ const editorToolsSlice = createSlice({
   initialState: createInitialState,
   reducers: {
     editorToolsInitialized: (_state, action: PayloadAction<EditorToolsState>) => action.payload,
-    editorToolsReset: (_state, action: PayloadAction<EditorToolsState>) => action.payload,
     loopPlaybackToggled: (state) => {
       state.loopPlaybackEnabled = !state.loopPlaybackEnabled;
     },
@@ -90,7 +89,6 @@ const editorToolsSlice = createSlice({
 
 const {
   editorToolsInitialized,
-  editorToolsReset,
   loopPlaybackToggled,
   sceneDetectionFailed,
   sceneDetectionFinished,
@@ -128,7 +126,6 @@ export {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
   editorToolsReducer,
-  editorToolsReset,
   loopPlaybackToggled,
   sceneDetectionFailed,
   sceneDetectionFinished,

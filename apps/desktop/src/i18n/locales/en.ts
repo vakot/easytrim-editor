@@ -412,7 +412,6 @@ export const en = {
       previousFrame: "Previous frame",
       previousSegment: "Move to previous segment",
       saveFrame: "Save frame",
-      resetTools: "Reset tools",
       setEnd: "Set segment end to current position",
       setStart: "Set segment start to current position",
       transform: {

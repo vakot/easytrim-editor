@@ -16,6 +16,10 @@ All notable changes to this project will be documented in this file.
 - Removed automatic playhead following while trim borders move.
 - Updated desktop branding to use the square logo on macOS and the symbol on Windows, Linux, and in-app surfaces.
 
+### Removed
+
+- Removed the Reset tools button from the timeline toolbar.
+
 ### Fixed
 
 - Fixed Spacebar playback toggling when an editor button has focus.

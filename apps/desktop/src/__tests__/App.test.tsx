@@ -989,14 +989,11 @@ describe("App", () => {
         .getByRole("button", { name: "Segment playback" })
         .querySelector(".lucide-between-vertical-start"),
     ).not.toBeNull();
-    expect(within(videoToolbar).getByRole("button", { name: "Reset tools" })).toHaveAttribute(
-      "data-variant",
-      "secondary",
-    );
+    expect(within(videoToolbar).queryByRole("button", { name: "Reset tools" })).toBeNull();
     expect(
       videoToolbar.querySelector('[data-slot="timeline-tools-divider"]'),
     ).not.toBeInTheDocument();
-    expect(within(videoToolbar).getAllByRole("button")).toHaveLength(5);
+    expect(within(videoToolbar).getAllByRole("button")).toHaveLength(4);
     const timelineFixedContent = screen.getByTestId("timeline-fixed-content");
     expect(
       within(timelineFixedContent).getByRole("button", { name: "Playback speed" }),

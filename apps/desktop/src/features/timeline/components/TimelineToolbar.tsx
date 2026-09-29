@@ -1,11 +1,4 @@
-import {
-  AudioLines,
-  BetweenVerticalStart,
-  Clapperboard,
-  LoaderCircle,
-  Repeat,
-  RotateCcw,
-} from "lucide-react";
+import { AudioLines, BetweenVerticalStart, Clapperboard, LoaderCircle, Repeat } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -16,14 +9,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
-  createEditorToolsStateFromPreferences,
-  editorToolsReset,
   loopPlaybackToggled,
   segmentPlaybackToggled,
   selectLoopPlaybackEnabled,
   selectSegmentPlaybackEnabled,
 } from "@/app/store/slices/editor-tools-slice";
-import { selectPreferences } from "@/app/store/slices/preferences-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { cn } from "@/lib/class-names.utils";
 
@@ -47,7 +37,6 @@ function TimelineToolbar() {
         <SegmentPlaybackTool />
         <SceneDetectionTool />
         <SilenceDetectionTool />
-        <ResetToolsTool />
       </div>
 
       <Separator orientation="vertical" />
@@ -222,24 +211,6 @@ function SegmentPlaybackTool() {
       title={enabled ? t("preview.tooltips.segmentEnabled") : t("preview.tooltips.segmentDisabled")}
     >
       <BetweenVerticalStart />
-    </TimelineToolButton>
-  );
-}
-
-function ResetToolsTool() {
-  const { t } = useTranslation();
-  const preferences = useAppSelector(selectPreferences);
-  const dispatch = useAppDispatch();
-
-  return (
-    <TimelineToolButton
-      enabled={false}
-      label={t("preview.actions.resetTools")}
-      onClick={() => dispatch(editorToolsReset(createEditorToolsStateFromPreferences(preferences)))}
-      preserveOnTrigger={false}
-      title={t("preview.actions.resetTools")}
-    >
-      <RotateCcw />
     </TimelineToolButton>
   );
 }

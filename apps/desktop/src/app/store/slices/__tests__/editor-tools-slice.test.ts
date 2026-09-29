@@ -5,7 +5,6 @@ import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
   editorToolsReducer,
-  editorToolsReset,
   loopPlaybackToggled,
   segmentPlaybackToggled,
   selectEditorTools,
@@ -70,25 +69,6 @@ describe("editor tools Redux domain", () => {
       status: "ready",
     });
     expect(hidden.silenceMarkersEnabled).toBe(false);
-  });
-
-  it("resets active tools from the supplied current Preferences values", () => {
-    const activeState = editorToolsReducer(
-      undefined,
-      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
-    );
-
-    const currentDefaults: Preferences = {
-      ...DEFAULT_PREFERENCES,
-      loopPlaybackEnabledDefault: false,
-    };
-
-    expect(
-      editorToolsReducer(
-        activeState,
-        editorToolsReset(createEditorToolsStateFromPreferences(currentDefaults)),
-      ),
-    ).toEqual(createEditorToolsStateFromPreferences(currentDefaults));
   });
 
   it("exposes focused selectors", () => {
