@@ -143,16 +143,22 @@ function ContextMenuCheckboxItem({
   children,
   className,
   inset,
+  keepOpen,
+  onSelect,
+  variant = "default",
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.CheckboxItem> & {
   inset?: boolean;
+  keepOpen?: boolean;
+  variant?: "default" | "destructive" | "success";
 }) {
   return (
     <ContextMenuPrimitive.CheckboxItem
       checked={checked}
-      className={cn(menuItemVariants({ kind: "checkbox", className }))}
+      className={cn(menuItemVariants({ kind: "checkbox", variant, className }))}
       data-inset={inset}
       data-slot="context-menu-checkbox-item"
+      onSelect={gateKeepOpenHandler(keepOpen, onSelect)}
       {...props}
     >
       <MenuIcon>
@@ -169,15 +175,21 @@ function ContextMenuRadioItem({
   children,
   className,
   inset,
+  keepOpen,
+  onSelect,
+  variant = "default",
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.RadioItem> & {
   inset?: boolean;
+  keepOpen?: boolean;
+  variant?: "default" | "destructive" | "success";
 }) {
   return (
     <ContextMenuPrimitive.RadioItem
-      className={cn(menuItemVariants({ kind: "radio", className }))}
+      className={cn(menuItemVariants({ kind: "radio", className, variant }))}
       data-inset={inset}
       data-slot="context-menu-radio-item"
+      onSelect={gateKeepOpenHandler(keepOpen, onSelect)}
       {...props}
     >
       <MenuIcon>

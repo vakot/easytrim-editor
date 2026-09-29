@@ -17,7 +17,6 @@ interface AudioTracksProps {
 }
 
 function AudioTracks({ streams, tracks }: AudioTracksProps) {
-  const { clearLiveAudioTrackGain, setLiveAudioTrackGain } = usePlayback();
   useWaveformPreparation(tracks);
 
   return (
@@ -29,9 +28,7 @@ function AudioTracks({ streams, tracks }: AudioTracksProps) {
         const trackColor = audioTrackColor(stream.streamIndex);
         return (
           <AudioTrackRow
-            clearLiveAudioTrackGain={clearLiveAudioTrackGain}
             key={stream.streamIndex}
-            setLiveAudioTrackGain={setLiveAudioTrackGain}
             stream={stream}
             track={track}
             trackColor={trackColor}

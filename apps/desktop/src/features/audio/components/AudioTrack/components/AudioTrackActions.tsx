@@ -1,105 +1,32 @@
-import { MoreVertical } from "lucide-react";
+import { ChevronRight, WandSparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
 import {
   ContextMenuCheckboxItem,
+  ContextMenuContent,
+  ContextMenuIcon,
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 import {
-  DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuIcon,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Slot } from "@/components/ui/slot";
 
 import type { AudioStream } from "@/lib/tauri/media.types";
 
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 
-type MenuMode = "context" | "dropdown";
+import { useAudioTrackEffectsDialog } from "./AudioTrackEffectsDialog";
 
 interface AudioTrackActionsProps {
   controller: AudioTrackController;
-  mode?: MenuMode;
-  onOpenEffects: () => void;
   stream: AudioStream;
   trackNumber: number;
-}
-
-function AudioTrackActions({
-  controller,
-  mode = "dropdown",
-  onOpenEffects,
-  stream,
-  trackNumber,
-}: AudioTrackActionsProps) {
-  const { t } = useTranslation();
-  const track = controller.track;
-  if (!track) return null;
-  const streamTitle =
-    stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
-
-  const content = (
-    <>
-      <TrackMenuItem
-        checked={track.enabled}
-        label={
-          track.enabled
-            ? t("audio.actions.muteTrack", { title: streamTitle })
-            : t("audio.actions.unmuteTrack", { title: streamTitle })
-        }
-        mode={mode}
-        onAction={controller.setEnabled}
-      />
-
-      <MenuSeparator mode={mode} />
-
-      <TrackMenuItem
-        disabled={track.activityAnalysis.status === "loading"}
-        label={activityActionLabel(track.activityAnalysis.status, t)}
-        mode={mode}
-        onAction={controller.detectActivity}
-      />
-      {track.activityAnalysis.status === "ready" ? (
-        <TrackMenuItem
-          checked={track.activityVisible}
-          label={
-            track.activityVisible
-              ? t("audio.actions.hideActivity")
-              : t("audio.actions.showActivity")
-          }
-          mode={mode}
-          onAction={controller.toggleActivityVisibility}
-        />
-      ) : null}
-
-      <MenuSeparator mode={mode} />
-
-      <TrackMenuItem label={t("audio.actions.effects")} mode={mode} onAction={onOpenEffects} />
-    </>
-  );
-
-  if (mode === "context") return content;
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          aria-label={t("audio.accessibility.trackActions", { number: trackNumber })}
-          size="icon-sm"
-          type="button"
-          variant="ghost"
-        >
-          <MoreVertical aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>{content}</DropdownMenuContent>
-    </DropdownMenu>
-  );
 }
 
 function activityActionLabel(
@@ -112,44 +39,148 @@ function activityActionLabel(
   return t("audio.actions.detectActivity");
 }
 
-function MenuSeparator({ mode }: { mode: MenuMode }) {
-  return mode === "context" ? <ContextMenuSeparator /> : <DropdownMenuSeparator />;
+function AudioTrackToggleMenuCheckboxItem({
+  children,
+  controller,
+  stream,
+  trackNumber,
+}: { children?: React.ReactNode } & AudioTrackActionsProps) {
+  const { t } = useTranslation();
+  const track = controller.track!;
+
+  const streamTitle =
+    stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
+
+  const commandProps = {
+    "aria-label": track.enabled
+      ? t("audio.actions.muteTrack", { title: streamTitle })
+      : t("audio.actions.unmuteTrack", { title: streamTitle }),
+    onCheckedChange: controller.setEnabled,
+    checked: track.enabled,
+  };
+
+  return <Slot {...commandProps}>{children}</Slot>;
 }
 
-function TrackMenuItem({
-  checked,
-  disabled,
-  label,
-  mode,
-  onAction,
-}: {
-  checked?: boolean;
-  disabled?: boolean;
-  label: string;
-  mode: MenuMode;
-  onAction: () => void;
-}) {
-  if (mode === "context") {
-    return checked === undefined ? (
-      <ContextMenuItem disabled={disabled} onSelect={onAction}>
-        {label}
-      </ContextMenuItem>
-    ) : (
-      <ContextMenuCheckboxItem checked={checked} disabled={disabled} onCheckedChange={onAction}>
-        {label}
-      </ContextMenuCheckboxItem>
-    );
-  }
+function AudioTrackToggleActivityCheckboxMenuItem({
+  children,
+  controller,
+}: { children?: React.ReactNode } & AudioTrackActionsProps) {
+  const { t } = useTranslation();
+  const track = controller.track!;
+  const hasActivity = track.activityAnalysis.status === "ready";
 
-  return checked === undefined ? (
-    <DropdownMenuItem disabled={disabled} onSelect={onAction}>
-      {label}
-    </DropdownMenuItem>
-  ) : (
-    <DropdownMenuCheckboxItem checked={checked} disabled={disabled} onCheckedChange={onAction}>
-      {label}
-    </DropdownMenuCheckboxItem>
+  const handleCheckedChange = () => {
+    if (!hasActivity) controller.detectActivity();
+    controller.toggleActivityVisibility();
+  };
+
+  const commandProps = {
+    "aria-label": hasActivity
+      ? track.activityVisible
+        ? t("audio.actions.hideActivity")
+        : t("audio.actions.showActivity")
+      : activityActionLabel(track.activityAnalysis.status, t),
+    onCheckedChange: handleCheckedChange,
+    checked: hasActivity && track.activityVisible,
+    disabled: track.activityAnalysis.status === "loading",
+  };
+
+  return <Slot {...commandProps}>{children}</Slot>;
+}
+
+function AudioTrackEffectsMenuItem({
+  children,
+}: { children?: React.ReactNode } & AudioTrackActionsProps) {
+  const { t } = useTranslation();
+  const { openEffects } = useAudioTrackEffectsDialog();
+
+  const commandProps = {
+    "aria-label": t("audio.actions.effects"),
+    onSelect: openEffects,
+  };
+
+  return <Slot {...commandProps}>{children}</Slot>;
+}
+
+function AudioTrackDropdownMenuContent({
+  controller,
+  stream,
+  trackNumber,
+}: AudioTrackActionsProps) {
+  return (
+    <DropdownMenuContent>
+      <AudioTrackToggleMenuCheckboxItem
+        controller={controller}
+        stream={stream}
+        trackNumber={trackNumber}
+      >
+        <DropdownMenuCheckboxItem keepOpen>Enabled</DropdownMenuCheckboxItem>
+      </AudioTrackToggleMenuCheckboxItem>
+
+      <DropdownMenuSeparator />
+
+      <AudioTrackToggleActivityCheckboxMenuItem
+        controller={controller}
+        stream={stream}
+        trackNumber={trackNumber}
+      >
+        <DropdownMenuCheckboxItem keepOpen>Show Activity</DropdownMenuCheckboxItem>
+      </AudioTrackToggleActivityCheckboxMenuItem>
+
+      <DropdownMenuSeparator />
+
+      <AudioTrackEffectsMenuItem controller={controller} stream={stream} trackNumber={trackNumber}>
+        <DropdownMenuItem inset>
+          <DropdownMenuIcon side="left">
+            <WandSparkles />
+          </DropdownMenuIcon>
+          Effects
+          <DropdownMenuIcon side="right">
+            <ChevronRight />
+          </DropdownMenuIcon>
+        </DropdownMenuItem>
+      </AudioTrackEffectsMenuItem>
+    </DropdownMenuContent>
   );
 }
 
-export { AudioTrackActions };
+function AudioTrackContextMenuContent({ controller, stream, trackNumber }: AudioTrackActionsProps) {
+  return (
+    <ContextMenuContent>
+      <AudioTrackToggleMenuCheckboxItem
+        controller={controller}
+        stream={stream}
+        trackNumber={trackNumber}
+      >
+        <ContextMenuCheckboxItem keepOpen>Toggle</ContextMenuCheckboxItem>
+      </AudioTrackToggleMenuCheckboxItem>
+
+      <ContextMenuSeparator />
+
+      <AudioTrackToggleActivityCheckboxMenuItem
+        controller={controller}
+        stream={stream}
+        trackNumber={trackNumber}
+      >
+        <ContextMenuCheckboxItem keepOpen>Show Activity</ContextMenuCheckboxItem>
+      </AudioTrackToggleActivityCheckboxMenuItem>
+
+      <ContextMenuSeparator />
+
+      <AudioTrackEffectsMenuItem controller={controller} stream={stream} trackNumber={trackNumber}>
+        <ContextMenuItem inset>
+          <ContextMenuIcon side="left">
+            <WandSparkles />
+          </ContextMenuIcon>
+          Effects
+          <ContextMenuIcon side="right">
+            <ChevronRight />
+          </ContextMenuIcon>
+        </ContextMenuItem>
+      </AudioTrackEffectsMenuItem>
+    </ContextMenuContent>
+  );
+}
+
+export { AudioTrackContextMenuContent, AudioTrackDropdownMenuContent };

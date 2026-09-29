@@ -1,10 +1,13 @@
-import { WandSparkles } from "lucide-react";
+import { MoreVertical, WandSparkles } from "lucide-react";
 import { type CSSProperties, memo, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { Button } from "@/components/ui/button";
+import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Slider } from "@/components/ui/slider";
 
+import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
@@ -16,14 +19,15 @@ import type { AudioTrackController } from "../../hooks/useAudioTrackController";
 import { useAudioTrackController } from "../../hooks/useAudioTrackController";
 import { formatChannels } from "../../lib/audio-level.utils";
 
-import { AudioTrackActions } from "./components/AudioTrackActions";
+import {
+  AudioTrackContextMenuContent,
+  AudioTrackDropdownMenuContent,
+} from "./components/AudioTrackActions";
 import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog";
 import { AudioTrackToggle } from "./components/AudioTrackToggle";
 import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
 
 interface AudioTrackRowProps {
-  clearLiveAudioTrackGain: (streamIndex: number, committedGainDb: number) => void;
-  setLiveAudioTrackGain: (streamIndex: number, gainDb: number) => void;
   stream: AudioStream;
   track: AudioTrackState;
   trackColor: string;
@@ -31,8 +35,6 @@ interface AudioTrackRowProps {
 }
 
 const AudioTrackRow = memo(function AudioTrackRow({
-  clearLiveAudioTrackGain,
-  setLiveAudioTrackGain,
   stream,
   track,
   trackColor,
@@ -46,73 +48,54 @@ const AudioTrackRow = memo(function AudioTrackRow({
     stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
 
   return (
-    <AudioTrackEffectsDialog
-      onAnalyzeLoudness={controller.analyzeLoudness}
-      onApply={controller.applyProcessing}
-      title={streamTitle}
-      track={track}
-    >
-      {(openEffects) => (
-        <ContextMenu>
-          <ContextMenuTrigger asChild>
-            <div
-              className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
-              data-slot="audio-track-row"
-              style={{ "--audio-track-color": trackColor } as CSSProperties}
-            >
-              <AudioTrackRowDetails
-                clearLiveAudioTrackGain={clearLiveAudioTrackGain}
-                controller={controller}
-                liveGainDb={liveGainDb}
-                onLiveGainChange={setLiveGainDb}
-                onOpenEffects={openEffects}
-                setLiveAudioTrackGain={setLiveAudioTrackGain}
-                stream={stream}
-                track={track}
-                trackNumber={trackNumber}
-              />
-              <AudioTrackRowWaveform
-                liveGainDb={liveGainDb}
-                stream={stream}
-                track={track}
-                trackColor={trackColor}
-              />
-            </div>
-          </ContextMenuTrigger>
-          <ContextMenuContent>
-            <AudioTrackActions
+    <AudioTrackEffectsDialog controller={controller} title={streamTitle} track={track}>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
+            data-slot="audio-track-row"
+            style={{ "--audio-track-color": trackColor } as CSSProperties}
+          >
+            <AudioTrackRowDetails
               controller={controller}
-              mode="context"
-              onOpenEffects={openEffects}
+              liveGainDb={liveGainDb}
+              onLiveGainChange={setLiveGainDb}
               stream={stream}
+              track={track}
               trackNumber={trackNumber}
             />
-          </ContextMenuContent>
-        </ContextMenu>
-      )}
+            <AudioTrackRowWaveform
+              liveGainDb={liveGainDb}
+              stream={stream}
+              track={track}
+              trackColor={trackColor}
+            />
+          </div>
+        </ContextMenuTrigger>
+        <AudioTrackContextMenuContent
+          controller={controller}
+          stream={stream}
+          trackNumber={trackNumber}
+        />
+      </ContextMenu>
     </AudioTrackEffectsDialog>
   );
 });
 
 function AudioTrackRowDetails({
-  clearLiveAudioTrackGain,
   controller,
   liveGainDb,
   onLiveGainChange,
-  onOpenEffects,
-  setLiveAudioTrackGain,
   stream,
   track,
   trackNumber,
 }: Omit<AudioTrackRowProps, "trackColor"> & {
-  clearLiveAudioTrackGain: (streamIndex: number, committedGainDb: number) => void;
   controller: AudioTrackController;
   liveGainDb: number;
   onLiveGainChange: (gainDb: number | null) => void;
-  onOpenEffects: () => void;
-  setLiveAudioTrackGain: (streamIndex: number, gainDb: number) => void;
 }) {
   const { t } = useTranslation();
+  const { clearLiveAudioTrackGain, setLiveAudioTrackGain } = usePlayback();
 
   const title =
     stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
@@ -145,12 +128,24 @@ function AudioTrackRowDetails({
         />
       </div>
 
-      <AudioTrackActions
-        controller={controller}
-        onOpenEffects={onOpenEffects}
-        stream={stream}
-        trackNumber={trackNumber}
-      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            aria-label={t("audio.accessibility.trackActions", { number: trackNumber })}
+            size="icon-sm"
+            type="button"
+            variant="ghost"
+          >
+            <MoreVertical aria-hidden="true" />
+          </Button>
+        </DropdownMenuTrigger>
+
+        <AudioTrackDropdownMenuContent
+          controller={controller}
+          stream={stream}
+          trackNumber={trackNumber}
+        />
+      </DropdownMenu>
     </div>
   );
 }
