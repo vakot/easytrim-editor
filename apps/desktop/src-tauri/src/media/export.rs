@@ -560,10 +560,6 @@ pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bo
                     track.processing.gain_db
                 ));
             }
-            filters.push_str(&format!(
-                ";[track{index}_normalized]volume={:.6}dB[audio{index}]",
-                track.processing.gain_db
-            ));
             filters
         })
         .collect::<Vec<_>>();

@@ -329,4 +329,17 @@ function isCurrentAnalysisTrack(
   );
 }
 
+function isCurrentAnalysisTrack(
+  state: ReturnType<Parameters<AppThunk>[1]>,
+  sourcePath: string,
+  sourceLoadToken: number,
+  streamIndex: number,
+): boolean {
+  return (
+    state.source.loadToken === sourceLoadToken &&
+    selectSourceSelection(state)?.sourcePath === sourcePath &&
+    selectAudioTracks(state).some((track) => track.streamIndex === streamIndex)
+  );
+}
+
 export { analyzeTrackLoudness, detectTrackActivity, prepareTrackPreview };
