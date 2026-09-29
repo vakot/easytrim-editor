@@ -1,5 +1,5 @@
 import { WandSparkles } from "lucide-react";
-import { type CSSProperties, memo } from "react";
+import { type CSSProperties, memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import {
   loudnessNormalizationTargets,
 } from "@/domain/audio-processing";
 import { timelinePercent } from "@/domain/trim";
+import { cn } from "@/lib/class-names.utils";
 
 import {
   type AudioTrackController,
@@ -132,18 +133,15 @@ function AudioTrackGainIndicator({ controller }: { controller: AudioTrackControl
     : null;
 
   return (
-    <Badge
+    <AudioTrackIndicator
       aria-label={
         normalizedSummary ?? t("audio.accessibility.trackGain", { number: controller.trackNumber })
       }
-      className="pointer-events-none absolute bottom-1 left-1 z-3 max-w-[calc(100%-0.75rem)]"
+      className="absolute bottom-1 left-1 z-3"
       data-slot="audio-track-gain-indicator"
-      role="note"
-      size="xs"
-      variant="outline"
     >
       {normalizedSummary ?? formatGain(controller.liveGainDb, i18n.language)}
-    </Badge>
+    </AudioTrackIndicator>
   );
 }
 
@@ -170,17 +168,14 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
   const summary = summaries.join(" · ");
 
   return (
-    <Badge
+    <AudioTrackIndicator
       aria-label={t("audio.accessibility.appliedEffects", { summary })}
-      className="pointer-events-none absolute top-1 left-1 z-3 max-w-[calc(100%-0.75rem)]"
+      className="absolute top-1 left-1 z-3"
       data-slot="audio-track-effects-indicator"
-      role="note"
-      size="xs"
-      variant="secondary"
     >
       <WandSparkles aria-hidden="true" className="size-3 shrink-0" />
       <span className="truncate">{summary}</span>
-    </Badge>
+    </AudioTrackIndicator>
   );
 }
 
