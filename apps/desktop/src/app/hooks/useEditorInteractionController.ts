@@ -23,6 +23,7 @@ import {
   effectiveAudioTrackGainDb,
 } from "@/domain/audio-processing";
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
+import { sameAudioTrackProcessing } from "@/domain/audio-processing";
 import {
   canSetTrimBoundaryAtPlayhead,
   setTrimBoundaryAtPlayhead,
