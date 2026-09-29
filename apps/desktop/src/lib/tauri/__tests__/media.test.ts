@@ -28,6 +28,7 @@ import {
   prepareAudioPreviews,
   prepareImportedSourceThumbnail,
   prepareAudioPreviews,
+  prepareImportedSourceThumbnail,
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,

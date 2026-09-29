@@ -25,8 +25,6 @@ import { AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
 import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog";
 import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
-import { useAudioTrackController } from "../../hooks/useAudioTrackController";
-import type { AudioTrackController } from "../../hooks/useAudioTrackController";
 
 interface AudioTrackRowProps {
   streamIndex: number;

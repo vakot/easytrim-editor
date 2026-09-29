@@ -551,6 +551,7 @@ export const ru = {
     },
     labels: {
       defaultTrack: "Аудио {{number}}",
+      loudnessAnalysis: "Анализ громкости",
       loudnessNormalization: "Нормализация громкости",
       maximumTruePeak: "Максимальный истинный пик (дБTP)",
       targetLufs: "Целевая громкость (LUFS)",
@@ -580,6 +581,12 @@ export const ru = {
       merge: "Все выбранные дорожки объединяются в одну; это требует кодирования.",
       normalizationReplacesGain:
         "Уровень дорожки задаёт нормализация громкости. Ручное усиление игнорируется, пока нормализация включена, сохраняется и восстанавливается после её отключения.",
+    },
+    dialogs: {
+      effects: {
+        description: "Изменения применятся только после нажатия «Применить».",
+        title: "{{title}} — эффекты",
+      },
     },
     dialogs: {
       effects: {

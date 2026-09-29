@@ -548,6 +548,7 @@ export const sk = {
     },
     labels: {
       defaultTrack: "Zvuk {{number}}",
+      loudnessAnalysis: "Analýza hlasitosti",
       loudnessNormalization: "Normalizácia hlasitosti",
       maximumTruePeak: "Maximálny skutočný vrchol (dBTP)",
       targetLufs: "Cieľová hlasitosť (LUFS)",
@@ -577,6 +578,12 @@ export const sk = {
       merge: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
       normalizationReplacesGain:
         "Úroveň tejto stopy riadi normalizácia hlasitosti. Manuálne zosilnenie sa počas normalizácie ignoruje, zachová sa a obnoví sa po vypnutí normalizácie.",
+    },
+    dialogs: {
+      effects: {
+        description: "Zmeny sa použijú až po stlačení tlačidla Použiť.",
+        title: "{{title}} — efekty",
+      },
     },
     dialogs: {
       effects: {
