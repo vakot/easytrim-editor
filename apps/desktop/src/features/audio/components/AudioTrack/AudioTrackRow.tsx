@@ -18,7 +18,7 @@ import { formatGain } from "../../lib/audio-level.utils";
 
 import { AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
-import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog/AudioTrackEffectsDialog";
+import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog";
 import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
 
 interface AudioTrackRowProps {
