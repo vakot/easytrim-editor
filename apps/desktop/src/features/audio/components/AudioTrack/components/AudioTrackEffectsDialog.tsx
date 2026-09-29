@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { createContext, type ReactNode, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -22,10 +22,11 @@ import {
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 
+import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
+
 interface AudioTrackEffectsDialogProps {
-  children: (openEffects: () => void) => ReactNode;
-  onAnalyzeLoudness: () => void;
-  onApply: (processing: AudioTrackProcessing) => void;
+  children: ReactNode;
+  controller: AudioTrackController;
   title: string;
   track: AudioTrackState;
 }
@@ -34,8 +35,7 @@ type NormalizationOption = "none" | "webVideo" | "streaming" | "broadcast" | "cu
 
 function AudioTrackEffectsDialog({
   children,
-  onAnalyzeLoudness,
-  onApply,
+  controller,
   title,
   track,
 }: AudioTrackEffectsDialogProps) {
@@ -125,7 +125,7 @@ function AudioTrackEffectsDialog({
   };
 
   const handleApply = () => {
-    onApply(cloneAudioTrackProcessing(draft));
+    controller.applyProcessing(cloneAudioTrackProcessing(draft));
     setOpen(false);
   };
 
@@ -138,8 +138,9 @@ function AudioTrackEffectsDialog({
         : t("audio.actions.analyzeLoudness");
 
   return (
-    <>
-      {children(openEffects)}
+    <AudioTrackEffectsDialogContext.Provider value={{ openEffects }}>
+      {children}
+
       <Dialog onOpenChange={setOpen} open={open}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -224,7 +225,7 @@ function AudioTrackEffectsDialog({
                 </div>
                 <Button
                   disabled={analysis.status === "loading"}
-                  onClick={onAnalyzeLoudness}
+                  onClick={controller.analyzeLoudness}
                   size="sm"
                   type="button"
                   variant="outline"
@@ -270,7 +271,7 @@ function AudioTrackEffectsDialog({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </AudioTrackEffectsDialogContext.Provider>
   );
 }
 
@@ -296,4 +297,14 @@ function formatLoudness(analysis: { integratedLufs?: number; truePeakDb?: number
   return `${loudness} · ${peak}`;
 }
 
-export { AudioTrackEffectsDialog };
+const AudioTrackEffectsDialogContext = createContext<{ openEffects: () => void } | null>(null);
+
+function useAudioTrackEffectsDialog() {
+  const context = useContext(AudioTrackEffectsDialogContext);
+  if (!context) {
+    throw new Error("useAudioTrackEffectsDialog must be used within AudioTrackEffectsDialog");
+  }
+  return context;
+}
+
+export { AudioTrackEffectsDialog, useAudioTrackEffectsDialog };
