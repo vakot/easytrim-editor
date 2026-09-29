@@ -162,7 +162,9 @@ fn diagnostics<'a>(
 mod tests {
     use std::{ffi::OsString, path::Path};
 
-    use crate::media::export::{AudioTrackProcessing, AudioTrackSelection, LoudnessPreset};
+    use crate::media::export::{
+        AudioTrackProcessing, AudioTrackSelection, LoudnessNormalization, LoudnessPreset,
+    };
 
     use super::audio_preview_arguments;
 
@@ -173,7 +175,9 @@ mod tests {
                 stream_index: 2,
                 processing: AudioTrackProcessing {
                     gain_db: 3.0,
-                    loudness_normalization: Some(LoudnessPreset::Streaming),
+                    loudness_normalization: Some(LoudnessNormalization::Preset(
+                        LoudnessPreset::Streaming,
+                    )),
                 },
             },
             AudioTrackSelection {

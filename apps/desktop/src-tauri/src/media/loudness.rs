@@ -184,7 +184,10 @@ mod tests {
         parse_loudness,
     };
     use crate::{
-        media::export::{AudioTrackProcessing, AudioTrackSelection, LoudnessPreset, TrimSelection},
+        media::export::{
+            AudioTrackProcessing, AudioTrackSelection, LoudnessNormalization, LoudnessPreset,
+            TrimSelection,
+        },
         process::run_bounded,
     };
 
@@ -219,7 +222,9 @@ mod tests {
             stream_index: 3,
             processing: AudioTrackProcessing {
                 gain_db: -6.0,
-                loudness_normalization: Some(LoudnessPreset::Broadcast),
+                loudness_normalization: Some(LoudnessNormalization::Preset(
+                    LoudnessPreset::Broadcast,
+                )),
             },
         };
         let graph = analysis_filter_graph(&track);

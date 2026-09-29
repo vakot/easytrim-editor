@@ -1,3 +1,4 @@
+import type { AudioTrackProcessing } from "@/domain/audio-processing";
 import type {
   AppError,
   AudioStream,
@@ -13,7 +14,6 @@ import type {
   OutputSelection,
   VideoStream,
 } from "@/domain/media";
-import type { AudioTrackProcessing } from "@/domain/audio-processing";
 import type { SourceRef } from "@/domain/source";
 
 interface OptimizedExportPlan {

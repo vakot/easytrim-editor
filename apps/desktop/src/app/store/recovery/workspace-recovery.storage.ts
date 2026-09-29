@@ -46,11 +46,22 @@ function isSnapshot(value: unknown): boolean {
         Number.isSafeInteger(track.streamIndex) &&
         isRecord(track.processing) &&
         isFiniteNumber(track.processing.gainDb) &&
-        (track.processing.loudnessNormalization === undefined ||
-          ["webVideo", "streaming", "broadcast"].includes(
-            String(track.processing.loudnessNormalization),
-          )),
+        isValidLoudnessNormalization(track.processing.loudnessNormalization),
     )
+  );
+}
+
+function isValidLoudnessNormalization(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (value === "webVideo" || value === "streaming" || value === "broadcast") return true;
+  if (!isRecord(value) || value.mode !== "custom") return false;
+  return (
+    isFiniteNumber(value.targetLufs) &&
+    value.targetLufs >= -36 &&
+    value.targetLufs <= -5 &&
+    isFiniteNumber(value.maxTruePeakDb) &&
+    value.maxTruePeakDb >= -9 &&
+    value.maxTruePeakDb <= 0
   );
 }
 

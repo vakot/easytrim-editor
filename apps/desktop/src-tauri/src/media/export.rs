@@ -58,14 +58,14 @@ pub struct AudioTrackSelection {
 pub struct AudioTrackProcessing {
     pub gain_db: f64,
     #[serde(default)]
-    pub loudness_normalization: Option<LoudnessPreset>,
+    pub loudness_normalization: Option<LoudnessNormalization>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct AudioTrackCacheKey {
     pub stream_index: u32,
     gain_db_bits: u64,
-    pub loudness_normalization: Option<LoudnessPreset>,
+    pub loudness_normalization: Option<LoudnessNormalizationCacheKey>,
 }
 
 impl From<&AudioTrackSelection> for AudioTrackCacheKey {
@@ -77,7 +77,11 @@ impl From<&AudioTrackSelection> for AudioTrackCacheKey {
             } else {
                 track.processing.gain_db.to_bits()
             },
-            loudness_normalization: track.processing.loudness_normalization,
+            loudness_normalization: track
+                .processing
+                .loudness_normalization
+                .as_ref()
+                .map(LoudnessNormalizationCacheKey::from),
         }
     }
 }
@@ -108,12 +112,63 @@ pub enum LoudnessPreset {
     Broadcast,
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum LoudnessNormalization {
+    Preset(LoudnessPreset),
+    Custom(CustomLoudnessNormalization),
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomLoudnessNormalization {
+    pub mode: CustomLoudnessMode,
+    pub target_lufs: f64,
+    pub max_true_peak_db: f64,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum CustomLoudnessMode {
+    Custom,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum LoudnessNormalizationCacheKey {
+    Preset(LoudnessPreset),
+    Custom {
+        target_lufs_bits: u64,
+        max_true_peak_db_bits: u64,
+    },
+}
+
+impl From<&LoudnessNormalization> for LoudnessNormalizationCacheKey {
+    fn from(normalization: &LoudnessNormalization) -> Self {
+        match normalization {
+            LoudnessNormalization::Preset(preset) => Self::Preset(*preset),
+            LoudnessNormalization::Custom(settings) => Self::Custom {
+                target_lufs_bits: settings.target_lufs.to_bits(),
+                max_true_peak_db_bits: settings.max_true_peak_db.to_bits(),
+            },
+        }
+    }
+}
+
 impl LoudnessPreset {
     pub(crate) fn targets(self) -> (f64, f64) {
         match self {
             Self::WebVideo => (-14.0, -1.0),
             Self::Streaming => (-16.0, -1.5),
             Self::Broadcast => (-23.0, -2.0),
+        }
+    }
+}
+
+impl LoudnessNormalization {
+    pub(crate) fn targets(&self) -> (f64, f64) {
+        match self {
+            Self::Preset(preset) => preset.targets(),
+            Self::Custom(settings) => (settings.target_lufs, settings.max_true_peak_db),
         }
     }
 }
@@ -359,13 +414,26 @@ pub(crate) fn validate_audio_track_selections(
         if !track.processing.gain_db.is_finite()
             || !is_known_stream
             || !selected_streams.insert(track.stream_index)
+            || !is_valid_loudness_normalization(track.processing.loudness_normalization.as_ref())
         {
             return Err(AppError::invalid_request(
-                "An audio stream selection or gain is invalid.",
+                "An audio stream selection or processing setting is invalid.",
             ));
         }
     }
     Ok(())
+}
+
+fn is_valid_loudness_normalization(normalization: Option<&LoudnessNormalization>) -> bool {
+    match normalization {
+        Some(LoudnessNormalization::Custom(settings)) => {
+            settings.target_lufs.is_finite()
+                && (-36.0..=-5.0).contains(&settings.target_lufs)
+                && settings.max_true_peak_db.is_finite()
+                && (-9.0..=0.0).contains(&settings.max_true_peak_db)
+        }
+        Some(LoudnessNormalization::Preset(_)) | None => true,
+    }
 }
 
 fn validate_resolution(resolution: &ResolutionSelection) -> Result<(), AppError> {
@@ -450,7 +518,8 @@ pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bo
             let (integrated_lufs, true_peak_db) = track
                 .processing
                 .loudness_normalization
-                .map(LoudnessPreset::targets)
+                .as_ref()
+                .map(LoudnessNormalization::targets)
                 .unwrap_or((0.0, 0.0));
             let mut filters = format!("[0:{}]", track.stream_index);
             if track.processing.loudness_normalization.is_some() {
@@ -612,8 +681,9 @@ mod tests {
 
     use super::{
         AudioTrackProcessing, AudioTrackSelection, CropSelection, FastExportRequest,
-        FrameRateSelection, LoudnessPreset, OptimizedExportRequest, ResolutionSelection,
-        TrimSelection, build_fast_arguments, build_optimized_arguments, optimized_command_preview,
+        FrameRateSelection, LoudnessNormalization, LoudnessPreset, OptimizedExportRequest,
+        ResolutionSelection, TrimSelection, build_fast_arguments, build_optimized_arguments,
+        optimized_command_preview,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -876,7 +946,9 @@ mod tests {
             stream_index: 2,
             processing: AudioTrackProcessing {
                 gain_db: -3.0,
-                loudness_normalization: Some(LoudnessPreset::Streaming),
+                loudness_normalization: Some(LoudnessNormalization::Preset(
+                    LoudnessPreset::Streaming,
+                )),
             },
         });
 
@@ -1139,7 +1211,9 @@ mod tests {
             stream_index: 1,
             processing: AudioTrackProcessing {
                 gain_db: 0.0,
-                loudness_normalization: Some(LoudnessPreset::WebVideo),
+                loudness_normalization: Some(LoudnessNormalization::Preset(
+                    LoudnessPreset::WebVideo,
+                )),
             },
         };
         let args = build_fast_arguments(

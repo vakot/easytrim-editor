@@ -21,6 +21,7 @@ import { previewReady } from "../app/store/slices/preview-slice";
 import { selectHasSource, selectSourceSelection } from "../app/store/slices/source-slice";
 import { store } from "../app/store/store";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
+import type { AudioTrackProcessing } from "../domain/audio-processing";
 import type { EditingInstanceListEntry } from "../domain/editing-instance";
 import type { EditorSnapshot } from "../domain/editor-snapshot";
 import type { SourceRef } from "../domain/source";
@@ -130,9 +131,7 @@ const media: MediaInfo = {
 
 function audioPreview(
   streamIndex: number,
-  processing: { gainDb: number; loudnessNormalization?: "webVideo" | "streaming" | "broadcast" } = {
-    gainDb: 0,
-  },
+  processing: AudioTrackProcessing = { gainDb: 0 },
   previewRevision = 1,
 ) {
   return {
@@ -260,10 +259,7 @@ beforeEach(() => {
     async (
       _sourcePath: string,
       audioTracks: Array<{
-        processing: {
-          gainDb: number;
-          loudnessNormalization?: "webVideo" | "streaming" | "broadcast";
-        };
+        processing: AudioTrackProcessing;
         streamIndex: number;
       }>,
     ) =>
@@ -758,17 +754,13 @@ describe("App", () => {
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       await user.click(screen.getByRole("button", { name: "Mute Game" }));
       await waitFor(() =>
-        expect(audioElements.some((audio) => audio.src.includes("stream=2&revision=1"))).toBe(
-          true,
-        ),
+        expect(audioElements.some((audio) => audio.src.includes("stream=2&revision=1"))).toBe(true),
       );
 
       await user.click(screen.getByRole("button", { name: "Mute Mic" }));
       await user.click(screen.getByRole("button", { name: "Unmute Game" }));
       await waitFor(() =>
-        expect(audioElements.some((audio) => audio.src.includes("stream=3&revision=1"))).toBe(
-          true,
-        ),
+        expect(audioElements.some((audio) => audio.src.includes("stream=3&revision=1"))).toBe(true),
       );
     } finally {
       vi.unstubAllGlobals();

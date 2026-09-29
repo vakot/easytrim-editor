@@ -218,13 +218,17 @@ mod tests {
 
     #[test]
     fn activity_uses_the_shared_per_track_processing_chain() {
-        use crate::media::export::{AudioTrackProcessing, AudioTrackSelection, LoudnessPreset};
+        use crate::media::export::{
+            AudioTrackProcessing, AudioTrackSelection, LoudnessNormalization, LoudnessPreset,
+        };
 
         let track = AudioTrackSelection {
             stream_index: 2,
             processing: AudioTrackProcessing {
                 gain_db: -3.0,
-                loudness_normalization: Some(LoudnessPreset::Streaming),
+                loudness_normalization: Some(LoudnessNormalization::Preset(
+                    LoudnessPreset::Streaming,
+                )),
             },
         };
         let args = silence_detection_arguments(Path::new("input.mp4"), &track);
