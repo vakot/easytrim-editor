@@ -22,11 +22,9 @@ const mocks = vi.hoisted(() => ({
   },
   executeCommand: vi.fn(),
   commands: {
-    "previous-scene": { enabled: true, label: "Previous scene", pending: false },
-    "next-scene": { enabled: true, label: "Next scene", pending: false },
+    "previous-segment": { enabled: true, label: "Move to previous segment", pending: false },
+    "next-segment": { enabled: true, label: "Move to next segment", pending: false },
     "show-scene-markers": { checked: true, enabled: true, label: "Show scene markers" },
-    "previous-silence": { enabled: false, label: "Previous silent range", pending: false },
-    "next-silence": { enabled: false, label: "Next silent range", pending: false },
     "show-silence-markers": { checked: true, enabled: false, label: "Show silent ranges" },
   },
   timeline: {
@@ -113,19 +111,26 @@ describe("PlaybackControls", () => {
     expect(mocks.playback.stopShuttle).not.toHaveBeenCalled();
   });
 
-  it("keeps focus on the current control after clicking a scene navigation button", async () => {
+  it("keeps focus on the current control after clicking a segment navigation button", async () => {
     const user = userEvent.setup();
     render(<PlaybackControls />, { wrapper: TestProvider });
 
     const playButton = screen.getByRole("button", { name: "Play" });
-    const previousSceneButton = screen.getByRole("button", { name: "Previous scene" });
-    const nextSceneButton = screen.getByRole("button", { name: "Next scene" });
-    expect(previousSceneButton).toHaveAttribute("data-editor-keyboard", "timeline-transport");
-    expect(nextSceneButton).toHaveAttribute("data-editor-keyboard", "timeline-transport");
+    const previousSegmentButton = screen.getByRole("button", {
+      name: "Move to previous segment",
+    });
+
+    const nextSegmentButton = screen.getByRole("button", { name: "Move to next segment" });
+    expect(previousSegmentButton).toHaveAttribute("data-editor-keyboard", "timeline-transport");
+    expect(nextSegmentButton).toHaveAttribute("data-editor-keyboard", "timeline-transport");
+    expect(
+      screen.getAllByRole("button", { name: /move to (previous|next) segment/i }),
+    ).toHaveLength(2);
     playButton.focus();
 
-    await user.click(previousSceneButton);
+    await user.click(previousSegmentButton);
 
     expect(document.activeElement).toBe(playButton);
+    expect(mocks.executeCommand).toHaveBeenCalledWith("previous-segment", "button");
   });
 });

@@ -26,9 +26,9 @@ import { cn } from "@/lib/class-names.utils";
 import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../lib/editor-shortcuts";
 
 const MotionButton = motion.create(Button);
-const SCENE_NAVIGATION_COLLAPSED_MARGIN = "-0.375rem";
+const SEGMENT_NAVIGATION_COLLAPSED_MARGIN = "-0.375rem";
 
-function preventSceneNavigationMouseFocus(event: MouseEvent<HTMLButtonElement>) {
+function preventSegmentNavigationMouseFocus(event: MouseEvent<HTMLButtonElement>) {
   if (event.button === 0) event.preventDefault();
 }
 
@@ -39,24 +39,20 @@ function PlaybackControls({ className }: { className?: string }) {
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const shouldReduceMotion = useReducedMotion() === true;
   const { executeCommand } = useApplicationCommands();
-  const previousSceneCommand = useApplicationCommand("previous-scene");
-  const nextSceneCommand = useApplicationCommand("next-scene");
+  const previousSegmentCommand = useApplicationCommand("previous-segment");
+  const nextSegmentCommand = useApplicationCommand("next-segment");
   const showSceneMarkersCommand = useApplicationCommand("show-scene-markers");
-  const previousSilenceCommand = useApplicationCommand("previous-silence");
-  const nextSilenceCommand = useApplicationCommand("next-silence");
   const showSilenceMarkersCommand = useApplicationCommand("show-silence-markers");
   const disabled = !playback.canInteract;
-  const previousSceneDisabled =
-    disabled || !previousSceneCommand.enabled || previousSceneCommand.pending;
+  const previousSegmentDisabled =
+    disabled || !previousSegmentCommand.enabled || previousSegmentCommand.pending;
 
-  const nextSceneDisabled = disabled || !nextSceneCommand.enabled || nextSceneCommand.pending;
-  const showSceneNavigation =
-    showSceneMarkersCommand.enabled &&
-    showSceneMarkersCommand.checked &&
-    sceneBoundariesMicros.length > 0;
-
-  const showSilenceNavigation =
-    showSilenceMarkersCommand.enabled && showSilenceMarkersCommand.checked;
+  const nextSegmentDisabled = disabled || !nextSegmentCommand.enabled || nextSegmentCommand.pending;
+  const showSegmentNavigation =
+    (showSceneMarkersCommand.enabled &&
+      showSceneMarkersCommand.checked &&
+      sceneBoundariesMicros.length > 0) ||
+    (showSilenceMarkersCommand.enabled && showSilenceMarkersCommand.checked);
 
   return (
     <div
@@ -80,43 +76,23 @@ function PlaybackControls({ className }: { className?: string }) {
           <SquareArrowRight />
         </TransportButton>
         <AnimatePresence initial={false}>
-          {showSilenceNavigation ? (
-            <Tooltip key="previous-silence-navigation">
-              <TooltipTrigger asChild>
-                <Button
-                  aria-label={previousSilenceCommand.label}
-                  className="overflow-hidden"
-                  data-editor-keyboard="timeline-transport"
-                  disabled={disabled || !previousSilenceCommand.enabled}
-                  onClick={() => void executeCommand("previous-silence", "button")}
-                  onMouseDown={preventSceneNavigationMouseFocus}
-                  size="icon-sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <ChevronsLeft />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{previousSilenceCommand.label}</TooltipContent>
-            </Tooltip>
-          ) : null}
-          {showSceneNavigation ? (
-            <Tooltip key="previous-scene-navigation">
+          {showSegmentNavigation ? (
+            <Tooltip key="previous-segment-navigation">
               <TooltipTrigger asChild>
                 <MotionButton
                   animate={{
-                    opacity: previousSceneDisabled ? 0.5 : 1,
+                    opacity: previousSegmentDisabled ? 0.5 : 1,
                     width: "1.75rem",
                     marginInlineStart: 0,
                   }}
-                  aria-label={previousSceneCommand.label}
+                  aria-label={previousSegmentCommand.label}
                   className="overflow-hidden transition-colors"
                   data-editor-keyboard="timeline-transport"
-                  disabled={previousSceneDisabled}
+                  disabled={previousSegmentDisabled}
                   exit={{
                     opacity: 0,
                     width: 0,
-                    marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                    marginInlineStart: SEGMENT_NAVIGATION_COLLAPSED_MARGIN,
                   }}
                   initial={
                     shouldReduceMotion
@@ -124,11 +100,11 @@ function PlaybackControls({ className }: { className?: string }) {
                       : {
                           opacity: 0,
                           width: 0,
-                          marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                          marginInlineStart: SEGMENT_NAVIGATION_COLLAPSED_MARGIN,
                         }
                   }
-                  onClick={() => void executeCommand("previous-scene", "button")}
-                  onMouseDown={preventSceneNavigationMouseFocus}
+                  onClick={() => void executeCommand("previous-segment", "button")}
+                  onMouseDown={preventSegmentNavigationMouseFocus}
                   size="icon-sm"
                   transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
                   type="button"
@@ -137,7 +113,7 @@ function PlaybackControls({ className }: { className?: string }) {
                   <ChevronsLeft />
                 </MotionButton>
               </TooltipTrigger>
-              <TooltipContent>{previousSceneCommand.label}</TooltipContent>
+              <TooltipContent>{previousSegmentCommand.label}</TooltipContent>
             </Tooltip>
           ) : null}
         </AnimatePresence>
@@ -186,23 +162,23 @@ function PlaybackControls({ className }: { className?: string }) {
           <SkipForward />
         </TransportButton>
         <AnimatePresence initial={false}>
-          {showSceneNavigation ? (
-            <Tooltip key="next-scene-navigation">
+          {showSegmentNavigation ? (
+            <Tooltip key="next-segment-navigation">
               <TooltipTrigger asChild>
                 <MotionButton
                   animate={{
-                    opacity: nextSceneDisabled ? 0.5 : 1,
+                    opacity: nextSegmentDisabled ? 0.5 : 1,
                     width: "1.75rem",
                     marginInlineStart: 0,
                   }}
-                  aria-label={nextSceneCommand.label}
+                  aria-label={nextSegmentCommand.label}
                   className="overflow-hidden transition-colors"
                   data-editor-keyboard="timeline-transport"
-                  disabled={nextSceneDisabled}
+                  disabled={nextSegmentDisabled}
                   exit={{
                     opacity: 0,
                     width: 0,
-                    marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                    marginInlineStart: SEGMENT_NAVIGATION_COLLAPSED_MARGIN,
                   }}
                   initial={
                     shouldReduceMotion
@@ -210,11 +186,11 @@ function PlaybackControls({ className }: { className?: string }) {
                       : {
                           opacity: 0,
                           width: 0,
-                          marginInlineStart: SCENE_NAVIGATION_COLLAPSED_MARGIN,
+                          marginInlineStart: SEGMENT_NAVIGATION_COLLAPSED_MARGIN,
                         }
                   }
-                  onClick={() => void executeCommand("next-scene", "button")}
-                  onMouseDown={preventSceneNavigationMouseFocus}
+                  onClick={() => void executeCommand("next-segment", "button")}
+                  onMouseDown={preventSegmentNavigationMouseFocus}
                   size="icon-sm"
                   transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
                   type="button"
@@ -223,27 +199,7 @@ function PlaybackControls({ className }: { className?: string }) {
                   <ChevronsRight />
                 </MotionButton>
               </TooltipTrigger>
-              <TooltipContent>{nextSceneCommand.label}</TooltipContent>
-            </Tooltip>
-          ) : null}
-          {showSilenceNavigation ? (
-            <Tooltip key="next-silence-navigation">
-              <TooltipTrigger asChild>
-                <Button
-                  aria-label={nextSilenceCommand.label}
-                  className="overflow-hidden"
-                  data-editor-keyboard="timeline-transport"
-                  disabled={disabled || !nextSilenceCommand.enabled}
-                  onClick={() => void executeCommand("next-silence", "button")}
-                  onMouseDown={preventSceneNavigationMouseFocus}
-                  size="icon-sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <ChevronsRight />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{nextSilenceCommand.label}</TooltipContent>
+              <TooltipContent>{nextSegmentCommand.label}</TooltipContent>
             </Tooltip>
           ) : null}
         </AnimatePresence>

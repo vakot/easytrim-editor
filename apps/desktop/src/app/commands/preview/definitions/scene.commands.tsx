@@ -14,10 +14,8 @@ import {
 } from "@/app/store/slices/editor-tools-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
-  findNextSceneBoundary,
-  findNextSilence,
-  findPreviousSceneBoundary,
-  findPreviousSilence,
+  findNextSegment,
+  findPreviousSegment,
   useSceneDetection,
   useSilenceDetection,
 } from "@/features/timeline";
@@ -32,128 +30,45 @@ function useSceneCommands() {
   const sourceReady = useAppSelector(selectSourceReady);
   const sceneDetection = useSceneDetection(sourceReady);
   const silenceDetection = useSilenceDetection(sourceReady);
-  const firstSceneStartMicros = timeline.trim?.startMicros ?? 0;
   const silenceMarkersEnabled = useAppSelector(selectSilenceMarkersEnabled);
+  const visibleSceneBoundaries = sceneMarkersEnabled ? sceneBoundariesMicros : [];
+  const visibleSilenceRanges = silenceMarkersEnabled ? silenceDetection.ranges : [];
+  const firstSceneStartMicros =
+    sceneMarkersEnabled && sceneDetection.hasDetected
+      ? (timeline.trim?.startMicros ?? 0)
+      : undefined;
 
-  const previousSceneMicros = findPreviousSceneBoundary(
-    sceneBoundariesMicros,
+  const previousSegmentMicros = findPreviousSegment(
+    visibleSceneBoundaries,
+    visibleSilenceRanges,
     timeline.playheadMicros,
     firstSceneStartMicros,
   );
 
-  const nextSceneMicros = findNextSceneBoundary(sceneBoundariesMicros, timeline.playheadMicros);
-  const previousSilenceMicros = findPreviousSilence(
-    silenceDetection.ranges,
+  const nextSegmentMicros = findNextSegment(
+    visibleSceneBoundaries,
+    visibleSilenceRanges,
     timeline.playheadMicros,
   );
 
-  const nextSilenceMicros = findNextSilence(silenceDetection.ranges, timeline.playheadMicros);
-  const showSceneMarkers = t("timeline.actions.enableSceneMarkers");
-  const detectScenes = t("timeline.actions.detectScenes");
-  const previousScene = t("preview.actions.previousScene");
-  const nextScene = t("preview.actions.nextScene");
-  const detectSilenceLabel = t("timeline.actions.detectSilence");
-  const showSilenceMarkers = silenceMarkersEnabled
-    ? t("timeline.actions.disableSilenceMarkers")
-    : t("timeline.actions.enableSilenceMarkers");
-
-  function moveToSilence(timeMicros: number) {
+  function moveToSegment(timeMicros: number) {
     playback.pause();
     timeline.onScrubStart();
     timeline.onSeek(timeMicros);
     timeline.onScrubEnd();
   }
 
-  function moveToScene(sceneMicros: number) {
-    playback.pause();
-    timeline.onScrubStart();
-    timeline.onSeek(sceneMicros);
-    timeline.onScrubEnd();
-  }
-
-  return [
-    {
-      enabled:
-        silenceDetection.canDetect &&
-        !silenceDetection.hasDetected &&
-        !silenceDetection.isDetecting,
-      icon: <AudioLines aria-hidden="true" />,
-      id: "detect-silence" as const,
-      label: detectSilenceLabel,
-      run: silenceDetection.detect,
-      searchTerms: commandSearchTerms(`${detectSilenceLabel}|silence detection|find silence`),
-      surfaces: ["button", "palette"] as const,
-      variant: "default" as const,
-    },
-    {
-      enabled: silenceMarkersEnabled && playback.canInteract && previousSilenceMicros !== undefined,
-      icon: <ChevronsLeft aria-hidden="true" />,
-      id: "previous-silence" as const,
-      label: t("preview.actions.previousSilence"),
-      run() {
-        if (previousSilenceMicros !== undefined) moveToSilence(previousSilenceMicros);
-      },
-      searchTerms: commandSearchTerms(`${t("preview.actions.previousSilence")}|silence|previous`),
-      surfaces: ["button", "palette"] as const,
-      variant: "default" as const,
-    },
-    {
-      enabled: silenceMarkersEnabled && playback.canInteract && nextSilenceMicros !== undefined,
-      icon: <ChevronsRight aria-hidden="true" />,
-      id: "next-silence" as const,
-      label: t("preview.actions.nextSilence"),
-      run() {
-        if (nextSilenceMicros !== undefined) moveToSilence(nextSilenceMicros);
-      },
-      searchTerms: commandSearchTerms(`${t("preview.actions.nextSilence")}|silence|next`),
-      surfaces: ["button", "palette"] as const,
-      variant: "default" as const,
-    },
-    {
-      checked: silenceMarkersEnabled,
-      enabled: silenceDetection.hasDetected,
-      icon: <Eye aria-hidden="true" />,
-      id: "show-silence-markers" as const,
-      label: showSilenceMarkers,
-      run() {
-        dispatch(silenceMarkersToggled());
-      },
-      searchTerms: commandSearchTerms(`${showSilenceMarkers}|silence|markers|show`),
-      surfaces: ["button", "palette"] as const,
-      variant: "default" as const,
-    },
+  const sceneCommands = [
     {
       enabled:
         sceneDetection.canDetect && !sceneDetection.hasDetected && !sceneDetection.isDetecting,
       icon: <Clapperboard aria-hidden="true" />,
       id: "detect-scenes" as const,
-      label: detectScenes,
+      label: t("timeline.actions.detectScenes"),
       run: sceneDetection.detect,
-      searchTerms: commandSearchTerms(`${detectScenes}|scene detection|analyze scenes`),
-      surfaces: ["button", "palette"] as const,
-      variant: "default" as const,
-    },
-    {
-      enabled: sceneMarkersEnabled && playback.canInteract && previousSceneMicros !== undefined,
-      icon: <ChevronsLeft aria-hidden="true" />,
-      id: "previous-scene" as const,
-      label: previousScene,
-      run() {
-        if (previousSceneMicros !== undefined) moveToScene(previousSceneMicros);
-      },
-      searchTerms: commandSearchTerms(`${previousScene}|scene|previous`),
-      surfaces: ["button", "palette"] as const,
-      variant: "default" as const,
-    },
-    {
-      enabled: sceneMarkersEnabled && playback.canInteract && nextSceneMicros !== undefined,
-      icon: <ChevronsRight aria-hidden="true" />,
-      id: "next-scene" as const,
-      label: nextScene,
-      run() {
-        if (nextSceneMicros !== undefined) moveToScene(nextSceneMicros);
-      },
-      searchTerms: commandSearchTerms(`${nextScene}|scene|next`),
+      searchTerms: commandSearchTerms(
+        `${t("timeline.actions.detectScenes")}|scene detection|analyze scenes`,
+      ),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
     },
@@ -162,15 +77,83 @@ function useSceneCommands() {
       enabled: sceneDetection.hasDetected,
       icon: <Eye aria-hidden="true" />,
       id: "show-scene-markers" as const,
-      label: showSceneMarkers,
+      label: sceneMarkersEnabled
+        ? t("timeline.actions.disableSceneMarkers")
+        : t("timeline.actions.enableSceneMarkers"),
       run() {
         dispatch(sceneMarkersToggled());
       },
-      searchTerms: commandSearchTerms(`${showSceneMarkers}|scene|markers|show`),
+      searchTerms: commandSearchTerms(
+        `${t("timeline.actions.enableSceneMarkers")}|${t("timeline.actions.disableSceneMarkers")}|scene|markers|show`,
+      ),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
     },
   ] as const;
+
+  const silenceCommands = [
+    {
+      enabled:
+        silenceDetection.canDetect &&
+        !silenceDetection.hasDetected &&
+        !silenceDetection.isDetecting,
+      icon: <AudioLines aria-hidden="true" />,
+      id: "detect-silence" as const,
+      label: t("timeline.actions.detectSilence"),
+      run: silenceDetection.detect,
+      searchTerms: commandSearchTerms(
+        `${t("timeline.actions.detectSilence")}|silence detection|find silence`,
+      ),
+      surfaces: ["button", "palette"] as const,
+      variant: "default" as const,
+    },
+    {
+      checked: silenceMarkersEnabled,
+      enabled: silenceDetection.hasDetected,
+      icon: <Eye aria-hidden="true" />,
+      id: "show-silence-markers" as const,
+      label: silenceMarkersEnabled
+        ? t("timeline.actions.disableSilenceMarkers")
+        : t("timeline.actions.enableSilenceMarkers"),
+      run() {
+        dispatch(silenceMarkersToggled());
+      },
+      searchTerms: commandSearchTerms(
+        `${t("timeline.actions.enableSilenceMarkers")}|silence|markers|show`,
+      ),
+      surfaces: ["button", "palette"] as const,
+      variant: "default" as const,
+    },
+  ] as const;
+
+  const segmentCommands = [
+    {
+      enabled: playback.canInteract && previousSegmentMicros !== undefined,
+      icon: <ChevronsLeft aria-hidden="true" />,
+      id: "previous-segment" as const,
+      label: t("preview.actions.previousSegment"),
+      run() {
+        if (previousSegmentMicros !== undefined) moveToSegment(previousSegmentMicros);
+      },
+      searchTerms: commandSearchTerms(`${t("preview.actions.previousSegment")}|previous|segment`),
+      surfaces: ["button", "palette"] as const,
+      variant: "default" as const,
+    },
+    {
+      enabled: playback.canInteract && nextSegmentMicros !== undefined,
+      icon: <ChevronsRight aria-hidden="true" />,
+      id: "next-segment" as const,
+      label: t("preview.actions.nextSegment"),
+      run() {
+        if (nextSegmentMicros !== undefined) moveToSegment(nextSegmentMicros);
+      },
+      searchTerms: commandSearchTerms(`${t("preview.actions.nextSegment")}|next|segment`),
+      surfaces: ["button", "palette"] as const,
+      variant: "default" as const,
+    },
+  ] as const;
+
+  return { sceneCommands, segmentCommands, silenceCommands } as const;
 }
 
 export { useSceneCommands };

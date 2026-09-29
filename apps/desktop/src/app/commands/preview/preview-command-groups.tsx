@@ -18,11 +18,23 @@ function usePreviewCommandGroups() {
   const rotations = useRotationCommands();
   const flips = useFlipCommands();
   const reset = useResetTransformCommand();
-  const sceneCommands = useSceneCommands();
+  const { sceneCommands, segmentCommands, silenceCommands } = useSceneCommands();
   return [
-    defineApplicationCommandGroup("preview-scenes", t("app.labels.commandSections.scenes"), [
-      ...sceneCommands,
-    ] as const),
+    defineApplicationCommandGroup(
+      "preview-segment-scenes",
+      t("app.labels.commandSections.segmentScene"),
+      sceneCommands,
+    ),
+    defineApplicationCommandGroup(
+      "preview-segment-silence",
+      t("app.labels.commandSections.segmentSilence"),
+      silenceCommands,
+    ),
+    defineApplicationCommandGroup(
+      "preview-segment-navigation",
+      t("app.labels.commandSections.segment"),
+      segmentCommands,
+    ),
     defineApplicationCommandGroup("preview-frame", t("app.labels.commandSections.previewFrame"), [
       saveFrame,
       copyFrame,

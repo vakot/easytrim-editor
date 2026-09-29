@@ -10,3 +10,4 @@ export {
 export { cancelFrame, syncPlayheadElements } from "./lib/playhead-sync";
 export { findNextSceneBoundary, findPreviousSceneBoundary } from "./lib/scene-navigation";
 export { findNextSilence, findPreviousSilence } from "./lib/silence-navigation";
+export { findNextSegment, findPreviousSegment } from "./lib/segment-navigation";
