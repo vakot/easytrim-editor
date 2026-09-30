@@ -164,7 +164,8 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     () =>
       Object.fromEntries(
         audioTracks.flatMap((track) =>
-          track.preview.status === "ready" &&
+          "descriptor" in track.preview &&
+          track.preview.descriptor &&
           sameAudioTrackPreviewProcessing(track.processing, track.preview.descriptor.processing)
             ? [[track.streamIndex, track.preview.descriptor.url]]
             : [],

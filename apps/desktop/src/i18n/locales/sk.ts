@@ -570,7 +570,7 @@ export const sk = {
       },
       normalizedEffectSummary: "Normalizované - {{preset}}",
       normalizedHoverTitle: "Normalizované · {{preset}}",
-      normalizedLevelSummary: "{{target}} LUFS · max {{peak}} dBTP",
+      normalizedLevelSummary: "Cieľ {{target}} LUFS · limit špičky {{peak}} dBTP",
       preparingProcessedPreview: "Pripravuje sa náhľad s týmito nastaveniami stopy…",
     },
     tooltips: {

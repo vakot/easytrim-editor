@@ -38,9 +38,10 @@ type AudioTrackAnalysis<T> =
 
 type AudioTrackPreviewState =
   | { status: "idle" }
-  | { operationId: string; status: "loading" }
+  | { descriptor?: AudioPreviewDescriptor; operationId: string; status: "loading" }
   | { descriptor: AudioPreviewDescriptor; status: "ready" }
-  | { error: AppError; operationId: string; status: "failed" };
+  | { descriptor: AudioPreviewDescriptor; status: "stale" }
+  | { descriptor?: AudioPreviewDescriptor; error: AppError; operationId: string; status: "failed" };
 
 type AudioPreviewState =
   | { previews: AudioPreviewDescriptor[]; status: "idle" }
@@ -86,7 +87,12 @@ const audioSlice = createSlice({
         previews: action.payload.previews,
       };
       for (const track of state.tracks) {
-        if (track.preview.status === "loading") continue;
+        if (
+          track.preview.status === "loading" ||
+          track.preview.status === "stale" ||
+          (track.preview.status === "failed" && track.preview.operationId !== "initial")
+        )
+          continue;
         const descriptor = action.payload.previews.find(
           (preview) => preview.streamIndex === track.streamIndex,
         );
@@ -127,7 +133,20 @@ const audioSlice = createSlice({
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
 
-      if (track) track.preview = { operationId: action.payload.operationId, status: "loading" };
+      if (track) {
+        const descriptor =
+          track.preview.status === "ready" || track.preview.status === "stale"
+            ? track.preview.descriptor
+            : track.preview.status === "loading"
+              ? track.preview.descriptor
+              : undefined;
+
+        track.preview = {
+          ...(descriptor ? { descriptor } : {}),
+          operationId: action.payload.operationId,
+          status: "loading",
+        };
+      }
     },
     audioTrackPreviewReady: (
       state,
@@ -169,7 +188,11 @@ const audioSlice = createSlice({
         track?.preview.status === "loading" &&
         track.preview.operationId === action.payload.operationId
       ) {
-        track.preview = { ...action.payload, status: "failed" };
+        track.preview = {
+          ...(track.preview.descriptor ? { descriptor: track.preview.descriptor } : {}),
+          ...action.payload,
+          status: "failed",
+        };
       }
     },
     audioTrackToggled: (state, action: PayloadAction<{ streamIndex: number }>) => {
@@ -436,7 +459,14 @@ const audioSlice = createSlice({
         for (const track of state.tracks) {
           track.loudnessAnalysis = { status: "idle" };
           if (track.processing.loudnessNormalization !== undefined) {
-            track.preview = { status: "idle" };
+            const descriptor =
+              track.preview.status === "ready" || track.preview.status === "stale"
+                ? track.preview.descriptor
+                : track.preview.status === "loading"
+                  ? track.preview.descriptor
+                  : undefined;
+
+            track.preview = descriptor ? { descriptor, status: "stale" } : { status: "idle" };
           }
         }
       })

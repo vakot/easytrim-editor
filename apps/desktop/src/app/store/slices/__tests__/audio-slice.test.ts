@@ -247,4 +247,79 @@ describe("audio slice", () => {
       status: "ready",
     });
   });
+
+  it("keeps the prior normalized preview available while rejecting a stale trim job", () => {
+    let state = audioReducer(
+      readyAudio(),
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: 0, loudnessNormalization: "streaming" },
+      }),
+    );
+
+    state = audioReducer(state, audioTrackPreviewStarted({ operationId: "old", streamIndex: 2 }));
+    state = audioReducer(
+      state,
+      audioTrackPreviewReady({
+        operationId: "old",
+        descriptor: {
+          mediaToken: 1,
+          previewRevision: 1,
+          processing: { gainDb: 0, loudnessNormalization: "streaming" },
+          streamIndex: 2,
+          url: "media://prior-trim",
+        },
+      }),
+    );
+    state = audioReducer(
+      state,
+      trimChanged({
+        trim: { endMicros: 4_000_000, sourceDurationMicros: 5_000_000, startMicros: 100_000 },
+      }),
+    );
+    expect(state.tracks[0]?.preview).toMatchObject({
+      descriptor: { url: "media://prior-trim" },
+      status: "stale",
+    });
+
+    state = audioReducer(
+      state,
+      audioPreviewsReady({
+        previews: [
+          {
+            mediaToken: 1,
+            previewRevision: 0,
+            processing: { gainDb: 0, loudnessNormalization: "streaming" },
+            streamIndex: 2,
+            url: "media://stale-initial-job",
+          },
+        ],
+      }),
+    );
+    expect(state.tracks[0]?.preview).toMatchObject({
+      descriptor: { url: "media://prior-trim" },
+      status: "stale",
+    });
+
+    state = audioReducer(state, audioTrackPreviewStarted({ operationId: "new", streamIndex: 2 }));
+    state = audioReducer(
+      state,
+      audioTrackPreviewReady({
+        operationId: "old",
+        descriptor: {
+          mediaToken: 1,
+          previewRevision: 2,
+          processing: { gainDb: 0, loudnessNormalization: "streaming" },
+          streamIndex: 2,
+          url: "media://stale-trim",
+        },
+      }),
+    );
+
+    expect(state.tracks[0]?.preview).toMatchObject({
+      descriptor: { url: "media://prior-trim" },
+      operationId: "new",
+      status: "loading",
+    });
+  });
 });

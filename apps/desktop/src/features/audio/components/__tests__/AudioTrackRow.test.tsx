@@ -12,6 +12,8 @@ import {
   audioTrackGainChanged,
   audioTrackProcessingChanged,
   audioTrackToggled,
+  waveformReady,
+  waveformsLoading,
 } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 import { audioTrackColor } from "@/features/audio";
@@ -51,6 +53,35 @@ function renderRow(enabled = true) {
 }
 
 describe("AudioTrackRow", () => {
+  it("scales the existing waveform during live gain adjustment", async () => {
+    const { store } = renderRow();
+    act(() => {
+      store.dispatch(waveformsLoading({ jobId: "waveform-1", streamIndexes: [2], width: 1280 }));
+      store.dispatch(
+        waveformReady({
+          jobId: "waveform-1",
+          status: "ready",
+          streamIndex: 2,
+          url: "media://waveform",
+          width: 1280,
+        }),
+      );
+    });
+
+    const image = document.querySelector<HTMLImageElement>(".waveform-image");
+    expect(image).toHaveAttribute("src", "media://waveform");
+    expect(image).toHaveStyle({ transform: "scaleY(1)" });
+
+    await userEvent.setup().hover(screen.getByText(/#1 ·/));
+    const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
+    gainSlider.focus();
+    fireEvent.keyDown(gainSlider, { key: "ArrowRight" });
+
+    expect(image).toHaveAttribute("src", "media://waveform");
+    expect(image?.style.transform).toBe("scaleY(1.0592537251772889)");
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0);
+  });
+
   it("marks gain levels, resets to unity on double-click, and mutes at negative infinity", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();
@@ -165,12 +196,12 @@ describe("AudioTrackRow", () => {
       loudnessNormalization: "streaming",
     });
     expect(await screen.findByText("Normalized - Streaming")).toBeInTheDocument();
-    expect(await screen.findByText("−16 LUFS · max −1.5 dBTP")).toBeInTheDocument();
+    expect(await screen.findByText("Target −16 LUFS · peak cap −1.5 dBTP")).toBeInTheDocument();
 
     await user.hover(screen.getByText(/#1 ·/));
     expect(screen.queryByRole("slider", { name: /audio 1 gain/i })).not.toBeInTheDocument();
     expect(screen.getByText("Normalized · Streaming")).toBeInTheDocument();
-    expect(screen.getAllByText("−16 LUFS · max −1.5 dBTP")).toHaveLength(2);
+    expect(screen.getAllByText("Target −16 LUFS · peak cap −1.5 dBTP")).toHaveLength(2);
 
     await user.hover(screen.getByText("Normalized · Streaming"));
     expect(

@@ -573,7 +573,7 @@ export const ru = {
       },
       normalizedEffectSummary: "Нормализация - {{preset}}",
       normalizedHoverTitle: "Нормализация · {{preset}}",
-      normalizedLevelSummary: "{{target}} LUFS · макс. {{peak}} дБTP",
+      normalizedLevelSummary: "Цель {{target}} LUFS · предел пика {{peak}} дБTP",
       preparingProcessedPreview: "Подготовка предпросмотра с этими настройками дорожки…",
     },
     tooltips: {

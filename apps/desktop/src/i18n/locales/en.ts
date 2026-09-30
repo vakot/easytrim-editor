@@ -570,7 +570,7 @@ export const en = {
       },
       normalizedEffectSummary: "Normalized - {{preset}}",
       normalizedHoverTitle: "Normalized · {{preset}}",
-      normalizedLevelSummary: "{{target}} LUFS · max {{peak}} dBTP",
+      normalizedLevelSummary: "Target {{target}} LUFS · peak cap {{peak}} dBTP",
       preparingProcessedPreview: "Preparing preview with these track settings…",
     },
     tooltips: {

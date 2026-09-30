@@ -10,16 +10,11 @@ import {
   selectAudioTracks,
 } from "@/app/store/slices/audio-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
-import {
-  analyzeTrackLoudness,
-  detectTrackActivity,
-  prepareTrackPreview,
-} from "@/app/store/thunks/audio-track-thunks";
+import { analyzeTrackLoudness, detectTrackActivity } from "@/app/store/thunks/audio-track-thunks";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import {
   type AudioTrackProcessing,
   cloneAudioTrackProcessing,
-  sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 
@@ -64,8 +59,6 @@ function useAudioTrackController(streamIndex: number) {
   const initialGainRef = useRef(track?.processing.gainDb ?? 0);
   const gainInteractionKindRef = useRef<"keyboard" | "pointer" | null>(null);
   const gainCommitTimerRef = useRef<number | null>(null);
-
-  const previewTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (gainInteractionKindRef.current === null) {
@@ -168,21 +161,6 @@ function useAudioTrackController(streamIndex: number) {
     [clearLiveAudioTrackGain, streamIndex],
   );
 
-  const schedulePreviewPreparation = useCallback(() => {
-    if (previewTimerRef.current !== null) window.clearTimeout(previewTimerRef.current);
-    previewTimerRef.current = window.setTimeout(() => {
-      previewTimerRef.current = null;
-      void dispatch(prepareTrackPreview(streamIndex));
-    }, 250);
-  }, [dispatch, streamIndex]);
-
-  useEffect(
-    () => () => {
-      if (previewTimerRef.current !== null) window.clearTimeout(previewTimerRef.current);
-    },
-    [],
-  );
-
   const setEnabled = useCallback(
     (enabled?: boolean) => {
       if (!track) return;
@@ -204,7 +182,6 @@ function useAudioTrackController(streamIndex: number) {
   const applyProcessing = useCallback(
     (processing: AudioTrackProcessing) => {
       if (!track || sameAudioTrackProcessing(track.processing, processing)) return;
-      const previewSettingsChanged = !sameAudioTrackPreviewProcessing(track.processing, processing);
       dispatch(
         audioTrackProcessingChanged({
           processing: cloneAudioTrackProcessing(processing),
@@ -212,9 +189,8 @@ function useAudioTrackController(streamIndex: number) {
         }),
       );
       dispatch(commitActiveEditingInstanceDraft());
-      if (previewSettingsChanged) schedulePreviewPreparation();
     },
-    [dispatch, schedulePreviewPreparation, streamIndex, track],
+    [dispatch, streamIndex, track],
   );
 
   const toggleActivityVisibility = useCallback(() => {

@@ -22,6 +22,7 @@ import {
   audioTrackProcessingChanged,
   audioTrackToggled,
 } from "@/app/store/slices/audio-slice";
+import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
 import {
   analyzeTrackLoudness,
@@ -101,6 +102,50 @@ describe("audio track operations", () => {
     await pendingPreview;
 
     expect(store.getState().audio.tracks[0]?.preview).toMatchObject({ status: "ready" });
+  });
+
+  it("refreshes normalized playback preview from the newly committed trim measurement", async () => {
+    const store = createStore();
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: 0, loudnessNormalization: "streaming" },
+      }),
+    );
+    store.dispatch(
+      trimChanged({
+        trim: { startMicros: 500_000, endMicros: 3_000_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    mocks.analyzeAudioLoudness.mockResolvedValue({ integratedLufs: -20, truePeakDb: -4 });
+    mocks.prepareAudioPreviews.mockResolvedValue([
+      {
+        mediaToken: 1,
+        previewRevision: 8,
+        processing: { gainDb: 0, loudnessNormalization: "streaming" },
+        streamIndex: 2,
+        url: "easytrim-media://localhost/1?variant=audio&stream=2&revision=8",
+      },
+    ]);
+
+    await vi.waitFor(() => {
+      expect(mocks.analyzeAudioLoudness).toHaveBeenCalledWith({
+        audioTrack: { processing: { gainDb: 0 }, streamIndex: 2 },
+        sourcePath: firstSource.sourcePath,
+        trim: { startMicros: 500_000, endMicros: 3_000_000 },
+      });
+      expect(mocks.prepareAudioPreviews).toHaveBeenCalledWith(firstSource.sourcePath, [
+        {
+          loudnessAnalysis: { integratedLufs: -20, truePeakDb: -4 },
+          processing: { gainDb: 0, loudnessNormalization: "streaming" },
+          streamIndex: 2,
+        },
+      ]);
+      expect(store.getState().audio.tracks[0]?.preview).toMatchObject({
+        descriptor: { previewRevision: 8 },
+        status: "ready",
+      });
+    });
   });
 
   it("analyzes clean source audio and keeps the result across level policy edits", async () => {
