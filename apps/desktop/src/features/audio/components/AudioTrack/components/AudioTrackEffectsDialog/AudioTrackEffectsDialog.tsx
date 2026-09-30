@@ -74,7 +74,7 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
   const isValid = isAudioTrackEffectsDraftValid(draft, AUDIO_TRACK_EFFECTS);
 
   return (
-    <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-hidden sm:max-w-3xl">
+    <DialogContent className="max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden sm:max-w-3xl">
       <DialogHeader className="-mx-4 border-b px-4 pb-4">
         <DialogTitle>{t("audio.dialogs.effects.title", { title })}</DialogTitle>
         <DialogDescription>{t("audio.dialogs.effects.description")}</DialogDescription>

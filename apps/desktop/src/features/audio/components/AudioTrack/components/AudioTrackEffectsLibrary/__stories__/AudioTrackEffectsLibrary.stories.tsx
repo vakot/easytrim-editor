@@ -25,10 +25,6 @@ import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioTrackEffectsDraftProvider } from "../../AudioTrackEffectsDialog/components/AudioTrackEffectsDraftProvider";
 import { useAudioTrackEffectsDraft } from "../../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
-import {
-  AUDIO_TRACK_EFFECTS,
-  type AudioTrackEffectDescriptor,
-} from "../consts/audio-track-effects";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
 import {
   AudioTrackEffectsLibraryPage,
@@ -38,6 +34,10 @@ import {
   AudioTrackEffectsLibraryPageHeaderContent,
   AudioTrackEffectsLibraryPageTitle,
 } from "../components/AudioTrackEffectsLibraryPage";
+import {
+  AUDIO_TRACK_EFFECTS,
+  type AudioTrackEffectDescriptor,
+} from "../consts/audio-track-effects";
 
 function PlaceholderEffectPage() {
   return (
@@ -113,7 +113,7 @@ function EffectsLibraryStoryContent({
   const { draft } = useAudioTrackEffectsDraft();
 
   return (
-    <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-hidden sm:max-w-3xl">
+    <DialogContent className="gap-0 overflow-hidden sm:max-w-3xl">
       <DialogHeader className="-mx-4 border-b px-4 pb-4">
         <DialogTitle>Audio 1 — Effects</DialogTitle>
         <DialogDescription>Configure audio processing for this track.</DialogDescription>

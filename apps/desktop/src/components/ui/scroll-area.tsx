@@ -98,6 +98,7 @@ function ScrollArea({
       className={cn(
         "relative overflow-hidden before:top-0 after:bottom-0",
         styles.scrollFade,
+        orientation === "horizontal" ? "min-w-0" : "min-h-0",
         orientation === "horizontal" && styles.horizontal,
         scrollState.canScrollUp && styles.canScrollUp,
         scrollState.canScrollDown && styles.canScrollDown,
