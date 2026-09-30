@@ -275,11 +275,19 @@ const optimizedExportSettingsChangedRequested =
   };
 
 const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) => {
-  const instanceId = selectActiveInstanceId(getState());
-  if (!instanceId) return;
+  const initialState = getState();
+  const initialInstance = selectActiveEditingInstance(initialState);
+  const initialSource = selectSourceSelection(initialState);
+  if (!initialInstance || !initialSource || !selectSourceReady(initialState)) return;
   const requestId = ++optimizedPlanRequestSequence;
   dispatch(optimizedExportPlanRequested({ requestId }));
-  if (!(await ensureLoudnessAnalysis(dispatch, getState))) {
+  const analysis = await ensureLoudnessAnalysis(dispatch, getState, {
+    instanceId: initialInstance.id,
+    loadToken: initialState.source.loadToken,
+    sourcePath: initialSource.sourcePath,
+  });
+
+  if (analysis.status === "failed") {
     dispatch(
       optimizedExportPlanFailed({
         requestId,
@@ -291,20 +299,21 @@ const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) =>
     );
     return;
   }
-  const request = getOptimizedRequest(getState());
+  if (analysis.status !== "ready") return;
+  const request = getOptimizedRequest(analysis.state);
   if (!request) return;
   const sourcePath = normalizeSourceKey(request.sourcePath);
   try {
     const plan = await planOptimizedExport(request);
     if (
-      selectActiveInstanceId(getState()) === instanceId &&
+      selectActiveInstanceId(getState()) === initialInstance.id &&
       currentSourceKey(getState()) === sourcePath
     ) {
       dispatch(optimizedExportPlanReceived({ requestId, commandPreview: plan.commandPreview }));
     }
   } catch (error: unknown) {
     if (
-      selectActiveInstanceId(getState()) === instanceId &&
+      selectActiveInstanceId(getState()) === initialInstance.id &&
       currentSourceKey(getState()) === sourcePath
     ) {
       dispatch(optimizedExportPlanFailed({ requestId, error: normalizeAppError(error) }));
@@ -343,7 +352,13 @@ async function startEditingInstanceExport(
   if (initialInstance.draftAvailable === false || initialState.importWorkflow.isNativeDialogOpen)
     return;
 
-  if (!(await ensureLoudnessAnalysis(dispatch, getState))) {
+  const analysis = await ensureLoudnessAnalysis(dispatch, getState, {
+    instanceId: initialInstance.id,
+    loadToken: initialState.source.loadToken,
+    sourcePath: initialSource.sourcePath,
+  });
+
+  if (analysis.status === "failed") {
     dispatch(
       exportLaunchFailed({
         code: "loudness_analysis_required",
@@ -352,8 +367,9 @@ async function startEditingInstanceExport(
     );
     return;
   }
+  if (analysis.status !== "ready") return;
 
-  const currentState = getState();
+  const currentState = analysis.state;
   const instance = selectActiveEditingInstance(currentState);
   const source = selectSourceSelection(currentState);
   const media = selectSourceMedia(currentState);
@@ -544,32 +560,117 @@ function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
 async function ensureLoudnessAnalysis(
   dispatch: Parameters<AppThunk>[0],
   getState: Parameters<AppThunk>[1],
-): Promise<boolean> {
-  const trim = selectTrim(getState());
-  if (!trim) return false;
+  context: { instanceId: string; loadToken: number; sourcePath: string },
+): Promise<LoudnessAnalysisResult> {
+  const maxPasses = 8;
+  for (let pass = 0; pass < maxPasses; pass += 1) {
+    let state = getState();
+    if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
+    const trim = selectTrim(state);
+    if (!trim) return { status: "failed" };
 
-  const tracks = selectAudioTracks(getState()).filter(
-    (track) => track.enabled && track.processing.loudnessNormalization !== undefined,
-  );
+    const missing = selectAudioTracks(state).filter((track) => {
+      if (!track.enabled || track.processing.loudnessNormalization === undefined) return false;
+      const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
+      return (
+        track.loudnessAnalysis.status !== "ready" || track.loudnessAnalysis.cacheKey !== cacheKey
+      );
+    });
 
-  for (const track of tracks) {
-    const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
-    if (track.loudnessAnalysis.status === "ready" && track.loudnessAnalysis.cacheKey === cacheKey)
-      continue;
-    if (track.loudnessAnalysis.status === "failed" && track.loudnessAnalysis.cacheKey === cacheKey)
-      return false;
-    await dispatch(analyzeTrackLoudness(track.streamIndex));
-    const currentTrack = selectAudioTracks(getState()).find(
-      (candidate) => candidate.streamIndex === track.streamIndex,
-    );
+    if (missing.length === 0) return { state, status: "ready" };
 
-    if (
-      currentTrack?.loudnessAnalysis.status !== "ready" ||
-      currentTrack.loudnessAnalysis.cacheKey !== cacheKey
-    )
-      return false;
+    for (const pendingTrack of missing) {
+      state = getState();
+      if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
+      const currentTrim = selectTrim(state);
+      const currentTrack = selectAudioTracks(state).find(
+        (track) => track.streamIndex === pendingTrack.streamIndex,
+      );
+
+      if (
+        !currentTrim ||
+        !currentTrack?.enabled ||
+        currentTrack.processing.loudnessNormalization === undefined
+      ) {
+        continue;
+      }
+      const cacheKey = audioTrackLoudnessInputsKey(
+        currentTrack.streamIndex,
+        currentTrim,
+        currentTrack.processing,
+      );
+
+      if (
+        currentTrack.loudnessAnalysis.status === "ready" &&
+        currentTrack.loudnessAnalysis.cacheKey === cacheKey
+      ) {
+        continue;
+      }
+      if (
+        currentTrack.loudnessAnalysis.status === "failed" &&
+        currentTrack.loudnessAnalysis.cacheKey === cacheKey
+      ) {
+        return { status: "failed" };
+      }
+
+      await dispatch(analyzeTrackLoudness(currentTrack.streamIndex));
+      state = getState();
+      if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
+      const afterTrim = selectTrim(state);
+      const afterTrack = selectAudioTracks(state).find(
+        (track) => track.streamIndex === pendingTrack.streamIndex,
+      );
+
+      if (
+        !afterTrim ||
+        !afterTrack?.enabled ||
+        afterTrack.processing.loudnessNormalization === undefined
+      )
+        continue;
+      const afterCacheKey = audioTrackLoudnessInputsKey(
+        afterTrack.streamIndex,
+        afterTrim,
+        afterTrack.processing,
+      );
+
+      if (
+        afterTrack.loudnessAnalysis.status === "failed" &&
+        afterTrack.loudnessAnalysis.cacheKey === afterCacheKey
+      ) {
+        return { status: "failed" };
+      }
+    }
   }
-  return true;
+
+  const state = getState();
+  if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
+  const trim = selectTrim(state);
+  if (!trim) return { status: "failed" };
+  const allAnalysesReady = selectAudioTracks(state).every((track) => {
+    if (!track.enabled || track.processing.loudnessNormalization === undefined) return true;
+    const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
+    return (
+      track.loudnessAnalysis.status === "ready" && track.loudnessAnalysis.cacheKey === cacheKey
+    );
+  });
+
+  return allAnalysesReady ? { state, status: "ready" } : { status: "failed" };
+}
+
+type LoudnessAnalysisResult =
+  | { state: ReturnType<Parameters<AppThunk>[1]>; status: "ready" }
+  | { status: "context-changed" | "failed" };
+
+function isLoudnessAnalysisContextCurrent(
+  state: ReturnType<Parameters<AppThunk>[1]>,
+  context: { instanceId: string; loadToken: number; sourcePath: string },
+): boolean {
+  return (
+    state.source.loadToken === context.loadToken &&
+    selectSourceReady(state) &&
+    selectActiveInstanceId(state) === context.instanceId &&
+    currentSourceKey(state) === normalizeSourceKey(context.sourcePath)
+  );
 }
 
 function getTotalFrames(

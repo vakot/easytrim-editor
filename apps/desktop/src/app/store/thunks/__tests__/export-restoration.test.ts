@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
-import { sourceReady } from "@/app/store/actions/source-actions";
+import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
   enqueueExport,
@@ -25,7 +25,7 @@ import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt } from "@/domain/editing-instance";
-import { firstSource, media, mediaWithAudio } from "@/test/source.fixtures";
+import { firstSource, media, mediaWithAudio, secondSource } from "@/test/source.fixtures";
 
 import {
   cancelOptimizedExportDialogRequested,
@@ -40,6 +40,7 @@ import {
 
 const native = vi.hoisted(() => ({
   analyzeAudioLoudness: vi.fn(),
+  prepareAudioPreviews: vi.fn(),
   activateSourcePath: vi.fn(),
   prepareSourcePreview: vi.fn(),
   chooseOutputPath: vi.fn(),
@@ -58,6 +59,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
 beforeEach(() => {
   vi.clearAllMocks();
   native.analyzeAudioLoudness.mockResolvedValue({ integratedLufs: -18, truePeakDb: -2 });
+  native.prepareAudioPreviews.mockResolvedValue([]);
   native.activateSourcePath.mockResolvedValue(firstSource);
   native.prepareSourcePreview.mockResolvedValue({
     kind: "source",
@@ -108,6 +110,15 @@ function setup(sourceMedia = media(firstSource.sourcePath)) {
   return { store, snapshot };
 }
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+
+  return { promise, resolve };
+}
+
 describe("export snapshot restoration", () => {
   it("builds the queued request and snapshot from the same state after loudness analysis", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
@@ -135,7 +146,176 @@ describe("export snapshot restoration", () => {
       expect(attempt?.state.status).toBe("queued");
       expect(attempt?.request.audioTracks[0]?.processing.gainDb).toBe(-2);
       expect(attempt?.snapshot.audio.tracks[0]?.processing.gainDb).toBe(-2);
+      expect(attempt?.request.audioTracks[0]?.loudnessAnalysis).toMatchObject({
+        integratedLufs: -18,
+        truePeakDb: -2,
+      });
     });
+  });
+
+  it("analyzes a newly normalized track before building the final export", async () => {
+    const { store } = setup(mediaWithAudio(firstSource.sourcePath));
+    const analysisA = createDeferred<{ integratedLufs: number; truePeakDb: number }>();
+    const analysisB = createDeferred<{ integratedLufs: number; truePeakDb: number }>();
+    native.analyzeAudioLoudness
+      .mockReturnValueOnce(analysisA.promise)
+      .mockReturnValueOnce(analysisB.promise);
+
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: 0, loudnessNormalization: "streaming" },
+      }),
+    );
+    store.dispatch(startOptimizedExportRequested());
+    await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(1));
+
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 4,
+        processing: { gainDb: 0, loudnessNormalization: "broadcast" },
+      }),
+    );
+    analysisA.resolve({ integratedLufs: -18, truePeakDb: -2 });
+    await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(2));
+    expect(native.analyzeAudioLoudness.mock.calls[1]?.[0]).toMatchObject({
+      audioTrack: { streamIndex: 4 },
+    });
+    analysisB.resolve({ integratedLufs: -22, truePeakDb: -3 });
+
+    await vi.waitFor(() => {
+      const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
+      expect(attempt?.state.status).toBe("queued");
+      expect(attempt?.request.audioTracks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            streamIndex: 2,
+            loudnessAnalysis: { integratedLufs: -18, truePeakDb: -2 },
+          }),
+          expect.objectContaining({
+            streamIndex: 4,
+            loudnessAnalysis: { integratedLufs: -22, truePeakDb: -3 },
+          }),
+        ]),
+      );
+      expect(attempt?.snapshot.audio.tracks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            streamIndex: 2,
+            processing: { gainDb: 0, loudnessNormalization: "streaming" },
+          }),
+          expect.objectContaining({
+            streamIndex: 4,
+            processing: { gainDb: 0, loudnessNormalization: "broadcast" },
+          }),
+        ]),
+      );
+    });
+  });
+
+  it("re-analyzes when the committed trim changes during loudness analysis", async () => {
+    const { store } = setup(mediaWithAudio(firstSource.sourcePath));
+    const firstAnalysis = createDeferred<{ integratedLufs: number; truePeakDb: number }>();
+    native.analyzeAudioLoudness
+      .mockReturnValueOnce(firstAnalysis.promise)
+      .mockResolvedValueOnce({ integratedLufs: -20, truePeakDb: -4 });
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: 0, loudnessNormalization: "streaming" },
+      }),
+    );
+    store.dispatch(startOptimizedExportRequested());
+    await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(1));
+    store.dispatch(
+      trimChanged({
+        trim: { startMicros: 300_000, endMicros: 1_700_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    firstAnalysis.resolve({ integratedLufs: -18, truePeakDb: -2 });
+
+    await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(2));
+    expect(native.analyzeAudioLoudness.mock.calls[1]?.[0].trim).toEqual({
+      startMicros: 300_000,
+      endMicros: 1_700_000,
+    });
+    await vi.waitFor(() => {
+      const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
+      expect(attempt?.state.status).toBe("queued");
+      expect(attempt?.request.trim).toEqual({ startMicros: 300_000, endMicros: 1_700_000 });
+      expect(attempt?.request.audioTracks[0]?.loudnessAnalysis).toMatchObject({
+        integratedLufs: -20,
+        truePeakDb: -4,
+      });
+      expect(attempt?.snapshot.trim).toEqual(attempt?.request.trim);
+    });
+  });
+
+  it("abandons export when the source changes during loudness analysis", async () => {
+    const { store } = setup(mediaWithAudio(firstSource.sourcePath));
+    const pendingAnalysis = createDeferred<{ integratedLufs: number; truePeakDb: number }>();
+    native.analyzeAudioLoudness.mockReturnValue(pendingAnalysis.promise);
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: 0, loudnessNormalization: "streaming" },
+      }),
+    );
+    const exportPromise = store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(1));
+
+    store.dispatch(sourceSelected({ source: secondSource, loadToken: 2 }));
+    pendingAnalysis.resolve({ integratedLufs: -18, truePeakDb: -2 });
+    await exportPromise;
+
+    expect(native.chooseOutputPath).not.toHaveBeenCalled();
+    expect(store.getState().editingInstances.entities.original?.exportAttempts).toHaveLength(0);
+  });
+
+  it("abandons export when the active editing instance changes during loudness analysis", async () => {
+    const { store } = setup(mediaWithAudio(firstSource.sourcePath));
+    const pendingAnalysis = createDeferred<{ integratedLufs: number; truePeakDb: number }>();
+    native.analyzeAudioLoudness.mockReturnValue(pendingAnalysis.promise);
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: 0, loudnessNormalization: "streaming" },
+      }),
+    );
+    const exportPromise = store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(1));
+
+    const nextSnapshot = createDefaultEditorSnapshot(secondSource, false);
+    nextSnapshot.trim = { startMicros: 0, endMicros: 1_500_000 };
+    const nextMedia = mediaWithAudio(secondSource.sourcePath);
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          id: "other",
+          origin: "source-import",
+          snapshot: nextSnapshot,
+          media: nextMedia,
+          sourceAvailability: "available",
+          exportAttempts: [],
+        },
+      ]),
+    );
+    store.dispatch(
+      editingInstanceActivated({
+        id: "other",
+        snapshot: nextSnapshot,
+        media: nextMedia,
+        loadToken: 2,
+      }),
+    );
+    store.dispatch(sourceReady({ media: nextMedia, loadToken: 2, snapshot: nextSnapshot }));
+    pendingAnalysis.resolve({ integratedLufs: -18, truePeakDb: -2 });
+    await exportPromise;
+
+    expect(native.chooseOutputPath).not.toHaveBeenCalled();
+    expect(store.getState().editingInstances.entities.original?.exportAttempts).toHaveLength(0);
+    expect(store.getState().editingInstances.entities.other?.exportAttempts).toHaveLength(0);
+    expect(store.getState().editingInstances.activeInstanceId).toBe("other");
   });
 
   it("keeps queued per-track processing immutable and restores it with the export", async () => {
