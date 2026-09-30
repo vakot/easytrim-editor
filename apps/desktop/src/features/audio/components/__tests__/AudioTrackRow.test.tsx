@@ -226,6 +226,18 @@ describe("AudioTrackRow", () => {
     expect(screen.getByRole("button", { name: /apply/i })).toBeDisabled();
   });
 
+  it("places Analyze Loudness in the Advanced section", async () => {
+    const user = userEvent.setup();
+    renderRow();
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+
+    const analyzeButton = screen.getByRole("button", { name: /analyze loudness/i });
+    expect(
+      analyzeButton.closest('[data-slot="audio-track-effects-library-page-advanced"]'),
+    ).not.toBeNull();
+  });
+
   it("offers only real presets and preserves the chosen preset while toggling the effect", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();

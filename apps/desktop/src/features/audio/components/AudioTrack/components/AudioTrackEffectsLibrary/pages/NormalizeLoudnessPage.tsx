@@ -272,42 +272,6 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
                 </SelectItem>
               </SelectContent>
             </Select>
-            <AnimatePresence initial={false}>
-              {!analysisReady ? (
-                <motion.div
-                  animate={{ opacity: 1, width: "auto", marginInlineStart: 8 }}
-                  className="overflow-hidden"
-                  exit={{ opacity: 0, width: 0, marginInlineStart: 0 }}
-                  initial={
-                    shouldReduceMotion ? false : { opacity: 0, width: 0, marginInlineStart: 0 }
-                  }
-                  transition={motionTransition}
-                >
-                  <Button
-                    aria-label={
-                      analysisLoading
-                        ? t("audio.actions.analyzingLoudness")
-                        : t("audio.actions.analyzeLoudness")
-                    }
-                    className="shrink-0 gap-1.5"
-                    disabled={analysisLoading}
-                    onClick={() => void dispatch(analyzeTrackLoudness(streamIndex))}
-                    type="button"
-                    variant={analysisFailed ? "destructive" : "outline"}
-                  >
-                    {analysisLoading ? (
-                      <LoaderCircle
-                        aria-hidden="true"
-                        className={shouldReduceMotion ? undefined : "animate-spin"}
-                      />
-                    ) : null}
-                    {analysisLoading
-                      ? t("audio.actions.analyzingLoudness")
-                      : t("audio.actions.analyzeLoudness")}
-                  </Button>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
           </div>
         </div>
       </AudioTrackEffectsLibraryPageBasic>
@@ -349,6 +313,40 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
             />
           </div>
         </div>
+        <AnimatePresence initial={false}>
+          {!analysisReady ? (
+            <motion.div
+              animate={{ opacity: 1, width: "auto", marginInlineStart: 8 }}
+              className="overflow-hidden"
+              exit={{ opacity: 0, width: 0, marginInlineStart: 0 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, width: 0, marginInlineStart: 0 }}
+              transition={motionTransition}
+            >
+              <Button
+                aria-label={
+                  analysisLoading
+                    ? t("audio.actions.analyzingLoudness")
+                    : t("audio.actions.analyzeLoudness")
+                }
+                className="shrink-0 gap-1.5"
+                disabled={analysisLoading}
+                onClick={() => void dispatch(analyzeTrackLoudness(streamIndex))}
+                type="button"
+                variant={analysisFailed ? "destructive" : "outline"}
+              >
+                {analysisLoading ? (
+                  <LoaderCircle
+                    aria-hidden="true"
+                    className={shouldReduceMotion ? undefined : "animate-spin"}
+                  />
+                ) : null}
+                {analysisLoading
+                  ? t("audio.actions.analyzingLoudness")
+                  : t("audio.actions.analyzeLoudness")}
+              </Button>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
         <AnimatePresence initial={false}>
           {analysisValue ? (
             <motion.p
