@@ -14,6 +14,7 @@ import type { FrameRate } from "@/lib/tauri/media.types";
 import {
   createTimelineSnapAnchors,
   findNearestTimelineSnapAnchor,
+  isTimelineSnapPositionAligned,
   type TimelineSnapAnchorId,
 } from "../lib/timeline-snap";
 
@@ -160,7 +161,10 @@ function useTrimTimelineInteractions({
 
     syncRange(next);
     onChange(boundary, next);
-    return snapTarget !== null && boundaryValue(next, boundary) === snapTarget.timeMicros;
+    return (
+      snapTarget !== null &&
+      isTimelineSnapPositionAligned(boundaryValue(next, boundary), snapTarget.timeMicros)
+    );
   }
 
   function handleTrimPointer(
@@ -271,9 +275,10 @@ function useTrimTimelineInteractions({
     const next = moveTrimRange(currentRange, requestedCenter - segmentDurationMicros / 2);
 
     syncRange(next);
+    const appliedCenterMicros = next.startMicros + (next.endMicros - next.startMicros) / 2;
     setSegmentSnapActive(
       snapTarget !== null &&
-        next.startMicros + (next.endMicros - next.startMicros) / 2 === snapTarget.timeMicros,
+        isTimelineSnapPositionAligned(appliedCenterMicros, snapTarget.timeMicros),
     );
     onMoveSegment(next);
   }

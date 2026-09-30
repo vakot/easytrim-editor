@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { AudioActivityRange } from "@/domain/media";
+import { moveTrimRange } from "@/domain/trim";
 
 import {
   createTimelineSnapAnchors,
   createTimelineSnapTargets,
   findNearestTimelineSnapAnchor,
+  isTimelineSnapPositionAligned,
 } from "../timeline-snap";
 
 const audioActivityRanges: AudioActivityRange[] = [
@@ -49,6 +51,41 @@ describe("timeline snap anchors", () => {
     ).toBeNull();
   });
 
+  it.each([
+    { durationMicros: 10_000_000, expectedCenterMicros: 35_000_000 },
+    { durationMicros: 10_000_001, expectedCenterMicros: 35_000_000.5 },
+  ])(
+    "snaps an even- or odd-duration segment center to the playhead",
+    ({ durationMicros, expectedCenterMicros }) => {
+      const range = {
+        startMicros: 10_000_000,
+        endMicros: 10_000_000 + durationMicros,
+        sourceDurationMicros: 60_000_000,
+      };
+
+      const anchors = createTimelineSnapAnchors(35_000_000, range, []);
+
+      const target = findNearestTimelineSnapAnchor(
+        34_500_000,
+        1_000,
+        range.sourceDurationMicros,
+        anchors,
+        "trim-center",
+      );
+
+      expect(target).toMatchObject({ id: "playhead", timeMicros: 35_000_000 });
+
+      const movedRange = moveTrimRange(range, target!.timeMicros - durationMicros / 2);
+      const appliedCenterMicros =
+        movedRange.startMicros + (movedRange.endMicros - movedRange.startMicros) / 2;
+
+      expect(Number.isSafeInteger(movedRange.startMicros)).toBe(true);
+      expect(Number.isSafeInteger(movedRange.endMicros)).toBe(true);
+      expect(appliedCenterMicros).toBe(expectedCenterMicros);
+      expect(isTimelineSnapPositionAligned(appliedCenterMicros, target!.timeMicros)).toBe(true);
+    },
+  );
+
   it("excludes a moving center when a trim border is dragged and filters unreachable anchors", () => {
     const range = {
       startMicros: 4_000_000,
@@ -66,17 +103,28 @@ describe("timeline snap anchors", () => {
     ).toBeNull();
   });
 
-  it("filters segment center targets beyond source limits and unreachable half-microsecond alignment", () => {
+  it("keeps odd-duration center snaps within the source-edge movement limits", () => {
     const nearStart = {
       startMicros: 1_000_000,
       endMicros: 4_000_001,
       sourceDurationMicros: 10_000_000,
     };
 
-    const anchors = createTimelineSnapAnchors(500_000, nearStart, [2_000_000]);
+    const anchors = createTimelineSnapAnchors(500_000, nearStart, [1_500_000, 2_000_000]);
 
     expect(
-      findNearestTimelineSnapAnchor(1_600_000, 1_000, 10_000_000, anchors, "trim-center"),
+      findNearestTimelineSnapAnchor(1_900_000, 1_000, 10_000_000, anchors, "trim-center"),
+    ).toMatchObject({ id: "marker-1", timeMicros: 2_000_000 });
+
+    const sourceEdgeRange = { ...nearStart, startMicros: 0, endMicros: 3_000_001 };
+    const sourceEdgeAnchors = createTimelineSnapAnchors(0, sourceEdgeRange, [1_500_000]);
+    expect(
+      findNearestTimelineSnapAnchor(1_500_000, 1_000, 10_000_000, sourceEdgeAnchors, "trim-center"),
     ).toBeNull();
+  });
+
+  it("accepts only the half-microsecond rounding difference when reporting alignment", () => {
+    expect(isTimelineSnapPositionAligned(35_000_000.5, 35_000_000)).toBe(true);
+    expect(isTimelineSnapPositionAligned(35_000_001, 35_000_000)).toBe(false);
   });
 });

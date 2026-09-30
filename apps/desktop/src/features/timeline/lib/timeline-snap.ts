@@ -17,7 +17,6 @@ interface TimelineSnapAnchor {
   movesWith: readonly TimelineSnapAnchorId[];
   reachableTimeRange: { maximumMicros: number; minimumMicros: number };
   timeMicros: number;
-  timeOffsetMicros: 0 | 0.5;
 }
 
 function createTimelineSnapTargets(
@@ -45,14 +44,12 @@ function createTimelineSnapAnchors(
       movesWith: [],
       reachableTimeRange: { minimumMicros: 0, maximumMicros: range.sourceDurationMicros },
       timeMicros: playheadMicros,
-      timeOffsetMicros: 0,
     },
     {
       id: "source-start",
       movesWith: [],
       reachableTimeRange: { minimumMicros: 0, maximumMicros: 0 },
       timeMicros: 0,
-      timeOffsetMicros: 0,
     },
     {
       id: "source-end",
@@ -62,14 +59,12 @@ function createTimelineSnapAnchors(
         maximumMicros: range.sourceDurationMicros,
       },
       timeMicros: range.sourceDurationMicros,
-      timeOffsetMicros: 0,
     },
     {
       id: "trim-start",
       movesWith: ["trim-center"],
       reachableTimeRange: { minimumMicros: 0, maximumMicros: range.endMicros - minimumDuration },
       timeMicros: range.startMicros,
-      timeOffsetMicros: 0,
     },
     {
       id: "trim-center",
@@ -79,7 +74,6 @@ function createTimelineSnapAnchors(
         maximumMicros: range.sourceDurationMicros - durationMicros / 2,
       },
       timeMicros: centerMicros,
-      timeOffsetMicros: durationMicros % 2 === 0 ? 0 : 0.5,
     },
     {
       id: "trim-end",
@@ -89,14 +83,12 @@ function createTimelineSnapAnchors(
         maximumMicros: range.sourceDurationMicros,
       },
       timeMicros: range.endMicros,
-      timeOffsetMicros: 0,
     },
     ...markerTimesMicros.map((timeMicros, index) => ({
       id: `marker-${index}` as TimelineSnapAnchorId,
       movesWith: [] as const,
       reachableTimeRange: { minimumMicros: timeMicros, maximumMicros: timeMicros },
       timeMicros,
-      timeOffsetMicros: 0 as const,
     })),
   ];
 }
@@ -120,8 +112,7 @@ function findNearestTimelineSnapAnchor(
     if (anchor.id === activeAnchorId || anchor.movesWith.includes(activeAnchorId)) continue;
     if (
       anchor.timeMicros < activeAnchor.reachableTimeRange.minimumMicros ||
-      anchor.timeMicros > activeAnchor.reachableTimeRange.maximumMicros ||
-      (anchor.timeMicros - activeAnchor.timeOffsetMicros) % 1 !== 0
+      anchor.timeMicros > activeAnchor.reachableTimeRange.maximumMicros
     ) {
       continue;
     }
@@ -138,10 +129,18 @@ function findNearestTimelineSnapAnchor(
   return nearest;
 }
 
+function isTimelineSnapPositionAligned(
+  appliedTimeMicros: number,
+  targetTimeMicros: number,
+): boolean {
+  return Math.abs(appliedTimeMicros - targetTimeMicros) <= 0.5;
+}
+
 export {
   createTimelineSnapAnchors,
   createTimelineSnapTargets,
   findNearestTimelineSnapAnchor,
+  isTimelineSnapPositionAligned,
   TIMELINE_SNAP_REACH_PX,
 };
 
