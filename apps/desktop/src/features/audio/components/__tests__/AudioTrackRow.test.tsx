@@ -238,6 +238,20 @@ describe("AudioTrackRow", () => {
     ).not.toBeNull();
   });
 
+  it("places the unapplied changes notice in the dialog footer", async () => {
+    const user = userEvent.setup();
+    renderRow();
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+
+    const notice = screen.getByText(/changes stay unapplied until you choose apply/i);
+    expect(notice).toHaveClass("text-xs", "text-muted-foreground");
+    expect(notice.closest('[data-slot="dialog-footer"]')).not.toBeNull();
+    expect(screen.getByRole("dialog")).toHaveAccessibleDescription(
+      "Effects are applied in the fixed order shown in the list.",
+    );
+  });
+
   it("offers only real presets and preserves the chosen preset while toggling the effect", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();

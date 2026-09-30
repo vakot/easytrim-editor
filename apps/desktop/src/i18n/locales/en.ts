@@ -581,8 +581,8 @@ export const en = {
     },
     dialogs: {
       effects: {
-        description:
-          "Effects are applied in the fixed order shown in the list. Changes stay unapplied until you choose Apply.",
+        applyNotice: "Changes stay unapplied until you choose Apply.",
+        description: "Effects are applied in the fixed order shown in the list.",
         title: "{{title}} — Effects",
       },
     },

@@ -581,8 +581,8 @@ export const sk = {
     },
     dialogs: {
       effects: {
-        description:
-          "Efekty sa aplikujú v pevnom poradí zobrazenom v zozname. Zmeny sa použijú až po stlačení tlačidla Použiť.",
+        applyNotice: "Zmeny sa nepoužijú, kým nevyberiete možnosť Použiť.",
+        description: "Efekty sa aplikujú v pevnom poradí zobrazenom v zozname.",
         title: "{{title}} — efekty",
       },
     },

@@ -96,21 +96,26 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
         </div>
       ) : null}
 
-      <DialogFooter className="-mx-4 border-t px-4 pt-4">
-        <DialogClose asChild>
-          <Button type="button" variant="outline">
-            {t("common.actions.cancel")}
-          </Button>
-        </DialogClose>
-        <DialogClose asChild>
-          <Button
-            disabled={!isDirty || !isValid}
-            onClick={() => controller.applyProcessing(draftProcessing)}
-            type="button"
-          >
-            {t("common.actions.apply")}
-          </Button>
-        </DialogClose>
+      <DialogFooter className="min-w-0 items-center sm:justify-between">
+        <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+          {t("audio.dialogs.effects.applyNotice")}
+        </p>
+        <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
+          <DialogClose asChild>
+            <Button type="button" variant="outline">
+              {t("common.actions.cancel")}
+            </Button>
+          </DialogClose>
+          <DialogClose asChild>
+            <Button
+              disabled={!isDirty || !isValid}
+              onClick={() => controller.applyProcessing(draftProcessing)}
+              type="button"
+            >
+              {t("common.actions.apply")}
+            </Button>
+          </DialogClose>
+        </div>
       </DialogFooter>
     </DialogContent>
   );
