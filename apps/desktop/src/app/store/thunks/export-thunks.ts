@@ -336,13 +336,15 @@ async function startEditingInstanceExport(
   getState: Parameters<AppThunk>[1],
   origin: DiagnosticOrigin,
 ) {
-  const state = getState();
-  const instance = selectActiveEditingInstance(state);
-  const source = selectSourceSelection(state);
-  const media = selectSourceMedia(state);
-  const trim = selectTrim(state);
-  if (!instance || !source || !media || !trim || !selectSourceReady(state)) return;
-  if (instance.draftAvailable === false || state.importWorkflow.isNativeDialogOpen) return;
+  const initialState = getState();
+  const initialInstance = selectActiveEditingInstance(initialState);
+  const initialSource = selectSourceSelection(initialState);
+  if (!initialInstance || !initialSource || !selectSourceReady(initialState)) return;
+  if (
+    initialInstance.draftAvailable === false ||
+    initialState.importWorkflow.isNativeDialogOpen
+  )
+    return;
 
   if (!(await ensureLoudnessAnalysis(dispatch, getState))) {
     dispatch(
@@ -353,10 +355,29 @@ async function startEditingInstanceExport(
     );
     return;
   }
-  const request = route === "fast" ? getFastRequest(getState()) : getOptimizedRequest(getState());
+
+  const currentState = getState();
+  const instance = selectActiveEditingInstance(currentState);
+  const source = selectSourceSelection(currentState);
+  const media = selectSourceMedia(currentState);
+  const trim = selectTrim(currentState);
+  if (
+    !instance ||
+    !source ||
+    !media ||
+    !trim ||
+    !selectSourceReady(currentState) ||
+    instance.id !== initialInstance.id ||
+    normalizeSourceKey(source.sourcePath) !== normalizeSourceKey(initialSource.sourcePath) ||
+    instance.draftAvailable === false ||
+    currentState.importWorkflow.isNativeDialogOpen
+  )
+    return;
+
+  const request = route === "fast" ? getFastRequest(currentState) : getOptimizedRequest(currentState);
   if (!request) return;
 
-  const snapshot = getCurrentExportSnapshot(state);
+  const snapshot = getCurrentExportSnapshot(currentState);
   if (!snapshot) return;
 
   // Persist the working draft at the export boundary, while the attempt keeps

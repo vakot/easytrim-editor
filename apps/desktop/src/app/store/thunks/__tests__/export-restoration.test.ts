@@ -8,7 +8,11 @@ import {
   setExportQueueExecutionEnabled,
   withdrawPendingExport,
 } from "@/app/store/integration/export-queue-runtime";
-import { selectAudioTracks } from "@/app/store/slices/audio-slice";
+import {
+  audioTrackGainChanged,
+  audioTrackProcessingChanged,
+  selectAudioTracks,
+} from "@/app/store/slices/audio-slice";
 import {
   editingInstanceExportAttemptQueued,
   editingInstanceExportCompleted,
@@ -35,6 +39,7 @@ import {
 } from "../source-media-thunks";
 
 const native = vi.hoisted(() => ({
+  analyzeAudioLoudness: vi.fn(),
   activateSourcePath: vi.fn(),
   prepareSourcePreview: vi.fn(),
   chooseOutputPath: vi.fn(),
@@ -52,6 +57,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  native.analyzeAudioLoudness.mockResolvedValue({ integratedLufs: -18, truePeakDb: -2 });
   native.activateSourcePath.mockResolvedValue(firstSource);
   native.prepareSourcePreview.mockResolvedValue({
     kind: "source",
@@ -103,6 +109,35 @@ function setup(sourceMedia = media(firstSource.sourcePath)) {
 }
 
 describe("export snapshot restoration", () => {
+  it("builds the queued request and snapshot from the same state after loudness analysis", async () => {
+    const { store } = setup(mediaWithAudio(firstSource.sourcePath));
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: -4, loudnessNormalization: "streaming" },
+      }),
+    );
+
+    let finishAnalysis!: (value: { integratedLufs: number; truePeakDb: number }) => void;
+    native.analyzeAudioLoudness.mockReturnValue(
+      new Promise((resolve) => {
+        finishAnalysis = resolve;
+      }),
+    );
+
+    store.dispatch(startOptimizedExportRequested());
+    await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledOnce());
+    store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -2 }));
+    finishAnalysis({ integratedLufs: -18, truePeakDb: -2 });
+
+    await vi.waitFor(() => {
+      const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
+      expect(attempt?.state.status).toBe("queued");
+      expect(attempt?.request.audioTracks[0]?.processing.gainDb).toBe(-2);
+      expect(attempt?.snapshot.audio.tracks[0]?.processing.gainDb).toBe(-2);
+    });
+  });
+
   it("keeps queued per-track processing immutable and restores it with the export", async () => {
     const { snapshot, store } = setup(mediaWithAudio(firstSource.sourcePath));
     const processing = { gainDb: -4.5, loudnessNormalization: "streaming" as const };
