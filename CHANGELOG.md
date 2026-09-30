@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Fixed Spacebar playback toggling when an editor button has focus.
+- Fixed Shift-snapped playhead dragging so it can move outside the selected segment and releases snapping beyond the 12 px reach.
 
 ## [1.12.3]
 
