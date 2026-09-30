@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { formatPlaybackTime } from "@/domain/playback";
-import type { SegmentSnapPoint, TrimBoundary, TrimRange } from "@/domain/trim";
+import type { TrimBoundary, TrimRange } from "@/domain/trim";
 import { cn } from "@/lib/class-names.utils";
 import type { FrameRate } from "@/lib/tauri/media.types";
 
@@ -24,7 +24,7 @@ interface SegmentDragHandleProps {
   onPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
   onPointerUp: (event: PointerEvent<HTMLButtonElement>) => void;
   range: TrimRange;
-  snapPoint: SegmentSnapPoint | null;
+  snapActive: boolean;
 }
 
 function SegmentDragHandle({
@@ -37,7 +37,7 @@ function SegmentDragHandle({
   onPointerMove,
   onPointerUp,
   range,
-  snapPoint,
+  snapActive,
 }: SegmentDragHandleProps) {
   const { t } = useTranslation();
   const durationMicros = range.endMicros - range.startMicros;
@@ -61,8 +61,7 @@ function SegmentDragHandle({
           )}
           data-dragging={dragging ? "true" : undefined}
           data-editor-keyboard="timeline-slider"
-          data-snap-active={snapPoint ? "true" : undefined}
-          data-snap-point={snapPoint ?? undefined}
+          data-snap-active={snapActive ? "true" : undefined}
           disabled={disabled}
           onKeyDown={onKeyDown}
           onLostPointerCapture={onLostPointerCapture}

@@ -6,7 +6,6 @@ import {
   createTimelineSnapAnchors,
   createTimelineSnapTargets,
   findNearestTimelineSnapAnchor,
-  findNearestTimelineSnapTarget,
 } from "../timeline-snap";
 
 const audioActivityRanges: AudioActivityRange[] = [
@@ -14,60 +13,70 @@ const audioActivityRanges: AudioActivityRange[] = [
   { endMicros: 9_000_000, startMicros: 8_000_000 },
 ];
 
-describe("timeline snap targets", () => {
-  it("includes scene boundaries and both ends of every audio activity range in time order", () => {
+describe("timeline snap anchors", () => {
+  it("creates scene and audio markers as ordered snapping anchors", () => {
     expect(createTimelineSnapTargets([2_000_000, 7_000_000], audioActivityRanges)).toEqual([
       2_000_000, 4_000_000, 5_000_000, 7_000_000, 8_000_000, 9_000_000,
     ]);
   });
 
-  it("snaps to either edge of an audio activity range within reach", () => {
-    const targets = createTimelineSnapTargets([], audioActivityRanges);
+  it("uses the nearest anchor within the shared 12 pixel reach", () => {
+    const range = { startMicros: 0, endMicros: 10_000_000, sourceDurationMicros: 10_000_000 };
+    const anchors = createTimelineSnapAnchors(7_000_000, range, [4_000_000, 5_000_000]);
 
-    expect(findNearestTimelineSnapTarget(4_050_000, 1_000, 10_000_000, targets)).toBe(4_000_000);
-    expect(findNearestTimelineSnapTarget(4_950_000, 1_000, 10_000_000, targets)).toBe(5_000_000);
+    expect(
+      findNearestTimelineSnapAnchor(4_050_000, 1_000, 10_000_000, anchors, "playhead"),
+    ).toMatchObject({ id: "marker-0" });
+    expect(
+      findNearestTimelineSnapAnchor(4_500_000, 1_000, 10_000_000, anchors, "playhead"),
+    ).toBeNull();
   });
 
-  it("ignores targets outside the Shift-snap reach", () => {
-    const targets = createTimelineSnapTargets([], audioActivityRanges);
-
-    expect(findNearestTimelineSnapTarget(4_500_000, 1_000, 10_000_000, targets)).toBeNull();
-  });
-});
-
-describe("timeline snap anchors", () => {
-  it("omits the opposite trim boundary when finding a handle snap", () => {
+  it("lets the segment center snap while its moving borders remain passive", () => {
     const range = {
-      endMicros: 5_000_000,
-      sourceDurationMicros: 10_000_000,
-      startMicros: 4_000_000,
+      startMicros: 10_000_000,
+      endMicros: 20_000_000,
+      sourceDurationMicros: 60_000_000,
     };
 
-    const anchors = createTimelineSnapAnchors(2_000_000, range, [4_100_000]);
+    const anchors = createTimelineSnapAnchors(35_000_000, range, []);
 
     expect(
-      findNearestTimelineSnapAnchor(
-        4_900_000,
-        100,
-        range.sourceDurationMicros,
-        anchors,
-        "trim-start",
-        ["trim-center", "trim-end"],
-      ),
-    ).toMatchObject({ id: "marker-0", timeMicros: 4_100_000 });
+      findNearestTimelineSnapAnchor(34_500_000, 1_000, 60_000_000, anchors, "trim-center"),
+    ).toMatchObject({ id: "playhead", timeMicros: 35_000_000 });
+    expect(
+      findNearestTimelineSnapAnchor(20_000_000, 1_000, 60_000_000, anchors, "trim-center"),
+    ).toBeNull();
   });
 
-  it("skips center targets outside the range where the segment can move", () => {
-    const anchors = [
-      { id: "playhead" as const, timeMicros: 1_800_000 },
-      { id: "marker-0" as const, timeMicros: 3_000_000 },
-    ];
+  it("excludes a moving center when a trim border is dragged and filters unreachable anchors", () => {
+    const range = {
+      startMicros: 4_000_000,
+      endMicros: 5_000_000,
+      sourceDurationMicros: 10_000_000,
+    };
+
+    const anchors = createTimelineSnapAnchors(8_000_000, range, [3_000_000, 4_100_000]);
 
     expect(
-      findNearestTimelineSnapAnchor(1_900_000, 100, 10_000_000, anchors, "trim-center", [], {
-        minimumMicros: 2_000_000,
-        maximumMicros: 8_000_000,
-      }),
+      findNearestTimelineSnapAnchor(4_000_000, 100, 10_000_000, anchors, "trim-start"),
     ).toMatchObject({ id: "marker-0", timeMicros: 3_000_000 });
+    expect(
+      findNearestTimelineSnapAnchor(9_950_000, 100, 10_000_000, anchors, "trim-start"),
+    ).toBeNull();
+  });
+
+  it("filters segment center targets beyond source limits and unreachable half-microsecond alignment", () => {
+    const nearStart = {
+      startMicros: 1_000_000,
+      endMicros: 4_000_001,
+      sourceDurationMicros: 10_000_000,
+    };
+
+    const anchors = createTimelineSnapAnchors(500_000, nearStart, [2_000_000]);
+
+    expect(
+      findNearestTimelineSnapAnchor(1_600_000, 1_000, 10_000_000, anchors, "trim-center"),
+    ).toBeNull();
   });
 });

@@ -26,7 +26,7 @@ function TimelineHandle({ dragging, kind }: { dragging: boolean; kind: HandleKin
         onPointerMove={vi.fn()}
         onPointerUp={vi.fn()}
         range={range}
-        snapPoint={null}
+        snapActive={false}
       />
     );
   }
