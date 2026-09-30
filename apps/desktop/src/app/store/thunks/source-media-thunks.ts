@@ -74,6 +74,7 @@ import {
 } from "@/domain/audio-processing";
 import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
 import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
+import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
 import { normalizeSourceKey } from "@/domain/source";

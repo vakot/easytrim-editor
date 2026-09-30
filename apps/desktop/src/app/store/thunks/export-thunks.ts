@@ -51,7 +51,6 @@ import { selectedAudioTracks } from "@/domain/audio-export";
 import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
-import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeTransformForExport } from "@/domain/rotation";
@@ -71,6 +70,7 @@ import { availableQueueFinishActions } from "@/lib/tauri/queue";
 import { analyzeTrackLoudness } from "./audio-track-thunks";
 import type { AppThunk } from "./source-media-thunks";
 import { analyzeTrackLoudness } from "./audio-track-thunks";
+import type { AppThunk } from "./source-media-thunks";
 import {
   activateEditingInstanceRequested,
   commitActiveEditingInstanceDraft,
