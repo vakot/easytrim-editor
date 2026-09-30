@@ -19,4 +19,33 @@ describe("selectedAudioTracks", () => {
       { streamIndex: 2, processing: { gainDb: 2, loudnessNormalization: "streaming" } },
     ]);
   });
+
+  it("exports same-stage effects in canonical order", () => {
+    expect(
+      selectedAudioTracks([
+        {
+          enabled: true,
+          streamIndex: 2,
+          processing: {
+            gainDb: 0,
+            effects: [
+              { preset: "strong", stage: "cleanup", type: "noiseReduction" },
+              { cutoffHz: 120, stage: "cleanup", type: "highPass" },
+            ],
+          },
+        },
+      ]),
+    ).toEqual([
+      {
+        streamIndex: 2,
+        processing: {
+          gainDb: 0,
+          effects: [
+            { cutoffHz: 120, stage: "cleanup", type: "highPass" },
+            { preset: "strong", stage: "cleanup", type: "noiseReduction" },
+          ],
+        },
+      },
+    ]);
+  });
 });

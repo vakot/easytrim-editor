@@ -12,6 +12,7 @@ import {
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
   type AudioTrackProcessing,
+  getAudioTrackSignalEffect,
   loudnessNormalizationTargets,
 } from "@/domain/audio-processing";
 import { timelinePercent } from "@/domain/trim";
@@ -162,7 +163,7 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
   const { t } = useTranslation();
   const summaries: string[] = [];
   const normalization = processing.loudnessNormalization;
-  const noiseReduction = processing.effects?.find((effect) => effect.type === "noiseReduction");
+  const noiseReduction = getAudioTrackSignalEffect(processing, "noiseReduction");
 
   if (noiseReduction) {
     summaries.push(

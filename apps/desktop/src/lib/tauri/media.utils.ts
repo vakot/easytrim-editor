@@ -1,7 +1,8 @@
-import type {
-  AudioTrackSignalEffect,
-  LoudnessNormalization,
-  NoiseReductionPreset,
+import {
+  type AudioTrackSignalEffect,
+  getAudioTrackSignalEffects,
+  type LoudnessNormalization,
+  type NoiseReductionPreset,
 } from "@/domain/audio-processing";
 import type { SourceRef } from "@/domain/source";
 
@@ -274,7 +275,7 @@ function parseAudioTrackSignalEffects(value: unknown): AudioTrackSignalEffect[] 
   if (value === undefined || value === null) return undefined;
   if (!Array.isArray(value)) throw invalidResponse("audio preview effects");
 
-  return value.map((item) => {
+  const effects = value.map((item): AudioTrackSignalEffect => {
     const effect = requireRecord(item, "audio preview effect");
     const stage = effect.stage;
     if (
@@ -300,6 +301,8 @@ function parseAudioTrackSignalEffects(value: unknown): AudioTrackSignalEffect[] 
     }
     return { preset, stage, type: "noiseReduction" };
   });
+
+  return getAudioTrackSignalEffects({ gainDb: 0, effects });
 }
 
 function parseNoiseReduction(value: unknown): NoiseReductionPreset | undefined {

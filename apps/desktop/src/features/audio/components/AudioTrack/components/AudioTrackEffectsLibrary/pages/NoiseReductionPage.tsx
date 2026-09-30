@@ -9,7 +9,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import type { AudioTrackSignalEffect, NoiseReductionPreset } from "@/domain/audio-processing";
+import {
+  getAudioTrackSignalEffect,
+  type NoiseReductionPreset,
+  removeAudioTrackSignalEffect,
+  setAudioTrackSignalEffect,
+} from "@/domain/audio-processing";
 
 import { useAudioTrackEffectsDraft } from "../../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
 import {
@@ -26,31 +31,21 @@ import {
 function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
   const { t } = useTranslation();
   const { dispatch, draft } = useAudioTrackEffectsDraft();
-  const preset = draft.processing.effects?.find(
-    (effect) => effect.type === "noiseReduction",
-  )?.preset;
+  const preset = getAudioTrackSignalEffect(draft.processing, "noiseReduction")?.preset;
 
-  const initialPreset = draft.initialProcessing.effects?.find(
-    (effect) => effect.type === "noiseReduction",
+  const initialPreset = getAudioTrackSignalEffect(
+    draft.initialProcessing,
+    "noiseReduction",
   )?.preset;
 
   const updatePreset = (nextPreset: NoiseReductionPreset | undefined) => {
-    const effects: AudioTrackSignalEffect[] = (draft.processing.effects ?? []).filter(
-      (effect) => effect.type !== "noiseReduction",
-    );
-
-    if (nextPreset) {
-      const effect: AudioTrackSignalEffect = {
-        preset: nextPreset,
-        stage: "cleanup",
-        type: "noiseReduction",
-      };
-
-      effects.push(effect);
-    }
-    const processing = { ...draft.processing };
-    if (effects.length === 0) delete processing.effects;
-    else processing.effects = effects;
+    const processing = nextPreset
+      ? setAudioTrackSignalEffect(draft.processing, {
+          preset: nextPreset,
+          stage: "cleanup",
+          type: "noiseReduction",
+        })
+      : removeAudioTrackSignalEffect(draft.processing, "noiseReduction");
 
     dispatch({ type: "processingChanged", value: processing });
     dispatch({

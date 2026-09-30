@@ -1,10 +1,14 @@
-import type { AudioTrackSelection, AudioTrackSettings } from "./audio-processing";
+import {
+  type AudioTrackSelection,
+  type AudioTrackSettings,
+  cloneAudioTrackProcessing,
+} from "./audio-processing";
 
 function selectedAudioTracks(tracks: readonly AudioTrackSettings[]): AudioTrackSelection[] {
   return tracks
     .filter((track) => track.enabled)
     .map(({ processing, streamIndex }) => ({
-      processing: { ...processing },
+      processing: cloneAudioTrackProcessing(processing),
       streamIndex,
     }));
 }

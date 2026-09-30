@@ -56,9 +56,23 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
-  it("prepares audio previews with the canonical per-track processing settings", async () => {
+  it("parses audio preview descriptors and preserves canonical signal effects", async () => {
     const audioTracks = [
-      { streamIndex: 2, processing: { gainDb: 3, loudnessNormalization: "streaming" as const } },
+      {
+        streamIndex: 2,
+        processing: {
+          gainDb: 3,
+          loudnessNormalization: "streaming" as const,
+          effects: [
+            {
+              preset: "strong" as const,
+              stage: "cleanup" as const,
+              type: "noiseReduction" as const,
+            },
+            { cutoffHz: 120, stage: "cleanup" as const, type: "highPass" as const },
+          ],
+        },
+      },
     ];
 
     const descriptor = {
@@ -72,7 +86,16 @@ describe("media IPC adapter", () => {
     mocks.invoke.mockResolvedValueOnce([descriptor]);
 
     await expect(prepareAudioPreviews("C:/Media/clip.mp4", audioTracks)).resolves.toEqual([
-      descriptor,
+      {
+        ...descriptor,
+        processing: {
+          ...audioTracks[0]!.processing,
+          effects: [
+            { cutoffHz: 120, stage: "cleanup", type: "highPass" },
+            { preset: "strong", stage: "cleanup", type: "noiseReduction" },
+          ],
+        },
+      },
     ]);
     expect(mocks.invoke).toHaveBeenCalledWith("prepare_audio_previews", {
       sourcePath: "C:/Media/clip.mp4",

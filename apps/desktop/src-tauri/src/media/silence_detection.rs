@@ -10,7 +10,7 @@ use serde::Serialize;
 
 use crate::{
     error::AppError,
-    media::export::{AudioTrackSelection, audio_filter_graph},
+    media::export::{AudioTrackSelection, audio_filter_graph, validate_audio_track_selections},
     process::{ProcessOutput, run_bounded_cancellable},
     state::ActiveSource,
 };
@@ -34,6 +34,11 @@ pub fn detect_silence_ranges(
     track: &AudioTrackSelection,
     duration_micros: u64,
 ) -> Result<Vec<SilenceRange>, AppError> {
+    let media = source.media.as_ref().ok_or_else(|| {
+        AppError::invalid_request("Inspect the video before detecting audio activity.")
+    })?;
+    validate_audio_track_selections(media, std::slice::from_ref(track))?;
+
     let arguments = silence_detection_arguments(&source.path, track);
     let output = run_bounded_cancellable(
         OsStr::new("ffmpeg"),
