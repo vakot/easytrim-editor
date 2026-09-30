@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { usePlaybackModes } from "@/app/hooks/usePlaybackModes";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { audioTrackPlaybackPreviewUrl, selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
@@ -56,6 +55,15 @@ import {
 import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
+import {
+  cancelPlaybackFrame,
+  type PlaybackFrameHandle,
+  requestPlaybackFrame,
+} from "../lib/media-sync";
+import { createSeekScheduler } from "../lib/seek-scheduler";
+
+import { usePlaybackModes } from "./usePlaybackModes";
+
 const EMPTY_TRIM: TrimRange = {
   startMicros: 0,
   endMicros: 0,
@@ -66,48 +74,7 @@ const AUDIO_SYNC_INTERVAL_MS = 100;
 const REVERSE_SHUTTLE_SEEK_INTERVAL_MS = 50;
 const SHUTTLE_MAX_FRAME_DELTA_MS = 100;
 
-interface EditorInteractionRuntime {
-  audioPlayback: AudioPlaybackContract;
-  canSetSegmentEnd: boolean;
-  canSetSegmentStart: boolean;
-  displayedPlayheadMicros: number;
-  isPlaybackReady: boolean;
-  isPlaying: boolean;
-  nativeLoopEnabled: boolean;
-  onCanPlay: () => void;
-  onCropToolOpenChange: (isOpen: boolean) => void;
-  onEnded: () => void;
-  onLoadedMetadata: () => void;
-  onPause: () => void;
-  onPausePlayback: () => void;
-  onPlay: () => void;
-  onPreviewPlaybackError: (previewKind: "source" | "proxy") => void;
-  onScrub: (micros: number) => void;
-  onScrubEnd: () => void;
-  onScrubStart: () => void;
-  onSeek: (micros: number) => void;
-  onSegmentDragEnd: () => void;
-  onSegmentDragStart: () => void;
-  onSegmentMove: (nextTrim: TrimRange) => void;
-  onSetSegmentBoundary: (boundary: TrimBoundary, origin?: DiagnosticOrigin) => void;
-  onShuttleEnd: (origin?: DiagnosticOrigin) => void;
-  onShuttleStart: (direction: FrameShuttleDirection, origin?: DiagnosticOrigin) => void;
-  onStepFrame: (direction: -1 | 1, origin?: DiagnosticOrigin) => void;
-  onTimeUpdate: (seconds: number) => void;
-  onTogglePlayback: (origin?: DiagnosticOrigin) => void;
-  onTrimBoundaryChange: (boundary: TrimBoundary, nextTrim: TrimRange) => void;
-  onTrimDragEnd: () => void;
-  onTrimDragStart: () => void;
-  playheadRef: React.RefObject<HTMLButtonElement | null>;
-  setMediaPlaybackRate: (rate: number) => void;
-  setVideoElement: (element: HTMLVideoElement | null) => void;
-  shuttleDirection: FrameShuttleDirection | 0;
-  transportError: string | null;
-  videoMuted: boolean;
-  videoRef: React.RefObject<HTMLVideoElement | null>;
-}
-
-function useEditorInteractionController(): EditorInteractionRuntime {
+function usePreviewPlaybackRuntime() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
@@ -197,6 +164,8 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     clearLiveAudioTrackGain,
     isReady: isAudioReady,
     pause: pauseAudioPlayback,
+    resumeAt: resumeAudioAt,
+    resumeAudioContext,
     setPlaybackRate: setAudioPlaybackRate,
     startAt: startAudioAt,
     syncTo: syncAudioPlayback,
@@ -472,11 +441,11 @@ function useEditorInteractionController(): EditorInteractionRuntime {
 
     const startSequence = playbackStartSequenceRef.current;
     const seconds = video.currentTime;
-    void startAudioAt(seconds).catch(() => {
+    void resumeAudioAt(seconds).catch(() => {
       if (startSequence !== playbackStartSequenceRef.current) return;
       handlePlaybackStartFailure();
     });
-  }, [handlePlaybackStartFailure, startAudioAt]);
+  }, [handlePlaybackStartFailure, resumeAudioAt]);
 
   useEffect(() => {
     if (!usesExternalAudio || !isPlaybackReady || !isPlayingRef.current) return;
@@ -574,6 +543,10 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     const startSequence = ++playbackStartSequenceRef.current;
     playbackRequestedRef.current = true;
     setTransportError(null);
+    void resumeAudioContext().catch(() => {
+      if (startSequence !== playbackStartSequenceRef.current) return;
+      handlePlaybackStartFailure();
+    });
     scheduleVideoSeek(startMicros, false, () => {
       if (startSequence !== playbackStartSequenceRef.current) return;
       void Promise.all([video.play(), startAudioAt(startMicros / 1_000_000)]).catch(() => {
@@ -584,6 +557,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   }, [
     flushFrameStepSeek,
     handlePlaybackStartFailure,
+    resumeAudioContext,
     startAudioAt,
     scheduleVideoSeek,
     setTransportError,
@@ -1200,4 +1174,4 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   };
 }
 
-export { useEditorInteractionController };
+export { usePreviewPlaybackRuntime };

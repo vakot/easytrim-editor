@@ -449,16 +449,23 @@ function useAudioPlaybackRuntime({
     for (const audio of audioElementsRef.current.values()) audio.playbackRate = rate;
   }, []);
 
+  const resumeAudioContext = useCallback(
+    () => audioContextRef.current?.resume() ?? Promise.resolve(),
+    [],
+  );
+
   const startAt = useCallback(
     (seconds: number): Promise<void[]> => {
       syncTo(seconds, true);
-      const resumeContext = audioContextRef.current?.resume() ?? Promise.resolve();
-      return Promise.all([
-        resumeContext.then(() => undefined),
-        ...[...audioElementsRef.current.values()].map((element) => element.play()),
-      ]);
+      return Promise.all([...audioElementsRef.current.values()].map((element) => element.play()));
     },
     [syncTo],
+  );
+
+  const resumeAt = useCallback(
+    (seconds: number) =>
+      Promise.all([resumeAudioContext().then(() => undefined), startAt(seconds)]),
+    [resumeAudioContext, startAt],
   );
 
   const isReady =
@@ -477,6 +484,8 @@ function useAudioPlaybackRuntime({
     clearLiveAudioTrackGain,
     isReady,
     pause,
+    resumeAt,
+    resumeAudioContext,
     setLiveAudioTrackGain,
     setPlaybackRate,
     startAt,

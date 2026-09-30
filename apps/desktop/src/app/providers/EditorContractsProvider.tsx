@@ -5,11 +5,11 @@ import {
   EditorTimelineCommandsContext,
   EditorTimelineStateContext,
 } from "@/app/contexts/editor-contracts-context";
-import { useEditorInteractionController } from "@/app/hooks/useEditorInteractionController";
 import { AudioPlaybackContext, type AudioPlaybackContract } from "@/features/audio";
+import { usePreviewPlaybackRuntime } from "@/features/preview";
 
 function EditorContractsProvider({ children }: { children: ReactNode }) {
-  const interaction = useEditorInteractionController();
+  const interaction = usePreviewPlaybackRuntime();
   const audioPlayback = useMemo<AudioPlaybackContract>(
     () => ({
       audioMeterRef: interaction.audioPlayback.audioMeterRef,
