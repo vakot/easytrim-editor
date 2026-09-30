@@ -9,6 +9,7 @@ import {
   type AudioTrackSettings,
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_PROCESSING,
+  sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
@@ -31,9 +32,9 @@ type WaveformState =
 
 type AudioTrackAnalysis<T> =
   | { status: "idle" }
-  | { operationId: string; status: "loading" }
-  | { operationId: string; status: "ready"; value: T }
-  | { error: AppError; operationId: string; status: "failed" };
+  | { cacheKey?: string; operationId: string; status: "loading" }
+  | { cacheKey?: string; operationId: string; status: "ready"; value: T }
+  | { cacheKey?: string; error: AppError; operationId: string; status: "failed" };
 
 type AudioTrackPreviewState =
   | { status: "idle" }
@@ -212,8 +213,13 @@ const audioSlice = createSlice({
         track.processing,
         action.payload.processing,
       );
+      const loudnessInputsChanged = !sameAudioTrackLoudnessInputs(
+        track.processing,
+        action.payload.processing,
+      );
 
       track.processing = cloneAudioTrackProcessing(action.payload.processing);
+      if (loudnessInputsChanged) track.loudnessAnalysis = { status: "idle" };
       if (activityChanged) track.activityAnalysis = { status: "idle" };
       if (previewChanged) track.preview = { status: "idle" };
     },
@@ -257,18 +263,27 @@ const audioSlice = createSlice({
     },
     audioTrackLoudnessAnalysisStarted: (
       state,
-      action: PayloadAction<{ operationId: string; streamIndex: number }>,
+      action: PayloadAction<{ cacheKey: string; operationId: string; streamIndex: number }>,
     ) => {
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
 
       if (track)
-        track.loudnessAnalysis = { operationId: action.payload.operationId, status: "loading" };
+        track.loudnessAnalysis = {
+          cacheKey: action.payload.cacheKey,
+          operationId: action.payload.operationId,
+          status: "loading",
+        };
     },
     audioTrackLoudnessAnalysisReady: (
       state,
-      action: PayloadAction<{ operationId: string; result: LoudnessAnalysis; streamIndex: number }>,
+      action: PayloadAction<{
+        cacheKey: string;
+        operationId: string;
+        result: LoudnessAnalysis;
+        streamIndex: number;
+      }>,
     ) => {
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
@@ -279,6 +294,7 @@ const audioSlice = createSlice({
         track.loudnessAnalysis.operationId === action.payload.operationId
       ) {
         track.loudnessAnalysis = {
+          cacheKey: action.payload.cacheKey,
           operationId: action.payload.operationId,
           status: "ready",
           value: action.payload.result,
@@ -287,7 +303,12 @@ const audioSlice = createSlice({
     },
     audioTrackLoudnessAnalysisFailed: (
       state,
-      action: PayloadAction<{ error: AppError; operationId: string; streamIndex: number }>,
+      action: PayloadAction<{
+        cacheKey: string;
+        error: AppError;
+        operationId: string;
+        streamIndex: number;
+      }>,
     ) => {
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
@@ -411,7 +432,12 @@ const audioSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(trimChanged, (state) => {
-        for (const track of state.tracks) track.loudnessAnalysis = { status: "idle" };
+        for (const track of state.tracks) {
+          track.loudnessAnalysis = { status: "idle" };
+          if (track.processing.loudnessNormalization !== undefined) {
+            track.preview = { status: "idle" };
+          }
+        }
       })
       .addCase(sourceSelected, (state, action) => {
         state.tracks = [];

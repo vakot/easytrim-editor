@@ -7,7 +7,12 @@ import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectTrim } from "@/app/store/slices/trim-slice";
-import { type AudioTrackProcessing, loudnessNormalizationTargets } from "@/domain/audio-processing";
+import {
+  audioTrackLoudnessInputsKey,
+  audioTrackNormalizationGainDb,
+  type AudioTrackProcessing,
+  loudnessNormalizationTargets,
+} from "@/domain/audio-processing";
 import { timelinePercent } from "@/domain/trim";
 
 import {
@@ -69,7 +74,11 @@ function AudioTrackRowWaveform({
       className="relative h-12.5 min-w-0 overflow-hidden rounded-lg border border-border bg-muted/30 transition-opacity data-[enabled=false]:opacity-40"
       data-enabled={track.enabled}
     >
-      <AudioTrackWaveform gainDb={liveGainDb} stream={stream} track={track} />
+      <AudioTrackWaveform
+        gainDb={waveformGainDb(controller, trim, liveGainDb)}
+        stream={stream}
+        track={track}
+      />
       {activityRanges.map((range) => (
         <div
           aria-hidden="true"
@@ -96,6 +105,23 @@ function AudioTrackRowWaveform({
       <AudioTrackGainIndicator controller={controller} />
     </div>
   );
+}
+
+function waveformGainDb(
+  controller: AudioTrackController,
+  trim: ReturnType<typeof selectTrim>,
+  liveGainDb: number,
+): number {
+  const track = controller.track;
+  if (!track) return liveGainDb;
+  const normalization = track.processing.loudnessNormalization;
+  const analysis = track.loudnessAnalysis;
+  if (!normalization) return liveGainDb;
+  if (!trim || analysis?.status !== "ready") return 0;
+  const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
+  return analysis.cacheKey === cacheKey
+    ? audioTrackNormalizationGainDb(normalization, analysis.value)
+    : 0;
 }
 
 function AudioTrackGainIndicator({ controller }: { controller: AudioTrackController }) {

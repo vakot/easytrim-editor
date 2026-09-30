@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { usePlaybackModes } from "@/app/hooks/usePlaybackModes";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectAudioTracks, selectMergeAudio } from "@/app/store/slices/audio-slice";
+import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
   selectLoopPlaybackEnabled,
@@ -160,7 +160,6 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const preview = useAppSelector(selectPreview);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const audioTracks = useAppSelector(selectAudioTracks);
-  const mergeAudio = useAppSelector(selectMergeAudio);
   const audioPreviewUrls = useMemo(
     () =>
       Object.fromEntries(
@@ -571,10 +570,12 @@ function useEditorInteractionController(): EditorInteractionRuntime {
 
     const audioStreams = media?.audioStreams ?? [];
     meter.isMono = isMonoAudioMix(
-      audioTracks.filter((track) => track.enabled).map(
-        (track) =>
-          audioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.channels,
-      ),
+      audioTracks
+        .filter((track) => track.enabled)
+        .map(
+          (track) =>
+            audioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.channels,
+        ),
     );
   }, [audioTracks, media?.audioStreams]);
 

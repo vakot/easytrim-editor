@@ -1,4 +1,5 @@
 import type { AudioTrackSelection } from "./audio-processing";
+export type { AudioLoudnessAnalysis as LoudnessAnalysis } from "./audio-processing";
 
 interface AppError {
   code: string;
@@ -60,11 +61,6 @@ interface LoudnessAnalysisRequest {
   audioTrack: AudioTrackSelection;
   sourcePath: string;
   trim: TrimSelection;
-}
-
-interface LoudnessAnalysis {
-  integratedLufs?: number;
-  truePeakDb?: number;
 }
 
 interface FrameRate {
@@ -130,7 +126,6 @@ export type {
   ExportResult,
   FastExportRequest,
   FrameRate,
-  LoudnessAnalysis,
   LoudnessAnalysisRequest,
   MediaInfo,
   OptimizedExportRequest,

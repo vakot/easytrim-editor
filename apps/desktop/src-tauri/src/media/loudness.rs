@@ -6,11 +6,13 @@ use std::{
     time::Duration,
 };
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::{
     error::AppError,
-    media::export::{AudioTrackSelection, TrimSelection, validate_common_request},
+    media::export::{
+        AudioLoudnessAnalysis, AudioTrackSelection, TrimSelection, validate_common_request,
+    },
     process::{ProcessOutput, run_bounded_cancellable},
     state::ActiveSource,
 };
@@ -27,12 +29,7 @@ pub struct LoudnessAnalysisRequest {
     pub audio_track: AudioTrackSelection,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LoudnessAnalysis {
-    pub integrated_lufs: Option<f64>,
-    pub true_peak_db: Option<f64>,
-}
+pub type LoudnessAnalysis = AudioLoudnessAnalysis;
 
 pub fn analyze_loudness(
     source: &ActiveSource,
@@ -216,6 +213,7 @@ mod tests {
     #[test]
     fn analysis_graph_measures_source_independently_of_level_processing() {
         let track = AudioTrackSelection {
+            loudness_analysis: None,
             stream_index: 3,
             processing: AudioTrackProcessing {
                 gain_db: -6.0,
@@ -266,6 +264,7 @@ mod tests {
                 end_micros: 2_000_000,
             },
             audio_track: AudioTrackSelection {
+                loudness_analysis: None,
                 stream_index: 0,
                 processing: AudioTrackProcessing {
                     gain_db: 0.0,

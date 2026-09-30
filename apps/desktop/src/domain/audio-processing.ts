@@ -20,8 +20,14 @@ interface AudioTrackSettings {
 }
 
 interface AudioTrackSelection {
+  loudnessAnalysis?: AudioLoudnessAnalysis;
   processing: AudioTrackProcessing;
   streamIndex: number;
+}
+
+interface AudioLoudnessAnalysis {
+  integratedLufs?: number;
+  truePeakDb?: number;
 }
 
 const DEFAULT_AUDIO_TRACK_PROCESSING: AudioTrackProcessing = { gainDb: 0 };
@@ -34,6 +40,18 @@ function effectiveAudioTrackGainDb(processing: AudioTrackProcessing): number {
   return audioTrackLevelMode(processing) === "manual" ? processing.gainDb : 0;
 }
 
+function audioTrackNormalizationGainDb(
+  normalization: LoudnessNormalization,
+  analysis: AudioLoudnessAnalysis,
+): number {
+  if (analysis.integratedLufs === undefined) return 0;
+  const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(normalization);
+  const targetGainDb = targetLufs - analysis.integratedLufs;
+  return analysis.truePeakDb === undefined
+    ? targetGainDb
+    : Math.min(targetGainDb, maxTruePeakDb - analysis.truePeakDb);
+}
+
 function audioTrackActivityProcessingChanged(
   left: AudioTrackProcessing,
   right: AudioTrackProcessing,
@@ -42,6 +60,29 @@ function audioTrackActivityProcessingChanged(
     return !sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization);
   }
   return left.gainDb !== right.gainDb;
+}
+
+function audioTrackLoudnessInputsKey(
+  streamIndex: number,
+  trim: { endMicros: number; startMicros: number },
+  processing: AudioTrackProcessing,
+): string {
+  const upstreamProcessing = Object.fromEntries(
+    Object.entries(processing)
+      .filter(([key]) => key !== "gainDb" && key !== "loudnessNormalization")
+      .sort(([left], [right]) => left.localeCompare(right)),
+  );
+  return JSON.stringify([streamIndex, trim.startMicros, trim.endMicros, upstreamProcessing]);
+}
+
+function sameAudioTrackLoudnessInputs(
+  left: AudioTrackProcessing,
+  right: AudioTrackProcessing,
+): boolean {
+  return (
+    audioTrackLoudnessInputsKey(0, { startMicros: 0, endMicros: 0 }, left) ===
+    audioTrackLoudnessInputsKey(0, { startMicros: 0, endMicros: 0 }, right)
+  );
 }
 
 function loudnessNormalizationTargets(normalization: LoudnessNormalization): {
@@ -115,6 +156,7 @@ export type {
   AudioTrackProcessing,
   AudioTrackSelection,
   AudioTrackSettings,
+  AudioLoudnessAnalysis,
   CustomLoudnessNormalization,
   LoudnessNormalization,
   LoudnessPreset,
@@ -122,11 +164,14 @@ export type {
 export {
   audioTrackActivityProcessingChanged,
   audioTrackLevelMode,
+  audioTrackNormalizationGainDb,
+  audioTrackLoudnessInputsKey,
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_PROCESSING,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
   effectiveAudioTrackGainDb,
   loudnessNormalizationTargets,
   sameAudioTrackPreviewProcessing,
+  sameAudioTrackLoudnessInputs,
   sameAudioTrackProcessing,
 };

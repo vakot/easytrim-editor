@@ -11,6 +11,7 @@ import {
   audioTrackActivityAnalysisStarted,
   audioTrackGainChanged,
   audioTrackLoudnessAnalysisStarted,
+  audioTrackLoudnessAnalysisReady,
   audioTrackPreviewReady,
   audioTrackPreviewStarted,
   audioTrackProcessingChanged,
@@ -85,7 +86,20 @@ describe("audio slice", () => {
     let state = readyAudio();
     state = audioReducer(
       state,
-      audioTrackLoudnessAnalysisStarted({ operationId: "loudness-2", streamIndex: 2 }),
+      audioTrackLoudnessAnalysisStarted({
+        cacheKey: "analysis-2",
+        operationId: "loudness-2",
+        streamIndex: 2,
+      }),
+    );
+    state = audioReducer(
+      state,
+      audioTrackLoudnessAnalysisReady({
+        cacheKey: "analysis-2",
+        operationId: "loudness-2",
+        result: { integratedLufs: -18, truePeakDb: -4 },
+        streamIndex: 2,
+      }),
     );
     state = audioReducer(
       state,
@@ -93,7 +107,11 @@ describe("audio slice", () => {
     );
     state = audioReducer(
       state,
-      audioTrackLoudnessAnalysisStarted({ operationId: "loudness-4", streamIndex: 4 }),
+      audioTrackLoudnessAnalysisStarted({
+        cacheKey: "analysis-4",
+        operationId: "loudness-4",
+        streamIndex: 4,
+      }),
     );
     state = audioReducer(
       state,
@@ -103,15 +121,27 @@ describe("audio slice", () => {
     const adjusted = audioReducer(state, audioTrackGainChanged({ streamIndex: 2, gainDb: -2 }));
     expect(adjusted.tracks[0]).toMatchObject({
       activityAnalysis: { status: "idle" },
-      loudnessAnalysis: { operationId: "loudness-2", status: "loading" },
+      loudnessAnalysis: { cacheKey: "analysis-2", status: "ready" },
     });
     expect(adjusted.tracks[1]).toMatchObject({
       activityAnalysis: { operationId: "activity-4", status: "loading" },
       loudnessAnalysis: { operationId: "loudness-4", status: "loading" },
     });
 
-    const trimmed = audioReducer(
+    const normalized = audioReducer(
       adjusted,
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: -2, loudnessNormalization: "broadcast" },
+      }),
+    );
+    expect(normalized.tracks[0]?.loudnessAnalysis).toMatchObject({
+      cacheKey: "analysis-2",
+      status: "ready",
+    });
+
+    const trimmed = audioReducer(
+      normalized,
       trimChanged({
         trim: { endMicros: 4_000_000, sourceDurationMicros: 5_000_000, startMicros: 0 },
       }),
@@ -135,7 +165,11 @@ describe("audio slice", () => {
     );
     state = audioReducer(
       state,
-      audioTrackLoudnessAnalysisStarted({ operationId: "loudness-2", streamIndex: 2 }),
+      audioTrackLoudnessAnalysisStarted({
+        cacheKey: "analysis-2",
+        operationId: "loudness-2",
+        streamIndex: 2,
+      }),
     );
     state = audioReducer(
       state,

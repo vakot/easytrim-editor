@@ -66,8 +66,10 @@ import {
   selectHasSource,
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
+import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
 import { normalizeSourceKey } from "@/domain/source";
@@ -95,6 +97,8 @@ import type {
   SourcePickerMode,
 } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
+
+import { analyzeTrackLoudness } from "./audio-track-thunks";
 
 export type AppThunk<ReturnValue = void | Promise<unknown>> = (
   dispatch: AppDispatch,
@@ -483,16 +487,28 @@ async function prepareSelectedSource(
   if (activeInstanceId) dispatch(editingInstanceMediaUpdated({ id: activeInstanceId, media }));
 
   const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
-  const audioTrackSelections = selectAudioTracks(getState()).map(({ processing, streamIndex }) => ({
-    processing: { ...processing, gainDb: 0 },
-    streamIndex,
-  }));
-
   const audioOperation = operation.child("audio.preview", {
     data: { streamCount: audioStreamIndexes.length },
   });
 
   const prepareAudio = async () => {
+    for (const track of selectAudioTracks(getState())) {
+      if (track.processing.loudnessNormalization !== undefined) {
+        await dispatch(analyzeTrackLoudness(track.streamIndex));
+      }
+    }
+    const currentTrim = selectTrim(getState());
+    const audioTrackSelections = selectAudioTracks(getState()).map((track) => ({
+      ...(track.processing.loudnessNormalization !== undefined &&
+      currentTrim &&
+      track.loudnessAnalysis.status === "ready" &&
+      track.loudnessAnalysis.cacheKey ===
+        audioTrackLoudnessInputsKey(track.streamIndex, currentTrim, track.processing)
+        ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
+        : {}),
+      processing: { ...track.processing, gainDb: 0 },
+      streamIndex: track.streamIndex,
+    }));
     const onlyTrack = audioTrackSelections[0];
     const requiresProcessedAudioPreview =
       audioTrackSelections.length > 1 ||

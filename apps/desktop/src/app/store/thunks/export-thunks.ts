@@ -47,9 +47,9 @@ import {
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
-import { selectedAudioTracks } from "@/domain/audio-export";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
+import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeTransformForExport } from "@/domain/rotation";
@@ -67,6 +67,7 @@ import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
 import type { AppThunk } from "./source-media-thunks";
+import { analyzeTrackLoudness } from "./audio-track-thunks";
 import {
   activateEditingInstanceRequested,
   commitActiveEditingInstanceDraft,
@@ -273,12 +274,25 @@ const optimizedExportSettingsChangedRequested =
   };
 
 const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) => {
-  const request = getOptimizedRequest(getState());
   const instanceId = selectActiveInstanceId(getState());
-  if (!request || !instanceId) return;
+  if (!instanceId) return;
   const requestId = ++optimizedPlanRequestSequence;
-  const sourcePath = normalizeSourceKey(request.sourcePath);
   dispatch(optimizedExportPlanRequested({ requestId }));
+  if (!(await ensureLoudnessAnalysis(dispatch, getState))) {
+    dispatch(
+      optimizedExportPlanFailed({
+        requestId,
+        error: {
+          code: "loudness_analysis_required",
+          message: "Analyze track loudness to continue.",
+        },
+      }),
+    );
+    return;
+  }
+  const request = getOptimizedRequest(getState());
+  if (!request) return;
+  const sourcePath = normalizeSourceKey(request.sourcePath);
   try {
     const plan = await planOptimizedExport(request);
     if (
@@ -326,9 +340,20 @@ async function startEditingInstanceExport(
   const source = selectSourceSelection(state);
   const media = selectSourceMedia(state);
   const trim = selectTrim(state);
-  const request = route === "fast" ? getFastRequest(state) : getOptimizedRequest(state);
-  if (!instance || !source || !media || !trim || !request || !selectSourceReady(state)) return;
+  if (!instance || !source || !media || !trim || !selectSourceReady(state)) return;
   if (instance.draftAvailable === false || state.importWorkflow.isNativeDialogOpen) return;
+
+  if (!(await ensureLoudnessAnalysis(dispatch, getState))) {
+    dispatch(
+      exportLaunchFailed({
+        code: "loudness_analysis_required",
+        message: "Analyze track loudness to continue.",
+      }),
+    );
+    return;
+  }
+  const request = route === "fast" ? getFastRequest(getState()) : getOptimizedRequest(getState());
+  if (!request) return;
 
   const snapshot = getCurrentExportSnapshot(state);
   if (!snapshot) return;
@@ -474,7 +499,53 @@ function exportTransform(state: ReturnType<Parameters<AppThunk>[1]>) {
 }
 
 function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
-  return selectedAudioTracks(selectAudioTracks(state));
+  const trim = selectTrim(state);
+  return selectAudioTracks(state)
+    .filter((track) => track.enabled)
+    .map((track) => {
+      const cacheKey = trim
+        ? audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing)
+        : null;
+      return {
+        ...(track.processing.loudnessNormalization !== undefined &&
+        cacheKey &&
+        track.loudnessAnalysis.status === "ready" &&
+        track.loudnessAnalysis.cacheKey === cacheKey
+          ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
+          : {}),
+        processing: { ...track.processing },
+        streamIndex: track.streamIndex,
+      };
+    });
+}
+
+async function ensureLoudnessAnalysis(
+  dispatch: Parameters<AppThunk>[0],
+  getState: Parameters<AppThunk>[1],
+): Promise<boolean> {
+  const trim = selectTrim(getState());
+  if (!trim) return false;
+
+  const tracks = selectAudioTracks(getState()).filter(
+    (track) => track.enabled && track.processing.loudnessNormalization !== undefined,
+  );
+  for (const track of tracks) {
+    const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
+    if (track.loudnessAnalysis.status === "ready" && track.loudnessAnalysis.cacheKey === cacheKey)
+      continue;
+    if (track.loudnessAnalysis.status === "failed" && track.loudnessAnalysis.cacheKey === cacheKey)
+      return false;
+    await dispatch(analyzeTrackLoudness(track.streamIndex));
+    const currentTrack = selectAudioTracks(getState()).find(
+      (candidate) => candidate.streamIndex === track.streamIndex,
+    );
+    if (
+      currentTrack?.loudnessAnalysis.status !== "ready" ||
+      currentTrack.loudnessAnalysis.cacheKey !== cacheKey
+    )
+      return false;
+  }
+  return true;
 }
 
 function getTotalFrames(

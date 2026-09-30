@@ -14,12 +14,15 @@ import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/sou
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppThunk } from "@/app/store/thunks/source-media-thunks";
 import {
+  audioTrackLoudnessInputsKey,
   type AudioTrackSelection,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 import { analyzeAudioLoudness, detectAudioActivity, prepareAudioPreviews } from "@/lib/tauri/media";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
+
+const activeLoudnessAnalysisJobs = new Map<string, Promise<void>>();
 
 function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
@@ -29,43 +32,95 @@ function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
     const track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
     if (!source || !trim || !track) return;
 
+    const cacheKey = audioTrackLoudnessInputsKey(streamIndex, trim, track.processing);
+    const jobKey = `${source.sourcePath}:${state.source.loadToken}:${cacheKey}`;
+    if (
+      (track.loudnessAnalysis.status === "ready" || track.loudnessAnalysis.status === "loading") &&
+      track.loudnessAnalysis.cacheKey === cacheKey
+    ) {
+      const activeJob = activeLoudnessAnalysisJobs.get(jobKey);
+      if (activeJob) await activeJob;
+      return;
+    }
+
+    const activeJob = activeLoudnessAnalysisJobs.get(jobKey);
+    if (activeJob) {
+      await activeJob;
+      return;
+    }
+
     const operationId = crypto.randomUUID();
     const sourceLoadToken = state.source.loadToken;
     const audioTrack = { streamIndex: track.streamIndex, processing: { gainDb: 0 } };
-    dispatch(audioTrackLoudnessAnalysisStarted({ operationId, streamIndex }));
-    try {
-      const result = await analyzeAudioLoudness({
-        audioTrack,
-        sourcePath: source.sourcePath,
-        trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-      });
+    dispatch(audioTrackLoudnessAnalysisStarted({ cacheKey, operationId, streamIndex }));
+    const job = (async () => {
+      try {
+        const result = await analyzeAudioLoudness({
+          audioTrack,
+          sourcePath: source.sourcePath,
+          trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
+        });
 
-      if (!isCurrentAnalysisTrack(getState(), source.sourcePath, sourceLoadToken, streamIndex))
-        return;
-      dispatch(audioTrackLoudnessAnalysisReady({ operationId, result, streamIndex }));
-    } catch (error: unknown) {
-      dispatch(
-        audioTrackLoudnessAnalysisFailed({
-          error: normalizeAppError(error),
-          operationId,
-          streamIndex,
-        }),
-      );
+        if (
+          !isCurrentAnalysisTrack(
+            getState(),
+            source.sourcePath,
+            sourceLoadToken,
+            streamIndex,
+            cacheKey,
+          )
+        )
+          return;
+        dispatch(audioTrackLoudnessAnalysisReady({ cacheKey, operationId, result, streamIndex }));
+      } catch (error: unknown) {
+        dispatch(
+          audioTrackLoudnessAnalysisFailed({
+            error: normalizeAppError(error),
+            cacheKey,
+            operationId,
+            streamIndex,
+          }),
+        );
+      }
+    })();
+    activeLoudnessAnalysisJobs.set(jobKey, job);
+    try {
+      await job;
+    } finally {
+      if (activeLoudnessAnalysisJobs.get(jobKey) === job) activeLoudnessAnalysisJobs.delete(jobKey);
     }
   };
 }
 
 function detectTrackActivity(streamIndex: number): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
-    const state = getState();
+    let state = getState();
     const source = selectSourceSelection(state);
     const media = selectSourceMedia(state);
-    const track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
+    let track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
     if (!source || !media || !track) return;
+
+    let trim = selectTrim(state);
+    if (!trim) return;
+    let cacheKey = audioTrackLoudnessInputsKey(streamIndex, trim, track.processing);
+
+    if (
+      track.processing.loudnessNormalization !== undefined &&
+      (track.loudnessAnalysis.status !== "ready" || track.loudnessAnalysis.cacheKey !== cacheKey)
+    ) {
+      await dispatch(analyzeTrackLoudness(streamIndex));
+      state = getState();
+      track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
+      trim = selectTrim(state);
+      if (!track || !trim) return;
+      cacheKey = audioTrackLoudnessInputsKey(streamIndex, trim, track.processing);
+      if (track.loudnessAnalysis.status !== "ready" || track.loudnessAnalysis.cacheKey !== cacheKey)
+        return;
+    }
 
     const operationId = crypto.randomUUID();
     const sourceLoadToken = state.source.loadToken;
-    const audioTrack = toAudioTrackSelection(track);
+    const audioTrack = toAudioTrackSelection(track, cacheKey);
     dispatch(audioTrackActivityAnalysisStarted({ operationId, streamIndex }));
     try {
       const result = await detectAudioActivity(source.sourcePath, audioTrack, media.durationMicros);
@@ -85,14 +140,32 @@ function detectTrackActivity(streamIndex: number): AppThunk<Promise<void>> {
 
 function prepareTrackPreview(streamIndex: number): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
-    const state = getState();
+    let state = getState();
     const source = selectSourceSelection(state);
-    const track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
+    let track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
     if (!source || !track) return;
+
+    let trim = selectTrim(state);
+    if (!trim) return;
+    let cacheKey = audioTrackLoudnessInputsKey(streamIndex, trim, track.processing);
+
+    if (
+      track.processing.loudnessNormalization !== undefined &&
+      (track.loudnessAnalysis.status !== "ready" || track.loudnessAnalysis.cacheKey !== cacheKey)
+    ) {
+      await dispatch(analyzeTrackLoudness(streamIndex));
+      state = getState();
+      track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
+      trim = selectTrim(state);
+      if (!track || !trim) return;
+      cacheKey = audioTrackLoudnessInputsKey(streamIndex, trim, track.processing);
+      if (track.loudnessAnalysis.status !== "ready" || track.loudnessAnalysis.cacheKey !== cacheKey)
+        return;
+    }
 
     const operationId = crypto.randomUUID();
     const sourceLoadToken = state.source.loadToken;
-    const audioTrack = toAudioTrackPreviewSelection(track);
+    const audioTrack = toAudioTrackPreviewSelection(track, cacheKey);
     dispatch(audioTrackPreviewStarted({ operationId, streamIndex }));
     try {
       const [descriptor] = await prepareAudioPreviews(source.sourcePath, [audioTrack]);
@@ -120,18 +193,35 @@ function prepareTrackPreview(streamIndex: number): AppThunk<Promise<void>> {
   };
 }
 
-function toAudioTrackSelection(track: {
-  processing: AudioTrackSelection["processing"];
-  streamIndex: number;
-}): AudioTrackSelection {
-  return { processing: { ...track.processing }, streamIndex: track.streamIndex };
+function toAudioTrackSelection(
+  track: ReturnType<typeof selectAudioTracks>[number],
+  cacheKey: string,
+): AudioTrackSelection {
+  return {
+    ...(track.processing.loudnessNormalization !== undefined &&
+    track.loudnessAnalysis.status === "ready" &&
+    track.loudnessAnalysis.cacheKey === cacheKey
+      ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
+      : {}),
+    processing: { ...track.processing },
+    streamIndex: track.streamIndex,
+  };
 }
 
-function toAudioTrackPreviewSelection(track: {
-  processing: AudioTrackSelection["processing"];
-  streamIndex: number;
-}): AudioTrackSelection {
+function toAudioTrackPreviewSelection(
+  track: {
+    loudnessAnalysis: ReturnType<typeof selectAudioTracks>[number]["loudnessAnalysis"];
+    processing: AudioTrackSelection["processing"];
+    streamIndex: number;
+  },
+  cacheKey: string,
+): AudioTrackSelection {
   return {
+    ...(track.processing.loudnessNormalization !== undefined &&
+    track.loudnessAnalysis.status === "ready" &&
+    track.loudnessAnalysis.cacheKey === cacheKey
+      ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
+      : {}),
     processing: { ...track.processing, gainDb: 0 },
     streamIndex: track.streamIndex,
   };
@@ -152,7 +242,12 @@ function isCurrentTrack(
     state.source.loadToken === sourceLoadToken &&
     selectSourceSelection(state)?.sourcePath === sourcePath &&
     currentTrack !== undefined &&
-    processingMatches(currentTrack.processing, audioTrack.processing)
+    processingMatches(currentTrack.processing, audioTrack.processing) &&
+    (audioTrack.loudnessAnalysis === undefined ||
+      (currentTrack.loudnessAnalysis.status === "ready" &&
+        currentTrack.loudnessAnalysis.value.integratedLufs ===
+          audioTrack.loudnessAnalysis.integratedLufs &&
+        currentTrack.loudnessAnalysis.value.truePeakDb === audioTrack.loudnessAnalysis.truePeakDb))
   );
 }
 
@@ -161,11 +256,17 @@ function isCurrentAnalysisTrack(
   sourcePath: string,
   sourceLoadToken: number,
   streamIndex: number,
+  cacheKey: string,
 ): boolean {
   return (
     state.source.loadToken === sourceLoadToken &&
     selectSourceSelection(state)?.sourcePath === sourcePath &&
-    selectAudioTracks(state).some((track) => track.streamIndex === streamIndex)
+    selectAudioTracks(state).some(
+      (track) =>
+        track.streamIndex === streamIndex &&
+        track.loudnessAnalysis.status === "loading" &&
+        track.loudnessAnalysis.cacheKey === cacheKey,
+    )
   );
 }
 

@@ -7,12 +7,18 @@ loudness normalization are alternative level policies:
 Source → pre-level loudness measurement → one level policy → track output
                                                ├─ Manual gain
                                                └─ Loudness normalization
+Track output → optional merge (raw sum, no track-count normalization)
 ```
 
 `gainDb` stores the user's manual level adjustment. When normalization is enabled, it is dormant and
 normalization controls the output level; disabling normalization restores the saved manual gain.
-Future signal-shaping filters may be placed before loudness measurement. Peak protection belongs
-after the selected level policy. Those processors are not implemented yet.
+The cached measurement is keyed by the stream, active trim range, and upstream processing inputs.
+It excludes manual gain and normalization targets because those are downstream level controls.
+Changing the trim or an upstream processor invalidates the measurement; changing gain or a
+normalization preset reuses it. Normalized preview and export both use the same measurement from the
+active trim range, even though playback preview covers the full source. Future signal-shaping
+filters belong before the measurement boundary. Peak protection belongs after the selected level
+policy. Those processors are not implemented yet.
 
 Export, audio activity detection, and processed playback previews use the same effective level
 policy: normalization replaces manual gain. Loudness measurement analyzes clean source audio at the
@@ -26,9 +32,13 @@ video's native audio route because that signal is equivalent to the processed ou
 normalization requires a generated processed preview before it is heard. Manual gain remains a
 lightweight runtime gain stage and does not rebuild the preview. For multi-track playback, every
 enabled track uses its processed preview. In all routes, the effective track signal feeds the meter
-before global playback volume attenuates it for monitoring.
+before global playback volume attenuates it for monitoring. Merging sums the final per-track signals
+without scaling them by track count; the meter observes that same sum.
 
-Waveforms continue to represent source audio and are independent of processing. Loudness analysis
-describes the pre-level source signal. Audio activity analysis describes the effective level policy,
-so it can depend on manual gain in manual mode or normalization in normalized mode. Muting only
-controls participation in playback and export; it does not block configuration or analysis.
+Waveforms use the cached source shape with a vertical amplitude transform for the committed level
+policy. Manual gain updates that transform live without regenerating source waveform data. The
+normalization transform uses the same cached loudness and true-peak measurement as playback and
+export, and ignores dormant manual gain. Draft dialog values never affect the waveform. Audio
+activity analysis describes the effective level policy, so it can depend on manual gain in manual
+mode or normalization in normalized mode. Muting only controls participation in playback and
+export; it does not block configuration or analysis.

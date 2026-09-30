@@ -172,6 +172,10 @@ mod tests {
     fn builds_one_input_with_multiple_audio_outputs() {
         let tracks = [
             AudioTrackSelection {
+                loudness_analysis: Some(crate::media::export::AudioLoudnessAnalysis {
+                    integrated_lufs: Some(-20.0),
+                    true_peak_db: Some(-5.0),
+                }),
                 stream_index: 2,
                 processing: AudioTrackProcessing {
                     gain_db: 3.0,
@@ -181,6 +185,7 @@ mod tests {
                 },
             },
             AudioTrackSelection {
+                loudness_analysis: None,
                 stream_index: 4,
                 processing: AudioTrackProcessing {
                     gain_db: 0.0,
@@ -217,7 +222,7 @@ mod tests {
             .find(|pair| pair[0] == "-filter_complex")
             .map(|pair| pair[1].to_string_lossy())
             .expect("filter graph exists");
-        assert!(filter.contains("[0:2]loudnorm=I=-16:TP=-1.5:LRA=11[audio0]"));
+        assert!(filter.contains("[0:2]volume=3.500000dB[audio0]"));
         assert!(filter.contains("[0:4]volume=0.000000dB[audio1]"));
         assert!(!filter.contains("volume=3.000000dB"));
         assert_eq!(
