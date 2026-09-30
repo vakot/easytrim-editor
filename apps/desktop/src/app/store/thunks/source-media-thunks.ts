@@ -490,11 +490,6 @@ async function prepareSelectedSource(
   if (activeInstanceId) dispatch(editingInstanceMediaUpdated({ id: activeInstanceId, media }));
 
   const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
-  const audioTrackSelections = selectAudioTracks(getState()).map(({ processing, streamIndex }) => ({
-    processing: { ...processing, gainDb: 0 },
-    streamIndex,
-  }));
-
   const audioOperation = operation.child("audio.preview", {
     data: { streamCount: audioStreamIndexes.length },
   });

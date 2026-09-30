@@ -587,12 +587,6 @@ export const ru = {
         title: "{{title}} — эффекты",
       },
     },
-    dialogs: {
-      effects: {
-        description: "Изменения применятся только после нажатия «Применить».",
-        title: "{{title}} — эффекты",
-      },
-    },
     accessibility: {
       trackActions: "Действия аудиодорожки {{number}}",
       appliedEffects: "Применённые эффекты: {{summary}}",

@@ -1,11 +1,7 @@
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import {
-  audioTrackPlaybackPreviewUrl,
-  selectAudioTracks,
-  selectMergeAudio,
-} from "@/app/store/slices/audio-slice";
+import { audioTrackPlaybackPreviewUrl, selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectPlaybackVolumePercent } from "@/app/store/slices/preferences-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 import {
@@ -24,7 +20,6 @@ import {
   createStereoAudioMeterNodes,
   disconnectStereoAudioMeterNodes,
   isMonoAudioMix,
-  meterMixNormalization,
   type StereoAudioMeterNodes,
 } from "../lib/stereo-audio-meter";
 
@@ -78,7 +73,6 @@ function useAudioPlaybackRuntime({
   const sourcePath = useAppSelector(selectSourceSelection)?.sourcePath ?? null;
   const media = useAppSelector(selectSourceMedia);
   const audioTracks = useAppSelector(selectAudioTracks);
-  const mergeAudio = useAppSelector(selectMergeAudio);
   const playbackVolumePercent = useAppSelector(selectPlaybackVolumePercent);
   const enabledAudioTracks = audioTracks.filter((track) => track.enabled);
   const nativeAudioStreamIndex =
@@ -395,19 +389,16 @@ function useAudioPlaybackRuntime({
   useEffect(() => {
     const meter = audioMeterRef.current;
     if (!meter) return;
-    const exportAudioTracks = audioTracks.filter((track) => track.enabled);
     const audioStreams = media?.audioStreams ?? [];
-    meter.normalizationGain.gain.value = meterMixNormalization(
-      mergeAudio && usesExternalAudio,
-      exportAudioTracks.length,
-    );
     meter.isMono = isMonoAudioMix(
-      exportAudioTracks.map(
-        (track) =>
-          audioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.channels,
-      ),
+      audioTracks
+        .filter((track) => track.enabled)
+        .map(
+          (track) =>
+            audioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.channels,
+        ),
     );
-  }, [audioTracks, mergeAudio, media?.audioStreams, usesExternalAudio]);
+  }, [audioTracks, media?.audioStreams]);
 
   useEffect(() => {
     const outputGain = playbackOutputGainRef.current;

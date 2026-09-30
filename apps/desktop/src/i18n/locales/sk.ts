@@ -584,12 +584,6 @@ export const sk = {
         title: "{{title}} — efekty",
       },
     },
-    dialogs: {
-      effects: {
-        description: "Zmeny sa použijú až po stlačení tlačidla Použiť.",
-        title: "{{title}} — efekty",
-      },
-    },
     accessibility: {
       trackActions: "Akcie zvukovej stopy {{number}}",
       appliedEffects: "Použité efekty: {{summary}}",

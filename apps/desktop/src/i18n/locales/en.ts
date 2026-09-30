@@ -584,12 +584,6 @@ export const en = {
         title: "{{title}} — Effects",
       },
     },
-    dialogs: {
-      effects: {
-        description: "Changes stay unapplied until you choose Apply.",
-        title: "{{title}} — Effects",
-      },
-    },
     accessibility: {
       trackActions: "Audio {{number}} actions",
       appliedEffects: "Applied effects: {{summary}}",

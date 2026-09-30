@@ -254,16 +254,6 @@ function toAudioTrackPreviewSelection(
   };
 }
 
-function toAudioTrackPreviewSelection(track: {
-  processing: AudioTrackSelection["processing"];
-  streamIndex: number;
-}): AudioTrackSelection {
-  return {
-    processing: { ...track.processing, gainDb: 0 },
-    streamIndex: track.streamIndex,
-  };
-}
-
 function isCurrentTrack(
   state: ReturnType<Parameters<AppThunk>[1]>,
   sourcePath: string,
@@ -326,19 +316,6 @@ function isCurrentAnalysisTrack(
         track.loudnessAnalysis.status === "loading" &&
         track.loudnessAnalysis.cacheKey === cacheKey,
     )
-  );
-}
-
-function isCurrentAnalysisTrack(
-  state: ReturnType<Parameters<AppThunk>[1]>,
-  sourcePath: string,
-  sourceLoadToken: number,
-  streamIndex: number,
-): boolean {
-  return (
-    state.source.loadToken === sourceLoadToken &&
-    selectSourceSelection(state)?.sourcePath === sourcePath &&
-    selectAudioTracks(state).some((track) => track.streamIndex === streamIndex)
   );
 }
 
