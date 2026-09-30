@@ -18,7 +18,7 @@ import {
   selectImportedEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
-import { ingestSources } from "@/app/store/thunks/source-media-thunks";
+import { ingestSources, shouldQueueLoudnessAnalysis } from "@/app/store/thunks/source-media-thunks";
 import { firstSource, media, secondSource } from "@/test/source.fixtures";
 
 beforeEach(() => {
@@ -36,6 +36,15 @@ beforeEach(() => {
 });
 
 describe("source import workflow", () => {
+  it("does not retry a current-key loudness analysis failure during source preparation", () => {
+    expect(shouldQueueLoudnessAnalysis({ status: "failed", cacheKey: "current" }, "current")).toBe(
+      false,
+    );
+    expect(shouldQueueLoudnessAnalysis({ status: "failed", cacheKey: "previous" }, "current")).toBe(
+      true,
+    );
+  });
+
   it("does not inspect media when imported sources are added", () => {
     const store = createAppStore();
 

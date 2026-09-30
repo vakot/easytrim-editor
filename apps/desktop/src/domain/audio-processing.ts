@@ -1,5 +1,10 @@
 type LoudnessPreset = "webVideo" | "streaming" | "broadcast";
 type AudioProcessingStage = "cleanup" | "dynamics" | "levelPolicy" | "finalProtection";
+type AudioTrackSignalEffect = {
+  cutoffHz: number;
+  stage: AudioProcessingStage;
+  type: "highPass";
+};
 
 interface CustomLoudnessNormalization {
   maxTruePeakDb: number;
@@ -10,6 +15,7 @@ interface CustomLoudnessNormalization {
 type LoudnessNormalization = LoudnessPreset | CustomLoudnessNormalization;
 
 interface AudioTrackProcessing {
+  effects?: AudioTrackSignalEffect[];
   gainDb: number;
   loudnessNormalization?: LoudnessNormalization;
 }
@@ -78,7 +84,12 @@ function audioTrackActivityProcessingChanged(
   left: AudioTrackProcessing,
   right: AudioTrackProcessing,
 ): boolean {
-  if (!sameAudioTrackLoudnessInputs(left, right)) return true;
+  if (
+    JSON.stringify(getAudioTrackSignalEffects(left)) !==
+    JSON.stringify(getAudioTrackSignalEffects(right))
+  ) {
+    return true;
+  }
   if (left.loudnessNormalization !== undefined || right.loudnessNormalization !== undefined) {
     return !sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization);
   }
@@ -91,14 +102,8 @@ function audioTrackLoudnessInputsKey(
   trim: { endMicros: number; startMicros: number },
   processing: AudioTrackProcessing,
 ): string {
-  const upstreamEffectInputs = getUpstreamAudioEffectInputs(processing);
-  return JSON.stringify([
-    sourceKey,
-    streamIndex,
-    trim.startMicros,
-    trim.endMicros,
-    upstreamEffectInputs,
-  ]);
+  const effects = getAudioTrackPreLevelEffects(processing);
+  return JSON.stringify([sourceKey, streamIndex, trim.startMicros, trim.endMicros, effects]);
 }
 
 function sameAudioTrackLoudnessInputs(
@@ -106,16 +111,27 @@ function sameAudioTrackLoudnessInputs(
   right: AudioTrackProcessing,
 ): boolean {
   return (
-    JSON.stringify(getUpstreamAudioEffectInputs(left)) ===
-    JSON.stringify(getUpstreamAudioEffectInputs(right))
+    JSON.stringify(getAudioTrackPreLevelEffects(left)) ===
+    JSON.stringify(getAudioTrackPreLevelEffects(right))
   );
 }
 
-function getUpstreamAudioEffectInputs(processing: AudioTrackProcessing): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(processing)
-      .filter(([key]) => key !== "gainDb" && key !== "loudnessNormalization")
-      .sort(([left], [right]) => left.localeCompare(right)),
+function getAudioTrackPreLevelEffects(processing: AudioTrackProcessing): AudioTrackSignalEffect[] {
+  return getAudioTrackSignalEffects(processing).filter(
+    (effect) => effect.stage === "cleanup" || effect.stage === "dynamics",
+  );
+}
+
+function getAudioTrackSignalEffects(processing: AudioTrackProcessing): AudioTrackSignalEffect[] {
+  const stageOrder: AudioProcessingStage[] = [
+    "cleanup",
+    "dynamics",
+    "levelPolicy",
+    "finalProtection",
+  ];
+
+  return [...(processing.effects ?? [])].sort(
+    (left, right) => stageOrder.indexOf(left.stage) - stageOrder.indexOf(right.stage),
   );
 }
 
@@ -145,7 +161,8 @@ function sameAudioTrackProcessing(
   return (
     left.gainDb === right.gainDb &&
     sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization) &&
-    sameAudioTrackLoudnessInputs(left, right)
+    JSON.stringify(getAudioTrackSignalEffects(left)) ===
+      JSON.stringify(getAudioTrackSignalEffects(right))
   );
 }
 
@@ -155,7 +172,8 @@ function sameAudioTrackPreviewProcessing(
 ): boolean {
   return (
     sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization) &&
-    sameAudioTrackLoudnessInputs(left, right)
+    JSON.stringify(getAudioTrackSignalEffects(left)) ===
+      JSON.stringify(getAudioTrackSignalEffects(right))
   );
 }
 
@@ -172,8 +190,10 @@ function sameLoudnessNormalization(
 
 function cloneAudioTrackProcessing(processing: AudioTrackProcessing): AudioTrackProcessing {
   return {
-    ...getUpstreamAudioEffectInputs(processing),
     gainDb: processing.gainDb,
+    ...(processing.effects === undefined
+      ? {}
+      : { effects: getAudioTrackSignalEffects(processing).map((effect) => ({ ...effect })) }),
     ...(processing.loudnessNormalization === undefined
       ? {}
       : {
@@ -197,6 +217,7 @@ export type {
   AudioTrackProcessing,
   AudioTrackSelection,
   AudioTrackSettings,
+  AudioTrackSignalEffect,
   CustomLoudnessNormalization,
   LoudnessNormalization,
   LoudnessPreset,
@@ -211,6 +232,7 @@ export {
   DEFAULT_AUDIO_TRACK_PROCESSING,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
   effectiveAudioTrackGainDb,
+  getAudioTrackSignalEffects,
   loudnessNormalizationTargets,
   sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,

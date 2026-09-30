@@ -235,6 +235,7 @@ mod tests {
                 loudness_normalization: Some(LoudnessNormalization::Preset(
                     LoudnessPreset::Streaming,
                 )),
+                effects: Vec::new(),
             },
         };
         let args = silence_detection_arguments(Path::new("input.mp4"), &track);

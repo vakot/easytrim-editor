@@ -68,11 +68,25 @@ describe("audio track level policy", () => {
         loudnessNormalization: { mode: "custom", targetLufs: -18, maxTruePeakDb: -2 },
       }),
     ).toBe(initial);
-    const upstreamProcessing = { ...processing, highPass: { cutoffHz: 100 } };
+    const upstreamProcessing = {
+      ...processing,
+      effects: [{ type: "highPass" as const, stage: "cleanup" as const, cutoffHz: 100 }],
+    };
+
     expect(audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing)).not.toBe(initial);
     expect(audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing)).toBe(
       audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing),
     );
+    const finalProtectionProcessing = {
+      ...processing,
+      effects: [{ type: "highPass" as const, stage: "finalProtection" as const, cutoffHz: 120 }],
+    };
+
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, finalProtectionProcessing)).toBe(
+      initial,
+    );
+    expect(sameAudioTrackLoudnessInputs(processing, finalProtectionProcessing)).toBe(true);
+    expect(audioTrackActivityProcessingChanged(processing, finalProtectionProcessing)).toBe(true);
     expect(audioTrackLoudnessInputsKey("source-b", 2, trim, processing)).not.toBe(initial);
     expect(sameAudioTrackLoudnessInputs(processing, { ...processing, gainDb: 2 })).toBe(true);
     expect(sameAudioTrackLoudnessInputs(processing, upstreamProcessing)).toBe(false);

@@ -258,7 +258,10 @@ describe("audio track operations", () => {
 
     await vi.waitFor(() => {
       expect(mocks.analyzeAudioLoudness).toHaveBeenCalledWith({
-        audioTrack: { processing: { gainDb: 0 }, streamIndex: 2 },
+        audioTrack: {
+          processing: { gainDb: 0, loudnessNormalization: "streaming" },
+          streamIndex: 2,
+        },
         sourcePath: firstSource.sourcePath,
         trim: { startMicros: 500_000, endMicros: 3_000_000 },
       });
@@ -303,5 +306,25 @@ describe("audio track operations", () => {
       status: "ready",
       value: { integratedLufs: -18 },
     });
+  });
+
+  it("analyzes the Effects draft pre-level signal without applying the draft", async () => {
+    const store = createStore();
+    const draftProcessing = {
+      gainDb: 7,
+      loudnessNormalization: "streaming" as const,
+      effects: [{ type: "highPass" as const, stage: "cleanup" as const, cutoffHz: 100 }],
+    };
+
+    mocks.analyzeAudioLoudness.mockResolvedValue({ integratedLufs: -18, truePeakDb: -2 });
+
+    await store.dispatch(analyzeTrackLoudness(2, draftProcessing));
+
+    expect(mocks.analyzeAudioLoudness).toHaveBeenCalledWith(
+      expect.objectContaining({
+        audioTrack: { streamIndex: 2, processing: draftProcessing },
+      }),
+    );
+    expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
   });
 });

@@ -30,12 +30,12 @@ function AudioTrackEffectsLibrary({
 
   return (
     <Tabs
-      className="-mx-4 flex min-h-72 min-w-0 flex-1 gap-4"
+      className="-mx-4 flex min-h-0 min-w-0 flex-1 gap-4"
       onValueChange={setSelectedEffect}
       orientation="vertical"
       value={selectedEffect}
     >
-      <ScrollArea className="h-full pl-4">
+      <ScrollArea className="h-full min-h-0 min-w-0 pl-4">
         <TabsList aria-label={t("audio.actions.effects")} className="bg-transparent py-4">
           {effects.map((effect) => (
             <AudioTrackEffectTab draft={draft} effect={effect} />
@@ -45,7 +45,7 @@ function AudioTrackEffectsLibrary({
 
       <Separator orientation="vertical" />
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="h-full min-h-0 min-w-0 flex-1">
         <div className="py-4 pr-4">
           {effects.map(({ id, Page }) => (
             <TabsContent

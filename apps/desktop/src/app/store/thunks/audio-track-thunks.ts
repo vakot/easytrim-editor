@@ -15,6 +15,7 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppThunk } from "@/app/store/thunks/source-media-thunks";
 import {
   audioTrackLoudnessInputsKey,
+  type AudioTrackProcessing,
   type AudioTrackSelection,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
@@ -24,7 +25,10 @@ import { normalizeAppError } from "@/lib/tauri/media.utils";
 
 const activeLoudnessAnalysisJobs = new Map<string, Promise<void>>();
 
-function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
+function analyzeTrackLoudness(
+  streamIndex: number,
+  processingOverride?: AudioTrackProcessing,
+): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
     const state = getState();
     const source = selectSourceSelection(state);
@@ -32,12 +36,8 @@ function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
     const track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
     if (!source || !trim || !track) return;
 
-    const cacheKey = audioTrackLoudnessInputsKey(
-      source.sourcePath,
-      streamIndex,
-      trim,
-      track.processing,
-    );
+    const processing = processingOverride ?? track.processing;
+    const cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, streamIndex, trim, processing);
 
     const jobKey = `${source.sourcePath}:${state.source.loadToken}:${cacheKey}`;
     if (
@@ -57,7 +57,7 @@ function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
 
     const operationId = crypto.randomUUID();
     const sourceLoadToken = state.source.loadToken;
-    const audioTrack = { streamIndex: track.streamIndex, processing: { gainDb: 0 } };
+    const audioTrack = { streamIndex: track.streamIndex, processing: { ...processing } };
     dispatch(audioTrackLoudnessAnalysisStarted({ cacheKey, operationId, streamIndex }));
     const job = (async () => {
       try {

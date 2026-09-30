@@ -145,7 +145,7 @@ describe("audio slice", () => {
 
     const processingWithUpstreamEffect = {
       ...normalized.tracks[0]!.processing,
-      highPass: { cutoffHz: 100 },
+      effects: [{ cutoffHz: 100, stage: "cleanup" as const, type: "highPass" as const }],
     };
 
     const upstreamChanged = audioReducer(

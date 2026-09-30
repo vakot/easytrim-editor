@@ -172,8 +172,8 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
     analysisIsCurrent && analysis?.status === "ready" ? analysis.value : undefined;
 
   const analysisReady = analysisValue !== undefined;
-  const analysisLoading = analysis?.status === "loading";
-  const analysisFailed = analysis?.status === "failed";
+  const analysisLoading = analysis?.status === "loading" && analysis.cacheKey === analysisCacheKey;
+  const analysisFailed = analysis?.status === "failed" && analysis.cacheKey === analysisCacheKey;
   const target = Number(form.targetLufsInput);
   const peak = Number(form.maxTruePeakDbInput);
   const valid =
@@ -241,6 +241,56 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
         />
       </AudioTrackEffectsLibraryPageHeader>
 
+      <div className="space-y-3" data-slot="audio-track-loudness-measurement">
+        <div className="flex items-center gap-3">
+          {!analysisReady ? (
+            <Button
+              aria-label={
+                analysisLoading
+                  ? t("audio.actions.analyzingLoudness")
+                  : t("audio.actions.analyzeLoudness")
+              }
+              className="h-auto shrink-0 gap-1.5 px-0"
+              disabled={analysisLoading}
+              onClick={() => void dispatch(analyzeTrackLoudness(streamIndex, draft.processing))}
+              type="button"
+              variant="link"
+            >
+              {analysisLoading ? (
+                <LoaderCircle
+                  aria-hidden="true"
+                  className={shouldReduceMotion ? undefined : "animate-spin"}
+                />
+              ) : null}
+              {analysisLoading
+                ? t("audio.actions.analyzingLoudness")
+                : t("audio.actions.analyzeLoudness")}
+            </Button>
+          ) : null}
+
+          {analysisValue ? (
+            <p className="text-sm text-muted-foreground" role="status">
+              {formatAnalysis(analysisValue, i18n.language)}
+            </p>
+          ) : null}
+        </div>
+
+        <AnimatePresence initial={false}>
+          {analysisFailed && analysis.error ? (
+            <motion.div
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -3 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: -3 }}
+              transition={motionTransition}
+            >
+              <Alert variant="destructive">
+                <AlertDescription>{analysis.error.message}</AlertDescription>
+              </Alert>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>
+
       <AudioTrackEffectsLibraryPageContent disabled={!form.enabled}>
         <AudioTrackEffectsLibraryPageBasic>
           <div className="grid gap-1.5">
@@ -279,39 +329,6 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
         </AudioTrackEffectsLibraryPageBasic>
 
         <AudioTrackEffectsLibraryPageAdvanced>
-          <div className="flex items-center gap-3">
-            {!analysisReady ? (
-              <Button
-                aria-label={
-                  analysisLoading
-                    ? t("audio.actions.analyzingLoudness")
-                    : t("audio.actions.analyzeLoudness")
-                }
-                className="h-auto shrink-0 gap-1.5 px-0"
-                disabled={analysisLoading}
-                onClick={() => void dispatch(analyzeTrackLoudness(streamIndex))}
-                type="button"
-                variant="link"
-              >
-                {analysisLoading ? (
-                  <LoaderCircle
-                    aria-hidden="true"
-                    className={shouldReduceMotion ? undefined : "animate-spin"}
-                  />
-                ) : null}
-                {analysisLoading
-                  ? t("audio.actions.analyzingLoudness")
-                  : t("audio.actions.analyzeLoudness")}
-              </Button>
-            ) : null}
-
-            {analysisValue ? (
-              <p className="text-sm text-muted-foreground" role="status">
-                {formatAnalysis(analysisValue, i18n.language)}
-              </p>
-            ) : null}
-          </div>
-
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor={`track-custom-lufs-${streamIndex}`}>
@@ -348,21 +365,6 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
               />
             </div>
           </div>
-
-          <AnimatePresence initial={false}>
-            {analysisFailed && analysis.error ? (
-              <motion.div
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -3 }}
-                initial={shouldReduceMotion ? false : { opacity: 0, y: -3 }}
-                transition={motionTransition}
-              >
-                <Alert variant="destructive">
-                  <AlertDescription>{analysis.error.message}</AlertDescription>
-                </Alert>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
         </AudioTrackEffectsLibraryPageAdvanced>
       </AudioTrackEffectsLibraryPageContent>
     </AudioTrackEffectsLibraryPage>

@@ -184,6 +184,7 @@ mod tests {
                     loudness_normalization: Some(LoudnessNormalization::Preset(
                         LoudnessPreset::Streaming,
                     )),
+                    effects: Vec::new(),
                 },
             },
             AudioTrackSelection {
@@ -192,6 +193,7 @@ mod tests {
                 processing: AudioTrackProcessing {
                     gain_db: 0.0,
                     loudness_normalization: None,
+                    effects: Vec::new(),
                 },
             },
         ];

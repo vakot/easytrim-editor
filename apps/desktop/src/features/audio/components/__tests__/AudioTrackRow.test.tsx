@@ -10,6 +10,7 @@ import {
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
   audioTrackGainChanged,
+  audioTrackLoudnessAnalysisFailed,
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
   audioTrackProcessingChanged,
@@ -223,19 +224,48 @@ describe("AudioTrackRow", () => {
     });
 
     expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
+    expect(screen.getByRole("status").closest("fieldset")).toBeNull();
     expect(screen.getByRole("button", { name: /apply/i })).toBeDisabled();
   });
 
-  it("places Analyze Loudness in the Advanced section", async () => {
+  it("keeps loudness measurement controls outside the disabled effect fieldset", async () => {
     const user = userEvent.setup();
-    renderRow();
+    const { store } = renderRow();
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
 
     const analyzeButton = screen.getByRole("button", { name: /analyze loudness/i });
-    expect(
-      analyzeButton.closest('[data-slot="audio-track-effects-library-page-advanced"]'),
-    ).not.toBeNull();
+    const currentCacheKey = audioTrackLoudnessInputsKey(
+      firstSource.sourcePath,
+      2,
+      selectTrim(store.getState())!,
+      { gainDb: 0 },
+    );
+
+    const fieldset = document.querySelector("fieldset:disabled");
+    expect(fieldset).not.toBeNull();
+    expect(analyzeButton).toBeEnabled();
+    expect(analyzeButton.closest("fieldset")).toBeNull();
+    expect(analyzeButton.closest('[data-slot="audio-track-loudness-measurement"]')).not.toBeNull();
+
+    act(() => {
+      store.dispatch(
+        audioTrackLoudnessAnalysisStarted({
+          cacheKey: currentCacheKey,
+          operationId: "failed-analysis-1",
+          streamIndex: 2,
+        }),
+      );
+      store.dispatch(
+        audioTrackLoudnessAnalysisFailed({
+          cacheKey: currentCacheKey,
+          error: { code: "render_failed", message: "Analysis failed." },
+          operationId: "failed-analysis-1",
+          streamIndex: 2,
+        }),
+      );
+    });
+    expect(screen.getByRole("alert").closest("fieldset")).toBeNull();
   });
 
   it("places the unapplied changes notice in the dialog footer", async () => {

@@ -525,10 +525,7 @@ async function prepareSelectedSource(
           track.processing,
         );
 
-        return track.loudnessAnalysis.status !== "ready" ||
-          track.loudnessAnalysis.cacheKey !== cacheKey
-          ? [track]
-          : [];
+        return shouldQueueLoudnessAnalysis(track.loudnessAnalysis, cacheKey) ? [track] : [];
       });
 
       if (pendingAnalysis.length === 0) break;
@@ -694,6 +691,14 @@ function captureActiveEditingInstanceDraft(
       snapshot,
     }),
   );
+}
+
+function shouldQueueLoudnessAnalysis(
+  analysis: { cacheKey?: string; status: string },
+  currentCacheKey: string,
+): boolean {
+  if (analysis.status === "failed" && analysis.cacheKey === currentCacheKey) return false;
+  return analysis.status !== "ready" || analysis.cacheKey !== currentCacheKey;
 }
 
 const commitActiveEditingInstanceDraft = (): AppThunk => (dispatch, getState) => {
@@ -1280,4 +1285,5 @@ export {
   restoreActiveEditingInstanceRequested,
   restoreExportAttemptRequested,
   restoreSourceFileRequested,
+  shouldQueueLoudnessAnalysis,
 };
