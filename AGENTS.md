@@ -109,17 +109,6 @@ Do not perform destructive or history-rewriting Git operations unless explicitly
 
 See `.agents/rules/git.md`.
 
-## Git Worktree Isolation
-
-Every agent MUST create and use its own dedicated Git worktree before making any changes.
-
-- Never modify files in the original/current working directory.
-- Create a new branch together with the worktree unless an appropriate dedicated branch already exists.
-- Perform all edits, installs, builds, tests, commits, and other repository operations from inside that worktree.
-- Do not reuse another agent's worktree.
-- Keep each agent's uncommitted changes isolated from all other agents.
-- When the task is complete, leave the worktree in a clean, committed state whenever possible.
-
 ## Commits
 
 Every logically independent change or addition should be represented by its own commit.
