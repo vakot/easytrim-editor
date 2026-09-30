@@ -107,10 +107,11 @@ pub enum NoiseReductionPreset {
 
 impl NoiseReductionPreset {
     fn filter(self) -> &'static str {
+        // A fixed floor keeps stationary room noise from being learned and preserved as signal.
         match self {
-            Self::Light => "afftdn=nr=6:tn=1",
-            Self::Medium => "afftdn=nr=12:tn=1",
-            Self::Strong => "afftdn=nr=20:tn=1",
+            Self::Light => "afftdn=nr=6:nf=-40",
+            Self::Medium => "afftdn=nr=12:nf=-35",
+            Self::Strong => "afftdn=nr=20:nf=-30",
         }
     }
 }
@@ -1444,9 +1445,9 @@ mod tests {
     #[test]
     fn noise_reduction_presets_build_the_expected_ffmpeg_filter() {
         for (preset, expected_filter) in [
-            (NoiseReductionPreset::Light, "afftdn=nr=6:tn=1"),
-            (NoiseReductionPreset::Medium, "afftdn=nr=12:tn=1"),
-            (NoiseReductionPreset::Strong, "afftdn=nr=20:tn=1"),
+            (NoiseReductionPreset::Light, "afftdn=nr=6:nf=-40"),
+            (NoiseReductionPreset::Medium, "afftdn=nr=12:nf=-35"),
+            (NoiseReductionPreset::Strong, "afftdn=nr=20:nf=-30"),
         ] {
             let processing = AudioTrackProcessing {
                 gain_db: 0.0,
@@ -1486,7 +1487,7 @@ mod tests {
 
         assert_eq!(
             high_pass_then_noise_reduction,
-            "highpass=f=120.000,afftdn=nr=20:tn=1"
+            "highpass=f=120.000,afftdn=nr=20:nf=-30"
         );
         assert_eq!(
             noise_reduction_then_high_pass,
@@ -1556,11 +1557,11 @@ mod tests {
 
         assert_eq!(
             pre_level_filter_chain(&track.processing),
-            "highpass=f=100.000,afftdn=nr=12:tn=1"
+            "highpass=f=100.000,afftdn=nr=12:nf=-35"
         );
         let graph = audio_filter_graph(&[track], false);
         assert!(graph.starts_with(
-            "[0:2]highpass=f=100.000,afftdn=nr=12:tn=1,loudnorm=I=-16.000:TP=-1.500:LRA=11:measured_I="
+            "[0:2]highpass=f=100.000,afftdn=nr=12:nf=-35,loudnorm=I=-16.000:TP=-1.500:LRA=11:measured_I="
         ));
         assert!(graph.ends_with("aresample=48000,highpass=f=300.000[audio0]"));
     }

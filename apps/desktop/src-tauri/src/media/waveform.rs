@@ -683,10 +683,10 @@ mod tests {
         let pcm_args = pcm_stream_arguments(source_path, 4, &processing);
 
         assert!(activity_args.iter().any(|argument| {
-            argument == "[0:4]afftdn=nr=12:tn=1,aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream4[activity0]"
+            argument == "[0:4]afftdn=nr=12:nf=-35,aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream4[activity0]"
         }));
         assert!(pcm_args.iter().any(|argument| {
-            argument == "[0:4]afftdn=nr=12:tn=1,aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
+            argument == "[0:4]afftdn=nr=12:nf=-35,aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
         }));
     }
 
