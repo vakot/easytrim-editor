@@ -608,7 +608,6 @@ export const en = {
       normalizationWebVideo: "Web Video",
       normalizationStreaming: "Streaming",
       normalizationBroadcast: "Broadcast",
-      noiseReductionOff: "Off",
       noiseReductionLight: "Light",
       noiseReductionMedium: "Medium",
       noiseReductionStrong: "Strong",

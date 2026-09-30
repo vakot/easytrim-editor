@@ -611,7 +611,6 @@ export const ru = {
       normalizationWebVideo: "Веб-видео",
       normalizationStreaming: "Стриминг",
       normalizationBroadcast: "Вещание",
-      noiseReductionOff: "Выкл.",
       noiseReductionLight: "Слабое",
       noiseReductionMedium: "Среднее",
       noiseReductionStrong: "Сильное",

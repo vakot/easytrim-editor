@@ -81,16 +81,14 @@ function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
           </Label>
           <Select
             onValueChange={(value) => {
-              if (value === "off") updatePreset(undefined);
-              else if (isNoiseReductionPreset(value)) updatePreset(value);
+              if (isNoiseReductionPreset(value)) updatePreset(value);
             }}
-            value={preset ?? "off"}
+            value={preset ?? "medium"}
           >
             <SelectTrigger className="w-full" id={`track-noise-reduction-${streamIndex}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="off">{t("audio.options.noiseReductionOff")}</SelectItem>
               <SelectItem value="light">{t("audio.options.noiseReductionLight")}</SelectItem>
               <SelectItem value="medium">{t("audio.options.noiseReductionMedium")}</SelectItem>
               <SelectItem value="strong">{t("audio.options.noiseReductionStrong")}</SelectItem>
