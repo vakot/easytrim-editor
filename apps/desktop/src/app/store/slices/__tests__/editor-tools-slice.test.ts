@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
-  audioActivityDetectionFinished,
-  audioActivityMarkersToggled,
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
   editorToolsReducer,
@@ -51,24 +49,6 @@ describe("editor tools Redux domain", () => {
 
     expect(modeState.loopPlaybackEnabled).toBe(false);
     expect(modeState.segmentPlaybackEnabled).toBe(false);
-  });
-
-  it("stores audio activity ranges and supports hiding their timeline markers", () => {
-    const ranges = [{ startMicros: 1_000_000, endMicros: 2_000_000 }];
-    const detected = editorToolsReducer(
-      undefined,
-      audioActivityDetectionFinished({ mixKey: "mix", ranges, sourceKey: "source" }),
-    );
-
-    const hidden = editorToolsReducer(detected, audioActivityMarkersToggled());
-
-    expect(detected.audioActivityDetection).toMatchObject({
-      mixKey: "mix",
-      ranges,
-      sourceKey: "source",
-      status: "ready",
-    });
-    expect(hidden.audioActivityMarkersEnabled).toBe(false);
   });
 
   it("exposes focused selectors", () => {

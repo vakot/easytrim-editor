@@ -2,6 +2,7 @@ export const ru = {
   common: {
     actions: {
       back: "Назад",
+      apply: "Применить",
       cancel: "Отмена",
       clear: "Очистить",
       close: "Закрыть",
@@ -68,7 +69,6 @@ export const ru = {
         previewTransform: "Предпросмотр / Трансформация",
         markers: "Маркеры",
         markersScene: "Маркеры / Сцена",
-        markersAudioActivity: "Маркеры / Активность аудио",
         queueOnFinishedApplication: "Очередь / После завершения / Приложение",
         queueOnFinishedSource: "Очередь / После завершения / Источник",
         go: "Перейти",
@@ -497,9 +497,6 @@ export const ru = {
   timeline: {
     actions: {
       detectScenes: "Найти смены сцен",
-      detectAudioActivity: "Найти активность аудио в текущем миксе",
-      disableAudioActivityMarkers: "Скрыть диапазоны активности аудио",
-      enableAudioActivityMarkers: "Показать диапазоны активности аудио",
       disableSceneMarkers: "Скрыть маркеры сцен",
       enableSceneMarkers: "Показать маркеры сцен",
       moveSegment: "Переместить выбранный сегмент",
@@ -513,13 +510,10 @@ export const ru = {
     },
     status: {
       sceneDetectionFailed: "Не удалось распознать сцены. Попробуйте ещё раз.",
-      audioActivityDetectionFailed: "Не удалось распознать активность аудио. Попробуйте ещё раз.",
     },
     tooltips: {
       detectScenes:
         "Анализировать исходное видео на смены сцен. Удерживайте Shift при перетаскивании, чтобы привязаться к маркеру сцены или к любому краю диапазона активности аудио.",
-      detectAudioActivity:
-        "Анализировать текущий аудиомикс и отмечать диапазоны активности аудио на шкале времени.",
       moveSegment:
         "Перетащите, чтобы переместить выбранный сегмент — удерживайте Shift для привязки",
       trimReset: "{{label}} — удерживайте Shift для привязки — дважды щёлкните для сброса",
@@ -540,15 +534,26 @@ export const ru = {
   },
   audio: {
     actions: {
-      enableTrack: "Включить {{title}}",
+      analyzeLoudness: "Анализировать громкость",
+      analyzingLoudness: "Анализ громкости…",
+      detectActivity: "Определить активность звука",
+      detectingActivity: "Определение активности звука…",
+      effects: "Эффекты…",
+      hideActivity: "Скрыть найденные интервалы",
       merge: "Объединить выбранные дорожки",
       mute: "Выключить звук",
       muteTrack: "Выключить звук: {{title}}",
+      redetectActivity: "Повторно определить активность звука",
+      retryActivityDetection: "Повторить поиск активности",
+      showActivity: "Показать найденные интервалы",
       unmute: "Включить звук",
+      unmuteTrack: "Включить звук: {{title}}",
     },
     labels: {
-      allTracks: "Все аудиодорожки",
       defaultTrack: "Аудио {{number}}",
+      loudnessNormalization: "Нормализация громкости",
+      maximumTruePeak: "Максимальный истинный пик (дБTP)",
+      targetLufs: "Целевая громкость (LUFS)",
       title: "Аудиодорожки",
     },
     status: {
@@ -566,18 +571,37 @@ export const ru = {
         separate_other: "{{count}} выбранных дорожек сохраняются отдельно",
         videoOnly: "Только видео",
       },
+      normalizedEffectSummary: "Нормализация - {{preset}}",
+      normalizedHoverTitle: "Нормализация · {{preset}}",
+      normalizedLevelSummary: "Цель {{target}} LUFS · предел пика {{peak}} дБTP",
+      preparingProcessedPreview: "Подготовка предпросмотра с этими настройками дорожки…",
     },
     tooltips: {
       merge: "Все выбранные дорожки объединяются в одну; это требует кодирования.",
+      normalizationReplacesGain:
+        "Уровень дорожки задаёт нормализация громкости. Ручное усиление игнорируется, пока нормализация включена, сохраняется и восстанавливается после её отключения.",
+    },
+    dialogs: {
+      effects: {
+        description: "Изменения применятся только после нажатия «Применить».",
+        title: "{{title}} — эффекты",
+      },
     },
     accessibility: {
-      allTracksVolume: "Громкость всех аудиодорожек",
-      trackVolume: "Громкость {{title}}",
+      trackActions: "Действия аудиодорожки {{number}}",
+      appliedEffects: "Применённые эффекты: {{summary}}",
+      trackGain: "Усиление аудиодорожки {{number}} в децибелах",
+      trackNormalization: "Нормализация громкости {{title}}",
     },
     options: {
       channels_one: "{{count}} канал",
       channels_few: "{{count}} канала",
       channels_other: "{{count}} каналов",
+      normalizationNone: "Выкл.",
+      normalizationCustom: "Своя настройка",
+      normalizationWebVideo: "Веб-видео",
+      normalizationStreaming: "Стриминг",
+      normalizationBroadcast: "Вещание",
       unknownLayout: "неизвестная конфигурация",
     },
   },
@@ -623,22 +647,6 @@ export const ru = {
         description: "Настройте оптимизированный рендеринг перед выбором файла.",
         editTitle: "Изменить экспорт в очереди",
         frameRate: "Частота кадров",
-        loudness: {
-          analyze: "Анализировать громкость",
-          analyzed: "Готово",
-          analyzing: "Анализ…",
-          analysisFailed: "Не удалось проанализировать громкость аудио.",
-          default: "По умолчанию",
-          defaultWithAnalysis: "По умолчанию · {{integratedLufs}} / {{truePeakDb}}",
-          label: "Нормализовать громкость",
-          retry: "Повторить",
-          presets: {
-            broadcast: "Вещание · −23 LUFS / −2 dBTP",
-            streaming: "Стриминг · −16 LUFS / −1,5 dBTP",
-            webVideo: "Веб-видео · −14 LUFS / −1 dBTP",
-          },
-          unavailable: "Недоступно",
-        },
         matchSource: "Как у источника",
         resolution: "Разрешение",
         saveNotice: "После подтверждения откроется системный диалог сохранения.",

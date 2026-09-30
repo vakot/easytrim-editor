@@ -1,3 +1,4 @@
+import type { AudioTrackProcessing } from "@/domain/audio-processing";
 import type {
   AppError,
   AudioStream,
@@ -46,6 +47,8 @@ interface ThumbnailDescriptor {
 
 interface AudioPreviewDescriptor {
   mediaToken: number;
+  previewRevision: number;
+  processing: AudioTrackProcessing;
   streamIndex: number;
   url: string;
 }

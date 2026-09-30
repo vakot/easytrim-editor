@@ -11,11 +11,7 @@ import {
   setExportQueueExecutionEnabled,
 } from "@/app/store/integration/export-queue-runtime";
 import { outputDefaults } from "@/app/store/lib/export-defaults";
-import {
-  selectAudioTracks,
-  selectMasterAudio,
-  selectMergeAudio,
-} from "@/app/store/slices/audio-slice";
+import { selectAudioTracks, selectMergeAudio } from "@/app/store/slices/audio-slice";
 import {
   selectCrop,
   selectCropApplied,
@@ -52,6 +48,7 @@ import {
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { selectedAudioTracks } from "@/domain/audio-export";
+import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
@@ -70,6 +67,7 @@ import type { FastExportRequest, OptimizedExportRequest } from "@/lib/tauri/medi
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
+import { analyzeTrackLoudness } from "./audio-track-thunks";
 import type { AppThunk } from "./source-media-thunks";
 import {
   activateEditingInstanceRequested,
@@ -161,7 +159,6 @@ const editExportAttemptRequested =
           id: instanceId,
           settings: {
             frameRate: optimizedRequest.frameRate,
-            loudnessPreset: optimizedRequest.loudnessNormalization,
             resolution: optimizedRequest.resolution,
           },
         }),
@@ -278,23 +275,45 @@ const optimizedExportSettingsChangedRequested =
   };
 
 const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) => {
-  const request = getOptimizedRequest(getState());
-  const instanceId = selectActiveInstanceId(getState());
-  if (!request || !instanceId) return;
+  const initialState = getState();
+  const initialInstance = selectActiveEditingInstance(initialState);
+  const initialSource = selectSourceSelection(initialState);
+  if (!initialInstance || !initialSource || !selectSourceReady(initialState)) return;
   const requestId = ++optimizedPlanRequestSequence;
-  const sourcePath = normalizeSourceKey(request.sourcePath);
   dispatch(optimizedExportPlanRequested({ requestId }));
+  const analysis = await ensureLoudnessAnalysis(dispatch, getState, {
+    instanceId: initialInstance.id,
+    loadToken: initialState.source.loadToken,
+    sourcePath: initialSource.sourcePath,
+  });
+
+  if (analysis.status === "failed") {
+    dispatch(
+      optimizedExportPlanFailed({
+        requestId,
+        error: {
+          code: "loudness_analysis_required",
+          message: "Analyze track loudness to continue.",
+        },
+      }),
+    );
+    return;
+  }
+  if (analysis.status !== "ready") return;
+  const request = getOptimizedRequest(analysis.state);
+  if (!request) return;
+  const sourcePath = normalizeSourceKey(request.sourcePath);
   try {
     const plan = await planOptimizedExport(request);
     if (
-      selectActiveInstanceId(getState()) === instanceId &&
+      selectActiveInstanceId(getState()) === initialInstance.id &&
       currentSourceKey(getState()) === sourcePath
     ) {
       dispatch(optimizedExportPlanReceived({ requestId, commandPreview: plan.commandPreview }));
     }
   } catch (error: unknown) {
     if (
-      selectActiveInstanceId(getState()) === instanceId &&
+      selectActiveInstanceId(getState()) === initialInstance.id &&
       currentSourceKey(getState()) === sourcePath
     ) {
       dispatch(optimizedExportPlanFailed({ requestId, error: normalizeAppError(error) }));
@@ -326,16 +345,54 @@ async function startEditingInstanceExport(
   getState: Parameters<AppThunk>[1],
   origin: DiagnosticOrigin,
 ) {
-  const state = getState();
-  const instance = selectActiveEditingInstance(state);
-  const source = selectSourceSelection(state);
-  const media = selectSourceMedia(state);
-  const trim = selectTrim(state);
-  const request = route === "fast" ? getFastRequest(state) : getOptimizedRequest(state);
-  if (!instance || !source || !media || !trim || !request || !selectSourceReady(state)) return;
-  if (instance.draftAvailable === false || state.importWorkflow.isNativeDialogOpen) return;
+  const initialState = getState();
+  const initialInstance = selectActiveEditingInstance(initialState);
+  const initialSource = selectSourceSelection(initialState);
+  if (!initialInstance || !initialSource || !selectSourceReady(initialState)) return;
+  if (initialInstance.draftAvailable === false || initialState.importWorkflow.isNativeDialogOpen)
+    return;
 
-  const snapshot = getCurrentExportSnapshot(state);
+  const analysis = await ensureLoudnessAnalysis(dispatch, getState, {
+    instanceId: initialInstance.id,
+    loadToken: initialState.source.loadToken,
+    sourcePath: initialSource.sourcePath,
+  });
+
+  if (analysis.status === "failed") {
+    dispatch(
+      exportLaunchFailed({
+        code: "loudness_analysis_required",
+        message: "Analyze track loudness to continue.",
+      }),
+    );
+    return;
+  }
+  if (analysis.status !== "ready") return;
+
+  const currentState = analysis.state;
+  const instance = selectActiveEditingInstance(currentState);
+  const source = selectSourceSelection(currentState);
+  const media = selectSourceMedia(currentState);
+  const trim = selectTrim(currentState);
+  if (
+    !instance ||
+    !source ||
+    !media ||
+    !trim ||
+    !selectSourceReady(currentState) ||
+    instance.id !== initialInstance.id ||
+    normalizeSourceKey(source.sourcePath) !== normalizeSourceKey(initialSource.sourcePath) ||
+    instance.draftAvailable === false ||
+    currentState.importWorkflow.isNativeDialogOpen
+  )
+    return;
+
+  const request =
+    route === "fast" ? getFastRequest(currentState) : getOptimizedRequest(currentState);
+
+  if (!request) return;
+
+  const snapshot = getCurrentExportSnapshot(currentState);
   if (!snapshot) return;
 
   // Persist the working draft at the export boundary, while the attempt keeps
@@ -405,11 +462,10 @@ function getCurrentExportSnapshot(state: ReturnType<Parameters<AppThunk>[1]>) {
     flipHorizontal: selectFlipHorizontal(state),
     flipVertical: selectFlipVertical(state),
     rotation: selectRotationDegrees(state),
-    masterAudio: selectMasterAudio(state),
-    audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
+    audioTracks: selectAudioTracks(state).map(({ enabled, processing, streamIndex }) => ({
       enabled,
       streamIndex,
-      volumePercent,
+      processing: { ...processing },
     })),
     mergeAudio: selectMergeAudio(state),
   });
@@ -425,7 +481,6 @@ function getInitialSettings(state: ReturnType<Parameters<AppThunk>[1]>): ExportS
   return (
     instance.optimizedSettings ?? {
       frameRate: undefined,
-      loudnessPreset: undefined,
       resolution: selectCropResolution(state),
     }
   );
@@ -468,7 +523,6 @@ function getOptimizedRequest(
       ? { numerator: settings.frameRate.numerator, denominator: settings.frameRate.denominator }
       : undefined,
     arguments: state.exportPresets.argumentsText,
-    ...(settings.loudnessPreset ? { loudnessNormalization: settings.loudnessPreset } : {}),
   };
 }
 
@@ -482,7 +536,141 @@ function exportTransform(state: ReturnType<Parameters<AppThunk>[1]>) {
 }
 
 function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
-  return selectedAudioTracks(selectAudioTracks(state), selectMasterAudio(state));
+  const trim = selectTrim(state);
+  const tracks = selectAudioTracks(state);
+  return selectedAudioTracks(tracks).map((selection) => {
+    const track = tracks.find((candidate) => candidate.streamIndex === selection.streamIndex);
+    if (!track) return selection;
+    const cacheKey = trim
+      ? audioTrackLoudnessInputsKey(selection.streamIndex, trim, selection.processing)
+      : null;
+
+    return {
+      ...selection,
+      ...(selection.processing.loudnessNormalization !== undefined &&
+      cacheKey &&
+      track.loudnessAnalysis.status === "ready" &&
+      track.loudnessAnalysis.cacheKey === cacheKey
+        ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
+        : {}),
+    };
+  });
+}
+
+async function ensureLoudnessAnalysis(
+  dispatch: Parameters<AppThunk>[0],
+  getState: Parameters<AppThunk>[1],
+  context: { instanceId: string; loadToken: number; sourcePath: string },
+): Promise<LoudnessAnalysisResult> {
+  const maxPasses = 8;
+  for (let pass = 0; pass < maxPasses; pass += 1) {
+    let state = getState();
+    if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
+    const trim = selectTrim(state);
+    if (!trim) return { status: "failed" };
+
+    const missing = selectAudioTracks(state).filter((track) => {
+      if (!track.enabled || track.processing.loudnessNormalization === undefined) return false;
+      const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
+      return (
+        track.loudnessAnalysis.status !== "ready" || track.loudnessAnalysis.cacheKey !== cacheKey
+      );
+    });
+
+    if (missing.length === 0) return { state, status: "ready" };
+
+    for (const pendingTrack of missing) {
+      state = getState();
+      if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
+      const currentTrim = selectTrim(state);
+      const currentTrack = selectAudioTracks(state).find(
+        (track) => track.streamIndex === pendingTrack.streamIndex,
+      );
+
+      if (
+        !currentTrim ||
+        !currentTrack?.enabled ||
+        currentTrack.processing.loudnessNormalization === undefined
+      ) {
+        continue;
+      }
+      const cacheKey = audioTrackLoudnessInputsKey(
+        currentTrack.streamIndex,
+        currentTrim,
+        currentTrack.processing,
+      );
+
+      if (
+        currentTrack.loudnessAnalysis.status === "ready" &&
+        currentTrack.loudnessAnalysis.cacheKey === cacheKey
+      ) {
+        continue;
+      }
+      if (
+        currentTrack.loudnessAnalysis.status === "failed" &&
+        currentTrack.loudnessAnalysis.cacheKey === cacheKey
+      ) {
+        return { status: "failed" };
+      }
+
+      await dispatch(analyzeTrackLoudness(currentTrack.streamIndex));
+      state = getState();
+      if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
+      const afterTrim = selectTrim(state);
+      const afterTrack = selectAudioTracks(state).find(
+        (track) => track.streamIndex === pendingTrack.streamIndex,
+      );
+
+      if (
+        !afterTrim ||
+        !afterTrack?.enabled ||
+        afterTrack.processing.loudnessNormalization === undefined
+      )
+        continue;
+      const afterCacheKey = audioTrackLoudnessInputsKey(
+        afterTrack.streamIndex,
+        afterTrim,
+        afterTrack.processing,
+      );
+
+      if (
+        afterTrack.loudnessAnalysis.status === "failed" &&
+        afterTrack.loudnessAnalysis.cacheKey === afterCacheKey
+      ) {
+        return { status: "failed" };
+      }
+    }
+  }
+
+  const state = getState();
+  if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
+  const trim = selectTrim(state);
+  if (!trim) return { status: "failed" };
+  const allAnalysesReady = selectAudioTracks(state).every((track) => {
+    if (!track.enabled || track.processing.loudnessNormalization === undefined) return true;
+    const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
+    return (
+      track.loudnessAnalysis.status === "ready" && track.loudnessAnalysis.cacheKey === cacheKey
+    );
+  });
+
+  return allAnalysesReady ? { state, status: "ready" } : { status: "failed" };
+}
+
+type LoudnessAnalysisResult =
+  | { state: ReturnType<Parameters<AppThunk>[1]>; status: "ready" }
+  | { status: "context-changed" | "failed" };
+
+function isLoudnessAnalysisContextCurrent(
+  state: ReturnType<Parameters<AppThunk>[1]>,
+  context: { instanceId: string; loadToken: number; sourcePath: string },
+): boolean {
+  return (
+    state.source.loadToken === context.loadToken &&
+    selectSourceReady(state) &&
+    selectActiveInstanceId(state) === context.instanceId &&
+    currentSourceKey(state) === normalizeSourceKey(context.sourcePath)
+  );
 }
 
 function getTotalFrames(

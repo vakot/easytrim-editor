@@ -34,7 +34,6 @@ import {
 import { CommandPreview } from "./components/CommandPreview";
 import { ExportFrameRate } from "./components/ExportFrameRate";
 import { ExportResolution } from "./components/ExportResolution";
-import { LoudnessControls } from "./components/LoudnessControls";
 import { PresetManager } from "./components/PresetManager";
 
 function ExportDialog() {
@@ -48,7 +47,6 @@ function ExportDialog() {
   const settings = activeInstance
     ? (activeInstance.optimizedSettings ?? {
         frameRate: undefined,
-        loudnessPreset: undefined,
         resolution: cropResolution,
       })
     : null;
@@ -89,7 +87,6 @@ function ExportDialog() {
           <PresetManager />
           <ExportResolution cropResolution={cropResolution} settings={settings} />
           <ExportFrameRate settings={settings} />
-          <LoudnessControls settings={settings} />
           <CommandPreview command={commandPreview} error={commandPreviewError?.message} />
 
           <DialogFooter className="min-w-0 items-center sm:justify-between">

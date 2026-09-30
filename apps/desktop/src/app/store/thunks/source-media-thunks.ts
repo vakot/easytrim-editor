@@ -19,7 +19,6 @@ import {
   audioPreviewsReady,
   audioPreviewsUnavailable,
   selectAudioTracks,
-  selectMasterAudio,
   selectMergeAudio,
   waveformReady,
   waveformsFailed,
@@ -67,7 +66,12 @@ import {
   selectHasSource,
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
+import {
+  audioTrackExternalPreviewStreamIndexes,
+  audioTrackLoudnessInputsKey,
+} from "@/domain/audio-processing";
 import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
@@ -96,6 +100,8 @@ import type {
   SourcePickerMode,
 } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
+
+import { analyzeTrackLoudness } from "./audio-track-thunks";
 
 export type AppThunk<ReturnValue = void | Promise<unknown>> = (
   dispatch: AppDispatch,
@@ -474,7 +480,6 @@ async function prepareSelectedSource(
         flipVertical: snapshot.flipVertical,
         rotation: snapshot.rotation,
         sceneBoundariesMicros: snapshot.sceneBoundariesMicros,
-        masterAudio: snapshot.audio.master,
         audioTracks: snapshot.audio.tracks,
         mergeAudio: snapshot.audio.mergeAudio,
       })
@@ -490,7 +495,91 @@ async function prepareSelectedSource(
   });
 
   const prepareAudio = async () => {
-    if (audioStreamIndexes.length <= 1) {
+    const nativeAudioStreamIndex =
+      media.audioStreams.find((stream) => stream.isDefault)?.streamIndex ??
+      media.audioStreams[0]?.streamIndex;
+
+    const maxAnalysisPasses = 8;
+
+    for (let pass = 0; pass < maxAnalysisPasses; pass += 1) {
+      if (!isCurrentSource(getState(), source.sourcePath, loadToken)) {
+        audioOperation.cancel({ reason: "source_replaced" });
+        return;
+      }
+      const state = getState();
+      const trim = selectTrim(state);
+      const tracks = selectAudioTracks(state);
+      if (!trim) return;
+      const requiredIndexes = audioTrackExternalPreviewStreamIndexes(
+        tracks,
+        nativeAudioStreamIndex,
+      );
+
+      const pendingAnalysis = requiredIndexes.flatMap((streamIndex) => {
+        const track = tracks.find((candidate) => candidate.streamIndex === streamIndex);
+        if (!track || track.processing.loudnessNormalization === undefined) return [];
+        const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
+        return track.loudnessAnalysis.status !== "ready" ||
+          track.loudnessAnalysis.cacheKey !== cacheKey
+          ? [track]
+          : [];
+      });
+
+      if (pendingAnalysis.length === 0) break;
+
+      for (const track of pendingAnalysis) {
+        await dispatch(analyzeTrackLoudness(track.streamIndex));
+      }
+    }
+
+    if (!isCurrentSource(getState(), source.sourcePath, loadToken)) {
+      audioOperation.cancel({ reason: "source_replaced" });
+      return;
+    }
+    const currentState = getState();
+    const currentTrim = selectTrim(currentState);
+    const tracks = selectAudioTracks(currentState);
+    const requiredIndexes = audioTrackExternalPreviewStreamIndexes(tracks, nativeAudioStreamIndex);
+    const audioTrackSelections = requiredIndexes.flatMap((streamIndex) => {
+      const track = tracks.find((candidate) => candidate.streamIndex === streamIndex);
+      if (!track) return [];
+      const cacheKey = currentTrim
+        ? audioTrackLoudnessInputsKey(track.streamIndex, currentTrim, track.processing)
+        : null;
+
+      if (
+        track.processing.loudnessNormalization !== undefined &&
+        (!cacheKey ||
+          track.loudnessAnalysis.status !== "ready" ||
+          track.loudnessAnalysis.cacheKey !== cacheKey)
+      ) {
+        return [];
+      }
+      return [
+        {
+          ...(track.processing.loudnessNormalization !== undefined &&
+          track.loudnessAnalysis.status === "ready"
+            ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
+            : {}),
+          processing: { ...track.processing, gainDb: 0 },
+          streamIndex,
+        },
+      ];
+    });
+
+    if (audioTrackSelections.length !== requiredIndexes.length) {
+      const error = {
+        code: "loudness_analysis_required",
+        message: "Analyze track loudness to prepare audio playback.",
+      };
+
+      dispatch(audioPreviewsUnavailable({ error }));
+      audioOperation.fail(error);
+      return;
+    }
+    const requiresProcessedAudioPreview = requiredIndexes.length > 0;
+
+    if (!requiresProcessedAudioPreview) {
       if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
         dispatch(audioPreviewsReady({ previews: [] }));
         audioOperation.complete({ previewCount: 0 });
@@ -507,7 +596,7 @@ async function prepareSelectedSource(
 
     dispatch(audioPreviewsLoading());
     try {
-      const previews = await prepareAudioPreviews(source.sourcePath, audioStreamIndexes);
+      const previews = await prepareAudioPreviews(source.sourcePath, audioTrackSelections);
       if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
         dispatch(audioPreviewsReady({ previews }));
         audioOperation.complete({ previewCount: previews.length });
@@ -562,11 +651,10 @@ async function prepareSelectedSource(
       trim: { kind: "full-source" },
       crop: null,
       rotation: 0,
-      masterAudio: selectMasterAudio(getState()),
-      audioTracks: selectAudioTracks(getState()).map(({ enabled, streamIndex, volumePercent }) => ({
+      audioTracks: selectAudioTracks(getState()).map(({ enabled, processing, streamIndex }) => ({
         enabled,
         streamIndex,
-        volumePercent,
+        processing: { ...processing },
       })),
       mergeAudio: selectMergeAudio(getState()),
     });
@@ -796,9 +884,6 @@ const restoreExportAttemptRequested =
           settings: {
             frameRate: attempt.request.frameRate,
             resolution: attempt.request.resolution,
-            ...(attempt.request.loudnessNormalization
-              ? { loudnessPreset: attempt.request.loudnessNormalization }
-              : {}),
           },
         }),
       );

@@ -2,6 +2,7 @@ export const en = {
   common: {
     actions: {
       back: "Back",
+      apply: "Apply",
       cancel: "Cancel",
       clear: "Clear",
       close: "Close",
@@ -68,7 +69,6 @@ export const en = {
         previewTransform: "Preview / Transform",
         markers: "Markers",
         markersScene: "Markers / Scene",
-        markersAudioActivity: "Markers / Audio Activity",
         queueOnFinishedApplication: "Queue / On finished / Application",
         queueOnFinishedSource: "Queue / On finished / Source",
         go: "Go",
@@ -495,9 +495,6 @@ export const en = {
   timeline: {
     actions: {
       detectScenes: "Detect scene changes",
-      detectAudioActivity: "Detect audio activity in active mix",
-      disableAudioActivityMarkers: "Hide audio activity ranges",
-      enableAudioActivityMarkers: "Show audio activity ranges",
       disableSceneMarkers: "Hide scene markers",
       enableSceneMarkers: "Show scene markers",
       moveSegment: "Move selected segment",
@@ -511,13 +508,10 @@ export const en = {
     },
     status: {
       sceneDetectionFailed: "Scene detection failed. Try again.",
-      audioActivityDetectionFailed: "Audio activity detection failed. Try again.",
     },
     tooltips: {
       detectScenes:
         "Analyze the source video for scene changes. Hold Shift while dragging to snap to scene markers or either edge of an audio activity range.",
-      detectAudioActivity:
-        "Analyze the active audio mix and mark audio activity ranges on the timeline.",
       moveSegment: "Drag to move the selected segment — hold Shift to snap",
       trimReset: "{{label}} — hold Shift to snap — double-click to reset",
     },
@@ -537,15 +531,26 @@ export const en = {
   },
   audio: {
     actions: {
-      enableTrack: "Enable {{title}}",
+      analyzeLoudness: "Analyze loudness",
+      analyzingLoudness: "Analyzing loudness…",
+      detectActivity: "Detect audio activity",
+      detectingActivity: "Detecting audio activity…",
+      effects: "Effects…",
+      hideActivity: "Hide detected ranges",
       merge: "Merge selected tracks",
       mute: "Mute",
       muteTrack: "Mute {{title}}",
+      redetectActivity: "Re-detect audio activity",
+      retryActivityDetection: "Retry activity detection",
+      showActivity: "Show detected ranges",
       unmute: "Unmute",
+      unmuteTrack: "Unmute {{title}}",
     },
     labels: {
-      allTracks: "All audio tracks",
       defaultTrack: "Audio {{number}}",
+      loudnessNormalization: "Loudness normalization",
+      maximumTruePeak: "Maximum true peak (dBTP)",
+      targetLufs: "Target loudness (LUFS)",
       title: "Audio tracks",
     },
     status: {
@@ -563,18 +568,37 @@ export const en = {
         separate_other: "{{count}} selected tracks kept separately",
         videoOnly: "Video-only output",
       },
+      normalizedEffectSummary: "Normalized - {{preset}}",
+      normalizedHoverTitle: "Normalized · {{preset}}",
+      normalizedLevelSummary: "Target {{target}} LUFS · peak cap {{peak}} dBTP",
+      preparingProcessedPreview: "Preparing preview with these track settings…",
     },
     tooltips: {
       merge: "All selected tracks are merged into one track; this requires encoding.",
+      normalizationReplacesGain:
+        "Normalize Loudness controls this track's level. Manual gain is ignored while normalization is enabled, preserved, and restored when normalization is turned off.",
+    },
+    dialogs: {
+      effects: {
+        description: "Changes stay unapplied until you choose Apply.",
+        title: "{{title}} — Effects",
+      },
     },
     accessibility: {
-      allTracksVolume: "All audio tracks volume",
-      trackVolume: "{{title}} volume",
+      trackActions: "Audio {{number}} actions",
+      appliedEffects: "Applied effects: {{summary}}",
+      trackGain: "Audio {{number}} gain in decibels",
+      trackNormalization: "{{title}} loudness normalization",
     },
     options: {
       channels_one: "{{count}} channel",
       channels_few: "{{count}} channels",
       channels_other: "{{count}} channels",
+      normalizationNone: "Off",
+      normalizationCustom: "Custom",
+      normalizationWebVideo: "Web Video",
+      normalizationStreaming: "Streaming",
+      normalizationBroadcast: "Broadcast",
       unknownLayout: "unknown layout",
     },
   },
@@ -620,22 +644,6 @@ export const en = {
         description: "Configure the optimized render before choosing its file.",
         editTitle: "Edit queued export",
         frameRate: "Frame rate",
-        loudness: {
-          analyze: "Analyze loudness",
-          analyzed: "Analyzed",
-          analyzing: "Analyzing…",
-          analysisFailed: "Audio loudness analysis failed.",
-          default: "Default",
-          defaultWithAnalysis: "Default · {{integratedLufs}} / {{truePeakDb}}",
-          label: "Normalize loudness",
-          retry: "Retry",
-          presets: {
-            broadcast: "Broadcast · −23 LUFS / −2 dBTP",
-            streaming: "Streaming · −16 LUFS / −1.5 dBTP",
-            webVideo: "Web video · −14 LUFS / −1 dBTP",
-          },
-          unavailable: "Unavailable",
-        },
         matchSource: "Match source",
         resolution: "Resolution",
         saveNotice: "The native save dialog opens after confirmation.",

@@ -117,7 +117,7 @@ function createWorkspaceRecoveryBackup(
     instances: selectEditingInstances(state).map((instance) => toRecoveryInstance(instance, state)),
     sessionId: previous?.sessionId ?? "",
     updatedAt: now,
-    version: 1,
+    version: 2,
   };
 }
 

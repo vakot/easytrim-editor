@@ -1,6 +1,6 @@
 export { AudioPanel } from "./components/AudioPanel";
-export { VolumeButton } from "./components/VolumeButton";
 export { synchronizeAudioPosition } from "./lib/audio-sync";
+export { audioTrackColor } from "./lib/audio-track-color";
 export type { NativeAudioBinding } from "./lib/native-audio-runtime";
 export {
   connectNativeAudioBinding,
@@ -13,7 +13,6 @@ export {
   createStereoAudioMeterNodes,
   disconnectStereoAudioMeterNodes,
   isMonoAudioMix,
-  meterMixNormalization,
   meterZoneLevels,
   peakAmplitude,
   smoothMeterLevel,

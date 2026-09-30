@@ -1,22 +1,23 @@
-import { AudioLines, ChevronsLeft, ChevronsRight, Clapperboard, Eye } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Clapperboard, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
 import {
-  audioActivityMarkersToggled,
   sceneMarkersToggled,
-  selectAudioActivityMarkersEnabled,
   selectSceneMarkersEnabled,
 } from "@/app/store/slices/editor-tools-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
+import { audioTrackColor } from "@/features/audio";
 import {
+  createTimelineMarkers,
   findNextMarker,
   findPreviousMarker,
-  useAudioActivityDetection,
+  timelineMarkerTimes,
   useSceneDetection,
 } from "@/features/timeline";
 
@@ -29,17 +30,11 @@ function useSceneCommands() {
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const sourceReady = useAppSelector(selectSourceReady);
   const sceneDetection = useSceneDetection(sourceReady);
-  const audioActivityDetection = useAudioActivityDetection(sourceReady);
-  const audioActivityMarkersEnabled = useAppSelector(selectAudioActivityMarkersEnabled);
+  const audioTracks = useAppSelector(selectAudioTracks);
   const visibleSceneBoundaries = sceneMarkersEnabled ? sceneBoundariesMicros : [];
-  const visibleAudioActivityRanges = audioActivityMarkersEnabled
-    ? audioActivityDetection.ranges
-    : [];
+  const markers = createTimelineMarkers(visibleSceneBoundaries, audioTracks, audioTrackColor);
 
-  const visibleMarkersMicros = [
-    ...visibleSceneBoundaries,
-    ...visibleAudioActivityRanges.map(({ startMicros }) => startMicros),
-  ];
+  const visibleMarkersMicros = timelineMarkerTimes(markers);
 
   const previousMarkerMicros = findPreviousMarker(visibleMarkersMicros, timeline.playheadMicros);
   const nextMarkerMicros = findNextMarker(visibleMarkersMicros, timeline.playheadMicros);
@@ -84,41 +79,6 @@ function useSceneCommands() {
     },
   ] as const;
 
-  const audioActivityCommands = [
-    {
-      enabled:
-        audioActivityDetection.canDetect &&
-        !audioActivityDetection.hasDetected &&
-        !audioActivityDetection.isDetecting,
-      icon: <AudioLines aria-hidden="true" />,
-      id: "detect-audio-activity" as const,
-      label: t("timeline.actions.detectAudioActivity"),
-      run: audioActivityDetection.detect,
-      searchTerms: commandSearchTerms(
-        `${t("timeline.actions.detectAudioActivity")}|audio activity detection|find audio`,
-      ),
-      surfaces: ["button", "palette"] as const,
-      variant: "default" as const,
-    },
-    {
-      checked: audioActivityMarkersEnabled,
-      enabled: audioActivityDetection.hasDetected,
-      icon: <Eye aria-hidden="true" />,
-      id: "show-audio-activity-markers" as const,
-      label: audioActivityMarkersEnabled
-        ? t("timeline.actions.disableAudioActivityMarkers")
-        : t("timeline.actions.enableAudioActivityMarkers"),
-      run() {
-        dispatch(audioActivityMarkersToggled());
-      },
-      searchTerms: commandSearchTerms(
-        `${t("timeline.actions.enableAudioActivityMarkers")}|audio activity|markers|show`,
-      ),
-      surfaces: ["button", "palette"] as const,
-      variant: "default" as const,
-    },
-  ] as const;
-
   const markerCommands = [
     {
       enabled: playback.canInteract && previousMarkerMicros !== undefined,
@@ -146,7 +106,7 @@ function useSceneCommands() {
     },
   ] as const;
 
-  return { audioActivityCommands, markerCommands, sceneCommands } as const;
+  return { markerCommands, sceneCommands } as const;
 }
 
 export { useSceneCommands };

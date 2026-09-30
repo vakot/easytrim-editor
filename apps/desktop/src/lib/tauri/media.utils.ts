@@ -1,3 +1,4 @@
+import type { LoudnessNormalization } from "@/domain/audio-processing";
 import type { SourceRef } from "@/domain/source";
 
 import type {
@@ -245,11 +246,41 @@ function parseBinaryCapability(value: unknown): BinaryCapability {
 
 function parseAudioPreviewDescriptor(value: unknown): AudioPreviewDescriptor {
   const preview = requireRecord(value, "audio preview descriptor");
+  const processing = requireRecord(preview.processing, "audio preview processing");
+  const gainDb = optionalFiniteNumber(processing.gainDb, "audio preview gain");
+  if (gainDb === undefined) throw invalidResponse("audio preview gain");
+  const loudnessNormalization = parseLoudnessNormalization(processing.loudnessNormalization);
   return {
     mediaToken: requirePositiveInteger(preview.mediaToken, "audio preview media token"),
+    previewRevision: requirePositiveInteger(preview.previewRevision, "audio preview revision"),
+    processing: {
+      gainDb,
+      ...(loudnessNormalization === undefined ? {} : { loudnessNormalization }),
+    },
     streamIndex: requireInteger(preview.streamIndex, "audio preview stream index"),
     url: requireString(preview.url, "audio preview URL"),
   };
+}
+
+function parseLoudnessNormalization(value: unknown): LoudnessNormalization | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (value === "webVideo" || value === "streaming" || value === "broadcast") return value;
+
+  const custom = requireRecord(value, "audio preview loudness normalization");
+  const targetLufs = optionalFiniteNumber(custom.targetLufs, "custom loudness target LUFS");
+  const maxTruePeakDb = optionalFiniteNumber(custom.maxTruePeakDb, "custom maximum true peak");
+  if (
+    custom.mode !== "custom" ||
+    targetLufs === undefined ||
+    targetLufs < -36 ||
+    targetLufs > -5 ||
+    maxTruePeakDb === undefined ||
+    maxTruePeakDb < -9 ||
+    maxTruePeakDb > 0
+  ) {
+    throw invalidResponse("audio preview loudness normalization");
+  }
+  return { maxTruePeakDb, mode: "custom", targetLufs };
 }
 
 function parseWaveformResult(value: unknown): WaveformResult {

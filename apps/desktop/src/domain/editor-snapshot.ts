@@ -1,3 +1,4 @@
+import type { AudioTrackSettings } from "./audio-processing";
 import type { CropRect } from "./crop";
 import type { RotationDegrees } from "./rotation";
 import type { SourceRef } from "./source";
@@ -7,9 +8,8 @@ type EditorSnapshotTrim = { kind: "full-source" } | { endMicros: number; startMi
 
 interface EditorSnapshot {
   audio: {
-    master: { enabled: boolean; volumePercent: number };
     mergeAudio: boolean;
-    tracks: Array<{ enabled: boolean; streamIndex: number; volumePercent: number }>;
+    tracks: AudioTrackSettings[];
   };
   crop: CropRect | null;
   flipHorizontal?: boolean;
@@ -25,7 +25,6 @@ function createEditorSnapshot(input: {
   crop: CropRect | null;
   flipHorizontal?: boolean;
   flipVertical?: boolean;
-  masterAudio: EditorSnapshot["audio"]["master"];
   mergeAudio: boolean;
   rotation?: RotationDegrees;
   sceneBoundariesMicros?: number[];
@@ -43,8 +42,10 @@ function createEditorSnapshot(input: {
       ? {}
       : { sceneBoundariesMicros: [...input.sceneBoundariesMicros] }),
     audio: {
-      master: { ...input.masterAudio },
-      tracks: input.audioTracks.map((track) => ({ ...track })),
+      tracks: input.audioTracks.map((track) => ({
+        ...track,
+        processing: { ...track.processing },
+      })),
       mergeAudio: input.mergeAudio,
     },
   };

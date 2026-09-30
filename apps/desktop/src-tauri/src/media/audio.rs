@@ -9,6 +9,7 @@ use std::{
 
 use crate::{
     error::AppError,
+    media::export::{AudioTrackSelection, audio_filter_graph, validate_audio_track_selections},
     process::{ProcessOutput, run_bounded_cancellable},
     state::{ActiveSource, AudioPreviewArtifact},
 };
@@ -19,27 +20,23 @@ static NEXT_DIRECTORY_ID: AtomicU64 = AtomicU64::new(0);
 
 pub fn generate_audio_previews(
     source: &ActiveSource,
-    stream_indexes: &[u32],
-) -> Result<Vec<(u32, AudioPreviewArtifact)>, AppError> {
-    for stream_index in stream_indexes {
-        if !source.audio_stream_indexes.contains(stream_index) {
-            return Err(AppError::invalid_request(format!(
-                "Audio stream #{stream_index} does not belong to the active source."
-            )));
-        }
-    }
+    audio_tracks: &[AudioTrackSelection],
+) -> Result<Vec<(AudioTrackSelection, AudioPreviewArtifact)>, AppError> {
+    let media = source.media.as_ref().ok_or_else(|| {
+        AppError::invalid_request("Audio previews require inspected source media.")
+    })?;
+    validate_audio_track_selections(media, audio_tracks)?;
 
-    let artifacts = stream_indexes
+    let artifacts = audio_tracks
         .iter()
-        .map(|stream_index| {
-            create_artifact(*stream_index).map(|artifact| (*stream_index, artifact))
-        })
+        .map(|track| create_artifact(track.stream_index).map(|artifact| (track.clone(), artifact)))
         .collect::<Result<Vec<_>, _>>()?;
     let arguments = audio_preview_arguments(
         &source.path,
+        audio_tracks,
         &artifacts
             .iter()
-            .map(|(stream_index, artifact)| (*stream_index, artifact.path()))
+            .map(|(_, artifact)| artifact.path())
             .collect::<Vec<_>>(),
     );
     let output = run_bounded_cancellable(
@@ -70,23 +67,29 @@ pub fn generate_audio_previews(
     ))
 }
 
-fn audio_preview_arguments(source_path: &Path, outputs: &[(u32, &Path)]) -> Vec<OsString> {
+fn audio_preview_arguments(
+    source_path: &Path,
+    audio_tracks: &[AudioTrackSelection],
+    outputs: &[&Path],
+) -> Vec<OsString> {
     let mut arguments = vec![
         OsString::from("-hide_banner"),
         OsString::from("-nostdin"),
         OsString::from("-n"),
         OsString::from("-i"),
         source_path.as_os_str().to_owned(),
+        OsString::from("-filter_complex"),
+        OsString::from(audio_filter_graph(audio_tracks, false)),
     ];
-    for (stream_index, output_path) in outputs {
+    for (index, output_path) in outputs.iter().enumerate() {
         arguments.extend([
             OsString::from("-map"),
-            OsString::from(format!("0:{stream_index}")),
+            OsString::from(format!("[audio{index}]")),
             OsString::from("-vn"),
             OsString::from("-sn"),
             OsString::from("-dn"),
             OsString::from("-c:a"),
-            OsString::from("copy"),
+            OsString::from("aac"),
             OsString::from("-f"),
             OsString::from("mp4"),
             output_path.as_os_str().to_owned(),
@@ -159,15 +162,43 @@ fn diagnostics<'a>(
 mod tests {
     use std::{ffi::OsString, path::Path};
 
+    use crate::media::export::{
+        AudioTrackProcessing, AudioTrackSelection, LoudnessNormalization, LoudnessPreset,
+    };
+
     use super::audio_preview_arguments;
 
     #[test]
     fn builds_one_input_with_multiple_audio_outputs() {
+        let tracks = [
+            AudioTrackSelection {
+                loudness_analysis: Some(crate::media::export::AudioLoudnessAnalysis {
+                    integrated_lufs: Some(-20.0),
+                    true_peak_db: Some(-5.0),
+                }),
+                stream_index: 2,
+                processing: AudioTrackProcessing {
+                    gain_db: 3.0,
+                    loudness_normalization: Some(LoudnessNormalization::Preset(
+                        LoudnessPreset::Streaming,
+                    )),
+                },
+            },
+            AudioTrackSelection {
+                loudness_analysis: None,
+                stream_index: 4,
+                processing: AudioTrackProcessing {
+                    gain_db: 0.0,
+                    loudness_normalization: None,
+                },
+            },
+        ];
         let arguments = audio_preview_arguments(
             Path::new("C:\\Videos\\source clip.mkv"),
+            &tracks,
             &[
-                (2, Path::new("C:\\Temp\\audio-2.m4a")),
-                (4, Path::new("C:\\Temp\\audio-4.m4a")),
+                Path::new("C:\\Temp\\audio-2.m4a"),
+                Path::new("C:\\Temp\\audio-4.m4a"),
             ],
         );
 
@@ -184,8 +215,16 @@ mod tests {
                 .filter(|pair| pair[0] == "-map")
                 .map(|pair| pair[1].clone())
                 .collect::<Vec<_>>(),
-            [OsString::from("0:2"), OsString::from("0:4")]
+            [OsString::from("[audio0]"), OsString::from("[audio1]")]
         );
+        let filter = arguments
+            .windows(2)
+            .find(|pair| pair[0] == "-filter_complex")
+            .map(|pair| pair[1].to_string_lossy())
+            .expect("filter graph exists");
+        assert!(filter.contains("[0:2]volume=3.500000dB[audio0]"));
+        assert!(filter.contains("[0:4]volume=0.000000dB[audio1]"));
+        assert!(!filter.contains("volume=3.000000dB"));
         assert_eq!(
             arguments
                 .iter()
@@ -193,5 +232,6 @@ mod tests {
                 .count(),
             2
         );
+        assert!(arguments.contains(&OsString::from("aac")));
     }
 }

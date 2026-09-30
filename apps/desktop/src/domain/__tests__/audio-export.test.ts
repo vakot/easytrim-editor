@@ -3,29 +3,20 @@ import { describe, expect, it } from "vitest";
 import { selectedAudioTracks } from "../audio-export";
 
 describe("selectedAudioTracks", () => {
-  it("applies master gain to enabled tracks and omits muted audio", () => {
+  it("preserves per-track processing and omits muted tracks", () => {
     expect(
-      selectedAudioTracks(
-        [
-          { enabled: true, streamIndex: 1, volumePercent: 50 },
-          { enabled: true, streamIndex: 2, volumePercent: 75 },
-          { enabled: false, streamIndex: 3, volumePercent: 50 },
-          { enabled: true, streamIndex: 4, volumePercent: 0 },
-        ],
-        { enabled: true, volumePercent: 80 },
-      ),
+      selectedAudioTracks([
+        { enabled: true, streamIndex: 1, processing: { gainDb: -6 } },
+        {
+          enabled: true,
+          streamIndex: 2,
+          processing: { gainDb: 2, loudnessNormalization: "streaming" },
+        },
+        { enabled: false, streamIndex: 3, processing: { gainDb: 0 } },
+      ]),
     ).toEqual([
-      { streamIndex: 1, volumePercent: 80 },
-      { streamIndex: 2, volumePercent: 120 },
+      { streamIndex: 1, processing: { gainDb: -6 } },
+      { streamIndex: 2, processing: { gainDb: 2, loudnessNormalization: "streaming" } },
     ]);
-  });
-
-  it("omits every track when the master output is muted", () => {
-    expect(
-      selectedAudioTracks([{ enabled: true, streamIndex: 1, volumePercent: 100 }], {
-        enabled: false,
-        volumePercent: 100,
-      }),
-    ).toEqual([]);
   });
 });

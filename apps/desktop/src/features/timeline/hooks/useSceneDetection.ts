@@ -23,14 +23,12 @@ function useSceneDetection(enabled: boolean) {
   const operation = useAppSelector(selectSceneDetectionOperation);
   const activeInstanceMatchesSource = Boolean(
     source &&
-      activeInstance &&
-      normalizeSourceKey(activeInstance.snapshot.source.sourcePath) ===
-        normalizeSourceKey(source.sourcePath),
+    activeInstance &&
+    normalizeSourceKey(activeInstance.snapshot.source.sourcePath) ===
+      normalizeSourceKey(source.sourcePath),
   );
 
-  const sourceKey = source
-    ? `${activeInstance?.id ?? ""}:${source.sourcePath}:${loadToken}`
-    : null;
+  const sourceKey = source ? `${activeInstance?.id ?? ""}:${source.sourcePath}:${loadToken}` : null;
 
   const requestId = useRef(0);
 
@@ -63,18 +61,20 @@ function useSceneDetection(enabled: boolean) {
       dispatch(sceneDetectionFinished(sourceKey));
     } catch (error: unknown) {
       if (requestId.current !== currentRequestId) return;
-      dispatch(sceneDetectionFailed({
-        error:
-          error instanceof Error
-            ? error.message
-            : typeof error === "object" &&
-                error !== null &&
-                "message" in error &&
-                typeof error.message === "string"
+      dispatch(
+        sceneDetectionFailed({
+          error:
+            error instanceof Error
               ? error.message
-              : null,
-        sourceKey,
-      }));
+              : typeof error === "object" &&
+                  error !== null &&
+                  "message" in error &&
+                  typeof error.message === "string"
+                ? error.message
+                : null,
+          sourceKey,
+        }),
+      );
     }
   }, [activeInstance, activeInstanceMatchesSource, dispatch, enabled, source, sourceKey]);
 

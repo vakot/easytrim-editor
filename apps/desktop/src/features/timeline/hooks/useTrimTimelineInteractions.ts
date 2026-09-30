@@ -379,15 +379,21 @@ function useTrimTimelineInteractions({
     const pointer = pointerMicros(clientX, bounds);
     if (!snapToScene) return pointer.micros;
 
-    const sourceDurationMicros = rangeRef.current.sourceDurationMicros;
+    const range = rangeRef.current;
+    const sourceDurationMicros = range.sourceDurationMicros;
+    const clampedPointerMicros = Math.max(
+      range.startMicros,
+      Math.min(range.endMicros, pointer.micros),
+    );
+
     const snapTarget = findNearestTimelineSnapTarget(
-      pointer.micros,
+      clampedPointerMicros,
       bounds.width,
       sourceDurationMicros,
       snapTargetsMicros,
     );
 
-    return snapTarget ?? pointer.micros;
+    return snapTarget ?? clampedPointerMicros;
   }
 
   function startScrub(event: PointerEvent<HTMLElement>, captureTarget: HTMLElement) {

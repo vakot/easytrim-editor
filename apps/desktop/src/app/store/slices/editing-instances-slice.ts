@@ -301,9 +301,6 @@ const editingInstancesSlice = createSlice({
         restored.optimizedSettings = {
           resolution: attempt.request.resolution,
           frameRate: attempt.request.frameRate,
-          ...(attempt.request.loudnessNormalization
-            ? { loudnessPreset: attempt.request.loudnessNormalization }
-            : {}),
         };
       }
       state.ids.push(restored.id);
@@ -637,7 +634,8 @@ const selectActiveSceneBoundariesMicros = createSelector(
     if (
       !instance ||
       !source ||
-      normalizeSourceKey(instance.snapshot.source.sourcePath) !== normalizeSourceKey(source.sourcePath)
+      normalizeSourceKey(instance.snapshot.source.sourcePath) !==
+        normalizeSourceKey(source.sourcePath)
     ) {
       return [];
     }

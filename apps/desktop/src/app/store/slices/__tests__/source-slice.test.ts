@@ -58,7 +58,6 @@ describe("source slice", () => {
           trim: { kind: "full-source" },
           crop: null,
           audio: {
-            master: { enabled: true, volumePercent: 50 },
             tracks: [],
             mergeAudio: false,
           },

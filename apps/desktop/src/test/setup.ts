@@ -20,6 +20,21 @@ class ResizeObserverMock implements ResizeObserver {
 }
 
 window.ResizeObserver = ResizeObserverMock;
+class PointerEventMock extends MouseEvent {
+  readonly isPrimary: boolean;
+  readonly pointerId: number;
+
+  constructor(type: string, init: PointerEventInit = {}) {
+    super(type, init);
+    this.isPrimary = init.isPrimary ?? true;
+    this.pointerId = init.pointerId ?? 0;
+  }
+}
+
+Object.defineProperty(window, "PointerEvent", {
+  configurable: true,
+  value: PointerEventMock,
+});
 Element.prototype.hasPointerCapture = () => true;
 Element.prototype.setPointerCapture = () => undefined;
 Element.prototype.releasePointerCapture = () => undefined;

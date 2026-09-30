@@ -43,7 +43,12 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
         else {
             return empty_response(StatusCode::NOT_FOUND);
         };
-        state.resolve_audio_preview_path(media_token, stream_index)
+        let Some(revision) = query_parameter(request.uri().query(), "revision")
+            .and_then(|value| value.parse::<u64>().ok())
+        else {
+            return empty_response(StatusCode::NOT_FOUND);
+        };
+        state.resolve_audio_preview_path(media_token, stream_index, revision)
     } else {
         state.resolve_preview_path(media_token)
     };

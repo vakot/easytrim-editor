@@ -1,4 +1,3 @@
-import { initialAudioState } from "@/app/store/slices/audio-slice";
 import {
   selectCrop,
   selectFlipHorizontal,
@@ -18,10 +17,6 @@ function createDefaultEditorSnapshot(source: SourceRef, mergeAudio: boolean): Ed
     flipHorizontal: false,
     flipVertical: false,
     rotation: 0,
-    masterAudio: {
-      enabled: initialAudioState.masterEnabled,
-      volumePercent: initialAudioState.masterVolumePercent,
-    },
     audioTracks: [],
     mergeAudio,
   });
@@ -45,14 +40,10 @@ function createEditorSnapshotFromState(state: RootState, source: SourceRef): Edi
     flipVertical: selectFlipVertical(state),
     rotation: selectRotationDegrees(state),
     sceneBoundariesMicros,
-    masterAudio: {
-      enabled: state.audio.masterEnabled,
-      volumePercent: state.audio.masterVolumePercent,
-    },
-    audioTracks: state.audio.tracks.map(({ enabled, streamIndex, volumePercent }) => ({
+    audioTracks: state.audio.tracks.map(({ enabled, processing, streamIndex }) => ({
       enabled,
       streamIndex,
-      volumePercent,
+      processing: { ...processing },
     })),
     mergeAudio: state.audio.mergeAudio,
   });

@@ -49,13 +49,14 @@ test("macOS Icon Composer keeps its square background separate from the symbol",
     "../../apps/desktop/src-tauri/icon-sources/macos/logo_mac_composer.icon/Assets/",
     import.meta.url,
   );
+
   const [background, symbol] = await Promise.all([
     readFile(new URL("background.svg", assetsRoot), "utf8"),
     readFile(new URL("logo.svg", assetsRoot), "utf8"),
   ]);
 
   assert.deepEqual(
-    layers.map(({ name, "image-name": imageName }) => [name, imageName]),
+    layers.map(({ "image-name": imageName, name }) => [name, imageName]),
     [
       ["background", "background.svg"],
       ["symbol", "logo.svg"],

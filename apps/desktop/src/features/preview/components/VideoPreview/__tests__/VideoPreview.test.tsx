@@ -30,6 +30,7 @@ import { ChangelogProvider } from "@/features/changelog";
 import { QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
+import { EditorContractsTestProvider } from "@/test/editor-contracts-test-provider";
 import { firstSource, media } from "@/test/source.fixtures";
 
 import { VideoPreviewEmpty } from "../components/VideoPreviewEmpty";
@@ -82,19 +83,21 @@ function readyPreview(url: string): Extract<PreviewState, { status: "ready" }> {
 function TooltipTestProvider({ children, store }: { children: ReactNode; store: AppStore }) {
   return (
     <Provider store={store}>
-      <TooltipProvider delayDuration={0}>
-        <SourceDeleteProvider>
-          <QueueDeleteSourceProvider>
-            <PreviewTransformProvider>
-              <ChangelogProvider>
-                <ResizablePanelContextProvider>
-                  <ApplicationCommandsProvider>{children}</ApplicationCommandsProvider>
-                </ResizablePanelContextProvider>
-              </ChangelogProvider>
-            </PreviewTransformProvider>
-          </QueueDeleteSourceProvider>
-        </SourceDeleteProvider>
-      </TooltipProvider>
+      <EditorContractsTestProvider>
+        <TooltipProvider delayDuration={0}>
+          <SourceDeleteProvider>
+            <QueueDeleteSourceProvider>
+              <PreviewTransformProvider>
+                <ChangelogProvider>
+                  <ResizablePanelContextProvider>
+                    <ApplicationCommandsProvider>{children}</ApplicationCommandsProvider>
+                  </ResizablePanelContextProvider>
+                </ChangelogProvider>
+              </PreviewTransformProvider>
+            </QueueDeleteSourceProvider>
+          </SourceDeleteProvider>
+        </TooltipProvider>
+      </EditorContractsTestProvider>
     </Provider>
   );
 }

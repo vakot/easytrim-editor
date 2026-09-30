@@ -24,6 +24,7 @@ import { SourceDeleteProvider } from "@/features/source";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
+import { EditorContractsTestProvider } from "@/test/editor-contracts-test-provider";
 
 import { MenuBar as AppMenuBar } from "../MenuBar";
 
@@ -91,6 +92,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
   useAppDispatch: () => menuState.dispatch,
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({
+      audio: { tracks: [] },
       preferences: menuState.preferences,
       importWorkflow: menuState.importWorkflow,
       source: {
@@ -101,6 +103,8 @@ vi.mock("@/app/store/redux-hooks", () => ({
         capabilities: { status: "checking" },
       },
       crop: menuState.crop,
+      editorTools: { loopPlaybackEnabled: true, segmentPlaybackEnabled: true },
+      trim: { value: null },
       export: {
         queue: menuState.export.queue,
         startedSourceIds: menuState.export.queueStarted
@@ -262,21 +266,23 @@ describe("MenuBarTest", () => {
       initialized.current = true;
     }
     return (
-      <SourceDeleteProvider>
-        <QueueDeleteSourceProvider>
-          <PreviewTransformProvider>
-            <ChangelogProvider>
-              <ResizablePanelContextProvider>
-                <ApplicationCommandsProvider>
-                  <ThemeProvider>
-                    <AppMenuBar />
-                  </ThemeProvider>
-                </ApplicationCommandsProvider>
-              </ResizablePanelContextProvider>
-            </ChangelogProvider>
-          </PreviewTransformProvider>
-        </QueueDeleteSourceProvider>
-      </SourceDeleteProvider>
+      <EditorContractsTestProvider>
+        <SourceDeleteProvider>
+          <QueueDeleteSourceProvider>
+            <PreviewTransformProvider>
+              <ChangelogProvider>
+                <ResizablePanelContextProvider>
+                  <ApplicationCommandsProvider>
+                    <ThemeProvider>
+                      <AppMenuBar />
+                    </ThemeProvider>
+                  </ApplicationCommandsProvider>
+                </ResizablePanelContextProvider>
+              </ChangelogProvider>
+            </PreviewTransformProvider>
+          </QueueDeleteSourceProvider>
+        </SourceDeleteProvider>
+      </EditorContractsTestProvider>
     );
   }
 
@@ -556,7 +562,7 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("Settings"));
-    for (const label of ["Snap", "Loop", "Follow segment", "Auto-start Queue", "Merge audio"]) {
+    for (const label of ["Loop", "Follow segment", "Auto-start Queue", "Merge audio"]) {
       expect(screen.getByRole("menuitemcheckbox", { name: label })).toBeInTheDocument();
     }
     const settingsMenu = screen.getAllByRole("menu").at(-1);
@@ -564,9 +570,6 @@ describe("MenuBarTest", () => {
     expect(within(settingsMenu!).getAllByRole("separator")).toHaveLength(4);
     expect(screen.queryByText("Timeline tools", { exact: true })).not.toBeInTheDocument();
     expect(screen.queryByText("Audio tools", { exact: true })).not.toBeInTheDocument();
-    expect(screen.getByRole("menuitemcheckbox", { name: "Snap" })).toContainElement(
-      settingsMenu!.querySelector(".lucide-magnet"),
-    );
     expect(screen.getByRole("menuitemcheckbox", { name: "Loop" })).toContainElement(
       settingsMenu!.querySelector(".lucide-repeat"),
     );

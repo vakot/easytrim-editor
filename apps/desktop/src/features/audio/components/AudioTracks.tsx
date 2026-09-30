@@ -1,64 +1,25 @@
-import { useTranslation } from "react-i18next";
-
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimelineState } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
-import type { AudioTrackState } from "@/app/store/slices/audio-slice";
+import { selectAudioTracks } from "@/app/store/slices/audio-slice";
+import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { timelinePercent, type TrimRange } from "@/domain/trim";
-import type { AudioStream } from "@/lib/tauri/media.types";
 
 import { useWaveformPreparation } from "../hooks/useWaveformPreparation";
 
-import { AudioTrackRow } from "./AudioTrackRow";
+import { AudioTrackRow } from "./AudioTrack/AudioTrackRow";
 
-interface AudioTracksProps {
-  onCommit: () => void;
-  onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
-  onToggleTrack: (streamIndex: number) => void;
-  onTrackVolumeChange: (streamIndex: number, volumePercent: number) => void;
-  onWaveformImageError: (streamIndex: number) => void;
-  streams: AudioStream[];
-  tracks: AudioTrackState[];
-  waveformPreparationEnabled: boolean;
-}
-
-function AudioTracks({
-  onCommit,
-  onPrepareWaveforms,
-  onToggleTrack,
-  onTrackVolumeChange,
-  onWaveformImageError,
-  streams,
-  tracks,
-  waveformPreparationEnabled,
-}: AudioTracksProps) {
-  const { t } = useTranslation();
-  useWaveformPreparation(tracks, waveformPreparationEnabled, onPrepareWaveforms);
+function AudioTracks() {
+  const streams = useAppSelector((state) => selectSourceMedia(state)?.audioStreams ?? []);
+  const tracks = useAppSelector(selectAudioTracks);
+  useWaveformPreparation(tracks);
 
   return (
     <div className="relative grid min-w-0 gap-2">
-      {streams.map((stream, index) => {
-        const track = tracks.find((candidate) => candidate.streamIndex === stream.streamIndex);
-
-        if (!track) return null;
-        const title =
-          stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: index + 1 });
-
-        return (
-          <AudioTrackRow
-            key={stream.streamIndex}
-            onCommit={onCommit}
-            onPrepareWaveform={onPrepareWaveforms}
-            onToggle={onToggleTrack}
-            onVolumeChange={onTrackVolumeChange}
-            onWaveformImageError={onWaveformImageError}
-            stream={stream}
-            title={title}
-            track={track}
-          />
-        );
-      })}
+      {streams.map((stream) => (
+        <AudioTrackRow key={stream.streamIndex} streamIndex={stream.streamIndex} />
+      ))}
       <AudioPlayhead />
     </div>
   );

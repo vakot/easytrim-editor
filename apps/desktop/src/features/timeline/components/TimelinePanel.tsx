@@ -1,4 +1,4 @@
-import { Gauge } from "lucide-react";
+import { Gauge, Volume1, Volume2, VolumeOff } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,7 +23,6 @@ import {
   PLAYBACK_SPEED_STEPS,
   type PlaybackSpeed,
 } from "@/domain/playback-speed";
-import { VolumeButton } from "@/features/audio";
 import { cn } from "@/lib/class-names.utils";
 
 import { PlaybackControls } from "./PlaybackControls";
@@ -157,10 +156,8 @@ function PlaybackSpeedControl() {
 }
 
 function PlaybackVolumeControl() {
-  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const volumePercent = useAppSelector(selectPlaybackVolumePercent);
-  const enabled = volumePercent > 0;
   const [focusWithin, setFocusWithin] = useState(false);
 
   return (
@@ -174,52 +171,79 @@ function PlaybackVolumeControl() {
       onFocusCapture={() => setFocusWithin(true)}
       onWheel={(event) => {
         if (event.deltaY === 0) return;
-
         event.preventDefault();
         dispatch(playbackVolumeChanged(volumePercent + (event.deltaY < 0 ? 1 : -1)));
       }}
       whileHover="expanded"
     >
-      <VolumeButton
-        aria-label={enabled ? t("audio.actions.mute") : t("audio.actions.unmute")}
-        className={cn(enabled && "text-primary")}
-        enabled={enabled}
-        onClick={() => dispatch(playbackVolumeToggled())}
-        tooltipText={
-          enabled
-            ? t("preview.tooltips.playbackVolumeMute")
-            : t("preview.tooltips.playbackVolumeUnmute")
-        }
-        variant="secondary"
-      />
+      <PlaybackVolumeControlToggle />
+      <PlaybackVolumeControlSlider />
+    </motion.div>
+  );
+}
 
-      <motion.div
-        className="flex h-full items-center overflow-hidden"
-        transition={{ duration: 0.12 }}
-        variants={{
-          collapsed: { maxWidth: 0, opacity: 0 },
-          expanded: { maxWidth: "11rem", opacity: 1 },
-        }}
-      >
-        <div className="px-2">
-          <div className="flex items-center">
-            <Slider
-              aria-label={t("preview.labels.playbackVolume")}
-              className="w-30"
-              max={100}
-              min={0}
-              onValueChange={([value]) => {
-                if (value !== undefined) dispatch(playbackVolumeChanged(value));
-              }}
-              step={1}
-              value={[volumePercent]}
-            />
-            <output className="w-9 shrink-0 text-right font-mono text-xs text-muted-foreground">
-              {volumePercent}%
-            </output>
-          </div>
+function PlaybackVolumeControlToggle() {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const volumePercent = useAppSelector(selectPlaybackVolumePercent);
+  const enabled = volumePercent > 0;
+
+  return (
+    <Tooltip preserveOnTrigger>
+      <TooltipTrigger asChild>
+        <Button
+          aria-label={enabled ? t("audio.actions.mute") : t("audio.actions.unmute")}
+          aria-pressed={enabled}
+          className={cn(enabled && "text-primary")}
+          onClick={() => dispatch(playbackVolumeToggled())}
+          size="icon-sm"
+          type="button"
+          variant="secondary"
+        >
+          {enabled ? volumePercent >= 50 ? <Volume2 /> : <Volume1 /> : <VolumeOff />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        {enabled
+          ? t("preview.tooltips.playbackVolumeMute")
+          : t("preview.tooltips.playbackVolumeUnmute")}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function PlaybackVolumeControlSlider() {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const volumePercent = useAppSelector(selectPlaybackVolumePercent);
+
+  return (
+    <motion.div
+      className="flex h-full items-center overflow-hidden"
+      transition={{ duration: 0.12 }}
+      variants={{
+        collapsed: { maxWidth: 0, opacity: 0 },
+        expanded: { maxWidth: "11rem", opacity: 1 },
+      }}
+    >
+      <div className="px-2">
+        <div className="flex items-center">
+          <Slider
+            aria-label={t("preview.labels.playbackVolume")}
+            className="w-30"
+            max={100}
+            min={0}
+            onValueChange={([value]) => {
+              if (value !== undefined) dispatch(playbackVolumeChanged(value));
+            }}
+            step={1}
+            value={[volumePercent]}
+          />
+          <output className="w-9 shrink-0 text-right font-mono text-xs text-muted-foreground">
+            {volumePercent}%
+          </output>
         </div>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }

@@ -3,12 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { usePlaybackModes } from "@/app/hooks/usePlaybackModes";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  selectAudioPreviews,
-  selectAudioTracks,
-  selectMasterAudio,
-  selectMergeAudio,
-} from "@/app/store/slices/audio-slice";
+import { audioTrackPlaybackPreviewUrl, selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
   selectLoopPlaybackEnabled,
@@ -23,6 +18,10 @@ import {
   commitActiveEditingInstanceDraft,
   handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested,
 } from "@/app/store/thunks/source-media-thunks";
+import {
+  audioTrackExternalPreviewStreamIndexes,
+  effectiveAudioTrackGainDb,
+} from "@/domain/audio-processing";
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
 import {
   canSetTrimBoundaryAtPlayhead,
@@ -37,7 +36,6 @@ import {
   disconnectStereoAudioMeterNodes,
   getOrCreateNativeAudioBinding,
   isMonoAudioMix,
-  meterMixNormalization,
   type NativeAudioBinding,
   type StereoAudioMeterNodes,
   synchronizeAudioPosition,
@@ -70,11 +68,46 @@ const AUDIO_SYNC_INTERVAL_MS = 100;
 const REVERSE_SHUTTLE_SEEK_INTERVAL_MS = 50;
 const SHUTTLE_MAX_FRAME_DELTA_MS = 100;
 
+function applyAudioTrackGain(
+  streamIndex: number,
+  gainDb: number,
+  runtime: LiveAudioTrackGainRuntime,
+  allowMutedTrackPreview = false,
+): void {
+  const linearGain = 10 ** (gainDb / 20);
+  const externalAudioNode = runtime.audioNodes.get(streamIndex);
+  if (externalAudioNode) externalAudioNode.gain.gain.value = linearGain;
+
+  if (runtime.nativeAudioTrack?.streamIndex !== streamIndex || runtime.requiresProcessedPreview)
+    return;
+
+  const nativeGain = runtime.nativeAudioTrack.enabled || allowMutedTrackPreview ? linearGain : 0;
+  if (runtime.nativeAudioBinding) {
+    runtime.nativeAudioBinding.binding.gain.gain.value = nativeGain;
+  } else if (runtime.videoElement) {
+    runtime.videoElement.volume = Math.min(1, (runtime.playbackVolumePercent / 100) * nativeGain);
+  }
+}
+
+interface LiveAudioTrackGainRuntime {
+  audioNodes: Map<number, { gain: GainNode; source: MediaElementAudioSourceNode }>;
+  nativeAudioBinding: { binding: NativeAudioBinding; element: HTMLVideoElement } | null;
+  nativeAudioTrack: { enabled: boolean; streamIndex: number } | undefined;
+  playbackVolumePercent: number;
+  requiresProcessedPreview: boolean;
+  videoElement: HTMLVideoElement | null;
+}
+
+function setGainNodeFromDb(gainNode: GainNode, gainDb: number): void {
+  gainNode.gain.value = 10 ** (gainDb / 20);
+}
+
 interface EditorInteractionRuntime {
   audioMeterRef: React.RefObject<StereoAudioMeterNodes | null>;
   audioPlayheadRef: React.RefObject<HTMLDivElement | null>;
   canSetSegmentEnd: boolean;
   canSetSegmentStart: boolean;
+  clearLiveAudioTrackGain: (streamIndex: number, committedGainDb: number) => void;
   displayedPlayheadMicros: number;
   isPlaybackReady: boolean;
   isPlaying: boolean;
@@ -104,6 +137,7 @@ interface EditorInteractionRuntime {
   onTrimDragEnd: () => void;
   onTrimDragStart: () => void;
   playheadRef: React.RefObject<HTMLButtonElement | null>;
+  setLiveAudioTrackGain: (streamIndex: number, gainDb: number) => void;
   setMediaPlaybackRate: (rate: number) => void;
   setVideoElement: (element: HTMLVideoElement | null) => void;
   shuttleDirection: FrameShuttleDirection | 0;
@@ -126,15 +160,28 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const preview = useAppSelector(selectPreview);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const audioTracks = useAppSelector(selectAudioTracks);
-  const masterAudio = useAppSelector(selectMasterAudio);
-  const mergeAudio = useAppSelector(selectMergeAudio);
-  const audioPreviewState = useAppSelector(selectAudioPreviews);
+  const routeNativeAudioStreamIndex =
+    media?.audioStreams.find((stream) => stream.isDefault)?.streamIndex ??
+    media?.audioStreams[0]?.streamIndex;
+
+  const externalPreviewStreamIndexes = useMemo(
+    () => new Set(audioTrackExternalPreviewStreamIndexes(audioTracks, routeNativeAudioStreamIndex)),
+    [audioTracks, routeNativeAudioStreamIndex],
+  );
+
   const audioPreviewUrls = useMemo(
     () =>
       Object.fromEntries(
-        (audioPreviewState?.previews ?? []).map((preview) => [preview.streamIndex, preview.url]),
+        audioTracks.flatMap((track) => {
+          const url = audioTrackPlaybackPreviewUrl(
+            track,
+            externalPreviewStreamIndexes.has(track.streamIndex),
+          );
+
+          return url ? [[track.streamIndex, url]] : [];
+        }),
       ),
-    [audioPreviewState?.previews],
+    [audioTracks, externalPreviewStreamIndexes],
   );
 
   const sourcePath = sourceSelection?.sourcePath ?? null;
@@ -153,11 +200,14 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const nativeAudioTrack =
     selectedAudioTrack?.streamIndex === nativeAudioStreamIndex ? selectedAudioTrack : undefined;
 
+  const requiresProcessedPreview =
+    enabledAudioTracks.length > 1 ||
+    (enabledAudioTracks.length === 1 &&
+      (nativeAudioTrack === undefined ||
+        enabledAudioTracks[0]!.processing.loudnessNormalization !== undefined));
+
   const usesExternalAudio =
-    audioPreviewState?.status === "ready" &&
-    activeExternalAudioStreamCount === enabledAudioTracks.length &&
-    enabledAudioTracks.length > 0 &&
-    (enabledAudioTracks.length > 1 || nativeAudioTrack === undefined);
+    requiresProcessedPreview && activeExternalAudioStreamCount === enabledAudioTracks.length;
 
   const previewKey =
     sourcePath && preview.status === "ready" ? `${sourcePath}:${preview.value.url}` : null;
@@ -168,9 +218,9 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const [transportError, setTransportError] = useState<string | null>(null);
   const [readyPreviewKey, setReadyPreviewKey] = useState<string | null>(null);
   const [audioReadiness, setAudioReadiness] = useState<{
+    previewUrls: Map<number, string>;
     sourcePath: string | null;
-    streamIndexes: Set<number>;
-  }>(() => ({ sourcePath: null, streamIndexes: new Set() }));
+  }>(() => ({ sourcePath: null, previewUrls: new Map() }));
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const setVideoElement = useCallback((element: HTMLVideoElement | null) => {
@@ -186,17 +236,66 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     new Map<number, { gain: GainNode; source: MediaElementAudioSourceNode }>(),
   );
 
+  const liveAudioTrackGainsRef = useRef(new Map<number, number>());
+
   const nativeAudioBindingsRef = useRef(new Map<HTMLVideoElement, NativeAudioBinding>());
   const nativeAudioBindingRef = useRef<{
     binding: NativeAudioBinding;
     element: HTMLVideoElement;
   } | null>(null);
 
-  const masterGainRef = useRef<GainNode | null>(null);
+  const audioMixRef = useRef<GainNode | null>(null);
   const audioMeterRef = useRef<StereoAudioMeterNodes | null>(null);
   const playbackOutputGainRef = useRef<GainNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
   const audioPlayheadRef = useRef<HTMLDivElement>(null);
+  const liveAudioTrackGainRuntimeRef = useRef<LiveAudioTrackGainRuntime | null>(null);
+
+  useEffect(() => {
+    liveAudioTrackGainRuntimeRef.current = {
+      audioNodes: audioNodesRef.current,
+      nativeAudioBinding: nativeAudioBindingRef.current,
+      nativeAudioTrack,
+      playbackVolumePercent,
+      requiresProcessedPreview,
+      videoElement: videoRef.current,
+    };
+  }, [nativeAudioTrack, playbackVolumePercent, requiresProcessedPreview]);
+
+  const setLiveAudioTrackGain = useCallback((streamIndex: number, gainDb: number) => {
+    const runtime = liveAudioTrackGainRuntimeRef.current;
+    if (!runtime) return;
+    liveAudioTrackGainsRef.current.set(streamIndex, gainDb);
+    applyAudioTrackGain(
+      streamIndex,
+      gainDb,
+      {
+        ...runtime,
+        audioNodes: audioNodesRef.current,
+        nativeAudioBinding: nativeAudioBindingRef.current,
+        videoElement: videoRef.current,
+      },
+      true,
+    );
+  }, []);
+
+  const clearLiveAudioTrackGain = useCallback((streamIndex: number, committedGainDb: number) => {
+    const runtime = liveAudioTrackGainRuntimeRef.current;
+    if (!runtime) return;
+    liveAudioTrackGainsRef.current.delete(streamIndex);
+    applyAudioTrackGain(
+      streamIndex,
+      committedGainDb,
+      {
+        ...runtime,
+        audioNodes: audioNodesRef.current,
+        nativeAudioBinding: nativeAudioBindingRef.current,
+        videoElement: videoRef.current,
+      },
+      true,
+    );
+  }, []);
+
   const playbackFrameRef = useRef<PlaybackFrameHandle | null>(null);
   const reverseShuttleFrameRef = useRef<number | null>(null);
   const reverseShuttleLastFrameAtRef = useRef<number | null>(null);
@@ -224,9 +323,15 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const isPlaybackReady =
     previewKey !== null &&
     readyPreviewKey === previewKey &&
-    (!usesExternalAudio ||
-      (audioReadiness.sourcePath === sourcePath &&
-        audioReadiness.streamIndexes.size === activeExternalAudioStreamCount));
+    (!requiresProcessedPreview ||
+      (usesExternalAudio &&
+        audioReadiness.sourcePath === sourcePath &&
+        activeExternalAudioStreamCount === enabledAudioTracks.length &&
+        enabledAudioTracks.every(
+          (track) =>
+            audioReadiness.previewUrls.get(track.streamIndex) ===
+            audioPreviewUrls[track.streamIndex],
+        )));
 
   const isPlaybackReadyRef = useRef(isPlaybackReady);
   const nativeLoopEnabled =
@@ -246,29 +351,32 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     togglePlayback: (origin?: DiagnosticOrigin) => void;
   } | null>(null);
 
-  const removeAudioRuntime = useCallback((streamIndex: number) => {
-    const element = audioElementsRef.current.get(streamIndex);
-    if (element) {
-      element.pause();
-      const readyListener = audioReadyListenersRef.current.get(streamIndex);
-      if (readyListener) element.removeEventListener("canplay", readyListener);
-      element.removeAttribute("src");
-      element.load();
-      element.remove();
-    }
-    audioElementsRef.current.delete(streamIndex);
-    audioReadyListenersRef.current.delete(streamIndex);
-    setAudioReadiness((current) => {
-      if (!current.streamIndexes.has(streamIndex)) return current;
-      const streamIndexes = new Set(current.streamIndexes);
-      streamIndexes.delete(streamIndex);
-      return { ...current, streamIndexes };
-    });
-    const node = audioNodesRef.current.get(streamIndex);
-    node?.source.disconnect();
-    node?.gain.disconnect();
-    audioNodesRef.current.delete(streamIndex);
-  }, []);
+  const removeAudioRuntime = useCallback(
+    (streamIndex: number) => {
+      const element = audioElementsRef.current.get(streamIndex);
+      if (element) {
+        element.pause();
+        const readyListener = audioReadyListenersRef.current.get(streamIndex);
+        if (readyListener) element.removeEventListener("canplay", readyListener);
+        element.removeAttribute("src");
+        element.load();
+        element.remove();
+      }
+      audioElementsRef.current.delete(streamIndex);
+      audioReadyListenersRef.current.delete(streamIndex);
+      setAudioReadiness((current) => {
+        if (!current.previewUrls.has(streamIndex)) return current;
+        const previewUrls = new Map(current.previewUrls);
+        previewUrls.delete(streamIndex);
+        return { ...current, previewUrls };
+      });
+      const node = audioNodesRef.current.get(streamIndex);
+      node?.source.disconnect();
+      node?.gain.disconnect();
+      audioNodesRef.current.delete(streamIndex);
+    },
+    [setAudioReadiness],
+  );
 
   const disconnectCurrentNativeAudioRoute = useCallback(() => {
     const currentBinding = nativeAudioBindingRef.current;
@@ -298,11 +406,12 @@ function useEditorInteractionController(): EditorInteractionRuntime {
 
   const cleanupAudioRuntime = useCallback(() => {
     for (const streamIndex of audioElementsRef.current.keys()) removeAudioRuntime(streamIndex);
+    liveAudioTrackGainsRef.current.clear();
     disconnectCurrentNativeAudioRoute();
     disconnectStereoAudioMeterNodes(audioMeterRef.current);
     audioMeterRef.current = null;
-    masterGainRef.current?.disconnect();
-    masterGainRef.current = null;
+    audioMixRef.current?.disconnect();
+    audioMixRef.current = null;
     playbackOutputGainRef.current?.disconnect();
     playbackOutputGainRef.current = null;
   }, [disconnectCurrentNativeAudioRoute, removeAudioRuntime]);
@@ -375,23 +484,21 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     }
     const context = audioContextRef.current ?? new AudioContext();
     audioContextRef.current = context;
-    let masterGain = masterGainRef.current;
-    if (!masterGain) {
-      masterGain = context.createGain();
-      masterGainRef.current = masterGain;
+    let audioMix = audioMixRef.current;
+    if (!audioMix) {
+      audioMix = context.createGain();
+      audioMixRef.current = audioMix;
       const playbackOutputGain = context.createGain();
       playbackOutputGainRef.current = playbackOutputGain;
-      audioMeterRef.current = createStereoAudioMeterNodes(context, masterGain);
-      masterGain.connect(playbackOutputGain);
+      audioMeterRef.current = createStereoAudioMeterNodes(context, audioMix);
+      audioMix.connect(playbackOutputGain);
       playbackOutputGain.connect(context.destination);
     }
 
     const activeExternalAudioUrls = usesExternalAudio
       ? Object.fromEntries(
           Object.entries(audioPreviewUrls).filter(([streamIndexText]) =>
-            audioTracks.some(
-              (track) => track.streamIndex === Number(streamIndexText) && track.enabled,
-            ),
+            enabledAudioTracks.some((track) => track.streamIndex === Number(streamIndexText)),
           ),
         )
       : {};
@@ -414,12 +521,14 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       element.style.display = "none";
       const markReady = () => {
         setAudioReadiness((current) => {
-          const indexes =
-            current.sourcePath === sourcePath ? new Set(current.streamIndexes) : new Set<number>();
+          const previewUrls =
+            current.sourcePath === sourcePath
+              ? new Map(current.previewUrls)
+              : new Map<number, string>();
 
-          if (indexes.has(streamIndex)) return current;
-          indexes.add(streamIndex);
-          return { sourcePath, streamIndexes: indexes };
+          if (previewUrls.get(streamIndex) === url) return current;
+          previewUrls.set(streamIndex, url);
+          return { sourcePath, previewUrls };
         });
       };
 
@@ -428,7 +537,15 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       document.body.appendChild(element);
       const audioSource = context.createMediaElementSource(element);
       const gain = context.createGain();
-      audioSource.connect(gain).connect(masterGain);
+      const track = audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
+      const gainDb = track
+        ? track.processing.loudnessNormalization === undefined
+          ? (liveAudioTrackGainsRef.current.get(streamIndex) ?? track.processing.gainDb)
+          : effectiveAudioTrackGainDb(track.processing)
+        : 0;
+
+      setGainNodeFromDb(gain, track?.enabled === false ? Number.NEGATIVE_INFINITY : gainDb);
+      audioSource.connect(gain).connect(audioMix);
       audioElementsRef.current.set(streamIndex, element);
       audioNodesRef.current.set(streamIndex, { source: audioSource, gain });
       if (element.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) markReady();
@@ -436,16 +553,17 @@ function useEditorInteractionController(): EditorInteractionRuntime {
 
     const video = videoRef.current;
     cleanupStaleNativeAudioBindings(video);
-    if (!video) {
+    if (!video || requiresProcessedPreview) {
       disconnectCurrentNativeAudioRoute();
     } else {
       const binding = getOrCreateNativeAudioBinding(nativeAudioBindingsRef.current, context, video);
-      connectNativeAudioBinding(binding, masterGain);
+      connectNativeAudioBinding(binding, audioMix);
       nativeAudioBindingRef.current = { element: video, binding };
     }
   }, [
     audioPreviewUrls,
     audioTracks,
+    enabledAudioTracks,
     cleanupAudioRuntime,
     cleanupStaleNativeAudioBindings,
     disconnectCurrentNativeAudioRoute,
@@ -453,6 +571,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     removeAudioRuntime,
     sourcePath,
     playbackSpeed,
+    requiresProcessedPreview,
     usesExternalAudio,
   ]);
 
@@ -460,28 +579,19 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     const meter = audioMeterRef.current;
     if (!meter) return;
 
-    const exportAudioTracks = audioTracks.filter(
-      (track) => track.enabled && track.volumePercent > 0,
-    );
-
     const audioStreams = media?.audioStreams ?? [];
-    meter.normalizationGain.gain.value = meterMixNormalization(
-      mergeAudio && usesExternalAudio,
-      exportAudioTracks.length,
-    );
     meter.isMono = isMonoAudioMix(
-      exportAudioTracks.map(
-        (track) =>
-          audioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.channels,
-      ),
+      audioTracks
+        .filter((track) => track.enabled)
+        .map(
+          (track) =>
+            audioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.channels,
+        ),
     );
-  }, [audioTracks, mergeAudio, media?.audioStreams, usesExternalAudio]);
+  }, [audioTracks, media?.audioStreams]);
 
   useEffect(() => {
-    const masterGain = masterGainRef.current;
     const playbackOutputGain = playbackOutputGainRef.current;
-    if (masterGain)
-      masterGain.gain.value = masterAudio.enabled ? masterAudio.volumePercent / 50 : 0;
     if (playbackOutputGain && audioContextRef.current) {
       const context = audioContextRef.current;
       const now = context.currentTime;
@@ -492,21 +602,37 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     }
     for (const track of audioTracks) {
       const node = audioNodesRef.current.get(track.streamIndex);
-      if (node) node.gain.gain.value = track.enabled ? track.volumePercent / 50 : 0;
+      if (node) {
+        const gainDb =
+          track.processing.loudnessNormalization === undefined
+            ? (liveAudioTrackGainsRef.current.get(track.streamIndex) ?? track.processing.gainDb)
+            : effectiveAudioTrackGainDb(track.processing);
+
+        node.gain.gain.value = track.enabled ? 10 ** (gainDb / 20) : 0;
+      }
     }
     if (nativeAudioBindingRef.current) {
-      nativeAudioBindingRef.current.binding.gain.gain.value = nativeAudioTrack?.enabled
-        ? nativeAudioTrack.volumePercent / 50
+      const gainDb = nativeAudioTrack
+        ? nativeAudioTrack.processing.loudnessNormalization === undefined
+          ? (liveAudioTrackGainsRef.current.get(nativeAudioTrack.streamIndex) ??
+            nativeAudioTrack.processing.gainDb)
+          : effectiveAudioTrackGainDb(nativeAudioTrack.processing)
         : 0;
-    } else if (videoRef.current) {
-      const masterGain = masterAudio.enabled ? masterAudio.volumePercent / 50 : 0;
-      const trackGain = nativeAudioTrack
-        ? nativeAudioTrack.enabled
-          ? nativeAudioTrack.volumePercent / 50
-          : 0
-        : 1;
 
-      const combinedGain = (playbackVolumePercent / 100) * masterGain * trackGain;
+      nativeAudioBindingRef.current.binding.gain.gain.value =
+        nativeAudioTrack?.enabled && !requiresProcessedPreview ? 10 ** (gainDb / 20) : 0;
+    } else if (videoRef.current) {
+      const gainDb = nativeAudioTrack
+        ? nativeAudioTrack.processing.loudnessNormalization === undefined
+          ? (liveAudioTrackGainsRef.current.get(nativeAudioTrack.streamIndex) ??
+            nativeAudioTrack.processing.gainDb)
+          : effectiveAudioTrackGainDb(nativeAudioTrack.processing)
+        : 0;
+
+      const trackGain =
+        nativeAudioTrack?.enabled && !requiresProcessedPreview ? 10 ** (gainDb / 20) : 0;
+
+      const combinedGain = (playbackVolumePercent / 100) * trackGain;
 
       videoRef.current.volume = Math.min(1, combinedGain);
     }
@@ -514,10 +640,9 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     audioPreviewUrls,
     audioTracks,
     nativeAudioTrack,
-    readyPreviewKey,
-    masterAudio.enabled,
-    masterAudio.volumePercent,
     playbackVolumePercent,
+    readyPreviewKey,
+    requiresProcessedPreview,
   ]);
 
   useEffect(() => {
@@ -616,7 +741,15 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     setShuttleDirection(0);
     stopPlayheadAnimation();
     setTransportError(t("preview.messages.playbackFailed"));
-  }, [pauseAudioPlayback, playbackSpeed, stopPlayheadAnimation, t]);
+  }, [
+    pauseAudioPlayback,
+    playbackSpeed,
+    setIsPlaying,
+    setShuttleDirection,
+    setTransportError,
+    stopPlayheadAnimation,
+    t,
+  ]);
 
   const resumeExternalAudioPlayback = useCallback(() => {
     const video = videoRef.current;
@@ -701,7 +834,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
         if (pendingMicros !== null) applyMediaSeek(pendingMicros);
       });
     },
-    [applyMediaSeek],
+    [applyMediaSeek, setPlayheadMicros],
   );
 
   const commitSeek = useCallback(
@@ -718,7 +851,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       if (publish) setPlayheadMicros(clamped);
       if (seekMedia) applyMediaSeek(clamped);
     },
-    [applyMediaSeek, flushFrameStepSeek],
+    [applyMediaSeek, flushFrameStepSeek, setPlayheadMicros],
   );
 
   const startMediaPlayback = useCallback(() => {
@@ -744,7 +877,13 @@ function useEditorInteractionController(): EditorInteractionRuntime {
         handlePlaybackStartFailure();
       });
     });
-  }, [flushFrameStepSeek, handlePlaybackStartFailure, scheduleVideoSeek, syncAudioPlayback]);
+  }, [
+    flushFrameStepSeek,
+    handlePlaybackStartFailure,
+    scheduleVideoSeek,
+    setTransportError,
+    syncAudioPlayback,
+  ]);
 
   const handlePlaybackBoundary = useCallback(
     (currentMicros: number): boolean => {
@@ -767,7 +906,14 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       commitSeek(boundary.action.positionMicros);
       return true;
     },
-    [commitSeek, pauseAudioPlayback, playbackModes, startMediaPlayback, stopPlayheadAnimation],
+    [
+      commitSeek,
+      pauseAudioPlayback,
+      playbackModes,
+      setIsPlaying,
+      startMediaPlayback,
+      stopPlayheadAnimation,
+    ],
   );
 
   const startPlayheadAnimation = useCallback(() => {
@@ -881,6 +1027,8 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       flushFrameStepSeek,
       pauseAudioPlayback,
       playbackSpeed,
+      setIsPlaying,
+      setShuttleDirection,
       setMediaPlaybackRate,
       stopPlayheadAnimation,
     ],
@@ -991,6 +1139,8 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       pauseAudioPlayback,
       playbackModes,
       playbackSpeed,
+      setIsPlaying,
+      setShuttleDirection,
       setMediaPlaybackRate,
       startMediaPlayback,
       startReverseShuttleAnimation,
@@ -1066,7 +1216,13 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     pauseAudioPlayback();
     setIsPlaying(false);
     stopPlayheadAnimation();
-  }, [flushFrameStepSeek, handleShuttleEnd, pauseAudioPlayback, stopPlayheadAnimation]);
+  }, [
+    flushFrameStepSeek,
+    handleShuttleEnd,
+    pauseAudioPlayback,
+    setIsPlaying,
+    stopPlayheadAnimation,
+  ]);
 
   const handleScrubEnd = useCallback(() => {
     flushScrubSeek();
@@ -1122,7 +1278,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       playbackModes.resetBoundary();
       startMediaPlayback();
     },
-    [commitSeek, handleShuttleEnd, playbackModes, startMediaPlayback],
+    [commitSeek, handleShuttleEnd, playbackModes, setTransportError, startMediaPlayback],
   );
 
   const handlePausePlayback = useCallback(() => {
@@ -1137,7 +1293,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     pauseAudioPlayback();
     setIsPlaying(false);
     stopPlayheadAnimation();
-  }, [handleShuttleEnd, pauseAudioPlayback, stopPlayheadAnimation]);
+  }, [handleShuttleEnd, pauseAudioPlayback, setIsPlaying, stopPlayheadAnimation]);
 
   const handleStepFrame = useCallback(
     (direction: -1 | 1, origin: DiagnosticOrigin = { type: "internal" }) => {
@@ -1152,7 +1308,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       const baseMicros = pendingFrameStepSeekMicrosRef.current ?? currentPlayheadMicrosRef.current;
       queueFrameStepSeek(baseMicros + direction * frameDurationMicros(frameRate));
     },
-    [frameRate, handleShuttleEnd, queueFrameStepSeek, stopPlayheadAnimation],
+    [frameRate, handleShuttleEnd, queueFrameStepSeek, setIsPlaying, stopPlayheadAnimation],
   );
 
   const handleSetSegmentBoundary = useCallback(
@@ -1254,7 +1410,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       setPlayheadMicros(currentMicros);
       if (currentMicros >= trimRef.current.sourceDurationMicros) stopPlayheadAnimation();
     },
-    [handlePlaybackBoundary, stopPlayheadAnimation],
+    [handlePlaybackBoundary, setPlayheadMicros, stopPlayheadAnimation],
   );
 
   const onPause = useCallback(() => {
@@ -1273,7 +1429,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       data: { status: "paused" },
       origin: { type: "internal" },
     });
-  }, [onTimeUpdate, pauseAudioPlayback, stopPlayheadAnimation]);
+  }, [onTimeUpdate, pauseAudioPlayback, setIsPlaying, stopPlayheadAnimation]);
 
   const onCropToolOpenChange = useCallback(
     (isOpen: boolean) => {
@@ -1301,7 +1457,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
         startMediaPlayback();
       }
     },
-    [handleShuttleEnd, pauseAudioPlayback, startMediaPlayback, stopPlayheadAnimation],
+    [handleShuttleEnd, pauseAudioPlayback, setIsPlaying, startMediaPlayback, stopPlayheadAnimation],
   );
 
   const onPreviewPlaybackError = useCallback(
@@ -1317,7 +1473,14 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       stopPlayheadAnimation();
       if (sourcePath) void dispatch(handlePreviewPlaybackErrorRequested(sourcePath, previewKind));
     },
-    [dispatch, handleShuttleEnd, pauseAudioPlayback, sourcePath, stopPlayheadAnimation],
+    [
+      dispatch,
+      handleShuttleEnd,
+      pauseAudioPlayback,
+      setIsPlaying,
+      sourcePath,
+      stopPlayheadAnimation,
+    ],
   );
 
   const onLoadedMetadata = useCallback(() => {
@@ -1326,7 +1489,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
 
   const onCanPlay = useCallback(() => {
     if (previewKey) setReadyPreviewKey(previewKey);
-  }, [previewKey]);
+  }, [previewKey, setReadyPreviewKey]);
 
   const onPlay = useCallback(() => {
     playbackRequestedRef.current = true;
@@ -1341,7 +1504,7 @@ function useEditorInteractionController(): EditorInteractionRuntime {
       data: { status: "playing" },
       origin: { type: "internal" },
     });
-  }, [startPlayheadAnimation]);
+  }, [setIsPlaying, startPlayheadAnimation]);
 
   const onEnded = useCallback(() => {
     diagnostics.event("playback.state.changed", {
@@ -1425,6 +1588,8 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     onCropToolOpenChange,
     onPreviewPlaybackError,
     setMediaPlaybackRate,
+    setLiveAudioTrackGain,
+    clearLiveAudioTrackGain,
     setVideoElement,
     canSetSegmentStart: canSetTrimBoundaryAtPlayhead(trim, "start", displayedPlayheadMicros),
     canSetSegmentEnd: canSetTrimBoundaryAtPlayhead(trim, "end", displayedPlayheadMicros),

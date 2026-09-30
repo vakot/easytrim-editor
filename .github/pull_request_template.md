@@ -2,8 +2,8 @@
 
 <!-- Add only relevant ticket, design, or upstream links. Delete unused bullets. -->
 
-- Ticket: [Asana]()
-- Design: [Figma]()
+- Ticket: [Asana](<>)
+- Design: [Figma](<>)
 - Upstream: -
 
 <!--

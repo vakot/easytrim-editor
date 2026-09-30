@@ -1,4 +1,4 @@
-import { AudioLines, BetweenVerticalStart, Clapperboard, LoaderCircle, Repeat } from "lucide-react";
+import { BetweenVerticalStart, Clapperboard, LoaderCircle, Repeat } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ import {
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { cn } from "@/lib/class-names.utils";
 
-import { useAudioActivityDetection } from "../hooks/useAudioActivityDetection";
 import { useSceneDetection } from "../hooks/useSceneDetection";
 
 import { StereoAudioMeter } from "./StereoAudioMeter";
@@ -32,85 +31,16 @@ function TimelineToolbar() {
       data-slot="timeline-toolbar"
       role="toolbar"
     >
-      <div className="grid auto-cols-7 grid-flow-col grid-rows-[repeat(2,1.75rem)] gap-1">
+      <div className="grid auto-cols-max grid-flow-col grid-rows-[repeat(2,1.75rem)] gap-1">
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
         <SceneDetectionTool />
-        <AudioActivityDetectionTool />
       </div>
 
       <Separator orientation="vertical" />
 
       <StereoAudioMeter />
     </div>
-  );
-}
-
-function AudioActivityDetectionTool() {
-  const { t } = useTranslation();
-  const sourceReady = useAppSelector(selectSourceReady);
-  const detectCommand = useApplicationCommand("detect-audio-activity");
-  const showMarkersCommand = useApplicationCommand("show-audio-activity-markers");
-  const { executeCommand } = useApplicationCommands();
-  const detection = useAudioActivityDetection(sourceReady);
-  const loading = detectCommand.pending || detection.isDetecting;
-  const hasFailed = detection.error !== null;
-  const error = detection.error;
-  const markersEnabled = showMarkersCommand.checked ?? true;
-  const label = detection.hasDetected
-    ? markersEnabled
-      ? t("timeline.actions.disableAudioActivityMarkers")
-      : t("timeline.actions.enableAudioActivityMarkers")
-    : t("timeline.actions.detectAudioActivity");
-
-  const button = (
-    <Button
-      aria-busy={loading}
-      aria-label={label}
-      aria-pressed={detection.hasDetected && markersEnabled}
-      className={cn(detection.hasDetected && markersEnabled && "text-primary")}
-      disabled={
-        loading || !(detection.hasDetected ? showMarkersCommand.enabled : detectCommand.enabled)
-      }
-      onClick={() =>
-        void executeCommand(
-          detection.hasDetected ? "show-audio-activity-markers" : "detect-audio-activity",
-          "button",
-        )
-      }
-      size="icon-sm"
-      type="button"
-      variant={hasFailed ? "destructive" : "secondary"}
-    >
-      {loading ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <AudioLines />}
-    </Button>
-  );
-
-  if (hasFailed) {
-    return (
-      <Popover>
-        <PopoverTrigger asChild>{button}</PopoverTrigger>
-        <PopoverContent align="start" className="space-y-3">
-          <p role="alert">{error || t("timeline.status.audioActivityDetectionFailed")}</p>
-          <Button
-            disabled={loading}
-            onClick={() => void executeCommand("detect-audio-activity", "button")}
-            size="sm"
-            type="button"
-          >
-            {t("common.actions.retry")}
-          </Button>
-        </PopoverContent>
-      </Popover>
-    );
-  }
-  return (
-    <Tooltip preserveOnTrigger>
-      <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent>
-        {detection.hasDetected ? label : t("timeline.tooltips.detectAudioActivity")}
-      </TooltipContent>
-    </Tooltip>
   );
 }
 

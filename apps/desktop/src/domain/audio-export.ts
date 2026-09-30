@@ -1,28 +1,12 @@
-import type { AudioTrackSelection } from "./media";
+import type { AudioTrackSelection, AudioTrackSettings } from "./audio-processing";
 
-interface SelectedAudioTrack {
-  enabled: boolean;
-  streamIndex: number;
-  volumePercent: number;
-}
-
-interface MasterAudioSettings {
-  enabled: boolean;
-  volumePercent: number;
-}
-
-function selectedAudioTracks(
-  tracks: readonly SelectedAudioTrack[],
-  master: MasterAudioSettings,
-): AudioTrackSelection[] {
-  const masterGain = master.enabled ? master.volumePercent / 50 : 0;
+function selectedAudioTracks(tracks: readonly AudioTrackSettings[]): AudioTrackSelection[] {
   return tracks
-    .filter((track) => track.enabled && track.volumePercent > 0 && masterGain > 0)
-    .map((track) => ({
-      streamIndex: track.streamIndex,
-      volumePercent: Math.min(200, Math.round(track.volumePercent * masterGain)),
-    }))
-    .filter((track) => track.volumePercent > 0);
+    .filter((track) => track.enabled)
+    .map(({ processing, streamIndex }) => ({
+      processing: { ...processing },
+      streamIndex,
+    }));
 }
 
 export { selectedAudioTracks };

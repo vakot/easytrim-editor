@@ -6,12 +6,12 @@ use std::{
     time::Duration,
 };
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::{
     error::AppError,
     media::export::{
-        AudioTrackSelection, TrimSelection, audio_filter_graph, validate_common_request,
+        AudioLoudnessAnalysis, AudioTrackSelection, TrimSelection, validate_common_request,
     },
     process::{ProcessOutput, run_bounded_cancellable},
     state::ActiveSource,
@@ -22,20 +22,14 @@ const ANALYSIS_TRUE_PEAK_DB: f64 = -1.5;
 const ANALYSIS_TIMEOUT: Duration = Duration::from_secs(60 * 60);
 const ANALYSIS_STDERR_LIMIT: usize = 128 * 1024;
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct LoudnessAnalysisRequest {
     pub trim: TrimSelection,
-    pub audio_tracks: Vec<AudioTrackSelection>,
-    pub merge_audio: bool,
+    pub audio_track: AudioTrackSelection,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LoudnessAnalysis {
-    pub integrated_lufs: Option<f64>,
-    pub true_peak_db: Option<f64>,
-}
+pub type LoudnessAnalysis = AudioLoudnessAnalysis;
 
 pub fn analyze_loudness(
     source: &ActiveSource,
@@ -46,12 +40,11 @@ pub fn analyze_loudness(
         .media
         .as_ref()
         .ok_or_else(|| AppError::invalid_request("Inspect the video before analyzing audio."))?;
-    validate_common_request(media, &request.trim, &request.audio_tracks)?;
-    if request.audio_tracks.is_empty() {
-        return Err(AppError::invalid_request(
-            "Select at least one audio track before analyzing loudness.",
-        ));
-    }
+    validate_common_request(
+        media,
+        &request.trim,
+        std::slice::from_ref(&request.audio_track),
+    )?;
 
     let arguments = analysis_arguments(request, &source.path);
     let output = run_bounded_cancellable(
@@ -97,10 +90,7 @@ fn analysis_arguments(request: &LoudnessAnalysisRequest, source_path: &Path) -> 
         OsString::from("-t"),
         OsString::from(format!("{duration_seconds:.6}")),
         OsString::from("-filter_complex"),
-        OsString::from(analysis_filter_graph(
-            &request.audio_tracks,
-            request.merge_audio,
-        )),
+        OsString::from(analysis_filter_graph(&request.audio_track)),
         OsString::from("-map"),
         OsString::from("[measured]"),
         OsString::from("-ac"),
@@ -114,30 +104,11 @@ fn analysis_arguments(request: &LoudnessAnalysisRequest, source_path: &Path) -> 
     ]
 }
 
-fn analysis_filter_graph(audio_tracks: &[AudioTrackSelection], merge_audio: bool) -> String {
-    let mut graph = audio_filter_graph(audio_tracks, false);
-    let inputs = (0..audio_tracks.len())
-        .map(|index| format!("[audio{index}]"))
-        .collect::<String>();
-    if merge_audio {
-        graph.push(';');
-        graph.push_str(&format!(
-            "{inputs}amix=inputs={}:duration=longest:dropout_transition=0:normalize=1[aout]",
-            audio_tracks.len()
-        ));
-    } else if audio_tracks.len() == 1 {
-        graph.push_str(";[audio0]anull[aout]");
-    } else {
-        graph.push(';');
-        graph.push_str(&format!(
-            "{inputs}amix=inputs={}:duration=longest:dropout_transition=0:normalize=0[aout]",
-            audio_tracks.len()
-        ));
-    }
-    graph.push_str(&format!(
-        ";[aout]loudnorm=I={ANALYSIS_TARGET_LUFS}:TP={ANALYSIS_TRUE_PEAK_DB}:LRA=11:print_format=json[measured]"
-    ));
-    graph
+fn analysis_filter_graph(audio_track: &AudioTrackSelection) -> String {
+    format!(
+        "[0:{}]aformat=channel_layouts=stereo,loudnorm=I={ANALYSIS_TARGET_LUFS}:TP={ANALYSIS_TRUE_PEAK_DB}:LRA=11:print_format=json[measured]",
+        audio_track.stream_index
+    )
 }
 
 fn parse_loudness(stderr: &[u8]) -> Result<LoudnessAnalysis, AppError> {
@@ -207,7 +178,10 @@ mod tests {
         parse_loudness,
     };
     use crate::{
-        media::export::{AudioTrackSelection, TrimSelection},
+        media::export::{
+            AudioTrackProcessing, AudioTrackSelection, LoudnessNormalization, LoudnessPreset,
+            TrimSelection,
+        },
         process::run_bounded,
     };
 
@@ -237,24 +211,22 @@ mod tests {
     }
 
     #[test]
-    fn analysis_graph_preserves_track_gains_and_merge_policy() {
-        let tracks = vec![
-            AudioTrackSelection {
-                stream_index: 1,
-                volume_percent: 25,
+    fn analysis_graph_measures_source_independently_of_level_processing() {
+        let track = AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 3,
+            processing: AudioTrackProcessing {
+                gain_db: -6.0,
+                loudness_normalization: Some(LoudnessNormalization::Preset(
+                    LoudnessPreset::Broadcast,
+                )),
             },
-            AudioTrackSelection {
-                stream_index: 3,
-                volume_percent: 100,
-            },
-        ];
-        let graph = analysis_filter_graph(&tracks, true);
-        assert!(graph.contains("[0:1]volume=0.500000[audio0]"));
-        assert!(graph.contains("[0:3]volume=2.000000[audio1]"));
-        assert!(graph.contains(
-            "[audio0][audio1]amix=inputs=2:duration=longest:dropout_transition=0:normalize=1[aout]"
-        ));
-        assert!(analysis_filter_graph(&tracks, false).contains("normalize=0[aout]"));
+        };
+        let graph = analysis_filter_graph(&track);
+        assert_eq!(
+            graph,
+            "[0:3]aformat=channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json[measured]"
+        );
     }
 
     #[test]
@@ -291,11 +263,14 @@ mod tests {
                 start_micros: 0,
                 end_micros: 2_000_000,
             },
-            audio_tracks: vec![AudioTrackSelection {
+            audio_track: AudioTrackSelection {
+                loudness_analysis: None,
                 stream_index: 0,
-                volume_percent: 50,
-            }],
-            merge_audio: false,
+                processing: AudioTrackProcessing {
+                    gain_db: 0.0,
+                    loudness_normalization: None,
+                },
+            },
         };
         let output = run_bounded(
             OsStr::new("ffmpeg"),

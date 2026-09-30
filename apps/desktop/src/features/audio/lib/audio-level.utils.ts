@@ -1,29 +1,18 @@
 import type { TFunction } from "i18next";
 
+import type { LoudnessPreset } from "@/domain/audio-processing";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
-export const MIN_SLIDER_DECIBELS = -24;
-export const MAX_SLIDER_DECIBELS = 6;
-
-function volumePercentToDecibels(volumePercent: number): number {
-  if (volumePercent <= 0) return MIN_SLIDER_DECIBELS;
-  const decibels = Math.max(
-    MIN_SLIDER_DECIBELS,
-    Math.min(MAX_SLIDER_DECIBELS, 20 * Math.log10(volumePercent / 50)),
-  );
-
-  return Math.round(decibels * 10) / 10;
-}
-
-function decibelsToVolumePercent(decibels: number): number {
-  if (decibels <= MIN_SLIDER_DECIBELS) return 0;
-  return 50 * 10 ** (decibels / 20);
-}
-
-function formatDecibels(volumePercent: number): string {
-  if (volumePercent <= 0) return "−∞ dB";
-  const decibels = 20 * Math.log10(volumePercent / 50);
-  return `${decibels >= 0 ? "+" : ""}${decibels.toFixed(1)} dB`;
+const MIN_SLIDER_DECIBELS = -24;
+function normalizationPresetLabel(preset: LoudnessPreset, t: TFunction): string {
+  switch (preset) {
+    case "broadcast":
+      return t("audio.options.normalizationBroadcast");
+    case "streaming":
+      return t("audio.options.normalizationStreaming");
+    case "webVideo":
+      return t("audio.options.normalizationWebVideo");
+  }
 }
 
 function formatChannels(stream: AudioStream, t: TFunction): string {
@@ -31,6 +20,17 @@ function formatChannels(stream: AudioStream, t: TFunction): string {
   return stream.channels === undefined
     ? t("audio.options.unknownLayout")
     : t("audio.options.channels", { count: stream.channels });
+}
+
+function formatGain(gainDb: number, language: string): string {
+  if (gainDb <= MIN_SLIDER_DECIBELS) return "−∞ dB";
+
+  const value = new Intl.NumberFormat(language, {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 1,
+  }).format(gainDb);
+
+  return `${value.replace(/-/g, "−")} dB`;
 }
 
 function audioOutputSummary(enabledCount: number, mergeAudio: boolean, t: TFunction): string {
@@ -44,8 +44,8 @@ function audioOutputSummary(enabledCount: number, mergeAudio: boolean, t: TFunct
 
 export {
   audioOutputSummary,
-  decibelsToVolumePercent,
   formatChannels,
-  formatDecibels,
-  volumePercentToDecibels,
+  formatGain,
+  MIN_SLIDER_DECIBELS,
+  normalizationPresetLabel,
 };

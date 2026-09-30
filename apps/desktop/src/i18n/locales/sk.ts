@@ -4,6 +4,7 @@ export const sk = {
   common: {
     actions: {
       back: "Späť",
+      apply: "Použiť",
       cancel: "Zrušiť",
       clear: "Vymazať",
       close: "Zavrieť",
@@ -70,7 +71,6 @@ export const sk = {
         previewTransform: "Náhľad / Transformácia",
         markers: "Značky",
         markersScene: "Značky / Scéna",
-        markersAudioActivity: "Značky / Aktivita zvuku",
         queueOnFinishedApplication: "Front / Po dokončení / Aplikácia",
         queueOnFinishedSource: "Front / Po dokončení / Zdroj",
         go: "Prejsť",
@@ -495,9 +495,6 @@ export const sk = {
   timeline: {
     actions: {
       detectScenes: "Rozpoznať zmeny scén",
-      detectAudioActivity: "Rozpoznať aktivitu zvuku v aktívnom mixe",
-      disableAudioActivityMarkers: "Skryť rozsahy aktivity zvuku",
-      enableAudioActivityMarkers: "Zobraziť rozsahy aktivity zvuku",
       disableSceneMarkers: "Skryť značky scén",
       enableSceneMarkers: "Zobraziť značky scén",
       moveSegment: "Presunúť vybraný segment",
@@ -511,13 +508,10 @@ export const sk = {
     },
     status: {
       sceneDetectionFailed: "Rozpoznávanie scén zlyhalo. Skúste to znova.",
-      audioActivityDetectionFailed: "Rozpoznávanie aktivity zvuku zlyhalo. Skúste to znova.",
     },
     tooltips: {
       detectScenes:
         "Analyzovať zdrojové video a vyhľadať zmeny scén. Podržte Shift počas ťahania a prichyťte sa k značke scény alebo k okraju rozsahu aktivity zvuku.",
-      detectAudioActivity:
-        "Analyzovať aktívny zvukový mix a označiť rozsahy aktivity zvuku na časovej osi.",
       moveSegment: "Potiahnutím presuňte vybraný segment — podržaním Shift ho prichytíte",
       trimReset: "{{label}} — podržaním Shift prichytíte — dvojitým kliknutím obnovíte",
     },
@@ -537,15 +531,26 @@ export const sk = {
   },
   audio: {
     actions: {
-      enableTrack: "Povoliť {{title}}",
+      analyzeLoudness: "Analyzovať hlasitosť",
+      analyzingLoudness: "Analyzuje sa hlasitosť…",
+      detectActivity: "Rozpoznať aktivitu zvuku",
+      detectingActivity: "Rozpoznáva sa aktivita zvuku…",
+      effects: "Efekty…",
+      hideActivity: "Skryť rozpoznané úseky",
       merge: "Zlúčiť vybrané stopy",
       mute: "Stlmiť",
       muteTrack: "Stlmiť {{title}}",
+      redetectActivity: "Znova rozpoznať aktivitu zvuku",
+      retryActivityDetection: "Zopakovať rozpoznávanie aktivity",
+      showActivity: "Zobraziť rozpoznané úseky",
       unmute: "Zrušiť stlmenie",
+      unmuteTrack: "Zrušiť stlmenie: {{title}}",
     },
     labels: {
-      allTracks: "Všetky zvukové stopy",
       defaultTrack: "Zvuk {{number}}",
+      loudnessNormalization: "Normalizácia hlasitosti",
+      maximumTruePeak: "Maximálny skutočný vrchol (dBTP)",
+      targetLufs: "Cieľová hlasitosť (LUFS)",
       title: "Zvukové stopy",
     },
     status: {
@@ -563,18 +568,37 @@ export const sk = {
         separate_other: "{{count}} vybraných stôp zostane samostatných",
         videoOnly: "Výstup iba s videom",
       },
+      normalizedEffectSummary: "Normalizované - {{preset}}",
+      normalizedHoverTitle: "Normalizované · {{preset}}",
+      normalizedLevelSummary: "Cieľ {{target}} LUFS · limit špičky {{peak}} dBTP",
+      preparingProcessedPreview: "Pripravuje sa náhľad s týmito nastaveniami stopy…",
     },
     tooltips: {
       merge: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
+      normalizationReplacesGain:
+        "Úroveň tejto stopy riadi normalizácia hlasitosti. Manuálne zosilnenie sa počas normalizácie ignoruje, zachová sa a obnoví sa po vypnutí normalizácie.",
+    },
+    dialogs: {
+      effects: {
+        description: "Zmeny sa použijú až po stlačení tlačidla Použiť.",
+        title: "{{title}} — efekty",
+      },
     },
     accessibility: {
-      allTracksVolume: "Hlasitosť všetkých zvukových stôp",
-      trackVolume: "Hlasitosť: {{title}}",
+      trackActions: "Akcie zvukovej stopy {{number}}",
+      appliedEffects: "Použité efekty: {{summary}}",
+      trackGain: "Zosilnenie zvukovej stopy {{number}} v decibeloch",
+      trackNormalization: "Normalizácia hlasitosti: {{title}}",
     },
     options: {
       channels_one: "{{count}} kanál",
       channels_few: "{{count}} kanály",
       channels_other: "{{count}} kanálov",
+      normalizationNone: "Vypnuté",
+      normalizationCustom: "Vlastné",
+      normalizationWebVideo: "Webové video",
+      normalizationStreaming: "Streamovanie",
+      normalizationBroadcast: "Vysielanie",
       unknownLayout: "neznáme rozloženie",
     },
   },
@@ -620,22 +644,6 @@ export const sk = {
         description: "Pred výberom súboru nastavte optimalizované vykreslenie.",
         editTitle: "Upraviť export vo fronte",
         frameRate: "Snímková frekvencia",
-        loudness: {
-          analyze: "Analyzovať hlasitosť",
-          analyzed: "Analyzované",
-          analyzing: "Analyzuje sa…",
-          analysisFailed: "Analýza hlasitosti zvuku zlyhala.",
-          default: "Predvolené",
-          defaultWithAnalysis: "Predvolené · {{integratedLufs}} / {{truePeakDb}}",
-          label: "Normalizovať hlasitosť",
-          retry: "Skúsiť znova",
-          presets: {
-            broadcast: "Vysielanie · −23 LUFS / −2 dBTP",
-            streaming: "Streamovanie · −16 LUFS / −1,5 dBTP",
-            webVideo: "Webové video · −14 LUFS / −1 dBTP",
-          },
-          unavailable: "Nedostupné",
-        },
         matchSource: "Podľa zdroja",
         resolution: "Rozlíšenie",
         saveNotice: "Po potvrdení sa otvorí systémové okno na uloženie.",

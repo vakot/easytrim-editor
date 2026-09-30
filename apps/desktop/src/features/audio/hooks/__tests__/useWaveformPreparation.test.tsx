@@ -1,44 +1,48 @@
 import { renderHook } from "@testing-library/react";
 import { type PropsWithChildren, StrictMode } from "react";
+import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
-import type { AudioTrackState } from "@/app/store/slices/audio-slice";
+const { prepareSourceWaveforms } = vi.hoisted(() => ({ prepareSourceWaveforms: vi.fn() }));
+
+vi.mock("@/app/hooks/usePlayback", () => ({ usePlayback: () => ({ isReady: true }) }));
+vi.mock("@/app/store/thunks/source-media-thunks", () => ({
+  prepareSourceWaveforms: (...args: unknown[]) => {
+    prepareSourceWaveforms(...args);
+    return () => undefined;
+  },
+}));
+
+import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { createAppStore } from "@/app/store/store";
+import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { useWaveformPreparation, WAVEFORM_RENDER_WIDTH } from "../useWaveformPreparation";
 
-const tracks: AudioTrackState[] = [
-  { streamIndex: 1, enabled: true, volumePercent: 50, waveform: { status: "idle" } },
-  { streamIndex: 2, enabled: true, volumePercent: 50, waveform: { status: "idle" } },
-];
-
-function StrictModeWrapper({ children }: PropsWithChildren) {
-  return <StrictMode>{children}</StrictMode>;
-}
-
 describe("useWaveformPreparation", () => {
-  it("requests each pending waveform set once under Strict Mode", () => {
-    const prepare = vi.fn();
-
-    renderHook(() => useWaveformPreparation(tracks, true, prepare), {
-      wrapper: StrictModeWrapper,
+  it("requests the pending waveform set once under Strict Mode", () => {
+    const store = createAppStore({
+      getItem: async () => null,
+      setItem: async () => undefined,
+      removeItem: async () => undefined,
     });
 
-    expect(prepare).toHaveBeenCalledOnce();
-    expect(prepare).toHaveBeenCalledWith([1, 2], WAVEFORM_RENDER_WIDTH);
-  });
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath) }));
 
-  it("waits for playable media before requesting waveforms", () => {
-    const prepare = vi.fn();
-    const { rerender } = renderHook(
-      ({ enabled }) => useWaveformPreparation(tracks, enabled, prepare),
-      { initialProps: { enabled: false } },
+    renderHook(() => useWaveformPreparation(store.getState().audio.tracks), {
+      wrapper: ({ children }: PropsWithChildren) => (
+        <StrictMode>
+          <Provider store={store}>{children}</Provider>
+        </StrictMode>
+      ),
+    });
+
+    expect(prepareSourceWaveforms).toHaveBeenCalledOnce();
+    expect(prepareSourceWaveforms).toHaveBeenCalledWith(
+      firstSource.sourcePath,
+      [2, 4],
+      WAVEFORM_RENDER_WIDTH,
     );
-
-    expect(prepare).not.toHaveBeenCalled();
-
-    rerender({ enabled: true });
-
-    expect(prepare).toHaveBeenCalledOnce();
-    expect(prepare).toHaveBeenCalledWith([1, 2], WAVEFORM_RENDER_WIDTH);
   });
 });
