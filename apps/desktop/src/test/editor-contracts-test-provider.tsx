@@ -8,17 +8,13 @@ import {
   type EditorTimelineState,
   EditorTimelineStateContext,
 } from "@/app/contexts/editor-contracts-context";
+import { AudioPlaybackContext, type AudioPlaybackContract } from "@/features/audio";
 
 const videoRef: RefObject<HTMLVideoElement | null> = { current: null };
-const audioPlayheadRef: EditorPlaybackInteraction["audioPlayheadRef"] = { current: null };
-const audioMeterRef: EditorPlaybackInteraction["audioMeterRef"] = { current: null };
 const playheadRef: RefObject<HTMLButtonElement | null> = { current: null };
 const noOperation = () => undefined;
 
 const playback = {
-  audioPlayheadRef,
-  audioMeterRef,
-  clearLiveAudioTrackGain: noOperation,
   isPlaybackReady: false,
   isPlaying: false,
   nativeLoopEnabled: false,
@@ -35,7 +31,6 @@ const playback = {
   onStepFrame: noOperation,
   onTimeUpdate: noOperation,
   onTogglePlayback: noOperation,
-  setLiveAudioTrackGain: noOperation,
   setMediaPlaybackRate: noOperation,
   setVideoElement: (element: HTMLVideoElement | null) => {
     videoRef.current = element;
@@ -45,6 +40,13 @@ const playback = {
   videoMuted: true,
   videoRef,
 } satisfies EditorPlaybackInteraction;
+
+const audioPlayback = {
+  audioPlayheadRef: { current: null },
+  audioMeterRef: { current: null },
+  clearLiveAudioTrackGain: noOperation,
+  setLiveAudioTrackGain: noOperation,
+} satisfies AudioPlaybackContract;
 
 const timelineState = {
   canSetSegmentEnd: false,
@@ -69,13 +71,15 @@ const timelineCommands = {
 
 function EditorContractsTestProvider({ children }: { children: ReactNode }) {
   return (
-    <EditorPlaybackContext.Provider value={playback}>
-      <EditorTimelineCommandsContext.Provider value={timelineCommands}>
-        <EditorTimelineStateContext.Provider value={timelineState}>
-          {children}
-        </EditorTimelineStateContext.Provider>
-      </EditorTimelineCommandsContext.Provider>
-    </EditorPlaybackContext.Provider>
+    <AudioPlaybackContext.Provider value={audioPlayback}>
+      <EditorPlaybackContext.Provider value={playback}>
+        <EditorTimelineCommandsContext.Provider value={timelineCommands}>
+          <EditorTimelineStateContext.Provider value={timelineState}>
+            {children}
+          </EditorTimelineStateContext.Provider>
+        </EditorTimelineCommandsContext.Provider>
+      </EditorPlaybackContext.Provider>
+    </AudioPlaybackContext.Provider>
   );
 }
 

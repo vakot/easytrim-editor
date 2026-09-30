@@ -1,4 +1,7 @@
 export { AudioPanel } from "./components/AudioPanel";
+export type { AudioPlaybackContract } from "./contexts/audio-playback-context";
+export { AudioPlaybackContext, useAudioPlayback } from "./contexts/audio-playback-context";
+export { useAudioPlaybackRuntime } from "./hooks/useAudioPlaybackRuntime";
 export { synchronizeAudioPosition } from "./lib/audio-sync";
 export { audioTrackColor } from "./lib/audio-track-color";
 export type { NativeAudioBinding } from "./lib/native-audio-runtime";

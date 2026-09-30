@@ -1,6 +1,7 @@
 export { TimelinePanel } from "./components/TimelinePanel";
 export { useEditorTimelineShortcuts } from "./hooks/useEditorTimelineShortcuts";
 export { useSceneDetection } from "./hooks/useSceneDetection";
+export { useTimelineEditingCommands } from "./hooks/useTimelineEditingCommands";
 export {
   editorShortcutFromEvent,
   FRAME_SHUTTLE_PLAYBACK_RATE,

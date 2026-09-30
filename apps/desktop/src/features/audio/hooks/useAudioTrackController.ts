@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   audioTrackActivityVisibilityToggled,
@@ -18,6 +17,7 @@ import {
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
+import { useAudioPlayback } from "@/features/audio";
 
 import { MIN_SLIDER_DECIBELS } from "../lib/audio-level.utils";
 import { audioTrackColor } from "../lib/audio-track-color";
@@ -36,7 +36,7 @@ const GAIN_ADJUSTMENT_KEYS = [
 
 function useAudioTrackController(streamIndex: number) {
   const dispatch = useAppDispatch();
-  const { clearLiveAudioTrackGain, setLiveAudioTrackGain } = usePlayback();
+  const { clearLiveAudioTrackGain, setLiveAudioTrackGain } = useAudioPlayback();
   const track = useAppSelector((state) =>
     selectAudioTracks(state).find((candidate) => candidate.streamIndex === streamIndex),
   );

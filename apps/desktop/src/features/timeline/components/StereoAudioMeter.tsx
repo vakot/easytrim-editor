@@ -8,6 +8,7 @@ import {
   peakAmplitude,
   smoothMeterLevel,
   updatePeakHold,
+  useAudioPlayback,
 } from "@/features/audio";
 import { cn } from "@/lib/class-names.utils";
 
@@ -35,7 +36,8 @@ const METER_MARKER_LABELS = [
 ];
 
 function StereoAudioMeter() {
-  const { audioMeterRef, isPlaying } = usePlayback();
+  const { audioMeterRef } = useAudioPlayback();
+  const { isPlaying } = usePlayback();
   const { t } = useTranslation();
   const leftFillRef = useRef<HTMLDivElement>(null);
   const rightFillRef = useRef<HTMLDivElement>(null);

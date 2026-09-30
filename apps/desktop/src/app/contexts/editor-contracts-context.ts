@@ -2,14 +2,10 @@ import type { RefObject } from "react";
 import { createContext } from "react";
 
 import type { TrimBoundary, TrimRange } from "@/domain/trim";
-import type { StereoAudioMeterNodes } from "@/features/audio";
 import type { FrameShuttleDirection } from "@/features/timeline";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 export interface EditorPlaybackInteraction {
-  audioMeterRef: RefObject<StereoAudioMeterNodes | null>;
-  audioPlayheadRef: RefObject<HTMLDivElement | null>;
-  clearLiveAudioTrackGain: (streamIndex: number, committedGainDb: number) => void;
   isPlaybackReady: boolean;
   isPlaying: boolean;
   nativeLoopEnabled: boolean;
@@ -26,7 +22,6 @@ export interface EditorPlaybackInteraction {
   onStepFrame: (direction: -1 | 1, origin?: DiagnosticOrigin) => void;
   onTimeUpdate: (seconds: number) => void;
   onTogglePlayback: (origin?: DiagnosticOrigin) => void;
-  setLiveAudioTrackGain: (streamIndex: number, gainDb: number) => void;
   setMediaPlaybackRate: (rate: number) => void;
   setVideoElement: (element: HTMLVideoElement | null) => void;
   shuttleDirection: FrameShuttleDirection | 0;

@@ -10,8 +10,6 @@ function usePlayback() {
   return {
     canInteract: interaction.isPlaybackReady,
     videoRef: interaction.videoRef,
-    audioPlayheadRef: interaction.audioPlayheadRef,
-    audioMeterRef: interaction.audioMeterRef,
     isPlaying: interaction.isPlaying,
     isReady: interaction.isPlaybackReady,
     transportError: interaction.transportError,
@@ -25,8 +23,6 @@ function usePlayback() {
     onTimeUpdate: interaction.onTimeUpdate,
     onEnded: interaction.onEnded,
     toggle: interaction.onTogglePlayback,
-    setLiveAudioTrackGain: interaction.setLiveAudioTrackGain,
-    clearLiveAudioTrackGain: interaction.clearLiveAudioTrackGain,
     setMediaPlaybackRate: interaction.setMediaPlaybackRate,
     setVideoElement: interaction.setVideoElement,
     stepFrame: interaction.onStepFrame,

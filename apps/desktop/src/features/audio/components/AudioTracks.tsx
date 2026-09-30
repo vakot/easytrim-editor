@@ -1,10 +1,10 @@
-import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimelineState } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { timelinePercent, type TrimRange } from "@/domain/trim";
+import { useAudioPlayback } from "@/features/audio";
 
 import { useWaveformPreparation } from "../hooks/useWaveformPreparation";
 
@@ -32,7 +32,7 @@ const EMPTY_TIMELINE_RANGE: TrimRange = {
 };
 
 function AudioPlayhead() {
-  const { audioPlayheadRef } = usePlayback();
+  const { audioPlayheadRef } = useAudioPlayback();
   const { displayedPlayheadMicros } = useTimelineState();
   const range = useAppSelector(selectTrim) ?? EMPTY_TIMELINE_RANGE;
   const playheadPercent = timelinePercent(displayedPlayheadMicros, range.sourceDurationMicros);

@@ -6,13 +6,27 @@ import {
   EditorTimelineStateContext,
 } from "@/app/contexts/editor-contracts-context";
 import { useEditorInteractionController } from "@/app/hooks/useEditorInteractionController";
+import { AudioPlaybackContext, type AudioPlaybackContract } from "@/features/audio";
 
 function EditorContractsProvider({ children }: { children: ReactNode }) {
   const interaction = useEditorInteractionController();
+  const audioPlayback = useMemo<AudioPlaybackContract>(
+    () => ({
+      audioMeterRef: interaction.audioPlayback.audioMeterRef,
+      audioPlayheadRef: interaction.audioPlayback.audioPlayheadRef,
+      clearLiveAudioTrackGain: interaction.audioPlayback.clearLiveAudioTrackGain,
+      setLiveAudioTrackGain: interaction.audioPlayback.setLiveAudioTrackGain,
+    }),
+    [
+      interaction.audioPlayback.audioMeterRef,
+      interaction.audioPlayback.audioPlayheadRef,
+      interaction.audioPlayback.clearLiveAudioTrackGain,
+      interaction.audioPlayback.setLiveAudioTrackGain,
+    ],
+  );
+
   const playback = useMemo(
     () => ({
-      audioPlayheadRef: interaction.audioPlayheadRef,
-      audioMeterRef: interaction.audioMeterRef,
       isPlaybackReady: interaction.isPlaybackReady,
       isPlaying: interaction.isPlaying,
       nativeLoopEnabled: interaction.nativeLoopEnabled,
@@ -29,8 +43,6 @@ function EditorContractsProvider({ children }: { children: ReactNode }) {
       onStepFrame: interaction.onStepFrame,
       onTimeUpdate: interaction.onTimeUpdate,
       onTogglePlayback: interaction.onTogglePlayback,
-      setLiveAudioTrackGain: interaction.setLiveAudioTrackGain,
-      clearLiveAudioTrackGain: interaction.clearLiveAudioTrackGain,
       setMediaPlaybackRate: interaction.setMediaPlaybackRate,
       setVideoElement: interaction.setVideoElement,
       shuttleDirection: interaction.shuttleDirection,
@@ -39,8 +51,6 @@ function EditorContractsProvider({ children }: { children: ReactNode }) {
       videoRef: interaction.videoRef,
     }),
     [
-      interaction.audioPlayheadRef,
-      interaction.audioMeterRef,
       interaction.isPlaybackReady,
       interaction.isPlaying,
       interaction.nativeLoopEnabled,
@@ -57,8 +67,6 @@ function EditorContractsProvider({ children }: { children: ReactNode }) {
       interaction.onStepFrame,
       interaction.onTimeUpdate,
       interaction.onTogglePlayback,
-      interaction.setLiveAudioTrackGain,
-      interaction.clearLiveAudioTrackGain,
       interaction.setMediaPlaybackRate,
       interaction.setVideoElement,
       interaction.shuttleDirection,
@@ -113,13 +121,15 @@ function EditorContractsProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <EditorPlaybackContext.Provider value={playback}>
-      <EditorTimelineCommandsContext.Provider value={timelineCommands}>
-        <EditorTimelineStateContext.Provider value={timelineState}>
-          {children}
-        </EditorTimelineStateContext.Provider>
-      </EditorTimelineCommandsContext.Provider>
-    </EditorPlaybackContext.Provider>
+    <AudioPlaybackContext.Provider value={audioPlayback}>
+      <EditorPlaybackContext.Provider value={playback}>
+        <EditorTimelineCommandsContext.Provider value={timelineCommands}>
+          <EditorTimelineStateContext.Provider value={timelineState}>
+            {children}
+          </EditorTimelineStateContext.Provider>
+        </EditorTimelineCommandsContext.Provider>
+      </EditorPlaybackContext.Provider>
+    </AudioPlaybackContext.Provider>
   );
 }
 
