@@ -73,6 +73,7 @@ import {
   audioTrackLoudnessInputsKey,
 } from "@/domain/audio-processing";
 import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
+import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
 import { normalizeSourceKey } from "@/domain/source";
@@ -490,11 +491,6 @@ async function prepareSelectedSource(
   if (activeInstanceId) dispatch(editingInstanceMediaUpdated({ id: activeInstanceId, media }));
 
   const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
-  const audioTrackSelections = selectAudioTracks(getState()).map(({ processing, streamIndex }) => ({
-    processing: { ...processing, gainDb: 0 },
-    streamIndex,
-  }));
-
   const audioOperation = operation.child("audio.preview", {
     data: { streamCount: audioStreamIndexes.length },
   });

@@ -176,6 +176,7 @@ export type {
   AudioTrackProcessing,
   AudioTrackSelection,
   AudioTrackSettings,
+  AudioLoudnessAnalysis,
   CustomLoudnessNormalization,
   LoudnessNormalization,
   LoudnessPreset,
@@ -193,5 +194,6 @@ export {
   loudnessNormalizationTargets,
   sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
+  sameAudioTrackLoudnessInputs,
   sameAudioTrackProcessing,
 };

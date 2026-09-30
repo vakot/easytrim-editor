@@ -127,7 +127,6 @@ export type {
   ExportResult,
   FastExportRequest,
   FrameRate,
-  LoudnessAnalysis,
   LoudnessAnalysisRequest,
   MediaInfo,
   OptimizedExportRequest,
