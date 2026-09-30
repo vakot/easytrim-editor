@@ -69,8 +69,6 @@ import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
 import { analyzeTrackLoudness } from "./audio-track-thunks";
 import type { AppThunk } from "./source-media-thunks";
-import { analyzeTrackLoudness } from "./audio-track-thunks";
-import type { AppThunk } from "./source-media-thunks";
 import {
   activateEditingInstanceRequested,
   commitActiveEditingInstanceDraft,

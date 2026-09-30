@@ -43,12 +43,6 @@ type AudioTrackPreviewState =
   | { descriptor: AudioPreviewDescriptor; status: "stale" }
   | { descriptor?: AudioPreviewDescriptor; error: AppError; operationId: string; status: "failed" };
 
-type AudioTrackPreviewState =
-  | { status: "idle" }
-  | { operationId: string; status: "loading" }
-  | { descriptor: AudioPreviewDescriptor; status: "ready" }
-  | { error: AppError; operationId: string; status: "failed" };
-
 type AudioPreviewState =
   | { previews: AudioPreviewDescriptor[]; status: "idle" }
   | { previews: AudioPreviewDescriptor[]; status: "loading" }
@@ -238,11 +232,6 @@ const audioSlice = createSlice({
       );
 
       const previewChanged = !sameAudioTrackPreviewProcessing(
-        track.processing,
-        action.payload.processing,
-      );
-
-      const loudnessInputsChanged = !sameAudioTrackLoudnessInputs(
         track.processing,
         action.payload.processing,
       );

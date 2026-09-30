@@ -254,25 +254,6 @@ function toAudioTrackPreviewSelection(
   };
 }
 
-function toAudioTrackPreviewSelection(
-  track: {
-    loudnessAnalysis: ReturnType<typeof selectAudioTracks>[number]["loudnessAnalysis"];
-    processing: AudioTrackSelection["processing"];
-    streamIndex: number;
-  },
-  cacheKey: string,
-): AudioTrackSelection {
-  return {
-    ...(track.processing.loudnessNormalization !== undefined &&
-    track.loudnessAnalysis.status === "ready" &&
-    track.loudnessAnalysis.cacheKey === cacheKey
-      ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
-      : {}),
-    processing: { ...track.processing, gainDb: 0 },
-    streamIndex: track.streamIndex,
-  };
-}
-
 function isCurrentTrack(
   state: ReturnType<Parameters<AppThunk>[1]>,
   sourcePath: string,
@@ -316,25 +297,6 @@ function isCurrentPreviewJob(
     selectSourceSelection(state)?.sourcePath === sourcePath &&
     track?.preview.status === "loading" &&
     track.preview.operationId === operationId
-  );
-}
-
-function isCurrentAnalysisTrack(
-  state: ReturnType<Parameters<AppThunk>[1]>,
-  sourcePath: string,
-  sourceLoadToken: number,
-  streamIndex: number,
-  cacheKey: string,
-): boolean {
-  return (
-    state.source.loadToken === sourceLoadToken &&
-    selectSourceSelection(state)?.sourcePath === sourcePath &&
-    selectAudioTracks(state).some(
-      (track) =>
-        track.streamIndex === streamIndex &&
-        track.loudnessAnalysis.status === "loading" &&
-        track.loudnessAnalysis.cacheKey === cacheKey,
-    )
   );
 }
 
