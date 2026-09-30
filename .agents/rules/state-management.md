@@ -5,6 +5,15 @@ Use it as the canonical source when changing frontend state or architecture.
 
 Agents must enforce the following:
 
+- Treat Redux as the main bus for shared application and feature workflow state. App and
+  feature-specific components select state at the point of use and dispatch domain actions/thunks;
+  do not pass Redux values or callbacks through intermediate components.
+- Keep app/feature component props minimal and mostly identity-based. Context-specific controls
+  connect to Redux themselves. Reserve broad generic value/event APIs for presentational primitives
+  in `components/ui`; those primitives remain unaware of product state and Redux.
+- Keep ephemeral drafts and interaction state local. Use a feature-local hook/context when nested
+  controls share a draft; do not move it to Redux only to remove callback props.
+
 - Identify one owner for every value before editing: Redux for shared serializable workflow state,
   feature state for capability-owned domains, local state for ephemeral UI, Context for services,
   and runtime owners for non-serializable resources.

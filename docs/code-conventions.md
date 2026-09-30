@@ -21,6 +21,25 @@ Keep single-consumer helpers, types, and constants with their owning module. Com
 in the same file as their component, immediately above the component declaration. Use a subsystem
 `types.ts` only for a deliberate shared contract, never for a component's props-only type.
 
+## Component state and props
+
+Treat Redux as the main bus for shared application and feature workflow state. An app- or
+feature-specific component reads the state it consumes with typed selectors and dispatches domain
+actions or thunks itself. Do not pass Redux-owned values, derived display state, or action callbacks
+through an intermediate component just to reach the component that uses them.
+
+Keep app and feature component props minimal and mostly identity-based (`streamIndex`, `sourceId`,
+or `instanceId`), plus `children` when composition requires it. A product-specific control should
+own its state connection and behavior rather than expose a broad configuration and callback API.
+Use a feature-local hook or context for ephemeral state shared by nested controls, such as an
+unsubmitted dialog draft.
+
+Reserve broad, generic controlled-value and event APIs for primitives under `components/ui`.
+Primitives such as `Slider` accept generic values and events (`value`, `onValueChange`,
+`onValueCommit`, `onClick`, and `onDoubleClick`) and remain unaware of Redux and product semantics.
+Context-specific wrappers belong to their feature: for example, `VolumeSlider` accepts a track
+identity such as `streamIndex`, selects and updates that track, and configures the generic `Slider`.
+
 ## Imports and exports
 
 Use named exports by default. Default exports are reserved for framework/tooling contracts that
