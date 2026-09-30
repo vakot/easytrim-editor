@@ -1,9 +1,10 @@
-import { BetweenVerticalStart, Clapperboard, LoaderCircle, Repeat } from "lucide-react";
+import { BetweenVerticalStart, Clapperboard, Repeat } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
@@ -80,7 +81,7 @@ function SceneDetectionTool() {
       type="button"
       variant={hasFailed ? "destructive" : "secondary"}
     >
-      {loading ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <Clapperboard />}
+      {loading ? <Spinner aria-hidden="true" /> : <Clapperboard />}
     </Button>
   );
 

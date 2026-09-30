@@ -4,7 +4,6 @@ import {
   FileVideo,
   Film,
   FolderOpen,
-  LoaderCircle,
   type LucideIcon,
   RotateCcw,
   Scissors,
@@ -12,8 +11,7 @@ import {
 } from "lucide-react";
 
 import { MarkerIcon } from "@/components/ui/marker";
-
-import { cn } from "@/lib/class-names.utils";
+import { Spinner } from "@/components/ui/spinner";
 
 import type { ActivityEntry, ActivityKind, ActivityStatus } from "../../../lib/activity-projection";
 
@@ -34,7 +32,7 @@ const activityStatusPresentation: Record<ActivityStatus, { className: string; ic
     completed: { className: "text-muted-foreground" },
     failed: { className: "text-destructive", icon: CircleAlert },
     interrupted: { className: "text-destructive", icon: CircleAlert },
-    pending: { className: "text-primary", icon: LoaderCircle },
+    pending: { className: "text-primary" },
   };
 
 interface ActivityFeedEntryIconProps {
@@ -49,7 +47,11 @@ function ActivityFeedEntryIcon({ entry }: ActivityFeedEntryIconProps) {
 
   return (
     <MarkerIcon className={statusPresentation.className}>
-      <Icon aria-hidden="true" className={cn(entry.status === "pending" && "animate-spin")} />
+      {entry.status === "pending" ? (
+        <Spinner aria-hidden="true" />
+      ) : (
+        <Icon aria-hidden="true" />
+      )}
     </MarkerIcon>
   );
 }

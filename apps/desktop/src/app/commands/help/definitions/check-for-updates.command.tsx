@@ -1,9 +1,10 @@
-import { CheckCircle2, CircleAlert, Download, LoaderCircle, RefreshCw } from "lucide-react";
+import { CheckCircle2, CircleAlert, Download, RefreshCw } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
+import { Spinner } from "@/components/ui/spinner";
 import { requestWindowShutdown } from "@/lib/tauri/window";
 
 function useCheckForUpdatesCommand() {
@@ -13,7 +14,7 @@ function useCheckForUpdatesCommand() {
 
   const icon = useMemo(() => {
     if (status === "checking" || isInstalling)
-      return <LoaderCircle aria-hidden="true" className="animate-spin" />;
+      return <Spinner aria-hidden="true" />;
     if (availableVersion) return <Download aria-hidden="true" />;
     if (status === "up-to-date") return <CheckCircle2 aria-hidden="true" />;
     if (status === "error") return <CircleAlert aria-hidden="true" />;

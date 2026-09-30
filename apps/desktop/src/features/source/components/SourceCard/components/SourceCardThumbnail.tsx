@@ -1,7 +1,8 @@
-import { FileVideo, LoaderCircle, Play } from "lucide-react";
+import { FileVideo, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectImportedSourceThumbnail } from "@/app/store/slices/preview-slice";
@@ -62,7 +63,7 @@ function SourceCardThumbnail({
           className="grid size-full place-items-center bg-linear-to-br from-muted to-background"
           role="status"
         >
-          <LoaderCircle aria-hidden="true" className="size-8 animate-spin text-primary" />
+          <Spinner aria-hidden="true" className="size-8 text-primary" />
         </span>
       ) : (
         <span className="grid size-full place-items-center bg-linear-to-br from-muted to-background">
