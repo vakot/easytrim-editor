@@ -53,9 +53,13 @@ function useTimelineMediaStartup({
   const { getMediaState, pauseMedia, playMedia, seekMedia, setPlaybackRate } =
     usePreviewMediaTransport();
 
-  const handlePlaybackStartFailure = useCallback(() => {
+  const cancelPendingPlaybackStart = useCallback(() => {
     playbackStartSequenceRef.current += 1;
     playbackRequestedRef.current = false;
+  }, [playbackRequestedRef, playbackStartSequenceRef]);
+
+  const handlePlaybackStartFailure = useCallback(() => {
+    cancelPendingPlaybackStart();
     isPlayingRef.current = false;
     shuttleDirectionRef.current = 0;
     cancelFrame(reverseShuttleFrameRef);
@@ -69,10 +73,9 @@ function useTimelineMediaStartup({
     setTransportError(t("preview.messages.playbackFailed"));
   }, [
     isPlayingRef,
+    cancelPendingPlaybackStart,
     pauseAudioPlayback,
-    playbackRequestedRef,
     playbackSpeed,
-    playbackStartSequenceRef,
     pauseMedia,
     reverseShuttleFrameRef,
     setAudioPlaybackRate,
@@ -168,6 +171,7 @@ function useTimelineMediaStartup({
 
   return {
     applyMediaSeek,
+    cancelPendingPlaybackStart,
     scheduleVideoSeek,
     startMediaPlayback,
   };

@@ -15,6 +15,7 @@ import { FRAME_SHUTTLE_PLAYBACK_RATE, type FrameShuttleDirection } from "../lib/
 import { cancelFrame } from "../lib/playhead-sync";
 
 interface TimelineShuttleArgs {
+  cancelPendingPlaybackStart: () => void;
   commitSeek: (micros: number) => void;
   currentPlayheadMicrosRef: MutableRefObject<number>;
   flushFrameStepSeek: () => void;
@@ -48,6 +49,7 @@ const REVERSE_SHUTTLE_SEEK_INTERVAL_MS = 50;
 const SHUTTLE_MAX_FRAME_DELTA_MS = 100;
 
 function useTimelineShuttle({
+  cancelPendingPlaybackStart,
   commitSeek,
   currentPlayheadMicrosRef,
   flushFrameStepSeek,
@@ -90,6 +92,8 @@ function useTimelineShuttle({
       const direction = shuttleDirectionRef.current;
       if (direction === 0) return;
 
+      cancelPendingPlaybackStart();
+
       const mediaState = getMediaState();
       const finalMicros =
         direction === 1 && mediaState && !mediaState.seeking && !isSeekPending()
@@ -111,6 +115,7 @@ function useTimelineShuttle({
     },
     [
       commitSeek,
+      cancelPendingPlaybackStart,
       currentPlayheadMicrosRef,
       flushFrameStepSeek,
       getMediaState,
@@ -211,6 +216,7 @@ function useTimelineShuttle({
     (direction: FrameShuttleDirection, origin: DiagnosticOrigin = { type: "internal" }) => {
       if (!isPlaybackReadyRef.current || shuttleDirectionRef.current === direction) return;
       if (shuttleDirectionRef.current !== 0) stopShuttle(origin);
+      cancelPendingPlaybackStart();
       flushFrameStepSeek();
       isPlayingRef.current = false;
       pauseMedia();
@@ -234,6 +240,7 @@ function useTimelineShuttle({
     },
     [
       flushFrameStepSeek,
+      cancelPendingPlaybackStart,
       isPlaybackReadyRef,
       isPlayingRef,
       pauseAudioPlayback,

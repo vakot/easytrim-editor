@@ -193,7 +193,8 @@ function useTimelinePlaybackController() {
     usesExternalAudio,
   });
 
-  const { applyMediaSeek, scheduleVideoSeek, startMediaPlayback } = mediaStartup;
+  const { applyMediaSeek, cancelPendingPlaybackStart, scheduleVideoSeek, startMediaPlayback } =
+    mediaStartup;
 
   const flushFrameStepSeek = useCallback(() => {
     cancelFrame(frameStepSeekFrameRef);
@@ -259,6 +260,7 @@ function useTimelinePlaybackController() {
   );
 
   const shuttle = useTimelineShuttle({
+    cancelPendingPlaybackStart,
     commitSeek,
     currentPlayheadMicrosRef,
     flushFrameStepSeek,
@@ -546,12 +548,7 @@ function useTimelinePlaybackController() {
     isPlaying,
     transportError,
     shuttleDirection,
-    onLoadedMetadata,
-    onPlay,
-    onPause,
     pause: handlePausePlayback,
-    onTimeUpdate,
-    onEnded,
     toggle: handleTogglePlayback,
     stepFrame: handleStepFrame,
     startShuttle: handleShuttleStart,
