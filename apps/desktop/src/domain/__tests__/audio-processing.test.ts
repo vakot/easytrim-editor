@@ -8,6 +8,7 @@ import {
   audioTrackNormalizationGainDb,
   effectiveAudioTrackGainDb,
   loudnessNormalizationTargets,
+  sameAudioTrackLoudnessInputs,
 } from "../audio-processing";
 
 describe("audio track level policy", () => {
@@ -52,18 +53,29 @@ describe("audio track level policy", () => {
 
   it("keys loudness analysis by trim and explicit pre-level processing inputs", () => {
     const trim = { startMicros: 1_000_000, endMicros: 8_000_000 };
-    const initial = audioTrackLoudnessInputsKey("source-a", 2, trim);
-    expect(audioTrackLoudnessInputsKey("source-a", 2, trim)).toBe(initial);
+    const processing = { gainDb: -4, loudnessNormalization: "streaming" as const };
+    const initial = audioTrackLoudnessInputsKey("source-a", 2, trim, processing);
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, processing)).toBe(initial);
     expect(
-      audioTrackLoudnessInputsKey("source-a", 2, { ...trim, startMicros: 2_000_000 }),
+      audioTrackLoudnessInputsKey("source-a", 2, { ...trim, startMicros: 2_000_000 }, processing),
     ).not.toBe(initial);
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, { ...processing, gainDb: 2 })).toBe(
+      initial,
+    );
     expect(
-      audioTrackLoudnessInputsKey("source-a", 2, trim, [{ highPass: { cutoffHz: 100 } }]),
-    ).not.toBe(initial);
-    expect(
-      audioTrackLoudnessInputsKey("source-a", 2, trim, [{ highPass: { cutoffHz: 100 } }]),
-    ).toBe(audioTrackLoudnessInputsKey("source-a", 2, trim, [{ highPass: { cutoffHz: 100 } }]));
-    expect(audioTrackLoudnessInputsKey("source-b", 2, trim)).not.toBe(initial);
+      audioTrackLoudnessInputsKey("source-a", 2, trim, {
+        ...processing,
+        loudnessNormalization: { mode: "custom", targetLufs: -18, maxTruePeakDb: -2 },
+      }),
+    ).toBe(initial);
+    const upstreamProcessing = { ...processing, highPass: { cutoffHz: 100 } };
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing)).not.toBe(initial);
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing)).toBe(
+      audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing),
+    );
+    expect(audioTrackLoudnessInputsKey("source-b", 2, trim, processing)).not.toBe(initial);
+    expect(sameAudioTrackLoudnessInputs(processing, { ...processing, gainDb: 2 })).toBe(true);
+    expect(sameAudioTrackLoudnessInputs(processing, upstreamProcessing)).toBe(false);
   });
 
   it("normalizes from one cached pre-level measurement while respecting true peak", () => {

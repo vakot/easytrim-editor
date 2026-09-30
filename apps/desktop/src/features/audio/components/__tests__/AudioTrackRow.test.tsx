@@ -198,7 +198,11 @@ describe("AudioTrackRow", () => {
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
 
     const trim = selectTrim(store.getState())!;
-    const cacheKey = audioTrackLoudnessInputsKey(firstSource.sourcePath, 2, trim);
+    const cacheKey = audioTrackLoudnessInputsKey(firstSource.sourcePath, 2, trim, {
+      gainDb: 0,
+      loudnessNormalization: "streaming",
+    });
+
     act(() => {
       store.dispatch(
         audioTrackLoudnessAnalysisStarted({ cacheKey, operationId: "loudness-1", streamIndex: 2 }),

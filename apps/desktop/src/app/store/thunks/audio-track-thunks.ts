@@ -32,7 +32,13 @@ function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
     const track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
     if (!source || !trim || !track) return;
 
-    const cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, streamIndex, trim);
+    const cacheKey = audioTrackLoudnessInputsKey(
+      source.sourcePath,
+      streamIndex,
+      trim,
+      track.processing,
+    );
+
     const jobKey = `${source.sourcePath}:${state.source.loadToken}:${cacheKey}`;
     if (
       (track.loudnessAnalysis.status === "ready" || track.loudnessAnalysis.status === "loading") &&
@@ -103,7 +109,12 @@ function detectTrackActivity(streamIndex: number): AppThunk<Promise<void>> {
 
     let trim = selectTrim(state);
     if (!trim) return;
-    let cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, streamIndex, trim);
+    let cacheKey = audioTrackLoudnessInputsKey(
+      source.sourcePath,
+      streamIndex,
+      trim,
+      track.processing,
+    );
 
     if (
       track.processing.loudnessNormalization !== undefined &&
@@ -114,7 +125,12 @@ function detectTrackActivity(streamIndex: number): AppThunk<Promise<void>> {
       track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
       trim = selectTrim(state);
       if (!track || !trim) return;
-      cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, streamIndex, trim);
+      cacheKey = audioTrackLoudnessInputsKey(
+        source.sourcePath,
+        streamIndex,
+        trim,
+        track.processing,
+      );
       if (track.loudnessAnalysis.status !== "ready" || track.loudnessAnalysis.cacheKey !== cacheKey)
         return;
     }
@@ -152,7 +168,12 @@ function prepareTrackPreview(streamIndex: number): AppThunk<Promise<void>> {
     const operationId = crypto.randomUUID();
     dispatch(audioTrackPreviewStarted({ operationId, streamIndex }));
 
-    let cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, streamIndex, trim);
+    let cacheKey = audioTrackLoudnessInputsKey(
+      source.sourcePath,
+      streamIndex,
+      trim,
+      track.processing,
+    );
 
     if (
       track.processing.loudnessNormalization !== undefined &&
@@ -168,7 +189,12 @@ function prepareTrackPreview(streamIndex: number): AppThunk<Promise<void>> {
         !isCurrentPreviewJob(state, source.sourcePath, sourceLoadToken, streamIndex, operationId)
       )
         return;
-      cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, streamIndex, trim);
+      cacheKey = audioTrackLoudnessInputsKey(
+        source.sourcePath,
+        streamIndex,
+        trim,
+        track.processing,
+      );
       if (
         track.loudnessAnalysis.status === "failed" &&
         track.loudnessAnalysis.cacheKey === cacheKey
@@ -271,6 +297,7 @@ function isCurrentTrack(
         selectSourceSelection(state)?.sourcePath ?? "",
         audioTrack.streamIndex,
         trim,
+        audioTrack.processing,
       )
     : null;
 

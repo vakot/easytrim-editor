@@ -9,6 +9,7 @@ import {
   type AudioTrackSettings,
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_PROCESSING,
+  sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
@@ -235,8 +236,10 @@ const audioSlice = createSlice({
         action.payload.processing,
       );
 
-      // Current processing contains no effects upstream of loudness analysis.
-      const loudnessInputsChanged = false;
+      const loudnessInputsChanged = !sameAudioTrackLoudnessInputs(
+        track.processing,
+        action.payload.processing,
+      );
 
       track.processing = cloneAudioTrackProcessing(action.payload.processing);
       if (loudnessInputsChanged) track.loudnessAnalysis = { status: "idle" };

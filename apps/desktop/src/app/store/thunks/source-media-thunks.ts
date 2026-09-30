@@ -518,7 +518,13 @@ async function prepareSelectedSource(
       const pendingAnalysis = requiredIndexes.flatMap((streamIndex) => {
         const track = tracks.find((candidate) => candidate.streamIndex === streamIndex);
         if (!track || track.processing.loudnessNormalization === undefined) return [];
-        const cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, track.streamIndex, trim);
+        const cacheKey = audioTrackLoudnessInputsKey(
+          source.sourcePath,
+          track.streamIndex,
+          trim,
+          track.processing,
+        );
+
         return track.loudnessAnalysis.status !== "ready" ||
           track.loudnessAnalysis.cacheKey !== cacheKey
           ? [track]
@@ -544,7 +550,12 @@ async function prepareSelectedSource(
       const track = tracks.find((candidate) => candidate.streamIndex === streamIndex);
       if (!track) return [];
       const cacheKey = currentTrim
-        ? audioTrackLoudnessInputsKey(source.sourcePath, track.streamIndex, currentTrim)
+        ? audioTrackLoudnessInputsKey(
+            source.sourcePath,
+            track.streamIndex,
+            currentTrim,
+            track.processing,
+          )
         : null;
 
       if (

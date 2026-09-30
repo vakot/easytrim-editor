@@ -163,7 +163,7 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
   const analysis = track?.loudnessAnalysis;
   const analysisCacheKey =
     track && trim && source
-      ? audioTrackLoudnessInputsKey(source.sourcePath, track.streamIndex, trim)
+      ? audioTrackLoudnessInputsKey(source.sourcePath, track.streamIndex, trim, draft.processing)
       : undefined;
 
   const analysisIsCurrent = analysis?.status === "ready" && analysis.cacheKey === analysisCacheKey;

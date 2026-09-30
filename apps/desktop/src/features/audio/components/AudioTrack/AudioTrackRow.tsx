@@ -122,7 +122,13 @@ function waveformGainDb(
   const analysis = track.loudnessAnalysis;
   if (!normalization) return liveGainDb;
   if (!trim || analysis?.status !== "ready") return 0;
-  const cacheKey = audioTrackLoudnessInputsKey(sourcePath, track.streamIndex, trim);
+  const cacheKey = audioTrackLoudnessInputsKey(
+    sourcePath,
+    track.streamIndex,
+    trim,
+    track.processing,
+  );
+
   return analysis.cacheKey === cacheKey
     ? audioTrackNormalizationGainDb(normalization, analysis.value)
     : 0;

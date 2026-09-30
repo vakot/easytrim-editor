@@ -78,6 +78,7 @@ function audioTrackActivityProcessingChanged(
   left: AudioTrackProcessing,
   right: AudioTrackProcessing,
 ): boolean {
+  if (!sameAudioTrackLoudnessInputs(left, right)) return true;
   if (left.loudnessNormalization !== undefined || right.loudnessNormalization !== undefined) {
     return !sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization);
   }
@@ -88,9 +89,9 @@ function audioTrackLoudnessInputsKey(
   sourceKey: string,
   streamIndex: number,
   trim: { endMicros: number; startMicros: number },
-  upstreamEffectInputs: readonly unknown[] = [],
+  processing: AudioTrackProcessing,
 ): string {
-  // Callers project only cleanup/dynamics inputs here; level policies are downstream.
+  const upstreamEffectInputs = getUpstreamAudioEffectInputs(processing);
   return JSON.stringify([
     sourceKey,
     streamIndex,
@@ -98,6 +99,24 @@ function audioTrackLoudnessInputsKey(
     trim.endMicros,
     upstreamEffectInputs,
   ]);
+}
+
+function sameAudioTrackLoudnessInputs(
+  left: AudioTrackProcessing,
+  right: AudioTrackProcessing,
+): boolean {
+  return (
+    JSON.stringify(getUpstreamAudioEffectInputs(left)) ===
+    JSON.stringify(getUpstreamAudioEffectInputs(right))
+  );
+}
+
+function getUpstreamAudioEffectInputs(processing: AudioTrackProcessing): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(processing)
+      .filter(([key]) => key !== "gainDb" && key !== "loudnessNormalization")
+      .sort(([left], [right]) => left.localeCompare(right)),
+  );
 }
 
 function loudnessNormalizationTargets(normalization: LoudnessNormalization): {
@@ -125,7 +144,8 @@ function sameAudioTrackProcessing(
 ): boolean {
   return (
     left.gainDb === right.gainDb &&
-    sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization)
+    sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization) &&
+    sameAudioTrackLoudnessInputs(left, right)
   );
 }
 
@@ -133,7 +153,10 @@ function sameAudioTrackPreviewProcessing(
   left: AudioTrackProcessing,
   right: AudioTrackProcessing,
 ): boolean {
-  return sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization);
+  return (
+    sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization) &&
+    sameAudioTrackLoudnessInputs(left, right)
+  );
 }
 
 function sameLoudnessNormalization(
@@ -149,6 +172,7 @@ function sameLoudnessNormalization(
 
 function cloneAudioTrackProcessing(processing: AudioTrackProcessing): AudioTrackProcessing {
   return {
+    ...getUpstreamAudioEffectInputs(processing),
     gainDb: processing.gainDb,
     ...(processing.loudnessNormalization === undefined
       ? {}
@@ -188,6 +212,7 @@ export {
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
   effectiveAudioTrackGainDb,
   loudnessNormalizationTargets,
+  sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
   sameLoudnessNormalization,

@@ -143,8 +143,23 @@ describe("audio slice", () => {
       status: "ready",
     });
 
-    const trimmed = audioReducer(
+    const processingWithUpstreamEffect = {
+      ...normalized.tracks[0]!.processing,
+      highPass: { cutoffHz: 100 },
+    };
+
+    const upstreamChanged = audioReducer(
       normalized,
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: processingWithUpstreamEffect,
+      }),
+    );
+
+    expect(upstreamChanged.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
+
+    const trimmed = audioReducer(
+      upstreamChanged,
       trimChanged({
         trim: { endMicros: 4_000_000, sourceDurationMicros: 5_000_000, startMicros: 0 },
       }),

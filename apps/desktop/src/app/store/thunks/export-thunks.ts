@@ -543,7 +543,7 @@ function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
     const track = tracks.find((candidate) => candidate.streamIndex === selection.streamIndex);
     if (!track) return selection;
     const cacheKey = trim
-      ? audioTrackLoudnessInputsKey(sourcePath, selection.streamIndex, trim)
+      ? audioTrackLoudnessInputsKey(sourcePath, selection.streamIndex, trim, selection.processing)
       : null;
 
     return {
@@ -573,7 +573,13 @@ async function ensureLoudnessAnalysis(
 
     const missing = selectAudioTracks(state).filter((track) => {
       if (!track.enabled || track.processing.loudnessNormalization === undefined) return false;
-      const cacheKey = audioTrackLoudnessInputsKey(sourcePath, track.streamIndex, trim);
+      const cacheKey = audioTrackLoudnessInputsKey(
+        sourcePath,
+        track.streamIndex,
+        trim,
+        track.processing,
+      );
+
       return (
         track.loudnessAnalysis.status !== "ready" || track.loudnessAnalysis.cacheKey !== cacheKey
       );
@@ -600,6 +606,7 @@ async function ensureLoudnessAnalysis(
         selectSourceSelection(state)?.sourcePath ?? "",
         currentTrack.streamIndex,
         currentTrim,
+        currentTrack.processing,
       );
 
       if (
@@ -633,6 +640,7 @@ async function ensureLoudnessAnalysis(
         selectSourceSelection(state)?.sourcePath ?? "",
         afterTrack.streamIndex,
         afterTrim,
+        afterTrack.processing,
       );
 
       if (
@@ -651,7 +659,13 @@ async function ensureLoudnessAnalysis(
   const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
   const allAnalysesReady = selectAudioTracks(state).every((track) => {
     if (!track.enabled || track.processing.loudnessNormalization === undefined) return true;
-    const cacheKey = audioTrackLoudnessInputsKey(sourcePath, track.streamIndex, trim);
+    const cacheKey = audioTrackLoudnessInputsKey(
+      sourcePath,
+      track.streamIndex,
+      trim,
+      track.processing,
+    );
+
     return (
       track.loudnessAnalysis.status === "ready" && track.loudnessAnalysis.cacheKey === cacheKey
     );
