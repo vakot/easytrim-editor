@@ -8,8 +8,15 @@ import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { loudnessNormalizationTargets } from "@/domain/audio-processing";
+
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
-import { formatChannels, formatGain, MIN_SLIDER_DECIBELS } from "../../../lib/audio-level.utils";
+import {
+  formatChannels,
+  formatGain,
+  MIN_SLIDER_DECIBELS,
+  normalizationPresetLabel,
+} from "../../../lib/audio-level.utils";
 
 import { AudioTrackDropdownMenuContent } from "./AudioTrackActions";
 import { AudioTrackToggle } from "./AudioTrackToggle";
@@ -78,7 +85,7 @@ function AudioTrackDetailsSection({
   controller: AudioTrackController;
   hovered?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const shouldReduceMotion = useReducedMotion() === true;
   const { stream, track } = controller;
   if (!stream || !track) return null;
@@ -112,9 +119,35 @@ function AudioTrackDetailsSection({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent>{t("audio.tooltips.normalizationReplacesGain")}</TooltipContent>
+      <TooltipContent>
+        {t("audio.tooltips.normalizationReplacesGain")} {"· "}
+        {t("audio.messages.normalizedHoverTitle", {
+          preset:
+            typeof normalization === "string"
+              ? normalizationPresetLabel(normalization, t)
+              : t("audio.options.normalizationCustom"),
+        })}
+        {" · "}
+        {formatNormalizationTargets(normalization, i18n.language, t)}
+      </TooltipContent>
     </Tooltip>
   );
+}
+
+function formatNormalizationTargets(
+  normalization: NonNullable<AudioTrackController["track"]>["processing"]["loudnessNormalization"],
+  language: string,
+  t: ReturnType<typeof useTranslation>["t"],
+) {
+  if (normalization === undefined) return "";
+  const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(normalization);
+  const format = (value: number) =>
+    new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(value).replace(/-/g, "−");
+
+  return t("audio.messages.normalizedLevelSummary", {
+    peak: format(maxTruePeakDb),
+    target: format(targetLufs),
+  });
 }
 
 function AudioTrackGainControl({ controller }: { controller: AudioTrackController }) {

@@ -128,6 +128,14 @@ fn parse_loudness(stderr: &[u8]) -> Result<LoudnessAnalysis, AppError> {
     let measurements: LoudnormMeasurements = serde_json::from_str(&text[start..end])
         .map_err(|_| AppError::render_failed("FFmpeg returned invalid loudness measurements."))?;
     Ok(LoudnessAnalysis {
+        input_lra: measurements
+            .input_lra
+            .as_deref()
+            .and_then(parse_measurement),
+        input_threshold: measurements
+            .input_thresh
+            .as_deref()
+            .and_then(parse_measurement),
         integrated_lufs: parse_measurement(&measurements.input_i),
         true_peak_db: parse_measurement(&measurements.input_tp),
     })
@@ -137,6 +145,8 @@ fn parse_loudness(stderr: &[u8]) -> Result<LoudnessAnalysis, AppError> {
 struct LoudnormMeasurements {
     input_i: String,
     input_tp: String,
+    input_lra: Option<String>,
+    input_thresh: Option<String>,
 }
 
 fn parse_measurement(value: &str) -> Option<f64> {
@@ -188,12 +198,14 @@ mod tests {
     #[test]
     fn parses_integrated_loudness_and_true_peak_from_ffmpeg_json() {
         let result = parse_loudness(
-            b"[Parsed_loudnorm]\n{\n\"input_i\" : \"-17.2\",\n\"input_tp\" : \"-1.4\"\n}\n",
+            b"[Parsed_loudnorm]\n{\n\"input_i\" : \"-17.2\",\n\"input_tp\" : \"-1.4\",\n\"input_lra\" : \"4.2\",\n\"input_thresh\" : \"-27.1\"\n}\n",
         )
         .unwrap();
         assert_eq!(
             result,
             LoudnessAnalysis {
+                input_lra: Some(4.2),
+                input_threshold: Some(-27.1),
                 integrated_lufs: Some(-17.2),
                 true_peak_db: Some(-1.4),
             }
@@ -203,11 +215,13 @@ mod tests {
     #[test]
     fn reports_unavailable_measurements_as_none() {
         let result = parse_loudness(
-            b"[Parsed_loudnorm]\n{\n\"input_i\" : \"-inf\",\n\"input_tp\" : \"-inf\"\n}\n",
+            b"[Parsed_loudnorm]\n{\n\"input_i\" : \"-inf\",\n\"input_tp\" : \"-inf\",\n\"input_lra\" : \"-inf\",\n\"input_thresh\" : \"-inf\"\n}\n",
         )
         .unwrap();
         assert_eq!(result.integrated_lufs, None);
         assert_eq!(result.true_peak_db, None);
+        assert_eq!(result.input_lra, None);
+        assert_eq!(result.input_threshold, None);
     }
 
     #[test]

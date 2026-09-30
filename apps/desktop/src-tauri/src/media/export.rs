@@ -58,6 +58,8 @@ pub struct AudioTrackSelection {
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioLoudnessAnalysis {
+    pub input_lra: Option<f64>,
+    pub input_threshold: Option<f64>,
     pub integrated_lufs: Option<f64>,
     pub true_peak_db: Option<f64>,
 }
@@ -552,8 +554,12 @@ pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bo
                 let analysis = track
                     .loudness_analysis
                     .expect("normalized audio tracks require a loudness measurement");
-                let gain_db = normalization_gain_db(analysis, integrated_lufs, true_peak_db);
-                filters.push_str(&format!("volume={gain_db:.6}dB[audio{index}]"));
+                filters.push_str(&normalization_filter(
+                    analysis,
+                    integrated_lufs,
+                    true_peak_db,
+                    index,
+                ));
             } else {
                 filters.push_str(&format!(
                     "volume={:.6}dB[audio{index}]",
@@ -575,20 +581,29 @@ pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bo
     graph.join(";")
 }
 
-fn normalization_gain_db(
+fn normalization_filter(
     analysis: AudioLoudnessAnalysis,
     target_lufs: f64,
     max_true_peak_db: f64,
-) -> f64 {
-    let Some(integrated_lufs) = analysis.integrated_lufs else {
-        return 0.0;
+    index: usize,
+) -> String {
+    let measured_pass = match (
+        analysis.integrated_lufs,
+        analysis.true_peak_db,
+        analysis.input_lra,
+        analysis.input_threshold,
+    ) {
+        (Some(input_i), Some(input_tp), Some(input_lra), Some(input_thresh)) => {
+            format!(
+                ":measured_I={input_i:.6}:measured_TP={input_tp:.6}:measured_LRA={input_lra:.6}:measured_thresh={input_thresh:.6}:linear=true"
+            )
+        }
+        _ => String::new(),
     };
-    let target_gain_db = target_lufs - integrated_lufs;
-    analysis
-        .true_peak_db
-        .map_or(target_gain_db, |true_peak_db| {
-            target_gain_db.min(max_true_peak_db - true_peak_db)
-        })
+    // loudnorm may upsample internally; keep every normalized output on the app's 48 kHz policy.
+    format!(
+        "loudnorm=I={target_lufs:.3}:TP={max_true_peak_db:.3}:LRA=11{measured_pass},aresample=48000[audio{index}]"
+    )
 }
 
 fn parse_arguments(value: &str) -> Result<Vec<OsString>, AppError> {
@@ -726,7 +741,8 @@ mod tests {
         AudioLoudnessAnalysis, AudioTrackCacheKey, AudioTrackProcessing, AudioTrackSelection,
         CropSelection, FastExportRequest, FrameRateSelection, LoudnessNormalization,
         LoudnessPreset, OptimizedExportRequest, ResolutionSelection, TrimSelection,
-        build_fast_arguments, build_optimized_arguments, optimized_command_preview,
+        audio_filter_graph, build_fast_arguments, build_optimized_arguments,
+        optimized_command_preview,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -988,6 +1004,8 @@ mod tests {
         request.merge_audio = false;
         request.audio_tracks.push(AudioTrackSelection {
             loudness_analysis: Some(AudioLoudnessAnalysis {
+                input_lra: Some(5.0),
+                input_threshold: Some(-30.0),
                 integrated_lufs: Some(-20.0),
                 true_peak_db: Some(-5.0),
             }),
@@ -1018,16 +1036,47 @@ mod tests {
         let graph = &values[graph_index + 1];
 
         assert!(graph.contains("[0:1]volume=0.000000dB[audio0]"));
-        assert!(graph.contains("[0:2]volume=3.500000dB[audio1]"));
+        assert!(graph.contains("[0:2]loudnorm=I=-16.000:TP=-1.500:LRA=11"));
+        assert!(graph.contains(":measured_I=-20.000000:measured_TP=-5.000000"));
+        assert!(graph.contains(
+            ":measured_LRA=5.000000:measured_thresh=-30.000000:linear=true,aresample=48000[audio1]"
+        ));
         assert!(!graph.contains("volume=-3.000000dB"));
+        assert!(!graph.contains("volume=3.500000dB"));
         assert!(values.contains(&"[audio0]".to_owned()));
         assert!(values.contains(&"[audio1]".to_owned()));
+    }
+
+    #[test]
+    fn dynamic_loudnorm_fallback_is_real_normalization_and_resamples_explicitly() {
+        let graph = audio_filter_graph(
+            &[AudioTrackSelection {
+                loudness_analysis: Some(AudioLoudnessAnalysis {
+                    integrated_lufs: Some(-20.0),
+                    true_peak_db: Some(-1.0),
+                    input_lra: None,
+                    input_threshold: None,
+                }),
+                stream_index: 2,
+                processing: AudioTrackProcessing {
+                    gain_db: 8.0,
+                    loudness_normalization: Some(LoudnessNormalization::Preset(
+                        LoudnessPreset::Streaming,
+                    )),
+                },
+            }],
+            false,
+        );
+        assert!(graph.contains("[0:2]loudnorm=I=-16.000:TP=-1.500:LRA=11,aresample=48000[audio0]"));
+        assert!(!graph.contains("volume="));
     }
 
     #[test]
     fn normalized_activity_cache_key_ignores_dormant_manual_gain() {
         let processing = |gain_db| AudioTrackSelection {
             loudness_analysis: Some(AudioLoudnessAnalysis {
+                input_lra: Some(5.0),
+                input_threshold: Some(-30.0),
                 integrated_lufs: Some(-20.0),
                 true_peak_db: Some(-5.0),
             }),
@@ -1278,6 +1327,8 @@ mod tests {
     fn fast_cut_reencodes_when_only_track_normalization_is_enabled() {
         let track = AudioTrackSelection {
             loudness_analysis: Some(AudioLoudnessAnalysis {
+                input_lra: Some(5.0),
+                input_threshold: Some(-30.0),
                 integrated_lufs: Some(-20.0),
                 true_peak_db: Some(-5.0),
             }),
@@ -1312,11 +1363,10 @@ mod tests {
 
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
         assert!(values.windows(2).any(|pair| pair == ["-c:a", "aac"]));
-        assert!(
-            values
-                .iter()
-                .any(|value| value.contains("volume=4.000000dB[audio0]"))
-        );
+        assert!(values.iter().any(|value| {
+            value.contains("[0:1]loudnorm=I=-14.000:TP=-1.000:LRA=11")
+                && value.contains("aresample=48000[audio0]")
+        }));
     }
 
     #[test]

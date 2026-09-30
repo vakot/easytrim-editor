@@ -490,11 +490,6 @@ async function prepareSelectedSource(
   if (activeInstanceId) dispatch(editingInstanceMediaUpdated({ id: activeInstanceId, media }));
 
   const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
-  const audioTrackSelections = selectAudioTracks(getState()).map(({ processing, streamIndex }) => ({
-    processing: { ...processing, gainDb: 0 },
-    streamIndex,
-  }));
-
   const audioOperation = operation.child("audio.preview", {
     data: { streamCount: audioStreamIndexes.length },
   });
@@ -523,7 +518,7 @@ async function prepareSelectedSource(
       const pendingAnalysis = requiredIndexes.flatMap((streamIndex) => {
         const track = tracks.find((candidate) => candidate.streamIndex === streamIndex);
         if (!track || track.processing.loudnessNormalization === undefined) return [];
-        const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
+        const cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, track.streamIndex, trim);
         return track.loudnessAnalysis.status !== "ready" ||
           track.loudnessAnalysis.cacheKey !== cacheKey
           ? [track]
@@ -549,7 +544,7 @@ async function prepareSelectedSource(
       const track = tracks.find((candidate) => candidate.streamIndex === streamIndex);
       if (!track) return [];
       const cacheKey = currentTrim
-        ? audioTrackLoudnessInputsKey(track.streamIndex, currentTrim, track.processing)
+        ? audioTrackLoudnessInputsKey(source.sourcePath, track.streamIndex, currentTrim)
         : null;
 
       if (

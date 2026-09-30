@@ -1,6 +1,6 @@
 import { LoaderCircle } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect } from "react";
+import { useEffect, useReducer } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -17,8 +17,16 @@ import {
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
+import { selectSourceSelection } from "@/app/store/slices/source-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
 import { analyzeTrackLoudness } from "@/app/store/thunks/audio-track-thunks";
-import { loudnessNormalizationTargets, type LoudnessPreset } from "@/domain/audio-processing";
+import {
+  audioTrackLoudnessInputsKey,
+  DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
+  type LoudnessNormalization,
+  loudnessNormalizationTargets,
+  type LoudnessPreset,
+} from "@/domain/audio-processing";
 import type { LoudnessAnalysis } from "@/domain/media";
 
 import { normalizationPresetLabel } from "../../../../../lib/audio-level.utils";
@@ -44,7 +52,100 @@ const PRESETS = [
   "broadcast",
 ] as const satisfies ReadonlyArray<LoudnessPreset>;
 
-const NORMALIZATION_PRESETS = ["default", ...PRESETS, "custom"] as const;
+type NormalizationChoice = LoudnessPreset | "custom";
+
+interface FormState {
+  enabled: boolean;
+  initialEnabled: boolean;
+  initialNormalization: LoudnessNormalization;
+  maxTruePeakDbInput: string;
+  normalization: LoudnessNormalization;
+  targetLufsInput: string;
+}
+
+type FormAction =
+  | { type: "enabledChanged"; value: boolean }
+  | { type: "presetChanged"; value: NormalizationChoice }
+  | { type: "targetChanged"; value: string }
+  | { type: "peakChanged"; value: string };
+
+function createFormState(
+  processing: ReturnType<typeof useAudioTrackEffectsDraft>["draft"]["processing"],
+): FormState {
+  const initialEnabled = processing.loudnessNormalization !== undefined;
+  const initialNormalization = processing.loudnessNormalization ?? "webVideo";
+  return {
+    initialEnabled,
+    initialNormalization,
+    enabled: initialEnabled,
+    normalization: initialNormalization,
+    targetLufsInput: String(
+      typeof initialNormalization === "object"
+        ? initialNormalization.targetLufs
+        : loudnessNormalizationTargets(initialNormalization).targetLufs,
+    ),
+    maxTruePeakDbInput: String(
+      typeof initialNormalization === "object"
+        ? initialNormalization.maxTruePeakDb
+        : loudnessNormalizationTargets(initialNormalization).maxTruePeakDb,
+    ),
+  };
+}
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "enabledChanged":
+      return { ...state, enabled: action.value };
+    case "presetChanged": {
+      if (action.value === "custom") {
+        const values =
+          typeof state.normalization === "object"
+            ? state.normalization
+            : DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION;
+
+        return {
+          ...state,
+          normalization: values,
+          targetLufsInput: String(values.targetLufs),
+          maxTruePeakDbInput: String(values.maxTruePeakDb),
+        };
+      }
+      const values = loudnessNormalizationTargets(action.value);
+      return {
+        ...state,
+        normalization: action.value,
+        targetLufsInput: String(values.targetLufs),
+        maxTruePeakDbInput: String(values.maxTruePeakDb),
+      };
+    }
+    case "targetChanged":
+      return {
+        ...state,
+        normalization: {
+          mode: "custom",
+          targetLufs: Number(action.value),
+          maxTruePeakDb:
+            typeof state.normalization === "object"
+              ? state.normalization.maxTruePeakDb
+              : loudnessNormalizationTargets(state.normalization).maxTruePeakDb,
+        },
+        targetLufsInput: action.value,
+      };
+    case "peakChanged":
+      return {
+        ...state,
+        normalization: {
+          mode: "custom",
+          targetLufs:
+            typeof state.normalization === "object"
+              ? state.normalization.targetLufs
+              : loudnessNormalizationTargets(state.normalization).targetLufs,
+          maxTruePeakDb: Number(action.value),
+        },
+        maxTruePeakDbInput: action.value,
+      };
+  }
+}
 
 function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
   const { i18n, t } = useTranslation();
@@ -54,29 +155,72 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
     selectAudioTracks(state).find((candidate) => candidate.streamIndex === streamIndex),
   );
 
+  const trim = useAppSelector(selectTrim);
+  const source = useAppSelector(selectSourceSelection);
   const { dispatch: dispatchDraft, draft } = useAudioTrackEffectsDraft();
+  const [form, dispatchForm] = useReducer(formReducer, draft.initialProcessing, createFormState);
 
   const analysis = track?.loudnessAnalysis;
-  const analysisValue = analysis?.status === "ready" ? analysis.value : undefined;
-  const selectedPreset = draft.normalizationPreset;
+  const analysisCacheKey =
+    track && trim && source
+      ? audioTrackLoudnessInputsKey(source.sourcePath, track.streamIndex, trim)
+      : undefined;
+
+  const analysisIsCurrent = analysis?.status === "ready" && analysis.cacheKey === analysisCacheKey;
+  const analysisValue =
+    analysisIsCurrent && analysis?.status === "ready" ? analysis.value : undefined;
+
   const analysisReady = analysisValue !== undefined;
   const analysisLoading = analysis?.status === "loading";
   const analysisFailed = analysis?.status === "failed";
-  const motionTransition = { duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" } as const;
+  const target = Number(form.targetLufsInput);
+  const peak = Number(form.maxTruePeakDbInput);
+  const valid =
+    Number.isFinite(target) &&
+    target >= -36 &&
+    target <= -5 &&
+    Number.isFinite(peak) &&
+    peak >= -9 &&
+    peak <= 0;
+
+  const initialChoice = form.initialNormalization;
+  const dirty =
+    form.enabled !== form.initialEnabled || !sameChoice(initialChoice, form.normalization);
 
   useEffect(() => {
-    if (!analysisValue) return;
-
+    const current = draft.processing;
+    let normalization: LoudnessNormalization | undefined;
+    if (form.enabled) {
+      if (typeof form.normalization === "object") {
+        normalization = valid
+          ? { mode: "custom", targetLufs: target, maxTruePeakDb: peak }
+          : typeof current.loudnessNormalization === "object"
+            ? current.loudnessNormalization
+            : typeof form.initialNormalization === "object"
+              ? form.initialNormalization
+              : DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION;
+      } else {
+        normalization = form.normalization;
+      }
+    }
+    const processing = { ...current };
+    if (normalization === undefined) delete processing.loudnessNormalization;
+    else processing.loudnessNormalization = normalization;
+    dispatchDraft({ type: "processingChanged", value: processing });
     dispatchDraft({
-      type: "analysisValuesReceived",
-      value: {
-        integratedLufs: analysisValue.integratedLufs,
-        truePeakDb: analysisValue.truePeakDb,
-      },
+      type: "effectStatusChanged",
+      effectId: "loudnessNormalization",
+      dirty,
+      valid: !form.enabled || typeof form.normalization !== "object" || valid,
     });
-  }, [analysisValue, dispatchDraft, selectedPreset]);
+  }, [dispatchDraft, draft.processing, dirty, form, peak, target, valid]);
 
   if (!track) return null;
+
+  const selectedPreset: NormalizationChoice =
+    typeof form.normalization === "string" ? form.normalization : "custom";
+
+  const motionTransition = { duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" } as const;
 
   return (
     <AudioTrackEffectsLibraryPage>
@@ -91,10 +235,8 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
         </AudioTrackEffectsLibraryPageHeaderContent>
         <AudioTrackEffectsLibraryPageToggle
           aria-label={t("audio.labels.loudnessNormalization")}
-          checked={draft.normalizationEnabled}
-          onCheckedChange={(checked) =>
-            dispatchDraft({ type: "normalizationEnabledChanged", value: checked })
-          }
+          checked={form.enabled}
+          onCheckedChange={(value) => dispatchForm({ type: "enabledChanged", value })}
         />
       </AudioTrackEffectsLibraryPageHeader>
 
@@ -106,13 +248,8 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
           <div className="flex items-center">
             <Select
               onValueChange={(value) => {
-                if (
-                  NORMALIZATION_PRESETS.includes(value as (typeof NORMALIZATION_PRESETS)[number])
-                ) {
-                  dispatchDraft({
-                    type: "normalizationSelected",
-                    value: value as (typeof NORMALIZATION_PRESETS)[number],
-                  });
+                if (value === "custom" || PRESETS.includes(value as LoudnessPreset)) {
+                  dispatchForm({ type: "presetChanged", value: value as NormalizationChoice });
                 }
               }}
               value={selectedPreset}
@@ -125,14 +262,6 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem className="whitespace-nowrap" value="default">
-                  {formatDefaultPreset(
-                    analysisValue?.integratedLufs,
-                    analysisValue?.truePeakDb,
-                    i18n.language,
-                    t,
-                  )}
-                </SelectItem>
                 {PRESETS.map((preset) => (
                   <SelectItem className="whitespace-nowrap" key={preset} value={preset}>
                     {formatNormalizationPreset(preset, i18n.language, t)}
@@ -194,16 +323,12 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
               max={-5}
               min={-36}
               onChange={(event) =>
-                dispatchDraft({
-                  field: "targetLufs",
-                  type: "customValueChanged",
-                  value: event.currentTarget.value,
-                })
+                dispatchForm({ type: "targetChanged", value: event.currentTarget.value })
               }
               onKeyDown={(event) => event.stopPropagation()}
               step={0.1}
               type="number"
-              value={draft.targetLufsInput}
+              value={form.targetLufsInput}
             />
           </div>
           <div className="grid gap-1.5">
@@ -215,20 +340,15 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
               max={0}
               min={-9}
               onChange={(event) =>
-                dispatchDraft({
-                  field: "maxTruePeakDb",
-                  type: "customValueChanged",
-                  value: event.currentTarget.value,
-                })
+                dispatchForm({ type: "peakChanged", value: event.currentTarget.value })
               }
               onKeyDown={(event) => event.stopPropagation()}
               step={0.1}
               type="number"
-              value={draft.maxTruePeakDbInput}
+              value={form.maxTruePeakDbInput}
             />
           </div>
         </div>
-
         <AnimatePresence initial={false}>
           {analysisValue ? (
             <motion.p
@@ -243,7 +363,6 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
             </motion.p>
           ) : null}
         </AnimatePresence>
-
         <AnimatePresence initial={false}>
           {analysisFailed && analysis.error ? (
             <motion.div
@@ -263,6 +382,16 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
   );
 }
 
+function sameChoice(left: LoudnessNormalization, right: LoudnessNormalization): boolean {
+  if (left === right) return true;
+  return (
+    typeof left === "object" &&
+    typeof right === "object" &&
+    left.targetLufs === right.targetLufs &&
+    left.maxTruePeakDb === right.maxTruePeakDb
+  );
+}
+
 function formatNormalizationPreset(
   preset: LoudnessPreset,
   language: string,
@@ -272,32 +401,7 @@ function formatNormalizationPreset(
   const format = (value: number) =>
     new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(value).replace(/-/g, "−");
 
-  return `${normalizationPresetLabel(preset, t)} · ${t("audio.messages.normalizedLevelSummary", {
-    peak: format(maxTruePeakDb),
-    target: format(targetLufs),
-  })}`;
-}
-
-function formatDefaultPreset(
-  targetLufs: number | undefined,
-  maxTruePeakDb: number | undefined,
-  language: string,
-  t: ReturnType<typeof useTranslation>["t"],
-): string {
-  if (targetLufs === undefined || maxTruePeakDb === undefined) {
-    return t("audio.options.normalizationDefault");
-  }
-
-  const format = (value: number) =>
-    new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(value).replace(/-/g, "−");
-
-  return `${t("audio.options.normalizationDefault")} · ${t(
-    "audio.messages.normalizedLevelSummary",
-    {
-      peak: format(maxTruePeakDb),
-      target: format(targetLufs),
-    },
-  )}`;
+  return `${normalizationPresetLabel(preset, t)} · ${t("audio.messages.normalizedLevelSummary", { peak: format(maxTruePeakDb), target: format(targetLufs) })}`;
 }
 
 function formatAnalysis(analysis: LoudnessAnalysis, language: string): string {

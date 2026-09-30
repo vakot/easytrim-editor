@@ -4,63 +4,58 @@ import { useTranslation } from "react-i18next";
 
 import { MenuIcon, menuItemVariants } from "@/components/ui/menu";
 
-import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectAudioTracks } from "@/app/store/slices/audio-slice";
-import { sameAudioTrackPreviewProcessing } from "@/domain/audio-processing";
 import { cn } from "@/lib/class-names.utils";
 
-import { getAudioTrackEffectsDraftProcessing } from "../AudioTrackEffectsDialog/audio-track-effects-draft.utils";
 import { useAudioTrackEffectsDraft } from "../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
 
-import { NormalizeLoudnessPage } from "./pages/NormalizeLoudnessPage";
+import {
+  AUDIO_TRACK_EFFECTS,
+  type AudioTrackEffectDescriptor,
+} from "./audio-track-effects.registry";
 
 interface AudioTrackEffectsLibraryProps {
+  effects?: readonly AudioTrackEffectDescriptor[];
   streamIndex: number;
 }
 
-const EFFECTS = ["loudnessNormalization"] as const;
-
-function AudioTrackEffectsLibrary({ streamIndex }: AudioTrackEffectsLibraryProps) {
+function AudioTrackEffectsLibrary({
+  effects = AUDIO_TRACK_EFFECTS,
+  streamIndex,
+}: AudioTrackEffectsLibraryProps) {
   const { t } = useTranslation();
-  const [selectedEffect, setSelectedEffect] =
-    useState<(typeof EFFECTS)[number]>("loudnessNormalization");
-
-  const track = useAppSelector((state) =>
-    selectAudioTracks(state).find((candidate) => candidate.streamIndex === streamIndex),
-  );
-
+  const [selectedEffect, setSelectedEffect] = useState<string | undefined>(effects[0]?.id);
   const { draft } = useAudioTrackEffectsDraft();
-
-  if (!track) return null;
-
-  const draftProcessing = getAudioTrackEffectsDraftProcessing(draft);
-  const isNormalizationDirty = !sameAudioTrackPreviewProcessing(track.processing, draftProcessing);
 
   return (
     <div className="-mx-4 flex min-h-72 min-w-0 flex-1">
       <nav aria-label={t("audio.actions.effects")} className="w-64 shrink-0 border-r px-2 py-3">
-        {EFFECTS.map((effect) => (
+        {effects.map((effect) => (
           <button
-            aria-current={selectedEffect === effect ? "page" : undefined}
+            aria-current={selectedEffect === effect.id ? "page" : undefined}
             className={cn(
               menuItemVariants({ kind: "checkbox" }),
               "w-full min-w-0 justify-start whitespace-nowrap",
             )}
             data-inset
-            data-selected={selectedEffect === effect}
-            key={effect}
-            onClick={() => setSelectedEffect(effect)}
+            data-selected={selectedEffect === effect.id}
+            key={effect.id}
+            onClick={() => setSelectedEffect(effect.id)}
             type="button"
           >
-            {draft.normalizationEnabled ? (
+            {effect.isEnabled(draft.processing) ? (
               <MenuIcon>
                 <Check />
               </MenuIcon>
             ) : null}
-            <span className="min-w-0 truncate">{t("audio.labels.loudnessNormalization")}</span>
+            <span className="min-w-0 truncate">{effect.label(t)}</span>
             <MenuIcon
               aria-hidden="true"
-              className={isNormalizationDirty ? undefined : "opacity-0"}
+              className={
+                effect.isDirty(draft.initialProcessing, draft.processing) ||
+                draft.effectStatus[effect.id]?.dirty
+                  ? undefined
+                  : "opacity-0"
+              }
               side="right"
             >
               <span className="size-1.5 rounded-full bg-current" />
@@ -70,9 +65,11 @@ function AudioTrackEffectsLibrary({ streamIndex }: AudioTrackEffectsLibraryProps
       </nav>
 
       <div className="min-w-0 flex-1 overflow-y-auto p-4">
-        {selectedEffect === "loudnessNormalization" ? (
-          <NormalizeLoudnessPage streamIndex={streamIndex} />
-        ) : null}
+        {effects.map(({ id, Page }) => (
+          <div aria-hidden={selectedEffect !== id} hidden={selectedEffect !== id} key={id}>
+            <Page streamIndex={streamIndex} />
+          </div>
+        ))}
       </div>
     </div>
   );

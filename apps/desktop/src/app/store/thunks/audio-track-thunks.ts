@@ -32,7 +32,7 @@ function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
     const track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
     if (!source || !trim || !track) return;
 
-    const cacheKey = audioTrackLoudnessInputsKey(streamIndex, trim, track.processing);
+    const cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, streamIndex, trim);
     const jobKey = `${source.sourcePath}:${state.source.loadToken}:${cacheKey}`;
     if (
       (track.loudnessAnalysis.status === "ready" || track.loudnessAnalysis.status === "loading") &&
@@ -103,7 +103,7 @@ function detectTrackActivity(streamIndex: number): AppThunk<Promise<void>> {
 
     let trim = selectTrim(state);
     if (!trim) return;
-    let cacheKey = audioTrackLoudnessInputsKey(streamIndex, trim, track.processing);
+    let cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, streamIndex, trim);
 
     if (
       track.processing.loudnessNormalization !== undefined &&
@@ -114,7 +114,7 @@ function detectTrackActivity(streamIndex: number): AppThunk<Promise<void>> {
       track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
       trim = selectTrim(state);
       if (!track || !trim) return;
-      cacheKey = audioTrackLoudnessInputsKey(streamIndex, trim, track.processing);
+      cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, streamIndex, trim);
       if (track.loudnessAnalysis.status !== "ready" || track.loudnessAnalysis.cacheKey !== cacheKey)
         return;
     }
@@ -152,7 +152,7 @@ function prepareTrackPreview(streamIndex: number): AppThunk<Promise<void>> {
     const operationId = crypto.randomUUID();
     dispatch(audioTrackPreviewStarted({ operationId, streamIndex }));
 
-    let cacheKey = audioTrackLoudnessInputsKey(streamIndex, trim, track.processing);
+    let cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, streamIndex, trim);
 
     if (
       track.processing.loudnessNormalization !== undefined &&
@@ -168,7 +168,7 @@ function prepareTrackPreview(streamIndex: number): AppThunk<Promise<void>> {
         !isCurrentPreviewJob(state, source.sourcePath, sourceLoadToken, streamIndex, operationId)
       )
         return;
-      cacheKey = audioTrackLoudnessInputsKey(streamIndex, trim, track.processing);
+      cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, streamIndex, trim);
       if (
         track.loudnessAnalysis.status === "failed" &&
         track.loudnessAnalysis.cacheKey === cacheKey
@@ -267,7 +267,11 @@ function isCurrentTrack(
 
   const trim = selectTrim(state);
   const loudnessCacheKey = trim
-    ? audioTrackLoudnessInputsKey(audioTrack.streamIndex, trim, audioTrack.processing)
+    ? audioTrackLoudnessInputsKey(
+        selectSourceSelection(state)?.sourcePath ?? "",
+        audioTrack.streamIndex,
+        trim,
+      )
     : null;
 
   return (
@@ -280,7 +284,10 @@ function isCurrentTrack(
         currentTrack.loudnessAnalysis.cacheKey === loudnessCacheKey &&
         currentTrack.loudnessAnalysis.value.integratedLufs ===
           audioTrack.loudnessAnalysis.integratedLufs &&
-        currentTrack.loudnessAnalysis.value.truePeakDb === audioTrack.loudnessAnalysis.truePeakDb))
+        currentTrack.loudnessAnalysis.value.truePeakDb === audioTrack.loudnessAnalysis.truePeakDb &&
+        currentTrack.loudnessAnalysis.value.inputLra === audioTrack.loudnessAnalysis.inputLra &&
+        currentTrack.loudnessAnalysis.value.inputThreshold ===
+          audioTrack.loudnessAnalysis.inputThreshold))
   );
 }
 

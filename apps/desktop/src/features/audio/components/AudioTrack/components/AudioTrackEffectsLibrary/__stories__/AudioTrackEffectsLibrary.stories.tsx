@@ -98,14 +98,17 @@ function EffectsLibraryStory({
         {effects.map((effect) => {
           const state = effectStates[effect];
           const enabled =
-            effect === "Normalize Loudness" ? draft.normalizationEnabled : state.enabled;
+            effect === "Normalize Loudness"
+              ? draft.processing.loudnessNormalization !== undefined
+              : state.enabled;
 
           const dirty =
             effect === "Normalize Loudness"
               ? !sameAudioTrackProcessing(
                   initialProcessing,
                   getAudioTrackEffectsDraftProcessing(draft),
-                )
+                ) ||
+                (draft.effectStatus.loudnessNormalization?.dirty ?? false)
               : state.isDirty;
 
           return (

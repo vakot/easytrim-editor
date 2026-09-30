@@ -13,16 +13,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { sameAudioTrackProcessing } from "@/domain/audio-processing";
-
 import type { AudioTrackController } from "../../../../hooks/useAudioTrackController";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
+import { AUDIO_TRACK_EFFECTS } from "../AudioTrackEffectsLibrary/audio-track-effects.registry";
 
 import { AudioTrackEffectsDraftProvider } from "./components/AudioTrackEffectsDraftProvider";
 import { AudioTrackEffectsDialogContext } from "./contexts/audio-track-effects-dialog-context";
 import { useAudioTrackEffectsDraft } from "./contexts/audio-track-effects-draft-context";
 import {
   getAudioTrackEffectsDraftProcessing,
+  isAudioTrackEffectsDraftDirty,
   isAudioTrackEffectsDraftValid,
 } from "./audio-track-effects-draft.utils";
 
@@ -70,8 +70,8 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
     t("audio.labels.defaultTrack", { number: controller.trackNumber });
 
   const draftProcessing = getAudioTrackEffectsDraftProcessing(draft);
-  const isDirty = !sameAudioTrackProcessing(track.processing, draftProcessing);
-  const isValid = isAudioTrackEffectsDraftValid(draft);
+  const isDirty = isAudioTrackEffectsDraftDirty(draft, AUDIO_TRACK_EFFECTS);
+  const isValid = isAudioTrackEffectsDraftValid(draft, AUDIO_TRACK_EFFECTS);
 
   return (
     <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-hidden sm:max-w-3xl">

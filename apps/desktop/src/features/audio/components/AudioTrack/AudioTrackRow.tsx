@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import {
   audioTrackLoudnessInputsKey,
@@ -62,6 +63,7 @@ function AudioTrackRowWaveform({
   controller: ReturnType<typeof useAudioTrackController>;
 }) {
   const trim = useAppSelector(selectTrim);
+  const source = useAppSelector(selectSourceSelection);
   const { liveGainDb, stream, track, trackColor } = controller;
   if (!stream || !track) return null;
 
@@ -76,7 +78,7 @@ function AudioTrackRowWaveform({
       data-enabled={track.enabled}
     >
       <AudioTrackWaveform
-        gainDb={waveformGainDb(controller, trim, liveGainDb)}
+        gainDb={waveformGainDb(controller, trim, liveGainDb, source?.sourcePath)}
         stream={stream}
         track={track}
       />
@@ -112,14 +114,15 @@ function waveformGainDb(
   controller: AudioTrackController,
   trim: ReturnType<typeof selectTrim>,
   liveGainDb: number,
+  sourcePath: string | undefined,
 ): number {
   const track = controller.track;
-  if (!track) return liveGainDb;
+  if (!track || !sourcePath) return liveGainDb;
   const normalization = track.processing.loudnessNormalization;
   const analysis = track.loudnessAnalysis;
   if (!normalization) return liveGainDb;
   if (!trim || analysis?.status !== "ready") return 0;
-  const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
+  const cacheKey = audioTrackLoudnessInputsKey(sourcePath, track.streamIndex, trim);
   return analysis.cacheKey === cacheKey
     ? audioTrackNormalizationGainDb(normalization, analysis.value)
     : 0;
@@ -176,6 +179,28 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
       <WandSparkles aria-hidden="true" className="size-3 shrink-0" />
       <span className="truncate">{summary}</span>
     </AudioTrackIndicator>
+  );
+}
+
+function AudioTrackIndicator({
+  "aria-label": ariaLabel,
+  children,
+  className,
+  ...props
+}: {
+  "aria-label": string;
+  children: ReactNode;
+  className: string;
+  "data-slot": string;
+}) {
+  return (
+    <Badge
+      aria-label={ariaLabel}
+      className={cn("max-w-[calc(100%-0.5rem)] gap-1.5", className)}
+      data-slot={props["data-slot"]}
+    >
+      {children}
+    </Badge>
   );
 }
 

@@ -570,14 +570,14 @@ export const en = {
         videoOnly: "Video-only output",
       },
       loudnessNormalizationDescription: "Normalize this track to a consistent target loudness.",
-      normalizedEffectSummary: "Normalized - {{preset}}",
+      normalizedEffectSummary: "Normalized · {{preset}}",
       normalizedHoverTitle: "Normalized · {{preset}}",
       normalizedLevelSummary: "Target {{target}} LUFS · peak cap {{peak}} dBTP",
       preparingProcessedPreview: "Preparing preview with these track settings…",
     },
     tooltips: {
       merge: "All selected tracks are merged into one track; this requires encoding.",
-      normalizationReplacesGain: "Normalize Loudness controls this track's level.",
+      normalizationReplacesGain: "Manual gain is ignored while normalization is enabled.",
     },
     dialogs: {
       effects: {
@@ -590,13 +590,11 @@ export const en = {
       trackActions: "Audio {{number}} actions",
       appliedEffects: "Applied effects: {{summary}}",
       trackGain: "Audio {{number}} gain in decibels",
-      trackNormalization: "{{title}} loudness normalization",
     },
     options: {
       channels_one: "{{count}} channel",
       channels_few: "{{count}} channels",
       channels_other: "{{count}} channels",
-      normalizationDefault: "Default",
       normalizationCustom: "Custom",
       normalizationWebVideo: "Web Video",
       normalizationStreaming: "Streaming",

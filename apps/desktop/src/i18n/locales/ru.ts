@@ -573,14 +573,14 @@ export const ru = {
         videoOnly: "Только видео",
       },
       loudnessNormalizationDescription: "Нормализовать дорожку до целевого уровня громкости.",
-      normalizedEffectSummary: "Нормализация - {{preset}}",
+      normalizedEffectSummary: "Нормализация · {{preset}}",
       normalizedHoverTitle: "Нормализация · {{preset}}",
       normalizedLevelSummary: "Цель {{target}} LUFS · предел пика {{peak}} дБTP",
       preparingProcessedPreview: "Подготовка предпросмотра с этими настройками дорожки…",
     },
     tooltips: {
       merge: "Все выбранные дорожки объединяются в одну; это требует кодирования.",
-      normalizationReplacesGain: "Уровень дорожки задаёт нормализация громкости.",
+      normalizationReplacesGain: "Ручное усиление не используется при нормализации.",
     },
     dialogs: {
       effects: {
@@ -593,13 +593,11 @@ export const ru = {
       trackActions: "Действия аудиодорожки {{number}}",
       appliedEffects: "Применённые эффекты: {{summary}}",
       trackGain: "Усиление аудиодорожки {{number}} в децибелах",
-      trackNormalization: "Нормализация громкости {{title}}",
     },
     options: {
       channels_one: "{{count}} канал",
       channels_few: "{{count}} канала",
       channels_other: "{{count}} каналов",
-      normalizationDefault: "По умолчанию",
       normalizationCustom: "Своя настройка",
       normalizationWebVideo: "Веб-видео",
       normalizationStreaming: "Стриминг",

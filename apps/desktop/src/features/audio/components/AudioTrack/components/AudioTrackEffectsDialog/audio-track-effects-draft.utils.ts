@@ -1,27 +1,33 @@
 import { type AudioTrackProcessing, cloneAudioTrackProcessing } from "@/domain/audio-processing";
 
+import type { AudioTrackEffectDescriptor } from "../AudioTrackEffectsLibrary/audio-track-effects.registry";
+
 import type { AudioTrackEffectsDraft } from "./contexts/audio-track-effects-draft-context";
 
 function getAudioTrackEffectsDraftProcessing(draft: AudioTrackEffectsDraft): AudioTrackProcessing {
-  const processing = cloneAudioTrackProcessing(draft.processing);
-  if (!draft.normalizationEnabled) delete processing.loudnessNormalization;
-  return processing;
+  return cloneAudioTrackProcessing(draft.processing);
 }
 
-function isAudioTrackEffectsDraftValid(draft: AudioTrackEffectsDraft): boolean {
-  if (!draft.normalizationEnabled) return true;
-
-  const normalization = draft.processing.loudnessNormalization;
-  if (typeof normalization === "string") return true;
-  if (normalization === undefined) return false;
-
-  return isInRange(draft.targetLufsInput, -36, -5) && isInRange(draft.maxTruePeakDbInput, -9, 0);
+function isAudioTrackEffectsDraftDirty(
+  draft: AudioTrackEffectsDraft,
+  effects: readonly AudioTrackEffectDescriptor[],
+): boolean {
+  return effects.some(
+    (effect) =>
+      effect.isDirty(draft.initialProcessing, draft.processing) ||
+      (draft.effectStatus[effect.id]?.dirty ?? false),
+  );
 }
 
-function isInRange(value: string, min: number, max: number): boolean {
-  if (value.trim() === "") return false;
-  const number = Number(value);
-  return Number.isFinite(number) && number >= min && number <= max;
+function isAudioTrackEffectsDraftValid(
+  draft: AudioTrackEffectsDraft,
+  effects: readonly AudioTrackEffectDescriptor[],
+): boolean {
+  return effects.every((effect) => draft.effectStatus[effect.id]?.valid ?? true);
 }
 
-export { getAudioTrackEffectsDraftProcessing, isAudioTrackEffectsDraftValid };
+export {
+  getAudioTrackEffectsDraftProcessing,
+  isAudioTrackEffectsDraftDirty,
+  isAudioTrackEffectsDraftValid,
+};

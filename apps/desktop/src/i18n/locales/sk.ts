@@ -570,14 +570,14 @@ export const sk = {
         videoOnly: "Výstup iba s videom",
       },
       loudnessNormalizationDescription: "Normalizovať túto stopu na cieľovú hlasitosť.",
-      normalizedEffectSummary: "Normalizované - {{preset}}",
+      normalizedEffectSummary: "Normalizované · {{preset}}",
       normalizedHoverTitle: "Normalizované · {{preset}}",
       normalizedLevelSummary: "Cieľ {{target}} LUFS · limit špičky {{peak}} dBTP",
       preparingProcessedPreview: "Pripravuje sa náhľad s týmito nastaveniami stopy…",
     },
     tooltips: {
       merge: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
-      normalizationReplacesGain: "Normalizácia hlasitosti riadi úroveň tejto stopy.",
+      normalizationReplacesGain: "Manuálne zosilnenie sa pri normalizácii nepoužíva.",
     },
     dialogs: {
       effects: {
@@ -590,13 +590,11 @@ export const sk = {
       trackActions: "Akcie zvukovej stopy {{number}}",
       appliedEffects: "Použité efekty: {{summary}}",
       trackGain: "Zosilnenie zvukovej stopy {{number}} v decibeloch",
-      trackNormalization: "Normalizácia hlasitosti: {{title}}",
     },
     options: {
       channels_one: "{{count}} kanál",
       channels_few: "{{count}} kanály",
       channels_other: "{{count}} kanálov",
-      normalizationDefault: "Predvolené",
       normalizationCustom: "Vlastné",
       normalizationWebVideo: "Webové video",
       normalizationStreaming: "Streamovanie",
