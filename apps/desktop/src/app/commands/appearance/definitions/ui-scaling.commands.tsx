@@ -22,14 +22,13 @@ function useUiScalingCommands() {
   const uiScalePercent = useAppSelector(selectUiScalePercent);
   const zoomInLabel = t("app.actions.zoomIn");
   const zoomOutLabel = t("app.actions.zoomOut");
-  const resetLabel = t("app.actions.resetToDefault");
+  const resetLabel = t("app.actions.zoomReset");
 
   return [
     {
       enabled: uiScalePercent < MAX_UI_SCALE_PERCENT,
-      hint: "+25%",
       icon: <ZoomIn aria-hidden="true" />,
-      surfaces: ["menu", "palette"] as const,
+      shortcut: { code: "Equal", key: "=", modifier: "control" },
       run() {
         dispatch(uiScaleIncreased());
       },
@@ -41,9 +40,8 @@ function useUiScalingCommands() {
     },
     {
       enabled: uiScalePercent > MIN_UI_SCALE_PERCENT,
-      hint: "-25%",
       icon: <ZoomOut aria-hidden="true" />,
-      surfaces: ["menu", "palette"] as const,
+      shortcut: { code: "Minus", key: "-", modifier: "control" },
       run() {
         dispatch(uiScaleDecreased());
       },
@@ -56,7 +54,7 @@ function useUiScalingCommands() {
     {
       enabled: uiScalePercent !== DEFAULT_UI_SCALE_PERCENT,
       icon: <RotateCcw aria-hidden="true" />,
-      surfaces: ["menu"] as const,
+      shortcut: { code: "Digit0", key: "0", modifier: "control" },
       run() {
         dispatch(uiScalingReset());
       },
@@ -64,6 +62,7 @@ function useUiScalingCommands() {
       label: resetLabel,
       searchTerms: commandSearchTerms(`${resetLabel}|ui scaling|zoom|view`),
       variant: "default" as const,
+      keepOpen: true,
     },
   ] as const satisfies readonly ApplicationCommandDefinition[];
 }

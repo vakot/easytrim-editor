@@ -120,13 +120,7 @@ function ApplicationCommandShortcut() {
   );
 }
 
-function ApplicationCommandHint() {
-  const { command } = useApplicationCommandMenuContext();
-  return command.hint ? <span className={menuClassNames.shortcut}>{command.hint}</span> : null;
-}
-
 export {
-  ApplicationCommandHint,
   ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,

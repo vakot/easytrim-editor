@@ -23,10 +23,10 @@ import {
 
 import { getPrimaryColorCommandId, getThemeCommandId } from "@/app/commands/appearance";
 import {
-  ApplicationCommandHint,
   ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
+  ApplicationCommandShortcut,
 } from "@/app/components/ApplicationCommandMenuItem";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -116,14 +116,15 @@ function MenuBarViewContent({ onClose }: { onClose: MenuBarViewProps["onClose"] 
               <ApplicationCommandMenuItem asChild commandId={commandId} key={commandId}>
                 <MenubarItem keepOpen>
                   <ApplicationCommandLabel />
-                  <ApplicationCommandHint />
+                  <ApplicationCommandShortcut />
                 </MenubarItem>
               </ApplicationCommandMenuItem>
             ))}
             <MenubarSeparator />
             <ApplicationCommandMenuItem asChild commandId="ui-scale-reset">
-              <MenubarItem variant="destructive">
+              <MenubarItem keepOpen variant="destructive">
                 <ApplicationCommandLabel />
+                <ApplicationCommandShortcut />
               </MenubarItem>
             </ApplicationCommandMenuItem>
           </MenubarSubContent>
