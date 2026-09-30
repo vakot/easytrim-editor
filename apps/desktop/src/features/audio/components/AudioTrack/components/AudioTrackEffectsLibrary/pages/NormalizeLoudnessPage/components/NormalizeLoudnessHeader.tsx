@@ -1,9 +1,9 @@
-import { LoaderCircle } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 import {
   AudioTrackEffectsLibraryPageDescription,
@@ -54,12 +54,7 @@ function NormalizeLoudnessHeader() {
               type="button"
               variant="link"
             >
-              {analysis.isLoading ? (
-                <LoaderCircle
-                  aria-hidden="true"
-                  className={shouldReduceMotion ? undefined : "animate-spin"}
-                />
-              ) : null}
+              {analysis.isLoading ? <Spinner aria-hidden="true" /> : null}
               {analysis.isLoading
                 ? t("audio.actions.analyzingLoudness")
                 : t("audio.actions.analyzeLoudness")}
