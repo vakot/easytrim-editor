@@ -75,7 +75,7 @@ function AudioTrackToggleActivityCheckboxMenuItem({
   controller,
 }: { children?: React.ReactNode } & AudioTrackActionsProps) {
   const { t } = useTranslation();
-  const { track } = controller;
+  const track = controller.track;
   if (!track) return null;
 
   const hasActivity = track.activityAnalysis.status === "ready";

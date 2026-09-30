@@ -26,8 +26,6 @@ import {
   moveSourceToTrash,
   planOptimizedExport,
   prepareAudioPreviews,
-  prepareAudioPreviews,
-  prepareImportedSourceThumbnail,
   prepareImportedSourceThumbnail,
   prepareProxyPreview,
   prepareSourcePreview,
