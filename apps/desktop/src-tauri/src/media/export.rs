@@ -498,6 +498,20 @@ pub(crate) fn validate_common_request(
     trim: &TrimSelection,
     audio_tracks: &[AudioTrackSelection],
 ) -> Result<(), AppError> {
+    validate_trim_selection(source, trim)?;
+    validate_audio_track_selections(source, audio_tracks)
+}
+
+pub(crate) fn validate_loudness_analysis_request(
+    source: &MediaInfo,
+    trim: &TrimSelection,
+    audio_track: &AudioTrackSelection,
+) -> Result<(), AppError> {
+    validate_trim_selection(source, trim)?;
+    validate_audio_track_selections_inner(source, std::slice::from_ref(audio_track), false)
+}
+
+fn validate_trim_selection(source: &MediaInfo, trim: &TrimSelection) -> Result<(), AppError> {
     if trim.start_micros < 0
         || trim.end_micros <= trim.start_micros
         || trim.end_micros > source.duration_micros
@@ -506,12 +520,20 @@ pub(crate) fn validate_common_request(
             "The selected export range is invalid.",
         ));
     }
-    validate_audio_track_selections(source, audio_tracks)
+    Ok(())
 }
 
 pub(crate) fn validate_audio_track_selections(
     source: &MediaInfo,
     audio_tracks: &[AudioTrackSelection],
+) -> Result<(), AppError> {
+    validate_audio_track_selections_inner(source, audio_tracks, true)
+}
+
+fn validate_audio_track_selections_inner(
+    source: &MediaInfo,
+    audio_tracks: &[AudioTrackSelection],
+    require_loudness_analysis: bool,
 ) -> Result<(), AppError> {
     let mut selected_streams = HashSet::new();
     for track in audio_tracks {
@@ -548,7 +570,8 @@ pub(crate) fn validate_audio_track_selections(
                         .input_threshold
                         .is_some_and(|value| !value.is_finite())
             })
-            || (track.processing.loudness_normalization.is_some()
+            || (require_loudness_analysis
+                && track.processing.loudness_normalization.is_some()
                 && track.loudness_analysis.is_none())
             || !is_known_stream
             || !selected_streams.insert(track.stream_index)

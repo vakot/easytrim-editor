@@ -12,7 +12,7 @@ use crate::{
     error::AppError,
     media::export::{
         AudioLoudnessAnalysis, AudioTrackSelection, TrimSelection, pre_level_filter_chain,
-        validate_common_request,
+        validate_loudness_analysis_request,
     },
     process::{ProcessOutput, run_bounded_cancellable},
     state::ActiveSource,
@@ -41,11 +41,7 @@ pub fn analyze_loudness(
         .media
         .as_ref()
         .ok_or_else(|| AppError::invalid_request("Inspect the video before analyzing audio."))?;
-    validate_common_request(
-        media,
-        &request.trim,
-        std::slice::from_ref(&request.audio_track),
-    )?;
+    validate_loudness_analysis_request(media, &request.trim, &request.audio_track)?;
 
     let arguments = analysis_arguments(request, &source.path);
     let output = run_bounded_cancellable(
