@@ -73,7 +73,7 @@ function AudioTrackWaveformImage({
 }
 
 function waveformVisualScale(gainDb: number): number {
-  return Math.min(2, Math.max(0.25, 10 ** (gainDb / 20)));
+  return 10 ** (gainDb / 20);
 }
 
 function AudioTrackWaveformError({

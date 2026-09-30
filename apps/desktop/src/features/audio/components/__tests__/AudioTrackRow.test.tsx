@@ -80,6 +80,11 @@ describe("AudioTrackRow", () => {
     expect(image).toHaveAttribute("src", "media://waveform");
     expect(image?.style.transform).toBe("scaleY(1.0592537251772889)");
     expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0);
+
+    fireEvent.keyUp(gainSlider, { key: "ArrowRight" });
+    fireEvent.keyDown(gainSlider, { key: "End" });
+    expect(image?.style.transform).toBe("scaleY(3.9810717055349722)");
+    expect(image).toHaveAttribute("src", "media://waveform");
   });
 
   it("marks gain levels, resets to unity on double-click, and mutes at negative infinity", async () => {
