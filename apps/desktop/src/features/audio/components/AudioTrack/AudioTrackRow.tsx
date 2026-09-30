@@ -216,8 +216,13 @@ function AudioTrackIndicator({
   return (
     <Badge
       aria-label={ariaLabel}
-      className={cn("max-w-[calc(100%-0.5rem)] gap-1.5", className)}
+      className={cn(
+        "max-w-[calc(100%-0.5rem)] gap-1.5 bg-background/25 backdrop-blur-xs",
+        className,
+      )}
       data-slot={props["data-slot"]}
+      size="xs"
+      variant="outline"
     >
       {children}
     </Badge>
