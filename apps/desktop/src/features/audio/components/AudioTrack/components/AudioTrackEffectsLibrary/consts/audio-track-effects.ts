@@ -7,7 +7,7 @@ import {
   sameLoudnessNormalization,
 } from "@/domain/audio-processing";
 
-import { NormalizeLoudnessPage } from "./pages/NormalizeLoudnessPage";
+import { NormalizeLoudnessPage } from "../pages/NormalizeLoudnessPage";
 
 interface AudioTrackEffectsPageProps {
   streamIndex: number;

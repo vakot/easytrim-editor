@@ -1,6 +1,6 @@
 import { type AudioTrackProcessing, cloneAudioTrackProcessing } from "@/domain/audio-processing";
 
-import type { AudioTrackEffectDescriptor } from "../AudioTrackEffectsLibrary/audio-track-effects.registry";
+import type { AudioTrackEffectDescriptor } from "../AudioTrackEffectsLibrary/consts/audio-track-effects";
 
 import type { AudioTrackEffectsDraft } from "./contexts/audio-track-effects-draft-context";
 

@@ -28,7 +28,7 @@ import { useAudioTrackEffectsDraft } from "../../AudioTrackEffectsDialog/context
 import {
   AUDIO_TRACK_EFFECTS,
   type AudioTrackEffectDescriptor,
-} from "../audio-track-effects.registry";
+} from "../consts/audio-track-effects";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
 import {
   AudioTrackEffectsLibraryPage,

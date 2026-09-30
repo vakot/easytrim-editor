@@ -15,7 +15,7 @@ import {
 
 import type { AudioTrackController } from "../../../../hooks/useAudioTrackController";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
-import { AUDIO_TRACK_EFFECTS } from "../AudioTrackEffectsLibrary/audio-track-effects.registry";
+import { AUDIO_TRACK_EFFECTS } from "../AudioTrackEffectsLibrary/consts/audio-track-effects";
 
 import { AudioTrackEffectsDraftProvider } from "./components/AudioTrackEffectsDraftProvider";
 import { AudioTrackEffectsDialogContext } from "./contexts/audio-track-effects-dialog-context";
