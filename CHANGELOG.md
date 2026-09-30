@@ -24,7 +24,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Fixed Spacebar playback toggling when an editor button has focus.
-- Fixed timeline snapping so the playhead can move outside the selected segment and each dragged control snaps only by its active position, releasing beyond the 12 px reach.
+- Fixed timeline snapping so the playhead can move freely outside the selected segment.
 
 ## [1.12.3]
 
