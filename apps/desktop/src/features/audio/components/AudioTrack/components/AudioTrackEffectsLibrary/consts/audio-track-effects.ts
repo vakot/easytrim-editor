@@ -9,6 +9,7 @@ import {
 } from "@/domain/audio-processing";
 
 import { NoiseReductionPage } from "../pages/NoiseReductionPage";
+import { LimiterPage } from "../pages/LimiterPage/LimiterPage";
 import { NormalizeLoudnessPage } from "../pages/NormalizeLoudnessPage";
 
 interface AudioTrackEffectsPageProps {
@@ -44,6 +45,21 @@ const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
     isEnabled: (processing) => processing.loudnessNormalization !== undefined,
     isDirty: (initial, current) =>
       !sameLoudnessNormalization(initial.loudnessNormalization, current.loudnessNormalization),
+  },
+  {
+    id: "limiter",
+    stage: "finalProtection",
+    label: (t) => t("audio.labels.limiter"),
+    Page: LimiterPage,
+    isEnabled: (processing) => getAudioTrackSignalEffect(processing, "limiter") !== undefined,
+    isDirty: (initial, current) => {
+      const initialLimiter = getAudioTrackSignalEffect(initial, "limiter");
+      const currentLimiter = getAudioTrackSignalEffect(current, "limiter");
+      return (
+        initialLimiter?.ceilingDb !== currentLimiter?.ceilingDb ||
+        (initialLimiter === undefined) !== (currentLimiter === undefined)
+      );
+    },
   },
 ];
 

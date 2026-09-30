@@ -160,7 +160,7 @@ function AudioTrackGainIndicator({ controller }: { controller: AudioTrackControl
 }
 
 function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProcessing }) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const summaries: string[] = [];
   const normalization = processing.loudnessNormalization;
   const noiseReduction = getAudioTrackSignalEffect(processing, "noiseReduction");
@@ -183,6 +183,15 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
     summaries.push(
       t("audio.messages.normalizedEffectSummary", {
         preset: t("audio.options.normalizationCustom"),
+      }),
+    );
+  }
+
+  const limiter = getAudioTrackSignalEffect(processing, "limiter");
+  if (limiter) {
+    summaries.push(
+      t("audio.messages.limitedEffectSummary", {
+        ceiling: formatProcessingValue(limiter.ceilingDb, i18n.language),
       }),
     );
   }
