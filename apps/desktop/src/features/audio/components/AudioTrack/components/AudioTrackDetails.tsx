@@ -8,15 +8,8 @@ import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { loudnessNormalizationTargets } from "@/domain/audio-processing";
-
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
-import {
-  formatChannels,
-  formatGain,
-  MIN_SLIDER_DECIBELS,
-  normalizationPresetLabel,
-} from "../../../lib/audio-level.utils";
+import { formatChannels, formatGain, MIN_SLIDER_DECIBELS } from "../../../lib/audio-level.utils";
 
 import { AudioTrackDropdownMenuContent } from "./AudioTrackActions";
 import { AudioTrackToggle } from "./AudioTrackToggle";
@@ -43,16 +36,16 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
     >
       <AudioTrackToggle controller={controller} />
 
-      <div className="relative grid min-w-0 flex-1 gap-0.5">
+      <div className="relative min-w-0 flex-1">
         <AudioTrackDetailsSection controller={controller} hovered={isFocused || isHovered}>
-          <div className="leading-tight">
+          <div>
             <p
               className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
               data-enabled={track.enabled}
             >
               {title}
             </p>
-            <p className="truncate text-xs leading-5 text-muted-foreground">
+            <p className="truncate text-xs text-muted-foreground">
               #{trackNumber} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
             </p>
           </div>
@@ -85,7 +78,7 @@ function AudioTrackDetailsSection({
   controller: AudioTrackController;
   hovered?: boolean;
 }) {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
   const shouldReduceMotion = useReducedMotion() === true;
   const { stream, track } = controller;
   if (!stream || !track) return null;
@@ -119,35 +112,9 @@ function AudioTrackDetailsSection({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent>
-        {t("audio.tooltips.normalizationReplacesGain")} {"· "}
-        {t("audio.messages.normalizedHoverTitle", {
-          preset:
-            typeof normalization === "string"
-              ? normalizationPresetLabel(normalization, t)
-              : t("audio.options.normalizationCustom"),
-        })}
-        {" · "}
-        {formatNormalizationTargets(normalization, i18n.language, t)}
-      </TooltipContent>
+      <TooltipContent>{t("audio.tooltips.normalizationReplacesGain")}</TooltipContent>
     </Tooltip>
   );
-}
-
-function formatNormalizationTargets(
-  normalization: NonNullable<AudioTrackController["track"]>["processing"]["loudnessNormalization"],
-  language: string,
-  t: ReturnType<typeof useTranslation>["t"],
-) {
-  if (normalization === undefined) return "";
-  const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(normalization);
-  const format = (value: number) =>
-    new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(value).replace(/-/g, "−");
-
-  return t("audio.messages.normalizedLevelSummary", {
-    peak: format(maxTruePeakDb),
-    target: format(targetLufs),
-  });
 }
 
 function AudioTrackGainControl({ controller }: { controller: AudioTrackController }) {
