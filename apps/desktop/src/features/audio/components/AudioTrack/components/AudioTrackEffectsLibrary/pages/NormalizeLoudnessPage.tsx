@@ -233,39 +233,6 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
           <AudioTrackEffectsLibraryPageDescription>
             {t("audio.messages.loudnessNormalizationDescription")}
           </AudioTrackEffectsLibraryPageDescription>
-
-          <div className="mt-1 flex items-center gap-3">
-            {!analysisReady ? (
-              <Button
-                aria-label={
-                  analysisLoading
-                    ? t("audio.actions.analyzingLoudness")
-                    : t("audio.actions.analyzeLoudness")
-                }
-                className="h-auto shrink-0 gap-1.5 px-0"
-                disabled={analysisLoading}
-                onClick={() => void dispatch(analyzeTrackLoudness(streamIndex))}
-                type="button"
-                variant="link"
-              >
-                {analysisLoading ? (
-                  <LoaderCircle
-                    aria-hidden="true"
-                    className={shouldReduceMotion ? undefined : "animate-spin"}
-                  />
-                ) : null}
-                {analysisLoading
-                  ? t("audio.actions.analyzingLoudness")
-                  : t("audio.actions.analyzeLoudness")}
-              </Button>
-            ) : null}
-
-            {analysisValue ? (
-              <p className="text-sm text-muted-foreground" role="status">
-                {formatAnalysis(analysisValue, i18n.language)}
-              </p>
-            ) : null}
-          </div>
         </AudioTrackEffectsLibraryPageHeaderContent>
         <AudioTrackEffectsLibraryPageToggle
           aria-label={t("audio.labels.loudnessNormalization")}
@@ -312,6 +279,39 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
         </AudioTrackEffectsLibraryPageBasic>
 
         <AudioTrackEffectsLibraryPageAdvanced>
+          <div className="flex items-center gap-3">
+            {!analysisReady ? (
+              <Button
+                aria-label={
+                  analysisLoading
+                    ? t("audio.actions.analyzingLoudness")
+                    : t("audio.actions.analyzeLoudness")
+                }
+                className="h-auto shrink-0 gap-1.5 px-0"
+                disabled={analysisLoading}
+                onClick={() => void dispatch(analyzeTrackLoudness(streamIndex))}
+                type="button"
+                variant="link"
+              >
+                {analysisLoading ? (
+                  <LoaderCircle
+                    aria-hidden="true"
+                    className={shouldReduceMotion ? undefined : "animate-spin"}
+                  />
+                ) : null}
+                {analysisLoading
+                  ? t("audio.actions.analyzingLoudness")
+                  : t("audio.actions.analyzeLoudness")}
+              </Button>
+            ) : null}
+
+            {analysisValue ? (
+              <p className="text-sm text-muted-foreground" role="status">
+                {formatAnalysis(analysisValue, i18n.language)}
+              </p>
+            ) : null}
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor={`track-custom-lufs-${streamIndex}`}>

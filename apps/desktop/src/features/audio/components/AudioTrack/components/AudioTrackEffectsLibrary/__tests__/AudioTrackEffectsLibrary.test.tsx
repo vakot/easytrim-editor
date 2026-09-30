@@ -4,10 +4,9 @@ import { describe, expect, it } from "vitest";
 
 import type { AudioTrackProcessing } from "@/domain/audio-processing";
 
-import { AudioTrackEffectsDraftProvider } from "../AudioTrackEffectsDialog/components/AudioTrackEffectsDraftProvider";
-
-import type { AudioTrackEffectDescriptor } from "./audio-track-effects.registry";
-import { AudioTrackEffectsLibrary } from "./AudioTrackEffectsLibrary";
+import { AudioTrackEffectsDraftProvider } from "../../AudioTrackEffectsDialog/components/AudioTrackEffectsDraftProvider";
+import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
+import type { AudioTrackEffectDescriptor } from "../consts/audio-track-effects";
 
 function FirstEffectPage() {
   return <p>First effect controls</p>;
