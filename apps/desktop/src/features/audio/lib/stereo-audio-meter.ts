@@ -20,7 +20,6 @@ interface PeakHoldState {
 interface StereoAudioMeterNodes {
   isMono: boolean;
   left: AnalyserNode;
-  normalizationGain: GainNode;
   right: AnalyserNode;
   source: AudioNode;
   splitter: ChannelSplitterNode;
@@ -30,30 +29,23 @@ function createStereoAudioMeterNodes(
   context: AudioContext,
   source: AudioNode,
 ): StereoAudioMeterNodes {
-  const normalizationGain = context.createGain();
   const splitter = context.createChannelSplitter(2);
   const left = context.createAnalyser();
   const right = context.createAnalyser();
   left.fftSize = 2048;
   right.fftSize = 2048;
-  source.connect(normalizationGain);
-  normalizationGain.connect(splitter);
+  source.connect(splitter);
   splitter.connect(left, 0);
   splitter.connect(right, 1);
-  return { left, isMono: false, normalizationGain, right, splitter, source };
+  return { left, isMono: false, right, splitter, source };
 }
 
 function disconnectStereoAudioMeterNodes(meter: StereoAudioMeterNodes | null): void {
   if (!meter) return;
-  meter.source.disconnect(meter.normalizationGain);
-  meter.normalizationGain.disconnect();
+  meter.source.disconnect(meter.splitter);
   meter.splitter.disconnect();
   meter.left.disconnect();
   meter.right.disconnect();
-}
-
-function meterMixNormalization(mergeAudio: boolean, trackCount: number): number {
-  return mergeAudio && trackCount > 1 ? 1 / trackCount : 1;
 }
 
 function isMonoAudioMix(channelCounts: readonly (number | undefined)[]): boolean {
@@ -121,7 +113,6 @@ export {
   createStereoAudioMeterNodes,
   disconnectStereoAudioMeterNodes,
   isMonoAudioMix,
-  meterMixNormalization,
   meterZoneLevels,
   peakAmplitude,
   smoothMeterLevel,

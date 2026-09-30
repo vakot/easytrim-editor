@@ -36,7 +36,6 @@ import {
   disconnectStereoAudioMeterNodes,
   getOrCreateNativeAudioBinding,
   isMonoAudioMix,
-  meterMixNormalization,
   type NativeAudioBinding,
   type StereoAudioMeterNodes,
   synchronizeAudioPosition,
@@ -570,20 +569,14 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     const meter = audioMeterRef.current;
     if (!meter) return;
 
-    const exportAudioTracks = audioTracks.filter((track) => track.enabled);
-
     const audioStreams = media?.audioStreams ?? [];
-    meter.normalizationGain.gain.value = meterMixNormalization(
-      mergeAudio && usesExternalAudio,
-      exportAudioTracks.length,
-    );
     meter.isMono = isMonoAudioMix(
-      exportAudioTracks.map(
+      audioTracks.filter((track) => track.enabled).map(
         (track) =>
           audioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.channels,
       ),
     );
-  }, [audioTracks, mergeAudio, media?.audioStreams, usesExternalAudio]);
+  }, [audioTracks, media?.audioStreams]);
 
   useEffect(() => {
     const playbackOutputGain = playbackOutputGainRef.current;

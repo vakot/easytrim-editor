@@ -537,7 +537,7 @@ pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bo
             .map(|index| format!("[audio{index}]"))
             .collect::<String>();
         graph.push(format!(
-            "{inputs}amix=inputs={}:duration=longest:dropout_transition=0:normalize=1[aout]",
+            "{inputs}amix=inputs={}:duration=longest:dropout_transition=0:normalize=0[aout]",
             audio_tracks.len()
         ));
     }
@@ -847,7 +847,7 @@ mod tests {
     }
 
     #[test]
-    fn fast_merge_reencodes_only_the_merged_audio() {
+    fn fast_merge_sums_tracks_without_track_count_normalization() {
         let args = build_fast_arguments(
             &media(),
             &FastExportRequest {
@@ -884,8 +884,9 @@ mod tests {
             .map(|value| value.to_string_lossy().to_string())
             .collect::<Vec<_>>();
         assert!(values.iter().any(|value| {
-            value.contains("amix=inputs=2:duration=longest:dropout_transition=0:normalize=1[aout]")
+            value.contains("amix=inputs=2:duration=longest:dropout_transition=0:normalize=0[aout]")
         }));
+        assert!(values.iter().all(|value| !value.contains("normalize=1")));
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
         assert!(values.windows(2).any(|pair| pair == ["-c:a", "aac"]));
     }
