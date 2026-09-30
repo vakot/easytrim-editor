@@ -1,10 +1,8 @@
 import { Check } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { MenuIcon, menuItemVariants } from "@/components/ui/menu";
-
-import { cn } from "@/lib/class-names.utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useAudioTrackEffectsDraft } from "../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
 
@@ -18,6 +16,17 @@ interface AudioTrackEffectsLibraryProps {
   streamIndex: number;
 }
 
+function EffectTabIndicator({ children, side }: { children?: ReactNode; side: "left" | "right" }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none absolute ${side === "left" ? "left-2" : "right-2"} top-1/2 flex size-4 -translate-y-1/2 items-center justify-center`}
+    >
+      {children}
+    </span>
+  );
+}
+
 function AudioTrackEffectsLibrary({
   effects = AUDIO_TRACK_EFFECTS,
   streamIndex,
@@ -27,51 +36,49 @@ function AudioTrackEffectsLibrary({
   const { draft } = useAudioTrackEffectsDraft();
 
   return (
-    <div className="-mx-4 flex min-h-72 min-w-0 flex-1">
-      <nav aria-label={t("audio.actions.effects")} className="w-64 shrink-0 border-r px-2 py-3">
-        {effects.map((effect) => (
-          <button
-            aria-current={selectedEffect === effect.id ? "page" : undefined}
-            className={cn(
-              menuItemVariants({ kind: "checkbox" }),
-              "w-full min-w-0 justify-start whitespace-nowrap",
-            )}
-            data-inset
-            data-selected={selectedEffect === effect.id}
-            key={effect.id}
-            onClick={() => setSelectedEffect(effect.id)}
-            type="button"
-          >
-            {effect.isEnabled(draft.processing) ? (
-              <MenuIcon>
-                <Check />
-              </MenuIcon>
-            ) : null}
-            <span className="min-w-0 truncate">{effect.label(t)}</span>
-            <MenuIcon
-              aria-hidden="true"
-              className={
-                effect.isDirty(draft.initialProcessing, draft.processing) ||
-                draft.effectStatus[effect.id]?.dirty
-                  ? undefined
-                  : "opacity-0"
-              }
-              side="right"
-            >
-              <span className="size-1.5 rounded-full bg-current" />
-            </MenuIcon>
-          </button>
-        ))}
-      </nav>
+    <Tabs
+      className="-mx-4 flex min-h-72 min-w-0 flex-1"
+      onValueChange={setSelectedEffect}
+      orientation="vertical"
+      value={selectedEffect}
+    >
+      <TabsList
+        aria-label={t("audio.actions.effects")}
+        className="w-64 shrink-0 items-stretch border-r px-2 py-3"
+        variant="line"
+      >
+        {effects.map((effect) => {
+          const enabled = effect.isEnabled(draft.processing);
+          const dirty =
+            effect.isDirty(draft.initialProcessing, draft.processing) ||
+            draft.effectStatus[effect.id]?.dirty;
+
+          return (
+            <TabsTrigger className="relative min-w-0 px-8" key={effect.id} value={effect.id}>
+              <EffectTabIndicator side="left">{enabled ? <Check /> : null}</EffectTabIndicator>
+              <span className="min-w-0 truncate text-left">{effect.label(t)}</span>
+              <EffectTabIndicator side="right">
+                {dirty ? <span className="size-1.5 rounded-full bg-current" /> : null}
+              </EffectTabIndicator>
+            </TabsTrigger>
+          );
+        })}
+      </TabsList>
 
       <div className="min-w-0 flex-1 overflow-y-auto p-4">
         {effects.map(({ id, Page }) => (
-          <div aria-hidden={selectedEffect !== id} hidden={selectedEffect !== id} key={id}>
+          <TabsContent
+            className="data-[state=inactive]:hidden"
+            forceMount
+            hidden={selectedEffect !== id}
+            key={id}
+            value={id}
+          >
             <Page streamIndex={streamIndex} />
-          </div>
+          </TabsContent>
         ))}
       </div>
-    </div>
+    </Tabs>
   );
 }
 

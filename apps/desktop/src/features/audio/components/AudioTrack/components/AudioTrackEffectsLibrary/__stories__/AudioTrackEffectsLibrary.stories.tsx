@@ -1,8 +1,7 @@
 import "@/i18n/config";
 
 import type { Meta, StoryObj } from "@storybook/react";
-import { Check } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Provider } from "react-redux";
 
 import { Button } from "@/components/ui/button";
@@ -15,178 +14,61 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MenuIcon, menuItemVariants } from "@/components/ui/menu";
 import { Switch } from "@/components/ui/switch";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { useAppDispatch } from "@/app/store/redux-hooks";
 import { audioTrackProcessingChanged } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 import { type AudioTrackProcessing, sameAudioTrackProcessing } from "@/domain/audio-processing";
-import { cn } from "@/lib/class-names.utils";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
-import { getAudioTrackEffectsDraftProcessing } from "../../AudioTrackEffectsDialog/audio-track-effects-draft.utils";
 import { AudioTrackEffectsDraftProvider } from "../../AudioTrackEffectsDialog/components/AudioTrackEffectsDraftProvider";
 import { useAudioTrackEffectsDraft } from "../../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
 import {
+  AUDIO_TRACK_EFFECTS,
+  type AudioTrackEffectDescriptor,
+} from "../audio-track-effects.registry";
+import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
+import {
   AudioTrackEffectsLibraryPage,
-  AudioTrackEffectsLibraryPageAdvanced,
   AudioTrackEffectsLibraryPageBasic,
   AudioTrackEffectsLibraryPageDescription,
   AudioTrackEffectsLibraryPageHeader,
   AudioTrackEffectsLibraryPageHeaderContent,
   AudioTrackEffectsLibraryPageTitle,
 } from "../components/AudioTrackEffectsLibraryPage";
-import { NormalizeLoudnessPage } from "../pages/NormalizeLoudnessPage";
 
-const effects = [
-  "High-pass",
-  "Noise reduction",
-  "Noise gate",
-  "Compressor",
-  "Normalize Loudness",
-  "Limiter",
-] as const;
-
-type Effect = (typeof effects)[number];
-
-interface EffectState {
-  enabled: boolean;
-  isDirty: boolean;
-}
-
-type EffectsState = Record<Effect, EffectState>;
-
-const initialEffectsState: EffectsState = {
-  "High-pass": { enabled: false, isDirty: false },
-  "Noise reduction": { enabled: true, isDirty: false },
-  "Noise gate": { enabled: false, isDirty: false },
-  Compressor: { enabled: false, isDirty: false },
-  "Normalize Loudness": { enabled: true, isDirty: false },
-  Limiter: { enabled: false, isDirty: false },
-};
-
-function EffectsLibraryStory({
-  initialProcessing,
-  streamIndex,
-}: {
-  initialProcessing: AudioTrackProcessing;
-  streamIndex: number;
-}) {
-  const { draft } = useAudioTrackEffectsDraft();
-  const [selected, setSelected] = useState<Effect>("Normalize Loudness");
-  const [effectStates, setEffectStates] = useState(initialEffectsState);
-  const selectedState = effectStates[selected];
-
-  const setEffectEnabled = (effect: Effect, enabled: boolean) => {
-    setEffectStates((current) => ({
-      ...current,
-      [effect]: { ...current[effect], enabled, isDirty: true },
-    }));
-  };
-
-  const markEffectDirty = (effect: Effect) => {
-    setEffectStates((current) => ({
-      ...current,
-      [effect]: { ...current[effect], isDirty: true },
-    }));
-  };
-
-  return (
-    <div className="-mx-4 flex min-h-80 min-w-0 flex-1">
-      <nav aria-label="Audio effects" className="w-64 shrink-0 border-r px-2 py-3">
-        {effects.map((effect) => {
-          const state = effectStates[effect];
-          const enabled =
-            effect === "Normalize Loudness"
-              ? draft.processing.loudnessNormalization !== undefined
-              : state.enabled;
-
-          const dirty =
-            effect === "Normalize Loudness"
-              ? !sameAudioTrackProcessing(
-                  initialProcessing,
-                  getAudioTrackEffectsDraftProcessing(draft),
-                ) ||
-                (draft.effectStatus.loudnessNormalization?.dirty ?? false)
-              : state.isDirty;
-
-          return (
-            <button
-              aria-current={selected === effect ? "page" : undefined}
-              className={cn(
-                menuItemVariants({ kind: "checkbox" }),
-                "w-full min-w-0 justify-start whitespace-nowrap",
-              )}
-              data-inset
-              data-selected={selected === effect}
-              key={effect}
-              onClick={() => setSelected(effect)}
-              type="button"
-            >
-              {enabled ? (
-                <MenuIcon>
-                  <Check />
-                </MenuIcon>
-              ) : null}
-              <span className="min-w-0 truncate">{effect}</span>
-              <MenuIcon aria-hidden="true" className={dirty ? undefined : "opacity-0"} side="right">
-                <span className="size-1.5 rounded-full bg-current" />
-              </MenuIcon>
-            </button>
-          );
-        })}
-      </nav>
-
-      <div className="min-w-0 flex-1 overflow-y-auto p-4">
-        {selected === "Normalize Loudness" ? (
-          <NormalizeLoudnessPage streamIndex={streamIndex} />
-        ) : (
-          <PlaceholderPage
-            effect={selected}
-            enabled={selectedState.enabled}
-            onChange={() => markEffectDirty(selected)}
-            onEnabledChange={(enabled) => setEffectEnabled(selected, enabled)}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-function PlaceholderPage({
-  effect,
-  enabled,
-  onChange,
-  onEnabledChange,
-}: {
-  effect: Effect;
-  enabled: boolean;
-  onChange: () => void;
-  onEnabledChange: (enabled: boolean) => void;
-}) {
+function PlaceholderEffectPage() {
   return (
     <AudioTrackEffectsLibraryPage>
       <AudioTrackEffectsLibraryPageHeader>
         <AudioTrackEffectsLibraryPageHeaderContent>
-          <AudioTrackEffectsLibraryPageTitle>{effect}</AudioTrackEffectsLibraryPageTitle>
+          <AudioTrackEffectsLibraryPageTitle>Noise reduction</AudioTrackEffectsLibraryPageTitle>
           <AudioTrackEffectsLibraryPageDescription>
-            Effect controls will be shown here.
+            This effect is disabled, but its settings page remains available.
           </AudioTrackEffectsLibraryPageDescription>
         </AudioTrackEffectsLibraryPageHeaderContent>
-        <Switch checked={enabled} onCheckedChange={onEnabledChange} />
+        <Switch aria-label="Noise reduction" checked={false} />
       </AudioTrackEffectsLibraryPageHeader>
       <AudioTrackEffectsLibraryPageBasic>
-        <Button onClick={onChange} type="button" variant="outline">
-          Change draft
-        </Button>
+        <p className="text-sm text-muted-foreground">Effect controls can be configured here.</p>
       </AudioTrackEffectsLibraryPageBasic>
-      <AudioTrackEffectsLibraryPageAdvanced>
-        <p className="text-sm text-muted-foreground">Advanced controls can be added here.</p>
-      </AudioTrackEffectsLibraryPageAdvanced>
     </AudioTrackEffectsLibraryPage>
   );
 }
+
+const storyEffects: readonly AudioTrackEffectDescriptor[] = [
+  ...AUDIO_TRACK_EFFECTS,
+  {
+    id: "noiseReduction",
+    stage: "cleanup",
+    label: () => "Noise reduction",
+    Page: PlaceholderEffectPage,
+    isEnabled: () => false,
+    isDirty: () => true,
+  },
+];
 
 function EffectsLibraryStoryDialog() {
   const store = useMemo(() => {
@@ -227,6 +109,7 @@ function EffectsLibraryStoryContent({
   initialProcessing: AudioTrackProcessing;
   streamIndex: number;
 }) {
+  const dispatch = useAppDispatch();
   const { draft } = useAudioTrackEffectsDraft();
 
   return (
@@ -235,7 +118,7 @@ function EffectsLibraryStoryContent({
         <DialogTitle>Audio 1 — Effects</DialogTitle>
         <DialogDescription>Configure audio processing for this track.</DialogDescription>
       </DialogHeader>
-      <EffectsLibraryStory initialProcessing={initialProcessing} streamIndex={streamIndex} />
+      <AudioTrackEffectsLibrary effects={storyEffects} streamIndex={streamIndex} />
       <DialogFooter className="-mx-4 border-t px-4 pt-4">
         <DialogClose asChild>
           <Button type="button" variant="outline">
@@ -244,8 +127,13 @@ function EffectsLibraryStoryContent({
         </DialogClose>
         <DialogClose asChild>
           <Button
-            disabled={draft.processing.loudnessNormalization === undefined}
-            onClick={() => undefined}
+            disabled={
+              Object.values(draft.effectStatus).some(({ valid }) => !valid) ||
+              sameAudioTrackProcessing(draft.processing, initialProcessing)
+            }
+            onClick={() =>
+              dispatch(audioTrackProcessingChanged({ processing: draft.processing, streamIndex }))
+            }
             type="button"
           >
             Apply

@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import type { AudioTrackProcessing } from "@/domain/audio-processing";
@@ -31,12 +32,13 @@ const effects: readonly AudioTrackEffectDescriptor[] = [
     label: () => "Second effect",
     Page: SecondEffectPage,
     isEnabled: () => false,
-    isDirty: () => false,
+    isDirty: () => true,
   },
 ];
 
 describe("AudioTrackEffectsLibrary", () => {
-  it("uses registry order and renders arbitrary effect pages without shell branches", () => {
+  it("uses registry order, tab semantics, and keyboard page switching without shell branches", async () => {
+    const user = userEvent.setup();
     const initialProcessing = { gainDb: 0, firstEnabled: true } as AudioTrackProcessing;
     render(
       <AudioTrackEffectsDraftProvider initialProcessing={initialProcessing}>
@@ -44,19 +46,19 @@ describe("AudioTrackEffectsLibrary", () => {
       </AudioTrackEffectsDraftProvider>,
     );
 
-    const navigation = screen.getByRole("navigation");
-    const links = within(navigation).getAllByRole("button");
-    expect(links.map((link) => link.textContent?.trim())).toEqual([
-      "First effect",
-      "Second effect",
-    ]);
-    expect(links[0]).toHaveAttribute("aria-current", "page");
-    expect(links[0]?.querySelector("svg.lucide-check")).toBeInTheDocument();
+    const tabs = within(screen.getByRole("tablist")).getAllByRole("tab");
+    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(["First effect", "Second effect"]);
+    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    expect(tabs[0]?.querySelector("svg.lucide-check")).toBeInTheDocument();
+    expect(tabs[1]?.querySelector(".rounded-full")).toBeInTheDocument();
     expect(screen.getByText("First effect controls")).toBeVisible();
     expect(screen.getByText("Second effect controls").parentElement).not.toBeVisible();
 
-    fireEvent.click(links[1]!);
-    expect(links[1]).toHaveAttribute("aria-current", "page");
+    tabs[0]?.focus();
+    await user.keyboard("{ArrowDown}");
+    expect(tabs[1]).toHaveFocus();
+    expect(tabs[1]).toHaveAttribute("aria-selected", "true");
     expect(screen.getByText("Second effect controls")).toBeVisible();
+    expect(screen.getByText("First effect controls").parentElement).not.toBeVisible();
   });
 });
