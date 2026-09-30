@@ -86,6 +86,28 @@ pub enum AudioTrackSignalEffect {
         cutoff_hz: f64,
         stage: AudioProcessingStage,
     },
+    NoiseReduction {
+        preset: NoiseReductionPreset,
+        stage: AudioProcessingStage,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Hash, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum NoiseReductionPreset {
+    Light,
+    Medium,
+    Strong,
+}
+
+impl NoiseReductionPreset {
+    fn filter(self) -> &'static str {
+        match self {
+            Self::Light => "afftdn=nr=6:tn=1",
+            Self::Medium => "afftdn=nr=12:tn=1",
+            Self::Strong => "afftdn=nr=20:tn=1",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Hash, Serialize)]
@@ -117,11 +139,19 @@ impl From<&AudioTrackSelection> for AudioTrackCacheKey {
             .iter()
             .map(|effect| match effect {
                 AudioTrackSignalEffect::HighPass { cutoff_hz, stage } => {
-                    (*stage, cutoff_hz.to_bits())
+                    (*stage, 0_u8, cutoff_hz.to_bits())
+                }
+                AudioTrackSignalEffect::NoiseReduction { preset, stage } => {
+                    let value = match preset {
+                        NoiseReductionPreset::Light => 1,
+                        NoiseReductionPreset::Medium => 2,
+                        NoiseReductionPreset::Strong => 3,
+                    };
+                    (*stage, 1, value)
                 }
             })
             .collect::<Vec<_>>();
-        effects.sort_by_key(|(stage, _)| match stage {
+        effects.sort_by_key(|(stage, _, _)| match stage {
             AudioProcessingStage::Cleanup => 0,
             AudioProcessingStage::Dynamics => 1,
             AudioProcessingStage::LevelPolicy => 2,
@@ -497,6 +527,9 @@ pub(crate) fn validate_audio_track_selections(
                         || !cutoff_hz.is_finite()
                         || !(10.0..=20_000.0).contains(cutoff_hz)
                 }
+                AudioTrackSignalEffect::NoiseReduction { stage, .. } => {
+                    *stage != AudioProcessingStage::Cleanup
+                }
             })
             || track.loudness_analysis.is_some_and(|analysis| {
                 analysis
@@ -620,6 +653,12 @@ pub(crate) fn pre_level_filter_chain(processing: &AudioTrackProcessing) -> Strin
             AudioProcessingStage::LevelPolicy => 2,
             AudioProcessingStage::FinalProtection => 3,
         },
+        AudioTrackSignalEffect::NoiseReduction { stage, .. } => match stage {
+            AudioProcessingStage::Cleanup => 0,
+            AudioProcessingStage::Dynamics => 1,
+            AudioProcessingStage::LevelPolicy => 2,
+            AudioProcessingStage::FinalProtection => 3,
+        },
     });
 
     effects
@@ -634,6 +673,15 @@ pub(crate) fn pre_level_filter_chain(processing: &AudioTrackProcessing) -> Strin
                 Some(format!("highpass=f={cutoff_hz:.3}"))
             }
             AudioTrackSignalEffect::HighPass { .. } => None,
+            AudioTrackSignalEffect::NoiseReduction { preset, stage }
+                if matches!(
+                    stage,
+                    AudioProcessingStage::Cleanup | AudioProcessingStage::Dynamics
+                ) =>
+            {
+                Some(preset.filter().to_owned())
+            }
+            AudioTrackSignalEffect::NoiseReduction { .. } => None,
         })
         .collect::<Vec<_>>()
         .join(",")
@@ -649,6 +697,7 @@ fn final_protection_filter_chain(processing: &AudioTrackProcessing) -> String {
                 stage: AudioProcessingStage::FinalProtection,
             } => Some(format!("highpass=f={cutoff_hz:.3}")),
             AudioTrackSignalEffect::HighPass { .. } => None,
+            AudioTrackSignalEffect::NoiseReduction { .. } => None,
         })
         .collect::<Vec<_>>()
         .join(",")

@@ -7,6 +7,7 @@ import {
   sameLoudnessNormalization,
 } from "@/domain/audio-processing";
 
+import { NoiseReductionPage } from "../pages/NoiseReductionPage";
 import { NormalizeLoudnessPage } from "../pages/NormalizeLoudnessPage";
 
 interface AudioTrackEffectsPageProps {
@@ -23,6 +24,17 @@ interface AudioTrackEffectDescriptor {
 }
 
 const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
+  {
+    id: "noiseReduction",
+    stage: "cleanup",
+    label: (t) => t("audio.labels.noiseReduction"),
+    Page: NoiseReductionPage,
+    isEnabled: (processing) =>
+      processing.effects?.some((effect) => effect.type === "noiseReduction") ?? false,
+    isDirty: (initial, current) =>
+      initial.effects?.find((effect) => effect.type === "noiseReduction")?.preset !==
+      current.effects?.find((effect) => effect.type === "noiseReduction")?.preset,
+  },
   {
     id: "loudnessNormalization",
     stage: "levelPolicy",

@@ -1,4 +1,8 @@
-import type { LoudnessNormalization } from "@/domain/audio-processing";
+import type {
+  AudioTrackSignalEffect,
+  LoudnessNormalization,
+  NoiseReductionPreset,
+} from "@/domain/audio-processing";
 import type { SourceRef } from "@/domain/source";
 
 import type {
@@ -252,16 +256,55 @@ function parseAudioPreviewDescriptor(value: unknown): AudioPreviewDescriptor {
   const gainDb = optionalFiniteNumber(processing.gainDb, "audio preview gain");
   if (gainDb === undefined) throw invalidResponse("audio preview gain");
   const loudnessNormalization = parseLoudnessNormalization(processing.loudnessNormalization);
+  const effects = parseAudioTrackSignalEffects(processing.effects);
   return {
     mediaToken: requirePositiveInteger(preview.mediaToken, "audio preview media token"),
     previewRevision: requirePositiveInteger(preview.previewRevision, "audio preview revision"),
     processing: {
       gainDb,
+      ...(effects === undefined ? {} : { effects }),
       ...(loudnessNormalization === undefined ? {} : { loudnessNormalization }),
     },
     streamIndex: requireInteger(preview.streamIndex, "audio preview stream index"),
     url: requireString(preview.url, "audio preview URL"),
   };
+}
+
+function parseAudioTrackSignalEffects(value: unknown): AudioTrackSignalEffect[] | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value)) throw invalidResponse("audio preview effects");
+
+  return value.map((item) => {
+    const effect = requireRecord(item, "audio preview effect");
+    const stage = effect.stage;
+    if (
+      stage !== "cleanup" &&
+      stage !== "dynamics" &&
+      stage !== "levelPolicy" &&
+      stage !== "finalProtection"
+    ) {
+      throw invalidResponse("audio preview effect stage");
+    }
+
+    if (effect.type === "highPass") {
+      const cutoffHz = optionalFiniteNumber(effect.cutoffHz, "audio preview high-pass cutoff");
+      if (cutoffHz === undefined || cutoffHz < 10 || cutoffHz > 20_000 || stage === "levelPolicy") {
+        throw invalidResponse("audio preview high-pass effect");
+      }
+      return { cutoffHz, stage, type: "highPass" };
+    }
+
+    const preset = parseNoiseReduction(effect.preset);
+    if (effect.type !== "noiseReduction" || preset === undefined || stage !== "cleanup") {
+      throw invalidResponse("audio preview noise-reduction effect");
+    }
+    return { preset, stage, type: "noiseReduction" };
+  });
+}
+
+function parseNoiseReduction(value: unknown): NoiseReductionPreset | undefined {
+  if (value === "light" || value === "medium" || value === "strong") return value;
+  return undefined;
 }
 
 function parseLoudnessNormalization(value: unknown): LoudnessNormalization | undefined {

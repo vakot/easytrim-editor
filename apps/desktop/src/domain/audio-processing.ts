@@ -1,11 +1,19 @@
 type LoudnessPreset = "webVideo" | "streaming" | "broadcast";
 const AUDIO_PROCESSING_STAGES = ["cleanup", "dynamics", "levelPolicy", "finalProtection"] as const;
 type AudioProcessingStage = (typeof AUDIO_PROCESSING_STAGES)[number];
-type AudioTrackSignalEffect = {
-  cutoffHz: number;
-  stage: AudioProcessingStage;
-  type: "highPass";
-};
+type AudioTrackSignalEffect =
+  | {
+      cutoffHz: number;
+      stage: AudioProcessingStage;
+      type: "highPass";
+    }
+  | {
+      preset: NoiseReductionPreset;
+      stage: "cleanup";
+      type: "noiseReduction";
+    };
+
+type NoiseReductionPreset = "light" | "medium" | "strong";
 
 interface CustomLoudnessNormalization {
   maxTruePeakDb: number;
@@ -220,6 +228,7 @@ export type {
   CustomLoudnessNormalization,
   LoudnessNormalization,
   LoudnessPreset,
+  NoiseReductionPreset,
 };
 export {
   AUDIO_PROCESSING_STAGES,

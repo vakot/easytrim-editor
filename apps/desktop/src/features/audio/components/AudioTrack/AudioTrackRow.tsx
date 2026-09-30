@@ -21,7 +21,11 @@ import {
   type AudioTrackController,
   useAudioTrackController,
 } from "../../hooks/useAudioTrackController";
-import { formatGain, normalizationPresetLabel } from "../../lib/audio-level.utils";
+import {
+  formatGain,
+  noiseReductionPresetLabel,
+  normalizationPresetLabel,
+} from "../../lib/audio-level.utils";
 
 import { AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
@@ -158,6 +162,15 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
   const { t } = useTranslation();
   const summaries: string[] = [];
   const normalization = processing.loudnessNormalization;
+  const noiseReduction = processing.effects?.find((effect) => effect.type === "noiseReduction");
+
+  if (noiseReduction) {
+    summaries.push(
+      t("audio.messages.noiseReductionEffectSummary", {
+        preset: noiseReductionPresetLabel(noiseReduction.preset, t),
+      }),
+    );
+  }
 
   if (typeof normalization === "string") {
     summaries.push(
