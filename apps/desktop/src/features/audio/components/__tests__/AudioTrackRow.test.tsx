@@ -384,12 +384,12 @@ describe("AudioTrackRow", () => {
       gainDb: -2.5,
       loudnessNormalization: "streaming",
     });
-    expect(await screen.findByText("Normalized · Streaming")).toBeInTheDocument();
+    expect(await screen.findByText("Normalized - Streaming")).toBeInTheDocument();
     expect(await screen.findByText("Target −16 LUFS · peak cap −1.5 dBTP")).toBeInTheDocument();
 
     await user.hover(screen.getByText(/#1 ·/));
     expect(screen.queryByRole("slider", { name: /audio 1 gain/i })).not.toBeInTheDocument();
-    expect(screen.getByText("Normalized · Streaming")).toBeInTheDocument();
+    expect(screen.getByText("Normalized - Streaming")).toBeInTheDocument();
     const normalizedTooltip = await screen.findByRole("tooltip");
     expect(normalizedTooltip).toHaveTextContent("Target −16 LUFS · peak cap −1.5 dBTP");
     expect(normalizedTooltip).toHaveTextContent(
