@@ -70,7 +70,7 @@ describe("audio track level policy", () => {
     ).toBe(false);
   });
 
-  it("keys loudness analysis by trim and explicit pre-level processing inputs", () => {
+  it("keys loudness analysis by trim and track processing effects", () => {
     const trim = { startMicros: 1_000_000, endMicros: 8_000_000 };
     const processing = { gainDb: -4, loudnessNormalization: "streaming" as const };
     const initial = audioTrackLoudnessInputsKey("source-a", 2, trim, processing);
@@ -101,11 +101,19 @@ describe("audio track level policy", () => {
       effects: [{ type: "highPass" as const, stage: "finalProtection" as const, cutoffHz: 120 }],
     };
 
-    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, finalProtectionProcessing)).toBe(
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, finalProtectionProcessing)).not.toBe(
       initial,
     );
-    expect(sameAudioTrackLoudnessInputs(processing, finalProtectionProcessing)).toBe(true);
+    expect(sameAudioTrackLoudnessInputs(processing, finalProtectionProcessing)).toBe(false);
     expect(audioTrackActivityProcessingChanged(processing, finalProtectionProcessing)).toBe(true);
+    const limitedProcessing = {
+      ...processing,
+      effects: [{ type: "limiter" as const, stage: "finalProtection" as const, ceilingDb: -1 }],
+    };
+
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, limitedProcessing)).not.toBe(initial);
+    expect(sameAudioTrackLoudnessInputs(processing, limitedProcessing)).toBe(false);
+    expect(audioTrackActivityProcessingChanged(processing, limitedProcessing)).toBe(true);
     expect(audioTrackLoudnessInputsKey("source-b", 2, trim, processing)).not.toBe(initial);
     expect(sameAudioTrackLoudnessInputs(processing, { ...processing, gainDb: 2 })).toBe(true);
     expect(sameAudioTrackLoudnessInputs(processing, upstreamProcessing)).toBe(false);

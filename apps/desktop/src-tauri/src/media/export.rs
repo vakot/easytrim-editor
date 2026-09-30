@@ -1566,6 +1566,55 @@ mod tests {
     }
 
     #[test]
+    fn applies_each_tracks_limiter_after_its_level_policy_before_merging() {
+        let tracks = [
+            AudioTrackSelection {
+                loudness_analysis: None,
+                stream_index: 2,
+                processing: AudioTrackProcessing {
+                    gain_db: -3.0,
+                    loudness_normalization: None,
+                    effects: vec![AudioTrackSignalEffect::Limiter {
+                        ceiling_db: -1.0,
+                        stage: AudioProcessingStage::FinalProtection,
+                    }],
+                },
+            },
+            AudioTrackSelection {
+                loudness_analysis: Some(AudioLoudnessAnalysis {
+                    input_lra: Some(5.0),
+                    input_threshold: Some(-30.0),
+                    integrated_lufs: Some(-20.0),
+                    true_peak_db: Some(-5.0),
+                }),
+                stream_index: 4,
+                processing: AudioTrackProcessing {
+                    gain_db: 0.0,
+                    loudness_normalization: Some(LoudnessNormalization::Preset(
+                        LoudnessPreset::Streaming,
+                    )),
+                    effects: vec![AudioTrackSignalEffect::Limiter {
+                        ceiling_db: -2.0,
+                        stage: AudioProcessingStage::FinalProtection,
+                    }],
+                },
+            },
+        ];
+
+        let graph = audio_filter_graph(&tracks, true);
+
+        assert!(graph.contains(
+            "[0:2]volume=-3.000000dB,alimiter=limit=0.891251:attack=5:release=50:level=0:latency=1[audio0]"
+        ));
+        assert!(graph.contains(
+            "aresample=48000,alimiter=limit=0.794328:attack=5:release=50:level=0:latency=1[audio1]"
+        ));
+        assert!(graph.ends_with(
+            "[audio0][audio1]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0[aout]"
+        ));
+    }
+
+    #[test]
     fn analysis_and_normalization_share_the_same_pre_level_filter_chain() {
         let track = AudioTrackSelection {
             loudness_analysis: Some(AudioLoudnessAnalysis {

@@ -8,6 +8,7 @@ import {
   audioMergeToggled,
   audioPreviewsReady,
   audioReducer,
+  audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
   audioTrackGainChanged,
   audioTrackLoudnessAnalysisReady,
@@ -82,6 +83,59 @@ describe("audio slice", () => {
 
     expect(stale).toEqual(loading);
     expect(current.tracks[0]).toMatchObject({ enabled: false, processing: { gainDb: 0 } });
+  });
+
+  it("invalidates only the changed track's analyses when its limiter changes", () => {
+    let state = readyAudio();
+    for (const streamIndex of [2, 4]) {
+      const operationId = `analysis-${streamIndex}`;
+      state = audioReducer(
+        state,
+        audioTrackLoudnessAnalysisStarted({
+          cacheKey: operationId,
+          operationId,
+          streamIndex,
+        }),
+      );
+      state = audioReducer(
+        state,
+        audioTrackLoudnessAnalysisReady({
+          cacheKey: operationId,
+          operationId,
+          result: { integratedLufs: -18, truePeakDb: -4 },
+          streamIndex,
+        }),
+      );
+      state = audioReducer(state, audioTrackActivityAnalysisStarted({ operationId, streamIndex }));
+      state = audioReducer(
+        state,
+        audioTrackActivityAnalysisReady({
+          operationId,
+          result: [{ endMicros: 2_000_000, startMicros: 0 }],
+          streamIndex,
+        }),
+      );
+    }
+
+    const updated = audioReducer(
+      state,
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: {
+          gainDb: 0,
+          effects: [{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }],
+        },
+      }),
+    );
+
+    expect(updated.tracks[0]).toMatchObject({
+      activityAnalysis: { status: "idle" },
+      loudnessAnalysis: { status: "idle" },
+    });
+    expect(updated.tracks[1]).toMatchObject({
+      activityAnalysis: { status: "ready" },
+      loudnessAnalysis: { status: "ready" },
+    });
   });
 
   it("keeps loudness analysis independent from manual gain and clears trim-bound results", () => {
