@@ -1,12 +1,16 @@
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectAudioTracks, selectMergeAudio } from "@/app/store/slices/audio-slice";
+import {
+  audioTrackPlaybackPreviewUrl,
+  selectAudioTracks,
+  selectMergeAudio,
+} from "@/app/store/slices/audio-slice";
 import { selectPlaybackVolumePercent } from "@/app/store/slices/preferences-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 import {
+  audioTrackExternalPreviewStreamIndexes,
   effectiveAudioTrackGainDb,
-  sameAudioTrackPreviewProcessing,
 } from "@/domain/audio-processing";
 
 import { synchronizeAudioPosition } from "../lib/audio-sync";
@@ -77,26 +81,33 @@ function useAudioPlaybackRuntime({
   const mergeAudio = useAppSelector(selectMergeAudio);
   const playbackVolumePercent = useAppSelector(selectPlaybackVolumePercent);
   const enabledAudioTracks = audioTracks.filter((track) => track.enabled);
+  const nativeAudioStreamIndex =
+    media?.audioStreams.find((stream) => stream.isDefault)?.streamIndex ??
+    media?.audioStreams[0]?.streamIndex;
+
+  const externalPreviewStreamIndexes = useMemo(
+    () => new Set(audioTrackExternalPreviewStreamIndexes(audioTracks, nativeAudioStreamIndex)),
+    [audioTracks, nativeAudioStreamIndex],
+  );
+
   const audioPreviewUrls = useMemo(
     () =>
       Object.fromEntries(
-        audioTracks.flatMap((track) =>
-          track.preview.status === "ready" &&
-          sameAudioTrackPreviewProcessing(track.processing, track.preview.descriptor.processing)
-            ? [[track.streamIndex, track.preview.descriptor.url]]
-            : [],
-        ),
+        audioTracks.flatMap((track) => {
+          const url = audioTrackPlaybackPreviewUrl(
+            track,
+            externalPreviewStreamIndexes.has(track.streamIndex),
+          );
+
+          return url ? [[track.streamIndex, url]] : [];
+        }),
       ),
-    [audioTracks],
+    [audioTracks, externalPreviewStreamIndexes],
   );
 
   const activeExternalAudioStreamCount = audioTracks.filter(
     (track) => track.enabled && audioPreviewUrls[track.streamIndex] !== undefined,
   ).length;
-
-  const nativeAudioStreamIndex =
-    media?.audioStreams.find((stream) => stream.isDefault)?.streamIndex ??
-    media?.audioStreams[0]?.streamIndex;
 
   const selectedAudioTrack = enabledAudioTracks.length === 1 ? enabledAudioTracks[0] : undefined;
   const nativeAudioTrack =
