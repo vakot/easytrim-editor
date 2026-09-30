@@ -20,7 +20,7 @@ function AudioTrackEffectsLibraryPage({ className, ...props }: ComponentProps<"d
 function AudioTrackEffectsLibraryPageHeader({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
-      className={cn("flex items-start justify-between gap-4", className)}
+      className={cn("flex items-start justify-between gap-4 border-b pb-3", className)}
       data-slot="audio-track-effects-library-page-header"
       {...props}
     />

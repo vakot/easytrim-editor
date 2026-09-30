@@ -50,18 +50,21 @@ function AudioTrackEffectsLibrary({
       orientation="vertical"
       value={selectedEffect}
     >
-      <ScrollArea className="h-full min-h-0 min-w-0 pl-4">
-        <TabsList aria-label={t("audio.actions.effects")} className="bg-transparent py-4">
+      <ScrollArea className="-mx-2 h-full min-h-0 min-w-0 pl-4">
+        <TabsList
+          aria-label={t("audio.actions.effects")}
+          className="bg-transparent px-0 pt-2.5 pb-4"
+        >
           {stageGroups.map(({ effects: stageEffects, stage }) => (
             <div
-              className="flex w-full flex-col gap-0.5"
+              className="flex w-full flex-col"
               data-slot="audio-track-effects-stage"
               data-stage={stage}
               key={stage}
             >
               <div
                 aria-hidden="true"
-                className="px-2 pt-3 pb-1 text-xs font-medium text-muted-foreground"
+                className="px-2.5 py-1.5 text-xs font-medium text-muted-foreground"
                 data-slot="audio-track-effects-stage-label"
               >
                 {stageLabels[stage]}
