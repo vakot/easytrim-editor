@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
+import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import {
   audioTrackLoudnessInputsKey,
@@ -69,6 +70,8 @@ function AudioTrackRowWaveform({
     track.activityAnalysis.status === "ready" && track.activityVisible
       ? track.activityAnalysis.value
       : [];
+
+  const waveformGainDb = getWaveformGainDb(track, liveGainDb);
 
   return (
     <div
@@ -183,6 +186,22 @@ function formatProcessingValue(value: number, language: string): string {
   return new Intl.NumberFormat(language, { maximumFractionDigits: 1 })
     .format(value)
     .replace(/-/g, "−");
+}
+
+function getWaveformGainDb(track: AudioTrackState, liveGainDb: number): number {
+  const normalization = track.processing.loudnessNormalization;
+  if (!normalization) return liveGainDb;
+
+  const analysis = track.loudnessAnalysis;
+  if (analysis.status !== "ready" || analysis.value.integratedLufs === undefined) return 0;
+
+  // Approximate loudnorm's level shift from the source measurement without regenerating the waveform.
+  const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(normalization);
+  const loudnessGainDb = targetLufs - analysis.value.integratedLufs;
+  const truePeakDb = analysis.value.truePeakDb;
+  return truePeakDb === undefined
+    ? loudnessGainDb
+    : Math.min(loudnessGainDb, maxTruePeakDb - truePeakDb);
 }
 
 function formatNormalizationLevel(

@@ -533,15 +533,13 @@ export const en = {
     actions: {
       analyzeLoudness: "Analyze loudness",
       analyzingLoudness: "Analyzing loudness…",
-      detectActivity: "Detect audio activity",
-      detectingActivity: "Detecting audio activity…",
+      analyzeActivity: "Analyze audio activity",
+      analyzingActivity: "Analyzing audio activity…",
       effects: "Effects…",
-      hideActivity: "Hide detected ranges",
       merge: "Merge selected tracks",
       mute: "Mute",
       muteTrack: "Mute ({{title}})",
-      redetectActivity: "Re-detect audio activity",
-      retryActivityDetection: "Retry activity detection",
+      retryActivityDetection: "Retry analysis",
       showActivity: "Show detected ranges",
       unmute: "Unmute",
       unmuteTrack: "Unmute ({{title}})",
@@ -578,12 +576,12 @@ export const en = {
     },
     tooltips: {
       merge: "All selected tracks are merged into one track; this requires encoding.",
-      normalizationReplacesGain:
-        "Normalize Loudness controls this track's level. Manual gain is ignored while normalization is enabled, preserved, and restored when normalization is turned off.",
+      normalizationReplacesGain: "Normalize Loudness controls this track's level.",
     },
     dialogs: {
       effects: {
-        description: "Changes stay unapplied until you choose Apply.",
+        description:
+          "Effects are applied in the fixed order shown in the list when you choose Apply.",
         title: "{{title}} — Effects",
       },
     },

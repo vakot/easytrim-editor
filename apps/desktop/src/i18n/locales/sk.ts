@@ -533,15 +533,13 @@ export const sk = {
     actions: {
       analyzeLoudness: "Analyzovať hlasitosť",
       analyzingLoudness: "Analyzuje sa hlasitosť…",
-      detectActivity: "Rozpoznať aktivitu zvuku",
-      detectingActivity: "Rozpoznáva sa aktivita zvuku…",
+      analyzeActivity: "Analyzovať aktivitu zvuku",
+      analyzingActivity: "Analyzuje sa aktivita zvuku…",
       effects: "Efekty…",
-      hideActivity: "Skryť rozpoznané úseky",
       merge: "Zlúčiť vybrané stopy",
       mute: "Stlmiť",
       muteTrack: "Stlmiť ({{title}})",
-      redetectActivity: "Znova rozpoznať aktivitu zvuku",
-      retryActivityDetection: "Zopakovať rozpoznávanie aktivity",
+      retryActivityDetection: "Zopakovať analýzu",
       showActivity: "Zobraziť rozpoznané úseky",
       unmute: "Zrušiť stlmenie",
       unmuteTrack: "Zrušiť stlmenie ({{title}})",
@@ -578,12 +576,12 @@ export const sk = {
     },
     tooltips: {
       merge: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
-      normalizationReplacesGain:
-        "Úroveň tejto stopy riadi normalizácia hlasitosti. Manuálne zosilnenie sa počas normalizácie ignoruje, zachová sa a obnoví sa po vypnutí normalizácie.",
+      normalizationReplacesGain: "Normalizácia hlasitosti riadi úroveň tejto stopy.",
     },
     dialogs: {
       effects: {
-        description: "Zmeny sa použijú až po stlačení tlačidla Použiť.",
+        description:
+          "Efekty sa po stlačení tlačidla Použiť aplikujú v pevnom poradí uvedenom v zozname.",
         title: "{{title}} — efekty",
       },
     },

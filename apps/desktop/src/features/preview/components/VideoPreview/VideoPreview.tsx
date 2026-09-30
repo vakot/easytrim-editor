@@ -59,7 +59,7 @@ function VideoPreview() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Badge
-                className="absolute top-3 right-3 cursor-help"
+                className="absolute top-3 right-3"
                 role="status"
                 tabIndex={0}
                 variant="secondary"

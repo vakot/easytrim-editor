@@ -27,25 +27,12 @@ interface AudioTrackActionsProps {
 
 function activityActionLabel(
   status: "idle" | "loading" | "ready" | "failed",
-  visible: boolean,
   t: ReturnType<typeof useTranslation>["t"],
 ) {
-  if (status === "ready") {
-    return visible ? t("audio.actions.hideActivity") : t("audio.actions.showActivity");
-  }
-  if (status === "loading") return t("audio.actions.detectingActivity");
+  if (status === "ready") return t("audio.actions.showActivity");
+  if (status === "loading") return t("audio.actions.analyzingActivity");
   if (status === "failed") return t("audio.actions.retryActivityDetection");
-  return t("audio.actions.detectActivity");
-}
-
-function AudioTrackRedetectActivityMenuItem({
-  children,
-  controller,
-}: { children?: React.ReactNode } & AudioTrackActionsProps) {
-  const track = controller.track;
-  if (!track || track.activityAnalysis.status !== "ready" || !children) return null;
-
-  return <Slot onSelect={controller.detectActivity}>{children}</Slot>;
+  return t("audio.actions.analyzeActivity");
 }
 
 function AudioTrackToggleMenuCheckboxItem({
@@ -88,7 +75,7 @@ function AudioTrackToggleActivityCheckboxMenuItem({
     : activityActionLabel(track.activityAnalysis.status, t);
 
   const commandProps = {
-    "aria-label": activityActionLabel(track.activityAnalysis.status, track.activityVisible, t),
+    "aria-label": activityActionLabel(track.activityAnalysis.status, t),
     checked: hasActivity && track.activityVisible,
     onCheckedChange: hasActivity ? controller.toggleActivityVisibility : controller.detectActivity,
     disabled: track.activityAnalysis.status === "loading",
@@ -125,19 +112,9 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
 
       <AudioTrackToggleActivityCheckboxMenuItem controller={controller}>
         <DropdownMenuCheckboxItem keepOpen>
-          {activityActionLabel(
-            track?.activityAnalysis.status || "idle",
-            track?.activityVisible ?? false,
-            t,
-          )}
+          {activityActionLabel(track?.activityAnalysis.status || "idle", t)}
         </DropdownMenuCheckboxItem>
       </AudioTrackToggleActivityCheckboxMenuItem>
-
-      {track?.activityAnalysis.status === "ready" ? (
-        <AudioTrackRedetectActivityMenuItem controller={controller}>
-          <DropdownMenuItem inset>{t("audio.actions.redetectActivity")}</DropdownMenuItem>
-        </AudioTrackRedetectActivityMenuItem>
-      ) : null}
 
       <DropdownMenuSeparator />
 
@@ -170,19 +147,9 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
 
       <AudioTrackToggleActivityCheckboxMenuItem controller={controller}>
         <ContextMenuCheckboxItem keepOpen>
-          {activityActionLabel(
-            track?.activityAnalysis.status || "idle",
-            track?.activityVisible ?? false,
-            t,
-          )}
+          {activityActionLabel(track?.activityAnalysis.status || "idle", t)}
         </ContextMenuCheckboxItem>
       </AudioTrackToggleActivityCheckboxMenuItem>
-
-      {track?.activityAnalysis.status === "ready" ? (
-        <AudioTrackRedetectActivityMenuItem controller={controller}>
-          <ContextMenuItem inset>{t("audio.actions.redetectActivity")}</ContextMenuItem>
-        </AudioTrackRedetectActivityMenuItem>
-      ) : null}
 
       <ContextMenuSeparator />
 
