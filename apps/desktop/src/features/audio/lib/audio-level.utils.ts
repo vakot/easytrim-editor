@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 
-import type { LoudnessPreset } from "@/domain/audio-processing";
+import type { LoudnessPreset, NoiseReductionPreset } from "@/domain/audio-processing";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
 const MIN_SLIDER_DECIBELS = -24;
@@ -12,6 +12,17 @@ function normalizationPresetLabel(preset: LoudnessPreset, t: TFunction): string 
       return t("audio.options.normalizationStreaming");
     case "webVideo":
       return t("audio.options.normalizationWebVideo");
+  }
+}
+
+function noiseReductionPresetLabel(preset: NoiseReductionPreset, t: TFunction): string {
+  switch (preset) {
+    case "light":
+      return t("audio.options.noiseReductionLight");
+    case "medium":
+      return t("audio.options.noiseReductionMedium");
+    case "strong":
+      return t("audio.options.noiseReductionStrong");
   }
 }
 
@@ -47,5 +58,6 @@ export {
   formatChannels,
   formatGain,
   MIN_SLIDER_DECIBELS,
+  noiseReductionPresetLabel,
   normalizationPresetLabel,
 };

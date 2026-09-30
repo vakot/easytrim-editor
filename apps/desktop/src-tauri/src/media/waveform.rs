@@ -10,6 +10,7 @@ use std::{
 
 use crate::{
     error::AppError,
+    media::export::{AudioTrackProcessing, waveform_signal_filter_chain},
     process::{ProcessOutput, run_bounded_cancellable, run_stream_cancellable},
     state::{WaveformArtifact, WaveformSource},
 };
@@ -28,6 +29,7 @@ pub fn generate_waveforms(
     source: &WaveformSource,
     stream_indexes: &[u32],
     width: u32,
+    processing_by_stream: &std::collections::HashMap<u32, AudioTrackProcessing>,
 ) -> Result<Vec<WaveformGenerationResult>, AppError> {
     for stream_index in stream_indexes {
         validate_waveform_request(&source.source.audio_stream_indexes, *stream_index, width)?;
@@ -40,7 +42,8 @@ pub fn generate_waveforms(
         .collect::<Result<Vec<_>, _>>()?;
     // Count samples and analyze activity before the streaming render pass so each pixel
     // receives the same sample range as showwavespic's full-rate implementation.
-    let activity_args = activity_arguments(&source.source.path, stream_indexes);
+    let activity_args =
+        activity_arguments(&source.source.path, stream_indexes, processing_by_stream);
     let activity_output = run_bounded_cancellable(
         OsStr::new("ffmpeg"),
         &activity_args,
@@ -109,7 +112,10 @@ pub fn generate_waveforms(
         }
 
         let envelope = create_envelope_artifact(*stream_index)?;
-        let arguments = pcm_stream_arguments(&source.source.path, *stream_index);
+        let processing = processing_by_stream
+            .get(stream_index)
+            .expect("every waveform stream has processing settings");
+        let arguments = pcm_stream_arguments(&source.source.path, *stream_index, processing);
         let envelope_path = envelope.path().to_owned();
         let sample_total = sample_count;
         let output_width = width;
@@ -245,14 +251,22 @@ pub fn validate_waveform_request(
     Ok(())
 }
 
-fn activity_arguments(source_path: &Path, stream_indexes: &[u32]) -> Vec<OsString> {
+fn activity_arguments(
+    source_path: &Path,
+    stream_indexes: &[u32],
+    processing_by_stream: &std::collections::HashMap<u32, AudioTrackProcessing>,
+) -> Vec<OsString> {
     let filters = stream_indexes
         .iter()
         .enumerate()
         .map(|(index, stream_index)| {
-            format!(
-                "[0:{stream_index}]aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream{stream_index}[activity{index}]"
-            )
+            let effects = waveform_signal_filter_chain(
+                processing_by_stream
+                    .get(stream_index)
+                    .expect("every waveform stream has processing settings"),
+            );
+            let effect_chain = if effects.is_empty() { String::new() } else { format!("{effects},") };
+            format!("[0:{stream_index}]{effect_chain}aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream{stream_index}[activity{index}]")
         })
         .collect::<Vec<_>>()
         .join(";");
@@ -282,7 +296,17 @@ fn activity_arguments(source_path: &Path, stream_indexes: &[u32]) -> Vec<OsStrin
     arguments
 }
 
-fn pcm_stream_arguments(source_path: &Path, stream_index: u32) -> Vec<OsString> {
+fn pcm_stream_arguments(
+    source_path: &Path,
+    stream_index: u32,
+    processing: &AudioTrackProcessing,
+) -> Vec<OsString> {
+    let effects = waveform_signal_filter_chain(processing);
+    let effect_chain = if effects.is_empty() {
+        String::new()
+    } else {
+        format!("{effects},")
+    };
     vec![
         OsString::from("-hide_banner"),
         OsString::from("-nostdin"),
@@ -293,7 +317,7 @@ fn pcm_stream_arguments(source_path: &Path, stream_index: u32) -> Vec<OsString> 
         source_path.as_os_str().to_owned(),
         OsString::from("-filter_complex"),
         OsString::from(format!(
-            "[0:{stream_index}]aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
+            "[0:{stream_index}]{effect_chain}aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
         )),
         OsString::from("-map"),
         OsString::from("[pcm]"),
@@ -570,13 +594,24 @@ mod tests {
         sync::{Arc, atomic::AtomicBool},
     };
 
-    use crate::state::{ActiveSource, WaveformSource};
+    use crate::{
+        media::export::{AudioTrackSignalEffect, NoiseReductionPreset},
+        state::{ActiveSource, WaveformSource},
+    };
 
     use super::{
-        MAX_WAVEFORM_WIDTH, MIN_WAVEFORM_WIDTH, activity_arguments, parse_audio_sample_counts,
-        pcm_stream_arguments, render_waveform_arguments, validate_waveform_request,
-        write_binned_pcm,
+        AudioTrackProcessing, MAX_WAVEFORM_WIDTH, MIN_WAVEFORM_WIDTH, activity_arguments,
+        parse_audio_sample_counts, pcm_stream_arguments, render_waveform_arguments,
+        validate_waveform_request, write_binned_pcm,
     };
+
+    fn empty_processing() -> AudioTrackProcessing {
+        AudioTrackProcessing {
+            gain_db: 0.0,
+            loudness_normalization: None,
+            effects: Vec::new(),
+        }
+    }
 
     #[test]
     fn validates_global_audio_stream_indexes_and_bounded_widths() {
@@ -589,7 +624,10 @@ mod tests {
     #[test]
     fn builds_counting_streaming_and_render_commands() {
         let source_path = Path::new("C:\\Videos\\source clip.mkv");
-        let activity_args = activity_arguments(source_path, &[2, 4]);
+        let processing_by_stream = [(2, empty_processing()), (4, empty_processing())]
+            .into_iter()
+            .collect();
+        let activity_args = activity_arguments(source_path, &[2, 4], &processing_by_stream);
         assert!(activity_args.windows(2).any(|pair| {
             pair == [
                 OsString::from("-i"),
@@ -609,7 +647,7 @@ mod tests {
             [OsString::from("[activity0]"), OsString::from("[activity1]")]
         );
 
-        let pcm_args = pcm_stream_arguments(source_path, 4);
+        let pcm_args = pcm_stream_arguments(source_path, 4, &empty_processing());
         assert!(pcm_args.iter().any(|argument| {
             argument == "[0:4]aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
         }));
@@ -628,6 +666,28 @@ mod tests {
                 .windows(2)
                 .any(|pair| { pair == [OsString::from("-ar"), OsString::from("1280")] })
         );
+    }
+
+    #[test]
+    fn applies_signal_effects_before_waveform_analysis_and_sampling() {
+        let source_path = Path::new("C:\\Videos\\source clip.mkv");
+        let processing = AudioTrackProcessing {
+            effects: vec![AudioTrackSignalEffect::NoiseReduction {
+                preset: NoiseReductionPreset::Medium,
+                stage: crate::media::export::AudioProcessingStage::Cleanup,
+            }],
+            ..empty_processing()
+        };
+        let processing_by_stream = [(4, processing.clone())].into_iter().collect();
+        let activity_args = activity_arguments(source_path, &[4], &processing_by_stream);
+        let pcm_args = pcm_stream_arguments(source_path, 4, &processing);
+
+        assert!(activity_args.iter().any(|argument| {
+            argument == "[0:4]afftdn=nr=12:nf=-35,aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream4[activity0]"
+        }));
+        assert!(pcm_args.iter().any(|argument| {
+            argument == "[0:4]afftdn=nr=12:nf=-35,aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
+        }));
     }
 
     #[test]
@@ -791,7 +851,13 @@ mod tests {
             },
             cancellation,
         };
-        let generated = super::generate_waveforms(&waveform_source, &indexes, 1280).unwrap();
+        let processing_by_stream = indexes
+            .iter()
+            .map(|stream_index| (*stream_index, empty_processing()))
+            .collect();
+        let generated =
+            super::generate_waveforms(&waveform_source, &indexes, 1280, &processing_by_stream)
+                .unwrap();
         for (position, ((stream_index, has_signal, result), reference)) in
             generated.iter().zip(&references).enumerate()
         {

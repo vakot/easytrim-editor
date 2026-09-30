@@ -1,11 +1,22 @@
 type LoudnessPreset = "webVideo" | "streaming" | "broadcast";
 const AUDIO_PROCESSING_STAGES = ["cleanup", "dynamics", "levelPolicy", "finalProtection"] as const;
+// Keep in sync with AudioTrackSignalEffect ordering in media/export.rs.
+const AUDIO_TRACK_SIGNAL_EFFECT_ORDER = ["highPass", "noiseReduction"] as const;
+const SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS = ["noiseReduction"] as const;
 type AudioProcessingStage = (typeof AUDIO_PROCESSING_STAGES)[number];
-type AudioTrackSignalEffect = {
-  cutoffHz: number;
-  stage: AudioProcessingStage;
-  type: "highPass";
-};
+type AudioTrackSignalEffect =
+  | {
+      cutoffHz: number;
+      stage: AudioProcessingStage;
+      type: "highPass";
+    }
+  | {
+      preset: NoiseReductionPreset;
+      stage: "cleanup";
+      type: "noiseReduction";
+    };
+
+type NoiseReductionPreset = "light" | "medium" | "strong";
 
 interface CustomLoudnessNormalization {
   maxTruePeakDb: number;
@@ -127,11 +138,73 @@ function getAudioTrackPreLevelEffects(processing: AudioTrackProcessing): AudioTr
   );
 }
 
-function getAudioTrackSignalEffects(processing: AudioTrackProcessing): AudioTrackSignalEffect[] {
-  return [...(processing.effects ?? [])].sort(
-    (left, right) =>
-      AUDIO_PROCESSING_STAGES.indexOf(left.stage) - AUDIO_PROCESSING_STAGES.indexOf(right.stage),
+function getAudioTrackSignalEffect<T extends AudioTrackSignalEffect["type"]>(
+  processing: AudioTrackProcessing,
+  type: T,
+): Extract<AudioTrackSignalEffect, { type: T }> | undefined {
+  return getAudioTrackSignalEffects(processing).find(
+    (effect): effect is Extract<AudioTrackSignalEffect, { type: T }> => effect.type === type,
   );
+}
+
+function setAudioTrackSignalEffect(
+  processing: AudioTrackProcessing,
+  nextEffect: AudioTrackSignalEffect,
+): AudioTrackProcessing {
+  const isSingleton = (SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS as readonly string[]).includes(
+    nextEffect.type,
+  );
+
+  const effects = getAudioTrackSignalEffects(processing).filter(
+    (effect) =>
+      effect.type !== nextEffect.type || (!isSingleton && effect.stage !== nextEffect.stage),
+  );
+
+  effects.push(nextEffect);
+
+  return { ...processing, effects: getAudioTrackSignalEffects({ ...processing, effects }) };
+}
+
+function removeAudioTrackSignalEffect(
+  processing: AudioTrackProcessing,
+  type: AudioTrackSignalEffect["type"],
+): AudioTrackProcessing {
+  const effects = getAudioTrackSignalEffects(processing).filter((effect) => effect.type !== type);
+  const nextProcessing = { ...processing };
+  if (effects.length === 0) delete nextProcessing.effects;
+  else nextProcessing.effects = effects;
+  return nextProcessing;
+}
+
+function getAudioTrackSignalEffects(processing: AudioTrackProcessing): AudioTrackSignalEffect[] {
+  return [...(processing.effects ?? [])].sort(compareAudioTrackSignalEffects);
+}
+
+function compareAudioTrackSignalEffects(
+  left: AudioTrackSignalEffect,
+  right: AudioTrackSignalEffect,
+): number {
+  const stageDifference =
+    AUDIO_PROCESSING_STAGES.indexOf(left.stage) - AUDIO_PROCESSING_STAGES.indexOf(right.stage);
+
+  if (stageDifference !== 0) return stageDifference;
+
+  const typeDifference =
+    AUDIO_TRACK_SIGNAL_EFFECT_ORDER.indexOf(left.type) -
+    AUDIO_TRACK_SIGNAL_EFFECT_ORDER.indexOf(right.type);
+
+  if (typeDifference !== 0) return typeDifference;
+
+  if (left.type === "highPass" && right.type === "highPass") {
+    return left.cutoffHz - right.cutoffHz;
+  }
+  if (left.type === "noiseReduction" && right.type === "noiseReduction") {
+    return (
+      ["light", "medium", "strong"].indexOf(left.preset) -
+      ["light", "medium", "strong"].indexOf(right.preset)
+    );
+  }
+  return 0;
 }
 
 function loudnessNormalizationTargets(normalization: LoudnessNormalization): {
@@ -220,9 +293,11 @@ export type {
   CustomLoudnessNormalization,
   LoudnessNormalization,
   LoudnessPreset,
+  NoiseReductionPreset,
 };
 export {
   AUDIO_PROCESSING_STAGES,
+  AUDIO_TRACK_SIGNAL_EFFECT_ORDER,
   audioTrackActivityProcessingChanged,
   audioTrackExternalPreviewStreamIndexes,
   audioTrackLevelMode,
@@ -233,10 +308,14 @@ export {
   DEFAULT_AUDIO_TRACK_PROCESSING,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
   effectiveAudioTrackGainDb,
+  getAudioTrackSignalEffect,
   getAudioTrackSignalEffects,
   loudnessNormalizationTargets,
+  removeAudioTrackSignalEffect,
   sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
   sameLoudnessNormalization,
+  setAudioTrackSignalEffect,
+  SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS,
 };

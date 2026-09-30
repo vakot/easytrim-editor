@@ -4,9 +4,11 @@ import type { ComponentType } from "react";
 import {
   type AudioProcessingStage,
   type AudioTrackProcessing,
+  getAudioTrackSignalEffect,
   sameLoudnessNormalization,
 } from "@/domain/audio-processing";
 
+import { NoiseReductionPage } from "../pages/NoiseReductionPage";
 import { NormalizeLoudnessPage } from "../pages/NormalizeLoudnessPage";
 
 interface AudioTrackEffectsPageProps {
@@ -23,6 +25,17 @@ interface AudioTrackEffectDescriptor {
 }
 
 const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
+  {
+    id: "noiseReduction",
+    stage: "cleanup",
+    label: (t) => t("audio.labels.noiseReduction"),
+    Page: NoiseReductionPage,
+    isEnabled: (processing) =>
+      getAudioTrackSignalEffect(processing, "noiseReduction") !== undefined,
+    isDirty: (initial, current) =>
+      getAudioTrackSignalEffect(initial, "noiseReduction")?.preset !==
+      getAudioTrackSignalEffect(current, "noiseReduction")?.preset,
+  },
   {
     id: "loudnessNormalization",
     stage: "levelPolicy",

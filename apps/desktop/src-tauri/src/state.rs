@@ -8,7 +8,10 @@ use std::{
     },
 };
 
-use crate::media::{export::AudioTrackCacheKey, probe::MediaInfo};
+use crate::media::{
+    export::{AudioTrackCacheKey, AudioTrackProcessing},
+    probe::MediaInfo,
+};
 use crate::{
     domain::source::{ValidatedSource, validate_source},
     error::AppError,
@@ -129,6 +132,7 @@ pub struct WaveformSource {
 struct WaveformRecord {
     width: u32,
     has_signal: Option<bool>,
+    processing: AudioTrackProcessing,
     artifact: WaveformArtifact,
 }
 
@@ -467,6 +471,7 @@ impl AppState {
         stream_index: u32,
         width: u32,
         has_signal: Option<bool>,
+        processing: AudioTrackProcessing,
         artifact: WaveformArtifact,
     ) -> Result<(), AppError> {
         let previous_waveform = {
@@ -483,6 +488,7 @@ impl AppState {
                 WaveformRecord {
                     width,
                     has_signal,
+                    processing,
                     artifact,
                 },
             )
@@ -496,13 +502,14 @@ impl AppState {
         load_token: u64,
         stream_index: u32,
         width: u32,
+        processing: &AudioTrackProcessing,
     ) -> Result<Option<Option<bool>>, AppError> {
         let session = self.lock_session()?;
         let source = active_source(&session, load_token)?;
         Ok(source
             .waveforms
             .get(&stream_index)
-            .filter(|waveform| waveform.width == width)
+            .filter(|waveform| waveform.width == width && waveform.processing == *processing)
             .map(|waveform| waveform.has_signal))
     }
 

@@ -3,7 +3,10 @@ use crate::{
     error::AppError,
     media::{
         audio::generate_audio_previews,
-        export::{AudioTrackCacheKey, AudioTrackSelection, validate_audio_track_selections},
+        export::{
+            AudioTrackCacheKey, AudioTrackProcessing, AudioTrackSelection,
+            validate_audio_track_selections,
+        },
         probe::{MediaInfo, inspect_media_cancellable as probe_media},
         proxy::generate_preview,
         scene_detection::detect_scene_boundaries,
@@ -15,6 +18,7 @@ use crate::{
 };
 use serde::Serialize;
 use std::{
+    collections::HashMap,
     path::PathBuf,
     sync::{
         Arc,
@@ -309,6 +313,7 @@ pub async fn prepare_waveforms(
     job_id: String,
     stream_indexes: Vec<u32>,
     width: u32,
+    processing_by_stream: HashMap<u32, AudioTrackProcessing>,
     state: State<'_, AppState>,
 ) -> Result<Vec<WaveformResult>, AppError> {
     if stream_indexes.is_empty() || stream_indexes.len() > 32 {
@@ -327,6 +332,42 @@ pub async fn prepare_waveforms(
 
     let waveform_source = state.begin_waveform_job(&source_path, job_id.clone())?;
     let media_token = waveform_source.source.load_token;
+    if processing_by_stream
+        .keys()
+        .any(|stream_index| !stream_indexes.contains(stream_index))
+    {
+        return Err(AppError::invalid_request(
+            "Waveform processing settings must match the selected audio streams.",
+        ));
+    }
+    let processing_by_stream = stream_indexes
+        .iter()
+        .map(|stream_index| {
+            (
+                *stream_index,
+                processing_by_stream
+                    .get(stream_index)
+                    .cloned()
+                    .unwrap_or(AudioTrackProcessing {
+                        gain_db: 0.0,
+                        loudness_normalization: None,
+                        effects: Vec::new(),
+                    }),
+            )
+        })
+        .collect::<HashMap<_, _>>();
+    let validation_tracks = stream_indexes
+        .iter()
+        .map(|stream_index| AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: *stream_index,
+            processing: processing_by_stream[stream_index].clone(),
+        })
+        .collect::<Vec<_>>();
+    let media = waveform_source.source.media.as_ref().ok_or_else(|| {
+        AppError::invalid_request("Audio stream metadata is unavailable for waveform generation.")
+    })?;
+    validate_audio_track_selections(media, &validation_tracks)?;
     for stream_index in &stream_indexes {
         validate_waveform_request(
             &waveform_source.source.audio_stream_indexes,
@@ -337,19 +378,20 @@ pub async fn prepare_waveforms(
 
     let mut results = Vec::with_capacity(stream_indexes.len());
     let mut pending_stream_indexes = Vec::new();
-    for stream_index in stream_indexes {
+    for stream_index in &stream_indexes {
+        let processing = &processing_by_stream[stream_index];
         if let Some(has_signal) =
-            state.waveform_activity_if_ready(media_token, stream_index, width)?
+            state.waveform_activity_if_ready(media_token, *stream_index, width, processing)?
         {
             results.push(ready_waveform(
                 media_token,
                 &job_id,
-                stream_index,
+                *stream_index,
                 width,
                 has_signal,
             ));
         } else {
-            pending_stream_indexes.push(stream_index);
+            pending_stream_indexes.push(*stream_index);
         }
     }
 
@@ -358,8 +400,14 @@ pub async fn prepare_waveforms(
         return Ok(results);
     }
 
+    let processing_for_generation = processing_by_stream.clone();
     let generated = tauri::async_runtime::spawn_blocking(move || {
-        generate_waveforms(&waveform_source, &pending_stream_indexes, width)
+        generate_waveforms(
+            &waveform_source,
+            &pending_stream_indexes,
+            width,
+            &processing_for_generation,
+        )
     })
     .await
     .map_err(|_| AppError::internal("Waveform generation stopped unexpectedly."))??;
@@ -373,6 +421,7 @@ pub async fn prepare_waveforms(
                     stream_index,
                     width,
                     has_signal,
+                    processing_by_stream[&stream_index].clone(),
                     artifact,
                 )?;
                 results.push(ready_waveform(
@@ -412,7 +461,7 @@ fn ready_waveform(
         width,
         status: WaveformStatus::Ready,
         has_signal,
-        url: Some(waveform_url(media_token, stream_index, width)),
+        url: Some(waveform_url(media_token, stream_index, width, job_id)),
         error: None,
     }
 }
@@ -483,9 +532,9 @@ fn preview_url(media_token: u64, kind: PreviewKind) -> String {
 }
 
 #[cfg(any(target_os = "windows", target_os = "android"))]
-fn waveform_url(media_token: u64, stream_index: u32, width: u32) -> String {
+fn waveform_url(media_token: u64, stream_index: u32, width: u32, revision: &str) -> String {
     format!(
-        "http://easytrim-media.localhost/{media_token}?variant=waveform&stream={stream_index}&width={width}"
+        "http://easytrim-media.localhost/{media_token}?variant=waveform&stream={stream_index}&width={width}&revision={revision}"
     )
 }
 
@@ -504,9 +553,9 @@ fn audio_preview_url(media_token: u64, stream_index: u32, revision: u64) -> Stri
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "android")))]
-fn waveform_url(media_token: u64, stream_index: u32, width: u32) -> String {
+fn waveform_url(media_token: u64, stream_index: u32, width: u32, revision: &str) -> String {
     format!(
-        "easytrim-media://localhost/{media_token}?variant=waveform&stream={stream_index}&width={width}"
+        "easytrim-media://localhost/{media_token}?variant=waveform&stream={stream_index}&width={width}&revision={revision}"
     )
 }
 
@@ -531,9 +580,9 @@ mod tests {
 
     #[test]
     fn waveform_url_contains_only_opaque_and_numeric_identifiers() {
-        let url = waveform_url(17, 4, 1_280);
+        let url = waveform_url(17, 4, 1_280, "waveform-1");
 
-        assert!(url.ends_with("/17?variant=waveform&stream=4&width=1280"));
+        assert!(url.ends_with("/17?variant=waveform&stream=4&width=1280&revision=waveform-1"));
         assert!(!url.contains('\\'));
     }
 }

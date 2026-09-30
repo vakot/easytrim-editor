@@ -12,6 +12,7 @@ import {
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
   type AudioTrackProcessing,
+  getAudioTrackSignalEffect,
   loudnessNormalizationTargets,
 } from "@/domain/audio-processing";
 import { timelinePercent } from "@/domain/trim";
@@ -21,7 +22,11 @@ import {
   type AudioTrackController,
   useAudioTrackController,
 } from "../../hooks/useAudioTrackController";
-import { formatGain, normalizationPresetLabel } from "../../lib/audio-level.utils";
+import {
+  formatGain,
+  noiseReductionPresetLabel,
+  normalizationPresetLabel,
+} from "../../lib/audio-level.utils";
 
 import { AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
@@ -158,6 +163,15 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
   const { t } = useTranslation();
   const summaries: string[] = [];
   const normalization = processing.loudnessNormalization;
+  const noiseReduction = getAudioTrackSignalEffect(processing, "noiseReduction");
+
+  if (noiseReduction) {
+    summaries.push(
+      t("audio.messages.noiseReductionEffectSummary", {
+        preset: noiseReductionPresetLabel(noiseReduction.preset, t),
+      }),
+    );
+  }
 
   if (typeof normalization === "string") {
     summaries.push(
@@ -202,8 +216,13 @@ function AudioTrackIndicator({
   return (
     <Badge
       aria-label={ariaLabel}
-      className={cn("max-w-[calc(100%-0.5rem)] gap-1.5", className)}
+      className={cn(
+        "max-w-[calc(100%-0.5rem)] gap-1.5 bg-background/25 backdrop-blur-xs",
+        className,
+      )}
       data-slot={props["data-slot"]}
+      size="xs"
+      variant="outline"
     >
       {children}
     </Badge>

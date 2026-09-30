@@ -8,8 +8,12 @@ import {
   audioTrackNormalizationGainDb,
   audioTrackRequiresProcessedPreview,
   effectiveAudioTrackGainDb,
+  getAudioTrackSignalEffect,
+  getAudioTrackSignalEffects,
   loudnessNormalizationTargets,
+  removeAudioTrackSignalEffect,
   sameAudioTrackLoudnessInputs,
+  setAudioTrackSignalEffect,
 } from "../audio-processing";
 
 describe("audio track level policy", () => {
@@ -105,6 +109,92 @@ describe("audio track level policy", () => {
     expect(audioTrackLoudnessInputsKey("source-b", 2, trim, processing)).not.toBe(initial);
     expect(sameAudioTrackLoudnessInputs(processing, { ...processing, gainDb: 2 })).toBe(true);
     expect(sameAudioTrackLoudnessInputs(processing, upstreamProcessing)).toBe(false);
+  });
+
+  it("keys loudness analysis differently for each noise-reduction preset", () => {
+    const trim = { startMicros: 0, endMicros: 4_000_000 };
+    const keyForPreset = (preset: "light" | "medium" | "strong") =>
+      audioTrackLoudnessInputsKey("source-a", 2, trim, {
+        gainDb: 0,
+        effects: [{ preset, stage: "cleanup", type: "noiseReduction" }],
+      });
+
+    expect(keyForPreset("light")).not.toBe(keyForPreset("medium"));
+    expect(keyForPreset("medium")).not.toBe(keyForPreset("strong"));
+  });
+
+  it("keeps same-stage signal effects in canonical order as effects are added and updated", () => {
+    const highPass = { cutoffHz: 120, stage: "cleanup", type: "highPass" } as const;
+    const noiseReduction = {
+      preset: "medium",
+      stage: "cleanup",
+      type: "noiseReduction",
+    } as const;
+
+    const highPassThenNoiseReduction = setAudioTrackSignalEffect(
+      setAudioTrackSignalEffect({ gainDb: 0 }, highPass),
+      noiseReduction,
+    );
+
+    const noiseReductionThenHighPass = setAudioTrackSignalEffect(
+      setAudioTrackSignalEffect({ gainDb: 0 }, noiseReduction),
+      highPass,
+    );
+
+    expect(getAudioTrackSignalEffects(highPassThenNoiseReduction)).toEqual([
+      highPass,
+      noiseReduction,
+    ]);
+    expect(getAudioTrackSignalEffects(noiseReductionThenHighPass)).toEqual(
+      getAudioTrackSignalEffects(highPassThenNoiseReduction),
+    );
+    expect(
+      getAudioTrackSignalEffect(
+        setAudioTrackSignalEffect(highPassThenNoiseReduction, {
+          ...noiseReduction,
+          preset: "strong",
+        }),
+        "noiseReduction",
+      )?.preset,
+    ).toBe("strong");
+    expect(
+      getAudioTrackSignalEffects(
+        setAudioTrackSignalEffect(highPassThenNoiseReduction, {
+          ...noiseReduction,
+          preset: "strong",
+        }),
+      )[0],
+    ).toEqual(highPass);
+    const duplicateNoiseReduction = setAudioTrackSignalEffect(
+      {
+        gainDb: 0,
+        effects: [
+          { ...noiseReduction, preset: "light" },
+          { ...noiseReduction, preset: "medium" },
+          highPass,
+        ],
+      },
+      { ...noiseReduction, preset: "strong" },
+    );
+
+    expect(
+      getAudioTrackSignalEffects(duplicateNoiseReduction).filter(
+        (effect) => effect.type === "noiseReduction",
+      ),
+    ).toEqual([{ ...noiseReduction, preset: "strong" }]);
+  });
+
+  it("removes a signal effect without disturbing other processing", () => {
+    expect(
+      removeAudioTrackSignalEffect(
+        {
+          gainDb: -3,
+          effects: [{ preset: "light", stage: "cleanup", type: "noiseReduction" }],
+          loudnessNormalization: "streaming",
+        },
+        "noiseReduction",
+      ),
+    ).toEqual({ gainDb: -3, loudnessNormalization: "streaming" });
   });
 
   it("normalizes from one cached pre-level measurement while respecting true peak", () => {

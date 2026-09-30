@@ -9,6 +9,7 @@ import {
   type AudioTrackSettings,
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_PROCESSING,
+  getAudioTrackSignalEffects,
   sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
@@ -241,7 +242,12 @@ const audioSlice = createSlice({
         action.payload.processing,
       );
 
+      const signalEffectsChanged =
+        JSON.stringify(getAudioTrackSignalEffects(track.processing)) !==
+        JSON.stringify(getAudioTrackSignalEffects(action.payload.processing));
+
       track.processing = cloneAudioTrackProcessing(action.payload.processing);
+      if (signalEffectsChanged) track.waveform = { status: "idle" };
       if (loudnessInputsChanged) track.loudnessAnalysis = { status: "idle" };
       if (activityChanged) track.activityAnalysis = { status: "idle" };
       if (previewChanged) track.preview = staleAudioTrackPreview(track.preview);

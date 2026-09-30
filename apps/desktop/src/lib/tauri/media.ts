@@ -3,7 +3,7 @@ import type { UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 
 import { audioActivityRangesFromSilence } from "@/domain/audio-activity";
-import type { AudioTrackSelection } from "@/domain/audio-processing";
+import type { AudioTrackProcessing, AudioTrackSelection } from "@/domain/audio-processing";
 import type { SourceRef } from "@/domain/source";
 
 import type {
@@ -342,6 +342,7 @@ async function prepareWaveforms(
   jobId: string,
   streamIndexes: number[],
   width: number,
+  processingByStream: Record<number, AudioTrackProcessing> = {},
 ): Promise<WaveformResult[]> {
   try {
     return parseWaveformResults(
@@ -350,6 +351,7 @@ async function prepareWaveforms(
         jobId,
         streamIndexes,
         width,
+        processingByStream,
       }),
     );
   } catch (error: unknown) {

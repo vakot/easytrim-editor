@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added per-track noise reduction with Off, Light, Medium, and Strong settings.
 - Added per-track mute, gain, loudness normalization, and audio activity controls, with detected ranges on track waveforms and markers on the shared timeline.
 - Added optional scene-change detection with animated timeline markers and Shift-drag snapping at scene boundaries.
 - Added scene detection result states with failure details and a retry action.

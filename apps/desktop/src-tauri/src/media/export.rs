@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     collections::HashSet,
     ffi::OsString,
     hash::{DefaultHasher, Hash, Hasher},
@@ -10,6 +11,10 @@ use serde::{Deserialize, Serialize};
 use crate::{error::AppError, media::probe::MediaInfo};
 
 const MICROS_PER_SECOND: f64 = 1_000_000.0;
+
+// Keep stage/type ordering in sync with audio-processing.ts.
+const HIGH_PASS_SIGNAL_EFFECT_ORDER: u8 = 0;
+const NOISE_REDUCTION_SIGNAL_EFFECT_ORDER: u8 = 1;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -86,6 +91,29 @@ pub enum AudioTrackSignalEffect {
         cutoff_hz: f64,
         stage: AudioProcessingStage,
     },
+    NoiseReduction {
+        preset: NoiseReductionPreset,
+        stage: AudioProcessingStage,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Hash, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum NoiseReductionPreset {
+    Light,
+    Medium,
+    Strong,
+}
+
+impl NoiseReductionPreset {
+    fn filter(self) -> &'static str {
+        // A fixed floor keeps stationary room noise from being learned and preserved as signal.
+        match self {
+            Self::Light => "afftdn=nr=6:nf=-40",
+            Self::Medium => "afftdn=nr=12:nf=-35",
+            Self::Strong => "afftdn=nr=20:nf=-30",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Hash, Serialize)]
@@ -111,22 +139,24 @@ pub struct AudioTrackCacheKey {
 
 impl From<&AudioTrackSelection> for AudioTrackCacheKey {
     fn from(track: &AudioTrackSelection) -> Self {
-        let mut effects = track
-            .processing
-            .effects
-            .iter()
+        let mut ordered_effects = track.processing.effects.iter().collect::<Vec<_>>();
+        ordered_effects.sort_by(|left, right| compare_signal_effects(left, right));
+        let effects = ordered_effects
+            .into_iter()
             .map(|effect| match effect {
                 AudioTrackSignalEffect::HighPass { cutoff_hz, stage } => {
-                    (*stage, cutoff_hz.to_bits())
+                    (*stage, 0_u8, cutoff_hz.to_bits())
+                }
+                AudioTrackSignalEffect::NoiseReduction { preset, stage } => {
+                    let value = match preset {
+                        NoiseReductionPreset::Light => 1,
+                        NoiseReductionPreset::Medium => 2,
+                        NoiseReductionPreset::Strong => 3,
+                    };
+                    (*stage, 1, value)
                 }
             })
             .collect::<Vec<_>>();
-        effects.sort_by_key(|(stage, _)| match stage {
-            AudioProcessingStage::Cleanup => 0,
-            AudioProcessingStage::Dynamics => 1,
-            AudioProcessingStage::LevelPolicy => 2,
-            AudioProcessingStage::FinalProtection => 3,
-        });
         let mut effects_hasher = DefaultHasher::new();
         effects.hash(&mut effects_hasher);
 
@@ -469,6 +499,20 @@ pub(crate) fn validate_common_request(
     trim: &TrimSelection,
     audio_tracks: &[AudioTrackSelection],
 ) -> Result<(), AppError> {
+    validate_trim_selection(source, trim)?;
+    validate_audio_track_selections(source, audio_tracks)
+}
+
+pub(crate) fn validate_loudness_analysis_request(
+    source: &MediaInfo,
+    trim: &TrimSelection,
+    audio_track: &AudioTrackSelection,
+) -> Result<(), AppError> {
+    validate_trim_selection(source, trim)?;
+    validate_audio_track_selections_inner(source, std::slice::from_ref(audio_track), false)
+}
+
+fn validate_trim_selection(source: &MediaInfo, trim: &TrimSelection) -> Result<(), AppError> {
     if trim.start_micros < 0
         || trim.end_micros <= trim.start_micros
         || trim.end_micros > source.duration_micros
@@ -477,26 +521,43 @@ pub(crate) fn validate_common_request(
             "The selected export range is invalid.",
         ));
     }
-    validate_audio_track_selections(source, audio_tracks)
+    Ok(())
 }
 
 pub(crate) fn validate_audio_track_selections(
     source: &MediaInfo,
     audio_tracks: &[AudioTrackSelection],
 ) -> Result<(), AppError> {
+    validate_audio_track_selections_inner(source, audio_tracks, true)
+}
+
+fn validate_audio_track_selections_inner(
+    source: &MediaInfo,
+    audio_tracks: &[AudioTrackSelection],
+    require_loudness_analysis: bool,
+) -> Result<(), AppError> {
     let mut selected_streams = HashSet::new();
     for track in audio_tracks {
+        let mut has_noise_reduction = false;
         let is_known_stream = source
             .audio_streams
             .iter()
             .any(|stream| stream.stream_index == track.stream_index);
         if !track.processing.gain_db.is_finite()
-            || track.processing.effects.iter().any(|effect| match effect {
-                AudioTrackSignalEffect::HighPass { cutoff_hz, stage } => {
-                    *stage == AudioProcessingStage::LevelPolicy
-                        || !cutoff_hz.is_finite()
-                        || !(10.0..=20_000.0).contains(cutoff_hz)
-                }
+            || track.processing.effects.iter().any(|effect| {
+                let valid = match effect {
+                    AudioTrackSignalEffect::HighPass { cutoff_hz, stage } => {
+                        *stage != AudioProcessingStage::LevelPolicy
+                            && cutoff_hz.is_finite()
+                            && (10.0..=20_000.0).contains(cutoff_hz)
+                    }
+                    AudioTrackSignalEffect::NoiseReduction { stage, .. } => {
+                        *stage == AudioProcessingStage::Cleanup
+                    }
+                };
+                let duplicate_singleton = is_singleton_signal_effect(effect)
+                    && std::mem::replace(&mut has_noise_reduction, true);
+                !valid || duplicate_singleton
             })
             || track.loudness_analysis.is_some_and(|analysis| {
                 analysis
@@ -510,7 +571,8 @@ pub(crate) fn validate_audio_track_selections(
                         .input_threshold
                         .is_some_and(|value| !value.is_finite())
             })
-            || (track.processing.loudness_normalization.is_some()
+            || (require_loudness_analysis
+                && track.processing.loudness_normalization.is_some()
                 && track.loudness_analysis.is_none())
             || !is_known_stream
             || !selected_streams.insert(track.stream_index)
@@ -612,17 +674,7 @@ fn audio_tracks_need_reencode(audio_tracks: &[AudioTrackSelection]) -> bool {
 }
 
 pub(crate) fn pre_level_filter_chain(processing: &AudioTrackProcessing) -> String {
-    let mut effects = processing.effects.iter().collect::<Vec<_>>();
-    effects.sort_by_key(|effect| match effect {
-        AudioTrackSignalEffect::HighPass { stage, .. } => match stage {
-            AudioProcessingStage::Cleanup => 0,
-            AudioProcessingStage::Dynamics => 1,
-            AudioProcessingStage::LevelPolicy => 2,
-            AudioProcessingStage::FinalProtection => 3,
-        },
-    });
-
-    effects
+    ordered_signal_effects(processing)
         .into_iter()
         .filter_map(|effect| match effect {
             AudioTrackSignalEffect::HighPass { cutoff_hz, stage }
@@ -634,24 +686,109 @@ pub(crate) fn pre_level_filter_chain(processing: &AudioTrackProcessing) -> Strin
                 Some(format!("highpass=f={cutoff_hz:.3}"))
             }
             AudioTrackSignalEffect::HighPass { .. } => None,
+            AudioTrackSignalEffect::NoiseReduction { preset, stage }
+                if matches!(
+                    stage,
+                    AudioProcessingStage::Cleanup | AudioProcessingStage::Dynamics
+                ) =>
+            {
+                Some(preset.filter().to_owned())
+            }
+            AudioTrackSignalEffect::NoiseReduction { .. } => None,
         })
         .collect::<Vec<_>>()
         .join(",")
 }
 
+pub(crate) fn waveform_signal_filter_chain(processing: &AudioTrackProcessing) -> String {
+    [
+        pre_level_filter_chain(processing),
+        final_protection_filter_chain(processing),
+    ]
+    .into_iter()
+    .filter(|filters| !filters.is_empty())
+    .collect::<Vec<_>>()
+    .join(",")
+}
+
 fn final_protection_filter_chain(processing: &AudioTrackProcessing) -> String {
-    processing
-        .effects
-        .iter()
+    ordered_signal_effects(processing)
+        .into_iter()
         .filter_map(|effect| match effect {
             AudioTrackSignalEffect::HighPass {
                 cutoff_hz,
                 stage: AudioProcessingStage::FinalProtection,
             } => Some(format!("highpass=f={cutoff_hz:.3}")),
             AudioTrackSignalEffect::HighPass { .. } => None,
+            AudioTrackSignalEffect::NoiseReduction { .. } => None,
         })
         .collect::<Vec<_>>()
         .join(",")
+}
+
+fn ordered_signal_effects(processing: &AudioTrackProcessing) -> Vec<&AudioTrackSignalEffect> {
+    let mut effects = processing.effects.iter().collect::<Vec<_>>();
+    effects.sort_by(|left, right| compare_signal_effects(left, right));
+    effects
+}
+
+fn compare_signal_effects(
+    left: &AudioTrackSignalEffect,
+    right: &AudioTrackSignalEffect,
+) -> Ordering {
+    signal_effect_stage_order(left)
+        .cmp(&signal_effect_stage_order(right))
+        .then_with(|| signal_effect_type_order(left).cmp(&signal_effect_type_order(right)))
+        .then_with(|| match (left, right) {
+            (
+                AudioTrackSignalEffect::HighPass {
+                    cutoff_hz: left, ..
+                },
+                AudioTrackSignalEffect::HighPass {
+                    cutoff_hz: right, ..
+                },
+            ) => left.total_cmp(right),
+            (
+                AudioTrackSignalEffect::NoiseReduction { preset: left, .. },
+                AudioTrackSignalEffect::NoiseReduction { preset: right, .. },
+            ) => noise_reduction_preset_order(left).cmp(&noise_reduction_preset_order(right)),
+            _ => Ordering::Equal,
+        })
+}
+
+fn signal_effect_stage_order(effect: &AudioTrackSignalEffect) -> u8 {
+    match effect_stage(effect) {
+        AudioProcessingStage::Cleanup => 0,
+        AudioProcessingStage::Dynamics => 1,
+        AudioProcessingStage::LevelPolicy => 2,
+        AudioProcessingStage::FinalProtection => 3,
+    }
+}
+
+fn effect_stage(effect: &AudioTrackSignalEffect) -> AudioProcessingStage {
+    match effect {
+        AudioTrackSignalEffect::HighPass { stage, .. }
+        | AudioTrackSignalEffect::NoiseReduction { stage, .. } => *stage,
+    }
+}
+
+fn signal_effect_type_order(effect: &AudioTrackSignalEffect) -> u8 {
+    match effect {
+        AudioTrackSignalEffect::HighPass { .. } => HIGH_PASS_SIGNAL_EFFECT_ORDER,
+        AudioTrackSignalEffect::NoiseReduction { .. } => NOISE_REDUCTION_SIGNAL_EFFECT_ORDER,
+    }
+}
+
+fn is_singleton_signal_effect(effect: &AudioTrackSignalEffect) -> bool {
+    matches!(effect, AudioTrackSignalEffect::NoiseReduction { .. })
+}
+
+fn noise_reduction_preset_order(preset: &NoiseReductionPreset) -> u8 {
+    match preset {
+        NoiseReductionPreset::Light => 0,
+        NoiseReductionPreset::Medium => 1,
+        NoiseReductionPreset::Strong => 2,
+    }
 }
 
 pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bool) -> String {
@@ -874,9 +1011,10 @@ mod tests {
     use super::{
         AudioLoudnessAnalysis, AudioProcessingStage, AudioTrackCacheKey, AudioTrackProcessing,
         AudioTrackSelection, AudioTrackSignalEffect, CropSelection, FastExportRequest,
-        FrameRateSelection, LoudnessNormalization, LoudnessPreset, OptimizedExportRequest,
-        ResolutionSelection, TrimSelection, audio_filter_graph, build_fast_arguments,
-        build_optimized_arguments, optimized_command_preview, pre_level_filter_chain,
+        FrameRateSelection, LoudnessNormalization, LoudnessPreset, NoiseReductionPreset,
+        OptimizedExportRequest, ResolutionSelection, TrimSelection, audio_filter_graph,
+        build_fast_arguments, build_optimized_arguments, optimized_command_preview,
+        pre_level_filter_chain,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -1280,6 +1418,112 @@ mod tests {
     }
 
     #[test]
+    fn activity_cache_keys_differ_between_noise_reduction_presets() {
+        let selection = |preset| AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 2,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: None,
+                effects: vec![AudioTrackSignalEffect::NoiseReduction {
+                    preset,
+                    stage: AudioProcessingStage::Cleanup,
+                }],
+            },
+        };
+
+        assert_ne!(
+            AudioTrackCacheKey::from(&selection(NoiseReductionPreset::Light)),
+            AudioTrackCacheKey::from(&selection(NoiseReductionPreset::Medium)),
+        );
+        assert_ne!(
+            AudioTrackCacheKey::from(&selection(NoiseReductionPreset::Medium)),
+            AudioTrackCacheKey::from(&selection(NoiseReductionPreset::Strong)),
+        );
+    }
+
+    #[test]
+    fn noise_reduction_presets_build_the_expected_ffmpeg_filter() {
+        for (preset, expected_filter) in [
+            (NoiseReductionPreset::Light, "afftdn=nr=6:nf=-40"),
+            (NoiseReductionPreset::Medium, "afftdn=nr=12:nf=-35"),
+            (NoiseReductionPreset::Strong, "afftdn=nr=20:nf=-30"),
+        ] {
+            let processing = AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: None,
+                effects: vec![AudioTrackSignalEffect::NoiseReduction {
+                    preset,
+                    stage: AudioProcessingStage::Cleanup,
+                }],
+            };
+
+            assert_eq!(pre_level_filter_chain(&processing), expected_filter);
+        }
+    }
+
+    #[test]
+    fn signal_effect_chain_is_canonical_independent_of_edit_order() {
+        let high_pass = AudioTrackSignalEffect::HighPass {
+            cutoff_hz: 120.0,
+            stage: AudioProcessingStage::Cleanup,
+        };
+        let noise_reduction = AudioTrackSignalEffect::NoiseReduction {
+            preset: NoiseReductionPreset::Strong,
+            stage: AudioProcessingStage::Cleanup,
+        };
+        let processing = |effects| AudioTrackProcessing {
+            gain_db: 0.0,
+            loudness_normalization: None,
+            effects,
+        };
+
+        let high_pass_then_noise_reduction = pre_level_filter_chain(&processing(vec![
+            high_pass.clone(),
+            noise_reduction.clone(),
+        ]));
+        let noise_reduction_then_high_pass =
+            pre_level_filter_chain(&processing(vec![noise_reduction, high_pass]));
+
+        assert_eq!(
+            high_pass_then_noise_reduction,
+            "highpass=f=120.000,afftdn=nr=20:nf=-30"
+        );
+        assert_eq!(
+            noise_reduction_then_high_pass,
+            high_pass_then_noise_reduction
+        );
+
+        let selection = |effects| AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 2,
+            processing: processing(effects),
+        };
+        assert_eq!(
+            AudioTrackCacheKey::from(&selection(vec![
+                AudioTrackSignalEffect::HighPass {
+                    cutoff_hz: 120.0,
+                    stage: AudioProcessingStage::Cleanup,
+                },
+                AudioTrackSignalEffect::NoiseReduction {
+                    preset: NoiseReductionPreset::Strong,
+                    stage: AudioProcessingStage::Cleanup,
+                },
+            ])),
+            AudioTrackCacheKey::from(&selection(vec![
+                AudioTrackSignalEffect::NoiseReduction {
+                    preset: NoiseReductionPreset::Strong,
+                    stage: AudioProcessingStage::Cleanup,
+                },
+                AudioTrackSignalEffect::HighPass {
+                    cutoff_hz: 120.0,
+                    stage: AudioProcessingStage::Cleanup,
+                },
+            ]))
+        );
+    }
+
+    #[test]
     fn analysis_and_normalization_share_the_same_pre_level_filter_chain() {
         let track = AudioTrackSelection {
             loudness_analysis: Some(AudioLoudnessAnalysis {
@@ -1295,6 +1539,10 @@ mod tests {
                     LoudnessPreset::Streaming,
                 )),
                 effects: vec![
+                    AudioTrackSignalEffect::NoiseReduction {
+                        preset: NoiseReductionPreset::Medium,
+                        stage: AudioProcessingStage::Cleanup,
+                    },
                     AudioTrackSignalEffect::HighPass {
                         cutoff_hz: 100.0,
                         stage: AudioProcessingStage::Cleanup,
@@ -1309,11 +1557,11 @@ mod tests {
 
         assert_eq!(
             pre_level_filter_chain(&track.processing),
-            "highpass=f=100.000"
+            "highpass=f=100.000,afftdn=nr=12:nf=-35"
         );
         let graph = audio_filter_graph(&[track], false);
         assert!(graph.starts_with(
-            "[0:2]highpass=f=100.000,loudnorm=I=-16.000:TP=-1.500:LRA=11:measured_I="
+            "[0:2]highpass=f=100.000,afftdn=nr=12:nf=-35,loudnorm=I=-16.000:TP=-1.500:LRA=11:measured_I="
         ));
         assert!(graph.ends_with("aresample=48000,highpass=f=300.000[audio0]"));
     }
@@ -1531,6 +1779,66 @@ mod tests {
         .expect_err("a stream can only be selected once");
 
         assert_eq!(error.code, "invalid_request");
+    }
+
+    #[test]
+    fn export_rejects_duplicate_noise_reduction_effects() {
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.audio_tracks[0].processing.effects = vec![
+            AudioTrackSignalEffect::NoiseReduction {
+                preset: NoiseReductionPreset::Light,
+                stage: AudioProcessingStage::Cleanup,
+            },
+            AudioTrackSignalEffect::NoiseReduction {
+                preset: NoiseReductionPreset::Strong,
+                stage: AudioProcessingStage::Cleanup,
+            },
+        ];
+
+        let error = build_optimized_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect_err("noise reduction is a singleton signal effect");
+
+        assert_eq!(error.code, "invalid_request");
+    }
+
+    #[test]
+    fn export_rejects_signal_effects_assigned_to_invalid_processing_stages() {
+        for effect in [
+            AudioTrackSignalEffect::NoiseReduction {
+                preset: NoiseReductionPreset::Medium,
+                stage: AudioProcessingStage::Dynamics,
+            },
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz: 120.0,
+                stage: AudioProcessingStage::LevelPolicy,
+            },
+        ] {
+            let mut request = optimized_request("-c:v libx264 -crf 20");
+            request.audio_tracks[0].processing.effects = vec![effect];
+            let error = build_optimized_arguments(
+                &media(),
+                &request,
+                Path::new("source.mkv"),
+                Path::new("out.mp4"),
+            )
+            .expect_err("effects cannot be assigned to an incompatible stage");
+
+            assert_eq!(error.code, "invalid_request");
+        }
+
+        assert!(
+            serde_json::from_value::<AudioTrackSignalEffect>(serde_json::json!({
+                "type": "noiseReduction",
+                "preset": "medium",
+                "stage": "unknownStage"
+            }))
+            .is_err()
+        );
     }
 
     #[test]

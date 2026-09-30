@@ -6,6 +6,7 @@ import { selectPlaybackVolumePercent } from "@/app/store/slices/preferences-slic
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 import {
   audioTrackExternalPreviewStreamIndexes,
+  audioTrackRequiresProcessedPreview,
   effectiveAudioTrackGainDb,
 } from "@/domain/audio-processing";
 
@@ -111,7 +112,7 @@ function useAudioPlaybackRuntime({
     enabledAudioTracks.length > 1 ||
     (enabledAudioTracks.length === 1 &&
       (nativeAudioTrack === undefined ||
-        enabledAudioTracks[0]!.processing.loudnessNormalization !== undefined));
+        audioTrackRequiresProcessedPreview(enabledAudioTracks[0]!.processing)));
 
   const usesExternalAudio =
     requiresProcessedPreview && activeExternalAudioStreamCount === enabledAudioTracks.length;
