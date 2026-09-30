@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { audioTrackPlaybackPreviewUrl, selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
   selectLoopPlaybackEnabled,
@@ -11,39 +10,11 @@ import {
 import { selectPlaybackSpeed } from "@/app/store/slices/playback-controls-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
-import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
-import {
-  commitActiveEditingInstanceDraft,
-  handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested,
-} from "@/app/store/thunks/source-media-thunks";
-import {
-  audioTrackExternalPreviewStreamIndexes,
-  effectiveAudioTrackGainDb,
-} from "@/domain/audio-processing";
+import { selectTrim } from "@/app/store/slices/trim-slice";
+import { handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested } from "@/app/store/thunks/source-media-thunks";
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
-import {
-  canSetTrimBoundaryAtPlayhead,
-  setTrimBoundaryAtPlayhead,
-  type TrimBoundary,
-  type TrimRange,
-} from "@/domain/trim";
-import {
-  connectNativeAudioBinding,
-  createStereoAudioMeterNodes,
-  disconnectNativeAudioBinding,
-  disconnectStereoAudioMeterNodes,
-  getOrCreateNativeAudioBinding,
-  isMonoAudioMix,
-  type NativeAudioBinding,
-  type StereoAudioMeterNodes,
-  synchronizeAudioPosition,
-} from "@/features/audio";
-import {
-  cancelPlaybackFrame,
-  createSeekScheduler,
-  type PlaybackFrameHandle,
-  requestPlaybackFrame,
-} from "@/features/preview";
+import { canSetTrimBoundaryAtPlayhead, type TrimRange } from "@/domain/trim";
+import { useAudioPlaybackRuntime } from "@/features/audio";
 import {
   cancelFrame,
   FRAME_SHUTTLE_PLAYBACK_RATE,
@@ -86,30 +57,6 @@ function usePreviewPlaybackRuntime() {
   const trim = useAppSelector(selectTrim) ?? EMPTY_TRIM;
   const preview = useAppSelector(selectPreview);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
-  const audioTracks = useAppSelector(selectAudioTracks);
-  const routeNativeAudioStreamIndex =
-    media?.audioStreams.find((stream) => stream.isDefault)?.streamIndex ??
-    media?.audioStreams[0]?.streamIndex;
-
-  const externalPreviewStreamIndexes = useMemo(
-    () => new Set(audioTrackExternalPreviewStreamIndexes(audioTracks, routeNativeAudioStreamIndex)),
-    [audioTracks, routeNativeAudioStreamIndex],
-  );
-
-  const audioPreviewUrls = useMemo(
-    () =>
-      Object.fromEntries(
-        audioTracks.flatMap((track) => {
-          const url = audioTrackPlaybackPreviewUrl(
-            track,
-            externalPreviewStreamIndexes.has(track.streamIndex),
-          );
-
-          return url ? [[track.streamIndex, url]] : [];
-        }),
-      ),
-    [audioTracks, externalPreviewStreamIndexes],
-  );
 
   const sourcePath = sourceSelection?.sourcePath ?? null;
   const previewKey =
@@ -234,177 +181,8 @@ function usePreviewPlaybackRuntime() {
   useEffect(() => {
     const video = videoRef.current;
     if (video) video.playbackRate = activePlaybackRate;
-    for (const audio of audioElementsRef.current.values()) audio.playbackRate = activePlaybackRate;
-  }, [audioPreviewUrls, playbackSpeed, shuttleDirection]);
-
-  useEffect(() => {
-    if (!sourcePath || audioTracks.length === 0 || typeof AudioContext === "undefined") {
-      cleanupAudioRuntime();
-      cleanupStaleNativeAudioBindings(videoRef.current);
-      return;
-    }
-    const context = audioContextRef.current ?? new AudioContext();
-    audioContextRef.current = context;
-    let audioMix = audioMixRef.current;
-    if (!audioMix) {
-      audioMix = context.createGain();
-      audioMixRef.current = audioMix;
-      const playbackOutputGain = context.createGain();
-      playbackOutputGainRef.current = playbackOutputGain;
-      audioMeterRef.current = createStereoAudioMeterNodes(context, audioMix);
-      audioMix.connect(playbackOutputGain);
-      playbackOutputGain.connect(context.destination);
-    }
-
-    const activeExternalAudioUrls = usesExternalAudio
-      ? Object.fromEntries(
-          Object.entries(audioPreviewUrls).filter(([streamIndexText]) =>
-            enabledAudioTracks.some((track) => track.streamIndex === Number(streamIndexText)),
-          ),
-        )
-      : {};
-
-    const activeStreamIndexes = new Set(Object.keys(activeExternalAudioUrls).map(Number));
-    for (const streamIndex of audioElementsRef.current.keys()) {
-      if (!activeStreamIndexes.has(streamIndex)) removeAudioRuntime(streamIndex);
-    }
-    for (const [streamIndexText, url] of Object.entries(activeExternalAudioUrls)) {
-      const streamIndex = Number(streamIndexText);
-      const existingElement = audioElementsRef.current.get(streamIndex);
-      if (existingElement?.src === url) continue;
-      if (existingElement) removeAudioRuntime(streamIndex);
-      const element = new Audio();
-      element.crossOrigin = "anonymous";
-      element.src = url;
-      element.preload = "auto";
-      element.playbackRate = playbackSpeed;
-      element.setAttribute("aria-hidden", "true");
-      element.style.display = "none";
-      const markReady = () => {
-        setAudioReadiness((current) => {
-          const previewUrls =
-            current.sourcePath === sourcePath
-              ? new Map(current.previewUrls)
-              : new Map<number, string>();
-
-          if (previewUrls.get(streamIndex) === url) return current;
-          previewUrls.set(streamIndex, url);
-          return { sourcePath, previewUrls };
-        });
-      };
-
-      element.addEventListener("canplay", markReady, { once: true });
-      audioReadyListenersRef.current.set(streamIndex, markReady);
-      document.body.appendChild(element);
-      const audioSource = context.createMediaElementSource(element);
-      const gain = context.createGain();
-      const track = audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
-      const gainDb = track
-        ? track.processing.loudnessNormalization === undefined
-          ? (liveAudioTrackGainsRef.current.get(streamIndex) ?? track.processing.gainDb)
-          : effectiveAudioTrackGainDb(track.processing)
-        : 0;
-
-      setGainNodeFromDb(gain, track?.enabled === false ? Number.NEGATIVE_INFINITY : gainDb);
-      audioSource.connect(gain).connect(audioMix);
-      audioElementsRef.current.set(streamIndex, element);
-      audioNodesRef.current.set(streamIndex, { source: audioSource, gain });
-      if (element.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) markReady();
-    }
-
-    const video = videoRef.current;
-    cleanupStaleNativeAudioBindings(video);
-    if (!video || requiresProcessedPreview) {
-      disconnectCurrentNativeAudioRoute();
-    } else {
-      const binding = getOrCreateNativeAudioBinding(nativeAudioBindingsRef.current, context, video);
-      connectNativeAudioBinding(binding, audioMix);
-      nativeAudioBindingRef.current = { element: video, binding };
-    }
-  }, [
-    audioPreviewUrls,
-    audioTracks,
-    enabledAudioTracks,
-    cleanupAudioRuntime,
-    cleanupStaleNativeAudioBindings,
-    disconnectCurrentNativeAudioRoute,
-    readyPreviewKey,
-    removeAudioRuntime,
-    sourcePath,
-    playbackSpeed,
-    requiresProcessedPreview,
-    usesExternalAudio,
-  ]);
-
-  useEffect(() => {
-    const meter = audioMeterRef.current;
-    if (!meter) return;
-
-    const audioStreams = media?.audioStreams ?? [];
-    meter.isMono = isMonoAudioMix(
-      audioTracks
-        .filter((track) => track.enabled)
-        .map(
-          (track) =>
-            audioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.channels,
-        ),
-    );
-  }, [audioTracks, media?.audioStreams]);
-
-  useEffect(() => {
-    const playbackOutputGain = playbackOutputGainRef.current;
-    if (playbackOutputGain && audioContextRef.current) {
-      const context = audioContextRef.current;
-      const now = context.currentTime;
-      const gain = playbackOutputGain.gain;
-      gain.cancelScheduledValues(now);
-      gain.setValueAtTime(gain.value, now);
-      gain.linearRampToValueAtTime(playbackVolumePercent / 100, now + 0.025);
-    }
-    for (const track of audioTracks) {
-      const node = audioNodesRef.current.get(track.streamIndex);
-      if (node) {
-        const gainDb =
-          track.processing.loudnessNormalization === undefined
-            ? (liveAudioTrackGainsRef.current.get(track.streamIndex) ?? track.processing.gainDb)
-            : effectiveAudioTrackGainDb(track.processing);
-
-        node.gain.gain.value = track.enabled ? 10 ** (gainDb / 20) : 0;
-      }
-    }
-    if (nativeAudioBindingRef.current) {
-      const gainDb = nativeAudioTrack
-        ? nativeAudioTrack.processing.loudnessNormalization === undefined
-          ? (liveAudioTrackGainsRef.current.get(nativeAudioTrack.streamIndex) ??
-            nativeAudioTrack.processing.gainDb)
-          : effectiveAudioTrackGainDb(nativeAudioTrack.processing)
-        : 0;
-
-      nativeAudioBindingRef.current.binding.gain.gain.value =
-        nativeAudioTrack?.enabled && !requiresProcessedPreview ? 10 ** (gainDb / 20) : 0;
-    } else if (videoRef.current) {
-      const gainDb = nativeAudioTrack
-        ? nativeAudioTrack.processing.loudnessNormalization === undefined
-          ? (liveAudioTrackGainsRef.current.get(nativeAudioTrack.streamIndex) ??
-            nativeAudioTrack.processing.gainDb)
-          : effectiveAudioTrackGainDb(nativeAudioTrack.processing)
-        : 0;
-
-      const trackGain =
-        nativeAudioTrack?.enabled && !requiresProcessedPreview ? 10 ** (gainDb / 20) : 0;
-
-      const combinedGain = (playbackVolumePercent / 100) * trackGain;
-
-      videoRef.current.volume = Math.min(1, combinedGain);
-    }
-  }, [
-    audioPreviewUrls,
-    audioTracks,
-    nativeAudioTrack,
-    playbackVolumePercent,
-    readyPreviewKey,
-    requiresProcessedPreview,
-  ]);
+    setAudioPlaybackRate(activePlaybackRate);
+  }, [activePlaybackRate, setAudioPlaybackRate]);
 
   const stopPlayheadAnimation = useCallback(() => cancelPlaybackFrame(playbackFrameRef), []);
   const handlePlaybackStartFailure = useCallback(() => {
