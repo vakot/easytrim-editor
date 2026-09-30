@@ -38,7 +38,7 @@ function createTimelineSnapAnchors(
     })),
   ];
 
-  return anchors.sort((left, right) => left.timeMicros - right.timeMicros);
+  return anchors;
 }
 
 function findNearestTimelineSnapAnchor(
@@ -47,6 +47,7 @@ function findNearestTimelineSnapAnchor(
   sourceDurationMicros: number,
   anchors: readonly TimelineSnapAnchor[],
   activeAnchorId: TimelineSnapAnchorId,
+  excludedAnchorIds: readonly TimelineSnapAnchorId[] = [],
 ): TimelineSnapAnchor | null {
   if (trackWidth <= 0 || sourceDurationMicros <= 0) return null;
 
@@ -54,7 +55,7 @@ function findNearestTimelineSnapAnchor(
   let nearestDistancePixels = Number.POSITIVE_INFINITY;
 
   for (const anchor of anchors) {
-    if (anchor.id === activeAnchorId) continue;
+    if (anchor.id === activeAnchorId || excludedAnchorIds.includes(anchor.id)) continue;
 
     const distancePixels =
       (Math.abs(positionMicros - anchor.timeMicros) / sourceDurationMicros) * trackWidth;
@@ -74,20 +75,27 @@ function findNearestTimelineSnapTarget(
   sourceDurationMicros: number,
   snapTargetsMicros: readonly number[],
 ): number | null {
-  const anchors = snapTargetsMicros.map((timeMicros, index) => ({
-    id: `marker-${index}` as const,
-    timeMicros,
-  }));
+  if (trackWidth <= 0 || sourceDurationMicros <= 0 || snapTargetsMicros.length === 0) {
+    return null;
+  }
 
-  return (
-    findNearestTimelineSnapAnchor(
-      pointerMicros,
-      trackWidth,
-      sourceDurationMicros,
-      anchors,
-      "playhead",
-    )?.timeMicros ?? null
-  );
+  let low = 0;
+  let high = snapTargetsMicros.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (snapTargetsMicros[middle]! < pointerMicros) low = middle + 1;
+    else high = middle;
+  }
+
+  const left = snapTargetsMicros[low - 1];
+  const right = snapTargetsMicros[low];
+  const leftDistance = left === undefined ? Number.POSITIVE_INFINITY : pointerMicros - left;
+  const rightDistance = right === undefined ? Number.POSITIVE_INFINITY : right - pointerMicros;
+  const nearest = leftDistance < rightDistance ? left : right;
+  if (nearest === undefined) return null;
+
+  const distancePixels = (Math.abs(pointerMicros - nearest) / sourceDurationMicros) * trackWidth;
+  return distancePixels <= TIMELINE_SNAP_REACH_PX ? nearest : null;
 }
 
 export {
