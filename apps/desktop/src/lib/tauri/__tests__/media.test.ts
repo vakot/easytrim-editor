@@ -489,6 +489,7 @@ describe("media IPC adapter", () => {
       jobId: "waveform-7",
       streamIndexes: [2, 4],
       width: 1280,
+      processingByStream: {},
     });
   });
 

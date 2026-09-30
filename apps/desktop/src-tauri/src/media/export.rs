@@ -699,6 +699,17 @@ pub(crate) fn pre_level_filter_chain(processing: &AudioTrackProcessing) -> Strin
         .join(",")
 }
 
+pub(crate) fn waveform_signal_filter_chain(processing: &AudioTrackProcessing) -> String {
+    [
+        pre_level_filter_chain(processing),
+        final_protection_filter_chain(processing),
+    ]
+    .into_iter()
+    .filter(|filters| !filters.is_empty())
+    .collect::<Vec<_>>()
+    .join(",")
+}
+
 fn final_protection_filter_chain(processing: &AudioTrackProcessing) -> String {
     ordered_signal_effects(processing)
         .into_iter()

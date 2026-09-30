@@ -68,9 +68,11 @@ import {
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
+import type { AudioTrackProcessing } from "@/domain/audio-processing";
 import {
   audioTrackExternalPreviewStreamIndexes,
   audioTrackLoudnessInputsKey,
+  getAudioTrackSignalEffects,
 } from "@/domain/audio-processing";
 import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
@@ -1243,7 +1245,32 @@ const prepareSourceWaveforms =
 
     dispatch(waveformsLoading({ jobId, width, streamIndexes }));
     try {
-      const results = await prepareWaveforms(sourcePath, jobId, streamIndexes, width);
+      const tracksByStream = new Map(
+        selectAudioTracks(getState()).map((track) => [track.streamIndex, track]),
+      );
+
+      const processingByStream = Object.fromEntries(
+        streamIndexes.map((streamIndex) => {
+          const processing = tracksByStream.get(streamIndex)?.processing;
+          const waveformProcessing: AudioTrackProcessing = {
+            gainDb: 0,
+            ...(processing && getAudioTrackSignalEffects(processing).length > 0
+              ? { effects: getAudioTrackSignalEffects(processing) }
+              : {}),
+          };
+
+          return [streamIndex, waveformProcessing];
+        }),
+      );
+
+      const results = await prepareWaveforms(
+        sourcePath,
+        jobId,
+        streamIndexes,
+        width,
+        processingByStream,
+      );
+
       if (isCurrentSource(getState(), sourcePath, loadToken)) {
         results.forEach((result) => dispatch(waveformReady(result)));
         operation.complete({ resultCount: results.length });
