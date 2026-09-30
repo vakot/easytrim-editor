@@ -127,7 +127,7 @@ describe("normalize loudness form", () => {
       value: true,
     });
 
-    const configured = normalizeLoudnessFormReducer(initial, {
+    const configured = normalizeLoudnessFormReducer(enabled, {
       type: "presetChanged",
       value: "streaming",
     });
@@ -135,6 +135,33 @@ describe("normalize loudness form", () => {
     expect(isNormalizeLoudnessFormDirty(initial)).toBe(false);
     expect(isNormalizeLoudnessFormDirty(enabled)).toBe(true);
     expect(isNormalizeLoudnessFormDirty(configured)).toBe(true);
+  });
+
+  it("returns to clean when a changed configuration is disabled again", () => {
+    const initial = createNormalizeLoudnessFormState({ gainDb: 0 });
+    const enabled = normalizeLoudnessFormReducer(initial, {
+      type: "enabledChanged",
+      value: true,
+    });
+
+    const modified = normalizeLoudnessFormReducer(enabled, {
+      type: "presetChanged",
+      value: "broadcast",
+    });
+
+    const disabled = normalizeLoudnessFormReducer(modified, {
+      type: "enabledChanged",
+      value: false,
+    });
+
+    const reenabled = normalizeLoudnessFormReducer(disabled, {
+      type: "enabledChanged",
+      value: true,
+    });
+
+    expect(disabled.normalization).toBe("broadcast");
+    expect(isNormalizeLoudnessFormDirty(disabled)).toBe(false);
+    expect(isNormalizeLoudnessFormDirty(reenabled)).toBe(true);
   });
 
   it("rejects invalid enabled Custom settings but ignores dormant invalid values", () => {

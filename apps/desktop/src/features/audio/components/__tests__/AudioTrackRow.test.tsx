@@ -307,6 +307,34 @@ describe("AudioTrackRow", () => {
     expect(store.getState().audio.tracks[0]?.processing.loudnessNormalization).toBe("broadcast");
   });
 
+  it("clears Apply for a disabled normalization no-op and keeps its dormant preset", async () => {
+    const user = userEvent.setup();
+    renderRow();
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+
+    const apply = screen.getByRole("button", { name: /apply/i });
+    const toggle = screen.getByRole("switch", { name: /loudness normalization/i });
+    expect(apply).toBeDisabled();
+
+    await user.click(toggle);
+    await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
+    await user.click(screen.getByRole("option", { name: /broadcast/i }));
+    expect(apply).toBeEnabled();
+
+    await user.click(toggle);
+    await waitFor(() => expect(apply).toBeDisabled());
+    expect(screen.getByRole("combobox", { name: /loudness normalization/i })).toHaveTextContent(
+      /broadcast/i,
+    );
+
+    await user.click(toggle);
+    await waitFor(() => expect(apply).toBeEnabled());
+    expect(screen.getByRole("combobox", { name: /loudness normalization/i })).toHaveTextContent(
+      /broadcast/i,
+    );
+  });
+
   it("blocks Apply while enabled custom values are invalid", async () => {
     const user = userEvent.setup();
     renderRow();

@@ -275,6 +275,9 @@ function toAudioTrackPreviewSelection(
     track.loudnessAnalysis.cacheKey === cacheKey
       ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
       : {}),
+    // Live playback reapplies Manual Gain after this preview. A nonlinear finalProtection effect
+    // would then run before gain here but after gain during export, so adding one needs an ordering
+    // review at this boundary.
     processing: { ...track.processing, gainDb: 0 },
     streamIndex: track.streamIndex,
   };

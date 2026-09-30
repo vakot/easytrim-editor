@@ -9,11 +9,9 @@ import type {
 
 interface NormalizeLoudnessContextValue {
   analysis: ReturnType<typeof useLoudnessAnalysis>;
-  dirty: boolean;
   dispatchForm: Dispatch<NormalizeLoudnessFormAction>;
   form: NormalizeLoudnessFormState;
   selectedPreset: NormalizationChoice;
-  valid: boolean;
 }
 
 const NormalizeLoudnessContext = createContext<NormalizeLoudnessContextValue | null>(null);

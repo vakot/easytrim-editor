@@ -6,6 +6,7 @@ import {
   audioTrackLevelMode,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
+  audioTrackRequiresProcessedPreview,
   effectiveAudioTrackGainDb,
   loudnessNormalizationTargets,
   sameAudioTrackLoudnessInputs,
@@ -20,7 +21,21 @@ describe("audio track level policy", () => {
       processing: { gainDb: 0, loudnessNormalization: "streaming" as const },
     };
 
+    const effectedA = {
+      ...manualA,
+      processing: {
+        gainDb: 0,
+        effects: [{ cutoffHz: 100, stage: "cleanup" as const, type: "highPass" as const }],
+      },
+    };
+
+    const manualGainOnly = { ...manualA, processing: { gainDb: -6 } };
+
     expect(audioTrackExternalPreviewStreamIndexes([manualA], 2)).toEqual([]);
+    expect(audioTrackExternalPreviewStreamIndexes([manualGainOnly], 2)).toEqual([]);
+    expect(audioTrackRequiresProcessedPreview(manualGainOnly.processing)).toBe(false);
+    expect(audioTrackRequiresProcessedPreview(effectedA.processing)).toBe(true);
+    expect(audioTrackExternalPreviewStreamIndexes([effectedA], 2)).toEqual([2]);
     expect(audioTrackExternalPreviewStreamIndexes([normalizedA], 2)).toEqual([2]);
     expect(audioTrackExternalPreviewStreamIndexes([manualA], 4)).toEqual([2]);
     expect(audioTrackExternalPreviewStreamIndexes([normalizedA, manualB], 2)).toEqual([2, 4]);

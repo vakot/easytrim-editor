@@ -5,7 +5,6 @@ import type { AudioTrackProcessing } from "@/domain/audio-processing";
 import {
   createNormalizeLoudnessFormState,
   isNormalizeLoudnessFormDirty,
-  isNormalizeLoudnessFormValid,
   normalizeLoudnessFormReducer,
 } from "../lib/normalize-loudness-form";
 
@@ -20,7 +19,6 @@ function useNormalizeLoudnessForm(initialProcessing: AudioTrackProcessing) {
     dirty: isNormalizeLoudnessFormDirty(form),
     dispatchForm,
     form,
-    valid: isNormalizeLoudnessFormValid(form),
   };
 }
 

@@ -15,14 +15,14 @@ function NormalizeLoudnessProvider({
   streamIndex: number;
 }) {
   const { draft } = useAudioTrackEffectsDraft();
-  const { dirty, dispatchForm, form, valid } = useNormalizeLoudnessForm(draft.initialProcessing);
+  const { dirty, dispatchForm, form } = useNormalizeLoudnessForm(draft.initialProcessing);
   const analysis = useLoudnessAnalysis(streamIndex, draft.processing);
   useSyncNormalizeLoudnessDraft(form, dirty);
 
   const selectedPreset: NormalizationChoice =
     typeof form.normalization === "string" ? form.normalization : "custom";
 
-  const value = { analysis, dirty, dispatchForm, form, selectedPreset, valid };
+  const value = { analysis, dispatchForm, form, selectedPreset };
 
   return (
     <NormalizeLoudnessContext.Provider value={value}>

@@ -38,7 +38,7 @@ function AudioTrackEffectsLibrary({
       <ScrollArea className="h-full min-h-0 min-w-0 pl-4">
         <TabsList aria-label={t("audio.actions.effects")} className="bg-transparent py-4">
           {effects.map((effect) => (
-            <AudioTrackEffectTab draft={draft} effect={effect} />
+            <AudioTrackEffectTab draft={draft} effect={effect} key={effect.id} />
           ))}
         </TabsList>
       </ScrollArea>
@@ -79,7 +79,7 @@ function AudioTrackEffectTab({
     draft.effectStatus[effect.id]?.dirty;
 
   return (
-    <TabsTrigger className="relative h-7 min-w-0 flex-none px-8" key={effect.id} value={effect.id}>
+    <TabsTrigger className="relative h-7 min-w-0 flex-none px-8" value={effect.id}>
       <EffectTabIndicator side="left">{enabled ? <Check /> : null}</EffectTabIndicator>
       <span className="min-w-0 truncate text-left">{effect.label(t)}</span>
       <EffectTabIndicator side="right">

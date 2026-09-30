@@ -125,10 +125,9 @@ function isNormalizeLoudnessEffectValid(state: NormalizeLoudnessFormState): bool
 }
 
 function isNormalizeLoudnessFormDirty(state: NormalizeLoudnessFormState): boolean {
-  return (
-    state.enabled !== state.initialEnabled ||
-    !sameNormalizationChoice(state.initialNormalization, state.normalization)
-  );
+  if (state.enabled !== state.initialEnabled) return true;
+  if (!state.enabled) return false;
+  return !sameNormalizationChoice(state.initialNormalization, state.normalization);
 }
 
 function getDraftLoudnessNormalization(
