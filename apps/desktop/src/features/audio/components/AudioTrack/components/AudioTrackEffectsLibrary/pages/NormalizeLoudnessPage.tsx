@@ -184,7 +184,7 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
       </AudioTrackEffectsLibraryPageBasic>
 
       <AudioTrackEffectsLibraryPageAdvanced>
-        <div className="grid gap-3 pt-1.5 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <div className="grid gap-1.5">
             <Label htmlFor={`track-custom-lufs-${streamIndex}`}>
               {t("audio.labels.targetLufs")}

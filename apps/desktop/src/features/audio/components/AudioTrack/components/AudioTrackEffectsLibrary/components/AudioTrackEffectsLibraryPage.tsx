@@ -1,3 +1,4 @@
+import { Settings } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -91,7 +92,10 @@ function AudioTrackEffectsLibraryPageAdvanced({
         className="flex items-center gap-3"
         data-slot="audio-track-effects-library-page-advanced-header"
       >
-        <h4 className="shrink-0 text-sm font-medium">{t("audio.labels.advanced")}</h4>
+        <h4 className="flex shrink-0 items-center gap-1 text-sm font-medium text-muted-foreground">
+          <Settings />
+          <span>{t("audio.labels.advanced")}</span>
+        </h4>
         <Separator className="flex-1" />
       </div>
 
