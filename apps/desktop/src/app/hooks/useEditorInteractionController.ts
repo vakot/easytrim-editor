@@ -48,14 +48,12 @@ import {
 } from "@/features/preview";
 import {
   cancelFrame,
-  editorShortcutFromEvent,
   FRAME_SHUTTLE_PLAYBACK_RATE,
   type FrameShuttleDirection,
-  shortcutDispositionFromEvent,
   syncPlayheadElements,
+  useEditorTimelineShortcuts,
 } from "@/features/timeline";
 import { diagnostics } from "@/lib/diagnostics";
-import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 const EMPTY_TRIM: TrimRange = {
@@ -342,15 +340,6 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     !usesExternalAudio;
 
   const nativeLoopEnabledRef = useRef(nativeLoopEnabled);
-  const shortcutActionsRef = useRef<{
-    enabled: boolean;
-    setSegmentBoundary: (boundary: TrimBoundary, origin?: DiagnosticOrigin) => void;
-    startShuttle: (direction: FrameShuttleDirection, origin?: DiagnosticOrigin) => void;
-    stepFrame: (direction: -1 | 1, origin?: DiagnosticOrigin) => void;
-    stopShuttle: (origin?: DiagnosticOrigin) => void;
-    togglePlayback: (origin?: DiagnosticOrigin) => void;
-  } | null>(null);
-
   const removeAudioRuntime = useCallback(
     (streamIndex: number) => {
       const element = audioElementsRef.current.get(streamIndex);
@@ -644,74 +633,6 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     readyPreviewKey,
     requiresProcessedPreview,
   ]);
-
-  useEffect(() => {
-    let heldDirection: FrameShuttleDirection | 0 = 0;
-    let shuttleStarted = false;
-
-    function releaseHeldFrameShortcut(origin: DiagnosticOrigin) {
-      if (shuttleStarted) shortcutActionsRef.current?.stopShuttle(origin);
-      heldDirection = 0;
-      shuttleStarted = false;
-    }
-
-    function handleEditorShortcut(event: globalThis.KeyboardEvent) {
-      if (isApplicationInteractionBlocked() || timelineInteractionActiveRef.current) return;
-      const actions = shortcutActionsRef.current;
-      const shortcut = editorShortcutFromEvent(event);
-      if (!actions?.enabled || !shortcut) return;
-      if (event.defaultPrevented || shortcutDispositionFromEvent(event) !== "timeline") return;
-      event.preventDefault();
-      event.stopPropagation();
-      const origin = { type: "hotkey" as const, id: event.key };
-      const shuttleDirection =
-        shortcut === "previous-frame" ? -1 : shortcut === "next-frame" ? 1 : 0;
-
-      if (shuttleDirection !== 0) {
-        if (event.repeat) {
-          if (heldDirection === shuttleDirection && !shuttleStarted) {
-            shuttleStarted = true;
-            actions.startShuttle(shuttleDirection, origin);
-          }
-          return;
-        }
-        if (heldDirection !== 0) releaseHeldFrameShortcut(origin);
-        heldDirection = shuttleDirection;
-        actions.stepFrame(shuttleDirection, origin);
-        return;
-      }
-
-      if (event.repeat) return;
-      if (heldDirection !== 0) releaseHeldFrameShortcut(origin);
-      if (shortcut === "toggle-playback") actions.togglePlayback(origin);
-      if (shortcut === "set-segment-start") actions.setSegmentBoundary("start", origin);
-      if (shortcut === "set-segment-end") actions.setSegmentBoundary("end", origin);
-    }
-
-    function handleEditorShortcutRelease(event: globalThis.KeyboardEvent) {
-      const shortcut = editorShortcutFromEvent(event);
-      const releasedDirection =
-        shortcut === "previous-frame" ? -1 : shortcut === "next-frame" ? 1 : 0;
-
-      if (releasedDirection === 0 || releasedDirection !== heldDirection) return;
-      event.preventDefault();
-      event.stopPropagation();
-      releaseHeldFrameShortcut({ type: "hotkey", id: event.key });
-    }
-
-    function handleWindowBlur() {
-      if (heldDirection !== 0) releaseHeldFrameShortcut({ type: "internal", id: "window-blur" });
-    }
-
-    window.addEventListener("keydown", handleEditorShortcut, true);
-    window.addEventListener("keyup", handleEditorShortcutRelease, true);
-    window.addEventListener("blur", handleWindowBlur);
-    return () => {
-      window.removeEventListener("keydown", handleEditorShortcut, true);
-      window.removeEventListener("keyup", handleEditorShortcutRelease, true);
-      window.removeEventListener("blur", handleWindowBlur);
-    };
-  }, []);
 
   const stopPlayheadAnimation = useCallback(() => cancelPlaybackFrame(playbackFrameRef), []);
   const pauseAudioPlayback = useCallback(() => {
@@ -1533,23 +1454,17 @@ function useEditorInteractionController(): EditorInteractionRuntime {
     if (videoRef.current) handlePlaybackBoundary(videoRef.current.currentTime * 1_000_000);
   }, [commitSeek, handlePlaybackBoundary, handleShuttleEnd, playbackModes, startMediaPlayback]);
 
-  useEffect(() => {
-    shortcutActionsRef.current = {
+  useEditorTimelineShortcuts(
+    {
       enabled: isPlaybackReady,
-      togglePlayback: handleTogglePlayback,
-      stepFrame: handleStepFrame,
-      startShuttle: handleShuttleStart,
-      stopShuttle: handleShuttleEnd,
-      setSegmentBoundary: handleSetSegmentBoundary,
-    };
-  }, [
-    handleSetSegmentBoundary,
-    handleShuttleEnd,
-    handleShuttleStart,
-    handleStepFrame,
-    handleTogglePlayback,
-    isPlaybackReady,
-  ]);
+      onSetSegmentBoundary: handleSetSegmentBoundary,
+      onShuttleEnd: handleShuttleEnd,
+      onShuttleStart: handleShuttleStart,
+      onStepFrame: handleStepFrame,
+      onTogglePlayback: handleTogglePlayback,
+    },
+    timelineInteractionActiveRef,
+  );
 
   return {
     videoRef,

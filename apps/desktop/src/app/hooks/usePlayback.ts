@@ -33,7 +33,6 @@ function usePlayback() {
     startShuttle: interaction.onShuttleStart,
     stopShuttle: interaction.onShuttleEnd,
     shuttleDirection: interaction.shuttleDirection,
-    setSegmentBoundary: interaction.onSetSegmentBoundary,
     onCropToolOpenChange: interaction.onCropToolOpenChange,
     onPreviewPlaybackError: interaction.onPreviewPlaybackError,
   };

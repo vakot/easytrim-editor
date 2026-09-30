@@ -34,6 +34,7 @@ function useTimeline() {
     canSetSegmentStart: state.canSetSegmentStart,
     canSetSegmentEnd: state.canSetSegmentEnd,
     onChange: commands.onTrimBoundaryChange,
+    onSetSegmentBoundary: commands.onSetSegmentBoundary,
     onMoveSegment: commands.onSegmentMove,
     onTrimDragStart: commands.onTrimDragStart,
     onTrimDragEnd: commands.onTrimDragEnd,

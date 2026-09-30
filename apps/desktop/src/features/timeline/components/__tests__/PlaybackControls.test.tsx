@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   playback: {
     canInteract: true,
     isPlaying: false,
-    setSegmentBoundary: vi.fn(),
     shuttleDirection: 0 as -1 | 0 | 1,
     startShuttle: vi.fn(),
     stepFrame: vi.fn(),
@@ -28,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   timeline: {
     canSetSegmentEnd: true,
     canSetSegmentStart: true,
+    onSetSegmentBoundary: vi.fn(),
   },
 }));
 
@@ -58,6 +58,26 @@ afterEach(() => {
 });
 
 describe("PlaybackControls", () => {
+  it("routes trim boundary changes through the timeline contract", async () => {
+    render(<PlaybackControls />, { wrapper: TestProvider });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Set segment start to current position" }),
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Set segment end to current position" }),
+    );
+
+    expect(mocks.timeline.onSetSegmentBoundary).toHaveBeenNthCalledWith(1, "start", {
+      type: "button",
+      id: "set-start",
+    });
+    expect(mocks.timeline.onSetSegmentBoundary).toHaveBeenNthCalledWith(2, "end", {
+      type: "button",
+      id: "set-end",
+    });
+  });
+
   it("steps once on press and starts a held shuttle without a duplicate click", () => {
     vi.useFakeTimers();
     render(<PlaybackControls />, { wrapper: TestProvider });

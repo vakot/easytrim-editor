@@ -55,7 +55,7 @@ function PlaybackControls({ className }: { className?: string }) {
           disabled={disabled || !timeline.canSetSegmentStart}
           label={t("preview.actions.setStart")}
           onClick={() => {
-            playback.setSegmentBoundary("start", { type: "button", id: "set-start" });
+            timeline.onSetSegmentBoundary("start", { type: "button", id: "set-start" });
           }}
           shortcut="I"
           title={
@@ -198,7 +198,7 @@ function PlaybackControls({ className }: { className?: string }) {
           disabled={disabled || !timeline.canSetSegmentEnd}
           label={t("preview.actions.setEnd")}
           onClick={() => {
-            playback.setSegmentBoundary("end", { type: "button", id: "set-end" });
+            timeline.onSetSegmentBoundary("end", { type: "button", id: "set-end" });
           }}
           shortcut="O"
           title={

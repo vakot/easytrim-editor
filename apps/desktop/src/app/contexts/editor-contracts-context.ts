@@ -1,56 +1,60 @@
+import type { RefObject } from "react";
 import { createContext } from "react";
 
-import type { EditorInteractionRuntime } from "@/app/hooks/useEditorInteractionController";
+import type { TrimBoundary, TrimRange } from "@/domain/trim";
+import type { StereoAudioMeterNodes } from "@/features/audio";
+import type { FrameShuttleDirection } from "@/features/timeline";
+import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
-export type EditorPlaybackInteraction = Pick<
-  EditorInteractionRuntime,
-  | "audioPlayheadRef"
-  | "audioMeterRef"
-  | "isPlaybackReady"
-  | "isPlaying"
-  | "nativeLoopEnabled"
-  | "onCanPlay"
-  | "onCropToolOpenChange"
-  | "onEnded"
-  | "onLoadedMetadata"
-  | "onPause"
-  | "onPausePlayback"
-  | "onPlay"
-  | "onPreviewPlaybackError"
-  | "onSetSegmentBoundary"
-  | "onShuttleEnd"
-  | "onShuttleStart"
-  | "onStepFrame"
-  | "onTimeUpdate"
-  | "onTogglePlayback"
-  | "setLiveAudioTrackGain"
-  | "clearLiveAudioTrackGain"
-  | "setMediaPlaybackRate"
-  | "setVideoElement"
-  | "shuttleDirection"
-  | "transportError"
-  | "videoMuted"
-  | "videoRef"
->;
+export interface EditorPlaybackInteraction {
+  audioMeterRef: RefObject<StereoAudioMeterNodes | null>;
+  audioPlayheadRef: RefObject<HTMLDivElement | null>;
+  clearLiveAudioTrackGain: (streamIndex: number, committedGainDb: number) => void;
+  isPlaybackReady: boolean;
+  isPlaying: boolean;
+  nativeLoopEnabled: boolean;
+  onCanPlay: () => void;
+  onCropToolOpenChange: (isOpen: boolean) => void;
+  onEnded: () => void;
+  onLoadedMetadata: () => void;
+  onPause: () => void;
+  onPausePlayback: () => void;
+  onPlay: () => void;
+  onPreviewPlaybackError: (previewKind: "source" | "proxy") => void;
+  onShuttleEnd: (origin?: DiagnosticOrigin) => void;
+  onShuttleStart: (direction: FrameShuttleDirection, origin?: DiagnosticOrigin) => void;
+  onStepFrame: (direction: -1 | 1, origin?: DiagnosticOrigin) => void;
+  onTimeUpdate: (seconds: number) => void;
+  onTogglePlayback: (origin?: DiagnosticOrigin) => void;
+  setLiveAudioTrackGain: (streamIndex: number, gainDb: number) => void;
+  setMediaPlaybackRate: (rate: number) => void;
+  setVideoElement: (element: HTMLVideoElement | null) => void;
+  shuttleDirection: FrameShuttleDirection | 0;
+  transportError: string | null;
+  videoMuted: boolean;
+  videoRef: RefObject<HTMLVideoElement | null>;
+}
 
-export type EditorTimelineState = Pick<
-  EditorInteractionRuntime,
-  "canSetSegmentEnd" | "canSetSegmentStart" | "displayedPlayheadMicros" | "playheadRef"
->;
+export interface EditorTimelineState {
+  canSetSegmentEnd: boolean;
+  canSetSegmentStart: boolean;
+  displayedPlayheadMicros: number;
+  playheadRef: RefObject<HTMLButtonElement | null>;
+}
 
-export type EditorTimelineCommands = Pick<
-  EditorInteractionRuntime,
-  | "onScrub"
-  | "onScrubEnd"
-  | "onScrubStart"
-  | "onSeek"
-  | "onSegmentDragEnd"
-  | "onSegmentDragStart"
-  | "onSegmentMove"
-  | "onTrimBoundaryChange"
-  | "onTrimDragEnd"
-  | "onTrimDragStart"
->;
+export interface EditorTimelineCommands {
+  onScrub: (micros: number) => void;
+  onScrubEnd: () => void;
+  onScrubStart: () => void;
+  onSeek: (micros: number) => void;
+  onSegmentDragEnd: () => void;
+  onSegmentDragStart: () => void;
+  onSegmentMove: (nextTrim: TrimRange) => void;
+  onSetSegmentBoundary: (boundary: TrimBoundary, origin?: DiagnosticOrigin) => void;
+  onTrimBoundaryChange: (boundary: TrimBoundary, nextTrim: TrimRange) => void;
+  onTrimDragEnd: () => void;
+  onTrimDragStart: () => void;
+}
 
 export const EditorPlaybackContext = createContext<EditorPlaybackInteraction | null>(null);
 export const EditorTimelineCommandsContext = createContext<EditorTimelineCommands | null>(null);
