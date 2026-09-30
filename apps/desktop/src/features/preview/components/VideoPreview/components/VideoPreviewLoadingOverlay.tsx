@@ -1,9 +1,9 @@
-import { LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Backdrop } from "@/components/ui/backdrop";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
@@ -54,7 +54,7 @@ function VideoPreviewLoadingOverlay() {
   return (
     <Backdrop className="absolute" data-testid="preview-loading-overlay">
       <div className="grid place-items-center gap-3">
-        <LoaderCircle aria-hidden="true" className="size-7 animate-spin text-primary" />
+        <Spinner aria-hidden="true" className="size-7 text-primary" />
         <strong className="text-foreground">
           {preview.status === "loading" && preview.kind === "proxy"
             ? t("preview.status.preparing")

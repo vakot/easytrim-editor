@@ -1,10 +1,11 @@
-import { CircleAlert, Download, LoaderCircle } from "lucide-react";
+import { CircleAlert, Download } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { SupportLink } from "@/app/components/SupportLink";
@@ -184,7 +185,7 @@ function getUpdateButtonAction(
   if (isLoading || status === "checking") {
     return {
       label: labels.loading,
-      icon: <LoaderCircle aria-hidden="true" className="size-3 animate-spin" />,
+      icon: <Spinner aria-hidden="true" className="size-3" />,
       disabled: true,
       variant: "default",
     };

@@ -8,7 +8,6 @@ import {
   Clipboard,
   ExternalLink,
   FolderOpen,
-  LoaderCircle,
   RotateCw,
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
@@ -19,6 +18,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
@@ -102,7 +102,7 @@ function MediaToolsStatusTrigger({
         variant={variant}
       >
         {checking ? (
-          <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+          <Spinner aria-hidden="true" className="size-3.5" />
         ) : ready ? (
           <CircleCheck aria-hidden="true" className="size-3.5" />
         ) : partial ? (

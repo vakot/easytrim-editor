@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Standardized loading indicators and made them respect reduced-motion preferences.
 - Kept track levels independent when mixing audio and reused trim-bound loudness measurements for preview and export normalization.
 - Removed automatic playhead following while trim borders move.
 - Updated desktop branding to use the square logo on macOS and the symbol on Windows, Linux, and in-app surfaces.
