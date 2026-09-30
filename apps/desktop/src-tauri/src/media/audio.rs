@@ -173,6 +173,8 @@ mod tests {
         let tracks = [
             AudioTrackSelection {
                 loudness_analysis: Some(crate::media::export::AudioLoudnessAnalysis {
+                    input_lra: Some(5.0),
+                    input_threshold: Some(-30.0),
                     integrated_lufs: Some(-20.0),
                     true_peak_db: Some(-5.0),
                 }),
@@ -182,6 +184,7 @@ mod tests {
                     loudness_normalization: Some(LoudnessNormalization::Preset(
                         LoudnessPreset::Streaming,
                     )),
+                    effects: Vec::new(),
                 },
             },
             AudioTrackSelection {
@@ -190,6 +193,7 @@ mod tests {
                 processing: AudioTrackProcessing {
                     gain_db: 0.0,
                     loudness_normalization: None,
+                    effects: Vec::new(),
                 },
             },
         ];
@@ -222,7 +226,9 @@ mod tests {
             .find(|pair| pair[0] == "-filter_complex")
             .map(|pair| pair[1].to_string_lossy())
             .expect("filter graph exists");
-        assert!(filter.contains("[0:2]volume=3.500000dB[audio0]"));
+        assert!(filter.contains("[0:2]loudnorm=I=-16.000:TP=-1.500:LRA=11"));
+        assert!(filter.contains("aresample=48000[audio0]"));
+        assert!(!filter.contains("volume=3.000000dB[audio0]"));
         assert!(filter.contains("[0:4]volume=0.000000dB[audio1]"));
         assert!(!filter.contains("volume=3.000000dB"));
         assert_eq!(

@@ -751,14 +751,14 @@ describe("App", () => {
       await waitFor(() => expect(audioElements).toHaveLength(3));
       expect(mediaElementSources.some((source) => source.element === video)).toBe(false);
 
-      await user.click(screen.getByRole("button", { name: "Mute eng" }));
-      await user.click(screen.getByRole("button", { name: "Mute Game" }));
+      await user.click(screen.getByRole("button", { name: "Mute (eng)" }));
+      await user.click(screen.getByRole("button", { name: "Mute (Game)" }));
       await waitFor(() =>
         expect(audioElements.some((audio) => audio.src.includes("stream=2&revision=1"))).toBe(true),
       );
 
-      await user.click(screen.getByRole("button", { name: "Mute Mic" }));
-      await user.click(screen.getByRole("button", { name: "Unmute Game" }));
+      await user.click(screen.getByRole("button", { name: "Mute (Mic)" }));
+      await user.click(screen.getByRole("button", { name: "Unmute (Game)" }));
       await waitFor(() =>
         expect(audioElements.some((audio) => audio.src.includes("stream=3&revision=1"))).toBe(true),
       );
@@ -1068,11 +1068,11 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    const mutedButton = await screen.findByRole("button", { name: "Unmute eng" });
+    const mutedButton = await screen.findByRole("button", { name: "Unmute (eng)" });
     expect(mutedButton).toHaveAttribute("aria-pressed", "false");
 
     await user.click(mutedButton);
-    expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Mute (eng)" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -1116,21 +1116,21 @@ describe("App", () => {
       await openSourcePicker(user);
 
       expect(await screen.findByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: "Mute (eng)" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
-      expect(screen.getByRole("button", { name: "Mute Commentary" })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: "Mute (Commentary)" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
-      await user.click(screen.getByRole("button", { name: "Mute eng" }));
-      expect(screen.getByRole("button", { name: "Unmute eng" })).toHaveAttribute(
+      await user.click(screen.getByRole("button", { name: "Mute (eng)" }));
+      expect(screen.getByRole("button", { name: "Unmute (eng)" })).toHaveAttribute(
         "aria-pressed",
         "false",
       );
-      await user.click(screen.getByRole("button", { name: "Unmute eng" }));
-      expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
+      await user.click(screen.getByRole("button", { name: "Unmute (eng)" }));
+      expect(screen.getByRole("button", { name: "Mute (eng)" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
@@ -1160,7 +1160,7 @@ describe("App", () => {
       await act(async () => fireEvent(window, new Event("resize")));
       expect(mocks.prepareWaveforms).toHaveBeenCalledTimes(1);
 
-      await user.click(screen.getByRole("button", { name: "Mute Commentary" }));
+      await user.click(screen.getByRole("button", { name: "Mute (Commentary)" }));
       expect(screen.getByText("1 selected track kept separately")).toBeInTheDocument();
       const mergeAudio = screen.getByRole("checkbox", { name: "Merge selected tracks" });
       await user.hover(mergeAudio);
@@ -1170,11 +1170,11 @@ describe("App", () => {
       );
       await user.click(mergeAudio);
       expect(screen.getByText("One selected track — no merge is needed")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: "Mute (eng)" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
-      expect(screen.getByRole("button", { name: "Unmute Commentary" })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: "Unmute (Commentary)" })).toHaveAttribute(
         "aria-pressed",
         "false",
       );
@@ -1226,7 +1226,7 @@ describe("App", () => {
       await openSourcePicker(user);
 
       const retry = await screen.findByRole("button", { name: "Retry" });
-      expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: "Mute (eng)" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );

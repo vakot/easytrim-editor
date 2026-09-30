@@ -537,12 +537,13 @@ function exportTransform(state: ReturnType<Parameters<AppThunk>[1]>) {
 
 function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
   const trim = selectTrim(state);
+  const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
   const tracks = selectAudioTracks(state);
   return selectedAudioTracks(tracks).map((selection) => {
     const track = tracks.find((candidate) => candidate.streamIndex === selection.streamIndex);
     if (!track) return selection;
     const cacheKey = trim
-      ? audioTrackLoudnessInputsKey(selection.streamIndex, trim, selection.processing)
+      ? audioTrackLoudnessInputsKey(sourcePath, selection.streamIndex, trim, selection.processing)
       : null;
 
     return {
@@ -568,10 +569,17 @@ async function ensureLoudnessAnalysis(
     if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
     const trim = selectTrim(state);
     if (!trim) return { status: "failed" };
+    const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
 
     const missing = selectAudioTracks(state).filter((track) => {
       if (!track.enabled || track.processing.loudnessNormalization === undefined) return false;
-      const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
+      const cacheKey = audioTrackLoudnessInputsKey(
+        sourcePath,
+        track.streamIndex,
+        trim,
+        track.processing,
+      );
+
       return (
         track.loudnessAnalysis.status !== "ready" || track.loudnessAnalysis.cacheKey !== cacheKey
       );
@@ -595,6 +603,7 @@ async function ensureLoudnessAnalysis(
         continue;
       }
       const cacheKey = audioTrackLoudnessInputsKey(
+        selectSourceSelection(state)?.sourcePath ?? "",
         currentTrack.streamIndex,
         currentTrim,
         currentTrack.processing,
@@ -628,6 +637,7 @@ async function ensureLoudnessAnalysis(
       )
         continue;
       const afterCacheKey = audioTrackLoudnessInputsKey(
+        selectSourceSelection(state)?.sourcePath ?? "",
         afterTrack.streamIndex,
         afterTrim,
         afterTrack.processing,
@@ -646,9 +656,16 @@ async function ensureLoudnessAnalysis(
   if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
   const trim = selectTrim(state);
   if (!trim) return { status: "failed" };
+  const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
   const allAnalysesReady = selectAudioTracks(state).every((track) => {
     if (!track.enabled || track.processing.loudnessNormalization === undefined) return true;
-    const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
+    const cacheKey = audioTrackLoudnessInputsKey(
+      sourcePath,
+      track.streamIndex,
+      trim,
+      track.processing,
+    );
+
     return (
       track.loudnessAnalysis.status === "ready" && track.loudnessAnalysis.cacheKey === cacheKey
     );

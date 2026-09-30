@@ -224,6 +224,8 @@ mod tests {
 
         let track = AudioTrackSelection {
             loudness_analysis: Some(crate::media::export::AudioLoudnessAnalysis {
+                input_lra: Some(5.0),
+                input_threshold: Some(-30.0),
                 integrated_lufs: Some(-20.0),
                 true_peak_db: Some(-5.0),
             }),
@@ -233,6 +235,7 @@ mod tests {
                 loudness_normalization: Some(LoudnessNormalization::Preset(
                     LoudnessPreset::Streaming,
                 )),
+                effects: Vec::new(),
             },
         };
         let args = silence_detection_arguments(Path::new("input.mp4"), &track);
@@ -246,7 +249,9 @@ mod tests {
             .expect("filter complex argument exists")[1]
             .to_string();
 
-        assert!(filter.contains("[0:2]volume=3.500000dB[audio0]"));
+        assert!(filter.contains("[0:2]loudnorm=I=-16.000:TP=-1.500:LRA=11"));
+        assert!(filter.contains("aresample=48000[audio0]"));
+        assert!(!filter.contains("volume="));
         assert!(filter.contains("[audio0]aformat=channel_layouts=mono,silencedetect"));
     }
 }

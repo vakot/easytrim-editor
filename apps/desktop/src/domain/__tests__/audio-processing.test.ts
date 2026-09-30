@@ -6,8 +6,10 @@ import {
   audioTrackLevelMode,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
+  audioTrackRequiresProcessedPreview,
   effectiveAudioTrackGainDb,
   loudnessNormalizationTargets,
+  sameAudioTrackLoudnessInputs,
 } from "../audio-processing";
 
 describe("audio track level policy", () => {
@@ -19,7 +21,21 @@ describe("audio track level policy", () => {
       processing: { gainDb: 0, loudnessNormalization: "streaming" as const },
     };
 
+    const effectedA = {
+      ...manualA,
+      processing: {
+        gainDb: 0,
+        effects: [{ cutoffHz: 100, stage: "cleanup" as const, type: "highPass" as const }],
+      },
+    };
+
+    const manualGainOnly = { ...manualA, processing: { gainDb: -6 } };
+
     expect(audioTrackExternalPreviewStreamIndexes([manualA], 2)).toEqual([]);
+    expect(audioTrackExternalPreviewStreamIndexes([manualGainOnly], 2)).toEqual([]);
+    expect(audioTrackRequiresProcessedPreview(manualGainOnly.processing)).toBe(false);
+    expect(audioTrackRequiresProcessedPreview(effectedA.processing)).toBe(true);
+    expect(audioTrackExternalPreviewStreamIndexes([effectedA], 2)).toEqual([2]);
     expect(audioTrackExternalPreviewStreamIndexes([normalizedA], 2)).toEqual([2]);
     expect(audioTrackExternalPreviewStreamIndexes([manualA], 4)).toEqual([2]);
     expect(audioTrackExternalPreviewStreamIndexes([normalizedA, manualB], 2)).toEqual([2, 4]);
@@ -50,21 +66,45 @@ describe("audio track level policy", () => {
     ).toBe(false);
   });
 
-  it("keys loudness analysis by trim and upstream processing, excluding level controls", () => {
+  it("keys loudness analysis by trim and explicit pre-level processing inputs", () => {
     const trim = { startMicros: 1_000_000, endMicros: 8_000_000 };
-    const initial = audioTrackLoudnessInputsKey(2, trim, { gainDb: -6 });
+    const processing = { gainDb: -4, loudnessNormalization: "streaming" as const };
+    const initial = audioTrackLoudnessInputsKey("source-a", 2, trim, processing);
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, processing)).toBe(initial);
     expect(
-      audioTrackLoudnessInputsKey(2, trim, {
-        gainDb: 7,
+      audioTrackLoudnessInputsKey("source-a", 2, { ...trim, startMicros: 2_000_000 }, processing),
+    ).not.toBe(initial);
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, { ...processing, gainDb: 2 })).toBe(
+      initial,
+    );
+    expect(
+      audioTrackLoudnessInputsKey("source-a", 2, trim, {
+        ...processing,
         loudnessNormalization: { mode: "custom", targetLufs: -18, maxTruePeakDb: -2 },
       }),
     ).toBe(initial);
-    expect(
-      audioTrackLoudnessInputsKey(2, { ...trim, startMicros: 2_000_000 }, { gainDb: 0 }),
-    ).not.toBe(initial);
-    expect(
-      audioTrackLoudnessInputsKey(2, trim, { gainDb: 0, highPass: { cutoffHz: 100 } } as never),
-    ).not.toBe(initial);
+    const upstreamProcessing = {
+      ...processing,
+      effects: [{ type: "highPass" as const, stage: "cleanup" as const, cutoffHz: 100 }],
+    };
+
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing)).not.toBe(initial);
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing)).toBe(
+      audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing),
+    );
+    const finalProtectionProcessing = {
+      ...processing,
+      effects: [{ type: "highPass" as const, stage: "finalProtection" as const, cutoffHz: 120 }],
+    };
+
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, finalProtectionProcessing)).toBe(
+      initial,
+    );
+    expect(sameAudioTrackLoudnessInputs(processing, finalProtectionProcessing)).toBe(true);
+    expect(audioTrackActivityProcessingChanged(processing, finalProtectionProcessing)).toBe(true);
+    expect(audioTrackLoudnessInputsKey("source-b", 2, trim, processing)).not.toBe(initial);
+    expect(sameAudioTrackLoudnessInputs(processing, { ...processing, gainDb: 2 })).toBe(true);
+    expect(sameAudioTrackLoudnessInputs(processing, upstreamProcessing)).toBe(false);
   });
 
   it("normalizes from one cached pre-level measurement while respecting true peak", () => {

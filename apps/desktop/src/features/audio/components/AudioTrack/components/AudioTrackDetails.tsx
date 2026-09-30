@@ -1,6 +1,6 @@
 import { MoreVertical } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,7 @@ import { AudioTrackDropdownMenuContent } from "./AudioTrackActions";
 import { AudioTrackToggle } from "./AudioTrackToggle";
 
 function AudioTrackDetails({ controller }: { controller: AudioTrackController }) {
-  const { i18n, t } = useTranslation();
-  const shouldReduceMotion = useReducedMotion() === true;
+  const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const { stream, track, trackNumber } = controller;
@@ -31,8 +30,6 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
 
   const title =
     stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
-
-  const normalization = track.processing.loudnessNormalization;
 
   return (
     <div
@@ -47,60 +44,19 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
       <AudioTrackToggle controller={controller} />
 
       <div className="relative grid min-w-0 flex-1 gap-0.5">
-        <div className="leading-tight">
-          <p
-            className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
-            data-enabled={track.enabled}
-          >
-            {title}
-          </p>
-          <p className="truncate text-xs leading-5 text-muted-foreground">
-            #{trackNumber} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
-          </p>
-        </div>
-
-        <AnimatePresence initial={false}>
-          {isHovered || isFocused ? (
-            <motion.div
-              animate={{ opacity: 1, scale: 1 }}
-              className="absolute inset-0 z-1 flex items-center bg-card"
-              exit={{ opacity: 0, scale: 0.96 }}
-              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96 }}
-              key="gain-control"
-              transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
+        <AudioTrackDetailsSection controller={controller} hovered={isFocused || isHovered}>
+          <div className="leading-tight">
+            <p
+              className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
+              data-enabled={track.enabled}
             >
-              {normalization === undefined ? (
-                <div className="w-full">
-                  <AudioTrackGainControl controller={controller} />
-                </div>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      aria-label={t("audio.accessibility.trackNormalization", { title })}
-                      className="grid w-full cursor-help gap-0.5 leading-tight"
-                      role="note"
-                      tabIndex={0}
-                    >
-                      <span className="truncate text-xs font-medium">
-                        {t("audio.messages.normalizedHoverTitle", {
-                          preset:
-                            typeof normalization === "string"
-                              ? normalizationPresetLabel(normalization, t)
-                              : t("audio.options.normalizationCustom"),
-                        })}
-                      </span>
-                      <span className="truncate text-[10px] text-muted-foreground">
-                        {formatNormalizationLevel(normalization, i18n.language, t)}
-                      </span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>{t("audio.tooltips.normalizationReplacesGain")}</TooltipContent>
-                </Tooltip>
-              )}
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+              {title}
+            </p>
+            <p className="truncate text-xs leading-5 text-muted-foreground">
+              #{trackNumber} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
+            </p>
+          </div>
+        </AudioTrackDetailsSection>
       </div>
 
       <DropdownMenu>
@@ -120,8 +76,84 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
   );
 }
 
+function AudioTrackDetailsSection({
+  children,
+  controller,
+  hovered,
+}: {
+  children: React.ReactNode;
+  controller: AudioTrackController;
+  hovered?: boolean;
+}) {
+  const { i18n, t } = useTranslation();
+  const shouldReduceMotion = useReducedMotion() === true;
+  const { stream, track } = controller;
+  if (!stream || !track) return null;
+
+  const normalization = track.processing.loudnessNormalization;
+
+  if (normalization === undefined) {
+    return (
+      <>
+        {children}
+        <AnimatePresence initial={false}>
+          {hovered ? (
+            <motion.div
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute inset-0 z-1 flex items-center bg-card"
+              exit={{ opacity: 0, scale: 0.96 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96 }}
+              key="gain-control"
+              transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
+            >
+              <div className="w-full">
+                <AudioTrackGainControl controller={controller} />
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </>
+    );
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent>
+        {t("audio.tooltips.normalizationReplacesGain")} {"· "}
+        {t("audio.messages.normalizedHoverTitle", {
+          preset:
+            typeof normalization === "string"
+              ? normalizationPresetLabel(normalization, t)
+              : t("audio.options.normalizationCustom"),
+        })}
+        {" · "}
+        {formatNormalizationTargets(normalization, i18n.language, t)}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function formatNormalizationTargets(
+  normalization: NonNullable<AudioTrackController["track"]>["processing"]["loudnessNormalization"],
+  language: string,
+  t: ReturnType<typeof useTranslation>["t"],
+) {
+  if (normalization === undefined) return "";
+  const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(normalization);
+  const format = (value: number) =>
+    new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(value).replace(/-/g, "−");
+
+  return t("audio.messages.normalizedLevelSummary", {
+    peak: format(maxTruePeakDb),
+    target: format(targetLufs),
+  });
+}
+
 function AudioTrackGainControl({ controller }: { controller: AudioTrackController }) {
   const { i18n, t } = useTranslation();
+  const pointerDownPosition = useRef<{ x: number; y: number } | null>(null);
+  const pointerMovedSinceDown = useRef(false);
   const {
     cancelGainInteraction,
     commitPointerGain,
@@ -147,13 +179,29 @@ function AudioTrackGainControl({ controller }: { controller: AudioTrackControlle
         min={MIN_SLIDER_DECIBELS}
         onBlur={() => finishGainInteraction()}
         onDoubleClick={() => {
+          if (pointerMovedSinceDown.current) return;
           updateLiveGain([0]);
           finishGainInteraction(0);
         }}
         onKeyDownCapture={(event) => handleGainKeyDown(event.key)}
         onKeyUpCapture={(event) => handleGainKeyUp(event.key)}
         onPointerCancelCapture={cancelGainInteraction}
-        onPointerDownCapture={startPointerGainInteraction}
+        onPointerDownCapture={(event) => {
+          pointerDownPosition.current = { x: event.clientX, y: event.clientY };
+          pointerMovedSinceDown.current = false;
+          startPointerGainInteraction();
+        }}
+        onPointerMoveCapture={(event) => {
+          const startPosition = pointerDownPosition.current;
+          if (!startPosition) return;
+
+          const distance = Math.hypot(
+            event.clientX - startPosition.x,
+            event.clientY - startPosition.y,
+          );
+
+          if (distance > 5) pointerMovedSinceDown.current = true;
+        }}
         onValueChange={updateLiveGain}
         onValueCommit={commitPointerGain}
         step={0.5}
@@ -167,19 +215,3 @@ function AudioTrackGainControl({ controller }: { controller: AudioTrackControlle
 }
 
 export { AudioTrackDetails };
-
-function formatNormalizationLevel(
-  normalization: NonNullable<AudioTrackController["track"]>["processing"]["loudnessNormalization"],
-  language: string,
-  t: ReturnType<typeof useTranslation>["t"],
-): string {
-  if (!normalization) return "";
-  const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(normalization);
-  const format = (value: number) =>
-    new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(value).replace(/-/g, "−");
-
-  return t("audio.messages.normalizedLevelSummary", {
-    peak: format(maxTruePeakDb),
-    target: format(targetLufs),
-  });
-}

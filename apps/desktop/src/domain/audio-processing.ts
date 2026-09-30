@@ -1,4 +1,11 @@
 type LoudnessPreset = "webVideo" | "streaming" | "broadcast";
+const AUDIO_PROCESSING_STAGES = ["cleanup", "dynamics", "levelPolicy", "finalProtection"] as const;
+type AudioProcessingStage = (typeof AUDIO_PROCESSING_STAGES)[number];
+type AudioTrackSignalEffect = {
+  cutoffHz: number;
+  stage: AudioProcessingStage;
+  type: "highPass";
+};
 
 interface CustomLoudnessNormalization {
   maxTruePeakDb: number;
@@ -9,6 +16,7 @@ interface CustomLoudnessNormalization {
 type LoudnessNormalization = LoudnessPreset | CustomLoudnessNormalization;
 
 interface AudioTrackProcessing {
+  effects?: AudioTrackSignalEffect[];
   gainDb: number;
   loudnessNormalization?: LoudnessNormalization;
 }
@@ -26,6 +34,8 @@ interface AudioTrackSelection {
 }
 
 interface AudioLoudnessAnalysis {
+  inputLra?: number;
+  inputThreshold?: number;
   integratedLufs?: number;
   truePeakDb?: number;
 }
@@ -40,6 +50,10 @@ function effectiveAudioTrackGainDb(processing: AudioTrackProcessing): number {
   return audioTrackLevelMode(processing) === "manual" ? processing.gainDb : 0;
 }
 
+function audioTrackRequiresProcessedPreview(processing: AudioTrackProcessing): boolean {
+  return processing.loudnessNormalization !== undefined || (processing.effects?.length ?? 0) > 0;
+}
+
 function audioTrackExternalPreviewStreamIndexes(
   tracks: AudioTrackSettings[],
   nativeAudioStreamIndex: number | undefined,
@@ -50,7 +64,7 @@ function audioTrackExternalPreviewStreamIndexes(
   const onlyTrack = enabledTracks[0];
   if (!onlyTrack) return [];
   if (
-    onlyTrack.processing.loudnessNormalization !== undefined ||
+    audioTrackRequiresProcessedPreview(onlyTrack.processing) ||
     onlyTrack.streamIndex !== nativeAudioStreamIndex
   ) {
     return [onlyTrack.streamIndex];
@@ -62,6 +76,7 @@ function audioTrackNormalizationGainDb(
   normalization: LoudnessNormalization,
   analysis: AudioLoudnessAnalysis,
 ): number {
+  // Presentation-only waveform estimate. Preview/export use FFmpeg loudnorm.
   if (analysis.integratedLufs === undefined) return 0;
   const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(normalization);
   const targetGainDb = targetLufs - analysis.integratedLufs;
@@ -74,6 +89,12 @@ function audioTrackActivityProcessingChanged(
   left: AudioTrackProcessing,
   right: AudioTrackProcessing,
 ): boolean {
+  if (
+    JSON.stringify(getAudioTrackSignalEffects(left)) !==
+    JSON.stringify(getAudioTrackSignalEffects(right))
+  ) {
+    return true;
+  }
   if (left.loudnessNormalization !== undefined || right.loudnessNormalization !== undefined) {
     return !sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization);
   }
@@ -81,17 +102,13 @@ function audioTrackActivityProcessingChanged(
 }
 
 function audioTrackLoudnessInputsKey(
+  sourceKey: string,
   streamIndex: number,
   trim: { endMicros: number; startMicros: number },
   processing: AudioTrackProcessing,
 ): string {
-  const upstreamProcessing = Object.fromEntries(
-    Object.entries(processing)
-      .filter(([key]) => key !== "gainDb" && key !== "loudnessNormalization")
-      .sort(([left], [right]) => left.localeCompare(right)),
-  );
-
-  return JSON.stringify([streamIndex, trim.startMicros, trim.endMicros, upstreamProcessing]);
+  const effects = getAudioTrackPreLevelEffects(processing);
+  return JSON.stringify([sourceKey, streamIndex, trim.startMicros, trim.endMicros, effects]);
 }
 
 function sameAudioTrackLoudnessInputs(
@@ -99,8 +116,21 @@ function sameAudioTrackLoudnessInputs(
   right: AudioTrackProcessing,
 ): boolean {
   return (
-    audioTrackLoudnessInputsKey(0, { startMicros: 0, endMicros: 0 }, left) ===
-    audioTrackLoudnessInputsKey(0, { startMicros: 0, endMicros: 0 }, right)
+    JSON.stringify(getAudioTrackPreLevelEffects(left)) ===
+    JSON.stringify(getAudioTrackPreLevelEffects(right))
+  );
+}
+
+function getAudioTrackPreLevelEffects(processing: AudioTrackProcessing): AudioTrackSignalEffect[] {
+  return getAudioTrackSignalEffects(processing).filter(
+    (effect) => effect.stage === "cleanup" || effect.stage === "dynamics",
+  );
+}
+
+function getAudioTrackSignalEffects(processing: AudioTrackProcessing): AudioTrackSignalEffect[] {
+  return [...(processing.effects ?? [])].sort(
+    (left, right) =>
+      AUDIO_PROCESSING_STAGES.indexOf(left.stage) - AUDIO_PROCESSING_STAGES.indexOf(right.stage),
   );
 }
 
@@ -129,7 +159,9 @@ function sameAudioTrackProcessing(
 ): boolean {
   return (
     left.gainDb === right.gainDb &&
-    sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization)
+    sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization) &&
+    JSON.stringify(getAudioTrackSignalEffects(left)) ===
+      JSON.stringify(getAudioTrackSignalEffects(right))
   );
 }
 
@@ -137,7 +169,11 @@ function sameAudioTrackPreviewProcessing(
   left: AudioTrackProcessing,
   right: AudioTrackProcessing,
 ): boolean {
-  return sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization);
+  return (
+    sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization) &&
+    JSON.stringify(getAudioTrackSignalEffects(left)) ===
+      JSON.stringify(getAudioTrackSignalEffects(right))
+  );
 }
 
 function sameLoudnessNormalization(
@@ -154,6 +190,9 @@ function sameLoudnessNormalization(
 function cloneAudioTrackProcessing(processing: AudioTrackProcessing): AudioTrackProcessing {
   return {
     gainDb: processing.gainDb,
+    ...(processing.effects === undefined
+      ? {}
+      : { effects: getAudioTrackSignalEffects(processing).map((effect) => ({ ...effect })) }),
     ...(processing.loudnessNormalization === undefined
       ? {}
       : {
@@ -173,25 +212,31 @@ const DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION: CustomLoudnessNormalization = {
 
 export type {
   AudioLoudnessAnalysis,
+  AudioProcessingStage,
   AudioTrackProcessing,
   AudioTrackSelection,
   AudioTrackSettings,
+  AudioTrackSignalEffect,
   CustomLoudnessNormalization,
   LoudnessNormalization,
   LoudnessPreset,
 };
 export {
+  AUDIO_PROCESSING_STAGES,
   audioTrackActivityProcessingChanged,
   audioTrackExternalPreviewStreamIndexes,
   audioTrackLevelMode,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
+  audioTrackRequiresProcessedPreview,
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_PROCESSING,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
   effectiveAudioTrackGainDb,
+  getAudioTrackSignalEffects,
   loudnessNormalizationTargets,
   sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
+  sameLoudnessNormalization,
 };

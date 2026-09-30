@@ -518,11 +518,14 @@ async function prepareSelectedSource(
       const pendingAnalysis = requiredIndexes.flatMap((streamIndex) => {
         const track = tracks.find((candidate) => candidate.streamIndex === streamIndex);
         if (!track || track.processing.loudnessNormalization === undefined) return [];
-        const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
-        return track.loudnessAnalysis.status !== "ready" ||
-          track.loudnessAnalysis.cacheKey !== cacheKey
-          ? [track]
-          : [];
+        const cacheKey = audioTrackLoudnessInputsKey(
+          source.sourcePath,
+          track.streamIndex,
+          trim,
+          track.processing,
+        );
+
+        return shouldQueueLoudnessAnalysis(track.loudnessAnalysis, cacheKey) ? [track] : [];
       });
 
       if (pendingAnalysis.length === 0) break;
@@ -544,7 +547,12 @@ async function prepareSelectedSource(
       const track = tracks.find((candidate) => candidate.streamIndex === streamIndex);
       if (!track) return [];
       const cacheKey = currentTrim
-        ? audioTrackLoudnessInputsKey(track.streamIndex, currentTrim, track.processing)
+        ? audioTrackLoudnessInputsKey(
+            source.sourcePath,
+            track.streamIndex,
+            currentTrim,
+            track.processing,
+          )
         : null;
 
       if (
@@ -683,6 +691,14 @@ function captureActiveEditingInstanceDraft(
       snapshot,
     }),
   );
+}
+
+function shouldQueueLoudnessAnalysis(
+  analysis: { cacheKey?: string; status: string },
+  currentCacheKey: string,
+): boolean {
+  if (analysis.status === "failed" && analysis.cacheKey === currentCacheKey) return false;
+  return analysis.status !== "ready" || analysis.cacheKey !== currentCacheKey;
 }
 
 const commitActiveEditingInstanceDraft = (): AppThunk => (dispatch, getState) => {
@@ -1269,4 +1285,5 @@ export {
   restoreActiveEditingInstanceRequested,
   restoreExportAttemptRequested,
   restoreSourceFileRequested,
+  shouldQueueLoudnessAnalysis,
 };

@@ -18,7 +18,7 @@ function SourceCardMetadata({ className }: { className?: string }) {
     <div className={cn("flex items-center gap-1 text-xs text-muted-foreground", className)}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="cursor-help truncate focus-visible:outline-none" tabIndex={0}>
+          <span className="truncate focus-visible:outline-none" tabIndex={0}>
             {fileSize}
           </span>
         </TooltipTrigger>

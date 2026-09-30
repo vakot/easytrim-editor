@@ -1,11 +1,12 @@
 import { WandSparkles } from "lucide-react";
-import { type CSSProperties, memo } from "react";
+import { type CSSProperties, memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import {
   audioTrackLoudnessInputsKey,
@@ -14,6 +15,7 @@ import {
   loudnessNormalizationTargets,
 } from "@/domain/audio-processing";
 import { timelinePercent } from "@/domain/trim";
+import { cn } from "@/lib/class-names.utils";
 
 import {
   type AudioTrackController,
@@ -61,6 +63,7 @@ function AudioTrackRowWaveform({
   controller: ReturnType<typeof useAudioTrackController>;
 }) {
   const trim = useAppSelector(selectTrim);
+  const source = useAppSelector(selectSourceSelection);
   const { liveGainDb, stream, track, trackColor } = controller;
   if (!stream || !track) return null;
 
@@ -75,7 +78,7 @@ function AudioTrackRowWaveform({
       data-enabled={track.enabled}
     >
       <AudioTrackWaveform
-        gainDb={waveformGainDb(controller, trim, liveGainDb)}
+        gainDb={waveformGainDb(controller, trim, liveGainDb, source?.sourcePath)}
         stream={stream}
         track={track}
       />
@@ -111,14 +114,21 @@ function waveformGainDb(
   controller: AudioTrackController,
   trim: ReturnType<typeof selectTrim>,
   liveGainDb: number,
+  sourcePath: string | undefined,
 ): number {
   const track = controller.track;
-  if (!track) return liveGainDb;
+  if (!track || !sourcePath) return liveGainDb;
   const normalization = track.processing.loudnessNormalization;
   const analysis = track.loudnessAnalysis;
   if (!normalization) return liveGainDb;
   if (!trim || analysis?.status !== "ready") return 0;
-  const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
+  const cacheKey = audioTrackLoudnessInputsKey(
+    sourcePath,
+    track.streamIndex,
+    trim,
+    track.processing,
+  );
+
   return analysis.cacheKey === cacheKey
     ? audioTrackNormalizationGainDb(normalization, analysis.value)
     : 0;
@@ -132,18 +142,15 @@ function AudioTrackGainIndicator({ controller }: { controller: AudioTrackControl
     : null;
 
   return (
-    <Badge
+    <AudioTrackIndicator
       aria-label={
         normalizedSummary ?? t("audio.accessibility.trackGain", { number: controller.trackNumber })
       }
-      className="pointer-events-none absolute bottom-1 left-1 z-3 max-w-[calc(100%-0.75rem)]"
+      className="absolute bottom-1 left-1 z-3"
       data-slot="audio-track-gain-indicator"
-      role="note"
-      size="xs"
-      variant="outline"
     >
       {normalizedSummary ?? formatGain(controller.liveGainDb, i18n.language)}
-    </Badge>
+    </AudioTrackIndicator>
   );
 }
 
@@ -170,16 +177,35 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
   const summary = summaries.join(" · ");
 
   return (
-    <Badge
+    <AudioTrackIndicator
       aria-label={t("audio.accessibility.appliedEffects", { summary })}
-      className="pointer-events-none absolute top-1 left-1 z-3 max-w-[calc(100%-0.75rem)]"
+      className="absolute top-1 left-1 z-3"
       data-slot="audio-track-effects-indicator"
-      role="note"
-      size="xs"
-      variant="secondary"
     >
       <WandSparkles aria-hidden="true" className="size-3 shrink-0" />
       <span className="truncate">{summary}</span>
+    </AudioTrackIndicator>
+  );
+}
+
+function AudioTrackIndicator({
+  "aria-label": ariaLabel,
+  children,
+  className,
+  ...props
+}: {
+  "aria-label": string;
+  children: ReactNode;
+  className: string;
+  "data-slot": string;
+}) {
+  return (
+    <Badge
+      aria-label={ariaLabel}
+      className={cn("max-w-[calc(100%-0.5rem)] gap-1.5", className)}
+      data-slot={props["data-slot"]}
+    >
+      {children}
     </Badge>
   );
 }

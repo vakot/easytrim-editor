@@ -174,6 +174,8 @@ function parseLoudnessAnalysis(value: unknown): LoudnessAnalysis {
   return {
     integratedLufs: optionalFiniteNumber(result.integratedLufs, "integrated loudness"),
     truePeakDb: optionalFiniteNumber(result.truePeakDb, "true peak"),
+    inputLra: optionalFiniteNumber(result.inputLra, "input loudness range"),
+    inputThreshold: optionalFiniteNumber(result.inputThreshold, "input loudness threshold"),
   };
 }
 

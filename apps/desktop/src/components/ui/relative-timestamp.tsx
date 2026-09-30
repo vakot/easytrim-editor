@@ -31,7 +31,7 @@ function RelativeTimestamp({ className, label, timestamp }: RelativeTimestampPro
     <Tooltip>
       <TooltipTrigger asChild>
         <time
-          className={cn("cursor-help truncate focus-visible:outline-none", className)}
+          className={cn("truncate focus-visible:outline-none", className)}
           dateTime={semanticDateTime}
           tabIndex={0}
         >

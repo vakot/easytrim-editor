@@ -1,4 +1,9 @@
-use std::{collections::HashSet, ffi::OsString, path::Path};
+use std::{
+    collections::HashSet,
+    ffi::OsString,
+    hash::{DefaultHasher, Hash, Hasher},
+    path::Path,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -58,6 +63,8 @@ pub struct AudioTrackSelection {
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioLoudnessAnalysis {
+    pub input_lra: Option<f64>,
+    pub input_threshold: Option<f64>,
     pub integrated_lufs: Option<f64>,
     pub true_peak_db: Option<f64>,
 }
@@ -68,6 +75,26 @@ pub struct AudioTrackProcessing {
     pub gain_db: f64,
     #[serde(default)]
     pub loudness_normalization: Option<LoudnessNormalization>,
+    #[serde(default)]
+    pub effects: Vec<AudioTrackSignalEffect>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum AudioTrackSignalEffect {
+    HighPass {
+        cutoff_hz: f64,
+        stage: AudioProcessingStage,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Hash, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AudioProcessingStage {
+    Cleanup,
+    Dynamics,
+    LevelPolicy,
+    FinalProtection,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -77,10 +104,32 @@ pub struct AudioTrackCacheKey {
     pub loudness_normalization: Option<LoudnessNormalizationCacheKey>,
     loudness_integrated_bits: Option<u64>,
     loudness_peak_bits: Option<u64>,
+    loudness_lra_bits: Option<u64>,
+    loudness_threshold_bits: Option<u64>,
+    effects_hash: u64,
 }
 
 impl From<&AudioTrackSelection> for AudioTrackCacheKey {
     fn from(track: &AudioTrackSelection) -> Self {
+        let mut effects = track
+            .processing
+            .effects
+            .iter()
+            .map(|effect| match effect {
+                AudioTrackSignalEffect::HighPass { cutoff_hz, stage } => {
+                    (*stage, cutoff_hz.to_bits())
+                }
+            })
+            .collect::<Vec<_>>();
+        effects.sort_by_key(|(stage, _)| match stage {
+            AudioProcessingStage::Cleanup => 0,
+            AudioProcessingStage::Dynamics => 1,
+            AudioProcessingStage::LevelPolicy => 2,
+            AudioProcessingStage::FinalProtection => 3,
+        });
+        let mut effects_hasher = DefaultHasher::new();
+        effects.hash(&mut effects_hasher);
+
         Self {
             stream_index: track.stream_index,
             gain_db_bits: if track.processing.loudness_normalization.is_some()
@@ -103,6 +152,15 @@ impl From<&AudioTrackSelection> for AudioTrackCacheKey {
                 .loudness_analysis
                 .and_then(|analysis| analysis.true_peak_db)
                 .map(f64::to_bits),
+            loudness_lra_bits: track
+                .loudness_analysis
+                .and_then(|analysis| analysis.input_lra)
+                .map(f64::to_bits),
+            loudness_threshold_bits: track
+                .loudness_analysis
+                .and_then(|analysis| analysis.input_threshold)
+                .map(f64::to_bits),
+            effects_hash: effects_hasher.finish(),
         }
     }
 }
@@ -433,12 +491,23 @@ pub(crate) fn validate_audio_track_selections(
             .iter()
             .any(|stream| stream.stream_index == track.stream_index);
         if !track.processing.gain_db.is_finite()
+            || track.processing.effects.iter().any(|effect| match effect {
+                AudioTrackSignalEffect::HighPass { cutoff_hz, stage } => {
+                    *stage == AudioProcessingStage::LevelPolicy
+                        || !cutoff_hz.is_finite()
+                        || !(10.0..=20_000.0).contains(cutoff_hz)
+                }
+            })
             || track.loudness_analysis.is_some_and(|analysis| {
                 analysis
                     .integrated_lufs
                     .is_some_and(|value| !value.is_finite())
                     || analysis
                         .true_peak_db
+                        .is_some_and(|value| !value.is_finite())
+                    || analysis.input_lra.is_some_and(|value| !value.is_finite())
+                    || analysis
+                        .input_threshold
                         .is_some_and(|value| !value.is_finite())
             })
             || (track.processing.loudness_normalization.is_some()
@@ -536,8 +605,53 @@ fn effective_transform(
 
 fn audio_tracks_need_reencode(audio_tracks: &[AudioTrackSelection]) -> bool {
     audio_tracks.iter().any(|track| {
-        track.processing.gain_db != 0.0 || track.processing.loudness_normalization.is_some()
+        track.processing.gain_db != 0.0
+            || track.processing.loudness_normalization.is_some()
+            || !track.processing.effects.is_empty()
     })
+}
+
+pub(crate) fn pre_level_filter_chain(processing: &AudioTrackProcessing) -> String {
+    let mut effects = processing.effects.iter().collect::<Vec<_>>();
+    effects.sort_by_key(|effect| match effect {
+        AudioTrackSignalEffect::HighPass { stage, .. } => match stage {
+            AudioProcessingStage::Cleanup => 0,
+            AudioProcessingStage::Dynamics => 1,
+            AudioProcessingStage::LevelPolicy => 2,
+            AudioProcessingStage::FinalProtection => 3,
+        },
+    });
+
+    effects
+        .into_iter()
+        .filter_map(|effect| match effect {
+            AudioTrackSignalEffect::HighPass { cutoff_hz, stage }
+                if matches!(
+                    stage,
+                    AudioProcessingStage::Cleanup | AudioProcessingStage::Dynamics
+                ) =>
+            {
+                Some(format!("highpass=f={cutoff_hz:.3}"))
+            }
+            AudioTrackSignalEffect::HighPass { .. } => None,
+        })
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+fn final_protection_filter_chain(processing: &AudioTrackProcessing) -> String {
+    processing
+        .effects
+        .iter()
+        .filter_map(|effect| match effect {
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz,
+                stage: AudioProcessingStage::FinalProtection,
+            } => Some(format!("highpass=f={cutoff_hz:.3}")),
+            AudioTrackSignalEffect::HighPass { .. } => None,
+        })
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bool) -> String {
@@ -552,13 +666,26 @@ pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bo
                 let analysis = track
                     .loudness_analysis
                     .expect("normalized audio tracks require a loudness measurement");
-                let gain_db = normalization_gain_db(analysis, integrated_lufs, true_peak_db);
-                filters.push_str(&format!("volume={gain_db:.6}dB[audio{index}]"));
-            } else {
-                filters.push_str(&format!(
-                    "volume={:.6}dB[audio{index}]",
-                    track.processing.gain_db
+                filters.push_str(&normalization_filter(
+                    &track.processing,
+                    analysis,
+                    integrated_lufs,
+                    true_peak_db,
+                    index,
                 ));
+            } else {
+                let pre_level_filters = pre_level_filter_chain(&track.processing);
+                if !pre_level_filters.is_empty() {
+                    filters.push_str(&pre_level_filters);
+                    filters.push(',');
+                }
+                filters.push_str(&format!("volume={:.6}dB", track.processing.gain_db));
+                let final_protection_filters = final_protection_filter_chain(&track.processing);
+                if !final_protection_filters.is_empty() {
+                    filters.push(',');
+                    filters.push_str(&final_protection_filters);
+                }
+                filters.push_str(&format!("[audio{index}]"));
             }
             filters
         })
@@ -575,20 +702,42 @@ pub(crate) fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bo
     graph.join(";")
 }
 
-fn normalization_gain_db(
+fn normalization_filter(
+    processing: &AudioTrackProcessing,
     analysis: AudioLoudnessAnalysis,
     target_lufs: f64,
     max_true_peak_db: f64,
-) -> f64 {
-    let Some(integrated_lufs) = analysis.integrated_lufs else {
-        return 0.0;
+    index: usize,
+) -> String {
+    let measured_pass = match (
+        analysis.integrated_lufs,
+        analysis.true_peak_db,
+        analysis.input_lra,
+        analysis.input_threshold,
+    ) {
+        (Some(input_i), Some(input_tp), Some(input_lra), Some(input_thresh)) => {
+            format!(
+                ":measured_I={input_i:.6}:measured_TP={input_tp:.6}:measured_LRA={input_lra:.6}:measured_thresh={input_thresh:.6}:linear=true"
+            )
+        }
+        _ => String::new(),
     };
-    let target_gain_db = target_lufs - integrated_lufs;
-    analysis
-        .true_peak_db
-        .map_or(target_gain_db, |true_peak_db| {
-            target_gain_db.min(max_true_peak_db - true_peak_db)
-        })
+    // loudnorm may upsample internally; keep every normalized output on the app's 48 kHz policy.
+    let pre_level_filters = pre_level_filter_chain(processing);
+    let final_protection_filters = final_protection_filter_chain(processing);
+    format!(
+        "{pre_level_filters}{pre_level_comma}loudnorm=I={target_lufs:.3}:TP={max_true_peak_db:.3}:LRA=11{measured_pass},aresample=48000{final_protection_comma}{final_protection_filters}[audio{index}]",
+        pre_level_comma = if pre_level_filters.is_empty() {
+            ""
+        } else {
+            ","
+        },
+        final_protection_comma = if final_protection_filters.is_empty() {
+            ""
+        } else {
+            ","
+        },
+    )
 }
 
 fn parse_arguments(value: &str) -> Result<Vec<OsString>, AppError> {
@@ -723,10 +872,11 @@ mod tests {
     use std::path::Path;
 
     use super::{
-        AudioLoudnessAnalysis, AudioTrackCacheKey, AudioTrackProcessing, AudioTrackSelection,
-        CropSelection, FastExportRequest, FrameRateSelection, LoudnessNormalization,
-        LoudnessPreset, OptimizedExportRequest, ResolutionSelection, TrimSelection,
-        build_fast_arguments, build_optimized_arguments, optimized_command_preview,
+        AudioLoudnessAnalysis, AudioProcessingStage, AudioTrackCacheKey, AudioTrackProcessing,
+        AudioTrackSelection, AudioTrackSignalEffect, CropSelection, FastExportRequest,
+        FrameRateSelection, LoudnessNormalization, LoudnessPreset, OptimizedExportRequest,
+        ResolutionSelection, TrimSelection, audio_filter_graph, build_fast_arguments,
+        build_optimized_arguments, optimized_command_preview, pre_level_filter_chain,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -794,6 +944,7 @@ mod tests {
                 processing: AudioTrackProcessing {
                     gain_db: 0.0,
                     loudness_normalization: None,
+                    effects: Vec::new(),
                 },
             }],
             merge_audio: false,
@@ -826,6 +977,7 @@ mod tests {
                     processing: AudioTrackProcessing {
                         gain_db: 0.0,
                         loudness_normalization: None,
+                        effects: Vec::new(),
                     },
                 }],
                 merge_audio: false,
@@ -912,6 +1064,7 @@ mod tests {
                         processing: AudioTrackProcessing {
                             gain_db: 0.0,
                             loudness_normalization: None,
+                            effects: Vec::new(),
                         },
                     },
                     AudioTrackSelection {
@@ -920,6 +1073,7 @@ mod tests {
                         processing: AudioTrackProcessing {
                             gain_db: 0.0,
                             loudness_normalization: None,
+                            effects: Vec::new(),
                         },
                     },
                 ],
@@ -958,6 +1112,7 @@ mod tests {
                     processing: AudioTrackProcessing {
                         gain_db: 6.0,
                         loudness_normalization: None,
+                        effects: Vec::new(),
                     },
                 }],
                 merge_audio: false,
@@ -988,6 +1143,8 @@ mod tests {
         request.merge_audio = false;
         request.audio_tracks.push(AudioTrackSelection {
             loudness_analysis: Some(AudioLoudnessAnalysis {
+                input_lra: Some(5.0),
+                input_threshold: Some(-30.0),
                 integrated_lufs: Some(-20.0),
                 true_peak_db: Some(-5.0),
             }),
@@ -997,6 +1154,7 @@ mod tests {
                 loudness_normalization: Some(LoudnessNormalization::Preset(
                     LoudnessPreset::Streaming,
                 )),
+                effects: Vec::new(),
             },
         });
 
@@ -1018,16 +1176,48 @@ mod tests {
         let graph = &values[graph_index + 1];
 
         assert!(graph.contains("[0:1]volume=0.000000dB[audio0]"));
-        assert!(graph.contains("[0:2]volume=3.500000dB[audio1]"));
+        assert!(graph.contains("[0:2]loudnorm=I=-16.000:TP=-1.500:LRA=11"));
+        assert!(graph.contains(":measured_I=-20.000000:measured_TP=-5.000000"));
+        assert!(graph.contains(
+            ":measured_LRA=5.000000:measured_thresh=-30.000000:linear=true,aresample=48000[audio1]"
+        ));
         assert!(!graph.contains("volume=-3.000000dB"));
+        assert!(!graph.contains("volume=3.500000dB"));
         assert!(values.contains(&"[audio0]".to_owned()));
         assert!(values.contains(&"[audio1]".to_owned()));
+    }
+
+    #[test]
+    fn dynamic_loudnorm_fallback_is_real_normalization_and_resamples_explicitly() {
+        let graph = audio_filter_graph(
+            &[AudioTrackSelection {
+                loudness_analysis: Some(AudioLoudnessAnalysis {
+                    integrated_lufs: Some(-20.0),
+                    true_peak_db: Some(-1.0),
+                    input_lra: None,
+                    input_threshold: None,
+                }),
+                stream_index: 2,
+                processing: AudioTrackProcessing {
+                    gain_db: 8.0,
+                    loudness_normalization: Some(LoudnessNormalization::Preset(
+                        LoudnessPreset::Streaming,
+                    )),
+                    effects: Vec::new(),
+                },
+            }],
+            false,
+        );
+        assert!(graph.contains("[0:2]loudnorm=I=-16.000:TP=-1.500:LRA=11,aresample=48000[audio0]"));
+        assert!(!graph.contains("volume="));
     }
 
     #[test]
     fn normalized_activity_cache_key_ignores_dormant_manual_gain() {
         let processing = |gain_db| AudioTrackSelection {
             loudness_analysis: Some(AudioLoudnessAnalysis {
+                input_lra: Some(5.0),
+                input_threshold: Some(-30.0),
                 integrated_lufs: Some(-20.0),
                 true_peak_db: Some(-5.0),
             }),
@@ -1037,12 +1227,95 @@ mod tests {
                 loudness_normalization: Some(LoudnessNormalization::Preset(
                     LoudnessPreset::Streaming,
                 )),
+                effects: Vec::new(),
             },
         };
         assert_eq!(
             AudioTrackCacheKey::from(&processing(-12.0)),
             AudioTrackCacheKey::from(&processing(6.0))
         );
+    }
+
+    #[test]
+    fn activity_cache_key_includes_every_loudness_measurement() {
+        let selection = |input_lra, input_threshold| AudioTrackSelection {
+            loudness_analysis: Some(AudioLoudnessAnalysis {
+                input_lra: Some(input_lra),
+                input_threshold: Some(input_threshold),
+                integrated_lufs: Some(-20.0),
+                true_peak_db: Some(-5.0),
+            }),
+            stream_index: 2,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: Some(LoudnessNormalization::Preset(
+                    LoudnessPreset::Streaming,
+                )),
+                effects: Vec::new(),
+            },
+        };
+
+        let base = AudioTrackCacheKey::from(&selection(5.0, -30.0));
+        assert_ne!(base, AudioTrackCacheKey::from(&selection(4.0, -30.0)));
+        assert_ne!(base, AudioTrackCacheKey::from(&selection(5.0, -29.0)));
+    }
+
+    #[test]
+    fn activity_cache_key_includes_signal_effects_after_the_level_policy_stage() {
+        let mut selection = AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 2,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: None,
+                effects: Vec::new(),
+            },
+        };
+        let without_effect = AudioTrackCacheKey::from(&selection);
+        selection.processing.effects = vec![AudioTrackSignalEffect::HighPass {
+            cutoff_hz: 120.0,
+            stage: AudioProcessingStage::FinalProtection,
+        }];
+        assert_ne!(without_effect, AudioTrackCacheKey::from(&selection));
+    }
+
+    #[test]
+    fn analysis_and_normalization_share_the_same_pre_level_filter_chain() {
+        let track = AudioTrackSelection {
+            loudness_analysis: Some(AudioLoudnessAnalysis {
+                input_lra: Some(5.0),
+                input_threshold: Some(-30.0),
+                integrated_lufs: Some(-20.0),
+                true_peak_db: Some(-5.0),
+            }),
+            stream_index: 2,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: Some(LoudnessNormalization::Preset(
+                    LoudnessPreset::Streaming,
+                )),
+                effects: vec![
+                    AudioTrackSignalEffect::HighPass {
+                        cutoff_hz: 100.0,
+                        stage: AudioProcessingStage::Cleanup,
+                    },
+                    AudioTrackSignalEffect::HighPass {
+                        cutoff_hz: 300.0,
+                        stage: AudioProcessingStage::FinalProtection,
+                    },
+                ],
+            },
+        };
+
+        assert_eq!(
+            pre_level_filter_chain(&track.processing),
+            "highpass=f=100.000"
+        );
+        let graph = audio_filter_graph(&[track], false);
+        assert!(graph.starts_with(
+            "[0:2]highpass=f=100.000,loudnorm=I=-16.000:TP=-1.500:LRA=11:measured_I="
+        ));
+        assert!(graph.ends_with("aresample=48000,highpass=f=300.000[audio0]"));
     }
 
     #[test]
@@ -1061,6 +1334,7 @@ mod tests {
                     processing: AudioTrackProcessing {
                         gain_db: 0.0,
                         loudness_normalization: None,
+                        effects: Vec::new(),
                     },
                 }],
                 merge_audio: false,
@@ -1275,9 +1549,42 @@ mod tests {
     }
 
     #[test]
+    fn export_rejects_non_finite_loudness_measurements() {
+        for analysis in [
+            AudioLoudnessAnalysis {
+                input_lra: Some(f64::NAN),
+                input_threshold: Some(-30.0),
+                integrated_lufs: Some(-20.0),
+                true_peak_db: Some(-5.0),
+            },
+            AudioLoudnessAnalysis {
+                input_lra: Some(5.0),
+                input_threshold: Some(f64::INFINITY),
+                integrated_lufs: Some(-20.0),
+                true_peak_db: Some(-5.0),
+            },
+        ] {
+            let mut request = optimized_request("-c:v libx264 -crf 20");
+            request.audio_tracks[0].processing.loudness_normalization =
+                Some(LoudnessNormalization::Preset(LoudnessPreset::Streaming));
+            request.audio_tracks[0].loudness_analysis = Some(analysis);
+            let error = build_optimized_arguments(
+                &media(),
+                &request,
+                Path::new("source.mkv"),
+                Path::new("out.mp4"),
+            )
+            .expect_err("non-finite measurements must not reach FFmpeg filters");
+            assert_eq!(error.code, "invalid_request");
+        }
+    }
+
+    #[test]
     fn fast_cut_reencodes_when_only_track_normalization_is_enabled() {
         let track = AudioTrackSelection {
             loudness_analysis: Some(AudioLoudnessAnalysis {
+                input_lra: Some(5.0),
+                input_threshold: Some(-30.0),
                 integrated_lufs: Some(-20.0),
                 true_peak_db: Some(-5.0),
             }),
@@ -1287,6 +1594,7 @@ mod tests {
                 loudness_normalization: Some(LoudnessNormalization::Preset(
                     LoudnessPreset::WebVideo,
                 )),
+                effects: Vec::new(),
             },
         };
         let args = build_fast_arguments(
@@ -1312,11 +1620,10 @@ mod tests {
 
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
         assert!(values.windows(2).any(|pair| pair == ["-c:a", "aac"]));
-        assert!(
-            values
-                .iter()
-                .any(|value| value.contains("volume=4.000000dB[audio0]"))
-        );
+        assert!(values.iter().any(|value| {
+            value.contains("[0:1]loudnorm=I=-14.000:TP=-1.000:LRA=11")
+                && value.contains("aresample=48000[audio0]")
+        }));
     }
 
     #[test]
