@@ -72,6 +72,7 @@ function audioTrackLoudnessInputsKey(
       .filter(([key]) => key !== "gainDb" && key !== "loudnessNormalization")
       .sort(([left], [right]) => left.localeCompare(right)),
   );
+
   return JSON.stringify([streamIndex, trim.startMicros, trim.endMicros, upstreamProcessing]);
 }
 
@@ -153,10 +154,10 @@ const DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION: CustomLoudnessNormalization = {
 };
 
 export type {
+  AudioLoudnessAnalysis,
   AudioTrackProcessing,
   AudioTrackSelection,
   AudioTrackSettings,
-  AudioLoudnessAnalysis,
   CustomLoudnessNormalization,
   LoudnessNormalization,
   LoudnessPreset,
@@ -164,14 +165,14 @@ export type {
 export {
   audioTrackActivityProcessingChanged,
   audioTrackLevelMode,
-  audioTrackNormalizationGainDb,
   audioTrackLoudnessInputsKey,
+  audioTrackNormalizationGainDb,
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_PROCESSING,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
   effectiveAudioTrackGainDb,
   loudnessNormalizationTargets,
-  sameAudioTrackPreviewProcessing,
   sameAudioTrackLoudnessInputs,
+  sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
 };

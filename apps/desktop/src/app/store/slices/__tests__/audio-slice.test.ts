@@ -10,8 +10,8 @@ import {
   audioReducer,
   audioTrackActivityAnalysisStarted,
   audioTrackGainChanged,
-  audioTrackLoudnessAnalysisStarted,
   audioTrackLoudnessAnalysisReady,
+  audioTrackLoudnessAnalysisStarted,
   audioTrackPreviewReady,
   audioTrackPreviewStarted,
   audioTrackProcessingChanged,
@@ -135,6 +135,7 @@ describe("audio slice", () => {
         processing: { gainDb: -2, loudnessNormalization: "broadcast" },
       }),
     );
+
     expect(normalized.tracks[0]?.loudnessAnalysis).toMatchObject({
       cacheKey: "analysis-2",
       status: "ready",

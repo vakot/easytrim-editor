@@ -47,9 +47,10 @@ import {
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
+import { selectedAudioTracks } from "@/domain/audio-export";
+import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
-import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeTransformForExport } from "@/domain/rotation";
@@ -66,8 +67,8 @@ import type { FastExportRequest, OptimizedExportRequest } from "@/lib/tauri/medi
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
-import type { AppThunk } from "./source-media-thunks";
 import { analyzeTrackLoudness } from "./audio-track-thunks";
+import type { AppThunk } from "./source-media-thunks";
 import {
   activateEditingInstanceRequested,
   commitActiveEditingInstanceDraft,
@@ -500,23 +501,24 @@ function exportTransform(state: ReturnType<Parameters<AppThunk>[1]>) {
 
 function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
   const trim = selectTrim(state);
-  return selectAudioTracks(state)
-    .filter((track) => track.enabled)
-    .map((track) => {
-      const cacheKey = trim
-        ? audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing)
-        : null;
-      return {
-        ...(track.processing.loudnessNormalization !== undefined &&
-        cacheKey &&
-        track.loudnessAnalysis.status === "ready" &&
-        track.loudnessAnalysis.cacheKey === cacheKey
-          ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
-          : {}),
-        processing: { ...track.processing },
-        streamIndex: track.streamIndex,
-      };
-    });
+  const tracks = selectAudioTracks(state);
+  return selectedAudioTracks(tracks).map((selection) => {
+    const track = tracks.find((candidate) => candidate.streamIndex === selection.streamIndex);
+    if (!track) return selection;
+    const cacheKey = trim
+      ? audioTrackLoudnessInputsKey(selection.streamIndex, trim, selection.processing)
+      : null;
+
+    return {
+      ...selection,
+      ...(selection.processing.loudnessNormalization !== undefined &&
+      cacheKey &&
+      track.loudnessAnalysis.status === "ready" &&
+      track.loudnessAnalysis.cacheKey === cacheKey
+        ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
+        : {}),
+    };
+  });
 }
 
 async function ensureLoudnessAnalysis(
@@ -529,6 +531,7 @@ async function ensureLoudnessAnalysis(
   const tracks = selectAudioTracks(getState()).filter(
     (track) => track.enabled && track.processing.loudnessNormalization !== undefined,
   );
+
   for (const track of tracks) {
     const cacheKey = audioTrackLoudnessInputsKey(track.streamIndex, trim, track.processing);
     if (track.loudnessAnalysis.status === "ready" && track.loudnessAnalysis.cacheKey === cacheKey)
@@ -539,6 +542,7 @@ async function ensureLoudnessAnalysis(
     const currentTrack = selectAudioTracks(getState()).find(
       (candidate) => candidate.streamIndex === track.streamIndex,
     );
+
     if (
       currentTrack?.loudnessAnalysis.status !== "ready" ||
       currentTrack.loudnessAnalysis.cacheKey !== cacheKey

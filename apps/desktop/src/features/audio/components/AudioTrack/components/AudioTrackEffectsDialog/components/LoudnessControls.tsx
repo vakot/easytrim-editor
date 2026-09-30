@@ -225,4 +225,3 @@ function formatAnalysis(analysis: LoudnessAnalysis, language: string): string {
 }
 
 export { LoudnessControls };
-export type { NormalizationOption };

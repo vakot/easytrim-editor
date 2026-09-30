@@ -1,5 +1,6 @@
-import type { AudioTrackSelection } from "./audio-processing";
-export type { AudioLoudnessAnalysis as LoudnessAnalysis } from "./audio-processing";
+import type { AudioLoudnessAnalysis, AudioTrackSelection } from "./audio-processing";
+
+type LoudnessAnalysis = AudioLoudnessAnalysis;
 
 interface AppError {
   code: string;
@@ -126,6 +127,7 @@ export type {
   ExportResult,
   FastExportRequest,
   FrameRate,
+  LoudnessAnalysis,
   LoudnessAnalysisRequest,
   MediaInfo,
   OptimizedExportRequest,

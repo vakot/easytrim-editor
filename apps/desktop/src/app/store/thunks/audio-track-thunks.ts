@@ -83,6 +83,7 @@ function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
         );
       }
     })();
+
     activeLoudnessAnalysisJobs.set(jobKey, job);
     try {
       await job;

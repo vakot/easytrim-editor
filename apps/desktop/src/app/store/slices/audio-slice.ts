@@ -213,6 +213,7 @@ const audioSlice = createSlice({
         track.processing,
         action.payload.processing,
       );
+
       const loudnessInputsChanged = !sameAudioTrackLoudnessInputs(
         track.processing,
         action.payload.processing,

@@ -68,8 +68,8 @@ import {
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
-import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
 import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
+import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
 import { normalizeSourceKey } from "@/domain/source";
@@ -509,6 +509,7 @@ async function prepareSelectedSource(
       processing: { ...track.processing, gainDb: 0 },
       streamIndex: track.streamIndex,
     }));
+
     const onlyTrack = audioTrackSelections[0];
     const requiresProcessedAudioPreview =
       audioTrackSelections.length > 1 ||
