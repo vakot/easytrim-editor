@@ -548,6 +548,10 @@ export const sk = {
     labels: {
       advanced: "Rozšírené",
       defaultTrack: "Zvuk {{number}}",
+      effectStageCleanup: "Čistenie",
+      effectStageDynamics: "Dynamika",
+      effectStageLevel: "Úroveň",
+      effectStageProtection: "Ochrana",
       loudnessNormalization: "Normalizácia hlasitosti",
       maximumTruePeak: "Maximálny skutočný vrchol (dBTP)",
       normalizationPreset: "Predvoľba",

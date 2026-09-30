@@ -551,6 +551,10 @@ export const ru = {
     labels: {
       advanced: "Дополнительно",
       defaultTrack: "Аудио {{number}}",
+      effectStageCleanup: "Очистка",
+      effectStageDynamics: "Динамика",
+      effectStageLevel: "Уровень",
+      effectStageProtection: "Защита",
       loudnessNormalization: "Нормализация громкости",
       maximumTruePeak: "Максимальный истинный пик (дБTP)",
       normalizationPreset: "Предустановка",

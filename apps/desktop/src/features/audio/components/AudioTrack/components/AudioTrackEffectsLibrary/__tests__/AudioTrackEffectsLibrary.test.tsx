@@ -60,4 +60,56 @@ describe("AudioTrackEffectsLibrary", () => {
     expect(screen.getByText("Second effect controls")).toBeVisible();
     expect(screen.getByText("First effect controls").parentElement).not.toBeVisible();
   });
+
+  it("groups tabs by canonical stage order and preserves registry order within each stage", async () => {
+    const user = userEvent.setup();
+    const stageEffects: readonly AudioTrackEffectDescriptor[] = [
+      { ...effects[1]!, id: "dynamics", label: () => "Dynamics effect" },
+      { ...effects[0]!, id: "cleanup-first", label: () => "Cleanup first" },
+      {
+        ...effects[1]!,
+        id: "level",
+        label: () => "Level effect",
+        stage: "levelPolicy",
+      },
+      { ...effects[0]!, id: "cleanup-second", label: () => "Cleanup second" },
+    ];
+
+    render(
+      <AudioTrackEffectsDraftProvider initialProcessing={{ gainDb: 0 }}>
+        <AudioTrackEffectsLibrary effects={stageEffects} streamIndex={2} />
+      </AudioTrackEffectsDraftProvider>,
+    );
+
+    const tablistElement = screen.getByRole("tablist");
+    const tablist = within(tablistElement);
+    const groups = Array.from(
+      tablistElement.querySelectorAll<HTMLElement>('[data-slot="audio-track-effects-stage"]'),
+    );
+
+    expect(groups.map((group) => group.dataset.stage)).toEqual([
+      "cleanup",
+      "dynamics",
+      "levelPolicy",
+    ]);
+    expect(
+      groups.map(
+        (group) =>
+          group.querySelector('[data-slot="audio-track-effects-stage-label"]')?.textContent,
+      ),
+    ).toEqual(["Cleanup", "Dynamics", "Level"]);
+
+    const tabs = tablist.getAllByRole("tab");
+    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual([
+      "Cleanup first",
+      "Cleanup second",
+      "Dynamics effect",
+      "Level effect",
+    ]);
+    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    tabs[1]?.focus();
+    await user.keyboard("{ArrowDown}");
+    expect(tabs[2]).toHaveFocus();
+    expect(tabs[2]).toHaveAttribute("aria-selected", "true");
+  });
 });

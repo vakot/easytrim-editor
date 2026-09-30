@@ -1,5 +1,6 @@
 type LoudnessPreset = "webVideo" | "streaming" | "broadcast";
-type AudioProcessingStage = "cleanup" | "dynamics" | "levelPolicy" | "finalProtection";
+const AUDIO_PROCESSING_STAGES = ["cleanup", "dynamics", "levelPolicy", "finalProtection"] as const;
+type AudioProcessingStage = (typeof AUDIO_PROCESSING_STAGES)[number];
 type AudioTrackSignalEffect = {
   cutoffHz: number;
   stage: AudioProcessingStage;
@@ -127,15 +128,9 @@ function getAudioTrackPreLevelEffects(processing: AudioTrackProcessing): AudioTr
 }
 
 function getAudioTrackSignalEffects(processing: AudioTrackProcessing): AudioTrackSignalEffect[] {
-  const stageOrder: AudioProcessingStage[] = [
-    "cleanup",
-    "dynamics",
-    "levelPolicy",
-    "finalProtection",
-  ];
-
   return [...(processing.effects ?? [])].sort(
-    (left, right) => stageOrder.indexOf(left.stage) - stageOrder.indexOf(right.stage),
+    (left, right) =>
+      AUDIO_PROCESSING_STAGES.indexOf(left.stage) - AUDIO_PROCESSING_STAGES.indexOf(right.stage),
   );
 }
 
@@ -227,6 +222,7 @@ export type {
   LoudnessPreset,
 };
 export {
+  AUDIO_PROCESSING_STAGES,
   audioTrackActivityProcessingChanged,
   audioTrackExternalPreviewStreamIndexes,
   audioTrackLevelMode,

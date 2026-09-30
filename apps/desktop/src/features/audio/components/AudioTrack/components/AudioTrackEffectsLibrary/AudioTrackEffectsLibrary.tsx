@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { AUDIO_PROCESSING_STAGES, type AudioProcessingStage } from "@/domain/audio-processing";
 import { cn } from "@/lib/class-names.utils";
 
 import {
@@ -25,8 +26,22 @@ function AudioTrackEffectsLibrary({
   streamIndex,
 }: AudioTrackEffectsLibraryProps) {
   const { t } = useTranslation();
-  const [selectedEffect, setSelectedEffect] = useState<string | undefined>(effects[0]?.id);
+  const stageGroups = AUDIO_PROCESSING_STAGES.map((stage) => ({
+    effects: effects.filter((effect) => effect.stage === stage),
+    stage,
+  })).filter(({ effects: stageEffects }) => stageEffects.length > 0);
+
+  const [selectedEffect, setSelectedEffect] = useState<string | undefined>(
+    stageGroups[0]?.effects[0]?.id,
+  );
+
   const { draft } = useAudioTrackEffectsDraft();
+  const stageLabels: Record<AudioProcessingStage, string> = {
+    cleanup: t("audio.labels.effectStageCleanup"),
+    dynamics: t("audio.labels.effectStageDynamics"),
+    finalProtection: t("audio.labels.effectStageProtection"),
+    levelPolicy: t("audio.labels.effectStageLevel"),
+  };
 
   return (
     <Tabs
@@ -37,8 +52,24 @@ function AudioTrackEffectsLibrary({
     >
       <ScrollArea className="h-full min-h-0 min-w-0 pl-4">
         <TabsList aria-label={t("audio.actions.effects")} className="bg-transparent py-4">
-          {effects.map((effect) => (
-            <AudioTrackEffectTab draft={draft} effect={effect} key={effect.id} />
+          {stageGroups.map(({ effects: stageEffects, stage }) => (
+            <div
+              className="flex w-full flex-col gap-0.5"
+              data-slot="audio-track-effects-stage"
+              data-stage={stage}
+              key={stage}
+            >
+              <div
+                aria-hidden="true"
+                className="px-2 pt-3 pb-1 text-xs font-medium text-muted-foreground"
+                data-slot="audio-track-effects-stage-label"
+              >
+                {stageLabels[stage]}
+              </div>
+              {stageEffects.map((effect) => (
+                <AudioTrackEffectTab draft={draft} effect={effect} key={effect.id} />
+              ))}
+            </div>
           ))}
         </TabsList>
       </ScrollArea>

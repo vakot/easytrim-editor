@@ -548,6 +548,10 @@ export const en = {
     labels: {
       advanced: "Advanced",
       defaultTrack: "Audio {{number}}",
+      effectStageCleanup: "Cleanup",
+      effectStageDynamics: "Dynamics",
+      effectStageLevel: "Level",
+      effectStageProtection: "Protection",
       loudnessNormalization: "Loudness normalization",
       maximumTruePeak: "Maximum true peak (dBTP)",
       normalizationPreset: "Preset",
