@@ -340,10 +340,7 @@ async function startEditingInstanceExport(
   const initialInstance = selectActiveEditingInstance(initialState);
   const initialSource = selectSourceSelection(initialState);
   if (!initialInstance || !initialSource || !selectSourceReady(initialState)) return;
-  if (
-    initialInstance.draftAvailable === false ||
-    initialState.importWorkflow.isNativeDialogOpen
-  )
+  if (initialInstance.draftAvailable === false || initialState.importWorkflow.isNativeDialogOpen)
     return;
 
   if (!(await ensureLoudnessAnalysis(dispatch, getState))) {
@@ -374,7 +371,9 @@ async function startEditingInstanceExport(
   )
     return;
 
-  const request = route === "fast" ? getFastRequest(currentState) : getOptimizedRequest(currentState);
+  const request =
+    route === "fast" ? getFastRequest(currentState) : getOptimizedRequest(currentState);
+
   if (!request) return;
 
   const snapshot = getCurrentExportSnapshot(currentState);
