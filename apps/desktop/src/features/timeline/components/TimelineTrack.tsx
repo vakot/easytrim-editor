@@ -73,7 +73,7 @@ function TimelineTrack() {
     resetBoundary,
     scrubDragging,
     segmentDragging,
-    segmentSnapPoint,
+    segmentSnapActive,
     startScrub,
     startSegmentDrag,
     trackRef,
@@ -136,7 +136,7 @@ function TimelineTrack() {
         onPointerMove={moveSegmentDrag}
         onPointerUp={(event) => finishSegmentDrag(event, true)}
         range={range}
-        snapPoint={segmentSnapPoint}
+        snapActive={segmentSnapActive}
       />
       <Playhead
         disabled={disabled}

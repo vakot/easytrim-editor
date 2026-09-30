@@ -8,7 +8,6 @@ import {
   moveTrimBoundary,
   moveTrimRange,
   setTrimBoundaryAtPlayhead,
-  snapMovedTrimRangeToPlayhead,
   timelinePercent,
 } from "../trim";
 
@@ -65,54 +64,6 @@ describe("trim domain", () => {
       ...range,
       startMicros: 7_000_000,
       endMicros: 10_000_000,
-    });
-  });
-
-  it("snaps all three segment points to the playhead", () => {
-    const range = {
-      startMicros: 10_000_000,
-      endMicros: 20_000_000,
-      sourceDurationMicros: 60_000_000,
-    };
-
-    expect(
-      snapMovedTrimRangeToPlayhead(moveTrimRange(range, 30_500_000), 30_000_000, 1_000_000),
-    ).toEqual({
-      range: { ...range, startMicros: 30_000_000, endMicros: 40_000_000 },
-      point: "start",
-    });
-    expect(
-      snapMovedTrimRangeToPlayhead(moveTrimRange(range, 24_500_000), 30_000_000, 1_000_000),
-    ).toEqual({
-      range: { ...range, startMicros: 25_000_000, endMicros: 35_000_000 },
-      point: "center",
-    });
-    expect(
-      snapMovedTrimRangeToPlayhead(moveTrimRange(range, 19_500_000), 30_000_000, 1_000_000),
-    ).toEqual({
-      range: { ...range, startMicros: 20_000_000, endMicros: 30_000_000 },
-      point: "end",
-    });
-  });
-
-  it("snaps borders regardless of playhead position or movement direction", () => {
-    const range = {
-      startMicros: 10_000_000,
-      endMicros: 20_000_000,
-      sourceDurationMicros: 60_000_000,
-    };
-
-    expect(
-      snapMovedTrimRangeToPlayhead(moveTrimRange(range, 9_500_000), 19_000_000, 1_000_000),
-    ).toEqual({
-      range: { ...range, startMicros: 9_000_000, endMicros: 19_000_000 },
-      point: "end",
-    });
-    expect(
-      snapMovedTrimRangeToPlayhead(moveTrimRange(range, 10_500_000), 9_000_000, 2_000_000),
-    ).toEqual({
-      range: { ...range, startMicros: 9_000_000, endMicros: 19_000_000 },
-      point: "start",
     });
   });
 

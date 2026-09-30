@@ -6,13 +6,6 @@ interface TrimRange {
   startMicros: number;
 }
 
-export type SegmentSnapPoint = TrimBoundary | "center";
-
-interface SegmentSnapResult {
-  point: SegmentSnapPoint | null;
-  range: TrimRange;
-}
-
 const MIN_SELECTION_MICROS = 1_000_000;
 
 function createFullTrimRange(sourceDurationMicros: number): TrimRange {
@@ -56,76 +49,6 @@ function moveTrimRange(range: TrimRange, requestedStartMicros: number): TrimRang
     startMicros,
     endMicros: startMicros + durationMicros,
   };
-}
-
-function snapMovedTrimRangeToPlayhead(
-  movedRange: TrimRange,
-  playheadMicros: number,
-  snapReachMicros: number,
-): SegmentSnapResult {
-  const playhead = clampInteger(playheadMicros, 0, movedRange.sourceDurationMicros);
-  const reach = Number.isFinite(snapReachMicros) ? Math.max(0, snapReachMicros) : 0;
-  const eligiblePoints: SegmentSnapPoint[] = ["center", "start", "end"];
-
-  let closestPoint: SegmentSnapPoint | null = null;
-  let closestDistance = Number.POSITIVE_INFINITY;
-  for (const point of eligiblePoints) {
-    const distance = Math.abs(segmentPointMicros(movedRange, point) - playhead);
-    if (
-      distance <= reach &&
-      distance < closestDistance &&
-      canAlignSegmentPoint(movedRange, point, playhead)
-    ) {
-      closestPoint = point;
-      closestDistance = distance;
-    }
-  }
-
-  if (!closestPoint) {
-    return { range: movedRange, point: null };
-  }
-
-  return {
-    range: moveTrimRange(movedRange, alignedSegmentStartMicros(movedRange, closestPoint, playhead)),
-    point: closestPoint,
-  };
-}
-
-function segmentPointMicros(range: TrimRange, point: SegmentSnapPoint): number {
-  if (point === "start") {
-    return range.startMicros;
-  }
-  if (point === "end") {
-    return range.endMicros;
-  }
-  return range.startMicros + (range.endMicros - range.startMicros) / 2;
-}
-
-function canAlignSegmentPoint(
-  range: TrimRange,
-  point: SegmentSnapPoint,
-  playheadMicros: number,
-): boolean {
-  const requestedStartMicros = alignedSegmentStartMicros(range, point, playheadMicros);
-  const durationMicros = range.endMicros - range.startMicros;
-  return (
-    requestedStartMicros >= 0 && requestedStartMicros <= range.sourceDurationMicros - durationMicros
-  );
-}
-
-function alignedSegmentStartMicros(
-  range: TrimRange,
-  point: SegmentSnapPoint,
-  playheadMicros: number,
-): number {
-  const durationMicros = range.endMicros - range.startMicros;
-  if (point === "start") {
-    return playheadMicros;
-  }
-  if (point === "center") {
-    return playheadMicros - durationMicros / 2;
-  }
-  return playheadMicros - durationMicros;
 }
 
 function setTrimBoundaryAtPlayhead(
@@ -226,7 +149,6 @@ export {
   moveTrimBoundary,
   moveTrimRange,
   setTrimBoundaryAtPlayhead,
-  snapMovedTrimRangeToPlayhead,
   timelinePercent,
 };
 

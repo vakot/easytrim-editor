@@ -1,6 +1,23 @@
 import type { AudioActivityRange } from "@/domain/media";
+import { minimumSelectionMicros, type TrimRange } from "@/domain/trim";
 
 const TIMELINE_SNAP_REACH_PX = 12;
+
+type TimelineSnapAnchorId =
+  | "playhead"
+  | "source-end"
+  | "source-start"
+  | "trim-center"
+  | "trim-end"
+  | "trim-start"
+  | `marker-${number}`;
+
+interface TimelineSnapAnchor {
+  id: TimelineSnapAnchorId;
+  movesWith: readonly TimelineSnapAnchorId[];
+  reachableTimeRange: { maximumMicros: number; minimumMicros: number };
+  timeMicros: number;
+}
 
 function createTimelineSnapTargets(
   sceneBoundariesMicros: readonly number[],
@@ -12,33 +29,119 @@ function createTimelineSnapTargets(
   ].sort((left, right) => left - right);
 }
 
-function findNearestTimelineSnapTarget(
-  pointerMicros: number,
-  trackWidth: number,
-  sourceDurationMicros: number,
-  snapTargetsMicros: readonly number[],
-): number | null {
-  if (trackWidth <= 0 || sourceDurationMicros <= 0 || snapTargetsMicros.length === 0) {
-    return null;
-  }
+function createTimelineSnapAnchors(
+  playheadMicros: number,
+  range: TrimRange,
+  markerTimesMicros: readonly number[],
+): TimelineSnapAnchor[] {
+  const durationMicros = range.endMicros - range.startMicros;
+  const centerMicros = range.startMicros + durationMicros / 2;
+  const minimumDuration = minimumSelectionMicros(range.sourceDurationMicros);
 
-  let low = 0;
-  let high = snapTargetsMicros.length;
-  while (low < high) {
-    const middle = Math.floor((low + high) / 2);
-    if (snapTargetsMicros[middle]! < pointerMicros) low = middle + 1;
-    else high = middle;
-  }
-
-  const left = snapTargetsMicros[low - 1];
-  const right = snapTargetsMicros[low];
-  const leftDistance = left === undefined ? Number.POSITIVE_INFINITY : pointerMicros - left;
-  const rightDistance = right === undefined ? Number.POSITIVE_INFINITY : right - pointerMicros;
-  const nearest = leftDistance < rightDistance ? left : right;
-  if (nearest === undefined) return null;
-
-  const distancePixels = (Math.abs(pointerMicros - nearest) / sourceDurationMicros) * trackWidth;
-  return distancePixels <= TIMELINE_SNAP_REACH_PX ? nearest : null;
+  return [
+    {
+      id: "playhead",
+      movesWith: [],
+      reachableTimeRange: { minimumMicros: 0, maximumMicros: range.sourceDurationMicros },
+      timeMicros: playheadMicros,
+    },
+    {
+      id: "source-start",
+      movesWith: [],
+      reachableTimeRange: { minimumMicros: 0, maximumMicros: 0 },
+      timeMicros: 0,
+    },
+    {
+      id: "source-end",
+      movesWith: [],
+      reachableTimeRange: {
+        minimumMicros: range.sourceDurationMicros,
+        maximumMicros: range.sourceDurationMicros,
+      },
+      timeMicros: range.sourceDurationMicros,
+    },
+    {
+      id: "trim-start",
+      movesWith: ["trim-center"],
+      reachableTimeRange: { minimumMicros: 0, maximumMicros: range.endMicros - minimumDuration },
+      timeMicros: range.startMicros,
+    },
+    {
+      id: "trim-center",
+      movesWith: ["trim-start", "trim-end"],
+      reachableTimeRange: {
+        minimumMicros: durationMicros / 2,
+        maximumMicros: range.sourceDurationMicros - durationMicros / 2,
+      },
+      timeMicros: centerMicros,
+    },
+    {
+      id: "trim-end",
+      movesWith: ["trim-center"],
+      reachableTimeRange: {
+        minimumMicros: range.startMicros + minimumDuration,
+        maximumMicros: range.sourceDurationMicros,
+      },
+      timeMicros: range.endMicros,
+    },
+    ...markerTimesMicros.map((timeMicros, index) => ({
+      id: `marker-${index}` as TimelineSnapAnchorId,
+      movesWith: [] as const,
+      reachableTimeRange: { minimumMicros: timeMicros, maximumMicros: timeMicros },
+      timeMicros,
+    })),
+  ];
 }
 
-export { createTimelineSnapTargets, findNearestTimelineSnapTarget, TIMELINE_SNAP_REACH_PX };
+function findNearestTimelineSnapAnchor(
+  positionMicros: number,
+  trackWidth: number,
+  sourceDurationMicros: number,
+  anchors: readonly TimelineSnapAnchor[],
+  activeAnchorId: TimelineSnapAnchorId,
+): TimelineSnapAnchor | null {
+  if (trackWidth <= 0 || sourceDurationMicros <= 0) return null;
+
+  const activeAnchor = anchors.find(({ id }) => id === activeAnchorId);
+  if (!activeAnchor) return null;
+
+  let nearest: TimelineSnapAnchor | null = null;
+  let nearestDistancePixels = Number.POSITIVE_INFINITY;
+
+  for (const anchor of anchors) {
+    if (anchor.id === activeAnchorId || anchor.movesWith.includes(activeAnchorId)) continue;
+    if (
+      anchor.timeMicros < activeAnchor.reachableTimeRange.minimumMicros ||
+      anchor.timeMicros > activeAnchor.reachableTimeRange.maximumMicros
+    ) {
+      continue;
+    }
+
+    const distancePixels =
+      (Math.abs(positionMicros - anchor.timeMicros) / sourceDurationMicros) * trackWidth;
+
+    if (distancePixels <= TIMELINE_SNAP_REACH_PX && distancePixels < nearestDistancePixels) {
+      nearest = anchor;
+      nearestDistancePixels = distancePixels;
+    }
+  }
+
+  return nearest;
+}
+
+function isTimelineSnapPositionAligned(
+  appliedTimeMicros: number,
+  targetTimeMicros: number,
+): boolean {
+  return Math.abs(appliedTimeMicros - targetTimeMicros) <= 0.5;
+}
+
+export {
+  createTimelineSnapAnchors,
+  createTimelineSnapTargets,
+  findNearestTimelineSnapAnchor,
+  isTimelineSnapPositionAligned,
+  TIMELINE_SNAP_REACH_PX,
+};
+
+export type { TimelineSnapAnchor, TimelineSnapAnchorId };

@@ -2187,7 +2187,7 @@ describe("App", () => {
     expect(video.currentTime).toBe(30);
   });
 
-  it("snaps all dragged segment points only while Shift is held", async () => {
+  it("snaps the segment center only while Shift is held", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
@@ -2229,41 +2229,11 @@ describe("App", () => {
       pointerId: 33,
     });
     await flushAnimationFrame();
-    expect(segmentHandle).not.toHaveAttribute("data-snap-point");
+    expect(segmentHandle).not.toHaveAttribute("data-snap-active");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
       "19500000",
     );
-
-    fireEvent.pointerMove(segmentHandle, {
-      clientX: clientXForSeconds(24.5),
-      pointerId: 33,
-      shiftKey: true,
-    });
-    await flushAnimationFrame();
-    expect(segmentHandle).toHaveAttribute("data-snap-point", "end");
-    expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
-      "aria-valuenow",
-      "20000000",
-    );
-
-    fireEvent.pointerMove(segmentHandle, {
-      clientX: clientXForSeconds(24.5),
-      pointerId: 33,
-    });
-    await flushAnimationFrame();
-    expect(segmentHandle).not.toHaveAttribute("data-snap-point");
-    expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
-      "aria-valuenow",
-      "19500000",
-    );
-
-    fireEvent.pointerMove(segmentHandle, {
-      clientX: clientXForSeconds(24.5),
-      pointerId: 33,
-      shiftKey: true,
-    });
-    expect(segmentHandle).toHaveAttribute("data-snap-point", "end");
 
     fireEvent.pointerMove(segmentHandle, {
       clientX: clientXForSeconds(29.5),
@@ -2271,10 +2241,14 @@ describe("App", () => {
       shiftKey: true,
     });
     await flushAnimationFrame();
-    expect(segmentHandle).toHaveAttribute("data-snap-point", "center");
+    expect(segmentHandle).toHaveAttribute("data-snap-active", "true");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
       "25000000",
+    );
+    expect(screen.getByRole("slider", { name: "Trim end" })).toHaveAttribute(
+      "aria-valuenow",
+      "35000000",
     );
 
     fireEvent.pointerMove(segmentHandle, {
@@ -2283,10 +2257,10 @@ describe("App", () => {
       shiftKey: true,
     });
     await flushAnimationFrame();
-    expect(segmentHandle).toHaveAttribute("data-snap-point", "start");
+    expect(segmentHandle).not.toHaveAttribute("data-snap-active");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
-      "30000000",
+      "30500000",
     );
     fireEvent.pointerUp(segmentHandle, {
       clientX: clientXForSeconds(35.5),
@@ -2294,77 +2268,9 @@ describe("App", () => {
       shiftKey: true,
     });
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
-
-    video.currentTime = 35;
-    fireEvent.timeUpdate(video);
-    fireEvent.pointerDown(segmentHandle, {
-      clientX: clientXForSeconds(35),
-      pointerId: 34,
-    });
-    fireEvent.pointerMove(segmentHandle, {
-      clientX: clientXForSeconds(30.5),
-      pointerId: 34,
-      shiftKey: true,
-    });
-    await flushAnimationFrame();
-    expect(segmentHandle).toHaveAttribute("data-snap-point", "end");
-    expect(screen.getByRole("slider", { name: "Trim end" })).toHaveAttribute(
-      "aria-valuenow",
-      "35000000",
-    );
-    fireEvent.pointerUp(segmentHandle, {
-      clientX: clientXForSeconds(30.5),
-      pointerId: 34,
-      shiftKey: true,
-    });
-
-    fireEvent.pointerDown(segmentHandle, {
-      clientX: clientXForSeconds(30),
-      pointerId: 35,
-    });
-    fireEvent.pointerMove(segmentHandle, {
-      clientX: clientXForSeconds(34.5),
-      pointerId: 35,
-      shiftKey: true,
-    });
-    await flushAnimationFrame();
-    expect(segmentHandle).toHaveAttribute("data-snap-point", "center");
-    expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
-      "aria-valuenow",
-      "30000000",
-    );
-    fireEvent.pointerUp(segmentHandle, {
-      clientX: clientXForSeconds(34.5),
-      pointerId: 35,
-      shiftKey: true,
-    });
-
-    video.currentTime = 45;
-    fireEvent.timeUpdate(video);
-    fireEvent.pointerDown(segmentHandle, {
-      clientX: clientXForSeconds(35),
-      pointerId: 36,
-    });
-    fireEvent.pointerMove(segmentHandle, {
-      clientX: clientXForSeconds(39.5),
-      pointerId: 36,
-      shiftKey: true,
-    });
-    await flushAnimationFrame();
-    expect(segmentHandle).toHaveAttribute("data-snap-point", "end");
-    expect(screen.getByRole("slider", { name: "Trim end" })).toHaveAttribute(
-      "aria-valuenow",
-      "45000000",
-    );
-    fireEvent.pointerUp(segmentHandle, {
-      clientX: clientXForSeconds(39.5),
-      pointerId: 36,
-      shiftKey: true,
-    });
-    expect(playhead).toHaveAttribute("aria-valuenow", "45000000");
   });
 
-  it("uses Shift to snap playhead and trim-handle drags to each other", async () => {
+  it("uses Shift to snap the playhead and trim handles to reachable stable anchors", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
@@ -2430,7 +2336,7 @@ describe("App", () => {
       shiftKey: true,
     });
     fireEvent.pointerUp(playhead, {
-      clientX: clientXForSeconds(5),
+      clientX: clientXForSeconds(9.5),
       pointerId: 10,
       shiftKey: true,
     });
@@ -2447,8 +2353,8 @@ describe("App", () => {
       pointerId: 11,
       shiftKey: true,
     });
-    expect(playhead).toHaveAttribute("aria-valuenow", "50000000");
-    expect(video.currentTime).toBe(50);
+    expect(playhead).toHaveAttribute("aria-valuenow", "60000000");
+    expect(video.currentTime).toBe(60);
 
     video.currentTime = 30;
     fireEvent.timeUpdate(video);

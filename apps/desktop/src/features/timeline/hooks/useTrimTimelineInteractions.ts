@@ -5,16 +5,18 @@ import {
   microsFromTimelinePosition,
   moveTrimBoundary,
   moveTrimRange,
-  type SegmentSnapPoint,
-  snapMovedTrimRangeToPlayhead,
   type TrimBoundary,
   type TrimRange,
 } from "@/domain/trim";
-import { snapToNearestPoint } from "@/lib/interaction/snap-points.utils";
 import { syncTimelineGeometry } from "@/lib/interaction/timeline-geometry.utils";
 import type { FrameRate } from "@/lib/tauri/media.types";
 
-import { findNearestTimelineSnapTarget, TIMELINE_SNAP_REACH_PX } from "../lib/timeline-snap";
+import {
+  createTimelineSnapAnchors,
+  findNearestTimelineSnapAnchor,
+  isTimelineSnapPositionAligned,
+  type TimelineSnapAnchorId,
+} from "../lib/timeline-snap";
 
 interface TrimTimelineInteractionOptions {
   frameRate?: FrameRate;
@@ -74,7 +76,7 @@ function useTrimTimelineInteractions({
   const geometryFrameRef = useRef<number | null>(null);
   const [scrubDragging, setScrubDragging] = useState(false);
   const [segmentDragging, setSegmentDragging] = useState(false);
-  const [segmentSnapPoint, setSegmentSnapPoint] = useState<SegmentSnapPoint | null>(null);
+  const [segmentSnapActive, setSegmentSnapActive] = useState(false);
   const [trimDragState, setTrimDragState] = useState<TrimDragState | null>(null);
 
   useEffect(() => {
@@ -118,37 +120,23 @@ function useTrimTimelineInteractions({
     };
   }
 
-  function nearestSnapTargetMicros(clientX: number, pointerMicros: number, bounds: DOMRect) {
+  function nearestSnapAnchor(
+    positionMicros: number,
+    bounds: DOMRect,
+    activeAnchorId: TimelineSnapAnchorId,
+  ) {
     const currentRange = rangeRef.current;
-    if (bounds.width <= 0 || currentRange.sourceDurationMicros <= 0) {
-      return null;
-    }
-
-    const clampedPlayhead = clampPlaybackMicros(playheadMicros, currentRange.sourceDurationMicros);
-    const playheadX =
-      bounds.left + (clampedPlayhead / currentRange.sourceDurationMicros) * bounds.width;
-
-    const candidates: number[] = [];
-
-    if (snapToNearestPoint(clientX, [playheadX], TIMELINE_SNAP_REACH_PX) !== null) {
-      candidates.push(clampedPlayhead);
-    }
-
-    const snapTarget = findNearestTimelineSnapTarget(
-      pointerMicros,
+    return findNearestTimelineSnapAnchor(
+      positionMicros,
       bounds.width,
       currentRange.sourceDurationMicros,
-      snapTargetsMicros,
+      createTimelineSnapAnchors(
+        clampPlaybackMicros(playheadMicros, currentRange.sourceDurationMicros),
+        currentRange,
+        snapTargetsMicros,
+      ),
+      activeAnchorId,
     );
-
-    if (snapTarget !== null) candidates.push(snapTarget);
-
-    return candidates.reduce<number | null>((nearest, candidate) => {
-      if (nearest === null) return candidate;
-      return Math.abs(candidate - pointerMicros) < Math.abs(nearest - pointerMicros)
-        ? candidate
-        : nearest;
-    }, null);
   }
 
   function updateTrimFromPointer(
@@ -162,14 +150,21 @@ function useTrimTimelineInteractions({
     }
     const pointer = pointerMicros(clientX, drag.bounds);
     const snapTarget = snapModifierActive
-      ? nearestSnapTargetMicros(clientX, pointer.micros, pointer.bounds)
+      ? nearestSnapAnchor(pointer.micros, pointer.bounds, `trim-${boundary}`)
       : null;
 
-    const next = moveTrimBoundary(rangeRef.current, boundary, snapTarget ?? pointer.micros);
+    const next = moveTrimBoundary(
+      rangeRef.current,
+      boundary,
+      snapTarget?.timeMicros ?? pointer.micros,
+    );
 
     syncRange(next);
     onChange(boundary, next);
-    return snapTarget !== null;
+    return (
+      snapTarget !== null &&
+      isTimelineSnapPositionAligned(boundaryValue(next, boundary), snapTarget.timeMicros)
+    );
   }
 
   function handleTrimPointer(
@@ -258,20 +253,10 @@ function useTrimTimelineInteractions({
 
   function segmentPointerPosition(clientX: number, bounds: DOMRect) {
     const pointer = pointerMicros(clientX, bounds);
-    return {
-      pointerMicros: pointer.micros,
-      snapReachMicros:
-        pointer.bounds.width > 0
-          ? (TIMELINE_SNAP_REACH_PX / pointer.bounds.width) * rangeRef.current.sourceDurationMicros
-          : 0,
-    };
+    return pointer.micros;
   }
 
-  function updateSegmentFromPointer(
-    pointerMicros: number,
-    snapReachMicros: number,
-    snapModifierActive: boolean,
-  ) {
+  function updateSegmentFromPointer(pointerMicros: number, snapModifierActive: boolean) {
     const drag = segmentDragRef.current;
     if (!drag) return;
     const currentRange = rangeRef.current;
@@ -281,19 +266,21 @@ function useTrimTimelineInteractions({
     if (pointerDeltaMicros === 0 && !snapModifierChanged) return;
     drag.lastPointerMicros = pointerMicros;
     drag.snapModifierActive = snapModifierActive;
-    const requestedStartMicros = pointerMicros - drag.grabOffsetMicros - segmentDurationMicros / 2;
-    const movedRange = moveTrimRange(currentRange, requestedStartMicros);
-    const snapped = snapModifierActive
-      ? snapMovedTrimRangeToMarkersOrPlayhead(
-          movedRange,
-          [playheadMicros, ...snapTargetsMicros],
-          snapReachMicros,
-        )
-      : { range: movedRange, point: null };
+    const requestedCenterMicros = pointerMicros - drag.grabOffsetMicros;
+    const snapTarget = snapModifierActive
+      ? nearestSnapAnchor(requestedCenterMicros, drag.bounds, "trim-center")
+      : null;
 
-    syncRange(snapped.range);
-    setSegmentSnapPoint(snapped.point);
-    onMoveSegment(snapped.range);
+    const requestedCenter = snapTarget?.timeMicros ?? requestedCenterMicros;
+    const next = moveTrimRange(currentRange, requestedCenter - segmentDurationMicros / 2);
+
+    syncRange(next);
+    const appliedCenterMicros = next.startMicros + (next.endMicros - next.startMicros) / 2;
+    setSegmentSnapActive(
+      snapTarget !== null &&
+        isTimelineSnapPositionAligned(appliedCenterMicros, snapTarget.timeMicros),
+    );
+    onMoveSegment(next);
   }
 
   function startSegmentDrag(event: PointerEvent<HTMLButtonElement>) {
@@ -301,7 +288,7 @@ function useTrimTimelineInteractions({
     event.stopPropagation();
     const bounds = trackRef.current?.getBoundingClientRect();
     if (!bounds) return;
-    const pointer = segmentPointerPosition(event.clientX, bounds);
+    const pointerPositionMicros = segmentPointerPosition(event.clientX, bounds);
     const currentRange = rangeRef.current;
     const segmentCenterMicros =
       currentRange.startMicros + (currentRange.endMicros - currentRange.startMicros) / 2;
@@ -309,8 +296,8 @@ function useTrimTimelineInteractions({
     segmentDragRef.current = {
       pointerId: event.pointerId,
       bounds,
-      grabOffsetMicros: pointer.pointerMicros - segmentCenterMicros,
-      lastPointerMicros: pointer.pointerMicros,
+      grabOffsetMicros: pointerPositionMicros - segmentCenterMicros,
+      lastPointerMicros: pointerPositionMicros,
       snapModifierActive: event.shiftKey,
     };
     setSegmentDragging(true);
@@ -323,8 +310,8 @@ function useTrimTimelineInteractions({
     if (drag?.pointerId !== event.pointerId) return;
     event.preventDefault();
     event.stopPropagation();
-    const pointer = segmentPointerPosition(event.clientX, drag.bounds);
-    updateSegmentFromPointer(pointer.pointerMicros, pointer.snapReachMicros, event.shiftKey);
+    const pointerPositionMicros = segmentPointerPosition(event.clientX, drag.bounds);
+    updateSegmentFromPointer(pointerPositionMicros, event.shiftKey);
   }
 
   function finishSegmentDrag(event: PointerEvent<HTMLButtonElement>, includePosition: boolean) {
@@ -333,13 +320,13 @@ function useTrimTimelineInteractions({
     event.preventDefault();
     event.stopPropagation();
     if (includePosition) {
-      const pointer = segmentPointerPosition(event.clientX, drag.bounds);
-      updateSegmentFromPointer(pointer.pointerMicros, pointer.snapReachMicros, event.shiftKey);
+      const pointerPositionMicros = segmentPointerPosition(event.clientX, drag.bounds);
+      updateSegmentFromPointer(pointerPositionMicros, event.shiftKey);
     }
     segmentDragRef.current = null;
     flushGeometry();
     setSegmentDragging(false);
-    setSegmentSnapPoint(null);
+    setSegmentSnapActive(false);
     onSegmentDragEnd();
   }
 
@@ -375,25 +362,13 @@ function useTrimTimelineInteractions({
     onSegmentDragEnd();
   }
 
-  function scrubMicros(clientX: number, snapToScene: boolean, bounds: DOMRect) {
+  function scrubMicros(clientX: number, snapModifierActive: boolean, bounds: DOMRect) {
     const pointer = pointerMicros(clientX, bounds);
-    if (!snapToScene) return pointer.micros;
+    if (!snapModifierActive) return pointer.micros;
 
-    const range = rangeRef.current;
-    const sourceDurationMicros = range.sourceDurationMicros;
-    const clampedPointerMicros = Math.max(
-      range.startMicros,
-      Math.min(range.endMicros, pointer.micros),
-    );
+    const snapTarget = nearestSnapAnchor(pointer.micros, bounds, "playhead");
 
-    const snapTarget = findNearestTimelineSnapTarget(
-      clampedPointerMicros,
-      bounds.width,
-      sourceDurationMicros,
-      snapTargetsMicros,
-    );
-
-    return snapTarget ?? clampedPointerMicros;
+    return snapTarget?.timeMicros ?? pointer.micros;
   }
 
   function startScrub(event: PointerEvent<HTMLElement>, captureTarget: HTMLElement) {
@@ -457,7 +432,7 @@ function useTrimTimelineInteractions({
     trackRef,
     scrubDragging,
     segmentDragging,
-    segmentSnapPoint,
+    segmentSnapActive,
     trimDragState,
     handleTrimPointer,
     finishTrimDrag,
@@ -481,32 +456,6 @@ function keyboardStepMicros(frameRate: FrameRate | undefined, coarse: boolean): 
 
 function boundaryValue(range: TrimRange, boundary: TrimBoundary): number {
   return boundary === "start" ? range.startMicros : range.endMicros;
-}
-
-function snapMovedTrimRangeToMarkersOrPlayhead(
-  movedRange: TrimRange,
-  snapTargetsMicros: readonly number[],
-  snapReachMicros: number,
-): { point: SegmentSnapPoint | null; range: TrimRange } {
-  let closest: { point: SegmentSnapPoint | null; range: TrimRange } = {
-    range: movedRange,
-    point: null,
-  };
-
-  let closestDistance = Number.POSITIVE_INFINITY;
-
-  for (const targetMicros of snapTargetsMicros) {
-    const candidate = snapMovedTrimRangeToPlayhead(movedRange, targetMicros, snapReachMicros);
-    if (candidate.point === null) continue;
-
-    const distance = Math.abs(candidate.range.startMicros - movedRange.startMicros);
-    if (distance < closestDistance) {
-      closest = candidate;
-      closestDistance = distance;
-    }
-  }
-
-  return closest;
 }
 
 export { useTrimTimelineInteractions };
