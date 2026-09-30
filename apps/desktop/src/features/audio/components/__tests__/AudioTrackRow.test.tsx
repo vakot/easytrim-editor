@@ -243,10 +243,19 @@ describe("AudioTrackRow", () => {
     );
 
     const fieldset = document.querySelector("fieldset:disabled");
+
+    const description = document.querySelector(
+      '[data-slot="audio-track-effects-library-page-description"]',
+    );
+
     expect(fieldset).not.toBeNull();
     expect(analyzeButton).toBeEnabled();
     expect(analyzeButton.closest("fieldset")).toBeNull();
     expect(analyzeButton.closest('[data-slot="audio-track-loudness-measurement"]')).not.toBeNull();
+    expect(description?.querySelector("[data-slot='audio-track-loudness-measurement']")).toBeNull();
+    expect(
+      description?.parentElement?.querySelector('[data-slot="audio-track-loudness-measurement"]'),
+    ).not.toBeNull();
 
     act(() => {
       store.dispatch(

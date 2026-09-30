@@ -26,8 +26,8 @@ function NormalizeLoudnessHeader() {
         </AudioTrackEffectsLibraryPageTitle>
         <AudioTrackEffectsLibraryPageDescription>
           {t("audio.messages.loudnessNormalizationDescription")}
-          <NormalizeLoudnessAnalize />
         </AudioTrackEffectsLibraryPageDescription>
+        <NormalizeLoudnessAnalysis />
       </AudioTrackEffectsLibraryPageHeaderContent>
       <AudioTrackEffectsLibraryPageToggle
         aria-label={t("audio.labels.loudnessNormalization")}
@@ -38,7 +38,7 @@ function NormalizeLoudnessHeader() {
   );
 }
 
-function NormalizeLoudnessAnalize() {
+function NormalizeLoudnessAnalysis() {
   const { i18n, t } = useTranslation();
   const { analysis } = useNormalizeLoudnessContext();
 
