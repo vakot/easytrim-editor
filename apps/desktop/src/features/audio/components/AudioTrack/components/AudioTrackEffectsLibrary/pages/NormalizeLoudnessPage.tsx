@@ -35,6 +35,7 @@ import {
   AudioTrackEffectsLibraryPage,
   AudioTrackEffectsLibraryPageAdvanced,
   AudioTrackEffectsLibraryPageBasic,
+  AudioTrackEffectsLibraryPageContent,
   AudioTrackEffectsLibraryPageDescription,
   AudioTrackEffectsLibraryPageHeader,
   AudioTrackEffectsLibraryPageHeaderContent,
@@ -273,95 +274,97 @@ function NormalizeLoudnessPage({ streamIndex }: NormalizeLoudnessPageProps) {
         />
       </AudioTrackEffectsLibraryPageHeader>
 
-      <AudioTrackEffectsLibraryPageBasic>
-        <div className="grid gap-1.5">
-          <Label htmlFor={`track-loudness-preset-${streamIndex}`}>
-            {t("audio.labels.normalizationPreset")}
-          </Label>
-          <div className="flex items-center">
-            <Select
-              onValueChange={(value) => {
-                if (value === "custom" || PRESETS.includes(value as LoudnessPreset)) {
-                  dispatchForm({ type: "presetChanged", value: value as NormalizationChoice });
-                }
-              }}
-              value={selectedPreset}
-            >
-              <SelectTrigger
-                aria-label={`${t("audio.labels.normalizationPreset")}: ${t("audio.labels.loudnessNormalization")}`}
-                className="min-w-0 flex-1"
-                id={`track-loudness-preset-${streamIndex}`}
+      <AudioTrackEffectsLibraryPageContent disabled={!form.enabled}>
+        <AudioTrackEffectsLibraryPageBasic>
+          <div className="grid gap-1.5">
+            <Label htmlFor={`track-loudness-preset-${streamIndex}`}>
+              {t("audio.labels.normalizationPreset")}
+            </Label>
+            <div className="flex items-center">
+              <Select
+                onValueChange={(value) => {
+                  if (value === "custom" || PRESETS.includes(value as LoudnessPreset)) {
+                    dispatchForm({ type: "presetChanged", value: value as NormalizationChoice });
+                  }
+                }}
+                value={selectedPreset}
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PRESETS.map((preset) => (
-                  <SelectItem className="whitespace-nowrap" key={preset} value={preset}>
-                    {formatNormalizationPreset(preset, i18n.language, t)}
+                <SelectTrigger
+                  aria-label={`${t("audio.labels.normalizationPreset")}: ${t("audio.labels.loudnessNormalization")}`}
+                  className="min-w-0 flex-1"
+                  id={`track-loudness-preset-${streamIndex}`}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRESETS.map((preset) => (
+                    <SelectItem className="whitespace-nowrap" key={preset} value={preset}>
+                      {formatNormalizationPreset(preset, i18n.language, t)}
+                    </SelectItem>
+                  ))}
+                  <SelectItem className="whitespace-nowrap" value="custom">
+                    {t("audio.options.normalizationCustom")}
                   </SelectItem>
-                ))}
-                <SelectItem className="whitespace-nowrap" value="custom">
-                  {t("audio.options.normalizationCustom")}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
-      </AudioTrackEffectsLibraryPageBasic>
+        </AudioTrackEffectsLibraryPageBasic>
 
-      <AudioTrackEffectsLibraryPageAdvanced>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="grid gap-1.5">
-            <Label htmlFor={`track-custom-lufs-${streamIndex}`}>
-              {t("audio.labels.targetLufs")}
-            </Label>
-            <Input
-              id={`track-custom-lufs-${streamIndex}`}
-              max={-5}
-              min={-36}
-              onChange={(event) =>
-                dispatchForm({ type: "targetChanged", value: event.currentTarget.value })
-              }
-              onKeyDown={(event) => event.stopPropagation()}
-              step={0.1}
-              type="number"
-              value={form.targetLufsInput}
-            />
+        <AudioTrackEffectsLibraryPageAdvanced>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor={`track-custom-lufs-${streamIndex}`}>
+                {t("audio.labels.targetLufs")}
+              </Label>
+              <Input
+                id={`track-custom-lufs-${streamIndex}`}
+                max={-5}
+                min={-36}
+                onChange={(event) =>
+                  dispatchForm({ type: "targetChanged", value: event.currentTarget.value })
+                }
+                onKeyDown={(event) => event.stopPropagation()}
+                step={0.1}
+                type="number"
+                value={form.targetLufsInput}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor={`track-custom-peak-${streamIndex}`}>
+                {t("audio.labels.maximumTruePeak")}
+              </Label>
+              <Input
+                id={`track-custom-peak-${streamIndex}`}
+                max={0}
+                min={-9}
+                onChange={(event) =>
+                  dispatchForm({ type: "peakChanged", value: event.currentTarget.value })
+                }
+                onKeyDown={(event) => event.stopPropagation()}
+                step={0.1}
+                type="number"
+                value={form.maxTruePeakDbInput}
+              />
+            </div>
           </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor={`track-custom-peak-${streamIndex}`}>
-              {t("audio.labels.maximumTruePeak")}
-            </Label>
-            <Input
-              id={`track-custom-peak-${streamIndex}`}
-              max={0}
-              min={-9}
-              onChange={(event) =>
-                dispatchForm({ type: "peakChanged", value: event.currentTarget.value })
-              }
-              onKeyDown={(event) => event.stopPropagation()}
-              step={0.1}
-              type="number"
-              value={form.maxTruePeakDbInput}
-            />
-          </div>
-        </div>
 
-        <AnimatePresence initial={false}>
-          {analysisFailed && analysis.error ? (
-            <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -3 }}
-              initial={shouldReduceMotion ? false : { opacity: 0, y: -3 }}
-              transition={motionTransition}
-            >
-              <Alert variant="destructive">
-                <AlertDescription>{analysis.error.message}</AlertDescription>
-              </Alert>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </AudioTrackEffectsLibraryPageAdvanced>
+          <AnimatePresence initial={false}>
+            {analysisFailed && analysis.error ? (
+              <motion.div
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -3 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: -3 }}
+                transition={motionTransition}
+              >
+                <Alert variant="destructive">
+                  <AlertDescription>{analysis.error.message}</AlertDescription>
+                </Alert>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </AudioTrackEffectsLibraryPageAdvanced>
+      </AudioTrackEffectsLibraryPageContent>
     </AudioTrackEffectsLibraryPage>
   );
 }

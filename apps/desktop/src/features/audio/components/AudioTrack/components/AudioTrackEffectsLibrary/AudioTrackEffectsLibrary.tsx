@@ -30,13 +30,13 @@ function AudioTrackEffectsLibrary({
 
   return (
     <Tabs
-      className="flex min-h-72 min-w-0 flex-1 gap-3"
+      className="-mx-4 flex min-h-72 min-w-0 flex-1 gap-4"
       onValueChange={setSelectedEffect}
       orientation="vertical"
       value={selectedEffect}
     >
-      <ScrollArea className="h-full shrink-0 py-3">
-        <TabsList aria-label={t("audio.actions.effects")} className="bg-transparent p-0">
+      <ScrollArea className="h-full pl-4">
+        <TabsList aria-label={t("audio.actions.effects")} className="bg-transparent py-4">
           {effects.map((effect) => (
             <AudioTrackEffectTab draft={draft} effect={effect} />
           ))}
@@ -45,18 +45,20 @@ function AudioTrackEffectsLibrary({
 
       <Separator orientation="vertical" />
 
-      <ScrollArea className="flex-1 py-3">
-        {effects.map(({ id, Page }) => (
-          <TabsContent
-            className="data-[state=inactive]:hidden"
-            forceMount
-            hidden={selectedEffect !== id}
-            key={id}
-            value={id}
-          >
-            <Page streamIndex={streamIndex} />
-          </TabsContent>
-        ))}
+      <ScrollArea className="flex-1">
+        <div className="py-4 pr-4">
+          {effects.map(({ id, Page }) => (
+            <TabsContent
+              className="data-[state=inactive]:hidden"
+              forceMount
+              hidden={selectedEffect !== id}
+              key={id}
+              value={id}
+            >
+              <Page streamIndex={streamIndex} />
+            </TabsContent>
+          ))}
+        </div>
       </ScrollArea>
     </Tabs>
   );
@@ -77,7 +79,7 @@ function AudioTrackEffectTab({
     draft.effectStatus[effect.id]?.dirty;
 
   return (
-    <TabsTrigger className="relative min-w-0 px-8" key={effect.id} value={effect.id}>
+    <TabsTrigger className="relative h-7 min-w-0 flex-none px-8" key={effect.id} value={effect.id}>
       <EffectTabIndicator side="left">{enabled ? <Check /> : null}</EffectTabIndicator>
       <span className="min-w-0 truncate text-left">{effect.label(t)}</span>
       <EffectTabIndicator side="right">

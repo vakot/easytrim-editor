@@ -70,6 +70,35 @@ function AudioTrackEffectsLibraryPageToggle({
   );
 }
 
+/**
+ * Wraps the editable portion of an Effects Library page.
+ *
+ * Uses native `<fieldset disabled>` semantics so standard form controls
+ * rendered by shadcn primitives are disabled automatically without propagating
+ * a `disabled` prop through the component tree.
+ *
+ * Interactive descendants are expected to use shadcn form primitives backed
+ * by native form controls. Non-form interactive elements are outside this
+ * component's contract.
+ *
+ * Keep page-level controls that must remain interactive while the effect is
+ * disabled, such as the enable switch or analysis actions, outside this wrapper.
+ */
+function AudioTrackEffectsLibraryPageContent({
+  className,
+  ...props
+}: React.ComponentProps<"fieldset">) {
+  return (
+    <fieldset
+      className={cn(
+        "min-w-0 space-y-4 border-0 p-0 transition-opacity disabled:pointer-events-none disabled:opacity-50",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 function AudioTrackEffectsLibraryPageBasic({ className, ...props }: ComponentProps<"section">) {
   return (
     <section
@@ -114,6 +143,7 @@ export {
   AudioTrackEffectsLibraryPage,
   AudioTrackEffectsLibraryPageAdvanced,
   AudioTrackEffectsLibraryPageBasic,
+  AudioTrackEffectsLibraryPageContent,
   AudioTrackEffectsLibraryPageDescription,
   AudioTrackEffectsLibraryPageHeader,
   AudioTrackEffectsLibraryPageHeaderContent,
