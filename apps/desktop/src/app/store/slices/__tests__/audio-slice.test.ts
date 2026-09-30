@@ -115,6 +115,20 @@ describe("audio slice", () => {
           streamIndex,
         }),
       );
+      state = audioReducer(state, audioTrackPreviewStarted({ operationId, streamIndex }));
+      state = audioReducer(
+        state,
+        audioTrackPreviewReady({
+          operationId,
+          descriptor: {
+            mediaToken: 1,
+            previewRevision: 1,
+            processing: { gainDb: 0 },
+            streamIndex,
+            url: `media://preview-${streamIndex}`,
+          },
+        }),
+      );
     }
 
     const updated = audioReducer(
@@ -130,11 +144,13 @@ describe("audio slice", () => {
 
     expect(updated.tracks[0]).toMatchObject({
       activityAnalysis: { status: "idle" },
-      loudnessAnalysis: { status: "idle" },
+      loudnessAnalysis: { status: "ready" },
+      preview: { status: "stale", descriptor: { url: "media://preview-2" } },
     });
     expect(updated.tracks[1]).toMatchObject({
       activityAnalysis: { status: "ready" },
       loudnessAnalysis: { status: "ready" },
+      preview: { status: "ready", descriptor: { url: "media://preview-4" } },
     });
   });
 

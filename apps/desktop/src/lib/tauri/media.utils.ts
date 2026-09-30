@@ -3,6 +3,7 @@ import {
   getAudioTrackSignalEffects,
   type LoudnessNormalization,
   type NoiseReductionPreset,
+  SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS,
 } from "@/domain/audio-processing";
 import type { SourceRef } from "@/domain/source";
 
@@ -295,12 +296,33 @@ function parseAudioTrackSignalEffects(value: unknown): AudioTrackSignalEffect[] 
       return { cutoffHz, stage, type: "highPass" };
     }
 
+    if (effect.type === "limiter") {
+      const ceilingDb = optionalFiniteNumber(effect.ceilingDb, "audio preview limiter ceiling");
+      if (
+        ceilingDb === undefined ||
+        ceilingDb < -24 ||
+        ceilingDb > 0 ||
+        stage !== "finalProtection"
+      ) {
+        throw invalidResponse("audio preview limiter effect");
+      }
+      return { ceilingDb, stage, type: "limiter" };
+    }
+
     const preset = parseNoiseReduction(effect.preset);
     if (effect.type !== "noiseReduction" || preset === undefined || stage !== "cleanup") {
       throw invalidResponse("audio preview noise-reduction effect");
     }
     return { preset, stage, type: "noiseReduction" };
   });
+
+  const singletonTypes = new Set<string>(SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS);
+  const seenSingletons = new Set<string>();
+  for (const effect of effects) {
+    if (!singletonTypes.has(effect.type)) continue;
+    if (seenSingletons.has(effect.type)) throw invalidResponse("duplicate audio preview effect");
+    seenSingletons.add(effect.type);
+  }
 
   return getAudioTrackSignalEffects({ gainDb: 0, effects });
 }

@@ -86,7 +86,11 @@ pub struct AudioTrackProcessing {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum AudioTrackSignalEffect {
     HighPass {
         cutoff_hz: f64,
@@ -1612,6 +1616,106 @@ mod tests {
         assert!(graph.ends_with(
             "[audio0][audio1]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0[aout]"
         ));
+    }
+
+    #[test]
+    fn activity_cache_key_changes_with_limiter_ceiling() {
+        let selection = |ceiling_db| AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 1,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: None,
+                effects: vec![AudioTrackSignalEffect::Limiter {
+                    ceiling_db,
+                    stage: AudioProcessingStage::FinalProtection,
+                }],
+            },
+        };
+
+        assert_ne!(
+            AudioTrackCacheKey::from(&selection(-1.0)),
+            AudioTrackCacheKey::from(&selection(-2.0)),
+        );
+    }
+
+    #[test]
+    fn signal_effect_order_is_deterministic_for_filter_graphs_and_cache_keys() {
+        let effects = [
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz: 300.0,
+                stage: AudioProcessingStage::Cleanup,
+            },
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz: 100.0,
+                stage: AudioProcessingStage::Cleanup,
+            },
+        ];
+        let selection = |effects| AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 1,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: None,
+                effects,
+            },
+        };
+        let ascending = selection(effects.to_vec());
+        let descending = selection(effects.into_iter().rev().collect());
+
+        assert_eq!(
+            pre_level_filter_chain(&ascending.processing),
+            "highpass=f=100.000,highpass=f=300.000"
+        );
+        assert_eq!(
+            pre_level_filter_chain(&ascending.processing),
+            pre_level_filter_chain(&descending.processing)
+        );
+        assert_eq!(
+            AudioTrackCacheKey::from(&ascending),
+            AudioTrackCacheKey::from(&descending)
+        );
+    }
+
+    #[test]
+    fn export_rejects_invalid_limiter_stages_ranges_and_duplicates() {
+        for (stage, ceiling_db) in [
+            (AudioProcessingStage::Cleanup, -1.0),
+            (AudioProcessingStage::FinalProtection, -24.1),
+            (AudioProcessingStage::FinalProtection, 0.1),
+        ] {
+            let mut request = optimized_request("-c:v libx264 -crf 20");
+            request.audio_tracks[0].processing.effects =
+                vec![AudioTrackSignalEffect::Limiter { ceiling_db, stage }];
+            let error = build_optimized_arguments(
+                &media(),
+                &request,
+                Path::new("source.mkv"),
+                Path::new("out.mp4"),
+            )
+            .expect_err("limiter settings must match its final-protection range");
+            assert_eq!(error.code, "invalid_request");
+        }
+
+        let mut duplicate = optimized_request("-c:v libx264 -crf 20");
+        duplicate.audio_tracks[0].processing.effects = vec![
+            AudioTrackSignalEffect::Limiter {
+                ceiling_db: -1.0,
+                stage: AudioProcessingStage::FinalProtection,
+            },
+            AudioTrackSignalEffect::Limiter {
+                ceiling_db: -2.0,
+                stage: AudioProcessingStage::FinalProtection,
+            },
+        ];
+        let error = build_optimized_arguments(
+            &media(),
+            &duplicate,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect_err("limiter is a singleton signal effect");
+        assert_eq!(error.code, "invalid_request");
     }
 
     #[test]

@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import {
-  type AudioTrackProcessing,
-  type AudioTrackSignalEffect,
   DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB,
+  getAudioTrackSignalEffect,
+  removeAudioTrackSignalEffect,
+  setAudioTrackSignalEffect,
 } from "@/domain/audio-processing";
 
 import { useAudioTrackEffectsDraft } from "../../../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
@@ -27,7 +28,7 @@ const MAX_LIMITER_CEILING_DB = 0;
 function LimiterPage({ streamIndex }: { streamIndex: number }) {
   const { t } = useTranslation();
   const { dispatch, draft } = useAudioTrackEffectsDraft();
-  const limiter = getLimiter(draft.processing);
+  const limiter = getAudioTrackSignalEffect(draft.processing, "limiter");
   const [ceilingInput, setCeilingInput] = useState(() =>
     String(limiter?.ceilingDb ?? DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB),
   );
@@ -35,20 +36,24 @@ function LimiterPage({ streamIndex }: { streamIndex: number }) {
   const ceilingDb = parseLimiterCeiling(ceilingInput);
   const valid = ceilingDb !== null;
 
-  const updateLimiter = (enabled: boolean, nextCeilingDb = ceilingDb) => {
-    const effects: AudioTrackSignalEffect[] =
-      draft.processing.effects?.filter((effect) => effect.type !== "limiter") ?? [];
+  const updateLimiter = (enabled: boolean, requestedCeilingDb = ceilingDb) => {
+    const nextCeilingDb =
+      enabled && requestedCeilingDb === null
+        ? DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB
+        : requestedCeilingDb;
 
-    if (enabled) {
-      effects.push({
-        ceilingDb: nextCeilingDb ?? DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB,
-        stage: "finalProtection",
-        type: "limiter",
-      });
-    }
-    const processing = { ...draft.processing, effects };
-    const initialLimiter = getLimiter(draft.initialProcessing);
-    const nextLimiter = getLimiter(processing);
+    if (enabled && requestedCeilingDb === null) setCeilingInput(String(nextCeilingDb));
+
+    const processing = enabled
+      ? setAudioTrackSignalEffect(draft.processing, {
+          ceilingDb: nextCeilingDb ?? DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB,
+          stage: "finalProtection",
+          type: "limiter",
+        })
+      : removeAudioTrackSignalEffect(draft.processing, "limiter");
+
+    const initialLimiter = getAudioTrackSignalEffect(draft.initialProcessing, "limiter");
+    const nextLimiter = getAudioTrackSignalEffect(processing, "limiter");
     const dirty =
       initialLimiter?.ceilingDb !== nextLimiter?.ceilingDb ||
       (initialLimiter === undefined) !== (nextLimiter === undefined);
@@ -121,15 +126,6 @@ function LimiterPage({ streamIndex }: { streamIndex: number }) {
         </div>
       </AudioTrackEffectsLibraryPageContent>
     </AudioTrackEffectsLibraryPage>
-  );
-}
-
-function getLimiter(
-  processing: AudioTrackProcessing,
-): Extract<AudioTrackSignalEffect, { type: "limiter" }> | undefined {
-  return processing.effects?.find(
-    (effect): effect is Extract<AudioTrackSignalEffect, { type: "limiter" }> =>
-      effect.type === "limiter",
   );
 }
 

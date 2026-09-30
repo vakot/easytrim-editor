@@ -355,6 +355,37 @@ describe("AudioTrackRow", () => {
     );
   });
 
+  it("resets an invalid limiter ceiling consistently when it is disabled and re-enabled", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("tab", { name: /limiter/i }));
+
+    const toggle = screen.getByRole("switch", { name: /limiter/i });
+    await user.click(toggle);
+    const ceiling = screen.getByRole("spinbutton", { name: /output ceiling/i });
+    await user.clear(ceiling);
+    await user.type(ceiling, "-30");
+    expect(ceiling).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("button", { name: /apply/i })).toBeDisabled();
+
+    await user.click(toggle);
+    expect(toggle).not.toBeChecked();
+    expect(screen.getByRole("button", { name: /apply/i })).toBeDisabled();
+
+    await user.click(toggle);
+    expect(toggle).toBeChecked();
+    expect(ceiling).toHaveValue(-1);
+    expect(ceiling).toHaveAttribute("aria-invalid", "false");
+    expect(screen.getByRole("button", { name: /apply/i })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: /apply/i }));
+    expect(store.getState().audio.tracks[0]?.processing.effects).toEqual([
+      { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+    ]);
+  });
+
   it("blocks Apply while enabled custom values are invalid", async () => {
     const user = userEvent.setup();
     renderRow();

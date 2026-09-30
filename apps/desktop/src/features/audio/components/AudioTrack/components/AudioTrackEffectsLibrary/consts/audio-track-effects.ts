@@ -8,8 +8,8 @@ import {
   sameLoudnessNormalization,
 } from "@/domain/audio-processing";
 
-import { NoiseReductionPage } from "../pages/NoiseReductionPage";
 import { LimiterPage } from "../pages/LimiterPage/LimiterPage";
+import { NoiseReductionPage } from "../pages/NoiseReductionPage";
 import { NormalizeLoudnessPage } from "../pages/NormalizeLoudnessPage";
 
 interface AudioTrackEffectsPageProps {
