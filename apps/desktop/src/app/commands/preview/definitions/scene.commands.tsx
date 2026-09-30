@@ -2,8 +2,6 @@ import { ChevronsLeft, ChevronsRight, Clapperboard, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
-import { usePlayback } from "@/app/hooks/usePlayback";
-import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
@@ -19,13 +17,17 @@ import {
   findPreviousMarker,
   timelineMarkerTimes,
   useSceneDetection,
+  useTimeline,
+  useTimelineReadiness,
+  useTimelineTransport,
 } from "@/features/timeline";
 
 function useSceneCommands() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const timeline = useTimeline();
-  const playback = usePlayback();
+  const readiness = useTimelineReadiness();
+  const playback = useTimelineTransport();
   const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const sourceReady = useAppSelector(selectSourceReady);
@@ -81,7 +83,7 @@ function useSceneCommands() {
 
   const markerCommands = [
     {
-      enabled: playback.canInteract && previousMarkerMicros !== undefined,
+      enabled: readiness.canInteract && previousMarkerMicros !== undefined,
       icon: <ChevronsLeft aria-hidden="true" />,
       id: "previous-marker" as const,
       label: t("preview.actions.previousMarker"),
@@ -93,7 +95,7 @@ function useSceneCommands() {
       variant: "default" as const,
     },
     {
-      enabled: playback.canInteract && nextMarkerMicros !== undefined,
+      enabled: readiness.canInteract && nextMarkerMicros !== undefined,
       icon: <ChevronsRight aria-hidden="true" />,
       id: "next-marker" as const,
       label: t("preview.actions.nextMarker"),

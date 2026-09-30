@@ -30,38 +30,29 @@ import { ChangelogProvider } from "@/features/changelog";
 import { QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
-import { EditorContractsTestProvider } from "@/test/editor-contracts-test-provider";
+import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";
 import { firstSource, media } from "@/test/source.fixtures";
 
 import { VideoPreviewEmpty } from "../components/VideoPreviewEmpty";
 import { VideoPreview } from "../VideoPreview";
 
 const playback = vi.hoisted(() => {
-  const videoRef = { current: null as HTMLVideoElement | null };
-
   return {
-    isPlaying: false,
-    nativeLoopEnabled: false,
-    onCanPlay: vi.fn(),
-    onCropToolOpenChange: vi.fn(),
-    onEnded: vi.fn(),
-    onLoadedMetadata: vi.fn(),
-    onPause: vi.fn(),
-    onPlay: vi.fn(),
-    onPreviewPlaybackError: vi.fn(),
-    onTimeUpdate: vi.fn(),
-    setMediaPlaybackRate: vi.fn(),
-    setVideoElement: vi.fn((element: HTMLVideoElement | null) => {
-      videoRef.current = element;
-    }),
+    isPlaying: false as boolean,
+    suspendForInteraction: vi.fn(() => false),
+    resumeAfterInteraction: vi.fn(),
     toggle: vi.fn(),
-    videoMuted: true,
-    videoRef,
   };
-});
+}) satisfies {
+  isPlaying: boolean;
+  resumeAfterInteraction: (resumePlayback: boolean) => void;
+  suspendForInteraction: () => boolean;
+  toggle: () => void;
+};
 
-vi.mock("@/app/hooks/usePlayback", () => ({
-  usePlayback: () => playback,
+vi.mock("@/features/timeline", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/timeline")>()),
+  useTimelineTransport: () => playback,
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
@@ -83,7 +74,7 @@ function readyPreview(url: string): Extract<PreviewState, { status: "ready" }> {
 function TooltipTestProvider({ children, store }: { children: ReactNode; store: AppStore }) {
   return (
     <Provider store={store}>
-      <EditorContractsTestProvider>
+      <EditorRuntimeTestProvider usesExternalAudio>
         <TooltipProvider delayDuration={0}>
           <SourceDeleteProvider>
             <QueueDeleteSourceProvider>
@@ -97,7 +88,7 @@ function TooltipTestProvider({ children, store }: { children: ReactNode; store: 
             </QueueDeleteSourceProvider>
           </SourceDeleteProvider>
         </TooltipProvider>
-      </EditorContractsTestProvider>
+      </EditorRuntimeTestProvider>
     </Provider>
   );
 }
@@ -478,7 +469,7 @@ describe("VideoPreview", () => {
     expect(container.querySelector("[data-preview-viewport]")).toHaveClass("overflow-hidden");
   });
 
-  it("pauses playback while crop controls are open", () => {
+  it("suspends timeline playback while crop controls are open", () => {
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector('[aria-label="Video crop preview"]');
@@ -489,10 +480,10 @@ describe("VideoPreview", () => {
     pause.mockClear();
 
     openCropTool(viewport!);
-    expect(pause).toHaveBeenCalledTimes(1);
+    expect(playback.suspendForInteraction).toHaveBeenCalled();
 
     fireEvent.play(video!);
-    expect(pause).toHaveBeenCalledTimes(2);
+    expect(pause).toHaveBeenCalledOnce();
   });
 
   it("shows the preview menu hierarchy and applies rotation to the CSS preview", () => {

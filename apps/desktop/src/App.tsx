@@ -17,7 +17,7 @@ import { AppLayout } from "@/app/layout";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { AppUpdatesProvider } from "@/app/providers/AppUpdatesProvider";
 import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
-import { EditorContractsProvider } from "@/app/providers/EditorContractsProvider";
+import { EditorRuntimeProviders } from "@/app/providers/EditorRuntimeProviders";
 import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectDropListenerError } from "@/app/store/slices/import-workflow-slice";
@@ -49,7 +49,7 @@ function EasyTrimEditorApp() {
               <AppShutdownGuard />
 
               <AppUpdatesProvider>
-                <EditorContractsProvider>
+                <EditorRuntimeProviders>
                   <ResizablePanelContextProvider>
                     <CommandPaletteProvider>
                       <ApplicationCommandsProvider>
@@ -79,7 +79,7 @@ function EasyTrimEditorApp() {
                       </ApplicationCommandsProvider>
                     </CommandPaletteProvider>
                   </ResizablePanelContextProvider>
-                </EditorContractsProvider>
+                </EditorRuntimeProviders>
               </AppUpdatesProvider>
             </PreviewTransformProvider>
           </QueueDeleteSourceProvider>

@@ -5,16 +5,19 @@ import { useTranslation } from "react-i18next";
 import { Backdrop } from "@/components/ui/backdrop";
 import { Button } from "@/components/ui/button";
 
-import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceLoadToken, selectSourceSelection } from "@/app/store/slices/source-slice";
 import { closeActiveEditingInstanceRequested } from "@/app/store/thunks/source-media-thunks";
+import { useAudioTransport } from "@/features/audio";
+import { usePreviewRuntime } from "@/features/preview";
 
 function VideoPreviewLoadingOverlay() {
   const { t } = useTranslation();
 
-  const playback = usePlayback();
+  const { isReady: isAudioReady } = useAudioTransport();
+  const { isPreviewReady } = usePreviewRuntime();
+  const isReady = isPreviewReady && isAudioReady;
   const dispatch = useAppDispatch();
 
   const sourceSelection = useAppSelector(selectSourceSelection);
@@ -27,20 +30,18 @@ function VideoPreviewLoadingOverlay() {
   const showLoadingOverlay =
     sourceSelection !== null &&
     (preview.status === "loading" ||
-      (preview.status === "ready" &&
-        completedTransitionKey !== transitionKey &&
-        !playback.isReady));
+      (preview.status === "ready" && completedTransitionKey !== transitionKey && !isReady));
 
   const [skipAvailableFor, setSkipAvailableFor] = useState<string | null>(null);
 
   useEffect(() => {
-    if (sourceSelection !== null && preview.status === "ready" && playback.isReady) {
+    if (sourceSelection !== null && preview.status === "ready" && isReady) {
       // Playback becoming ready completes this source transition. Later audio-route
       // reconfiguration must not revive the source-opening overlay.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCompletedTransitionKey(transitionKey);
     }
-  }, [playback.isReady, preview.status, sourceSelection, transitionKey]);
+  }, [isReady, preview.status, sourceSelection, transitionKey]);
 
   useEffect(() => {
     if (!showLoadingOverlay) return;

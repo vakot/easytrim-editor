@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 
 const { prepareSourceWaveforms } = vi.hoisted(() => ({ prepareSourceWaveforms: vi.fn() }));
 
-vi.mock("@/app/hooks/usePlayback", () => ({ usePlayback: () => ({ isReady: true }) }));
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
   prepareSourceWaveforms: (...args: unknown[]) => {
     prepareSourceWaveforms(...args);

@@ -2,10 +2,10 @@ import { motion, type Transition } from "motion/react";
 import { type CSSProperties, type SyntheticEvent, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
-import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectPlaybackSpeed } from "@/app/store/slices/playback-controls-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
+import { useAudioTransport } from "@/features/audio";
+import { usePreviewRuntime } from "@/features/preview";
 import { diagnostics } from "@/lib/diagnostics";
 
 interface CropViewportVideoProps {
@@ -23,40 +23,23 @@ function CropViewportVideo({
 }: CropViewportVideoProps) {
   const { t } = useTranslation();
   const {
-    nativeLoopEnabled,
+    isNativeLoopEnabled,
     onCanPlay,
-    onEnded: onPlaybackEnded,
-    onLoadedMetadata: onPlaybackLoadedMetadata,
-    onPause: onPlaybackPause,
-    onPlay: onPlaybackPlay,
-    onPreviewPlaybackError,
-    onTimeUpdate: onPlaybackTimeUpdate,
-    setMediaPlaybackRate,
+    onEnded,
+    onLoadedMetadata,
+    onPause,
+    onPlay,
+    onPlaybackError,
+    onTimeUpdate,
     setVideoElement,
-    videoMuted,
-    videoRef,
-  } = usePlayback();
+  } = usePreviewRuntime();
 
-  const playbackRate = useAppSelector(selectPlaybackSpeed);
+  const { usesExternalAudio } = useAudioTransport();
+  const videoMuted = usesExternalAudio && typeof AudioContext === "undefined";
   const preview = useAppSelector(selectPreview);
   const reportedUrl = useRef<string | null>(null);
   const sourceUrl = preview.status === "ready" ? preview.value.url : null;
   const previewKind = preview.status === "ready" ? preview.value.kind : null;
-
-  useEffect(() => {
-    setMediaPlaybackRate(playbackRate);
-  }, [playbackRate, setMediaPlaybackRate, sourceUrl]);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video && video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) onCanPlay();
-  }, [onCanPlay, sourceUrl, videoRef]);
-
-  useEffect(() => {
-    const video = videoRef.current;
-
-    return () => video?.pause();
-  }, [sourceUrl, videoRef]);
 
   useEffect(() => {
     if (previewKind === null) return;
@@ -70,59 +53,23 @@ function CropViewportVideo({
     reportedUrl.current = null;
   }, [sourceUrl]);
 
-  const onEnded = useCallback(() => {
-    if (previewKind === null) return;
-    diagnostics.event("media.playback.ended", {
-      data: { kind: previewKind },
-      origin: { type: "internal" },
-    });
-    onPlaybackEnded();
-  }, [onPlaybackEnded, previewKind]);
-
   const onError = useCallback(() => {
     if (previewKind === null || sourceUrl === null) return;
-    diagnostics.error(
-      "media.playback.failed",
-      {
-        code: "media_element_error",
-        message: "The preview media element reported an error.",
-      },
-      { data: { kind: previewKind }, origin: { type: "internal" } },
-    );
     if (reportedUrl.current === sourceUrl) return;
     reportedUrl.current = sourceUrl;
-    onPreviewPlaybackError(previewKind);
-  }, [onPreviewPlaybackError, previewKind, sourceUrl]);
+    onPlaybackError();
+  }, [onPlaybackError, previewKind, sourceUrl]);
 
-  const onLoadedMetadata = useCallback(
-    () => onPlaybackLoadedMetadata(),
-    [onPlaybackLoadedMetadata],
-  );
-
-  const onPlay = useCallback(
+  const handlePlay = useCallback(
     (event: SyntheticEvent<HTMLVideoElement>) => {
       if (cropIsOpen) {
         event.currentTarget.pause();
         return;
       }
-      if (previewKind === null) return;
-      diagnostics.event("media.playback.started", {
-        data: { kind: previewKind },
-        origin: { type: "internal" },
-      });
-      onPlaybackPlay();
+      onPlay();
     },
-    [cropIsOpen, onPlaybackPlay, previewKind],
+    [cropIsOpen, onPlay],
   );
-
-  const onPause = useCallback(() => {
-    if (previewKind === null) return;
-    diagnostics.event("media.playback.paused", {
-      data: { kind: previewKind },
-      origin: { type: "internal" },
-    });
-    onPlaybackPause();
-  }, [onPlaybackPause, previewKind]);
 
   const onLoadStart = useCallback(() => {
     if (previewKind !== null)
@@ -139,12 +86,6 @@ function CropViewportVideo({
         origin: { type: "internal" },
       });
   }, [previewKind]);
-
-  const onTimeUpdate = useCallback(
-    (event: SyntheticEvent<HTMLVideoElement>) =>
-      onPlaybackTimeUpdate(event.currentTarget.currentTime),
-    [onPlaybackTimeUpdate],
-  );
 
   const onWaiting = useCallback(() => {
     if (previewKind !== null)
@@ -167,12 +108,11 @@ function CropViewportVideo({
       aria-label={t("preview.accessibility.source")}
       className="absolute max-w-none cursor-pointer"
       crossOrigin="anonymous"
-      data-playback-rate={playbackRate}
       data-presentation-rotation={presentationRotation}
       data-preview-kind={previewKind}
       initial={false}
       key={sourceUrl}
-      loop={nativeLoopEnabled}
+      loop={isNativeLoopEnabled}
       muted={videoMuted}
       onCanPlay={onCanPlay}
       onEnded={onEnded}
@@ -180,9 +120,9 @@ function CropViewportVideo({
       onLoadedMetadata={onLoadedMetadata}
       onLoadStart={onLoadStart}
       onPause={onPause}
-      onPlay={onPlay}
+      onPlay={handlePlay}
       onStalled={onStalled}
-      onTimeUpdate={onTimeUpdate}
+      onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
       onWaiting={onWaiting}
       playsInline
       preload="auto"

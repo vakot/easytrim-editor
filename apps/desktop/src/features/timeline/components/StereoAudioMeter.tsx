@@ -1,14 +1,15 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
-import { usePlayback } from "@/app/hooks/usePlayback";
 import {
   amplitudeToMeterLevel,
   meterZoneLevels,
   peakAmplitude,
   smoothMeterLevel,
   updatePeakHold,
+  useAudioPlayback,
 } from "@/features/audio";
+import { useTimelineTransport } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 
 const METER_MARKERS = [
@@ -35,7 +36,8 @@ const METER_MARKER_LABELS = [
 ];
 
 function StereoAudioMeter() {
-  const { audioMeterRef, isPlaying } = usePlayback();
+  const { audioMeterRef } = useAudioPlayback();
+  const { isPlaying } = useTimelineTransport();
   const { t } = useTranslation();
   const leftFillRef = useRef<HTMLDivElement>(null);
   const rightFillRef = useRef<HTMLDivElement>(null);

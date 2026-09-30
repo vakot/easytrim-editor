@@ -2,8 +2,6 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { usePlayback } from "@/app/hooks/usePlayback";
-import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
@@ -12,6 +10,7 @@ import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { clampPlaybackMicros } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
 import { audioTrackColor } from "@/features/audio";
+import { useTimeline, useTimelineReadiness } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 
 import { useTrimTimelineInteractions } from "../hooks/useTrimTimelineInteractions";
@@ -32,7 +31,7 @@ function TimelineTrack() {
   const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const audioTracks = useAppSelector(selectAudioTracks);
-  const playback = usePlayback();
+  const readiness = useTimelineReadiness();
   const timeline = useTimeline();
   const timelineMarkers = useMemo(
     () => createTimelineMarkers(sceneBoundariesMicros, audioTracks, audioTrackColor),
@@ -55,7 +54,7 @@ function TimelineTrack() {
   );
 
   const range = timeline.trim ?? EMPTY_TIMELINE_RANGE;
-  const disabled = !playback.canInteract;
+  const disabled = !readiness.canInteract;
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const playheadValue = clampPlaybackMicros(timeline.playheadMicros, range.sourceDurationMicros);
   const playheadPercent = timelinePercent(playheadValue, range.sourceDurationMicros);

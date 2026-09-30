@@ -17,8 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
-import { usePlayback } from "@/app/hooks/usePlayback";
-import { useTimeline } from "@/app/hooks/useTimeline";
+import {
+  useTimelineEditing,
+  useTimelineReadiness,
+  useTimelineTransport,
+} from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 
 import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../lib/editor-shortcuts";
@@ -32,13 +35,14 @@ function preventMarkerNavigationMouseFocus(event: MouseEvent<HTMLButtonElement>)
 
 function PlaybackControls({ className }: { className?: string }) {
   const { t } = useTranslation();
-  const playback = usePlayback();
-  const timeline = useTimeline();
+  const editing = useTimelineEditing();
+  const readiness = useTimelineReadiness();
+  const playback = useTimelineTransport();
   const shouldReduceMotion = useReducedMotion() === true;
   const { executeCommand } = useApplicationCommands();
   const previousMarkerCommand = useApplicationCommand("previous-marker");
   const nextMarkerCommand = useApplicationCommand("next-marker");
-  const disabled = !playback.canInteract;
+  const disabled = !readiness.canInteract;
   const previousMarkerDisabled =
     disabled || !previousMarkerCommand.enabled || previousMarkerCommand.pending;
 
@@ -52,14 +56,14 @@ function PlaybackControls({ className }: { className?: string }) {
     >
       <div className="flex items-center gap-1.5">
         <TransportButton
-          disabled={disabled || !timeline.canSetSegmentStart}
+          disabled={disabled || !editing.canSetSegmentStart}
           label={t("preview.actions.setStart")}
           onClick={() => {
-            playback.setSegmentBoundary("start", { type: "button", id: "set-start" });
+            editing.onSetSegmentBoundary("start", { type: "button", id: "set-start" });
           }}
           shortcut="I"
           title={
-            timeline.canSetSegmentStart
+            editing.canSetSegmentStart
               ? t("preview.tooltips.setStart")
               : t("preview.messages.setStartUnavailable")
           }
@@ -195,14 +199,14 @@ function PlaybackControls({ className }: { className?: string }) {
           ) : null}
         </AnimatePresence>
         <TransportButton
-          disabled={disabled || !timeline.canSetSegmentEnd}
+          disabled={disabled || !editing.canSetSegmentEnd}
           label={t("preview.actions.setEnd")}
           onClick={() => {
-            playback.setSegmentBoundary("end", { type: "button", id: "set-end" });
+            editing.onSetSegmentBoundary("end", { type: "button", id: "set-end" });
           }}
           shortcut="O"
           title={
-            timeline.canSetSegmentEnd
+            editing.canSetSegmentEnd
               ? t("preview.tooltips.setEnd")
               : t("preview.messages.setEndUnavailable")
           }

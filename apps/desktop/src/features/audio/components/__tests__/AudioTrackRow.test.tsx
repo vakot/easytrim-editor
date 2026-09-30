@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -17,16 +17,21 @@ import {
 } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 import { audioTrackColor } from "@/features/audio";
+// eslint-disable-next-line no-restricted-imports -- Test owns a focused audio runtime fixture.
+import {
+  AudioPlaybackContext,
+  type AudioPlaybackContract,
+} from "@/features/audio/contexts/audio-playback-context";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
 
-vi.mock("@/app/hooks/usePlayback", () => ({
-  usePlayback: () => ({
-    clearLiveAudioTrackGain: () => undefined,
-    setLiveAudioTrackGain: () => undefined,
-  }),
-}));
+const audioPlayback = {
+  audioMeterRef: { current: null },
+  audioPlayheadRef: { current: null },
+  clearLiveAudioTrackGain: () => undefined,
+  setLiveAudioTrackGain: () => undefined,
+} satisfies AudioPlaybackContract;
 
 function renderRow(enabled = true) {
   const store = createAppStore({
@@ -41,15 +46,21 @@ function renderRow(enabled = true) {
   const stream = media.audioStreams[0]!;
   if (!enabled) store.dispatch(audioTrackToggled({ streamIndex: stream.streamIndex }));
 
-  render(
-    <Provider store={store}>
-      <TooltipProvider>
-        <AudioTrackRow streamIndex={stream.streamIndex} />
-      </TooltipProvider>
-    </Provider>,
-  );
+  renderTrack(store, media.audioStreams[0]!.streamIndex);
 
   return { store };
+}
+
+function renderTrack(store: ReturnType<typeof createAppStore>, streamIndex: number) {
+  render(
+    <Provider store={store}>
+      <AudioPlaybackContext.Provider value={audioPlayback}>
+        <TooltipProvider>
+          <AudioTrackRow streamIndex={streamIndex} />
+        </TooltipProvider>
+      </AudioPlaybackContext.Provider>
+    </Provider>,
+  );
 }
 
 describe("AudioTrackRow", () => {
@@ -260,13 +271,7 @@ describe("AudioTrackRow", () => {
         streamIndex: 2,
       }),
     );
-    render(
-      <Provider store={store}>
-        <TooltipProvider>
-          <AudioTrackRow streamIndex={2} />
-        </TooltipProvider>
-      </Provider>,
-    );
+    renderTrack(store, 2);
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
 
     expect(screen.getByRole("menuitemcheckbox", { name: /hide detected ranges/i })).toBeChecked();
@@ -323,13 +328,7 @@ describe("AudioTrackRow", () => {
       }),
     );
 
-    render(
-      <Provider store={store}>
-        <TooltipProvider>
-          <AudioTrackRow streamIndex={stream.streamIndex} />
-        </TooltipProvider>
-      </Provider>,
-    );
+    renderTrack(store, stream.streamIndex);
 
     const range = document.querySelector('[data-slot="audio-track-activity-range"]');
     expect(range).toHaveStyle({ backgroundColor: audioTrackColor(stream.streamIndex) });

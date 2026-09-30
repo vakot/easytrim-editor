@@ -10,9 +10,7 @@ import { PlaybackControls } from "../PlaybackControls";
 
 const mocks = vi.hoisted(() => ({
   playback: {
-    canInteract: true,
     isPlaying: false,
-    setSegmentBoundary: vi.fn(),
     shuttleDirection: 0 as -1 | 0 | 1,
     startShuttle: vi.fn(),
     stepFrame: vi.fn(),
@@ -20,6 +18,12 @@ const mocks = vi.hoisted(() => ({
     toggle: vi.fn(),
     transportError: null as string | null,
   },
+  editing: {
+    canSetSegmentEnd: true,
+    canSetSegmentStart: true,
+    onSetSegmentBoundary: vi.fn(),
+  },
+  readiness: { canInteract: true },
   executeCommand: vi.fn(),
   commands: {
     "previous-marker": { enabled: true, label: "Previous marker", pending: false },
@@ -28,14 +32,15 @@ const mocks = vi.hoisted(() => ({
   timeline: {
     canSetSegmentEnd: true,
     canSetSegmentStart: true,
+    onSetSegmentBoundary: vi.fn(),
   },
 }));
 
-vi.mock("@/app/hooks/usePlayback", () => ({
-  usePlayback: () => mocks.playback,
-}));
-
-vi.mock("@/app/hooks/useTimeline", () => ({
+vi.mock("@/features/timeline", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/timeline")>()),
+  useTimelineTransport: () => mocks.playback,
+  useTimelineEditing: () => mocks.editing,
+  useTimelineReadiness: () => mocks.readiness,
   useTimeline: () => mocks.timeline,
 }));
 
@@ -58,6 +63,26 @@ afterEach(() => {
 });
 
 describe("PlaybackControls", () => {
+  it("routes trim boundary changes through the timeline contract", async () => {
+    render(<PlaybackControls />, { wrapper: TestProvider });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Set segment start to current position" }),
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Set segment end to current position" }),
+    );
+
+    expect(mocks.editing.onSetSegmentBoundary).toHaveBeenNthCalledWith(1, "start", {
+      type: "button",
+      id: "set-start",
+    });
+    expect(mocks.editing.onSetSegmentBoundary).toHaveBeenNthCalledWith(2, "end", {
+      type: "button",
+      id: "set-end",
+    });
+  });
+
   it("steps once on press and starts a held shuttle without a duplicate click", () => {
     vi.useFakeTimers();
     render(<PlaybackControls />, { wrapper: TestProvider });

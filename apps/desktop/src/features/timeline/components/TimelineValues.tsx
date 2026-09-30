@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
 
-import { usePlayback } from "@/app/hooks/usePlayback";
-import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
+import { useTimelineReadiness } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 
 import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
@@ -14,11 +14,11 @@ import { TimelineTimeValue } from "./TimelineTimeValue";
 function TimelineValues({ className }: { className?: string }) {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
-  const playback = usePlayback();
-  const timeline = useTimeline();
-  const range = timeline.trim ?? EMPTY_TIMELINE_RANGE;
+  const readiness = useTimelineReadiness();
+  const trim = useAppSelector(selectTrim);
+  const range = trim ?? EMPTY_TIMELINE_RANGE;
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
-  const disabled = !playback.canInteract;
+  const disabled = !readiness.canInteract;
 
   return (
     <dl
