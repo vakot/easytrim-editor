@@ -37,36 +37,22 @@ import { VideoPreviewEmpty } from "../components/VideoPreviewEmpty";
 import { VideoPreview } from "../VideoPreview";
 
 const playback = vi.hoisted(() => {
-  const videoRef = { current: null as HTMLVideoElement | null };
-
   return {
-    canInteract: true,
-    isPlaying: false,
-    shuttleDirection: 0,
-    nativeLoopEnabled: false,
-    onCanPlay: vi.fn(),
-    onCropToolOpenChange: vi.fn(),
-    onEnded: vi.fn(),
-    onLoadedMetadata: vi.fn(),
-    onPause: vi.fn(),
-    onPlay: vi.fn(),
-    onPreviewPlaybackError: vi.fn(),
-    onTimeUpdate: vi.fn(),
-    pause: vi.fn(),
-    stopShuttle: vi.fn(),
-    setMediaPlaybackRate: vi.fn(),
-    setVideoElement: vi.fn((element: HTMLVideoElement | null) => {
-      videoRef.current = element;
-    }),
+    isPlaying: false as boolean,
+    suspendForInteraction: vi.fn(() => false),
+    resumeAfterInteraction: vi.fn(),
     toggle: vi.fn(),
-    videoMuted: true,
-    videoRef,
   };
-});
+}) satisfies {
+  isPlaying: boolean;
+  resumeAfterInteraction: (resumePlayback: boolean) => void;
+  suspendForInteraction: () => boolean;
+  toggle: () => void;
+};
 
 vi.mock("@/features/timeline", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/timeline")>()),
-  useTimelinePlayback: () => playback,
+  useTimelineTransport: () => playback,
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
@@ -483,7 +469,7 @@ describe("VideoPreview", () => {
     expect(container.querySelector("[data-preview-viewport]")).toHaveClass("overflow-hidden");
   });
 
-  it("pauses playback while crop controls are open", () => {
+  it("suspends timeline playback while crop controls are open", () => {
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector('[aria-label="Video crop preview"]');
@@ -494,10 +480,10 @@ describe("VideoPreview", () => {
     pause.mockClear();
 
     openCropTool(viewport!);
-    expect(pause).toHaveBeenCalledTimes(1);
+    expect(playback.suspendForInteraction).toHaveBeenCalled();
 
     fireEvent.play(video!);
-    expect(pause).toHaveBeenCalledTimes(2);
+    expect(pause).toHaveBeenCalledOnce();
   });
 
   it("shows the preview menu hierarchy and applies rotation to the CSS preview", () => {

@@ -18,14 +18,16 @@ import {
   timelineMarkerTimes,
   useSceneDetection,
   useTimeline,
-  useTimelinePlayback,
+  useTimelineReadiness,
+  useTimelineTransport,
 } from "@/features/timeline";
 
 function useSceneCommands() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const timeline = useTimeline();
-  const playback = useTimelinePlayback();
+  const readiness = useTimelineReadiness();
+  const playback = useTimelineTransport();
   const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const sourceReady = useAppSelector(selectSourceReady);
@@ -81,7 +83,7 @@ function useSceneCommands() {
 
   const markerCommands = [
     {
-      enabled: playback.canInteract && previousMarkerMicros !== undefined,
+      enabled: readiness.canInteract && previousMarkerMicros !== undefined,
       icon: <ChevronsLeft aria-hidden="true" />,
       id: "previous-marker" as const,
       label: t("preview.actions.previousMarker"),
@@ -93,7 +95,7 @@ function useSceneCommands() {
       variant: "default" as const,
     },
     {
-      enabled: playback.canInteract && nextMarkerMicros !== undefined,
+      enabled: readiness.canInteract && nextMarkerMicros !== undefined,
       icon: <ChevronsRight aria-hidden="true" />,
       id: "next-marker" as const,
       label: t("preview.actions.nextMarker"),

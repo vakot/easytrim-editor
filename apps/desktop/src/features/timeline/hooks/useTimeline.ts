@@ -1,27 +1,28 @@
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 
-import { useTimelinePlayback } from "../contexts/timeline-playback-context";
+import { useTimelineEditing, useTimelinePlayhead } from "../contexts/timeline-runtime-contexts";
 
 function useTimeline() {
-  const playback = useTimelinePlayback();
+  const playhead = useTimelinePlayhead();
+  const editing = useTimelineEditing();
   return {
     trim: useAppSelector(selectTrim),
-    playheadMicros: playback.displayedPlayheadMicros,
-    playheadRef: playback.playheadRef,
-    canSetSegmentStart: playback.canSetSegmentStart,
-    canSetSegmentEnd: playback.canSetSegmentEnd,
-    onChange: playback.onTrimBoundaryChange,
-    onSetSegmentBoundary: playback.onSetSegmentBoundary,
-    onMoveSegment: playback.onSegmentMove,
-    onTrimDragStart: playback.onTrimDragStart,
-    onTrimDragEnd: playback.onTrimDragEnd,
-    onSegmentDragStart: playback.onSegmentDragStart,
-    onSegmentDragEnd: playback.onSegmentDragEnd,
-    onSeek: playback.onSeek,
-    onScrubStart: playback.onScrubStart,
-    onScrub: playback.onScrub,
-    onScrubEnd: playback.onScrubEnd,
+    playheadMicros: playhead.displayedPlayheadMicros,
+    playheadRef: playhead.playheadRef,
+    canSetSegmentStart: editing.canSetSegmentStart,
+    canSetSegmentEnd: editing.canSetSegmentEnd,
+    onChange: editing.onTrimBoundaryChange,
+    onSetSegmentBoundary: editing.onSetSegmentBoundary,
+    onMoveSegment: editing.onSegmentMove,
+    onTrimDragStart: editing.onTrimDragStart,
+    onTrimDragEnd: editing.onTrimDragEnd,
+    onSegmentDragStart: editing.onSegmentDragStart,
+    onSegmentDragEnd: editing.onSegmentDragEnd,
+    onSeek: editing.onSeek,
+    onScrubStart: editing.onScrubStart,
+    onScrub: editing.onScrub,
+    onScrubEnd: editing.onScrubEnd,
   };
 }
 

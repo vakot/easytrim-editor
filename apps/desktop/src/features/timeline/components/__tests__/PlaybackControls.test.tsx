@@ -10,7 +10,6 @@ import { PlaybackControls } from "../PlaybackControls";
 
 const mocks = vi.hoisted(() => ({
   playback: {
-    canInteract: true,
     isPlaying: false,
     shuttleDirection: 0 as -1 | 0 | 1,
     startShuttle: vi.fn(),
@@ -19,6 +18,12 @@ const mocks = vi.hoisted(() => ({
     toggle: vi.fn(),
     transportError: null as string | null,
   },
+  editing: {
+    canSetSegmentEnd: true,
+    canSetSegmentStart: true,
+    onSetSegmentBoundary: vi.fn(),
+  },
+  readiness: { canInteract: true },
   executeCommand: vi.fn(),
   commands: {
     "previous-marker": { enabled: true, label: "Previous marker", pending: false },
@@ -33,7 +38,9 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/features/timeline", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/timeline")>()),
-  useTimelinePlayback: () => mocks.playback,
+  useTimelineTransport: () => mocks.playback,
+  useTimelineEditing: () => mocks.editing,
+  useTimelineReadiness: () => mocks.readiness,
   useTimeline: () => mocks.timeline,
 }));
 
@@ -66,11 +73,11 @@ describe("PlaybackControls", () => {
       screen.getByRole("button", { name: "Set segment end to current position" }),
     );
 
-    expect(mocks.timeline.onSetSegmentBoundary).toHaveBeenNthCalledWith(1, "start", {
+    expect(mocks.editing.onSetSegmentBoundary).toHaveBeenNthCalledWith(1, "start", {
       type: "button",
       id: "set-start",
     });
-    expect(mocks.timeline.onSetSegmentBoundary).toHaveBeenNthCalledWith(2, "end", {
+    expect(mocks.editing.onSetSegmentBoundary).toHaveBeenNthCalledWith(2, "end", {
       type: "button",
       id: "set-end",
     });

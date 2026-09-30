@@ -5,7 +5,7 @@ interface SeekRequest {
 }
 
 /** One decoder seek at a time, plus the latest requested destination. */
-function createSeekScheduler(video: HTMLVideoElement) {
+function createPreviewSeekScheduler(video: HTMLVideoElement) {
   let pending: SeekRequest | null = null;
   let active: SeekRequest | null = null;
   let approximatePosition = false;
@@ -23,7 +23,6 @@ function createSeekScheduler(video: HTMLVideoElement) {
         else video.currentTime = request.seconds;
       }
     } catch {
-      // Some engines reject seeks before metadata. Retry only the newest request on readiness.
       pending = request;
       active = null;
       return;
@@ -51,7 +50,6 @@ function createSeekScheduler(video: HTMLVideoElement) {
   video.addEventListener("emptied", clear);
 
   return {
-    video,
     get isPending() {
       return pending !== null || active !== null || video.seeking;
     },
@@ -71,4 +69,4 @@ function createSeekScheduler(video: HTMLVideoElement) {
   };
 }
 
-export { createSeekScheduler };
+export { createPreviewSeekScheduler };

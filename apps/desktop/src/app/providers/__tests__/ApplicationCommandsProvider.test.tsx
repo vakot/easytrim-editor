@@ -102,7 +102,7 @@ vi.mock("@/features/preview", () => ({
 }));
 vi.mock("@/features/timeline", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/timeline")>()),
-  useTimelinePlayback: () => ({ isPlaying: mocks.isPlaying }),
+  useTimelineTransport: () => ({ isPlaying: mocks.isPlaying }),
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({

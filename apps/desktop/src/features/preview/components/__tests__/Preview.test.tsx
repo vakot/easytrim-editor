@@ -5,47 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { sourceSelected } from "@/app/store/actions/source-actions";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { createAppStore } from "@/app/store/store";
-
-const playback = vi.hoisted(() => {
-  const videoRef = { current: null as HTMLVideoElement | null };
-
-  return {
-    audioPlayheadRef: { current: null },
-    canInteract: false,
-    displayedPlayheadMicros: 0,
-    isPlaying: false,
-    isReady: false,
-    nativeLoopEnabled: false,
-    onCanPlay: vi.fn(),
-    onCropToolOpenChange: vi.fn(),
-    onEnded: vi.fn(),
-    onLoadedMetadata: vi.fn(),
-    onPause: vi.fn(),
-    onPlay: vi.fn(),
-    onPlaybackError: vi.fn(),
-    onScrub: vi.fn(),
-    onScrubEnd: vi.fn(),
-    onScrubStart: vi.fn(),
-    onStepFrame: vi.fn(),
-    onTimeUpdate: vi.fn(),
-    onTogglePlayback: vi.fn(),
-    setMediaPlaybackRate: vi.fn(),
-    setVideoElement: vi.fn((element: HTMLVideoElement | null) => {
-      videoRef.current = element;
-    }),
-    setSegmentBoundary: vi.fn(),
-    stepFrame: vi.fn(),
-    toggle: vi.fn(),
-    transportError: null,
-    videoMuted: false,
-    videoRef,
-  };
-});
-
-vi.mock("@/features/timeline", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/features/timeline")>()),
-  useTimelinePlayback: () => playback,
-}));
+import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";
 
 import { Preview } from "../Preview";
 
@@ -64,7 +24,9 @@ describe("Preview", () => {
     );
     const { container } = render(
       <Provider store={appStore}>
-        <Preview />
+        <EditorRuntimeTestProvider>
+          <Preview />
+        </EditorRuntimeTestProvider>
       </Provider>,
     );
 
@@ -90,7 +52,9 @@ describe("Preview", () => {
     );
     render(
       <Provider store={appStore}>
-        <Preview />
+        <EditorRuntimeTestProvider>
+          <Preview />
+        </EditorRuntimeTestProvider>
       </Provider>,
     );
 

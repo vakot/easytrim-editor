@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createSeekScheduler } from "../seek-scheduler";
+import { createPreviewSeekScheduler } from "../preview-seek-scheduler";
 
 function decoder() {
   const video = document.createElement("video");
@@ -28,7 +28,7 @@ function decoder() {
 describe("decoder seek backpressure", () => {
   it("bounds a burst of 1,000 seeks to the active and latest destination", () => {
     const media = decoder();
-    const scheduler = createSeekScheduler(media.video);
+    const scheduler = createPreviewSeekScheduler(media.video);
     for (let index = 1; index <= 1_000; index++) scheduler.seek(index * 14);
     expect(media.assignments).toHaveBeenCalledTimes(1);
     expect(scheduler.isPending).toBe(true);
@@ -42,7 +42,7 @@ describe("decoder seek backpressure", () => {
 
   it("replaces stale completion callbacks and resumes only at the final position", () => {
     const media = decoder();
-    const scheduler = createSeekScheduler(media.video);
+    const scheduler = createPreviewSeekScheduler(media.video);
     const stale = vi.fn();
     const resume = vi.fn();
     scheduler.seek(10, false, stale);
@@ -58,7 +58,7 @@ describe("decoder seek backpressure", () => {
   it("uses fast seeks for dragging and an exact seek even at the same release target", () => {
     const media = decoder();
     media.video.fastSeek = vi.fn(media.assignments);
-    const scheduler = createSeekScheduler(media.video);
+    const scheduler = createPreviewSeekScheduler(media.video);
     scheduler.seek(12.25, true);
     scheduler.seek(12.25);
     expect(media.video.fastSeek).toHaveBeenCalledOnce();
@@ -74,7 +74,7 @@ describe("decoder seek backpressure", () => {
     media.assignments.mockImplementationOnce(() => {
       throw new Error("no metadata");
     });
-    const scheduler = createSeekScheduler(media.video);
+    const scheduler = createPreviewSeekScheduler(media.video);
     scheduler.seek(10);
     scheduler.seek(20);
     media.video.dispatchEvent(new Event("loadedmetadata"));
@@ -87,7 +87,7 @@ describe("decoder seek backpressure", () => {
 
   it("drops queued work and listeners on source replacement", () => {
     const media = decoder();
-    const scheduler = createSeekScheduler(media.video);
+    const scheduler = createPreviewSeekScheduler(media.video);
     const resume = vi.fn();
     scheduler.seek(10);
     scheduler.seek(20, false, resume);
@@ -100,7 +100,7 @@ describe("decoder seek backpressure", () => {
 
   it("ignores invalid destinations without touching the decoder", () => {
     const media = decoder();
-    const scheduler = createSeekScheduler(media.video);
+    const scheduler = createPreviewSeekScheduler(media.video);
     for (const target of [NaN, Infinity, -1]) scheduler.seek(target);
     expect(media.assignments).not.toHaveBeenCalled();
     scheduler.dispose();

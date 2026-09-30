@@ -9,7 +9,7 @@ import {
   updatePeakHold,
   useAudioPlayback,
 } from "@/features/audio";
-import { useTimelinePlayback } from "@/features/timeline";
+import { useTimelineTransport } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 
 const METER_MARKERS = [
@@ -37,7 +37,7 @@ const METER_MARKER_LABELS = [
 
 function StereoAudioMeter() {
   const { audioMeterRef } = useAudioPlayback();
-  const { isPlaying } = useTimelinePlayback();
+  const { isPlaying } = useTimelineTransport();
   const { t } = useTranslation();
   const leftFillRef = useRef<HTMLDivElement>(null);
   const rightFillRef = useRef<HTMLDivElement>(null);

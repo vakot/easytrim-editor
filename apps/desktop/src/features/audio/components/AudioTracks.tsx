@@ -4,7 +4,7 @@ import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { timelinePercent, type TrimRange } from "@/domain/trim";
 import { useAudioPlayback } from "@/features/audio";
-import { useTimelinePlayback } from "@/features/timeline";
+import { useTimelinePlayhead } from "@/features/timeline";
 
 import { useWaveformPreparation } from "../hooks/useWaveformPreparation";
 
@@ -33,7 +33,7 @@ const EMPTY_TIMELINE_RANGE: TrimRange = {
 
 function AudioPlayhead() {
   const { audioPlayheadRef } = useAudioPlayback();
-  const { displayedPlayheadMicros } = useTimelinePlayback();
+  const { displayedPlayheadMicros } = useTimelinePlayhead();
   const range = useAppSelector(selectTrim) ?? EMPTY_TIMELINE_RANGE;
   const playheadPercent = timelinePercent(displayedPlayheadMicros, range.sourceDurationMicros);
 

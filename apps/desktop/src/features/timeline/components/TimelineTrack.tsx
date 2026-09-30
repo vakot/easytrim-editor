@@ -10,7 +10,7 @@ import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { clampPlaybackMicros } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
 import { audioTrackColor } from "@/features/audio";
-import { useTimeline, useTimelinePlayback } from "@/features/timeline";
+import { useTimeline, useTimelineReadiness } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 
 import { useTrimTimelineInteractions } from "../hooks/useTrimTimelineInteractions";
@@ -31,7 +31,7 @@ function TimelineTrack() {
   const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const audioTracks = useAppSelector(selectAudioTracks);
-  const playback = useTimelinePlayback();
+  const readiness = useTimelineReadiness();
   const timeline = useTimeline();
   const timelineMarkers = useMemo(
     () => createTimelineMarkers(sceneBoundariesMicros, audioTracks, audioTrackColor),
@@ -54,7 +54,7 @@ function TimelineTrack() {
   );
 
   const range = timeline.trim ?? EMPTY_TIMELINE_RANGE;
-  const disabled = !playback.canInteract;
+  const disabled = !readiness.canInteract;
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const playheadValue = clampPlaybackMicros(timeline.playheadMicros, range.sourceDurationMicros);
   const playheadPercent = timelinePercent(playheadValue, range.sourceDurationMicros);

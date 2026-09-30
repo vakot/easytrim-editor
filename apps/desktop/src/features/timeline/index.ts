@@ -1,5 +1,10 @@
 export { TimelinePanel } from "./components/TimelinePanel";
-export { useTimelinePlayback } from "./contexts/timeline-playback-context";
+export {
+  useTimelineEditing,
+  useTimelinePlayhead,
+  useTimelineReadiness,
+  useTimelineTransport,
+} from "./contexts/timeline-runtime-contexts";
 export { useSceneDetection } from "./hooks/useSceneDetection";
 export { useTimeline } from "./hooks/useTimeline";
 export { findNextMarker, findPreviousMarker } from "./lib/marker-navigation";

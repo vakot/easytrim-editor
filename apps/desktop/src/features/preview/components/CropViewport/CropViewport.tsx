@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type PointerEvent, useCallback, useEffect, useMemo, useRef } from "react";
+import { type PointerEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -20,7 +20,7 @@ import {
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { isQuarterTurn } from "@/domain/rotation";
 import { usePreviewRuntime, usePreviewTransform } from "@/features/preview";
-import { useTimelinePlayback } from "@/features/timeline";
+import { useTimelineTransport } from "@/features/timeline";
 import { saveFramePng } from "@/lib/tauri/media";
 
 import type { CropHandle } from "../../lib/crop-geometry.utils";
@@ -45,7 +45,7 @@ import { usePreviewPresentation } from "./hooks/usePreviewPresentation";
 function CropViewport() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { isPlaying, pause, shuttleDirection, stopShuttle, toggle } = useTimelinePlayback();
+  const { isPlaying, resumeAfterInteraction, suspendForInteraction } = useTimelineTransport();
 
   const { videoRef } = usePreviewRuntime();
   const { registerHandlers } = usePreviewTransform();
@@ -86,17 +86,10 @@ function CropViewport() {
   const resumeAfterCropRef = useRef(false);
   const cropWasOpenRef = useRef(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (cropSelection.isOpen && !cropWasOpenRef.current) {
       cropWasOpenRef.current = true;
-      if (shuttleDirection !== 0) {
-        stopShuttle({ type: "internal", id: "crop-tool" });
-        resumeAfterCropRef.current = false;
-      } else {
-        resumeAfterCropRef.current = isPlaying;
-        if (isPlaying) pause();
-        else videoRef.current?.pause();
-      }
+      resumeAfterCropRef.current = suspendForInteraction();
       return;
     }
     if (!cropSelection.isOpen && cropWasOpenRef.current) {
@@ -104,11 +97,9 @@ function CropViewport() {
     } else {
       return;
     }
-    if (resumeAfterCropRef.current) {
-      resumeAfterCropRef.current = false;
-      toggle();
-    }
-  }, [cropSelection.isOpen, isPlaying, pause, shuttleDirection, stopShuttle, toggle, videoRef]);
+    resumeAfterInteraction(resumeAfterCropRef.current);
+    resumeAfterCropRef.current = false;
+  }, [cropSelection.isOpen, resumeAfterInteraction, suspendForInteraction]);
 
   const { clearDrag, isDragging, isEditing, open, startDrag } = cropSelection;
   const resolved = presentation;

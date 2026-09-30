@@ -11,27 +11,29 @@ import {
   type AudioTransportContract,
 } from "@/features/audio/contexts/audio-transport-context";
 // eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies feature-owned contexts.
-import { PreviewRuntimeContext } from "@/features/preview/contexts/preview-runtime-context";
+import {
+  PreviewRuntimeContext,
+  type PreviewRuntimeContract,
+} from "@/features/preview/contexts/preview-runtime-context";
 // eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies feature-owned contexts.
 import {
-  TimelinePlaybackContext,
-  type TimelinePlaybackContract,
-} from "@/features/timeline/contexts/timeline-playback-context";
+  TimelineEditingContext,
+  type TimelineEditingContract,
+  TimelinePlayheadContext,
+  type TimelinePlayheadContract,
+  TimelineReadinessContext,
+  type TimelineReadinessContract,
+  TimelineTransportContext,
+  type TimelineTransportContract,
+} from "@/features/timeline/contexts/timeline-runtime-contexts";
 
 const noOperation = () => undefined;
 const videoRef: RefObject<HTMLVideoElement | null> = { current: null };
 const playheadRef: RefObject<HTMLButtonElement | null> = { current: null };
 
-const timelinePlayback = {
-  canInteract: false,
+const timelineEditing = {
   canSetSegmentEnd: false,
   canSetSegmentStart: false,
-  displayedPlayheadMicros: 0,
-  isPlaying: false,
-  onEnded: noOperation,
-  onLoadedMetadata: noOperation,
-  onPause: noOperation,
-  onPlay: noOperation,
   onScrub: noOperation,
   onScrubEnd: noOperation,
   onScrubStart: noOperation,
@@ -40,30 +42,58 @@ const timelinePlayback = {
   onSegmentDragStart: noOperation,
   onSegmentMove: noOperation,
   onSetSegmentBoundary: noOperation,
-  onTimeUpdate: noOperation,
   onTrimBoundaryChange: noOperation,
   onTrimDragEnd: noOperation,
   onTrimDragStart: noOperation,
-  pause: noOperation,
+} satisfies TimelineEditingContract;
+
+const timelinePlayhead = {
+  displayedPlayheadMicros: 0,
   playheadRef,
+} satisfies TimelinePlayheadContract;
+
+const timelineReadiness = { canInteract: false } satisfies TimelineReadinessContract;
+
+const timelineTransport = {
+  isPlaying: false,
+  pause: noOperation,
+  resumeAfterInteraction: noOperation,
   shuttleDirection: 0,
-  transportError: null,
   stepFrame: noOperation,
   startShuttle: noOperation,
   stopShuttle: noOperation,
+  suspendForInteraction: () => false,
   toggle: noOperation,
-} satisfies TimelinePlaybackContract;
+  transportError: null,
+} satisfies TimelineTransportContract;
 
 const preview = {
   isPreviewReady: false,
+  isNativeLoopEnabled: false,
+  onEnded: noOperation,
+  onLoadedMetadata: noOperation,
+  onPause: noOperation,
+  onPlay: noOperation,
+  onPlaybackError: noOperation,
+  onTimeUpdate: noOperation,
   onCanPlay: noOperation,
   onPreviewPlaybackError: noOperation,
   previewKey: null,
+  getMediaState: () => null,
+  isSeekPending: () => false,
+  pauseMedia: noOperation,
+  playMedia: async () => undefined,
+  requestPlaybackFrame: () => null,
+  registerMediaObserver: () => noOperation,
+  seekMedia: noOperation,
+  setNativeLoopEnabled: noOperation,
+  setPlaybackRate: noOperation,
   setVideoElement: (element: HTMLVideoElement | null) => {
+    if (videoRef.current && videoRef.current !== element) videoRef.current.pause();
     videoRef.current = element;
   },
   videoRef,
-};
+} satisfies PreviewRuntimeContract;
 
 const audioPlayback = {
   audioMeterRef: { current: null },
@@ -94,9 +124,15 @@ function EditorRuntimeTestProvider({
     <PreviewRuntimeContext.Provider value={preview}>
       <AudioPlaybackContext.Provider value={audioPlayback}>
         <AudioTransportContext.Provider value={audioTransport}>
-          <TimelinePlaybackContext.Provider value={timelinePlayback}>
-            {children}
-          </TimelinePlaybackContext.Provider>
+          <TimelinePlayheadContext.Provider value={timelinePlayhead}>
+            <TimelineEditingContext.Provider value={timelineEditing}>
+              <TimelineReadinessContext.Provider value={timelineReadiness}>
+                <TimelineTransportContext.Provider value={timelineTransport}>
+                  {children}
+                </TimelineTransportContext.Provider>
+              </TimelineReadinessContext.Provider>
+            </TimelineEditingContext.Provider>
+          </TimelinePlayheadContext.Provider>
         </AudioTransportContext.Provider>
       </AudioPlaybackContext.Provider>
     </PreviewRuntimeContext.Provider>

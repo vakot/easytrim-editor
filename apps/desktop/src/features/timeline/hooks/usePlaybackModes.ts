@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import {
   type PlaybackBoundaryAction,
@@ -30,47 +30,6 @@ function usePlaybackModes({
     segmentEnabledRef.current = segmentEnabled;
   }, [loopEnabled, segmentEnabled]);
 
-  function activeRange(trim: TrimRange, playbackStartMicrosValue: number) {
-    return playbackRange(
-      trim.sourceDurationMicros,
-      trim.startMicros,
-      segmentEnabledRef.current && playbackStartMicrosValue > trim.endMicros
-        ? trim.sourceDurationMicros
-        : trim.endMicros,
-      segmentEnabledRef.current,
-    );
-  }
-
-  function startMicros(currentMicros: number, trim: TrimRange) {
-    const range = activeRange(trim, currentMicros);
-    playbackRangeRef.current = range;
-    return currentMicros;
-  }
-
-  function consumeBoundary(
-    currentMicros: number,
-    trim: TrimRange,
-    direction: PlaybackDirection = 1,
-  ): PlaybackBoundaryResult {
-    return consumeBoundaryInRange(
-      currentMicros,
-      playbackRangeRef.current ?? activeRange(trim, trim.startMicros),
-      direction,
-    );
-  }
-
-  function consumeSourceBoundary(
-    currentMicros: number,
-    sourceDurationMicros: number,
-    direction: PlaybackDirection,
-  ): PlaybackBoundaryResult {
-    return consumeBoundaryInRange(
-      currentMicros,
-      playbackRange(sourceDurationMicros, 0, sourceDurationMicros, false),
-      direction,
-    );
-  }
-
   function consumeBoundaryInRange(
     currentMicros: number,
     range: PlaybackRange,
@@ -90,16 +49,64 @@ function usePlaybackModes({
     return { reached: true, action };
   }
 
-  function resetBoundary() {
-    boundaryHandledRef.current = false;
-  }
+  const activeRange = useCallback((trim: TrimRange, playbackStartMicrosValue: number) => {
+    return playbackRange(
+      trim.sourceDurationMicros,
+      trim.startMicros,
+      segmentEnabledRef.current && playbackStartMicrosValue > trim.endMicros
+        ? trim.sourceDurationMicros
+        : trim.endMicros,
+      segmentEnabledRef.current,
+    );
+  }, []);
 
-  return {
-    startMicros,
-    consumeBoundary,
-    consumeSourceBoundary,
-    resetBoundary,
-  };
+  const startMicros = useCallback(
+    (currentMicros: number, trim: TrimRange) => {
+      const range = activeRange(trim, currentMicros);
+      playbackRangeRef.current = range;
+      return currentMicros;
+    },
+    [activeRange],
+  );
+
+  const consumeBoundary = useCallback(
+    (
+      currentMicros: number,
+      trim: TrimRange,
+      direction: PlaybackDirection = 1,
+    ): PlaybackBoundaryResult => {
+      return consumeBoundaryInRange(
+        currentMicros,
+        playbackRangeRef.current ?? activeRange(trim, trim.startMicros),
+        direction,
+      );
+    },
+    [activeRange],
+  );
+
+  const consumeSourceBoundary = useCallback(
+    (
+      currentMicros: number,
+      sourceDurationMicros: number,
+      direction: PlaybackDirection,
+    ): PlaybackBoundaryResult => {
+      return consumeBoundaryInRange(
+        currentMicros,
+        playbackRange(sourceDurationMicros, 0, sourceDurationMicros, false),
+        direction,
+      );
+    },
+    [],
+  );
+
+  const resetBoundary = useCallback(() => {
+    boundaryHandledRef.current = false;
+  }, []);
+
+  return useMemo(
+    () => ({ startMicros, consumeBoundary, consumeSourceBoundary, resetBoundary }),
+    [consumeBoundary, consumeSourceBoundary, resetBoundary, startMicros],
+  );
 }
 
 export { usePlaybackModes };

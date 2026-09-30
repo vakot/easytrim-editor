@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { cancelPlaybackFrame, requestPlaybackFrame } from "../media-sync";
+import { requestPreviewPlaybackFrame } from "../preview-frame-scheduler";
 
-describe("playback frame scheduling", () => {
+describe("preview playback frame scheduling", () => {
   it("uses presented video frames and their media timestamps when available", () => {
     let callback: VideoFrameRequestCallback | undefined;
     const cancelVideoFrameCallback = vi.fn();
@@ -16,13 +16,12 @@ describe("playback frame scheduling", () => {
     } as unknown as HTMLVideoElement;
 
     const update = vi.fn();
-    const frameRef = { current: requestPlaybackFrame(video, update) };
+    const frame = requestPreviewPlaybackFrame(video, update);
 
     callback?.(123, { mediaTime: 4.25 } as VideoFrameCallbackMetadata);
 
     expect(update).toHaveBeenCalledWith(123, 4.25);
-    cancelPlaybackFrame(frameRef);
+    frame.cancel();
     expect(cancelVideoFrameCallback).toHaveBeenCalledWith(17);
-    expect(frameRef.current).toBeNull();
   });
 });
