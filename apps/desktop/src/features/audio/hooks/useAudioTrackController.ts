@@ -15,7 +15,6 @@ import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-medi
 import {
   type AudioTrackProcessing,
   cloneAudioTrackProcessing,
-  sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 
@@ -183,7 +182,6 @@ function useAudioTrackController(streamIndex: number) {
   const applyProcessing = useCallback(
     (processing: AudioTrackProcessing) => {
       if (!track || sameAudioTrackProcessing(track.processing, processing)) return;
-      const previewSettingsChanged = !sameAudioTrackPreviewProcessing(track.processing, processing);
       dispatch(
         audioTrackProcessingChanged({
           processing: cloneAudioTrackProcessing(processing),

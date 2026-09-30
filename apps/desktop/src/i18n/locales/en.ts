@@ -536,6 +536,7 @@ export const en = {
       analyzeActivity: "Analyze audio activity",
       analyzingActivity: "Analyzing audio activity…",
       effects: "Effects…",
+      hideActivity: "Hide detected ranges",
       merge: "Merge selected tracks",
       mute: "Mute",
       muteTrack: "Mute ({{title}})",
@@ -581,13 +582,7 @@ export const en = {
     dialogs: {
       effects: {
         description:
-          "Effects are applied in the fixed order shown in the list when you choose Apply.",
-        title: "{{title}} — Effects",
-      },
-    },
-    dialogs: {
-      effects: {
-        description: "Changes stay unapplied until you choose Apply.",
+          "Effects are applied in the fixed order shown in the list. Changes stay unapplied until you choose Apply.",
         title: "{{title}} — Effects",
       },
     },

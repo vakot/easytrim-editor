@@ -536,6 +536,7 @@ export const sk = {
       analyzeActivity: "Analyzovať aktivitu zvuku",
       analyzingActivity: "Analyzuje sa aktivita zvuku…",
       effects: "Efekty…",
+      hideActivity: "Skryť rozpoznané úseky",
       merge: "Zlúčiť vybrané stopy",
       mute: "Stlmiť",
       muteTrack: "Stlmiť ({{title}})",
@@ -581,13 +582,7 @@ export const sk = {
     dialogs: {
       effects: {
         description:
-          "Efekty sa po stlačení tlačidla Použiť aplikujú v pevnom poradí uvedenom v zozname.",
-        title: "{{title}} — efekty",
-      },
-    },
-    dialogs: {
-      effects: {
-        description: "Zmeny sa použijú až po stlačení tlačidla Použiť.",
+          "Efekty sa aplikujú v pevnom poradí zobrazenom v zozname. Zmeny sa použijú až po stlačení tlačidla Použiť.",
         title: "{{title}} — efekty",
       },
     },
