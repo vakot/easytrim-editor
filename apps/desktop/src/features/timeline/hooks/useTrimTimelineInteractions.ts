@@ -10,7 +10,6 @@ import {
   type TrimBoundary,
   type TrimRange,
 } from "@/domain/trim";
-import { snapToNearestPoint } from "@/lib/interaction/snap-points.utils";
 import { syncTimelineGeometry } from "@/lib/interaction/timeline-geometry.utils";
 import type { FrameRate } from "@/lib/tauri/media.types";
 
@@ -118,21 +117,24 @@ function useTrimTimelineInteractions({
     };
   }
 
-  function nearestSnapTargetMicros(clientX: number, pointerMicros: number, bounds: DOMRect) {
+  function nearestSnapTargetMicros(pointerMicros: number, bounds: DOMRect) {
     const currentRange = rangeRef.current;
     if (bounds.width <= 0 || currentRange.sourceDurationMicros <= 0) {
       return null;
     }
 
     const clampedPlayhead = clampPlaybackMicros(playheadMicros, currentRange.sourceDurationMicros);
-    const playheadX =
-      bounds.left + (clampedPlayhead / currentRange.sourceDurationMicros) * bounds.width;
 
     const candidates: number[] = [];
 
-    if (snapToNearestPoint(clientX, [playheadX], TIMELINE_SNAP_REACH_PX) !== null) {
-      candidates.push(clampedPlayhead);
-    }
+    const playheadSnapTarget = findNearestTimelineSnapTarget(
+      pointerMicros,
+      bounds.width,
+      currentRange.sourceDurationMicros,
+      [clampedPlayhead],
+    );
+
+    if (playheadSnapTarget !== null) candidates.push(playheadSnapTarget);
 
     const snapTarget = findNearestTimelineSnapTarget(
       pointerMicros,
@@ -162,7 +164,7 @@ function useTrimTimelineInteractions({
     }
     const pointer = pointerMicros(clientX, drag.bounds);
     const snapTarget = snapModifierActive
-      ? nearestSnapTargetMicros(clientX, pointer.micros, pointer.bounds)
+      ? nearestSnapTargetMicros(pointer.micros, pointer.bounds)
       : null;
 
     const next = moveTrimBoundary(rangeRef.current, boundary, snapTarget ?? pointer.micros);
@@ -381,19 +383,18 @@ function useTrimTimelineInteractions({
 
     const range = rangeRef.current;
     const sourceDurationMicros = range.sourceDurationMicros;
-    const clampedPointerMicros = Math.max(
-      range.startMicros,
-      Math.min(range.endMicros, pointer.micros),
+    const snapTargets = [...snapTargetsMicros, range.startMicros, range.endMicros].sort(
+      (left, right) => left - right,
     );
 
     const snapTarget = findNearestTimelineSnapTarget(
-      clampedPointerMicros,
+      pointer.micros,
       bounds.width,
       sourceDurationMicros,
-      snapTargetsMicros,
+      snapTargets,
     );
 
-    return snapTarget ?? clampedPointerMicros;
+    return snapTarget ?? pointer.micros;
   }
 
   function startScrub(event: PointerEvent<HTMLElement>, captureTarget: HTMLElement) {
