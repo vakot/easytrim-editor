@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/app/store/redux-hooks";
+import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
@@ -27,17 +28,33 @@ function useTimelineEditingCommands({
   trimRef: { current: TrimRange };
 }) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const sourcePath = useAppSelector(selectSourceSelection)?.sourcePath ?? null;
+  const sourceIdentity = useMemo(
+    () => ({ activeInstanceId, sourcePath }),
+    [activeInstanceId, sourcePath],
+  );
+
   const trimCommitFrameRef = useRef<number | null>(null);
   const pendingTrimCommitRef = useRef<TrimRange | null>(null);
+
+  const isCurrentSourceIdentity = useCallback(() => {
+    const state = store.getState();
+    return (
+      selectActiveInstanceId(state) === sourceIdentity.activeInstanceId &&
+      (selectSourceSelection(state)?.sourcePath ?? null) === sourceIdentity.sourcePath
+    );
+  }, [sourceIdentity, store]);
 
   const flushTrimCommit = useCallback(() => {
     if (trimCommitFrameRef.current !== null) cancelAnimationFrame(trimCommitFrameRef.current);
     trimCommitFrameRef.current = null;
     const pendingTrim = pendingTrimCommitRef.current;
     pendingTrimCommitRef.current = null;
-    if (pendingTrim && sourcePath) dispatch(trimChanged({ trim: pendingTrim }));
-  }, [dispatch, sourcePath]);
+    if (pendingTrim && sourcePath && isCurrentSourceIdentity())
+      dispatch(trimChanged({ trim: pendingTrim }));
+  }, [dispatch, isCurrentSourceIdentity, sourcePath]);
 
   const queueTrimCommit = useCallback(
     (nextTrim: TrimRange) => {
@@ -47,10 +64,11 @@ function useTimelineEditingCommands({
         trimCommitFrameRef.current = null;
         const pendingTrim = pendingTrimCommitRef.current;
         pendingTrimCommitRef.current = null;
-        if (pendingTrim && sourcePath) dispatch(trimChanged({ trim: pendingTrim }));
+        if (pendingTrim && sourcePath && isCurrentSourceIdentity())
+          dispatch(trimChanged({ trim: pendingTrim }));
       });
     },
-    [dispatch, sourcePath],
+    [dispatch, isCurrentSourceIdentity, sourcePath],
   );
 
   const onSetSegmentBoundary = useCallback(
@@ -114,13 +132,13 @@ function useTimelineEditingCommands({
     onScrubEnd();
   }, [dispatch, flushTrimCommit, onScrubEnd]);
 
-  useEffect(
+  useLayoutEffect(
     () => () => {
       if (trimCommitFrameRef.current !== null) cancelAnimationFrame(trimCommitFrameRef.current);
       trimCommitFrameRef.current = null;
       pendingTrimCommitRef.current = null;
     },
-    [],
+    [sourceIdentity],
   );
 
   return {
