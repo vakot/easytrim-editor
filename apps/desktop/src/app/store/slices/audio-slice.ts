@@ -78,8 +78,7 @@ const audioSlice = createSlice({
   initialState: initialAudioState,
   reducers: {
     audioPreviewsLoading: (state) => {
-      state.previews = { status: "loading", previews: [] };
-      for (const track of state.tracks) track.preview = { status: "idle" };
+      state.previews = { status: "loading", previews: state.previews?.previews ?? [] };
     },
     audioPreviewsReady: (state, action: PayloadAction<{ previews: AudioPreviewDescriptor[] }>) => {
       state.previews = {
@@ -245,7 +244,7 @@ const audioSlice = createSlice({
       track.processing = cloneAudioTrackProcessing(action.payload.processing);
       if (loudnessInputsChanged) track.loudnessAnalysis = { status: "idle" };
       if (activityChanged) track.activityAnalysis = { status: "idle" };
-      if (previewChanged) track.preview = { status: "idle" };
+      if (previewChanged) track.preview = staleAudioTrackPreview(track.preview);
     },
     audioTrackLoudnessNormalizationChanged: (
       state,
@@ -273,7 +272,7 @@ const audioSlice = createSlice({
       const previewChanged = !sameAudioTrackPreviewProcessing(track.processing, processing);
       track.processing = processing;
       if (activityChanged) track.activityAnalysis = { status: "idle" };
-      if (previewChanged) track.preview = { status: "idle" };
+      if (previewChanged) track.preview = staleAudioTrackPreview(track.preview);
     },
     audioTrackActivityVisibilityToggled: (
       state,
@@ -459,14 +458,7 @@ const audioSlice = createSlice({
         for (const track of state.tracks) {
           track.loudnessAnalysis = { status: "idle" };
           if (track.processing.loudnessNormalization !== undefined) {
-            const descriptor =
-              track.preview.status === "ready" || track.preview.status === "stale"
-                ? track.preview.descriptor
-                : track.preview.status === "loading"
-                  ? track.preview.descriptor
-                  : undefined;
-
-            track.preview = descriptor ? { descriptor, status: "stale" } : { status: "idle" };
+            track.preview = staleAudioTrackPreview(track.preview);
           }
         }
       })
@@ -518,6 +510,15 @@ function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTr
       activityVisible: true,
     };
   });
+}
+
+function staleAudioTrackPreview(preview: AudioTrackPreviewState): AudioTrackPreviewState {
+  const descriptor =
+    preview.status === "ready" || preview.status === "stale" || preview.status === "loading"
+      ? preview.descriptor
+      : undefined;
+
+  return descriptor ? { descriptor, status: "stale" } : { status: "idle" };
 }
 
 function applyWaveformResult(state: AudioState, result: WaveformResult) {
@@ -578,6 +579,24 @@ const selectAudioTracks = (state: RootState): AudioTrackState[] =>
 
 const selectMergeAudio = (state: RootState): boolean => state.audio.mergeAudio;
 
+function audioTrackPlaybackPreviewUrl(
+  track: AudioTrackState,
+  routeRequiresExternalPreview: boolean,
+): string | undefined {
+  if (!routeRequiresExternalPreview) return undefined;
+  const preview = track.preview;
+  if (
+    preview.status === "ready" &&
+    sameAudioTrackPreviewProcessing(track.processing, preview.descriptor.processing)
+  ) {
+    return preview.descriptor.url;
+  }
+  if ((preview.status === "stale" || preview.status === "loading") && preview.descriptor) {
+    return preview.descriptor.url;
+  }
+  return undefined;
+}
+
 export {
   audioMergeToggled,
   audioPreviewsLoading,
@@ -593,6 +612,7 @@ export {
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
   audioTrackLoudnessNormalizationChanged,
+  audioTrackPlaybackPreviewUrl,
   audioTrackPreviewFailed,
   audioTrackPreviewReady,
   audioTrackPreviewStarted,

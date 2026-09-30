@@ -40,6 +40,24 @@ function effectiveAudioTrackGainDb(processing: AudioTrackProcessing): number {
   return audioTrackLevelMode(processing) === "manual" ? processing.gainDb : 0;
 }
 
+function audioTrackExternalPreviewStreamIndexes(
+  tracks: AudioTrackSettings[],
+  nativeAudioStreamIndex: number | undefined,
+): number[] {
+  const enabledTracks = tracks.filter((track) => track.enabled);
+  if (enabledTracks.length > 1) return enabledTracks.map((track) => track.streamIndex);
+
+  const onlyTrack = enabledTracks[0];
+  if (!onlyTrack) return [];
+  if (
+    onlyTrack.processing.loudnessNormalization !== undefined ||
+    onlyTrack.streamIndex !== nativeAudioStreamIndex
+  ) {
+    return [onlyTrack.streamIndex];
+  }
+  return [];
+}
+
 function audioTrackNormalizationGainDb(
   normalization: LoudnessNormalization,
   analysis: AudioLoudnessAnalysis,
@@ -164,6 +182,7 @@ export type {
 };
 export {
   audioTrackActivityProcessingChanged,
+  audioTrackExternalPreviewStreamIndexes,
   audioTrackLevelMode,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,

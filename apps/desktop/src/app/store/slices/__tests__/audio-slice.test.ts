@@ -12,6 +12,8 @@ import {
   audioTrackGainChanged,
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
+  audioTrackPlaybackPreviewUrl,
+  audioTrackPreviewFailed,
   audioTrackPreviewReady,
   audioTrackPreviewStarted,
   audioTrackProcessingChanged,
@@ -281,6 +283,7 @@ describe("audio slice", () => {
       descriptor: { url: "media://prior-trim" },
       status: "stale",
     });
+    expect(audioTrackPlaybackPreviewUrl(state.tracks[0]!, true)).toBe("media://prior-trim");
 
     state = audioReducer(
       state,
@@ -321,5 +324,55 @@ describe("audio slice", () => {
       operationId: "new",
       status: "loading",
     });
+    expect(audioTrackPlaybackPreviewUrl(state.tracks[0]!, true)).toBe("media://prior-trim");
+    expect(audioTrackPlaybackPreviewUrl(state.tracks[0]!, false)).toBeUndefined();
+  });
+
+  it("marks an outdated fallback failed when its replacement cannot be prepared", () => {
+    let state = audioReducer(
+      readyAudio(),
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: 0, loudnessNormalization: "streaming" },
+      }),
+    );
+
+    state = audioReducer(state, audioTrackPreviewStarted({ operationId: "prior", streamIndex: 2 }));
+    state = audioReducer(
+      state,
+      audioTrackPreviewReady({
+        operationId: "prior",
+        descriptor: {
+          mediaToken: 1,
+          previewRevision: 1,
+          processing: { gainDb: 0, loudnessNormalization: "streaming" },
+          streamIndex: 2,
+          url: "media://old-processing",
+        },
+      }),
+    );
+    state = audioReducer(
+      state,
+      audioTrackProcessingChanged({ streamIndex: 2, processing: { gainDb: 0 } }),
+    );
+    state = audioReducer(
+      state,
+      audioTrackPreviewStarted({ operationId: "replacement", streamIndex: 2 }),
+    );
+    state = audioReducer(
+      state,
+      audioTrackPreviewFailed({
+        error: { code: "internal", message: "preview failed" },
+        operationId: "replacement",
+        streamIndex: 2,
+      }),
+    );
+
+    expect(state.tracks[0]?.preview).toMatchObject({
+      descriptor: { url: "media://old-processing" },
+      operationId: "replacement",
+      status: "failed",
+    });
+    expect(audioTrackPlaybackPreviewUrl(state.tracks[0]!, true)).toBeUndefined();
   });
 });

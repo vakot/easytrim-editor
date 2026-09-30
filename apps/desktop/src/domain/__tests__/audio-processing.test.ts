@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   audioTrackActivityProcessingChanged,
+  audioTrackExternalPreviewStreamIndexes,
   audioTrackLevelMode,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
@@ -10,6 +11,23 @@ import {
 } from "../audio-processing";
 
 describe("audio track level policy", () => {
+  it("selects external preview tracks from the active playback route", () => {
+    const manualA = { enabled: true, processing: { gainDb: 0 }, streamIndex: 2 };
+    const manualB = { enabled: true, processing: { gainDb: 0 }, streamIndex: 4 };
+    const normalizedA = {
+      ...manualA,
+      processing: { gainDb: 0, loudnessNormalization: "streaming" as const },
+    };
+
+    expect(audioTrackExternalPreviewStreamIndexes([manualA], 2)).toEqual([]);
+    expect(audioTrackExternalPreviewStreamIndexes([normalizedA], 2)).toEqual([2]);
+    expect(audioTrackExternalPreviewStreamIndexes([manualA], 4)).toEqual([2]);
+    expect(audioTrackExternalPreviewStreamIndexes([normalizedA, manualB], 2)).toEqual([2, 4]);
+    expect(
+      audioTrackExternalPreviewStreamIndexes([manualA, { ...manualB, enabled: false }], 2),
+    ).toEqual([]);
+  });
+
   it("uses normalization instead of manual gain while preserving the stored gain", () => {
     const processing = { gainDb: -2.5, loudnessNormalization: "streaming" as const };
 

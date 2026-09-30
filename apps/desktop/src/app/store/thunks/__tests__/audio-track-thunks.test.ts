@@ -29,6 +29,10 @@ import {
   detectTrackActivity,
   prepareTrackPreview,
 } from "@/app/store/thunks/audio-track-thunks";
+import {
+  audioTrackExternalPreviewStreamIndexes,
+  type AudioTrackSelection,
+} from "@/domain/audio-processing";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 function createStore() {
@@ -48,6 +52,78 @@ beforeEach(() => {
 });
 
 describe("audio track operations", () => {
+  it("returns a single default track to native playback when normalization is disabled", async () => {
+    const store = createStore();
+    store.dispatch(audioTrackToggled({ streamIndex: 4 }));
+    mocks.analyzeAudioLoudness.mockResolvedValue({ integratedLufs: -18, truePeakDb: -2 });
+    mocks.prepareAudioPreviews.mockImplementation(
+      async (_sourcePath: string, tracks: AudioTrackSelection[]) =>
+        tracks.map((track, index) => ({
+          mediaToken: 1,
+          previewRevision: index + 1,
+          processing: track.processing,
+          streamIndex: track.streamIndex,
+          url: `media://preview-${track.streamIndex}`,
+        })),
+    );
+
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: 0, loudnessNormalization: "streaming" },
+      }),
+    );
+    await vi.waitFor(() => expect(store.getState().audio.tracks[0]?.preview.status).toBe("ready"));
+    expect(audioTrackExternalPreviewStreamIndexes(store.getState().audio.tracks, 2)).toEqual([2]);
+
+    store.dispatch(audioTrackProcessingChanged({ streamIndex: 2, processing: { gainDb: 0 } }));
+
+    expect(audioTrackExternalPreviewStreamIndexes(store.getState().audio.tracks, 2)).toEqual([]);
+    expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
+  });
+
+  it("prepares every enabled track after normalization is removed from a multi-track route", async () => {
+    const store = createStore();
+    mocks.analyzeAudioLoudness.mockResolvedValue({ integratedLufs: -18, truePeakDb: -2 });
+    mocks.prepareAudioPreviews.mockImplementation(
+      async (_sourcePath: string, tracks: AudioTrackSelection[]) =>
+        tracks.map((track, index) => ({
+          mediaToken: 1,
+          previewRevision: index + 1,
+          processing: track.processing,
+          streamIndex: track.streamIndex,
+          url: `media://preview-${track.streamIndex}-${index + 1}`,
+        })),
+    );
+
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: 0, loudnessNormalization: "streaming" },
+      }),
+    );
+    await vi.waitFor(() => expect(mocks.prepareAudioPreviews).toHaveBeenCalledTimes(2));
+
+    store.dispatch(audioTrackProcessingChanged({ streamIndex: 2, processing: { gainDb: 0 } }));
+    await vi.waitFor(() => expect(mocks.prepareAudioPreviews).toHaveBeenCalledTimes(3));
+
+    expect(audioTrackExternalPreviewStreamIndexes(store.getState().audio.tracks, 2)).toEqual([
+      2, 4,
+    ]);
+    expect(store.getState().audio.tracks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          streamIndex: 2,
+          preview: expect.objectContaining({ status: "ready" }),
+        }),
+        expect.objectContaining({
+          streamIndex: 4,
+          preview: expect.objectContaining({ status: "ready" }),
+        }),
+      ]),
+    );
+  });
+
   it("analyzes muted tracks with their effective processing settings", async () => {
     const store = createStore();
     store.dispatch(audioTrackToggled({ streamIndex: 2 }));
@@ -102,6 +178,58 @@ describe("audio track operations", () => {
     await pendingPreview;
 
     expect(store.getState().audio.tracks[0]?.preview).toMatchObject({ status: "ready" });
+  });
+
+  it("does not let an older preview job replace newer committed processing", async () => {
+    const store = createStore();
+    let finishOldPreview!: (value: unknown) => void;
+    mocks.prepareAudioPreviews
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          finishOldPreview = resolve;
+        }),
+      )
+      .mockResolvedValue([
+        {
+          mediaToken: 1,
+          previewRevision: 9,
+          processing: { gainDb: 0, loudnessNormalization: "streaming" },
+          streamIndex: 2,
+          url: "media://new-processing",
+        },
+      ]);
+    mocks.analyzeAudioLoudness.mockResolvedValue({ integratedLufs: -18, truePeakDb: -2 });
+
+    const oldPreview = store.dispatch(prepareTrackPreview(2));
+    await vi.waitFor(() => expect(mocks.prepareAudioPreviews).toHaveBeenCalledTimes(1));
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: { gainDb: 0, loudnessNormalization: "streaming" },
+      }),
+    );
+    await vi.waitFor(() => {
+      expect(store.getState().audio.tracks[0]?.preview).toMatchObject({
+        descriptor: { url: "media://new-processing" },
+        status: "ready",
+      });
+    });
+
+    finishOldPreview([
+      {
+        mediaToken: 1,
+        previewRevision: 8,
+        processing: { gainDb: 0 },
+        streamIndex: 2,
+        url: "media://old-processing",
+      },
+    ]);
+    await oldPreview;
+
+    expect(store.getState().audio.tracks[0]?.preview).toMatchObject({
+      descriptor: { url: "media://new-processing" },
+      status: "ready",
+    });
   });
 
   it("refreshes normalized playback preview from the newly committed trim measurement", async () => {

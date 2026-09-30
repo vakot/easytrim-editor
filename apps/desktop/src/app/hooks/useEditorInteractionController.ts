@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { usePlaybackModes } from "@/app/hooks/usePlaybackModes";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectAudioTracks } from "@/app/store/slices/audio-slice";
+import { audioTrackPlaybackPreviewUrl, selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
   selectLoopPlaybackEnabled,
@@ -19,8 +19,8 @@ import {
   handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import {
+  audioTrackExternalPreviewStreamIndexes,
   effectiveAudioTrackGainDb,
-  sameAudioTrackPreviewProcessing,
 } from "@/domain/audio-processing";
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
 import {
@@ -160,18 +160,28 @@ function useEditorInteractionController(): EditorInteractionRuntime {
   const preview = useAppSelector(selectPreview);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const audioTracks = useAppSelector(selectAudioTracks);
+  const routeNativeAudioStreamIndex =
+    media?.audioStreams.find((stream) => stream.isDefault)?.streamIndex ??
+    media?.audioStreams[0]?.streamIndex;
+
+  const externalPreviewStreamIndexes = useMemo(
+    () => new Set(audioTrackExternalPreviewStreamIndexes(audioTracks, routeNativeAudioStreamIndex)),
+    [audioTracks, routeNativeAudioStreamIndex],
+  );
+
   const audioPreviewUrls = useMemo(
     () =>
       Object.fromEntries(
-        audioTracks.flatMap((track) =>
-          "descriptor" in track.preview &&
-          track.preview.descriptor &&
-          sameAudioTrackPreviewProcessing(track.processing, track.preview.descriptor.processing)
-            ? [[track.streamIndex, track.preview.descriptor.url]]
-            : [],
-        ),
+        audioTracks.flatMap((track) => {
+          const url = audioTrackPlaybackPreviewUrl(
+            track,
+            externalPreviewStreamIndexes.has(track.streamIndex),
+          );
+
+          return url ? [[track.streamIndex, url]] : [];
+        }),
       ),
-    [audioTracks],
+    [audioTracks, externalPreviewStreamIndexes],
   );
 
   const sourcePath = sourceSelection?.sourcePath ?? null;
