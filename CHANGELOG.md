@@ -20,11 +20,11 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 - Removed the Reset tools button from the timeline toolbar.
+- Removed automatic playhead following while trim borders move.
 
 ### Fixed
 
 - Fixed Spacebar playback toggling when an editor button has focus.
-- Fixed timeline snapping so the playhead can move freely outside the selected segment.
 
 ## [1.12.3]
 
