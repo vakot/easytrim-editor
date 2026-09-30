@@ -15,7 +15,7 @@ import {
   layoutDensityChanged,
 } from "@/app/store/slices/preferences-slice";
 import { createAppStore } from "@/app/store/store";
-import { EditorContractsTestProvider } from "@/test/editor-contracts-test-provider";
+import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";
 
 import { MenuBarSettings } from "../MenuBarSettings";
 
@@ -58,7 +58,7 @@ function renderSettings() {
   const store = createAppStore();
   render(
     <Provider store={store}>
-      <EditorContractsTestProvider>
+      <EditorRuntimeTestProvider>
         <TooltipProvider delayDuration={0}>
           <ApplicationCommandsProvider>
             <Menubar value="settings">
@@ -66,7 +66,7 @@ function renderSettings() {
             </Menubar>
           </ApplicationCommandsProvider>
         </TooltipProvider>
-      </EditorContractsTestProvider>
+      </EditorRuntimeTestProvider>
     </Provider>,
   );
   return store;

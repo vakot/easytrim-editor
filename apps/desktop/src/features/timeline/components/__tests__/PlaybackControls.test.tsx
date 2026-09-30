@@ -31,11 +31,9 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/app/hooks/usePlayback", () => ({
-  usePlayback: () => mocks.playback,
-}));
-
-vi.mock("@/app/hooks/useTimeline", () => ({
+vi.mock("@/features/timeline", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/timeline")>()),
+  useTimelinePlayback: () => mocks.playback,
   useTimeline: () => mocks.timeline,
 }));
 

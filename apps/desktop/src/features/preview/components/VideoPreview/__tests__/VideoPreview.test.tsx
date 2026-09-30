@@ -30,7 +30,7 @@ import { ChangelogProvider } from "@/features/changelog";
 import { QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
-import { EditorContractsTestProvider } from "@/test/editor-contracts-test-provider";
+import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";
 import { firstSource, media } from "@/test/source.fixtures";
 
 import { VideoPreviewEmpty } from "../components/VideoPreviewEmpty";
@@ -40,7 +40,9 @@ const playback = vi.hoisted(() => {
   const videoRef = { current: null as HTMLVideoElement | null };
 
   return {
+    canInteract: true,
     isPlaying: false,
+    shuttleDirection: 0,
     nativeLoopEnabled: false,
     onCanPlay: vi.fn(),
     onCropToolOpenChange: vi.fn(),
@@ -50,6 +52,8 @@ const playback = vi.hoisted(() => {
     onPlay: vi.fn(),
     onPreviewPlaybackError: vi.fn(),
     onTimeUpdate: vi.fn(),
+    pause: vi.fn(),
+    stopShuttle: vi.fn(),
     setMediaPlaybackRate: vi.fn(),
     setVideoElement: vi.fn((element: HTMLVideoElement | null) => {
       videoRef.current = element;
@@ -60,8 +64,9 @@ const playback = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/app/hooks/usePlayback", () => ({
-  usePlayback: () => playback,
+vi.mock("@/features/timeline", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/timeline")>()),
+  useTimelinePlayback: () => playback,
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
@@ -83,7 +88,7 @@ function readyPreview(url: string): Extract<PreviewState, { status: "ready" }> {
 function TooltipTestProvider({ children, store }: { children: ReactNode; store: AppStore }) {
   return (
     <Provider store={store}>
-      <EditorContractsTestProvider>
+      <EditorRuntimeTestProvider usesExternalAudio>
         <TooltipProvider delayDuration={0}>
           <SourceDeleteProvider>
             <QueueDeleteSourceProvider>
@@ -97,7 +102,7 @@ function TooltipTestProvider({ children, store }: { children: ReactNode; store: 
             </QueueDeleteSourceProvider>
           </SourceDeleteProvider>
         </TooltipProvider>
-      </EditorContractsTestProvider>
+      </EditorRuntimeTestProvider>
     </Provider>
   );
 }

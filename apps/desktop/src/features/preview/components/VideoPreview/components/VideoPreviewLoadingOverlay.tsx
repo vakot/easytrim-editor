@@ -5,16 +5,16 @@ import { useTranslation } from "react-i18next";
 import { Backdrop } from "@/components/ui/backdrop";
 import { Button } from "@/components/ui/button";
 
-import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceLoadToken, selectSourceSelection } from "@/app/store/slices/source-slice";
 import { closeActiveEditingInstanceRequested } from "@/app/store/thunks/source-media-thunks";
+import { useTimelinePlayback } from "@/features/timeline";
 
 function VideoPreviewLoadingOverlay() {
   const { t } = useTranslation();
 
-  const playback = usePlayback();
+  const playback = useTimelinePlayback();
   const dispatch = useAppDispatch();
 
   const sourceSelection = useAppSelector(selectSourceSelection);
@@ -29,18 +29,18 @@ function VideoPreviewLoadingOverlay() {
     (preview.status === "loading" ||
       (preview.status === "ready" &&
         completedTransitionKey !== transitionKey &&
-        !playback.isReady));
+        !playback.canInteract));
 
   const [skipAvailableFor, setSkipAvailableFor] = useState<string | null>(null);
 
   useEffect(() => {
-    if (sourceSelection !== null && preview.status === "ready" && playback.isReady) {
+    if (sourceSelection !== null && preview.status === "ready" && playback.canInteract) {
       // Playback becoming ready completes this source transition. Later audio-route
       // reconfiguration must not revive the source-opening overlay.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCompletedTransitionKey(transitionKey);
     }
-  }, [playback.isReady, preview.status, sourceSelection, transitionKey]);
+  }, [playback.canInteract, preview.status, sourceSelection, transitionKey]);
 
   useEffect(() => {
     if (!showLoadingOverlay) return;

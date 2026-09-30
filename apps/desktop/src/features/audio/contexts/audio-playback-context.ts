@@ -13,7 +13,7 @@ const AudioPlaybackContext = createContext<AudioPlaybackContract | null>(null);
 
 function useAudioPlayback() {
   const playback = useContext(AudioPlaybackContext);
-  if (!playback) throw new Error("Audio playback must be used within EditorContractsProvider.");
+  if (!playback) throw new Error("Audio playback must be used within AudioPlaybackProvider.");
   return playback;
 }
 

@@ -17,8 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
-import { usePlayback } from "@/app/hooks/usePlayback";
-import { useTimeline } from "@/app/hooks/useTimeline";
+import { useTimeline, useTimelinePlayback } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 
 import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../lib/editor-shortcuts";
@@ -32,7 +31,7 @@ function preventMarkerNavigationMouseFocus(event: MouseEvent<HTMLButtonElement>)
 
 function PlaybackControls({ className }: { className?: string }) {
   const { t } = useTranslation();
-  const playback = usePlayback();
+  const playback = useTimelinePlayback();
   const timeline = useTimeline();
   const shouldReduceMotion = useReducedMotion() === true;
   const { executeCommand } = useApplicationCommands();

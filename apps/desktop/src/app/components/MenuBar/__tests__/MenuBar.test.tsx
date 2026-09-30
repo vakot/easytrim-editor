@@ -24,7 +24,7 @@ import { SourceDeleteProvider } from "@/features/source";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
-import { EditorContractsTestProvider } from "@/test/editor-contracts-test-provider";
+import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";
 
 import { MenuBar as AppMenuBar } from "../MenuBar";
 
@@ -266,7 +266,7 @@ describe("MenuBarTest", () => {
       initialized.current = true;
     }
     return (
-      <EditorContractsTestProvider>
+      <EditorRuntimeTestProvider>
         <SourceDeleteProvider>
           <QueueDeleteSourceProvider>
             <PreviewTransformProvider>
@@ -282,7 +282,7 @@ describe("MenuBarTest", () => {
             </PreviewTransformProvider>
           </QueueDeleteSourceProvider>
         </SourceDeleteProvider>
-      </EditorContractsTestProvider>
+      </EditorRuntimeTestProvider>
     );
   }
 

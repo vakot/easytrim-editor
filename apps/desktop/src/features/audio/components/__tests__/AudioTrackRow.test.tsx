@@ -16,11 +16,12 @@ import {
   waveformsLoading,
 } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
+import { audioTrackColor } from "@/features/audio";
+// eslint-disable-next-line no-restricted-imports -- Test owns a focused audio runtime fixture.
 import {
   AudioPlaybackContext,
   type AudioPlaybackContract,
-  audioTrackColor,
-} from "@/features/audio";
+} from "@/features/audio/contexts/audio-playback-context";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";

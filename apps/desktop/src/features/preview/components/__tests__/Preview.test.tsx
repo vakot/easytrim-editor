@@ -42,8 +42,9 @@ const playback = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/app/hooks/usePlayback", () => ({
-  usePlayback: () => playback,
+vi.mock("@/features/timeline", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/timeline")>()),
+  useTimelinePlayback: () => playback,
 }));
 
 import { Preview } from "../Preview";

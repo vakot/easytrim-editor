@@ -1,38 +1,38 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/app/store/redux-hooks";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
   selectLoopPlaybackEnabled,
   selectSegmentPlaybackEnabled,
 } from "@/app/store/slices/editor-tools-slice";
 import { selectPlaybackSpeed } from "@/app/store/slices/playback-controls-slice";
-import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
-import { handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested } from "@/app/store/thunks/source-media-thunks";
+import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
+import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
-import { canSetTrimBoundaryAtPlayhead, type TrimRange } from "@/domain/trim";
-import { useAudioPlaybackRuntime } from "@/features/audio";
 import {
-  cancelFrame,
-  FRAME_SHUTTLE_PLAYBACK_RATE,
-  type FrameShuttleDirection,
-  syncPlayheadElements,
-  useEditorTimelineShortcuts,
-  useTimelineEditingCommands,
-} from "@/features/timeline";
+  canSetTrimBoundaryAtPlayhead,
+  setTrimBoundaryAtPlayhead,
+  type TrimBoundary,
+  type TrimRange,
+} from "@/domain/trim";
+import { useAudioPlayback, useAudioTransport } from "@/features/audio";
+import { usePreviewRuntime } from "@/features/preview";
 import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
+import { FRAME_SHUTTLE_PLAYBACK_RATE, type FrameShuttleDirection } from "../lib/editor-shortcuts";
 import {
   cancelPlaybackFrame,
   type PlaybackFrameHandle,
   requestPlaybackFrame,
 } from "../lib/media-sync";
+import { cancelFrame, syncPlayheadElements } from "../lib/playhead-sync";
 import { createSeekScheduler } from "../lib/seek-scheduler";
 
+import { useEditorTimelineShortcuts } from "./useEditorTimelineShortcuts";
 import { usePlaybackModes } from "./usePlaybackModes";
 
 const EMPTY_TRIM: TrimRange = {
@@ -45,9 +45,10 @@ const AUDIO_SYNC_INTERVAL_MS = 100;
 const REVERSE_SHUTTLE_SEEK_INTERVAL_MS = 50;
 const SHUTTLE_MAX_FRAME_DELTA_MS = 100;
 
-function usePreviewPlaybackRuntime() {
+function useTimelinePlaybackRuntime() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const loopPlaybackEnabled = useAppSelector(selectLoopPlaybackEnabled);
   const segmentPlaybackEnabled = useAppSelector(selectSegmentPlaybackEnabled);
@@ -55,22 +56,21 @@ function usePreviewPlaybackRuntime() {
   const sourceSelection = useAppSelector(selectSourceSelection);
   const media = useAppSelector(selectSourceMedia);
   const trim = useAppSelector(selectTrim) ?? EMPTY_TRIM;
-  const preview = useAppSelector(selectPreview);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
 
   const sourcePath = sourceSelection?.sourcePath ?? null;
-  const previewKey =
-    sourcePath && preview.status === "ready" ? `${sourcePath}:${preview.value.url}` : null;
+  const sourceIdentity = useMemo(
+    () => ({ activeInstanceId, sourcePath }),
+    [activeInstanceId, sourcePath],
+  );
+
+  const previewRuntime = usePreviewRuntime();
+  const { previewKey, videoRef } = previewRuntime;
 
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
   const [shuttleDirection, setShuttleDirection] = useState<FrameShuttleDirection | 0>(0);
   const [transportError, setTransportError] = useState<string | null>(null);
-  const [readyPreviewKey, setReadyPreviewKey] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const setVideoElement = useCallback((element: HTMLVideoElement | null) => {
-    videoRef.current = element;
-  }, []);
 
   const seekSchedulerRef = useRef<ReturnType<typeof createSeekScheduler> | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
@@ -89,7 +89,6 @@ function usePreviewPlaybackRuntime() {
   const playbackRequestedRef = useRef(false);
   const isPlayingRef = useRef(false);
   const shuttleDirectionRef = useRef<FrameShuttleDirection | 0>(0);
-  const resumeAfterCropRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
   const lastScrubCommitAtRef = useRef(-Infinity);
   const trimInteractionActiveRef = useRef(false);
@@ -97,18 +96,10 @@ function usePreviewPlaybackRuntime() {
   const trimRef = useRef(trim);
   const currentPlayheadMicrosRef = useRef(trim.startMicros);
   const activePlaybackRate = shuttleDirection === 1 ? FRAME_SHUTTLE_PLAYBACK_RATE : playbackSpeed;
-  const audioPlayback = useAudioPlaybackRuntime({
-    activeInstanceId,
-    isPreviewReady: previewKey !== null && readyPreviewKey === previewKey,
-    playbackRate: activePlaybackRate,
-    previewKey,
-    videoRef,
-  });
+  const { audioPlayheadRef } = useAudioPlayback();
+  const audioTransport = useAudioTransport();
 
   const {
-    audioMeterRef,
-    audioPlayheadRef,
-    clearLiveAudioTrackGain,
     isReady: isAudioReady,
     pause: pauseAudioPlayback,
     resumeAt: resumeAudioAt,
@@ -117,9 +108,9 @@ function usePreviewPlaybackRuntime() {
     startAt: startAudioAt,
     syncTo: syncAudioPlayback,
     usesExternalAudio,
-  } = audioPlayback;
+  } = audioTransport;
 
-  const isPlaybackReady = previewKey !== null && readyPreviewKey === previewKey && isAudioReady;
+  const isPlaybackReady = previewRuntime.isPreviewReady && isAudioReady;
 
   const isPlaybackReadyRef = useRef(isPlaybackReady);
   const nativeLoopEnabled =
@@ -176,13 +167,13 @@ function usePreviewPlaybackRuntime() {
     // Snapshot activation restores the selected segment, so preview should begin at its boundary.
     currentPlayheadMicrosRef.current = trimRef.current.startMicros;
     setPlayheadMicros(trimRef.current.startMicros);
-  }, [activeInstanceId, pauseAudioPlayback, previewKey, sourcePath]);
+  }, [activeInstanceId, pauseAudioPlayback, previewKey, sourcePath, videoRef]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (video) video.playbackRate = activePlaybackRate;
     setAudioPlaybackRate(activePlaybackRate);
-  }, [activePlaybackRate, setAudioPlaybackRate]);
+  }, [activePlaybackRate, setAudioPlaybackRate, videoRef]);
 
   const stopPlayheadAnimation = useCallback(() => cancelPlaybackFrame(playbackFrameRef), []);
   const handlePlaybackStartFailure = useCallback(() => {
@@ -211,6 +202,7 @@ function usePreviewPlaybackRuntime() {
     setTransportError,
     stopPlayheadAnimation,
     t,
+    videoRef,
   ]);
 
   const resumeExternalAudioPlayback = useCallback(() => {
@@ -223,7 +215,7 @@ function usePreviewPlaybackRuntime() {
       if (startSequence !== playbackStartSequenceRef.current) return;
       handlePlaybackStartFailure();
     });
-  }, [handlePlaybackStartFailure, resumeAudioAt]);
+  }, [handlePlaybackStartFailure, resumeAudioAt, videoRef]);
 
   useEffect(() => {
     if (!usesExternalAudio || !isPlaybackReady || !isPlayingRef.current) return;
@@ -240,7 +232,7 @@ function usePreviewPlaybackRuntime() {
       }
       seekSchedulerRef.current.seek(micros / 1_000_000, approximate, onSettled);
     },
-    [],
+    [videoRef],
   );
 
   const applyMediaSeek = useCallback(
@@ -339,6 +331,7 @@ function usePreviewPlaybackRuntime() {
     startAudioAt,
     scheduleVideoSeek,
     setTransportError,
+    videoRef,
   ]);
 
   const handlePlaybackBoundary = useCallback(
@@ -369,6 +362,7 @@ function usePreviewPlaybackRuntime() {
       setIsPlaying,
       startMediaPlayback,
       stopPlayheadAnimation,
+      videoRef,
     ],
   );
 
@@ -413,7 +407,13 @@ function usePreviewPlaybackRuntime() {
 
     const video = videoRef.current;
     if (video) playbackFrameRef.current = requestPlaybackFrame(video, update);
-  }, [audioPlayheadRef, handlePlaybackBoundary, stopPlayheadAnimation, syncAudioPlayback]);
+  }, [
+    audioPlayheadRef,
+    handlePlaybackBoundary,
+    stopPlayheadAnimation,
+    syncAudioPlayback,
+    videoRef,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -432,7 +432,7 @@ function usePreviewPlaybackRuntime() {
       if (videoRef.current) videoRef.current.playbackRate = rate;
       setAudioPlaybackRate(rate);
     },
-    [setAudioPlaybackRate],
+    [setAudioPlaybackRate, videoRef],
   );
 
   const handleShuttleEnd = useCallback(
@@ -474,6 +474,7 @@ function usePreviewPlaybackRuntime() {
       setShuttleDirection,
       setMediaPlaybackRate,
       stopPlayheadAnimation,
+      videoRef,
     ],
   );
 
@@ -544,7 +545,7 @@ function usePreviewPlaybackRuntime() {
     };
 
     reverseShuttleFrameRef.current = requestAnimationFrame(update);
-  }, [audioPlayheadRef, handleShuttleEnd, playbackModes, scheduleVideoSeek]);
+  }, [audioPlayheadRef, handleShuttleEnd, playbackModes, scheduleVideoSeek, videoRef]);
 
   const handleShuttleStart = useCallback(
     (direction: FrameShuttleDirection, origin: DiagnosticOrigin = { type: "internal" }) => {
@@ -588,6 +589,7 @@ function usePreviewPlaybackRuntime() {
       startMediaPlayback,
       startReverseShuttleAnimation,
       stopPlayheadAnimation,
+      videoRef,
     ],
   );
 
@@ -644,6 +646,7 @@ function usePreviewPlaybackRuntime() {
     pauseAudioPlayback,
     setIsPlaying,
     stopPlayheadAnimation,
+    videoRef,
   ]);
 
   const handleScrubEnd = useCallback(() => {
@@ -665,13 +668,107 @@ function usePreviewPlaybackRuntime() {
     }
   }, [applyMediaSeek, flushScrubSeek, playbackModes, startMediaPlayback]);
 
-  const timelineEditing = useTimelineEditingCommands({
-    currentPlayheadMicrosRef,
-    onScrubEnd: handleScrubEnd,
-    onScrubStart: handleScrubStart,
-    trimInteractionActiveRef,
-    trimRef,
-  });
+  const trimCommitFrameRef = useRef<number | null>(null);
+  const pendingTrimCommitRef = useRef<TrimRange | null>(null);
+  const isCurrentSourceIdentity = useCallback(() => {
+    const state = store.getState();
+    return (
+      selectActiveInstanceId(state) === sourceIdentity.activeInstanceId &&
+      (selectSourceSelection(state)?.sourcePath ?? null) === sourceIdentity.sourcePath
+    );
+  }, [sourceIdentity, store]);
+
+  const flushTrimCommit = useCallback(() => {
+    if (trimCommitFrameRef.current !== null) cancelAnimationFrame(trimCommitFrameRef.current);
+    trimCommitFrameRef.current = null;
+    const pendingTrim = pendingTrimCommitRef.current;
+    pendingTrimCommitRef.current = null;
+    if (pendingTrim && sourcePath && isCurrentSourceIdentity())
+      dispatch(trimChanged({ trim: pendingTrim }));
+  }, [dispatch, isCurrentSourceIdentity, sourcePath]);
+
+  const queueTrimCommit = useCallback(
+    (nextTrim: TrimRange) => {
+      pendingTrimCommitRef.current = nextTrim;
+      if (trimCommitFrameRef.current !== null) return;
+      trimCommitFrameRef.current = requestAnimationFrame(() => {
+        trimCommitFrameRef.current = null;
+        const pendingTrim = pendingTrimCommitRef.current;
+        pendingTrimCommitRef.current = null;
+        if (pendingTrim && sourcePath && isCurrentSourceIdentity())
+          dispatch(trimChanged({ trim: pendingTrim }));
+      });
+    },
+    [dispatch, isCurrentSourceIdentity, sourcePath],
+  );
+
+  const onSetSegmentBoundary = useCallback(
+    (boundary: TrimBoundary, origin: DiagnosticOrigin = { type: "internal" }) => {
+      diagnostics.action("timeline.trim-boundary.requested", origin, { boundary });
+      if (!sourcePath) {
+        diagnostics.event("timeline.trim-boundary.ignored", {
+          data: { boundary, reason: "source_unavailable" },
+          origin,
+          result: "ignored",
+        });
+        return;
+      }
+      const currentMicros = currentPlayheadMicrosRef.current;
+      if (!canSetTrimBoundaryAtPlayhead(trimRef.current, boundary, currentMicros)) {
+        diagnostics.event("timeline.trim-boundary.ignored", {
+          data: { boundary, reason: "outside_trim_range" },
+          origin,
+          result: "ignored",
+        });
+        return;
+      }
+      const nextTrim = setTrimBoundaryAtPlayhead(trimRef.current, boundary, currentMicros);
+      trimRef.current = nextTrim;
+      flushTrimCommit();
+      dispatch(trimChanged({ trim: nextTrim }));
+      diagnostics.event("timeline.trim-boundary.changed", {
+        data: { boundary, micros: currentMicros },
+        origin,
+      });
+    },
+    [dispatch, flushTrimCommit, sourcePath],
+  );
+
+  const onTrimBoundaryChange = useCallback(
+    (_boundary: TrimBoundary, nextTrim: TrimRange) => {
+      trimRef.current = nextTrim;
+      queueTrimCommit(nextTrim);
+    },
+    [queueTrimCommit],
+  );
+
+  const onSegmentMove = useCallback(
+    (nextTrim: TrimRange) => {
+      trimRef.current = nextTrim;
+      queueTrimCommit(nextTrim);
+    },
+    [queueTrimCommit],
+  );
+
+  const beginTrimDrag = useCallback(() => {
+    trimInteractionActiveRef.current = true;
+    handleScrubStart();
+  }, [handleScrubStart]);
+
+  const finishTrimDrag = useCallback(() => {
+    flushTrimCommit();
+    dispatch(commitActiveEditingInstanceDraft());
+    handleScrubEnd();
+  }, [dispatch, flushTrimCommit, handleScrubEnd]);
+
+  useLayoutEffect(
+    () => () => {
+      if (trimCommitFrameRef.current !== null) cancelAnimationFrame(trimCommitFrameRef.current);
+      trimCommitFrameRef.current = null;
+      pendingTrimCommitRef.current = null;
+    },
+    [sourceIdentity],
+  );
 
   const handleTogglePlayback = useCallback(
     (origin: DiagnosticOrigin = { type: "internal" }) => {
@@ -708,7 +805,7 @@ function usePreviewPlaybackRuntime() {
       playbackModes.resetBoundary();
       startMediaPlayback();
     },
-    [commitSeek, handleShuttleEnd, playbackModes, setTransportError, startMediaPlayback],
+    [commitSeek, handleShuttleEnd, playbackModes, setTransportError, startMediaPlayback, videoRef],
   );
 
   const handlePausePlayback = useCallback(() => {
@@ -723,7 +820,7 @@ function usePreviewPlaybackRuntime() {
     pauseAudioPlayback();
     setIsPlaying(false);
     stopPlayheadAnimation();
-  }, [handleShuttleEnd, pauseAudioPlayback, setIsPlaying, stopPlayheadAnimation]);
+  }, [handleShuttleEnd, pauseAudioPlayback, setIsPlaying, stopPlayheadAnimation, videoRef]);
 
   const handleStepFrame = useCallback(
     (direction: -1 | 1, origin: DiagnosticOrigin = { type: "internal" }) => {
@@ -738,7 +835,14 @@ function usePreviewPlaybackRuntime() {
       const baseMicros = pendingFrameStepSeekMicrosRef.current ?? currentPlayheadMicrosRef.current;
       queueFrameStepSeek(baseMicros + direction * frameDurationMicros(frameRate));
     },
-    [frameRate, handleShuttleEnd, queueFrameStepSeek, setIsPlaying, stopPlayheadAnimation],
+    [
+      frameRate,
+      handleShuttleEnd,
+      queueFrameStepSeek,
+      setIsPlaying,
+      stopPlayheadAnimation,
+      videoRef,
+    ],
   );
 
   const onTimeUpdate = useCallback(
@@ -770,7 +874,7 @@ function usePreviewPlaybackRuntime() {
       setPlayheadMicros(currentMicros);
       if (currentMicros >= trimRef.current.sourceDurationMicros) stopPlayheadAnimation();
     },
-    [audioPlayheadRef, handlePlaybackBoundary, setPlayheadMicros, stopPlayheadAnimation],
+    [audioPlayheadRef, handlePlaybackBoundary, setPlayheadMicros, stopPlayheadAnimation, videoRef],
   );
 
   const onPause = useCallback(() => {
@@ -789,67 +893,11 @@ function usePreviewPlaybackRuntime() {
       data: { status: "paused" },
       origin: { type: "internal" },
     });
-  }, [onTimeUpdate, pauseAudioPlayback, setIsPlaying, stopPlayheadAnimation]);
-
-  const onCropToolOpenChange = useCallback(
-    (isOpen: boolean) => {
-      diagnostics.event(isOpen ? "crop.tool.opened" : "crop.tool.closed", {
-        origin: { type: "button", id: "crop.tool" },
-      });
-      if (isOpen) {
-        if (shuttleDirectionRef.current !== 0) {
-          handleShuttleEnd({ type: "internal", id: "crop-tool" });
-          return;
-        }
-        resumeAfterCropRef.current = playbackRequestedRef.current || isPlayingRef.current;
-        if (!resumeAfterCropRef.current) return;
-        playbackStartSequenceRef.current += 1;
-        playbackRequestedRef.current = false;
-        isPlayingRef.current = false;
-        videoRef.current?.pause();
-        pauseAudioPlayback();
-        setIsPlaying(false);
-        stopPlayheadAnimation();
-        return;
-      }
-      if (resumeAfterCropRef.current) {
-        resumeAfterCropRef.current = false;
-        startMediaPlayback();
-      }
-    },
-    [handleShuttleEnd, pauseAudioPlayback, setIsPlaying, startMediaPlayback, stopPlayheadAnimation],
-  );
-
-  const onPreviewPlaybackError = useCallback(
-    (previewKind: "source" | "proxy") => {
-      if (shuttleDirectionRef.current !== 0)
-        handleShuttleEnd({ type: "internal", id: "preview-error" });
-      playbackStartSequenceRef.current += 1;
-      playbackRequestedRef.current = false;
-      isPlayingRef.current = false;
-      videoRef.current?.pause();
-      pauseAudioPlayback();
-      setIsPlaying(false);
-      stopPlayheadAnimation();
-      if (sourcePath) void dispatch(handlePreviewPlaybackErrorRequested(sourcePath, previewKind));
-    },
-    [
-      dispatch,
-      handleShuttleEnd,
-      pauseAudioPlayback,
-      setIsPlaying,
-      sourcePath,
-      stopPlayheadAnimation,
-    ],
-  );
+  }, [onTimeUpdate, pauseAudioPlayback, setIsPlaying, stopPlayheadAnimation, videoRef]);
 
   const onLoadedMetadata = useCallback(() => {
     commitSeek(currentPlayheadMicrosRef.current);
   }, [commitSeek]);
-
-  const onCanPlay = useCallback(() => {
-    if (previewKey) setReadyPreviewKey(previewKey);
-  }, [previewKey, setReadyPreviewKey]);
 
   const onPlay = useCallback(() => {
     playbackRequestedRef.current = true;
@@ -891,12 +939,19 @@ function usePreviewPlaybackRuntime() {
       return;
     }
     if (videoRef.current) handlePlaybackBoundary(videoRef.current.currentTime * 1_000_000);
-  }, [commitSeek, handlePlaybackBoundary, handleShuttleEnd, playbackModes, startMediaPlayback]);
+  }, [
+    commitSeek,
+    handlePlaybackBoundary,
+    handleShuttleEnd,
+    playbackModes,
+    startMediaPlayback,
+    videoRef,
+  ]);
 
   useEditorTimelineShortcuts(
     {
       enabled: isPlaybackReady,
-      onSetSegmentBoundary: timelineEditing.onSetSegmentBoundary,
+      onSetSegmentBoundary,
       onShuttleEnd: handleShuttleEnd,
       onShuttleStart: handleShuttleStart,
       onStepFrame: handleStepFrame,
@@ -906,50 +961,36 @@ function usePreviewPlaybackRuntime() {
   );
 
   return {
-    videoRef,
+    canInteract: isPlaybackReady,
     playheadRef,
     displayedPlayheadMicros,
     isPlaying,
-    isPlaybackReady,
     transportError,
-    nativeLoopEnabled,
     shuttleDirection,
-    videoMuted: usesExternalAudio && typeof AudioContext === "undefined",
     onLoadedMetadata,
-    onCanPlay,
     onPlay,
     onPause,
-    onPausePlayback: handlePausePlayback,
+    pause: handlePausePlayback,
     onTimeUpdate,
     onEnded,
-    onTogglePlayback: handleTogglePlayback,
-    onStepFrame: handleStepFrame,
-    onShuttleStart: handleShuttleStart,
-    onShuttleEnd: handleShuttleEnd,
-    onSetSegmentBoundary: timelineEditing.onSetSegmentBoundary,
-    onTrimBoundaryChange: timelineEditing.onTrimBoundaryChange,
-    onSegmentMove: timelineEditing.onSegmentMove,
-    onTrimDragStart: timelineEditing.onTrimDragStart,
-    onTrimDragEnd: timelineEditing.onTrimDragEnd,
-    onSegmentDragStart: timelineEditing.onSegmentDragStart,
-    onSegmentDragEnd: timelineEditing.onSegmentDragEnd,
+    toggle: handleTogglePlayback,
+    stepFrame: handleStepFrame,
+    startShuttle: handleShuttleStart,
+    stopShuttle: handleShuttleEnd,
+    onSetSegmentBoundary,
+    onTrimBoundaryChange,
+    onSegmentMove,
+    onTrimDragStart: beginTrimDrag,
+    onTrimDragEnd: finishTrimDrag,
+    onSegmentDragStart: beginTrimDrag,
+    onSegmentDragEnd: finishTrimDrag,
     onSeek: commitSeek,
     onScrubStart: handleScrubStart,
     onScrub: queueScrubSeek,
     onScrubEnd: handleScrubEnd,
-    onCropToolOpenChange,
-    onPreviewPlaybackError,
-    setMediaPlaybackRate,
-    audioPlayback: {
-      audioMeterRef,
-      audioPlayheadRef,
-      setLiveAudioTrackGain: audioPlayback.setLiveAudioTrackGain,
-      clearLiveAudioTrackGain,
-    },
-    setVideoElement,
     canSetSegmentStart: canSetTrimBoundaryAtPlayhead(trim, "start", displayedPlayheadMicros),
     canSetSegmentEnd: canSetTrimBoundaryAtPlayhead(trim, "end", displayedPlayheadMicros),
   };
 }
 
-export { usePreviewPlaybackRuntime };
+export { useTimelinePlaybackRuntime };

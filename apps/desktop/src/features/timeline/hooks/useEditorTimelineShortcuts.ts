@@ -1,4 +1,4 @@
-import { type RefObject,useEffect, useRef } from "react";
+import { type RefObject, useEffect, useRef } from "react";
 
 import type { TrimBoundary } from "@/domain/trim";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";

@@ -2,10 +2,16 @@ import { motion, type Transition } from "motion/react";
 import { type CSSProperties, type SyntheticEvent, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
-import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppSelector } from "@/app/store/redux-hooks";
+import {
+  selectLoopPlaybackEnabled,
+  selectSegmentPlaybackEnabled,
+} from "@/app/store/slices/editor-tools-slice";
 import { selectPlaybackSpeed } from "@/app/store/slices/playback-controls-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
+import { useAudioTransport } from "@/features/audio";
+import { usePreviewRuntime } from "@/features/preview";
+import { useTimelinePlayback } from "@/features/timeline";
 import { diagnostics } from "@/lib/diagnostics";
 
 interface CropViewportVideoProps {
@@ -22,20 +28,20 @@ function CropViewportVideo({
   transition,
 }: CropViewportVideoProps) {
   const { t } = useTranslation();
-  const {
-    nativeLoopEnabled,
-    onCanPlay,
-    onEnded: onPlaybackEnded,
-    onLoadedMetadata: onPlaybackLoadedMetadata,
-    onPause: onPlaybackPause,
-    onPlay: onPlaybackPlay,
-    onPreviewPlaybackError,
-    onTimeUpdate: onPlaybackTimeUpdate,
-    setMediaPlaybackRate,
-    setVideoElement,
-    videoMuted,
-    videoRef,
-  } = usePlayback();
+  const playback = useTimelinePlayback();
+  const { onCanPlay, onPreviewPlaybackError, setVideoElement, videoRef } = usePreviewRuntime();
+
+  const { usesExternalAudio } = useAudioTransport();
+  const loopPlaybackEnabled = useAppSelector(selectLoopPlaybackEnabled);
+  const segmentPlaybackEnabled = useAppSelector(selectSegmentPlaybackEnabled);
+  const nativeLoopEnabled =
+    playback.canInteract &&
+    playback.shuttleDirection === 0 &&
+    loopPlaybackEnabled &&
+    !segmentPlaybackEnabled &&
+    !usesExternalAudio;
+
+  const videoMuted = usesExternalAudio && typeof AudioContext === "undefined";
 
   const playbackRate = useAppSelector(selectPlaybackSpeed);
   const preview = useAppSelector(selectPreview);
@@ -44,8 +50,8 @@ function CropViewportVideo({
   const previewKind = preview.status === "ready" ? preview.value.kind : null;
 
   useEffect(() => {
-    setMediaPlaybackRate(playbackRate);
-  }, [playbackRate, setMediaPlaybackRate, sourceUrl]);
+    if (videoRef.current) videoRef.current.playbackRate = playbackRate;
+  }, [playbackRate, sourceUrl, videoRef]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -76,8 +82,8 @@ function CropViewportVideo({
       data: { kind: previewKind },
       origin: { type: "internal" },
     });
-    onPlaybackEnded();
-  }, [onPlaybackEnded, previewKind]);
+    playback.onEnded();
+  }, [playback, previewKind]);
 
   const onError = useCallback(() => {
     if (previewKind === null || sourceUrl === null) return;
@@ -91,13 +97,11 @@ function CropViewportVideo({
     );
     if (reportedUrl.current === sourceUrl) return;
     reportedUrl.current = sourceUrl;
+    playback.pause();
     onPreviewPlaybackError(previewKind);
-  }, [onPreviewPlaybackError, previewKind, sourceUrl]);
+  }, [onPreviewPlaybackError, playback, previewKind, sourceUrl]);
 
-  const onLoadedMetadata = useCallback(
-    () => onPlaybackLoadedMetadata(),
-    [onPlaybackLoadedMetadata],
-  );
+  const onLoadedMetadata = useCallback(() => playback.onLoadedMetadata(), [playback]);
 
   const onPlay = useCallback(
     (event: SyntheticEvent<HTMLVideoElement>) => {
@@ -110,9 +114,9 @@ function CropViewportVideo({
         data: { kind: previewKind },
         origin: { type: "internal" },
       });
-      onPlaybackPlay();
+      playback.onPlay();
     },
-    [cropIsOpen, onPlaybackPlay, previewKind],
+    [cropIsOpen, playback, previewKind],
   );
 
   const onPause = useCallback(() => {
@@ -121,8 +125,8 @@ function CropViewportVideo({
       data: { kind: previewKind },
       origin: { type: "internal" },
     });
-    onPlaybackPause();
-  }, [onPlaybackPause, previewKind]);
+    playback.onPause();
+  }, [playback, previewKind]);
 
   const onLoadStart = useCallback(() => {
     if (previewKind !== null)
@@ -142,8 +146,8 @@ function CropViewportVideo({
 
   const onTimeUpdate = useCallback(
     (event: SyntheticEvent<HTMLVideoElement>) =>
-      onPlaybackTimeUpdate(event.currentTarget.currentTime),
-    [onPlaybackTimeUpdate],
+      playback.onTimeUpdate(event.currentTarget.currentTime),
+    [playback],
   );
 
   const onWaiting = useCallback(() => {

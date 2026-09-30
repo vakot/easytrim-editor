@@ -100,8 +100,9 @@ vi.mock("@/features/preview", () => ({
     requestSaveFrame: vi.fn(),
   }),
 }));
-vi.mock("@/app/hooks/usePlayback", () => ({
-  usePlayback: () => ({ isPlaying: mocks.isPlaying }),
+vi.mock("@/features/timeline", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/timeline")>()),
+  useTimelinePlayback: () => ({ isPlaying: mocks.isPlaying }),
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
@@ -131,7 +132,7 @@ vi.mock("@/lib/diagnostics", () => ({
 }));
 
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
-import { EditorContractsTestProvider } from "@/test/editor-contracts-test-provider";
+import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";
 
 import { ApplicationCommandsProvider } from "../ApplicationCommandsProvider";
 
@@ -176,11 +177,11 @@ function RuntimeProbe() {
 
 function runtimeUi() {
   return (
-    <EditorContractsTestProvider>
+    <EditorRuntimeTestProvider>
       <ApplicationCommandsProvider>
         <RuntimeProbe />
       </ApplicationCommandsProvider>
-    </EditorContractsTestProvider>
+    </EditorRuntimeTestProvider>
   );
 }
 
