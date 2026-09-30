@@ -125,6 +125,7 @@ function useTrimTimelineInteractions({
     bounds: DOMRect,
     activeAnchorId: TimelineSnapAnchorId,
     excludedAnchorIds: readonly TimelineSnapAnchorId[] = [],
+    allowedTimeRange?: { maximumMicros: number; minimumMicros: number },
   ) {
     const currentRange = rangeRef.current;
     return findNearestTimelineSnapAnchor(
@@ -138,6 +139,7 @@ function useTrimTimelineInteractions({
       ),
       activeAnchorId,
       excludedAnchorIds,
+      allowedTimeRange,
     );
   }
 
@@ -152,7 +154,10 @@ function useTrimTimelineInteractions({
     }
     const pointer = pointerMicros(clientX, drag.bounds);
     const snapTarget = snapModifierActive
-      ? nearestSnapAnchor(pointer.micros, pointer.bounds, `trim-${boundary}`, ["trim-center"])
+      ? nearestSnapAnchor(pointer.micros, pointer.bounds, `trim-${boundary}`, [
+          "trim-center",
+          boundary === "start" ? "trim-end" : "trim-start",
+        ])
       : null;
 
     const next = moveTrimBoundary(
@@ -267,10 +272,16 @@ function useTrimTimelineInteractions({
     drag.snapModifierActive = snapModifierActive;
     const requestedCenterMicros = pointerMicros - drag.grabOffsetMicros;
     const snapTarget = snapModifierActive
-      ? nearestSnapAnchor(requestedCenterMicros, drag.bounds, "trim-center", [
-          "trim-start",
-          "trim-end",
-        ])
+      ? nearestSnapAnchor(
+          requestedCenterMicros,
+          drag.bounds,
+          "trim-center",
+          ["trim-start", "trim-end"],
+          {
+            minimumMicros: segmentDurationMicros / 2,
+            maximumMicros: currentRange.sourceDurationMicros - segmentDurationMicros / 2,
+          },
+        )
       : null;
 
     const requestedCenter = snapTarget?.timeMicros ?? requestedCenterMicros;

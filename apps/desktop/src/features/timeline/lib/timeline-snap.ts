@@ -11,6 +11,11 @@ interface TimelineSnapAnchor {
   timeMicros: number;
 }
 
+interface TimelineSnapAnchorTimeRange {
+  maximumMicros: number;
+  minimumMicros: number;
+}
+
 function createTimelineSnapTargets(
   sceneBoundariesMicros: readonly number[],
   audioActivityRanges: readonly AudioActivityRange[],
@@ -48,6 +53,7 @@ function findNearestTimelineSnapAnchor(
   anchors: readonly TimelineSnapAnchor[],
   activeAnchorId: TimelineSnapAnchorId,
   excludedAnchorIds: readonly TimelineSnapAnchorId[] = [],
+  allowedTimeRange?: TimelineSnapAnchorTimeRange,
 ): TimelineSnapAnchor | null {
   if (trackWidth <= 0 || sourceDurationMicros <= 0) return null;
 
@@ -56,6 +62,13 @@ function findNearestTimelineSnapAnchor(
 
   for (const anchor of anchors) {
     if (anchor.id === activeAnchorId || excludedAnchorIds.includes(anchor.id)) continue;
+    if (
+      allowedTimeRange &&
+      (anchor.timeMicros < allowedTimeRange.minimumMicros ||
+        anchor.timeMicros > allowedTimeRange.maximumMicros)
+    ) {
+      continue;
+    }
 
     const distancePixels =
       (Math.abs(positionMicros - anchor.timeMicros) / sourceDurationMicros) * trackWidth;
