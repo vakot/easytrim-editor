@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 
 import {
   DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB,
@@ -11,7 +11,7 @@ import {
   setAudioTrackSignalEffect,
 } from "@/domain/audio-processing";
 
-import { useAudioTrackEffectsDraft } from "../../../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
+import { useAudioTrackEffectsDraft } from "../../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
 import {
   AudioTrackEffectsLibraryPage,
   AudioTrackEffectsLibraryPageContent,
@@ -20,33 +20,25 @@ import {
   AudioTrackEffectsLibraryPageHeaderContent,
   AudioTrackEffectsLibraryPageTitle,
   AudioTrackEffectsLibraryPageToggle,
-} from "../../components/AudioTrackEffectsLibraryPage";
+} from "../components/AudioTrackEffectsLibraryPage";
 
 const MIN_LIMITER_CEILING_DB = -24;
 const MAX_LIMITER_CEILING_DB = 0;
 
 function LimiterPage({ streamIndex }: { streamIndex: number }) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const { dispatch, draft } = useAudioTrackEffectsDraft();
   const limiter = getAudioTrackSignalEffect(draft.processing, "limiter");
-  const [ceilingInput, setCeilingInput] = useState(() =>
-    String(limiter?.ceilingDb ?? DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB),
+  const [ceilingDb, setCeilingDb] = useState(
+    () => limiter?.ceilingDb ?? DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB,
   );
 
-  const ceilingDb = parseLimiterCeiling(ceilingInput);
-  const valid = ceilingDb !== null;
+  const formattedCeilingDb = formatCeilingDb(ceilingDb, i18n.language);
 
   const updateLimiter = (enabled: boolean, requestedCeilingDb = ceilingDb) => {
-    const nextCeilingDb =
-      enabled && requestedCeilingDb === null
-        ? DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB
-        : requestedCeilingDb;
-
-    if (enabled && requestedCeilingDb === null) setCeilingInput(String(nextCeilingDb));
-
     const processing = enabled
       ? setAudioTrackSignalEffect(draft.processing, {
-          ceilingDb: nextCeilingDb ?? DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB,
+          ceilingDb: requestedCeilingDb,
           stage: "finalProtection",
           type: "limiter",
         })
@@ -60,26 +52,17 @@ function LimiterPage({ streamIndex }: { streamIndex: number }) {
 
     dispatch({ type: "processingChanged", value: processing });
     dispatch({
-      dirty: dirty || (enabled && nextCeilingDb === null),
+      dirty,
       effectId: "limiter",
       type: "effectStatusChanged",
-      valid: !enabled || nextCeilingDb !== null,
+      valid: true,
     });
   };
 
-  const handleCeilingChange = (value: string) => {
-    setCeilingInput(value);
-    const nextCeilingDb = parseLimiterCeiling(value);
-    if (nextCeilingDb === null) {
-      dispatch({
-        dirty: true,
-        effectId: "limiter",
-        type: "effectStatusChanged",
-        valid: false,
-      });
-      return;
-    }
-    updateLimiter(true, nextCeilingDb);
+  const handleCeilingChange = ([value]: number[]) => {
+    if (value === undefined) return;
+    setCeilingDb(value);
+    updateLimiter(true, value);
   };
 
   return (
@@ -101,42 +84,44 @@ function LimiterPage({ streamIndex }: { streamIndex: number }) {
       </AudioTrackEffectsLibraryPageHeader>
 
       <AudioTrackEffectsLibraryPageContent disabled={limiter === undefined}>
-        <div className="grid gap-1.5">
-          <Label htmlFor={`track-limiter-ceiling-${streamIndex}`}>
-            {t("audio.labels.limiterCeiling")}
-          </Label>
-          <div className="flex max-w-48 items-center gap-2">
-            <Input
-              aria-invalid={limiter !== undefined && !valid}
-              id={`track-limiter-ceiling-${streamIndex}`}
-              max={MAX_LIMITER_CEILING_DB}
-              min={MIN_LIMITER_CEILING_DB}
-              onChange={(event) => handleCeilingChange(event.currentTarget.value)}
-              step="0.5"
-              type="number"
-              value={ceilingInput}
-            />
-            <span aria-hidden="true" className="text-sm text-muted-foreground">
-              dB
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {t("audio.messages.limiterCeilingDescription")}
-          </p>
+        <Label htmlFor={`track-limiter-ceiling-${streamIndex}`}>
+          {t("audio.labels.limiterCeiling")}
+        </Label>
+        <div className="mt-2 flex max-w-md items-center gap-3">
+          <Slider
+            aria-label={t("audio.labels.limiterCeiling")}
+            aria-valuetext={`${formattedCeilingDb} dB`}
+            id={`track-limiter-ceiling-${streamIndex}`}
+            markers={[
+              { label: "-24 dB", value: MIN_LIMITER_CEILING_DB },
+              { label: "-18 dB", value: -18 },
+              { label: "-12 dB", value: -12 },
+              { label: "-6 dB", value: -6 },
+              { label: "0 dB", value: MAX_LIMITER_CEILING_DB },
+            ]}
+            max={MAX_LIMITER_CEILING_DB}
+            min={MIN_LIMITER_CEILING_DB}
+            onDoubleClick={() => {
+              setCeilingDb(DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB);
+              updateLimiter(true, DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB);
+            }}
+            onValueChange={handleCeilingChange}
+            step={1}
+            value={[ceilingDb]}
+          />
+          <output className="w-12 shrink-0 text-right text-sm text-muted-foreground">
+            {formattedCeilingDb} dB
+          </output>
         </div>
       </AudioTrackEffectsLibraryPageContent>
     </AudioTrackEffectsLibraryPage>
   );
 }
 
-function parseLimiterCeiling(value: string): number | null {
-  if (!value.trim()) return null;
-  const ceilingDb = Number(value);
-  return Number.isFinite(ceilingDb) &&
-    ceilingDb >= MIN_LIMITER_CEILING_DB &&
-    ceilingDb <= MAX_LIMITER_CEILING_DB
-    ? ceilingDb
-    : null;
+function formatCeilingDb(value: number, language: string): string {
+  return new Intl.NumberFormat(language, { maximumFractionDigits: 1 })
+    .format(value)
+    .replace(/-/g, "−");
 }
 
 export { LimiterPage };

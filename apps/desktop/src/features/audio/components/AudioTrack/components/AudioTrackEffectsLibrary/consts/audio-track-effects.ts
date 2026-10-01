@@ -8,7 +8,7 @@ import {
   sameLoudnessNormalization,
 } from "@/domain/audio-processing";
 
-import { LimiterPage } from "../pages/LimiterPage/LimiterPage";
+import { LimiterPage } from "../pages/LimiterPage";
 import { NoiseReductionPage } from "../pages/NoiseReductionPage";
 import { NormalizeLoudnessPage } from "../pages/NormalizeLoudnessPage";
 
