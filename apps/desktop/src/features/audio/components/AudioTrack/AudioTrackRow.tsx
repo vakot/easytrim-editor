@@ -188,6 +188,11 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
       );
     }
 
+    const highPassCutoffHz = getAudioTrackSignalEffect(processing, "highPass")?.cutoffHz;
+    if (highPassCutoffHz !== undefined) {
+      summaries.push(t("audio.messages.highPassEffectSummary", { cutoff: highPassCutoffHz }));
+    }
+
     const limiter = getAudioTrackSignalEffect(processing, "limiter");
     if (limiter) {
       summaries.push(

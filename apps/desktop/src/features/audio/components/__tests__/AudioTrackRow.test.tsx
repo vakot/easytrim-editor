@@ -203,6 +203,29 @@ describe("AudioTrackRow", () => {
     expect(screen.queryByRole("spinbutton", { name: /gain/i })).not.toBeInTheDocument();
   });
 
+  it("applies the high-pass cutoff to its track and shows the active effect", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("tab", { name: /high-pass filter/i }));
+    await user.click(screen.getByRole("combobox", { name: /cutoff frequency.*high-pass filter/i }));
+    await user.click(screen.getByRole("option", { name: "80 Hz" }));
+
+    expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
+    await user.click(screen.getByRole("button", { name: /apply/i }));
+
+    expect(store.getState().audio.tracks[0]?.processing).toEqual({
+      gainDb: 0,
+      effects: [{ cutoffHz: 80, stage: "cleanup", type: "highPass" }],
+    });
+    expect(store.getState().audio.tracks[1]?.processing).toEqual({ gainDb: 0 });
+    expect(document.querySelector('[data-slot="audio-track-effects-indicator"]')).toHaveTextContent(
+      /high-pass.*80 hz/i,
+    );
+  });
+
   it("keeps analysis measurement-only and leaves the clean dialog draft clean", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();
@@ -255,8 +278,12 @@ describe("AudioTrackRow", () => {
 
     const fieldset = document.querySelector("fieldset:disabled");
 
-    const description = document.querySelector(
-      '[data-slot="audio-track-effects-library-page-description"]',
+    const description = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '[data-slot="audio-track-effects-library-page-description"]',
+      ),
+    ).find(
+      (element) => element.textContent === "Normalize this track to a consistent target loudness.",
     );
 
     expect(fieldset).not.toBeNull();

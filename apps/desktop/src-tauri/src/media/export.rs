@@ -2037,6 +2037,51 @@ mod tests {
     }
 
     #[test]
+    fn high_pass_signal_effect_round_trips_frontend_camel_case_fields() {
+        let frontend_payload = serde_json::json!({
+            "type": "highPass",
+            "cutoffHz": 80.0,
+            "stage": "cleanup"
+        });
+
+        let effect: AudioTrackSignalEffect = serde_json::from_value(frontend_payload.clone())
+            .expect("frontend payload deserializes");
+
+        assert_eq!(
+            effect,
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz: 80.0,
+                stage: AudioProcessingStage::Cleanup,
+            }
+        );
+        assert_eq!(
+            serde_json::to_value(effect).expect("effect serializes"),
+            frontend_payload
+        );
+    }
+
+    #[test]
+    fn export_rejects_out_of_range_high_pass_cutoffs() {
+        for cutoff_hz in [9.0, 20_001.0] {
+            let mut request = optimized_request("-c:v libx264 -crf 20");
+            request.audio_tracks[0].processing.effects = vec![AudioTrackSignalEffect::HighPass {
+                cutoff_hz,
+                stage: AudioProcessingStage::Cleanup,
+            }];
+
+            let error = build_optimized_arguments(
+                &media(),
+                &request,
+                Path::new("source.mkv"),
+                Path::new("out.mp4"),
+            )
+            .expect_err("high-pass cutoff must be within the supported frequency range");
+
+            assert_eq!(error.code, "invalid_request");
+        }
+    }
+
+    #[test]
     fn export_rejects_non_finite_track_gain() {
         let mut request = optimized_request("-c:v libx264 -crf 20");
         request.audio_tracks[0].processing.gain_db = f64::NAN;

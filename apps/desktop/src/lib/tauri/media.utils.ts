@@ -1,9 +1,7 @@
 import {
   type AudioTrackSignalEffect,
-  getAudioTrackSignalEffects,
   type LoudnessNormalization,
-  type NoiseReductionPreset,
-  SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS,
+  parseAudioTrackSignalEffects as parseSignalEffects,
 } from "@/domain/audio-processing";
 import type { SourceRef } from "@/domain/source";
 
@@ -273,63 +271,10 @@ function parseAudioPreviewDescriptor(value: unknown): AudioPreviewDescriptor {
 }
 
 function parseAudioTrackSignalEffects(value: unknown): AudioTrackSignalEffect[] | undefined {
-  if (value === undefined || value === null) return undefined;
-  if (!Array.isArray(value)) throw invalidResponse("audio preview effects");
-
-  const effects = value.map((item): AudioTrackSignalEffect => {
-    const effect = requireRecord(item, "audio preview effect");
-    const stage = effect.stage;
-    if (
-      stage !== "cleanup" &&
-      stage !== "dynamics" &&
-      stage !== "levelPolicy" &&
-      stage !== "finalProtection"
-    ) {
-      throw invalidResponse("audio preview effect stage");
-    }
-
-    if (effect.type === "highPass") {
-      const cutoffHz = optionalFiniteNumber(effect.cutoffHz, "audio preview high-pass cutoff");
-      if (cutoffHz === undefined || cutoffHz < 10 || cutoffHz > 20_000 || stage === "levelPolicy") {
-        throw invalidResponse("audio preview high-pass effect");
-      }
-      return { cutoffHz, stage, type: "highPass" };
-    }
-
-    if (effect.type === "limiter") {
-      const ceilingDb = optionalFiniteNumber(effect.ceilingDb, "audio preview limiter ceiling");
-      if (
-        ceilingDb === undefined ||
-        ceilingDb < -24 ||
-        ceilingDb > 0 ||
-        stage !== "finalProtection"
-      ) {
-        throw invalidResponse("audio preview limiter effect");
-      }
-      return { ceilingDb, stage, type: "limiter" };
-    }
-
-    const preset = parseNoiseReduction(effect.preset);
-    if (effect.type !== "noiseReduction" || preset === undefined || stage !== "cleanup") {
-      throw invalidResponse("audio preview noise-reduction effect");
-    }
-    return { preset, stage, type: "noiseReduction" };
-  });
-
-  const singletonTypes = new Set<string>(SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS);
-  const seenSingletons = new Set<string>();
-  for (const effect of effects) {
-    if (!singletonTypes.has(effect.type)) continue;
-    if (seenSingletons.has(effect.type)) throw invalidResponse("duplicate audio preview effect");
-    seenSingletons.add(effect.type);
-  }
-
-  return getAudioTrackSignalEffects({ gainDb: 0, effects });
-}
-
-function parseNoiseReduction(value: unknown): NoiseReductionPreset | undefined {
-  if (value === "light" || value === "medium" || value === "strong") return value;
-  return undefined;
+  if (value === null) return undefined;
+  const effects = parseSignalEffects(value);
+  if (value !== undefined && effects === undefined) throw invalidResponse("audio preview effects");
+  return effects;
 }
 
 function parseLoudnessNormalization(value: unknown): LoudnessNormalization | undefined {

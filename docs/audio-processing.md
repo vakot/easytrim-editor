@@ -4,25 +4,29 @@ Each track persists its enabled state and an `AudioTrackProcessing` value. Manua
 loudness normalization are alternative level policies:
 
 ```text
-Source → pre-level loudness measurement → one level policy → track output
-                                               ├─ Manual gain
-                                               └─ Loudness normalization
+Source → optional high-pass cleanup → pre-level loudness measurement → one level policy → track output
+                                                                  ├─ Manual gain
+                                                                  └─ Loudness normalization
 Track output → optional merge (raw sum, no track-count normalization)
 ```
 
 `gainDb` stores the user's manual level adjustment. When normalization is enabled, it is dormant and
 normalization controls the output level; disabling normalization restores the saved manual gain.
+High-pass cleanup is configured per track with Off, 60, 80, 100, or 120 Hz cutoffs. It runs before
+the pre-level measurement and before merge, so playback, analysis, and export use the same filtered
+track signal.
+
 The cached measurement is keyed by the stream, active trim range, and upstream processing inputs.
 It excludes manual gain and normalization targets because those are downstream level controls.
 Changing the trim or an upstream processor invalidates the measurement; changing gain or a
-normalization preset reuses it. Normalized preview and export both use the same measurement from the
-active trim range, even though playback preview covers the full source. Future signal-shaping
-filters belong before the measurement boundary. Peak protection belongs after the selected level
-policy. Those processors are not implemented yet.
+normalization preset reuses it. Changing the high-pass cutoff invalidates only that track's
+measurement. Normalized preview and export both use the same measurement from the active trim range,
+even though playback preview covers the full source. Future signal-shaping filters belong before the
+measurement boundary. Peak protection belongs after the selected level policy.
 
 Export, audio activity detection, and processed playback previews use the same effective level
-policy: normalization replaces manual gain. Loudness measurement analyzes clean source audio at the
-pre-level boundary and is independent of both manual gain and normalization targets. Processed
+policy: normalization replaces manual gain. Loudness measurement analyzes the track after its
+pre-level high-pass cleanup and is independent of both manual gain and normalization targets. Processed
 preview artifacts carry the processing settings and revision used to generate them. Playback only
 uses an artifact whose settings still match the current track. This keeps stale asynchronous preview
 work from becoming audible after a setting changes.

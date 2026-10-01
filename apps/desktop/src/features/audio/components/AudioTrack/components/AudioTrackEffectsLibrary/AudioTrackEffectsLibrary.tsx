@@ -32,7 +32,7 @@ function AudioTrackEffectsLibrary({
   })).filter(({ effects: stageEffects }) => stageEffects.length > 0);
 
   const [selectedEffect, setSelectedEffect] = useState<string | undefined>(
-    stageGroups[0]?.effects[0]?.id,
+    effects.find((effect) => effect.defaultSelected)?.id ?? stageGroups[0]?.effects[0]?.id,
   );
 
   const { draft } = useAudioTrackEffectsDraft();

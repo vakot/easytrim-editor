@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Added scene detection result states with failure details and a retry action.
 - Added offline integrated LUFS and true-peak analysis for the selected audio mix, with optional optimized-export normalization presets.
 - Added Ctrl+=, Ctrl+-, and Ctrl+0 shortcuts for zooming and resetting UI scaling, with scale percentages included in the action labels.
+- Added a per-track high-pass filter with Off, 60, 80, 100, and 120 Hz cutoff settings.
 
 ### Changed
 

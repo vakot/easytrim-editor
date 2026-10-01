@@ -8,6 +8,7 @@ import {
   sameLoudnessNormalization,
 } from "@/domain/audio-processing";
 
+import { HighPassPage } from "../pages/HighPassPage";
 import { LimiterPage } from "../pages/LimiterPage";
 import { NoiseReductionPage } from "../pages/NoiseReductionPage";
 import { NormalizeLoudnessPage } from "../pages/NormalizeLoudnessPage";
@@ -17,6 +18,7 @@ interface AudioTrackEffectsPageProps {
 }
 
 interface AudioTrackEffectDescriptor {
+  defaultSelected?: boolean;
   id: string;
   isDirty: (initial: AudioTrackProcessing, current: AudioTrackProcessing) => boolean;
   isEnabled: (processing: AudioTrackProcessing) => boolean;
@@ -26,6 +28,17 @@ interface AudioTrackEffectDescriptor {
 }
 
 const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
+  {
+    id: "highPass",
+    stage: "cleanup",
+    label: (t) => t("audio.labels.highPass"),
+    Page: HighPassPage,
+    isEnabled: (processing) =>
+      getAudioTrackSignalEffect(processing, "highPass", "cleanup") !== undefined,
+    isDirty: (initial, current) =>
+      getAudioTrackSignalEffect(initial, "highPass", "cleanup")?.cutoffHz !==
+      getAudioTrackSignalEffect(current, "highPass", "cleanup")?.cutoffHz,
+  },
   {
     id: "noiseReduction",
     stage: "cleanup",
@@ -38,6 +51,7 @@ const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
       getAudioTrackSignalEffect(current, "noiseReduction")?.preset,
   },
   {
+    defaultSelected: true,
     id: "loudnessNormalization",
     stage: "levelPolicy",
     label: (t) => t("audio.labels.loudnessNormalization"),
