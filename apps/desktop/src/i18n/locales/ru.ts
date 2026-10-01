@@ -586,7 +586,7 @@ export const ru = {
       noiseReductionEffectSummary: "Шумоподавление - {{preset}}",
       limiterDescription: "Ограничивать пики дорожки после усиления или нормализации громкости.",
       limiterCeilingDescription: "Выберите предел от −24 до 0 дБ. По умолчанию −1 дБ.",
-      limitedEffectSummary: "Ограничение · {{ceiling}} дБ",
+      limitedEffectSummary: "Лимитер ({{ceiling}} дБ)",
       normalizedEffectSummary: "Нормализация - {{preset}}",
       normalizedHoverTitle: "Нормализация - {{preset}}",
       normalizedLevelSummary: "Цель {{target}} LUFS · предел пика {{peak}} дБTP",

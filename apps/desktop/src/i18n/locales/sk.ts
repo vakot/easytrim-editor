@@ -583,7 +583,7 @@ export const sk = {
       noiseReductionEffectSummary: "Redukcia šumu - {{preset}}",
       limiterDescription: "Znížiť špičky tejto stopy po zosilnení alebo normalizácii hlasitosti.",
       limiterCeilingDescription: "Vyberte limit od −24 do 0 dB. Predvolená hodnota je −1 dB.",
-      limitedEffectSummary: "Obmedzené · {{ceiling}} dB",
+      limitedEffectSummary: "Obmedzovač špičiek ({{ceiling}} dB)",
       normalizedEffectSummary: "Normalizované - {{preset}}",
       normalizedHoverTitle: "Normalizované - {{preset}}",
       normalizedLevelSummary: "Cieľ {{target}} LUFS · limit špičky {{peak}} dBTP",

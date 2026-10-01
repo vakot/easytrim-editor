@@ -583,7 +583,7 @@ export const en = {
       noiseReductionEffectSummary: "Noise reduction - {{preset}}",
       limiterDescription: "Reduce peaks on this track after gain or loudness normalization.",
       limiterCeilingDescription: "Choose a ceiling from −24 to 0 dB. The default is −1 dB.",
-      limitedEffectSummary: "Limited · {{ceiling}} dB",
+      limitedEffectSummary: "Limiter ({{ceiling}} dB)",
       normalizedEffectSummary: "Normalized - {{preset}}",
       normalizedHoverTitle: "Normalized - {{preset}}",
       normalizedLevelSummary: "Target {{target}} LUFS · peak cap {{peak}} dBTP",
