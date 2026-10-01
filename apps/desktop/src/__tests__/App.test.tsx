@@ -636,6 +636,7 @@ describe("App", () => {
           expect.stringMatching(/^waveform-/),
           [1, 2],
           4_096,
+          { 1: { gainDb: 0 }, 2: { gainDb: 0 } },
         ),
       );
 
@@ -1140,6 +1141,7 @@ describe("App", () => {
           expect.stringMatching(/^waveform-/),
           [1, 2],
           4_096,
+          { 1: { gainDb: 0 }, 2: { gainDb: 0 } },
         ),
       );
       await waitFor(() =>

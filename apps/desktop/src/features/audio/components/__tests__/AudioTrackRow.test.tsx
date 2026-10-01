@@ -169,6 +169,7 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
     expect(screen.getByRole("dialog", { name: /effects/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
     expect(
       screen.getByRole("option", { name: /streaming.*−16 LUFS.*−1.5 dBTP/i }),
@@ -187,6 +188,7 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("tab", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("switch", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("option", { name: /streaming/i }));
@@ -272,6 +274,7 @@ describe("AudioTrackRow", () => {
     const { store } = renderRow();
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("tab", { name: /loudness normalization/i }));
 
     const trim = selectTrim(store.getState())!;
     const cacheKey = audioTrackLoudnessInputsKey(firstSource.sourcePath, 2, trim, {
@@ -308,6 +311,7 @@ describe("AudioTrackRow", () => {
     const { store } = renderRow();
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("tab", { name: /loudness normalization/i }));
 
     const analyzeButton = screen.getByRole("button", { name: /analyze loudness/i });
     const currentCacheKey = audioTrackLoudnessInputsKey(
@@ -375,6 +379,7 @@ describe("AudioTrackRow", () => {
     const { store } = renderRow();
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("tab", { name: /loudness normalization/i }));
     const preset = screen.getByRole("combobox", { name: /loudness normalization/i });
     await user.click(preset);
     expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(
@@ -400,6 +405,7 @@ describe("AudioTrackRow", () => {
     renderRow();
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("tab", { name: /loudness normalization/i }));
 
     const apply = screen.getByRole("button", { name: /apply/i });
     const toggle = screen.getByRole("switch", { name: /loudness normalization/i });
@@ -423,7 +429,7 @@ describe("AudioTrackRow", () => {
     );
   });
 
-  it("resets an invalid limiter ceiling consistently when it is disabled and re-enabled", async () => {
+  it("preserves the limiter ceiling when it is disabled and re-enabled", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
@@ -432,11 +438,10 @@ describe("AudioTrackRow", () => {
 
     const toggle = screen.getByRole("switch", { name: /limiter/i });
     await user.click(toggle);
-    const ceiling = screen.getByRole("spinbutton", { name: /output ceiling/i });
-    await user.clear(ceiling);
-    await user.type(ceiling, "-30");
-    expect(ceiling).toHaveAttribute("aria-invalid", "true");
-    expect(screen.getByRole("button", { name: /apply/i })).toBeDisabled();
+    const ceiling = screen.getByRole("slider", { name: /output ceiling/i });
+    ceiling.focus();
+    await user.keyboard("{ARROWLEFT}");
+    expect(ceiling).toHaveAttribute("aria-valuetext", "−2 dB");
 
     await user.click(toggle);
     expect(toggle).not.toBeChecked();
@@ -444,13 +449,15 @@ describe("AudioTrackRow", () => {
 
     await user.click(toggle);
     expect(toggle).toBeChecked();
-    expect(ceiling).toHaveValue(-1);
-    expect(ceiling).toHaveAttribute("aria-invalid", "false");
+    expect(screen.getByRole("slider", { name: /output ceiling/i })).toHaveAttribute(
+      "aria-valuetext",
+      "−2 dB",
+    );
     expect(screen.getByRole("button", { name: /apply/i })).toBeEnabled();
 
     await user.click(screen.getByRole("button", { name: /apply/i }));
     expect(store.getState().audio.tracks[0]?.processing.effects).toEqual([
-      { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+      { ceilingDb: -2, stage: "finalProtection", type: "limiter" },
     ]);
   });
 
@@ -459,6 +466,7 @@ describe("AudioTrackRow", () => {
     renderRow();
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("tab", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("switch", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("option", { name: /custom/i }));
@@ -489,8 +497,8 @@ describe("AudioTrackRow", () => {
     await user.hover(screen.getByText(/#1 ·/));
     expect(screen.queryByRole("slider", { name: /audio 1 gain/i })).not.toBeInTheDocument();
     expect(screen.getByText("Normalized - Streaming")).toBeInTheDocument();
+    expect(screen.getByText("Target −16 LUFS · peak cap −1.5 dBTP")).toBeInTheDocument();
     const normalizedTooltip = await screen.findByRole("tooltip");
-    expect(normalizedTooltip).toHaveTextContent("Target −16 LUFS · peak cap −1.5 dBTP");
     expect(normalizedTooltip).toHaveTextContent(
       /manual gain is unavailable while automatic normalization is applied/i,
     );
@@ -555,6 +563,7 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("tab", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("switch", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("option", { name: /custom/i }));
@@ -581,6 +590,7 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    await user.click(screen.getByRole("tab", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("switch", { name: /loudness normalization/i }));
     const target = screen.getByRole("spinbutton", { name: /target loudness/i });
     expect(target).toHaveValue(-14);
