@@ -1,48 +1,98 @@
 # Per-track audio processing
 
-Each track persists its enabled state and an `AudioTrackProcessing` value. Manual gain and
-loudness normalization are alternative level policies:
+Each audio track has one persisted processing value and exactly one active level policy. The
+current signal path is:
 
 ```text
-Source → optional high-pass cleanup → pre-level loudness measurement → one level policy → track output
-                                                                  ├─ Manual gain
-                                                                  └─ Loudness normalization
-Track output → optional merge (raw sum, no track-count normalization)
+Source
+  → cleanup effects
+  → dynamics effects
+  → loudness measurement boundary
+  → manual gain OR loudness normalization
+  → final-protection effects
+  → per-track output
+  → optional merge
 ```
 
-`gainDb` stores the user's manual level adjustment. When normalization is enabled, it is dormant and
-normalization controls the output level; disabling normalization restores the saved manual gain.
-High-pass cleanup is configured per track with Off, 60, 80, 100, or 120 Hz cutoffs. It runs before
-the pre-level measurement and before merge, so playback, analysis, and export use the same filtered
-track signal.
+The implemented effects are High Pass, Noise Reduction, and Limiter. High Pass is unique within
+each `(type, stage)` pair. The UI edits and summarizes the `cleanup` High Pass. Noise Reduction is
+a singleton in `cleanup` and follows High Pass there. High Pass can also be represented in other
+stages. Limiter is a singleton in `finalProtection` and always follows the selected level policy.
+The TypeScript domain and Rust filter builder sort effects by the same stage and effect order.
 
-The cached measurement is keyed by the stream, active trim range, and upstream processing inputs.
-It excludes manual gain and normalization targets because those are downstream level controls.
-Changing the trim or an upstream processor invalidates the measurement; changing gain or a
-normalization preset reuses it. Changing the high-pass cutoff invalidates only that track's
-measurement. Normalized preview and export both use the same measurement from the active trim range,
-even though playback preview covers the full source. Future signal-shaping filters belong before the
-measurement boundary. Peak protection belongs after the selected level policy.
+## Level policy and measurement
 
-Export, audio activity detection, and processed playback previews use the same effective level
-policy: normalization replaces manual gain. Loudness measurement analyzes the track after its
-pre-level high-pass cleanup and is independent of both manual gain and normalization targets. Processed
-preview artifacts carry the processing settings and revision used to generate them. Playback only
-uses an artifact whose settings still match the current track. This keeps stale asynchronous preview
-work from becoming audible after a setting changes.
+`gainDb` stores manual gain. Without normalization, the track uses:
 
-When a single default track uses the default processing settings, playback can use the source
-video's native audio route because that signal is equivalent to the processed output. A track with
-normalization requires a generated processed preview before it is heard. Manual gain remains a
-lightweight runtime gain stage and does not rebuild the preview. For multi-track playback, every
-enabled track uses its processed preview. In all routes, the effective track signal feeds the meter
-before global playback volume attenuates it for monitoring. Merging sums the final per-track signals
-without scaling them by track count; the meter observes that same sum.
+```text
+pre-level effects → manual gain → Limiter
+```
 
-Waveforms use the cached source shape with a vertical amplitude transform for the committed level
-policy. Manual gain updates that transform live without regenerating source waveform data. The
-normalization transform uses the same cached loudness and true-peak measurement as playback and
-export, and ignores dormant manual gain. Draft dialog values never affect the waveform. Audio
-activity analysis describes the effective level policy, so it can depend on manual gain in manual
-mode or normalization in normalized mode. Muting only controls participation in playback and
-export; it does not block configuration or analysis.
+When loudness normalization is enabled, it replaces manual gain while leaving the saved `gainDb`
+unchanged:
+
+```text
+pre-level effects → loudnorm → Limiter
+```
+
+Disabling normalization restores the saved manual gain. Loudness analysis measures the selected
+trim after cleanup and dynamics effects and before either level policy or final protection. It
+therefore excludes manual gain, normalization targets, and Limiter. The same measured values feed
+normalization in playback and export.
+
+Loudness results are keyed by source, stream, trim, and pre-level effects. Trim or pre-level effect
+changes require a new measurement. Gain, normalization targets, and final-protection changes reuse
+it. Final-protection changes still invalidate activity analysis because they alter the effective
+track output.
+
+## Playback and meter
+
+The default source audio route remains available when one selected native track needs no processed
+preview. Tracks that need processing use full-source FFmpeg audio preview artifacts. The artifact
+uses the same pre-level effects, level policy, and final-protection order as export. Manual gain is
+baked into a preview when Limiter is enabled, because applying gain after a nonlinear limiter would
+change the exported signal. Manual gain without Limiter remains a runtime WebAudio gain and does
+not require a new artifact. Normalized previews bake loudness normalization and ignore dormant
+manual gain.
+
+While the gain control is being dragged, WebAudio applies the difference between the draft value
+and any gain already baked into the current artifact. For a limited track it follows that adjustment
+with a WebAudio ceiling curve. This keeps draft playback responsive and bounds peaks while the new
+committed artifact is prepared. Once the committed preview is ready, it contains the exact selected
+level policy followed by Limiter.
+
+Per-track playback signals feed the track mix and meter before the global playback-volume control.
+The meter therefore reflects the effective per-track or merged signal without master-volume
+attenuation. Optional audio merge combines the already processed track outputs after Limiter; it
+does not change the individual track processing order.
+
+## Waveforms and activity
+
+Cached waveforms use a lightweight source-shape model:
+
+```text
+Source → pre-level signal-shaping effects → cached waveform
+```
+
+Pre-level High Pass and Noise Reduction affect waveform generation. Manual gain and loudness
+normalization remain presentation transforms over the cached waveform. Limiter is excluded because
+its output depends on the downstream level policy. Changing gain, normalization, or Limiter does not
+regenerate the source-shape waveform; changing a pre-level effect does.
+
+The separate activity/silence analysis uses the complete effective per-track signal, including the
+selected level policy and Limiter. Its cached result changes when any effective input changes. The
+waveform's source-shape signal-presence check remains tied to the waveform inputs.
+
+## Cache and invalidation boundaries
+
+| Cached result              | Inputs                                                                                                        | Changes that reuse it                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Loudness measurement       | Source, stream, trim, cleanup/dynamics effects                                                                | Manual gain, normalization targets, final-protection effects |
+| Source-shape waveform      | Source, stream, width, pre-level effects                                                                      | Manual gain, normalization, final-protection effects         |
+| Processed playback preview | Source, stream, effects, level policy; manual gain under Limiter; active trim and measurement when normalized | Manual gain without Limiter; dormant gain while normalized   |
+| Activity/silence analysis  | Source, stream, effective level policy, all signal effects, and loudness measurements used by normalization   | No effective processing change                               |
+
+Preview descriptors carry the processing settings used to create their artifact. Frontend preview
+identity and invalidation compare those baked inputs, so stale asynchronous work is not accepted as
+the current committed preview. Native request validation preserves the effect stage, singleton,
+range, and uniqueness rules as a second boundary.
