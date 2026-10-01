@@ -9,7 +9,7 @@ import {
   type AudioTrackSettings,
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_PROCESSING,
-  getAudioTrackSignalEffects,
+  getAudioTrackPreLevelEffects,
   sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
@@ -217,6 +217,15 @@ const audioSlice = createSlice({
       if (track.processing.loudnessNormalization === undefined) {
         track.activityAnalysis = { status: "idle" };
       }
+      if (
+        !sameAudioTrackPreviewProcessing(
+          track.processing,
+          ("descriptor" in track.preview && track.preview.descriptor?.processing) ||
+            track.processing,
+        )
+      ) {
+        track.preview = staleAudioTrackPreview(track.preview);
+      }
     },
     audioTrackProcessingChanged: (
       state,
@@ -242,12 +251,12 @@ const audioSlice = createSlice({
         action.payload.processing,
       );
 
-      const signalEffectsChanged =
-        JSON.stringify(getAudioTrackSignalEffects(track.processing)) !==
-        JSON.stringify(getAudioTrackSignalEffects(action.payload.processing));
+      const waveformInputsChanged =
+        JSON.stringify(getAudioTrackPreLevelEffects(track.processing)) !==
+        JSON.stringify(getAudioTrackPreLevelEffects(action.payload.processing));
 
       track.processing = cloneAudioTrackProcessing(action.payload.processing);
-      if (signalEffectsChanged) track.waveform = { status: "idle" };
+      if (waveformInputsChanged) track.waveform = { status: "idle" };
       if (loudnessInputsChanged) track.loudnessAnalysis = { status: "idle" };
       if (activityChanged) track.activityAnalysis = { status: "idle" };
       if (previewChanged) track.preview = staleAudioTrackPreview(track.preview);

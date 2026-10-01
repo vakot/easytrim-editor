@@ -672,10 +672,20 @@ mod tests {
     fn applies_signal_effects_before_waveform_analysis_and_sampling() {
         let source_path = Path::new("C:\\Videos\\source clip.mkv");
         let processing = AudioTrackProcessing {
-            effects: vec![AudioTrackSignalEffect::NoiseReduction {
-                preset: NoiseReductionPreset::Medium,
-                stage: crate::media::export::AudioProcessingStage::Cleanup,
-            }],
+            effects: vec![
+                AudioTrackSignalEffect::HighPass {
+                    cutoff_hz: 100.0,
+                    stage: crate::media::export::AudioProcessingStage::Cleanup,
+                },
+                AudioTrackSignalEffect::NoiseReduction {
+                    preset: NoiseReductionPreset::Medium,
+                    stage: crate::media::export::AudioProcessingStage::Cleanup,
+                },
+                AudioTrackSignalEffect::Limiter {
+                    ceiling_db: -1.0,
+                    stage: crate::media::export::AudioProcessingStage::FinalProtection,
+                },
+            ],
             ..empty_processing()
         };
         let processing_by_stream = [(4, processing.clone())].into_iter().collect();
@@ -683,11 +693,21 @@ mod tests {
         let pcm_args = pcm_stream_arguments(source_path, 4, &processing);
 
         assert!(activity_args.iter().any(|argument| {
-            argument == "[0:4]afftdn=nr=12:nf=-35,aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream4[activity0]"
+            argument == "[0:4]highpass=f=100.000,afftdn=nr=12:nf=-35,aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream4[activity0]"
         }));
+        assert!(
+            activity_args
+                .iter()
+                .all(|argument| !argument.to_string_lossy().contains("alimiter"))
+        );
         assert!(pcm_args.iter().any(|argument| {
-            argument == "[0:4]afftdn=nr=12:nf=-35,aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
+            argument == "[0:4]highpass=f=100.000,afftdn=nr=12:nf=-35,aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
         }));
+        assert!(
+            pcm_args
+                .iter()
+                .all(|argument| !argument.to_string_lossy().contains("alimiter"))
+        );
     }
 
     #[test]

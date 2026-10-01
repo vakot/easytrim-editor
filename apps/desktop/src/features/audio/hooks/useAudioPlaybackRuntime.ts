@@ -1,15 +1,26 @@
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { audioTrackPlaybackPreviewUrl, selectAudioTracks } from "@/app/store/slices/audio-slice";
+import {
+  audioTrackPlaybackPreviewUrl,
+  type AudioTrackState,
+  selectAudioTracks,
+} from "@/app/store/slices/audio-slice";
 import { selectPlaybackVolumePercent } from "@/app/store/slices/preferences-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 import {
   audioTrackExternalPreviewStreamIndexes,
+  audioTrackPreviewRuntimeGainDb,
+  type AudioTrackProcessing,
   audioTrackRequiresProcessedPreview,
   effectiveAudioTrackGainDb,
 } from "@/domain/audio-processing";
 
+import {
+  connectAudioTrackLimiter,
+  connectPlaybackAudioGraph,
+  updateAudioTrackLimiter,
+} from "../lib/audio-playback-graph";
 import { synchronizeAudioPosition } from "../lib/audio-sync";
 import {
   connectNativeAudioBinding,
@@ -18,14 +29,18 @@ import {
   type NativeAudioBinding,
 } from "../lib/native-audio-runtime";
 import {
-  createStereoAudioMeterNodes,
   disconnectStereoAudioMeterNodes,
   isMonoAudioMix,
   type StereoAudioMeterNodes,
 } from "../lib/stereo-audio-meter";
 
 interface LiveAudioTrackGainRuntime {
-  audioNodes: Map<number, { gain: GainNode; source: MediaElementAudioSourceNode }>;
+  audioMix: GainNode | null;
+  audioNodes: Map<
+    number,
+    { gain: GainNode; limiter: WaveShaperNode | null; source: MediaElementAudioSourceNode }
+  >;
+  audioTracks: AudioTrackState[];
   nativeAudioBinding: { binding: NativeAudioBinding; element: HTMLVideoElement } | null;
   nativeAudioTrack: { enabled: boolean; streamIndex: number } | undefined;
   playbackVolumePercent: number;
@@ -39,13 +54,18 @@ function applyAudioTrackGain(
   runtime: LiveAudioTrackGainRuntime,
   allowMutedTrackPreview = false,
 ): void {
-  const linearGain = 10 ** (gainDb / 20);
   const externalAudioNode = runtime.audioNodes.get(streamIndex);
-  if (externalAudioNode) externalAudioNode.gain.gain.value = linearGain;
+  const track = runtime.audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
+  const runtimeGainDb = track
+    ? audioTrackPreviewRuntimeGainDb(track.processing, previewProcessingForTrack(track), gainDb)
+    : gainDb;
+
+  if (externalAudioNode) externalAudioNode.gain.gain.value = 10 ** (runtimeGainDb / 20);
 
   if (runtime.nativeAudioTrack?.streamIndex !== streamIndex || runtime.requiresProcessedPreview)
     return;
 
+  const linearGain = 10 ** (gainDb / 20);
   const nativeGain = runtime.nativeAudioTrack.enabled || allowMutedTrackPreview ? linearGain : 0;
   if (runtime.nativeAudioBinding) {
     runtime.nativeAudioBinding.binding.gain.gain.value = nativeGain;
@@ -56,6 +76,12 @@ function applyAudioTrackGain(
 
 function setGainNodeFromDb(gainNode: GainNode, gainDb: number): void {
   gainNode.gain.value = 10 ** (gainDb / 20);
+}
+
+function previewProcessingForTrack(track: AudioTrackState): AudioTrackProcessing {
+  return "descriptor" in track.preview && track.preview.descriptor
+    ? track.preview.descriptor.processing
+    : { gainDb: 0 };
 }
 
 function useAudioPlaybackRuntime({
@@ -127,7 +153,10 @@ function useAudioPlaybackRuntime({
   const audioContextRef = useRef<AudioContext | null>(null);
   const deferredAudioCleanupRef = useRef<number | null>(null);
   const audioNodesRef = useRef(
-    new Map<number, { gain: GainNode; source: MediaElementAudioSourceNode }>(),
+    new Map<
+      number,
+      { gain: GainNode; limiter: WaveShaperNode | null; source: MediaElementAudioSourceNode }
+    >(),
   );
 
   const liveAudioTrackGainsRef = useRef(new Map<number, number>());
@@ -145,6 +174,8 @@ function useAudioPlaybackRuntime({
 
   useEffect(() => {
     liveAudioTrackGainRuntimeRef.current = {
+      audioMix: audioMixRef.current,
+      audioTracks,
       audioNodes: audioNodesRef.current,
       nativeAudioBinding: nativeAudioBindingRef.current,
       nativeAudioTrack,
@@ -152,7 +183,7 @@ function useAudioPlaybackRuntime({
       requiresProcessedPreview,
       videoElement: videoRef.current,
     };
-  }, [nativeAudioTrack, playbackVolumePercent, requiresProcessedPreview, videoRef]);
+  }, [audioTracks, nativeAudioTrack, playbackVolumePercent, requiresProcessedPreview, videoRef]);
 
   const setLiveAudioTrackGain = useCallback(
     (streamIndex: number, gainDb: number) => {
@@ -296,11 +327,13 @@ function useAudioPlaybackRuntime({
     if (!audioMix) {
       audioMix = context.createGain();
       audioMixRef.current = audioMix;
-      const playbackOutputGain = context.createGain();
+      const { meter, outputGain: playbackOutputGain } = connectPlaybackAudioGraph(
+        context,
+        audioMix,
+      );
+
       playbackOutputGainRef.current = playbackOutputGain;
-      audioMeterRef.current = createStereoAudioMeterNodes(context, audioMix);
-      audioMix.connect(playbackOutputGain);
-      playbackOutputGain.connect(context.destination);
+      audioMeterRef.current = meter;
     }
 
     const activeExternalAudioUrls = usesExternalAudio
@@ -346,19 +379,24 @@ function useAudioPlaybackRuntime({
       audioReadyListenersRef.current.set(streamIndex, markReady);
       document.body.appendChild(element);
 
+      const track = audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
       const audioSource = context.createMediaElementSource(element);
       const gain = context.createGain();
-      const track = audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
+      const previewProcessing = track ? previewProcessingForTrack(track) : { gainDb: 0 };
       const gainDb = track
-        ? track.processing.loudnessNormalization === undefined
-          ? (liveAudioTrackGainsRef.current.get(streamIndex) ?? track.processing.gainDb)
-          : effectiveAudioTrackGainDb(track.processing)
+        ? audioTrackPreviewRuntimeGainDb(
+            track.processing,
+            previewProcessing,
+            liveAudioTrackGainsRef.current.get(streamIndex) ?? track.processing.gainDb,
+          )
         : 0;
 
       setGainNodeFromDb(gain, track?.enabled === false ? Number.NEGATIVE_INFINITY : gainDb);
-      audioSource.connect(gain).connect(audioMix);
+      audioSource.connect(gain);
+      const limiter = track ? connectAudioTrackLimiter(context, gain, audioMix, track) : null;
+      if (!limiter) gain.connect(audioMix);
       audioElementsRef.current.set(streamIndex, element);
-      audioNodesRef.current.set(streamIndex, { source: audioSource, gain });
+      audioNodesRef.current.set(streamIndex, { limiter, source: audioSource, gain });
       if (element.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) markReady();
     }
 
@@ -402,9 +440,11 @@ function useAudioPlaybackRuntime({
   }, [audioTracks, media?.audioStreams]);
 
   useEffect(() => {
+    const context = audioContextRef.current;
+    if (!context) return;
     const outputGain = playbackOutputGainRef.current;
-    if (outputGain && audioContextRef.current) {
-      const now = audioContextRef.current.currentTime;
+    if (outputGain) {
+      const now = context.currentTime;
       outputGain.gain.cancelScheduledValues(now);
       outputGain.gain.setValueAtTime(outputGain.gain.value, now);
       outputGain.gain.linearRampToValueAtTime(playbackVolumePercent / 100, now + 0.025);
@@ -413,12 +453,15 @@ function useAudioPlaybackRuntime({
     for (const track of audioTracks) {
       const node = audioNodesRef.current.get(track.streamIndex);
       if (!node) continue;
-      const gainDb =
-        track.processing.loudnessNormalization === undefined
-          ? (liveAudioTrackGainsRef.current.get(track.streamIndex) ?? track.processing.gainDb)
-          : effectiveAudioTrackGainDb(track.processing);
+      const gainDb = audioTrackPreviewRuntimeGainDb(
+        track.processing,
+        previewProcessingForTrack(track),
+        liveAudioTrackGainsRef.current.get(track.streamIndex) ?? track.processing.gainDb,
+      );
 
       node.gain.gain.value = track.enabled ? 10 ** (gainDb / 20) : 0;
+      const audioMix = audioMixRef.current;
+      if (audioMix) updateAudioTrackLimiter(context, node, audioMix, track);
     }
 
     const gainDb = nativeAudioTrack

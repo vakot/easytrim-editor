@@ -1,4 +1,5 @@
 import {
+  audioTrackGainChanged,
   audioTrackProcessingChanged,
   audioTrackToggled,
   selectAudioTracks,
@@ -22,13 +23,15 @@ listenerMiddleware.startListening({
   ): action is
     | ReturnType<typeof trimChanged>
     | ReturnType<typeof audioTrackProcessingChanged>
+    | ReturnType<typeof audioTrackGainChanged>
     | ReturnType<typeof audioTrackToggled> =>
     trimChanged.match(action) ||
     audioTrackProcessingChanged.match(action) ||
+    audioTrackGainChanged.match(action) ||
     audioTrackToggled.match(action),
   effect: async (action, listenerApi) => {
     if (
-      audioTrackProcessingChanged.match(action) &&
+      (audioTrackProcessingChanged.match(action) || audioTrackGainChanged.match(action)) &&
       sameAudioTrackPreviewProcessing(
         selectAudioTracks(listenerApi.getOriginalState()).find(
           (track) => track.streamIndex === action.payload.streamIndex,
