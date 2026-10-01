@@ -593,7 +593,7 @@ export const ru = {
     },
     tooltips: {
       merge: "Все выбранные дорожки объединяются в одну; это требует кодирования.",
-      normalizationReplacesGain: "Ручное усиление не используется при нормализации.",
+      normalizationReplacesGain: "Ручное усиление недоступно при автоматической нормализации.",
     },
     dialogs: {
       effects: {

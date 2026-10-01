@@ -590,7 +590,8 @@ export const en = {
     },
     tooltips: {
       merge: "All selected tracks are merged into one track; this requires encoding.",
-      normalizationReplacesGain: "Manual gain is ignored while normalization is enabled.",
+      normalizationReplacesGain:
+        "Manual gain is unavailable while automatic normalization is applied.",
     },
     dialogs: {
       effects: {

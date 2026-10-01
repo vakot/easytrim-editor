@@ -590,7 +590,8 @@ export const sk = {
     },
     tooltips: {
       merge: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
-      normalizationReplacesGain: "Manuálne zosilnenie sa pri normalizácii nepoužíva.",
+      normalizationReplacesGain:
+        "Manuálne zosilnenie nie je dostupné, keď je aktívna automatická normalizácia.",
     },
     dialogs: {
       effects: {

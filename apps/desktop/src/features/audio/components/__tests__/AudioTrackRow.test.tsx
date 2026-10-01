@@ -424,7 +424,7 @@ describe("AudioTrackRow", () => {
     const normalizedTooltip = await screen.findByRole("tooltip");
     expect(normalizedTooltip).toHaveTextContent("Target −16 LUFS · peak cap −1.5 dBTP");
     expect(normalizedTooltip).toHaveTextContent(
-      /manual gain is ignored while normalization is enabled/i,
+      /manual gain is unavailable while automatic normalization is applied/i,
     );
 
     act(() => {
