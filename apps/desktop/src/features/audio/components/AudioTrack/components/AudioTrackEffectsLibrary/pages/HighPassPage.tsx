@@ -1,13 +1,8 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 
 import {
   AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS,
@@ -19,23 +14,41 @@ import {
 import { useAudioTrackEffectsDraft } from "../../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
 import {
   AudioTrackEffectsLibraryPage,
-  AudioTrackEffectsLibraryPageBasic,
   AudioTrackEffectsLibraryPageContent,
   AudioTrackEffectsLibraryPageDescription,
   AudioTrackEffectsLibraryPageHeader,
   AudioTrackEffectsLibraryPageHeaderContent,
   AudioTrackEffectsLibraryPageTitle,
+  AudioTrackEffectsLibraryPageToggle,
 } from "../components/AudioTrackEffectsLibraryPage";
 
-interface HighPassPageProps {
-  streamIndex: number;
-}
+const DEFAULT_HIGH_PASS_CUTOFF_HZ = 80;
+const MIN_HIGH_PASS_CUTOFF_HZ = AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS[0];
+const MAX_HIGH_PASS_CUTOFF_HZ = AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS[3];
 
-function HighPassPage({ streamIndex }: HighPassPageProps) {
+function HighPassPage({ streamIndex }: { streamIndex: number }) {
   const { t } = useTranslation();
   const { dispatch, draft } = useAudioTrackEffectsDraft();
-  const cutoffHz = getAudioTrackSignalEffect(draft.processing, "highPass", "cleanup")?.cutoffHz;
-  const value = cutoffHz?.toString() ?? "off";
+  const highPass = getAudioTrackSignalEffect(draft.processing, "highPass", "cleanup");
+  const [cutoffHz, setCutoffHz] = useState(() => highPass?.cutoffHz ?? DEFAULT_HIGH_PASS_CUTOFF_HZ);
+
+  const updateHighPass = (enabled: boolean, requestedCutoffHz = cutoffHz) => {
+    const processing = enabled
+      ? setAudioTrackSignalEffect(draft.processing, {
+          cutoffHz: requestedCutoffHz,
+          stage: "cleanup",
+          type: "highPass",
+        })
+      : removeAudioTrackSignalEffect(draft.processing, "highPass", "cleanup");
+
+    dispatch({ type: "processingChanged", value: processing });
+  };
+
+  const handleCutoffChange = ([value]: number[]) => {
+    if (value === undefined) return;
+    setCutoffHz(value);
+    updateHighPass(true, value);
+  };
 
   return (
     <AudioTrackEffectsLibraryPage>
@@ -48,52 +61,36 @@ function HighPassPage({ streamIndex }: HighPassPageProps) {
             {t("audio.messages.highPassDescription")}
           </AudioTrackEffectsLibraryPageDescription>
         </AudioTrackEffectsLibraryPageHeaderContent>
+        <AudioTrackEffectsLibraryPageToggle
+          aria-label={t("audio.labels.highPass")}
+          checked={highPass !== undefined}
+          onCheckedChange={(enabled) => updateHighPass(enabled)}
+        />
       </AudioTrackEffectsLibraryPageHeader>
 
-      <AudioTrackEffectsLibraryPageContent>
-        <AudioTrackEffectsLibraryPageBasic>
-          <div className="grid gap-1.5">
-            <Label htmlFor={`track-high-pass-cutoff-${streamIndex}`}>
-              {t("audio.labels.highPassCutoff")}
-            </Label>
-            <Select
-              onValueChange={(nextValue) => {
-                const nextCutoffHz = AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS.find(
-                  (preset) => preset.toString() === nextValue,
-                );
-
-                dispatch({
-                  type: "processingChanged",
-                  value:
-                    nextCutoffHz === undefined
-                      ? removeAudioTrackSignalEffect(draft.processing, "highPass", "cleanup")
-                      : setAudioTrackSignalEffect(draft.processing, {
-                          cutoffHz: nextCutoffHz,
-                          stage: "cleanup",
-                          type: "highPass",
-                        }),
-                });
-              }}
-              value={value}
-            >
-              <SelectTrigger
-                aria-label={`${t("audio.labels.highPassCutoff")}: ${t("audio.labels.highPass")}`}
-                className="w-full"
-                id={`track-high-pass-cutoff-${streamIndex}`}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="off">{t("audio.options.highPassOff")}</SelectItem>
-                {AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS.map((preset) => (
-                  <SelectItem key={preset} value={preset.toString()}>
-                    {preset} Hz
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </AudioTrackEffectsLibraryPageBasic>
+      <AudioTrackEffectsLibraryPageContent disabled={highPass === undefined}>
+        <Label htmlFor={`track-high-pass-cutoff-${streamIndex}`}>
+          {t("audio.labels.highPassCutoff")}
+        </Label>
+        <div className="mt-2 flex max-w-md items-center gap-3">
+          <Slider
+            aria-label={t("audio.labels.highPassCutoff")}
+            aria-valuetext={`${cutoffHz} Hz`}
+            id={`track-high-pass-cutoff-${streamIndex}`}
+            markers={AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS.map((preset) => ({
+              label: `${preset} Hz`,
+              value: preset,
+            }))}
+            max={MAX_HIGH_PASS_CUTOFF_HZ}
+            min={MIN_HIGH_PASS_CUTOFF_HZ}
+            onValueChange={handleCutoffChange}
+            step={20}
+            value={[cutoffHz]}
+          />
+          <output className="w-12 shrink-0 text-right text-sm text-muted-foreground">
+            {cutoffHz} Hz
+          </output>
+        </div>
       </AudioTrackEffectsLibraryPageContent>
     </AudioTrackEffectsLibraryPage>
   );

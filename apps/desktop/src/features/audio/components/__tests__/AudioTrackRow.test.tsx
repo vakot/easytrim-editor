@@ -203,15 +203,18 @@ describe("AudioTrackRow", () => {
     expect(screen.queryByRole("spinbutton", { name: /gain/i })).not.toBeInTheDocument();
   });
 
-  it("applies the high-pass cutoff to its track and shows the active effect", async () => {
+  it("enables the high-pass filter with its default cutoff and shows the active effect", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
     await user.click(screen.getByRole("tab", { name: /high-pass filter/i }));
-    await user.click(screen.getByRole("combobox", { name: /cutoff frequency.*high-pass filter/i }));
-    await user.click(screen.getByRole("option", { name: "80 Hz" }));
+    await user.click(screen.getByRole("switch", { name: /high-pass filter/i }));
+    expect(screen.getByRole("slider", { name: /cutoff frequency/i })).toHaveAttribute(
+      "aria-valuetext",
+      "80 Hz",
+    );
 
     expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
     await user.click(screen.getByRole("button", { name: /apply/i }));

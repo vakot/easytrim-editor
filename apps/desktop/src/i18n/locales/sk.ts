@@ -617,7 +617,6 @@ export const sk = {
       normalizationWebVideo: "Webové video",
       normalizationStreaming: "Streamovanie",
       normalizationBroadcast: "Vysielanie",
-      highPassOff: "Vypnuté",
       noiseReductionLight: "Jemná",
       noiseReductionMedium: "Stredná",
       noiseReductionStrong: "Silná",
