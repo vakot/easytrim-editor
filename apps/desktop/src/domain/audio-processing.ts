@@ -228,6 +228,7 @@ function parseAudioTrackSignalEffects(value: unknown): AudioTrackSignalEffect[] 
   if (!Array.isArray(value)) return undefined;
 
   const effects: AudioTrackSignalEffect[] = [];
+  const highPassStages = new Set<AudioProcessingStage>();
   for (const valueEffect of value) {
     if (typeof valueEffect !== "object" || valueEffect === null || Array.isArray(valueEffect)) {
       return undefined;
@@ -241,9 +242,11 @@ function parseAudioTrackSignalEffects(value: unknown): AudioTrackSignalEffect[] 
         typeof effect.cutoffHz !== "number" ||
         !Number.isFinite(effect.cutoffHz) ||
         effect.cutoffHz < 10 ||
-        effect.cutoffHz > 20_000
+        effect.cutoffHz > 20_000 ||
+        highPassStages.has(effect.stage as AudioProcessingStage)
       )
         return undefined;
+      highPassStages.add(effect.stage as AudioProcessingStage);
       effects.push({ cutoffHz: effect.cutoffHz, stage: effect.stage, type: "highPass" });
     } else if (effect.type === "noiseReduction") {
       if (

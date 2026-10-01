@@ -281,6 +281,27 @@ describe("audio track level policy", () => {
     ).toBeUndefined();
   });
 
+  it("allows one high-pass effect per stage and rejects duplicates within a stage", () => {
+    expect(
+      parseAudioTrackSignalEffects([
+        { cutoffHz: 60, stage: "cleanup", type: "highPass" },
+        { cutoffHz: 80, stage: "cleanup", type: "highPass" },
+      ]),
+    ).toBeUndefined();
+
+    expect(
+      parseAudioTrackSignalEffects([
+        { cutoffHz: 60, stage: "cleanup", type: "highPass" },
+        { cutoffHz: 80, stage: "dynamics", type: "highPass" },
+        { cutoffHz: 100, stage: "finalProtection", type: "highPass" },
+      ]),
+    ).toEqual([
+      { cutoffHz: 60, stage: "cleanup", type: "highPass" },
+      { cutoffHz: 80, stage: "dynamics", type: "highPass" },
+      { cutoffHz: 100, stage: "finalProtection", type: "highPass" },
+    ]);
+  });
+
   it("removes a signal effect without disturbing other processing", () => {
     expect(
       removeAudioTrackSignalEffect(

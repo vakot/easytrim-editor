@@ -188,7 +188,7 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
       );
     }
 
-    const highPassCutoffHz = getAudioTrackSignalEffect(processing, "highPass")?.cutoffHz;
+    const highPassCutoffHz = getAudioTrackSignalEffect(processing, "highPass", "cleanup")?.cutoffHz;
     if (highPassCutoffHz !== undefined) {
       summaries.push(t("audio.messages.highPassEffectSummary", { cutoff: highPassCutoffHz }));
     }

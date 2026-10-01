@@ -20,7 +20,7 @@ import {
 } from "@/app/store/slices/audio-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
-import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
+import { audioTrackLoudnessInputsKey, type AudioTrackProcessing } from "@/domain/audio-processing";
 import { audioTrackColor } from "@/features/audio";
 // eslint-disable-next-line no-restricted-imports -- Test owns a focused audio runtime fixture.
 import {
@@ -224,6 +224,44 @@ describe("AudioTrackRow", () => {
       effects: [{ cutoffHz: 80, stage: "cleanup", type: "highPass" }],
     });
     expect(store.getState().audio.tracks[1]?.processing).toEqual({ gainDb: 0 });
+    expect(document.querySelector('[data-slot="audio-track-effects-indicator"]')).toHaveTextContent(
+      /high-pass.*80 hz/i,
+    );
+  });
+
+  it("summarizes only the cleanup-stage high-pass effect", () => {
+    const { store } = renderRow();
+    const laterStageEffects: AudioTrackProcessing = {
+      effects: [
+        { cutoffHz: 100, stage: "dynamics", type: "highPass" },
+        { cutoffHz: 120, stage: "finalProtection", type: "highPass" },
+      ],
+      gainDb: 0,
+    };
+
+    act(() => {
+      store.dispatch(
+        audioTrackProcessingChanged({ processing: laterStageEffects, streamIndex: 2 }),
+      );
+    });
+    expect(
+      document.querySelector('[data-slot="audio-track-effects-indicator"]'),
+    ).not.toBeInTheDocument();
+
+    act(() => {
+      store.dispatch(
+        audioTrackProcessingChanged({
+          processing: {
+            ...laterStageEffects,
+            effects: [
+              { cutoffHz: 80, stage: "cleanup", type: "highPass" },
+              ...(laterStageEffects.effects ?? []),
+            ],
+          },
+          streamIndex: 2,
+        }),
+      );
+    });
     expect(document.querySelector('[data-slot="audio-track-effects-indicator"]')).toHaveTextContent(
       /high-pass.*80 hz/i,
     );
