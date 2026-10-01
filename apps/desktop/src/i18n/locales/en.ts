@@ -553,6 +553,8 @@ export const en = {
       effectStageDynamics: "Dynamics",
       effectStageLevel: "Level",
       effectStageProtection: "Protection",
+      limiter: "Limiter",
+      limiterCeiling: "Output ceiling",
       loudnessNormalization: "Loudness normalization",
       noiseReduction: "Noise reduction",
       noiseReductionStrength: "Noise reduction strength",
@@ -579,6 +581,8 @@ export const en = {
       loudnessNormalizationDescription: "Normalize this track to a consistent target loudness.",
       noiseReductionDescription: "Reduce background noise on this audio track.",
       noiseReductionEffectSummary: "Noise reduction - {{preset}}",
+      limiterDescription: "Reduce peaks on this track",
+      limitedEffectSummary: "Limiter ({{ceiling}} dB)",
       normalizedEffectSummary: "Normalized - {{preset}}",
       normalizedHoverTitle: "Normalized - {{preset}}",
       normalizedLevelSummary: "Target {{target}} LUFS · peak cap {{peak}} dBTP",
@@ -586,7 +590,8 @@ export const en = {
     },
     tooltips: {
       merge: "All selected tracks are merged into one track; this requires encoding.",
-      normalizationReplacesGain: "Manual gain is ignored while normalization is enabled.",
+      normalizationReplacesGain:
+        "Manual gain is unavailable while automatic normalization is applied.",
     },
     dialogs: {
       effects: {

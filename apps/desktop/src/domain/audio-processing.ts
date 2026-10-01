@@ -1,8 +1,8 @@
 type LoudnessPreset = "webVideo" | "streaming" | "broadcast";
 const AUDIO_PROCESSING_STAGES = ["cleanup", "dynamics", "levelPolicy", "finalProtection"] as const;
 // Keep in sync with AudioTrackSignalEffect ordering in media/export.rs.
-const AUDIO_TRACK_SIGNAL_EFFECT_ORDER = ["highPass", "noiseReduction"] as const;
-const SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS = ["noiseReduction"] as const;
+const AUDIO_TRACK_SIGNAL_EFFECT_ORDER = ["highPass", "noiseReduction", "limiter"] as const;
+const SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS = ["noiseReduction", "limiter"] as const;
 type AudioProcessingStage = (typeof AUDIO_PROCESSING_STAGES)[number];
 type AudioTrackSignalEffect =
   | {
@@ -14,6 +14,11 @@ type AudioTrackSignalEffect =
       preset: NoiseReductionPreset;
       stage: "cleanup";
       type: "noiseReduction";
+    }
+  | {
+      ceilingDb: number;
+      stage: "finalProtection";
+      type: "limiter";
     };
 
 type NoiseReductionPreset = "light" | "medium" | "strong";
@@ -52,6 +57,7 @@ interface AudioLoudnessAnalysis {
 }
 
 const DEFAULT_AUDIO_TRACK_PROCESSING: AudioTrackProcessing = { gainDb: 0 };
+const DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB = -1;
 
 function audioTrackLevelMode(processing: AudioTrackProcessing): "manual" | "normalized" {
   return processing.loudnessNormalization === undefined ? "manual" : "normalized";
@@ -204,6 +210,9 @@ function compareAudioTrackSignalEffects(
       ["light", "medium", "strong"].indexOf(right.preset)
     );
   }
+  if (left.type === "limiter" && right.type === "limiter") {
+    return left.ceilingDb - right.ceilingDb;
+  }
   return 0;
 }
 
@@ -305,6 +314,7 @@ export {
   audioTrackNormalizationGainDb,
   audioTrackRequiresProcessedPreview,
   cloneAudioTrackProcessing,
+  DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB,
   DEFAULT_AUDIO_TRACK_PROCESSING,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
   effectiveAudioTrackGainDb,

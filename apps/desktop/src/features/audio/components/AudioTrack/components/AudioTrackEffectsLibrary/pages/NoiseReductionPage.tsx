@@ -1,13 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 
 import {
   getAudioTrackSignalEffect,
@@ -32,6 +26,15 @@ function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
   const { t } = useTranslation();
   const { dispatch, draft } = useAudioTrackEffectsDraft();
   const preset = getAudioTrackSignalEffect(draft.processing, "noiseReduction")?.preset;
+  const selectedPreset = preset ?? "medium";
+  const presets: readonly NoiseReductionPreset[] = ["light", "medium", "strong"];
+  const presetLabels = [
+    t("audio.options.noiseReductionLight"),
+    t("audio.options.noiseReductionMedium"),
+    t("audio.options.noiseReductionStrong"),
+  ];
+
+  const selectedPresetIndex = presets.indexOf(selectedPreset);
 
   const initialPreset = getAudioTrackSignalEffect(
     draft.initialProcessing,
@@ -75,33 +78,29 @@ function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
       </AudioTrackEffectsLibraryPageHeader>
 
       <AudioTrackEffectsLibraryPageContent disabled={preset === undefined}>
-        <AudioTrackEffectsLibraryPageBasic>
+        <AudioTrackEffectsLibraryPageBasic className="space-y-4">
           <Label htmlFor={`track-noise-reduction-${streamIndex}`}>
             {t("audio.labels.noiseReductionStrength")}
           </Label>
-          <Select
-            onValueChange={(value) => {
-              if (isNoiseReductionPreset(value)) updatePreset(value);
+          <Slider
+            aria-label={t("audio.labels.noiseReductionStrength")}
+            aria-valuetext={presetLabels[selectedPresetIndex]}
+            id={`track-noise-reduction-${streamIndex}`}
+            markers={presetLabels.map((label, value) => ({ label, value }))}
+            max={presets.length - 1}
+            min={0}
+            onDoubleClick={() => updatePreset("medium")}
+            onValueChange={([value]) => {
+              const nextPreset = presets[value ?? -1];
+              if (nextPreset) updatePreset(nextPreset);
             }}
-            value={preset ?? "medium"}
-          >
-            <SelectTrigger className="w-full" id={`track-noise-reduction-${streamIndex}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="light">{t("audio.options.noiseReductionLight")}</SelectItem>
-              <SelectItem value="medium">{t("audio.options.noiseReductionMedium")}</SelectItem>
-              <SelectItem value="strong">{t("audio.options.noiseReductionStrong")}</SelectItem>
-            </SelectContent>
-          </Select>
+            step={1}
+            value={[selectedPresetIndex]}
+          />
         </AudioTrackEffectsLibraryPageBasic>
       </AudioTrackEffectsLibraryPageContent>
     </AudioTrackEffectsLibraryPage>
   );
-}
-
-function isNoiseReductionPreset(value: string): value is NoiseReductionPreset {
-  return value === "light" || value === "medium" || value === "strong";
 }
 
 export { NoiseReductionPage };

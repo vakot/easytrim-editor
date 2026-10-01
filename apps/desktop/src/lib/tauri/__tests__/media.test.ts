@@ -64,12 +64,13 @@ describe("media IPC adapter", () => {
           gainDb: 3,
           loudnessNormalization: "streaming" as const,
           effects: [
+            { cutoffHz: 120, stage: "cleanup" as const, type: "highPass" as const },
             {
               preset: "strong" as const,
               stage: "cleanup" as const,
               type: "noiseReduction" as const,
             },
-            { cutoffHz: 120, stage: "cleanup" as const, type: "highPass" as const },
+            { ceilingDb: -1, stage: "finalProtection" as const, type: "limiter" as const },
           ],
         },
       },
@@ -93,6 +94,7 @@ describe("media IPC adapter", () => {
           effects: [
             { cutoffHz: 120, stage: "cleanup", type: "highPass" },
             { preset: "strong", stage: "cleanup", type: "noiseReduction" },
+            { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
           ],
         },
       },
@@ -101,6 +103,42 @@ describe("media IPC adapter", () => {
       sourcePath: "C:/Media/clip.mp4",
       audioTracks,
     });
+  });
+
+  it.each([
+    { ceilingDb: -25, stage: "finalProtection", type: "limiter" },
+    { ceilingDb: -1, stage: "cleanup", type: "limiter" },
+  ])("rejects an invalid limiter returned in an audio preview descriptor", async (effect) => {
+    mocks.invoke.mockResolvedValueOnce([
+      {
+        mediaToken: 4,
+        previewRevision: 12,
+        processing: { gainDb: 0, effects: [effect] },
+        streamIndex: 2,
+        url: "easytrim-media://localhost/4?variant=audio&stream=2&revision=12",
+      },
+    ]);
+
+    await expect(
+      prepareAudioPreviews("C:/Media/clip.mp4", [{ streamIndex: 2, processing: { gainDb: 0 } }]),
+    ).rejects.toThrow();
+  });
+
+  it("rejects duplicate singleton effects returned in an audio preview descriptor", async () => {
+    const limiter = { ceilingDb: -1, stage: "finalProtection", type: "limiter" };
+    mocks.invoke.mockResolvedValueOnce([
+      {
+        mediaToken: 4,
+        previewRevision: 12,
+        processing: { gainDb: 0, effects: [limiter, { ...limiter, ceilingDb: -2 }] },
+        streamIndex: 2,
+        url: "easytrim-media://localhost/4?variant=audio&stream=2&revision=12",
+      },
+    ]);
+
+    await expect(
+      prepareAudioPreviews("C:/Media/clip.mp4", [{ streamIndex: 2, processing: { gainDb: 0 } }]),
+    ).rejects.toThrow();
   });
 
   it("converts detected silence to activity ranges for one track", async () => {

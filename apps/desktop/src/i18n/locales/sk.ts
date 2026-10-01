@@ -553,6 +553,8 @@ export const sk = {
       effectStageDynamics: "Dynamika",
       effectStageLevel: "Úroveň",
       effectStageProtection: "Ochrana",
+      limiter: "Obmedzovač špičiek",
+      limiterCeiling: "Výstupný limit",
       loudnessNormalization: "Normalizácia hlasitosti",
       noiseReduction: "Redukcia šumu",
       noiseReductionStrength: "Sila redukcie šumu",
@@ -579,6 +581,8 @@ export const sk = {
       loudnessNormalizationDescription: "Normalizovať túto stopu na cieľovú hlasitosť.",
       noiseReductionDescription: "Obmedziť šum v pozadí tejto zvukovej stopy.",
       noiseReductionEffectSummary: "Redukcia šumu - {{preset}}",
+      limiterDescription: "Znížiť špičky tejto stopy.",
+      limitedEffectSummary: "Obmedzovač špičiek ({{ceiling}} dB)",
       normalizedEffectSummary: "Normalizované - {{preset}}",
       normalizedHoverTitle: "Normalizované - {{preset}}",
       normalizedLevelSummary: "Cieľ {{target}} LUFS · limit špičky {{peak}} dBTP",
@@ -586,7 +590,8 @@ export const sk = {
     },
     tooltips: {
       merge: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
-      normalizationReplacesGain: "Manuálne zosilnenie sa pri normalizácii nepoužíva.",
+      normalizationReplacesGain:
+        "Manuálne zosilnenie nie je dostupné, keď je aktívna automatická normalizácia.",
     },
     dialogs: {
       effects: {

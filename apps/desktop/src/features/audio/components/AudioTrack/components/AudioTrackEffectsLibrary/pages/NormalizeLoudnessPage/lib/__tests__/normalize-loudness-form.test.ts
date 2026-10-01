@@ -9,7 +9,7 @@ import {
   isNormalizeLoudnessFormDirty,
   isNormalizeLoudnessFormValid,
   normalizeLoudnessFormReducer,
-} from "../lib/normalize-loudness-form";
+} from "../normalize-loudness-form";
 
 describe("normalize loudness form", () => {
   it("starts disabled with a default configuration without enabling the effect", () => {

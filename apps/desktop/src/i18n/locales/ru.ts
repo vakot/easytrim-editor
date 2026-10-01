@@ -556,6 +556,8 @@ export const ru = {
       effectStageDynamics: "Динамика",
       effectStageLevel: "Уровень",
       effectStageProtection: "Защита",
+      limiter: "Лимитер",
+      limiterCeiling: "Выходной предел",
       loudnessNormalization: "Нормализация громкости",
       noiseReduction: "Шумоподавление",
       noiseReductionStrength: "Сила шумоподавления",
@@ -582,6 +584,8 @@ export const ru = {
       loudnessNormalizationDescription: "Нормализовать дорожку до целевого уровня громкости.",
       noiseReductionDescription: "Уменьшает фоновый шум в этой аудиодорожке.",
       noiseReductionEffectSummary: "Шумоподавление - {{preset}}",
+      limiterDescription: "Ограничивать пики этой дорожки.",
+      limitedEffectSummary: "Лимитер ({{ceiling}} дБ)",
       normalizedEffectSummary: "Нормализация - {{preset}}",
       normalizedHoverTitle: "Нормализация - {{preset}}",
       normalizedLevelSummary: "Цель {{target}} LUFS · предел пика {{peak}} дБTP",
@@ -589,7 +593,7 @@ export const ru = {
     },
     tooltips: {
       merge: "Все выбранные дорожки объединяются в одну; это требует кодирования.",
-      normalizationReplacesGain: "Ручное усиление не используется при нормализации.",
+      normalizationReplacesGain: "Ручное усиление недоступно при автоматической нормализации.",
     },
     dialogs: {
       effects: {

@@ -70,7 +70,7 @@ describe("audio track level policy", () => {
     ).toBe(false);
   });
 
-  it("keys loudness analysis by trim and explicit pre-level processing inputs", () => {
+  it("keys loudness analysis by trim and track processing effects", () => {
     const trim = { startMicros: 1_000_000, endMicros: 8_000_000 };
     const processing = { gainDb: -4, loudnessNormalization: "streaming" as const };
     const initial = audioTrackLoudnessInputsKey("source-a", 2, trim, processing);
@@ -93,9 +93,7 @@ describe("audio track level policy", () => {
     };
 
     expect(audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing)).not.toBe(initial);
-    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing)).toBe(
-      audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing),
-    );
+    expect(sameAudioTrackLoudnessInputs(processing, upstreamProcessing)).toBe(false);
     const finalProtectionProcessing = {
       ...processing,
       effects: [{ type: "highPass" as const, stage: "finalProtection" as const, cutoffHz: 120 }],
@@ -106,6 +104,14 @@ describe("audio track level policy", () => {
     );
     expect(sameAudioTrackLoudnessInputs(processing, finalProtectionProcessing)).toBe(true);
     expect(audioTrackActivityProcessingChanged(processing, finalProtectionProcessing)).toBe(true);
+    const limitedProcessing = {
+      ...processing,
+      effects: [{ type: "limiter" as const, stage: "finalProtection" as const, ceilingDb: -1 }],
+    };
+
+    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, limitedProcessing)).toBe(initial);
+    expect(sameAudioTrackLoudnessInputs(processing, limitedProcessing)).toBe(true);
+    expect(audioTrackActivityProcessingChanged(processing, limitedProcessing)).toBe(true);
     expect(audioTrackLoudnessInputsKey("source-b", 2, trim, processing)).not.toBe(initial);
     expect(sameAudioTrackLoudnessInputs(processing, { ...processing, gainDb: 2 })).toBe(true);
     expect(sameAudioTrackLoudnessInputs(processing, upstreamProcessing)).toBe(false);

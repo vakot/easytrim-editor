@@ -1,5 +1,5 @@
 import { WandSparkles } from "lucide-react";
-import { type CSSProperties, memo, type ReactNode } from "react";
+import { type CSSProperties, memo, type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -160,35 +160,47 @@ function AudioTrackGainIndicator({ controller }: { controller: AudioTrackControl
 }
 
 function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProcessing }) {
-  const { t } = useTranslation();
-  const summaries: string[] = [];
-  const normalization = processing.loudnessNormalization;
-  const noiseReduction = getAudioTrackSignalEffect(processing, "noiseReduction");
+  const { i18n, t } = useTranslation();
+  const summary = useMemo(() => {
+    const summaries: string[] = [];
+    const normalization = processing.loudnessNormalization;
+    const noiseReduction = getAudioTrackSignalEffect(processing, "noiseReduction");
 
-  if (noiseReduction) {
-    summaries.push(
-      t("audio.messages.noiseReductionEffectSummary", {
-        preset: noiseReductionPresetLabel(noiseReduction.preset, t),
-      }),
-    );
-  }
+    if (noiseReduction) {
+      summaries.push(
+        t("audio.messages.noiseReductionEffectSummary", {
+          preset: noiseReductionPresetLabel(noiseReduction.preset, t),
+        }),
+      );
+    }
 
-  if (typeof normalization === "string") {
-    summaries.push(
-      t("audio.messages.normalizedEffectSummary", {
-        preset: normalizationPresetLabel(normalization, t),
-      }),
-    );
-  } else if (normalization) {
-    summaries.push(
-      t("audio.messages.normalizedEffectSummary", {
-        preset: t("audio.options.normalizationCustom"),
-      }),
-    );
-  }
+    if (typeof normalization === "string") {
+      summaries.push(
+        t("audio.messages.normalizedEffectSummary", {
+          preset: normalizationPresetLabel(normalization, t),
+        }),
+      );
+    } else if (normalization) {
+      summaries.push(
+        t("audio.messages.normalizedEffectSummary", {
+          preset: t("audio.options.normalizationCustom"),
+        }),
+      );
+    }
 
-  if (summaries.length === 0) return null;
-  const summary = summaries.join(" · ");
+    const limiter = getAudioTrackSignalEffect(processing, "limiter");
+    if (limiter) {
+      summaries.push(
+        t("audio.messages.limitedEffectSummary", {
+          ceiling: formatProcessingValue(limiter.ceilingDb, i18n.language),
+        }),
+      );
+    }
+
+    return summaries.length === 0 ? null : summaries.join(" · ");
+  }, [i18n.language, processing, t]);
+
+  if (!summary) return null;
 
   return (
     <AudioTrackIndicator
