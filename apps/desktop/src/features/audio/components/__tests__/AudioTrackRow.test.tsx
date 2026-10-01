@@ -515,6 +515,39 @@ describe("AudioTrackRow", () => {
     expect(screen.getAllByText("−2.5 dB")).toHaveLength(2);
   });
 
+  it("shows effect summaries in canonical pipeline order and uses cleanup High Pass", () => {
+    const { store } = renderRow();
+    act(() => {
+      store.dispatch(
+        audioTrackProcessingChanged({
+          streamIndex: 2,
+          processing: {
+            gainDb: 0,
+            loudnessNormalization: "streaming",
+            effects: [
+              { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+              { cutoffHz: 120, stage: "dynamics", type: "highPass" },
+              { preset: "medium", stage: "cleanup", type: "noiseReduction" },
+              { cutoffHz: 100, stage: "cleanup", type: "highPass" },
+            ],
+          },
+        }),
+      );
+    });
+
+    const indicator = document.querySelector('[data-slot="audio-track-effects-indicator"]');
+    const summary = indicator?.textContent ?? "";
+
+    expect(summary).toContain("High-pass (100 Hz)");
+    expect(summary).toContain("Noise reduction");
+    expect(summary).toContain("Normalized");
+    expect(summary).toContain("Limiter");
+    expect(summary.indexOf("High-pass (100 Hz)")).toBeLessThan(summary.indexOf("Noise reduction"));
+    expect(summary.indexOf("Noise reduction")).toBeLessThan(summary.indexOf("Normalized"));
+    expect(summary.indexOf("Normalized")).toBeLessThan(summary.indexOf("Limiter"));
+    expect(summary).not.toContain("120 Hz");
+  });
+
   it("exposes the same action-only commands in the row context menu", async () => {
     const user = userEvent.setup();
     renderRow();

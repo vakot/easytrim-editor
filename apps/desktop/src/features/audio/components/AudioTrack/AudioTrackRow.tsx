@@ -9,6 +9,7 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import {
+  AUDIO_TRACK_EFFECT_SUMMARY_ORDER,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
   type AudioTrackProcessing,
@@ -163,43 +164,46 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
   const { i18n, t } = useTranslation();
   const summary = useMemo(() => {
     const summaries: string[] = [];
-    const normalization = processing.loudnessNormalization;
-    const noiseReduction = getAudioTrackSignalEffect(processing, "noiseReduction");
-
-    if (noiseReduction) {
-      summaries.push(
-        t("audio.messages.noiseReductionEffectSummary", {
-          preset: noiseReductionPresetLabel(noiseReduction.preset, t),
-        }),
-      );
-    }
-
-    if (typeof normalization === "string") {
-      summaries.push(
-        t("audio.messages.normalizedEffectSummary", {
-          preset: normalizationPresetLabel(normalization, t),
-        }),
-      );
-    } else if (normalization) {
-      summaries.push(
-        t("audio.messages.normalizedEffectSummary", {
-          preset: t("audio.options.normalizationCustom"),
-        }),
-      );
-    }
-
-    const highPassCutoffHz = getAudioTrackSignalEffect(processing, "highPass", "cleanup")?.cutoffHz;
-    if (highPassCutoffHz !== undefined) {
-      summaries.push(t("audio.messages.highPassEffectSummary", { cutoff: highPassCutoffHz }));
-    }
-
-    const limiter = getAudioTrackSignalEffect(processing, "limiter");
-    if (limiter) {
-      summaries.push(
-        t("audio.messages.limitedEffectSummary", {
-          ceiling: formatProcessingValue(limiter.ceilingDb, i18n.language),
-        }),
-      );
+    for (const effect of AUDIO_TRACK_EFFECT_SUMMARY_ORDER) {
+      if (effect === "cleanupHighPass") {
+        const cutoffHz = getAudioTrackSignalEffect(processing, "highPass", "cleanup")?.cutoffHz;
+        if (cutoffHz !== undefined) {
+          summaries.push(t("audio.messages.highPassEffectSummary", { cutoff: cutoffHz }));
+        }
+      } else if (effect === "noiseReduction") {
+        const noiseReduction = getAudioTrackSignalEffect(processing, "noiseReduction");
+        if (noiseReduction) {
+          summaries.push(
+            t("audio.messages.noiseReductionEffectSummary", {
+              preset: noiseReductionPresetLabel(noiseReduction.preset, t),
+            }),
+          );
+        }
+      } else if (effect === "loudnessNormalization") {
+        const normalization = processing.loudnessNormalization;
+        if (typeof normalization === "string") {
+          summaries.push(
+            t("audio.messages.normalizedEffectSummary", {
+              preset: normalizationPresetLabel(normalization, t),
+            }),
+          );
+        } else if (normalization) {
+          summaries.push(
+            t("audio.messages.normalizedEffectSummary", {
+              preset: t("audio.options.normalizationCustom"),
+            }),
+          );
+        }
+      } else {
+        const limiter = getAudioTrackSignalEffect(processing, "limiter");
+        if (limiter) {
+          summaries.push(
+            t("audio.messages.limitedEffectSummary", {
+              ceiling: formatProcessingValue(limiter.ceilingDb, i18n.language),
+            }),
+          );
+        }
+      }
     }
 
     return summaries.length === 0 ? null : summaries.join(" · ");
