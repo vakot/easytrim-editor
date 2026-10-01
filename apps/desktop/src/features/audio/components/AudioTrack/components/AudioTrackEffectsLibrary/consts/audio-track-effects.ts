@@ -29,6 +29,7 @@ interface AudioTrackEffectDescriptor {
 
 const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
   {
+    defaultSelected: true,
     id: "highPass",
     stage: "cleanup",
     label: (t) => t("audio.labels.highPass"),
@@ -51,7 +52,6 @@ const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
       getAudioTrackSignalEffect(current, "noiseReduction")?.preset,
   },
   {
-    defaultSelected: true,
     id: "loudnessNormalization",
     stage: "levelPolicy",
     label: (t) => t("audio.labels.loudnessNormalization"),
