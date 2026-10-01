@@ -582,7 +582,7 @@ export const en = {
       },
       loudnessNormalizationDescription: "Normalize this track to a consistent target loudness.",
       highPassDescription: "Reduce low-frequency rumble on this track.",
-      highPassEffectSummary: "High-pass · {{cutoff}} Hz",
+      highPassEffectSummary: "High-pass ({{cutoff}} Hz)",
       noiseReductionDescription: "Reduce background noise on this audio track.",
       noiseReductionEffectSummary: "Noise reduction - {{preset}}",
       limiterDescription: "Reduce peaks on this track",

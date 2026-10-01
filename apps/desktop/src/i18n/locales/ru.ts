@@ -585,7 +585,7 @@ export const ru = {
       },
       loudnessNormalizationDescription: "Нормализовать дорожку до целевого уровня громкости.",
       highPassDescription: "Уберите низкочастотный гул в этой дорожке.",
-      highPassEffectSummary: "Фильтр высоких частот · {{cutoff}} Гц",
+      highPassEffectSummary: "Фильтр высоких частот ({{cutoff}} Гц)",
       noiseReductionDescription: "Уменьшает фоновый шум в этой аудиодорожке.",
       noiseReductionEffectSummary: "Шумоподавление - {{preset}}",
       limiterDescription: "Ограничивать пики этой дорожки.",

@@ -582,7 +582,7 @@ export const sk = {
       },
       loudnessNormalizationDescription: "Normalizovať túto stopu na cieľovú hlasitosť.",
       highPassDescription: "Odstráňte nízkofrekvenčné dunenie z tejto stopy.",
-      highPassEffectSummary: "Hornopriepustný filter · {{cutoff}} Hz",
+      highPassEffectSummary: "Hornopriepustný filter ({{cutoff}} Hz)",
       noiseReductionDescription: "Obmedziť šum v pozadí tejto zvukovej stopy.",
       noiseReductionEffectSummary: "Redukcia šumu - {{preset}}",
       limiterDescription: "Znížiť špičky tejto stopy.",
