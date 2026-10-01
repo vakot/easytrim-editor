@@ -1,5 +1,6 @@
 type LoudnessPreset = "webVideo" | "streaming" | "broadcast";
 const AUDIO_PROCESSING_STAGES = ["cleanup", "dynamics", "levelPolicy", "finalProtection"] as const;
+const AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS = [60, 80, 100, 120] as const;
 // Keep in sync with AudioTrackSignalEffect ordering in media/export.rs.
 const AUDIO_TRACK_SIGNAL_EFFECT_ORDER = ["highPass", "noiseReduction", "limiter"] as const;
 const SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS = ["noiseReduction", "limiter"] as const;
@@ -20,8 +21,8 @@ type AudioTrackSignalEffect =
       stage: "finalProtection";
       type: "limiter";
     };
-
 type NoiseReductionPreset = "light" | "medium" | "strong";
+type AudioTrackHighPassCutoff = (typeof AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS)[number];
 
 interface CustomLoudnessNormalization {
   maxTruePeakDb: number;
@@ -147,9 +148,11 @@ function getAudioTrackPreLevelEffects(processing: AudioTrackProcessing): AudioTr
 function getAudioTrackSignalEffect<T extends AudioTrackSignalEffect["type"]>(
   processing: AudioTrackProcessing,
   type: T,
+  stage?: AudioProcessingStage,
 ): Extract<AudioTrackSignalEffect, { type: T }> | undefined {
   return getAudioTrackSignalEffects(processing).find(
-    (effect): effect is Extract<AudioTrackSignalEffect, { type: T }> => effect.type === type,
+    (effect): effect is Extract<AudioTrackSignalEffect, { type: T }> =>
+      effect.type === type && (stage === undefined || effect.stage === stage),
   );
 }
 
@@ -174,8 +177,12 @@ function setAudioTrackSignalEffect(
 function removeAudioTrackSignalEffect(
   processing: AudioTrackProcessing,
   type: AudioTrackSignalEffect["type"],
+  stage?: AudioProcessingStage,
 ): AudioTrackProcessing {
-  const effects = getAudioTrackSignalEffects(processing).filter((effect) => effect.type !== type);
+  const effects = getAudioTrackSignalEffects(processing).filter(
+    (effect) => effect.type !== type || (stage !== undefined && effect.stage !== stage),
+  );
+
   const nextProcessing = { ...processing };
   if (effects.length === 0) delete nextProcessing.effects;
   else nextProcessing.effects = effects;
@@ -214,6 +221,62 @@ function compareAudioTrackSignalEffects(
     return left.ceilingDb - right.ceilingDb;
   }
   return 0;
+}
+
+function parseAudioTrackSignalEffects(value: unknown): AudioTrackSignalEffect[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) return undefined;
+
+  const effects: AudioTrackSignalEffect[] = [];
+  const highPassStages = new Set<AudioProcessingStage>();
+  for (const valueEffect of value) {
+    if (typeof valueEffect !== "object" || valueEffect === null || Array.isArray(valueEffect)) {
+      return undefined;
+    }
+    const effect = valueEffect as Record<string, unknown>;
+    if (effect.type === "highPass") {
+      if (
+        (effect.stage !== "cleanup" &&
+          effect.stage !== "dynamics" &&
+          effect.stage !== "finalProtection") ||
+        typeof effect.cutoffHz !== "number" ||
+        !Number.isFinite(effect.cutoffHz) ||
+        effect.cutoffHz < 10 ||
+        effect.cutoffHz > 20_000 ||
+        highPassStages.has(effect.stage as AudioProcessingStage)
+      )
+        return undefined;
+      highPassStages.add(effect.stage as AudioProcessingStage);
+      effects.push({ cutoffHz: effect.cutoffHz, stage: effect.stage, type: "highPass" });
+    } else if (effect.type === "noiseReduction") {
+      if (
+        effect.stage !== "cleanup" ||
+        (effect.preset !== "light" && effect.preset !== "medium" && effect.preset !== "strong")
+      )
+        return undefined;
+      effects.push({ preset: effect.preset, stage: "cleanup", type: "noiseReduction" });
+    } else if (effect.type === "limiter") {
+      if (
+        effect.stage !== "finalProtection" ||
+        typeof effect.ceilingDb !== "number" ||
+        !Number.isFinite(effect.ceilingDb) ||
+        effect.ceilingDb < -24 ||
+        effect.ceilingDb > 0
+      )
+        return undefined;
+      effects.push({ ceilingDb: effect.ceilingDb, stage: "finalProtection", type: "limiter" });
+    } else {
+      return undefined;
+    }
+  }
+  if (
+    SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS.some(
+      (type) => effects.filter((effect) => effect.type === type).length > 1,
+    )
+  ) {
+    return undefined;
+  }
+  return getAudioTrackSignalEffects({ gainDb: 0, effects });
 }
 
 function loudnessNormalizationTargets(normalization: LoudnessNormalization): {
@@ -295,6 +358,7 @@ const DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION: CustomLoudnessNormalization = {
 export type {
   AudioLoudnessAnalysis,
   AudioProcessingStage,
+  AudioTrackHighPassCutoff,
   AudioTrackProcessing,
   AudioTrackSelection,
   AudioTrackSettings,
@@ -306,6 +370,7 @@ export type {
 };
 export {
   AUDIO_PROCESSING_STAGES,
+  AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS,
   AUDIO_TRACK_SIGNAL_EFFECT_ORDER,
   audioTrackActivityProcessingChanged,
   audioTrackExternalPreviewStreamIndexes,
@@ -321,6 +386,7 @@ export {
   getAudioTrackSignalEffect,
   getAudioTrackSignalEffects,
   loudnessNormalizationTargets,
+  parseAudioTrackSignalEffects,
   removeAudioTrackSignalEffect,
   sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,

@@ -6,7 +6,10 @@ import type { AudioTrackProcessing } from "@/domain/audio-processing";
 
 import { AudioTrackEffectsDraftProvider } from "../../AudioTrackEffectsDialog/components/AudioTrackEffectsDraftProvider";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
-import type { AudioTrackEffectDescriptor } from "../consts/audio-track-effects";
+import {
+  AUDIO_TRACK_EFFECTS,
+  type AudioTrackEffectDescriptor,
+} from "../consts/audio-track-effects";
 
 function FirstEffectPage() {
   return <p>First effect controls</p>;
@@ -36,6 +39,31 @@ const effects: readonly AudioTrackEffectDescriptor[] = [
 ];
 
 describe("AudioTrackEffectsLibrary", () => {
+  it("tracks cleanup high-pass state independently from later-stage high-pass effects", () => {
+    const highPass = AUDIO_TRACK_EFFECTS.find(({ id }) => id === "highPass");
+    expect(highPass).toBeDefined();
+
+    const initial: AudioTrackProcessing = {
+      effects: [{ cutoffHz: 100, stage: "dynamics", type: "highPass" }],
+      gainDb: 0,
+    };
+
+    const changedLaterStage: AudioTrackProcessing = {
+      effects: [{ cutoffHz: 120, stage: "dynamics", type: "highPass" }],
+      gainDb: 0,
+    };
+
+    const cleanupEnabled: AudioTrackProcessing = {
+      effects: [{ cutoffHz: 80, stage: "cleanup", type: "highPass" }],
+      gainDb: 0,
+    };
+
+    expect(highPass!.isEnabled(initial)).toBe(false);
+    expect(highPass!.isDirty(initial, changedLaterStage)).toBe(false);
+    expect(highPass!.isEnabled(cleanupEnabled)).toBe(true);
+    expect(highPass!.isDirty(initial, cleanupEnabled)).toBe(true);
+  });
+
   it("uses registry order, tab semantics, and keyboard page switching without shell branches", async () => {
     const user = userEvent.setup();
     const initialProcessing = { gainDb: 0, firstEnabled: true } as AudioTrackProcessing;

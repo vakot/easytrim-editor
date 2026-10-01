@@ -1,3 +1,5 @@
+import { parseAudioTrackSignalEffects } from "@/domain/audio-processing";
+
 import type { WorkspaceRecoveryBackup } from "./workspace-recovery.types";
 
 const CURRENT_KEY = "easytrim:workspace-recovery:current";
@@ -46,9 +48,14 @@ function isSnapshot(value: unknown): boolean {
         Number.isSafeInteger(track.streamIndex) &&
         isRecord(track.processing) &&
         isFiniteNumber(track.processing.gainDb) &&
+        isValidAudioTrackEffects(track.processing.effects) &&
         isValidLoudnessNormalization(track.processing.loudnessNormalization),
     )
   );
+}
+
+function isValidAudioTrackEffects(value: unknown): boolean {
+  return value === undefined || parseAudioTrackSignalEffects(value) !== undefined;
 }
 
 function isValidLoudnessNormalization(value: unknown): boolean {

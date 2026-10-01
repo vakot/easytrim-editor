@@ -209,6 +209,50 @@ describe("workspace recovery contract", () => {
     expect(localStorage.getItem(CANDIDATE_KEY)).toBe(JSON.stringify(oldBackup));
   });
 
+  it("recovers workspaces with shared signal effects, including high-pass processing", () => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded([instance("filtered-track")]));
+    const backup = createWorkspaceRecoveryBackup(store.getState(), {
+      sessionId: "crashed-session",
+    });
+
+    const recoveredInstance = backup.instances[0]!;
+    recoveredInstance.snapshot = {
+      ...recoveredInstance.snapshot,
+      audio: {
+        ...recoveredInstance.snapshot.audio,
+        tracks: [
+          {
+            enabled: true,
+            streamIndex: 2,
+            processing: {
+              gainDb: 0,
+              effects: [
+                { cutoffHz: 80, stage: "cleanup", type: "highPass" },
+                { preset: "medium", stage: "cleanup", type: "noiseReduction" },
+                { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+              ],
+            },
+          },
+        ],
+      },
+    };
+    localStorage.setItem(CURRENT_KEY, JSON.stringify(backup));
+
+    initializeWorkspaceRecovery(store, "new-session", true);
+
+    expect(
+      getWorkspaceRecoveryCandidate()?.instances[0]?.snapshot.audio.tracks[0]?.processing,
+    ).toEqual({
+      gainDb: 0,
+      effects: [
+        { cutoffHz: 80, stage: "cleanup", type: "highPass" },
+        { preset: "medium", stage: "cleanup", type: "noiseReduction" },
+        { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+      ],
+    });
+  });
+
   it("does not expose malformed or incompatible storage", () => {
     const store = createAppStore();
     localStorage.setItem(CURRENT_KEY, JSON.stringify({ version: 99, instances: [] }));

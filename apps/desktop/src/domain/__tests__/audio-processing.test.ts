@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS,
   audioTrackActivityProcessingChanged,
   audioTrackExternalPreviewStreamIndexes,
   audioTrackLevelMode,
@@ -11,6 +12,7 @@ import {
   getAudioTrackSignalEffect,
   getAudioTrackSignalEffects,
   loudnessNormalizationTargets,
+  parseAudioTrackSignalEffects,
   removeAudioTrackSignalEffect,
   sameAudioTrackLoudnessInputs,
   setAudioTrackSignalEffect,
@@ -188,6 +190,116 @@ describe("audio track level policy", () => {
         (effect) => effect.type === "noiseReduction",
       ),
     ).toEqual([{ ...noiseReduction, preset: "strong" }]);
+  });
+
+  it("edits and disables only the cleanup high-pass across every preset", () => {
+    const processing = setAudioTrackSignalEffect(
+      setAudioTrackSignalEffect(
+        { gainDb: -2 },
+        {
+          preset: "medium",
+          stage: "cleanup",
+          type: "noiseReduction",
+        },
+      ),
+      { cutoffHz: 60, stage: "dynamics", type: "highPass" },
+    );
+
+    const withFinalProtectionHighPass = setAudioTrackSignalEffect(processing, {
+      cutoffHz: 120,
+      stage: "finalProtection",
+      type: "highPass",
+    });
+
+    let currentProcessing = setAudioTrackSignalEffect(withFinalProtectionHighPass, {
+      cutoffHz: 60,
+      stage: "cleanup",
+      type: "highPass",
+    });
+
+    for (const cutoffHz of AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS) {
+      currentProcessing = setAudioTrackSignalEffect(currentProcessing, {
+        cutoffHz,
+        stage: "cleanup",
+        type: "highPass",
+      });
+
+      const updated = currentProcessing;
+      const effects = getAudioTrackSignalEffects(updated);
+
+      expect(getAudioTrackSignalEffect(updated, "highPass", "cleanup")).toEqual({
+        cutoffHz,
+        stage: "cleanup",
+        type: "highPass",
+      });
+      expect(getAudioTrackSignalEffect(updated, "highPass", "dynamics")).toEqual({
+        cutoffHz: 60,
+        stage: "dynamics",
+        type: "highPass",
+      });
+      expect(getAudioTrackSignalEffect(updated, "highPass", "finalProtection")).toEqual({
+        cutoffHz: 120,
+        stage: "finalProtection",
+        type: "highPass",
+      });
+      expect(effects.map(({ stage, type }) => `${stage}:${type}`)).toEqual([
+        "cleanup:highPass",
+        "cleanup:noiseReduction",
+        "dynamics:highPass",
+        "finalProtection:highPass",
+      ]);
+      expect(
+        effects.filter(({ stage, type }) => type === "highPass" && stage === "cleanup"),
+      ).toHaveLength(1);
+    }
+
+    const off = removeAudioTrackSignalEffect(currentProcessing, "highPass", "cleanup");
+
+    expect(getAudioTrackSignalEffect(off, "highPass", "cleanup")).toBeUndefined();
+    expect(getAudioTrackSignalEffects(off)).toEqual([
+      { preset: "medium", stage: "cleanup", type: "noiseReduction" },
+      { cutoffHz: 60, stage: "dynamics", type: "highPass" },
+      { cutoffHz: 120, stage: "finalProtection", type: "highPass" },
+    ]);
+  });
+
+  it("rejects invalid signal-effect stages and high-pass cutoffs in the shared parser", () => {
+    expect(
+      parseAudioTrackSignalEffects([{ cutoffHz: 80, stage: "levelPolicy", type: "highPass" }]),
+    ).toBeUndefined();
+    expect(
+      parseAudioTrackSignalEffects([{ cutoffHz: 20_001, stage: "cleanup", type: "highPass" }]),
+    ).toBeUndefined();
+    expect(
+      parseAudioTrackSignalEffects([{ cutoffHz: Number.NaN, stage: "cleanup", type: "highPass" }]),
+    ).toBeUndefined();
+    expect(
+      parseAudioTrackSignalEffects([{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }]),
+    ).toEqual([{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }]);
+    expect(
+      parseAudioTrackSignalEffects([{ ceilingDb: -25, stage: "finalProtection", type: "limiter" }]),
+    ).toBeUndefined();
+  });
+
+  it("allows one high-pass effect per stage and rejects duplicates within a stage", () => {
+    expect(
+      parseAudioTrackSignalEffects([
+        { cutoffHz: 60, stage: "cleanup", type: "highPass" },
+        { cutoffHz: 80, stage: "cleanup", type: "highPass" },
+      ]),
+    ).toBeUndefined();
+
+    expect(
+      parseAudioTrackSignalEffects([
+        { cutoffHz: 60, stage: "cleanup", type: "highPass" },
+        { cutoffHz: 80, stage: "dynamics", type: "highPass" },
+        { cutoffHz: 100, stage: "finalProtection", type: "highPass" },
+      ]),
+    ).toEqual([
+      { cutoffHz: 60, stage: "cleanup", type: "highPass" },
+      { cutoffHz: 80, stage: "dynamics", type: "highPass" },
+      { cutoffHz: 100, stage: "finalProtection", type: "highPass" },
+    ]);
   });
 
   it("removes a signal effect without disturbing other processing", () => {

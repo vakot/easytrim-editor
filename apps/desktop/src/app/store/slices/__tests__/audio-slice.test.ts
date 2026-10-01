@@ -242,6 +242,72 @@ describe("audio slice", () => {
     expect(trimmed.tracks[1]?.activityAnalysis).toMatchObject({ status: "loading" });
   });
 
+  it("invalidates cleanup analysis and preview only for the changed track", () => {
+    let state = readyAudio();
+    for (const streamIndex of [2, 4]) {
+      state = audioReducer(
+        state,
+        audioTrackLoudnessAnalysisStarted({
+          cacheKey: `analysis-${streamIndex}`,
+          operationId: `loudness-${streamIndex}`,
+          streamIndex,
+        }),
+      );
+      state = audioReducer(
+        state,
+        audioTrackLoudnessAnalysisReady({
+          cacheKey: `analysis-${streamIndex}`,
+          operationId: `loudness-${streamIndex}`,
+          result: { integratedLufs: -18, truePeakDb: -4 },
+          streamIndex,
+        }),
+      );
+      state = audioReducer(
+        state,
+        audioTrackActivityAnalysisStarted({ operationId: `activity-${streamIndex}`, streamIndex }),
+      );
+      state = audioReducer(
+        state,
+        audioTrackPreviewStarted({ operationId: `preview-${streamIndex}`, streamIndex }),
+      );
+      state = audioReducer(
+        state,
+        audioTrackPreviewReady({
+          operationId: `preview-${streamIndex}`,
+          descriptor: {
+            mediaToken: 1,
+            previewRevision: 1,
+            processing: { gainDb: 0 },
+            streamIndex,
+            url: `media://preview-${streamIndex}`,
+          },
+        }),
+      );
+    }
+
+    const changed = audioReducer(
+      state,
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: {
+          gainDb: 0,
+          effects: [{ cutoffHz: 80, stage: "cleanup", type: "highPass" }],
+        },
+      }),
+    );
+
+    expect(changed.tracks[0]).toMatchObject({
+      activityAnalysis: { status: "idle" },
+      loudnessAnalysis: { status: "idle" },
+      preview: { status: "stale" },
+    });
+    expect(changed.tracks[1]).toMatchObject({
+      activityAnalysis: { operationId: "activity-4", status: "loading" },
+      loudnessAnalysis: { cacheKey: "analysis-4", status: "ready" },
+      preview: { descriptor: { url: "media://preview-4" }, status: "ready" },
+    });
+  });
+
   it("keeps dormant manual gain changes from invalidating normalized activity or preview", () => {
     let state = readyAudio();
     state = audioReducer(

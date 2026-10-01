@@ -550,6 +550,7 @@ fn validate_audio_track_selections_inner(
 ) -> Result<(), AppError> {
     let mut selected_streams = HashSet::new();
     for track in audio_tracks {
+        let mut high_pass_stages = HashSet::new();
         let mut has_noise_reduction = false;
         let mut has_limiter = false;
         let is_known_stream = source
@@ -573,17 +574,18 @@ fn validate_audio_track_selections_inner(
                             && (-24.0..=0.0).contains(ceiling_db)
                     }
                 };
-                let duplicate_singleton = is_singleton_signal_effect(effect)
-                    && match effect {
-                        AudioTrackSignalEffect::NoiseReduction { .. } => {
-                            std::mem::replace(&mut has_noise_reduction, true)
-                        }
-                        AudioTrackSignalEffect::Limiter { .. } => {
-                            std::mem::replace(&mut has_limiter, true)
-                        }
-                        AudioTrackSignalEffect::HighPass { .. } => false,
-                    };
-                !valid || duplicate_singleton
+                let duplicate_effect = match effect {
+                    AudioTrackSignalEffect::HighPass { stage, .. } => {
+                        !high_pass_stages.insert(*stage)
+                    }
+                    AudioTrackSignalEffect::NoiseReduction { .. } => {
+                        std::mem::replace(&mut has_noise_reduction, true)
+                    }
+                    AudioTrackSignalEffect::Limiter { .. } => {
+                        std::mem::replace(&mut has_limiter, true)
+                    }
+                };
+                !valid || duplicate_effect
             })
             || track.loudness_analysis.is_some_and(|analysis| {
                 analysis
@@ -822,13 +824,6 @@ fn signal_effect_type_order(effect: &AudioTrackSignalEffect) -> u8 {
     }
 }
 
-fn is_singleton_signal_effect(effect: &AudioTrackSignalEffect) -> bool {
-    matches!(
-        effect,
-        AudioTrackSignalEffect::NoiseReduction { .. } | AudioTrackSignalEffect::Limiter { .. }
-    )
-}
-
 fn noise_reduction_preset_order(preset: &NoiseReductionPreset) -> u8 {
     match preset {
         NoiseReductionPreset::Light => 0,
@@ -1060,7 +1055,7 @@ mod tests {
         FrameRateSelection, LoudnessNormalization, LoudnessPreset, NoiseReductionPreset,
         OptimizedExportRequest, ResolutionSelection, TrimSelection, audio_filter_graph,
         build_fast_arguments, build_optimized_arguments, optimized_command_preview,
-        pre_level_filter_chain,
+        pre_level_filter_chain, validate_audio_track_selections,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -2002,6 +1997,38 @@ mod tests {
     }
 
     #[test]
+    fn audio_track_validation_enforces_high_pass_uniqueness_per_stage() {
+        let mut track = optimized_request("-c:v libx264 -crf 20").audio_tracks[0].clone();
+        track.processing.effects = vec![
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz: 60.0,
+                stage: AudioProcessingStage::Cleanup,
+            },
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz: 80.0,
+                stage: AudioProcessingStage::Cleanup,
+            },
+        ];
+        assert!(validate_audio_track_selections(&media(), &[track.clone()]).is_err());
+
+        track.processing.effects = vec![
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz: 60.0,
+                stage: AudioProcessingStage::Cleanup,
+            },
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz: 80.0,
+                stage: AudioProcessingStage::Dynamics,
+            },
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz: 100.0,
+                stage: AudioProcessingStage::FinalProtection,
+            },
+        ];
+        assert!(validate_audio_track_selections(&media(), &[track]).is_ok());
+    }
+
+    #[test]
     fn export_rejects_signal_effects_assigned_to_invalid_processing_stages() {
         for effect in [
             AudioTrackSignalEffect::NoiseReduction {
@@ -2034,6 +2061,51 @@ mod tests {
             }))
             .is_err()
         );
+    }
+
+    #[test]
+    fn high_pass_signal_effect_round_trips_frontend_camel_case_fields() {
+        let frontend_payload = serde_json::json!({
+            "type": "highPass",
+            "cutoffHz": 80.0,
+            "stage": "cleanup"
+        });
+
+        let effect: AudioTrackSignalEffect = serde_json::from_value(frontend_payload.clone())
+            .expect("frontend payload deserializes");
+
+        assert_eq!(
+            effect,
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz: 80.0,
+                stage: AudioProcessingStage::Cleanup,
+            }
+        );
+        assert_eq!(
+            serde_json::to_value(effect).expect("effect serializes"),
+            frontend_payload
+        );
+    }
+
+    #[test]
+    fn export_rejects_out_of_range_high_pass_cutoffs() {
+        for cutoff_hz in [9.0, 20_001.0] {
+            let mut request = optimized_request("-c:v libx264 -crf 20");
+            request.audio_tracks[0].processing.effects = vec![AudioTrackSignalEffect::HighPass {
+                cutoff_hz,
+                stage: AudioProcessingStage::Cleanup,
+            }];
+
+            let error = build_optimized_arguments(
+                &media(),
+                &request,
+                Path::new("source.mkv"),
+                Path::new("out.mp4"),
+            )
+            .expect_err("high-pass cutoff must be within the supported frequency range");
+
+            assert_eq!(error.code, "invalid_request");
+        }
     }
 
     #[test]

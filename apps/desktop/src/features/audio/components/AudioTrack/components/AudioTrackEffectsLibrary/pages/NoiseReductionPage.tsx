@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Label } from "@/components/ui/label";
@@ -26,8 +27,11 @@ function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
   const { t } = useTranslation();
   const { dispatch, draft } = useAudioTrackEffectsDraft();
   const preset = getAudioTrackSignalEffect(draft.processing, "noiseReduction")?.preset;
-  const selectedPreset = preset ?? "medium";
   const presets: readonly NoiseReductionPreset[] = ["light", "medium", "strong"];
+  const [selectedPreset, setSelectedPreset] = useState<NoiseReductionPreset>(
+    () => preset ?? "medium",
+  );
+
   const presetLabels = [
     t("audio.options.noiseReductionLight"),
     t("audio.options.noiseReductionMedium"),
@@ -42,6 +46,8 @@ function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
   )?.preset;
 
   const updatePreset = (nextPreset: NoiseReductionPreset | undefined) => {
+    if (nextPreset !== undefined) setSelectedPreset(nextPreset);
+
     const processing = nextPreset
       ? setAudioTrackSignalEffect(draft.processing, {
           preset: nextPreset,
@@ -73,7 +79,7 @@ function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
         <AudioTrackEffectsLibraryPageToggle
           aria-label={t("audio.labels.noiseReduction")}
           checked={preset !== undefined}
-          onCheckedChange={(enabled) => updatePreset(enabled ? (preset ?? "medium") : undefined)}
+          onCheckedChange={(enabled) => updatePreset(enabled ? selectedPreset : undefined)}
         />
       </AudioTrackEffectsLibraryPageHeader>
 
