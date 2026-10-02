@@ -69,11 +69,7 @@ function applyAudioTrackGain(
         audioContext,
         externalAudioNode,
         audioMix,
-        getAudioTrackRuntimeLimiter(
-          track.processing,
-          { processing: previewProcessingForTrack(track), status: track.preview.status },
-          gainDb,
-        ),
+        getAudioTrackRuntimeLimiter(track.processing, previewProcessingForTrack(track), gainDb),
       );
     }
   }
@@ -425,7 +421,7 @@ function useAudioPlaybackRuntime({
         track
           ? getAudioTrackRuntimeLimiter(
               track.processing,
-              { processing: previewProcessing, status: track.preview.status },
+              previewProcessing,
               liveAudioTrackGainsRef.current.get(streamIndex),
             )
           : undefined,
@@ -501,10 +497,7 @@ function useAudioPlaybackRuntime({
           context,
           node,
           audioMix,
-          getAudioTrackRuntimeLimiter(track.processing, {
-            processing: previewProcessingForTrack(track),
-            status: track.preview.status,
-          }),
+          getAudioTrackRuntimeLimiter(track.processing, previewProcessingForTrack(track)),
         );
     }
 
