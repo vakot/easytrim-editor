@@ -3,6 +3,13 @@ const AUDIO_PROCESSING_STAGES = ["cleanup", "dynamics", "levelPolicy", "finalPro
 const AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS = [60, 80, 100, 120] as const;
 // Keep in sync with AudioTrackSignalEffect ordering in media/export.rs.
 const AUDIO_TRACK_SIGNAL_EFFECT_ORDER = ["highPass", "noiseReduction", "limiter"] as const;
+const AUDIO_TRACK_EFFECT_SUMMARY_ORDER = [
+  "cleanupHighPass",
+  "noiseReduction",
+  "loudnessNormalization",
+  "limiter",
+] as const;
+
 const SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS = ["noiseReduction", "limiter"] as const;
 type AudioProcessingStage = (typeof AUDIO_PROCESSING_STAGES)[number];
 type AudioTrackSignalEffect =
@@ -21,6 +28,7 @@ type AudioTrackSignalEffect =
       stage: "finalProtection";
       type: "limiter";
     };
+type AudioTrackLimiter = Extract<AudioTrackSignalEffect, { type: "limiter" }>;
 type NoiseReductionPreset = "light" | "medium" | "strong";
 type AudioTrackHighPassCutoff = (typeof AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS)[number];
 
@@ -70,6 +78,30 @@ function effectiveAudioTrackGainDb(processing: AudioTrackProcessing): number {
 
 function audioTrackRequiresProcessedPreview(processing: AudioTrackProcessing): boolean {
   return processing.loudnessNormalization !== undefined || (processing.effects?.length ?? 0) > 0;
+}
+
+function audioTrackPreviewProcessing(processing: AudioTrackProcessing): AudioTrackProcessing {
+  const limiter = getAudioTrackSignalEffect(processing, "limiter");
+  const bakeManualGain = limiter !== undefined && processing.loudnessNormalization === undefined;
+  return { ...processing, gainDb: bakeManualGain ? processing.gainDb : 0 };
+}
+
+function audioTrackPreviewRuntimeGainDb(
+  processing: AudioTrackProcessing,
+  previewProcessing: AudioTrackProcessing,
+  liveGainDb = processing.gainDb,
+): number {
+  if (processing.loudnessNormalization !== undefined) return 0;
+  const previewBakesManualGain =
+    getAudioTrackSignalEffect(previewProcessing, "limiter") !== undefined &&
+    previewProcessing.loudnessNormalization === undefined;
+
+  return liveGainDb - (previewBakesManualGain ? previewProcessing.gainDb : 0);
+}
+
+function limitAudioPreviewSample(sample: number, ceilingDb: number): number {
+  const ceiling = 10 ** (ceilingDb / 20);
+  return Math.max(-ceiling, Math.min(ceiling, sample));
 }
 
 function audioTrackExternalPreviewStreamIndexes(
@@ -315,6 +347,7 @@ function sameAudioTrackPreviewProcessing(
   right: AudioTrackProcessing,
 ): boolean {
   return (
+    audioTrackPreviewProcessing(left).gainDb === audioTrackPreviewProcessing(right).gainDb &&
     sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization) &&
     JSON.stringify(getAudioTrackSignalEffects(left)) ===
       JSON.stringify(getAudioTrackSignalEffects(right))
@@ -359,6 +392,7 @@ export type {
   AudioLoudnessAnalysis,
   AudioProcessingStage,
   AudioTrackHighPassCutoff,
+  AudioTrackLimiter,
   AudioTrackProcessing,
   AudioTrackSelection,
   AudioTrackSettings,
@@ -370,6 +404,7 @@ export type {
 };
 export {
   AUDIO_PROCESSING_STAGES,
+  AUDIO_TRACK_EFFECT_SUMMARY_ORDER,
   AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS,
   AUDIO_TRACK_SIGNAL_EFFECT_ORDER,
   audioTrackActivityProcessingChanged,
@@ -377,14 +412,18 @@ export {
   audioTrackLevelMode,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
+  audioTrackPreviewProcessing,
+  audioTrackPreviewRuntimeGainDb,
   audioTrackRequiresProcessedPreview,
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB,
   DEFAULT_AUDIO_TRACK_PROCESSING,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
   effectiveAudioTrackGainDb,
+  getAudioTrackPreLevelEffects,
   getAudioTrackSignalEffect,
   getAudioTrackSignalEffects,
+  limitAudioPreviewSample,
   loudnessNormalizationTargets,
   parseAudioTrackSignalEffects,
   removeAudioTrackSignalEffect,

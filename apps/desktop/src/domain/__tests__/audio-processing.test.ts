@@ -7,14 +7,19 @@ import {
   audioTrackLevelMode,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
+  audioTrackPreviewProcessing,
+  audioTrackPreviewRuntimeGainDb,
+  type AudioTrackProcessing,
   audioTrackRequiresProcessedPreview,
   effectiveAudioTrackGainDb,
   getAudioTrackSignalEffect,
   getAudioTrackSignalEffects,
+  limitAudioPreviewSample,
   loudnessNormalizationTargets,
   parseAudioTrackSignalEffects,
   removeAudioTrackSignalEffect,
   sameAudioTrackLoudnessInputs,
+  sameAudioTrackPreviewProcessing,
   setAudioTrackSignalEffect,
 } from "../audio-processing";
 
@@ -57,6 +62,22 @@ describe("audio track level policy", () => {
     expect(effectiveAudioTrackGainDb(processing)).toBe(0);
     expect(processing.gainDb).toBe(-2.5);
     expect(effectiveAudioTrackGainDb({ gainDb: processing.gainDb })).toBe(-2.5);
+  });
+
+  it("bakes manual gain into limited previews and leaves linear gain runtime-only", () => {
+    const limited = {
+      gainDb: 6,
+      effects: [{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }],
+    } satisfies AudioTrackProcessing;
+
+    const linear = { gainDb: 6 };
+
+    expect(audioTrackPreviewProcessing(limited)).toEqual(limited);
+    expect(audioTrackPreviewRuntimeGainDb(limited, limited)).toBe(0);
+    expect(audioTrackPreviewRuntimeGainDb(limited, limited, 8)).toBe(2);
+    expect(audioTrackPreviewProcessing(linear)).toEqual({ gainDb: 0 });
+    expect(audioTrackPreviewRuntimeGainDb(linear, { gainDb: 0 })).toBe(6);
+    expect(limitAudioPreviewSample(0.9 * 10 ** (6 / 20), -1)).toBeCloseTo(10 ** (-1 / 20));
   });
 
   it("treats normalization targets as analysis independent and reports its level targets", () => {
@@ -129,6 +150,23 @@ describe("audio track level policy", () => {
 
     expect(keyForPreset("light")).not.toBe(keyForPreset("medium"));
     expect(keyForPreset("medium")).not.toBe(keyForPreset("strong"));
+  });
+
+  it("includes manual gain in limited preview identity but not in linear or normalized preview identity", () => {
+    const limiter = { ceilingDb: -1, stage: "finalProtection", type: "limiter" } as const;
+    expect(
+      sameAudioTrackPreviewProcessing(
+        { gainDb: 0, effects: [limiter] },
+        { gainDb: 2, effects: [limiter] },
+      ),
+    ).toBe(false);
+    expect(sameAudioTrackPreviewProcessing({ gainDb: 0 }, { gainDb: 2 })).toBe(true);
+    expect(
+      sameAudioTrackPreviewProcessing(
+        { gainDb: 0, loudnessNormalization: "streaming", effects: [limiter] },
+        { gainDb: 2, loudnessNormalization: "streaming", effects: [limiter] },
+      ),
+    ).toBe(true);
   });
 
   it("keeps same-stage signal effects in canonical order as effects are added and updated", () => {

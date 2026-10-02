@@ -52,6 +52,75 @@ beforeEach(() => {
 });
 
 describe("audio track operations", () => {
+  it("regenerates a limited preview when committed manual gain changes", async () => {
+    const store = createStore();
+    store.dispatch(audioTrackToggled({ streamIndex: 4 }));
+    mocks.prepareAudioPreviews.mockImplementation(
+      async (_sourcePath: string, tracks: AudioTrackSelection[]) =>
+        tracks.map((track, index) => ({
+          mediaToken: 1,
+          previewRevision: index + 1,
+          processing: track.processing,
+          streamIndex: track.streamIndex,
+          url: `media://preview-${track.streamIndex}-${index + 1}`,
+        })),
+    );
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: {
+          gainDb: 0,
+          effects: [{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }],
+        },
+      }),
+    );
+    await vi.waitFor(() => expect(mocks.prepareAudioPreviews).toHaveBeenCalledTimes(1));
+
+    store.dispatch(audioTrackGainChanged({ gainDb: 6, streamIndex: 2 }));
+    await vi.waitFor(() => expect(mocks.prepareAudioPreviews).toHaveBeenCalledTimes(2));
+
+    expect(mocks.prepareAudioPreviews.mock.calls[1]?.[1][0]?.processing).toMatchObject({
+      gainDb: 6,
+      effects: [{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }],
+    });
+  });
+
+  it("bakes committed manual gain before Limiter in the processed playback preview", async () => {
+    const store = createStore();
+    store.dispatch(audioTrackToggled({ streamIndex: 4 }));
+    store.dispatch(
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: {
+          gainDb: 6,
+          effects: [{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }],
+        },
+      }),
+    );
+    mocks.prepareAudioPreviews.mockImplementation(
+      async (_sourcePath: string, tracks: AudioTrackSelection[]) =>
+        tracks.map((track) => ({
+          mediaToken: 1,
+          previewRevision: 1,
+          processing: track.processing,
+          streamIndex: track.streamIndex,
+          url: `media://preview-${track.streamIndex}`,
+        })),
+    );
+
+    await store.dispatch(prepareTrackPreview(2));
+
+    expect(mocks.prepareAudioPreviews).toHaveBeenCalledWith(firstSource.sourcePath, [
+      expect.objectContaining({
+        streamIndex: 2,
+        processing: {
+          gainDb: 6,
+          effects: [{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }],
+        },
+      }),
+    ]);
+  });
+
   it("returns a single default track to native playback when normalization is disabled", async () => {
     const store = createStore();
     store.dispatch(audioTrackToggled({ streamIndex: 4 }));

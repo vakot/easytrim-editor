@@ -360,6 +360,78 @@ describe("audio slice", () => {
     });
   });
 
+  it("invalidates a limited preview when baked manual gain changes", () => {
+    let state = audioReducer(
+      readyAudio(),
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: {
+          gainDb: 0,
+          effects: [{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }],
+        },
+      }),
+    );
+
+    state = audioReducer(
+      state,
+      audioTrackPreviewStarted({ operationId: "limited", streamIndex: 2 }),
+    );
+    state = audioReducer(
+      state,
+      audioTrackPreviewReady({
+        operationId: "limited",
+        descriptor: {
+          mediaToken: 1,
+          previewRevision: 1,
+          processing: {
+            gainDb: 0,
+            effects: [{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }],
+          },
+          streamIndex: 2,
+          url: "media://limited",
+        },
+      }),
+    );
+
+    const changed = audioReducer(state, audioTrackGainChanged({ gainDb: 6, streamIndex: 2 }));
+
+    expect(changed.tracks[0]).toMatchObject({
+      preview: { descriptor: { url: "media://limited" }, status: "stale" },
+      processing: { gainDb: 6 },
+    });
+  });
+
+  it("keeps a cached source-shape waveform when Limiter changes", () => {
+    let state = audioReducer(
+      readyAudio(),
+      waveformsLoading({ jobId: "waveform-1", streamIndexes: [2], width: 800 }),
+    );
+
+    state = audioReducer(
+      state,
+      waveformReady({
+        jobId: "waveform-1",
+        streamIndex: 2,
+        status: "ready",
+        url: "media://waveform",
+        width: 800,
+      }),
+    );
+
+    const changed = audioReducer(
+      state,
+      audioTrackProcessingChanged({
+        streamIndex: 2,
+        processing: {
+          gainDb: 0,
+          effects: [{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }],
+        },
+      }),
+    );
+
+    expect(changed.tracks[0]?.waveform).toMatchObject({ status: "ready", url: "media://waveform" });
+  });
+
   it("keeps a newer per-track preview when initial preparation finishes out of order", () => {
     let state = readyAudio();
     state = audioReducer(

@@ -162,6 +162,8 @@ fn diagnostics<'a>(
 mod tests {
     use std::{ffi::OsString, path::Path};
 
+    use crate::media::export::audio_filter_graph;
+
     use crate::media::export::{
         AudioTrackProcessing, AudioTrackSelection, LoudnessNormalization, LoudnessPreset,
     };
@@ -239,5 +241,50 @@ mod tests {
             2
         );
         assert!(arguments.contains(&OsString::from("aac")));
+    }
+
+    #[test]
+    fn limited_manual_preview_uses_the_same_filter_order_as_export() {
+        let track = AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 2,
+            processing: AudioTrackProcessing {
+                gain_db: 6.0,
+                loudness_normalization: None,
+                effects: vec![
+                    crate::media::export::AudioTrackSignalEffect::HighPass {
+                        cutoff_hz: 100.0,
+                        stage: crate::media::export::AudioProcessingStage::Cleanup,
+                    },
+                    crate::media::export::AudioTrackSignalEffect::NoiseReduction {
+                        preset: crate::media::export::NoiseReductionPreset::Medium,
+                        stage: crate::media::export::AudioProcessingStage::Cleanup,
+                    },
+                    crate::media::export::AudioTrackSignalEffect::Limiter {
+                        ceiling_db: -1.0,
+                        stage: crate::media::export::AudioProcessingStage::FinalProtection,
+                    },
+                ],
+            },
+        };
+        let preview_arguments = audio_preview_arguments(
+            Path::new("source.mp4"),
+            std::slice::from_ref(&track),
+            &[Path::new("preview.m4a")],
+        );
+        let preview_graph = preview_arguments
+            .windows(2)
+            .find(|pair| pair[0] == "-filter_complex")
+            .map(|pair| pair[1].to_string_lossy())
+            .expect("preview filter graph is present");
+
+        assert_eq!(
+            preview_graph,
+            audio_filter_graph(std::slice::from_ref(&track), false)
+        );
+        assert!(
+            preview_graph
+                .contains("highpass=f=100.000,afftdn=nr=12:nf=-35,volume=6.000000dB,alimiter=")
+        );
     }
 }

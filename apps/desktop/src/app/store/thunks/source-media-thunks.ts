@@ -72,7 +72,8 @@ import type { AudioTrackProcessing } from "@/domain/audio-processing";
 import {
   audioTrackExternalPreviewStreamIndexes,
   audioTrackLoudnessInputsKey,
-  getAudioTrackSignalEffects,
+  audioTrackPreviewProcessing,
+  getAudioTrackPreLevelEffects,
 } from "@/domain/audio-processing";
 import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
@@ -571,7 +572,7 @@ async function prepareSelectedSource(
           track.loudnessAnalysis.status === "ready"
             ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
             : {}),
-          processing: { ...track.processing, gainDb: 0 },
+          processing: audioTrackPreviewProcessing(track.processing),
           streamIndex,
         },
       ];
@@ -1254,8 +1255,8 @@ const prepareSourceWaveforms =
           const processing = tracksByStream.get(streamIndex)?.processing;
           const waveformProcessing: AudioTrackProcessing = {
             gainDb: 0,
-            ...(processing && getAudioTrackSignalEffects(processing).length > 0
-              ? { effects: getAudioTrackSignalEffects(processing) }
+            ...(processing && getAudioTrackPreLevelEffects(processing).length > 0
+              ? { effects: getAudioTrackPreLevelEffects(processing) }
               : {}),
           };
 

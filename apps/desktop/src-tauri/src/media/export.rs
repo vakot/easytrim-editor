@@ -730,14 +730,7 @@ pub(crate) fn pre_level_filter_chain(processing: &AudioTrackProcessing) -> Strin
 }
 
 pub(crate) fn waveform_signal_filter_chain(processing: &AudioTrackProcessing) -> String {
-    [
-        pre_level_filter_chain(processing),
-        final_protection_filter_chain(processing),
-    ]
-    .into_iter()
-    .filter(|filters| !filters.is_empty())
-    .collect::<Vec<_>>()
-    .join(",")
+    pre_level_filter_chain(processing)
 }
 
 fn final_protection_filter_chain(processing: &AudioTrackProcessing) -> String {
@@ -1055,7 +1048,7 @@ mod tests {
         FrameRateSelection, LoudnessNormalization, LoudnessPreset, NoiseReductionPreset,
         OptimizedExportRequest, ResolutionSelection, TrimSelection, audio_filter_graph,
         build_fast_arguments, build_optimized_arguments, optimized_command_preview,
-        pre_level_filter_chain, validate_audio_track_selections,
+        pre_level_filter_chain, validate_audio_track_selections, waveform_signal_filter_chain,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -1611,6 +1604,107 @@ mod tests {
         assert!(graph.ends_with(
             "[audio0][audio1]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0[aout]"
         ));
+    }
+
+    #[test]
+    fn integrated_cleanup_level_policy_and_limiter_order_matches_every_output_route() {
+        let cleanup = vec![
+            AudioTrackSignalEffect::NoiseReduction {
+                preset: NoiseReductionPreset::Medium,
+                stage: AudioProcessingStage::Cleanup,
+            },
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz: 100.0,
+                stage: AudioProcessingStage::Cleanup,
+            },
+            AudioTrackSignalEffect::Limiter {
+                ceiling_db: -1.0,
+                stage: AudioProcessingStage::FinalProtection,
+            },
+        ];
+        let manual = AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 2,
+            processing: AudioTrackProcessing {
+                gain_db: 6.0,
+                loudness_normalization: None,
+                effects: cleanup.clone(),
+            },
+        };
+        let normalized = AudioTrackSelection {
+            loudness_analysis: Some(AudioLoudnessAnalysis {
+                input_lra: Some(5.0),
+                input_threshold: Some(-30.0),
+                integrated_lufs: Some(-20.0),
+                true_peak_db: Some(-5.0),
+            }),
+            stream_index: 2,
+            processing: AudioTrackProcessing {
+                gain_db: 6.0,
+                loudness_normalization: Some(LoudnessNormalization::Preset(
+                    LoudnessPreset::Streaming,
+                )),
+                effects: cleanup,
+            },
+        };
+
+        let manual_graph = audio_filter_graph(std::slice::from_ref(&manual), false);
+        let normalized_graph = audio_filter_graph(std::slice::from_ref(&normalized), false);
+        let manual_order = [
+            "highpass=f=100.000",
+            "afftdn=nr=12:nf=-35",
+            "volume=6.000000dB",
+            "alimiter=limit=0.891251",
+        ];
+        let normalized_order = [
+            "highpass=f=100.000",
+            "afftdn=nr=12:nf=-35",
+            "loudnorm=I=-16.000:TP=-1.500:LRA=11",
+            "alimiter=limit=0.891251",
+        ];
+        let assert_order = |graph: &str, stages: &[&str]| {
+            let mut last_position = 0;
+            for stage in stages {
+                let position = graph.find(stage).expect("pipeline stage is present");
+                assert!(
+                    position >= last_position,
+                    "{stage} must follow the prior stage"
+                );
+                last_position = position;
+            }
+        };
+
+        assert_order(&manual_graph, &manual_order);
+        assert_order(&normalized_graph, &normalized_order);
+        assert!(manual_graph.contains("volume=6.000000dB,alimiter"));
+        assert!(normalized_graph.contains("measured_I=-20.000000"));
+    }
+
+    #[test]
+    fn waveform_filter_chain_contains_only_pre_level_shaping_effects() {
+        let processing = AudioTrackProcessing {
+            gain_db: 6.0,
+            loudness_normalization: None,
+            effects: vec![
+                AudioTrackSignalEffect::HighPass {
+                    cutoff_hz: 100.0,
+                    stage: AudioProcessingStage::Cleanup,
+                },
+                AudioTrackSignalEffect::NoiseReduction {
+                    preset: NoiseReductionPreset::Medium,
+                    stage: AudioProcessingStage::Cleanup,
+                },
+                AudioTrackSignalEffect::Limiter {
+                    ceiling_db: -1.0,
+                    stage: AudioProcessingStage::FinalProtection,
+                },
+            ],
+        };
+
+        assert_eq!(
+            waveform_signal_filter_chain(&processing),
+            "highpass=f=100.000,afftdn=nr=12:nf=-35"
+        );
     }
 
     #[test]

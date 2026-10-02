@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Aligned per-track gain and limiter behavior across playback and export, and kept waveforms in sync with waveform-affecting effects.
 - Fixed Spacebar playback toggling when an editor button has focus.
 
 ## [1.12.3]
