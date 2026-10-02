@@ -17,10 +17,11 @@ import {
 } from "@/domain/audio-processing";
 
 import {
-  connectAudioTrackLimiter,
   connectPlaybackAudioGraph,
+  disconnectAudioTrackRuntime,
   updateAudioTrackLimiter,
 } from "../lib/audio-playback-graph";
+import { getAudioTrackRuntimeLimiter } from "../lib/audio-playback-runtime";
 import { synchronizeAudioPosition } from "../lib/audio-sync";
 import {
   connectNativeAudioBinding,
@@ -35,7 +36,6 @@ import {
 } from "../lib/stereo-audio-meter";
 
 interface LiveAudioTrackGainRuntime {
-  audioMix: GainNode | null;
   audioNodes: Map<
     number,
     { gain: GainNode; limiter: WaveShaperNode | null; source: MediaElementAudioSourceNode }
@@ -53,6 +53,8 @@ function applyAudioTrackGain(
   gainDb: number,
   runtime: LiveAudioTrackGainRuntime,
   allowMutedTrackPreview = false,
+  audioContext?: AudioContext | null,
+  audioMix?: GainNode | null,
 ): void {
   const externalAudioNode = runtime.audioNodes.get(streamIndex);
   const track = runtime.audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
@@ -60,7 +62,21 @@ function applyAudioTrackGain(
     ? audioTrackPreviewRuntimeGainDb(track.processing, previewProcessingForTrack(track), gainDb)
     : gainDb;
 
-  if (externalAudioNode) externalAudioNode.gain.gain.value = 10 ** (runtimeGainDb / 20);
+  if (externalAudioNode) {
+    externalAudioNode.gain.gain.value = 10 ** (runtimeGainDb / 20);
+    if (track && audioContext && audioMix) {
+      updateAudioTrackLimiter(
+        audioContext,
+        externalAudioNode,
+        audioMix,
+        getAudioTrackRuntimeLimiter(
+          track.processing,
+          { processing: previewProcessingForTrack(track), status: track.preview.status },
+          gainDb,
+        ),
+      );
+    }
+  }
 
   if (runtime.nativeAudioTrack?.streamIndex !== streamIndex || runtime.requiresProcessedPreview)
     return;
@@ -174,7 +190,6 @@ function useAudioPlaybackRuntime({
 
   useEffect(() => {
     liveAudioTrackGainRuntimeRef.current = {
-      audioMix: audioMixRef.current,
       audioTracks,
       audioNodes: audioNodesRef.current,
       nativeAudioBinding: nativeAudioBindingRef.current,
@@ -200,6 +215,8 @@ function useAudioPlaybackRuntime({
           videoElement: videoRef.current,
         },
         true,
+        audioContextRef.current,
+        audioMixRef.current,
       );
     },
     [videoRef],
@@ -220,6 +237,8 @@ function useAudioPlaybackRuntime({
           videoElement: videoRef.current,
         },
         true,
+        audioContextRef.current,
+        audioMixRef.current,
       );
     },
     [videoRef],
@@ -244,8 +263,7 @@ function useAudioPlaybackRuntime({
       return { ...current, previewUrls };
     });
     const node = audioNodesRef.current.get(streamIndex);
-    node?.source.disconnect();
-    node?.gain.disconnect();
+    if (node) disconnectAudioTrackRuntime(node);
     audioNodesRef.current.delete(streamIndex);
   }, []);
 
@@ -393,10 +411,27 @@ function useAudioPlaybackRuntime({
 
       setGainNodeFromDb(gain, track?.enabled === false ? Number.NEGATIVE_INFINITY : gainDb);
       audioSource.connect(gain);
-      const limiter = track ? connectAudioTrackLimiter(context, gain, audioMix, track) : null;
-      if (!limiter) gain.connect(audioMix);
+      gain.connect(audioMix);
+      const node: {
+        gain: GainNode;
+        limiter: WaveShaperNode | null;
+        source: MediaElementAudioSourceNode;
+      } = { limiter: null, gain, source: audioSource };
+
+      updateAudioTrackLimiter(
+        context,
+        node,
+        audioMix,
+        track
+          ? getAudioTrackRuntimeLimiter(
+              track.processing,
+              { processing: previewProcessing, status: track.preview.status },
+              liveAudioTrackGainsRef.current.get(streamIndex),
+            )
+          : undefined,
+      );
       audioElementsRef.current.set(streamIndex, element);
-      audioNodesRef.current.set(streamIndex, { limiter, source: audioSource, gain });
+      audioNodesRef.current.set(streamIndex, node);
       if (element.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) markReady();
     }
 
@@ -461,7 +496,16 @@ function useAudioPlaybackRuntime({
 
       node.gain.gain.value = track.enabled ? 10 ** (gainDb / 20) : 0;
       const audioMix = audioMixRef.current;
-      if (audioMix) updateAudioTrackLimiter(context, node, audioMix, track);
+      if (audioMix)
+        updateAudioTrackLimiter(
+          context,
+          node,
+          audioMix,
+          getAudioTrackRuntimeLimiter(track.processing, {
+            processing: previewProcessingForTrack(track),
+            status: track.preview.status,
+          }),
+        );
     }
 
     const gainDb = nativeAudioTrack

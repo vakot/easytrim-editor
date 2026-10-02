@@ -1,5 +1,4 @@
-import type { AudioTrackState } from "@/app/store/slices/audio-slice";
-import { getAudioTrackSignalEffect, limitAudioPreviewSample } from "@/domain/audio-processing";
+import { type AudioTrackLimiter, limitAudioPreviewSample } from "@/domain/audio-processing";
 
 import { createStereoAudioMeterNodes, type StereoAudioMeterNodes } from "./stereo-audio-meter";
 
@@ -15,30 +14,15 @@ function limiterCurve(ceilingDb: number): Float32Array<ArrayBuffer> {
   return curve;
 }
 
-function connectAudioTrackLimiter(
-  context: AudioContext,
-  gain: GainNode,
-  audioMix: GainNode,
-  track: AudioTrackState,
-): WaveShaperNode | null {
-  const limiter = getAudioTrackSignalEffect(track.processing, "limiter");
-  if (!limiter) return null;
-  const node = context.createWaveShaper();
-  node.curve = limiterCurve(limiter.ceilingDb);
-  node.oversample = "4x";
-  gain.connect(node).connect(audioMix);
-  return node;
-}
-
 function updateAudioTrackLimiter(
   context: AudioContext,
   nodes: { gain: GainNode; limiter: WaveShaperNode | null },
   audioMix: GainNode,
-  track: AudioTrackState,
+  limiter: AudioTrackLimiter | undefined,
 ): void {
-  const limiter = getAudioTrackSignalEffect(track.processing, "limiter");
   if (!limiter) {
     if (nodes.limiter) {
+      nodes.gain.disconnect();
       nodes.limiter.disconnect();
       nodes.limiter = null;
       nodes.gain.connect(audioMix);
@@ -55,8 +39,19 @@ function updateAudioTrackLimiter(
   node.curve = limiterCurve(limiter.ceilingDb);
   node.oversample = "4x";
   nodes.gain.disconnect();
-  nodes.gain.connect(node).connect(audioMix);
+  nodes.gain.connect(node);
+  node.connect(audioMix);
   nodes.limiter = node;
+}
+
+function disconnectAudioTrackRuntime(nodes: {
+  gain: GainNode;
+  limiter: WaveShaperNode | null;
+  source: MediaElementAudioSourceNode;
+}): void {
+  nodes.source.disconnect();
+  nodes.gain.disconnect();
+  nodes.limiter?.disconnect();
 }
 
 function connectPlaybackAudioGraph(
@@ -70,4 +65,4 @@ function connectPlaybackAudioGraph(
   return { meter, outputGain };
 }
 
-export { connectAudioTrackLimiter, connectPlaybackAudioGraph, updateAudioTrackLimiter };
+export { connectPlaybackAudioGraph, disconnectAudioTrackRuntime, updateAudioTrackLimiter };
