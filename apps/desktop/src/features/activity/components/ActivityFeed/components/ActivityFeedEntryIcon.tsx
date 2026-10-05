@@ -47,11 +47,7 @@ function ActivityFeedEntryIcon({ entry }: ActivityFeedEntryIconProps) {
 
   return (
     <MarkerIcon className={statusPresentation.className}>
-      {entry.status === "pending" ? (
-        <Spinner aria-hidden="true" />
-      ) : (
-        <Icon aria-hidden="true" />
-      )}
+      {entry.status === "pending" ? <Spinner aria-hidden="true" /> : <Icon aria-hidden="true" />}
     </MarkerIcon>
   );
 }

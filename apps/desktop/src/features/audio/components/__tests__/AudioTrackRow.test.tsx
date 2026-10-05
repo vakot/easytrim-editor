@@ -586,7 +586,7 @@ describe("AudioTrackRow", () => {
     renderTrack(store, 2);
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
 
-    expect(screen.getByRole("menuitemcheckbox", { name: /hide detected ranges/i })).toBeChecked();
+    expect(screen.getByRole("menuitemcheckbox", { name: /show detected ranges/i })).toBeChecked();
     expect(screen.queryByRole("menuitemcheckbox", { name: /retry analysis/i })).toBeNull();
   });
 

@@ -30,7 +30,6 @@ type AudioTrackSignalEffect =
     };
 type AudioTrackLimiter = Extract<AudioTrackSignalEffect, { type: "limiter" }>;
 type NoiseReductionPreset = "light" | "medium" | "strong";
-type AudioTrackHighPassCutoff = (typeof AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS)[number];
 
 interface CustomLoudnessNormalization {
   maxTruePeakDb: number;
@@ -391,7 +390,6 @@ const DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION: CustomLoudnessNormalization = {
 export type {
   AudioLoudnessAnalysis,
   AudioProcessingStage,
-  AudioTrackHighPassCutoff,
   AudioTrackLimiter,
   AudioTrackProcessing,
   AudioTrackSelection,
