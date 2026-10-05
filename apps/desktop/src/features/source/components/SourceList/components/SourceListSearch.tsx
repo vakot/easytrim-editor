@@ -59,7 +59,9 @@ function SourceListSearch() {
             >
               <X aria-hidden="true" />
             </InputGroupButton>
-            <span className="pr-1">{sources.length} Results</span>
+            <span className="pr-1">
+              {t("source.labels.searchResults", { count: sources.length })}
+            </span>
           </>
         ) : (
           <KbdGroup aria-label="Ctrl + F">

@@ -5,9 +5,7 @@ import * as React from "react";
 import { cn } from "@/lib/class-names.utils";
 
 function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
-  return (
-    <nav aria-label="breadcrumb" className={cn(className)} data-slot="breadcrumb" {...props} />
-  );
+  return <nav className={cn(className)} data-slot="breadcrumb" {...props} />;
 }
 
 function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
@@ -88,7 +86,6 @@ function BreadcrumbEllipsis({ className, ...props }: React.ComponentProps<"span"
       {...props}
     >
       <MoreHorizontalIcon />
-      <span className="sr-only">More</span>
     </span>
   );
 }
