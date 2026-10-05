@@ -12,7 +12,7 @@ export const en = {
       retry: "Retry",
       save: "Save",
     },
-    labels: { brand: "EasyTrim Editor", or: "or", search: "Search" },
+    labels: { brand: "EasyTrim Editor", breadcrumb: "Breadcrumb", or: "or", search: "Search" },
     status: {
       disabled: "Disabled",
       enabled: "Enabled",
@@ -348,6 +348,10 @@ export const en = {
       importedSources: "Imported Sources",
       nextSource: "Next source",
       previousSource: "Previous source",
+      searchResults_one: "{{count}} result",
+      searchResults_few: "{{count}} results",
+      searchResults_many: "{{count}} results",
+      searchResults_other: "{{count}} results",
       metadata: {
         bitrate: "Bitrate",
         container: "Container",

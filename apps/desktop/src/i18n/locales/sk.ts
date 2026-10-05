@@ -14,7 +14,12 @@ export const sk = {
       retry: "Skúsiť znova",
       save: "Uložiť",
     },
-    labels: { brand: "EasyTrim Editor", or: "alebo", search: "Hľadať" },
+    labels: {
+      brand: "EasyTrim Editor",
+      breadcrumb: "Navigačná cesta",
+      or: "alebo",
+      search: "Hľadať",
+    },
     status: {
       disabled: "Vypnuté",
       enabled: "Zapnuté",
@@ -348,6 +353,10 @@ export const sk = {
       importedSources: "Importované zdroje",
       nextSource: "Nasledujúci zdroj",
       previousSource: "Predchádzajúci zdroj",
+      searchResults_one: "{{count}} výsledok",
+      searchResults_few: "{{count}} výsledky",
+      searchResults_many: "{{count}} výsledkov",
+      searchResults_other: "{{count}} výsledkov",
       metadata: {
         bitrate: "Dátový tok",
         container: "Kontajner",

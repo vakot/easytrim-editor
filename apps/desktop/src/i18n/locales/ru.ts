@@ -12,7 +12,12 @@ export const ru = {
       retry: "Повторить",
       save: "Сохранить",
     },
-    labels: { brand: "EasyTrim Editor", or: "или", search: "Поиск" },
+    labels: {
+      brand: "EasyTrim Editor",
+      breadcrumb: "Навигационная цепочка",
+      or: "или",
+      search: "Поиск",
+    },
     status: {
       disabled: "Отключено",
       enabled: "Включено",
@@ -350,6 +355,10 @@ export const ru = {
       importedSources: "Импортированные источники",
       nextSource: "Следующий источник",
       previousSource: "Предыдущий источник",
+      searchResults_one: "{{count}} результат",
+      searchResults_few: "{{count}} результата",
+      searchResults_many: "{{count}} результатов",
+      searchResults_other: "{{count}} результата",
       metadata: {
         bitrate: "Битрейт",
         container: "Контейнер",
