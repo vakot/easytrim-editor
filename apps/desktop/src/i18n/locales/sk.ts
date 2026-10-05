@@ -68,7 +68,6 @@ export const sk = {
         export: "Export",
         file: "Súbor",
         help: "Pomoc",
-        language: "Jazyk",
         layout: "Rozloženie",
         layoutActivityFeedView: "Rozloženie / Zobrazenie prehľadu aktivít",
         layoutDensity: "Rozloženie / Hustota",

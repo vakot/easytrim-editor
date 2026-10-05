@@ -21,13 +21,12 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { ApplicationCommandId } from "@/app/commands";
-import { getLanguageCommandId } from "@/app/commands/preferences";
 import {
   ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
 } from "@/app/components/ApplicationCommandMenuItem";
-import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
 import {
   LanguageSelector,
   LanguageSelectorContent,
@@ -94,7 +93,6 @@ function MenuBarSettings() {
 
 function MenuBarSettingsContent() {
   const { i18n, t } = useTranslation();
-  const { executeCommand } = useApplicationCommands();
   const [languageSubmenuOpen, setLanguageSubmenuOpen] = useState(false);
 
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
@@ -139,7 +137,7 @@ function MenuBarSettingsContent() {
           onValueChange={(language) => {
             if (!isSupportedLanguage(language)) return;
 
-            void executeCommand(getLanguageCommandId(language), "menu");
+            void i18n.changeLanguage(language);
             setLanguageSubmenuOpen(false);
           }}
           value={currentLanguage}
