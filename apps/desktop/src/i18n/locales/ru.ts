@@ -14,7 +14,7 @@ export const ru = {
     },
     labels: {
       brand: "EasyTrim Editor",
-      breadcrumb: "Навигационная цепочка",
+      breadcrumb: "Хлебные крошки",
       or: "или",
       search: "Поиск",
     },
