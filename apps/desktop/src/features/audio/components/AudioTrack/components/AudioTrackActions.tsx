@@ -117,7 +117,7 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
           <DropdownMenuIcon side="left">
             <WandSparkles />
           </DropdownMenuIcon>
-          Effects
+          {t("audio.actions.effects")}
           <DropdownMenuIcon side="right">
             <ChevronRight />
           </DropdownMenuIcon>
