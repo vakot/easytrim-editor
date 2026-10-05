@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   Command,
@@ -9,17 +10,20 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { cn } from "@/lib/class-names.utils";
 
 type ComboboxContextValue = {
+  allowTriggerCloseRef: React.MutableRefObject<boolean>;
   hasInputTriggerRef: React.MutableRefObject<boolean>;
-  setOpen: (open: boolean) => void;
+  openRef: React.MutableRefObject<boolean>;
+  triggerRef: React.MutableRefObject<HTMLElement | null>;
 };
 
 const ComboboxContext = React.createContext<ComboboxContextValue | null>(null);
 const ComboboxContentContext = React.createContext(false);
+const ComboboxAsChildContentContext = React.createContext(false);
 
 function useCombobox() {
   const context = React.useContext(ComboboxContext);
@@ -31,53 +35,45 @@ function useCombobox() {
   return context;
 }
 
-type ComboboxProps = Omit<
-  React.ComponentProps<typeof Popover>,
-  "open" | "defaultOpen" | "onOpenChange"
-> & {
-  defaultOpen?: boolean;
-  filterItems?: boolean;
+type ComboboxProps = Omit<React.ComponentProps<typeof Popover>, "open" | "onOpenChange"> & {
   label?: string;
-  onOpenChange?: (open: boolean) => void;
-  open?: boolean;
+  shouldFilter?: boolean;
 };
 
 function Combobox({
   children,
   defaultOpen = false,
-  filterItems = true,
-  label = "Suggestions",
-  onOpenChange,
-  open: openProp,
+  label,
+  shouldFilter = true,
   ...props
 }: ComboboxProps) {
-  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
-
-  const open = openProp ?? uncontrolledOpen;
+  const { t } = useTranslation();
+  const allowTriggerCloseRef = React.useRef(false);
   const hasInputTriggerRef = React.useRef(false);
-
-  const setOpen = React.useCallback(
-    (nextOpen: boolean) => {
-      if (open === nextOpen) return;
-
-      if (openProp === undefined) {
-        setUncontrolledOpen(nextOpen);
-      }
-
-      onOpenChange?.(nextOpen);
-    },
-    [onOpenChange, open, openProp],
-  );
+  const openRef = React.useRef(defaultOpen);
+  const triggerRef = React.useRef<HTMLElement | null>(null);
 
   return (
     <ComboboxContext.Provider
       value={{
-        setOpen,
+        allowTriggerCloseRef,
         hasInputTriggerRef,
+        openRef,
+        triggerRef,
       }}
     >
-      <Command className="contents" label={label} shouldFilter={filterItems}>
-        <Popover onOpenChange={setOpen} open={open} {...props}>
+      <Command
+        className="contents"
+        label={label ?? t("common.labels.searchSuggestions")}
+        shouldFilter={shouldFilter}
+      >
+        <Popover
+          {...props}
+          defaultOpen={defaultOpen}
+          onOpenChange={(open) => {
+            openRef.current = open;
+          }}
+        >
           {children}
         </Popover>
       </Command>
@@ -89,11 +85,17 @@ function ComboboxTrigger({
   asChild = true,
   ...props
 }: React.ComponentProps<typeof PopoverTrigger>) {
-  return <PopoverTrigger asChild={asChild} {...props} />;
-}
+  const { triggerRef } = useCombobox();
 
-function ComboboxAnchor({ asChild = true, ...props }: React.ComponentProps<typeof PopoverAnchor>) {
-  return <PopoverAnchor asChild={asChild} {...props} />;
+  return (
+    <PopoverTrigger
+      asChild={asChild}
+      ref={(node) => {
+        triggerRef.current = node;
+      }}
+      {...props}
+    />
+  );
 }
 
 function ComboboxContent({
@@ -109,7 +111,11 @@ function ComboboxContent({
   const { hasInputTriggerRef } = useCombobox();
 
   if (asChild) {
-    return <ComboboxContentContext.Provider value>{children}</ComboboxContentContext.Provider>;
+    return (
+      <ComboboxAsChildContentContext.Provider value>
+        <ComboboxContentContext.Provider value>{children}</ComboboxContentContext.Provider>
+      </ComboboxAsChildContentContext.Provider>
+    );
   }
 
   return (
@@ -149,8 +155,8 @@ function ComboboxInput({
   ...props
 }: React.ComponentProps<typeof CommandInput>) {
   const insideContent = React.useContext(ComboboxContentContext);
-  const { hasInputTriggerRef, setOpen } = useCombobox();
-  // Pointer focus arrives before click; wait for click to open so Radix does not dismiss it as outside.
+  const { allowTriggerCloseRef, hasInputTriggerRef, openRef, triggerRef } = useCombobox();
+  // Pointer focus arrives before the Radix trigger click; let that click toggle the popover once.
   const pointerDownRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -181,28 +187,36 @@ function ComboboxInput({
   }
 
   return (
-    <PopoverAnchor asChild>
+    <PopoverTrigger
+      asChild
+      ref={(node) => {
+        triggerRef.current = node;
+      }}
+    >
       <CommandInput
         onClick={(event) => {
           onClick?.(event);
-          pointerDownRef.current = false;
 
-          if (!event.defaultPrevented) {
-            setOpen(true);
+          if (!event.defaultPrevented && !allowTriggerCloseRef.current && openRef.current) {
+            event.preventDefault();
           }
         }}
         onFocus={(event) => {
           onFocus?.(event);
 
-          if (!event.defaultPrevented && !pointerDownRef.current) {
-            setOpen(true);
+          if (!event.defaultPrevented && !pointerDownRef.current && !openRef.current) {
+            event.currentTarget.click();
           }
         }}
         onKeyDown={(event) => {
           onKeyDown?.(event);
 
-          if (!event.defaultPrevented && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
-            setOpen(true);
+          if (
+            !event.defaultPrevented &&
+            (event.key === "ArrowDown" || event.key === "ArrowUp") &&
+            !openRef.current
+          ) {
+            event.currentTarget.click();
           }
         }}
         onPointerCancel={(event) => {
@@ -222,11 +236,13 @@ function ComboboxInput({
         }}
         onValueChange={(value) => {
           onValueChange?.(value);
-          setOpen(true);
+          if (!openRef.current) {
+            triggerRef.current?.click();
+          }
         }}
         {...props}
       />
-    </PopoverAnchor>
+    </PopoverTrigger>
   );
 }
 
@@ -243,13 +259,20 @@ function ComboboxGroup({ ...props }: React.ComponentProps<typeof CommandGroup>) 
 }
 
 function ComboboxItem({ onSelect, ...props }: React.ComponentProps<typeof CommandItem>) {
-  const { setOpen } = useCombobox();
+  const insideAsChildContent = React.useContext(ComboboxAsChildContentContext);
+  const { allowTriggerCloseRef, openRef, triggerRef } = useCombobox();
 
   return (
     <CommandItem
       onSelect={(value) => {
         onSelect?.(value);
-        setOpen(false);
+        const trigger = triggerRef.current;
+
+        if (!insideAsChildContent && trigger && openRef.current) {
+          allowTriggerCloseRef.current = true;
+          trigger.click();
+          allowTriggerCloseRef.current = false;
+        }
       }}
       {...props}
     />
@@ -262,7 +285,6 @@ function ComboboxSeparator({ ...props }: React.ComponentProps<typeof CommandSepa
 
 export {
   Combobox,
-  ComboboxAnchor,
   ComboboxContent,
   ComboboxEmpty,
   ComboboxGroup,

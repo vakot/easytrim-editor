@@ -17,6 +17,8 @@ export const ru = {
       breadcrumb: "Хлебные крошки",
       or: "или",
       search: "Поиск",
+      searchLanguages: "Поиск языков",
+      searchSuggestions: "Предложения",
     },
     status: {
       disabled: "Отключено",
@@ -25,6 +27,7 @@ export const ru = {
       loading: "Загрузка…",
       unknown: "Неизвестно",
     },
+    messages: { noLanguagesFound: "Языки не найдены." },
   },
   app: {
     actions: {

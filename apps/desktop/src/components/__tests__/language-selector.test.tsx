@@ -59,15 +59,9 @@ describe("LanguageSelector", () => {
 
   it("uses the editable input as the trigger and restores the selected name after closing", async () => {
     const user = userEvent.setup();
-    const onOpenChange = vi.fn();
 
     render(
-      <LanguageSelector
-        defaultValue="en"
-        label="Choose language"
-        languages={languages}
-        onOpenChange={onOpenChange}
-      >
+      <LanguageSelector defaultValue="en" label="Choose language" languages={languages}>
         <LanguageSelectorInput aria-label="Choose language" placeholder="Search languages" />
         <LanguageSelectorContent>
           <LanguageSelectorList />
@@ -80,10 +74,10 @@ describe("LanguageSelector", () => {
 
     fireEvent.pointerDown(input, { button: 0 });
     fireEvent.focus(input);
-    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
     fireEvent.pointerUp(input, { button: 0 });
     fireEvent.click(input);
-    expect(onOpenChange.mock.calls).toEqual([[true]]);
+    expect(screen.getByRole("listbox")).toBeVisible();
     await user.type(input, "russian");
     expect(input).toHaveValue("russian");
     expect(screen.getByRole("option", { name: "Русский (Russian), ru" })).toBeVisible();

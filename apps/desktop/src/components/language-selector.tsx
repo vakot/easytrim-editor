@@ -1,6 +1,7 @@
 import { CheckIcon } from "lucide-react";
 import { Slot } from "radix-ui";
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   Combobox,
@@ -43,7 +44,7 @@ function useLanguageSelector() {
   return context;
 }
 
-type LanguageSelectorProps = Omit<React.ComponentProps<typeof Combobox>, "filterItems"> & {
+type LanguageSelectorProps = Omit<React.ComponentProps<typeof Combobox>, "shouldFilter"> & {
   defaultValue?: Language["code"];
   disabled?: boolean;
   languages?: readonly Language[];
@@ -55,14 +56,13 @@ function LanguageSelector({
   children,
   defaultValue,
   disabled = false,
-  label = "Search languages",
+  label,
   languages = LANGUAGE_CATALOG,
-  onOpenChange,
   onValueChange,
-  open,
   value,
   ...props
 }: LanguageSelectorProps) {
+  const { t } = useTranslation();
   const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue);
   const [query, setQuery] = React.useState<string | null>(null);
 
@@ -75,14 +75,6 @@ function LanguageSelector({
   const filteredLanguages = React.useMemo(
     () => filterLanguages(languages, query ?? ""),
     [languages, query],
-  );
-
-  const handleOpenChange = React.useCallback(
-    (open: boolean) => {
-      if (!open) setQuery(null);
-      onOpenChange?.(open);
-    },
-    [onOpenChange],
   );
 
   const selectLanguage = React.useCallback(
@@ -108,13 +100,7 @@ function LanguageSelector({
 
   return (
     <LanguageSelectorContext.Provider value={context}>
-      <Combobox
-        filterItems={false}
-        label={label}
-        onOpenChange={handleOpenChange}
-        open={open}
-        {...props}
-      >
+      <Combobox label={label ?? t("common.labels.searchLanguages")} shouldFilter={false} {...props}>
         {children}
       </Combobox>
     </LanguageSelectorContext.Provider>
@@ -163,13 +149,21 @@ function LanguageSelectorContent({
 
 function LanguageSelectorInput({
   disabled,
+  onBlur,
   onClick,
   onFocus,
+  onKeyDown,
   onValueChange,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxInput>, "value">) {
   const insideContent = React.useContext(LanguageSelectorContentContext);
   const { disabled: selectorDisabled, language, query, setQuery } = useLanguageSelector();
+  React.useEffect(() => {
+    if (!insideContent) return;
+
+    return () => setQuery(null);
+  }, [insideContent, setQuery]);
+
   const value = insideContent
     ? (query ?? "")
     : (query ?? (language ? getLanguageDisplayName(language) : ""));
@@ -178,19 +172,27 @@ function LanguageSelectorInput({
     <ComboboxInput
       autoComplete="off"
       disabled={selectorDisabled || disabled}
+      onBlur={(event) => {
+        onBlur?.(event);
+        if (!insideContent) setQuery(null);
+      }}
       onClick={(event) => {
         onClick?.(event);
 
         if (!insideContent && !event.defaultPrevented && query === null) {
-          event.currentTarget.select();
+          setQuery("");
         }
       }}
       onFocus={(event) => {
         onFocus?.(event);
 
-        if (!insideContent && !event.defaultPrevented && query === null) {
-          event.currentTarget.select();
+        if (!insideContent && !event.defaultPrevented) {
+          setQuery("");
         }
+      }}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        if (!insideContent && event.key === "Escape") setQuery(null);
       }}
       onValueChange={(nextQuery) => {
         setQuery(nextQuery);
@@ -206,11 +208,12 @@ function LanguageSelectorList({
   className,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxList>, "children">) {
+  const { t } = useTranslation();
   const { disabled, language: selectedLanguage, languages, selectLanguage } = useLanguageSelector();
 
   return (
     <ComboboxList className={cn("min-h-0", className)} {...props}>
-      <ComboboxEmpty>No languages found.</ComboboxEmpty>
+      <ComboboxEmpty>{t("common.messages.noLanguagesFound")}</ComboboxEmpty>
       <ComboboxGroup>
         {languages.map((language) => {
           const selected = selectedLanguage?.code === language.code;

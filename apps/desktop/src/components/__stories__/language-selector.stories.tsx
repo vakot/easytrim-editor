@@ -83,7 +83,7 @@ function ButtonTriggerExample({
 
 export const InputTrigger: Story = {
   render: () => (
-    <LanguageSelector defaultValue="ja" label="Choose language" languages={commonLanguages}>
+    <LanguageSelector defaultValue="ja" languages={commonLanguages}>
       <LanguageSelectorInput
         aria-label="Choose language"
         className="w-72"
@@ -116,7 +116,6 @@ function DropdownMenuSubmenuExample() {
         <DropdownMenuSeparator />
 
         <LanguageSelector
-          label="Search languages"
           languages={commonLanguages}
           onValueChange={(code) => {
             setLanguageCode(code);

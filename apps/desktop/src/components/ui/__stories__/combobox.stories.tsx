@@ -68,20 +68,14 @@ export const ButtonTrigger: Story = {
 };
 
 function ButtonTriggerStory() {
-  const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState("");
 
   const selected = frameworks.find((framework) => framework.value === value);
 
   return (
-    <Combobox onOpenChange={setOpen} open={open}>
+    <Combobox>
       <ComboboxTrigger>
-        <Button
-          aria-expanded={open}
-          className="w-52 justify-between"
-          role="combobox"
-          variant="outline"
-        >
+        <Button className="w-52 justify-between" role="combobox" variant="outline">
           {selected?.label ?? "Select framework..."}
 
           <ChevronsUpDownIcon className="opacity-50" />
@@ -122,11 +116,10 @@ export const InputTrigger: Story = {
 };
 
 function InputTriggerStory() {
-  const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState("");
 
   return (
-    <Combobox onOpenChange={setOpen} open={open}>
+    <Combobox>
       <ComboboxInput
         className="w-64"
         onValueChange={setValue}
@@ -281,13 +274,12 @@ export const WithoutSearch: Story = {
 };
 
 function WithoutSearchStory() {
-  const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState("");
 
   const selected = frameworks.find((framework) => framework.value === value);
 
   return (
-    <Combobox onOpenChange={setOpen} open={open}>
+    <Combobox>
       <ComboboxTrigger>
         <Button className="w-52 justify-between" variant="outline">
           {selected?.label ?? "Select framework..."}
@@ -304,7 +296,6 @@ function WithoutSearchStory() {
                 key={framework.value}
                 onSelect={() => {
                   setValue(framework.value);
-                  setOpen(false);
                 }}
                 value={framework.value}
               >
