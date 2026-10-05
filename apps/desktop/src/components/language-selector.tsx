@@ -1,175 +1,253 @@
+import { CheckIcon } from "lucide-react";
+import { Slot } from "radix-ui";
 import * as React from "react";
 
 import {
   Combobox,
-  ComboboxAnchor,
-  ComboboxCommand,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxGroup,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { filterLanguages, type Language, LANGUAGE_CATALOG } from "@/domain/languages";
+import {
+  filterLanguages,
+  getLanguageDisplayName,
+  type Language,
+  LANGUAGE_CATALOG,
+} from "@/domain/languages";
+import { cn } from "@/lib/class-names.utils";
 
-type LanguageIdentifier = Pick<Language, "code">;
+interface LanguageSelectorContextValue {
+  disabled: boolean;
+  language: Language | undefined;
+  languages: readonly Language[];
+  query: string | null;
+  selectLanguage: (language: Language) => void;
+  setQuery: (query: string | null) => void;
+}
 
-function LanguageSelector({
-  languages = LANGUAGE_CATALOG,
-  onValueChange,
-  value,
-  ...props
-}: React.ComponentProps<typeof Combobox> & {
+const LanguageSelectorContext = React.createContext<LanguageSelectorContextValue | null>(null);
+const LanguageSelectorContentContext = React.createContext(false);
+
+function useLanguageSelector() {
+  const context = React.useContext(LanguageSelectorContext);
+
+  if (!context) {
+    throw new Error("LanguageSelector components must be used within LanguageSelector");
+  }
+
+  return context;
+}
+
+type LanguageSelectorProps = Omit<React.ComponentProps<typeof Combobox>, "filterItems"> & {
+  defaultValue?: Language["code"];
+  disabled?: boolean;
   languages?: readonly Language[];
   onValueChange?: (value: Language["code"]) => void;
   value?: Language["code"];
-}) {
-  const [query, setQuery] = React.useState("");
-  const selectedLanguage = languages.find((language) => language.code === value);
+};
+
+function LanguageSelector({
+  children,
+  defaultValue,
+  disabled = false,
+  label = "Search languages",
+  languages = LANGUAGE_CATALOG,
+  onOpenChange,
+  onValueChange,
+  open,
+  value,
+  ...props
+}: LanguageSelectorProps) {
+  const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue);
+  const [query, setQuery] = React.useState<string | null>(null);
+
+  const selectedValue = value === undefined ? uncontrolledValue : value;
+  const language = React.useMemo(
+    () => languages.find((language) => language.code === selectedValue),
+    [languages, selectedValue],
+  );
+
   const filteredLanguages = React.useMemo(
-    () => filterLanguages(languages, query),
+    () => filterLanguages(languages, query ?? ""),
     [languages, query],
   );
 
-  const selectLanguage = (language: LanguageIdentifier) => {
-    onValueChange?.(language.code);
-  };
+  const handleOpenChange = React.useCallback(
+    (open: boolean) => {
+      if (!open) setQuery(null);
+      onOpenChange?.(open);
+    },
+    [onOpenChange],
+  );
+
+  const selectLanguage = React.useCallback(
+    (nextLanguage: Language) => {
+      if (value === undefined) setUncontrolledValue(nextLanguage.code);
+      onValueChange?.(nextLanguage.code);
+      setQuery(null);
+    },
+    [onValueChange, value],
+  );
+
+  const context = React.useMemo(
+    () => ({
+      disabled,
+      language,
+      languages: filteredLanguages,
+      query,
+      selectLanguage,
+      setQuery,
+    }),
+    [disabled, filteredLanguages, language, query, selectLanguage],
+  );
 
   return (
-    <LanguageSelectorContext.Provider
-      value={{
-        selectLanguage,
-        language: selectedLanguage,
-        languages: filteredLanguages,
-        query,
-        setQuery,
-      }}
-    >
-      <Combobox {...props} />
+    <LanguageSelectorContext.Provider value={context}>
+      <Combobox
+        filterItems={false}
+        label={label}
+        onOpenChange={handleOpenChange}
+        open={open}
+        {...props}
+      >
+        {children}
+      </Combobox>
     </LanguageSelectorContext.Provider>
   );
 }
 
-function LanguageSelectorContent({ ...props }: React.ComponentProps<typeof ComboboxContent>) {
-  return <ComboboxContent align="start" sideOffset={4} {...props} />;
+function LanguageSelectorTrigger(props: React.ComponentProps<typeof ComboboxTrigger>) {
+  const { disabled } = useLanguageSelector();
+
+  return <ComboboxTrigger {...props} disabled={disabled || props.disabled} />;
+}
+
+function LanguageSelectorValue({ placeholder }: { placeholder?: React.ReactNode }) {
+  const { language } = useLanguageSelector();
+
+  return language ? getLanguageDisplayName(language) : (placeholder ?? null);
+}
+
+const languageSelectorContentClassName =
+  "flex max-h-[min(24rem,var(--radix-popover-content-available-height,24rem))] w-[max(var(--radix-popover-trigger-width,16rem),16rem)] min-w-[min(16rem,calc(100vw-2rem))] max-w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden p-0";
+
+function LanguageSelectorContent({
+  asChild = false,
+  children,
+  className,
+  ...props
+}: React.ComponentProps<typeof ComboboxContent>) {
+  const mergedClassName = cn(languageSelectorContentClassName, className);
+
+  if (asChild) {
+    return (
+      <LanguageSelectorContentContext.Provider value>
+        <Slot.Root className={mergedClassName}>{children}</Slot.Root>
+      </LanguageSelectorContentContext.Provider>
+    );
+  }
+
+  return (
+    <LanguageSelectorContentContext.Provider value>
+      <ComboboxContent align="start" className={mergedClassName} sideOffset={4} {...props}>
+        {children}
+      </ComboboxContent>
+    </LanguageSelectorContentContext.Provider>
+  );
 }
 
 function LanguageSelectorInput({
+  disabled,
+  onClick,
+  onFocus,
   onValueChange,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxInput>, "value">) {
-  const { query, setQuery } = useLanguageSelector();
-
-  const handleValueChange = (search: string) => {
-    setQuery(search);
-    onValueChange?.(search);
-  };
-
-  return (
-    <ComboboxInput autoComplete="off" onValueChange={handleValueChange} value={query} {...props} />
-  );
-}
-
-function LanguageSelectorList({
-  ...props
-}: Omit<React.ComponentProps<typeof ComboboxList>, "children">) {
-  const { languages } = useLanguageSelector();
+  const insideContent = React.useContext(LanguageSelectorContentContext);
+  const { disabled: selectorDisabled, language, query, setQuery } = useLanguageSelector();
+  const value = insideContent
+    ? (query ?? "")
+    : (query ?? (language ? getLanguageDisplayName(language) : ""));
 
   return (
-    <ComboboxList {...props}>
-      <ScrollArea>
-        <ComboboxEmpty>{"No languages found. TODO: add translation"}</ComboboxEmpty>
-        {languages.map((language) => (
-          <LanguageSelectorItem key={language.code} />
-        ))}
-      </ScrollArea>
-    </ComboboxList>
-  );
-}
+    <ComboboxInput
+      autoComplete="off"
+      disabled={selectorDisabled || disabled}
+      onClick={(event) => {
+        onClick?.(event);
 
-function LanguageSelectorCommand({
-  onValueChange,
-  ...props
-}: Omit<React.ComponentProps<typeof ComboboxCommand>, "value">) {
-  const { language, selectLanguage } = useLanguageSelector();
+        if (!insideContent && !event.defaultPrevented && query === null) {
+          event.currentTarget.select();
+        }
+      }}
+      onFocus={(event) => {
+        onFocus?.(event);
 
-  const handleValueChange = (value: string) => {
-    selectLanguage({ code: value });
-    onValueChange?.(value);
-  };
-
-  return (
-    <ComboboxCommand
-      onValueChange={handleValueChange}
-      shouldFilter={false}
-      value={language?.code}
+        if (!insideContent && !event.defaultPrevented && query === null) {
+          event.currentTarget.select();
+        }
+      }}
+      onValueChange={(nextQuery) => {
+        setQuery(nextQuery);
+        onValueChange?.(nextQuery);
+      }}
+      value={value}
       {...props}
     />
   );
 }
 
-function LanguageSelectorTrigger({
-  children,
+function LanguageSelectorList({
+  className,
   ...props
-}: Omit<React.ComponentProps<typeof ComboboxTrigger>, "children"> & {
-  children: ((value: { language: Language | undefined }) => React.ReactNode) | React.ReactNode;
-}) {
-  const { language } = useLanguageSelector();
+}: Omit<React.ComponentProps<typeof ComboboxList>, "children">) {
+  const { disabled, language: selectedLanguage, languages, selectLanguage } = useLanguageSelector();
 
   return (
-    <ComboboxTrigger {...props}>
-      {typeof children === "function" ? children({ language }) : children}
-    </ComboboxTrigger>
+    <ComboboxList className={cn("min-h-0", className)} {...props}>
+      <ComboboxEmpty>No languages found.</ComboboxEmpty>
+      <ComboboxGroup>
+        {languages.map((language) => {
+          const selected = selectedLanguage?.code === language.code;
+
+          return (
+            <ComboboxItem
+              aria-label={`${getLanguageDisplayName(language)}, ${language.code}`}
+              className={cn(
+                "min-w-0 data-[language-selected=true]:font-medium",
+                "[&>svg:last-child]:hidden",
+              )}
+              data-language-selected={selected || undefined}
+              disabled={disabled}
+              key={language.code}
+              keywords={[language.code, language.englishName, language.nativeName]}
+              onSelect={() => selectLanguage(language)}
+              value={language.code}
+            >
+              <CheckIcon
+                aria-hidden="true"
+                className={cn("size-4", selected ? "opacity-100" : "opacity-0")}
+              />
+              <span className="min-w-0 flex-1 truncate">{getLanguageDisplayName(language)}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">{language.code}</span>
+            </ComboboxItem>
+          );
+        })}
+      </ComboboxGroup>
+    </ComboboxList>
   );
-}
-
-function LanguageSelectorAnchor({
-  children,
-  ...props
-}: Omit<React.ComponentProps<typeof ComboboxAnchor>, "children"> & {
-  children: ((value: { language: Language | undefined }) => React.ReactNode) | React.ReactNode;
-}) {
-  const { language } = useLanguageSelector();
-
-  return (
-    <ComboboxAnchor {...props}>
-      {typeof children === "function" ? children({ language }) : children}
-    </ComboboxAnchor>
-  );
-}
-
-function LanguageSelectorItem({ ...props }: React.ComponentProps<typeof ComboboxItem>) {
-  return <ComboboxItem {...props} />;
-}
-
-interface LanguageSelectorContextProps {
-  language: Language | undefined;
-  languages: readonly Language[];
-  query: string;
-  selectLanguage: (value: LanguageIdentifier) => void;
-  setQuery: (value: string) => void;
-}
-
-const LanguageSelectorContext = React.createContext<LanguageSelectorContextProps | null>(null);
-
-function useLanguageSelector() {
-  const context = React.useContext(LanguageSelectorContext);
-  if (!context) {
-    throw new Error("* must be used within LanguageSelector");
-  }
-  return context;
 }
 
 export {
   LanguageSelector,
-  LanguageSelectorAnchor,
-  LanguageSelectorCommand,
   LanguageSelectorContent,
   LanguageSelectorInput,
-  LanguageSelectorItem,
   LanguageSelectorList,
   LanguageSelectorTrigger,
+  LanguageSelectorValue,
 };

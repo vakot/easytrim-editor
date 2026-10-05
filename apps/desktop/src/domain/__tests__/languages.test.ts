@@ -31,6 +31,15 @@ describe("filterLanguages", () => {
 
     expect(filterLanguages(languages, "middle english")).toEqual(languages);
   });
+
+  it("matches language codes and searches native names without diacritics", () => {
+    expect(filterLanguages(LANGUAGE_CATALOG, "ru")).toContainEqual(
+      expect.objectContaining({ code: "ru" }),
+    );
+    expect(filterLanguages(LANGUAGE_CATALOG, "espanol")).toContainEqual(
+      expect.objectContaining({ code: "es" }),
+    );
+  });
 });
 
 describe("language display names", () => {

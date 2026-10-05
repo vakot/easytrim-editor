@@ -35,16 +35,18 @@ type ComboboxProps = Omit<
   React.ComponentProps<typeof Popover>,
   "open" | "defaultOpen" | "onOpenChange"
 > & {
-  commandProps?: Omit<React.ComponentProps<typeof Command>, "children">;
   defaultOpen?: boolean;
+  filterItems?: boolean;
+  label?: string;
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
 };
 
 function Combobox({
   children,
-  commandProps,
   defaultOpen = false,
+  filterItems = true,
+  label = "Suggestions",
   onOpenChange,
   open: openProp,
   ...props
@@ -56,13 +58,15 @@ function Combobox({
 
   const setOpen = React.useCallback(
     (nextOpen: boolean) => {
+      if (open === nextOpen) return;
+
       if (openProp === undefined) {
         setUncontrolledOpen(nextOpen);
       }
 
       onOpenChange?.(nextOpen);
     },
-    [openProp, onOpenChange],
+    [onOpenChange, open, openProp],
   );
 
   return (
@@ -72,7 +76,7 @@ function Combobox({
         hasInputTriggerRef,
       }}
     >
-      <Command {...commandProps} className={cn("contents", commandProps?.className)}>
+      <Command className="contents" label={label} shouldFilter={filterItems}>
         <Popover onOpenChange={setOpen} open={open} {...props}>
           {children}
         </Popover>
@@ -138,11 +142,16 @@ function ComboboxInput({
   onClick,
   onFocus,
   onKeyDown,
+  onPointerCancel,
+  onPointerDown,
+  onPointerUp,
   onValueChange,
   ...props
 }: React.ComponentProps<typeof CommandInput>) {
   const insideContent = React.useContext(ComboboxContentContext);
   const { hasInputTriggerRef, setOpen } = useCombobox();
+  // Pointer focus arrives before click; wait for click to open so Radix does not dismiss it as outside.
+  const pointerDownRef = React.useRef(false);
 
   React.useEffect(() => {
     if (insideContent) {
@@ -162,6 +171,9 @@ function ComboboxInput({
         onClick={onClick}
         onFocus={onFocus}
         onKeyDown={onKeyDown}
+        onPointerCancel={onPointerCancel}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
         onValueChange={onValueChange}
         {...props}
       />
@@ -173,6 +185,7 @@ function ComboboxInput({
       <CommandInput
         onClick={(event) => {
           onClick?.(event);
+          pointerDownRef.current = false;
 
           if (!event.defaultPrevented) {
             setOpen(true);
@@ -181,7 +194,7 @@ function ComboboxInput({
         onFocus={(event) => {
           onFocus?.(event);
 
-          if (!event.defaultPrevented) {
+          if (!event.defaultPrevented && !pointerDownRef.current) {
             setOpen(true);
           }
         }}
@@ -191,6 +204,21 @@ function ComboboxInput({
           if (!event.defaultPrevented && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
             setOpen(true);
           }
+        }}
+        onPointerCancel={(event) => {
+          onPointerCancel?.(event);
+          pointerDownRef.current = false;
+        }}
+        onPointerDown={(event) => {
+          onPointerDown?.(event);
+
+          if (!event.defaultPrevented) {
+            pointerDownRef.current = true;
+          }
+        }}
+        onPointerUp={(event) => {
+          onPointerUp?.(event);
+          pointerDownRef.current = false;
         }}
         onValueChange={(value) => {
           onValueChange?.(value);
@@ -214,8 +242,18 @@ function ComboboxGroup({ ...props }: React.ComponentProps<typeof CommandGroup>) 
   return <CommandGroup {...props} />;
 }
 
-function ComboboxItem({ ...props }: React.ComponentProps<typeof CommandItem>) {
-  return <CommandItem {...props} />;
+function ComboboxItem({ onSelect, ...props }: React.ComponentProps<typeof CommandItem>) {
+  const { setOpen } = useCombobox();
+
+  return (
+    <CommandItem
+      onSelect={(value) => {
+        onSelect?.(value);
+        setOpen(false);
+      }}
+      {...props}
+    />
+  );
 }
 
 function ComboboxSeparator({ ...props }: React.ComponentProps<typeof CommandSeparator>) {

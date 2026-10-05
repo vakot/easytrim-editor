@@ -204,7 +204,7 @@ export const LANGUAGE_CATALOG: readonly Language[] = LANGUAGE_CODES.map((code) =
 });
 
 function normalizeLanguageSearch(value: string): string {
-  return value.trim().replace(/\s+/gu, " ").toLowerCase();
+  return value.normalize("NFD").replace(/\p{M}/gu, "").trim().replace(/\s+/gu, " ").toLowerCase();
 }
 
 export function filterLanguages<T extends Language>(languages: readonly T[], query: string): T[] {
@@ -213,7 +213,7 @@ export function filterLanguages<T extends Language>(languages: readonly T[], que
   if (!normalizedQuery) return [...languages];
 
   return languages.filter((language) =>
-    [language.englishName, language.nativeName].some((name) =>
+    [language.code, language.englishName, language.nativeName].some((name) =>
       normalizeLanguageSearch(name).includes(normalizedQuery),
     ),
   );

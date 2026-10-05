@@ -100,7 +100,6 @@ function ButtonTriggerStory() {
                 key={framework.value}
                 onSelect={(currentValue) => {
                   setValue(currentValue === value ? "" : currentValue);
-                  setOpen(false);
                 }}
                 value={framework.value}
               >
@@ -145,7 +144,6 @@ function InputTriggerStory() {
                 key={framework.value}
                 onSelect={() => {
                   setValue(framework.label);
-                  setOpen(false);
                 }}
                 value={framework.value}
               >
