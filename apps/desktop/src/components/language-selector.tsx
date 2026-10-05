@@ -13,6 +13,7 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
+import { MenuIcon } from "@/components/ui/menu";
 
 import {
   filterLanguages,
@@ -113,10 +114,18 @@ function LanguageSelectorTrigger(props: React.ComponentProps<typeof ComboboxTrig
   return <ComboboxTrigger {...props} disabled={disabled || props.disabled} />;
 }
 
-function LanguageSelectorValue({ placeholder }: { placeholder?: React.ReactNode }) {
+function LanguageSelectorValue({
+  placeholder,
+  type = "displayName",
+}: {
+  placeholder?: React.ReactNode;
+  type?: keyof Language | "displayName";
+}) {
   const { language } = useLanguageSelector();
 
-  return language ? getLanguageDisplayName(language) : (placeholder ?? null);
+  if (!language) return placeholder ?? null;
+  if (type === "displayName") return getLanguageDisplayName(language);
+  return language[type];
 }
 
 const languageSelectorContentClassName =
@@ -149,21 +158,11 @@ function LanguageSelectorContent({
 
 function LanguageSelectorInput({
   disabled,
-  onBlur,
-  onClick,
-  onFocus,
-  onKeyDown,
   onValueChange,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxInput>, "value">) {
   const insideContent = React.useContext(LanguageSelectorContentContext);
   const { disabled: selectorDisabled, language, query, setQuery } = useLanguageSelector();
-  React.useEffect(() => {
-    if (!insideContent) return;
-
-    return () => setQuery(null);
-  }, [insideContent, setQuery]);
-
   const value = insideContent
     ? (query ?? "")
     : (query ?? (language ? getLanguageDisplayName(language) : ""));
@@ -172,28 +171,6 @@ function LanguageSelectorInput({
     <ComboboxInput
       autoComplete="off"
       disabled={selectorDisabled || disabled}
-      onBlur={(event) => {
-        onBlur?.(event);
-        if (!insideContent) setQuery(null);
-      }}
-      onClick={(event) => {
-        onClick?.(event);
-
-        if (!insideContent && !event.defaultPrevented && query === null) {
-          setQuery("");
-        }
-      }}
-      onFocus={(event) => {
-        onFocus?.(event);
-
-        if (!insideContent && !event.defaultPrevented) {
-          setQuery("");
-        }
-      }}
-      onKeyDown={(event) => {
-        onKeyDown?.(event);
-        if (!insideContent && event.key === "Escape") setQuery(null);
-      }}
       onValueChange={(nextQuery) => {
         setQuery(nextQuery);
         onValueChange?.(nextQuery);
@@ -209,10 +186,18 @@ function LanguageSelectorList({
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxList>, "children">) {
   const { t } = useTranslation();
-  const { disabled, language: selectedLanguage, languages, selectLanguage } = useLanguageSelector();
+  const {
+    disabled,
+    language: selectedLanguage,
+    languages,
+    selectLanguage,
+    setQuery,
+  } = useLanguageSelector();
+
+  React.useEffect(() => () => setQuery(null), [setQuery]);
 
   return (
-    <ComboboxList className={cn("min-h-0", className)} {...props}>
+    <ComboboxList className={className} {...props}>
       <ComboboxEmpty>{t("common.messages.noLanguagesFound")}</ComboboxEmpty>
       <ComboboxGroup>
         {languages.map((language) => {
@@ -221,10 +206,7 @@ function LanguageSelectorList({
           return (
             <ComboboxItem
               aria-label={`${getLanguageDisplayName(language)}, ${language.code}`}
-              className={cn(
-                "min-w-0 data-[language-selected=true]:font-medium",
-                "[&>svg:last-child]:hidden",
-              )}
+              className={cn("min-w-0 px-8 data-[language-selected=true]:font-medium")}
               data-language-selected={selected || undefined}
               disabled={disabled}
               key={language.code}
@@ -232,12 +214,15 @@ function LanguageSelectorList({
               onSelect={() => selectLanguage(language)}
               value={language.code}
             >
-              <CheckIcon
-                aria-hidden="true"
-                className={cn("size-4", selected ? "opacity-100" : "opacity-0")}
-              />
+              {selected ? (
+                <MenuIcon>
+                  <CheckIcon aria-hidden="true" />
+                </MenuIcon>
+              ) : null}
               <span className="min-w-0 flex-1 truncate">{getLanguageDisplayName(language)}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">{language.code}</span>
+              <MenuIcon side="right">
+                <span className="shrink-0 text-xs text-muted-foreground">{language.code}</span>
+              </MenuIcon>
             </ComboboxItem>
           );
         })}

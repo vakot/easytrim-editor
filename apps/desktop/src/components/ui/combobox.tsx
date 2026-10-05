@@ -204,8 +204,12 @@ function ComboboxInput({
         onFocus={(event) => {
           onFocus?.(event);
 
-          if (!event.defaultPrevented && !pointerDownRef.current && !openRef.current) {
-            event.currentTarget.click();
+          if (!event.defaultPrevented) {
+            event.currentTarget.select();
+
+            if (!pointerDownRef.current && !openRef.current) {
+              event.currentTarget.click();
+            }
           }
         }}
         onKeyDown={(event) => {

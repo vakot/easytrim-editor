@@ -127,7 +127,7 @@ function DropdownMenuSubmenuExample() {
             <DropdownMenuSubTrigger>
               Language
               <span className="ml-auto max-w-32 truncate text-muted-foreground">
-                <LanguageSelectorValue />
+                <LanguageSelectorValue type="code" />
               </span>
             </DropdownMenuSubTrigger>
 
@@ -135,6 +135,7 @@ function DropdownMenuSubmenuExample() {
               <DropdownMenuSubContent>
                 <LanguageSelectorInput
                   aria-label="Search languages"
+                  className="h-7"
                   placeholder="Search languages..."
                 />
                 <LanguageSelectorList />

@@ -233,7 +233,7 @@ function MenuItemTriggerStory() {
 
             <ComboboxContent asChild>
               <DropdownMenuSubContent className="w-52 p-0">
-                <ComboboxInput placeholder="Search framework..." />
+                <ComboboxInput className="h-7" placeholder="Search framework..." />
 
                 <ComboboxList>
                   <ComboboxEmpty>No framework found.</ComboboxEmpty>
