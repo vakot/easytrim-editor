@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - Added an Open export queue action to the Queue menu and Command Center.
 
+### Changed
+
+- Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
+
 ### Fixed
 
 - Localized audio track menu actions across English, Russian, and Slovak.

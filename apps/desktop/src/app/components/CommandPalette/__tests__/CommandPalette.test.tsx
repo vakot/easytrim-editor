@@ -85,7 +85,7 @@ describe("CommandPalette semantic icons", () => {
 
   it("colors destructive and success icons with the shared menu variant styles", async () => {
     render(<CommandPalette />);
-    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
 
     const destructiveItem = await screen.findByRole("option", { name: "Reset to default" });
     const successItem = screen.getByRole("option", { name: "Up to date" });
@@ -96,7 +96,7 @@ describe("CommandPalette semantic icons", () => {
 
   it("uses an expanded responsive size for the dialog and command list", async () => {
     render(<CommandPalette />);
-    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
 
     const dialog = await screen.findByRole("dialog");
 
@@ -158,7 +158,7 @@ describe("CommandPalette semantic icons", () => {
 
   it("keeps the palette open for Promise actions so their state and label can update", async () => {
     const view = render(<CommandPalette />);
-    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
 
     fireEvent.click(await screen.findByRole("option", { name: "Up to date" }));
 
@@ -185,7 +185,7 @@ describe("CommandPalette semantic icons", () => {
       createCommand("theme-dark", "Dark", "default", <CheckCircle2 />, { checked: true }),
     ];
     render(<CommandPalette />);
-    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
 
     fireEvent.click(await screen.findByRole("option", { name: "Loop playback" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -204,7 +204,7 @@ describe("CommandPalette semantic icons", () => {
       }),
     ];
     render(<CommandPalette />);
-    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
 
     fireEvent.click(await screen.findByRole("option", { name: "Dark" }));
 
@@ -214,7 +214,7 @@ describe("CommandPalette semantic icons", () => {
   it("closes the palette after action clicks even when the action returns a Promise", async () => {
     mocks.commands = [createCommand("open-folder", "Open Folder", "default", <CheckCircle2 />)];
     render(<CommandPalette />);
-    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
 
     fireEvent.click(await screen.findByRole("option", { name: "Open Folder" }));
 
@@ -223,7 +223,7 @@ describe("CommandPalette semantic icons", () => {
 
   it("closes the palette after synchronous actions", async () => {
     render(<CommandPalette />);
-    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
 
     fireEvent.click(await screen.findByRole("option", { name: "Reset to default" }));
 
@@ -237,7 +237,7 @@ describe("CommandPalette semantic icons", () => {
       }),
     ];
     render(<CommandPalette />);
-    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
 
     expect(screen.queryByRole("option", { name: "Reset to default" })).not.toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeInTheDocument();

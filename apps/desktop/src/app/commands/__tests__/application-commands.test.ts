@@ -166,23 +166,28 @@ describe("application command shortcuts", () => {
     modifier: "alt",
   } as const;
 
-  it("formats the primary modifier for Windows/Linux and macOS", () => {
-    expect(getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT, "other")).toEqual(["Ctrl", "H"]);
-    expect(getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT, "other")).toBe("Control+H");
-    expect(getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT, "macos")).toEqual(["Cmd", "H"]);
-    expect(getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT, "macos")).toBe("Meta+H");
+  it("formats the command palette shortcut without a modifier", () => {
+    expect(getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT, "other")).toEqual(["/"]);
+    expect(getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT, "other")).toBe("/");
+    expect(getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT, "macos")).toEqual(["/"]);
+    expect(getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT, "macos")).toBe("/");
     expect(getShortcutDisplayKeys(fileShortcuts.openFolder, "macos")).toEqual(["Ctrl", "K"]);
     expect(getShortcutDisplayKeys(fileShortcuts.saveLosslessCut, "macos")).toEqual(["Ctrl", "S"]);
   });
 
-  it("matches only the platform primary modifier", () => {
-    const controlH = new KeyboardEvent("keydown", { code: "KeyH", ctrlKey: true });
-    const commandH = new KeyboardEvent("keydown", { code: "KeyH", metaKey: true });
+  it("matches slash with or without Shift and rejects other modifiers", () => {
+    const slash = new KeyboardEvent("keydown", { code: "Slash", key: "/" });
+    const shiftedSlash = new KeyboardEvent("keydown", {
+      code: "Slash",
+      key: "/",
+      shiftKey: true,
+    });
 
-    expect(isShortcutEvent(controlH, COMMAND_PALETTE_SHORTCUT, "other")).toBe(true);
-    expect(isShortcutEvent(commandH, COMMAND_PALETTE_SHORTCUT, "other")).toBe(false);
-    expect(isShortcutEvent(commandH, COMMAND_PALETTE_SHORTCUT, "macos")).toBe(true);
-    expect(isShortcutEvent(controlH, COMMAND_PALETTE_SHORTCUT, "macos")).toBe(false);
+    const controlSlash = new KeyboardEvent("keydown", { code: "Slash", key: "/", ctrlKey: true });
+
+    expect(isShortcutEvent(slash, COMMAND_PALETTE_SHORTCUT, "other")).toBe(true);
+    expect(isShortcutEvent(shiftedSlash, COMMAND_PALETTE_SHORTCUT, "other")).toBe(true);
+    expect(isShortcutEvent(controlSlash, COMMAND_PALETTE_SHORTCUT, "other")).toBe(false);
   });
 
   it("formats and matches alt shortcuts", () => {
