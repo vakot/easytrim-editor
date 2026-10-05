@@ -25,6 +25,11 @@ import {
   selectExportQueue,
   selectExportQueueSummary,
 } from "@/app/store/slices/editing-instances-slice";
+import {
+  exportQueueDialogClosed,
+  exportQueueDialogOpened,
+  selectExportQueueDialogOpen,
+} from "@/app/store/slices/export-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   openOptimizedExportDialog,
@@ -42,6 +47,7 @@ function ExportActions() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
+  const exportQueueDialogOpen = useAppSelector(selectExportQueueDialogOpen);
   const sourceReady = useAppSelector(selectSourceReady);
   const cropApplied = useAppSelector(selectCropApplied);
   const transformApplied = useAppSelector(selectTransformApplied);
@@ -57,7 +63,12 @@ function ExportActions() {
       className="flex shrink-0 items-center gap-1"
       role="toolbar"
     >
-      <Dialog>
+      <Dialog
+        onOpenChange={(open) =>
+          dispatch(open ? exportQueueDialogOpened() : exportQueueDialogClosed())
+        }
+        open={exportQueueDialogOpen}
+      >
         <ExportQueue>
           <ExportQueueTrigger finishedExports={finishedExports} queueSize={queueSize} />
 

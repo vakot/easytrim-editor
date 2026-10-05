@@ -262,6 +262,7 @@ export const ru = {
     actions: {
       cancel: "Отменить экспорт",
       editExport: "Изменить экспорт",
+      openExportQueue: "Открыть очередь экспорта",
       restore: "Восстановить монтаж",
       revealOutput: "Показать результат",
       retry: "Повторить",

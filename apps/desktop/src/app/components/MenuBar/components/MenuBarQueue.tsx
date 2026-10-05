@@ -60,6 +60,17 @@ function MenuBarQueueContent() {
   return (
     <>
       <MenubarGroup>
+        <ApplicationCommandMenuItem asChild commandId="open-export-queue">
+          <MenubarItem inset>
+            <MenubarIcon>
+              <ApplicationCommandIcon />
+            </MenubarIcon>
+            <ApplicationCommandLabel />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
+      </MenubarGroup>
+      <MenubarSeparator />
+      <MenubarGroup>
         <Tooltip preserveOnTrigger>
           <TooltipTrigger asChild>
             <ApplicationCommandMenuItem asChild commandId="delete-source-on-render-finish">

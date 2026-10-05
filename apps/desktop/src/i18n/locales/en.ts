@@ -260,6 +260,7 @@ export const en = {
     actions: {
       cancel: "Cancel export",
       editExport: "Edit export",
+      openExportQueue: "Open export queue",
       restore: "Restore edit",
       revealOutput: "Reveal output",
       retry: "Retry",
