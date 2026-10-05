@@ -7,10 +7,15 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Added an Open export queue action to the Queue menu and Command Center.
+- Added searchable language selection to the Settings menu.
 
 ### Changed
 
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
+
+### Removed
+
+- Removed language changing commands from the Command Center.
 
 ### Fixed
 
