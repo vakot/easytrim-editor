@@ -75,6 +75,8 @@ function getShortcutDisplayKeys(
   shortcut: ApplicationShortcut,
   platform = getShortcutPlatform(),
 ): readonly string[] {
+  if (shortcut.modifier === "none") return [shortcut.key];
+
   const modifier =
     shortcut.modifier === "alt"
       ? "Alt"
@@ -89,6 +91,8 @@ function getShortcutAriaValue(
   shortcut: ApplicationShortcut,
   platform = getShortcutPlatform(),
 ): string {
+  if (shortcut.modifier === "none") return shortcut.key;
+
   const modifier =
     shortcut.modifier === "alt"
       ? "Alt"
@@ -104,6 +108,10 @@ function isShortcutEvent(
   shortcut: ApplicationShortcut,
   platform = getShortcutPlatform(),
 ): boolean {
+  if (shortcut.modifier === "none") {
+    return event.key === shortcut.key && !event.altKey && !event.ctrlKey && !event.metaKey;
+  }
+
   const usesMeta = shortcut.modifier === "primary" && platform === "macos";
   const requiredModifierPressed =
     shortcut.modifier === "alt" ? event.altKey : usesMeta ? event.metaKey : event.ctrlKey;

@@ -340,7 +340,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
     expect(screen.getByRole("dialog", { name: "Command Palette" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /Close File/ })).toHaveAttribute(
       "aria-disabled",
@@ -784,13 +784,13 @@ describe("App", () => {
     expect(mocks.chooseSource).toHaveBeenCalledWith("folders");
   });
 
-  it("toggles the command palette with Ctrl+H", () => {
+  it("toggles the command palette with slash", () => {
     render(<App />);
 
-    fireEvent.keyDown(window, { key: "h", code: "KeyH", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
     expect(screen.getByRole("dialog", { name: "Command Palette" })).toBeInTheDocument();
 
-    fireEvent.keyDown(window, { key: "h", code: "KeyH", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "/", code: "Slash" });
     expect(screen.queryByRole("dialog", { name: "Command Palette" })).not.toBeInTheDocument();
   });
 
