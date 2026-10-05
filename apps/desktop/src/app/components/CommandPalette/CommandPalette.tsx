@@ -49,8 +49,9 @@ function CommandPalette() {
   const query = queryState.sessionId === sessionId ? queryState.value : "";
   const setQuery = (value: string) => setQueryState({ sessionId, value });
   const { commands, executeCommand: executeApplicationCommand } = useApplicationCommands();
-  const paletteCommands = commands.filter((command) =>
-    isApplicationCommandAvailableOnSurface(command, "palette"),
+  const paletteCommands = commands.filter(
+    (command) =>
+      isApplicationCommandAvailableOnSurface(command, "palette") && command.group.id !== "language",
   );
 
   const matches = filterApplicationCommands(paletteCommands, query);
@@ -114,7 +115,7 @@ function CommandPalette() {
             placeholder={t("app.messages.commandPalettePlaceholder")}
             value={query}
           />
-          <CommandList>
+          <CommandList className="min-h-0 flex-1">
             <CommandPaletteEmpty />
             <CommandPaletteContent groups={groups} />
           </CommandList>

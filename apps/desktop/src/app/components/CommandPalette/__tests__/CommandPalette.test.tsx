@@ -242,4 +242,17 @@ describe("CommandPalette semantic icons", () => {
     expect(screen.queryByRole("option", { name: "Reset to default" })).not.toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
+
+  it("does not expose language commands in the palette", async () => {
+    mocks.commands = ["English", "Slovenčina", "Русский"].map((label, index) => ({
+      ...createCommand(`language-${index}`, label, "default", <CheckCircle2 />),
+      group: { id: "language", label: "Language" },
+    }));
+    render(<CommandPalette />);
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
+
+    expect(await screen.findByText("No commands found.")).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "English" })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
 });
