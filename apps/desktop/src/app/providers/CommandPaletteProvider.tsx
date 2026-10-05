@@ -4,7 +4,7 @@ import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-comman
 import { isShortcutEvent } from "@/app/commands/core/application-command.utils";
 import { CommandPaletteContext } from "@/app/contexts/command-palette-context";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
-import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
+import { isApplicationInteractionBlocked, isEditableTarget } from "@/lib/hotkeys.utils";
 
 function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -27,7 +27,8 @@ function CommandPaletteProvider({ children }: { children: ReactNode }) {
   useKeyboardShortcut(
     (event) =>
       isShortcutEvent(event, COMMAND_PALETTE_SHORTCUT) &&
-      (isCommandPaletteOpen || !isApplicationInteractionBlocked()),
+      (isCommandPaletteOpen ||
+        (!isEditableTarget(event.target) && !isApplicationInteractionBlocked())),
     toggleCommandPalette,
     { allowEditableTarget: true },
   );
