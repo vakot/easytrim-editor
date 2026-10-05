@@ -429,7 +429,7 @@ describe("App", () => {
     ]) {
       expect(within(shortcutList).getByText(label)).toBeInTheDocument();
     }
-    expect(within(shortcutList).getByLabelText("Ctrl + H")).toBeInTheDocument();
+    expect(within(shortcutList).getByLabelText("/")).toBeInTheDocument();
     expect(within(shortcutList).queryByText("Save Lossless Cut")).not.toBeInTheDocument();
     expect(within(shortcutList).queryByText("Optimize & Export")).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Support on Ko-fi.com" })).not.toHaveLength(0);
