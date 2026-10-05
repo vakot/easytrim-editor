@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added an Open export queue action to the Queue menu and Command Center.
+
 ## [1.13.0]
 
 ### Added
