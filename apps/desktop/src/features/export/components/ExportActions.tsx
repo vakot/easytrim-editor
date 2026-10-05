@@ -229,7 +229,7 @@ function ExportActionButton({
   return (
     <Button
       className={cn(
-        "max-w-44 max-2xl:size-7 max-2xl:gap-0 max-2xl:rounded-[min(var(--radius-md),0.75rem)] max-2xl:p-0",
+        "max-2xl:size-7 max-2xl:gap-0 max-2xl:rounded-[min(var(--radius-md),0.75rem)] max-2xl:p-0",
         className,
       )}
       size="sm"

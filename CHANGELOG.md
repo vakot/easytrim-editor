@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Localized audio track menu actions across English, Russian, and Slovak.
+- Localized source search result counts and breadcrumb navigation labels.
+
 ## [1.13.0]
 
 ### Added

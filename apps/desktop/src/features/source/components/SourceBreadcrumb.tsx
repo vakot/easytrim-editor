@@ -29,6 +29,7 @@ interface SourceBreadcrumbProps {
 }
 
 function SourceBreadcrumb({ className }: SourceBreadcrumbProps) {
+  const { t } = useTranslation();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const entries = useAppSelector(selectEditingInstanceTopologyEntries);
   const instance = entries.find((entry) => entry.id === activeInstanceId);
@@ -39,7 +40,7 @@ function SourceBreadcrumb({ className }: SourceBreadcrumbProps) {
   const directories = getPathDirectories(sourcePath);
 
   return (
-    <Breadcrumb className={className}>
+    <Breadcrumb aria-label={t("common.labels.breadcrumb")} className={className}>
       <BreadcrumbList className="flex-nowrap">
         <SourceBreadcrumbList>
           {directories.map((directory) => (
