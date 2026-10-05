@@ -159,9 +159,10 @@ function MenuBarSettingsContent() {
               </MenubarSubTrigger>
             </LanguageSelectorTrigger>
             <LanguageSelectorContent asChild>
-              <MenubarSubContent>
+              <MenubarSubContent className="p-0">
                 <LanguageSelectorInput
                   aria-label={t("common.labels.searchLanguages")}
+                  className="h-7"
                   placeholder={t("common.labels.searchLanguages")}
                 />
                 <LanguageSelectorList />
