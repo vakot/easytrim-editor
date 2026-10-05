@@ -11,6 +11,7 @@ interface ExportUiState {
   availableQueueFinishActions: QueueFinishAction[];
   commandPreview: string;
   commandPreviewError: AppError | null;
+  exportQueueDialogOpen: boolean;
   launchError: AppError | null;
   optimizedDialogOpen: boolean;
   optimizedPlanRequestId: number | null;
@@ -24,6 +25,7 @@ export const initialExportState: ExportUiState = {
   commandPreview: "",
   commandPreviewError: null,
   launchError: null,
+  exportQueueDialogOpen: false,
   optimizedDialogOpen: false,
   optimizedPlanRequestId: null,
   queueFinishAction: "nothing",
@@ -35,6 +37,12 @@ const exportSlice = createSlice({
   name: "export",
   initialState: initialExportState,
   reducers: {
+    exportQueueDialogOpened: (state) => {
+      state.exportQueueDialogOpen = true;
+    },
+    exportQueueDialogClosed: (state) => {
+      state.exportQueueDialogOpen = false;
+    },
     optimizedExportDialogOpened: (state) => {
       state.optimizedDialogOpen = true;
       state.launchError = null;
@@ -112,6 +120,8 @@ const exportSlice = createSlice({
 
 const {
   exportLaunchFailed,
+  exportQueueDialogClosed,
+  exportQueueDialogOpened,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
   optimizedExportPlanFailed,
@@ -139,6 +149,9 @@ const selectAvailableQueueFinishActions = (state: RootState): QueueFinishAction[
 const selectOptimizedExportDialogOpen = (state: RootState): boolean =>
   state.export.optimizedDialogOpen;
 
+const selectExportQueueDialogOpen = (state: RootState): boolean =>
+  state.export.exportQueueDialogOpen;
+
 const selectExportCommandPreview = (state: RootState): string => state.export.commandPreview;
 const selectExportCommandPreviewError = (state: RootState): AppError | null =>
   state.export.commandPreviewError;
@@ -148,6 +161,8 @@ const selectQueueEdit = (state: RootState): ExportUiState["queueEdit"] => state.
 
 export {
   exportLaunchFailed,
+  exportQueueDialogClosed,
+  exportQueueDialogOpened,
   exportReducer,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
@@ -164,6 +179,7 @@ export {
   selectExportCommandPreview,
   selectExportCommandPreviewError,
   selectExportLaunchError,
+  selectExportQueueDialogOpen,
   selectOptimizedExportDialogOpen,
   selectQueueEdit,
   selectQueueFinishAction,

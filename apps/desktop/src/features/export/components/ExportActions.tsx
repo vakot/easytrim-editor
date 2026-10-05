@@ -25,6 +25,11 @@ import {
   selectExportQueue,
   selectExportQueueSummary,
 } from "@/app/store/slices/editing-instances-slice";
+import {
+  exportQueueDialogClosed,
+  exportQueueDialogOpened,
+  selectExportQueueDialogOpen,
+} from "@/app/store/slices/export-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   openOptimizedExportDialog,
@@ -42,6 +47,7 @@ function ExportActions() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
+  const exportQueueDialogOpen = useAppSelector(selectExportQueueDialogOpen);
   const sourceReady = useAppSelector(selectSourceReady);
   const cropApplied = useAppSelector(selectCropApplied);
   const transformApplied = useAppSelector(selectTransformApplied);
@@ -57,7 +63,12 @@ function ExportActions() {
       className="flex shrink-0 items-center gap-1"
       role="toolbar"
     >
-      <Dialog>
+      <Dialog
+        onOpenChange={(open) =>
+          dispatch(open ? exportQueueDialogOpened() : exportQueueDialogClosed())
+        }
+        open={exportQueueDialogOpen}
+      >
         <ExportQueue>
           <ExportQueueTrigger finishedExports={finishedExports} queueSize={queueSize} />
 
@@ -178,24 +189,22 @@ function ExportQueueTrigger({
   }, [pulseControls, shouldReduceMotion, store]);
 
   return (
-    <ExportActionTooltip tooltip={t("queue.labels.renderQueue")}>
-      <DialogTrigger asChild>
-        <MotionExportActionButton
-          animate={pulseControls}
-          className="max-2xl:size-auto max-2xl:h-7 max-2xl:gap-1 max-2xl:px-2"
-          icon={<List aria-hidden="true" />}
-          indicator={
-            <Badge size="xs" variant="secondary">
-              {finishedExports}/{queueSize}
-            </Badge>
-          }
-          initial={false}
-          variant="default"
-        >
-          {t("queue.labels.renderQueue")}
-        </MotionExportActionButton>
-      </DialogTrigger>
-    </ExportActionTooltip>
+    <DialogTrigger asChild>
+      <MotionExportActionButton
+        animate={pulseControls}
+        className="max-2xl:size-auto max-2xl:h-7 max-2xl:gap-1 max-2xl:px-2"
+        icon={<List aria-hidden="true" />}
+        indicator={
+          <Badge size="xs" variant="secondary">
+            {finishedExports}/{queueSize}
+          </Badge>
+        }
+        initial={false}
+        variant="default"
+      >
+        {t("queue.labels.renderQueue")}
+      </MotionExportActionButton>
+    </DialogTrigger>
   );
 }
 

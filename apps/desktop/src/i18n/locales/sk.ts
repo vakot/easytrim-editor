@@ -265,6 +265,7 @@ export const sk = {
     actions: {
       cancel: "Zrušiť export",
       editExport: "Upraviť export",
+      openExportQueue: "Otvoriť front exportov",
       restore: "Obnoviť úpravu",
       revealOutput: "Zobraziť výstup",
       retry: "Opakovať",
