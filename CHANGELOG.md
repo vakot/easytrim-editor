@@ -4,16 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.13.0]
+
 ### Added
 
-- Added per-track noise reduction with Off, Light, Medium, and Strong settings.
+- Added per-track noise reduction filter.
 - Added per-track mute, gain, loudness normalization, and audio activity controls, with detected ranges on track waveforms and markers on the shared timeline.
-- Added a per-track peak limiter with an adjustable output ceiling for processed preview and exports.
-- Added optional scene-change detection with animated timeline markers and Shift-drag snapping at scene boundaries.
-- Added scene detection result states with failure details and a retry action.
-- Added offline integrated LUFS and true-peak analysis for the selected audio mix, with optional optimized-export normalization presets.
-- Added Ctrl+=, Ctrl+-, and Ctrl+0 shortcuts for zooming and resetting UI scaling, with scale percentages included in the action labels.
-- Added a per-track high-pass filter with Off, 60, 80, 100, and 120 Hz cutoff settings.
+- Added a per-track peak limiter filter.
+- Added optional scene-change detection with timeline markers.
+- Added integrated LUFS and true-peak analysis for the selected audio mix, with optional optimized-export normalization presets.
+- Added Ctrl+=, Ctrl+-, and Ctrl+0 shortcuts for zooming and resetting UI scaling.
+- Added a per-track high-pass filter.
 
 ### Changed
 
@@ -27,7 +28,6 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- Aligned per-track gain and limiter behavior across playback and export, and kept waveforms in sync with waveform-affecting effects.
 - Fixed Spacebar playback toggling when an editor button has focus.
 
 ## [1.12.3]
