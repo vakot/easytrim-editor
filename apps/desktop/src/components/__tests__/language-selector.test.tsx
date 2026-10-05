@@ -19,6 +19,23 @@ const languages: readonly Language[] = [
 ];
 
 describe("LanguageSelector", () => {
+  it("applies content sizing classes when wrapping custom submenu content", () => {
+    render(
+      <LanguageSelector>
+        <LanguageSelectorContent asChild className="custom-submenu-content">
+          <div data-testid="submenu-content" />
+        </LanguageSelectorContent>
+      </LanguageSelector>,
+    );
+
+    expect(screen.getByTestId("submenu-content")).toHaveClass(
+      "w-[max(var(--radix-popover-trigger-width,16rem),16rem)]",
+      "max-w-[min(24rem,calc(100vw-2rem))]",
+      "min-w-[min(16rem,calc(100vw-2rem))]",
+      "custom-submenu-content",
+    );
+  });
+
   it("filters by language names, selects by keyboard, and displays the selected language", async () => {
     const user = userEvent.setup();
     const onValueChange = vi.fn();

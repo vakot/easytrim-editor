@@ -150,7 +150,7 @@ function CommandItem({
   variant = "default",
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Item> & {
-  variant: "default" | "success" | "destructive";
+  variant?: "default" | "success" | "destructive";
 }) {
   return (
     <CommandPrimitive.Item

@@ -11,6 +11,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Slot } from "@/components/ui/slot";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -113,7 +114,9 @@ function ComboboxContent({
   if (asChild) {
     return (
       <ComboboxAsChildContentContext.Provider value>
-        <ComboboxContentContext.Provider value>{children}</ComboboxContentContext.Provider>
+        <ComboboxContentContext.Provider value>
+          <Slot className={className}>{children}</Slot>
+        </ComboboxContentContext.Provider>
       </ComboboxAsChildContentContext.Provider>
     );
   }
