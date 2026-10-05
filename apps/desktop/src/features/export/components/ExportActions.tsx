@@ -189,24 +189,22 @@ function ExportQueueTrigger({
   }, [pulseControls, shouldReduceMotion, store]);
 
   return (
-    <ExportActionTooltip tooltip={t("queue.labels.renderQueue")}>
-      <DialogTrigger asChild>
-        <MotionExportActionButton
-          animate={pulseControls}
-          className="max-2xl:size-auto max-2xl:h-7 max-2xl:gap-1 max-2xl:px-2"
-          icon={<List aria-hidden="true" />}
-          indicator={
-            <Badge size="xs" variant="secondary">
-              {finishedExports}/{queueSize}
-            </Badge>
-          }
-          initial={false}
-          variant="default"
-        >
-          {t("queue.labels.renderQueue")}
-        </MotionExportActionButton>
-      </DialogTrigger>
-    </ExportActionTooltip>
+    <DialogTrigger asChild>
+      <MotionExportActionButton
+        animate={pulseControls}
+        className="max-2xl:size-auto max-2xl:h-7 max-2xl:gap-1 max-2xl:px-2"
+        icon={<List aria-hidden="true" />}
+        indicator={
+          <Badge size="xs" variant="secondary">
+            {finishedExports}/{queueSize}
+          </Badge>
+        }
+        initial={false}
+        variant="default"
+      >
+        {t("queue.labels.renderQueue")}
+      </MotionExportActionButton>
+    </DialogTrigger>
   );
 }
 
