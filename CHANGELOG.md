@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Localized audio track menu actions across English, Russian, and Slovak.
+
 ## [1.13.0]
 
 ### Added
