@@ -23,7 +23,7 @@ const menuItemVariants = cva(
         item: "",
         checkbox: "pl-8",
         radio: "pl-8",
-        subTrigger: "data-open:bg-accent data-open:text-accent-foreground",
+        subTrigger: "pr-8 data-open:bg-accent data-open:text-accent-foreground",
       },
       variant: {
         default: "",
