@@ -114,7 +114,7 @@ function CommandPalette() {
             placeholder={t("app.messages.commandPalettePlaceholder")}
             value={query}
           />
-          <CommandList className="min-h-0 flex-1">
+          <CommandList>
             <CommandPaletteEmpty />
             <CommandPaletteContent groups={groups} />
           </CommandList>
