@@ -25,6 +25,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { MenuIcon } from "@/components/ui/menu";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -51,6 +52,11 @@ const frameworks = [
   },
 ];
 
+const longList = Array.from({ length: 100 }).map((_, index) => ({
+  value: `${index}`,
+  label: `item ${index}`,
+}));
+
 const meta = {
   title: "Design System/Combobox",
   component: Combobox,
@@ -70,7 +76,7 @@ export const ButtonTrigger: Story = {
 function ButtonTriggerStory() {
   const [value, setValue] = React.useState("");
 
-  const selected = frameworks.find((framework) => framework.value === value);
+  const selected = longList.find((framework) => framework.value === value);
 
   return (
     <Combobox>
@@ -89,8 +95,9 @@ function ButtonTriggerStory() {
           <ComboboxEmpty>No framework found.</ComboboxEmpty>
 
           <ComboboxGroup>
-            {frameworks.map((framework) => (
+            {longList.map((framework) => (
               <ComboboxItem
+                className="pl-8"
                 key={framework.value}
                 onSelect={(currentValue) => {
                   setValue(currentValue === value ? "" : currentValue);
@@ -99,9 +106,11 @@ function ButtonTriggerStory() {
               >
                 {framework.label}
 
-                <CheckIcon
-                  className={cn("ml-auto", value === framework.value ? "opacity-100" : "opacity-0")}
-                />
+                {value === framework.value ? (
+                  <MenuIcon>
+                    <CheckIcon aria-hidden="true" />
+                  </MenuIcon>
+                ) : null}
               </ComboboxItem>
             ))}
           </ComboboxGroup>

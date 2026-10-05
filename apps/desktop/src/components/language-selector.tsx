@@ -1,5 +1,4 @@
 import { CheckIcon } from "lucide-react";
-import { Slot } from "radix-ui";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -128,28 +127,24 @@ function LanguageSelectorValue({
   return language[type];
 }
 
-const languageSelectorContentClassName =
-  "flex max-h-[min(24rem,var(--radix-popover-content-available-height,24rem))] w-[max(var(--radix-popover-trigger-width,16rem),16rem)] min-w-[min(16rem,calc(100vw-2rem))] max-w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden p-0";
-
 function LanguageSelectorContent({
   asChild = false,
   children,
   className,
   ...props
 }: React.ComponentProps<typeof ComboboxContent>) {
-  const mergedClassName = cn(languageSelectorContentClassName, className);
-
-  if (asChild) {
-    return (
-      <LanguageSelectorContentContext.Provider value>
-        <Slot.Root className={mergedClassName}>{children}</Slot.Root>
-      </LanguageSelectorContentContext.Provider>
-    );
-  }
-
   return (
     <LanguageSelectorContentContext.Provider value>
-      <ComboboxContent align="start" className={mergedClassName} sideOffset={4} {...props}>
+      <ComboboxContent
+        align="start"
+        asChild={asChild}
+        className={cn(
+          "w-[max(var(--radix-popover-trigger-width,16rem),16rem)] max-w-[min(24rem,calc(100vw-2rem))] min-w-[min(16rem,calc(100vw-2rem))]",
+          className,
+        )}
+        sideOffset={4}
+        {...props}
+      >
         {children}
       </ComboboxContent>
     </LanguageSelectorContentContext.Provider>
@@ -182,7 +177,6 @@ function LanguageSelectorInput({
 }
 
 function LanguageSelectorList({
-  className,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxList>, "children">) {
   const { t } = useTranslation();
@@ -197,7 +191,7 @@ function LanguageSelectorList({
   React.useEffect(() => () => setQuery(null), [setQuery]);
 
   return (
-    <ComboboxList className={className} {...props}>
+    <ComboboxList {...props}>
       <ComboboxEmpty>{t("common.messages.noLanguagesFound")}</ComboboxEmpty>
       <ComboboxGroup>
         {languages.map((language) => {
