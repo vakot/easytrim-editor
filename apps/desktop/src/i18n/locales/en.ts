@@ -12,7 +12,14 @@ export const en = {
       retry: "Retry",
       save: "Save",
     },
-    labels: { brand: "EasyTrim Editor", breadcrumb: "Breadcrumb", or: "or", search: "Search" },
+    labels: {
+      brand: "EasyTrim Editor",
+      breadcrumb: "Breadcrumb",
+      or: "or",
+      search: "Search",
+      searchLanguages: "Search languages",
+      searchSuggestions: "Suggestions",
+    },
     status: {
       disabled: "Disabled",
       enabled: "Enabled",
@@ -20,6 +27,7 @@ export const en = {
       loading: "Loading…",
       unknown: "Unknown",
     },
+    messages: { noLanguagesFound: "No languages found." },
   },
   app: {
     actions: {

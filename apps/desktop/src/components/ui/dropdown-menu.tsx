@@ -229,17 +229,21 @@ function DropdownMenuSubTrigger({
 }
 
 function DropdownMenuSubContent({
+  alignOffset = -4,
   className,
+  sideOffset = 4,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
   return (
     <DropdownMenuPrimitive.SubContent
+      alignOffset={alignOffset}
       className={cn(
         menuClassNames.content,
         "origin-(--radix-dropdown-menu-content-transform-origin)",
         className,
       )}
       data-slot="dropdown-menu-sub-content"
+      sideOffset={sideOffset}
       {...props}
     />
   );

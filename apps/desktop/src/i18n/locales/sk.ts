@@ -19,6 +19,8 @@ export const sk = {
       breadcrumb: "Navigačná cesta",
       or: "alebo",
       search: "Hľadať",
+      searchLanguages: "Hľadať jazyky",
+      searchSuggestions: "Návrhy",
     },
     status: {
       disabled: "Vypnuté",
@@ -27,6 +29,7 @@ export const sk = {
       loading: "Načítava sa…",
       unknown: "Neznáme",
     },
+    messages: { noLanguagesFound: "Nenašli sa žiadne jazyky." },
   },
   app: {
     actions: {
