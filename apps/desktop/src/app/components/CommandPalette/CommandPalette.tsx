@@ -14,13 +14,12 @@ import {
 } from "@/components/ui/command";
 import { Highlight } from "@/components/ui/highlight";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
-import { menuVariantIconClassNames } from "@/components/ui/menu";
+import { MenuIcon } from "@/components/ui/menu";
 
 import type { ApplicationCommandId } from "@/app/commands";
 import type {
   ApplicationCommand,
   ApplicationCommandMatch,
-  ApplicationCommandVariant,
 } from "@/app/commands/core/application-command.types";
 import {
   filterApplicationCommands,
@@ -34,12 +33,6 @@ import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import type { SearchMatchRange } from "@/domain/search.types";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
-
-const commandVariantClassNames = {
-  default: undefined,
-  destructive: `text-destructive data-selected:bg-destructive/10 data-selected:text-destructive dark:data-selected:bg-destructive/20 ${menuVariantIconClassNames.destructive}`,
-  success: `text-success data-selected:bg-success/10 data-selected:text-success dark:data-selected:bg-success/20 ${menuVariantIconClassNames.success}`,
-} satisfies Record<ApplicationCommandVariant, string | undefined>;
 
 type CommandPaletteGroupMatches = {
   groupLabel: string;
@@ -172,13 +165,15 @@ function CommandPaletteItem({ match }: { match: ApplicationCommandMatch<Applicat
   return (
     <CommandItem
       aria-busy={command.pending}
-      className={commandVariantClassNames[command.variant]}
       data-checked={command.checked}
       disabled={!command.enabled || command.pending}
       onSelect={() => executeCommand(command)}
       value={command.id}
+      variant={command.variant}
     >
-      <ApplicationCommandIcon command={command} />
+      <MenuIcon>
+        <ApplicationCommandIcon command={command} />
+      </MenuIcon>
       <span>
         <Highlight ranges={match.labelMatchRanges}>{command.label}</Highlight>
       </span>

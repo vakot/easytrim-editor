@@ -1,3 +1,4 @@
+import { cva } from "class-variance-authority";
 import { Command as CommandPrimitive } from "cmdk";
 import { CheckIcon, SearchIcon } from "lucide-react";
 import * as React from "react";
@@ -10,10 +11,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
-import { menuItemVariants } from "@/components/ui/menu";
+import { MenuIcon, menuItemVariants } from "@/components/ui/menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { cn } from "@/lib/class-names.utils";
+
+const commandItemVariants = cva(
+  "group/command-item px-8 in-data-[slot=dialog-content]:rounded-lg!",
+  {
+    variants: {
+      variant: {
+        default: "",
+        success: `data-selected:bg-success/10 data-selected:text-success! dark:data-selected:bg-success/20`,
+        destructive: `data-selected:bg-destructive/10 data-selected:text-destructive! dark:data-selected:bg-destructive/20`,
+      },
+    },
+  },
+);
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
   return (
@@ -133,20 +147,25 @@ function CommandSeparator({
 function CommandItem({
   children,
   className,
+  variant = "default",
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Item>) {
+}: React.ComponentProps<typeof CommandPrimitive.Item> & {
+  variant: "default" | "success" | "destructive";
+}) {
   return (
     <CommandPrimitive.Item
       className={cn(
-        menuItemVariants({ kind: "item" }),
-        "group/command-item in-data-[slot=dialog-content]:rounded-lg! data-selected:bg-muted data-selected:text-foreground data-selected:*:[svg]:text-foreground",
+        menuItemVariants({ kind: "item", variant }),
+        commandItemVariants({ variant }),
         className,
       )}
       data-slot="command-item"
       {...props}
     >
       {children}
-      <CheckIcon className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
+      <MenuIcon side="right">
+        <CheckIcon className="hidden group-data-[checked=true]/command-item:block" />
+      </MenuIcon>
     </CommandPrimitive.Item>
   );
 }
@@ -154,10 +173,7 @@ function CommandItem({
 function CommandShortcut({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
-      className={cn(
-        "ml-auto text-xs tracking-widest text-muted-foreground group-data-selected/command-item:text-foreground",
-        className,
-      )}
+      className={cn("ml-auto text-xs tracking-widest text-muted-foreground", className)}
       data-slot="command-shortcut"
       {...props}
     />
