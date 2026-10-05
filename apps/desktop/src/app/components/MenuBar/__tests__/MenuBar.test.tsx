@@ -21,6 +21,7 @@ import { ChangelogProvider } from "@/features/changelog";
 import { QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
+import { i18n } from "@/i18n/config";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
@@ -749,7 +750,7 @@ describe("MenuBarTest", () => {
     expect(screen.queryByRole("heading", { name: "Delete source file?" })).not.toBeInTheDocument();
   });
 
-  it("keeps Theme and Language metadata visible for every submenu option", async () => {
+  it("keeps theme radios and searches for languages in Settings", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
@@ -799,23 +800,18 @@ describe("MenuBarTest", () => {
     languageItem?.focus();
     await user.keyboard("{ArrowRight}");
 
-    expect(screen.getByRole("menuitemradio", { name: /English/ })).toHaveTextContent("EN");
-    expect(screen.getByRole("menuitemradio", { name: /Slov/ })).toHaveTextContent("SK");
-    expect(screen.getByRole("menuitemradio", { name: /Русский/ })).toHaveTextContent("RU");
-    expect(screen.getByRole("menuitemradio", { name: /English/ })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
-    expect(screen.getByRole("menuitemradio", { name: /Slov/ })).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
-    expect(screen.getByRole("menuitemradio", { name: /Русский/ })).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
-    await user.click(screen.getByRole("menuitemradio", { name: /English/ }));
-    expect(screen.queryByRole("menuitemradio", { name: /English/ })).not.toBeInTheDocument();
+    const languageSearch = screen.getByRole("combobox", { name: "Search languages" });
+    await user.type(languageSearch, "slovak");
+
+    const slovakOption = screen.getByRole("option", { name: "Slovenčina (Slovak), sk" });
+    expect(slovakOption).toBeVisible();
+    expect(screen.queryByRole("option", { name: /Русский/ })).not.toBeInTheDocument();
+
+    await user.click(slovakOption);
+    await waitFor(() => expect(i18n.resolvedLanguage).toBe("sk"));
+    expect(languageItem).toHaveTextContent(/sk$/i);
+    expect(screen.queryByRole("option", { name: /Slov/ })).not.toBeInTheDocument();
+    await i18n.changeLanguage("en");
   });
 
   it("shows hex values and accepts custom input as soon as it is valid", async () => {

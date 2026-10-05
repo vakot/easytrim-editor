@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { CheckCircle2, RotateCcw } from "lucide-react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -241,5 +242,29 @@ describe("CommandPalette semantic icons", () => {
 
     expect(screen.queryByRole("option", { name: "Reset to default" })).not.toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("changes languages through the searchable selector without closing the palette", async () => {
+    const user = userEvent.setup();
+    mocks.commands = ["en", "sk", "ru"].map((code) => ({
+      ...createCommand(`language-${code}`, code, "default", <CheckCircle2 />),
+      group: { id: "language", label: "Language" },
+    }));
+    render(<CommandPalette />);
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
+
+    await user.click(await screen.findByRole("combobox", { name: "Language" }));
+    const search = await screen.findByRole("combobox", { name: "Search languages" });
+    await user.type(search, "slovak");
+
+    const slovakOption = screen.getByRole("option", { name: "Slovenčina (Slovak), sk" });
+    expect(slovakOption).toBeVisible();
+    expect(screen.queryByRole("option", { name: "Русский (Russian), ru" })).not.toBeInTheDocument();
+
+    await user.click(slovakOption);
+
+    expect(mocks.executeCommand).toHaveBeenCalledWith("language-sk", "palette");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Search languages" })).not.toBeInTheDocument();
   });
 });

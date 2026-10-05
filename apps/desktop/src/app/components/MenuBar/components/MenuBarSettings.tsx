@@ -1,5 +1,6 @@
 import { Languages } from "lucide-react";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,6 @@ import {
   MenubarIcon,
   MenubarItem,
   MenubarMenu,
-  MenubarRadioGroup,
-  MenubarRadioItem,
   MenubarSeparator,
   MenubarShortcut,
   MenubarSub,
@@ -28,8 +27,19 @@ import {
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
 } from "@/app/components/ApplicationCommandMenuItem";
-import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
+import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import {
+  LanguageSelector,
+  LanguageSelectorContent,
+  LanguageSelectorInput,
+  LanguageSelectorList,
+  LanguageSelectorTrigger,
+  LanguageSelectorValue,
+} from "@/components/language-selector";
+import { LANGUAGE_CATALOG } from "@/domain/languages";
 import { isSupportedLanguage } from "@/i18n/resources";
+
+const supportedLanguages = LANGUAGE_CATALOG.filter(({ code }) => isSupportedLanguage(code));
 
 interface PreferenceMenuItemProps {
   children: ReactNode;
@@ -84,6 +94,8 @@ function MenuBarSettings() {
 
 function MenuBarSettingsContent() {
   const { i18n, t } = useTranslation();
+  const { executeCommand } = useApplicationCommands();
+  const [languageSubmenuOpen, setLanguageSubmenuOpen] = useState(false);
 
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
 
@@ -122,31 +134,41 @@ function MenuBarSettingsContent() {
       </MenubarGroup>
       <MenubarSeparator />
       <MenubarGroup>
-        <MenubarSub>
-          <MenubarSubTrigger inset>
-            <MenubarIcon>
-              <Languages aria-hidden="true" />
-            </MenubarIcon>
-            {t("settings.labels.language")}
-            <MenubarShortcut>{currentLanguage.toUpperCase()}</MenubarShortcut>
-          </MenubarSubTrigger>
-          <MenubarSubContent>
-            <MenubarRadioGroup value={currentLanguage}>
-              {(["en", "sk", "ru"] as const).map((language) => (
-                <ApplicationCommandMenuItem
-                  asChild
-                  commandId={getLanguageCommandId(language)}
-                  key={language}
-                >
-                  <MenubarRadioItem value={language}>
-                    <ApplicationCommandLabel />
-                    <MenubarShortcut>{language.toUpperCase()}</MenubarShortcut>
-                  </MenubarRadioItem>
-                </ApplicationCommandMenuItem>
-              ))}
-            </MenubarRadioGroup>
-          </MenubarSubContent>
-        </MenubarSub>
+        <LanguageSelector
+          languages={supportedLanguages}
+          onValueChange={(language) => {
+            if (!isSupportedLanguage(language)) return;
+
+            void executeCommand(getLanguageCommandId(language), "menu");
+            setLanguageSubmenuOpen(false);
+          }}
+          value={currentLanguage}
+        >
+          <MenubarSub onOpenChange={setLanguageSubmenuOpen} open={languageSubmenuOpen}>
+            <LanguageSelectorTrigger>
+              <MenubarSubTrigger inset>
+                <MenubarIcon>
+                  <Languages aria-hidden="true" />
+                </MenubarIcon>
+                {t("settings.labels.language")}
+                <MenubarShortcut>
+                  <span className="uppercase">
+                    <LanguageSelectorValue type="code" />
+                  </span>
+                </MenubarShortcut>
+              </MenubarSubTrigger>
+            </LanguageSelectorTrigger>
+            <LanguageSelectorContent asChild>
+              <MenubarSubContent>
+                <LanguageSelectorInput
+                  aria-label={t("common.labels.searchLanguages")}
+                  placeholder={t("common.labels.searchLanguages")}
+                />
+                <LanguageSelectorList />
+              </MenubarSubContent>
+            </LanguageSelectorContent>
+          </MenubarSub>
+        </LanguageSelector>
       </MenubarGroup>
     </>
   );

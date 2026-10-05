@@ -1,6 +1,8 @@
+import { ChevronsUpDownIcon, Languages } from "lucide-react";
 import { createContext, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandDialog,
@@ -28,11 +30,24 @@ import {
   isApplicationCommandAvailableOnSurface,
   isShortcutEvent,
 } from "@/app/commands/core/application-command.utils";
+import { getLanguageCommandId } from "@/app/commands/preferences";
 import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
 import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import {
+  LanguageSelector,
+  LanguageSelectorContent,
+  LanguageSelectorInput,
+  LanguageSelectorList,
+  LanguageSelectorTrigger,
+  LanguageSelectorValue,
+} from "@/components/language-selector";
+import { LANGUAGE_CATALOG } from "@/domain/languages";
 import type { SearchMatchRange } from "@/domain/search.types";
+import { isSupportedLanguage } from "@/i18n/resources";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
+
+const supportedLanguages = LANGUAGE_CATALOG.filter(({ code }) => isSupportedLanguage(code));
 
 type CommandPaletteGroupMatches = {
   groupLabel: string;
@@ -41,7 +56,7 @@ type CommandPaletteGroupMatches = {
 };
 
 function CommandPalette() {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const { closeCommandPalette, isCommandPaletteOpen, openCommandPalette, sessionId } =
     useCommandPalette();
 
@@ -49,8 +64,10 @@ function CommandPalette() {
   const query = queryState.sessionId === sessionId ? queryState.value : "";
   const setQuery = (value: string) => setQueryState({ sessionId, value });
   const { commands, executeCommand: executeApplicationCommand } = useApplicationCommands();
-  const paletteCommands = commands.filter((command) =>
-    isApplicationCommandAvailableOnSurface(command, "palette"),
+  const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
+  const paletteCommands = commands.filter(
+    (command) =>
+      isApplicationCommandAvailableOnSurface(command, "palette") && command.group.id !== "language",
   );
 
   const matches = filterApplicationCommands(paletteCommands, query);
@@ -107,18 +124,61 @@ function CommandPalette() {
         open={isCommandPaletteOpen}
         title={t("app.labels.commandPalette")}
       >
-        <Command label={t("app.labels.searchCommands")} shouldFilter={false}>
-          <CommandInput
-            aria-label={t("app.labels.searchCommands")}
-            onValueChange={setQuery}
-            placeholder={t("app.messages.commandPalettePlaceholder")}
-            value={query}
-          />
-          <CommandList>
-            <CommandPaletteEmpty />
-            <CommandPaletteContent groups={groups} />
-          </CommandList>
-        </Command>
+        <div className="flex size-full min-h-0 flex-col">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2">
+            <span className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+              <Languages aria-hidden="true" className="size-4 shrink-0" />
+              <span className="truncate">{t("settings.labels.language")}</span>
+            </span>
+            <LanguageSelector
+              languages={supportedLanguages}
+              onValueChange={(language) => {
+                if (isSupportedLanguage(language)) {
+                  void executeApplicationCommand(getLanguageCommandId(language), "palette");
+                }
+              }}
+              value={currentLanguage}
+            >
+              <LanguageSelectorTrigger>
+                <Button
+                  aria-label={t("settings.labels.language")}
+                  className="max-w-56 justify-between"
+                  role="combobox"
+                  size="sm"
+                  variant="outline"
+                >
+                  <span className="truncate">
+                    <LanguageSelectorValue />
+                  </span>
+                  <ChevronsUpDownIcon className="shrink-0 text-muted-foreground" />
+                </Button>
+              </LanguageSelectorTrigger>
+              <LanguageSelectorContent>
+                <LanguageSelectorInput
+                  aria-label={t("common.labels.searchLanguages")}
+                  placeholder={t("common.labels.searchLanguages")}
+                />
+                <LanguageSelectorList />
+              </LanguageSelectorContent>
+            </LanguageSelector>
+          </div>
+          <Command
+            className="h-0 min-h-0 flex-1"
+            label={t("app.labels.searchCommands")}
+            shouldFilter={false}
+          >
+            <CommandInput
+              aria-label={t("app.labels.searchCommands")}
+              onValueChange={setQuery}
+              placeholder={t("app.messages.commandPalettePlaceholder")}
+              value={query}
+            />
+            <CommandList className="min-h-0 flex-1">
+              <CommandPaletteEmpty />
+              <CommandPaletteContent groups={groups} />
+            </CommandList>
+          </Command>
+        </div>
       </CommandDialog>
     </CommandPaletteContext.Provider>
   );
