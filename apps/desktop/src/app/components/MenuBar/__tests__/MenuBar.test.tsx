@@ -634,6 +634,44 @@ describe("MenuBarTest", () => {
     expect(scaleSelect).toHaveTextContent("200%");
   });
 
+  it("syncs both appearance color swatches with a live custom color preview", async () => {
+    const user = userEvent.setup();
+    renderMenus({ primaryColor: "blue", customPrimaryColor: "#123456" });
+    await user.click(getMenuTrigger("Settings"));
+    await user.click(screen.getByRole("tab", { name: "Appearance" }));
+    await user.click(screen.getByRole("button", { name: "Primary accent" }));
+    await user.click(screen.getByRole("button", { name: "Custom" }));
+
+    const wheel = screen.getByRole("button", { name: /Theme color spectrum/ });
+    Object.defineProperty(wheel, "getBoundingClientRect", {
+      value: () => new DOMRect(0, 0, 192, 192),
+    });
+    Object.assign(wheel, {
+      hasPointerCapture: () => true,
+      releasePointerCapture: vi.fn(),
+      setPointerCapture: vi.fn(),
+    });
+
+    fireEvent.pointerDown(wheel, { clientX: 96, clientY: 96, pointerId: 1 });
+
+    const activeSwatch = screen.getByRole("button", { name: "Primary accent" });
+    const customSwatch = screen.getByRole("button", { name: "Custom" });
+    expect(menuState.preferences.primaryColor).toBe("blue");
+    expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe(
+      "#808080",
+    );
+    expect(activeSwatch).toHaveStyle({
+      backgroundColor: "var(--primary-color-preview, #4299e1)",
+    });
+    expect(customSwatch).toHaveStyle({
+      backgroundColor: "var(--primary-color-preview, #123456)",
+    });
+
+    fireEvent.pointerCancel(wheel, { pointerId: 1 });
+    expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
+    expect(menuState.preferences.primaryColor).toBe("blue");
+  });
+
   it("changes the interface language through the existing i18n path", async () => {
     const user = userEvent.setup();
     renderMenus();

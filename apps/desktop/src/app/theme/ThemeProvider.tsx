@@ -6,6 +6,7 @@ import { selectPrimaryColor, selectThemePreference } from "@/app/store/slices/pr
 import {
   type PrimaryColor,
   primaryColorPalette,
+  resolvePrimaryColor,
   resolveTheme,
   subscribeToSystemTheme,
   systemPrefersDark,
@@ -17,17 +18,30 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   const primaryColor = useAppSelector(selectPrimaryColor);
   const systemDark = useSyncExternalStore(subscribeToSystemTheme, systemPrefersDark, () => false);
   const resolvedTheme = resolveTheme(preference, systemDark);
-  const finishPrimaryColorPreview = useCallback((committedColor: PrimaryColor) => {
-    const root = document.documentElement;
-    root.removeAttribute("data-primary-color-scrubbing");
-    root.dataset.primaryColor = committedColor;
-    applyPrimaryColor(root, committedColor);
-  }, []);
+  const finishPrimaryColorPreview = useCallback(
+    (committedColor: PrimaryColor) => {
+      const root = document.documentElement;
+      root.removeAttribute("data-primary-color-scrubbing");
+      if (primaryColor === committedColor) {
+        root.style.removeProperty("--primary-color-preview");
+      } else {
+        root.style.setProperty("--primary-color-preview", resolvePrimaryColor(committedColor));
+      }
+      root.dataset.primaryColor = committedColor;
+      applyPrimaryColor(root, committedColor);
+    },
+    [primaryColor],
+  );
 
   const previewPrimaryColor = useCallback(
     (nextPrimaryColor: PrimaryColor | null) => {
       const root = document.documentElement;
       root.toggleAttribute("data-primary-color-scrubbing", nextPrimaryColor !== null);
+      if (nextPrimaryColor) {
+        root.style.setProperty("--primary-color-preview", resolvePrimaryColor(nextPrimaryColor));
+      } else {
+        root.style.removeProperty("--primary-color-preview");
+      }
       const appliedColor = nextPrimaryColor ?? primaryColor;
       root.dataset.primaryColor = appliedColor;
       applyPrimaryColor(root, appliedColor);
@@ -42,6 +56,12 @@ function ThemeProvider({ children }: { children: ReactNode }) {
     root.dataset.theme = resolvedTheme;
     root.dataset.primaryColor = primaryColor;
     applyPrimaryColor(root, primaryColor);
+    if (
+      !root.hasAttribute("data-primary-color-scrubbing") &&
+      root.style.getPropertyValue("--primary-color-preview") === resolvePrimaryColor(primaryColor)
+    ) {
+      root.style.removeProperty("--primary-color-preview");
+    }
     root.style.colorScheme = resolvedTheme;
 
     return () => {
@@ -49,6 +69,7 @@ function ThemeProvider({ children }: { children: ReactNode }) {
       delete root.dataset.theme;
       delete root.dataset.primaryColor;
       root.removeAttribute("data-primary-color-scrubbing");
+      root.style.removeProperty("--primary-color-preview");
       root.style.removeProperty("--primary-light");
       root.style.removeProperty("--primary-foreground-light");
       root.style.removeProperty("--primary-dark");

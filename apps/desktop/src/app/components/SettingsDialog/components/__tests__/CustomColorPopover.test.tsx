@@ -87,6 +87,9 @@ describe("CustomColorPopover", () => {
 
     expect(document.documentElement).toHaveAttribute("data-primary-color-scrubbing");
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#808080");
+    expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe(
+      "#808080",
+    );
     expect(store.getState().preferences.primaryColor).toBe("blue");
     expect(store.getState().preferences.customPrimaryColor).toBe("#123456");
     expect(dispatch).not.toHaveBeenCalled();
@@ -96,6 +99,7 @@ describe("CustomColorPopover", () => {
     expect(screen.getByRole("textbox", { name: "Custom hex" })).toHaveValue("123456");
     expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
     expect(document.documentElement).toHaveAttribute("data-primary-color", "blue");
+    expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
     expect(store.getState().preferences.primaryColor).toBe("blue");
     expect(screen.getByRole("button", { name: /Theme color spectrum/ })).toBeVisible();
     expect(

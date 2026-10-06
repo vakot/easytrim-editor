@@ -111,7 +111,9 @@ function SettingsAppearance() {
               <Button
                 aria-label={t("settings.labels.primaryAccent")}
                 className="size-8 p-0"
-                style={{ backgroundColor: primaryColor }}
+                style={{
+                  backgroundColor: `var(--primary-color-preview, ${resolvePrimaryColor(primaryColor)})`,
+                }}
               />
             </CollapsibleTrigger>
           </SettingRow>
@@ -131,7 +133,11 @@ function SettingsAppearance() {
 
             <CustomColorPopover value={customPrimaryColor}>
               <CustomColorPopoverTrigger asChild>
-                <Button style={{ backgroundColor: resolvePrimaryColor(customPrimaryColor) }}>
+                <Button
+                  style={{
+                    backgroundColor: `var(--primary-color-preview, ${resolvePrimaryColor(customPrimaryColor)})`,
+                  }}
+                >
                   {t("settings.options.colors.custom")}
                 </Button>
               </CustomColorPopoverTrigger>
