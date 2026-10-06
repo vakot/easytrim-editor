@@ -159,26 +159,23 @@ function ColorPicker({
   );
 }
 
-function ColorPickerSpectrum({
-  "aria-label": ariaLabel,
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+function ColorPickerSpectrum({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      aria-label={ariaLabel}
       className={cn("space-y-3", className)}
       data-slot="color-spectrum"
       role="group"
       {...props}
-    >
-      <ColorPickerSaturation aria-label={ariaLabel} />
-      <ColorPickerHue aria-label={ariaLabel} />
-    </div>
+    />
   );
 }
 
-function ColorPickerSaturation({ "aria-label": ariaLabel }: { "aria-label"?: string }) {
+function ColorPickerSaturationValue({
+  "aria-label": ariaLabel,
+  className,
+  onKeyDown,
+  ...props
+}: React.ComponentProps<"button">) {
   const { cancel, changeHsv, commitHsv, commitPointerHsv, hsv, onUnmount } = useColorPicker();
 
   const pointer = usePointerScrub({
@@ -237,12 +234,17 @@ function ColorPickerSaturation({ "aria-label": ariaLabel }: { "aria-label"?: str
 
   return (
     <button
-      aria-label={
-        ariaLabel ? `${ariaLabel} saturation and brightness` : "Saturation and brightness"
-      }
-      className="relative isolate block h-48 w-full cursor-crosshair touch-none rounded-lg ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring"
+      {...props}
+      aria-label={ariaLabel}
+      className={cn(
+        "relative isolate block h-48 w-full cursor-crosshair touch-none rounded-lg ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring",
+        className,
+      )}
       data-slot="color-spectrum-field"
-      onKeyDown={handleKeyDown}
+      onKeyDown={(event) => {
+        handleKeyDown(event);
+        onKeyDown?.(event);
+      }}
       type="button"
       {...pointer}
       style={{
@@ -267,7 +269,12 @@ function ColorPickerSaturation({ "aria-label": ariaLabel }: { "aria-label"?: str
   );
 }
 
-function ColorPickerHue({ "aria-label": ariaLabel }: { "aria-label"?: string }) {
+function ColorPickerHue({
+  "aria-label": ariaLabel,
+  className,
+  onKeyDown,
+  ...props
+}: React.ComponentProps<"button">) {
   const { cancel, changeHsv, commitHsv, commitPointerHsv, hsv, onUnmount } = useColorPicker();
 
   const pointer = usePointerScrub({
@@ -322,14 +329,21 @@ function ColorPickerHue({ "aria-label": ariaLabel }: { "aria-label"?: string }) 
 
   return (
     <button
-      aria-label={ariaLabel ? `${ariaLabel} hue` : "Hue"}
+      {...props}
+      aria-label={ariaLabel}
       aria-orientation="horizontal"
       aria-valuemax={360}
       aria-valuemin={0}
       aria-valuenow={hsv.hue}
-      className="relative isolate block h-4 w-full touch-none rounded-full ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring"
+      className={cn(
+        "relative isolate block h-4 w-full touch-none rounded-full ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring",
+        className,
+      )}
       data-slot="color-hue-slider"
-      onKeyDown={handleKeyDown}
+      onKeyDown={(event) => {
+        handleKeyDown(event);
+        onKeyDown?.(event);
+      }}
       role="slider"
       type="button"
       {...pointer}
@@ -547,4 +561,12 @@ function useColorPicker() {
   return context;
 }
 
-export { ColorPicker, ColorPickerInput, ColorPickerPreset, ColorPickerSpectrum, ColorSample };
+export {
+  ColorPicker,
+  ColorPickerHue,
+  ColorPickerInput,
+  ColorPickerPreset,
+  ColorPickerSaturationValue,
+  ColorPickerSpectrum,
+  ColorSample,
+};

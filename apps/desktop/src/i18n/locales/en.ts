@@ -280,6 +280,8 @@ export const en = {
     },
     accessibility: {
       colorSpectrum: "Theme color picker",
+      colorSaturationValue: "Saturation and brightness",
+      colorHue: "Hue",
       primaryColorHex: "Primary color HEX",
     },
     options: {

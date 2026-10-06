@@ -644,7 +644,7 @@ describe("MenuBarTest", () => {
     expect(screen.getByRole("button", { name: "Amber" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("textbox", { name: "Primary color HEX" })).toHaveValue("efbf04");
     const spectrum = screen.getByRole("button", {
-      name: "Theme color picker saturation and brightness",
+      name: "Saturation and brightness",
     });
 
     const spectrumMarker = spectrum.querySelector<HTMLElement>(
@@ -652,7 +652,7 @@ describe("MenuBarTest", () => {
     );
 
     const hueMarker = screen
-      .getByRole("slider", { name: "Theme color picker hue" })
+      .getByRole("slider", { name: "Hue" })
       .querySelector<HTMLElement>('[data-slot="color-hue-marker"]');
 
     expect(spectrumMarker?.style.left).not.toBe("0%");
@@ -689,7 +689,7 @@ describe("MenuBarTest", () => {
     });
 
     const spectrum = screen.getByRole("button", {
-      name: "Theme color picker saturation and brightness",
+      name: "Saturation and brightness",
     });
 
     Object.defineProperty(spectrum, "getBoundingClientRect", {
@@ -710,6 +710,20 @@ describe("MenuBarTest", () => {
     expect(screen.getByRole("textbox", { name: "Primary color HEX" })).toHaveValue("efbf04");
     expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
     expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
+  });
+
+  it("uses localized names for the composed color controls", async () => {
+    const user = userEvent.setup();
+    await i18n.changeLanguage("ru");
+    renderMenus();
+    await user.click(screen.getByRole("button", { name: "Настройки" }));
+    await user.click(screen.getByRole("tab", { name: "Внешний вид" }));
+    await user.click(screen.getByRole("button", { name: "Основной цвет" }));
+
+    expect(screen.getByRole("button", { name: "Насыщенность и яркость" })).toBeVisible();
+    expect(screen.getByRole("slider", { name: "Оттенок" })).toBeVisible();
+
+    await i18n.changeLanguage("en");
   });
 
   it("changes the interface language through the existing i18n path", async () => {

@@ -29,8 +29,10 @@ import { PRIMARY_COLOR_PRESETS } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/useTheme";
 import {
   ColorPicker,
+  ColorPickerHue,
   ColorPickerInput,
   ColorPickerPreset,
+  ColorPickerSaturationValue,
   ColorPickerSpectrum,
   ColorSample,
 } from "@/components/color";
@@ -132,7 +134,12 @@ function SettingsAppearance() {
               onCommit={(color) => dispatch(primaryColorChanged(color))}
             >
               <div className="w-full space-y-3">
-                <ColorPickerSpectrum aria-label={t("settings.accessibility.colorSpectrum")} />
+                <ColorPickerSpectrum aria-label={t("settings.accessibility.colorSpectrum")}>
+                  <ColorPickerSaturationValue
+                    aria-label={t("settings.accessibility.colorSaturationValue")}
+                  />
+                  <ColorPickerHue aria-label={t("settings.accessibility.colorHue")} />
+                </ColorPickerSpectrum>
 
                 <div className="flex items-center gap-2">
                   <ColorPickerInput

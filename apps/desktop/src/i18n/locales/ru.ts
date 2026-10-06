@@ -281,6 +281,8 @@ export const ru = {
     },
     accessibility: {
       colorSpectrum: "Выбор цвета темы",
+      colorSaturationValue: "Насыщенность и яркость",
+      colorHue: "Оттенок",
       primaryColorHex: "HEX основного цвета",
     },
     options: {

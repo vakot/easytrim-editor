@@ -2,7 +2,9 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import {
   ColorPicker,
+  ColorPickerHue,
   ColorPickerInput,
+  ColorPickerSaturationValue,
   ColorPickerSpectrum,
   ColorSample,
 } from "@/components/color";
@@ -26,7 +28,10 @@ export const Spectrum: Story = {
   render: () => (
     <ColorPicker defaultValue="#f59e0b">
       <div className="w-72 space-y-3">
-        <ColorPickerSpectrum aria-label="Choose a color" />
+        <ColorPickerSpectrum aria-label="Choose a color">
+          <ColorPickerSaturationValue aria-label="Saturation and brightness" />
+          <ColorPickerHue aria-label="Hue" />
+        </ColorPickerSpectrum>
         <ColorPickerInput aria-label="HEX color" />
       </div>
     </ColorPicker>

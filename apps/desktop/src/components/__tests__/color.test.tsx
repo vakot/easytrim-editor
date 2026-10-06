@@ -4,8 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   ColorPicker,
+  ColorPickerHue,
   ColorPickerInput,
   ColorPickerPreset,
+  ColorPickerSaturationValue,
   ColorPickerSpectrum,
 } from "@/components/color";
 import { hsvToHex } from "@/lib/color.utils";
@@ -39,10 +41,10 @@ function mockBounds(
 
 function getControls() {
   const spectrum = screen.getByRole("button", {
-    name: "Color picker saturation and brightness",
+    name: "Saturation and brightness",
   });
 
-  const hue = screen.getByRole("slider", { name: "Color picker hue" });
+  const hue = screen.getByRole("slider", { name: "Hue" });
   mockBounds(spectrum, 10, 20, 100, 100);
   mockBounds(hue, 10, 150, 100, 16);
 
@@ -80,7 +82,10 @@ function renderPicker({
 } = {}) {
   const view = render(
     <ColorPicker defaultValue={defaultValue} onChange={onChange} onCommit={onCommit}>
-      <ColorPickerSpectrum aria-label="Color picker" />
+      <ColorPickerSpectrum aria-label="Color picker">
+        <ColorPickerSaturationValue aria-label="Saturation and brightness" />
+        <ColorPickerHue aria-label="Hue" />
+      </ColorPickerSpectrum>
       <ColorPickerInput aria-label="Color HEX" />
       <ColorPickerPreset value="#efbf04">
         <button type="button">Amber</button>

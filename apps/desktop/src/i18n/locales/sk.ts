@@ -280,6 +280,8 @@ export const sk = {
     },
     accessibility: {
       colorSpectrum: "Výber farby motívu",
+      colorSaturationValue: "Sýtosť a jas",
+      colorHue: "Odtieň",
       primaryColorHex: "HEX hlavnej farby",
     },
     options: {
