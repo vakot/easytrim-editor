@@ -29,7 +29,11 @@ function AppLayout() {
     <main className="fixed inset-0 grid h-dvh w-screen min-w-80 grid-rows-[2.25rem_minmax(0,1fr)_auto] overflow-hidden bg-background">
       <AppLayoutHeader />
 
-      <ResizablePanelGroup id="workspace" persisted>
+      <ResizablePanelGroup
+        className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
+        id="workspace"
+        persisted
+      >
         <ResizablePanel
           className="ml-1.5 overflow-hidden!"
           collapsedSize={0}
@@ -40,7 +44,7 @@ function AppLayout() {
           maxSize="30rem"
           minSize="25rem"
         >
-          <AppLayoutPanel className="layout-compact:rounded-l-xl layout-compact:border-r-0">
+          <AppLayoutPanel className="min-w-100 layout-compact:rounded-l-xl layout-compact:border-r-0">
             <AppLayoutSidebar />
           </AppLayoutPanel>
         </ResizablePanel>
