@@ -13,6 +13,7 @@ import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { SettingsDialog } from "@/app/components/SettingsDialog";
+import { CommandPalette } from "@/app/components/CommandPalette";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
@@ -22,7 +23,7 @@ import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
 import { ChangelogProvider } from "@/features/changelog";
-import { QueueDeleteSourceProvider } from "@/features/export";
+import { ExportActions, QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
 import { i18n } from "@/i18n/config";
@@ -48,6 +49,7 @@ const menuState = vi.hoisted(() => ({
   },
   export: {
     queue: [] as Array<{ status: "queued" | "rendering" }>,
+    queueDialogOpen: false,
     queueStarted: false,
     queueFinishAction: "nothing" as QueueFinishAction,
     availableQueueFinishActions: ["exit", "nothing"] as QueueFinishAction[],
@@ -104,6 +106,10 @@ function SettingsOpenIndicator() {
 
 vi.mock("@/app/store/redux-hooks", () => ({
   useAppDispatch: () => menuState.dispatch,
+  useAppStore: () => ({
+    getState: () => ({ editingInstances: { ids: [], entities: {} } }),
+    subscribe: () => () => {},
+  }),
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({
       audio: { tracks: [] },
@@ -121,6 +127,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
       trim: { value: null },
       export: {
         queue: menuState.export.queue,
+        exportQueueDialogOpen: menuState.export.queueDialogOpen,
         startedSourceIds: menuState.export.queueStarted
           ? menuState.export.queue.map((_, index) => `instance-${index}`)
           : [],
@@ -206,6 +213,7 @@ describe("MenuBarTest", () => {
       ...(overrides.hasQueuedItems ? [{ status: "queued" as const }] : []),
       ...(overrides.hasActiveItem ? [{ status: "rendering" as const }] : []),
     ];
+    menuState.export.queueDialogOpen = false;
     menuState.export.queueStarted = overrides.queueStarted ?? false;
     menuState.export.queueFinishAction = overrides.queueFinishAction ?? "nothing";
     menuState.export.availableQueueFinishActions = overrides.availableQueueFinishActions ?? [
@@ -231,6 +239,12 @@ describe("MenuBarTest", () => {
       });
 
     menuState.dispatch = vi.fn((action: { payload?: unknown; type: string }) => {
+      if (action.type === "export/exportQueueDialogOpened") {
+        menuState.export.queueDialogOpen = true;
+      }
+      if (action.type === "export/exportQueueDialogClosed") {
+        menuState.export.queueDialogOpen = false;
+      }
       if (
         action.type === "preferences/preferenceChanged" &&
         typeof action.payload === "object" &&
@@ -293,6 +307,8 @@ describe("MenuBarTest", () => {
                       <ApplicationCommandsProvider>
                         <ThemeProvider>
                           <AppMenuBar />
+                          <CommandPalette />
+                          <ExportActions />
                           <SettingsDialog />
                           <SettingsOpenIndicator />
                         </ThemeProvider>
@@ -334,6 +350,26 @@ describe("MenuBarTest", () => {
 
     const labels = [...menuButtons].map((button) => button.textContent);
     expect(labels).toEqual(["File", "View", "Settings", "Help"]);
+  });
+
+  it("opens the Command Palette from View", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+
+    await user.click(getMenuTrigger("View"));
+    await user.click(screen.getByRole("menuitem", { name: /Command Palette/ }));
+
+    expect(await screen.findByRole("combobox", { name: "Search commands" })).toBeVisible();
+  });
+
+  it("opens the Export Queue from View", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+
+    await user.click(getMenuTrigger("View"));
+    await user.click(screen.getByRole("menuitem", { name: /Export Queue/ }));
+
+    expect(await screen.findByRole("dialog", { name: "Export Queue" })).toBeVisible();
   });
 
   it("keeps queue configuration in Settings, separate from queue actions", async () => {
