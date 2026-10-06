@@ -86,13 +86,13 @@ function SettingsDialog() {
 
   return (
     <Dialog onOpenChange={(open) => !open && closeSettings()} open={isSettingsOpen}>
-      <DialogContent className="grid h-[min(42rem,calc(100dvh-1rem))] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-4xl grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:w-[calc(100vw-3rem)]">
-        <DialogHeader className="border-b px-5 py-4">
+      <DialogContent className="grid h-[min(48rem,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-6xl grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0">
+        <DialogHeader className="border-b px-6 py-5">
           <DialogTitle>{t("settings.labels.title")}</DialogTitle>
           <DialogDescription>{t("settings.pages.dialogDescription")}</DialogDescription>
         </DialogHeader>
         <Library
-          className="mx-0 min-h-0 gap-3 px-4 sm:gap-5 sm:px-5"
+          className="mx-0 min-h-0 gap-4 px-5 sm:gap-6 sm:px-6"
           onValueChange={(value) => setSelectedPage(value as SettingsPageId)}
           value={selectedPage}
         >
@@ -115,7 +115,7 @@ function SettingsDialog() {
             </LibraryNavigationGroup>
           </LibraryNavigation>
           <LibrarySeparator />
-          <LibraryContent className="px-1 sm:px-2">
+          <LibraryContent className="px-2 sm:px-3">
             <SettingsPage hidden={selectedPage !== "general"} page="general">
               <GeneralSettings />
             </SettingsPage>
@@ -144,7 +144,9 @@ function SettingsDialog() {
 function SettingsPageItem({ page }: { page: SettingsPageId }) {
   const { t } = useTranslation();
   return (
-    <LibraryNavigationItem value={page}>{getSettingsPageTitle(t, page)}</LibraryNavigationItem>
+    <LibraryNavigationItem className="px-3" value={page}>
+      {getSettingsPageTitle(t, page)}
+    </LibraryNavigationItem>
   );
 }
 
@@ -160,7 +162,7 @@ function SettingsPage({
   const { t } = useTranslation();
   return (
     <LibraryPage hidden={hidden} value={page}>
-      <div className="space-y-1 border-b pb-4">
+      <div className="space-y-1 border-b pb-5">
         <h2 className="text-lg font-semibold">{getSettingsPageTitle(t, page)}</h2>
         <p className="text-sm text-muted-foreground">{getSettingsPageDescription(t, page)}</p>
       </div>
@@ -215,7 +217,7 @@ function SettingRow({
   label: string;
 }) {
   return (
-    <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 space-y-1">
         <div
           className={destructive ? "text-sm font-medium text-destructive" : "text-sm font-medium"}
