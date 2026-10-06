@@ -31,14 +31,17 @@ function SettingsQueue() {
         description={t("settings.pages.queue.autoStartDescription")}
         label={t("settings.labels.autoStartQueue")}
       >
-        <CommandSwitch commandId="preference-auto-start-queue" />
+        <CommandSwitch
+          commandId="preference-auto-start-queue"
+          label={t("settings.labels.autoStartQueue")}
+        />
       </SettingRow>
 
       <SettingRow
         description={t("queue.tooltips.deleteSourceOnRenderFinish")}
         label={t("queue.labels.deleteSource")}
       >
-        <CommandSwitch commandId="delete-source-on-render-finish" />
+        <CommandSwitch commandId="delete-source-on-render-finish" label={t("queue.labels.deleteSource")} />
       </SettingRow>
 
       <SettingRow

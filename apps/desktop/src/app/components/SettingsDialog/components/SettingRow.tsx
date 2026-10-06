@@ -43,12 +43,19 @@ function SettingsSection({
   );
 }
 
-function CommandSwitch({ commandId }: { commandId: Parameters<typeof useApplicationCommand>[0] }) {
+function CommandSwitch({
+  commandId,
+  label,
+}: {
+  commandId: Parameters<typeof useApplicationCommand>[0];
+  label: string;
+}) {
   const command = useApplicationCommand(commandId);
   const { executeCommand } = useApplicationCommands();
 
   return (
     <Switch
+      aria-label={label}
       checked={Boolean(command.checked)}
       disabled={!command.enabled || command.pending}
       onCheckedChange={() => void executeCommand(command.id, "dialog")}
