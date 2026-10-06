@@ -13,7 +13,7 @@ export const PRIMARY_COLOR_PRESETS = [
   { id: "emerald", color: "#32a876" },
 ] as const satisfies readonly { color: HexColor; id: string }[];
 
-export const DEFAULT_PRIMARY_COLOR: PrimaryColor = "#efbf04";
+export const DEFAULT_PRIMARY_COLOR: PrimaryColor = PRIMARY_COLOR_PRESETS[0].color;
 
 export type PrimaryColor = HexColor;
 
