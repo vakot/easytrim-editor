@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { Input } from "@/components/ui/input";
+import { Slot } from "@/components/ui/slot";
 
 import { cn } from "@/lib/class-names.utils";
 import type { HexColor, HsvColor } from "@/lib/color.types";
@@ -31,7 +32,6 @@ function ColorSample({
   ...props
 }: React.ComponentProps<"span"> & {
   color: string;
-  selected?: boolean;
 }) {
   return (
     <span
@@ -72,15 +72,18 @@ function ColorPicker({
     onPreview?.(color);
   }
 
+  function commitColor(color: HexColor) {
+    setState(createColorPickerState(color));
+    onCommit?.(color);
+  }
+
   function commit(nextHsv: HsvColor) {
     const color = hsvToHex(nextHsv.hue, nextHsv.saturation, nextHsv.value);
+    commitColor(color);
+  }
 
-    setState({
-      hsv: nextHsv,
-      hexDraft: color.slice(1),
-    });
-
-    onCommit?.(color);
+  function selectPreset(color: HexColor) {
+    commitColor(color);
   }
 
   function cancel(previousHsv: HsvColor) {
@@ -107,12 +110,7 @@ function ColorPicker({
       return;
     }
 
-    setState({
-      hsv: hexToHsv(color),
-      hexDraft,
-    });
-
-    onCommit?.(color);
+    commitColor(color);
   }
 
   return (
@@ -124,6 +122,7 @@ function ColorPicker({
         hexDraft: state.hexDraft,
         hsv: state.hsv,
         preview,
+        selectPreset,
       }}
     >
       {children}
@@ -131,16 +130,26 @@ function ColorPicker({
   );
 }
 
-function ColorPickerSpectrum({ className, ...props }: React.ComponentProps<"div">) {
+function ColorPickerSpectrum({
+  "aria-label": ariaLabel,
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
   return (
-    <div className={cn("space-y-3", className)} data-slot="color-spectrum" {...props}>
-      <ColorPickerSaturation />
-      <ColorPickerHue />
+    <div
+      aria-label={ariaLabel}
+      className={cn("space-y-3", className)}
+      data-slot="color-spectrum"
+      role="group"
+      {...props}
+    >
+      <ColorPickerSaturation aria-label={ariaLabel} />
+      <ColorPickerHue aria-label={ariaLabel} />
     </div>
   );
 }
 
-function ColorPickerSaturation() {
+function ColorPickerSaturation({ "aria-label": ariaLabel }: { "aria-label"?: string }) {
   const { cancel, commit, hsv, preview } = useColorPicker();
 
   const pointer = usePointerScrub({
@@ -199,6 +208,9 @@ function ColorPickerSaturation() {
 
   return (
     <button
+      aria-label={
+        ariaLabel ? `${ariaLabel} saturation and brightness` : "Saturation and brightness"
+      }
       className="relative isolate block h-48 w-full cursor-crosshair touch-none rounded-lg ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring"
       data-slot="color-spectrum-field"
       onKeyDown={handleKeyDown}
@@ -226,7 +238,7 @@ function ColorPickerSaturation() {
   );
 }
 
-function ColorPickerHue() {
+function ColorPickerHue({ "aria-label": ariaLabel }: { "aria-label"?: string }) {
   const { cancel, commit, hsv, preview } = useColorPicker();
 
   const pointer = usePointerScrub({
@@ -281,6 +293,7 @@ function ColorPickerHue() {
 
   return (
     <button
+      aria-label={ariaLabel ? `${ariaLabel} hue` : "Hue"}
       aria-orientation="horizontal"
       aria-valuemax={360}
       aria-valuemin={0}
@@ -344,6 +357,12 @@ function ColorPickerInput({
       />
     </div>
   );
+}
+
+function ColorPickerPreset({ children, value }: { children: React.ReactElement; value: HexColor }) {
+  const { selectPreset } = useColorPicker();
+
+  return <Slot onClick={() => selectPreset(value)}>{children}</Slot>;
 }
 
 interface PointerScrubOptions<T> {
@@ -484,6 +503,7 @@ interface ColorPickerContextValue {
   hexDraft: string;
   hsv: HsvColor;
   preview: (value: HsvColor) => void;
+  selectPreset: (color: HexColor) => void;
 }
 
 const ColorPickerContext = React.createContext<ColorPickerContextValue | null>(null);
@@ -492,10 +512,10 @@ function useColorPicker() {
   const context = React.useContext(ColorPickerContext);
 
   if (!context) {
-    throw new Error("ColorPickerInput and ColorPickerSpectrum must be used within ColorPicker");
+    throw new Error("ColorPicker controls must be used within ColorPicker");
   }
 
   return context;
 }
 
-export { ColorPicker, ColorPickerInput, ColorPickerSpectrum, ColorSample };
+export { ColorPicker, ColorPickerInput, ColorPickerPreset, ColorPickerSpectrum, ColorSample };

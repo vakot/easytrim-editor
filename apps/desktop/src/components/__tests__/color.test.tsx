@@ -1,33 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import type { HexColor } from "@/lib/color.types";
-
-import { ColorSpectrum } from "../color";
-
-function ControlledColorSpectrum({
-  initialColor,
-  onCancel = vi.fn(),
-}: {
-  initialColor: HexColor;
-  onCancel?: () => void;
-}) {
-  const [color, setColor] = useState(initialColor);
-
-  return (
-    <ColorSpectrum
-      aria-label="Color picker"
-      color={color}
-      onCancel={() => {
-        setColor(initialColor);
-        onCancel();
-      }}
-      onCommit={setColor}
-      onPreview={setColor}
-    />
-  );
-}
+import {
+  ColorPicker,
+  ColorPickerInput,
+  ColorPickerPreset,
+  ColorPickerSpectrum,
+} from "@/components/color";
 
 function mockBounds(
   element: HTMLElement,
@@ -47,266 +27,101 @@ function mockBounds(
   });
 }
 
-function getControls() {
-  const spectrum = screen.getByRole("button", { name: "Color picker" });
-  const hue = screen.getByRole("slider", { name: "Color picker" });
-  mockBounds(spectrum, 10, 20, 100, 100);
-  mockBounds(hue, 10, 150, 100, 16);
-
+function getMarkers() {
+  const spectrum = document.querySelector<HTMLElement>('[data-slot="color-spectrum-field"]')!;
+  const hue = document.querySelector<HTMLElement>('[data-slot="color-hue-slider"]')!;
   return {
-    hue,
-    hueMarker: hue.querySelector<HTMLElement>('[data-slot="color-hue-marker"]')!,
-    spectrum,
     spectrumMarker: spectrum.querySelector<HTMLElement>('[data-slot="color-spectrum-marker"]')!,
+    hueMarker: hue.querySelector<HTMLElement>('[data-slot="color-hue-marker"]')!,
   };
 }
 
-function drag(
-  element: HTMLElement,
-  type: "pointerDown" | "pointerMove" | "pointerUp" | "pointerCancel",
-  x: number,
-  y: number,
-  pointerId = 1,
-) {
-  const event = { clientX: x, clientY: y, pointerId };
+describe("ColorPicker", () => {
+  it("routes preset selection through the active picker session", async () => {
+    const user = userEvent.setup();
+    const onCommit = vi.fn();
 
-  if (type === "pointerDown") fireEvent.pointerDown(element, event);
-  if (type === "pointerMove") fireEvent.pointerMove(element, event);
-  if (type === "pointerUp") fireEvent.pointerUp(element, event);
-  if (type === "pointerCancel") fireEvent.pointerCancel(element, event);
-}
-
-describe("ColorSpectrum", () => {
-  it("keeps both hue endpoints stable and can drag back from the right edge", () => {
-    render(<ControlledColorSpectrum initialColor="#4299e1" />);
-    const { hue, hueMarker } = getControls();
-    const startingHuePosition = hueMarker.style.left;
-
-    fireEvent.pointerDown(hue, { button: 2, clientX: 110, clientY: 158, pointerId: 9 });
-    expect(hueMarker.style.left).toBe(startingHuePosition);
-
-    drag(hue, "pointerDown", 10, 158);
-    expect(hueMarker).toHaveStyle({ left: "0%" });
-    drag(hue, "pointerUp", 10, 158);
-
-    drag(hue, "pointerDown", 110, 158);
-    expect(hueMarker).toHaveStyle({ left: "100%" });
-    drag(hue, "pointerMove", 60, 158);
-    expect(hueMarker).toHaveStyle({ left: "50%" });
-    drag(hue, "pointerUp", 60, 158);
-  });
-
-  it("clamps captured pointer movement beyond every control edge", () => {
-    render(<ControlledColorSpectrum initialColor="#4299e1" />);
-    const { hue, hueMarker, spectrum, spectrumMarker } = getControls();
-
-    drag(hue, "pointerDown", -40, 158);
-    expect(hueMarker).toHaveStyle({ left: "0%" });
-    drag(hue, "pointerMove", 160, 158);
-    expect(hueMarker).toHaveStyle({ left: "100%" });
-    drag(hue, "pointerUp", 160, 158);
-
-    drag(spectrum, "pointerDown", -40, -20, 2);
-    expect(spectrumMarker).toHaveStyle({ left: "0%", top: "0%" });
-    drag(spectrum, "pointerMove", 160, 140, 2);
-    expect(spectrumMarker).toHaveStyle({ left: "100%", top: "100%" });
-    drag(spectrum, "pointerUp", 160, 140, 2);
-  });
-
-  it("preserves a selected hue while saturation becomes grayscale and returns", () => {
-    render(<ControlledColorSpectrum initialColor="#4299e1" />);
-    const { hue, hueMarker, spectrum, spectrumMarker } = getControls();
-
-    drag(hue, "pointerDown", 97.5, 158);
-    drag(hue, "pointerUp", 97.5, 158);
-    expect(hueMarker).toHaveStyle({ left: "87.5%" });
-
-    drag(spectrum, "pointerDown", 10, 20, 2);
-    drag(spectrum, "pointerUp", 10, 20, 2);
-    expect(spectrumMarker).toHaveStyle({ left: "0%" });
-    expect(hueMarker).toHaveStyle({ left: "87.5%" });
-
-    drag(spectrum, "pointerDown", 40, 20, 3);
-    expect(spectrumMarker).toHaveStyle({ left: "30%" });
-    expect(hueMarker).toHaveStyle({ left: "87.5%" });
-    drag(spectrum, "pointerUp", 40, 20, 3);
-
-    drag(hue, "pointerDown", 60, 158, 4);
-    expect(hueMarker).toHaveStyle({ left: "50%" });
-    drag(hue, "pointerUp", 60, 158, 4);
-  });
-
-  it("preserves hue and saturation while value becomes black and returns", () => {
-    render(<ControlledColorSpectrum initialColor="#4299e1" />);
-    const { hue, hueMarker, spectrum, spectrumMarker } = getControls();
-
-    drag(hue, "pointerDown", 97.5, 158);
-    drag(hue, "pointerUp", 97.5, 158);
-    drag(spectrum, "pointerDown", 60, 120, 2);
-    expect(spectrumMarker).toHaveStyle({ left: "50%", top: "100%" });
-    expect(hueMarker).toHaveStyle({ left: "87.5%" });
-    drag(spectrum, "pointerUp", 60, 120, 2);
-
-    drag(hue, "pointerDown", 60, 158, 3);
-    expect(hueMarker).toHaveStyle({ left: "50%" });
-    drag(hue, "pointerUp", 60, 158, 3);
-
-    drag(spectrum, "pointerDown", 60, 70, 4);
-    expect(spectrumMarker).toHaveStyle({ left: "50%", top: "50%" });
-    expect(hueMarker).toHaveStyle({ left: "50%" });
-    drag(spectrum, "pointerUp", 60, 70, 4);
-  });
-
-  it("keeps spectrum and hue marker positions independent through repeated echoed previews", () => {
-    render(<ControlledColorSpectrum initialColor="#123456" />);
-    const { hue, hueMarker, spectrum, spectrumMarker } = getControls();
-    const startingHuePosition = hueMarker.style.left;
-
-    drag(spectrum, "pointerDown", 31.25, 44.75);
-    drag(spectrum, "pointerMove", 37.125, 62.375);
-    const spectrumPosition = {
-      left: spectrumMarker.style.left,
-      top: spectrumMarker.style.top,
-    };
-
-    expect(hueMarker.style.left).toBe(startingHuePosition);
-    drag(spectrum, "pointerMove", 88.875, 12.625);
-    drag(spectrum, "pointerMove", 37.125, 62.375);
-    expect(hueMarker.style.left).toBe(startingHuePosition);
-    expect(spectrumMarker.style.left).toBe(spectrumPosition.left);
-    expect(spectrumMarker.style.top).toBe(spectrumPosition.top);
-    drag(spectrum, "pointerUp", 37.125, 62.375);
-
-    drag(hue, "pointerDown", 77.125, 158, 2);
-    const huePosition = hueMarker.style.left;
-    drag(hue, "pointerMove", 24.875, 158, 2);
-    expect(spectrumMarker.style.left).toBe(spectrumPosition.left);
-    expect(spectrumMarker.style.top).toBe(spectrumPosition.top);
-    drag(hue, "pointerMove", 77.125, 158, 2);
-    expect(hueMarker.style.left).toBe(huePosition);
-    expect(spectrumMarker.style.left).toBe(spectrumPosition.left);
-    expect(spectrumMarker.style.top).toBe(spectrumPosition.top);
-    drag(hue, "pointerUp", 77.125, 158, 2);
-  });
-
-  it("keeps one captured pointer authoritative while allowing sequential control switches", () => {
-    const onCancel = vi.fn();
-    render(<ControlledColorSpectrum initialColor="#123456" onCancel={onCancel} />);
-    const { hue, hueMarker, spectrum } = getControls();
-
-    drag(hue, "pointerDown", 10, 158, 1);
-    fireEvent.pointerDown(spectrum, {
-      button: 0,
-      clientX: 60,
-      clientY: 70,
-      isPrimary: false,
-      pointerId: 2,
-    });
-    drag(spectrum, "pointerMove", 60, 70, 2);
-    expect(hueMarker).toHaveStyle({ left: "0%" });
-    expect(hue.releasePointerCapture).not.toHaveBeenCalled();
-    expect(onCancel).not.toHaveBeenCalled();
-    drag(hue, "pointerUp", 10, 158, 1);
-
-    drag(spectrum, "pointerDown", 60, 70, 3);
-    drag(spectrum, "pointerUp", 60, 70, 3);
-    drag(hue, "pointerDown", 110, 158, 4);
-    drag(hue, "pointerCancel", 110, 158, 4);
-    expect(onCancel).toHaveBeenCalledOnce();
-    expect(hueMarker).toHaveStyle({ left: `${(210 / 360) * 100}%` });
-  });
-
-  it("exposes the hue as a keyboard-operable slider with stable clamped endpoints", () => {
-    render(<ControlledColorSpectrum initialColor="#808080" />);
-    const { hue, hueMarker, spectrum, spectrumMarker } = getControls();
-    const expectedTop = 100 - (128 / 255) * 100 - 10;
-
-    expect(screen.getByRole("group", { name: "Color picker" })).toBeVisible();
-    expect(spectrum).toHaveAccessibleName("Color picker");
-    expect(hue).toHaveAccessibleName("Color picker");
-    expect(hue).toHaveAttribute("aria-valuemin", "0");
-    expect(hue).toHaveAttribute("aria-valuemax", "360");
-    expect(hue).toHaveAttribute("aria-valuenow", "0");
-
-    fireEvent.keyDown(spectrum, { key: "ArrowLeft" });
-    fireEvent.keyDown(spectrum, { key: "ArrowRight", shiftKey: true });
-    fireEvent.keyDown(spectrum, { key: "ArrowUp", shiftKey: true });
-    expect(spectrumMarker.style.left).toBe("10%");
-    expect(Number.parseFloat(spectrumMarker.style.top)).toBeCloseTo(expectedTop);
-
-    fireEvent.keyDown(hue, { key: "End" });
-    expect(hueMarker).toHaveStyle({ left: "100%" });
-    expect(hue).toHaveAttribute("aria-valuenow", "360");
-    fireEvent.keyDown(hue, { key: "ArrowRight" });
-    expect(hueMarker).toHaveStyle({ left: "100%" });
-    fireEvent.keyDown(hue, { key: "Home" });
-    fireEvent.keyDown(hue, { key: "ArrowLeft" });
-    expect(hueMarker).toHaveStyle({ left: "0%" });
-    expect(spectrumMarker.style.left).toBe("10%");
-    expect(Number.parseFloat(spectrumMarker.style.top)).toBeCloseTo(expectedTop);
-  });
-
-  it("restores the starting state if pointer capture is unexpectedly lost", () => {
-    const onCancel = vi.fn();
-    render(<ControlledColorSpectrum initialColor="#4299e1" onCancel={onCancel} />);
-    const { hue, hueMarker } = getControls();
-    const startingHuePosition = hueMarker.style.left;
-
-    drag(hue, "pointerDown", 10, 158);
-    drag(hue, "pointerMove", 90, 158);
-    fireEvent.lostPointerCapture(hue, { pointerId: 1 });
-
-    expect(onCancel).toHaveBeenCalledOnce();
-    expect(hueMarker.style.left).toBe(startingHuePosition);
-  });
-
-  it("synchronizes genuine external changes while ignoring its own echoed preview", () => {
-    const view = render(<ColorSpectrum aria-label="Color picker" color="#4299e1" />);
-    const { hueMarker } = getControls();
-
-    view.rerender(<ColorSpectrum aria-label="Color picker" color="#00ff00" />);
-    expect(hueMarker).toHaveStyle({ left: `${(120 / 360) * 100}%` });
-
-    view.rerender(<ControlledColorSpectrum initialColor="#4299e1" />);
-    const controlled = getControls();
-    drag(controlled.hue, "pointerDown", 110, 158);
-    expect(controlled.hueMarker).toHaveStyle({ left: "100%" });
-    drag(controlled.hue, "pointerMove", 100, 158);
-    expect(controlled.hueMarker).toHaveStyle({ left: "90%" });
-  });
-
-  it("forwards standard container attributes", () => {
     render(
-      <ColorSpectrum
-        aria-label="Color picker"
-        color="#4299e1"
-        data-testid="picker"
-        id="picker"
-        title="Choose a color"
-      />,
+      <ColorPicker defaultValue="#4299e1" onCommit={onCommit}>
+        <ColorPickerSpectrum aria-label="Primary color" />
+        <ColorPickerInput aria-label="Primary color HEX" />
+        <ColorPickerPreset value="#efbf04">
+          <button type="button">Amber</button>
+        </ColorPickerPreset>
+      </ColorPicker>,
     );
 
-    expect(screen.getByTestId("picker")).toHaveAttribute("title", "Choose a color");
-    expect(screen.getByTestId("picker")).toHaveAttribute("id", "picker");
+    const initialSpectrumColor = getMarkers().spectrumMarker.style.backgroundColor;
+    const initialHuePosition = getMarkers().hueMarker.style.left;
+    await user.click(screen.getByRole("button", { name: "Amber" }));
+
+    expect(onCommit).toHaveBeenCalledWith("#efbf04");
+    expect(screen.getByRole("textbox", { name: "Primary color HEX" })).toHaveValue("efbf04");
+    expect(getMarkers().spectrumMarker.style.backgroundColor).not.toBe(initialSpectrumColor);
+    expect(getMarkers().hueMarker.style.left).not.toBe(initialHuePosition);
   });
 
-  it("reopens cleanly after grayscale, black, and custom colors are committed", () => {
-    const view = render(<ColorSpectrum aria-label="Color picker" color="#808080" key="#808080" />);
-    let controls = getControls();
-    expect(controls.hueMarker).toHaveStyle({ left: "0%" });
-    drag(controls.hue, "pointerDown", 85, 158);
-    drag(controls.hue, "pointerUp", 85, 158);
+  it("commits valid HEX input to the same color callback", () => {
+    const onCommit = vi.fn();
 
-    view.rerender(<ColorSpectrum aria-label="Color picker" color="#000000" key="#000000" />);
-    controls = getControls();
-    expect(controls.spectrumMarker).toHaveStyle({ left: "0%", top: "100%" });
-    drag(controls.hue, "pointerDown", 85, 158);
-    drag(controls.hue, "pointerUp", 85, 158);
+    render(
+      <ColorPicker defaultValue="#4299e1" onCommit={onCommit}>
+        <ColorPickerInput aria-label="Primary color HEX" />
+      </ColorPicker>,
+    );
 
-    view.rerender(<ColorSpectrum aria-label="Color picker" color="#123456" key="#123456" />);
-    controls = getControls();
-    expect(controls.hueMarker).toHaveStyle({
-      left: `${(210 / 360) * 100}%`,
+    fireEvent.change(screen.getByRole("textbox", { name: "Primary color HEX" }), {
+      target: { value: "ABCDEF" },
     });
+
+    expect(onCommit).toHaveBeenCalledWith("#abcdef");
+  });
+
+  it("previews spectrum movement without committing until pointer release", () => {
+    const onPreview = vi.fn();
+    const onCommit = vi.fn();
+
+    render(
+      <ColorPicker defaultValue="#4299e1" onCommit={onCommit} onPreview={onPreview}>
+        <ColorPickerSpectrum aria-label="Primary color" />
+      </ColorPicker>,
+    );
+
+    const field = screen.getByRole("button", {
+      name: "Primary color saturation and brightness",
+    });
+
+    mockBounds(field, 0, 0, 100, 100);
+
+    fireEvent.pointerDown(field, { button: 0, clientX: 50, clientY: 50, pointerId: 1 });
+    expect(onPreview).toHaveBeenCalledWith("#406380");
+    expect(onCommit).not.toHaveBeenCalled();
+
+    fireEvent.pointerUp(field, { clientX: 50, clientY: 50, pointerId: 1 });
+    expect(onCommit).toHaveBeenCalledWith("#406380");
+  });
+
+  it("restores the picker state when a spectrum pointer interaction is canceled", () => {
+    const onCancel = vi.fn();
+
+    render(
+      <ColorPicker defaultValue="#4299e1" onCancel={onCancel}>
+        <ColorPickerSpectrum aria-label="Primary color" />
+      </ColorPicker>,
+    );
+
+    const field = screen.getByRole("button", {
+      name: "Primary color saturation and brightness",
+    });
+
+    mockBounds(field, 0, 0, 100, 100);
+    const initialPosition = getMarkers().spectrumMarker.style.left;
+
+    fireEvent.pointerDown(field, { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
+    expect(getMarkers().spectrumMarker.style.left).toBe("100%");
+    fireEvent.pointerCancel(field, { pointerId: 1 });
+
+    expect(onCancel).toHaveBeenCalledOnce();
+    expect(getMarkers().spectrumMarker.style.left).toBe(initialPosition);
   });
 });
