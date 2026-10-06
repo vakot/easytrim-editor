@@ -25,7 +25,7 @@ function useResetViewSettingsCommand() {
       primaryColor !== DEFAULT_PREFERENCES.primaryColor ||
       customPrimaryColor !== DEFAULT_PREFERENCES.customPrimaryColor,
     icon: <RotateCcw aria-hidden="true" />,
-    surfaces: ["menu"] as const,
+    surfaces: ["dialog", "menu"] as const,
     run() {
       dispatch(viewSettingsReset());
     },

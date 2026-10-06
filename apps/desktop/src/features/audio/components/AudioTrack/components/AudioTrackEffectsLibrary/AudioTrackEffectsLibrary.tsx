@@ -1,13 +1,18 @@
 import { Check } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
+import {
+  Library,
+  LibraryContent,
+  LibraryNavigation,
+  LibraryNavigationGroup,
+  LibraryNavigationItem,
+  LibraryNavigationItemIndicator,
+  LibraryPage,
+  LibrarySeparator,
+} from "@/components/library";
 import { AUDIO_PROCESSING_STAGES, type AudioProcessingStage } from "@/domain/audio-processing";
-import { cn } from "@/lib/class-names.utils";
 
 import {
   type AudioTrackEffectsDraft,
@@ -44,57 +49,31 @@ function AudioTrackEffectsLibrary({
   };
 
   return (
-    <Tabs
-      className="-mx-4 flex min-h-0 min-w-0 flex-1 gap-4"
-      onValueChange={setSelectedEffect}
-      orientation="vertical"
-      value={selectedEffect}
-    >
-      <ScrollArea className="-mx-2 h-full min-h-0 min-w-0 pl-4">
-        <TabsList
-          aria-label={t("audio.actions.effects")}
-          className="bg-transparent px-0 pt-2.5 pb-4"
-        >
-          {stageGroups.map(({ effects: stageEffects, stage }) => (
-            <div
-              className="flex w-full flex-col"
-              data-slot="audio-track-effects-stage"
-              data-stage={stage}
-              key={stage}
+    <Library onValueChange={setSelectedEffect} value={selectedEffect}>
+      <LibraryNavigation aria-label={t("audio.actions.effects")}>
+        {stageGroups.map(({ effects: stageEffects, stage }) => (
+          <div data-slot="audio-track-effects-stage" data-stage={stage} key={stage}>
+            <LibraryNavigationGroup
+              label={<span data-slot="audio-track-effects-stage-label">{stageLabels[stage]}</span>}
             >
-              <div
-                aria-hidden="true"
-                className="px-2.5 py-1.5 text-xs font-medium text-muted-foreground"
-                data-slot="audio-track-effects-stage-label"
-              >
-                {stageLabels[stage]}
-              </div>
               {stageEffects.map((effect) => (
                 <AudioTrackEffectTab draft={draft} effect={effect} key={effect.id} />
               ))}
-            </div>
-          ))}
-        </TabsList>
-      </ScrollArea>
+            </LibraryNavigationGroup>
+          </div>
+        ))}
+      </LibraryNavigation>
 
-      <Separator orientation="vertical" />
+      <LibrarySeparator />
 
-      <ScrollArea className="h-full min-h-0 min-w-0 flex-1">
-        <div className="py-4 pr-4">
-          {effects.map(({ id, Page }) => (
-            <TabsContent
-              className="data-[state=inactive]:hidden"
-              forceMount
-              hidden={selectedEffect !== id}
-              key={id}
-              value={id}
-            >
-              <Page streamIndex={streamIndex} />
-            </TabsContent>
-          ))}
-        </div>
-      </ScrollArea>
-    </Tabs>
+      <LibraryContent>
+        {effects.map(({ id, Page }) => (
+          <LibraryPage forceMount hidden={selectedEffect !== id} key={id} value={id}>
+            <Page streamIndex={streamIndex} />
+          </LibraryPage>
+        ))}
+      </LibraryContent>
+    </Library>
   );
 }
 
@@ -113,27 +92,19 @@ function AudioTrackEffectTab({
     draft.effectStatus[effect.id]?.dirty;
 
   return (
-    <TabsTrigger className="relative h-7 min-w-0 flex-none px-8" value={effect.id}>
-      <EffectTabIndicator side="left">{enabled ? <Check /> : null}</EffectTabIndicator>
-      <span className="min-w-0 truncate text-left">{effect.label(t)}</span>
-      <EffectTabIndicator side="right">
-        {dirty ? <span className="size-1.5 rounded-full bg-current" /> : null}
-      </EffectTabIndicator>
-    </TabsTrigger>
-  );
-}
-
-function EffectTabIndicator({ children, side }: { children?: ReactNode; side: "left" | "right" }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "pointer-events-none absolute top-1/2 flex size-4 -translate-y-1/2 items-center justify-center text-muted-foreground",
-        side === "left" ? "left-2" : "right-2",
-      )}
-    >
-      {children}
-    </span>
+    <LibraryNavigationItem className="px-8" value={effect.id}>
+      {enabled ? (
+        <LibraryNavigationItemIndicator>
+          <Check />
+        </LibraryNavigationItemIndicator>
+      ) : null}
+      {effect.label(t)}
+      {dirty ? (
+        <LibraryNavigationItemIndicator side="right">
+          <span className="size-1.5 rounded-full bg-current" />
+        </LibraryNavigationItemIndicator>
+      ) : null}
+    </LibraryNavigationItem>
   );
 }
 

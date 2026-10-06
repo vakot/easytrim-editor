@@ -41,7 +41,7 @@ describe("SourceCardThumbnail", () => {
       </Provider>,
     );
 
-    const image = screen.getByRole("img", { name: "clip.mp4 thumbnail" });
+    const image = screen.getByRole("img", { name: "Thumbnail for clip.mp4" });
     expect(image).toHaveAttribute("decoding", "async");
     expect(image).toHaveAttribute("loading", "lazy");
     expect(image).toHaveAttribute("fetchpriority", "low");

@@ -20,6 +20,7 @@ const CANONICAL_NAMESPACES = [
 ];
 
 const CATEGORY_ORDER = [
+  "pages",
   "actions",
   "labels",
   "status",

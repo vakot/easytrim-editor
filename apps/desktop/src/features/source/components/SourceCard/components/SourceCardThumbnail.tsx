@@ -42,8 +42,8 @@ function SourceCardThumbnail({
       {thumbnailUrl ? (
         <>
           <img
-            alt={`${displayName} thumbnail`}
-            aria-label={`${displayName} thumbnail`}
+            alt={t("source.accessibility.thumbnail", { name: displayName })}
+            aria-label={t("source.accessibility.thumbnail", { name: displayName })}
             className="size-full object-cover transition-transform"
             decoding="async"
             fetchPriority="low"

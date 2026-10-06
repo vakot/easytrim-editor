@@ -9,6 +9,7 @@ export const ru = {
       delete: "Удалить",
       edit: "Изменить",
       enable: "Включить",
+      reset: "Сбросить",
       retry: "Повторить",
       save: "Сохранить",
     },
@@ -21,7 +22,6 @@ export const ru = {
       searchSuggestions: "Предложения",
     },
     status: {
-      disabled: "Отключено",
       enabled: "Включено",
       error: "Ошибка",
       loading: "Загрузка…",
@@ -221,24 +221,66 @@ export const ru = {
     },
   },
   settings: {
+    pages: {
+      navigationLabel: "Разделы настроек",
+      general: {
+        title: "Общие",
+        description: "Выберите, как EasyTrim отображает интерфейс.",
+        languageDescription: "Выберите язык интерфейса EasyTrim Editor.",
+      },
+      appearance: {
+        title: "Внешний вид",
+        description: "Настройте масштаб интерфейса, тему и основной цвет.",
+        scalingDescription: "Измените размер элементов управления и текста в приложении.",
+        colorDescription: "Выберите готовый или пользовательский основной цвет.",
+        resetLabel: "Сбросить внешний вид",
+      },
+      defaults: {
+        title: "По умолчанию",
+        description: "Выберите настройки для новых сеансов редактирования.",
+        loopDescription: "Включать повтор воспроизведения для новых сеансов.",
+        followSegmentDescription: "По умолчанию ограничивать воспроизведение выбранным сегментом.",
+        mergeAudioDescription: "Объединять включённые аудиодорожки в новых экспортах.",
+        resetLabel: "Сбросить настройки",
+      },
+      layout: {
+        title: "Макет",
+        description: "Настройте видимость панелей и плотность рабочей области.",
+        resetLabel: "Сбросить макет",
+      },
+      queue: {
+        title: "Очередь",
+        description: "Настройте запуск и завершение очереди экспорта.",
+        autoStartDescription: "Начинать обработку сразу после добавления экспортов в очередь.",
+        onFinishedDescription: "Выберите действие после завершения всех экспортов в очереди.",
+        resetLabel: "Сбросить настройки очереди",
+      },
+      about: {
+        title: "О программе",
+        description: "Версия приложения, обновления и ресурсы проекта.",
+        moreSection: "Дополнительно",
+        supportSection: "Поддержка",
+        versionDescription: "Открыть заметки к выпуску этой версии.",
+        updatesLabel: "Обновления",
+        updatesDescription: "Проверить наличие обновлений или установить доступное обновление.",
+      },
+    },
     labels: {
       activityFeedView: "Вид ленты активности",
       autoStartQueue: "Автозапуск очереди",
       color: "Цвет",
+      editor: "Редактор",
       followSegment: "Следовать за сегментом",
       language: "Язык",
       loop: "Повтор",
       mergeAudio: "Объединять аудио",
+      panels: "Панели",
+      primaryAccent: "Основной цвет",
       theme: "Тема",
       title: "Настройки",
     },
-    tooltips: {
-      disabledByDefault: "По умолчанию отключено",
-      enabledByDefault: "По умолчанию включено",
-    },
     accessibility: {
-      colorSpectrum:
-        "Цветовой спектр темы. Используйте стрелки влево и вправо для изменения оттенка.",
+      colorSpectrum: "Выбор цвета темы",
       customColorHex: "Пользовательский HEX-код",
     },
     options: {
@@ -415,6 +457,8 @@ export const ru = {
     },
     accessibility: {
       metadata: "Метаданные видео",
+      searchShortcut: "Сочетание клавиш для поиска источников: {{shortcut}}",
+      thumbnail: "Миниатюра файла {{name}}",
     },
   },
   preview: {
@@ -723,6 +767,7 @@ export const ru = {
       whatsNewTitle: "Что нового",
     },
     messages: {
+      buyMeCoffee: "Угостите меня кофе",
       emptyChangelog: "Выпущенных изменений пока нет.",
       emptyChangelogDescription:
         "Выпущенные обновления появятся здесь, когда войдут в установленную версию.",

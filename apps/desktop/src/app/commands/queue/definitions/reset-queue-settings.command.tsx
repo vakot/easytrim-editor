@@ -27,7 +27,7 @@ function useResetQueueSettingsCommand() {
       queueFinishAction !== defaultQueueFinishAction ||
       deleteSourceOnFinish !== DEFAULT_PREFERENCES.deleteSourceOnRenderFinish,
     icon: <RotateCcw aria-hidden="true" />,
-    surfaces: ["menu"] as const,
+    surfaces: ["dialog", "menu"] as const,
     run() {
       dispatch(queueSettingsReset());
     },

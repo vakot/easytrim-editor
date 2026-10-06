@@ -26,7 +26,7 @@ function useResetLayoutCommand() {
   return {
     enabled: hasLayoutPreferencesToReset || (panels.isAvailable && !panels.isReset),
     icon: <RotateCcw aria-hidden="true" />,
-    surfaces: ["menu"] as const,
+    surfaces: ["dialog", "menu"] as const,
     run() {
       dispatch(layoutReset());
       panels.reset();

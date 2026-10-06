@@ -3,15 +3,16 @@ import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  LibraryDialog,
+  LibraryDialogClose,
+  LibraryDialogContent,
+  LibraryDialogDescription,
+  LibraryDialogFooter,
+  LibraryDialogHeader,
+  LibraryDialogTitle,
+} from "@/components/library";
 
 import type { AudioTrackController } from "../../../../hooks/useAudioTrackController";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
@@ -48,11 +49,11 @@ function AudioTrackEffectsDialog({ children, controller }: AudioTrackEffectsDial
     <AudioTrackEffectsDialogContext.Provider value={{ openEffects }}>
       {children}
 
-      <Dialog onOpenChange={setOpen} open={open}>
+      <LibraryDialog onOpenChange={setOpen} open={open}>
         <AudioTrackEffectsDraftProvider initialProcessing={track.processing} key={draftSession}>
           <AudioTrackEffectsDialogContent controller={controller} />
         </AudioTrackEffectsDraftProvider>
-      </Dialog>
+      </LibraryDialog>
     </AudioTrackEffectsDialogContext.Provider>
   );
 }
@@ -74,11 +75,13 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
   const isValid = isAudioTrackEffectsDraftValid(draft, AUDIO_TRACK_EFFECTS);
 
   return (
-    <DialogContent className="max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden sm:max-w-3xl">
-      <DialogHeader className="-mx-4 border-b px-4 pb-4">
-        <DialogTitle>{t("audio.dialogs.effects.title", { title })}</DialogTitle>
-        <DialogDescription>{t("audio.dialogs.effects.description")}</DialogDescription>
-      </DialogHeader>
+    <LibraryDialogContent>
+      <LibraryDialogHeader className="-mx-4 border-b px-4 pb-4">
+        <LibraryDialogTitle>{t("audio.dialogs.effects.title", { title })}</LibraryDialogTitle>
+        <LibraryDialogDescription>
+          {t("audio.dialogs.effects.description")}
+        </LibraryDialogDescription>
+      </LibraryDialogHeader>
 
       <AudioTrackEffectsLibrary streamIndex={track.streamIndex} />
 
@@ -96,17 +99,17 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
         </div>
       ) : null}
 
-      <DialogFooter className="min-w-0 items-center sm:justify-between">
+      <LibraryDialogFooter className="min-w-0 items-center sm:justify-between">
         <p className="min-w-0 flex-1 text-xs text-muted-foreground">
           {t("audio.dialogs.effects.applyNotice")}
         </p>
         <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
-          <DialogClose asChild>
+          <LibraryDialogClose asChild>
             <Button type="button" variant="outline">
               {t("common.actions.cancel")}
             </Button>
-          </DialogClose>
-          <DialogClose asChild>
+          </LibraryDialogClose>
+          <LibraryDialogClose asChild>
             <Button
               disabled={!isDirty || !isValid}
               onClick={() => controller.applyProcessing(draftProcessing)}
@@ -114,10 +117,10 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
             >
               {t("common.actions.apply")}
             </Button>
-          </DialogClose>
+          </LibraryDialogClose>
         </div>
-      </DialogFooter>
-    </DialogContent>
+      </LibraryDialogFooter>
+    </LibraryDialogContent>
   );
 }
 

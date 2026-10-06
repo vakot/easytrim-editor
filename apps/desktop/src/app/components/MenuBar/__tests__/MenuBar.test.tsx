@@ -12,9 +12,12 @@ import { describe, expect, it, vi } from "vitest";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { SettingsDialog } from "@/app/components/SettingsDialog";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
+import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
+import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
 import { ChangelogProvider } from "@/features/changelog";
@@ -84,9 +87,15 @@ function render(ui: ReactElement) {
 }
 
 function getMenuTrigger(name: string) {
+  if (name === "Settings") return screen.getByRole("button", { name });
   return within(screen.getByRole("menubar", { name: "Application menus" })).getByRole("menuitem", {
     name,
   });
+}
+
+function SettingsOpenIndicator() {
+  const { isSettingsOpen } = useSettingsDialog();
+  return isSettingsOpen ? <span data-testid="settings-open" /> : null;
 }
 
 vi.mock("@/app/store/redux-hooks", () => ({
@@ -245,6 +254,18 @@ describe("MenuBarTest", () => {
       if (action.type === "preferences/themePreferenceChanged") {
         menuState.preferences.theme = action.payload as Preferences["theme"];
       }
+      if (action.type === "preferences/uiScaleIncreased") {
+        menuState.preferences.uiScalePercent = Math.min(
+          200,
+          menuState.preferences.uiScalePercent + 25,
+        );
+      }
+      if (action.type === "preferences/uiScaleDecreased") {
+        menuState.preferences.uiScalePercent = Math.max(
+          50,
+          menuState.preferences.uiScalePercent - 25,
+        );
+      }
       if (action.type === "preferences/primaryColorChanged") {
         menuState.preferences.primaryColor = action.payload as Preferences["primaryColor"];
         if ((action.payload as string).startsWith("#")) {
@@ -261,8 +282,8 @@ describe("MenuBarTest", () => {
 
   function MenuBarTest(overrides: MenuTestOverrides = {}) {
     const [, forceUpdate] = useState(0);
-    const initialized = useRef(false);
-    if (!initialized.current) {
+    const initialized = useRef<boolean | null>(null);
+    if (initialized.current === null) {
       configureMenuState(overrides, () => forceUpdate((value) => value + 1));
       initialized.current = true;
     }
@@ -273,11 +294,15 @@ describe("MenuBarTest", () => {
             <PreviewTransformProvider>
               <ChangelogProvider>
                 <ResizablePanelContextProvider>
-                  <ApplicationCommandsProvider>
-                    <ThemeProvider>
-                      <AppMenuBar />
-                    </ThemeProvider>
-                  </ApplicationCommandsProvider>
+                  <SettingsDialogProvider>
+                    <ApplicationCommandsProvider>
+                      <ThemeProvider>
+                        <AppMenuBar />
+                        <SettingsDialog />
+                        <SettingsOpenIndicator />
+                      </ThemeProvider>
+                    </ApplicationCommandsProvider>
+                  </SettingsDialogProvider>
                 </ResizablePanelContextProvider>
               </ChangelogProvider>
             </PreviewTransformProvider>
@@ -552,120 +577,123 @@ describe("MenuBarTest", () => {
     expect(installUpdate).not.toHaveBeenCalled();
   });
 
-  it("shows a checkbox menu item for every configurable preference", async () => {
+  it("opens Settings from the regular menubar button", async () => {
     const user = userEvent.setup();
-    render(
-      <TooltipProvider>
-        <ThemeProvider>
-          <MenuBarTest canExport canSave isChoosingSource={false} />
-        </ThemeProvider>
-      </TooltipProvider>,
-    );
-
+    renderMenus();
     await user.click(getMenuTrigger("Settings"));
-    for (const label of ["Loop", "Follow segment", "Auto-start Queue", "Merge audio"]) {
-      expect(screen.getByRole("menuitemcheckbox", { name: label })).toBeInTheDocument();
-    }
-    const settingsMenu = screen.getAllByRole("menu").at(-1);
-    expect(settingsMenu).toBeDefined();
-    expect(within(settingsMenu!).getAllByRole("separator")).toHaveLength(4);
-    expect(screen.queryByText("Timeline tools", { exact: true })).not.toBeInTheDocument();
-    expect(screen.queryByText("Audio tools", { exact: true })).not.toBeInTheDocument();
-    expect(screen.getByRole("menuitemcheckbox", { name: "Loop" })).toContainElement(
-      settingsMenu!.querySelector(".lucide-repeat"),
-    );
-    expect(screen.getByRole("menuitemcheckbox", { name: "Follow segment" })).toContainElement(
-      settingsMenu!.querySelector(".lucide-between-vertical-start"),
-    );
-    expect(screen.getByRole("menuitemcheckbox", { name: "Auto-start Queue" })).toContainElement(
-      settingsMenu!.querySelector(".lucide-play"),
-    );
+    expect(screen.getByTestId("settings-open")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
-  it("resets preference defaults", async () => {
+  it("opens Settings from the compact menu", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
-        <ThemeProvider>
-          <MenuBarTest canExport canSave isChoosingSource={false} />
-        </ThemeProvider>
+        <AppUpdatesContext.Provider value={defaultAppUpdates}>
+          <MenuBarTest />
+        </AppUpdatesContext.Provider>
       </TooltipProvider>,
     );
-
-    await user.click(getMenuTrigger("Settings"));
-    const loopItem = screen.getByRole("menuitemcheckbox", {
-      name: "Loop",
-    });
-
-    await user.click(loopItem);
-    expect(loopItem).not.toBeChecked();
-    await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
-
-    expect(loopItem).toBeChecked();
-    expect(screen.getByRole("menuitem", { name: "Reset to default" })).toBeInTheDocument();
+    await user.click(screen.getAllByLabelText("Application menus").at(-1)!);
+    await user.click(screen.getByRole("menuitem", { name: "Settings" }));
+    expect(screen.getByTestId("settings-open")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("shows the default state in preference item tooltips", async () => {
+  it("switches settings pages and applies default changes immediately", async () => {
     const user = userEvent.setup();
-    render(
-      <TooltipProvider>
-        <ThemeProvider>
-          <MenuBarTest canExport canSave isChoosingSource={false} />
-        </ThemeProvider>
-      </TooltipProvider>,
-    );
-
+    renderMenus();
     await user.click(getMenuTrigger("Settings"));
-    const loopItem = screen.getByRole("menuitemcheckbox", {
-      name: "Loop",
-    });
 
-    await user.hover(loopItem);
-    await waitFor(() => {
-      expect(screen.getByRole("tooltip")).toHaveTextContent("Enabled by default");
-    });
+    const defaultsTab = screen.getByRole("tab", { name: "Defaults" });
+    expect(screen.getByRole("tab", { name: "General" })).toHaveAttribute("aria-selected", "true");
+    await user.click(defaultsTab);
+    expect(defaultsTab).toHaveAttribute("aria-selected", "true");
+
+    const loopSwitch = screen.getByRole("switch", { name: "Loop" });
+    expect(loopSwitch).toBeChecked();
+    await user.click(loopSwitch);
+    expect(menuState.preferences.loopPlaybackEnabledDefault).toBe(false);
+    expect(loopSwitch).not.toBeChecked();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("shows disabled by default for disabled preference items", async () => {
+  it("shows the saved UI scale and changes it through the zoom commands", async () => {
     const user = userEvent.setup();
-    render(
-      <TooltipProvider>
-        <ThemeProvider>
-          <MenuBarTest
-            canExport
-            canSave
-            isChoosingSource={false}
-            onPreferenceChange={vi.fn()}
-            preferences={{
-              theme: "system",
-              primaryColor: "amber",
-              lastAudiblePlaybackVolumePercent: 100,
-              playbackVolumePercent: 100,
-              customPrimaryColor: "#efbf04",
-              activityFeedView: "default",
-              layoutDensity: "default",
-              loopPlaybackEnabledDefault: false,
-              segmentPlaybackEnabledDefault: false,
-              autoStartQueueEnabled: false,
-              mergeAudioEnabledDefault: false,
-              deleteSourceOnRenderFinish: false,
-              lastSeenChangelogVersion: null,
-              uiScalePercent: 100,
-            }}
-          />
-        </ThemeProvider>
-      </TooltipProvider>,
-    );
-
+    renderMenus({
+      preferences: { ...DEFAULT_PREFERENCES, uiScalePercent: 150 },
+    });
     await user.click(getMenuTrigger("Settings"));
-    const mergeItem = screen.getByRole("menuitemcheckbox", {
-      name: "Merge audio",
+    await user.click(screen.getByRole("tab", { name: "Appearance" }));
+
+    const scaleSelect = screen.getByRole("combobox", { name: "UI Scaling" });
+    expect(scaleSelect).toHaveTextContent("150%");
+    expect(screen.getAllByRole("button", { name: "Primary accent" })).toHaveLength(1);
+    expect(screen.queryByText("Update channel")).not.toBeInTheDocument();
+
+    await user.click(scaleSelect);
+    await user.click(screen.getByRole("option", { name: "200%" }));
+
+    await waitFor(() => expect(menuState.preferences.uiScalePercent).toBe(200));
+    expect(scaleSelect).toHaveTextContent("200%");
+  });
+
+  it("syncs both appearance color swatches with a live custom color preview", async () => {
+    const user = userEvent.setup();
+    renderMenus({ primaryColor: "blue", customPrimaryColor: "#123456" });
+    await user.click(getMenuTrigger("Settings"));
+    await user.click(screen.getByRole("tab", { name: "Appearance" }));
+    await user.click(screen.getByRole("button", { name: "Primary accent" }));
+    await user.click(screen.getByRole("button", { name: "Custom" }));
+
+    const spectrum = screen.getByRole("button", { name: "Saturation and brightness" });
+    Object.defineProperty(spectrum, "getBoundingClientRect", {
+      value: () => new DOMRect(0, 0, 192, 192),
+    });
+    Object.assign(spectrum, {
+      hasPointerCapture: () => true,
+      releasePointerCapture: vi.fn(),
+      setPointerCapture: vi.fn(),
     });
 
-    await user.hover(mergeItem);
-    await waitFor(() => {
-      expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
+    fireEvent.pointerDown(spectrum, { clientX: 96, clientY: 96, pointerId: 1 });
+
+    const activeSwatch = screen.getByRole("button", { name: "Primary accent" });
+    const customSwatch = screen.getByRole("button", { name: "Custom" });
+    expect(menuState.preferences.primaryColor).toBe("blue");
+    expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe(
+      "#406080",
+    );
+    expect(activeSwatch).toHaveStyle({
+      backgroundColor: "var(--primary)",
     });
+    expect(customSwatch).toHaveStyle({
+      backgroundColor: "var(--primary-color-preview, #123456)",
+    });
+
+    fireEvent.pointerCancel(spectrum, { pointerId: 1 });
+    expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
+    expect(menuState.preferences.primaryColor).toBe("blue");
+  });
+
+  it("changes the interface language through the existing i18n path", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+    await user.click(getMenuTrigger("Settings"));
+
+    await user.click(screen.getByLabelText("Language"));
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(3);
+    expect(options.map((option) => option.getAttribute("aria-label"))).toEqual(
+      expect.arrayContaining(["English, en", "Slovenčina (Slovak), sk", "Русский (Russian), ru"]),
+    );
+    expect(screen.queryByRole("option", { name: /Japanese/ })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("option", { name: /, ru$/ }));
+    await waitFor(() => expect(i18n.resolvedLanguage).toBe("ru"));
+    await i18n.changeLanguage("en");
   });
 
   it("shows retry feedback after an update check fails", async () => {
@@ -750,7 +778,7 @@ describe("MenuBarTest", () => {
     expect(screen.queryByRole("heading", { name: "Delete source file?" })).not.toBeInTheDocument();
   });
 
-  it("keeps theme radios and searches for languages in Settings", async () => {
+  it("keeps theme radios available in the View menu", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
@@ -792,29 +820,9 @@ describe("MenuBarTest", () => {
       "true",
     );
     await user.keyboard("{Escape}");
-    await user.keyboard("{Escape}");
-    const settingsButton = getMenuTrigger("Settings");
-    await user.click(settingsButton);
-    const languageItem = screen.getByRole("menuitem", { name: /Language/ });
-    expect(languageItem).not.toBeNull();
-    languageItem?.focus();
-    await user.keyboard("{ArrowRight}");
-
-    const languageSearch = screen.getByRole("combobox", { name: "Search languages" });
-    await user.type(languageSearch, "slovak");
-
-    const slovakOption = screen.getByRole("option", { name: "Slovenčina (Slovak), sk" });
-    expect(slovakOption).toBeVisible();
-    expect(screen.queryByRole("option", { name: /Русский/ })).not.toBeInTheDocument();
-
-    await user.click(slovakOption);
-    await waitFor(() => expect(i18n.resolvedLanguage).toBe("sk"));
-    expect(languageItem).toHaveTextContent(/sk$/i);
-    expect(screen.queryByRole("option", { name: /Slov/ })).not.toBeInTheDocument();
-    await i18n.changeLanguage("en");
   });
 
-  it("shows hex values and accepts custom input as soon as it is valid", async () => {
+  it("shows hex values for the primary color presets", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
@@ -847,61 +855,6 @@ describe("MenuBarTest", () => {
       expect(item).toHaveTextContent(hex);
       expect(item.querySelector('[aria-hidden="true"]')).not.toBeNull();
     }
-    const customItem = screen.getByRole("menuitem", { name: /Custom/ });
-    expect(customItem).toHaveTextContent("#123456");
-    expect(customItem.querySelector('[aria-hidden="true"]')).not.toBeNull();
-    await user.click(screen.getByRole("menuitemradio", { name: /Amber/ }));
-    expect(screen.getByRole("menuitemradio", { name: /Amber/ })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("menuitem", { name: /Custom/ }));
-    expect(document.documentElement).toHaveAttribute("data-primary-color", "#123456");
-
-    const spectrum = await screen.findByRole("button", { name: /Theme color spectrum/ });
-    expect(spectrum).toBeVisible();
-    Object.defineProperty(spectrum, "getBoundingClientRect", {
-      value: () => new DOMRect(0, 0, 192, 192),
-    });
-    fireEvent.pointerDown(spectrum, { pointerId: 1, clientX: 96, clientY: 96 });
-    expect(customItem).toHaveTextContent("#808080");
-    expect(colorItem?.querySelector('[aria-hidden="true"]')).toHaveStyle({
-      backgroundColor: "rgb(128, 128, 128)",
-    });
-    fireEvent.pointerCancel(spectrum, { pointerId: 1 });
-    expect(customItem).toHaveTextContent("#123456");
-    const hexInput = screen.getByRole("textbox", { name: "Custom hex" });
-    expect(hexInput).toHaveValue("123456");
-    expect(hexInput.previousElementSibling).toHaveAttribute("aria-hidden", "true");
-    await user.clear(hexInput);
-    expect(hexInput.previousElementSibling).toHaveTextContent("#");
-    fireEvent.change(hexInput, { target: { value: "abcde" } });
-    expect(hexInput).toHaveValue("abcde");
-    fireEvent.change(hexInput, { target: { value: "abcdef" } });
-    expect(document.documentElement).toHaveAttribute("data-primary-color", "#abcdef");
-
-    const reopenedCustomItem = screen.getByRole("menuitem", { name: /Custom/ });
-    await user.click(reopenedCustomItem);
-    const reopenedSpectrum = await screen.findByRole("button", { name: /Theme color spectrum/ });
-    const reopenedHexInput = screen.getByRole("textbox", { name: "Custom hex" });
-    fireEvent.change(reopenedHexInput, { target: { value: "abcdeg" } });
-    expect(document.documentElement).toHaveAttribute("data-primary-color", "#abcdef");
-
-    const colorMenus = screen.getAllByRole("menu", { name: "Color" });
-    const customMenu = colorMenus[colorMenus.length - 1];
-    expect(customMenu).toBeDefined();
-    Object.defineProperty(customItem, "getBoundingClientRect", {
-      value: () => new DOMRect(0, 0, 200, 32),
-    });
-    Object.defineProperty(customMenu, "getBoundingClientRect", {
-      value: () => new DOMRect(204, 0, 210, 240),
-    });
-    fireEvent.pointerLeave(customItem, { clientX: 199, clientY: 16 });
-    fireEvent.pointerMove(reopenedSpectrum, { clientX: 208, clientY: 16 });
-    expect(screen.getByRole("button", { name: /Theme color spectrum/ })).toBeVisible();
-
-    reopenedHexInput.focus();
-    await user.keyboard("{Enter}");
-    expect(screen.queryByRole("menuitem", { name: /Custom/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Theme color spectrum/ })).not.toBeInTheDocument();
   });
 
   it("switches between open menus on hover but stays click-to-open when closed", async () => {
@@ -938,7 +891,7 @@ describe("MenuBarTest", () => {
     renderMenus();
 
     await user.click(getMenuTrigger("File"));
-    for (const menuName of ["View", "Queue", "Settings", "Help"]) {
+    for (const menuName of ["View", "Queue", "Help"]) {
       await user.hover(getMenuTrigger(menuName));
     }
 

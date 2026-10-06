@@ -12,6 +12,7 @@ import { AppShutdownGuard } from "@/app/components/AppShutdownGuard";
 import { CommandPalette } from "@/app/components/CommandPalette";
 import { DiagnosticsRecoveryDialog } from "@/app/components/DiagnosticsRecoveryDialog";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
+import { SettingsDialog } from "@/app/components/SettingsDialog";
 import { WorkspaceRecoveryNotice } from "@/app/components/WorkspaceRecoveryNotice";
 import { AppLayout } from "@/app/layout";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
@@ -19,6 +20,7 @@ import { AppUpdatesProvider } from "@/app/providers/AppUpdatesProvider";
 import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
 import { EditorRuntimeProviders } from "@/app/providers/EditorRuntimeProviders";
 import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
+import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectDropListenerError } from "@/app/store/slices/import-workflow-slice";
 import { persistor, store } from "@/app/store/store";
@@ -52,31 +54,34 @@ function EasyTrimEditorApp() {
                 <EditorRuntimeProviders>
                   <ResizablePanelContextProvider>
                     <CommandPaletteProvider>
-                      <ApplicationCommandsProvider>
-                        <AppLayout />
-                        <CommandPalette />
+                      <SettingsDialogProvider>
+                        <ApplicationCommandsProvider>
+                          <AppLayout />
+                          <SettingsDialog />
+                          <CommandPalette />
 
-                        <Toaster />
-                        <ActivityToasts />
-                        <ExportDialog />
-                        <DiagnosticsRecoveryDialog />
-                        <WorkspaceRecoveryNotice />
-                        <SourceDropOverlay />
-                        <NativeDialogOverlay />
+                          <Toaster />
+                          <ActivityToasts />
+                          <ExportDialog />
+                          <DiagnosticsRecoveryDialog />
+                          <WorkspaceRecoveryNotice />
+                          <SourceDropOverlay />
+                          <NativeDialogOverlay />
 
-                        {dropListenerError ? (
-                          <Alert
-                            className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
-                            variant="destructive"
-                          >
-                            <AlertDescription>
-                              {t("app.messages.dragUnavailable", {
-                                message: dropListenerError.message,
-                              })}
-                            </AlertDescription>
-                          </Alert>
-                        ) : null}
-                      </ApplicationCommandsProvider>
+                          {dropListenerError ? (
+                            <Alert
+                              className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+                              variant="destructive"
+                            >
+                              <AlertDescription>
+                                {t("app.messages.dragUnavailable", {
+                                  message: dropListenerError.message,
+                                })}
+                              </AlertDescription>
+                            </Alert>
+                          ) : null}
+                        </ApplicationCommandsProvider>
+                      </SettingsDialogProvider>
                     </CommandPaletteProvider>
                   </ResizablePanelContextProvider>
                 </EditorRuntimeProviders>

@@ -40,6 +40,14 @@ Primitives such as `Slider` accept generic values and events (`value`, `onValueC
 Context-specific wrappers belong to their feature: for example, `VolumeSlider` accepts a track
 identity such as `streamIndex`, selects and updates that track, and configures the generic `Slider`.
 
+Keep reusable UI primitive props limited to indispensable behavior or data. Before adding a custom
+prop, check whether a native React/DOM prop (`className`, `style`, `id`, `aria-*`, `data-*`, or a
+native event handler) or normal composition (`children`) already expresses the need; if it does,
+use that mechanism. Inherit and forward native element props directly instead of omitting and
+redeclaring standard attributes. Do not add convenience aliases, fixed-value configuration props,
+or consumer-specific formatting and accessibility prose to expose implementation details. Keep such
+details internal unless consumers have a concrete need to control them.
+
 ## Imports and exports
 
 Use named exports by default. Default exports are reserved for framework/tooling contracts that

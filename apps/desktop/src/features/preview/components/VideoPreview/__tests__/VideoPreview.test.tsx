@@ -16,6 +16,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
+import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { cropChanged, flipToggled, rotationChanged } from "@/app/store/slices/crop-slice";
 import {
@@ -81,7 +82,9 @@ function TooltipTestProvider({ children, store }: { children: ReactNode; store: 
               <PreviewTransformProvider>
                 <ChangelogProvider>
                   <ResizablePanelContextProvider>
-                    <ApplicationCommandsProvider>{children}</ApplicationCommandsProvider>
+                    <SettingsDialogProvider>
+                      <ApplicationCommandsProvider>{children}</ApplicationCommandsProvider>
+                    </SettingsDialogProvider>
                   </ResizablePanelContextProvider>
                 </ChangelogProvider>
               </PreviewTransformProvider>

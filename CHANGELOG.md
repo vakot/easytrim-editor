@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Replaced the Settings menu dropdown with a full preferences dialog for language, appearance, defaults, layout, queue, and update/help options.
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
 
 ### Removed

@@ -9,6 +9,7 @@ export const en = {
       delete: "Delete",
       edit: "Edit",
       enable: "Enable",
+      reset: "Reset",
       retry: "Retry",
       save: "Save",
     },
@@ -21,7 +22,6 @@ export const en = {
       searchSuggestions: "Suggestions",
     },
     status: {
-      disabled: "Disabled",
       enabled: "Enabled",
       error: "Error",
       loading: "Loading…",
@@ -220,23 +220,66 @@ export const en = {
     },
   },
   settings: {
+    pages: {
+      navigationLabel: "Settings pages",
+      general: {
+        title: "General",
+        description: "Choose how EasyTrim presents its interface.",
+        languageDescription: "Choose the language used throughout EasyTrim Editor.",
+      },
+      appearance: {
+        title: "Appearance",
+        description: "Adjust the interface scale, theme, and primary color.",
+        scalingDescription: "Change the size of controls and text across the app.",
+        colorDescription: "Choose a preset or pick a custom primary color.",
+        resetLabel: "Reset appearance",
+      },
+      defaults: {
+        title: "Defaults",
+        description: "Choose the defaults used for new editing sessions.",
+        loopDescription: "Start new sessions with loop playback enabled.",
+        followSegmentDescription: "Keep playback within the selected segment by default.",
+        mergeAudioDescription: "Merge enabled audio tracks for new exports by default.",
+        resetLabel: "Reset preferences",
+      },
+      layout: {
+        title: "Layout",
+        description: "Control panel visibility and workspace density.",
+        resetLabel: "Reset layout",
+      },
+      queue: {
+        title: "Queue",
+        description: "Choose how the export queue starts and finishes.",
+        autoStartDescription: "Start processing as soon as exports are added to the queue.",
+        onFinishedDescription: "Choose what happens when every queued export finishes.",
+        resetLabel: "Reset queue settings",
+      },
+      about: {
+        title: "About",
+        description: "Application version, updates, and project resources.",
+        moreSection: "More",
+        supportSection: "Support",
+        versionDescription: "View this version's release notes.",
+        updatesLabel: "Updates",
+        updatesDescription: "Check for updates or install an available update.",
+      },
+    },
     labels: {
       activityFeedView: "Activity Feed View",
       autoStartQueue: "Auto-start Queue",
       color: "Color",
+      editor: "Editor",
       followSegment: "Follow segment",
       language: "Language",
       loop: "Loop",
       mergeAudio: "Merge audio",
+      panels: "Panels",
+      primaryAccent: "Primary accent",
       theme: "Theme",
       title: "Settings",
     },
-    tooltips: {
-      disabledByDefault: "Disabled by default",
-      enabledByDefault: "Enabled by default",
-    },
     accessibility: {
-      colorSpectrum: "Theme color spectrum. Use the Left and Right Arrow keys to adjust the hue.",
+      colorSpectrum: "Theme color picker",
       customColorHex: "Custom hex",
     },
     options: {
@@ -413,6 +456,8 @@ export const en = {
     },
     accessibility: {
       metadata: "Video metadata",
+      searchShortcut: "Source search keyboard shortcut: {{shortcut}}",
+      thumbnail: "Thumbnail for {{name}}",
     },
   },
   preview: {
@@ -721,6 +766,7 @@ export const en = {
       whatsNewTitle: "What’s New",
     },
     messages: {
+      buyMeCoffee: "Buy me a coffee",
       emptyChangelog: "No released changes are available yet.",
       emptyChangelogDescription:
         "Released updates will appear here when they are included in your installed version.",

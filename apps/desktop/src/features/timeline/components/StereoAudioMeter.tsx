@@ -179,7 +179,7 @@ function StereoAudioMeterChannel({
 }) {
   return (
     <div
-      aria-label={`${label} channel audio level`}
+      aria-label={label}
       className="relative flex flex-1 overflow-hidden rounded-md bg-secondary p-0.75"
       role="img"
     >

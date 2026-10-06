@@ -132,12 +132,15 @@ vi.mock("@/lib/diagnostics", () => ({
 }));
 
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";
 
 import { ApplicationCommandsProvider } from "../ApplicationCommandsProvider";
+import { SettingsDialogProvider } from "../SettingsDialogProvider";
 
 function RuntimeProbe() {
   const { commands, executeCommand } = useApplicationCommands();
+  const { isSettingsOpen } = useSettingsDialog();
 
   return (
     <div>
@@ -171,6 +174,10 @@ function RuntimeProbe() {
       <button onClick={() => void executeCommand("reset-layout", "menu")} type="button">
         reset-layout-menu
       </button>
+      <button onClick={() => void executeCommand("open-settings", "palette")} type="button">
+        open-settings-palette
+      </button>
+      {isSettingsOpen ? <span data-testid="settings-open-from-command" /> : null}
     </div>
   );
 }
@@ -178,9 +185,11 @@ function RuntimeProbe() {
 function runtimeUi() {
   return (
     <EditorRuntimeTestProvider>
-      <ApplicationCommandsProvider>
-        <RuntimeProbe />
-      </ApplicationCommandsProvider>
+      <SettingsDialogProvider>
+        <ApplicationCommandsProvider>
+          <RuntimeProbe />
+        </ApplicationCommandsProvider>
+      </SettingsDialogProvider>
     </EditorRuntimeTestProvider>
   );
 }
@@ -212,7 +221,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(59);
+    ).toHaveLength(60);
     expect(
       screen
         .getAllByRole("button")
@@ -291,12 +300,21 @@ describe("ApplicationCommandsProvider", () => {
       "data-group",
       "Preferences",
     );
-    for (const commandId of ["reset-preferences", "reset-layout", "reset-transform"]) {
+    for (const commandId of [
+      "reset-preferences",
+      "reset-layout",
+      "reset-queue-settings",
+      "reset-view-settings",
+    ]) {
       expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
         "data-surfaces",
-        "menu",
+        "dialog,menu",
       );
     }
+    expect(screen.getByRole("button", { name: "reset-transform" })).toHaveAttribute(
+      "data-surfaces",
+      "menu",
+    );
     expect(screen.getByRole("button", { name: "crop-preview" })).toHaveAttribute(
       "data-group",
       "Preview / Transform",
@@ -329,6 +347,15 @@ describe("ApplicationCommandsProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 
     expect(mocks.requestSourceDelete).toHaveBeenCalledWith({ sourceIds: ["source-1"] });
+  });
+
+  it("opens Settings through the application command", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    renderRuntime();
+
+    await user.click(screen.getByRole("button", { name: "open-settings-palette" }));
+
+    expect(screen.getByTestId("settings-open-from-command")).toBeInTheDocument();
   });
 
   it("allows saving a frame only while playback is paused", () => {

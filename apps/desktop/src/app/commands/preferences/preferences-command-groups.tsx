@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { defineApplicationCommandGroup } from "@/app/commands/core/application-command.utils";
 
 import { useAudioPreferenceCommands } from "./definitions/audio.commands";
+import { useOpenSettingsCommand } from "./definitions/open-settings.command";
 import { usePlaybackPreferenceCommands } from "./definitions/playback.commands";
 import { useResetPreferencesCommand } from "./definitions/reset-preferences.command";
 
@@ -11,6 +12,7 @@ function usePreferencesCommandGroups() {
   const playback = usePlaybackPreferenceCommands();
   const audio = useAudioPreferenceCommands();
   const reset = useResetPreferencesCommand();
+  const openSettings = useOpenSettingsCommand();
   return [
     defineApplicationCommandGroup(
       "preferences-playback",
@@ -23,6 +25,7 @@ function usePreferencesCommandGroups() {
       audio,
     ),
     defineApplicationCommandGroup("preferences", t("app.labels.commandSections.preferences"), [
+      openSettings,
       reset,
     ]),
   ] as const;
