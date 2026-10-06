@@ -31,7 +31,7 @@ function SettingsLayout() {
   };
 
   return (
-    <SettingsSection title="Panels">
+    <SettingsSection title={t("settings.labels.panels")}>
       <SettingRow label={t("app.labels.leftPanel")}>
         <CommandSwitch commandId="toggle-left-panel" />
       </SettingRow>

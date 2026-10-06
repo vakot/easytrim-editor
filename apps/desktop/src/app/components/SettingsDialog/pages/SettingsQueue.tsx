@@ -26,7 +26,7 @@ function SettingsQueue() {
   const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
 
   return (
-    <SettingsSection title="Queue">
+    <SettingsSection title={t("settings.pages.queue.title")}>
       <SettingRow
         description={t("settings.pages.queue.autoStartDescription")}
         label={t("settings.labels.autoStartQueue")}

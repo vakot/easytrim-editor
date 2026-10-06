@@ -9,6 +9,7 @@ export const en = {
       delete: "Delete",
       edit: "Edit",
       enable: "Enable",
+      reset: "Reset",
       retry: "Retry",
       save: "Save",
     },
@@ -256,6 +257,9 @@ export const en = {
       about: {
         title: "About",
         description: "Application version, updates, and project resources.",
+        moreSection: "More",
+        supportSection: "Support",
+        updateChannelDescription: "Choose an update channel.",
         versionDescription: "View this version's release notes.",
         updatesLabel: "Updates",
         updatesDescription: "Check for updates or install an available update.",
@@ -265,12 +269,16 @@ export const en = {
       activityFeedView: "Activity Feed View",
       autoStartQueue: "Auto-start Queue",
       color: "Color",
+      editor: "Editor",
       followSegment: "Follow segment",
       language: "Language",
       loop: "Loop",
       mergeAudio: "Merge audio",
+      panels: "Panels",
+      primaryAccent: "Primary accent",
       theme: "Theme",
       title: "Settings",
+      updateChannel: "Update channel",
     },
     accessibility: {
       colorSpectrum: "Theme color spectrum. Use the Left and Right Arrow keys to adjust the hue.",
@@ -292,6 +300,7 @@ export const en = {
       },
       activityFeedViews: { branch: "Branch", compact: "Compact", default: "Default" },
       themes: { dark: "Dark", light: "Light", system: "System" },
+      updateChannels: { beta: "Beta", production: "Production" },
     },
   },
   activity: {
@@ -450,6 +459,8 @@ export const en = {
     },
     accessibility: {
       metadata: "Video metadata",
+      searchShortcut: "Source search keyboard shortcut: {{shortcut}}",
+      thumbnail: "Thumbnail for {{name}}",
     },
   },
   preview: {
@@ -758,6 +769,7 @@ export const en = {
       whatsNewTitle: "What’s New",
     },
     messages: {
+      buyMeCoffee: "Buy me a coffee",
       emptyChangelog: "No released changes are available yet.",
       emptyChangelogDescription:
         "Released updates will appear here when they are included in your installed version.",

@@ -55,7 +55,7 @@ function SettingsAppearance() {
   ] as const;
 
   return (
-    <SettingsSection title="Theme">
+    <SettingsSection title={t("settings.labels.theme")}>
       <SettingRow label={t("settings.labels.theme")}>
         <Select
           onValueChange={(value) =>
@@ -81,7 +81,7 @@ function SettingsAppearance() {
         <div>
           <SettingRow
             description={t("settings.pages.appearance.colorDescription")}
-            label="Primary accent"
+            label={t("settings.labels.primaryAccent")}
           >
             <CollapsibleTrigger>
               <Button className="size-8 p-0" style={{ backgroundColor: primaryColor }} />
@@ -104,7 +104,7 @@ function SettingsAppearance() {
             <CustomColorPopover value={customPrimaryColor}>
               <CustomColorPopoverTrigger asChild>
                 <Button style={{ backgroundColor: resolvePrimaryColor(customPrimaryColor) }}>
-                  Custom
+                  {t("settings.options.colors.custom")}
                 </Button>
               </CustomColorPopoverTrigger>
 
@@ -126,7 +126,7 @@ function SettingsAppearance() {
           <span className="flex items-center">
             {t("app.labels.uiScaling")}
             <CommandButton commandId="ui-scale-reset" type="reset" variant="link">
-              Reset
+              {t("common.actions.reset")}
             </CommandButton>
           </span>
         }

@@ -5,7 +5,7 @@ import { CommandReset, CommandSwitch, SettingRow, SettingsSection } from "../com
 function SettingsEditor() {
   const { t } = useTranslation();
   return (
-    <SettingsSection title="Editor">
+    <SettingsSection title={t("settings.labels.editor")}>
       <SettingRow
         description={t("settings.pages.defaults.loopDescription")}
         label={t("settings.labels.loop")}

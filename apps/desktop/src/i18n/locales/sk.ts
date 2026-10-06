@@ -11,6 +11,7 @@ export const sk = {
       delete: "Odstrániť",
       edit: "Upraviť",
       enable: "Povoliť",
+      reset: "Obnoviť",
       retry: "Skúsiť znova",
       save: "Uložiť",
     },
@@ -256,6 +257,9 @@ export const sk = {
       about: {
         title: "Informácie",
         description: "Verzia aplikácie, aktualizácie a zdroje projektu.",
+        moreSection: "Viac",
+        supportSection: "Podpora",
+        updateChannelDescription: "Vyberte kanál aktualizácií.",
         versionDescription: "Zobraziť poznámky k vydaniu tejto verzie.",
         updatesLabel: "Aktualizácie",
         updatesDescription: "Skontrolovať aktualizácie alebo nainštalovať dostupnú aktualizáciu.",
@@ -265,12 +269,16 @@ export const sk = {
       activityFeedView: "Zobrazenie prehľadu aktivít",
       autoStartQueue: "Automatické spustenie frontu",
       color: "Farba",
+      editor: "Editor",
       followSegment: "Sledovať segment",
       language: "Jazyk",
       loop: "Opakovanie",
       mergeAudio: "Zlúčiť zvuk",
+      panels: "Panely",
+      primaryAccent: "Hlavná farba",
       theme: "Téma",
       title: "Nastavenia",
+      updateChannel: "Kanál aktualizácií",
     },
     accessibility: {
       colorSpectrum: "Spektrum farieb motívu. Odtieň upravíte šípkami doľava a doprava.",
@@ -292,6 +300,7 @@ export const sk = {
       },
       activityFeedViews: { branch: "Vetvené", compact: "Kompaktné", default: "Predvolené" },
       themes: { dark: "Tmavá", light: "Svetlá", system: "Systémová" },
+      updateChannels: { beta: "Beta", production: "Produkčná verzia" },
     },
   },
   activity: {
@@ -450,6 +459,8 @@ export const sk = {
     },
     accessibility: {
       metadata: "Metadáta videa",
+      searchShortcut: "Klávesová skratka vyhľadávania zdrojov: {{shortcut}}",
+      thumbnail: "Miniatúra súboru {{name}}",
     },
   },
   preview: {
@@ -758,6 +769,7 @@ export const sk = {
       whatsNewTitle: "Čo je nové",
     },
     messages: {
+      buyMeCoffee: "Kúpte mi kávu",
       emptyChangelog: "Zatiaľ nie sú dostupné žiadne vydané zmeny.",
       emptyChangelogDescription:
         "Vydané aktualizácie sa tu zobrazia, keď budú súčasťou nainštalovanej verzie.",

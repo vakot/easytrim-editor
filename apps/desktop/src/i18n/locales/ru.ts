@@ -9,6 +9,7 @@ export const ru = {
       delete: "Удалить",
       edit: "Изменить",
       enable: "Включить",
+      reset: "Сбросить",
       retry: "Повторить",
       save: "Сохранить",
     },
@@ -257,6 +258,9 @@ export const ru = {
       about: {
         title: "О программе",
         description: "Версия приложения, обновления и ресурсы проекта.",
+        moreSection: "Дополнительно",
+        supportSection: "Поддержка",
+        updateChannelDescription: "Выберите канал обновлений.",
         versionDescription: "Открыть заметки к выпуску этой версии.",
         updatesLabel: "Обновления",
         updatesDescription: "Проверить наличие обновлений или установить доступное обновление.",
@@ -266,12 +270,16 @@ export const ru = {
       activityFeedView: "Вид ленты активности",
       autoStartQueue: "Автозапуск очереди",
       color: "Цвет",
+      editor: "Редактор",
       followSegment: "Следовать за сегментом",
       language: "Язык",
       loop: "Повтор",
       mergeAudio: "Объединять аудио",
+      panels: "Панели",
+      primaryAccent: "Основной цвет",
       theme: "Тема",
       title: "Настройки",
+      updateChannel: "Канал обновлений",
     },
     accessibility: {
       colorSpectrum:
@@ -294,6 +302,7 @@ export const ru = {
       },
       activityFeedViews: { branch: "Ветвление", compact: "Компактный", default: "Обычный" },
       themes: { dark: "Тёмная", light: "Светлая", system: "Системная" },
+      updateChannels: { beta: "Бета", production: "Стабильная версия" },
     },
   },
   activity: {
@@ -452,6 +461,8 @@ export const ru = {
     },
     accessibility: {
       metadata: "Метаданные видео",
+      searchShortcut: "Сочетание клавиш для поиска источников: {{shortcut}}",
+      thumbnail: "Миниатюра файла {{name}}",
     },
   },
   preview: {
@@ -760,6 +771,7 @@ export const ru = {
       whatsNewTitle: "Что нового",
     },
     messages: {
+      buyMeCoffee: "Угостите меня кофе",
       emptyChangelog: "Выпущенных изменений пока нет.",
       emptyChangelogDescription:
         "Выпущенные обновления появятся здесь, когда войдут в установленную версию.",

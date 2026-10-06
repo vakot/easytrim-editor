@@ -17,13 +17,13 @@ function SettingsAbout() {
   const { t } = useTranslation();
   return (
     <>
-      <SettingsSection title="Support">
-        <SettingRow description="Buy me a coffee" label={t("support.actions.projectSupport")}>
+      <SettingsSection title={t("settings.pages.about.supportSection")}>
+        <SettingRow description={t("support.messages.buyMeCoffee")} label={t("support.actions.projectSupport")}>
           <CommandButton commandId="support-project" />
         </SettingRow>
       </SettingsSection>
 
-      <SettingsSection title="Updates">
+      <SettingsSection title={t("settings.pages.about.updatesLabel")}>
         <SettingRow
           description={t("settings.pages.about.versionDescription")}
           label={t("app.labels.version", { version: getCurrentVersion() })}
@@ -38,22 +38,27 @@ function SettingsAbout() {
           <CommandButton commandId="check-for-updates" variant="default" />
         </SettingRow>
 
-        <SettingRow description="TODO: use beta" label="Strategy">
+        <SettingRow
+          description={t("settings.pages.about.updateChannelDescription")}
+          label={t("settings.labels.updateChannel")}
+        >
           <Select defaultValue="production">
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="production">Production</SelectItem>
-                <SelectItem value="beta">Beta</SelectItem>
+                <SelectItem value="production">
+                  {t("settings.options.updateChannels.production")}
+                </SelectItem>
+                <SelectItem value="beta">{t("settings.options.updateChannels.beta")}</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
         </SettingRow>
       </SettingsSection>
 
-      <SettingsSection title="More">
+      <SettingsSection title={t("settings.pages.about.moreSection")}>
         <SettingRow label={t("support.actions.projectPage")}>
           <CommandButton commandId="open-project-page" />
         </SettingRow>
@@ -63,7 +68,7 @@ function SettingsAbout() {
         </SettingRow>
       </SettingsSection>
 
-      <SettingsSection title="What's new">
+      <SettingsSection title={t("support.labels.whatsNewTitle")}>
         <SettingRow label={t("support.actions.changelog")}>
           <CommandButton commandId="open-changelog" />
         </SettingRow>

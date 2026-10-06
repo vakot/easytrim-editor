@@ -64,7 +64,7 @@ function SourceListSearch() {
             </span>
           </>
         ) : (
-          <KbdGroup aria-label="Ctrl + F">
+          <KbdGroup aria-label={t("source.accessibility.searchShortcut", { shortcut: "Ctrl + F" })}>
             <Kbd>Ctrl</Kbd>
             <Kbd>F</Kbd>
           </KbdGroup>

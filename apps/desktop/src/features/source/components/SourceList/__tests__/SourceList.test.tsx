@@ -167,7 +167,7 @@ describe("source queue controls", () => {
     );
 
     const search = screen.getByRole("searchbox", { name: "Search" });
-    expect(screen.getByLabelText("Ctrl + F")).toBeInTheDocument();
+    expect(screen.getByLabelText("Source search keyboard shortcut: Ctrl + F")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { code: "KeyF", ctrlKey: true });
 
@@ -237,7 +237,9 @@ describe("source queue controls", () => {
     await user.click(await screen.findByRole("button", { name: "Clear" }));
 
     expect(search).toHaveValue("");
-    expect(await screen.findByLabelText("Ctrl + F")).toBeInTheDocument();
+    expect(
+      await screen.findByLabelText("Source search keyboard shortcut: Ctrl + F"),
+    ).toBeInTheDocument();
   });
 
   it("closes all imported sources from the source list action", async () => {
