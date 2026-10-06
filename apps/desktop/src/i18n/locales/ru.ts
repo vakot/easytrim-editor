@@ -66,7 +66,6 @@ export const ru = {
         export: "Экспорт",
         file: "Файл",
         help: "Справка",
-        language: "Язык",
         layout: "Макет",
         layoutActivityFeedView: "Макет / Вид ленты активности",
         layoutDensity: "Макет / Плотность",

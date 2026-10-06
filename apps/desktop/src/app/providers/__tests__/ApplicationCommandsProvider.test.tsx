@@ -212,7 +212,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(61);
+    ).toHaveLength(59);
     expect(
       screen
         .getAllByRole("button")
@@ -252,27 +252,9 @@ describe("ApplicationCommandsProvider", () => {
       "data-group",
       "Queue",
     );
-    expect(screen.getByRole("button", { name: "language-en" })).toHaveAttribute(
-      "data-label",
-      "English",
-    );
-    expect(screen.getByRole("button", { name: "language-sk" })).toHaveAttribute(
-      "data-label",
-      "Slovenčina",
-    );
-    expect(screen.getByRole("button", { name: "language-ru" })).toHaveAttribute(
-      "data-label",
-      "Русский",
-    );
-    expect(
-      screen.getByRole("button", { name: "language-en" }).querySelector("[data-icon]"),
-    ).toHaveTextContent("EN");
-    expect(
-      screen.getByRole("button", { name: "language-sk" }).querySelector("[data-icon]"),
-    ).toHaveTextContent("SK");
-    expect(
-      screen.getByRole("button", { name: "language-ru" }).querySelector("[data-icon]"),
-    ).toHaveTextContent("RU");
+    for (const commandId of ["language-en", "language-sk", "language-ru"]) {
+      expect(screen.queryByRole("button", { name: commandId })).not.toBeInTheDocument();
+    }
     expect(screen.getByRole("button", { name: "primary-color-amber" })).toHaveAttribute(
       "data-group",
       "Appearance / Color",

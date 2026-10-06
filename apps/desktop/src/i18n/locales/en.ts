@@ -66,7 +66,6 @@ export const en = {
         export: "Export",
         file: "File",
         help: "Help",
-        language: "Language",
         layout: "Layout",
         layoutActivityFeedView: "Layout / Activity Feed View",
         layoutDensity: "Layout / Density",
