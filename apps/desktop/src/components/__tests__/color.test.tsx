@@ -390,6 +390,24 @@ describe("ColorPicker", () => {
     expect(onCommit).toHaveBeenCalledOnce();
     expect(onChange).toHaveBeenCalledWith(onCommit.mock.calls[0]?.[0]);
   });
+
+  it("keeps keyboard hue endpoints stable and preserves the spectrum marker", () => {
+    const { hue, hueMarker, spectrumMarker } = getControlsForDefault("#808080");
+    const spectrumPosition = { left: spectrumMarker.style.left, top: spectrumMarker.style.top };
+
+    fireEvent.keyDown(hue, { key: "End" });
+    expect(hueMarker.style.left).toBe("100%");
+    expect(hue).toHaveAttribute("aria-valuenow", "360");
+    fireEvent.keyDown(hue, { key: "ArrowRight" });
+    expect(hueMarker.style.left).toBe("100%");
+
+    fireEvent.keyDown(hue, { key: "Home" });
+    fireEvent.keyDown(hue, { key: "ArrowLeft" });
+    expect(hueMarker.style.left).toBe("0%");
+    expect(hue).toHaveAttribute("aria-valuenow", "0");
+    expect(spectrumMarker.style.left).toBe(spectrumPosition.left);
+    expect(spectrumMarker.style.top).toBe(spectrumPosition.top);
+  });
 });
 
 function getControlsForDefault(defaultValue: HexColor = "#4299e1") {
