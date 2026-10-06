@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Replaced the Settings menu dropdown with a full preferences dialog for language, appearance, defaults, layout, queue, and update/help options.
+- Refined spacing and scrolling in the settings and audio effects libraries and adjusted the editor sidebar layout.
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
 
 ### Removed
