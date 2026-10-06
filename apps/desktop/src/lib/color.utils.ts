@@ -4,10 +4,42 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function clampPercent(value: number) {
+  return clamp(value, 0, 100);
+}
+
+function clampHue(value: number) {
+  return clamp(value, 0, 360);
+}
+
+function positionRatio(coordinate: number, length: number) {
+  return length > 0 ? clamp(coordinate / length, 0, 1) : 0;
+}
+
+function saturationFromPosition(x: number, width: number) {
+  return positionRatio(x, width) * 100;
+}
+
+function valueFromPosition(y: number, height: number) {
+  return (1 - positionRatio(y, height)) * 100;
+}
+
+function positionFromSaturation(saturation: number) {
+  return clampPercent(saturation) / 100;
+}
+
+function positionFromValue(value: number) {
+  return 1 - clampPercent(value) / 100;
+}
+
+function positionFromHue(hue: number) {
+  return clampHue(hue) / 360;
+}
+
 function hsvToHex(hue: number, saturation: number, value: number): HexColor {
   const normalizedHue = ((hue % 360) + 360) % 360;
-  const s = clamp(saturation, 0, 100) / 100;
-  const v = clamp(value, 0, 100) / 100;
+  const s = clampPercent(saturation) / 100;
+  const v = clampPercent(value) / 100;
 
   const chroma = v * s;
   const segment = normalizedHue / 60;
@@ -70,16 +102,16 @@ function hexToHsv(hex: string) {
 function hsvFromSpectrumPosition(x: number, y: number, width: number, height: number, hue: number) {
   return {
     hue,
-    saturation: width > 0 ? clamp(x / width, 0, 1) * 100 : 0,
-    value: height > 0 ? (1 - clamp(y / height, 0, 1)) * 100 : 0,
+    saturation: saturationFromPosition(x, width),
+    value: valueFromPosition(y, height),
   };
 }
 
 function hueFromPosition(x: number, width: number) {
-  return width > 0 ? clamp(x / width, 0, 1) * 360 : 0;
+  return positionRatio(x, width) * 360;
 }
 
-// Оставь существующие HSL helpers, если они используются theme palette.
+// HSL conversions are shared by theme palette generation.
 function hslToHex(hue: number, saturation: number, lightness: number): HexColor {
   const chroma = (1 - Math.abs((2 * lightness) / 100 - 1)) * (saturation / 100);
   const segment = hue / 60;
@@ -138,4 +170,18 @@ function hexToHsl(hex: string) {
   };
 }
 
-export { hexToHsl, hexToHsv, hslToHex, hsvFromSpectrumPosition, hsvToHex, hueFromPosition };
+export {
+  clampHue,
+  clampPercent,
+  hexToHsl,
+  hexToHsv,
+  hslToHex,
+  hsvFromSpectrumPosition,
+  hsvToHex,
+  hueFromPosition,
+  positionFromHue,
+  positionFromSaturation,
+  positionFromValue,
+  saturationFromPosition,
+  valueFromPosition,
+};

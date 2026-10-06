@@ -119,12 +119,7 @@ function MenuBarViewContent() {
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSub>
-          <MenubarSubTrigger inset>
-            {/* <MenubarIcon>
-              <ColorSample color={resolvePrimaryColor(displayedPrimaryColor)} />
-            </MenubarIcon> */}
-            {t("settings.labels.color")}
-          </MenubarSubTrigger>
+          <MenubarSubTrigger inset>{t("settings.labels.color")}</MenubarSubTrigger>
           <MenubarSubContent>
             <MenubarRadioGroup value={primaryColor}>
               {PRIMARY_COLORS.map((color) => (
@@ -142,33 +137,6 @@ function MenuBarViewContent() {
                   </MenubarRadioItem>
                 </ApplicationCommandMenuItem>
               ))}
-              {/* <MenubarSub>
-                <MenubarSubTrigger
-                  inset
-                  onClick={() => {
-                    setPreviewColor(null);
-                    dispatch(primaryColorChanged(customPrimaryColor));
-                  }}
-                >
-                  {primaryColorKey === CUSTOM_PRIMARY_COLOR && (
-                    <MenubarIcon>
-                      <Check aria-hidden="true" />
-                    </MenubarIcon>
-                  )}
-                  {t("settings.options.colors.custom")}
-                  <MenubarShortcut className="flex items-center gap-2">
-                    <span className="font-mono">{displayedCustomColor.toUpperCase()}</span>
-                    <ColorSample color={resolvePrimaryColor(displayedCustomColor)} />
-                  </MenubarShortcut>
-                </MenubarSubTrigger>
-                <MenubarSubContent>
-                  <CustomColorPickerPanel
-                    onClose={closeMenu}
-                    onPreviewChange={setPreviewColor}
-                    previewColor={previewColor}
-                  />
-                </MenubarSubContent>
-              </MenubarSub> */}
             </MenubarRadioGroup>
           </MenubarSubContent>
         </MenubarSub>

@@ -58,32 +58,32 @@ function ColorPickerHarness() {
   );
 }
 
-function prepareSpectrumWheel() {
-  const wheel = screen.getByRole("button", { name: "Color saturation and brightness" });
+function prepareSpectrum() {
+  const spectrum = screen.getByRole("button", { name: "Saturation and brightness" });
 
-  Object.defineProperty(wheel, "getBoundingClientRect", {
+  Object.defineProperty(spectrum, "getBoundingClientRect", {
     configurable: true,
     value: () => new DOMRect(0, 0, 192, 192),
   });
-  Object.assign(wheel, {
+  Object.assign(spectrum, {
     hasPointerCapture: () => true,
     releasePointerCapture: vi.fn(),
     setPointerCapture: vi.fn(),
   });
 
-  return wheel;
+  return spectrum;
 }
 
 describe("CustomColorPopover", () => {
-  it("previews wheel scrubbing without dispatching and cancels without closing", async () => {
+  it("previews spectrum scrubbing without dispatching and cancels without closing", async () => {
     const user = userEvent.setup();
     const store = renderColorPicker();
     const dispatch = vi.spyOn(store, "dispatch");
 
     await user.click(screen.getByRole("button", { name: "Choose custom color" }));
 
-    const wheel = prepareSpectrumWheel();
-    fireEvent.pointerDown(wheel, { clientX: 96, clientY: 96, pointerId: 1 });
+    const spectrum = prepareSpectrum();
+    fireEvent.pointerDown(spectrum, { clientX: 96, clientY: 96, pointerId: 1 });
 
     expect(document.documentElement).toHaveAttribute("data-primary-color-scrubbing");
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#406080");
@@ -94,41 +94,44 @@ describe("CustomColorPopover", () => {
     expect(store.getState().preferences.customPrimaryColor).toBe("#123456");
     expect(dispatch).not.toHaveBeenCalled();
 
-    fireEvent.pointerCancel(wheel, { pointerId: 1 });
+    fireEvent.pointerCancel(spectrum, { pointerId: 1 });
 
     expect(screen.getByRole("textbox", { name: "Custom hex" })).toHaveValue("123456");
     expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
     expect(document.documentElement).toHaveAttribute("data-primary-color", "blue");
     expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
     expect(store.getState().preferences.primaryColor).toBe("blue");
-    expect(screen.getByRole("button", { name: "Color saturation and brightness" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Saturation and brightness" })).toBeVisible();
     expect(
       screen
-        .getByRole("button", { name: "Color saturation and brightness" })
+        .getByRole("button", { name: "Saturation and brightness" })
         .querySelector('[data-slot="color-spectrum-marker"]'),
     ).toHaveStyle({
       backgroundColor: "rgb(18, 52, 86)",
     });
   });
 
-  it("persists a released wheel color and uses it as the next cancellation baseline", async () => {
+  it("persists a released spectrum color and uses it as the next cancellation baseline", async () => {
     const user = userEvent.setup();
     const store = renderColorPicker();
+    const dispatch = vi.spyOn(store, "dispatch");
 
     await user.click(screen.getByRole("button", { name: "Choose custom color" }));
 
-    let wheel = prepareSpectrumWheel();
-    fireEvent.pointerDown(wheel, { clientX: 96, clientY: 96, pointerId: 1 });
-    fireEvent.pointerUp(wheel, { clientX: 96, clientY: 96, pointerId: 1 });
+    let spectrum = prepareSpectrum();
+    fireEvent.pointerDown(spectrum, { clientX: 96, clientY: 96, pointerId: 1 });
+    expect(dispatch).not.toHaveBeenCalled();
+    fireEvent.pointerUp(spectrum, { clientX: 96, clientY: 96, pointerId: 1 });
 
+    expect(dispatch).toHaveBeenCalledTimes(1);
     expect(store.getState().preferences.primaryColor).toBe("#406080");
     expect(store.getState().preferences.customPrimaryColor).toBe("#406080");
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#406080");
     expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
 
-    wheel = prepareSpectrumWheel();
-    fireEvent.pointerDown(wheel, { clientX: 0, clientY: 0, pointerId: 2 });
-    fireEvent.pointerCancel(wheel, { pointerId: 2 });
+    spectrum = prepareSpectrum();
+    fireEvent.pointerDown(spectrum, { clientX: 0, clientY: 0, pointerId: 2 });
+    fireEvent.pointerCancel(spectrum, { pointerId: 2 });
 
     expect(store.getState().preferences.primaryColor).toBe("#406080");
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#406080");
@@ -155,7 +158,7 @@ describe("CustomColorPopover", () => {
     expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
     expect(
       screen
-        .getByRole("button", { name: "Color saturation and brightness" })
+        .getByRole("button", { name: "Saturation and brightness" })
         .querySelector('[data-slot="color-spectrum-marker"]'),
     ).toHaveStyle({
       backgroundColor: "rgb(171, 205, 153)",

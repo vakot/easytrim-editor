@@ -37,7 +37,7 @@ function CustomColorPopover({
     setSession((current) => ({
       ...current,
       hexDraft: resolved.slice(1),
-      wheelColor: resolved,
+      pickerColor: resolved,
     }));
     previewPrimaryColor(resolved);
   };
@@ -87,7 +87,7 @@ function CustomColorPopover({
     <CustomColorContext.Provider
       value={{
         cancelInteraction,
-        color: session.wheelColor,
+        color: session.pickerColor,
         commit,
         hexValue: session.hexDraft,
         preview,
@@ -115,9 +115,19 @@ function CustomColorPopoverContent({
       <ColorSpectrum
         aria-label={t("settings.accessibility.colorSpectrum")}
         color={color}
+        formatHueValue={(hue) => t("settings.accessibility.colorSpectrumHueValue", { hue })}
+        formatSpectrumValue={(saturation, value) =>
+          t("settings.accessibility.colorSpectrumValue", {
+            saturation: Math.round(saturation),
+            value: Math.round(value),
+          })
+        }
+        hueLabel={t("settings.accessibility.colorSpectrumHue")}
         onCancel={cancelInteraction}
         onCommit={commit}
         onPreview={preview}
+        spectrumRoleDescription={t("settings.accessibility.colorSpectrumRoleDescription")}
+        spectrumLabel={t("settings.accessibility.colorSpectrumField")}
       />
       {children}
     </PopoverContent>
@@ -172,11 +182,11 @@ interface CustomColorContextValue {
 interface CustomColorEditSession {
   hexDraft: string;
   persistedColor: CustomPrimaryColor;
-  wheelColor: CustomPrimaryColor;
+  pickerColor: CustomPrimaryColor;
 }
 
 function createEditSession(color: CustomPrimaryColor): CustomColorEditSession {
-  return { hexDraft: color.slice(1), persistedColor: color, wheelColor: color };
+  return { hexDraft: color.slice(1), persistedColor: color, pickerColor: color };
 }
 
 const CustomColorContext = createContext<CustomColorContextValue | null>(null);

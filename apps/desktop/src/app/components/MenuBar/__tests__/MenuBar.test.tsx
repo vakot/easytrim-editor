@@ -255,10 +255,16 @@ describe("MenuBarTest", () => {
         menuState.preferences.theme = action.payload as Preferences["theme"];
       }
       if (action.type === "preferences/uiScaleIncreased") {
-        menuState.preferences.uiScalePercent = Math.min(200, menuState.preferences.uiScalePercent + 25);
+        menuState.preferences.uiScalePercent = Math.min(
+          200,
+          menuState.preferences.uiScalePercent + 25,
+        );
       }
       if (action.type === "preferences/uiScaleDecreased") {
-        menuState.preferences.uiScalePercent = Math.max(50, menuState.preferences.uiScalePercent - 25);
+        menuState.preferences.uiScalePercent = Math.max(
+          50,
+          menuState.preferences.uiScalePercent - 25,
+        );
       }
       if (action.type === "preferences/primaryColorChanged") {
         menuState.preferences.primaryColor = action.payload as Preferences["primaryColor"];
@@ -642,32 +648,32 @@ describe("MenuBarTest", () => {
     await user.click(screen.getByRole("button", { name: "Primary accent" }));
     await user.click(screen.getByRole("button", { name: "Custom" }));
 
-    const wheel = screen.getByRole("button", { name: /Theme color spectrum/ });
-    Object.defineProperty(wheel, "getBoundingClientRect", {
+    const spectrum = screen.getByRole("button", { name: "Saturation and brightness" });
+    Object.defineProperty(spectrum, "getBoundingClientRect", {
       value: () => new DOMRect(0, 0, 192, 192),
     });
-    Object.assign(wheel, {
+    Object.assign(spectrum, {
       hasPointerCapture: () => true,
       releasePointerCapture: vi.fn(),
       setPointerCapture: vi.fn(),
     });
 
-    fireEvent.pointerDown(wheel, { clientX: 96, clientY: 96, pointerId: 1 });
+    fireEvent.pointerDown(spectrum, { clientX: 96, clientY: 96, pointerId: 1 });
 
     const activeSwatch = screen.getByRole("button", { name: "Primary accent" });
     const customSwatch = screen.getByRole("button", { name: "Custom" });
     expect(menuState.preferences.primaryColor).toBe("blue");
     expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe(
-      "#808080",
+      "#406080",
     );
     expect(activeSwatch).toHaveStyle({
-      backgroundColor: "var(--primary-color-preview, #4299e1)",
+      backgroundColor: "var(--primary)",
     });
     expect(customSwatch).toHaveStyle({
       backgroundColor: "var(--primary-color-preview, #123456)",
     });
 
-    fireEvent.pointerCancel(wheel, { pointerId: 1 });
+    fireEvent.pointerCancel(spectrum, { pointerId: 1 });
     expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
     expect(menuState.preferences.primaryColor).toBe("blue");
   });
@@ -816,7 +822,7 @@ describe("MenuBarTest", () => {
     await user.keyboard("{Escape}");
   });
 
-  it("shows hex values and accepts custom input as soon as it is valid", async () => {
+  it("shows hex values for the primary color presets", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
@@ -849,61 +855,6 @@ describe("MenuBarTest", () => {
       expect(item).toHaveTextContent(hex);
       expect(item.querySelector('[aria-hidden="true"]')).not.toBeNull();
     }
-    const customItem = screen.getByRole("menuitem", { name: /Custom/ });
-    expect(customItem).toHaveTextContent("#123456");
-    expect(customItem.querySelector('[aria-hidden="true"]')).not.toBeNull();
-    await user.click(screen.getByRole("menuitemradio", { name: /Amber/ }));
-    expect(screen.getByRole("menuitemradio", { name: /Amber/ })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("menuitem", { name: /Custom/ }));
-    expect(document.documentElement).toHaveAttribute("data-primary-color", "#123456");
-
-    const spectrum = await screen.findByRole("button", { name: /Theme color spectrum/ });
-    expect(spectrum).toBeVisible();
-    Object.defineProperty(spectrum, "getBoundingClientRect", {
-      value: () => new DOMRect(0, 0, 192, 192),
-    });
-    fireEvent.pointerDown(spectrum, { pointerId: 1, clientX: 96, clientY: 96 });
-    expect(customItem).toHaveTextContent("#808080");
-    expect(colorItem?.querySelector('[aria-hidden="true"]')).toHaveStyle({
-      backgroundColor: "rgb(128, 128, 128)",
-    });
-    fireEvent.pointerCancel(spectrum, { pointerId: 1 });
-    expect(customItem).toHaveTextContent("#123456");
-    const hexInput = screen.getByRole("textbox", { name: "Custom hex" });
-    expect(hexInput).toHaveValue("123456");
-    expect(hexInput.previousElementSibling).toHaveAttribute("aria-hidden", "true");
-    await user.clear(hexInput);
-    expect(hexInput.previousElementSibling).toHaveTextContent("#");
-    fireEvent.change(hexInput, { target: { value: "abcde" } });
-    expect(hexInput).toHaveValue("abcde");
-    fireEvent.change(hexInput, { target: { value: "abcdef" } });
-    expect(document.documentElement).toHaveAttribute("data-primary-color", "#abcdef");
-
-    const reopenedCustomItem = screen.getByRole("menuitem", { name: /Custom/ });
-    await user.click(reopenedCustomItem);
-    const reopenedSpectrum = await screen.findByRole("button", { name: /Theme color spectrum/ });
-    const reopenedHexInput = screen.getByRole("textbox", { name: "Custom hex" });
-    fireEvent.change(reopenedHexInput, { target: { value: "abcdeg" } });
-    expect(document.documentElement).toHaveAttribute("data-primary-color", "#abcdef");
-
-    const colorMenus = screen.getAllByRole("menu", { name: "Color" });
-    const customMenu = colorMenus[colorMenus.length - 1];
-    expect(customMenu).toBeDefined();
-    Object.defineProperty(customItem, "getBoundingClientRect", {
-      value: () => new DOMRect(0, 0, 200, 32),
-    });
-    Object.defineProperty(customMenu, "getBoundingClientRect", {
-      value: () => new DOMRect(204, 0, 210, 240),
-    });
-    fireEvent.pointerLeave(customItem, { clientX: 199, clientY: 16 });
-    fireEvent.pointerMove(reopenedSpectrum, { clientX: 208, clientY: 16 });
-    expect(screen.getByRole("button", { name: /Theme color spectrum/ })).toBeVisible();
-
-    reopenedHexInput.focus();
-    await user.keyboard("{Enter}");
-    expect(screen.queryByRole("menuitem", { name: /Custom/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Theme color spectrum/ })).not.toBeInTheDocument();
   });
 
   it("switches between open menus on hover but stays click-to-open when closed", async () => {

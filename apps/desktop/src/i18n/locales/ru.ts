@@ -280,8 +280,12 @@ export const ru = {
       title: "Настройки",
     },
     accessibility: {
-      colorSpectrum:
-        "Цветовой спектр темы. Используйте стрелки влево и вправо для изменения оттенка.",
+      colorSpectrum: "Выбор цвета темы",
+      colorSpectrumField: "Насыщенность и яркость",
+      colorSpectrumHue: "Оттенок",
+      colorSpectrumHueValue: "{{hue}} градусов",
+      colorSpectrumRoleDescription: "двумерный выбор цвета",
+      colorSpectrumValue: "Насыщенность {{saturation}}%; яркость {{value}}%",
       customColorHex: "Пользовательский HEX-код",
     },
     options: {

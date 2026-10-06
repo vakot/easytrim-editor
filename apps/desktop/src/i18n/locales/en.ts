@@ -279,7 +279,12 @@ export const en = {
       title: "Settings",
     },
     accessibility: {
-      colorSpectrum: "Theme color spectrum. Use the Left and Right Arrow keys to adjust the hue.",
+      colorSpectrum: "Theme color picker",
+      colorSpectrumField: "Saturation and brightness",
+      colorSpectrumHue: "Hue",
+      colorSpectrumHueValue: "{{hue}} degrees",
+      colorSpectrumRoleDescription: "two-dimensional color selector",
+      colorSpectrumValue: "Saturation {{saturation}}%; brightness {{value}}%",
       customColorHex: "Custom hex",
     },
     options: {

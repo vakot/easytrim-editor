@@ -279,7 +279,12 @@ export const sk = {
       title: "Nastavenia",
     },
     accessibility: {
-      colorSpectrum: "Spektrum farieb motívu. Odtieň upravíte šípkami doľava a doprava.",
+      colorSpectrum: "Výber farby motívu",
+      colorSpectrumField: "Sýtosť a jas",
+      colorSpectrumHue: "Odtieň",
+      colorSpectrumHueValue: "{{hue}} stupňov",
+      colorSpectrumRoleDescription: "dvojrozmerný výber farby",
+      colorSpectrumValue: "Sýtosť {{saturation}} %; jas {{value}} %",
       customColorHex: "Hexadecimálna hodnota vlastnej farby",
     },
     options: {
