@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { ColorSample, ColorSpectrum } from "../color";
+import { ColorSample, ColorSpectrum } from "../../color";
 
 const meta = {
   component: ColorSample,

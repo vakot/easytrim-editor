@@ -1,4 +1,4 @@
-import { Monitor, Moon, Sun } from "lucide-react";
+import { ChevronsUpDown, Monitor, Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -11,28 +11,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { getPrimaryColorCommandId, getThemeCommandId } from "@/app/commands/appearance";
+import { getThemeCommandId } from "@/app/commands/appearance";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import {
   MAX_UI_SCALE_PERCENT,
   MIN_UI_SCALE_PERCENT,
   UI_SCALE_STEP_PERCENT,
 } from "@/app/preferences";
-import { useAppSelector } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
+  customPrimaryColorChanged,
   selectCustomPrimaryColor,
   selectPrimaryColor,
   selectThemePreference,
   selectUiScalePercent,
 } from "@/app/store/slices/preferences-slice";
 import { PRIMARY_COLORS, resolvePrimaryColor } from "@/app/theme/theme";
-
+import { useTheme } from "@/app/theme/useTheme";
 import {
-  CustomColorInput,
-  CustomColorPopover,
-  CustomColorPopoverContent,
-  CustomColorPopoverTrigger,
-} from "../components/CustomColorPopover";
+  ColorPicker,
+  ColorPickerInput,
+  ColorPickerSpectrum,
+  ColorSample,
+} from "@/components/color";
+
 import { CommandButton, CommandReset, SettingRow, SettingsSection } from "../components/SettingRow";
 
 const uiScaleOptions = Array.from(
@@ -43,17 +45,13 @@ const uiScaleOptions = Array.from(
 function SettingsAppearance() {
   const { t } = useTranslation();
   const { executeCommand } = useApplicationCommands();
+  const { finishPrimaryColorPreview, previewPrimaryColor } = useTheme();
+  const dispatch = useAppDispatch();
+
   const theme = useAppSelector(selectThemePreference);
   const primaryColor = useAppSelector(selectPrimaryColor);
   const customPrimaryColor = useAppSelector(selectCustomPrimaryColor);
   const uiScalePercent = useAppSelector(selectUiScalePercent);
-  const colorLabels = {
-    amber: t("settings.options.colors.amber"),
-    blue: t("settings.options.colors.blue"),
-    emerald: t("settings.options.colors.emerald"),
-    rose: t("settings.options.colors.rose"),
-    violet: t("settings.options.colors.violet"),
-  };
 
   const themeOptions = [
     {
@@ -110,40 +108,50 @@ function SettingsAppearance() {
             <CollapsibleTrigger asChild>
               <Button
                 aria-label={t("settings.labels.primaryAccent")}
-                className="size-8 p-0"
-                style={{ backgroundColor: "var(--primary)" }}
-              />
+                className="w-44"
+                variant="outline"
+              >
+                <ColorSample color={resolvePrimaryColor(primaryColor)} selected />
+                {resolvePrimaryColor(primaryColor)}
+                <ChevronsUpDown aria-hidden="true" className="ml-auto text-muted-foreground" />
+              </Button>
             </CollapsibleTrigger>
           </SettingRow>
 
           <CollapsibleContent className="mb-4 flex flex-wrap items-center gap-1.5">
-            {PRIMARY_COLORS.map((color) => (
-              <Button
-                aria-label={colorLabels[color]}
-                aria-pressed={primaryColor === color}
-                className="size-8 p-0"
-                key={color}
-                onClick={() => void executeCommand(getPrimaryColorCommandId(color), "dialog")}
-                style={{ backgroundColor: resolvePrimaryColor(color) }}
-                title={colorLabels[color]}
-              />
-            ))}
+            {/* TODO: ColorPicker = source of truth */}
+            <ColorPicker
+              defaultValue={customPrimaryColor}
+              onCancel={() => previewPrimaryColor(null)}
+              onCommit={(color) => {
+                dispatch(customPrimaryColorChanged(color));
+                finishPrimaryColorPreview(color);
+              }}
+              onPreview={previewPrimaryColor}
+            >
+              <div className="w-full space-y-3">
+                <ColorPickerSpectrum aria-label={t("settings.accessibility.colorSpectrum")} />
 
-            <CustomColorPopover value={customPrimaryColor}>
-              <CustomColorPopoverTrigger asChild>
-                <Button
-                  style={{
-                    backgroundColor: `var(--primary-color-preview, ${resolvePrimaryColor(customPrimaryColor)})`,
-                  }}
-                >
-                  {t("settings.options.colors.custom")}
-                </Button>
-              </CustomColorPopoverTrigger>
+                <div className="flex items-center gap-2">
+                  <ColorPickerInput
+                    aria-label={t("settings.accessibility.customColorHex")}
+                    className="flex-1"
+                  />
 
-              <CustomColorPopoverContent>
-                <CustomColorInput aria-label={t("settings.accessibility.customColorHex")} />
-              </CustomColorPopoverContent>
-            </CustomColorPopover>
+                  {/* TODO: PRIMARY_COLORS = presets for ColorPicker - apply selected to ColorPicker */}
+                  {PRIMARY_COLORS.map((color) => (
+                    <Button
+                      className="p-0.5"
+                      onClick={() => void dispatch(customPrimaryColorChanged(color))}
+                      size="icon"
+                      variant={primaryColor === color ? "secondary" : "outline"}
+                    >
+                      <ColorSample color={color} />
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </ColorPicker>
           </CollapsibleContent>
         </div>
       </Collapsible>
@@ -151,9 +159,14 @@ function SettingsAppearance() {
       <SettingRow
         description={t("settings.pages.appearance.scalingDescription")}
         label={
-          <span className="flex items-center">
+          <span className="flex items-center gap-2">
             {t("app.labels.uiScaling")}
-            <CommandButton commandId="ui-scale-reset" type="reset" variant="link">
+            <CommandButton
+              className="h-auto p-0"
+              commandId="ui-scale-reset"
+              type="reset"
+              variant="link"
+            >
               {t("common.actions.reset")}
             </CommandButton>
           </span>

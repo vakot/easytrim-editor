@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-import { ColorSample } from "@/components/ui/color";
+import { ColorSample } from "@/components/color";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { primaryColorChanged } from "@/app/store/slices/preferences-slice";
