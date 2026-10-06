@@ -2,12 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/class-names.utils";
 import type { HexColor } from "@/lib/color.types";
-import {
-  hexToHsv,
-  hsvFromSpectrumPosition,
-  hsvToHex,
-  hueFromPosition,
-} from "@/lib/color.utils";
+import { hexToHsv, hsvFromSpectrumPosition, hsvToHex, hueFromPosition } from "@/lib/color.utils";
 
 function ColorSample({
   className,
@@ -136,7 +131,11 @@ function ColorSpectrum({
   function scrub(event: React.PointerEvent<HTMLButtonElement>, type: "spectrum" | "hue") {
     const active = activePointer.current;
 
-    if (active?.id !== event.pointerId || active.type !== type || active.target !== event.currentTarget)
+    if (
+      active?.id !== event.pointerId ||
+      active.type !== type ||
+      active.target !== event.currentTarget
+    )
       return;
 
     if (type === "spectrum") {
