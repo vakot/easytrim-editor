@@ -10,7 +10,7 @@ import {
   LibraryNavigationItem,
   LibraryPage,
   LibrarySeparator,
-} from "@/components/ui/library";
+} from "@/components/library";
 
 const meta = {
   title: "Design System/Library",

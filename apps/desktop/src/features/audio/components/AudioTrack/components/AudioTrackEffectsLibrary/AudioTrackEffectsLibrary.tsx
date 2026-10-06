@@ -8,10 +8,10 @@ import {
   LibraryNavigation,
   LibraryNavigationGroup,
   LibraryNavigationItem,
+  LibraryNavigationItemIndicator,
   LibraryPage,
   LibrarySeparator,
-} from "@/components/ui/library";
-
+} from "@/components/library";
 import { AUDIO_PROCESSING_STAGES, type AudioProcessingStage } from "@/domain/audio-processing";
 
 import {
@@ -92,12 +92,18 @@ function AudioTrackEffectTab({
     draft.effectStatus[effect.id]?.dirty;
 
   return (
-    <LibraryNavigationItem
-      indicator={enabled ? <Check /> : null}
-      trailingIndicator={dirty ? <span className="size-1.5 rounded-full bg-current" /> : null}
-      value={effect.id}
-    >
+    <LibraryNavigationItem className="px-8" value={effect.id}>
+      {enabled ? (
+        <LibraryNavigationItemIndicator>
+          <Check />
+        </LibraryNavigationItemIndicator>
+      ) : null}
       {effect.label(t)}
+      {dirty ? (
+        <LibraryNavigationItemIndicator side="right">
+          <span className="size-1.5 rounded-full bg-current" />
+        </LibraryNavigationItemIndicator>
+      ) : null}
     </LibraryNavigationItem>
   );
 }

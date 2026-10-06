@@ -220,9 +220,7 @@ export const en = {
   },
   settings: {
     pages: {
-      dialogDescription: "Change EasyTrim preferences. Updates take effect immediately.",
       navigationLabel: "Settings pages",
-      groups: { preferences: "Preferences", workspace: "Workspace", about: "About" },
       general: {
         title: "General",
         description: "Choose how EasyTrim presents its interface.",
@@ -253,18 +251,15 @@ export const en = {
         description: "Choose how the export queue starts and finishes.",
         autoStartDescription: "Start processing as soon as exports are added to the queue.",
         onFinishedDescription: "Choose what happens when every queued export finishes.",
-        resetLabel: "Reset Queue settings",
+        resetLabel: "Reset queue settings",
       },
       about: {
-        title: "About / Updates",
+        title: "About",
         description: "Application version, updates, and project resources.",
-        versionLabel: "Application version",
         versionDescription: "View this version's release notes.",
-        openRelease: "Open release page",
         updatesLabel: "Updates",
         updatesDescription: "Check for updates or install an available update.",
       },
-      resetImmediateDescription: "Changes take effect immediately.",
     },
     labels: {
       activityFeedView: "Activity Feed View",

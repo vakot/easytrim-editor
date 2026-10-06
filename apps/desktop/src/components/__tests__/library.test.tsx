@@ -11,7 +11,7 @@ import {
   LibraryNavigationItem,
   LibraryPage,
   LibrarySeparator,
-} from "@/components/ui/library";
+} from "@/components/library";
 
 function ControlledLibrary() {
   const [value, setValue] = useState("general");

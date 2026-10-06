@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { CheckIcon, ChevronDownIcon, ChevronsUpDownIcon, ChevronUpIcon } from "lucide-react";
 import { Select as SelectPrimitive } from "radix-ui";
 import * as React from "react";
 
@@ -60,7 +60,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground group-data-[variant=primary]/select-trigger:text-primary-foreground" />
+        <ChevronsUpDownIcon className="pointer-events-none size-4 text-muted-foreground group-data-[variant=primary]/select-trigger:text-primary-foreground" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );

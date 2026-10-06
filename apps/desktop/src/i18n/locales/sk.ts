@@ -220,9 +220,7 @@ export const sk = {
   },
   settings: {
     pages: {
-      dialogDescription: "Zmeňte nastavenia EasyTrim. Zmeny sa prejavia okamžite.",
       navigationLabel: "Stránky nastavení",
-      groups: { preferences: "Predvoľby", workspace: "Pracovný priestor", about: "Informácie" },
       general: {
         title: "Všeobecné",
         description: "Vyberte, ako má EasyTrim zobrazovať svoje rozhranie.",
@@ -256,15 +254,12 @@ export const sk = {
         resetLabel: "Obnoviť nastavenia frontu",
       },
       about: {
-        title: "Informácie / Aktualizácie",
+        title: "Informácie",
         description: "Verzia aplikácie, aktualizácie a zdroje projektu.",
-        versionLabel: "Verzia aplikácie",
         versionDescription: "Zobraziť poznámky k vydaniu tejto verzie.",
-        openRelease: "Otvoriť stránku vydania",
         updatesLabel: "Aktualizácie",
         updatesDescription: "Skontrolovať aktualizácie alebo nainštalovať dostupnú aktualizáciu.",
       },
-      resetImmediateDescription: "Zmeny sa prejavia okamžite.",
     },
     labels: {
       activityFeedView: "Zobrazenie prehľadu aktivít",

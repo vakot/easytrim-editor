@@ -221,9 +221,7 @@ export const ru = {
   },
   settings: {
     pages: {
-      dialogDescription: "Измените настройки EasyTrim. Изменения применяются сразу.",
       navigationLabel: "Разделы настроек",
-      groups: { preferences: "Настройки", workspace: "Рабочая область", about: "О программе" },
       general: {
         title: "Общие",
         description: "Выберите, как EasyTrim отображает интерфейс.",
@@ -257,15 +255,12 @@ export const ru = {
         resetLabel: "Сбросить настройки очереди",
       },
       about: {
-        title: "О программе / Обновления",
+        title: "О программе",
         description: "Версия приложения, обновления и ресурсы проекта.",
-        versionLabel: "Версия приложения",
         versionDescription: "Открыть заметки к выпуску этой версии.",
-        openRelease: "Открыть страницу выпуска",
         updatesLabel: "Обновления",
         updatesDescription: "Проверить наличие обновлений или установить доступное обновление.",
       },
-      resetImmediateDescription: "Изменения применяются сразу.",
     },
     labels: {
       activityFeedView: "Вид ленты активности",
