@@ -190,7 +190,6 @@ describe("MenuBarTest", () => {
     hasSource?: boolean;
     isChoosingSource?: boolean;
     onPreferenceChange?: (key: PreferenceKey, enabled: boolean) => void;
-    onPreferencesReset?: () => void;
     preferences?: Preferences;
     primaryColor?: Preferences["primaryColor"];
     queueFinishAction?: QueueFinishAction;
@@ -232,12 +231,6 @@ describe("MenuBarTest", () => {
         menuState.preferences[key] = enabled;
       });
 
-    const resetPreferences =
-      overrides.onPreferencesReset ??
-      (() => {
-        menuState.preferences = { ...DEFAULT_PREFERENCES };
-      });
-
     menuState.dispatch = vi.fn((action: { payload?: unknown; type: string }) => {
       if (action.type === "export/exportQueueDialogOpened") {
         menuState.export.queueDialogOpen = true;
@@ -255,15 +248,27 @@ describe("MenuBarTest", () => {
         const payload = action.payload as { enabled: boolean; key: PreferenceKey };
         setPreference(payload.key, payload.enabled);
       }
-      if (action.type === "preferences/preferencesReset") {
-        resetPreferences();
+      if (action.type === "preferences/editorSettingsReset") {
+        menuState.preferences.loopPlaybackEnabledDefault =
+          DEFAULT_PREFERENCES.loopPlaybackEnabledDefault;
+        menuState.preferences.mergeAudioEnabledDefault =
+          DEFAULT_PREFERENCES.mergeAudioEnabledDefault;
+        menuState.preferences.segmentPlaybackEnabledDefault =
+          DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault;
       }
-      if (action.type === "preferences/viewSettingsReset") {
+      if (action.type === "preferences/appearanceSettingsReset") {
+        menuState.preferences.theme = DEFAULT_PREFERENCES.theme;
+        menuState.preferences.primaryColor = DEFAULT_PREFERENCES.primaryColor;
+        menuState.preferences.uiScalePercent = DEFAULT_PREFERENCES.uiScalePercent;
+      }
+      if (action.type === "preferences/appearanceThemeColorReset") {
         menuState.preferences.theme = DEFAULT_PREFERENCES.theme;
         menuState.preferences.primaryColor = DEFAULT_PREFERENCES.primaryColor;
       }
       if (action.type === "queue/settingsReset") {
         menuState.export.queueFinishAction = "nothing";
+        menuState.preferences.autoStartQueueEnabled =
+          DEFAULT_PREFERENCES.autoStartQueueEnabled;
         menuState.preferences.deleteSourceOnRenderFinish = false;
       }
       if (action.type === "preferences/themePreferenceChanged") {
@@ -394,7 +399,7 @@ describe("MenuBarTest", () => {
     await user.click(screen.getByRole("button", { name: "Reset to default" }));
 
     expect(menuState.dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "preferences/viewSettingsReset" }),
+      expect.objectContaining({ type: "preferences/appearanceSettingsReset" }),
     );
     expect(menuState.preferences).toMatchObject({
       theme: DEFAULT_PREFERENCES.theme,

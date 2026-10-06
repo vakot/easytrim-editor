@@ -1,11 +1,10 @@
-import { BetweenVerticalStart, Play, Repeat } from "lucide-react";
+import { BetweenVerticalStart, Repeat } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   preferenceChanged,
-  selectAutoStartQueueEnabled,
   selectLoopPlaybackEnabledDefault,
   selectSegmentPlaybackEnabledDefault,
 } from "@/app/store/slices/preferences-slice";
@@ -13,23 +12,15 @@ import {
 function usePlaybackPreferenceCommands() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const autoStart = useAppSelector(selectAutoStartQueueEnabled);
   const loop = useAppSelector(selectLoopPlaybackEnabledDefault);
   const followSegment = useAppSelector(selectSegmentPlaybackEnabledDefault);
   const labels = {
-    autoStartQueueEnabled: t("settings.labels.autoStartQueue"),
     loopPlaybackEnabledDefault: t("settings.options.commandLabels.loop"),
     segmentPlaybackEnabledDefault: t("settings.options.commandLabels.followSegment"),
   };
 
   return (
     [
-      {
-        checked: autoStart,
-        icon: <Play aria-hidden="true" />,
-        key: "autoStartQueueEnabled",
-        id: "preference-auto-start-queue" as const,
-      },
       {
         checked: loop,
         icon: <Repeat aria-hidden="true" />,

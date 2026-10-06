@@ -5,12 +5,12 @@ import { commandSearchTerms } from "@/app/commands/core/application-command.util
 import { DEFAULT_PREFERENCES } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
+  appearanceThemeColorReset,
   selectPrimaryColor,
   selectThemePreference,
-  viewSettingsReset,
 } from "@/app/store/slices/preferences-slice";
 
-function useResetViewSettingsCommand() {
+function useResetAppearanceThemeColorSettingsCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const theme = useAppSelector(selectThemePreference);
@@ -23,13 +23,13 @@ function useResetViewSettingsCommand() {
     icon: <RotateCcw aria-hidden="true" />,
     surfaces: ["dialog", "menu"] as const,
     run() {
-      dispatch(viewSettingsReset());
+      dispatch(appearanceThemeColorReset());
     },
-    id: "reset-view-settings" as const,
+    id: "reset-appearance-theme-color-settings" as const,
     label,
     searchTerms: commandSearchTerms(`${label}|view|theme|color|appearance`),
     variant: "destructive" as const,
   };
 }
 
-export { useResetViewSettingsCommand };
+export { useResetAppearanceThemeColorSettingsCommand };

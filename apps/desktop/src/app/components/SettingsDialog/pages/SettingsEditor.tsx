@@ -37,7 +37,7 @@ function SettingsEditor() {
       </SettingRow>
 
       <SettingRow label={t("settings.pages.defaults.resetLabel")}>
-        <CommandReset commandId="reset-preferences" />
+        <CommandReset commandId="reset-editor-settings" />
       </SettingRow>
     </SettingsSection>
   );

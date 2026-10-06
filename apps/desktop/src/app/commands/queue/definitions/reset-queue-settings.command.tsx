@@ -9,7 +9,10 @@ import {
   selectAvailableQueueFinishActions,
   selectQueueFinishAction,
 } from "@/app/store/slices/export-slice";
-import { selectDeleteSourceOnRenderFinish } from "@/app/store/slices/preferences-slice";
+import {
+  selectAutoStartQueueEnabled,
+  selectDeleteSourceOnRenderFinish,
+} from "@/app/store/slices/preferences-slice";
 
 function useResetQueueSettingsCommand() {
   const { t } = useTranslation();
@@ -17,6 +20,7 @@ function useResetQueueSettingsCommand() {
   const queueFinishAction = useAppSelector(selectQueueFinishAction);
   const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
   const deleteSourceOnFinish = useAppSelector(selectDeleteSourceOnRenderFinish);
+  const autoStartQueue = useAppSelector(selectAutoStartQueueEnabled);
   const label = t("app.actions.resetToDefault");
   const defaultQueueFinishAction = availableQueueFinishActions.includes("nothing")
     ? "nothing"
@@ -25,6 +29,7 @@ function useResetQueueSettingsCommand() {
   return {
     enabled:
       queueFinishAction !== defaultQueueFinishAction ||
+      autoStartQueue !== DEFAULT_PREFERENCES.autoStartQueueEnabled ||
       deleteSourceOnFinish !== DEFAULT_PREFERENCES.deleteSourceOnRenderFinish,
     icon: <RotateCcw aria-hidden="true" />,
     surfaces: ["dialog", "menu"] as const,

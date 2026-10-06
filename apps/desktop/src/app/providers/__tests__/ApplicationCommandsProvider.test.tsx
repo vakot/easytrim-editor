@@ -62,6 +62,7 @@ const state = {
     primaryColor: "#efbf04",
     segmentPlaybackEnabledDefault: true,
     theme: "system",
+    uiScalePercent: 100,
   },
   export: { availableQueueFinishActions: ["exit", "nothing"], queueFinishAction: "nothing" },
   source: {
@@ -213,6 +214,11 @@ describe("ApplicationCommandsProvider", () => {
     state.importWorkflow.isNativeDialogOpen = false;
     state.preferences.activityFeedView = "default";
     state.preferences.layoutDensity = "default";
+    state.preferences.autoStartQueueEnabled = true;
+    state.preferences.uiScalePercent = 100;
+    state.preferences.loopPlaybackEnabledDefault = true;
+    state.preferences.mergeAudioEnabledDefault = false;
+    state.preferences.segmentPlaybackEnabledDefault = true;
   });
 
   it("executes synchronous commands through the shared runtime and exposes semantic metadata", async () => {
@@ -221,7 +227,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(60);
+    ).toHaveLength(61);
     expect(
       screen
         .getAllByRole("button")
@@ -253,7 +259,9 @@ describe("ApplicationCommandsProvider", () => {
     ]) {
       expect(screen.getByRole("button", { name: commandId })).not.toHaveAttribute("data-checked");
     }
-    expect(screen.getByRole("button", { name: "reset-view-settings" })).toHaveAttribute(
+    expect(
+      screen.getByRole("button", { name: "reset-appearance-theme-color-settings" }),
+    ).toHaveAttribute(
       "data-group",
       "Appearance / Theme",
     );
@@ -290,21 +298,21 @@ describe("ApplicationCommandsProvider", () => {
     );
     expect(screen.getByRole("button", { name: "preference-auto-start-queue" })).toHaveAttribute(
       "data-group",
-      "Preferences / Playback",
+      "Queue",
     );
     expect(screen.getByRole("button", { name: "preference-merge-audio" })).toHaveAttribute(
       "data-group",
       "Preferences / Audio",
     );
-    expect(screen.getByRole("button", { name: "reset-preferences" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "reset-editor-settings" })).toHaveAttribute(
       "data-group",
       "Preferences",
     );
     for (const commandId of [
-      "reset-preferences",
+      "reset-editor-settings",
       "reset-layout",
       "reset-queue-settings",
-      "reset-view-settings",
+      "reset-appearance-theme-color-settings",
     ]) {
       expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
         "data-surfaces",
@@ -337,12 +345,21 @@ describe("ApplicationCommandsProvider", () => {
       "data-label",
       "Reset to default",
     );
-    for (const commandId of ["reset-preferences", "reset-view-settings", "reset-queue-settings"]) {
+    for (const commandId of [
+      "reset-appearance-settings",
+      "reset-editor-settings",
+      "reset-appearance-theme-color-settings",
+      "reset-queue-settings",
+    ]) {
       expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
         "data-label",
         "Reset to default",
       );
     }
+    expect(screen.getByRole("button", { name: "reset-appearance-settings" })).toHaveAttribute(
+      "data-surfaces",
+      "dialog",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 
@@ -441,7 +458,7 @@ describe("ApplicationCommandsProvider", () => {
   it("does not execute menu-only commands from the palette surface", () => {
     renderRuntime();
 
-    fireEvent.click(screen.getByRole("button", { name: "reset-preferences" }));
+    fireEvent.click(screen.getByRole("button", { name: "reset-editor-settings" }));
 
     expect(mocks.dispatch).not.toHaveBeenCalled();
   });
@@ -464,5 +481,15 @@ describe("ApplicationCommandsProvider", () => {
     renderRuntime();
 
     expect(screen.getByRole("button", { name: "reset-layout" })).toBeEnabled();
+  });
+
+  it("enables only the reset command that owns a changed setting", () => {
+    state.preferences.autoStartQueueEnabled = false;
+    state.preferences.uiScalePercent = 125;
+    renderRuntime();
+
+    expect(screen.getByRole("button", { name: "reset-queue-settings" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "reset-appearance-settings" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "reset-editor-settings" })).toBeDisabled();
   });
 });

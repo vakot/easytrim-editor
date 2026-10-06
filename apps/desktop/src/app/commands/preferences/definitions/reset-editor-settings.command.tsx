@@ -4,9 +4,9 @@ import { useTranslation } from "react-i18next";
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { DEFAULT_PREFERENCES } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { preferencesReset, selectPreferences } from "@/app/store/slices/preferences-slice";
+import { editorSettingsReset, selectPreferences } from "@/app/store/slices/preferences-slice";
 
-function useResetPreferencesCommand() {
+function useResetEditorSettingsCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const preferences = useAppSelector(selectPreferences);
@@ -14,7 +14,6 @@ function useResetPreferencesCommand() {
 
   return {
     enabled:
-      preferences.autoStartQueueEnabled !== DEFAULT_PREFERENCES.autoStartQueueEnabled ||
       preferences.loopPlaybackEnabledDefault !== DEFAULT_PREFERENCES.loopPlaybackEnabledDefault ||
       preferences.mergeAudioEnabledDefault !== DEFAULT_PREFERENCES.mergeAudioEnabledDefault ||
       preferences.segmentPlaybackEnabledDefault !==
@@ -22,13 +21,13 @@ function useResetPreferencesCommand() {
     icon: <RotateCcw aria-hidden="true" />,
     surfaces: ["dialog", "menu"] as const,
     run() {
-      dispatch(preferencesReset());
+      dispatch(editorSettingsReset());
     },
-    id: "reset-preferences" as const,
+    id: "reset-editor-settings" as const,
     label,
     searchTerms: commandSearchTerms(`${label}|settings|preferences`),
     variant: "destructive" as const,
   };
 }
 
-export { useResetPreferencesCommand };
+export { useResetEditorSettingsCommand };

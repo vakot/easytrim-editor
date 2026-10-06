@@ -231,7 +231,7 @@ function SettingsAppearance() {
       </SettingRow>
 
       <SettingRow label={t("settings.pages.appearance.resetLabel")}>
-        <CommandReset commandId="reset-view-settings" />
+        <CommandReset commandId="reset-appearance-settings" />
       </SettingRow>
     </SettingsSection>
   );

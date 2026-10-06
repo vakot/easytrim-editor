@@ -13,7 +13,7 @@ import {
   activityFeedViewChanged,
   layoutDensityChanged,
   preferenceChanged,
-  preferencesReset,
+  editorSettingsReset,
   primaryColorChanged,
   themePreferenceChanged,
 } from "@/app/store/slices/preferences-slice";
@@ -273,7 +273,7 @@ describe("Redux Persist store integration", () => {
     });
   });
 
-  it("preserves view and queue settings when persisting a preferences reset", async () => {
+  it("preserves settings owned by other pages when resetting editor defaults", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
@@ -281,10 +281,11 @@ describe("Redux Persist store integration", () => {
     store.dispatch(layoutDensityChanged("compact"));
     store.dispatch(themePreferenceChanged("dark"));
     store.dispatch(primaryColorChanged("#4299e1"));
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
     store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
     store.dispatch(queueFinishActionChanged("exit"));
     await persistor.flush();
-    store.dispatch(preferencesReset());
+    store.dispatch(editorSettingsReset());
     await persistor.flush();
 
     expect(store.getState().export.queueFinishAction).toBe("exit");
@@ -295,6 +296,7 @@ describe("Redux Persist store integration", () => {
       layoutDensity: "compact",
       theme: "dark",
       primaryColor: "#4299e1",
+      autoStartQueueEnabled: false,
       deleteSourceOnRenderFinish: true,
     });
   });
@@ -303,13 +305,19 @@ describe("Redux Persist store integration", () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(queueFinishActionChanged("exit"));
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
     store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
+    store.dispatch(themePreferenceChanged("dark"));
+    store.dispatch(activityFeedViewChanged("branch"));
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     store.dispatch(queueSettingsReset());
     await persistor.flush();
 
     expect(store.getState().export.queueFinishAction).toBe("nothing");
+    expect(store.getState().preferences.autoStartQueueEnabled).toBe(true);
     expect(store.getState().preferences.deleteSourceOnRenderFinish).toBe(false);
+    expect(store.getState().preferences.theme).toBe("dark");
+    expect(store.getState().preferences.activityFeedView).toBe("branch");
     expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
     const persistedRoot = await readPersistedRoot(storage);
     expect(JSON.parse(String(persistedRoot.preferences))).toMatchObject({
