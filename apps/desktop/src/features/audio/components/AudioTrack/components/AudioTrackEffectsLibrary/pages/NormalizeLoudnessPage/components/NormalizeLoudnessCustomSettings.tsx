@@ -10,8 +10,8 @@ function NormalizeLoudnessCustomSettings({ streamIndex }: { streamIndex: number 
   const { dispatchForm, form } = useNormalizeLoudnessContext();
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <div className="grid gap-1.5">
+    <div className="grid gap-x-3 gap-y-1.5 sm:grid-cols-2 sm:grid-rows-[auto_auto]">
+      <div className="grid min-w-0 gap-y-1.5 sm:row-span-2 sm:grid-rows-subgrid">
         <Label htmlFor={`track-custom-lufs-${streamIndex}`}>{t("audio.labels.targetLufs")}</Label>
         <Input
           id={`track-custom-lufs-${streamIndex}`}
@@ -26,7 +26,7 @@ function NormalizeLoudnessCustomSettings({ streamIndex }: { streamIndex: number 
           value={form.targetLufsInput}
         />
       </div>
-      <div className="grid gap-1.5">
+      <div className="grid min-w-0 gap-y-1.5 sm:row-span-2 sm:grid-rows-subgrid">
         <Label htmlFor={`track-custom-peak-${streamIndex}`}>
           {t("audio.labels.maximumTruePeak")}
         </Label>
