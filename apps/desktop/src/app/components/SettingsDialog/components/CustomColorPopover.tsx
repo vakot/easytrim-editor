@@ -115,19 +115,9 @@ function CustomColorPopoverContent({
       <ColorSpectrum
         aria-label={t("settings.accessibility.colorSpectrum")}
         color={color}
-        formatHueValue={(hue) => t("settings.accessibility.colorSpectrumHueValue", { hue })}
-        formatSpectrumValue={(saturation, value) =>
-          t("settings.accessibility.colorSpectrumValue", {
-            saturation: Math.round(saturation),
-            value: Math.round(value),
-          })
-        }
-        hueLabel={t("settings.accessibility.colorSpectrumHue")}
         onCancel={cancelInteraction}
         onCommit={commit}
         onPreview={preview}
-        spectrumLabel={t("settings.accessibility.colorSpectrumField")}
-        spectrumRoleDescription={t("settings.accessibility.colorSpectrumRoleDescription")}
       />
       {children}
     </PopoverContent>

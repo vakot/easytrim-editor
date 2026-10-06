@@ -280,11 +280,6 @@ export const sk = {
     },
     accessibility: {
       colorSpectrum: "Výber farby motívu",
-      colorSpectrumField: "Sýtosť a jas",
-      colorSpectrumHue: "Odtieň",
-      colorSpectrumHueValue: "{{hue}} stupňov",
-      colorSpectrumRoleDescription: "dvojrozmerný výber farby",
-      colorSpectrumValue: "Sýtosť {{saturation}} %; jas {{value}} %",
       customColorHex: "Hexadecimálna hodnota vlastnej farby",
     },
     options: {

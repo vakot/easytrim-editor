@@ -37,41 +37,25 @@ function ColorSample({
   );
 }
 
-interface ColorSpectrumProps extends Omit<
-  React.ComponentProps<"div">,
-  "aria-label" | "color" | "role"
-> {
-  "aria-label": string;
+interface ColorSpectrumProps extends React.ComponentProps<"div"> {
   color: HexColor;
-  formatHueValue?: (hue: number) => string;
-  formatSpectrumValue?: (saturation: number, value: number) => string;
-  hueLabel?: string;
   onCancel?: () => void;
   onCommit?: (color: HexColor) => void;
   onPreview?: (color: HexColor) => void;
-  spectrumLabel?: string;
-  spectrumRoleDescription?: string;
 }
 
 function ColorSpectrum({
-  "aria-label": ariaLabel,
   className,
   color,
-  formatHueValue = (hue) => `${Math.round(hue)}°`,
-  formatSpectrumValue = (saturation, value) =>
-    `Saturation ${Math.round(saturation)}%; brightness ${Math.round(value)}%`,
-  hueLabel = "Hue",
+  id,
   onCancel,
   onCommit,
   onPreview,
-  spectrumLabel = "Saturation and brightness",
-  spectrumRoleDescription = "two-dimensional color selector",
+  role,
   ...props
 }: ColorSpectrumProps) {
   const [hsv, setHsv] = React.useState(() => hexToHsv(color));
   const hsvRef = React.useRef(hsv);
-  const previousColor = React.useRef(color);
-  const emittedColor = React.useRef<HexColor | null>(null);
   const activePointer = React.useRef<{
     id: number;
     target: HTMLButtonElement;
@@ -80,7 +64,8 @@ function ColorSpectrum({
 
   const scrubbedColor = React.useRef<HexColor | null>(null);
   const interactionStart = React.useRef<typeof hsv | null>(null);
-  const spectrumValueId = React.useId();
+  const groupId = React.useId();
+  const labelId = id ?? groupId;
 
   const updateHsv = React.useCallback((nextHsv: typeof hsv) => {
     hsvRef.current = nextHsv;
@@ -89,15 +74,9 @@ function ColorSpectrum({
 
   // HEX echoes cannot preserve hue at 360° or when saturation/value is zero.
   React.useLayoutEffect(() => {
-    if (previousColor.current === color) return;
-
-    previousColor.current = color;
-    if (emittedColor.current === color) {
-      emittedColor.current = null;
+    if (hsvToHex(hsvRef.current.hue, hsvRef.current.saturation, hsvRef.current.value) === color)
       return;
-    }
 
-    emittedColor.current = null;
     const active = activePointer.current;
     activePointer.current = null;
     interactionStart.current = null;
@@ -111,7 +90,6 @@ function ColorSpectrum({
   function preview(nextHsv: typeof hsv) {
     updateHsv(nextHsv);
     const nextColor = hsvToHex(nextHsv.hue, nextHsv.saturation, nextHsv.value);
-    emittedColor.current = nextColor;
     scrubbedColor.current = nextColor;
     onPreview?.(nextColor);
   }
@@ -278,7 +256,6 @@ function ColorSpectrum({
   function commit(nextHsv: typeof hsv) {
     updateHsv(nextHsv);
     const nextColor = hsvToHex(nextHsv.hue, nextHsv.saturation, nextHsv.value);
-    emittedColor.current = nextColor;
     onCommit?.(nextColor);
   }
 
@@ -293,21 +270,16 @@ function ColorSpectrum({
     [],
   );
 
-  const formattedSpectrumValue = formatSpectrumValue(hsv.saturation, hsv.value);
-
   return (
     <div
       {...props}
-      aria-label={ariaLabel}
       className={cn("w-84 space-y-3", className)}
       data-slot="color-spectrum"
-      role="group"
+      id={labelId}
+      role={role ?? "group"}
     >
       <button
-        aria-describedby={spectrumValueId}
-        aria-keyshortcuts="ArrowDown ArrowLeft ArrowRight ArrowUp Shift+ArrowDown Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp"
-        aria-label={spectrumLabel}
-        aria-roledescription={spectrumRoleDescription}
+        aria-labelledby={labelId}
         className="relative isolate block h-48 w-full cursor-crosshair touch-none rounded-lg ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring"
         data-slot="color-spectrum-field"
         onKeyDown={adjustSpectrum}
@@ -335,19 +307,14 @@ function ColorSpectrum({
             backgroundColor: hsvToHex(hsv.hue, hsv.saturation, hsv.value),
           }}
         />
-        <span className="sr-only" id={spectrumValueId}>
-          {formattedSpectrumValue}
-        </span>
       </button>
 
       <button
-        aria-keyshortcuts="ArrowDown ArrowLeft ArrowRight ArrowUp Home End Shift+ArrowDown Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp"
-        aria-label={hueLabel}
+        aria-labelledby={labelId}
         aria-orientation="horizontal"
         aria-valuemax={360}
         aria-valuemin={0}
         aria-valuenow={hsv.hue}
-        aria-valuetext={formatHueValue(Math.round(hsv.hue))}
         className="relative isolate block h-4 w-full touch-none rounded-full ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring"
         data-slot="color-hue-slider"
         onKeyDown={adjustHue}

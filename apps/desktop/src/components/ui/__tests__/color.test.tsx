@@ -48,8 +48,8 @@ function mockBounds(
 }
 
 function getControls() {
-  const spectrum = screen.getByRole("button", { name: "Saturation and brightness" });
-  const hue = screen.getByRole("slider", { name: "Hue" });
+  const spectrum = screen.getByRole("button", { name: "Color picker" });
+  const hue = screen.getByRole("slider", { name: "Color picker" });
   mockBounds(spectrum, 10, 20, 100, 100);
   mockBounds(hue, 10, 150, 100, 16);
 
@@ -222,12 +222,11 @@ describe("ColorSpectrum", () => {
     const expectedTop = 100 - (128 / 255) * 100 - 10;
 
     expect(screen.getByRole("group", { name: "Color picker" })).toBeVisible();
-    expect(spectrum).toHaveAttribute("aria-roledescription", "two-dimensional color selector");
-    expect(spectrum).toHaveAccessibleDescription("Saturation 0%; brightness 50%");
+    expect(spectrum).toHaveAccessibleName("Color picker");
+    expect(hue).toHaveAccessibleName("Color picker");
     expect(hue).toHaveAttribute("aria-valuemin", "0");
     expect(hue).toHaveAttribute("aria-valuemax", "360");
     expect(hue).toHaveAttribute("aria-valuenow", "0");
-    expect(hue).toHaveAttribute("aria-valuetext", "0°");
 
     fireEvent.keyDown(spectrum, { key: "ArrowLeft" });
     fireEvent.keyDown(spectrum, { key: "ArrowRight", shiftKey: true });
@@ -274,6 +273,21 @@ describe("ColorSpectrum", () => {
     expect(controlled.hueMarker).toHaveStyle({ left: "100%" });
     drag(controlled.hue, "pointerMove", 100, 158);
     expect(controlled.hueMarker).toHaveStyle({ left: "90%" });
+  });
+
+  it("forwards standard container attributes", () => {
+    render(
+      <ColorSpectrum
+        aria-label="Color picker"
+        color="#4299e1"
+        data-testid="picker"
+        id="picker"
+        title="Choose a color"
+      />,
+    );
+
+    expect(screen.getByTestId("picker")).toHaveAttribute("title", "Choose a color");
+    expect(screen.getByTestId("picker")).toHaveAttribute("id", "picker");
   });
 
   it("reopens cleanly after grayscale, black, and custom colors are committed", () => {

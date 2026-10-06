@@ -281,11 +281,6 @@ export const ru = {
     },
     accessibility: {
       colorSpectrum: "Выбор цвета темы",
-      colorSpectrumField: "Насыщенность и яркость",
-      colorSpectrumHue: "Оттенок",
-      colorSpectrumHueValue: "{{hue}} градусов",
-      colorSpectrumRoleDescription: "двумерный выбор цвета",
-      colorSpectrumValue: "Насыщенность {{saturation}}%; яркость {{value}}%",
       customColorHex: "Пользовательский HEX-код",
     },
     options: {
