@@ -127,12 +127,11 @@ function SettingsAppearance() {
           <CollapsibleContent className="mb-4 flex flex-wrap items-center gap-1.5">
             <ColorPicker
               defaultValue={primaryColor}
-              onCancel={() => previewPrimaryColor(null)}
+              onChange={previewPrimaryColor}
               onCommit={(color) => {
                 dispatch(primaryColorChanged(color));
                 finishPrimaryColorPreview(color);
               }}
-              onPreview={previewPrimaryColor}
             >
               <div className="w-full space-y-3">
                 <ColorPickerSpectrum aria-label={t("settings.accessibility.colorSpectrum")} />

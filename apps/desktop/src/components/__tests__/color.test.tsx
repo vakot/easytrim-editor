@@ -39,10 +39,11 @@ function getMarkers() {
 describe("ColorPicker", () => {
   it("routes preset selection through the active picker session", async () => {
     const user = userEvent.setup();
+    const onChange = vi.fn();
     const onCommit = vi.fn();
 
     render(
-      <ColorPicker defaultValue="#4299e1" onCommit={onCommit}>
+      <ColorPicker defaultValue="#4299e1" onChange={onChange} onCommit={onCommit}>
         <ColorPickerSpectrum aria-label="Primary color" />
         <ColorPickerInput aria-label="Primary color HEX" />
         <ColorPickerPreset value="#efbf04">
@@ -55,34 +56,41 @@ describe("ColorPicker", () => {
     const initialHuePosition = getMarkers().hueMarker.style.left;
     await user.click(screen.getByRole("button", { name: "Amber" }));
 
+    expect(onChange).toHaveBeenCalledWith("#efbf04");
     expect(onCommit).toHaveBeenCalledWith("#efbf04");
     expect(screen.getByRole("textbox", { name: "Primary color HEX" })).toHaveValue("efbf04");
     expect(getMarkers().spectrumMarker.style.backgroundColor).not.toBe(initialSpectrumColor);
     expect(getMarkers().hueMarker.style.left).not.toBe(initialHuePosition);
   });
 
-  it("commits valid HEX input to the same color callback", () => {
+  it("keeps incomplete HEX drafts local and changes then commits valid HEX input", () => {
+    const onChange = vi.fn();
     const onCommit = vi.fn();
 
     render(
-      <ColorPicker defaultValue="#4299e1" onCommit={onCommit}>
+      <ColorPicker defaultValue="#4299e1" onChange={onChange} onCommit={onCommit}>
         <ColorPickerInput aria-label="Primary color HEX" />
       </ColorPicker>,
     );
 
-    fireEvent.change(screen.getByRole("textbox", { name: "Primary color HEX" }), {
-      target: { value: "ABCDEF" },
-    });
+    const input = screen.getByRole("textbox", { name: "Primary color HEX" });
+    fireEvent.change(input, { target: { value: "abc12" } });
 
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onCommit).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: "ABCDEF" } });
+
+    expect(onChange).toHaveBeenCalledWith("#abcdef");
     expect(onCommit).toHaveBeenCalledWith("#abcdef");
   });
 
-  it("previews spectrum movement without committing until pointer release", () => {
-    const onPreview = vi.fn();
+  it("changes during spectrum movement and commits once on pointer release", () => {
+    const onChange = vi.fn();
     const onCommit = vi.fn();
 
     render(
-      <ColorPicker defaultValue="#4299e1" onCommit={onCommit} onPreview={onPreview}>
+      <ColorPicker defaultValue="#4299e1" onChange={onChange} onCommit={onCommit}>
         <ColorPickerSpectrum aria-label="Primary color" />
       </ColorPicker>,
     );
@@ -94,18 +102,56 @@ describe("ColorPicker", () => {
     mockBounds(field, 0, 0, 100, 100);
 
     fireEvent.pointerDown(field, { button: 0, clientX: 50, clientY: 50, pointerId: 1 });
-    expect(onPreview).toHaveBeenCalledWith("#406380");
+    expect(onChange).toHaveBeenCalledWith("#406380");
     expect(onCommit).not.toHaveBeenCalled();
 
-    fireEvent.pointerUp(field, { clientX: 50, clientY: 50, pointerId: 1 });
-    expect(onCommit).toHaveBeenCalledWith("#406380");
+    fireEvent.pointerMove(field, { clientX: 75, clientY: 25, pointerId: 1 });
+    fireEvent.pointerUp(field, { clientX: 75, clientY: 25, pointerId: 1 });
+    expect(onChange).toHaveBeenLastCalledWith("#307ebf");
+    expect(onCommit).toHaveBeenCalledOnce();
+    expect(onCommit).toHaveBeenCalledWith("#307ebf");
   });
 
-  it("restores the picker state when a spectrum pointer interaction is canceled", () => {
-    const onCancel = vi.fn();
+  it("restores the latest committed color on cancellation without committing", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onCommit = vi.fn();
 
     render(
-      <ColorPicker defaultValue="#4299e1" onCancel={onCancel}>
+      <ColorPicker defaultValue="#4299e1" onChange={onChange} onCommit={onCommit}>
+        <ColorPickerSpectrum aria-label="Primary color" />
+        <ColorPickerInput aria-label="Primary color HEX" />
+        <ColorPickerPreset value="#efbf04">
+          <button type="button">Amber</button>
+        </ColorPickerPreset>
+      </ColorPicker>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Amber" }));
+    onChange.mockClear();
+    onCommit.mockClear();
+
+    const field = screen.getByRole("button", {
+      name: "Primary color saturation and brightness",
+    });
+
+    mockBounds(field, 0, 0, 100, 100);
+    fireEvent.pointerDown(field, { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
+    expect(getMarkers().spectrumMarker.style.left).toBe("100%");
+    const transientPosition = getMarkers().spectrumMarker.style.left;
+    fireEvent.pointerCancel(field, { pointerId: 1 });
+
+    expect(onChange).toHaveBeenLastCalledWith("#efbf04");
+    expect(onCommit).not.toHaveBeenCalled();
+    expect(screen.getByRole("textbox", { name: "Primary color HEX" })).toHaveValue("efbf04");
+    expect(getMarkers().spectrumMarker.style.left).not.toBe(transientPosition);
+  });
+
+  it("restores the committed color when pointer capture is lost", () => {
+    const onChange = vi.fn();
+
+    render(
+      <ColorPicker defaultValue="#4299e1" onChange={onChange}>
         <ColorPickerSpectrum aria-label="Primary color" />
       </ColorPicker>,
     );
@@ -115,13 +161,31 @@ describe("ColorPicker", () => {
     });
 
     mockBounds(field, 0, 0, 100, 100);
-    const initialPosition = getMarkers().spectrumMarker.style.left;
-
+    const committedPosition = getMarkers().spectrumMarker.style.left;
     fireEvent.pointerDown(field, { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
-    expect(getMarkers().spectrumMarker.style.left).toBe("100%");
-    fireEvent.pointerCancel(field, { pointerId: 1 });
+    fireEvent.lostPointerCapture(field, { pointerId: 1 });
 
-    expect(onCancel).toHaveBeenCalledOnce();
-    expect(getMarkers().spectrumMarker.style.left).toBe(initialPosition);
+    expect(onChange).toHaveBeenLastCalledWith("#4299e1");
+    expect(getMarkers().spectrumMarker.style.left).toBe(committedPosition);
+  });
+
+  it("changes and commits keyboard adjustments", () => {
+    const onChange = vi.fn();
+    const onCommit = vi.fn();
+
+    render(
+      <ColorPicker defaultValue="#4299e1" onChange={onChange} onCommit={onCommit}>
+        <ColorPickerSpectrum aria-label="Primary color" />
+      </ColorPicker>,
+    );
+
+    fireEvent.keyDown(
+      screen.getByRole("button", { name: "Primary color saturation and brightness" }),
+      { key: "ArrowRight" },
+    );
+
+    expect(onChange).toHaveBeenCalledOnce();
+    expect(onCommit).toHaveBeenCalledOnce();
+    expect(onChange).toHaveBeenCalledWith(onCommit.mock.calls[0]?.[0]);
   });
 });

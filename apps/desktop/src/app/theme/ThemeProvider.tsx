@@ -32,16 +32,16 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   const previewPrimaryColor = useCallback(
-    (nextPrimaryColor: PrimaryColor | null) => {
+    (nextPrimaryColor: PrimaryColor) => {
       const root = document.documentElement;
-      root.toggleAttribute("data-primary-color-scrubbing", nextPrimaryColor !== null);
-      if (nextPrimaryColor) {
+      const isPersistedColor = nextPrimaryColor === primaryColor;
+      root.toggleAttribute("data-primary-color-scrubbing", !isPersistedColor);
+      if (!isPersistedColor) {
         root.style.setProperty("--primary-color-preview", nextPrimaryColor);
       } else {
         root.style.removeProperty("--primary-color-preview");
       }
-      const appliedColor = nextPrimaryColor ?? primaryColor;
-      applyPrimaryColor(root, appliedColor);
+      applyPrimaryColor(root, nextPrimaryColor);
     },
     [primaryColor],
   );

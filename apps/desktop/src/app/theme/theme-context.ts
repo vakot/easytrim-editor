@@ -4,7 +4,7 @@ import type { PrimaryColor, ResolvedTheme } from "./theme";
 
 interface ThemeContextValue {
   finishPrimaryColorPreview: (committedColor: PrimaryColor) => void;
-  previewPrimaryColor: (primaryColor: PrimaryColor | null) => void;
+  previewPrimaryColor: (primaryColor: PrimaryColor) => void;
   resolvedTheme: ResolvedTheme;
 }
 

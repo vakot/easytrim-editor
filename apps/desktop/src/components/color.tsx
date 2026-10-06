@@ -50,18 +50,17 @@ function ColorSample({
 function ColorPicker({
   children,
   defaultValue,
-  onCancel,
+  onChange,
   onCommit,
-  onPreview,
 }: React.PropsWithChildren<{
   defaultValue: HexColor;
-  onCancel?: () => void;
+  onChange?: (color: HexColor) => void;
   onCommit?: (color: HexColor) => void;
-  onPreview?: (color: HexColor) => void;
 }>) {
   const [state, setState] = React.useState(() => createColorPickerState(defaultValue));
+  const committedColor = React.useRef(defaultValue);
 
-  function preview(nextHsv: HsvColor) {
+  function change(nextHsv: HsvColor) {
     const color = hsvToHex(nextHsv.hue, nextHsv.saturation, nextHsv.value);
 
     setState({
@@ -69,32 +68,29 @@ function ColorPicker({
       hexDraft: color.slice(1),
     });
 
-    onPreview?.(color);
+    onChange?.(color);
   }
 
-  function commitColor(color: HexColor) {
+  function commitColor(color: HexColor, notifyChange = true) {
     setState(createColorPickerState(color));
+    committedColor.current = color;
+    if (notifyChange) onChange?.(color);
     onCommit?.(color);
   }
 
-  function commit(nextHsv: HsvColor) {
+  function commit(nextHsv: HsvColor, notifyChange = true) {
     const color = hsvToHex(nextHsv.hue, nextHsv.saturation, nextHsv.value);
-    commitColor(color);
+    commitColor(color, notifyChange);
   }
 
   function selectPreset(color: HexColor) {
     commitColor(color);
   }
 
-  function cancel(previousHsv: HsvColor) {
-    const color = hsvToHex(previousHsv.hue, previousHsv.saturation, previousHsv.value);
-
-    setState({
-      hsv: previousHsv,
-      hexDraft: color.slice(1),
-    });
-
-    onCancel?.();
+  function cancel() {
+    const color = committedColor.current;
+    setState(createColorPickerState(color));
+    onChange?.(color);
   }
 
   function editHex(value: string) {
@@ -121,7 +117,7 @@ function ColorPicker({
         editHex,
         hexDraft: state.hexDraft,
         hsv: state.hsv,
-        preview,
+        change,
         selectPreset,
       }}
     >
@@ -150,10 +146,9 @@ function ColorPickerSpectrum({
 }
 
 function ColorPickerSaturation({ "aria-label": ariaLabel }: { "aria-label"?: string }) {
-  const { cancel, commit, hsv, preview } = useColorPicker();
+  const { cancel, change, commit, hsv } = useColorPicker();
 
   const pointer = usePointerScrub({
-    value: hsv,
     resolve(event) {
       const bounds = event.currentTarget.getBoundingClientRect();
 
@@ -166,8 +161,8 @@ function ColorPickerSaturation({ "aria-label": ariaLabel }: { "aria-label"?: str
       );
     },
     onCancel: cancel,
-    onCommit: commit,
-    onPreview: preview,
+    onCommit: (value) => commit(value, false),
+    onChange: change,
   });
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
@@ -239,10 +234,9 @@ function ColorPickerSaturation({ "aria-label": ariaLabel }: { "aria-label"?: str
 }
 
 function ColorPickerHue({ "aria-label": ariaLabel }: { "aria-label"?: string }) {
-  const { cancel, commit, hsv, preview } = useColorPicker();
+  const { cancel, change, commit, hsv } = useColorPicker();
 
   const pointer = usePointerScrub({
-    value: hsv,
     resolve(event) {
       const bounds = event.currentTarget.getBoundingClientRect();
 
@@ -252,8 +246,8 @@ function ColorPickerHue({ "aria-label": ariaLabel }: { "aria-label"?: string }) 
       };
     },
     onCancel: cancel,
-    onCommit: commit,
-    onPreview: preview,
+    onCommit: (value) => commit(value, false),
+    onChange: change,
   });
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
@@ -366,50 +360,34 @@ function ColorPickerPreset({ children, value }: { children: React.ReactElement; 
 }
 
 interface PointerScrubOptions<T> {
-  onCancel: (value: T) => void;
+  onCancel: () => void;
+  onChange: (value: T) => void;
   onCommit: (value: T) => void;
-  onPreview: (value: T) => void;
   resolve: (event: React.PointerEvent<HTMLButtonElement>) => T;
-  value: T;
 }
 
-function usePointerScrub<T>({
-  onCancel,
-  onCommit,
-  onPreview,
-  resolve,
-  value,
-}: PointerScrubOptions<T>) {
+function usePointerScrub<T>({ onCancel, onChange, onCommit, resolve }: PointerScrubOptions<T>) {
   const activePointer = React.useRef<{
     id: number;
     target: HTMLButtonElement;
   } | null>(null);
 
-  const startValue = React.useRef<T | null>(null);
   const currentValue = React.useRef<T | null>(null);
 
   function clear() {
     activePointer.current = null;
-    startValue.current = null;
     currentValue.current = null;
   }
 
-  function release() {
-    const active = activePointer.current;
-
+  function release(active = activePointer.current) {
     if (active?.target.hasPointerCapture(active.id)) {
       active.target.releasePointerCapture(active.id);
     }
   }
 
   function cancel() {
-    const initial = startValue.current;
-
     clear();
-
-    if (initial !== null) {
-      onCancel(initial);
-    }
+    onCancel();
   }
 
   function onPointerDown(event: React.PointerEvent<HTMLButtonElement>) {
@@ -422,14 +400,12 @@ function usePointerScrub<T>({
       target: event.currentTarget,
     };
 
-    startValue.current = value;
-
     event.currentTarget.setPointerCapture(event.pointerId);
 
     const nextValue = resolve(event);
 
     currentValue.current = nextValue;
-    onPreview(nextValue);
+    onChange(nextValue);
   }
 
   function onPointerMove(event: React.PointerEvent<HTMLButtonElement>) {
@@ -442,7 +418,7 @@ function usePointerScrub<T>({
     const nextValue = resolve(event);
 
     currentValue.current = nextValue;
-    onPreview(nextValue);
+    onChange(nextValue);
   }
 
   function onPointerUp(event: React.PointerEvent<HTMLButtonElement>) {
@@ -453,11 +429,11 @@ function usePointerScrub<T>({
     }
 
     const finalValue = currentValue.current;
+    const pointer = activePointer.current;
 
     activePointer.current = null;
-    release();
+    release(pointer);
 
-    startValue.current = null;
     currentValue.current = null;
 
     if (finalValue !== null) {
@@ -466,10 +442,11 @@ function usePointerScrub<T>({
   }
 
   function onPointerCancel(event: React.PointerEvent<HTMLButtonElement>) {
-    if (activePointer.current?.id !== event.pointerId) return;
+    const active = activePointer.current;
+    if (active?.id !== event.pointerId) return;
 
     activePointer.current = null;
-    release();
+    release(active);
     cancel();
   }
 
@@ -497,12 +474,12 @@ function usePointerScrub<T>({
 }
 
 interface ColorPickerContextValue {
-  cancel: (value: HsvColor) => void;
-  commit: (value: HsvColor) => void;
+  cancel: () => void;
+  change: (value: HsvColor) => void;
+  commit: (value: HsvColor, notifyChange?: boolean) => void;
   editHex: (value: string) => void;
   hexDraft: string;
   hsv: HsvColor;
-  preview: (value: HsvColor) => void;
   selectPreset: (color: HexColor) => void;
 }
 
