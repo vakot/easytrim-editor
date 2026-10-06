@@ -141,10 +141,7 @@ function SettingsAppearance() {
               </CustomColorPopoverTrigger>
 
               <CustomColorPopoverContent>
-                <div className="flex h-6 items-center rounded-lg border px-1.5">
-                  <span className="font-mono text-xs text-muted-foreground">#</span>
-                  <CustomColorInput aria-label={t("settings.accessibility.customColorHex")} />
-                </div>
+                <CustomColorInput aria-label={t("settings.accessibility.customColorHex")} />
               </CustomColorPopoverContent>
             </CustomColorPopover>
           </CollapsibleContent>
@@ -162,7 +159,10 @@ function SettingsAppearance() {
           </span>
         }
       >
-        <Select onValueChange={(value) => void handleUiScaleChange(value)} value={String(uiScalePercent)}>
+        <Select
+          onValueChange={(value) => void handleUiScaleChange(value)}
+          value={String(uiScalePercent)}
+        >
           <SelectTrigger aria-label={t("app.labels.uiScaling")} className="w-44">
             <SelectValue />
           </SelectTrigger>

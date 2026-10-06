@@ -1,5 +1,4 @@
 import { Menu } from "lucide-react";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -54,12 +53,7 @@ function CompactMenuSub({ children, id, label }: CompactMenuSubProps) {
 
 function MenuBar() {
   const { t } = useTranslation();
-  const [menuVersion, setMenuVersion] = useState(0);
   const { executeCommand } = useApplicationCommands();
-
-  const closeMenu = () => {
-    setMenuVersion((version) => version + 1);
-  };
 
   return (
     <>
@@ -67,11 +61,10 @@ function MenuBar() {
         <Menubar
           aria-label={t("app.accessibility.menus")}
           className="h-full rounded-none border-0 bg-transparent p-0"
-          key={menuVersion}
           onValueChange={(value) => reportMenuChange(value as MenuId | "")}
         >
           <MenuBarFile />
-          <MenuBarView onClose={closeMenu} />
+          <MenuBarView />
           <MenuBarQueue />
           <MenuBarSettings />
           <MenuBarHelp />
@@ -93,7 +86,7 @@ function MenuBar() {
               </CompactMenuSub>
 
               <CompactMenuSub id="view" label={t("app.labels.view")}>
-                <MenuBarViewContent onClose={closeMenu} />
+                <MenuBarViewContent />
               </CompactMenuSub>
 
               <CompactMenuSub id="queue" label={t("queue.labels.title")}>

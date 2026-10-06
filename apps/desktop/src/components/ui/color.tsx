@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/class-names.utils";
 import type { HexColor } from "@/lib/color.types";
-import { colorFromSpectrumPosition, hexToHsl } from "@/lib/color.utils";
+import { colorFromSpectrumPosition, hexToHsv, hsvToHex, hueFromPosition } from "@/lib/color.utils";
 
 function ColorSample({
   className,
@@ -27,58 +27,88 @@ function ColorSample({
   );
 }
 
-function SpectrumWheel({
-  className,
-  color,
-  onCancel,
-  onCommit,
-  onKeyDown,
-  onPointerCancel,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
-  onPreview,
-  style,
-  ...props
-}: React.ComponentProps<"button"> & {
+interface ColorSpectrumProps extends Omit<React.ComponentProps<"div">, "color"> {
   color: string;
   onCancel?: () => void;
   onCommit?: (color: HexColor) => void;
   onPreview?: (color: HexColor) => void;
-}) {
-  const wheelRef = React.useRef<HTMLButtonElement>(null);
-  const activePointerId = React.useRef<number | null>(null);
+}
+
+function ColorSpectrum({
+  className,
+  color,
+  onCancel,
+  onCommit,
+  onPreview,
+  ...props
+}: ColorSpectrumProps) {
+  const activePointer = React.useRef<{
+    id: number;
+    type: "spectrum" | "hue";
+  } | null>(null);
+
   const scrubbedColor = React.useRef<HexColor | null>(null);
 
-  function chooseColor(event: React.PointerEvent<HTMLButtonElement>) {
+  const { hue, saturation, value } = hexToHsv(color);
+
+  function preview(nextColor: HexColor) {
+    scrubbedColor.current = nextColor;
+    onPreview?.(nextColor);
+  }
+
+  function chooseSpectrum(event: React.PointerEvent<HTMLButtonElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
 
-    const selectedColor = colorFromSpectrumPosition(
-      event.clientX - bounds.left,
-      event.clientY - bounds.top,
-      bounds.width,
+    preview(
+      colorFromSpectrumPosition(
+        event.clientX - bounds.left,
+        event.clientY - bounds.top,
+        bounds.width,
+        bounds.height,
+        hue,
+      ),
     );
-
-    scrubbedColor.current = selectedColor;
-    onPreview?.(selectedColor);
   }
 
-  function startScrubbing(event: React.PointerEvent<HTMLButtonElement>) {
-    activePointerId.current = event.pointerId;
+  function chooseHue(event: React.PointerEvent<HTMLButtonElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+
+    const nextHue = hueFromPosition(event.clientX - bounds.left, bounds.width);
+
+    preview(hsvToHex(nextHue, saturation, value));
+  }
+
+  function startScrubbing(event: React.PointerEvent<HTMLButtonElement>, type: "spectrum" | "hue") {
+    activePointer.current = {
+      id: event.pointerId,
+      type,
+    };
+
     event.currentTarget.setPointerCapture(event.pointerId);
-    chooseColor(event);
+
+    if (type === "spectrum") {
+      chooseSpectrum(event);
+    } else {
+      chooseHue(event);
+    }
   }
 
-  function scrubColor(event: React.PointerEvent<HTMLButtonElement>) {
-    if (activePointerId.current === event.pointerId) {
-      chooseColor(event);
+  function scrub(event: React.PointerEvent<HTMLButtonElement>, type: "spectrum" | "hue") {
+    const active = activePointer.current;
+
+    if (active?.id !== event.pointerId || active.type !== type) return;
+
+    if (type === "spectrum") {
+      chooseSpectrum(event);
+    } else {
+      chooseHue(event);
     }
   }
 
   function stopScrubbing(event: React.PointerEvent<HTMLButtonElement>, commit: boolean) {
-    if (activePointerId.current !== event.pointerId) return;
+    if (activePointer.current?.id !== event.pointerId) return;
 
-    activePointerId.current = null;
+    activePointer.current = null;
 
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -86,11 +116,43 @@ function SpectrumWheel({
 
     if (commit && scrubbedColor.current) {
       onCommit?.(scrubbedColor.current);
-    } else if (!commit) {
+    } else {
       onCancel?.();
     }
 
     scrubbedColor.current = null;
+  }
+
+  function adjustSpectrum(event: React.KeyboardEvent<HTMLButtonElement>) {
+    let nextSaturation = saturation;
+    let nextValue = value;
+
+    switch (event.key) {
+      case "ArrowLeft":
+        nextSaturation -= 2;
+        break;
+      case "ArrowRight":
+        nextSaturation += 2;
+        break;
+      case "ArrowUp":
+        nextValue += 2;
+        break;
+      case "ArrowDown":
+        nextValue -= 2;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+
+    onCommit?.(
+      hsvToHex(
+        hue,
+        Math.min(100, Math.max(0, nextSaturation)),
+        Math.min(100, Math.max(0, nextValue)),
+      ),
+    );
   }
 
   function adjustHue(event: React.KeyboardEvent<HTMLButtonElement>) {
@@ -98,81 +160,70 @@ function SpectrumWheel({
 
     event.preventDefault();
 
-    const bounds = wheelRef.current?.getBoundingClientRect();
-    if (!bounds) return;
+    const change = event.key === "ArrowRight" ? 4 : -4;
 
-    const change = event.key === "ArrowRight" ? 8 : -8;
-    const center = bounds.width / 2;
-
-    const { hue } = hexToHsl(color);
-    const nextHue = (((hue + change) % 360) + 360) % 360;
-    const angle = ((nextHue - 90) * Math.PI) / 180;
-
-    onCommit?.(
-      colorFromSpectrumPosition(
-        center + Math.cos(angle) * center,
-        center + Math.sin(angle) * center,
-        bounds.width,
-      ),
-    );
+    onCommit?.(hsvToHex((hue + change + 360) % 360, saturation, value));
   }
 
   return (
-    <button
-      className={cn(
-        "relative block size-48 cursor-crosshair touch-none rounded-full ring-1 ring-foreground/10 outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        className,
-      )}
-      data-slot="spectrum-wheel"
-      onKeyDown={(event) => {
-        adjustHue(event);
-        onKeyDown?.(event);
-      }}
-      onPointerCancel={(event) => {
-        stopScrubbing(event, false);
-        onPointerCancel?.(event);
-      }}
-      onPointerDown={(event) => {
-        startScrubbing(event);
-        onPointerDown?.(event);
-      }}
-      onPointerMove={(event) => {
-        scrubColor(event);
-        onPointerMove?.(event);
-      }}
-      onPointerUp={(event) => {
-        stopScrubbing(event, true);
-        onPointerUp?.(event);
-      }}
-      ref={wheelRef}
-      style={{
-        background:
-          "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 70%), conic-gradient(from 0deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)",
-        ...style,
-      }}
-      type="button"
-      {...props}
-    >
-      <span
-        aria-hidden="true"
-        className="absolute size-4 -translate-1/2 rounded-full border-2 border-white shadow-md"
-        data-slot="spectrum-wheel-marker"
-        style={getColorMarkerStyle(color)}
-      />
-    </button>
+    <div className={cn("w-84 space-y-3", className)} data-slot="color-spectrum" {...props}>
+      <button
+        aria-label="Color saturation and brightness"
+        className="relative block h-48 w-full cursor-crosshair touch-none overflow-hidden rounded-lg ring-1 ring-foreground/10 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        data-slot="color-spectrum-field"
+        onKeyDown={adjustSpectrum}
+        onPointerCancel={(event) => stopScrubbing(event, false)}
+        onPointerDown={(event) => startScrubbing(event, "spectrum")}
+        onPointerMove={(event) => scrub(event, "spectrum")}
+        onPointerUp={(event) => stopScrubbing(event, true)}
+        style={{
+          background: `
+            linear-gradient(to top, #000000, transparent),
+            linear-gradient(to right, #ffffff, transparent),
+            ${hsvToHex(hue, 100, 100)}
+          `,
+        }}
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          className="absolute size-4 -translate-1/2 rounded-full border-2 border-white shadow-md"
+          data-slot="color-spectrum-marker"
+          style={{
+            left: `${saturation}%`,
+            top: `${100 - value}%`,
+            backgroundColor: color,
+          }}
+        />
+      </button>
+
+      <button
+        aria-label="Color hue"
+        className="relative block h-4 w-full touch-none rounded-full ring-1 ring-foreground/10 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        data-slot="color-hue-slider"
+        onKeyDown={adjustHue}
+        onPointerCancel={(event) => stopScrubbing(event, false)}
+        onPointerDown={(event) => startScrubbing(event, "hue")}
+        onPointerMove={(event) => scrub(event, "hue")}
+        onPointerUp={(event) => stopScrubbing(event, true)}
+        style={{
+          background:
+            "linear-gradient(to right, #ff0000 0%, #ffff00 16.67%, #00ff00 33.33%, #00ffff 50%, #0000ff 66.67%, #ff00ff 83.33%, #ff0000 100%)",
+        }}
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          className="absolute top-1/2 size-5 -translate-1/2 rounded-full border-2 border-white shadow-md"
+          data-slot="color-hue-marker"
+          style={{
+            left: `${(hue / 360) * 100}%`,
+            backgroundColor: hsvToHex(hue, 100, 100),
+          }}
+        />
+      </button>
+    </div>
   );
 }
 
-function getColorMarkerStyle(color: string): React.CSSProperties {
-  const { hue, saturation } = hexToHsl(color);
-  const angle = ((hue - 90) * Math.PI) / 180;
-  const radius = (saturation / 100) * 45;
-
-  return {
-    left: `${50 + Math.cos(angle) * radius}%`,
-    top: `${50 + Math.sin(angle) * radius}%`,
-    backgroundColor: color,
-  };
-}
-
-export { ColorSample, SpectrumWheel };
+export { ColorSample, ColorSpectrum };

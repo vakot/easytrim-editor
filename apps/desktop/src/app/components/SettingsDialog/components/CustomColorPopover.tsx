@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { SpectrumWheel } from "@/components/ui/color";
+import { ColorSpectrum } from "@/components/ui/color";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -112,7 +112,7 @@ function CustomColorPopoverContent({
 
   return (
     <PopoverContent align={align} className={cn("w-auto space-y-3 p-3", className)} {...props}>
-      <SpectrumWheel
+      <ColorSpectrum
         aria-label={t("settings.accessibility.colorSpectrum")}
         color={color}
         onCancel={cancelInteraction}
@@ -137,17 +137,22 @@ function CustomColorInput({
   };
 
   return (
-    <Input
-      className={cn(
-        "h-full border-0 p-0 font-mono text-xs shadow-none focus-visible:ring-0",
-        className,
-      )}
-      onChange={handleChange}
-      pattern="[0-9a-fA-F]{6}"
-      spellCheck={false}
-      {...props}
-      value={hexValue}
-    />
+    <div className="relative">
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 font-mono text-muted-foreground"
+      >
+        #
+      </span>
+      <Input
+        className={cn("pl-5 font-mono", className)}
+        onChange={handleChange}
+        pattern="[0-9a-fA-F]{6}"
+        spellCheck={false}
+        {...props}
+        value={hexValue}
+      />
+    </div>
   );
 }
 
