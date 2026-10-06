@@ -48,6 +48,12 @@ redeclaring standard attributes. Do not add convenience aliases, fixed-value con
 or consumer-specific formatting and accessibility prose to expose implementation details. Keep such
 details internal unless consumers have a concrete need to control them.
 
+Shared components may expose only the standard `className` prop for caller styling. Do not add
+secondary class-name props such as `wrapperClassName`, `containerClassName`, `rootClassName`,
+`contentClassName`, or `triggerClassName`; use composition or a meaningful subcomponent instead.
+Standard React and DOM props must keep their standard meaning: compose supported handlers and
+styles with internal behavior, and omit props from the public type when the component must own them.
+
 ## Imports and exports
 
 Use named exports by default. Default exports are reserved for framework/tooling contracts that
