@@ -1,4 +1,5 @@
 import { ChevronsUpDown, Monitor, Moon, Sun } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import {
   ColorPickerSpectrum,
   ColorSample,
 } from "@/components/color";
+import type { HexColor } from "@/lib/color.types";
 
 import { CommandButton, CommandReset, SettingRow, SettingsSection } from "../components/SettingRow";
 
@@ -53,6 +55,27 @@ function SettingsAppearance() {
   const theme = useAppSelector(selectThemePreference);
   const primaryColor = useAppSelector(selectPrimaryColor);
   const uiScalePercent = useAppSelector(selectUiScalePercent);
+  const [colorPickerSession, setColorPickerSession] = useState(0);
+  const colorPickerSessionRef = useRef(colorPickerSession);
+  const previousPrimaryColor = useRef(primaryColor);
+  const pickerCommitColor = useRef<HexColor | null>(null);
+
+  useLayoutEffect(() => {
+    if (previousPrimaryColor.current === primaryColor) return;
+
+    previousPrimaryColor.current = primaryColor;
+
+    if (pickerCommitColor.current === primaryColor) {
+      pickerCommitColor.current = null;
+      return;
+    }
+
+    pickerCommitColor.current = null;
+    const nextSession = colorPickerSessionRef.current + 1;
+    colorPickerSessionRef.current = nextSession;
+    setColorPickerSession(nextSession);
+  }, [primaryColor]);
+
   const colorPresetLabels = {
     amber: t("settings.options.colors.amber"),
     blue: t("settings.options.colors.blue"),
@@ -129,9 +152,16 @@ function SettingsAppearance() {
           <CollapsibleContent className="mb-4 flex flex-wrap items-center gap-1.5">
             <ColorPicker
               defaultValue={primaryColor}
-              key={primaryColor}
-              onChange={previewPrimaryColor}
-              onCommit={(color) => dispatch(primaryColorChanged(color))}
+              key={colorPickerSession}
+              onChange={(color) => {
+                if (colorPickerSession === colorPickerSessionRef.current) {
+                  previewPrimaryColor(color);
+                }
+              }}
+              onCommit={(color) => {
+                if (color !== primaryColor) pickerCommitColor.current = color;
+                dispatch(primaryColorChanged(color));
+              }}
             >
               <div className="w-full space-y-3">
                 <ColorPickerSpectrum aria-label={t("settings.accessibility.colorSpectrum")}>

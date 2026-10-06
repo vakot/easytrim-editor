@@ -678,6 +678,35 @@ describe("MenuBarTest", () => {
     expect(menuState.preferences.primaryColor).toBe("#efbf04");
   });
 
+  it("keeps the picker session and exact hue when a hue-360 commit updates preferences", async () => {
+    const user = userEvent.setup();
+    renderMenus({ primaryColor: "#4299e1" });
+    await user.click(getMenuTrigger("Settings"));
+    await user.click(screen.getByRole("tab", { name: "Appearance" }));
+    await user.click(screen.getByRole("button", { name: "Primary accent" }));
+
+    const hue = screen.getByRole("slider", { name: "Hue" });
+    const hueMarker = hue.querySelector<HTMLElement>('[data-slot="color-hue-marker"]');
+    Object.defineProperty(hue, "getBoundingClientRect", {
+      value: () => new DOMRect(0, 0, 200, 16),
+    });
+    Object.assign(hue, {
+      hasPointerCapture: () => true,
+      releasePointerCapture: vi.fn(),
+      setPointerCapture: vi.fn(),
+    });
+
+    fireEvent.pointerDown(hue, { button: 0, clientX: 200, clientY: 8, pointerId: 1 });
+    fireEvent.pointerUp(hue, { button: 0, clientX: 200, clientY: 8, pointerId: 1 });
+
+    const committedHue = screen.getByRole("slider", { name: "Hue" });
+    expect(menuState.preferences.primaryColor).not.toBe("#4299e1");
+    expect(committedHue).toBe(hue);
+    expect(committedHue).toHaveAttribute("aria-valuenow", "360");
+    expect(committedHue.querySelector('[data-slot="color-hue-marker"]')).toBe(hueMarker);
+    expect(hueMarker?.style.left).toBe("100%");
+  });
+
   it("resets an open picker session when appearance is reset during a drag", async () => {
     const user = userEvent.setup();
     renderMenus({ primaryColor: "#4299e1" });
@@ -691,6 +720,8 @@ describe("MenuBarTest", () => {
     const spectrum = screen.getByRole("button", {
       name: "Saturation and brightness",
     });
+
+    const hue = screen.getByRole("slider", { name: "Hue" });
 
     Object.defineProperty(spectrum, "getBoundingClientRect", {
       value: () => new DOMRect(0, 0, 192, 192),
@@ -708,6 +739,7 @@ describe("MenuBarTest", () => {
 
     expect(menuState.preferences.primaryColor).toBe(DEFAULT_PREFERENCES.primaryColor);
     expect(screen.getByRole("textbox", { name: "Primary color HEX" })).toHaveValue("efbf04");
+    expect(screen.getByRole("slider", { name: "Hue" })).not.toBe(hue);
     expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
     expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
   });
