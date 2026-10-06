@@ -44,7 +44,7 @@ function AppLayout() {
           maxSize="30rem"
           minSize="25rem"
         >
-          <AppLayoutPanel className="min-w-100 layout-compact:rounded-l-xl layout-compact:border-r-0">
+          <AppLayoutPanel className="min-w-98.25 layout-compact:rounded-l-xl layout-compact:border-r-0">
             <AppLayoutSidebar />
           </AppLayoutPanel>
         </ResizablePanel>
