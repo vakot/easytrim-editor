@@ -4,7 +4,6 @@ import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   activityFeedViewChanged,
   changelogVersionSeen,
-  customPrimaryColorChanged,
   layoutDensityChanged,
   layoutReset,
   preferenceChanged,
@@ -12,18 +11,17 @@ import {
   preferencesReset,
   primaryColorChanged,
   selectActivityFeedView,
-  selectCustomPrimaryColor,
   selectDeleteSourceOnRenderFinish,
   selectLayoutDensity,
   selectMergeAudioEnabledDefault,
   selectPreferences,
   selectPrimaryColor,
-  selectPrimaryColorKey,
   selectThemePreference,
   themePreferenceChanged,
   viewSettingsReset,
 } from "@/app/store/slices/preferences-slice";
 import type { RootState } from "@/app/store/store";
+import { isHexColor } from "@/lib/color.utils";
 
 describe("preferences Redux domain", () => {
   it("starts from deterministic product defaults without persistence access", () => {
@@ -76,24 +74,23 @@ describe("preferences Redux domain", () => {
     expect(selectLayoutDensity({ preferences: nextState } as RootState)).toBe("compact");
   });
 
-  it("changes theme and color preferences while retaining the custom value", () => {
+  it("stores preset and custom colors in the single primary color preference", () => {
     const themedState = preferencesReducer(undefined, themePreferenceChanged("dark"));
-    const presetState = preferencesReducer(themedState, primaryColorChanged("blue"));
-    const customState = preferencesReducer(presetState, customPrimaryColorChanged("#123456"));
-    const nextPresetState = preferencesReducer(customState, primaryColorChanged("rose"));
+    const presetState = preferencesReducer(themedState, primaryColorChanged("#4299e1"));
+    const customState = preferencesReducer(presetState, primaryColorChanged("#123456"));
 
     expect(themedState.theme).toBe("dark");
-    expect(presetState).toMatchObject({ primaryColor: "blue", customPrimaryColor: "#efbf04" });
-    expect(customState).toMatchObject({ primaryColor: "#123456", customPrimaryColor: "#123456" });
-    expect(nextPresetState).toMatchObject({ primaryColor: "rose", customPrimaryColor: "#123456" });
+    expect(presetState.primaryColor).toBe("#4299e1");
+    expect(customState.primaryColor).toBe("#123456");
+    expect(isHexColor(customState.primaryColor)).toBe(true);
+    expect(customState).not.toHaveProperty("customPrimaryColor");
   });
 
   it("resets only theme and color view settings", () => {
     const initialState: Preferences = {
       ...DEFAULT_PREFERENCES,
       theme: "dark",
-      primaryColor: "blue",
-      customPrimaryColor: "#123456",
+      primaryColor: "#4299e1",
       deleteSourceOnRenderFinish: true,
     };
 
@@ -103,7 +100,6 @@ describe("preferences Redux domain", () => {
       ...initialState,
       theme: DEFAULT_PREFERENCES.theme,
       primaryColor: DEFAULT_PREFERENCES.primaryColor,
-      customPrimaryColor: DEFAULT_PREFERENCES.customPrimaryColor,
     });
   });
 
@@ -122,7 +118,6 @@ describe("preferences Redux domain", () => {
         primaryColor: "#123456",
         lastAudiblePlaybackVolumePercent: 100,
         playbackVolumePercent: 100,
-        customPrimaryColor: "#123456",
         uiScalePercent: 100,
       },
       preferencesReset(),
@@ -134,7 +129,6 @@ describe("preferences Redux domain", () => {
       layoutDensity: "compact",
       theme: "dark",
       primaryColor: "#123456",
-      customPrimaryColor: "#123456",
       deleteSourceOnRenderFinish: true,
     });
   });
@@ -167,10 +161,9 @@ describe("preferences Redux domain", () => {
       activityFeedView: "default",
       layoutDensity: "default",
       theme: "system",
-      primaryColor: "amber",
+      primaryColor: "#efbf04",
       lastAudiblePlaybackVolumePercent: 100,
       playbackVolumePercent: 100,
-      customPrimaryColor: "#efbf04",
       uiScalePercent: 100,
     };
 
@@ -183,9 +176,7 @@ describe("preferences Redux domain", () => {
     expect(selectDeleteSourceOnRenderFinish(state)).toBe(false);
     expect(selectActivityFeedView(state)).toBe("default");
     expect(selectThemePreference(state)).toBe("system");
-    expect(selectPrimaryColor(state)).toBe("amber");
-    expect(selectPrimaryColorKey(state)).toBe("amber");
-    expect(selectCustomPrimaryColor(state)).toBe("#efbf04");
+    expect(selectPrimaryColor(state)).toBe("#efbf04");
   });
 
   it("falls back to the default activity feed view for invalid persisted state", () => {

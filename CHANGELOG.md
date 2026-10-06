@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 
 - Replaced the Settings menu dropdown with a full preferences dialog for language, appearance, defaults, layout, queue, and update/help options.
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
+- Localized the primary color picker's saturation, brightness, and hue labels for assistive technology.
 
 ### Removed
 
@@ -22,6 +23,7 @@ All notable changes to this project will be documented in this file.
 
 - Localized audio track menu actions across English, Russian, and Slovak.
 - Localized source search result counts and breadcrumb navigation labels.
+- Preserved hue and saturation after committing grayscale or black colors in the primary color picker.
 
 ## [1.13.0]
 

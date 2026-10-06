@@ -1,11 +1,5 @@
 import { DEFAULT_LAYOUT_DENSITY, type LayoutDensity } from "@/app/layout/lib/layout-density";
-import {
-  type CustomPrimaryColor,
-  DEFAULT_CUSTOM_PRIMARY_COLOR,
-  DEFAULT_PRIMARY_COLOR,
-  type PrimaryColor,
-  type ThemePreference,
-} from "@/app/theme/theme";
+import { DEFAULT_PRIMARY_COLOR, type PrimaryColor, type ThemePreference } from "@/app/theme/theme";
 
 export type ActivityFeedView = "default" | "compact" | "branch";
 export const DEFAULT_PLAYBACK_VOLUME_PERCENT = 100;
@@ -17,7 +11,6 @@ export const UI_SCALE_STEP_PERCENT = 25;
 interface Preferences {
   activityFeedView: ActivityFeedView;
   autoStartQueueEnabled: boolean;
-  customPrimaryColor: CustomPrimaryColor;
   deleteSourceOnRenderFinish: boolean;
   lastAudiblePlaybackVolumePercent: number;
   lastSeenChangelogVersion: string | null;
@@ -48,7 +41,6 @@ export const DEFAULT_PREFERENCES: Preferences = {
   primaryColor: DEFAULT_PRIMARY_COLOR,
   lastAudiblePlaybackVolumePercent: DEFAULT_PLAYBACK_VOLUME_PERCENT,
   playbackVolumePercent: DEFAULT_PLAYBACK_VOLUME_PERCENT,
-  customPrimaryColor: DEFAULT_CUSTOM_PRIMARY_COLOR,
   lastSeenChangelogVersion: null,
 };
 

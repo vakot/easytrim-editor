@@ -59,7 +59,7 @@ const state = {
     layoutDensity: "default",
     loopPlaybackEnabledDefault: true,
     mergeAudioEnabledDefault: false,
-    primaryColor: "amber",
+    primaryColor: "#efbf04",
     segmentPlaybackEnabledDefault: true,
     theme: "system",
   },

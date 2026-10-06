@@ -5,7 +5,6 @@ import { commandSearchTerms } from "@/app/commands/core/application-command.util
 import { DEFAULT_PREFERENCES } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
-  selectCustomPrimaryColor,
   selectPrimaryColor,
   selectThemePreference,
   viewSettingsReset,
@@ -16,14 +15,11 @@ function useResetViewSettingsCommand() {
   const dispatch = useAppDispatch();
   const theme = useAppSelector(selectThemePreference);
   const primaryColor = useAppSelector(selectPrimaryColor);
-  const customPrimaryColor = useAppSelector(selectCustomPrimaryColor);
   const label = t("app.actions.resetToDefault");
 
   return {
     enabled:
-      theme !== DEFAULT_PREFERENCES.theme ||
-      primaryColor !== DEFAULT_PREFERENCES.primaryColor ||
-      customPrimaryColor !== DEFAULT_PREFERENCES.customPrimaryColor,
+      theme !== DEFAULT_PREFERENCES.theme || primaryColor !== DEFAULT_PREFERENCES.primaryColor,
     icon: <RotateCcw aria-hidden="true" />,
     surfaces: ["dialog", "menu"] as const,
     run() {

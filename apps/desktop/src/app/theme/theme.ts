@@ -5,49 +5,26 @@ const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
 export type ThemePreference = "system" | "light" | "dark";
 export type ResolvedTheme = Exclude<ThemePreference, "system">;
 
-export const PRIMARY_COLORS = ["amber", "rose", "violet", "blue", "emerald"] as const;
-export const CUSTOM_PRIMARY_COLOR = "custom" as const;
-export const DEFAULT_PRIMARY_COLOR = "amber" as const;
-export const DEFAULT_CUSTOM_PRIMARY_COLOR = "#efbf04" as const;
+export const PRIMARY_COLOR_PRESETS = [
+  { id: "amber", color: "#efbf04" },
+  { id: "rose", color: "#e85d75" },
+  { id: "violet", color: "#8b6ee8" },
+  { id: "blue", color: "#4299e1" },
+  { id: "emerald", color: "#32a876" },
+] as const satisfies readonly { color: HexColor; id: string }[];
 
-export type PrimaryColorKey = (typeof PRIMARY_COLORS)[number] | typeof CUSTOM_PRIMARY_COLOR;
-export type CustomPrimaryColor = HexColor;
-export type PrimaryColor = (typeof PRIMARY_COLORS)[number] | CustomPrimaryColor;
+export const DEFAULT_PRIMARY_COLOR: PrimaryColor = PRIMARY_COLOR_PRESETS[0].color;
 
-const primaryColorValues = {
-  amber: "#efbf04",
-  rose: "#e85d75",
-  violet: "#8b6ee8",
-  blue: "#4299e1",
-  emerald: "#32a876",
-} as const;
-
-function isCustomPrimaryColor(value: unknown): value is CustomPrimaryColor {
-  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
-}
-
-function isPrimaryColor(value: unknown): value is PrimaryColor {
-  return (
-    isCustomPrimaryColor(value) ||
-    (typeof value === "string" && PRIMARY_COLORS.includes(value as (typeof PRIMARY_COLORS)[number]))
-  );
-}
+export type PrimaryColor = HexColor;
 
 function isThemePreference(value: unknown): value is ThemePreference {
   return value === "system" || value === "light" || value === "dark";
 }
 
-function resolvePrimaryColor(color: PrimaryColor): string {
-  return color.startsWith("#")
-    ? color
-    : primaryColorValues[color as (typeof PRIMARY_COLORS)[number]];
-}
-
 function primaryColorPalette(color: PrimaryColor) {
-  const hex = resolvePrimaryColor(color);
-  const { hue, saturation } = hexToHsl(hex);
+  const { hue, saturation } = hexToHsl(color);
   return {
-    color: hex,
+    color,
     light: hslToHex(hue, saturation, 42),
     lightForeground: saturation < 34 && hue > 35 && hue < 70 ? "#241d00" : "#ffffff",
     dark: hslToHex(hue, saturation, 67),
@@ -77,11 +54,8 @@ function subscribeToSystemTheme(onChange: () => void): () => void {
 }
 
 export {
-  isCustomPrimaryColor,
-  isPrimaryColor,
   isThemePreference,
   primaryColorPalette,
-  resolvePrimaryColor,
   resolveTheme,
   subscribeToSystemTheme,
   systemPrefersDark,

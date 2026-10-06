@@ -19,12 +19,35 @@ import {
   type Preferences,
   UI_SCALE_STEP_PERCENT,
 } from "@/app/preferences";
-import { isCustomPrimaryColor, isPrimaryColor, isThemePreference } from "@/app/theme/theme";
+import { isThemePreference } from "@/app/theme/theme";
+import type { HexColor } from "@/lib/color.types";
+import { isHexColor } from "@/lib/color.utils";
 
 interface LegacyThemeState {
   customPrimaryColor?: unknown;
   preference?: unknown;
   primaryColor?: unknown;
+}
+
+const legacyPrimaryColorValues: Record<string, HexColor> = {
+  amber: "#efbf04",
+  rose: "#e85d75",
+  violet: "#8b6ee8",
+  blue: "#4299e1",
+  emerald: "#32a876",
+};
+
+function migratePrimaryColor(value: unknown, legacyCustomColor?: unknown): HexColor {
+  if (isHexColor(String(value ?? ""))) {
+    return String(value) as HexColor;
+  }
+  if (typeof value === "string" && Object.hasOwn(legacyPrimaryColorValues, value)) {
+    return legacyPrimaryColorValues[value]!;
+  }
+  if ((value === "custom" || value == null) && isHexColor(String(legacyCustomColor ?? ""))) {
+    return String(legacyCustomColor) as HexColor;
+  }
+  return DEFAULT_PREFERENCES.primaryColor;
 }
 
 interface PersistedRootState {
@@ -76,7 +99,10 @@ const preferencesTransform = createTransform(
 
     const persistedPreferences = Object.fromEntries(
       Object.entries(state).filter(
-        ([key]) => key !== "editorSourceCollapsibleState" && key !== "snapPlaybackEnabledDefault",
+        ([key]) =>
+          key !== "editorSourceCollapsibleState" &&
+          key !== "snapPlaybackEnabledDefault" &&
+          key !== "customPrimaryColor",
       ),
     ) as Partial<Preferences>;
 
@@ -112,14 +138,12 @@ const preferencesTransform = createTransform(
         (persistedPreferences.uiScalePercent - MIN_UI_SCALE_PERCENT) % UI_SCALE_STEP_PERCENT === 0
           ? persistedPreferences.uiScalePercent
           : DEFAULT_PREFERENCES.uiScalePercent,
-      customPrimaryColor: isCustomPrimaryColor(persistedPreferences.customPrimaryColor)
-        ? persistedPreferences.customPrimaryColor
-        : DEFAULT_PREFERENCES.customPrimaryColor,
       lastAudiblePlaybackVolumePercent,
       playbackVolumePercent,
-      primaryColor: isPrimaryColor(persistedPreferences.primaryColor)
-        ? persistedPreferences.primaryColor
-        : DEFAULT_PREFERENCES.primaryColor,
+      primaryColor: migratePrimaryColor(
+        (state as Record<string, unknown>).primaryColor,
+        (state as Record<string, unknown>).customPrimaryColor,
+      ),
       theme: isThemePreference(persistedPreferences.theme)
         ? persistedPreferences.theme
         : DEFAULT_PREFERENCES.theme,
@@ -143,11 +167,15 @@ const migrateLegacyTheme = (state: PersistedState): PersistedState => {
   if (isThemePreference(legacyTheme?.preference)) {
     preferences.theme = legacyTheme.preference;
   }
-  if (isPrimaryColor(legacyTheme?.primaryColor)) {
-    preferences.primaryColor = legacyTheme.primaryColor;
+  if (legacyTheme?.primaryColor !== undefined) {
+    preferences.primaryColor = legacyTheme.primaryColor as Preferences["primaryColor"];
   }
-  if (isCustomPrimaryColor(legacyTheme?.customPrimaryColor)) {
-    preferences.customPrimaryColor = legacyTheme.customPrimaryColor;
+  if (legacyTheme?.customPrimaryColor !== undefined) {
+    (preferences as Preferences & { customPrimaryColor?: unknown }).customPrimaryColor =
+      legacyTheme.customPrimaryColor;
+    if (legacyTheme.primaryColor === undefined) {
+      preferences.primaryColor = "custom" as Preferences["primaryColor"];
+    }
   }
 
   const stateWithoutTheme = { ...persistedState };
@@ -155,12 +183,33 @@ const migrateLegacyTheme = (state: PersistedState): PersistedState => {
   return { ...stateWithoutTheme, preferences } as PersistedState;
 };
 
-const migrations = createMigrate({ 1: migrateLegacyTheme });
+const migratePrimaryColorPreference = (state: PersistedState): PersistedState => {
+  if (!state || typeof state !== "object") {
+    return state;
+  }
+
+  const persistedState = state as PersistedRootState;
+  const legacyPreferences = (persistedState.preferences ?? {}) as Preferences & {
+    customPrimaryColor?: unknown;
+  };
+
+  const { customPrimaryColor, ...preferences } = legacyPreferences;
+
+  return {
+    ...persistedState,
+    preferences: {
+      ...preferences,
+      primaryColor: migratePrimaryColor(preferences.primaryColor, customPrimaryColor),
+    },
+  } as PersistedState;
+};
+
+const migrations = createMigrate({ 1: migrateLegacyTheme, 2: migratePrimaryColorPreference });
 
 export const persistConfig: PersistConfig<unknown> = {
   key: "easytrim-redux",
   storage: reduxStorage,
-  version: 1,
+  version: 2,
   migrate: migrations,
   // NOTE: Root allow-listing keeps future reducers runtime-only until explicitly opted in.
   transforms: [preferencesTransform],

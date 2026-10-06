@@ -31,7 +31,7 @@ import {
   selectThemePreference,
   selectUiScalePercent,
 } from "@/app/store/slices/preferences-slice";
-import { PRIMARY_COLORS, resolvePrimaryColor } from "@/app/theme/theme";
+import { PRIMARY_COLOR_PRESETS } from "@/app/theme/theme";
 
 const themeIcons = {
   system: <Monitor aria-hidden="true" />,
@@ -122,16 +122,16 @@ function MenuBarViewContent() {
           <MenubarSubTrigger inset>{t("settings.labels.color")}</MenubarSubTrigger>
           <MenubarSubContent>
             <MenubarRadioGroup value={primaryColor}>
-              {PRIMARY_COLORS.map((color) => (
+              {PRIMARY_COLOR_PRESETS.map((preset) => (
                 <ApplicationCommandMenuItem
                   asChild
-                  commandId={getPrimaryColorCommandId(color)}
-                  key={color}
+                  commandId={getPrimaryColorCommandId(preset.id)}
+                  key={preset.id}
                 >
-                  <MenubarRadioItem inset keepOpen value={color}>
+                  <MenubarRadioItem inset keepOpen value={preset.color}>
                     <ApplicationCommandLabel />
                     <MenubarShortcut className="flex items-center gap-2">
-                      <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
+                      <span className="font-mono">{preset.color.toUpperCase()}</span>
                       <ApplicationCommandIcon />
                     </MenubarShortcut>
                   </MenubarRadioItem>

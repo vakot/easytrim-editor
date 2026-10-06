@@ -1,4 +1,11 @@
-import { type ReactNode, useCallback, useLayoutEffect, useMemo, useSyncExternalStore } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectPrimaryColor, selectThemePreference } from "@/app/store/slices/preferences-slice";
@@ -6,7 +13,6 @@ import { selectPrimaryColor, selectThemePreference } from "@/app/store/slices/pr
 import {
   type PrimaryColor,
   primaryColorPalette,
-  resolvePrimaryColor,
   resolveTheme,
   subscribeToSystemTheme,
   systemPrefersDark,
@@ -18,33 +24,21 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   const primaryColor = useAppSelector(selectPrimaryColor);
   const systemDark = useSyncExternalStore(subscribeToSystemTheme, systemPrefersDark, () => false);
   const resolvedTheme = resolveTheme(preference, systemDark);
-  const finishPrimaryColorPreview = useCallback(
-    (committedColor: PrimaryColor) => {
-      const root = document.documentElement;
-      root.removeAttribute("data-primary-color-scrubbing");
-      if (primaryColor === committedColor) {
-        root.style.removeProperty("--primary-color-preview");
-      } else {
-        root.style.setProperty("--primary-color-preview", resolvePrimaryColor(committedColor));
-      }
-      root.dataset.primaryColor = committedColor;
-      applyPrimaryColor(root, committedColor);
-    },
-    [primaryColor],
-  );
+  const previewedColor = useRef<PrimaryColor | null>(null);
+  const previousPrimaryColor = useRef(primaryColor);
 
   const previewPrimaryColor = useCallback(
-    (nextPrimaryColor: PrimaryColor | null) => {
+    (nextPrimaryColor: PrimaryColor) => {
       const root = document.documentElement;
-      root.toggleAttribute("data-primary-color-scrubbing", nextPrimaryColor !== null);
-      if (nextPrimaryColor) {
-        root.style.setProperty("--primary-color-preview", resolvePrimaryColor(nextPrimaryColor));
+      const isPersistedColor = nextPrimaryColor === primaryColor;
+      previewedColor.current = isPersistedColor ? null : nextPrimaryColor;
+      root.toggleAttribute("data-primary-color-scrubbing", !isPersistedColor);
+      if (!isPersistedColor) {
+        root.style.setProperty("--primary-color-preview", nextPrimaryColor);
       } else {
         root.style.removeProperty("--primary-color-preview");
       }
-      const appliedColor = nextPrimaryColor ?? primaryColor;
-      root.dataset.primaryColor = appliedColor;
-      applyPrimaryColor(root, appliedColor);
+      applyPrimaryColor(root, nextPrimaryColor);
     },
     [primaryColor],
   );
@@ -54,21 +48,20 @@ function ThemeProvider({ children }: { children: ReactNode }) {
     root.classList.toggle("light", preference === "light");
     root.classList.toggle("dark", resolvedTheme === "dark");
     root.dataset.theme = resolvedTheme;
-    root.dataset.primaryColor = primaryColor;
-    applyPrimaryColor(root, primaryColor);
-    if (
-      !root.hasAttribute("data-primary-color-scrubbing") &&
-      root.style.getPropertyValue("--primary-color-preview") === resolvePrimaryColor(primaryColor)
-    ) {
+    if (previousPrimaryColor.current !== primaryColor) {
+      previousPrimaryColor.current = primaryColor;
+      previewedColor.current = null;
+      root.removeAttribute("data-primary-color-scrubbing");
       root.style.removeProperty("--primary-color-preview");
     }
+    applyPrimaryColor(root, previewedColor.current ?? primaryColor);
     root.style.colorScheme = resolvedTheme;
 
     return () => {
       root.classList.remove("light", "dark");
       delete root.dataset.theme;
-      delete root.dataset.primaryColor;
       root.removeAttribute("data-primary-color-scrubbing");
+      previewedColor.current = null;
       root.style.removeProperty("--primary-color-preview");
       root.style.removeProperty("--primary-light");
       root.style.removeProperty("--primary-foreground-light");
@@ -79,8 +72,8 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   }, [preference, primaryColor, resolvedTheme]);
 
   const value = useMemo(
-    () => ({ finishPrimaryColorPreview, resolvedTheme, previewPrimaryColor }),
-    [finishPrimaryColorPreview, resolvedTheme, previewPrimaryColor],
+    () => ({ resolvedTheme, previewPrimaryColor }),
+    [resolvedTheme, previewPrimaryColor],
   );
 
   return <ThemeContext value={value}>{children}</ThemeContext>;
