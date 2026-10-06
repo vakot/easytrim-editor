@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { BookOpen, Palette, Sparkles } from "lucide-react";
 import { useState } from "react";
 
+import { Separator } from "@/components/ui/separator";
+
 import {
   Library,
   LibraryContent,
@@ -9,7 +11,6 @@ import {
   LibraryNavigationGroup,
   LibraryNavigationItem,
   LibraryPage,
-  LibrarySeparator,
 } from "@/components/library";
 
 const meta = {
@@ -42,7 +43,7 @@ export const Navigation: Story = {
               </LibraryNavigationItem>
             </LibraryNavigationGroup>
           </LibraryNavigation>
-          <LibrarySeparator />
+          <Separator orientation="vertical" />
           <LibraryContent>
             <LibraryPage hidden={value !== "general"} value="general">
               <h2 className="text-lg font-semibold">General</h2>
