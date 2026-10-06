@@ -21,7 +21,6 @@ export const en = {
       searchSuggestions: "Suggestions",
     },
     status: {
-      disabled: "Disabled",
       enabled: "Enabled",
       error: "Error",
       loading: "Loading…",
@@ -220,6 +219,53 @@ export const en = {
     },
   },
   settings: {
+    pages: {
+      dialogDescription: "Change EasyTrim preferences. Updates take effect immediately.",
+      navigationLabel: "Settings pages",
+      groups: { preferences: "Preferences", workspace: "Workspace", about: "About" },
+      general: {
+        title: "General",
+        description: "Choose how EasyTrim presents its interface.",
+        languageDescription: "Choose the language used throughout EasyTrim Editor.",
+      },
+      appearance: {
+        title: "Appearance",
+        description: "Adjust the interface scale, theme, and primary color.",
+        scalingDescription: "Change the size of controls and text across the app.",
+        colorDescription: "Choose a preset or pick a custom primary color.",
+        resetLabel: "Reset appearance",
+      },
+      defaults: {
+        title: "Defaults",
+        description: "Choose the defaults used for new editing sessions.",
+        loopDescription: "Start new sessions with loop playback enabled.",
+        followSegmentDescription: "Keep playback within the selected segment by default.",
+        mergeAudioDescription: "Merge enabled audio tracks for new exports by default.",
+        resetLabel: "Reset preferences",
+      },
+      layout: {
+        title: "Layout",
+        description: "Control panel visibility and workspace density.",
+        resetLabel: "Reset layout",
+      },
+      queue: {
+        title: "Queue",
+        description: "Choose how the export queue starts and finishes.",
+        autoStartDescription: "Start processing as soon as exports are added to the queue.",
+        onFinishedDescription: "Choose what happens when every queued export finishes.",
+        resetLabel: "Reset Queue settings",
+      },
+      about: {
+        title: "About / Updates",
+        description: "Application version, updates, and project resources.",
+        versionLabel: "Application version",
+        versionDescription: "View this version's release notes.",
+        openRelease: "Open release page",
+        updatesLabel: "Updates",
+        updatesDescription: "Check for updates or install an available update.",
+      },
+      resetImmediateDescription: "Changes take effect immediately.",
+    },
     labels: {
       activityFeedView: "Activity Feed View",
       autoStartQueue: "Auto-start Queue",
@@ -230,10 +276,6 @@ export const en = {
       mergeAudio: "Merge audio",
       theme: "Theme",
       title: "Settings",
-    },
-    tooltips: {
-      disabledByDefault: "Disabled by default",
-      enabledByDefault: "Enabled by default",
     },
     accessibility: {
       colorSpectrum: "Theme color spectrum. Use the Left and Right Arrow keys to adjust the hue.",

@@ -23,7 +23,6 @@ export const sk = {
       searchSuggestions: "Návrhy",
     },
     status: {
-      disabled: "Vypnuté",
       enabled: "Zapnuté",
       error: "Chyba",
       loading: "Načítava sa…",
@@ -220,6 +219,53 @@ export const sk = {
     },
   },
   settings: {
+    pages: {
+      dialogDescription: "Zmeňte nastavenia EasyTrim. Zmeny sa prejavia okamžite.",
+      navigationLabel: "Stránky nastavení",
+      groups: { preferences: "Predvoľby", workspace: "Pracovný priestor", about: "Informácie" },
+      general: {
+        title: "Všeobecné",
+        description: "Vyberte, ako má EasyTrim zobrazovať svoje rozhranie.",
+        languageDescription: "Vyberte jazyk používaný v EasyTrim Editore.",
+      },
+      appearance: {
+        title: "Vzhľad",
+        description: "Upravte mierku rozhrania, motív a hlavnú farbu.",
+        scalingDescription: "Zmeňte veľkosť ovládacích prvkov a textu v aplikácii.",
+        colorDescription: "Vyberte prednastavenú alebo vlastnú hlavnú farbu.",
+        resetLabel: "Obnoviť vzhľad",
+      },
+      defaults: {
+        title: "Predvolené hodnoty",
+        description: "Vyberte predvolené nastavenia pre nové relácie úprav.",
+        loopDescription: "V nových reláciách predvolene zapnúť opakovanie prehrávania.",
+        followSegmentDescription: "Predvolene obmedziť prehrávanie na vybraný segment.",
+        mergeAudioDescription: "Predvolene zlúčiť povolené zvukové stopy pri nových exportoch.",
+        resetLabel: "Obnoviť predvoľby",
+      },
+      layout: {
+        title: "Rozloženie",
+        description: "Nastavte viditeľnosť panelov a hustotu pracovného priestoru.",
+        resetLabel: "Obnoviť rozloženie",
+      },
+      queue: {
+        title: "Front",
+        description: "Vyberte, ako sa front exportov spúšťa a dokončuje.",
+        autoStartDescription: "Spustiť spracovanie hneď po pridaní exportov do frontu.",
+        onFinishedDescription: "Vyberte, čo sa stane po dokončení všetkých exportov vo fronte.",
+        resetLabel: "Obnoviť nastavenia frontu",
+      },
+      about: {
+        title: "Informácie / Aktualizácie",
+        description: "Verzia aplikácie, aktualizácie a zdroje projektu.",
+        versionLabel: "Verzia aplikácie",
+        versionDescription: "Zobraziť poznámky k vydaniu tejto verzie.",
+        openRelease: "Otvoriť stránku vydania",
+        updatesLabel: "Aktualizácie",
+        updatesDescription: "Skontrolovať aktualizácie alebo nainštalovať dostupnú aktualizáciu.",
+      },
+      resetImmediateDescription: "Zmeny sa prejavia okamžite.",
+    },
     labels: {
       activityFeedView: "Zobrazenie prehľadu aktivít",
       autoStartQueue: "Automatické spustenie frontu",
@@ -230,10 +276,6 @@ export const sk = {
       mergeAudio: "Zlúčiť zvuk",
       theme: "Téma",
       title: "Nastavenia",
-    },
-    tooltips: {
-      disabledByDefault: "Predvolene vypnuté",
-      enabledByDefault: "Predvolene zapnuté",
     },
     accessibility: {
       colorSpectrum: "Spektrum farieb motívu. Odtieň upravíte šípkami doľava a doprava.",

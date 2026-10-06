@@ -20,7 +20,7 @@ function useResetPreferencesCommand() {
       preferences.segmentPlaybackEnabledDefault !==
         DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault,
     icon: <RotateCcw aria-hidden="true" />,
-    surfaces: ["menu"] as const,
+    surfaces: ["dialog", "menu"] as const,
     run() {
       dispatch(preferencesReset());
     },

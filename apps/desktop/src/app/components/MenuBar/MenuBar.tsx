@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Menubar,
   MenubarContent,
+  MenubarItem,
   MenubarMenu,
   MenubarSub,
   MenubarSubContent,
@@ -13,15 +14,16 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
+import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { diagnostics } from "@/lib/diagnostics";
 
 import { MenuBarFile, MenuBarFileContent } from "./components/MenuBarFile";
 import { MenuBarHelp, MenuBarHelpContent } from "./components/MenuBarHelp";
 import { MenuBarQueue, MenuBarQueueContent } from "./components/MenuBarQueue";
-import { MenuBarSettings, MenuBarSettingsContent } from "./components/MenuBarSettings";
+import { MenuBarSettings } from "./components/MenuBarSettings";
 import { MenuBarView, MenuBarViewContent } from "./components/MenuBarView";
 
-type MenuId = "file" | "view" | "queue" | "settings" | "help";
+type MenuId = "file" | "view" | "queue" | "help";
 
 function reportMenuChange(value: MenuId | "") {
   diagnostics.event(value ? "menu.opened.changed" : "menu.closed.changed", {
@@ -53,6 +55,7 @@ function CompactMenuSub({ children, id, label }: CompactMenuSubProps) {
 function MenuBar() {
   const { t } = useTranslation();
   const [menuVersion, setMenuVersion] = useState(0);
+  const { executeCommand } = useApplicationCommands();
 
   const closeMenu = () => {
     setMenuVersion((version) => version + 1);
@@ -97,9 +100,9 @@ function MenuBar() {
                 <MenuBarQueueContent />
               </CompactMenuSub>
 
-              <CompactMenuSub id="settings" label={t("settings.labels.title")}>
-                <MenuBarSettingsContent />
-              </CompactMenuSub>
+              <MenubarItem onSelect={() => void executeCommand("open-settings", "menu")}>
+                {t("settings.labels.title")}
+              </MenubarItem>
 
               <CompactMenuSub id="help" label={t("app.labels.help")}>
                 <MenuBarHelpContent />

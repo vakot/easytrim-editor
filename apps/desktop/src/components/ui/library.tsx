@@ -20,11 +20,12 @@ function Library({ className, ...props }: LibraryProps) {
 
 interface LibraryNavigationProps extends ComponentProps<typeof TabsList> {
   "aria-label": string;
+  containerClassName?: string;
 }
 
-function LibraryNavigation({ className, ...props }: LibraryNavigationProps) {
+function LibraryNavigation({ className, containerClassName, ...props }: LibraryNavigationProps) {
   return (
-    <ScrollArea className="-mx-2 h-full min-h-0 min-w-0 pl-4">
+    <ScrollArea className={cn("-mx-2 h-full min-h-0 min-w-0 pl-4", containerClassName)}>
       <TabsList className={cn("bg-transparent px-0 pt-2.5 pb-4", className)} {...props} />
     </ScrollArea>
   );

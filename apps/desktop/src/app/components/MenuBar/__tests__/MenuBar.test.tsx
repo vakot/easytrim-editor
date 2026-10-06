@@ -12,9 +12,12 @@ import { describe, expect, it, vi } from "vitest";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { SettingsDialog } from "@/app/components/SettingsDialog";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
+import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
+import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
 import { ChangelogProvider } from "@/features/changelog";
@@ -84,9 +87,15 @@ function render(ui: ReactElement) {
 }
 
 function getMenuTrigger(name: string) {
+  if (name === "Settings") return screen.getByRole("button", { name });
   return within(screen.getByRole("menubar", { name: "Application menus" })).getByRole("menuitem", {
     name,
   });
+}
+
+function SettingsOpenIndicator() {
+  const { isSettingsOpen } = useSettingsDialog();
+  return isSettingsOpen ? <span data-testid="settings-open" /> : null;
 }
 
 vi.mock("@/app/store/redux-hooks", () => ({
@@ -261,8 +270,8 @@ describe("MenuBarTest", () => {
 
   function MenuBarTest(overrides: MenuTestOverrides = {}) {
     const [, forceUpdate] = useState(0);
-    const initialized = useRef(false);
-    if (!initialized.current) {
+    const initialized = useRef<boolean | null>(null);
+    if (initialized.current === null) {
       configureMenuState(overrides, () => forceUpdate((value) => value + 1));
       initialized.current = true;
     }
@@ -273,11 +282,15 @@ describe("MenuBarTest", () => {
             <PreviewTransformProvider>
               <ChangelogProvider>
                 <ResizablePanelContextProvider>
-                  <ApplicationCommandsProvider>
-                    <ThemeProvider>
-                      <AppMenuBar />
-                    </ThemeProvider>
-                  </ApplicationCommandsProvider>
+                  <SettingsDialogProvider>
+                    <ApplicationCommandsProvider>
+                      <ThemeProvider>
+                        <AppMenuBar />
+                        <SettingsDialog />
+                        <SettingsOpenIndicator />
+                      </ThemeProvider>
+                    </ApplicationCommandsProvider>
+                  </SettingsDialogProvider>
                 </ResizablePanelContextProvider>
               </ChangelogProvider>
             </PreviewTransformProvider>
@@ -552,120 +565,65 @@ describe("MenuBarTest", () => {
     expect(installUpdate).not.toHaveBeenCalled();
   });
 
-  it("shows a checkbox menu item for every configurable preference", async () => {
+  it("opens Settings from the regular menubar button", async () => {
     const user = userEvent.setup();
-    render(
-      <TooltipProvider>
-        <ThemeProvider>
-          <MenuBarTest canExport canSave isChoosingSource={false} />
-        </ThemeProvider>
-      </TooltipProvider>,
-    );
-
+    renderMenus();
     await user.click(getMenuTrigger("Settings"));
-    for (const label of ["Loop", "Follow segment", "Auto-start Queue", "Merge audio"]) {
-      expect(screen.getByRole("menuitemcheckbox", { name: label })).toBeInTheDocument();
-    }
-    const settingsMenu = screen.getAllByRole("menu").at(-1);
-    expect(settingsMenu).toBeDefined();
-    expect(within(settingsMenu!).getAllByRole("separator")).toHaveLength(4);
-    expect(screen.queryByText("Timeline tools", { exact: true })).not.toBeInTheDocument();
-    expect(screen.queryByText("Audio tools", { exact: true })).not.toBeInTheDocument();
-    expect(screen.getByRole("menuitemcheckbox", { name: "Loop" })).toContainElement(
-      settingsMenu!.querySelector(".lucide-repeat"),
-    );
-    expect(screen.getByRole("menuitemcheckbox", { name: "Follow segment" })).toContainElement(
-      settingsMenu!.querySelector(".lucide-between-vertical-start"),
-    );
-    expect(screen.getByRole("menuitemcheckbox", { name: "Auto-start Queue" })).toContainElement(
-      settingsMenu!.querySelector(".lucide-play"),
-    );
+    expect(screen.getByTestId("settings-open")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
-  it("resets preference defaults", async () => {
+  it("opens Settings from the compact menu", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
-        <ThemeProvider>
-          <MenuBarTest canExport canSave isChoosingSource={false} />
-        </ThemeProvider>
+        <AppUpdatesContext.Provider value={defaultAppUpdates}>
+          <MenuBarTest />
+        </AppUpdatesContext.Provider>
       </TooltipProvider>,
     );
-
-    await user.click(getMenuTrigger("Settings"));
-    const loopItem = screen.getByRole("menuitemcheckbox", {
-      name: "Loop",
-    });
-
-    await user.click(loopItem);
-    expect(loopItem).not.toBeChecked();
-    await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
-
-    expect(loopItem).toBeChecked();
-    expect(screen.getByRole("menuitem", { name: "Reset to default" })).toBeInTheDocument();
+    await user.click(screen.getAllByLabelText("Application menus").at(-1)!);
+    await user.click(screen.getByRole("menuitem", { name: "Settings" }));
+    expect(screen.getByTestId("settings-open")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("shows the default state in preference item tooltips", async () => {
+  it("switches settings pages and applies default changes immediately", async () => {
     const user = userEvent.setup();
-    render(
-      <TooltipProvider>
-        <ThemeProvider>
-          <MenuBarTest canExport canSave isChoosingSource={false} />
-        </ThemeProvider>
-      </TooltipProvider>,
-    );
-
+    renderMenus();
     await user.click(getMenuTrigger("Settings"));
-    const loopItem = screen.getByRole("menuitemcheckbox", {
-      name: "Loop",
-    });
 
-    await user.hover(loopItem);
-    await waitFor(() => {
-      expect(screen.getByRole("tooltip")).toHaveTextContent("Enabled by default");
-    });
+    const defaultsTab = screen.getByRole("tab", { name: "Defaults" });
+    expect(screen.getByRole("tab", { name: "General" })).toHaveAttribute("aria-selected", "true");
+    await user.click(defaultsTab);
+    expect(defaultsTab).toHaveAttribute("aria-selected", "true");
+
+    const loopSwitch = screen.getByRole("switch", { name: "Loop" });
+    expect(loopSwitch).toBeChecked();
+    await user.click(loopSwitch);
+    expect(menuState.preferences.loopPlaybackEnabledDefault).toBe(false);
+    expect(loopSwitch).not.toBeChecked();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("shows disabled by default for disabled preference items", async () => {
+  it("changes the interface language through the existing i18n path", async () => {
     const user = userEvent.setup();
-    render(
-      <TooltipProvider>
-        <ThemeProvider>
-          <MenuBarTest
-            canExport
-            canSave
-            isChoosingSource={false}
-            onPreferenceChange={vi.fn()}
-            preferences={{
-              theme: "system",
-              primaryColor: "amber",
-              lastAudiblePlaybackVolumePercent: 100,
-              playbackVolumePercent: 100,
-              customPrimaryColor: "#efbf04",
-              activityFeedView: "default",
-              layoutDensity: "default",
-              loopPlaybackEnabledDefault: false,
-              segmentPlaybackEnabledDefault: false,
-              autoStartQueueEnabled: false,
-              mergeAudioEnabledDefault: false,
-              deleteSourceOnRenderFinish: false,
-              lastSeenChangelogVersion: null,
-              uiScalePercent: 100,
-            }}
-          />
-        </ThemeProvider>
-      </TooltipProvider>,
-    );
-
+    renderMenus();
     await user.click(getMenuTrigger("Settings"));
-    const mergeItem = screen.getByRole("menuitemcheckbox", {
-      name: "Merge audio",
-    });
 
-    await user.hover(mergeItem);
-    await waitFor(() => {
-      expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
-    });
+    await user.click(screen.getByLabelText("Language"));
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(3);
+    expect(options.map((option) => option.getAttribute("aria-label"))).toEqual(
+      expect.arrayContaining(["English, en", "Slovenčina (Slovak), sk", "Русский (Russian), ru"]),
+    );
+    expect(screen.queryByRole("option", { name: /Japanese/ })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("option", { name: /, ru$/ }));
+    await waitFor(() => expect(i18n.resolvedLanguage).toBe("ru"));
+    await i18n.changeLanguage("en");
   });
 
   it("shows retry feedback after an update check fails", async () => {
@@ -750,7 +708,7 @@ describe("MenuBarTest", () => {
     expect(screen.queryByRole("heading", { name: "Delete source file?" })).not.toBeInTheDocument();
   });
 
-  it("keeps theme radios and searches for languages in Settings", async () => {
+  it("keeps theme radios available in the View menu", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
@@ -792,26 +750,6 @@ describe("MenuBarTest", () => {
       "true",
     );
     await user.keyboard("{Escape}");
-    await user.keyboard("{Escape}");
-    const settingsButton = getMenuTrigger("Settings");
-    await user.click(settingsButton);
-    const languageItem = screen.getByRole("menuitem", { name: /Language/ });
-    expect(languageItem).not.toBeNull();
-    languageItem?.focus();
-    await user.keyboard("{ArrowRight}");
-
-    const languageSearch = screen.getByRole("combobox", { name: "Search languages" });
-    await user.type(languageSearch, "slovak");
-
-    const slovakOption = screen.getByRole("option", { name: "Slovenčina (Slovak), sk" });
-    expect(slovakOption).toBeVisible();
-    expect(screen.queryByRole("option", { name: /Русский/ })).not.toBeInTheDocument();
-
-    await user.click(slovakOption);
-    await waitFor(() => expect(i18n.resolvedLanguage).toBe("sk"));
-    expect(languageItem).toHaveTextContent(/sk$/i);
-    expect(screen.queryByRole("option", { name: /Slov/ })).not.toBeInTheDocument();
-    await i18n.changeLanguage("en");
   });
 
   it("shows hex values and accepts custom input as soon as it is valid", async () => {
@@ -938,7 +876,7 @@ describe("MenuBarTest", () => {
     renderMenus();
 
     await user.click(getMenuTrigger("File"));
-    for (const menuName of ["View", "Queue", "Settings", "Help"]) {
+    for (const menuName of ["View", "Queue", "Help"]) {
       await user.hover(getMenuTrigger(menuName));
     }
 

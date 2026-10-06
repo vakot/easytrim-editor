@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { SearchMatchRange } from "@/domain/search.types";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
-type ApplicationCommandSurface = "button" | "hotkey" | "menu" | "palette";
+type ApplicationCommandSurface = "button" | "dialog" | "hotkey" | "menu" | "palette";
 type ApplicationCommandVariant = "default" | "destructive" | "success";
 type MaybePromise<T> = T | Promise<T>;
 type ShortcutPlatform = "macos" | "other";
@@ -68,7 +68,13 @@ interface ApplicationCommandMatch<Id extends string = string> {
 
 function commandOrigin(commandId: string, surface: ApplicationCommandSurface) {
   const type: DiagnosticOrigin["type"] =
-    surface === "hotkey" ? "hotkey" : surface === "button" ? "button" : "menu";
+    surface === "hotkey"
+      ? "hotkey"
+      : surface === "button"
+        ? "button"
+        : surface === "dialog"
+          ? "menu"
+          : "menu";
 
   return { id: `${surface}.${commandId}`, type } satisfies DiagnosticOrigin;
 }

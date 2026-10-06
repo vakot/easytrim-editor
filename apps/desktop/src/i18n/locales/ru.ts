@@ -21,7 +21,6 @@ export const ru = {
       searchSuggestions: "Предложения",
     },
     status: {
-      disabled: "Отключено",
       enabled: "Включено",
       error: "Ошибка",
       loading: "Загрузка…",
@@ -221,6 +220,53 @@ export const ru = {
     },
   },
   settings: {
+    pages: {
+      dialogDescription: "Измените настройки EasyTrim. Изменения применяются сразу.",
+      navigationLabel: "Разделы настроек",
+      groups: { preferences: "Настройки", workspace: "Рабочая область", about: "О программе" },
+      general: {
+        title: "Общие",
+        description: "Выберите, как EasyTrim отображает интерфейс.",
+        languageDescription: "Выберите язык интерфейса EasyTrim Editor.",
+      },
+      appearance: {
+        title: "Внешний вид",
+        description: "Настройте масштаб интерфейса, тему и основной цвет.",
+        scalingDescription: "Измените размер элементов управления и текста в приложении.",
+        colorDescription: "Выберите готовый или пользовательский основной цвет.",
+        resetLabel: "Сбросить внешний вид",
+      },
+      defaults: {
+        title: "По умолчанию",
+        description: "Выберите настройки для новых сеансов редактирования.",
+        loopDescription: "Включать повтор воспроизведения для новых сеансов.",
+        followSegmentDescription: "По умолчанию ограничивать воспроизведение выбранным сегментом.",
+        mergeAudioDescription: "Объединять включённые аудиодорожки в новых экспортах.",
+        resetLabel: "Сбросить настройки",
+      },
+      layout: {
+        title: "Макет",
+        description: "Настройте видимость панелей и плотность рабочей области.",
+        resetLabel: "Сбросить макет",
+      },
+      queue: {
+        title: "Очередь",
+        description: "Настройте запуск и завершение очереди экспорта.",
+        autoStartDescription: "Начинать обработку сразу после добавления экспортов в очередь.",
+        onFinishedDescription: "Выберите действие после завершения всех экспортов в очереди.",
+        resetLabel: "Сбросить настройки очереди",
+      },
+      about: {
+        title: "О программе / Обновления",
+        description: "Версия приложения, обновления и ресурсы проекта.",
+        versionLabel: "Версия приложения",
+        versionDescription: "Открыть заметки к выпуску этой версии.",
+        openRelease: "Открыть страницу выпуска",
+        updatesLabel: "Обновления",
+        updatesDescription: "Проверить наличие обновлений или установить доступное обновление.",
+      },
+      resetImmediateDescription: "Изменения применяются сразу.",
+    },
     labels: {
       activityFeedView: "Вид ленты активности",
       autoStartQueue: "Автозапуск очереди",
@@ -231,10 +277,6 @@ export const ru = {
       mergeAudio: "Объединять аудио",
       theme: "Тема",
       title: "Настройки",
-    },
-    tooltips: {
-      disabledByDefault: "По умолчанию отключено",
-      enabledByDefault: "По умолчанию включено",
     },
     accessibility: {
       colorSpectrum:
