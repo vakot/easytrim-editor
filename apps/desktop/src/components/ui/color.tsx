@@ -49,13 +49,13 @@ interface ColorSpectrumProps extends Omit<
   onCancel?: () => void;
   onCommit?: (color: HexColor) => void;
   onPreview?: (color: HexColor) => void;
-  spectrumRoleDescription?: string;
   spectrumLabel?: string;
+  spectrumRoleDescription?: string;
 }
 
 function ColorSpectrum({
-  className,
   "aria-label": ariaLabel,
+  className,
   color,
   formatHueValue = (hue) => `${Math.round(hue)}°`,
   formatSpectrumValue = (saturation, value) =>
@@ -64,8 +64,8 @@ function ColorSpectrum({
   onCancel,
   onCommit,
   onPreview,
-  spectrumRoleDescription = "two-dimensional color selector",
   spectrumLabel = "Saturation and brightness",
+  spectrumRoleDescription = "two-dimensional color selector",
   ...props
 }: ColorSpectrumProps) {
   const [hsv, setHsv] = React.useState(() => hexToHsv(color));
@@ -305,13 +305,13 @@ function ColorSpectrum({
     >
       <button
         aria-describedby={spectrumValueId}
-        aria-label={spectrumLabel}
         aria-keyshortcuts="ArrowDown ArrowLeft ArrowRight ArrowUp Shift+ArrowDown Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp"
+        aria-label={spectrumLabel}
         aria-roledescription={spectrumRoleDescription}
         className="relative isolate block h-48 w-full cursor-crosshair touch-none rounded-lg ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring"
         data-slot="color-spectrum-field"
-        onLostPointerCapture={losePointerCapture}
         onKeyDown={adjustSpectrum}
+        onLostPointerCapture={losePointerCapture}
         onPointerCancel={(event) => stopScrubbing(event, false)}
         onPointerDown={(event) => startScrubbing(event, "spectrum")}
         onPointerMove={(event) => scrub(event, "spectrum")}
@@ -341,8 +341,8 @@ function ColorSpectrum({
       </button>
 
       <button
-        aria-label={hueLabel}
         aria-keyshortcuts="ArrowDown ArrowLeft ArrowRight ArrowUp Home End Shift+ArrowDown Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp"
+        aria-label={hueLabel}
         aria-orientation="horizontal"
         aria-valuemax={360}
         aria-valuemin={0}
@@ -350,8 +350,8 @@ function ColorSpectrum({
         aria-valuetext={formatHueValue(Math.round(hsv.hue))}
         className="relative isolate block h-4 w-full touch-none rounded-full ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring"
         data-slot="color-hue-slider"
-        onLostPointerCapture={losePointerCapture}
         onKeyDown={adjustHue}
+        onLostPointerCapture={losePointerCapture}
         onPointerCancel={(event) => stopScrubbing(event, false)}
         onPointerDown={(event) => startScrubbing(event, "hue")}
         onPointerMove={(event) => scrub(event, "hue")}

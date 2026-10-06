@@ -168,6 +168,7 @@ describe("ColorSpectrum", () => {
       left: spectrumMarker.style.left,
       top: spectrumMarker.style.top,
     };
+
     expect(hueMarker.style.left).toBe(startingHuePosition);
     drag(spectrum, "pointerMove", 88.875, 12.625);
     drag(spectrum, "pointerMove", 37.125, 62.375);
@@ -218,6 +219,7 @@ describe("ColorSpectrum", () => {
   it("exposes the hue as a keyboard-operable slider with stable clamped endpoints", () => {
     render(<ControlledColorSpectrum initialColor="#808080" />);
     const { hue, hueMarker, spectrum, spectrumMarker } = getControls();
+    const expectedTop = 100 - (128 / 255) * 100 - 10;
 
     expect(screen.getByRole("group", { name: "Color picker" })).toBeVisible();
     expect(spectrum).toHaveAttribute("aria-roledescription", "two-dimensional color selector");
@@ -230,7 +232,8 @@ describe("ColorSpectrum", () => {
     fireEvent.keyDown(spectrum, { key: "ArrowLeft" });
     fireEvent.keyDown(spectrum, { key: "ArrowRight", shiftKey: true });
     fireEvent.keyDown(spectrum, { key: "ArrowUp", shiftKey: true });
-    expect(spectrumMarker).toHaveStyle({ left: "10%", top: "40%" });
+    expect(spectrumMarker.style.left).toBe("10%");
+    expect(Number.parseFloat(spectrumMarker.style.top)).toBeCloseTo(expectedTop);
 
     fireEvent.keyDown(hue, { key: "End" });
     expect(hueMarker).toHaveStyle({ left: "100%" });
@@ -240,7 +243,8 @@ describe("ColorSpectrum", () => {
     fireEvent.keyDown(hue, { key: "Home" });
     fireEvent.keyDown(hue, { key: "ArrowLeft" });
     expect(hueMarker).toHaveStyle({ left: "0%" });
-    expect(spectrumMarker).toHaveStyle({ left: "10%", top: "40%" });
+    expect(spectrumMarker.style.left).toBe("10%");
+    expect(Number.parseFloat(spectrumMarker.style.top)).toBeCloseTo(expectedTop);
   });
 
   it("restores the starting state if pointer capture is unexpectedly lost", () => {

@@ -126,8 +126,8 @@ function CustomColorPopoverContent({
         onCancel={cancelInteraction}
         onCommit={commit}
         onPreview={preview}
-        spectrumRoleDescription={t("settings.accessibility.colorSpectrumRoleDescription")}
         spectrumLabel={t("settings.accessibility.colorSpectrumField")}
+        spectrumRoleDescription={t("settings.accessibility.colorSpectrumRoleDescription")}
       />
       {children}
     </PopoverContent>
