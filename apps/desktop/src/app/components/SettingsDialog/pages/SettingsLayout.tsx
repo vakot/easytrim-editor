@@ -33,11 +33,11 @@ function SettingsLayout() {
   return (
     <SettingsSection title={t("settings.labels.panels")}>
       <SettingRow label={t("app.labels.leftPanel")}>
-        <CommandSwitch commandId="toggle-left-panel" label={t("app.labels.leftPanel")} />
+        <CommandSwitch aria-label={t("app.labels.leftPanel")} commandId="toggle-left-panel" />
       </SettingRow>
 
       <SettingRow label={t("app.labels.bottomPanel")}>
-        <CommandSwitch commandId="toggle-bottom-panel" label={t("app.labels.bottomPanel")} />
+        <CommandSwitch aria-label={t("app.labels.bottomPanel")} commandId="toggle-bottom-panel" />
       </SettingRow>
 
       <SettingRow label={t("app.labels.layoutDensity")}>

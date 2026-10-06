@@ -45,20 +45,19 @@ function SettingsSection({
 
 function CommandSwitch({
   commandId,
-  label,
-}: {
+  ...props
+}: Omit<React.ComponentProps<typeof Switch>, "disabled" | "checked" | "onCheckedChange"> & {
   commandId: Parameters<typeof useApplicationCommand>[0];
-  label: string;
 }) {
   const command = useApplicationCommand(commandId);
   const { executeCommand } = useApplicationCommands();
 
   return (
     <Switch
-      aria-label={label}
       checked={Boolean(command.checked)}
       disabled={!command.enabled || command.pending}
       onCheckedChange={() => void executeCommand(command.id, "dialog")}
+      {...props}
     />
   );
 }

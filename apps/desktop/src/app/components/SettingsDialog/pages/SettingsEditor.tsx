@@ -10,7 +10,7 @@ function SettingsEditor() {
         description={t("settings.pages.defaults.loopDescription")}
         label={t("settings.labels.loop")}
       >
-        <CommandSwitch commandId="preference-loop-playback" label={t("settings.labels.loop")} />
+        <CommandSwitch aria-label={t("settings.labels.loop")} commandId="preference-loop-playback" />
       </SettingRow>
 
       <SettingRow
@@ -18,8 +18,8 @@ function SettingsEditor() {
         label={t("settings.labels.followSegment")}
       >
         <CommandSwitch
+          aria-label={t("settings.labels.followSegment")}
           commandId="preference-segment-playback"
-          label={t("settings.labels.followSegment")}
         />
       </SettingRow>
 
@@ -27,7 +27,10 @@ function SettingsEditor() {
         description={t("settings.pages.defaults.mergeAudioDescription")}
         label={t("settings.labels.mergeAudio")}
       >
-        <CommandSwitch commandId="preference-merge-audio" label={t("settings.labels.mergeAudio")} />
+        <CommandSwitch
+          aria-label={t("settings.labels.mergeAudio")}
+          commandId="preference-merge-audio"
+        />
       </SettingRow>
 
       <SettingRow label={t("settings.pages.defaults.resetLabel")}>

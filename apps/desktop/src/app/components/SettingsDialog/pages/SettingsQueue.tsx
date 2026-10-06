@@ -32,8 +32,8 @@ function SettingsQueue() {
         label={t("settings.labels.autoStartQueue")}
       >
         <CommandSwitch
+          aria-label={t("settings.labels.autoStartQueue")}
           commandId="preference-auto-start-queue"
-          label={t("settings.labels.autoStartQueue")}
         />
       </SettingRow>
 
@@ -41,7 +41,10 @@ function SettingsQueue() {
         description={t("queue.tooltips.deleteSourceOnRenderFinish")}
         label={t("queue.labels.deleteSource")}
       >
-        <CommandSwitch commandId="delete-source-on-render-finish" label={t("queue.labels.deleteSource")} />
+        <CommandSwitch
+          aria-label={t("queue.labels.deleteSource")}
+          commandId="delete-source-on-render-finish"
+        />
       </SettingRow>
 
       <SettingRow
