@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Fixed Settings reset actions so they only reset settings owned by their page.
 - Localized audio track menu actions across English, Russian, and Slovak.
 - Localized source search result counts and breadcrumb navigation labels.
 - Fixed spacing and scrolling in the settings and audio effects libraries and sidebar layout.
