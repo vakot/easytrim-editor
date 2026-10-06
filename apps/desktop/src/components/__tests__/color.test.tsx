@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, type Mock, vi } from "vitest";
 
 import {
   ColorPicker,
@@ -10,6 +10,7 @@ import {
   ColorPickerSaturationValue,
   ColorPickerSpectrum,
 } from "@/components/color";
+import type { HexColor } from "@/lib/color.types";
 import { hsvToHex } from "@/lib/color.utils";
 
 function toRgb(hex: string) {
@@ -73,12 +74,12 @@ function drag(
 
 function renderPicker({
   defaultValue = "#4299e1",
-  onChange = vi.fn(),
-  onCommit = vi.fn(),
+  onChange = vi.fn<(color: HexColor) => void>(),
+  onCommit = vi.fn<(color: HexColor) => void>(),
 }: {
-  defaultValue?: `#${string}`;
-  onChange?: ReturnType<typeof vi.fn>;
-  onCommit?: ReturnType<typeof vi.fn>;
+  defaultValue?: HexColor;
+  onChange?: Mock<(color: HexColor) => void>;
+  onCommit?: Mock<(color: HexColor) => void>;
 } = {}) {
   const view = render(
     <ColorPicker defaultValue={defaultValue} onChange={onChange} onCommit={onCommit}>
@@ -391,7 +392,7 @@ describe("ColorPicker", () => {
   });
 });
 
-function getControlsForDefault(defaultValue = "#4299e1") {
+function getControlsForDefault(defaultValue: HexColor = "#4299e1") {
   renderPicker({ defaultValue });
   return getControls();
 }
