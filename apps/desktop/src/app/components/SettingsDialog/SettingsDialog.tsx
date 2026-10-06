@@ -2,6 +2,8 @@ import type { TFunction } from "i18next";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Separator } from "@/components/ui/separator";
+
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import {
   Library,
@@ -15,7 +17,6 @@ import {
   LibraryNavigationGroup,
   LibraryNavigationItem,
   LibraryPage,
-  LibrarySeparator,
 } from "@/components/library";
 
 import { SettingsAbout } from "./pages/SettingsAbout";
@@ -57,7 +58,7 @@ function SettingsDialog() {
             </LibraryNavigationGroup>
           </LibraryNavigation>
 
-          <LibrarySeparator />
+          <Separator orientation="vertical" />
 
           <LibraryContent>
             <SettingsPage page="general">
