@@ -28,11 +28,21 @@ function ControlledLibrary() {
         <LibraryPage hidden={value !== "general"} value="general">
           General settings content
         </LibraryPage>
-        <LibraryPage hidden={value !== "appearance"} value="appearance">
-          Appearance settings content
+        <LibraryPage forceMount hidden={value !== "appearance"} value="appearance">
+          <PersistentPageContent />
         </LibraryPage>
       </LibraryContent>
     </Library>
+  );
+}
+
+function PersistentPageContent() {
+  const [value, setValue] = useState(0);
+
+  return (
+    <button onClick={() => setValue((current) => current + 1)} type="button">
+      Appearance visits: {value}
+    </button>
   );
 }
 
@@ -45,13 +55,29 @@ describe("Library", () => {
     const tabs = tablist.getAllByRole("tab");
     expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(["General", "Appearance"]);
     expect(screen.getByText("General settings content")).toBeVisible();
-    expect(screen.getByText("Appearance settings content")).not.toBeVisible();
+    expect(
+      screen.getByRole("button", { hidden: true, name: "Appearance visits: 0" }),
+    ).not.toBeVisible();
 
     tabs[0]?.focus();
     await user.keyboard("{ArrowDown}");
 
     expect(tabs[1]).toHaveFocus();
     expect(tabs[1]).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Appearance settings content")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Appearance visits: 0" })).toBeVisible();
+  });
+
+  it("keeps force-mounted page state when switching tabs", async () => {
+    const user = userEvent.setup();
+    render(<ControlledLibrary />);
+
+    const tablist = within(screen.getByRole("tablist", { name: "Settings pages" }));
+    const appearanceTab = tablist.getByRole("tab", { name: "Appearance" });
+    await user.click(appearanceTab);
+    await user.click(screen.getByRole("button", { name: "Appearance visits: 0" }));
+    await user.click(tablist.getByRole("tab", { name: "General" }));
+    await user.click(appearanceTab);
+
+    expect(screen.getByRole("button", { name: "Appearance visits: 1" })).toBeVisible();
   });
 });

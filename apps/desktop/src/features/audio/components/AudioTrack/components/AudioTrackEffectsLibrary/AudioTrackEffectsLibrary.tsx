@@ -68,7 +68,7 @@ function AudioTrackEffectsLibrary({
 
       <LibraryContent>
         {effects.map(({ id, Page }) => (
-          <LibraryPage hidden={selectedEffect !== id} key={id} value={id}>
+          <LibraryPage forceMount hidden={selectedEffect !== id} key={id} value={id}>
             <Page streamIndex={streamIndex} />
           </LibraryPage>
         ))}
