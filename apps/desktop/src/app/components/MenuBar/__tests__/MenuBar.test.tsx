@@ -256,11 +256,6 @@ describe("MenuBarTest", () => {
         menuState.preferences.segmentPlaybackEnabledDefault =
           DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault;
       }
-      if (action.type === "preferences/appearanceSettingsReset") {
-        menuState.preferences.theme = DEFAULT_PREFERENCES.theme;
-        menuState.preferences.primaryColor = DEFAULT_PREFERENCES.primaryColor;
-        menuState.preferences.uiScalePercent = DEFAULT_PREFERENCES.uiScalePercent;
-      }
       if (action.type === "queue/settingsReset") {
         menuState.export.queueFinishAction = "nothing";
         menuState.preferences.autoStartQueueEnabled =
@@ -386,21 +381,14 @@ describe("MenuBarTest", () => {
     expect(screen.getByRole("combobox", { name: "On queue finished" })).toBeInTheDocument();
   });
 
-  it("resets theme and color settings from Settings", async () => {
+  it("does not expose a full Appearance reset", async () => {
     const user = userEvent.setup();
     renderMenus({ themePreference: "dark", primaryColor: "#4299e1" });
 
     await user.click(getMenuTrigger("Settings"));
     await user.click(screen.getByRole("tab", { name: "Appearance" }));
-    await user.click(screen.getByRole("button", { name: "Reset to default" }));
-
-    expect(menuState.dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "preferences/appearanceSettingsReset" }),
-    );
-    expect(menuState.preferences).toMatchObject({
-      theme: DEFAULT_PREFERENCES.theme,
-      primaryColor: DEFAULT_PREFERENCES.primaryColor,
-    });
+    expect(screen.queryByRole("button", { name: "Reset to default" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
   });
 
   it("resets queue finish and delete-source settings from Settings", async () => {
@@ -754,43 +742,6 @@ describe("MenuBarTest", () => {
     expect(committedHue).toHaveAttribute("aria-valuenow", "360");
     expect(committedHue.querySelector('[data-slot="color-hue-marker"]')).toBe(hueMarker);
     expect(hueMarker?.style.left).toBe("100%");
-  });
-
-  it("resets an open picker session when appearance is reset during a drag", async () => {
-    const user = userEvent.setup();
-    renderMenus({ primaryColor: "#4299e1" });
-    await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Appearance" }));
-    await user.click(screen.getByRole("button", { name: "Primary accent" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "Primary color HEX" }), {
-      target: { value: "123456" },
-    });
-
-    const spectrum = screen.getByRole("button", {
-      name: "Saturation and brightness",
-    });
-
-    const hue = screen.getByRole("slider", { name: "Hue" });
-
-    Object.defineProperty(spectrum, "getBoundingClientRect", {
-      value: () => new DOMRect(0, 0, 192, 192),
-    });
-    Object.assign(spectrum, {
-      hasPointerCapture: () => true,
-      releasePointerCapture: vi.fn(),
-      setPointerCapture: vi.fn(),
-    });
-
-    fireEvent.pointerDown(spectrum, { button: 0, clientX: 96, clientY: 96, pointerId: 1 });
-    expect(document.documentElement).toHaveAttribute("data-primary-color-scrubbing");
-
-    fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
-
-    expect(menuState.preferences.primaryColor).toBe(DEFAULT_PREFERENCES.primaryColor);
-    expect(screen.getByRole("textbox", { name: "Primary color HEX" })).toHaveValue("efbf04");
-    expect(screen.getByRole("slider", { name: "Hue" })).not.toBe(hue);
-    expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
-    expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
   });
 
   it("uses localized names for the composed color controls", async () => {

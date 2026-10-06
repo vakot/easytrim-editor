@@ -232,7 +232,6 @@ export const sk = {
         description: "Upravte mierku rozhrania, motív a hlavnú farbu.",
         scalingDescription: "Zmeňte veľkosť ovládacích prvkov a textu v aplikácii.",
         colorDescription: "Vyberte prednastavenú alebo vlastnú hlavnú farbu.",
-        resetLabel: "Obnoviť vzhľad",
       },
       defaults: {
         title: "Predvolené hodnoty",

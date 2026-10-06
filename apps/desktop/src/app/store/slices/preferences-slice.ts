@@ -71,11 +71,6 @@ const preferencesSlice = createSlice({
       state.activityFeedView = DEFAULT_PREFERENCES.activityFeedView;
       state.layoutDensity = DEFAULT_PREFERENCES.layoutDensity;
     },
-    appearanceSettingsReset: (state) => {
-      state.theme = DEFAULT_PREFERENCES.theme;
-      state.primaryColor = DEFAULT_PREFERENCES.primaryColor;
-      state.uiScalePercent = DEFAULT_PREFERENCES.uiScalePercent;
-    },
     editorSettingsReset: (state) => {
       state.loopPlaybackEnabledDefault = DEFAULT_PREFERENCES.loopPlaybackEnabledDefault;
       state.mergeAudioEnabledDefault = DEFAULT_PREFERENCES.mergeAudioEnabledDefault;
@@ -101,7 +96,6 @@ const preferencesSlice = createSlice({
 
 const {
   activityFeedViewChanged,
-  appearanceSettingsReset,
   changelogVersionSeen,
   editorSettingsReset,
   layoutDensityChanged,
@@ -168,7 +162,6 @@ const selectLastSeenChangelogVersion = (state: RootState): string | null =>
 
 export {
   activityFeedViewChanged,
-  appearanceSettingsReset,
   changelogVersionSeen,
   layoutDensityChanged,
   layoutReset,

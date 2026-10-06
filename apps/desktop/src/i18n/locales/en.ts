@@ -232,7 +232,6 @@ export const en = {
         description: "Adjust the interface scale, theme, and primary color.",
         scalingDescription: "Change the size of controls and text across the app.",
         colorDescription: "Choose a preset or pick a custom primary color.",
-        resetLabel: "Reset appearance",
       },
       defaults: {
         title: "Defaults",

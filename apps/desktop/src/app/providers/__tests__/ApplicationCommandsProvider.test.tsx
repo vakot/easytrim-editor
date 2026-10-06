@@ -227,7 +227,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(60);
+    ).toHaveLength(59);
     expect(
       screen
         .getAllByRole("button")
@@ -339,7 +339,6 @@ describe("ApplicationCommandsProvider", () => {
       "Reset to default",
     );
     for (const commandId of [
-      "reset-appearance-settings",
       "reset-editor-settings",
       "reset-queue-settings",
     ]) {
@@ -348,11 +347,6 @@ describe("ApplicationCommandsProvider", () => {
         "Reset to default",
       );
     }
-    expect(screen.getByRole("button", { name: "reset-appearance-settings" })).toHaveAttribute(
-      "data-surfaces",
-      "dialog",
-    );
-
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 
     expect(mocks.requestSourceDelete).toHaveBeenCalledWith({ sourceIds: ["source-1"] });
@@ -481,7 +475,7 @@ describe("ApplicationCommandsProvider", () => {
     renderRuntime();
 
     expect(screen.getByRole("button", { name: "reset-queue-settings" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "reset-appearance-settings" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "reset-appearance-settings" })).toBeNull();
     expect(screen.getByRole("button", { name: "reset-editor-settings" })).toBeDisabled();
   });
 });

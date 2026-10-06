@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   activityFeedViewChanged,
-  appearanceSettingsReset,
   changelogVersionSeen,
   editorSettingsReset,
   layoutDensityChanged,
@@ -84,31 +83,6 @@ describe("preferences Redux domain", () => {
     expect(customState.primaryColor).toBe("#123456");
     expect(isHexColor(customState.primaryColor)).toBe(true);
     expect(customState).not.toHaveProperty("customPrimaryColor");
-  });
-
-  it("resets only appearance settings, including UI scaling", () => {
-    const initialState: Preferences = {
-      ...DEFAULT_PREFERENCES,
-      theme: "dark",
-      primaryColor: "#4299e1",
-      uiScalePercent: 125,
-      loopPlaybackEnabledDefault: false,
-      activityFeedView: "branch",
-      autoStartQueueEnabled: false,
-      deleteSourceOnRenderFinish: true,
-    };
-
-    const state = preferencesReducer(initialState, appearanceSettingsReset());
-
-    expect(state).toEqual({
-      ...initialState,
-      theme: DEFAULT_PREFERENCES.theme,
-      primaryColor: DEFAULT_PREFERENCES.primaryColor,
-      uiScalePercent: DEFAULT_PREFERENCES.uiScalePercent,
-      loopPlaybackEnabledDefault: false,
-      activityFeedView: "branch",
-      autoStartQueueEnabled: false,
-    });
   });
 
   it("resets only editor defaults while preserving settings owned by other pages", () => {

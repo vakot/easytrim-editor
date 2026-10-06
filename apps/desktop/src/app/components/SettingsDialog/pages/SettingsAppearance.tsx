@@ -39,7 +39,7 @@ import {
 } from "@/components/color";
 import type { HexColor } from "@/lib/color.types";
 
-import { CommandButton, CommandReset, SettingRow, SettingsSection } from "../components/SettingRow";
+import { CommandButton, SettingRow, SettingsSection } from "../components/SettingRow";
 
 const uiScaleOptions = Array.from(
   { length: (MAX_UI_SCALE_PERCENT - MIN_UI_SCALE_PERCENT) / UI_SCALE_STEP_PERCENT + 1 },
@@ -230,9 +230,6 @@ function SettingsAppearance() {
         </Select>
       </SettingRow>
 
-      <SettingRow label={t("settings.pages.appearance.resetLabel")}>
-        <CommandReset commandId="reset-appearance-settings" />
-      </SettingRow>
     </SettingsSection>
   );
 }
