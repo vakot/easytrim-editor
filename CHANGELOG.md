@@ -6,11 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added an Open export queue action to the Queue menu and Command Center.
+- Added panel visibility, layout density, and Activity Feed view controls to the View menu.
 - Added searchable language selection to the Settings menu.
 
 ### Changed
 
+- Refined View menu actions to include main windows entry-points and layout controls
 - Replaced the Settings menu dropdown with a full preferences dialog for language, appearance, defaults, layout, queue, and update/help options.
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
 - Localized the primary color picker's saturation, brightness, and hue labels for assistive technology.
@@ -18,6 +19,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 - Removed language changing commands from the Command Center.
+- Removed Queue menu from menubar
 
 ### Fixed
 

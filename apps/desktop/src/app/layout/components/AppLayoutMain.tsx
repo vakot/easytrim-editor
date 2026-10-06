@@ -76,7 +76,12 @@ function AppLayoutMain() {
     <div className="size-full min-h-0" data-slot="timeline-pane" ref={initializeTimelinePane}>
       <TimelineGeometrySync targetRef={timelinePaneRef} />
 
-      <ResizablePanelGroup id="editor-stage" orientation="vertical" persisted>
+      <ResizablePanelGroup
+        className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
+        id="editor-stage"
+        orientation="vertical"
+        persisted
+      >
         <ResizablePanel id="editor-stage-preview" minSize="14rem">
           <AppLayoutPanel
             className="flex flex-col bg-preview-surface layout-compact:rounded-tr-xl layout-compact:border-b-0 layout-compact:border-l-0"

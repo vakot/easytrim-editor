@@ -10,6 +10,7 @@ import {
   LibraryNavigation,
   LibraryNavigationGroup,
   LibraryNavigationItem,
+  LibraryNavigationItemIndicator,
   LibraryPage,
 } from "@/components/library";
 
@@ -30,15 +31,24 @@ export const Navigation: Story = {
         <Library onValueChange={setValue} value={value}>
           <LibraryNavigation aria-label="Settings pages">
             <LibraryNavigationGroup label="Preferences">
-              <LibraryNavigationItem indicator={<BookOpen />} value="general">
+              <LibraryNavigationItem value="general">
+                <LibraryNavigationItemIndicator>
+                  <BookOpen />
+                </LibraryNavigationItemIndicator>
                 General
               </LibraryNavigationItem>
-              <LibraryNavigationItem indicator={<Palette />} value="appearance">
+              <LibraryNavigationItem value="appearance">
+                <LibraryNavigationItemIndicator>
+                  <Palette />
+                </LibraryNavigationItemIndicator>
                 Appearance
               </LibraryNavigationItem>
             </LibraryNavigationGroup>
             <LibraryNavigationGroup label="Information">
-              <LibraryNavigationItem indicator={<Sparkles />} value="about">
+              <LibraryNavigationItem value="about">
+                <LibraryNavigationItemIndicator>
+                  <Sparkles />
+                </LibraryNavigationItemIndicator>
                 About / Updates
               </LibraryNavigationItem>
             </LibraryNavigationGroup>

@@ -10,7 +10,10 @@ function SettingsEditor() {
         description={t("settings.pages.defaults.loopDescription")}
         label={t("settings.labels.loop")}
       >
-        <CommandSwitch aria-label={t("settings.labels.loop")} commandId="preference-loop-playback" />
+        <CommandSwitch
+          aria-label={t("settings.labels.loop")}
+          commandId="preference-loop-playback"
+        />
       </SettingRow>
 
       <SettingRow

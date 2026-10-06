@@ -13,15 +13,17 @@ import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { SettingsDialog } from "@/app/components/SettingsDialog";
+import { CommandPalette } from "@/app/components/CommandPalette";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
+import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
 import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
 import { ChangelogProvider } from "@/features/changelog";
-import { QueueDeleteSourceProvider } from "@/features/export";
+import { ExportActions, QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
 import { i18n } from "@/i18n/config";
@@ -47,6 +49,7 @@ const menuState = vi.hoisted(() => ({
   },
   export: {
     queue: [] as Array<{ status: "queued" | "rendering" }>,
+    queueDialogOpen: false,
     queueStarted: false,
     queueFinishAction: "nothing" as QueueFinishAction,
     availableQueueFinishActions: ["exit", "nothing"] as QueueFinishAction[],
@@ -76,7 +79,11 @@ const defaultAppUpdates = {
   installUpdate: vi.fn(async () => undefined),
 };
 
-const nativeDiagnostics = vi.hoisted(() => ({ revealDiagnosticLogs: vi.fn() }));
+const nativeDiagnostics = vi.hoisted(() => ({
+  persistDiagnosticEvent: vi.fn(async () => undefined),
+  revealDiagnosticLogs: vi.fn(),
+}));
+
 const nativeWindow = vi.hoisted(() => ({ requestWindowShutdown: vi.fn() }));
 
 function render(ui: ReactElement) {
@@ -99,6 +106,10 @@ function SettingsOpenIndicator() {
 
 vi.mock("@/app/store/redux-hooks", () => ({
   useAppDispatch: () => menuState.dispatch,
+  useAppStore: () => ({
+    getState: () => ({ editingInstances: { ids: [], entities: {} } }),
+    subscribe: () => () => {},
+  }),
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({
       audio: { tracks: [] },
@@ -116,6 +127,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
       trim: { value: null },
       export: {
         queue: menuState.export.queue,
+        exportQueueDialogOpen: menuState.export.queueDialogOpen,
         startedSourceIds: menuState.export.queueStarted
           ? menuState.export.queue.map((_, index) => `instance-${index}`)
           : [],
@@ -201,6 +213,7 @@ describe("MenuBarTest", () => {
       ...(overrides.hasQueuedItems ? [{ status: "queued" as const }] : []),
       ...(overrides.hasActiveItem ? [{ status: "rendering" as const }] : []),
     ];
+    menuState.export.queueDialogOpen = false;
     menuState.export.queueStarted = overrides.queueStarted ?? false;
     menuState.export.queueFinishAction = overrides.queueFinishAction ?? "nothing";
     menuState.export.availableQueueFinishActions = overrides.availableQueueFinishActions ?? [
@@ -226,6 +239,12 @@ describe("MenuBarTest", () => {
       });
 
     menuState.dispatch = vi.fn((action: { payload?: unknown; type: string }) => {
+      if (action.type === "export/exportQueueDialogOpened") {
+        menuState.export.queueDialogOpen = true;
+      }
+      if (action.type === "export/exportQueueDialogClosed") {
+        menuState.export.queueDialogOpen = false;
+      }
       if (
         action.type === "preferences/preferenceChanged" &&
         typeof action.payload === "object" &&
@@ -283,15 +302,19 @@ describe("MenuBarTest", () => {
             <PreviewTransformProvider>
               <ChangelogProvider>
                 <ResizablePanelContextProvider>
-                  <SettingsDialogProvider>
-                    <ApplicationCommandsProvider>
-                      <ThemeProvider>
-                        <AppMenuBar />
-                        <SettingsDialog />
-                        <SettingsOpenIndicator />
-                      </ThemeProvider>
-                    </ApplicationCommandsProvider>
-                  </SettingsDialogProvider>
+                  <CommandPaletteProvider>
+                    <SettingsDialogProvider>
+                      <ApplicationCommandsProvider>
+                        <ThemeProvider>
+                          <AppMenuBar />
+                          <CommandPalette />
+                          <ExportActions />
+                          <SettingsDialog />
+                          <SettingsOpenIndicator />
+                        </ThemeProvider>
+                      </ApplicationCommandsProvider>
+                    </SettingsDialogProvider>
+                  </CommandPaletteProvider>
                 </ResizablePanelContextProvider>
               </ChangelogProvider>
             </PreviewTransformProvider>
@@ -319,34 +342,56 @@ describe("MenuBarTest", () => {
     );
   }
 
-  it("places Queue before Settings", () => {
+  it("keeps the top-level menus in their expected order", () => {
     renderMenus();
     const menuButtons = screen
       .getByRole("menubar", { name: "Application menus" })
       .querySelectorAll("button");
 
     const labels = [...menuButtons].map((button) => button.textContent);
-    expect(labels.indexOf("Queue")).toBeLessThan(labels.indexOf("Settings"));
+    expect(labels).toEqual(["File", "View", "Settings", "Help"]);
   });
 
-  it("keeps queue configuration separate from queue actions", async () => {
+  it("opens the Command Palette from View", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+
+    await user.click(getMenuTrigger("View"));
+    await user.click(screen.getByRole("menuitem", { name: /Command Palette/ }));
+
+    expect(await screen.findByRole("combobox", { name: "Search commands" })).toBeVisible();
+  });
+
+  it("opens the Export Queue from View", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+
+    await user.click(getMenuTrigger("View"));
+    await user.click(screen.getByRole("menuitem", { name: /Export Queue/ }));
+
+    expect(await screen.findByRole("dialog", { name: "Export Queue" })).toBeVisible();
+  });
+
+  it("keeps queue configuration in Settings, separate from queue actions", async () => {
     const user = userEvent.setup();
     renderMenus({ hasQueuedItems: true, hasActiveItem: true });
 
-    await user.click(getMenuTrigger("Queue"));
+    await user.click(getMenuTrigger("Settings"));
+    await user.click(screen.getByRole("tab", { name: "Queue" }));
     expect(screen.queryByRole("menuitem", { name: /Start queue/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Skip" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Cancel" })).not.toBeInTheDocument();
-    expect(screen.getByRole("menuitemcheckbox", { name: "Delete source" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: /On queue finished/ })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Delete source" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "On queue finished" })).toBeInTheDocument();
   });
 
-  it("resets view theme and color settings from the View menu", async () => {
+  it("resets theme and color settings from Settings", async () => {
     const user = userEvent.setup();
     renderMenus({ themePreference: "dark", primaryColor: "#4299e1" });
 
-    await user.click(getMenuTrigger("View"));
-    await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
+    await user.click(getMenuTrigger("Settings"));
+    await user.click(screen.getByRole("tab", { name: "Appearance" }));
+    await user.click(screen.getByRole("button", { name: "Reset to default" }));
 
     expect(menuState.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "preferences/viewSettingsReset" }),
@@ -357,15 +402,16 @@ describe("MenuBarTest", () => {
     });
   });
 
-  it("resets queue finish and delete-source settings from the Queue menu", async () => {
+  it("resets queue finish and delete-source settings from Settings", async () => {
     const user = userEvent.setup();
     renderMenus({
       queueFinishAction: "exit",
       preferences: { ...DEFAULT_PREFERENCES, deleteSourceOnRenderFinish: true },
     });
 
-    await user.click(getMenuTrigger("Queue"));
-    await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
+    await user.click(getMenuTrigger("Settings"));
+    await user.click(screen.getByRole("tab", { name: "Queue" }));
+    await user.click(screen.getByRole("button", { name: "Reset to default" }));
 
     expect(menuState.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "queue/settingsReset" }),
@@ -380,11 +426,10 @@ describe("MenuBarTest", () => {
       availableQueueFinishActions: ["exit", "nothing"],
     });
 
-    await user.click(getMenuTrigger("Queue"));
-    const finishItem = screen.getByRole("menuitem", { name: /On queue finished/ });
-    finishItem.focus();
-    await user.keyboard("{ArrowRight}");
-    await user.click(screen.getByRole("menuitemradio", { name: "Exit application" }));
+    await user.click(getMenuTrigger("Settings"));
+    await user.click(screen.getByRole("tab", { name: "Queue" }));
+    await user.click(screen.getByRole("combobox", { name: "On queue finished" }));
+    await user.click(screen.getByRole("option", { name: "Exit application" }));
     expect(menuState.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "export/queueFinishActionChanged", payload: "exit" }),
     );
@@ -394,9 +439,10 @@ describe("MenuBarTest", () => {
     const user = userEvent.setup();
     renderMenus();
 
-    await user.click(getMenuTrigger("Queue"));
-    const deleteSourceItem = screen.getByRole("menuitemcheckbox", { name: "Delete source" });
-    expect(deleteSourceItem).toHaveAttribute("aria-checked", "false");
+    await user.click(getMenuTrigger("Settings"));
+    await user.click(screen.getByRole("tab", { name: "Queue" }));
+    const deleteSourceItem = screen.getByRole("switch", { name: "Delete source" });
+    expect(deleteSourceItem).not.toBeChecked();
 
     await user.click(deleteSourceItem);
     expect(
@@ -422,9 +468,10 @@ describe("MenuBarTest", () => {
       preferences: { ...DEFAULT_PREFERENCES, deleteSourceOnRenderFinish: true },
     });
 
-    await user.click(getMenuTrigger("Queue"));
-    const deleteSourceItem = screen.getByRole("menuitemcheckbox", { name: "Delete source" });
-    expect(deleteSourceItem).toHaveAttribute("aria-checked", "true");
+    await user.click(getMenuTrigger("Settings"));
+    await user.click(screen.getByRole("tab", { name: "Queue" }));
+    const deleteSourceItem = screen.getByRole("switch", { name: "Delete source" });
+    expect(deleteSourceItem).toBeChecked();
 
     await user.click(deleteSourceItem);
 
@@ -432,10 +479,7 @@ describe("MenuBarTest", () => {
       type: "preferences/preferenceChanged",
       payload: { enabled: false, key: "deleteSourceOnRenderFinish" },
     });
-    expect(screen.getByRole("menuitemcheckbox", { name: "Delete source" })).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
+    expect(screen.getByRole("switch", { name: "Delete source" })).not.toBeChecked();
     expect(
       screen.queryByRole("heading", { name: "Delete source after rendering?" }),
     ).not.toBeInTheDocument();
@@ -874,6 +918,9 @@ describe("MenuBarTest", () => {
 
     const viewButton = getMenuTrigger("View");
     await user.click(viewButton);
+    const appearanceItem = screen.getByRole("menuitem", { name: "Appearance" });
+    appearanceItem.focus();
+    await user.keyboard("{ArrowRight}");
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
     expect(themeItem).toHaveClass("min-w-48");
@@ -917,6 +964,9 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("View"));
+    const appearanceItem = screen.getByRole("menuitem", { name: "Appearance" });
+    appearanceItem.focus();
+    await user.keyboard("{ArrowRight}");
     const colorItem = screen.getByText("Color").closest<HTMLElement>('[role="menuitem"]');
     expect(colorItem).not.toBeNull();
     colorItem?.focus();
@@ -954,13 +1004,13 @@ describe("MenuBarTest", () => {
 
     await waitFor(() => {
       expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
-      expect(screen.getByRole("menuitem", { name: /Theme/ })).toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: /Export Queue/ })).toBeInTheDocument();
     });
 
     await user.hover(fileButton);
     await waitFor(() => {
       expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
-      expect(screen.queryByRole("menuitem", { name: /Theme/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole("menuitem", { name: /Export Queue/ })).not.toBeInTheDocument();
     });
   });
 
@@ -969,7 +1019,7 @@ describe("MenuBarTest", () => {
     renderMenus();
 
     await user.click(getMenuTrigger("File"));
-    for (const menuName of ["View", "Queue", "Help"]) {
+    for (const menuName of ["View", "Help"]) {
       await user.hover(getMenuTrigger(menuName));
     }
 
@@ -988,13 +1038,13 @@ describe("MenuBarTest", () => {
 
     const fileButton = getMenuTrigger("File");
     const viewButton = getMenuTrigger("View");
-    const queueButton = getMenuTrigger("Queue");
+    const helpButton = getMenuTrigger("Help");
 
     await user.click(fileButton);
     await user.hover(viewButton);
     expect(fileButton).not.toHaveFocus();
 
-    await user.hover(queueButton);
+    await user.hover(helpButton);
     expect(viewButton).not.toHaveFocus();
   });
 
@@ -1023,11 +1073,14 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("View"));
-    const themeItem = screen.getByRole("menuitem", { name: /Theme/ });
-    const colorItem = screen.getByRole("menuitem", { name: /Color/ });
+    const appearanceItem = screen.getByRole("menuitem", { name: "Appearance" });
+    appearanceItem.focus();
+    await user.keyboard("{ArrowRight}");
+    const themeItem = screen.getByRole("menuitem", { name: "Theme" });
+    const colorItem = screen.getByRole("menuitem", { name: "Color" });
 
     await user.hover(themeItem);
-    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(3));
     const themeSubmenu = screen.getAllByRole("menu").at(-1);
     expect(themeSubmenu).toBeDefined();
     expect(
@@ -1035,7 +1088,7 @@ describe("MenuBarTest", () => {
     ).toBeInTheDocument();
 
     await user.hover(colorItem);
-    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(3));
     const colorSubmenu = screen.getAllByRole("menu").at(-1);
     expect(colorSubmenu).toBeDefined();
     expect(
@@ -1044,6 +1097,6 @@ describe("MenuBarTest", () => {
     expect(
       within(colorSubmenu!).queryByRole("menuitem", { name: "System" }),
     ).not.toBeInTheDocument();
-    expect(screen.getAllByRole("menu")).toHaveLength(2);
+    expect(screen.getAllByRole("menu")).toHaveLength(3);
   });
 });

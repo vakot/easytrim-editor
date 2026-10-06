@@ -68,7 +68,7 @@ function AppLayoutSidebar() {
 
           <div className="mt-1 flex min-h-0 flex-1 flex-col">
             <SourceList>
-              <div className="mt-1 flex gap-2 px-3">
+              <div className="flex gap-2 px-3">
                 <SourceListSearch />
                 <SourceListCloseAll />
               </div>

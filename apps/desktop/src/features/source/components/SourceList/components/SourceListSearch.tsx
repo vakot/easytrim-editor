@@ -39,6 +39,7 @@ function SourceListSearch() {
       <InputGroupAddon>
         <Search aria-hidden="true" />
       </InputGroupAddon>
+
       <InputGroupInput
         aria-label={t("common.labels.search")}
         onChange={(event) => setSearchInternal(event.currentTarget.value)}
@@ -47,6 +48,7 @@ function SourceListSearch() {
         type="search"
         value={searchInternal}
       />
+
       <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-1">
         {isFiltered ? (
           <>
