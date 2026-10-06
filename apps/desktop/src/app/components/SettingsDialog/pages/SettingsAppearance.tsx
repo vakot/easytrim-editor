@@ -20,17 +20,17 @@ import {
 } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
-  customPrimaryColorChanged,
-  selectCustomPrimaryColor,
+  primaryColorChanged,
   selectPrimaryColor,
   selectThemePreference,
   selectUiScalePercent,
 } from "@/app/store/slices/preferences-slice";
-import { PRIMARY_COLORS, resolvePrimaryColor } from "@/app/theme/theme";
+import { PRIMARY_COLOR_PRESETS } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/useTheme";
 import {
   ColorPicker,
   ColorPickerInput,
+  ColorPickerPreset,
   ColorPickerSpectrum,
   ColorSample,
 } from "@/components/color";
@@ -50,8 +50,14 @@ function SettingsAppearance() {
 
   const theme = useAppSelector(selectThemePreference);
   const primaryColor = useAppSelector(selectPrimaryColor);
-  const customPrimaryColor = useAppSelector(selectCustomPrimaryColor);
   const uiScalePercent = useAppSelector(selectUiScalePercent);
+  const colorPresetLabels = {
+    amber: t("settings.options.colors.amber"),
+    blue: t("settings.options.colors.blue"),
+    emerald: t("settings.options.colors.emerald"),
+    rose: t("settings.options.colors.rose"),
+    violet: t("settings.options.colors.violet"),
+  };
 
   const themeOptions = [
     {
@@ -111,20 +117,19 @@ function SettingsAppearance() {
                 className="w-44"
                 variant="outline"
               >
-                <ColorSample color={resolvePrimaryColor(primaryColor)} selected />
-                {resolvePrimaryColor(primaryColor)}
+                <ColorSample color={primaryColor} />
+                <span className="font-mono">{primaryColor.toUpperCase()}</span>
                 <ChevronsUpDown aria-hidden="true" className="ml-auto text-muted-foreground" />
               </Button>
             </CollapsibleTrigger>
           </SettingRow>
 
           <CollapsibleContent className="mb-4 flex flex-wrap items-center gap-1.5">
-            {/* TODO: ColorPicker = source of truth */}
             <ColorPicker
-              defaultValue={customPrimaryColor}
+              defaultValue={primaryColor}
               onCancel={() => previewPrimaryColor(null)}
               onCommit={(color) => {
-                dispatch(customPrimaryColorChanged(color));
+                dispatch(primaryColorChanged(color));
                 finishPrimaryColorPreview(color);
               }}
               onPreview={previewPrimaryColor}
@@ -134,20 +139,22 @@ function SettingsAppearance() {
 
                 <div className="flex items-center gap-2">
                   <ColorPickerInput
-                    aria-label={t("settings.accessibility.customColorHex")}
+                    aria-label={t("settings.accessibility.primaryColorHex")}
                     className="flex-1"
                   />
 
-                  {/* TODO: PRIMARY_COLORS = presets for ColorPicker - apply selected to ColorPicker */}
-                  {PRIMARY_COLORS.map((color) => (
-                    <Button
-                      className="p-0.5"
-                      onClick={() => void dispatch(customPrimaryColorChanged(color))}
-                      size="icon"
-                      variant={primaryColor === color ? "secondary" : "outline"}
-                    >
-                      <ColorSample color={color} />
-                    </Button>
+                  {PRIMARY_COLOR_PRESETS.map((preset) => (
+                    <ColorPickerPreset key={preset.id} value={preset.color}>
+                      <Button
+                        aria-label={colorPresetLabels[preset.id]}
+                        aria-pressed={primaryColor === preset.color}
+                        className="p-0.5"
+                        size="icon"
+                        variant={primaryColor === preset.color ? "secondary" : "outline"}
+                      >
+                        <ColorSample color={preset.color} />
+                      </Button>
+                    </ColorPickerPreset>
                   ))}
                 </div>
               </div>

@@ -6,7 +6,6 @@ import { selectPrimaryColor, selectThemePreference } from "@/app/store/slices/pr
 import {
   type PrimaryColor,
   primaryColorPalette,
-  resolvePrimaryColor,
   resolveTheme,
   subscribeToSystemTheme,
   systemPrefersDark,
@@ -25,9 +24,8 @@ function ThemeProvider({ children }: { children: ReactNode }) {
       if (primaryColor === committedColor) {
         root.style.removeProperty("--primary-color-preview");
       } else {
-        root.style.setProperty("--primary-color-preview", resolvePrimaryColor(committedColor));
+        root.style.setProperty("--primary-color-preview", committedColor);
       }
-      root.dataset.primaryColor = committedColor;
       applyPrimaryColor(root, committedColor);
     },
     [primaryColor],
@@ -38,12 +36,11 @@ function ThemeProvider({ children }: { children: ReactNode }) {
       const root = document.documentElement;
       root.toggleAttribute("data-primary-color-scrubbing", nextPrimaryColor !== null);
       if (nextPrimaryColor) {
-        root.style.setProperty("--primary-color-preview", resolvePrimaryColor(nextPrimaryColor));
+        root.style.setProperty("--primary-color-preview", nextPrimaryColor);
       } else {
         root.style.removeProperty("--primary-color-preview");
       }
       const appliedColor = nextPrimaryColor ?? primaryColor;
-      root.dataset.primaryColor = appliedColor;
       applyPrimaryColor(root, appliedColor);
     },
     [primaryColor],
@@ -54,11 +51,10 @@ function ThemeProvider({ children }: { children: ReactNode }) {
     root.classList.toggle("light", preference === "light");
     root.classList.toggle("dark", resolvedTheme === "dark");
     root.dataset.theme = resolvedTheme;
-    root.dataset.primaryColor = primaryColor;
     applyPrimaryColor(root, primaryColor);
     if (
       !root.hasAttribute("data-primary-color-scrubbing") &&
-      root.style.getPropertyValue("--primary-color-preview") === resolvePrimaryColor(primaryColor)
+      root.style.getPropertyValue("--primary-color-preview") === primaryColor
     ) {
       root.style.removeProperty("--primary-color-preview");
     }
@@ -67,7 +63,6 @@ function ThemeProvider({ children }: { children: ReactNode }) {
     return () => {
       root.classList.remove("light", "dark");
       delete root.dataset.theme;
-      delete root.dataset.primaryColor;
       root.removeAttribute("data-primary-color-scrubbing");
       root.style.removeProperty("--primary-color-preview");
       root.style.removeProperty("--primary-light");

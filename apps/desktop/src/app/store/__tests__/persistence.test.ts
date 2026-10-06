@@ -11,7 +11,6 @@ import {
 import { playbackSpeedChanged } from "@/app/store/slices/playback-controls-slice";
 import {
   activityFeedViewChanged,
-  customPrimaryColorChanged,
   layoutDensityChanged,
   preferenceChanged,
   preferencesReset,
@@ -123,7 +122,6 @@ describe("Redux Persist store integration", () => {
         theme: JSON.stringify({
           preference: "dark",
           primaryColor: "#123456",
-          customPrimaryColor: "#123456",
         }),
         _persist: JSON.stringify({ version: -1, rehydrated: true }),
       }),
@@ -137,7 +135,6 @@ describe("Redux Persist store integration", () => {
       activityFeedView: "compact",
       theme: "dark",
       primaryColor: "#123456",
-      customPrimaryColor: "#123456",
     });
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(false);
     expect(store.getState().playbackControls.playbackSpeed).toBe(1);
@@ -150,8 +147,54 @@ describe("Redux Persist store integration", () => {
     expect(JSON.parse(String(migratedRoot.preferences))).toMatchObject({
       theme: "dark",
       primaryColor: "#123456",
-      customPrimaryColor: "#123456",
     });
+  });
+
+  it("migrates legacy named primary colors to their preset HEX values", async () => {
+    const storage = createTestStorage({
+      [`persist:${persistConfig.key}`]: JSON.stringify({
+        preferences: JSON.stringify({
+          ...DEFAULT_PREFERENCES,
+          primaryColor: "blue",
+          customPrimaryColor: "#abcdef",
+        }),
+        _persist: JSON.stringify({ version: 1, rehydrated: true }),
+      }),
+    });
+
+    const { store } = await createPersistedTestStore(storage);
+
+    expect(store.getState().preferences.primaryColor).toBe("#4299e1");
+    expect(store.getState().preferences).not.toHaveProperty("customPrimaryColor");
+  });
+
+  it("preserves the legacy custom HEX representation and defaults invalid colors", async () => {
+    const customStorage = createTestStorage({
+      [`persist:${persistConfig.key}`]: JSON.stringify({
+        preferences: JSON.stringify({
+          ...DEFAULT_PREFERENCES,
+          primaryColor: "custom",
+          customPrimaryColor: "#abcdef",
+        }),
+        _persist: JSON.stringify({ version: 1, rehydrated: true }),
+      }),
+    });
+
+    const invalidStorage = createTestStorage({
+      [`persist:${persistConfig.key}`]: JSON.stringify({
+        preferences: JSON.stringify({ ...DEFAULT_PREFERENCES, primaryColor: "invalid" }),
+        _persist: JSON.stringify({ version: 1, rehydrated: true }),
+      }),
+    });
+
+    const customStore = await createPersistedTestStore(customStorage);
+    const invalidStore = await createPersistedTestStore(invalidStorage);
+
+    expect(customStore.store.getState().preferences.primaryColor).toBe("#abcdef");
+    expect(customStore.store.getState().preferences).not.toHaveProperty("customPrimaryColor");
+    expect(invalidStore.store.getState().preferences.primaryColor).toBe(
+      DEFAULT_PREFERENCES.primaryColor,
+    );
   });
 
   it("does not rewrite active tools when a Preference changes", async () => {
@@ -237,7 +280,7 @@ describe("Redux Persist store integration", () => {
     store.dispatch(activityFeedViewChanged("branch"));
     store.dispatch(layoutDensityChanged("compact"));
     store.dispatch(themePreferenceChanged("dark"));
-    store.dispatch(primaryColorChanged("blue"));
+    store.dispatch(primaryColorChanged("#4299e1"));
     store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
     store.dispatch(queueFinishActionChanged("exit"));
     await persistor.flush();
@@ -251,7 +294,7 @@ describe("Redux Persist store integration", () => {
       activityFeedView: "branch",
       layoutDensity: "compact",
       theme: "dark",
-      primaryColor: "blue",
+      primaryColor: "#4299e1",
       deleteSourceOnRenderFinish: true,
     });
   });
@@ -279,15 +322,14 @@ describe("Redux Persist store integration", () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(themePreferenceChanged("dark"));
-    store.dispatch(primaryColorChanged("blue"));
-    store.dispatch(customPrimaryColorChanged("#123456"));
+    store.dispatch(primaryColorChanged("#4299e1"));
+    store.dispatch(primaryColorChanged("#123456"));
     await persistor.flush();
 
     const persistedRoot = await readPersistedRoot(storage);
     expect(JSON.parse(String(persistedRoot.preferences))).toMatchObject({
       theme: "dark",
       primaryColor: "#123456",
-      customPrimaryColor: "#123456",
     });
     expect(persistedRoot).not.toHaveProperty("theme");
     expect(JSON.parse(String(persistedRoot.preferences))).not.toHaveProperty("resolvedTheme");

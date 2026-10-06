@@ -280,7 +280,7 @@ export const en = {
     },
     accessibility: {
       colorSpectrum: "Theme color picker",
-      customColorHex: "Custom hex",
+      primaryColorHex: "Primary color HEX",
     },
     options: {
       commandLabels: {
@@ -291,7 +291,6 @@ export const en = {
       colors: {
         amber: "Amber",
         blue: "Blue",
-        custom: "Custom",
         emerald: "Emerald",
         rose: "Rose",
         violet: "Violet",

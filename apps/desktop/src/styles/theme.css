@@ -53,34 +53,6 @@
   --primary-foreground-dark: #17130a;
 }
 
-:root[data-primary-color="rose"] {
-  --primary-light: #d94161;
-  --primary-foreground-light: #ffffff;
-  --primary-dark: #f17a90;
-  --primary-foreground-dark: #2d0811;
-}
-
-:root[data-primary-color="violet"] {
-  --primary-light: #7052c8;
-  --primary-foreground-light: #ffffff;
-  --primary-dark: #a78bfa;
-  --primary-foreground-dark: #1e1245;
-}
-
-:root[data-primary-color="blue"] {
-  --primary-light: #2879ba;
-  --primary-foreground-light: #ffffff;
-  --primary-dark: #65b5f6;
-  --primary-foreground-dark: #08213a;
-}
-
-:root[data-primary-color="emerald"] {
-  --primary-light: #16845a;
-  --primary-foreground-light: #ffffff;
-  --primary-dark: #5fd19a;
-  --primary-foreground-dark: #062717;
-}
-
 :root,
 .light {
   color-scheme: light;

@@ -61,10 +61,9 @@ const menuState = vi.hoisted(() => ({
     lastSeenChangelogVersion: "1.10.4",
     mergeAudioEnabledDefault: false,
     theme: "system",
-    primaryColor: "amber",
+    primaryColor: "#efbf04",
     lastAudiblePlaybackVolumePercent: 100,
     playbackVolumePercent: 100,
-    customPrimaryColor: "#efbf04",
     uiScalePercent: 100,
   } as Preferences,
 }));
@@ -174,7 +173,6 @@ describe("MenuBarTest", () => {
     availableQueueFinishActions?: QueueFinishAction[];
     canExport?: boolean;
     canSave?: boolean;
-    customPrimaryColor?: `#${string}`;
     hasActiveItem?: boolean;
     hasQueuedItems?: boolean;
     hasSource?: boolean;
@@ -214,8 +212,7 @@ describe("MenuBarTest", () => {
       lastSeenChangelogVersion: getCurrentVersion(),
     };
     menuState.preferences.theme = overrides.themePreference ?? "system";
-    menuState.preferences.primaryColor = overrides.primaryColor ?? "amber";
-    menuState.preferences.customPrimaryColor = overrides.customPrimaryColor ?? "#efbf04";
+    menuState.preferences.primaryColor = overrides.primaryColor ?? "#efbf04";
     const setPreference =
       overrides.onPreferenceChange ??
       ((key: PreferenceKey, enabled: boolean) => {
@@ -245,7 +242,6 @@ describe("MenuBarTest", () => {
       if (action.type === "preferences/viewSettingsReset") {
         menuState.preferences.theme = DEFAULT_PREFERENCES.theme;
         menuState.preferences.primaryColor = DEFAULT_PREFERENCES.primaryColor;
-        menuState.preferences.customPrimaryColor = DEFAULT_PREFERENCES.customPrimaryColor;
       }
       if (action.type === "queue/settingsReset") {
         menuState.export.queueFinishAction = "nothing";
@@ -268,13 +264,6 @@ describe("MenuBarTest", () => {
       }
       if (action.type === "preferences/primaryColorChanged") {
         menuState.preferences.primaryColor = action.payload as Preferences["primaryColor"];
-        if ((action.payload as string).startsWith("#")) {
-          menuState.preferences.customPrimaryColor = action.payload as `#${string}`;
-        }
-      }
-      if (action.type === "preferences/customPrimaryColorChanged") {
-        menuState.preferences.primaryColor = action.payload as Preferences["primaryColor"];
-        menuState.preferences.customPrimaryColor = action.payload as `#${string}`;
       }
       notify();
     });
@@ -354,7 +343,7 @@ describe("MenuBarTest", () => {
 
   it("resets view theme and color settings from the View menu", async () => {
     const user = userEvent.setup();
-    renderMenus({ themePreference: "dark", primaryColor: "blue", customPrimaryColor: "#123456" });
+    renderMenus({ themePreference: "dark", primaryColor: "#4299e1" });
 
     await user.click(getMenuTrigger("View"));
     await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
@@ -365,7 +354,6 @@ describe("MenuBarTest", () => {
     expect(menuState.preferences).toMatchObject({
       theme: DEFAULT_PREFERENCES.theme,
       primaryColor: DEFAULT_PREFERENCES.primaryColor,
-      customPrimaryColor: DEFAULT_PREFERENCES.customPrimaryColor,
     });
   });
 
@@ -640,15 +628,34 @@ describe("MenuBarTest", () => {
     expect(scaleSelect).toHaveTextContent("200%");
   });
 
-  it("syncs both appearance color swatches with a live custom color preview", async () => {
+  it("routes picker presets through the color session and previews spectrum edits", async () => {
     const user = userEvent.setup();
-    renderMenus({ primaryColor: "blue", customPrimaryColor: "#123456" });
+    renderMenus({ primaryColor: "#4299e1" });
     await user.click(getMenuTrigger("Settings"));
     await user.click(screen.getByRole("tab", { name: "Appearance" }));
     await user.click(screen.getByRole("button", { name: "Primary accent" }));
-    await user.click(screen.getByRole("button", { name: "Custom" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Primary color HEX" }), {
+      target: { value: "efbf04" },
+    });
 
-    const spectrum = screen.getByRole("button", { name: "Saturation and brightness" });
+    expect(menuState.preferences.primaryColor).toBe("#efbf04");
+    expect(screen.getByRole("button", { name: "Amber" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("textbox", { name: "Primary color HEX" })).toHaveValue("efbf04");
+    const spectrum = screen.getByRole("button", {
+      name: "Theme color picker saturation and brightness",
+    });
+
+    const spectrumMarker = spectrum.querySelector<HTMLElement>(
+      '[data-slot="color-spectrum-marker"]',
+    );
+
+    const hueMarker = screen
+      .getByRole("slider", { name: "Theme color picker hue" })
+      .querySelector<HTMLElement>('[data-slot="color-hue-marker"]');
+
+    expect(spectrumMarker?.style.left).not.toBe("0%");
+    expect(hueMarker?.style.left).not.toBe("0%");
+
     Object.defineProperty(spectrum, "getBoundingClientRect", {
       value: () => new DOMRect(0, 0, 192, 192),
     });
@@ -660,22 +667,13 @@ describe("MenuBarTest", () => {
 
     fireEvent.pointerDown(spectrum, { clientX: 96, clientY: 96, pointerId: 1 });
 
-    const activeSwatch = screen.getByRole("button", { name: "Primary accent" });
-    const customSwatch = screen.getByRole("button", { name: "Custom" });
-    expect(menuState.preferences.primaryColor).toBe("blue");
+    expect(menuState.preferences.primaryColor).toBe("#efbf04");
     expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe(
-      "#406080",
+      "#807240",
     );
-    expect(activeSwatch).toHaveStyle({
-      backgroundColor: "var(--primary)",
-    });
-    expect(customSwatch).toHaveStyle({
-      backgroundColor: "var(--primary-color-preview, #123456)",
-    });
-
     fireEvent.pointerCancel(spectrum, { pointerId: 1 });
     expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
-    expect(menuState.preferences.primaryColor).toBe("blue");
+    expect(menuState.preferences.primaryColor).toBe("#efbf04");
   });
 
   it("changes the interface language through the existing i18n path", async () => {
@@ -827,13 +825,7 @@ describe("MenuBarTest", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <MenuBarTest
-            canExport
-            canSave
-            customPrimaryColor="#123456"
-            isChoosingSource={false}
-            primaryColor="blue"
-          />
+          <MenuBarTest canExport canSave isChoosingSource={false} primaryColor="#4299e1" />
         </ThemeProvider>
       </TooltipProvider>,
     );
