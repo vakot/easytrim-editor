@@ -167,7 +167,7 @@ describe("ColorSpectrum", () => {
     drag(hue, "pointerDown", 110, 158, 3);
     drag(hue, "pointerCancel", 110, 158, 3);
     expect(onCancel).toHaveBeenCalledOnce();
-    expect(hueMarker).toHaveStyle({ left: "20%" });
+    expect(hueMarker).toHaveStyle({ left: `${(210 / 360) * 100}%` });
   });
 
   it("synchronizes genuine external changes while ignoring its own echoed preview", () => {
@@ -186,19 +186,19 @@ describe("ColorSpectrum", () => {
   });
 
   it("reopens cleanly after grayscale, black, and custom colors are committed", () => {
-    const view = render(<ColorSpectrum color="#808080" />);
+    const view = render(<ColorSpectrum color="#808080" key="#808080" />);
     let controls = getControls();
     expect(controls.hueMarker).toHaveStyle({ left: "0%" });
     drag(controls.hue, "pointerDown", 85, 158);
     drag(controls.hue, "pointerUp", 85, 158);
 
-    view.rerender(<ColorSpectrum color="#000000" />);
+    view.rerender(<ColorSpectrum color="#000000" key="#000000" />);
     controls = getControls();
     expect(controls.spectrumMarker).toHaveStyle({ left: "0%", top: "100%" });
     drag(controls.hue, "pointerDown", 85, 158);
     drag(controls.hue, "pointerUp", 85, 158);
 
-    view.rerender(<ColorSpectrum color="#123456" />);
+    view.rerender(<ColorSpectrum color="#123456" key="#123456" />);
     controls = getControls();
     expect(controls.hueMarker).toHaveStyle({
       left: `${(210 / 360) * 100}%`,

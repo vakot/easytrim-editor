@@ -86,9 +86,9 @@ describe("CustomColorPopover", () => {
     fireEvent.pointerDown(wheel, { clientX: 96, clientY: 96, pointerId: 1 });
 
     expect(document.documentElement).toHaveAttribute("data-primary-color-scrubbing");
-    expect(document.documentElement).toHaveAttribute("data-primary-color", "#808080");
+    expect(document.documentElement).toHaveAttribute("data-primary-color", "#406080");
     expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe(
-      "#808080",
+      "#406080",
     );
     expect(store.getState().preferences.primaryColor).toBe("blue");
     expect(store.getState().preferences.customPrimaryColor).toBe("#123456");
@@ -121,17 +121,17 @@ describe("CustomColorPopover", () => {
     fireEvent.pointerDown(wheel, { clientX: 96, clientY: 96, pointerId: 1 });
     fireEvent.pointerUp(wheel, { clientX: 96, clientY: 96, pointerId: 1 });
 
-    expect(store.getState().preferences.primaryColor).toBe("#808080");
-    expect(store.getState().preferences.customPrimaryColor).toBe("#808080");
-    expect(document.documentElement).toHaveAttribute("data-primary-color", "#808080");
+    expect(store.getState().preferences.primaryColor).toBe("#406080");
+    expect(store.getState().preferences.customPrimaryColor).toBe("#406080");
+    expect(document.documentElement).toHaveAttribute("data-primary-color", "#406080");
     expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
 
     wheel = prepareSpectrumWheel();
     fireEvent.pointerDown(wheel, { clientX: 0, clientY: 0, pointerId: 2 });
     fireEvent.pointerCancel(wheel, { pointerId: 2 });
 
-    expect(store.getState().preferences.primaryColor).toBe("#808080");
-    expect(document.documentElement).toHaveAttribute("data-primary-color", "#808080");
+    expect(store.getState().preferences.primaryColor).toBe("#406080");
+    expect(document.documentElement).toHaveAttribute("data-primary-color", "#406080");
     expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
   });
 
