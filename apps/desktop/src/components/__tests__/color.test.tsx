@@ -245,6 +245,20 @@ describe("ColorPicker", () => {
     drag(hue, "pointerUp", 77.125, 158, 2);
   });
 
+  it("does not accumulate hue quantization across committed saturation-value interactions", () => {
+    const { onCommit } = renderPicker({ defaultValue: "#4299e1" });
+    const { hueMarker, spectrum } = getControls();
+    const initialHuePosition = hueMarker.style.left;
+
+    for (let pointerId = 1; pointerId <= 5; pointerId += 1) {
+      drag(spectrum, "pointerDown", 67.3, 78.3, pointerId);
+      drag(spectrum, "pointerUp", 67.3, 78.3, pointerId);
+      expect(hueMarker.style.left).toBe(initialHuePosition);
+    }
+
+    expect(onCommit).toHaveBeenCalledTimes(5);
+  });
+
   it("clamps pointer coordinates outside each control", () => {
     const { hue, hueMarker, spectrum, spectrumMarker } = getControlsForDefault();
 
