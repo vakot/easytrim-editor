@@ -111,9 +111,7 @@ function SettingsAppearance() {
               <Button
                 aria-label={t("settings.labels.primaryAccent")}
                 className="size-8 p-0"
-                style={{
-                  backgroundColor: `var(--primary-color-preview, ${resolvePrimaryColor(primaryColor)})`,
-                }}
+                style={{ backgroundColor: "var(--primary)" }}
               />
             </CollapsibleTrigger>
           </SettingRow>
