@@ -638,6 +638,10 @@ describe("MenuBarTest", () => {
       target: { value: "efbf04" },
     });
 
+    const colorInput = screen.getByRole("textbox", { name: "Primary color HEX" });
+    expect(colorInput).not.toHaveClass("flex-1");
+    expect(colorInput.parentElement?.parentElement).toHaveClass("flex-1");
+
     expect(menuState.preferences.primaryColor).toBe("#efbf04");
     expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
     expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");

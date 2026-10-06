@@ -174,8 +174,14 @@ function ColorPickerSaturationValue({
   "aria-label": ariaLabel,
   className,
   onKeyDown,
+  onLostPointerCapture,
+  onPointerCancel,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  style,
   ...props
-}: React.ComponentProps<"button">) {
+}: Omit<React.ComponentProps<"button">, "role" | "type">) {
   const { cancel, changeHsv, commitHsv, commitPointerHsv, hsv, onUnmount } = useColorPicker();
 
   const pointer = usePointerScrub({
@@ -245,15 +251,35 @@ function ColorPickerSaturationValue({
         handleKeyDown(event);
         onKeyDown?.(event);
       }}
-      type="button"
-      {...pointer}
+      onLostPointerCapture={(event) => {
+        pointer.onLostPointerCapture(event);
+        onLostPointerCapture?.(event);
+      }}
+      onPointerCancel={(event) => {
+        pointer.onPointerCancel(event);
+        onPointerCancel?.(event);
+      }}
+      onPointerDown={(event) => {
+        pointer.onPointerDown(event);
+        onPointerDown?.(event);
+      }}
+      onPointerMove={(event) => {
+        pointer.onPointerMove(event);
+        onPointerMove?.(event);
+      }}
+      onPointerUp={(event) => {
+        pointer.onPointerUp(event);
+        onPointerUp?.(event);
+      }}
       style={{
         background: `
           linear-gradient(to top, #000000, transparent),
           linear-gradient(to right, #ffffff, transparent),
           ${hsvToHex(hsv.hue, 100, 100)}
         `,
+        ...style,
       }}
+      type="button"
     >
       <span
         aria-hidden="true"
@@ -273,8 +299,17 @@ function ColorPickerHue({
   "aria-label": ariaLabel,
   className,
   onKeyDown,
+  onLostPointerCapture,
+  onPointerCancel,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  style,
   ...props
-}: React.ComponentProps<"button">) {
+}: Omit<
+  React.ComponentProps<"button">,
+  "aria-orientation" | "aria-valuemax" | "aria-valuemin" | "aria-valuenow" | "role" | "type"
+>) {
   const { cancel, changeHsv, commitHsv, commitPointerHsv, hsv, onUnmount } = useColorPicker();
 
   const pointer = usePointerScrub({
@@ -344,13 +379,33 @@ function ColorPickerHue({
         handleKeyDown(event);
         onKeyDown?.(event);
       }}
+      onLostPointerCapture={(event) => {
+        pointer.onLostPointerCapture(event);
+        onLostPointerCapture?.(event);
+      }}
+      onPointerCancel={(event) => {
+        pointer.onPointerCancel(event);
+        onPointerCancel?.(event);
+      }}
+      onPointerDown={(event) => {
+        pointer.onPointerDown(event);
+        onPointerDown?.(event);
+      }}
+      onPointerMove={(event) => {
+        pointer.onPointerMove(event);
+        onPointerMove?.(event);
+      }}
+      onPointerUp={(event) => {
+        pointer.onPointerUp(event);
+        onPointerUp?.(event);
+      }}
       role="slider"
-      type="button"
-      {...pointer}
       style={{
         background:
           "linear-gradient(to right, #ff0000 0%, #ffff00 16.67%, #00ff00 33.33%, #00ffff 50%, #0000ff 66.67%, #ff00ff 83.33%, #ff0000 100%)",
+        ...style,
       }}
+      type="button"
     >
       <span
         aria-hidden="true"
@@ -381,7 +436,7 @@ function ColorPickerInput({
   }
 
   return (
-    <div className={cn("relative", className)}>
+    <div className="relative">
       <span
         aria-hidden="true"
         className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 font-mono text-muted-foreground"
@@ -390,7 +445,7 @@ function ColorPickerInput({
       </span>
 
       <Input
-        className="pl-5 font-mono"
+        className={cn("pl-5 font-mono", className)}
         maxLength={6}
         onChange={handleChange}
         pattern="[0-9a-fA-F]{6}"

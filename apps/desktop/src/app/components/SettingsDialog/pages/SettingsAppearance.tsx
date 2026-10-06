@@ -172,10 +172,9 @@ function SettingsAppearance() {
                 </ColorPickerSpectrum>
 
                 <div className="flex items-center gap-2">
-                  <ColorPickerInput
-                    aria-label={t("settings.accessibility.primaryColorHex")}
-                    className="flex-1"
-                  />
+                  <div className="flex-1">
+                    <ColorPickerInput aria-label={t("settings.accessibility.primaryColorHex")} />
+                  </div>
 
                   {PRIMARY_COLOR_PRESETS.map((preset) => (
                     <ColorPickerPreset key={preset.id} value={preset.color}>

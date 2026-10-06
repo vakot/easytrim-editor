@@ -98,6 +98,80 @@ function renderPicker({
 }
 
 describe("ColorPicker", () => {
+  it("applies ColorPickerInput className to the input control", () => {
+    render(
+      <ColorPicker defaultValue="#4299e1">
+        <ColorPickerInput aria-label="Color HEX" className="w-40" />
+      </ColorPicker>,
+    );
+
+    const input = screen.getByRole("textbox", { name: "Color HEX" });
+
+    expect(input).toHaveClass("w-40");
+    expect(input.parentElement).not.toHaveClass("w-40");
+  });
+
+  it("merges control styles and composes standard pointer handlers", () => {
+    const createPointerHandlers = () => ({
+      onLostPointerCapture: vi.fn(),
+      onPointerCancel: vi.fn(),
+      onPointerDown: vi.fn(),
+      onPointerMove: vi.fn(),
+      onPointerUp: vi.fn(),
+    });
+
+    const spectrumHandlers = createPointerHandlers();
+    const hueHandlers = createPointerHandlers();
+
+    render(
+      <ColorPicker defaultValue="#4299e1">
+        <ColorPickerSaturationValue
+          aria-label="Saturation and brightness"
+          onLostPointerCapture={spectrumHandlers.onLostPointerCapture}
+          onPointerCancel={spectrumHandlers.onPointerCancel}
+          onPointerDown={spectrumHandlers.onPointerDown}
+          onPointerMove={spectrumHandlers.onPointerMove}
+          onPointerUp={spectrumHandlers.onPointerUp}
+          style={{ outlineColor: "lime" }}
+        />
+        <ColorPickerHue
+          aria-label="Hue"
+          onLostPointerCapture={hueHandlers.onLostPointerCapture}
+          onPointerCancel={hueHandlers.onPointerCancel}
+          onPointerDown={hueHandlers.onPointerDown}
+          onPointerMove={hueHandlers.onPointerMove}
+          onPointerUp={hueHandlers.onPointerUp}
+          style={{ outlineColor: "rebeccapurple" }}
+        />
+      </ColorPicker>,
+    );
+
+    const { hue, spectrum } = getControls();
+    expect(spectrum.style.outlineColor).toBe("lime");
+    expect(spectrum.style.background).not.toBe("");
+    expect(hue.style.outlineColor).toBe("rebeccapurple");
+    expect(hue.style.background).not.toBe("");
+
+    for (const [control, handlers] of [
+      [spectrum, spectrumHandlers],
+      [hue, hueHandlers],
+    ] as const) {
+      drag(control, "pointerDown", 60, 70, 1);
+      drag(control, "pointerMove", 65, 65, 1);
+      drag(control, "pointerUp", 65, 65, 1);
+
+      drag(control, "pointerDown", 60, 70, 2);
+      drag(control, "pointerCancel", 60, 70, 2);
+      fireEvent.lostPointerCapture(control, { pointerId: 2 });
+
+      expect(handlers.onPointerDown).toHaveBeenCalledTimes(2);
+      expect(handlers.onPointerMove).toHaveBeenCalledOnce();
+      expect(handlers.onPointerUp).toHaveBeenCalledOnce();
+      expect(handlers.onPointerCancel).toHaveBeenCalledOnce();
+      expect(handlers.onLostPointerCapture).toHaveBeenCalledOnce();
+    }
+  });
+
   it("commits a preset through the current picker session", async () => {
     const user = userEvent.setup();
     const { onChange, onCommit } = renderPicker();
