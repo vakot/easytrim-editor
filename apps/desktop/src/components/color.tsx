@@ -18,7 +18,12 @@ import {
   positionFromValue,
 } from "@/lib/color.utils";
 
-function createColorPickerState(color: HexColor) {
+interface ColorPickerState {
+  hexDraft: string;
+  hsv: HsvColor;
+}
+
+function createColorPickerState(color: HexColor): ColorPickerState {
   return {
     hsv: hexToHsv(color),
     hexDraft: color.slice(1),
@@ -58,9 +63,16 @@ function ColorPicker({
   onCommit?: (color: HexColor) => void;
 }>) {
   const [state, setState] = React.useState(() => createColorPickerState(defaultValue));
-  const committedColor = React.useRef(defaultValue);
+  const committedState = React.useRef(state);
+  const onChangeRef = React.useRef(onChange);
+  onChangeRef.current = onChange;
 
-  function change(nextHsv: HsvColor) {
+  function colorForState(nextState: ColorPickerState) {
+    const { hue, saturation, value } = nextState.hsv;
+    return hsvToHex(hue, saturation, value);
+  }
+
+  function changeHsv(nextHsv: HsvColor) {
     const color = hsvToHex(nextHsv.hue, nextHsv.saturation, nextHsv.value);
 
     setState({
@@ -71,16 +83,32 @@ function ColorPicker({
     onChange?.(color);
   }
 
-  function commitColor(color: HexColor, notifyChange = true) {
-    setState(createColorPickerState(color));
-    committedColor.current = color;
-    if (notifyChange) onChange?.(color);
+  function commitHsv(nextHsv: HsvColor) {
+    const color = hsvToHex(nextHsv.hue, nextHsv.saturation, nextHsv.value);
+    const nextState = { hsv: nextHsv, hexDraft: color.slice(1) };
+
+    setState(nextState);
+    committedState.current = nextState;
+    onChange?.(color);
     onCommit?.(color);
   }
 
-  function commit(nextHsv: HsvColor, notifyChange = true) {
+  function commitPointerHsv(nextHsv: HsvColor) {
     const color = hsvToHex(nextHsv.hue, nextHsv.saturation, nextHsv.value);
-    commitColor(color, notifyChange);
+    const nextState = { hsv: nextHsv, hexDraft: color.slice(1) };
+
+    setState(nextState);
+    committedState.current = nextState;
+    onCommit?.(color);
+  }
+
+  function commitColor(color: HexColor) {
+    const nextState = createColorPickerState(color);
+
+    setState(nextState);
+    committedState.current = nextState;
+    onChange?.(color);
+    onCommit?.(color);
   }
 
   function selectPreset(color: HexColor) {
@@ -88,9 +116,12 @@ function ColorPicker({
   }
 
   function cancel() {
-    const color = committedColor.current;
-    setState(createColorPickerState(color));
-    onChange?.(color);
+    setState(committedState.current);
+    restoreCommittedValue();
+  }
+
+  function restoreCommittedValue() {
+    onChangeRef.current?.(colorForState(committedState.current));
   }
 
   function editHex(value: string) {
@@ -113,11 +144,13 @@ function ColorPicker({
     <ColorPickerContext.Provider
       value={{
         cancel,
-        commit,
+        changeHsv,
+        commitHsv,
+        commitPointerHsv,
         editHex,
         hexDraft: state.hexDraft,
         hsv: state.hsv,
-        change,
+        onUnmount: restoreCommittedValue,
         selectPreset,
       }}
     >
@@ -146,7 +179,7 @@ function ColorPickerSpectrum({
 }
 
 function ColorPickerSaturation({ "aria-label": ariaLabel }: { "aria-label"?: string }) {
-  const { cancel, change, commit, hsv } = useColorPicker();
+  const { cancel, changeHsv, commitHsv, commitPointerHsv, hsv, onUnmount } = useColorPicker();
 
   const pointer = usePointerScrub({
     resolve(event) {
@@ -161,8 +194,9 @@ function ColorPickerSaturation({ "aria-label": ariaLabel }: { "aria-label"?: str
       );
     },
     onCancel: cancel,
-    onCommit: (value) => commit(value, false),
-    onChange: change,
+    onUnmount,
+    onCommit: commitPointerHsv,
+    onChange: changeHsv,
   });
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
@@ -194,7 +228,7 @@ function ColorPickerSaturation({ "aria-label": ariaLabel }: { "aria-label"?: str
 
     event.preventDefault();
 
-    commit({
+    commitHsv({
       ...hsv,
       saturation: clampPercent(saturation),
       value: clampPercent(value),
@@ -234,7 +268,7 @@ function ColorPickerSaturation({ "aria-label": ariaLabel }: { "aria-label"?: str
 }
 
 function ColorPickerHue({ "aria-label": ariaLabel }: { "aria-label"?: string }) {
-  const { cancel, change, commit, hsv } = useColorPicker();
+  const { cancel, changeHsv, commitHsv, commitPointerHsv, hsv, onUnmount } = useColorPicker();
 
   const pointer = usePointerScrub({
     resolve(event) {
@@ -246,8 +280,9 @@ function ColorPickerHue({ "aria-label": ariaLabel }: { "aria-label"?: string }) 
       };
     },
     onCancel: cancel,
-    onCommit: (value) => commit(value, false),
-    onChange: change,
+    onUnmount,
+    onCommit: commitPointerHsv,
+    onChange: changeHsv,
   });
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
@@ -279,7 +314,7 @@ function ColorPickerHue({ "aria-label": ariaLabel }: { "aria-label"?: string }) 
 
     event.preventDefault();
 
-    commit({
+    commitHsv({
       ...hsv,
       hue: clampHue(hue),
     });
@@ -363,10 +398,22 @@ interface PointerScrubOptions<T> {
   onCancel: () => void;
   onChange: (value: T) => void;
   onCommit: (value: T) => void;
+  onUnmount: () => void;
   resolve: (event: React.PointerEvent<HTMLButtonElement>) => T;
 }
 
-function usePointerScrub<T>({ onCancel, onChange, onCommit, resolve }: PointerScrubOptions<T>) {
+function usePointerScrub<T>({
+  onCancel,
+  onChange,
+  onCommit,
+  onUnmount,
+  resolve,
+}: PointerScrubOptions<T>) {
+  const onUnmountRef = React.useRef(onUnmount);
+  React.useLayoutEffect(() => {
+    onUnmountRef.current = onUnmount;
+  }, [onUnmount]);
+
   const activePointer = React.useRef<{
     id: number;
     target: HTMLButtonElement;
@@ -458,8 +505,11 @@ function usePointerScrub<T>({ onCancel, onChange, onCommit, resolve }: PointerSc
 
   React.useEffect(
     () => () => {
-      release();
+      const active = activePointer.current;
+      const interactionWasActive = active !== null;
       clear();
+      release(active);
+      if (interactionWasActive) onUnmountRef.current();
     },
     [],
   );
@@ -475,11 +525,13 @@ function usePointerScrub<T>({ onCancel, onChange, onCommit, resolve }: PointerSc
 
 interface ColorPickerContextValue {
   cancel: () => void;
-  change: (value: HsvColor) => void;
-  commit: (value: HsvColor, notifyChange?: boolean) => void;
+  changeHsv: (value: HsvColor) => void;
+  commitHsv: (value: HsvColor) => void;
+  commitPointerHsv: (value: HsvColor) => void;
   editHex: (value: string) => void;
   hexDraft: string;
   hsv: HsvColor;
+  onUnmount: () => void;
   selectPreset: (color: HexColor) => void;
 }
 
