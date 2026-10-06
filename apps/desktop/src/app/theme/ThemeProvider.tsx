@@ -17,6 +17,13 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   const primaryColor = useAppSelector(selectPrimaryColor);
   const systemDark = useSyncExternalStore(subscribeToSystemTheme, systemPrefersDark, () => false);
   const resolvedTheme = resolveTheme(preference, systemDark);
+  const finishPrimaryColorPreview = useCallback((committedColor: PrimaryColor) => {
+    const root = document.documentElement;
+    root.removeAttribute("data-primary-color-scrubbing");
+    root.dataset.primaryColor = committedColor;
+    applyPrimaryColor(root, committedColor);
+  }, []);
+
   const previewPrimaryColor = useCallback(
     (nextPrimaryColor: PrimaryColor | null) => {
       const root = document.documentElement;
@@ -51,8 +58,8 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   }, [preference, primaryColor, resolvedTheme]);
 
   const value = useMemo(
-    () => ({ resolvedTheme, previewPrimaryColor }),
-    [resolvedTheme, previewPrimaryColor],
+    () => ({ finishPrimaryColorPreview, resolvedTheme, previewPrimaryColor }),
+    [finishPrimaryColorPreview, resolvedTheme, previewPrimaryColor],
   );
 
   return <ThemeContext value={value}>{children}</ThemeContext>;

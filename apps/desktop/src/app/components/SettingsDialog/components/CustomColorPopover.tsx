@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { SpectrumWheel } from "@/components/ui/color";
@@ -23,22 +23,22 @@ function CustomColorPopover({
 }: Omit<React.ComponentProps<typeof Popover>, "open" | "onOpenChange"> & {
   value: CustomPrimaryColor;
 }) {
-  const { previewPrimaryColor } = useTheme();
+  const { finishPrimaryColorPreview, previewPrimaryColor } = useTheme();
   const dispatch = useAppDispatch();
 
   const [open, setOpen] = useState(false);
-  const [color, setColor] = useState<CustomPrimaryColor>(value);
-  const [hexValue, setHexValueState] = useState(value.slice(1));
-
-  const committedColorRef = useRef(value);
+  const [session, setSession] = useState(() => createEditSession(value));
 
   const preview = (nextColor: PrimaryColor) => {
     const resolved = resolvePrimaryColor(nextColor);
 
     if (!isCustomPrimaryColor(resolved)) return;
 
-    setColor(resolved);
-    setHexValueState(resolved.slice(1));
+    setSession((current) => ({
+      ...current,
+      hexDraft: resolved.slice(1),
+      wheelColor: resolved,
+    }));
     previewPrimaryColor(resolved);
   };
 
@@ -47,61 +47,51 @@ function CustomColorPopover({
 
     if (!isCustomPrimaryColor(resolved)) return;
 
-    committedColorRef.current = resolved;
-
-    setColor(resolved);
-    setHexValueState(resolved.slice(1));
-
-    previewPrimaryColor(resolved);
+    setSession(createEditSession(resolved));
     dispatch(customPrimaryColorChanged(resolved));
+    finishPrimaryColorPreview(resolved);
   };
 
-  const setHexValue = (nextValue: string) => {
+  const editHex = (nextValue: string) => {
     const sanitized = nextValue.replace(/[^0-9a-fA-F]/g, "").slice(0, 6);
+    const nextColor = `#${sanitized.toLowerCase()}`;
 
-    setHexValueState(sanitized);
+    if (isCustomPrimaryColor(nextColor)) {
+      setSession(createEditSession(nextColor));
+      dispatch(customPrimaryColorChanged(nextColor));
+      finishPrimaryColorPreview(nextColor);
+      return;
+    }
 
-    const nextColor = `#${sanitized}`;
+    setSession((current) => ({ ...current, hexDraft: sanitized }));
+  };
 
-    if (!isCustomPrimaryColor(nextColor)) return;
-
-    setColor(nextColor);
-    committedColorRef.current = nextColor;
-
-    previewPrimaryColor(nextColor);
-    dispatch(customPrimaryColorChanged(nextColor));
+  const cancelInteraction = () => {
+    setSession((current) => createEditSession(current.persistedColor));
+    previewPrimaryColor(null);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
 
     if (nextOpen) {
-      committedColorRef.current = value;
-      setColor(value);
-      setHexValueState(value.slice(1));
+      setSession(createEditSession(value));
       return;
     }
 
-    const committedColor = committedColorRef.current;
-
-    setColor(committedColor);
-    setHexValueState(committedColor.slice(1));
+    setSession((current) => createEditSession(current.persistedColor));
     previewPrimaryColor(null);
-  };
-
-  const close = () => {
-    handleOpenChange(false);
   };
 
   return (
     <CustomColorContext.Provider
       value={{
-        close,
-        color,
+        cancelInteraction,
+        color: session.wheelColor,
         commit,
-        hexValue,
+        hexValue: session.hexDraft,
         preview,
-        setHexValue,
+        editHex,
       }}
     >
       <Popover onOpenChange={handleOpenChange} open={open} {...props}>
@@ -113,32 +103,24 @@ function CustomColorPopover({
 
 function CustomColorPopoverContent({
   align = "end",
+  children,
   className,
   ...props
 }: React.ComponentProps<typeof PopoverContent>) {
-  return (
-    <PopoverContent align={align} className={cn("w-auto space-y-3 p-3", className)} {...props} />
-  );
-}
-
-function CustomColorContent({
-  ...props
-}: Omit<
-  React.ComponentProps<typeof SpectrumWheel>,
-  "color" | "onCancel" | "onCommit" | "onPreview"
->) {
   const { t } = useTranslation();
-  const { close, color, commit, preview } = useCustomColor();
+  const { cancelInteraction, color, commit, preview } = useCustomColor();
 
   return (
-    <SpectrumWheel
-      aria-label={t("settings.accessibility.colorSpectrum")}
-      color={color}
-      onCancel={close}
-      onCommit={commit}
-      onPreview={preview}
-      {...props}
-    />
+    <PopoverContent align={align} className={cn("w-auto space-y-3 p-3", className)} {...props}>
+      <SpectrumWheel
+        aria-label={t("settings.accessibility.colorSpectrum")}
+        color={color}
+        onCancel={cancelInteraction}
+        onCommit={commit}
+        onPreview={preview}
+      />
+      {children}
+    </PopoverContent>
   );
 }
 
@@ -146,11 +128,11 @@ function CustomColorInput({
   className,
   onChange,
   ...props
-}: Omit<React.ComponentProps<typeof Input>, "maxLength" | "pattern" | "spellCheck" | "value">) {
-  const { hexValue, setHexValue } = useCustomColor();
+}: Omit<React.ComponentProps<typeof Input>, "pattern" | "spellCheck" | "value">) {
+  const { editHex, hexValue } = useCustomColor();
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setHexValue(event.target.value);
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+    editHex(event.currentTarget.value);
     onChange?.(event);
   };
 
@@ -160,12 +142,11 @@ function CustomColorInput({
         "h-full border-0 p-0 font-mono text-xs shadow-none focus-visible:ring-0",
         className,
       )}
-      maxLength={6}
       onChange={handleChange}
       pattern="[0-9a-fA-F]{6}"
       spellCheck={false}
-      value={hexValue}
       {...props}
+      value={hexValue}
     />
   );
 }
@@ -175,12 +156,22 @@ function CustomColorPopoverTrigger(props: React.ComponentProps<typeof PopoverTri
 }
 
 interface CustomColorContextValue {
-  close: () => void;
+  cancelInteraction: () => void;
   color: CustomPrimaryColor;
   commit: (color: PrimaryColor) => void;
+  editHex: (value: string) => void;
   hexValue: string;
   preview: (color: PrimaryColor) => void;
-  setHexValue: (value: string) => void;
+}
+
+interface CustomColorEditSession {
+  hexDraft: string;
+  persistedColor: CustomPrimaryColor;
+  wheelColor: CustomPrimaryColor;
+}
+
+function createEditSession(color: CustomPrimaryColor): CustomColorEditSession {
+  return { hexDraft: color.slice(1), persistedColor: color, wheelColor: color };
 }
 
 const CustomColorContext = createContext<CustomColorContextValue | null>(null);
@@ -189,14 +180,13 @@ function useCustomColor() {
   const context = useContext(CustomColorContext);
 
   if (!context) {
-    throw new Error("Custom color components must be used inside CustomColorPopover");
+    throw new Error("useCustomColor must be used within <CustomColorPopover>.");
   }
 
   return context;
 }
 
 export {
-  CustomColorContent,
   CustomColorInput,
   CustomColorPopover,
   CustomColorPopoverContent,

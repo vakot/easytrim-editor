@@ -22,7 +22,6 @@ import {
 import { PRIMARY_COLORS, resolvePrimaryColor } from "@/app/theme/theme";
 
 import {
-  CustomColorContent,
   CustomColorInput,
   CustomColorPopover,
   CustomColorPopoverContent,
@@ -109,7 +108,6 @@ function SettingsAppearance() {
               </CustomColorPopoverTrigger>
 
               <CustomColorPopoverContent>
-                <CustomColorContent />
                 <div className="flex h-6 items-center rounded-lg border px-1.5">
                   <span className="font-mono text-xs text-muted-foreground">#</span>
                   <CustomColorInput aria-label={t("settings.accessibility.customColorHex")} />
