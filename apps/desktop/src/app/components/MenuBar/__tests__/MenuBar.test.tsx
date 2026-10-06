@@ -261,10 +261,6 @@ describe("MenuBarTest", () => {
         menuState.preferences.primaryColor = DEFAULT_PREFERENCES.primaryColor;
         menuState.preferences.uiScalePercent = DEFAULT_PREFERENCES.uiScalePercent;
       }
-      if (action.type === "preferences/appearanceThemeColorReset") {
-        menuState.preferences.theme = DEFAULT_PREFERENCES.theme;
-        menuState.preferences.primaryColor = DEFAULT_PREFERENCES.primaryColor;
-      }
       if (action.type === "queue/settingsReset") {
         menuState.export.queueFinishAction = "nothing";
         menuState.preferences.autoStartQueueEnabled =

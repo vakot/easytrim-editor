@@ -4,7 +4,6 @@ import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   activityFeedViewChanged,
   appearanceSettingsReset,
-  appearanceThemeColorReset,
   changelogVersionSeen,
   editorSettingsReset,
   layoutDensityChanged,
@@ -109,23 +108,6 @@ describe("preferences Redux domain", () => {
       loopPlaybackEnabledDefault: false,
       activityFeedView: "branch",
       autoStartQueueEnabled: false,
-    });
-  });
-
-  it("resets only theme and color from the appearance menu scope", () => {
-    const initialState: Preferences = {
-      ...DEFAULT_PREFERENCES,
-      theme: "dark",
-      primaryColor: "#4299e1",
-      uiScalePercent: 125,
-    };
-
-    const state = preferencesReducer(initialState, appearanceThemeColorReset());
-
-    expect(state).toEqual({
-      ...initialState,
-      theme: DEFAULT_PREFERENCES.theme,
-      primaryColor: DEFAULT_PREFERENCES.primaryColor,
     });
   });
 

@@ -227,7 +227,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(61);
+    ).toHaveLength(60);
     expect(
       screen
         .getAllByRole("button")
@@ -259,12 +259,6 @@ describe("ApplicationCommandsProvider", () => {
     ]) {
       expect(screen.getByRole("button", { name: commandId })).not.toHaveAttribute("data-checked");
     }
-    expect(
-      screen.getByRole("button", { name: "reset-appearance-theme-color-settings" }),
-    ).toHaveAttribute(
-      "data-group",
-      "Appearance / Theme",
-    );
     expect(screen.getByRole("button", { name: "reset-queue-settings" })).toHaveAttribute(
       "data-group",
       "Queue",
@@ -312,7 +306,6 @@ describe("ApplicationCommandsProvider", () => {
       "reset-editor-settings",
       "reset-layout",
       "reset-queue-settings",
-      "reset-appearance-theme-color-settings",
     ]) {
       expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
         "data-surfaces",
@@ -348,7 +341,6 @@ describe("ApplicationCommandsProvider", () => {
     for (const commandId of [
       "reset-appearance-settings",
       "reset-editor-settings",
-      "reset-appearance-theme-color-settings",
       "reset-queue-settings",
     ]) {
       expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(

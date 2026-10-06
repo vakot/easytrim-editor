@@ -71,10 +71,6 @@ const preferencesSlice = createSlice({
       state.activityFeedView = DEFAULT_PREFERENCES.activityFeedView;
       state.layoutDensity = DEFAULT_PREFERENCES.layoutDensity;
     },
-    appearanceThemeColorReset: (state) => {
-      state.theme = DEFAULT_PREFERENCES.theme;
-      state.primaryColor = DEFAULT_PREFERENCES.primaryColor;
-    },
     appearanceSettingsReset: (state) => {
       state.theme = DEFAULT_PREFERENCES.theme;
       state.primaryColor = DEFAULT_PREFERENCES.primaryColor;
@@ -118,7 +114,6 @@ const {
   uiScaleDecreased,
   uiScaleIncreased,
   uiScalingReset,
-  appearanceThemeColorReset,
 } = preferencesSlice.actions;
 
 const preferencesReducer = preferencesSlice.reducer;
@@ -200,5 +195,4 @@ export {
   uiScaleDecreased,
   uiScaleIncreased,
   uiScalingReset,
-  appearanceThemeColorReset,
 };
