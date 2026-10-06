@@ -28,7 +28,13 @@ function ControlledColorSpectrum({
   );
 }
 
-function mockBounds(element: HTMLElement, left: number, top: number, width: number, height: number) {
+function mockBounds(
+  element: HTMLElement,
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+) {
   Object.defineProperty(element, "getBoundingClientRect", {
     configurable: true,
     value: () => new DOMRect(left, top, width, height),
@@ -56,7 +62,7 @@ function getControls() {
 
 function drag(
   element: HTMLElement,
-  type: "pointerDown" | "pointerMove" | "pointerUp",
+  type: "pointerDown" | "pointerMove" | "pointerUp" | "pointerCancel",
   x: number,
   y: number,
   pointerId = 1,
@@ -66,6 +72,7 @@ function drag(
   if (type === "pointerDown") fireEvent.pointerDown(element, event);
   if (type === "pointerMove") fireEvent.pointerMove(element, event);
   if (type === "pointerUp") fireEvent.pointerUp(element, event);
+  if (type === "pointerCancel") fireEvent.pointerCancel(element, event);
 }
 
 describe("ColorSpectrum", () => {
@@ -165,7 +172,7 @@ describe("ColorSpectrum", () => {
 
   it("synchronizes genuine external changes while ignoring its own echoed preview", () => {
     const view = render(<ColorSpectrum color="#4299e1" />);
-    const { hue, hueMarker } = getControls();
+    const { hueMarker } = getControls();
 
     view.rerender(<ColorSpectrum color="#00ff00" />);
     expect(hueMarker).toHaveStyle({ left: `${(120 / 360) * 100}%` });

@@ -138,11 +138,4 @@ function hexToHsl(hex: string) {
   };
 }
 
-export {
-  hexToHsl,
-  hexToHsv,
-  hsvFromSpectrumPosition,
-  hsvToHex,
-  hslToHex,
-  hueFromPosition,
-};
+export { hexToHsl, hexToHsv, hslToHex, hsvFromSpectrumPosition, hsvToHex, hueFromPosition };

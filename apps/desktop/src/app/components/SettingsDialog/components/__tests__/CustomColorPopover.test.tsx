@@ -59,7 +59,7 @@ function ColorPickerHarness() {
 }
 
 function prepareSpectrumWheel() {
-  const wheel = screen.getByRole("button", { name: /Theme color spectrum/ });
+  const wheel = screen.getByRole("button", { name: "Color saturation and brightness" });
 
   Object.defineProperty(wheel, "getBoundingClientRect", {
     configurable: true,
@@ -101,11 +101,11 @@ describe("CustomColorPopover", () => {
     expect(document.documentElement).toHaveAttribute("data-primary-color", "blue");
     expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
     expect(store.getState().preferences.primaryColor).toBe("blue");
-    expect(screen.getByRole("button", { name: /Theme color spectrum/ })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Color saturation and brightness" })).toBeVisible();
     expect(
       screen
-        .getByRole("button", { name: /Theme color spectrum/ })
-        .querySelector('[data-slot="spectrum-wheel-marker"]'),
+        .getByRole("button", { name: "Color saturation and brightness" })
+        .querySelector('[data-slot="color-spectrum-marker"]'),
     ).toHaveStyle({
       backgroundColor: "rgb(18, 52, 86)",
     });
@@ -155,8 +155,8 @@ describe("CustomColorPopover", () => {
     expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
     expect(
       screen
-        .getByRole("button", { name: /Theme color spectrum/ })
-        .querySelector('[data-slot="spectrum-wheel-marker"]'),
+        .getByRole("button", { name: "Color saturation and brightness" })
+        .querySelector('[data-slot="color-spectrum-marker"]'),
     ).toHaveStyle({
       backgroundColor: "rgb(171, 205, 153)",
     });
