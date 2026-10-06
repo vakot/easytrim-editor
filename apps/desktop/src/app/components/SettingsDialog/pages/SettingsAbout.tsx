@@ -9,7 +9,10 @@ function SettingsAbout() {
   return (
     <>
       <SettingsSection title={t("settings.pages.about.supportSection")}>
-        <SettingRow description={t("support.messages.buyMeCoffee")} label={t("support.actions.projectSupport")}>
+        <SettingRow
+          description={t("support.messages.buyMeCoffee")}
+          label={t("support.actions.projectSupport")}
+        >
           <CommandButton commandId="support-project" />
         </SettingRow>
       </SettingsSection>
@@ -28,7 +31,6 @@ function SettingsAbout() {
         >
           <CommandButton commandId="check-for-updates" variant="default" />
         </SettingRow>
-
       </SettingsSection>
 
       <SettingsSection title={t("settings.pages.about.moreSection")}>
