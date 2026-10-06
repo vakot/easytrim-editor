@@ -6,7 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added an Open export queue action to the Queue menu and Command Center.
+- Added View menu actions for opening the Command Palette and export queue, with queue progress counts.
+- Added panel visibility, layout density, and Activity Feed view controls to the View menu.
 - Added searchable language selection to the Settings menu.
 
 ### Changed
@@ -14,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Replaced the Settings menu dropdown with a full preferences dialog for language, appearance, defaults, layout, queue, and update/help options.
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
 - Localized the primary color picker's saturation, brightness, and hue labels for assistive technology.
+- Animated Source Explorer and editor-stage panel collapse, including collapse caused by resizing.
 
 ### Removed
 
@@ -24,6 +26,7 @@ All notable changes to this project will be documented in this file.
 - Localized audio track menu actions across English, Russian, and Slovak.
 - Localized source search result counts and breadcrumb navigation labels.
 - Fixed spacing and scrolling in the settings and audio effects libraries and sidebar layout.
+- Fixed Command Palette results sizing so the list scrolls within the dialog.
 
 ## [1.13.0]
 
