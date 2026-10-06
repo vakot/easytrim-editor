@@ -259,7 +259,6 @@ export const en = {
         description: "Application version, updates, and project resources.",
         moreSection: "More",
         supportSection: "Support",
-        updateChannelDescription: "Choose an update channel.",
         versionDescription: "View this version's release notes.",
         updatesLabel: "Updates",
         updatesDescription: "Check for updates or install an available update.",
@@ -278,7 +277,6 @@ export const en = {
       primaryAccent: "Primary accent",
       theme: "Theme",
       title: "Settings",
-      updateChannel: "Update channel",
     },
     accessibility: {
       colorSpectrum: "Theme color spectrum. Use the Left and Right Arrow keys to adjust the hue.",
@@ -300,7 +298,6 @@ export const en = {
       },
       activityFeedViews: { branch: "Branch", compact: "Compact", default: "Default" },
       themes: { dark: "Dark", light: "Light", system: "System" },
-      updateChannels: { beta: "Beta", production: "Production" },
     },
   },
   activity: {

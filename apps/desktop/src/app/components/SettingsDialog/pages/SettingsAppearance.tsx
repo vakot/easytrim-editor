@@ -13,11 +13,17 @@ import {
 
 import { getPrimaryColorCommandId, getThemeCommandId } from "@/app/commands/appearance";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import {
+  MAX_UI_SCALE_PERCENT,
+  MIN_UI_SCALE_PERCENT,
+  UI_SCALE_STEP_PERCENT,
+} from "@/app/preferences";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectCustomPrimaryColor,
   selectPrimaryColor,
   selectThemePreference,
+  selectUiScalePercent,
 } from "@/app/store/slices/preferences-slice";
 import { PRIMARY_COLORS, resolvePrimaryColor } from "@/app/theme/theme";
 
@@ -29,12 +35,18 @@ import {
 } from "../components/CustomColorPopover";
 import { CommandButton, CommandReset, SettingRow, SettingsSection } from "../components/SettingRow";
 
+const uiScaleOptions = Array.from(
+  { length: (MAX_UI_SCALE_PERCENT - MIN_UI_SCALE_PERCENT) / UI_SCALE_STEP_PERCENT + 1 },
+  (_, index) => MIN_UI_SCALE_PERCENT + index * UI_SCALE_STEP_PERCENT,
+);
+
 function SettingsAppearance() {
   const { t } = useTranslation();
   const { executeCommand } = useApplicationCommands();
   const theme = useAppSelector(selectThemePreference);
   const primaryColor = useAppSelector(selectPrimaryColor);
   const customPrimaryColor = useAppSelector(selectCustomPrimaryColor);
+  const uiScalePercent = useAppSelector(selectUiScalePercent);
   const colorLabels = {
     amber: t("settings.options.colors.amber"),
     blue: t("settings.options.colors.blue"),
@@ -52,6 +64,19 @@ function SettingsAppearance() {
     { id: "light", icon: <Sun aria-hidden="true" />, label: t("settings.options.themes.light") },
     { id: "dark", icon: <Moon aria-hidden="true" />, label: t("settings.options.themes.dark") },
   ] as const;
+
+  const handleUiScaleChange = async (value: string) => {
+    const nextScale = Number(value);
+
+    if (!uiScaleOptions.includes(nextScale) || nextScale === uiScalePercent) return;
+
+    const commandId = nextScale > uiScalePercent ? "ui-scale-zoom-in" : "ui-scale-zoom-out";
+    const stepCount = Math.abs(nextScale - uiScalePercent) / UI_SCALE_STEP_PERCENT;
+
+    for (let step = 0; step < stepCount; step += 1) {
+      await executeCommand(commandId, "dialog");
+    }
+  };
 
   return (
     <SettingsSection title={t("settings.labels.theme")}>
@@ -82,8 +107,12 @@ function SettingsAppearance() {
             description={t("settings.pages.appearance.colorDescription")}
             label={t("settings.labels.primaryAccent")}
           >
-            <CollapsibleTrigger>
-              <Button className="size-8 p-0" style={{ backgroundColor: primaryColor }} />
+            <CollapsibleTrigger asChild>
+              <Button
+                aria-label={t("settings.labels.primaryAccent")}
+                className="size-8 p-0"
+                style={{ backgroundColor: primaryColor }}
+              />
             </CollapsibleTrigger>
           </SettingRow>
 
@@ -129,13 +158,17 @@ function SettingsAppearance() {
           </span>
         }
       >
-        <Select defaultValue="100">
-          <SelectTrigger className="w-44">
+        <Select onValueChange={(value) => void handleUiScaleChange(value)} value={String(uiScalePercent)}>
+          <SelectTrigger aria-label={t("app.labels.uiScaling")} className="w-44">
             <SelectValue />
           </SelectTrigger>
 
           <SelectContent>
-            <SelectItem value="100">100%</SelectItem>
+            {uiScaleOptions.map((scale) => (
+              <SelectItem key={scale} value={String(scale)}>
+                {scale}%
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </SettingRow>

@@ -1,14 +1,5 @@
 import { useTranslation } from "react-i18next";
 
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 import { getCurrentVersion } from "@/lib/app-version.utils";
 
 import { CommandButton, SettingRow, SettingsSection } from "../components/SettingRow";
@@ -38,24 +29,6 @@ function SettingsAbout() {
           <CommandButton commandId="check-for-updates" variant="default" />
         </SettingRow>
 
-        <SettingRow
-          description={t("settings.pages.about.updateChannelDescription")}
-          label={t("settings.labels.updateChannel")}
-        >
-          <Select defaultValue="production">
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="production">
-                  {t("settings.options.updateChannels.production")}
-                </SelectItem>
-                <SelectItem value="beta">{t("settings.options.updateChannels.beta")}</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </SettingRow>
       </SettingsSection>
 
       <SettingsSection title={t("settings.pages.about.moreSection")}>

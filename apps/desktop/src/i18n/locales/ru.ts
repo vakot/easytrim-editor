@@ -260,7 +260,6 @@ export const ru = {
         description: "Версия приложения, обновления и ресурсы проекта.",
         moreSection: "Дополнительно",
         supportSection: "Поддержка",
-        updateChannelDescription: "Выберите канал обновлений.",
         versionDescription: "Открыть заметки к выпуску этой версии.",
         updatesLabel: "Обновления",
         updatesDescription: "Проверить наличие обновлений или установить доступное обновление.",
@@ -279,7 +278,6 @@ export const ru = {
       primaryAccent: "Основной цвет",
       theme: "Тема",
       title: "Настройки",
-      updateChannel: "Канал обновлений",
     },
     accessibility: {
       colorSpectrum:
@@ -302,7 +300,6 @@ export const ru = {
       },
       activityFeedViews: { branch: "Ветвление", compact: "Компактный", default: "Обычный" },
       themes: { dark: "Тёмная", light: "Светлая", system: "Системная" },
-      updateChannels: { beta: "Бета", production: "Стабильная версия" },
     },
   },
   activity: {

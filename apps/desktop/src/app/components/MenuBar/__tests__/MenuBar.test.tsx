@@ -254,6 +254,12 @@ describe("MenuBarTest", () => {
       if (action.type === "preferences/themePreferenceChanged") {
         menuState.preferences.theme = action.payload as Preferences["theme"];
       }
+      if (action.type === "preferences/uiScaleIncreased") {
+        menuState.preferences.uiScalePercent = Math.min(200, menuState.preferences.uiScalePercent + 25);
+      }
+      if (action.type === "preferences/uiScaleDecreased") {
+        menuState.preferences.uiScalePercent = Math.max(50, menuState.preferences.uiScalePercent - 25);
+      }
       if (action.type === "preferences/primaryColorChanged") {
         menuState.preferences.primaryColor = action.payload as Preferences["primaryColor"];
         if ((action.payload as string).startsWith("#")) {
@@ -606,6 +612,26 @@ describe("MenuBarTest", () => {
     expect(loopSwitch).not.toBeChecked();
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("shows the saved UI scale and changes it through the zoom commands", async () => {
+    const user = userEvent.setup();
+    renderMenus({
+      preferences: { ...DEFAULT_PREFERENCES, uiScalePercent: 150 },
+    });
+    await user.click(getMenuTrigger("Settings"));
+    await user.click(screen.getByRole("tab", { name: "Appearance" }));
+
+    const scaleSelect = screen.getByRole("combobox", { name: "UI Scaling" });
+    expect(scaleSelect).toHaveTextContent("150%");
+    expect(screen.getAllByRole("button", { name: "Primary accent" })).toHaveLength(1);
+    expect(screen.queryByText("Update channel")).not.toBeInTheDocument();
+
+    await user.click(scaleSelect);
+    await user.click(screen.getByRole("option", { name: "200%" }));
+
+    await waitFor(() => expect(menuState.preferences.uiScalePercent).toBe(200));
+    expect(scaleSelect).toHaveTextContent("200%");
   });
 
   it("changes the interface language through the existing i18n path", async () => {

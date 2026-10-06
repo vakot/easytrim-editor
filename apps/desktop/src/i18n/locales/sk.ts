@@ -259,7 +259,6 @@ export const sk = {
         description: "Verzia aplikácie, aktualizácie a zdroje projektu.",
         moreSection: "Viac",
         supportSection: "Podpora",
-        updateChannelDescription: "Vyberte kanál aktualizácií.",
         versionDescription: "Zobraziť poznámky k vydaniu tejto verzie.",
         updatesLabel: "Aktualizácie",
         updatesDescription: "Skontrolovať aktualizácie alebo nainštalovať dostupnú aktualizáciu.",
@@ -278,7 +277,6 @@ export const sk = {
       primaryAccent: "Hlavná farba",
       theme: "Téma",
       title: "Nastavenia",
-      updateChannel: "Kanál aktualizácií",
     },
     accessibility: {
       colorSpectrum: "Spektrum farieb motívu. Odtieň upravíte šípkami doľava a doprava.",
@@ -300,7 +298,6 @@ export const sk = {
       },
       activityFeedViews: { branch: "Vetvené", compact: "Kompaktné", default: "Predvolené" },
       themes: { dark: "Tmavá", light: "Svetlá", system: "Systémová" },
-      updateChannels: { beta: "Beta", production: "Produkčná verzia" },
     },
   },
   activity: {
