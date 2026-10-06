@@ -35,7 +35,7 @@ function SettingsSection({
 }) {
   return (
     <div className="space-y-1">
-      <div className="ml-1.5 font-mono text-sm font-medium text-primary/80 uppercase">{title}</div>
+      <div className="ml-4 font-mono text-sm font-medium text-primary/80 uppercase">{title}</div>
       <Card className="py-0 ring-inset">
         <CardContent className="divide-y">{children}</CardContent>
       </Card>
