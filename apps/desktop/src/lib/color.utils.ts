@@ -67,21 +67,16 @@ function hexToHsv(hex: string) {
   };
 }
 
-function colorFromSpectrumPosition(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  hue: number,
-): HexColor {
-  const saturation = clamp(x / width, 0, 1) * 100;
-  const value = (1 - clamp(y / height, 0, 1)) * 100;
-
-  return hsvToHex(hue, saturation, value);
+function hsvFromSpectrumPosition(x: number, y: number, width: number, height: number, hue: number) {
+  return {
+    hue,
+    saturation: width > 0 ? clamp(x / width, 0, 1) * 100 : 0,
+    value: height > 0 ? (1 - clamp(y / height, 0, 1)) * 100 : 0,
+  };
 }
 
 function hueFromPosition(x: number, width: number) {
-  return clamp(x / width, 0, 1) * 360;
+  return width > 0 ? clamp(x / width, 0, 1) * 360 : 0;
 }
 
 // Оставь существующие HSL helpers, если они используются theme palette.
@@ -143,4 +138,11 @@ function hexToHsl(hex: string) {
   };
 }
 
-export { colorFromSpectrumPosition, hexToHsl, hexToHsv, hslToHex, hsvToHex, hueFromPosition };
+export {
+  hexToHsl,
+  hexToHsv,
+  hsvFromSpectrumPosition,
+  hsvToHex,
+  hslToHex,
+  hueFromPosition,
+};

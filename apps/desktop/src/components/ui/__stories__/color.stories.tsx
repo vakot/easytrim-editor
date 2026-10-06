@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { ColorSample, SpectrumWheel } from "../color";
+import { ColorSample, ColorSpectrum } from "../color";
 
 const meta = {
   component: ColorSample,
@@ -18,5 +18,5 @@ export const Sample: Story = {
 
 export const Spectrum: Story = {
   args: { color: "#f59e0b" },
-  render: () => <SpectrumWheel aria-label="Choose a color" color="#f59e0b" />,
+  render: () => <ColorSpectrum aria-label="Choose a color" color="#f59e0b" />,
 };

@@ -2,7 +2,12 @@ import * as React from "react";
 
 import { cn } from "@/lib/class-names.utils";
 import type { HexColor } from "@/lib/color.types";
-import { colorFromSpectrumPosition, hexToHsv, hsvToHex, hueFromPosition } from "@/lib/color.utils";
+import {
+  hexToHsv,
+  hsvFromSpectrumPosition,
+  hsvToHex,
+  hueFromPosition,
+} from "@/lib/color.utils";
 
 function ColorSample({
   className,
@@ -42,16 +47,42 @@ function ColorSpectrum({
   onPreview,
   ...props
 }: ColorSpectrumProps) {
+  const [hsv, setHsv] = React.useState(() => hexToHsv(color));
+  const hsvRef = React.useRef(hsv);
+  const previousColor = React.useRef(color);
+  const emittedColor = React.useRef<HexColor | null>(null);
   const activePointer = React.useRef<{
     id: number;
+    target: HTMLButtonElement;
     type: "spectrum" | "hue";
   } | null>(null);
 
   const scrubbedColor = React.useRef<HexColor | null>(null);
+  const interactionStart = React.useRef<typeof hsv | null>(null);
 
-  const { hue, saturation, value } = hexToHsv(color);
+  const updateHsv = React.useCallback((nextHsv: typeof hsv) => {
+    hsvRef.current = nextHsv;
+    setHsv(nextHsv);
+  }, []);
 
-  function preview(nextColor: HexColor) {
+  // HEX echoes cannot preserve hue at 360° or when saturation/value is zero.
+  React.useLayoutEffect(() => {
+    if (previousColor.current === color) return;
+
+    previousColor.current = color;
+    if (emittedColor.current === color) {
+      emittedColor.current = null;
+      return;
+    }
+
+    emittedColor.current = null;
+    updateHsv(hexToHsv(color));
+  }, [color, updateHsv]);
+
+  function preview(nextHsv: typeof hsv) {
+    updateHsv(nextHsv);
+    const nextColor = hsvToHex(nextHsv.hue, nextHsv.saturation, nextHsv.value);
+    emittedColor.current = nextColor;
     scrubbedColor.current = nextColor;
     onPreview?.(nextColor);
   }
@@ -60,29 +91,38 @@ function ColorSpectrum({
     const bounds = event.currentTarget.getBoundingClientRect();
 
     preview(
-      colorFromSpectrumPosition(
+      hsvFromSpectrumPosition(
         event.clientX - bounds.left,
         event.clientY - bounds.top,
         bounds.width,
         bounds.height,
-        hue,
+        hsvRef.current.hue,
       ),
     );
   }
 
   function chooseHue(event: React.PointerEvent<HTMLButtonElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
-
-    const nextHue = hueFromPosition(event.clientX - bounds.left, bounds.width);
-
-    preview(hsvToHex(nextHue, saturation, value));
+    const current = hsvRef.current;
+    preview({
+      ...current,
+      hue: hueFromPosition(event.clientX - bounds.left, bounds.width),
+    });
   }
 
   function startScrubbing(event: React.PointerEvent<HTMLButtonElement>, type: "spectrum" | "hue") {
+    const active = activePointer.current;
+    if (active?.target.hasPointerCapture(active.id)) {
+      active.target.releasePointerCapture(active.id);
+    }
+
     activePointer.current = {
       id: event.pointerId,
+      target: event.currentTarget,
       type,
     };
+    interactionStart.current = hsvRef.current;
+    scrubbedColor.current = null;
 
     event.currentTarget.setPointerCapture(event.pointerId);
 
@@ -96,7 +136,8 @@ function ColorSpectrum({
   function scrub(event: React.PointerEvent<HTMLButtonElement>, type: "spectrum" | "hue") {
     const active = activePointer.current;
 
-    if (active?.id !== event.pointerId || active.type !== type) return;
+    if (active?.id !== event.pointerId || active.type !== type || active.target !== event.currentTarget)
+      return;
 
     if (type === "spectrum") {
       chooseSpectrum(event);
@@ -106,26 +147,30 @@ function ColorSpectrum({
   }
 
   function stopScrubbing(event: React.PointerEvent<HTMLButtonElement>, commit: boolean) {
-    if (activePointer.current?.id !== event.pointerId) return;
+    const active = activePointer.current;
+    if (active?.id !== event.pointerId || active.target !== event.currentTarget) return;
 
     activePointer.current = null;
 
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+    if (active.target.hasPointerCapture(event.pointerId)) {
+      active.target.releasePointerCapture(event.pointerId);
     }
 
     if (commit && scrubbedColor.current) {
       onCommit?.(scrubbedColor.current);
     } else {
+      if (interactionStart.current) updateHsv(interactionStart.current);
       onCancel?.();
     }
 
     scrubbedColor.current = null;
+    interactionStart.current = null;
   }
 
   function adjustSpectrum(event: React.KeyboardEvent<HTMLButtonElement>) {
-    let nextSaturation = saturation;
-    let nextValue = value;
+    const current = hsvRef.current;
+    let nextSaturation = current.saturation;
+    let nextValue = current.value;
 
     switch (event.key) {
       case "ArrowLeft":
@@ -146,23 +191,27 @@ function ColorSpectrum({
 
     event.preventDefault();
 
-    onCommit?.(
-      hsvToHex(
-        hue,
-        Math.min(100, Math.max(0, nextSaturation)),
-        Math.min(100, Math.max(0, nextValue)),
-      ),
-    );
+    commit({
+      ...current,
+      saturation: Math.min(100, Math.max(0, nextSaturation)),
+      value: Math.min(100, Math.max(0, nextValue)),
+    });
   }
 
   function adjustHue(event: React.KeyboardEvent<HTMLButtonElement>) {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
 
     event.preventDefault();
-
     const change = event.key === "ArrowRight" ? 4 : -4;
+    const current = hsvRef.current;
+    commit({ ...current, hue: Math.min(360, Math.max(0, current.hue + change)) });
+  }
 
-    onCommit?.(hsvToHex((hue + change + 360) % 360, saturation, value));
+  function commit(nextHsv: typeof hsv) {
+    updateHsv(nextHsv);
+    const nextColor = hsvToHex(nextHsv.hue, nextHsv.saturation, nextHsv.value);
+    emittedColor.current = nextColor;
+    onCommit?.(nextColor);
   }
 
   return (
@@ -180,7 +229,7 @@ function ColorSpectrum({
           background: `
             linear-gradient(to top, #000000, transparent),
             linear-gradient(to right, #ffffff, transparent),
-            ${hsvToHex(hue, 100, 100)}
+            ${hsvToHex(hsv.hue, 100, 100)}
           `,
         }}
         type="button"
@@ -190,9 +239,9 @@ function ColorSpectrum({
           className="absolute size-4 -translate-1/2 rounded-full border-2 border-white shadow-md"
           data-slot="color-spectrum-marker"
           style={{
-            left: `${saturation}%`,
-            top: `${100 - value}%`,
-            backgroundColor: color,
+            left: `${hsv.saturation}%`,
+            top: `${100 - hsv.value}%`,
+            backgroundColor: hsvToHex(hsv.hue, hsv.saturation, hsv.value),
           }}
         />
       </button>
@@ -217,8 +266,8 @@ function ColorSpectrum({
           className="absolute top-1/2 size-5 -translate-1/2 rounded-full border-2 border-white shadow-md"
           data-slot="color-hue-marker"
           style={{
-            left: `${(hue / 360) * 100}%`,
-            backgroundColor: hsvToHex(hue, 100, 100),
+            left: `${(hsv.hue / 360) * 100}%`,
+            backgroundColor: hsvToHex(hsv.hue, 100, 100),
           }}
         />
       </button>
