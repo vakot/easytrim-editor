@@ -2,6 +2,8 @@ import { Check } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Separator } from "@/components/ui/separator";
+
 import {
   Library,
   LibraryContent,
@@ -10,7 +12,6 @@ import {
   LibraryNavigationItem,
   LibraryNavigationItemIndicator,
   LibraryPage,
-  LibrarySeparator,
 } from "@/components/library";
 import { AUDIO_PROCESSING_STAGES, type AudioProcessingStage } from "@/domain/audio-processing";
 
@@ -52,19 +53,20 @@ function AudioTrackEffectsLibrary({
     <Library onValueChange={setSelectedEffect} value={selectedEffect}>
       <LibraryNavigation aria-label={t("audio.actions.effects")}>
         {stageGroups.map(({ effects: stageEffects, stage }) => (
-          <div data-slot="audio-track-effects-stage" data-stage={stage} key={stage}>
-            <LibraryNavigationGroup
-              label={<span data-slot="audio-track-effects-stage-label">{stageLabels[stage]}</span>}
-            >
-              {stageEffects.map((effect) => (
-                <AudioTrackEffectTab draft={draft} effect={effect} key={effect.id} />
-              ))}
-            </LibraryNavigationGroup>
-          </div>
+          <LibraryNavigationGroup
+            data-slot="audio-track-effects-stage"
+            data-stage={stage}
+            key={stage}
+            label={<span data-slot="audio-track-effects-stage-label">{stageLabels[stage]}</span>}
+          >
+            {stageEffects.map((effect) => (
+              <AudioTrackEffectTab draft={draft} effect={effect} key={effect.id} />
+            ))}
+          </LibraryNavigationGroup>
         ))}
       </LibraryNavigation>
 
-      <LibrarySeparator />
+      <Separator orientation="vertical" />
 
       <LibraryContent>
         {effects.map(({ id, Page }) => (

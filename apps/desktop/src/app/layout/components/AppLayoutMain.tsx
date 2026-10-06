@@ -27,7 +27,7 @@ const TIMELINE_PANEL_DEFAULT_SIZE_REM = 9.625;
 const TIMELINE_PANEL_COMPACT_SIZE_REM = 9.5625;
 
 const AUDIO_PANEL_SIZE_LINE_REM = 3.625;
-const AUDIO_PANEL_SIZE_MIN_REM = 7.875;
+const AUDIO_PANEL_SIZE_MIN_REM = 7.375;
 
 const getTimelinePanelSize = (lines: number = 0, isCompact = false): PanelSizes => {
   const minSizeRem = isCompact ? TIMELINE_PANEL_COMPACT_SIZE_REM : TIMELINE_PANEL_DEFAULT_SIZE_REM;

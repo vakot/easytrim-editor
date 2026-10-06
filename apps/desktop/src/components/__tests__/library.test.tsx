@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
+import { Separator } from "@/components/ui/separator";
+
 import {
   Library,
   LibraryContent,
@@ -10,7 +12,6 @@ import {
   LibraryNavigationGroup,
   LibraryNavigationItem,
   LibraryPage,
-  LibrarySeparator,
 } from "@/components/library";
 
 function ControlledLibrary() {
@@ -23,7 +24,7 @@ function ControlledLibrary() {
           <LibraryNavigationItem value="appearance">Appearance</LibraryNavigationItem>
         </LibraryNavigationGroup>
       </LibraryNavigation>
-      <LibrarySeparator />
+      <Separator orientation="vertical" />
       <LibraryContent>
         <LibraryPage hidden={value !== "general"} value="general">
           General settings content

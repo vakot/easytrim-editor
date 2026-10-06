@@ -23,7 +23,7 @@ All notable changes to this project will be documented in this file.
 
 - Localized audio track menu actions across English, Russian, and Slovak.
 - Localized source search result counts and breadcrumb navigation labels.
-- Preserved hue and saturation after committing grayscale or black colors in the primary color picker.
+- Fixed spacing and scrolling in the settings and audio effects libraries and sidebar layout.
 
 ## [1.13.0]
 
