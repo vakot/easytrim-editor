@@ -45,7 +45,7 @@ const uiScaleOptions = Array.from(
 function SettingsAppearance() {
   const { t } = useTranslation();
   const { executeCommand } = useApplicationCommands();
-  const { finishPrimaryColorPreview, previewPrimaryColor } = useTheme();
+  const { previewPrimaryColor } = useTheme();
   const dispatch = useAppDispatch();
 
   const theme = useAppSelector(selectThemePreference);
@@ -127,11 +127,9 @@ function SettingsAppearance() {
           <CollapsibleContent className="mb-4 flex flex-wrap items-center gap-1.5">
             <ColorPicker
               defaultValue={primaryColor}
+              key={primaryColor}
               onChange={previewPrimaryColor}
-              onCommit={(color) => {
-                dispatch(primaryColorChanged(color));
-                finishPrimaryColorPreview(color);
-              }}
+              onCommit={(color) => dispatch(primaryColorChanged(color))}
             >
               <div className="w-full space-y-3">
                 <ColorPickerSpectrum aria-label={t("settings.accessibility.colorSpectrum")} />

@@ -503,7 +503,7 @@ function usePointerScrub<T>({
     cancel();
   }
 
-  React.useEffect(
+  React.useLayoutEffect(
     () => () => {
       const active = activePointer.current;
       const interactionWasActive = active !== null;

@@ -639,6 +639,8 @@ describe("MenuBarTest", () => {
     });
 
     expect(menuState.preferences.primaryColor).toBe("#efbf04");
+    expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
+    expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
     expect(screen.getByRole("button", { name: "Amber" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("textbox", { name: "Primary color HEX" })).toHaveValue("efbf04");
     const spectrum = screen.getByRole("button", {
@@ -674,6 +676,40 @@ describe("MenuBarTest", () => {
     fireEvent.pointerCancel(spectrum, { pointerId: 1 });
     expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
     expect(menuState.preferences.primaryColor).toBe("#efbf04");
+  });
+
+  it("resets an open picker session when appearance is reset during a drag", async () => {
+    const user = userEvent.setup();
+    renderMenus({ primaryColor: "#4299e1" });
+    await user.click(getMenuTrigger("Settings"));
+    await user.click(screen.getByRole("tab", { name: "Appearance" }));
+    await user.click(screen.getByRole("button", { name: "Primary accent" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Primary color HEX" }), {
+      target: { value: "123456" },
+    });
+
+    const spectrum = screen.getByRole("button", {
+      name: "Theme color picker saturation and brightness",
+    });
+
+    Object.defineProperty(spectrum, "getBoundingClientRect", {
+      value: () => new DOMRect(0, 0, 192, 192),
+    });
+    Object.assign(spectrum, {
+      hasPointerCapture: () => true,
+      releasePointerCapture: vi.fn(),
+      setPointerCapture: vi.fn(),
+    });
+
+    fireEvent.pointerDown(spectrum, { button: 0, clientX: 96, clientY: 96, pointerId: 1 });
+    expect(document.documentElement).toHaveAttribute("data-primary-color-scrubbing");
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
+
+    expect(menuState.preferences.primaryColor).toBe(DEFAULT_PREFERENCES.primaryColor);
+    expect(screen.getByRole("textbox", { name: "Primary color HEX" })).toHaveValue("efbf04");
+    expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
+    expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
   });
 
   it("changes the interface language through the existing i18n path", async () => {
