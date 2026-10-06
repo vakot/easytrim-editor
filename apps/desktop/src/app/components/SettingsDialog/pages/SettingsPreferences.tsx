@@ -2,12 +2,12 @@ import { useTranslation } from "react-i18next";
 
 import { CommandReset, CommandSwitch, SettingRow, SettingsSection } from "../components/SettingRow";
 
-function SettingsEditor() {
+function SettingsPreferences() {
   const { t } = useTranslation();
   return (
-    <SettingsSection title={t("settings.labels.editor")}>
+    <SettingsSection title={t("settings.pages.preferences.title")}>
       <SettingRow
-        description={t("settings.pages.defaults.loopDescription")}
+        description={t("settings.pages.preferences.loopDescription")}
         label={t("settings.labels.loop")}
       >
         <CommandSwitch
@@ -17,7 +17,7 @@ function SettingsEditor() {
       </SettingRow>
 
       <SettingRow
-        description={t("settings.pages.defaults.followSegmentDescription")}
+        description={t("settings.pages.preferences.followSegmentDescription")}
         label={t("settings.labels.followSegment")}
       >
         <CommandSwitch
@@ -27,7 +27,7 @@ function SettingsEditor() {
       </SettingRow>
 
       <SettingRow
-        description={t("settings.pages.defaults.mergeAudioDescription")}
+        description={t("settings.pages.preferences.mergeAudioDescription")}
         label={t("settings.labels.mergeAudio")}
       >
         <CommandSwitch
@@ -36,11 +36,11 @@ function SettingsEditor() {
         />
       </SettingRow>
 
-      <SettingRow label={t("settings.pages.defaults.resetLabel")}>
-        <CommandReset commandId="reset-editor-settings" />
+      <SettingRow label={t("settings.pages.preferences.resetLabel")}>
+        <CommandReset commandId="reset-preferences-settings" />
       </SettingRow>
     </SettingsSection>
   );
 }
 
-export { SettingsEditor };
+export { SettingsPreferences };

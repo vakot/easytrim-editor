@@ -71,7 +71,7 @@ const preferencesSlice = createSlice({
       state.activityFeedView = DEFAULT_PREFERENCES.activityFeedView;
       state.layoutDensity = DEFAULT_PREFERENCES.layoutDensity;
     },
-    editorSettingsReset: (state) => {
+    preferencesSettingsReset: (state) => {
       state.loopPlaybackEnabledDefault = DEFAULT_PREFERENCES.loopPlaybackEnabledDefault;
       state.mergeAudioEnabledDefault = DEFAULT_PREFERENCES.mergeAudioEnabledDefault;
       state.segmentPlaybackEnabledDefault = DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault;
@@ -97,7 +97,7 @@ const preferencesSlice = createSlice({
 const {
   activityFeedViewChanged,
   changelogVersionSeen,
-  editorSettingsReset,
+  preferencesSettingsReset,
   layoutDensityChanged,
   layoutReset,
   playbackVolumeChanged,
@@ -169,7 +169,7 @@ export {
   playbackVolumeToggled,
   preferenceChanged,
   preferencesReducer,
-  editorSettingsReset,
+  preferencesSettingsReset,
   primaryColorChanged,
   selectActivityFeedView,
   selectAutoStartQueueEnabled,

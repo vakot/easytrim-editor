@@ -4,7 +4,7 @@ import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   activityFeedViewChanged,
   changelogVersionSeen,
-  editorSettingsReset,
+  preferencesSettingsReset,
   layoutDensityChanged,
   layoutReset,
   preferenceChanged,
@@ -54,7 +54,7 @@ describe("preferences Redux domain", () => {
 
   it("persists the changelog seen marker without resetting it with preferences", () => {
     const seenState = preferencesReducer(undefined, changelogVersionSeen("1.10.4"));
-    const resetState = preferencesReducer(seenState, editorSettingsReset());
+    const resetState = preferencesReducer(seenState, preferencesSettingsReset());
 
     expect(seenState.lastSeenChangelogVersion).toBe("1.10.4");
     expect(resetState.lastSeenChangelogVersion).toBe("1.10.4");
@@ -85,7 +85,7 @@ describe("preferences Redux domain", () => {
     expect(customState).not.toHaveProperty("customPrimaryColor");
   });
 
-  it("resets only editor defaults while preserving settings owned by other pages", () => {
+  it("resets only Preferences settings while preserving settings owned by other pages", () => {
     const state = preferencesReducer(
       {
         loopPlaybackEnabledDefault: false,
@@ -102,7 +102,7 @@ describe("preferences Redux domain", () => {
         playbackVolumePercent: 100,
         uiScalePercent: 125,
       },
-      editorSettingsReset(),
+      preferencesSettingsReset(),
     );
 
     expect(state).toEqual({

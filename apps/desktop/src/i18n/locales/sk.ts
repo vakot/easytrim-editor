@@ -233,9 +233,9 @@ export const sk = {
         scalingDescription: "Zmeňte veľkosť ovládacích prvkov a textu v aplikácii.",
         colorDescription: "Vyberte prednastavenú alebo vlastnú hlavnú farbu.",
       },
-      defaults: {
-        title: "Predvolené hodnoty",
-        description: "Vyberte predvolené nastavenia pre nové relácie úprav.",
+      preferences: {
+        title: "Predvoľby",
+        description: "Vyberte predvolené správanie pre nové relácie úprav.",
         loopDescription: "V nových reláciách predvolene zapnúť opakovanie prehrávania.",
         followSegmentDescription: "Predvolene obmedziť prehrávanie na vybraný segment.",
         mergeAudioDescription: "Predvolene zlúčiť povolené zvukové stopy pri nových exportoch.",
@@ -267,7 +267,6 @@ export const sk = {
       activityFeedView: "Zobrazenie prehľadu aktivít",
       autoStartQueue: "Automatické spustenie frontu",
       color: "Farba",
-      editor: "Editor",
       followSegment: "Sledovať segment",
       language: "Jazyk",
       loop: "Opakovanie",

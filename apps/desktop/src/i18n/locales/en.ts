@@ -233,9 +233,9 @@ export const en = {
         scalingDescription: "Change the size of controls and text across the app.",
         colorDescription: "Choose a preset or pick a custom primary color.",
       },
-      defaults: {
-        title: "Defaults",
-        description: "Choose the defaults used for new editing sessions.",
+      preferences: {
+        title: "Preferences",
+        description: "Choose the default behavior for new editing sessions.",
         loopDescription: "Start new sessions with loop playback enabled.",
         followSegmentDescription: "Keep playback within the selected segment by default.",
         mergeAudioDescription: "Merge enabled audio tracks for new exports by default.",
@@ -267,7 +267,6 @@ export const en = {
       activityFeedView: "Activity Feed View",
       autoStartQueue: "Auto-start Queue",
       color: "Color",
-      editor: "Editor",
       followSegment: "Follow segment",
       language: "Language",
       loop: "Loop",

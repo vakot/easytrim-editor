@@ -88,7 +88,7 @@ function CommandButton({
 function CommandReset({
   commandId,
 }: {
-  commandId: "reset-editor-settings" | "reset-queue-settings";
+  commandId: "reset-preferences-settings" | "reset-queue-settings";
 }) {
   return <CommandButton commandId={commandId} variant="destructive" />;
 }

@@ -12,7 +12,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Refined View menu actions to include main windows entry-points and layout controls
-- Replaced the Settings menu dropdown with a full preferences dialog for language, appearance, defaults, layout, queue, and update/help options.
+- Replaced the Settings menu dropdown with a full preferences dialog for language, appearance, preferences, layout, queue, and update/help options.
+- Renamed the Defaults page to Preferences in Settings.
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
 - Localized the primary color picker's saturation, brightness, and hue labels for assistive technology.
 

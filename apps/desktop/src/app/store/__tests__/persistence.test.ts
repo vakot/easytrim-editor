@@ -13,7 +13,7 @@ import {
   activityFeedViewChanged,
   layoutDensityChanged,
   preferenceChanged,
-  editorSettingsReset,
+  preferencesSettingsReset,
   primaryColorChanged,
   themePreferenceChanged,
 } from "@/app/store/slices/preferences-slice";
@@ -273,7 +273,7 @@ describe("Redux Persist store integration", () => {
     });
   });
 
-  it("preserves settings owned by other pages when resetting editor defaults", async () => {
+  it("preserves settings owned by other pages when resetting Preferences", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
@@ -285,7 +285,7 @@ describe("Redux Persist store integration", () => {
     store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
     store.dispatch(queueFinishActionChanged("exit"));
     await persistor.flush();
-    store.dispatch(editorSettingsReset());
+    store.dispatch(preferencesSettingsReset());
     await persistor.flush();
 
     expect(store.getState().export.queueFinishAction).toBe("exit");

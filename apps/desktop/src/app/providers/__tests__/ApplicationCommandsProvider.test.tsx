@@ -298,12 +298,12 @@ describe("ApplicationCommandsProvider", () => {
       "data-group",
       "Preferences / Audio",
     );
-    expect(screen.getByRole("button", { name: "reset-editor-settings" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "reset-preferences-settings" })).toHaveAttribute(
       "data-group",
       "Preferences",
     );
     for (const commandId of [
-      "reset-editor-settings",
+      "reset-preferences-settings",
       "reset-layout",
       "reset-queue-settings",
     ]) {
@@ -339,7 +339,7 @@ describe("ApplicationCommandsProvider", () => {
       "Reset to default",
     );
     for (const commandId of [
-      "reset-editor-settings",
+      "reset-preferences-settings",
       "reset-queue-settings",
     ]) {
       expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
@@ -444,7 +444,7 @@ describe("ApplicationCommandsProvider", () => {
   it("does not execute menu-only commands from the palette surface", () => {
     renderRuntime();
 
-    fireEvent.click(screen.getByRole("button", { name: "reset-editor-settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "reset-preferences-settings" }));
 
     expect(mocks.dispatch).not.toHaveBeenCalled();
   });
@@ -476,6 +476,6 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(screen.getByRole("button", { name: "reset-queue-settings" })).toBeEnabled();
     expect(screen.queryByRole("button", { name: "reset-appearance-settings" })).toBeNull();
-    expect(screen.getByRole("button", { name: "reset-editor-settings" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "reset-preferences-settings" })).toBeDisabled();
   });
 });

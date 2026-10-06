@@ -4,9 +4,9 @@ import { useTranslation } from "react-i18next";
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { DEFAULT_PREFERENCES } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { editorSettingsReset, selectPreferences } from "@/app/store/slices/preferences-slice";
+import { preferencesSettingsReset, selectPreferences } from "@/app/store/slices/preferences-slice";
 
-function useResetEditorSettingsCommand() {
+function useResetPreferencesSettingsCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const preferences = useAppSelector(selectPreferences);
@@ -21,13 +21,13 @@ function useResetEditorSettingsCommand() {
     icon: <RotateCcw aria-hidden="true" />,
     surfaces: ["dialog", "menu"] as const,
     run() {
-      dispatch(editorSettingsReset());
+      dispatch(preferencesSettingsReset());
     },
-    id: "reset-editor-settings" as const,
+    id: "reset-preferences-settings" as const,
     label,
     searchTerms: commandSearchTerms(`${label}|settings|preferences`),
     variant: "destructive" as const,
   };
 }
 
-export { useResetEditorSettingsCommand };
+export { useResetPreferencesSettingsCommand };

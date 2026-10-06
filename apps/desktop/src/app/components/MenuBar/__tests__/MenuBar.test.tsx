@@ -248,7 +248,7 @@ describe("MenuBarTest", () => {
         const payload = action.payload as { enabled: boolean; key: PreferenceKey };
         setPreference(payload.key, payload.enabled);
       }
-      if (action.type === "preferences/editorSettingsReset") {
+      if (action.type === "preferences/preferencesSettingsReset") {
         menuState.preferences.loopPlaybackEnabledDefault =
           DEFAULT_PREFERENCES.loopPlaybackEnabledDefault;
         menuState.preferences.mergeAudioEnabledDefault =
@@ -627,10 +627,10 @@ describe("MenuBarTest", () => {
     renderMenus();
     await user.click(getMenuTrigger("Settings"));
 
-    const defaultsTab = screen.getByRole("tab", { name: "Defaults" });
+    const preferencesTab = screen.getByRole("tab", { name: "Preferences" });
     expect(screen.getByRole("tab", { name: "General" })).toHaveAttribute("aria-selected", "true");
-    await user.click(defaultsTab);
-    expect(defaultsTab).toHaveAttribute("aria-selected", "true");
+    await user.click(preferencesTab);
+    expect(preferencesTab).toHaveAttribute("aria-selected", "true");
 
     const loopSwitch = screen.getByRole("switch", { name: "Loop" });
     expect(loopSwitch).toBeChecked();
