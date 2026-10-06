@@ -1,4 +1,4 @@
-import { Languages } from "lucide-react";
+import { ChevronsUpDown, Languages } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ function SettingsGeneral() {
               <span className="min-w-0 flex-1 truncate text-left">
                 <LanguageSelectorValue />
               </span>
+              <ChevronsUpDown aria-hidden="true" className="ml-auto size-4 text-muted-foreground" />
             </Button>
           </LanguageSelectorTrigger>
           <LanguageSelectorContent>
