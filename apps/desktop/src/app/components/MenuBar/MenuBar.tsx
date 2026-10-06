@@ -18,7 +18,6 @@ import { diagnostics } from "@/lib/diagnostics";
 
 import { MenuBarFile, MenuBarFileContent } from "./components/MenuBarFile";
 import { MenuBarHelp, MenuBarHelpContent } from "./components/MenuBarHelp";
-import { MenuBarQueue, MenuBarQueueContent } from "./components/MenuBarQueue";
 import { MenuBarSettings } from "./components/MenuBarSettings";
 import { MenuBarView, MenuBarViewContent } from "./components/MenuBarView";
 
@@ -65,7 +64,6 @@ function MenuBar() {
         >
           <MenuBarFile />
           <MenuBarView />
-          <MenuBarQueue />
           <MenuBarSettings />
           <MenuBarHelp />
         </Menubar>
@@ -87,10 +85,6 @@ function MenuBar() {
 
               <CompactMenuSub id="view" label={t("app.labels.view")}>
                 <MenuBarViewContent />
-              </CompactMenuSub>
-
-              <CompactMenuSub id="queue" label={t("queue.labels.title")}>
-                <MenuBarQueueContent />
               </CompactMenuSub>
 
               <MenubarItem onSelect={() => void executeCommand("open-settings", "menu")}>
