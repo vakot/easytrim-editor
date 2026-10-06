@@ -1,4 +1,4 @@
-import type { HexColor } from "./color.types";
+import type { HexColor, HsvColor } from "./color.types";
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -22,6 +22,10 @@ function saturationFromPosition(x: number, width: number) {
 
 function valueFromPosition(y: number, height: number) {
   return (1 - positionRatio(y, height)) * 100;
+}
+
+function hueFromPosition(x: number, width: number) {
+  return positionRatio(x, width) * 360;
 }
 
 function positionFromSaturation(saturation: number) {
@@ -99,18 +103,6 @@ function hexToHsv(hex: string) {
   };
 }
 
-function hsvFromSpectrumPosition(x: number, y: number, width: number, height: number, hue: number) {
-  return {
-    hue,
-    saturation: saturationFromPosition(x, width),
-    value: valueFromPosition(y, height),
-  };
-}
-
-function hueFromPosition(x: number, width: number) {
-  return positionRatio(x, width) * 360;
-}
-
 // HSL conversions are shared by theme palette generation.
 function hslToHex(hue: number, saturation: number, lightness: number): HexColor {
   const chroma = (1 - Math.abs((2 * lightness) / 100 - 1)) * (saturation / 100);
@@ -170,6 +162,24 @@ function hexToHsl(hex: string) {
   };
 }
 
+function hsvFromSpectrumPosition(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  hue: number,
+): HsvColor {
+  return {
+    hue,
+    saturation: saturationFromPosition(x, width),
+    value: valueFromPosition(y, height),
+  };
+}
+
+function isHexColor(value: string): value is HexColor {
+  return /^#[0-9a-f]{6}$/i.test(value);
+}
+
 export {
   clampHue,
   clampPercent,
@@ -179,6 +189,7 @@ export {
   hsvFromSpectrumPosition,
   hsvToHex,
   hueFromPosition,
+  isHexColor,
   positionFromHue,
   positionFromSaturation,
   positionFromValue,

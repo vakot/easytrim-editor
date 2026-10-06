@@ -1,15 +1,12 @@
 import { useTranslation } from "react-i18next";
 
-import { ColorSample } from "@/components/ui/color";
-
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { primaryColorChanged } from "@/app/store/slices/preferences-slice";
-import { PRIMARY_COLORS, resolvePrimaryColor } from "@/app/theme/theme";
+import { PRIMARY_COLOR_PRESETS } from "@/app/theme/theme";
+import { ColorSample } from "@/components/color";
 
-type PrimaryColor = (typeof PRIMARY_COLORS)[number];
-
-function getPrimaryColorCommandId(color: PrimaryColor) {
-  return `primary-color-${color}` as const;
+function getPrimaryColorCommandId(id: (typeof PRIMARY_COLOR_PRESETS)[number]["id"]) {
+  return `primary-color-${id}` as const;
 }
 
 function usePrimaryColorCommands() {
@@ -24,18 +21,22 @@ function usePrimaryColorCommands() {
     violet: t("settings.options.colors.violet"),
   };
 
-  return PRIMARY_COLORS.map((color) => ({
-    checked: currentColor === color,
-    enabled: true,
-    icon: <ColorSample aria-hidden="true" color={resolvePrimaryColor(color)} />,
-    run() {
-      dispatch(primaryColorChanged(color));
-    },
-    id: getPrimaryColorCommandId(color),
-    label: labels[color],
-    searchTerms: [labels[color], "color", "accent"],
-    variant: "default" as const,
-  }));
+  return PRIMARY_COLOR_PRESETS.map((preset) => {
+    const label = labels[preset.id];
+
+    return {
+      checked: currentColor === preset.color,
+      enabled: true,
+      icon: <ColorSample aria-hidden="true" color={preset.color} />,
+      run() {
+        dispatch(primaryColorChanged(preset.color));
+      },
+      id: getPrimaryColorCommandId(preset.id),
+      label,
+      searchTerms: [label, "color", "accent"],
+      variant: "default" as const,
+    };
+  });
 }
 
 export { getPrimaryColorCommandId, usePrimaryColorCommands };

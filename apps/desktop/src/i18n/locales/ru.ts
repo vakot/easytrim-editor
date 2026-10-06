@@ -281,7 +281,9 @@ export const ru = {
     },
     accessibility: {
       colorSpectrum: "Выбор цвета темы",
-      customColorHex: "Пользовательский HEX-код",
+      colorSaturationValue: "Насыщенность и яркость",
+      colorHue: "Оттенок",
+      primaryColorHex: "HEX основного цвета",
     },
     options: {
       commandLabels: {
@@ -292,7 +294,6 @@ export const ru = {
       colors: {
         amber: "Янтарный",
         blue: "Синий",
-        custom: "Пользовательский",
         emerald: "Изумрудный",
         rose: "Розовый",
         violet: "Фиолетовый",

@@ -17,13 +17,7 @@ import {
   UI_SCALE_STEP_PERCENT,
 } from "@/app/preferences";
 import { queueSettingsReset } from "@/app/store/actions/queue-actions";
-import {
-  type CustomPrimaryColor,
-  isCustomPrimaryColor,
-  type PrimaryColor,
-  type PrimaryColorKey,
-  type ThemePreference,
-} from "@/app/theme/theme";
+import type { PrimaryColor, ThemePreference } from "@/app/theme/theme";
 
 import type { RootState } from "../store";
 
@@ -80,19 +74,11 @@ const preferencesSlice = createSlice({
     viewSettingsReset: (state) => {
       state.theme = DEFAULT_PREFERENCES.theme;
       state.primaryColor = DEFAULT_PREFERENCES.primaryColor;
-      state.customPrimaryColor = DEFAULT_PREFERENCES.customPrimaryColor;
     },
     themePreferenceChanged: (state, action: PayloadAction<ThemePreference>) => {
       state.theme = action.payload;
     },
     primaryColorChanged: (state, action: PayloadAction<PrimaryColor>) => {
-      state.primaryColor = action.payload;
-      if (isCustomPrimaryColor(action.payload)) {
-        state.customPrimaryColor = action.payload;
-      }
-    },
-    customPrimaryColorChanged: (state, action: PayloadAction<CustomPrimaryColor>) => {
-      state.customPrimaryColor = action.payload;
       state.primaryColor = action.payload;
     },
     changelogVersionSeen: (state, action: PayloadAction<string>) => {
@@ -104,7 +90,6 @@ const preferencesSlice = createSlice({
       const lastSeenChangelogVersion = state.lastSeenChangelogVersion;
       const theme = state.theme;
       const primaryColor = state.primaryColor;
-      const customPrimaryColor = state.customPrimaryColor;
       const deleteSourceOnRenderFinish = state.deleteSourceOnRenderFinish;
       Object.assign(state, DEFAULT_PREFERENCES);
       state.activityFeedView = activityFeedView;
@@ -112,7 +97,6 @@ const preferencesSlice = createSlice({
       state.lastSeenChangelogVersion = lastSeenChangelogVersion;
       state.theme = theme;
       state.primaryColor = primaryColor;
-      state.customPrimaryColor = customPrimaryColor;
       state.deleteSourceOnRenderFinish = deleteSourceOnRenderFinish;
     },
   },
@@ -126,7 +110,6 @@ const preferencesSlice = createSlice({
 const {
   activityFeedViewChanged,
   changelogVersionSeen,
-  customPrimaryColorChanged,
   layoutDensityChanged,
   layoutReset,
   playbackVolumeChanged,
@@ -188,21 +171,12 @@ const selectUiScalePercent = (state: RootState): number => {
 const selectPrimaryColor = (state: RootState): PrimaryColor =>
   selectPreferences(state).primaryColor;
 
-const selectPrimaryColorKey = (state: RootState): PrimaryColorKey => {
-  const primaryColor = selectPrimaryColor(state);
-  return isCustomPrimaryColor(primaryColor) ? "custom" : primaryColor;
-};
-
-const selectCustomPrimaryColor = (state: RootState): CustomPrimaryColor =>
-  selectPreferences(state).customPrimaryColor;
-
 const selectLastSeenChangelogVersion = (state: RootState): string | null =>
   selectPreferences(state).lastSeenChangelogVersion;
 
 export {
   activityFeedViewChanged,
   changelogVersionSeen,
-  customPrimaryColorChanged,
   layoutDensityChanged,
   layoutReset,
   playbackVolumeChanged,
@@ -213,7 +187,6 @@ export {
   primaryColorChanged,
   selectActivityFeedView,
   selectAutoStartQueueEnabled,
-  selectCustomPrimaryColor,
   selectDeleteSourceOnRenderFinish,
   selectLastSeenChangelogVersion,
   selectLayoutDensity,
@@ -222,7 +195,6 @@ export {
   selectPlaybackVolumePercent,
   selectPreferences,
   selectPrimaryColor,
-  selectPrimaryColorKey,
   selectSegmentPlaybackEnabledDefault,
   selectThemePreference,
   selectUiScalePercent,

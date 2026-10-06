@@ -280,7 +280,9 @@ export const sk = {
     },
     accessibility: {
       colorSpectrum: "Výber farby motívu",
-      customColorHex: "Hexadecimálna hodnota vlastnej farby",
+      colorSaturationValue: "Sýtosť a jas",
+      colorHue: "Odtieň",
+      primaryColorHex: "HEX hlavnej farby",
     },
     options: {
       commandLabels: {
@@ -291,7 +293,6 @@ export const sk = {
       colors: {
         amber: "Jantárová",
         blue: "Modrá",
-        custom: "Vlastná",
         emerald: "Smaragdová",
         rose: "Ružová",
         violet: "Fialová",
