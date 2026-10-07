@@ -31,6 +31,7 @@ import { ChangelogProvider } from "@/features/changelog";
 import { ExportDialog, QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider, SourceDropOverlay } from "@/features/source";
+import { localizeAppError } from "@/i18n/app-errors";
 
 function EasyTrimEditorApp() {
   const { t } = useTranslation();
@@ -75,7 +76,7 @@ function EasyTrimEditorApp() {
                             >
                               <AlertDescription>
                                 {t("app.dragUnavailable", {
-                                  message: dropListenerError.message,
+                                  message: localizeAppError(dropListenerError, t),
                                 })}
                               </AlertDescription>
                             </Alert>

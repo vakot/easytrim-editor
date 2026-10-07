@@ -94,7 +94,10 @@ function ExportActionsQueuePulseStory() {
         editingInstanceExportFailed({
           attemptId: latestAttempt.id,
           durationMs: 1_200,
-          error: { code: "render-failed", message: "The example export failed." },
+          error: {
+            code: "render-failed",
+            messageId: "export.ffmpegCouldNotRenderTheSelectedSegment",
+          },
           id: "story-source",
         }),
       );

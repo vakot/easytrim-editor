@@ -35,7 +35,7 @@ import {
   saveFramePng,
 } from "../media";
 import type { MediaInfo } from "../media.types";
-import { parseSourceRef } from "../media.utils";
+import { parseMediaCapabilities, parseSourceRef } from "../media.utils";
 
 type NativeDropEvent =
   | { payload: { paths: string[]; type: "enter" } }
@@ -56,6 +56,53 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
+  it("parses semantic capability failures and preserves diagnostics separately", () => {
+    expect(
+      parseMediaCapabilities({
+        ffmpeg: {
+          available: false,
+          errorId: "checkFailed",
+          diagnostics: "C:/private/ffmpeg.exe: codec check failed",
+        },
+        ffprobe: {
+          available: true,
+          path: "C:/Tools/ffprobe.exe",
+          version: "ffprobe version 7.1",
+        },
+      }),
+    ).toEqual({
+      ffmpeg: {
+        available: false,
+        errorId: "checkFailed",
+        diagnostics: "C:/private/ffmpeg.exe: codec check failed",
+        path: undefined,
+        version: undefined,
+      },
+      ffprobe: {
+        available: true,
+        errorId: undefined,
+        diagnostics: undefined,
+        path: "C:/Tools/ffprobe.exe",
+        version: "ffprobe version 7.1",
+      },
+    });
+  });
+
+  it("uses unknown capability error IDs as an unspecified failure", () => {
+    expect(
+      parseMediaCapabilities({
+        ffmpeg: { available: false, errorId: "futureFailure", diagnostics: "private detail" },
+        ffprobe: { available: true },
+      }).ffmpeg,
+    ).toEqual({
+      available: false,
+      errorId: undefined,
+      diagnostics: "private detail",
+      path: undefined,
+      version: undefined,
+    });
+  });
+
   it("parses audio preview descriptors and preserves canonical signal effects", async () => {
     const audioTracks = [
       {
@@ -383,7 +430,7 @@ describe("media IPC adapter", () => {
 
     await expect(inspectMedia("C:/Media/clip.mp4")).rejects.toEqual({
       code: "internal",
-      message: "The native application returned an invalid duration.",
+      diagnostics: "The native application returned an invalid duration.",
     });
   });
 
@@ -495,7 +542,7 @@ describe("media IPC adapter", () => {
 
     await expect(prepareSourcePreview("C:/Media/clip.mp4")).rejects.toEqual({
       code: "internal",
-      message: "The native application returned an invalid preview kind.",
+      diagnostics: "The native application returned an invalid preview kind.",
     });
   });
 
@@ -553,8 +600,7 @@ describe("media IPC adapter", () => {
 
     await expect(prepareWaveforms("C:/Media/clip.mp4", "waveform-7", [2], 1280)).rejects.toEqual({
       code: "internal",
-      message: "The native application returned an invalid waveform width.",
-      diagnostics: undefined,
+      diagnostics: "The native application returned an invalid waveform width.",
     });
   });
 
@@ -597,7 +643,7 @@ describe("media IPC adapter", () => {
   it("normalizes a rejected dropped path into a structured failure", async () => {
     mocks.invoke.mockRejectedValue({
       code: "unsupported_media",
-      message: "This file type is not supported yet.",
+      messageId: "source.fileTypeIsNotSupportedYet",
     });
     const onEvent = vi.fn();
     await listenForSourceDrops(onEvent);
@@ -609,8 +655,7 @@ describe("media IPC adapter", () => {
         status: "failed",
         error: {
           code: "unsupported_media",
-          message: "This file type is not supported yet.",
-          diagnostics: undefined,
+          messageId: "source.fileTypeIsNotSupportedYet",
         },
       });
     });
@@ -660,7 +705,7 @@ describe("media IPC adapter", () => {
       status: "failed",
       error: {
         code: "invalid_request",
-        message: "Drop a video file instead of an empty selection.",
+        messageId: "source.dropVideoFileInsteadOfEmptySelection",
       },
     });
   });

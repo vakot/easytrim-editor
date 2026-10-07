@@ -21,7 +21,18 @@ pub struct BinaryCapability {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
+    pub error_id: Option<BinaryCapabilityErrorId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub diagnostics: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum BinaryCapabilityErrorId {
+    NotFound,
+    TimedOut,
+    StartFailed,
+    CheckFailed,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -57,44 +68,48 @@ fn check_binary(executable: &str) -> BinaryCapability {
             });
             available_capability(version, resolved_path(executable))
         }
-        Ok(output) => {
-            let detail = first_non_empty_line(&output.stderr).map(|detail| {
-                if output.stderr_truncated {
-                    format!(" {detail} [diagnostics truncated]")
-                } else {
-                    format!(" {detail}")
-                }
-            });
-            BinaryCapability {
-                available: false,
-                path: None,
-                version: None,
-                error: Some(format!(
-                    "{executable} did not start successfully.{}",
-                    detail.unwrap_or_default()
-                )),
-            }
+        Ok(output) => failed_capability(
+            BinaryCapabilityErrorId::CheckFailed,
+            output_diagnostics(&output.stderr, output.stderr_truncated),
+        ),
+        Err(error) => failed_capability(io_error_id(error.kind()), Some(error.to_string())),
+    }
+}
+
+fn io_error_id(kind: io::ErrorKind) -> BinaryCapabilityErrorId {
+    match kind {
+        io::ErrorKind::NotFound => BinaryCapabilityErrorId::NotFound,
+        io::ErrorKind::TimedOut => BinaryCapabilityErrorId::TimedOut,
+        _ => BinaryCapabilityErrorId::StartFailed,
+    }
+}
+
+fn failed_capability(
+    error_id: BinaryCapabilityErrorId,
+    diagnostics: Option<String>,
+) -> BinaryCapability {
+    BinaryCapability {
+        available: false,
+        path: None,
+        version: None,
+        error_id: Some(error_id),
+        diagnostics,
+    }
+}
+
+fn output_diagnostics(stderr: &[u8], truncated: bool) -> Option<String> {
+    let detail = String::from_utf8_lossy(stderr).trim().to_owned();
+    if detail.is_empty() && !truncated {
+        return None;
+    }
+    if truncated {
+        if detail.is_empty() {
+            Some("[diagnostics truncated]".to_owned())
+        } else {
+            Some(format!("{detail}\n[diagnostics truncated]"))
         }
-        Err(error) if error.kind() == io::ErrorKind::NotFound => BinaryCapability {
-            available: false,
-            path: None,
-            version: None,
-            error: Some(format!(
-                "{executable} is not installed or available on PATH."
-            )),
-        },
-        Err(error) if error.kind() == io::ErrorKind::TimedOut => BinaryCapability {
-            available: false,
-            path: None,
-            version: None,
-            error: Some(format!("{executable} did not respond within 3 seconds.")),
-        },
-        Err(_) => BinaryCapability {
-            available: false,
-            path: None,
-            version: None,
-            error: Some(format!("{executable} could not be checked.")),
-        },
+    } else {
+        Some(detail)
     }
 }
 
@@ -109,7 +124,8 @@ fn available_capability(version: Option<String>, path: Option<String>) -> Binary
         available: true,
         path,
         version,
-        error: None,
+        error_id: None,
+        diagnostics: None,
     }
 }
 
@@ -123,7 +139,12 @@ fn first_non_empty_line(output: &[u8]) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{BinaryCapability, available_capability, check_binary, first_non_empty_line};
+    use std::io;
+
+    use super::{
+        BinaryCapability, BinaryCapabilityErrorId, available_capability, check_binary,
+        failed_capability, first_non_empty_line, io_error_id, output_diagnostics,
+    };
 
     #[test]
     fn extracts_the_version_header() {
@@ -138,7 +159,62 @@ mod tests {
         let capability = check_binary("easytrim-binary-that-does-not-exist");
 
         assert!(!capability.available);
-        assert!(capability.error.is_some());
+        assert_eq!(capability.error_id, Some(BinaryCapabilityErrorId::NotFound));
+        assert!(capability.diagnostics.is_some());
+    }
+
+    #[test]
+    fn classifies_timeout_and_start_failures_without_user_facing_text() {
+        assert_eq!(
+            io_error_id(io::ErrorKind::TimedOut),
+            BinaryCapabilityErrorId::TimedOut
+        );
+        assert_eq!(
+            io_error_id(io::ErrorKind::PermissionDenied),
+            BinaryCapabilityErrorId::StartFailed
+        );
+    }
+
+    #[test]
+    fn keeps_nonzero_exit_stderr_separate_from_the_semantic_failure() {
+        let capability = failed_capability(
+            BinaryCapabilityErrorId::CheckFailed,
+            output_diagnostics(b"codec initialization failed\n", false),
+        );
+
+        assert_eq!(
+            capability.error_id,
+            Some(BinaryCapabilityErrorId::CheckFailed)
+        );
+        assert_eq!(
+            capability.diagnostics.as_deref(),
+            Some("codec initialization failed")
+        );
+    }
+
+    #[test]
+    fn serializes_capability_error_ids_and_diagnostics_without_english_copy() {
+        let capability = failed_capability(
+            BinaryCapabilityErrorId::TimedOut,
+            Some("process exceeded 3 second limit".to_owned()),
+        );
+
+        assert_eq!(
+            serde_json::to_value(capability).expect("capability serializes"),
+            serde_json::json!({
+                "available": false,
+                "errorId": "timedOut",
+                "diagnostics": "process exceeded 3 second limit"
+            })
+        );
+    }
+
+    #[test]
+    fn marks_truncated_stderr_in_diagnostics() {
+        assert_eq!(
+            output_diagnostics(b"stderr detail", true).as_deref(),
+            Some("stderr detail\n[diagnostics truncated]")
+        );
     }
 
     #[test]
@@ -155,7 +231,8 @@ mod tests {
             available: true,
             path: Some("C:/Tools/ffmpeg.exe".to_owned()),
             version: Some("ffmpeg version 7.1".to_owned()),
-            error: None,
+            error_id: None,
+            diagnostics: None,
         };
         let without_path = available_capability(None, None);
 

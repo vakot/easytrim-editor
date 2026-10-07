@@ -15,7 +15,9 @@ import {
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
 import { deleteActiveEditingInstanceSourceRequested } from "@/app/store/thunks/source-media-thunks";
+import type { AppError } from "@/domain/media";
 import { normalizeSourceKey } from "@/domain/source";
+import { localizeAppError } from "@/i18n/app-errors";
 
 interface SourceDeleteDialogProps {
   children?: ReactNode;
@@ -45,7 +47,7 @@ function SourceDeleteDialog({
   const item = items[0];
   const isFolder = target === "folder";
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<AppError | null>(null);
 
   const handleDeleteSource = async () => {
     if (items.length === 0) return;
@@ -58,10 +60,10 @@ function SourceDeleteDialog({
       }
     }
 
-    let firstError: string | null = null;
+    let firstError: AppError | null = null;
     for (const id of sourceIdsByPath.values()) {
       const result = await dispatch(deleteActiveEditingInstanceSourceRequested(id));
-      if (result && !firstError) firstError = result.message;
+      if (result && !firstError) firstError = result;
     }
     if (firstError) setError(firstError);
     setPending(false);
@@ -88,7 +90,7 @@ function SourceDeleteDialog({
                 })}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? <p className="text-sm text-destructive">{localizeAppError(error, t)}</p> : null}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>{t("common.actions.cancel")}</AlertDialogCancel>
           <AlertDialogAction

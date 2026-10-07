@@ -34,7 +34,9 @@ pub fn run() {
                 app.path().app_data_dir()?,
                 app.package_info().version.to_string(),
             )
-            .map_err(|error| std::io::Error::other(error.message))?;
+            .map_err(|error| {
+                std::io::Error::other(error.diagnostics.unwrap_or_else(|| error.code.to_owned()))
+            })?;
             diagnostics::install_panic_hook();
             let watchdog = Arc::clone(&diagnostics);
             std::thread::spawn(move || {

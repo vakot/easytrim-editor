@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
@@ -6,8 +7,10 @@ import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { analyzeTrackLoudness } from "@/app/store/thunks/audio-track-thunks";
 import { audioTrackLoudnessInputsKey, type AudioTrackProcessing } from "@/domain/audio-processing";
+import { localizeAppError } from "@/i18n/app-errors";
 
 function useLoudnessAnalysis(streamIndex: number, processing: AudioTrackProcessing) {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const track = useAppSelector((state) =>
     selectAudioTracks(state).find((candidate) => candidate.streamIndex === streamIndex),
@@ -25,7 +28,8 @@ function useLoudnessAnalysis(streamIndex: number, processing: AudioTrackProcessi
   const value = isReady && analysis.status === "ready" ? analysis.value : undefined;
   const isLoading = analysis?.status === "loading" && analysis.cacheKey === cacheKey;
   const isFailed = analysis?.status === "failed" && analysis.cacheKey === cacheKey;
-  const error = isFailed && analysis.status === "failed" ? analysis.error.message : undefined;
+  const error =
+    isFailed && analysis.status === "failed" ? localizeAppError(analysis.error, t) : undefined;
 
   const analyze = useCallback(() => {
     void dispatch(analyzeTrackLoudness(streamIndex, processing));

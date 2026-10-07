@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::{
-    error::AppError,
+    error::{AppError, AppErrorMessageId},
     process::{ProcessOutput, run_bounded_cancellable},
     state::ActiveSource,
 };
@@ -21,7 +21,7 @@ const MAX_SCENE_BOUNDARIES: usize = 20_000;
 pub fn detect_scene_boundaries(source: &ActiveSource) -> Result<Vec<u64>, AppError> {
     let Some(media) = source.media.as_ref() else {
         return Err(AppError::invalid_request(
-            "The active source has not been inspected.",
+            AppErrorMessageId::MediaSceneActiveSourceHasNotBeenInspected,
         ));
     };
     let arguments = scene_detection_arguments(&source.path, media.video.stream_index);
@@ -37,13 +37,13 @@ pub fn detect_scene_boundaries(source: &ActiveSource) -> Result<Vec<u64>, AppErr
 
     if !output.status.success() {
         return Err(AppError::scene_detection_failed(
-            "FFmpeg could not detect scene changes.",
+            AppErrorMessageId::MediaSceneFfmpegCouldNotDetectSceneChanges,
             diagnostics(&output, &source.path),
         ));
     }
     if output.stderr_truncated {
         return Err(AppError::scene_detection_failed(
-            "The scene detection output exceeded its safety limit.",
+            AppErrorMessageId::MediaSceneSceneDetectionOutputExceededItsSafetyLimit,
             None::<String>,
         ));
     }
@@ -103,7 +103,7 @@ fn parse_scene_timestamps(stderr: &[u8]) -> Result<Vec<u64>, AppError> {
             timestamps_micros.push(timestamp);
             if timestamps_micros.len() > MAX_SCENE_BOUNDARIES {
                 return Err(AppError::scene_detection_failed(
-                    "The source contains too many detected scene changes.",
+                    AppErrorMessageId::MediaSceneSourceContainsTooManyDetectedSceneChanges,
                     None::<String>,
                 ));
             }
@@ -114,16 +114,19 @@ fn parse_scene_timestamps(stderr: &[u8]) -> Result<Vec<u64>, AppError> {
 
 fn process_error(error: io::Error) -> AppError {
     match error.kind() {
-        io::ErrorKind::Interrupted => AppError::cancelled("Scene detection was interrupted."),
+        io::ErrorKind::Interrupted => {
+            AppError::cancelled(AppErrorMessageId::MediaSceneSceneDetectionWasInterrupted)
+        }
         io::ErrorKind::NotFound => AppError::scene_detection_failed(
-            "FFmpeg is required to detect scene changes.",
+            AppErrorMessageId::MediaSceneFfmpegIsRequiredToDetectSceneChanges,
             None::<String>,
         ),
-        io::ErrorKind::TimedOut => {
-            AppError::scene_detection_failed("Scene detection took too long.", None::<String>)
-        }
+        io::ErrorKind::TimedOut => AppError::scene_detection_failed(
+            AppErrorMessageId::MediaSceneSceneDetectionTookTooLong,
+            None::<String>,
+        ),
         _ => AppError::scene_detection_failed(
-            "FFmpeg could not detect scene changes.",
+            AppErrorMessageId::MediaSceneFfmpegCouldNotDetectSceneChanges,
             None::<String>,
         ),
     }

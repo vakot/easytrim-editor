@@ -15,7 +15,7 @@ use tauri_plugin_dialog::DialogExt;
 
 use crate::{
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
-    error::AppError,
+    error::{AppError, AppErrorMessageId},
     media::export::{
         FastExportRequest, OptimizedExportRequest, build_fast_arguments, build_optimized_arguments,
         optimized_command_preview,
@@ -116,7 +116,9 @@ pub async fn choose_output_path(
     video_filter: String,
 ) -> Result<Option<OutputSelection>, AppError> {
     if default_name.trim().is_empty() || default_name.len() > 255 {
-        return Err(AppError::invalid_request("The output name is required."));
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportOutputNameIsRequired,
+        ));
     }
     let (sender, receiver) = std::sync::mpsc::channel();
     app.dialog()
@@ -133,14 +135,14 @@ pub async fn choose_output_path(
     let Some(selected) = selected else {
         return Ok(None);
     };
-    let path = selected
-        .into_path()
-        .map_err(|_| AppError::invalid_request("The selected output location is not supported."))?;
+    let path = selected.into_path().map_err(|_| {
+        AppError::invalid_request(AppErrorMessageId::ExportSelectedOutputLocationIsNotSupported)
+    })?;
     let display_name = path
         .file_name()
         .and_then(|value| value.to_str())
         .filter(|value| !value.is_empty())
-        .ok_or_else(|| AppError::invalid_request("The output name is required."))?
+        .ok_or_else(|| AppError::invalid_request(AppErrorMessageId::ExportOutputNameIsRequired))?
         .to_owned();
     let display_path = path.display().to_string();
     let output_id = state.register_output(path)?;
@@ -181,10 +183,9 @@ pub async fn render_fast(
     // The queue retains the source across retries and explicitly releases it after terminal work.
     async {
         let source = state.resolve_export_source(&request.source_path)?;
-        let media = source
-            .media
-            .clone()
-            .ok_or_else(|| AppError::invalid_request("Inspect the video before exporting."))?;
+        let media = source.media.clone().ok_or_else(|| {
+            AppError::invalid_request(AppErrorMessageId::ExportInspectTheVideoBeforeExporting)
+        })?;
         let output_path = state.resolve_output(&output_id)?;
         let display_name = output_display_name(&output_path)?;
         let arguments = build_fast_arguments(&media, &request, &source.path, &output_path)?;
@@ -219,10 +220,9 @@ pub async fn render_optimized(
     // The queue retains the source across retries and explicitly releases it after terminal work.
     async {
         let source = state.resolve_export_source(&request.source_path)?;
-        let media = source
-            .media
-            .clone()
-            .ok_or_else(|| AppError::invalid_request("Inspect the video before exporting."))?;
+        let media = source.media.clone().ok_or_else(|| {
+            AppError::invalid_request(AppErrorMessageId::ExportInspectTheVideoBeforeExporting)
+        })?;
         let output_path = state.resolve_output(&output_id)?;
         let display_name = output_display_name(&output_path)?;
         let arguments = build_optimized_arguments(&media, &request, &source.path, &output_path)?;
@@ -250,10 +250,9 @@ pub fn plan_optimized_export(
     state: State<'_, AppState>,
 ) -> Result<OptimizedExportPlan, AppError> {
     let source = state.resolve_source_by_path(&request.source_path)?;
-    let media = source
-        .media
-        .as_ref()
-        .ok_or_else(|| AppError::invalid_request("Inspect the video before exporting."))?;
+    let media = source.media.as_ref().ok_or_else(|| {
+        AppError::invalid_request(AppErrorMessageId::ExportInspectTheVideoBeforeExporting)
+    })?;
     Ok(OptimizedExportPlan {
         command_preview: optimized_command_preview(media, &request)?,
     })
@@ -286,7 +285,7 @@ pub fn open_file_location(path: String) -> Result<(), AppError> {
     let path = PathBuf::from(path);
     if !path.is_file() && !path.is_dir() {
         return Err(AppError::io_failed(
-            "The file or folder is no longer available.",
+            AppErrorMessageId::ExportFileOrFolderIsNoLongerAvailable,
         ));
     }
 
@@ -316,9 +315,10 @@ pub fn open_file_location(path: String) -> Result<(), AppError> {
         })
         .spawn();
 
-    result
-        .map(|_| ())
-        .map_err(|error| AppError::io_failed(format!("Could not open the file location: {error}")))
+    result.map(|_| ()).map_err(|error| {
+        AppError::io_failed(AppErrorMessageId::ExportFileLocationCouldNotBeOpened)
+            .with_diagnostics(error.to_string())
+    })
 }
 
 async fn run_export(
@@ -403,11 +403,12 @@ async fn run_export(
         );
         process.map_err(|error| {
             if error.kind() == std::io::ErrorKind::Interrupted {
-                AppError::cancelled("The export was cancelled.")
+                AppError::cancelled(AppErrorMessageId::ExportExportWasCancelled)
             } else if error.kind() == std::io::ErrorKind::NotFound {
-                AppError::io_failed("FFmpeg is required to export video files.")
+                AppError::io_failed(AppErrorMessageId::ExportFfmpegIsRequiredToExportVideoFiles)
             } else {
-                AppError::io_failed(format!("FFmpeg could not be started: {error}"))
+                AppError::io_failed(AppErrorMessageId::ExportFfmpegCouldNotBeStarted)
+                    .with_diagnostics(error.to_string())
             }
         })
     })
@@ -487,7 +488,9 @@ async fn run_export(
             diagnostic_parent_operation_id.as_deref(),
             diagnostic_snapshot_id.as_deref(),
         );
-        return Err(AppError::cancelled("The export was cancelled."));
+        return Err(AppError::cancelled(
+            AppErrorMessageId::ExportExportWasCancelled,
+        ));
     }
     if !result.status.success() {
         remove_partial_output(&output_path);
@@ -500,7 +503,7 @@ async fn run_export(
             diagnostic_snapshot_id.as_deref(),
         );
         return Err(AppError::render_failed_with_diagnostics(
-            "FFmpeg could not render the selected segment.",
+            AppErrorMessageId::ExportFfmpegCouldNotRenderTheSelectedSegment,
             export_diagnostics(&result, &source_path, &output_path),
         ));
     }
@@ -517,7 +520,7 @@ async fn run_export(
                 diagnostic_snapshot_id.as_deref(),
             );
             return Err(AppError::render_failed(
-                "The rendered output could not be verified.",
+                AppErrorMessageId::ExportRenderedOutputCouldNotBeVerified,
             ));
         }
     };
@@ -531,7 +534,9 @@ async fn run_export(
             diagnostic_parent_operation_id.as_deref(),
             diagnostic_snapshot_id.as_deref(),
         );
-        return Err(AppError::render_failed("The rendered output is empty."));
+        return Err(AppError::render_failed(
+            AppErrorMessageId::ExportRenderedOutputIsEmpty,
+        ));
     }
     record_ffmpeg_event(
         &diagnostics,
@@ -721,7 +726,7 @@ fn output_display_name(path: &std::path::Path) -> Result<String, AppError> {
     path.file_name()
         .and_then(|value| value.to_str())
         .map(ToOwned::to_owned)
-        .ok_or_else(|| AppError::invalid_request("The output name is required."))
+        .ok_or_else(|| AppError::invalid_request(AppErrorMessageId::ExportOutputNameIsRequired))
 }
 
 #[cfg(test)]

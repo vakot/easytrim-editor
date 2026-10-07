@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
 import { type AudioTrackState, waveformDisplayFailed } from "@/app/store/slices/audio-slice";
+import { localizeAppError } from "@/i18n/app-errors";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
 import { useWaveformPrepare } from "../../../hooks/useWaveformPreparation";
@@ -93,7 +94,7 @@ function AudioTrackWaveformError({
         <TooltipTrigger asChild>
           <span>{t("audio.waveform.unavailable")}</span>
         </TooltipTrigger>
-        <TooltipContent>{waveform.error.message}</TooltipContent>
+        <TooltipContent>{localizeAppError(waveform.error, t)}</TooltipContent>
       </Tooltip>
 
       <Button onClick={prepare} size="xs" type="button" variant="ghost">

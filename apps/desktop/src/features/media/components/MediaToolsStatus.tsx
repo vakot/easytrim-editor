@@ -23,10 +23,15 @@ import { Spinner } from "@/components/ui/spinner";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
 import { checkMediaCapabilitiesRequested } from "@/app/store/thunks/source-media-thunks";
+import { localizeAppError } from "@/i18n/app-errors";
 import { cn } from "@/lib/class-names.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import { openFileLocation } from "@/lib/tauri/media";
-import type { BinaryCapability, MediaCapabilities } from "@/lib/tauri/media.types";
+import type {
+  BinaryCapability,
+  BinaryCapabilityErrorId,
+  MediaCapabilities,
+} from "@/lib/tauri/media.types";
 
 const INSTALL_COMMAND = "winget install --id Gyan.FFmpeg --exact";
 
@@ -158,7 +163,7 @@ function MediaToolsStatusContent({ className }: { className?: string }) {
           </div>
           <p className="text-xs text-muted-foreground">
             {capabilities.status === "failed"
-              ? capabilities.error.message
+              ? localizeAppError(capabilities.error, t)
               : ready
                 ? t("mediaTools.ready")
                 : t("mediaTools.requirements")}
@@ -298,11 +303,31 @@ function BinaryRow({ capability, label }: { capability: BinaryCapability; label:
           </Button>
         </div>
       ) : null}
-      {!capability.available && capability.error ? (
-        <span className="pl-5 text-xs text-muted-foreground">{capability.error}</span>
+      {!capability.available ? (
+        <span className="pl-5 text-xs text-muted-foreground">
+          {getBinaryCapabilityErrorText(capability.errorId, label, t)}
+        </span>
       ) : null}
     </li>
   );
+}
+
+function getBinaryCapabilityErrorText(
+  errorId: BinaryCapabilityErrorId | undefined,
+  label: string,
+  t: TFunction,
+): string {
+  switch (errorId) {
+    case "notFound":
+      return t("mediaTools.errors.notFound", { label });
+    case "timedOut":
+      return t("mediaTools.errors.timedOut", { label });
+    case "startFailed":
+      return t("mediaTools.errors.startFailed", { label });
+    case "checkFailed":
+    default:
+      return t("mediaTools.errors.checkFailed", { label });
+  }
 }
 
 type MediaToolsState = {

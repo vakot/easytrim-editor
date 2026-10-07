@@ -21,7 +21,7 @@ describe("source slice", () => {
       replacement,
       sourceFailed({
         loadToken: 2,
-        error: { code: "probe_failed", message: "Inspection failed." },
+        error: { code: "probe_failed", diagnostics: "Inspection failed." },
       }),
     );
 

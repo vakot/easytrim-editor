@@ -8,7 +8,10 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{error::AppError, media::probe::MediaInfo};
+use crate::{
+    error::{AppError, AppErrorMessageId},
+    media::probe::MediaInfo,
+};
 
 const MICROS_PER_SECOND: f64 = 1_000_000.0;
 
@@ -304,7 +307,7 @@ pub fn build_fast_arguments(
     validate_rotation(request.rotation_degrees)?;
     if request.rotation_degrees != 0 {
         return Err(AppError::invalid_request(
-            "Fast cut cannot apply rotation; use optimized render.",
+            AppErrorMessageId::ExportFastCutCannotApplyRotationUseOptimizedRender,
         ));
     }
 
@@ -389,7 +392,7 @@ pub fn build_optimized_arguments(
         && (frame_rate.numerator == 0 || frame_rate.denominator == 0)
     {
         return Err(AppError::invalid_request(
-            "The output frame rate is invalid.",
+            AppErrorMessageId::ExportOutputFrameRateIsInvalid,
         ));
     }
 
@@ -530,7 +533,7 @@ fn validate_trim_selection(source: &MediaInfo, trim: &TrimSelection) -> Result<(
         || trim.end_micros > source.duration_micros
     {
         return Err(AppError::invalid_request(
-            "The selected export range is invalid.",
+            AppErrorMessageId::ExportSelectedExportRangeIsInvalid,
         ));
     }
     Ok(())
@@ -607,7 +610,7 @@ fn validate_audio_track_selections_inner(
             || !is_valid_loudness_normalization(track.processing.loudness_normalization.as_ref())
         {
             return Err(AppError::invalid_request(
-                "An audio stream selection or processing setting is invalid.",
+                AppErrorMessageId::ExportAudioStreamSelectionOrProcessingSettingIsInvalid,
             ));
         }
     }
@@ -629,7 +632,7 @@ fn is_valid_loudness_normalization(normalization: Option<&LoudnessNormalization>
 fn validate_resolution(resolution: &ResolutionSelection) -> Result<(), AppError> {
     if resolution.width == 0 || resolution.height == 0 {
         return Err(AppError::invalid_request(
-            "The output resolution must be greater than zero.",
+            AppErrorMessageId::ExportOutputResolutionMustBeGreaterThanZero,
         ));
     }
     Ok(())
@@ -644,7 +647,9 @@ fn validate_crop(crop: Option<&CropSelection>) -> Result<(), AppError> {
             || crop.x + crop.width > 1.0
             || crop.y + crop.height > 1.0)
     {
-        return Err(AppError::invalid_request("The crop selection is invalid."));
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportCropSelectionIsInvalid,
+        ));
     }
     Ok(())
 }
@@ -654,7 +659,7 @@ fn validate_rotation(rotation_degrees: u16) -> Result<(), AppError> {
         Ok(())
     } else {
         Err(AppError::invalid_request(
-            "The rotation must be 0, 90, 180, or 270 degrees.",
+            AppErrorMessageId::ExportRotationMustBe090180Or270Degrees,
         ))
     }
 }
@@ -929,7 +934,7 @@ fn parse_arguments(value: &str) -> Result<Vec<OsString>, AppError> {
     }
     if quote.is_some() {
         return Err(AppError::invalid_request(
-            "The optimized FFmpeg arguments contain an unclosed quote.",
+            AppErrorMessageId::ExportOptimizedFfmpegArgumentsContainAnUnclosedQuote,
         ));
     }
     if !current.is_empty() {
@@ -1006,7 +1011,7 @@ fn validate_user_arguments(arguments: &[OsString]) -> Result<(), AppError> {
     }
     if expects_value {
         return Err(AppError::invalid_request(
-            "The final optimized FFmpeg option is missing its value.",
+            AppErrorMessageId::ExportFinalOptimizedFfmpegOptionIsMissingItsValue,
         ));
     }
     Ok(())
@@ -1014,7 +1019,7 @@ fn validate_user_arguments(arguments: &[OsString]) -> Result<(), AppError> {
 
 fn invalid_optimized_arguments() -> AppError {
     AppError::invalid_request(
-        "Optimized arguments cannot override input, trim, mapping, filters, output format, or output paths.",
+        AppErrorMessageId::ExportOptimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths,
     )
 }
 

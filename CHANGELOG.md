@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Standardized error messages across source, media, and export workflows while keeping technical details available for diagnostics.
 - Refined View menu actions to include main window entry points and layout controls.
 - Replaced the Settings menu dropdown with a full preferences dialog.
 - Moved queue access into View.

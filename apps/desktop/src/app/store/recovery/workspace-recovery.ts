@@ -4,7 +4,6 @@ import type { AppStore, RootState } from "@/app/store/store";
 import type { EditingInstance, ExportAttempt } from "@/domain/editing-instance";
 import { EMPTY_EXPORT_METRICS } from "@/domain/editing-instance";
 import { normalizeSourceKey } from "@/domain/source";
-import { t } from "@/i18n/config";
 import { diagnostics } from "@/lib/diagnostics";
 
 import {
@@ -64,7 +63,7 @@ function toRecoveryAttempt(attempt: ExportAttempt): ExportAttempt {
         attempt.state.status === "queued" ? attempt.state.queuedAt : attempt.state.startedAt,
       error: {
         code: "export_interrupted",
-        message: t("app.workspaceRecovery.exportInterrupted"),
+        messageId: "export.interruptedWhenEasyTrimClosedUnexpectedly",
       },
       status: "canceled",
     },

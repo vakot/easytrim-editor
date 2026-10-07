@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { closeActiveEditingInstanceRequested } from "@/app/store/thunks/source-media-thunks";
+import { localizeAppError } from "@/i18n/app-errors";
 
 import { CropViewport } from "../CropViewport";
 
@@ -29,7 +30,7 @@ function VideoPreview() {
           <AlertCircle />
           <AlertTitle>{t("preview.info.playbackError")}</AlertTitle>
           <AlertDescription>
-            <p>{preview.error.message}</p>
+            <p>{localizeAppError(preview.error, t)}</p>
             {preview.error.diagnostics ? (
               <details className="mt-2">
                 <summary>{t("source.technicalDetails")}</summary>

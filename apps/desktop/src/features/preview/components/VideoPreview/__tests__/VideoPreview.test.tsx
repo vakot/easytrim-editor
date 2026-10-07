@@ -162,12 +162,12 @@ describe("VideoPreview", () => {
     renderVideoPreview(
       {
         status: "failed",
-        error: { code: "unsupported_media", message: "This source cannot be opened." },
+        error: { code: "unsupported_media", messageId: "source.selectedVideoCouldNotBeOpened" },
       },
       store,
     );
 
-    expect(screen.getByRole("alert")).toHaveTextContent("This source cannot be opened.");
+    expect(screen.getByRole("alert")).toHaveTextContent("The selected video could not be opened.");
     fireEvent.click(screen.getByRole("button", { name: "Skip" }));
     expect(selectSourceSelection(store.getState())).toBeNull();
   });

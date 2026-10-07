@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const native = vi.hoisted(() => ({ checkMediaCapabilities: vi.fn() }));
 
@@ -11,6 +11,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
 
 import { capabilitiesFailed, capabilitiesReady } from "@/app/store/slices/source-slice";
 import { createAppStore } from "@/app/store/store";
+import { i18n } from "@/i18n/config";
 import type { MediaCapabilities } from "@/lib/tauri/media.types";
 
 import {
@@ -52,6 +53,10 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+afterEach(async () => {
+  await i18n.changeLanguage("en");
+});
+
 describe("MediaToolsStatus", () => {
   it("shows checking while a check is active and disables Recheck", async () => {
     renderStatus();
@@ -81,7 +86,7 @@ describe("MediaToolsStatus", () => {
     );
     const partial: MediaCapabilities = {
       ffmpeg: readyCapabilities.ffmpeg,
-      ffprobe: { available: false, error: "ffprobe is not available on PATH." },
+      ffprobe: { available: false, errorId: "notFound" },
     };
 
     renderStatus(partial);
@@ -94,9 +99,59 @@ describe("MediaToolsStatus", () => {
     expect(native.checkMediaCapabilities).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    ["notFound", "FFmpeg is not installed or available on PATH."],
+    ["timedOut", "FFmpeg did not respond within 3 seconds."],
+    ["startFailed", "Could not start FFmpeg."],
+    ["checkFailed", "Could not check FFmpeg."],
+  ] as const)(
+    "localizes the %s capability failure without showing diagnostics",
+    (errorId, copy) => {
+      renderStatus({
+        ffmpeg: { available: false, diagnostics: "C:/private/ffmpeg.exe: private stderr", errorId },
+        ffprobe: readyCapabilities.ffprobe,
+      });
+      fireEvent.click(screen.getByRole("button"));
+
+      expect(screen.getByText(copy)).toBeInTheDocument();
+      expect(screen.queryByText("C:/private/ffmpeg.exe: private stderr")).not.toBeInTheDocument();
+    },
+  );
+
+  it("interpolates the FFprobe label and safely handles an unknown error ID", () => {
+    renderStatus({
+      ffmpeg: readyCapabilities.ffmpeg,
+      ffprobe: {
+        available: false,
+        diagnostics: "C:/private/ffprobe.exe: private stderr",
+        errorId: undefined,
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Media tools issue" }));
+
+    expect(screen.getByText("Could not check FFprobe.")).toBeInTheDocument();
+    expect(screen.queryByText("C:/private/ffprobe.exe: private stderr")).not.toBeInTheDocument();
+  });
+
+  it.each(["ru", "sk"] as const)(
+    "falls back to English capability copy in %s",
+    async (language) => {
+      await i18n.changeLanguage(language);
+      renderStatus({
+        ffmpeg: { available: false, errorId: "notFound" },
+        ffprobe: readyCapabilities.ffprobe,
+      });
+      fireEvent.click(screen.getByRole("button"));
+
+      expect(screen.getByText("FFmpeg is not installed or available on PATH.")).toBeInTheDocument();
+    },
+  );
+
   it("shows check failure distinctly and allows a failed capability check to be retried", () => {
     const store = createAppStore();
-    store.dispatch(capabilitiesFailed({ code: "internal", message: "Capability check failed." }));
+    store.dispatch(
+      capabilitiesFailed({ code: "internal", diagnostics: "Capability check failed." }),
+    );
     render(
       <Provider store={store}>
         <MediaToolsStatus>
@@ -107,7 +162,7 @@ describe("MediaToolsStatus", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Media tools check failed" }));
 
-    expect(screen.getByText("Capability check failed.")).toBeInTheDocument();
+    expect(screen.getByText("An unexpected application error occurred.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Recheck" })).toBeEnabled();
     expect(screen.queryByText("Install on Windows")).not.toBeInTheDocument();
   });

@@ -191,7 +191,7 @@ describe("editing instances slice", () => {
       editingInstanceExportFailed({
         attemptId: failed.id,
         durationMs: 250,
-        error: { code: "render-failed", message: "Render failed" },
+        error: { code: "render-failed", diagnostics: "Render failed" },
         id: "source",
       }),
     );
@@ -425,7 +425,7 @@ describe("editing instances slice", () => {
       editingInstanceExportFailed({
         attemptId: "attempt-1",
         durationMs: 200,
-        error: { code: "stale", message: "Should be ignored" },
+        error: { code: "stale", diagnostics: "Should be ignored" },
         id: "instance-1",
       }),
     );

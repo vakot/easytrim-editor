@@ -23,6 +23,54 @@ export const en = {
     unknown: "Unknown",
   },
   source: {
+    errors: {
+      restoringSourceFilesFromTrashIsNotSupportedOnThisPlatform:
+        "Restoring source files from trash is not supported on this platform.",
+      selectedSourceLocationIsNotSupported: "The selected source location is not supported.",
+      sourceFileCouldNotBeFoundInTrash: "The source file could not be found in trash.",
+      sourcePathMustBeAbsolute: "The source path must be absolute.",
+      fileTypeIsNotSupportedYet: "This file type is not supported yet.",
+      selectAVideoFileInsteadOfAFolder: "Select a video file instead of a folder.",
+      selectedSourceHasNoUsableFileName: "The selected source has no usable file name.",
+      selectedVideoCouldNotBeOpened: "The selected video could not be opened.",
+      selectedVideoHasNoUsableFileName: "The selected video has no usable file name.",
+      probe: {
+        ffprobeCouldNotBeStarted: "FFprobe could not be started.",
+        ffprobeCouldNotInspectThisVideo: "FFprobe could not inspect this video.",
+        ffprobeIsRequiredToInspectVideoFiles: "FFprobe is required to inspect video files.",
+        ffprobeReturnedUnreadableMetadata: "FFprobe returned unreadable metadata.",
+        noUsableVideoStreamWasFound: "No usable video stream was found.",
+        videoDurationIsUnavailable: "The video duration is unavailable.",
+        videoHeightIsUnavailable: "The video height is unavailable.",
+        videoWidthIsUnavailable: "The video width is unavailable.",
+        videoContainsMoreMetadataThanTheInspectionLimitAllows:
+          "This video contains more metadata than the inspection limit allows.",
+        videoInspectionExceededThe20SecondLimit: "Video inspection exceeded the 20-second limit.",
+      },
+      thumbnail: {
+        temporaryThumbnailDirectoryCouldNotBeCreated:
+          "A temporary thumbnail directory could not be created.",
+        thumbnailCouldNotBePreparedForThisVideo:
+          "A thumbnail could not be prepared for this video.",
+        uniqueTemporaryThumbnailDirectoryCouldNotBeCreated:
+          "A unique temporary thumbnail directory could not be created.",
+        sourceFileIsNoLongerAvailable: "The source file is no longer available.",
+        sourceFileMetadataIsUnavailable: "The source file metadata is unavailable.",
+        thumbnailCouldNotBeEncoded: "The thumbnail could not be encoded.",
+        thumbnailCouldNotBeSavedTemporarily: "The thumbnail could not be saved temporarily.",
+        ffmpegRequired: "FFmpeg is required to prepare source thumbnails.",
+        preparationTimedOut: "Preparing a source thumbnail took too long.",
+        preparationFailed: "FFmpeg could not prepare a source thumbnail.",
+      },
+      fileCouldNotBeMovedToTrash: "Could not move the source file to trash.",
+      trashCouldNotBeRead: "Could not read trash.",
+      fileCouldNotBeRestoredFromTrash: "Could not restore the source file.",
+      replaced: "The selected source changed. Try again.",
+      dropVideoFileInsteadOfEmptySelection: "Drop a video file instead of an empty selection.",
+      selectedSourceCouldNotBeRestored: "The selected source could not be restored.",
+      cannotDeleteWhileExportIsQueuedOrRendering:
+        "The source cannot be deleted while an export is queued or rendering.",
+    },
     actions: {
       title: "Source actions",
     },
@@ -35,7 +83,6 @@ export const en = {
     },
     delete: {
       action: "Delete",
-      blockedByExport: "The source cannot be deleted while an export is queued or rendering.",
       cancelled: "File deletion cancelled",
       failed: "File deletion failed",
       interrupted: "File deletion interrupted",
@@ -60,7 +107,6 @@ export const en = {
       },
     },
     restore: {
-      selectedFailed: "The selected source could not be restored.",
       cancelled: "File restoration cancelled",
       failed: "File restoration failed",
       interrupted: "File restoration interrupted",
@@ -85,7 +131,6 @@ export const en = {
       description: "Open one or more supported video files from your computer.",
       resetNotice: "The current edit will be reset.",
       title: "Drag and drop videos here",
-      emptySelection: "Drop a video file instead of an empty selection.",
     },
     explorer: "Source explorer",
     importedSources: "Imported Sources",
@@ -142,6 +187,21 @@ export const en = {
     brand: "EasyTrim Editor",
     errors: {
       unexpected: "An unexpected application error occurred.",
+      diagnostics: {
+        diagnosticEventNameIsInvalid: "The diagnostic event name is invalid.",
+        diagnosticLevelIsInvalid: "The diagnostic level is invalid.",
+        diagnosticLogsPathIsInvalid: "The diagnostic logs path is invalid.",
+        diagnosticReportIsUnavailable: "The diagnostic report is unavailable.",
+        diagnosticReportPathIsInvalid: "The diagnostic report path is invalid.",
+        diagnosticSessionIdentifierIsInvalid: "The diagnostic session identifier is invalid.",
+      },
+      state: {
+        audioPreviewIsNotAvailable: "The audio preview is not available.",
+        operationIsNoLongerAvailable: "The operation is no longer available.",
+        outputLocationIsNoLongerAvailable: "The output location is no longer available.",
+        waveformIsNotAvailable: "The waveform is not available.",
+        waveformJobIdIsInvalid: "The waveform job ID is invalid.",
+      },
     },
     navigation: {
       breadcrumb: "Breadcrumb",
@@ -156,7 +216,6 @@ export const en = {
       restart: "Restart application",
     },
     workspaceRecovery: {
-      exportInterrupted: "The export was interrupted when EasyTrim closed unexpectedly.",
       restore: "Restore",
       restored_one: "Restored {{count}} source from previous session",
       restored_other: "Restored {{count}} sources from previous session",
@@ -369,6 +428,12 @@ export const en = {
   mediaTools: {
     copyInstallCommand: "Copy FFmpeg install command",
     copyPath: "Copy {{label}} path",
+    errors: {
+      checkFailed: "Could not check {{label}}.",
+      notFound: "{{label}} is not installed or available on PATH.",
+      startFailed: "Could not start {{label}}.",
+      timedOut: "{{label}} did not respond within 3 seconds.",
+    },
     ffmpegDownloads: "FFmpeg downloads",
     recheck: "Recheck",
     showPathInFolder: "Show {{label}} in folder",
@@ -448,6 +513,37 @@ export const en = {
     },
   },
   export: {
+    errors: {
+      ffmpegCouldNotRenderTheSelectedSegment: "FFmpeg could not render the selected segment.",
+      ffmpegIsRequiredToExportVideoFiles: "FFmpeg is required to export video files.",
+      inspectTheVideoBeforeExporting: "Inspect the video before exporting.",
+      exportWasCancelled: "The export was cancelled.",
+      fileOrFolderIsNoLongerAvailable: "The file or folder is no longer available.",
+      outputNameIsRequired: "The output name is required.",
+      renderedOutputCouldNotBeVerified: "The rendered output could not be verified.",
+      renderedOutputIsEmpty: "The rendered output is empty.",
+      selectedOutputLocationIsNotSupported: "The selected output location is not supported.",
+      audioStreamSelectionOrProcessingSettingIsInvalid:
+        "An audio stream selection or processing setting is invalid.",
+      fastCutCannotApplyRotationUseOptimizedRender:
+        "Fast cut cannot apply rotation; use optimized render.",
+      optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths:
+        "Optimized arguments cannot override input, trim, mapping, filters, output format, or output paths.",
+      cropSelectionIsInvalid: "The crop selection is invalid.",
+      finalOptimizedFfmpegOptionIsMissingItsValue:
+        "The final optimized FFmpeg option is missing its value.",
+      optimizedFfmpegArgumentsContainAnUnclosedQuote:
+        "The optimized FFmpeg arguments contain an unclosed quote.",
+      outputFrameRateIsInvalid: "The output frame rate is invalid.",
+      outputResolutionMustBeGreaterThanZero: "The output resolution must be greater than zero.",
+      rotationMustBe090180Or270Degrees: "The rotation must be 0, 90, 180, or 270 degrees.",
+      selectedExportRangeIsInvalid: "The selected export range is invalid.",
+      fileLocationCouldNotBeOpened: "Could not open the file location.",
+      ffmpegCouldNotBeStarted: "FFmpeg could not be started.",
+      analyzeTrackLoudnessToContinue: "Analyze track loudness to continue.",
+      interruptedWhenEasyTrimClosedUnexpectedly:
+        "The export was interrupted when EasyTrim closed unexpectedly.",
+    },
     outputDialog: {
       videoFilter: "Video files",
     },
@@ -574,6 +670,13 @@ export const en = {
     },
   },
   queue: {
+    errors: {
+      systemShutdownIsNotAvailable: "System shutdown is not available.",
+      systemSleepIsNotAvailable: "System sleep is not available.",
+      selectedSystemActionCouldNotBeStarted: "The selected system action could not be started.",
+      selectedSystemActionWasRejectedByTheSystem:
+        "The selected system action was rejected by the system.",
+    },
     actions: {
       cancelExport: "Cancel export",
       editExport: "Edit export",
@@ -654,6 +757,27 @@ export const en = {
     },
   },
   preview: {
+    errors: {
+      frame: {
+        capturedFrameCouldNotBeSaved: "The captured frame could not be saved.",
+        capturedFrameIsNotAPngImage: "The captured frame is not a PNG image.",
+        capturedFrameIsTooLargeToSave: "The captured frame is too large to save.",
+        selectedImageLocationIsNotSupported: "The selected image location is not supported.",
+        suggestedFrameFilenameIsInvalid: "The suggested frame filename is invalid.",
+      },
+      compatiblePreviewCouldNotBePreparedForThisVideo:
+        "A compatible preview could not be prepared for this video.",
+      temporaryPreviewDirectoryCouldNotBeCreated:
+        "A temporary preview directory could not be created.",
+      uniqueTemporaryPreviewDirectoryCouldNotBeCreated:
+        "A unique temporary preview directory could not be created.",
+      ffmpegCouldNotPrepareACompatiblePreview: "FFmpeg could not prepare a compatible preview.",
+      ffmpegIsRequiredToPrepareACompatiblePreview:
+        "FFmpeg is required to prepare a compatible preview.",
+      inspectTheVideoBeforePreparingItsPreview: "Inspect the video before preparing its preview.",
+      preparingTheCompatiblePreviewTookTooLong: "Preparing the compatible preview took too long.",
+      compatiblePreviewCouldNotBePlayed: "The compatible preview could not be played.",
+    },
     frame: {
       pngFilter: "PNG image",
       next: "Next frame",
@@ -713,7 +837,6 @@ export const en = {
     },
     info: {
       compatible: "Compatible preview",
-      compatiblePlaybackFailed: "The compatible preview could not be played.",
       playbackError: "Could not preview this video",
       proxy:
         "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file.",
@@ -747,6 +870,33 @@ export const en = {
     },
   },
   timeline: {
+    errors: {
+      inspectTheVideoBeforeDetectingAudioActivity:
+        "Inspect the video before detecting audio activity.",
+      scene: {
+        ffmpegCouldNotDetectSceneChanges: "FFmpeg could not detect scene changes.",
+        ffmpegIsRequiredToDetectSceneChanges: "FFmpeg is required to detect scene changes.",
+        sceneDetectionTookTooLong: "Scene detection took too long.",
+        sceneDetectionWasInterrupted: "Scene detection was interrupted.",
+        activeSourceHasNotBeenInspected: "The active source has not been inspected.",
+        sceneDetectionOutputExceededItsSafetyLimit:
+          "The scene detection output exceeded its safety limit.",
+        sourceContainsTooManyDetectedSceneChanges:
+          "The source contains too many detected scene changes.",
+      },
+      audioActivity: {
+        audioActivityDetectionTookTooLong: "Audio activity detection took too long.",
+        audioActivityDetectionWasInterrupted: "Audio activity detection was interrupted.",
+        ffmpegCouldNotAnalyzeAudioActivity: "FFmpeg could not analyze audio activity.",
+        ffmpegIsRequiredToAnalyzeAudioActivity: "FFmpeg is required to analyze audio activity.",
+        inspectTheVideoBeforeDetectingAudioActivity:
+          "Inspect the video before detecting audio activity.",
+        audioActivityAnalysisContainsTooManyRanges:
+          "The audio activity analysis contains too many ranges.",
+        audioActivityAnalysisOutputExceededItsSafetyLimit:
+          "The audio activity analysis output exceeded its safety limit.",
+      },
+    },
     sceneMarkers: {
       actions: {
         detectScenes: "Detect scene changes",
@@ -802,11 +952,72 @@ export const en = {
     },
   },
   audio: {
+    errors: {
+      audioPreviewStreamIndexesMustBeUnique: "Audio preview stream indexes must be unique.",
+      audioStreamMetadataIsUnavailableForWaveformGeneration:
+        "Audio stream metadata is unavailable for waveform generation.",
+      selectBetweenOneAnd32AudioStreamsForPreview:
+        "Select between one and 32 audio streams for preview.",
+      selectBetweenOneAnd32AudioStreamsForWaveformGeneration:
+        "Select between one and 32 audio streams for waveform generation.",
+      thumbnailCacheIsUnavailable: "The thumbnail cache is unavailable.",
+      waveformProcessingSettingsMustMatchTheSelectedAudioStreams:
+        "Waveform processing settings must match the selected audio streams.",
+      waveformStreamIndexesMustBeUnique: "Waveform stream indexes must be unique.",
+      audio: {
+        temporaryAudioPreviewDirectoryCouldNotBeCreated:
+          "A temporary audio preview directory could not be created.",
+        uniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated:
+          "A unique temporary audio preview directory could not be created.",
+        audioPreviewsRequireInspectedSourceMedia: "Audio previews require inspected source media.",
+        ffmpegCouldNotPrepareAudioPreview: "FFmpeg could not prepare audio preview.",
+        ffmpegIsRequiredToPrepareAudioPreview: "FFmpeg is required to prepare audio preview.",
+        preparingAudioPreviewTookTooLong: "Preparing audio preview took too long.",
+        selectedAudioStreamsCouldNotBePreparedForPreview:
+          "The selected audio streams could not be prepared for preview.",
+        analyzeTrackLoudnessToPrepareAudioPlayback:
+          "Analyze track loudness to prepare audio playback.",
+      },
+      loudness: {
+        ffmpegCouldNotAnalyzeAudioLoudness: "FFmpeg could not analyze audio loudness.",
+        ffmpegDidNotReturnLoudnessMeasurements: "FFmpeg did not return loudness measurements.",
+        ffmpegIsRequiredToAnalyzeLoudness: "FFmpeg is required to analyze loudness.",
+        ffmpegReturnedIncompleteLoudnessMeasurements:
+          "FFmpeg returned incomplete loudness measurements.",
+        ffmpegReturnedInvalidLoudnessMeasurements: "FFmpeg returned invalid loudness measurements.",
+        inspectTheVideoBeforeAnalyzingAudio: "Inspect the video before analyzing audio.",
+        loudnessAnalysisTookTooLong: "Loudness analysis took too long.",
+        loudnessAnalysisWasInterrupted: "Loudness analysis was interrupted.",
+        loudnessAnalysisOutputExceededItsSafetyLimit:
+          "The loudness analysis output exceeded its safety limit.",
+      },
+      waveform: {
+        temporaryWaveformDirectoryCouldNotBeCreated:
+          "A temporary waveform directory could not be created.",
+        uniqueTemporaryWaveformDirectoryCouldNotBeCreated:
+          "A unique temporary waveform directory could not be created.",
+        ffmpegCouldNotGenerateTheAudioWaveform: "FFmpeg could not generate the audio waveform.",
+        ffmpegIsRequiredToGenerateAudioWaveforms: "FFmpeg is required to generate audio waveforms.",
+        waveformGenerationTookTooLong: "Waveform generation took too long.",
+        waveformGenerationWasReplaced: "Waveform generation was replaced.",
+        widthOutOfRange: "Waveform width must be between {{minWidth}} and {{maxWidth}} pixels.",
+        streamDoesNotBelongToSource:
+          "Audio stream #{{streamIndex}} does not belong to the active source.",
+        analysisFailed: "Waveform analysis failed for audio stream #{{streamIndex}}.",
+        sampleCountUnavailable:
+          "FFmpeg did not report the audio sample count for audio stream #{{streamIndex}}.",
+        tooFewSamples:
+          "The audio stream has too few samples for its waveform width (stream #{{streamIndex}}).",
+        sampleReductionFailed:
+          "Waveform sample reduction failed for audio stream #{{streamIndex}}.",
+        imageMissing: "Waveform generation produced no image for audio stream #{{streamIndex}}.",
+        imageRenderingFailed: "Waveform image rendering failed for audio stream #{{streamIndex}}.",
+        previewCouldNotBeDisplayed: "The waveform preview could not be displayed.",
+      },
+    },
     loudness: {
       analyze: "Analyze loudness",
       analyzing: "Analyzing loudness…",
-      requiredForPlayback: "Analyze track loudness to prepare audio playback.",
-      requiredForExport: "Analyze track loudness to continue.",
     },
     activityDetection: {
       analyze: "Analyze audio activity",
@@ -896,7 +1107,6 @@ export const en = {
       summary: "Noise reduction - {{preset}}",
     },
     waveform: {
-      displayFailed: "The waveform preview could not be displayed.",
       preparing: "Preparing waveform…",
       unavailable: "Waveform unavailable",
     },

@@ -585,7 +585,7 @@ describe("audio slice", () => {
     state = audioReducer(
       state,
       audioTrackPreviewFailed({
-        error: { code: "internal", message: "preview failed" },
+        error: { code: "internal", diagnostics: "preview failed" },
         operationId: "replacement",
         streamIndex: 2,
       }),

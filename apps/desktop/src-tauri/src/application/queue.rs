@@ -1,6 +1,9 @@
 use std::{env, path::PathBuf, process::Command};
 
-use crate::{domain::QueueFinishAction, error::AppError};
+use crate::{
+    domain::QueueFinishAction,
+    error::{AppError, AppErrorMessageId},
+};
 
 pub fn available_finish_actions() -> Vec<QueueFinishAction> {
     let mut actions = vec![QueueFinishAction::Exit];
@@ -47,55 +50,63 @@ pub fn execute_system_action(action: QueueFinishAction) -> Result<(), AppError> 
     let status = Command::new(program)
         .args(arguments)
         .status()
-        .map_err(|_| AppError::io_failed("The selected system action could not be started."))?;
+        .map_err(|_| {
+            AppError::io_failed(AppErrorMessageId::QueueSelectedSystemActionCouldNotBeStarted)
+        })?;
     if status.success() {
         Ok(())
     } else {
         Err(AppError::io_failed(
-            "The selected system action was rejected by the system.",
+            AppErrorMessageId::QueueSelectedSystemActionWasRejectedByTheSystem,
         ))
     }
 }
 
 #[cfg(target_os = "windows")]
 fn system_sleep_command() -> Result<(PathBuf, Vec<&'static str>), AppError> {
-    let program = executable_on_path("rundll32.exe")
-        .ok_or_else(|| AppError::invalid_request("System sleep is not available."))?;
+    let program = executable_on_path("rundll32.exe").ok_or_else(|| {
+        AppError::invalid_request(AppErrorMessageId::QueueSystemSleepIsNotAvailable)
+    })?;
     Ok((program, vec!["powrprof.dll,SetSuspendState", "0,1,0"]))
 }
 
 #[cfg(target_os = "windows")]
 fn system_shutdown_command() -> Result<(PathBuf, Vec<&'static str>), AppError> {
-    let program = executable_on_path("shutdown.exe")
-        .ok_or_else(|| AppError::invalid_request("System shutdown is not available."))?;
+    let program = executable_on_path("shutdown.exe").ok_or_else(|| {
+        AppError::invalid_request(AppErrorMessageId::QueueSystemShutdownIsNotAvailable)
+    })?;
     Ok((program, vec!["/s", "/t", "0"]))
 }
 
 #[cfg(all(unix, not(target_os = "macos")))]
 fn system_sleep_command() -> Result<(PathBuf, Vec<&'static str>), AppError> {
-    let program = executable_on_path("systemctl")
-        .ok_or_else(|| AppError::invalid_request("System sleep is not available."))?;
+    let program = executable_on_path("systemctl").ok_or_else(|| {
+        AppError::invalid_request(AppErrorMessageId::QueueSystemSleepIsNotAvailable)
+    })?;
     Ok((program, vec!["suspend"]))
 }
 
 #[cfg(all(unix, not(target_os = "macos")))]
 fn system_shutdown_command() -> Result<(PathBuf, Vec<&'static str>), AppError> {
-    let program = executable_on_path("systemctl")
-        .ok_or_else(|| AppError::invalid_request("System shutdown is not available."))?;
+    let program = executable_on_path("systemctl").ok_or_else(|| {
+        AppError::invalid_request(AppErrorMessageId::QueueSystemShutdownIsNotAvailable)
+    })?;
     Ok((program, vec!["poweroff"]))
 }
 
 #[cfg(target_os = "macos")]
 fn system_sleep_command() -> Result<(PathBuf, Vec<&'static str>), AppError> {
-    let program = executable_on_path("pmset")
-        .ok_or_else(|| AppError::invalid_request("System sleep is not available."))?;
+    let program = executable_on_path("pmset").ok_or_else(|| {
+        AppError::invalid_request(AppErrorMessageId::QueueSystemSleepIsNotAvailable)
+    })?;
     Ok((program, vec!["sleepnow"]))
 }
 
 #[cfg(target_os = "macos")]
 fn system_shutdown_command() -> Result<(PathBuf, Vec<&'static str>), AppError> {
-    let program = executable_on_path("osascript")
-        .ok_or_else(|| AppError::invalid_request("System shutdown is not available."))?;
+    let program = executable_on_path("osascript").ok_or_else(|| {
+        AppError::invalid_request(AppErrorMessageId::QueueSystemShutdownIsNotAvailable)
+    })?;
     Ok((
         program,
         vec!["-e", "tell app \"System Events\" to shut down"],

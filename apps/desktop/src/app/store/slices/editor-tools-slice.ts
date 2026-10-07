@@ -2,11 +2,12 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import type { RootState } from "@/app/store/store";
+import type { AppError } from "@/domain/media";
 
 type EditorToolsState = {
   loopPlaybackEnabled: boolean;
   sceneDetection?: {
-    error: string | null;
+    error: AppError | null;
     sourceKey: string;
     status: "failed" | "loading";
   };
@@ -47,7 +48,7 @@ const editorToolsSlice = createSlice({
     },
     sceneDetectionFailed: (
       state,
-      action: PayloadAction<{ error: string | null; sourceKey: string }>,
+      action: PayloadAction<{ error: AppError | null; sourceKey: string }>,
     ) => {
       state.sceneDetection = { ...action.payload, status: "failed" };
     },

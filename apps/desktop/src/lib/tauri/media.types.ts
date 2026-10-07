@@ -22,10 +22,13 @@ interface OptimizedExportPlan {
 
 interface BinaryCapability {
   available: boolean;
-  error?: string;
+  diagnostics?: string;
+  errorId?: BinaryCapabilityErrorId;
   path?: string;
   version?: string;
 }
+
+type BinaryCapabilityErrorId = "notFound" | "timedOut" | "startFailed" | "checkFailed";
 
 interface MediaCapabilities {
   ffmpeg: BinaryCapability;
@@ -102,6 +105,7 @@ export type {
   AudioPreviewDescriptor,
   AudioStream,
   BinaryCapability,
+  BinaryCapabilityErrorId,
   ChapterInfo,
   ExportProgress,
   ExportResult,

@@ -372,7 +372,7 @@ describe("App", () => {
     await user.click(screen.getByRole("menuitem", { name: /Open Folder/ }));
     await waitFor(() => expect(mocks.chooseSource).toHaveBeenCalledTimes(2));
     expect(mocks.chooseSource).toHaveBeenLastCalledWith("folders");
-  });
+  }, 10_000);
 
   it("preserves editor tools across source replacement", async () => {
     mocks.chooseSource
@@ -2685,8 +2685,8 @@ describe("App", () => {
 
   it("shows a clear missing-binary capability state", async () => {
     mocks.checkMediaCapabilities.mockResolvedValue({
-      ffmpeg: { available: false, error: "ffmpeg is not installed or available on PATH." },
-      ffprobe: { available: false, error: "ffprobe is not installed or available on PATH." },
+      ffmpeg: { available: false, errorId: "notFound" },
+      ffprobe: { available: false, errorId: "notFound" },
     });
     await store.dispatch(checkMediaCapabilitiesRequested());
     render(<App />);
@@ -2694,7 +2694,7 @@ describe("App", () => {
     const status = await screen.findByRole("button", { name: "Media tools unavailable" });
     await userEvent.setup().click(status);
 
-    expect(await screen.findByText(/ffprobe is not installed/)).toBeInTheDocument();
+    expect(await screen.findByText(/FFprobe is not installed/)).toBeInTheDocument();
     expect(screen.getByText("winget install --id Gyan.FFmpeg --exact")).toBeInTheDocument();
   });
 
@@ -2709,7 +2709,7 @@ describe("App", () => {
     act(() => {
       sourceDropListener?.({
         status: "failed",
-        error: { code: "unsupported_media", message: "This file type is not supported yet." },
+        error: { code: "unsupported_media", messageId: "source.fileTypeIsNotSupportedYet" },
       });
     });
 

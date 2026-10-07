@@ -9,7 +9,7 @@ use std::{
 };
 
 use crate::{
-    error::AppError,
+    error::{AppError, AppErrorMessageId},
     media::export::{AudioTrackProcessing, waveform_signal_filter_chain},
     process::{ProcessOutput, run_bounded_cancellable, run_stream_cancellable},
     state::{WaveformArtifact, WaveformSource},
@@ -70,7 +70,7 @@ pub fn generate_waveforms(
                 waveform_error_result(
                     stream_index,
                     artifact,
-                    "Waveform analysis failed",
+                    AppErrorMessageId::MediaWaveformAnalysisFailed,
                     failure_diagnostics.clone(),
                 )
             })
@@ -92,7 +92,7 @@ pub fn generate_waveforms(
             results[position] = Some(waveform_error_result(
                 *stream_index,
                 artifact,
-                "FFmpeg did not report the audio sample count",
+                AppErrorMessageId::MediaWaveformSampleCountUnavailable,
                 None,
             ));
             continue;
@@ -105,7 +105,7 @@ pub fn generate_waveforms(
             results[position] = Some(waveform_error_result(
                 *stream_index,
                 artifact,
-                "The audio stream has too few samples for its waveform width",
+                AppErrorMessageId::MediaWaveformTooFewSamples,
                 None,
             ));
             continue;
@@ -141,7 +141,7 @@ pub fn generate_waveforms(
             results[position] = Some(waveform_error_result(
                 *stream_index,
                 artifact,
-                "Waveform sample reduction failed",
+                AppErrorMessageId::MediaWaveformSampleReductionFailed,
                 failure_diagnostics,
             ));
             continue;
@@ -193,7 +193,7 @@ pub fn generate_waveforms(
                     results[position] = Some(waveform_error_result(
                         stream_index,
                         artifact,
-                        "Waveform generation produced no image",
+                        AppErrorMessageId::MediaWaveformImageMissing,
                         None,
                     ));
                 }
@@ -215,7 +215,7 @@ pub fn generate_waveforms(
                 results[position] = Some(waveform_error_result(
                     stream_index,
                     artifact,
-                    "Waveform image rendering failed",
+                    AppErrorMessageId::MediaWaveformImageRenderingFailed,
                     failure_diagnostics.clone(),
                 ));
             }
@@ -239,14 +239,17 @@ pub fn validate_waveform_request(
     width: u32,
 ) -> Result<(), AppError> {
     if !(MIN_WAVEFORM_WIDTH..=MAX_WAVEFORM_WIDTH).contains(&width) {
-        return Err(AppError::invalid_request(format!(
-            "Waveform width must be between {MIN_WAVEFORM_WIDTH} and {MAX_WAVEFORM_WIDTH} pixels."
-        )));
+        return Err(
+            AppError::invalid_request(AppErrorMessageId::MediaWaveformWidthOutOfRange)
+                .with_arg("minWidth", MIN_WAVEFORM_WIDTH)
+                .with_arg("maxWidth", MAX_WAVEFORM_WIDTH),
+        );
     }
     if !audio_stream_indexes.contains(&stream_index) {
-        return Err(AppError::invalid_request(format!(
-            "Audio stream #{stream_index} does not belong to the active source."
-        )));
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::MediaWaveformStreamDoesNotBelongToSource,
+        )
+        .with_arg("streamIndex", stream_index));
     }
     Ok(())
 }
@@ -476,16 +479,14 @@ fn parse_audio_sample_counts(
 fn waveform_error_result(
     stream_index: u32,
     _artifact: WaveformArtifact,
-    message: &str,
+    message_id: AppErrorMessageId,
     diagnostics: Option<String>,
 ) -> WaveformGenerationResult {
     (
         stream_index,
         None,
-        Err(AppError::waveform_failed(
-            format!("{message} for audio stream #{stream_index}."),
-            diagnostics,
-        )),
+        Err(AppError::waveform_failed(message_id, diagnostics)
+            .with_arg("streamIndex", stream_index)),
     )
 }
 
@@ -537,29 +538,32 @@ fn create_temporary_artifact(
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
             Err(_) => {
                 return Err(AppError::io_failed(
-                    "A temporary waveform directory could not be created.",
+                    AppErrorMessageId::MediaWaveformTemporaryWaveformDirectoryCouldNotBeCreated,
                 ));
             }
         }
     }
 
     Err(AppError::io_failed(
-        "A unique temporary waveform directory could not be created.",
+        AppErrorMessageId::MediaWaveformUniqueTemporaryWaveformDirectoryCouldNotBeCreated,
     ))
 }
 
 fn process_error(error: io::Error) -> AppError {
     match error.kind() {
-        io::ErrorKind::Interrupted => AppError::cancelled("Waveform generation was replaced."),
+        io::ErrorKind::Interrupted => {
+            AppError::cancelled(AppErrorMessageId::MediaWaveformWaveformGenerationWasReplaced)
+        }
         io::ErrorKind::NotFound => AppError::waveform_failed(
-            "FFmpeg is required to generate audio waveforms.",
+            AppErrorMessageId::MediaWaveformFfmpegIsRequiredToGenerateAudioWaveforms,
             None::<String>,
         ),
-        io::ErrorKind::TimedOut => {
-            AppError::waveform_failed("Waveform generation took too long.", None::<String>)
-        }
+        io::ErrorKind::TimedOut => AppError::waveform_failed(
+            AppErrorMessageId::MediaWaveformWaveformGenerationTookTooLong,
+            None::<String>,
+        ),
         _ => AppError::waveform_failed(
-            "FFmpeg could not generate the audio waveform.",
+            AppErrorMessageId::MediaWaveformFfmpegCouldNotGenerateTheAudioWaveform,
             None::<String>,
         ),
     }

@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::{
-    error::AppError,
+    error::{AppError, AppErrorMessageId},
     process::{ProcessOutput, media_debug, run_bounded_cancellable},
     state::{ActiveSource, PreviewArtifact, PreviewStreamSelection},
 };
@@ -20,7 +20,9 @@ static NEXT_DIRECTORY_ID: AtomicU64 = AtomicU64::new(0);
 
 pub fn generate_preview(source: &ActiveSource) -> Result<PreviewArtifact, AppError> {
     let streams = source.preview_streams.ok_or_else(|| {
-        AppError::invalid_request("Inspect the video before preparing its preview.")
+        AppError::invalid_request(
+            AppErrorMessageId::MediaPreviewInspectTheVideoBeforePreparingItsPreview,
+        )
     })?;
     let artifact = create_artifact()?;
 
@@ -82,7 +84,7 @@ pub fn generate_preview(source: &ActiveSource) -> Result<PreviewArtifact, AppErr
     }
 
     Err(AppError::preview_failed(
-        "A compatible preview could not be prepared for this video.",
+        AppErrorMessageId::MediaPreviewCompatiblePreviewCouldNotBePreparedForThisVideo,
         diagnostics(&output, &source.path, artifact.path()),
     ))
 }
@@ -262,14 +264,14 @@ fn create_artifact() -> Result<PreviewArtifact, AppError> {
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
             Err(_) => {
                 return Err(AppError::io_failed(
-                    "A temporary preview directory could not be created.",
+                    AppErrorMessageId::MediaPreviewTemporaryPreviewDirectoryCouldNotBeCreated,
                 ));
             }
         }
     }
 
     Err(AppError::io_failed(
-        "A unique temporary preview directory could not be created.",
+        AppErrorMessageId::MediaPreviewUniqueTemporaryPreviewDirectoryCouldNotBeCreated,
     ))
 }
 
@@ -277,15 +279,15 @@ fn process_error(error: io::Error) -> AppError {
     match error.kind() {
         io::ErrorKind::Interrupted => AppError::source_replaced(),
         io::ErrorKind::NotFound => AppError::preview_failed(
-            "FFmpeg is required to prepare a compatible preview.",
+            AppErrorMessageId::MediaPreviewFfmpegIsRequiredToPrepareACompatiblePreview,
             None::<String>,
         ),
         io::ErrorKind::TimedOut => AppError::preview_failed(
-            "Preparing the compatible preview took too long.",
+            AppErrorMessageId::MediaPreviewPreparingTheCompatiblePreviewTookTooLong,
             None::<String>,
         ),
         _ => AppError::preview_failed(
-            "FFmpeg could not prepare a compatible preview.",
+            AppErrorMessageId::MediaPreviewFfmpegCouldNotPrepareACompatiblePreview,
             None::<String>,
         ),
     }

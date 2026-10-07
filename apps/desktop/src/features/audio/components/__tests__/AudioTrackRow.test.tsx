@@ -351,7 +351,10 @@ describe("AudioTrackRow", () => {
       store.dispatch(
         audioTrackLoudnessAnalysisFailed({
           cacheKey: currentCacheKey,
-          error: { code: "render_failed", message: "Analysis failed." },
+          error: {
+            code: "render_failed",
+            messageId: "media.loudness.ffmpegCouldNotAnalyzeAudioLoudness",
+          },
           operationId: "failed-analysis-1",
           streamIndex: 2,
         }),

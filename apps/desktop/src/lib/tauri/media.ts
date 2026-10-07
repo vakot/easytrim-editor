@@ -389,7 +389,7 @@ async function listenForSourceDrops(
             status: "failed",
             error: {
               code: "invalid_request",
-              message: t("source.drop.emptySelection"),
+              messageId: "source.dropVideoFileInsteadOfEmptySelection",
             },
           });
           break;

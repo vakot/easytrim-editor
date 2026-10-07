@@ -16,7 +16,6 @@ import {
 } from "@/domain/audio-processing";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import type { AudioActivityRange, LoudnessAnalysis } from "@/domain/media";
-import { t } from "@/i18n/config";
 import type {
   AppError,
   AudioPreviewDescriptor,
@@ -442,7 +441,7 @@ const audioSlice = createSlice({
           width: track.waveform.width,
           error: {
             code: "waveform_failed",
-            message: t("audio.waveform.displayFailed"),
+            messageId: "media.waveform.previewCouldNotBeDisplayed",
           },
         };
       }
