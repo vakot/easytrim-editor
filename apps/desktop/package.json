@@ -24,6 +24,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "country-flag-icons": "^1.6.20",
     "fuse.js": "^7.5.0",
     "i18next": "^26.3.6",
     "lucide-react": "^1.28.0",

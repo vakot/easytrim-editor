@@ -2,6 +2,7 @@ import Fuse, { type IFuseOptions } from "fuse.js";
 
 import type { EditingInstanceSearchEntry } from "@/domain/editing-instance";
 import type { SearchMatchRange } from "@/domain/search.types";
+import { FUZZY_SEARCH_OPTIONS } from "@/lib/fuzzy-search.consts";
 
 interface SourceSearchResult {
   displayNameRanges: ReadonlyArray<SearchMatchRange>;
@@ -11,14 +12,11 @@ interface SourceSearchResult {
 
 const sourceSearchOptions = {
   includeMatches: true,
-  ignoreLocation: true,
   keys: [
     { name: "displayName", weight: 2 },
     { name: "sourcePath", weight: 1 },
   ],
-  threshold: 0.3,
-  useTokenSearch: true,
-  tokenMatch: "all",
+  ...FUZZY_SEARCH_OPTIONS,
 } satisfies IFuseOptions<EditingInstanceSearchEntry>;
 
 function createSourceSearcher(sources: EditingInstanceSearchEntry[]) {

@@ -1,57 +1,56 @@
 import { describe, expect, it } from "vitest";
 
-import { filterLanguages, getLanguageDisplayName, LANGUAGE_CATALOG } from "../languages";
+import { createLanguageSearcher, getLanguageDisplayName, SUPPORTED_LANGUAGES } from "../languages";
 
-describe("filterLanguages", () => {
-  it("matches English and native names without case or extra whitespace sensitivity", () => {
-    expect(filterLanguages(LANGUAGE_CATALOG, "  RUSSIAN ")).toContainEqual(
-      expect.objectContaining({ code: "ru" }),
-    );
-    expect(filterLanguages(LANGUAGE_CATALOG, "русский")).toContainEqual(
-      expect.objectContaining({ code: "ru" }),
-    );
-    expect(filterLanguages(LANGUAGE_CATALOG, "  UKRAINIAN  ")).toContainEqual(
-      expect.objectContaining({ code: "uk" }),
-    );
-    expect(filterLanguages(LANGUAGE_CATALOG, "日本語")).toContainEqual(
-      expect.objectContaining({ code: "ja" }),
-    );
+const searchLanguages = createLanguageSearcher(SUPPORTED_LANGUAGES);
+
+describe("supported languages", () => {
+  it("contains only the languages currently supported by the application", () => {
+    expect(SUPPORTED_LANGUAGES.map(({ code }) => code)).toEqual(["en", "ru", "sk"]);
+  });
+});
+
+describe("createLanguageSearcher", () => {
+  it("preserves supported language order for an empty query", () => {
+    const results = searchLanguages("   ");
+
+    expect(results).toEqual(SUPPORTED_LANGUAGES);
+    expect(results).not.toBe(SUPPORTED_LANGUAGES);
   });
 
-  it("returns a copy of the supplied list for an empty search", () => {
-    const languages = LANGUAGE_CATALOG.slice(0, 2);
-    const results = filterLanguages(languages, "   ");
-
-    expect(results).toEqual(languages);
-    expect(results).not.toBe(languages);
+  it.each([
+    ["englsh", "en"],
+    ["russan", "ru"],
+    ["slovak", "sk"],
+  ])("tolerates the typo or partial query %s", (query, expectedCode) => {
+    expect(searchLanguages(query)[0]?.code).toBe(expectedCode);
   });
 
-  it("normalizes whitespace inside names and queries", () => {
-    const languages = [{ code: "x-test", englishName: "Middle   English", nativeName: "ME" }];
-
-    expect(filterLanguages(languages, "middle english")).toEqual(languages);
+  it("matches multiple partial tokens", () => {
+    expect(searchLanguages("slovenc sk")[0]?.code).toBe("sk");
   });
 
-  it("matches language codes and searches native names without diacritics", () => {
-    expect(filterLanguages(LANGUAGE_CATALOG, "ru")).toContainEqual(
-      expect.objectContaining({ code: "ru" }),
-    );
-    expect(filterLanguages(LANGUAGE_CATALOG, "espanol")).toContainEqual(
-      expect.objectContaining({ code: "es" }),
-    );
+  it("searches both native and English names", () => {
+    expect(searchLanguages("русский")[0]?.code).toBe("ru");
+    expect(searchLanguages("slovak")[0]?.code).toBe("sk");
+  });
+
+  it("ignores diacritics in native language names", () => {
+    expect(searchLanguages("slovencina")[0]?.code).toBe("sk");
+  });
+
+  it("matches ISO language codes", () => {
+    expect(searchLanguages("ru")[0]?.code).toBe("ru");
+    expect(searchLanguages("sk")[0]?.code).toBe("sk");
   });
 });
 
 describe("language display names", () => {
   it("avoids repeating an English name when it matches the native name", () => {
-    expect(getLanguageDisplayName(LANGUAGE_CATALOG.find(({ code }) => code === "en")!)).toBe(
-      "English",
-    );
+    expect(getLanguageDisplayName(SUPPORTED_LANGUAGES[0])).toBe("English");
   });
 
   it("includes the English name when a language has a distinct native name", () => {
-    expect(getLanguageDisplayName(LANGUAGE_CATALOG.find(({ code }) => code === "ru")!)).toBe(
-      "Русский (Russian)",
-    );
+    expect(getLanguageDisplayName(SUPPORTED_LANGUAGES[1])).toBe("Русский (Russian)");
   });
 });
