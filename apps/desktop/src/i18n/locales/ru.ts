@@ -227,7 +227,7 @@ export const ru = {
         title: "Общие",
         description: "Выберите, как EasyTrim отображает интерфейс.",
         languageDescription: "Выберите язык интерфейса EasyTrim Editor.",
-        openSettingsShortcutLabel: "Открыть настройки сочетанием",
+        openSettingsShortcutLabel: "Открыть окно настроек можно в любое время сочетанием",
       },
       appearance: {
         title: "Внешний вид",

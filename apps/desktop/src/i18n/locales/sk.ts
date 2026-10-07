@@ -226,7 +226,7 @@ export const sk = {
         title: "Všeobecné",
         description: "Vyberte, ako má EasyTrim zobrazovať svoje rozhranie.",
         languageDescription: "Vyberte jazyk používaný v EasyTrim Editore.",
-        openSettingsShortcutLabel: "Otvoriť nastavenia pomocou",
+        openSettingsShortcutLabel: "Dialóg nastavení môžete kedykoľvek otvoriť pomocou",
       },
       appearance: {
         title: "Vzhľad",

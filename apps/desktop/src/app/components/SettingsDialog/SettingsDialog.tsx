@@ -1,4 +1,5 @@
 import type { TFunction } from "i18next";
+import { Keyboard } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -65,6 +66,7 @@ function SettingsDialog() {
           <LibraryContent>
             <SettingsPage page="general">
               <Badge className="h-8 border-primary/10 bg-primary/5" variant="outline">
+                <Keyboard aria-hidden="true" className="size-4" />
                 {t("settings.pages.general.openSettingsShortcutLabel")}
                 <KbdGroup>
                   {getShortcutDisplayKeys(SETTINGS_SHORTCUT).map((key) => (
