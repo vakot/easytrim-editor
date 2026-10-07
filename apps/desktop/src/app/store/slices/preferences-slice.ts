@@ -71,9 +71,10 @@ const preferencesSlice = createSlice({
       state.activityFeedView = DEFAULT_PREFERENCES.activityFeedView;
       state.layoutDensity = DEFAULT_PREFERENCES.layoutDensity;
     },
-    viewSettingsReset: (state) => {
-      state.theme = DEFAULT_PREFERENCES.theme;
-      state.primaryColor = DEFAULT_PREFERENCES.primaryColor;
+    editingSettingsReset: (state) => {
+      state.loopPlaybackEnabledDefault = DEFAULT_PREFERENCES.loopPlaybackEnabledDefault;
+      state.mergeAudioEnabledDefault = DEFAULT_PREFERENCES.mergeAudioEnabledDefault;
+      state.segmentPlaybackEnabledDefault = DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault;
     },
     themePreferenceChanged: (state, action: PayloadAction<ThemePreference>) => {
       state.theme = action.payload;
@@ -84,24 +85,10 @@ const preferencesSlice = createSlice({
     changelogVersionSeen: (state, action: PayloadAction<string>) => {
       state.lastSeenChangelogVersion = action.payload;
     },
-    preferencesReset: (state) => {
-      const activityFeedView = state.activityFeedView;
-      const layoutDensity = state.layoutDensity;
-      const lastSeenChangelogVersion = state.lastSeenChangelogVersion;
-      const theme = state.theme;
-      const primaryColor = state.primaryColor;
-      const deleteSourceOnRenderFinish = state.deleteSourceOnRenderFinish;
-      Object.assign(state, DEFAULT_PREFERENCES);
-      state.activityFeedView = activityFeedView;
-      state.layoutDensity = layoutDensity;
-      state.lastSeenChangelogVersion = lastSeenChangelogVersion;
-      state.theme = theme;
-      state.primaryColor = primaryColor;
-      state.deleteSourceOnRenderFinish = deleteSourceOnRenderFinish;
-    },
   },
   extraReducers: (builder) => {
     builder.addCase(queueSettingsReset, (state) => {
+      state.autoStartQueueEnabled = DEFAULT_PREFERENCES.autoStartQueueEnabled;
       state.deleteSourceOnRenderFinish = DEFAULT_PREFERENCES.deleteSourceOnRenderFinish;
     });
   },
@@ -110,18 +97,17 @@ const preferencesSlice = createSlice({
 const {
   activityFeedViewChanged,
   changelogVersionSeen,
+  editingSettingsReset,
   layoutDensityChanged,
   layoutReset,
   playbackVolumeChanged,
   playbackVolumeToggled,
   preferenceChanged,
-  preferencesReset,
   primaryColorChanged,
   themePreferenceChanged,
   uiScaleDecreased,
   uiScaleIncreased,
   uiScalingReset,
-  viewSettingsReset,
 } = preferencesSlice.actions;
 
 const preferencesReducer = preferencesSlice.reducer;
@@ -177,13 +163,13 @@ const selectLastSeenChangelogVersion = (state: RootState): string | null =>
 export {
   activityFeedViewChanged,
   changelogVersionSeen,
+  editingSettingsReset,
   layoutDensityChanged,
   layoutReset,
   playbackVolumeChanged,
   playbackVolumeToggled,
   preferenceChanged,
   preferencesReducer,
-  preferencesReset,
   primaryColorChanged,
   selectActivityFeedView,
   selectAutoStartQueueEnabled,
@@ -202,5 +188,4 @@ export {
   uiScaleDecreased,
   uiScaleIncreased,
   uiScalingReset,
-  viewSettingsReset,
 };

@@ -226,21 +226,22 @@ export const sk = {
         title: "Všeobecné",
         description: "Vyberte, ako má EasyTrim zobrazovať svoje rozhranie.",
         languageDescription: "Vyberte jazyk používaný v EasyTrim Editore.",
+        openSettingsShortcutLabel: "Dialóg nastavení môžete kedykoľvek otvoriť pomocou",
       },
       appearance: {
         title: "Vzhľad",
         description: "Upravte mierku rozhrania, motív a hlavnú farbu.",
         scalingDescription: "Zmeňte veľkosť ovládacích prvkov a textu v aplikácii.",
         colorDescription: "Vyberte prednastavenú alebo vlastnú hlavnú farbu.",
-        resetLabel: "Obnoviť vzhľad",
       },
-      defaults: {
-        title: "Predvolené hodnoty",
-        description: "Vyberte predvolené nastavenia pre nové relácie úprav.",
+      preferences: {
+        title: "Predvoľby",
+        sectionTitle: "Úpravy",
+        description: "Vyberte predvolené správanie pre nové relácie úprav.",
         loopDescription: "V nových reláciách predvolene zapnúť opakovanie prehrávania.",
         followSegmentDescription: "Predvolene obmedziť prehrávanie na vybraný segment.",
         mergeAudioDescription: "Predvolene zlúčiť povolené zvukové stopy pri nových exportoch.",
-        resetLabel: "Obnoviť predvoľby",
+        resetLabel: "Obnoviť nastavenia úprav",
       },
       layout: {
         title: "Rozloženie",
@@ -249,7 +250,6 @@ export const sk = {
       },
       queue: {
         title: "Front",
-        description: "Vyberte, ako sa front exportov spúšťa a dokončuje.",
         autoStartDescription: "Spustiť spracovanie hneď po pridaní exportov do frontu.",
         onFinishedDescription: "Vyberte, čo sa stane po dokončení všetkých exportov vo fronte.",
         resetLabel: "Obnoviť nastavenia frontu",
@@ -268,7 +268,6 @@ export const sk = {
       activityFeedView: "Zobrazenie prehľadu aktivít",
       autoStartQueue: "Automatické spustenie frontu",
       color: "Farba",
-      editor: "Editor",
       followSegment: "Sledovať segment",
       language: "Jazyk",
       loop: "Opakovanie",

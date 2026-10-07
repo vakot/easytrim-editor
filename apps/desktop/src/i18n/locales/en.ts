@@ -226,21 +226,22 @@ export const en = {
         title: "General",
         description: "Choose how EasyTrim presents its interface.",
         languageDescription: "Choose the language used throughout EasyTrim Editor.",
+        openSettingsShortcutLabel: "Open the Settings dialog at any time with",
       },
       appearance: {
         title: "Appearance",
         description: "Adjust the interface scale, theme, and primary color.",
         scalingDescription: "Change the size of controls and text across the app.",
         colorDescription: "Choose a preset or pick a custom primary color.",
-        resetLabel: "Reset appearance",
       },
-      defaults: {
-        title: "Defaults",
-        description: "Choose the defaults used for new editing sessions.",
+      preferences: {
+        title: "Preferences",
+        sectionTitle: "Editing",
+        description: "Choose the default behavior for new editing sessions.",
         loopDescription: "Start new sessions with loop playback enabled.",
         followSegmentDescription: "Keep playback within the selected segment by default.",
         mergeAudioDescription: "Merge enabled audio tracks for new exports by default.",
-        resetLabel: "Reset preferences",
+        resetLabel: "Reset editing settings",
       },
       layout: {
         title: "Layout",
@@ -249,7 +250,6 @@ export const en = {
       },
       queue: {
         title: "Queue",
-        description: "Choose how the export queue starts and finishes.",
         autoStartDescription: "Start processing as soon as exports are added to the queue.",
         onFinishedDescription: "Choose what happens when every queued export finishes.",
         resetLabel: "Reset queue settings",
@@ -268,7 +268,6 @@ export const en = {
       activityFeedView: "Activity Feed View",
       autoStartQueue: "Auto-start Queue",
       color: "Color",
-      editor: "Editor",
       followSegment: "Follow segment",
       language: "Language",
       loop: "Loop",

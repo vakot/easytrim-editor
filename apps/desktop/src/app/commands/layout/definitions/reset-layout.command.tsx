@@ -17,7 +17,13 @@ function useResetLayoutCommand() {
   const dispatch = useAppDispatch();
   const activityFeedView = useAppSelector(selectActivityFeedView);
   const layoutDensity = useAppSelector(selectLayoutDensity);
-  const panels = usePanelCommand(["workspace-sidebar", "editor-stage-timeline"]);
+  const panels = usePanelCommand([
+    "workspace-sidebar",
+    "editor-stage-timeline",
+    "editor-source-imported-sources",
+    "editor-source-activity-feed",
+  ]);
+
   const label = t("app.actions.resetToDefault");
   const hasLayoutPreferencesToReset =
     activityFeedView !== DEFAULT_PREFERENCES.activityFeedView ||

@@ -4,11 +4,11 @@ import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   activityFeedViewChanged,
   changelogVersionSeen,
+  editingSettingsReset,
   layoutDensityChanged,
   layoutReset,
   preferenceChanged,
   preferencesReducer,
-  preferencesReset,
   primaryColorChanged,
   selectActivityFeedView,
   selectDeleteSourceOnRenderFinish,
@@ -18,7 +18,7 @@ import {
   selectPrimaryColor,
   selectThemePreference,
   themePreferenceChanged,
-  viewSettingsReset,
+  uiScalingReset,
 } from "@/app/store/slices/preferences-slice";
 import type { RootState } from "@/app/store/store";
 import { isHexColor } from "@/lib/color.utils";
@@ -55,7 +55,7 @@ describe("preferences Redux domain", () => {
 
   it("persists the changelog seen marker without resetting it with preferences", () => {
     const seenState = preferencesReducer(undefined, changelogVersionSeen("1.10.4"));
-    const resetState = preferencesReducer(seenState, preferencesReset());
+    const resetState = preferencesReducer(seenState, editingSettingsReset());
 
     expect(seenState.lastSeenChangelogVersion).toBe("1.10.4");
     expect(resetState.lastSeenChangelogVersion).toBe("1.10.4");
@@ -86,24 +86,7 @@ describe("preferences Redux domain", () => {
     expect(customState).not.toHaveProperty("customPrimaryColor");
   });
 
-  it("resets only theme and color view settings", () => {
-    const initialState: Preferences = {
-      ...DEFAULT_PREFERENCES,
-      theme: "dark",
-      primaryColor: "#4299e1",
-      deleteSourceOnRenderFinish: true,
-    };
-
-    const state = preferencesReducer(initialState, viewSettingsReset());
-
-    expect(state).toEqual({
-      ...initialState,
-      theme: DEFAULT_PREFERENCES.theme,
-      primaryColor: DEFAULT_PREFERENCES.primaryColor,
-    });
-  });
-
-  it("resets defaults while preserving view and queue preferences", () => {
+  it("resets only Editing settings while preserving settings owned by other sections", () => {
     const state = preferencesReducer(
       {
         loopPlaybackEnabledDefault: false,
@@ -118,9 +101,9 @@ describe("preferences Redux domain", () => {
         primaryColor: "#123456",
         lastAudiblePlaybackVolumePercent: 100,
         playbackVolumePercent: 100,
-        uiScalePercent: 100,
+        uiScalePercent: 125,
       },
-      preferencesReset(),
+      editingSettingsReset(),
     );
 
     expect(state).toEqual({
@@ -129,7 +112,9 @@ describe("preferences Redux domain", () => {
       layoutDensity: "compact",
       theme: "dark",
       primaryColor: "#123456",
+      autoStartQueueEnabled: false,
       deleteSourceOnRenderFinish: true,
+      uiScalePercent: 125,
     });
   });
 
@@ -138,7 +123,14 @@ describe("preferences Redux domain", () => {
       ...DEFAULT_PREFERENCES,
       activityFeedView: "branch",
       layoutDensity: "compact",
+      loopPlaybackEnabledDefault: false,
+      segmentPlaybackEnabledDefault: false,
+      mergeAudioEnabledDefault: true,
+      autoStartQueueEnabled: false,
+      deleteSourceOnRenderFinish: true,
       theme: "dark",
+      primaryColor: "#123456",
+      uiScalePercent: 125,
     };
 
     const state = preferencesReducer(initialState, layoutReset());
@@ -147,6 +139,22 @@ describe("preferences Redux domain", () => {
       ...initialState,
       activityFeedView: DEFAULT_PREFERENCES.activityFeedView,
       layoutDensity: DEFAULT_PREFERENCES.layoutDensity,
+    });
+  });
+
+  it("resets only UI scaling while preserving theme and primary color", () => {
+    const initialState: Preferences = {
+      ...DEFAULT_PREFERENCES,
+      uiScalePercent: 150,
+      theme: "dark",
+      primaryColor: "#123456",
+    };
+
+    const state = preferencesReducer(initialState, uiScalingReset());
+
+    expect(state).toEqual({
+      ...initialState,
+      uiScalePercent: DEFAULT_PREFERENCES.uiScalePercent,
     });
   });
 

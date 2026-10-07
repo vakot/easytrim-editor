@@ -227,21 +227,22 @@ export const ru = {
         title: "Общие",
         description: "Выберите, как EasyTrim отображает интерфейс.",
         languageDescription: "Выберите язык интерфейса EasyTrim Editor.",
+        openSettingsShortcutLabel: "Открыть окно настроек можно в любое время сочетанием",
       },
       appearance: {
         title: "Внешний вид",
         description: "Настройте масштаб интерфейса, тему и основной цвет.",
         scalingDescription: "Измените размер элементов управления и текста в приложении.",
         colorDescription: "Выберите готовый или пользовательский основной цвет.",
-        resetLabel: "Сбросить внешний вид",
       },
-      defaults: {
-        title: "По умолчанию",
-        description: "Выберите настройки для новых сеансов редактирования.",
+      preferences: {
+        title: "Предпочтения",
+        sectionTitle: "Редактирование",
+        description: "Выберите поведение по умолчанию для новых сеансов редактирования.",
         loopDescription: "Включать повтор воспроизведения для новых сеансов.",
         followSegmentDescription: "По умолчанию ограничивать воспроизведение выбранным сегментом.",
         mergeAudioDescription: "Объединять включённые аудиодорожки в новых экспортах.",
-        resetLabel: "Сбросить настройки",
+        resetLabel: "Сбросить настройки редактирования",
       },
       layout: {
         title: "Макет",
@@ -250,7 +251,6 @@ export const ru = {
       },
       queue: {
         title: "Очередь",
-        description: "Настройте запуск и завершение очереди экспорта.",
         autoStartDescription: "Начинать обработку сразу после добавления экспортов в очередь.",
         onFinishedDescription: "Выберите действие после завершения всех экспортов в очереди.",
         resetLabel: "Сбросить настройки очереди",
@@ -269,7 +269,6 @@ export const ru = {
       activityFeedView: "Вид ленты активности",
       autoStartQueue: "Автозапуск очереди",
       color: "Цвет",
-      editor: "Редактор",
       followSegment: "Следовать за сегментом",
       language: "Язык",
       loop: "Повтор",

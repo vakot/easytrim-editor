@@ -6,4 +6,10 @@ const COMMAND_PALETTE_SHORTCUT = {
   modifier: "none",
 } as const satisfies ApplicationShortcut;
 
-export { COMMAND_PALETTE_SHORTCUT };
+const SETTINGS_SHORTCUT = {
+  code: "KeyH",
+  key: "H",
+  modifier: "control",
+} as const satisfies ApplicationShortcut;
+
+export { COMMAND_PALETTE_SHORTCUT, SETTINGS_SHORTCUT };

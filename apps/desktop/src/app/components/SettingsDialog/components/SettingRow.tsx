@@ -87,10 +87,11 @@ function CommandButton({
 
 function CommandReset({
   commandId,
-}: {
-  commandId: "reset-preferences" | "reset-view-settings" | "reset-queue-settings";
+  ...props
+}: Omit<React.ComponentProps<typeof CommandButton>, "variant" | "commandId"> & {
+  commandId: "reset-editing-settings" | "reset-queue-settings";
 }) {
-  return <CommandButton commandId={commandId} variant="destructive" />;
+  return <CommandButton commandId={commandId} variant="destructive" {...props} />;
 }
 
 export { CommandButton, CommandReset, CommandSwitch, SettingRow, SettingsSection };

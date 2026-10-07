@@ -12,8 +12,8 @@ import { describe, expect, it, vi } from "vitest";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { SettingsDialog } from "@/app/components/SettingsDialog";
 import { CommandPalette } from "@/app/components/CommandPalette";
+import { SettingsDialog } from "@/app/components/SettingsDialog";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
@@ -190,7 +190,6 @@ describe("MenuBarTest", () => {
     hasSource?: boolean;
     isChoosingSource?: boolean;
     onPreferenceChange?: (key: PreferenceKey, enabled: boolean) => void;
-    onPreferencesReset?: () => void;
     preferences?: Preferences;
     primaryColor?: Preferences["primaryColor"];
     queueFinishAction?: QueueFinishAction;
@@ -232,12 +231,6 @@ describe("MenuBarTest", () => {
         menuState.preferences[key] = enabled;
       });
 
-    const resetPreferences =
-      overrides.onPreferencesReset ??
-      (() => {
-        menuState.preferences = { ...DEFAULT_PREFERENCES };
-      });
-
     menuState.dispatch = vi.fn((action: { payload?: unknown; type: string }) => {
       if (action.type === "export/exportQueueDialogOpened") {
         menuState.export.queueDialogOpen = true;
@@ -255,15 +248,17 @@ describe("MenuBarTest", () => {
         const payload = action.payload as { enabled: boolean; key: PreferenceKey };
         setPreference(payload.key, payload.enabled);
       }
-      if (action.type === "preferences/preferencesReset") {
-        resetPreferences();
-      }
-      if (action.type === "preferences/viewSettingsReset") {
-        menuState.preferences.theme = DEFAULT_PREFERENCES.theme;
-        menuState.preferences.primaryColor = DEFAULT_PREFERENCES.primaryColor;
+      if (action.type === "preferences/editingSettingsReset") {
+        menuState.preferences.loopPlaybackEnabledDefault =
+          DEFAULT_PREFERENCES.loopPlaybackEnabledDefault;
+        menuState.preferences.mergeAudioEnabledDefault =
+          DEFAULT_PREFERENCES.mergeAudioEnabledDefault;
+        menuState.preferences.segmentPlaybackEnabledDefault =
+          DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault;
       }
       if (action.type === "queue/settingsReset") {
         menuState.export.queueFinishAction = "nothing";
+        menuState.preferences.autoStartQueueEnabled = DEFAULT_PREFERENCES.autoStartQueueEnabled;
         menuState.preferences.deleteSourceOnRenderFinish = false;
       }
       if (action.type === "preferences/themePreferenceChanged") {
@@ -372,12 +367,15 @@ describe("MenuBarTest", () => {
     expect(await screen.findByRole("dialog", { name: "Export Queue" })).toBeVisible();
   });
 
-  it("keeps queue configuration in Settings, separate from queue actions", async () => {
+  it("keeps queue configuration in Preferences, separate from queue actions", async () => {
     const user = userEvent.setup();
     renderMenus({ hasQueuedItems: true, hasActiveItem: true });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Queue" }));
+    await user.click(screen.getByRole("tab", { name: "Preferences" }));
+    expect(screen.queryByRole("tab", { name: "Queue" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset editing settings" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset queue settings" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: /Start queue/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Skip" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Cancel" })).not.toBeInTheDocument();
@@ -385,21 +383,14 @@ describe("MenuBarTest", () => {
     expect(screen.getByRole("combobox", { name: "On queue finished" })).toBeInTheDocument();
   });
 
-  it("resets theme and color settings from Settings", async () => {
+  it("keeps UI scaling reset local to Appearance", async () => {
     const user = userEvent.setup();
     renderMenus({ themePreference: "dark", primaryColor: "#4299e1" });
 
     await user.click(getMenuTrigger("Settings"));
     await user.click(screen.getByRole("tab", { name: "Appearance" }));
-    await user.click(screen.getByRole("button", { name: "Reset to default" }));
-
-    expect(menuState.dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "preferences/viewSettingsReset" }),
-    );
-    expect(menuState.preferences).toMatchObject({
-      theme: DEFAULT_PREFERENCES.theme,
-      primaryColor: DEFAULT_PREFERENCES.primaryColor,
-    });
+    expect(screen.queryByRole("button", { name: "Reset to default" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
   });
 
   it("resets queue finish and delete-source settings from Settings", async () => {
@@ -410,8 +401,8 @@ describe("MenuBarTest", () => {
     });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Queue" }));
-    await user.click(screen.getByRole("button", { name: "Reset to default" }));
+    await user.click(screen.getByRole("tab", { name: "Preferences" }));
+    await user.click(screen.getByRole("button", { name: "Reset queue settings" }));
 
     expect(menuState.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "queue/settingsReset" }),
@@ -427,7 +418,7 @@ describe("MenuBarTest", () => {
     });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Queue" }));
+    await user.click(screen.getByRole("tab", { name: "Preferences" }));
     await user.click(screen.getByRole("combobox", { name: "On queue finished" }));
     await user.click(screen.getByRole("option", { name: "Exit application" }));
     expect(menuState.dispatch).toHaveBeenCalledWith(
@@ -440,7 +431,7 @@ describe("MenuBarTest", () => {
     renderMenus();
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Queue" }));
+    await user.click(screen.getByRole("tab", { name: "Preferences" }));
     const deleteSourceItem = screen.getByRole("switch", { name: "Delete source" });
     expect(deleteSourceItem).not.toBeChecked();
 
@@ -469,7 +460,7 @@ describe("MenuBarTest", () => {
     });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Queue" }));
+    await user.click(screen.getByRole("tab", { name: "Preferences" }));
     const deleteSourceItem = screen.getByRole("switch", { name: "Delete source" });
     expect(deleteSourceItem).toBeChecked();
 
@@ -638,10 +629,12 @@ describe("MenuBarTest", () => {
     renderMenus();
     await user.click(getMenuTrigger("Settings"));
 
-    const defaultsTab = screen.getByRole("tab", { name: "Defaults" });
+    const preferencesTab = screen.getByRole("tab", { name: "Preferences" });
     expect(screen.getByRole("tab", { name: "General" })).toHaveAttribute("aria-selected", "true");
-    await user.click(defaultsTab);
-    expect(defaultsTab).toHaveAttribute("aria-selected", "true");
+    await user.click(preferencesTab);
+    expect(preferencesTab).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Editing")).toBeInTheDocument();
+    expect(screen.getByText("Reset editing settings")).toBeInTheDocument();
 
     const loopSwitch = screen.getByRole("switch", { name: "Loop" });
     expect(loopSwitch).toBeChecked();
@@ -753,43 +746,6 @@ describe("MenuBarTest", () => {
     expect(committedHue).toHaveAttribute("aria-valuenow", "360");
     expect(committedHue.querySelector('[data-slot="color-hue-marker"]')).toBe(hueMarker);
     expect(hueMarker?.style.left).toBe("100%");
-  });
-
-  it("resets an open picker session when appearance is reset during a drag", async () => {
-    const user = userEvent.setup();
-    renderMenus({ primaryColor: "#4299e1" });
-    await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Appearance" }));
-    await user.click(screen.getByRole("button", { name: "Primary accent" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "Primary color HEX" }), {
-      target: { value: "123456" },
-    });
-
-    const spectrum = screen.getByRole("button", {
-      name: "Saturation and brightness",
-    });
-
-    const hue = screen.getByRole("slider", { name: "Hue" });
-
-    Object.defineProperty(spectrum, "getBoundingClientRect", {
-      value: () => new DOMRect(0, 0, 192, 192),
-    });
-    Object.assign(spectrum, {
-      hasPointerCapture: () => true,
-      releasePointerCapture: vi.fn(),
-      setPointerCapture: vi.fn(),
-    });
-
-    fireEvent.pointerDown(spectrum, { button: 0, clientX: 96, clientY: 96, pointerId: 1 });
-    expect(document.documentElement).toHaveAttribute("data-primary-color-scrubbing");
-
-    fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
-
-    expect(menuState.preferences.primaryColor).toBe(DEFAULT_PREFERENCES.primaryColor);
-    expect(screen.getByRole("textbox", { name: "Primary color HEX" })).toHaveValue("efbf04");
-    expect(screen.getByRole("slider", { name: "Hue" })).not.toBe(hue);
-    expect(document.documentElement).not.toHaveAttribute("data-primary-color-scrubbing");
-    expect(document.documentElement.style.getPropertyValue("--primary-color-preview")).toBe("");
   });
 
   it("uses localized names for the composed color controls", async () => {

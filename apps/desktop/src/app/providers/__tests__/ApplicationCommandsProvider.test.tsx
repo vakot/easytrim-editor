@@ -23,7 +23,8 @@ const mocks = vi.hoisted(() => ({
   })),
   requestSourceDelete: vi.fn(),
   resetPanels: vi.fn(),
-  panelsAreReset: false,
+  panelCommandIds: [] as (string | string[])[],
+  panelsAreReset: true,
   startFastCutRequested: vi.fn((origin: unknown) => ({
     origin,
     type: "export/fast",
@@ -62,6 +63,7 @@ const state = {
     primaryColor: "#efbf04",
     segmentPlaybackEnabledDefault: true,
     theme: "system",
+    uiScalePercent: 100,
   },
   export: { availableQueueFinishActions: ["exit", "nothing"], queueFinishAction: "nothing" },
   source: {
@@ -114,14 +116,17 @@ vi.mock("@/app/hooks/useAppUpdates", () => ({
   }),
 }));
 vi.mock("@/components/ui/resizable", () => ({
-  usePanelCommand: () => ({
-    isAvailable: true,
-    isCollapsed: false,
-    isDisabled: false,
-    isReset: mocks.panelsAreReset,
-    toggle: vi.fn(),
-    reset: mocks.resetPanels,
-  }),
+  usePanelCommand: (panelIds: string | string[]) => {
+    mocks.panelCommandIds.push(panelIds);
+    return {
+      isAvailable: true,
+      isCollapsed: false,
+      isDisabled: false,
+      isReset: mocks.panelsAreReset,
+      toggle: vi.fn(),
+      reset: mocks.resetPanels,
+    };
+  },
 }));
 vi.mock("@/lib/open-external-url.utils", () => ({ openExternalUrl: vi.fn() }));
 vi.mock("@/lib/app-version.utils", () => ({ getCurrentVersion: () => "0.0.0" }));
@@ -203,7 +208,8 @@ describe("ApplicationCommandsProvider", () => {
     mocks.dispatch.mockReset();
     mocks.dispatch.mockImplementation(() => undefined);
     mocks.resetPanels.mockReset();
-    mocks.panelsAreReset = false;
+    mocks.panelCommandIds.length = 0;
+    mocks.panelsAreReset = true;
     mocks.diagnosticsError.mockClear();
     mocks.requestSourceDelete.mockClear();
     mocks.availableVersion = null;
@@ -213,6 +219,16 @@ describe("ApplicationCommandsProvider", () => {
     state.importWorkflow.isNativeDialogOpen = false;
     state.preferences.activityFeedView = "default";
     state.preferences.layoutDensity = "default";
+    state.preferences.autoStartQueueEnabled = true;
+    state.preferences.deleteSourceOnRenderFinish = false;
+    state.preferences.theme = "system";
+    state.preferences.primaryColor = "#efbf04";
+    state.preferences.uiScalePercent = 100;
+    state.preferences.loopPlaybackEnabledDefault = true;
+    state.preferences.mergeAudioEnabledDefault = false;
+    state.preferences.segmentPlaybackEnabledDefault = true;
+    state.export.availableQueueFinishActions = ["exit", "nothing"];
+    state.export.queueFinishAction = "nothing";
   });
 
   it("executes synchronous commands through the shared runtime and exposes semantic metadata", async () => {
@@ -221,7 +237,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(60);
+    ).toHaveLength(59);
     expect(
       screen
         .getAllByRole("button")
@@ -253,10 +269,6 @@ describe("ApplicationCommandsProvider", () => {
     ]) {
       expect(screen.getByRole("button", { name: commandId })).not.toHaveAttribute("data-checked");
     }
-    expect(screen.getByRole("button", { name: "reset-view-settings" })).toHaveAttribute(
-      "data-group",
-      "Appearance / Theme",
-    );
     expect(screen.getByRole("button", { name: "reset-queue-settings" })).toHaveAttribute(
       "data-group",
       "Queue",
@@ -290,22 +302,17 @@ describe("ApplicationCommandsProvider", () => {
     );
     expect(screen.getByRole("button", { name: "preference-auto-start-queue" })).toHaveAttribute(
       "data-group",
-      "Preferences / Playback",
+      "Queue",
     );
     expect(screen.getByRole("button", { name: "preference-merge-audio" })).toHaveAttribute(
       "data-group",
       "Preferences / Audio",
     );
-    expect(screen.getByRole("button", { name: "reset-preferences" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "reset-editing-settings" })).toHaveAttribute(
       "data-group",
       "Preferences",
     );
-    for (const commandId of [
-      "reset-preferences",
-      "reset-layout",
-      "reset-queue-settings",
-      "reset-view-settings",
-    ]) {
+    for (const commandId of ["reset-editing-settings", "reset-layout", "reset-queue-settings"]) {
       expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
         "data-surfaces",
         "dialog,menu",
@@ -337,13 +344,12 @@ describe("ApplicationCommandsProvider", () => {
       "data-label",
       "Reset to default",
     );
-    for (const commandId of ["reset-preferences", "reset-view-settings", "reset-queue-settings"]) {
+    for (const commandId of ["reset-editing-settings", "reset-queue-settings"]) {
       expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
         "data-label",
         "Reset to default",
       );
     }
-
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 
     expect(mocks.requestSourceDelete).toHaveBeenCalledWith({ sourceIds: ["source-1"] });
@@ -441,12 +447,13 @@ describe("ApplicationCommandsProvider", () => {
   it("does not execute menu-only commands from the palette surface", () => {
     renderRuntime();
 
-    fireEvent.click(screen.getByRole("button", { name: "reset-preferences" }));
+    fireEvent.click(screen.getByRole("button", { name: "reset-editing-settings" }));
 
     expect(mocks.dispatch).not.toHaveBeenCalled();
   });
 
   it("resets layout preferences and panels from the menu surface", () => {
+    state.preferences.layoutDensity = "compact";
     renderRuntime();
 
     fireEvent.click(screen.getByRole("button", { name: "reset-layout-menu" }));
@@ -455,14 +462,68 @@ describe("ApplicationCommandsProvider", () => {
       expect.objectContaining({ type: "preferences/layoutReset" }),
     );
     expect(mocks.resetPanels).toHaveBeenCalledOnce();
+    expect(mocks.panelCommandIds).toContainEqual([
+      "workspace-sidebar",
+      "editor-stage-timeline",
+      "editor-source-imported-sources",
+      "editor-source-activity-feed",
+    ]);
   });
 
   it("enables layout reset when density or activity-feed view differs from its default", () => {
     state.preferences.layoutDensity = "compact";
     state.preferences.activityFeedView = "branch";
-    mocks.panelsAreReset = true;
     renderRuntime();
 
     expect(screen.getByRole("button", { name: "reset-layout" })).toBeEnabled();
+  });
+
+  it("enables only the reset command that owns a changed setting", () => {
+    state.preferences.autoStartQueueEnabled = false;
+    state.preferences.uiScalePercent = 125;
+    state.preferences.theme = "dark";
+    state.preferences.primaryColor = "#123456";
+    renderRuntime();
+
+    expect(screen.getByRole("button", { name: "reset-queue-settings" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "ui-scale-reset" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "reset-editing-settings" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "reset-layout" })).toBeDisabled();
+  });
+
+  it("enables the Editing reset only when an Editing setting differs from its default", () => {
+    state.preferences.loopPlaybackEnabledDefault = false;
+    renderRuntime();
+
+    expect(screen.getByRole("button", { name: "reset-editing-settings" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "reset-queue-settings" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "ui-scale-reset" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "reset-layout" })).toBeDisabled();
+  });
+
+  it("keeps the Queue reset disabled when only other sections differ from defaults", () => {
+    state.preferences.loopPlaybackEnabledDefault = false;
+    state.preferences.uiScalePercent = 125;
+    state.preferences.theme = "dark";
+    state.preferences.primaryColor = "#123456";
+    state.preferences.layoutDensity = "compact";
+    state.preferences.activityFeedView = "branch";
+    renderRuntime();
+
+    expect(screen.getByRole("button", { name: "reset-queue-settings" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "reset-editing-settings" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "ui-scale-reset" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "reset-layout" })).toBeEnabled();
+  });
+
+  it("keeps UI scaling reset disabled when only other Appearance settings differ", () => {
+    state.preferences.theme = "dark";
+    state.preferences.primaryColor = "#123456";
+    renderRuntime();
+
+    expect(screen.getByRole("button", { name: "ui-scale-reset" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "reset-editing-settings" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "reset-queue-settings" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "reset-layout" })).toBeDisabled();
   });
 });

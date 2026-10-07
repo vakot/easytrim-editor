@@ -12,7 +12,12 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Refined View menu actions to include main windows entry-points and layout controls
-- Replaced the Settings menu dropdown with a full preferences dialog for language, appearance, defaults, layout, queue, and update/help options.
+- Replaced the Settings menu dropdown with a full preferences dialog for language, appearance, preferences, layout, and update/help options.
+- Renamed the settings page to Preferences.
+- Moved queue settings into the Preferences page.
+- Renamed the Preferences settings section and reset label to Editing terminology.
+- Refined About page button variants and added a Ko-fi brand icon to the support link.
+- Added a Ctrl+H shortcut and visible hint for opening Settings.
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
 - Localized the primary color picker's saturation, brightness, and hue labels for assistive technology.
 
@@ -23,6 +28,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Scoped Settings reset actions to their owning sections and individual settings.
 - Localized audio track menu actions across English, Russian, and Slovak.
 - Localized source search result counts and breadcrumb navigation labels.
 - Fixed spacing and scrolling in the settings and audio effects libraries and sidebar layout.

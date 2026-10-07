@@ -1,6 +1,7 @@
 import { Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { SETTINGS_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 
@@ -16,6 +17,7 @@ function useOpenSettingsCommand() {
     id: "open-settings" as const,
     label,
     searchTerms: commandSearchTerms(`${label}|preferences|configuration`),
+    shortcut: SETTINGS_SHORTCUT,
     variant: "default" as const,
   };
 }

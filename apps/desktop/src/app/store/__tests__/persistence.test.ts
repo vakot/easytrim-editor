@@ -11,11 +11,12 @@ import {
 import { playbackSpeedChanged } from "@/app/store/slices/playback-controls-slice";
 import {
   activityFeedViewChanged,
+  editingSettingsReset,
   layoutDensityChanged,
   preferenceChanged,
-  preferencesReset,
   primaryColorChanged,
   themePreferenceChanged,
+  uiScaleIncreased,
 } from "@/app/store/slices/preferences-slice";
 import { type AppStore, createAppPersistor, createAppStore } from "@/app/store/store";
 
@@ -273,21 +274,35 @@ describe("Redux Persist store integration", () => {
     });
   });
 
-  it("preserves view and queue settings when persisting a preferences reset", async () => {
+  it("resets only Editing settings while preserving Queue, Layout, and Appearance", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
+    store.dispatch(preferenceChanged({ key: "segmentPlaybackEnabledDefault", enabled: false }));
+    store.dispatch(preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }));
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
+    store.dispatch(queueFinishActionChanged("exit"));
     store.dispatch(activityFeedViewChanged("branch"));
     store.dispatch(layoutDensityChanged("compact"));
     store.dispatch(themePreferenceChanged("dark"));
     store.dispatch(primaryColorChanged("#4299e1"));
-    store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
-    store.dispatch(queueFinishActionChanged("exit"));
+    store.dispatch(uiScaleIncreased());
     await persistor.flush();
-    store.dispatch(preferencesReset());
+    store.dispatch(editingSettingsReset());
     await persistor.flush();
 
     expect(store.getState().export.queueFinishAction).toBe("exit");
+    expect(store.getState().preferences).toEqual({
+      ...DEFAULT_PREFERENCES,
+      activityFeedView: "branch",
+      layoutDensity: "compact",
+      theme: "dark",
+      primaryColor: "#4299e1",
+      autoStartQueueEnabled: false,
+      deleteSourceOnRenderFinish: true,
+      uiScalePercent: 125,
+    });
     const persistedRoot = await readPersistedRoot(storage);
     expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
       ...DEFAULT_PREFERENCES,
@@ -295,26 +310,52 @@ describe("Redux Persist store integration", () => {
       layoutDensity: "compact",
       theme: "dark",
       primaryColor: "#4299e1",
+      autoStartQueueEnabled: false,
       deleteSourceOnRenderFinish: true,
+      uiScalePercent: 125,
     });
   });
 
-  it("resets both queue settings while preserving unrelated preferences", async () => {
+  it("resets only Queue settings while preserving Editing, Layout, and Appearance", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(queueFinishActionChanged("exit"));
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
     store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
+    store.dispatch(themePreferenceChanged("dark"));
+    store.dispatch(primaryColorChanged("#123456"));
+    store.dispatch(activityFeedViewChanged("branch"));
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
+    store.dispatch(preferenceChanged({ key: "segmentPlaybackEnabledDefault", enabled: false }));
+    store.dispatch(preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }));
+    store.dispatch(layoutDensityChanged("compact"));
+    store.dispatch(uiScaleIncreased());
     store.dispatch(queueSettingsReset());
     await persistor.flush();
 
     expect(store.getState().export.queueFinishAction).toBe("nothing");
-    expect(store.getState().preferences.deleteSourceOnRenderFinish).toBe(false);
-    expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
-    const persistedRoot = await readPersistedRoot(storage);
-    expect(JSON.parse(String(persistedRoot.preferences))).toMatchObject({
-      deleteSourceOnRenderFinish: false,
+    expect(store.getState().preferences).toEqual({
+      ...DEFAULT_PREFERENCES,
+      activityFeedView: "branch",
+      layoutDensity: "compact",
+      theme: "dark",
+      primaryColor: "#123456",
       loopPlaybackEnabledDefault: false,
+      segmentPlaybackEnabledDefault: false,
+      mergeAudioEnabledDefault: true,
+      uiScalePercent: 125,
+    });
+    const persistedRoot = await readPersistedRoot(storage);
+    expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
+      ...DEFAULT_PREFERENCES,
+      activityFeedView: "branch",
+      layoutDensity: "compact",
+      theme: "dark",
+      primaryColor: "#123456",
+      loopPlaybackEnabledDefault: false,
+      segmentPlaybackEnabledDefault: false,
+      mergeAudioEnabledDefault: true,
+      uiScalePercent: 125,
     });
   });
 

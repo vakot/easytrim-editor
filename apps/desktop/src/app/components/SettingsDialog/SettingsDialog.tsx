@@ -1,9 +1,14 @@
 import type { TFunction } from "i18next";
+import { Keyboard } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Badge } from "@/components/ui/badge";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Separator } from "@/components/ui/separator";
 
+import { SETTINGS_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
+import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import {
   Library,
@@ -21,12 +26,11 @@ import {
 
 import { SettingsAbout } from "./pages/SettingsAbout";
 import { SettingsAppearance } from "./pages/SettingsAppearance";
-import { SettingsEditor } from "./pages/SettingsEditor";
 import { SettingsGeneral } from "./pages/SettingsGeneral";
 import { SettingsLayout } from "./pages/SettingsLayout";
-import { SettingsQueue } from "./pages/SettingsQueue";
+import { SettingsPreferences } from "./pages/SettingsPreferences";
 
-type SettingsPageId = "general" | "appearance" | "editor" | "layout" | "queue" | "about";
+type SettingsPageId = "general" | "appearance" | "preferences" | "layout" | "about";
 
 function SettingsDialog() {
   const { t } = useTranslation();
@@ -51,9 +55,8 @@ function SettingsDialog() {
             <LibraryNavigationGroup>
               <SettingsPageItem page="general" />
               <SettingsPageItem page="appearance" />
-              <SettingsPageItem page="editor" />
+              <SettingsPageItem page="preferences" />
               <SettingsPageItem page="layout" />
-              <SettingsPageItem page="queue" />
               <SettingsPageItem page="about" />
             </LibraryNavigationGroup>
           </LibraryNavigation>
@@ -62,19 +65,28 @@ function SettingsDialog() {
 
           <LibraryContent>
             <SettingsPage page="general">
+              <Badge
+                className="h-8 gap-2 border-primary/10 bg-primary/5 text-muted-foreground"
+                variant="outline"
+              >
+                <Keyboard aria-hidden="true" className="size-4" />
+                {t("settings.pages.general.openSettingsShortcutLabel")}
+                <KbdGroup>
+                  {getShortcutDisplayKeys(SETTINGS_SHORTCUT).map((key) => (
+                    <Kbd key={key}>{key}</Kbd>
+                  ))}
+                </KbdGroup>
+              </Badge>
               <SettingsGeneral />
             </SettingsPage>
             <SettingsPage page="appearance">
               <SettingsAppearance />
             </SettingsPage>
-            <SettingsPage page="editor">
-              <SettingsEditor />
+            <SettingsPage page="preferences">
+              <SettingsPreferences />
             </SettingsPage>
             <SettingsPage page="layout">
               <SettingsLayout />
-            </SettingsPage>
-            <SettingsPage page="queue">
-              <SettingsQueue />
             </SettingsPage>
             <SettingsPage page="about">
               <SettingsAbout />
@@ -108,12 +120,10 @@ function getSettingsPageTitle(t: TFunction, page: SettingsPageId) {
       return t("settings.pages.general.title");
     case "appearance":
       return t("settings.pages.appearance.title");
-    case "editor":
-      return t("settings.pages.defaults.title");
+    case "preferences":
+      return t("settings.pages.preferences.title");
     case "layout":
       return t("settings.pages.layout.title");
-    case "queue":
-      return t("settings.pages.queue.title");
     case "about":
       return t("settings.pages.about.title");
   }
@@ -125,12 +135,10 @@ function getSettingsPageDescription(t: TFunction, page: SettingsPageId) {
       return t("settings.pages.general.description");
     case "appearance":
       return t("settings.pages.appearance.description");
-    case "editor":
-      return t("settings.pages.defaults.description");
+    case "preferences":
+      return t("settings.pages.preferences.description");
     case "layout":
       return t("settings.pages.layout.description");
-    case "queue":
-      return t("settings.pages.queue.description");
     case "about":
       return t("settings.pages.about.description");
   }
