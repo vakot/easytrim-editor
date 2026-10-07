@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { filterLanguages, getLanguageDisplayName, LANGUAGE_CATALOG } from "../languages";
+import {
+  filterLanguages,
+  getLanguageDisplayName,
+  getLanguageRegion,
+  LANGUAGE_CATALOG,
+} from "../languages";
 
 describe("filterLanguages", () => {
   it("matches English and native names without case or extra whitespace sensitivity", () => {
@@ -39,6 +44,46 @@ describe("filterLanguages", () => {
     expect(filterLanguages(LANGUAGE_CATALOG, "espanol")).toContainEqual(
       expect.objectContaining({ code: "es" }),
     );
+  });
+
+  it("tolerates typos and partial words in English names", () => {
+    expect(filterLanguages(LANGUAGE_CATALOG, "englsh")[0]?.code).toBe("en");
+    expect(filterLanguages(LANGUAGE_CATALOG, "russan")).toContainEqual(
+      expect.objectContaining({ code: "ru" }),
+    );
+    expect(filterLanguages(LANGUAGE_CATALOG, "ukrain")[0]?.code).toBe("uk");
+  });
+
+  it("matches all tokens across language search terms", () => {
+    expect(filterLanguages(LANGUAGE_CATALOG, "pt br")[0]?.code).toBe("pt");
+  });
+
+  it("searches native and English names", () => {
+    expect(filterLanguages(LANGUAGE_CATALOG, "русский")[0]?.code).toBe("ru");
+    expect(filterLanguages(LANGUAGE_CATALOG, "slovak")[0]?.code).toBe("sk");
+  });
+});
+
+describe("language flags", () => {
+  it.each([
+    ["en", "GB"],
+    ["ru", "RU"],
+    ["uk", "UA"],
+    ["sk", "SK"],
+    ["de", "DE"],
+    ["fr", "FR"],
+    ["es", "ES"],
+    ["pt", "PT"],
+    ["ja", "JP"],
+    ["ko", "KR"],
+    ["zh", "CN"],
+  ])("maps %s to its representative region", (code, expectedFlag) => {
+    const language = LANGUAGE_CATALOG.find((entry) => entry.code === code)!;
+    expect(getLanguageRegion(language)).toBe(expectedFlag);
+  });
+
+  it("returns no region for a language without a representative region", () => {
+    expect(getLanguageRegion(LANGUAGE_CATALOG.find(({ code }) => code === "aa")!)).toBeUndefined();
   });
 });
 

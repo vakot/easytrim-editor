@@ -10,6 +10,7 @@ import type {
   ApplicationShortcut,
   ShortcutPlatform,
 } from "@/app/commands/core/application-command.types";
+import { FUZZY_SEARCH_OPTIONS } from "@/lib/fuzzy-search.consts";
 
 function defineApplicationCommandGroup<
   const Commands extends readonly ApplicationCommandDefinition[],
@@ -64,11 +65,8 @@ function filterApplicationCommands<Id extends string>(
 
 const commandSearchOptions = {
   includeMatches: true,
-  ignoreLocation: true,
   keys: ["label", "group.label", "searchTerms"],
-  threshold: 0.3,
-  tokenMatch: "all",
-  useTokenSearch: true,
+  ...FUZZY_SEARCH_OPTIONS,
 } satisfies IFuseOptions<ApplicationCommand>;
 
 function getShortcutDisplayKeys(

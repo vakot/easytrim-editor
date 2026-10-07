@@ -27,7 +27,7 @@ import {
 import { LANGUAGE_CATALOG } from "@/domain/languages";
 
 const commonLanguages = LANGUAGE_CATALOG.filter(({ code }) =>
-  ["de", "en", "es", "fr", "ja", "ru"].includes(code),
+  ["aa", "de", "en", "es", "fr", "ja", "ru", "sk", "zh"].includes(code),
 );
 
 const meta = {

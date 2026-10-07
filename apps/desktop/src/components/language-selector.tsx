@@ -1,4 +1,4 @@
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, LanguagesIcon } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -15,8 +15,9 @@ import {
 import { MenuIcon } from "@/components/ui/menu";
 
 import {
-  filterLanguages,
+  createLanguageSearcher,
   getLanguageDisplayName,
+  getLanguageRegion,
   type Language,
   LANGUAGE_CATALOG,
 } from "@/domain/languages";
@@ -33,6 +34,27 @@ interface LanguageSelectorContextValue {
 
 const LanguageSelectorContext = React.createContext<LanguageSelectorContextValue | null>(null);
 const LanguageSelectorContentContext = React.createContext(false);
+
+function LanguageFlag({ language }: { language: Language }) {
+  const regionCode = getLanguageRegion(language);
+
+  return (
+    <span
+      aria-hidden="true"
+      className="mr-2 flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs"
+    >
+      {regionCode ? (
+        <img
+          alt=""
+          className="block aspect-4/3 w-full object-cover"
+          src={`/flags/${regionCode.toLowerCase()}.svg`}
+        />
+      ) : (
+        <LanguagesIcon className="size-4 text-muted-foreground" />
+      )}
+    </span>
+  );
+}
 
 function useLanguageSelector() {
   const context = React.useContext(LanguageSelectorContext);
@@ -72,9 +94,10 @@ function LanguageSelector({
     [languages, selectedValue],
   );
 
+  const searchLanguages = React.useMemo(() => createLanguageSearcher(languages), [languages]);
   const filteredLanguages = React.useMemo(
-    () => filterLanguages(languages, query ?? ""),
-    [languages, query],
+    () => searchLanguages(query ?? ""),
+    [query, searchLanguages],
   );
 
   const selectLanguage = React.useCallback(
@@ -123,8 +146,14 @@ function LanguageSelectorValue({
   const { language } = useLanguageSelector();
 
   if (!language) return placeholder ?? null;
-  if (type === "displayName") return getLanguageDisplayName(language);
-  return language[type];
+  const value = type === "displayName" ? getLanguageDisplayName(language) : language[type];
+
+  return (
+    <>
+      <LanguageFlag language={language} />
+      <span>{value}</span>
+    </>
+  );
 }
 
 function LanguageSelectorContent({
@@ -200,7 +229,7 @@ function LanguageSelectorList({
           return (
             <ComboboxItem
               aria-label={`${getLanguageDisplayName(language)}, ${language.code}`}
-              className={cn("min-w-0 px-8 data-[language-selected=true]:font-medium")}
+              className={cn("min-w-0 px-2.5 pr-8 data-[language-selected=true]:font-medium")}
               data-language-selected={selected || undefined}
               disabled={disabled}
               key={language.code}
@@ -209,14 +238,15 @@ function LanguageSelectorList({
               value={language.code}
             >
               {selected ? (
-                <MenuIcon>
+                <MenuIcon side="right">
                   <CheckIcon aria-hidden="true" />
                 </MenuIcon>
               ) : null}
+              <LanguageFlag language={language} />
               <span className="min-w-0 flex-1 truncate">{getLanguageDisplayName(language)}</span>
-              <MenuIcon side="right">
-                <span className="shrink-0 text-xs text-muted-foreground">{language.code}</span>
-              </MenuIcon>
+              <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                {language.code}
+              </span>
             </ComboboxItem>
           );
         })}

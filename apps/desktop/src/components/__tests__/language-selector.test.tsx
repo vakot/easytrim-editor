@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -10,7 +10,7 @@ import {
   LanguageSelectorTrigger,
   LanguageSelectorValue,
 } from "@/components/language-selector";
-import type { Language } from "@/domain/languages";
+import { getLanguageDisplayName, type Language, LANGUAGE_CATALOG } from "@/domain/languages";
 
 const languages: readonly Language[] = [
   { code: "en", englishName: "English", nativeName: "English" },
@@ -54,9 +54,13 @@ describe("LanguageSelector", () => {
       </LanguageSelector>,
     );
 
-    expect(screen.getByRole("button", { name: "Choose language" })).toHaveTextContent(
-      "Русский (Russian)",
+    const trigger = screen.getByRole("button", { name: "Choose language" });
+    expect(trigger).toHaveTextContent("Русский (Russian)");
+    expect(trigger.querySelector("span[aria-hidden='true'] img")).toHaveAttribute(
+      "src",
+      "/flags/ru.svg",
     );
+    expect(trigger.querySelector("span[aria-hidden='true']")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /choose language/i }));
     const search = screen.getByRole("combobox", { name: "Search languages" });
@@ -155,5 +159,57 @@ describe("LanguageSelector", () => {
 
     expect(screen.getByRole("option", { name: "English, en" })).toBeVisible();
     expect(screen.getByRole("option", { name: "Русский (Russian), ru" })).toBeVisible();
+  });
+
+  it.each([
+    ["en", "gb"],
+    ["ru", "ru"],
+    ["uk", "ua"],
+    ["sk", "sk"],
+    ["de", "de"],
+    ["fr", "fr"],
+    ["es", "es"],
+    ["pt", "pt"],
+    ["ja", "jp"],
+    ["ko", "kr"],
+    ["zh", "cn"],
+  ])("renders the mapped %s flag in its option", (code, flagAsset) => {
+    const language = LANGUAGE_CATALOG.find((entry) => entry.code === code)!;
+    const label = `${getLanguageDisplayName(language)}, ${language.code}`;
+
+    render(
+      <LanguageSelector defaultOpen languages={[language]}>
+        <LanguageSelectorContent>
+          <LanguageSelectorList />
+        </LanguageSelectorContent>
+      </LanguageSelector>,
+    );
+
+    const option = screen.getByRole("option", { name: label });
+    const flagContainer = option.querySelector("span[aria-hidden='true']");
+    expect(flagContainer?.querySelector("img")).toHaveAttribute("src", `/flags/${flagAsset}.svg`);
+    expect(flagContainer).toBeInTheDocument();
+    expect(flagContainer?.querySelector("img")).toHaveAttribute("alt", "");
+    expect(within(option).getByText(language.code)).toBeVisible();
+  });
+
+  it("renders a neutral flag fallback for languages without a mapped region", () => {
+    const language = LANGUAGE_CATALOG.find((entry) => entry.code === "aa")!;
+
+    render(
+      <LanguageSelector defaultOpen languages={[language]}>
+        <LanguageSelectorContent>
+          <LanguageSelectorList />
+        </LanguageSelectorContent>
+      </LanguageSelector>,
+    );
+
+    const option = screen.getByRole("option", {
+      name: `${getLanguageDisplayName(language)}, ${language.code}`,
+    });
+
+    const flagContainer = option.querySelector("span[aria-hidden='true']");
+    expect(flagContainer?.querySelector("img")).not.toBeInTheDocument();
+    expect(flagContainer?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 });

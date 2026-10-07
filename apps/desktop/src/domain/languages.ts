@@ -1,8 +1,26 @@
+import Fuse from "fuse.js";
+
+import { FUZZY_SEARCH_OPTIONS } from "@/lib/fuzzy-search.consts";
+
 export type Language = {
   /** ISO 639-1 alpha-2 identifier. */
   code: string;
   englishName: string;
   nativeName: string;
+};
+
+const LANGUAGE_REGIONS: Readonly<Record<string, string>> = {
+  de: "DE",
+  en: "GB",
+  es: "ES",
+  fr: "FR",
+  ja: "JP",
+  ko: "KR",
+  pt: "PT",
+  ru: "RU",
+  sk: "SK",
+  uk: "UA",
+  zh: "CN",
 };
 
 const LANGUAGE_CODES = [
@@ -203,20 +221,38 @@ export const LANGUAGE_CATALOG: readonly Language[] = LANGUAGE_CODES.map((code) =
   return { code, englishName, nativeName };
 });
 
-function normalizeLanguageSearch(value: string): string {
-  return value.normalize("NFD").replace(/\p{M}/gu, "").trim().replace(/\s+/gu, " ").toLowerCase();
+export function getLanguageRegion(language: Language): string | undefined {
+  return LANGUAGE_REGIONS[language.code];
 }
 
 export function filterLanguages<T extends Language>(languages: readonly T[], query: string): T[] {
-  const normalizedQuery = normalizeLanguageSearch(query);
-
+  const normalizedQuery = query.trim();
   if (!normalizedQuery) return [...languages];
 
-  return languages.filter((language) =>
-    [language.code, language.englishName, language.nativeName].some((name) =>
-      normalizeLanguageSearch(name).includes(normalizedQuery),
-    ),
-  );
+  return createLanguageSearcher(languages)(normalizedQuery);
+}
+
+export function createLanguageSearcher<T extends Language>(languages: readonly T[]) {
+  const searchEntries = languages.map((language) => ({
+    language,
+    code: language.code,
+    englishName: language.englishName,
+    nativeName: language.nativeName,
+    searchTerms: language.code === "pt" ? "pt br pt-br brazilian portuguese" : "",
+  }));
+
+  const fuse = new Fuse(searchEntries, {
+    ...FUZZY_SEARCH_OPTIONS,
+    ignoreDiacritics: true,
+    keys: ["code", "englishName", "nativeName", "searchTerms"],
+  });
+
+  return (query: string): T[] => {
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) return [...languages];
+
+    return fuse.search(normalizedQuery).map(({ item }) => item.language);
+  };
 }
 
 export function getLanguageDisplayName(language: Language): string {
