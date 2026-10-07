@@ -24,39 +24,66 @@ function localizeAppError(error: AppError, t: TFunction): string {
       return t("source.errors.thumbnail.preparationTimedOut");
     case "media.thumbnail.preparationFailed":
       return t("source.errors.thumbnail.preparationFailed");
-    case "media.waveform.widthOutOfRange":
+    case "media.waveform.widthOutOfRange": {
+      const minWidth = getNonNegativeIntegerArg(error, "minWidth");
+      const maxWidth = getNonNegativeIntegerArg(error, "maxWidth");
+      if (minWidth === undefined || maxWidth === undefined || maxWidth <= minWidth) {
+        return t("app.errors.unexpected");
+      }
       return t("audio.errors.waveform.widthOutOfRange", {
-        minWidth: error.messageArgs?.minWidth ?? "?",
-        maxWidth: error.messageArgs?.maxWidth ?? "?",
+        minWidth,
+        maxWidth,
       });
-    case "media.waveform.streamDoesNotBelongToSource":
+    }
+    case "media.waveform.streamDoesNotBelongToSource": {
+      const streamIndex = getNonNegativeIntegerArg(error, "streamIndex");
+      if (streamIndex === undefined) return t("app.errors.unexpected");
       return t("audio.errors.waveform.streamDoesNotBelongToSource", {
-        streamIndex: error.messageArgs?.streamIndex ?? "?",
+        streamIndex,
       });
-    case "media.waveform.analysisFailed":
+    }
+    case "media.waveform.analysisFailed": {
+      const streamIndex = getNonNegativeIntegerArg(error, "streamIndex");
+      if (streamIndex === undefined) return t("app.errors.unexpected");
       return t("audio.errors.waveform.analysisFailed", {
-        streamIndex: error.messageArgs?.streamIndex ?? "?",
+        streamIndex,
       });
-    case "media.waveform.sampleCountUnavailable":
+    }
+    case "media.waveform.sampleCountUnavailable": {
+      const streamIndex = getNonNegativeIntegerArg(error, "streamIndex");
+      if (streamIndex === undefined) return t("app.errors.unexpected");
       return t("audio.errors.waveform.sampleCountUnavailable", {
-        streamIndex: error.messageArgs?.streamIndex ?? "?",
+        streamIndex,
       });
-    case "media.waveform.tooFewSamples":
+    }
+    case "media.waveform.tooFewSamples": {
+      const streamIndex = getNonNegativeIntegerArg(error, "streamIndex");
+      if (streamIndex === undefined) return t("app.errors.unexpected");
       return t("audio.errors.waveform.tooFewSamples", {
-        streamIndex: error.messageArgs?.streamIndex ?? "?",
+        streamIndex,
       });
-    case "media.waveform.sampleReductionFailed":
+    }
+    case "media.waveform.sampleReductionFailed": {
+      const streamIndex = getNonNegativeIntegerArg(error, "streamIndex");
+      if (streamIndex === undefined) return t("app.errors.unexpected");
       return t("audio.errors.waveform.sampleReductionFailed", {
-        streamIndex: error.messageArgs?.streamIndex ?? "?",
+        streamIndex,
       });
-    case "media.waveform.imageMissing":
+    }
+    case "media.waveform.imageMissing": {
+      const streamIndex = getNonNegativeIntegerArg(error, "streamIndex");
+      if (streamIndex === undefined) return t("app.errors.unexpected");
       return t("audio.errors.waveform.imageMissing", {
-        streamIndex: error.messageArgs?.streamIndex ?? "?",
+        streamIndex,
       });
-    case "media.waveform.imageRenderingFailed":
+    }
+    case "media.waveform.imageRenderingFailed": {
+      const streamIndex = getNonNegativeIntegerArg(error, "streamIndex");
+      if (streamIndex === undefined) return t("app.errors.unexpected");
       return t("audio.errors.waveform.imageRenderingFailed", {
-        streamIndex: error.messageArgs?.streamIndex ?? "?",
+        streamIndex,
       });
+    }
     case "source.dropVideoFileInsteadOfEmptySelection":
       return t("source.errors.dropVideoFileInsteadOfEmptySelection");
     case "export.analyzeTrackLoudnessToContinue":
@@ -310,6 +337,11 @@ function localizeAppError(error: AppError, t: TFunction): string {
     default:
       return t("app.errors.unexpected");
   }
+}
+
+function getNonNegativeIntegerArg(error: AppError, key: string): number | undefined {
+  const value = error.messageArgs?.[key];
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 }
 
 export { localizeAppError };
