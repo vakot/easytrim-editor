@@ -16,7 +16,7 @@ All notable changes to this project will be documented in this file.
 - Renamed the Defaults page to Preferences in Settings.
 - Moved queue settings into the Preferences page.
 - Renamed the Preferences settings section and reset label to Editing terminology.
-- Refined About page button variants to distinguish the update action from supporting links.
+- Refined About page button variants and added a Ko-fi brand icon to the support link.
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
 - Localized the primary color picker's saturation, brightness, and hue labels for assistive technology.
 
