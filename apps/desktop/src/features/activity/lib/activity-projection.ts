@@ -191,6 +191,7 @@ function groupActivitySessionsForDisplay(
     const presentation = getActivitySessionPresentation(group, currentAppVersion, {
       now: currentSessionLabel,
     });
+
     const timestampMs = Date.parse(group.startedAt);
     const timeBucketKey = group.isCurrent
       ? "current"
@@ -198,6 +199,7 @@ function groupActivitySessionsForDisplay(
           Number.isNaN(timestampMs) ? undefined : timestampMs * 1_000,
           nowMs,
         );
+
     const displayKey = JSON.stringify([timeBucketKey, presentation.tone, presentation.label]);
     const previous = displayGroups.at(-1);
 
@@ -830,8 +832,8 @@ export type {
   ActivityEntry,
   ActivityGroup,
   ActivityProjectionLabels,
+  ActivitySessionDisplayGroup,
   ActivitySessionGroup,
   ActivitySessionLabels,
-  ActivitySessionDisplayGroup,
   ActivitySessionPresentation,
 };

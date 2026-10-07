@@ -30,9 +30,9 @@ function renderActivity(
   onAction = vi.fn(),
   activityFeedView: "default" | "compact" | "branch" = "default",
   options: {
+    additionalEntries?: ActivityEntry[];
     currentAppVersion?: string;
     currentSessionId?: string;
-    additionalEntries?: ActivityEntry[];
     sessions?: (typeof session)[];
   } = {},
 ) {
@@ -87,11 +87,13 @@ describe("ActivityFeedView file lifecycle entries", () => {
       new Date(now.getTime() - 23 * 60 * 60_000).toISOString(),
       new Date(now.getTime() - 24 * 60 * 60_000).toISOString(),
     ];
+
     const sessions = sessionStarts.map((startedAt, index) => ({
       ...session,
       sessionId: `history-session-${index}`,
       startedAt,
     }));
+
     const entries = sessionStarts.map((startedAt, index) => ({
       id: `history-session-${index}:delete-1:source.file-delete`,
       kind: "file-deleted" as const,
@@ -163,11 +165,13 @@ describe("ActivityFeedView file lifecycle entries", () => {
       new Date(now.getTime() - 24 * 60 * 60_000).toISOString(),
       new Date(now.getTime() - 30 * 60 * 60_000).toISOString(),
     ];
+
     const sessions = sessionStarts.map((startedAt, index) => ({
       ...session,
       sessionId: `yesterday-session-${index}`,
       startedAt,
     }));
+
     const entries = sessionStarts.map((startedAt, index) => ({
       id: `yesterday-session-${index}:delete-1:source.file-delete`,
       kind: "file-deleted" as const,
@@ -184,6 +188,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
         additionalEntries: [entries[1]!],
         sessions,
       });
+
       const separators = container.querySelectorAll(
         '[data-slot="marker"][data-variant="separator"]',
       );
@@ -208,6 +213,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
       sessionId: `dated-session-${index}`,
       startedAt,
     }));
+
     const entries = sessionStarts.map((startedAt, index) => ({
       id: `dated-session-${index}:delete-1:source.file-delete`,
       kind: "file-deleted" as const,
@@ -224,9 +230,11 @@ describe("ActivityFeedView file lifecycle entries", () => {
         additionalEntries: [entries[1]!],
         sessions,
       });
+
       const separators = container.querySelectorAll(
         '[data-slot="marker"][data-variant="separator"]',
       );
+
       const timestamps = Array.from(separators).map(
         (separator) => separator.querySelector("time")?.textContent,
       );
@@ -253,6 +261,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
       sessionId: `transition-session-${index}`,
       startedAt,
     }));
+
     const entries = sessionStarts.map((startedAt, index) => ({
       id: `transition-session-${index}:delete-1:source.file-delete`,
       kind: "file-deleted" as const,
@@ -269,6 +278,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
         additionalEntries: [entries[1]!],
         sessions,
       });
+
       const separatorQuery = '[data-slot="marker"][data-variant="separator"]';
 
       expect(container.querySelectorAll(separatorQuery)).toHaveLength(2);
@@ -291,6 +301,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
       sessionId: `version-session-${index}`,
       startedAt,
     }));
+
     const entries = sessionStarts.map((startedAt, index) => ({
       id: `version-session-${index}:delete-1:source.file-delete`,
       kind: "file-deleted" as const,
@@ -307,6 +318,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
         additionalEntries: [entries[1]!],
         sessions,
       });
+
       const separators = Array.from(
         container.querySelectorAll('[data-slot="marker"][data-variant="separator"]'),
       );
@@ -331,11 +343,13 @@ describe("ActivityFeedView file lifecycle entries", () => {
       sessionId: "history-session",
       startedAt: historicalStartedAt,
     };
+
     const olderHistoricalSession = {
       ...session,
       sessionId: "older-history-session",
       startedAt: olderHistoricalStartedAt,
     };
+
     const currentEntry = {
       ...fileEntry("completed"),
       id: "current-session:current-delete:source.file-delete",
@@ -343,6 +357,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
       startedAt: "2026-08-31T17:00:00.000Z",
       title: "Current deletion",
     };
+
     const historicalEntry = {
       ...fileEntry("completed"),
       id: "history-session:history-delete:source.file-delete",
@@ -351,6 +366,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
       startedAt: historicalStartedAt,
       title: "Historical deletion",
     };
+
     const olderHistoricalEntry = {
       ...historicalEntry,
       id: "older-history-session:older-delete:source.file-delete",
@@ -365,6 +381,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
         additionalEntries: [historicalEntry, olderHistoricalEntry],
         sessions: [session, historicalSession, olderHistoricalSession],
       });
+
       const timestamps = Array.from(
         container.querySelectorAll('[data-slot="marker"][data-variant="separator"]'),
       ).map((separator) => separator.textContent?.replaceAll("·", "").trim());
