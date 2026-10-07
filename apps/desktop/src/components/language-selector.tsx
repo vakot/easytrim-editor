@@ -53,14 +53,6 @@ function useLanguageSelector() {
   return context;
 }
 
-type LanguageSelectorProps = Omit<React.ComponentProps<typeof Combobox>, "shouldFilter"> & {
-  defaultValue?: Language["code"];
-  disabled?: boolean;
-  languages?: readonly Language[];
-  onValueChange?: (value: Language["code"]) => void;
-  value?: Language["code"];
-};
-
 function LanguageSelector({
   children,
   defaultValue,
@@ -70,7 +62,13 @@ function LanguageSelector({
   onValueChange,
   value,
   ...props
-}: LanguageSelectorProps) {
+}: Omit<React.ComponentProps<typeof Combobox>, "shouldFilter"> & {
+  defaultValue?: Language["code"];
+  disabled?: boolean;
+  languages?: readonly Language[];
+  onValueChange?: (value: Language["code"]) => void;
+  value?: Language["code"];
+}) {
   const { t } = useTranslation();
   const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue);
   const [query, setQuery] = React.useState<string | null>(null);
