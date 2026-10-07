@@ -1,6 +1,5 @@
 import GB from "country-flag-icons/react/3x2/GB";
 import RU from "country-flag-icons/react/3x2/RU";
-import SK from "country-flag-icons/react/3x2/SK";
 import { CheckIcon } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
@@ -41,7 +40,6 @@ const LanguageSelectorContentContext = React.createContext(false);
 const LANGUAGE_REGION_FLAGS: Record<Language["region"], typeof GB> = {
   GB,
   RU,
-  SK,
 };
 
 function useLanguageSelector() {

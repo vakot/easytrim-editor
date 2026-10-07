@@ -2,7 +2,6 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import GB from "country-flag-icons/react/3x2/GB";
 import RU from "country-flag-icons/react/3x2/RU";
-import SK from "country-flag-icons/react/3x2/SK";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -60,21 +59,41 @@ describe("LanguageSelector", () => {
 
     await user.click(screen.getByRole("button", { name: /choose language/i }));
     const search = screen.getByRole("combobox", { name: "Search languages" });
-    await user.type(search, "slovencina");
+    await user.type(search, "Русский");
 
-    expect(screen.getByRole("option", { name: "Slovenčina, sk" })).toBeVisible();
-    expect(screen.queryByRole("option", { name: "Русский, ru" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Русский, ru" })).toBeVisible();
+    expect(screen.queryByRole("option", { name: "English, en" })).not.toBeInTheDocument();
 
     await user.keyboard("{ArrowDown}{Enter}");
 
-    expect(onValueChange).toHaveBeenCalledWith("sk");
-    expect(screen.getByRole("button", { name: "Choose language" })).toHaveTextContent("Slovenčina");
+    expect(onValueChange).toHaveBeenCalledWith("ru");
+    expect(screen.getByRole("button", { name: "Choose language" })).toHaveTextContent("Русский");
     expect(
       screen
         .getByRole("button", { name: "Choose language" })
         .querySelector("span[aria-hidden='true'] svg")?.outerHTML,
-    ).toBe(renderToStaticMarkup(<SK aria-hidden="true" className="block h-auto! w-full!" />));
+    ).toBe(renderToStaticMarkup(<RU aria-hidden="true" className="block h-auto! w-full!" />));
     await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());
+  });
+
+  it("finds Russian by both its English and native names", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <LanguageSelector defaultOpen languages={languages}>
+        <LanguageSelectorContent>
+          <LanguageSelectorInput aria-label="Search languages" />
+          <LanguageSelectorList />
+        </LanguageSelectorContent>
+      </LanguageSelector>,
+    );
+
+    const search = screen.getByRole("combobox", { name: "Search languages" });
+    await user.type(search, "Russian");
+    expect(screen.getByRole("option", { name: "Русский, ru" })).toBeVisible();
+    await user.clear(search);
+    await user.type(search, "Русский");
+    expect(screen.getByRole("option", { name: "Русский, ru" })).toBeVisible();
   });
 
   it("uses the editable input as the trigger and restores the selected name after closing", async () => {
@@ -158,12 +177,12 @@ describe("LanguageSelector", () => {
 
     expect(screen.getByRole("option", { name: "English, en" })).toBeVisible();
     expect(screen.getByRole("option", { name: "Русский, ru" })).toBeVisible();
+    expect(screen.getAllByRole("option")).toHaveLength(2);
   });
 
   it.each([
     { Flag: GB, language: SUPPORTED_LANGUAGES[0] },
     { Flag: RU, language: SUPPORTED_LANGUAGES[1] },
-    { Flag: SK, language: SUPPORTED_LANGUAGES[2] },
   ])("renders the package flag in its option", ({ Flag, language }) => {
     const label = `${language.nativeName}, ${language.code}`;
 

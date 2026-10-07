@@ -39,10 +39,10 @@ describe("SettingsGeneral", () => {
     render(<SettingsGeneral />);
 
     await user.click(screen.getByRole("button", { name: "Language" }));
-    await user.type(screen.getByRole("combobox", { name: "Search languages" }), "slovencina");
+    await user.type(screen.getByRole("combobox", { name: "Search languages" }), "Русский");
     await user.keyboard("{ArrowDown}{Enter}");
 
-    await waitFor(() => expect(i18n.resolvedLanguage).toBe("sk"));
-    expect(screen.getByRole("button", { name: "Jazyk" })).toHaveTextContent("Slovenčina");
+    await waitFor(() => expect(i18n.resolvedLanguage).toBe("ru"));
+    expect(screen.getByRole("button", { name: "Язык" })).toHaveTextContent("Русский");
   });
 });

@@ -4,7 +4,7 @@ import { basename, extname, join, relative } from "node:path";
 import ts from "typescript";
 
 const CANONICAL_LOCALE = "en";
-export const SUPPORTED_LOCALES = ["en", "ru", "sk"];
+export const SUPPORTED_LOCALES = ["en", "ru"];
 const PLURAL_SUFFIXES = ["zero", "one", "two", "few", "many", "other"];
 const PLURAL_KEY = /^(.*)_(zero|one|two|few|many|other)$/;
 const SUSPICIOUS_CYRILLIC = /[\u0400-\u04ff]/;

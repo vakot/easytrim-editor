@@ -18,7 +18,7 @@ const repositoryRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 test("validates the repository translation graph", async () => {
   const report = await validateI18n(repositoryRoot);
 
-  assert.equal(report.localeCount, 3);
+  assert.equal(report.localeCount, 2);
   assert.equal(report.resourceLeafCount, report.usedResourceLeafCount);
   assert.equal(report.resourceUnitCount, report.usedResourceUnitCount);
   assert.ok(report.resourceUnitCount < report.resourceLeafCount);
@@ -111,21 +111,21 @@ test("accepts partial locales but rejects unknown keys and interpolation mismatc
       ),
     ],
     [
-      "sk",
+      "ru",
       parseLocaleSource(
-        `export const sk = { common: { labels: {
+        `export const ru = { common: { labels: {
           extra: "Navyše",
-          greeting: "Ahoj {{person}}",
+          greeting: "Привет, {{person}}",
         } } } as const;`,
-        "sk",
+        "ru",
       ),
     ],
   ]);
 
   const issues = validateLocaleArchitecture(locales);
 
-  assert.ok(issues.includes("sk has extra translation key common.labels.extra"));
-  assert.ok(issues.includes("sk interpolation parameters differ for common.labels.greeting"));
+  assert.ok(issues.includes("ru has extra translation key common.labels.extra"));
+  assert.ok(issues.includes("ru interpolation parameters differ for common.labels.greeting"));
   assert.ok(!issues.some((issue) => issue.includes("is missing translation key")));
 });
 
@@ -211,9 +211,7 @@ test("accepts complete locale-specific cardinal forms absent from English", () =
     jobs_other: "{{count}} jobs",
   };
 
-  for (const language of ["ru", "sk"]) {
-    assert.deepEqual(validateLocaleArchitecture(pluralLocales(language, forms)), []);
-  }
+  assert.deepEqual(validateLocaleArchitecture(pluralLocales("ru", forms)), []);
 });
 
 test("rejects partially translated plural families", () => {
@@ -223,7 +221,7 @@ test("rejects partially translated plural families", () => {
   for (const category of ["few", "many", "other"]) {
     assert.ok(issues.includes(`ru plural family queue.summary.jobs requires an _${category} form`));
   }
-  const missingMany = pluralLocales("sk", {
+  const missingMany = pluralLocales("ru", {
     jobs_one: "{{count}} job",
     jobs_few: "{{count}} jobs",
     jobs_other: "{{count}} jobs",
@@ -231,7 +229,7 @@ test("rejects partially translated plural families", () => {
 
   assert.ok(
     validateLocaleArchitecture(missingMany).includes(
-      "sk plural family queue.summary.jobs requires an _many form",
+      "ru plural family queue.summary.jobs requires an _many form",
     ),
   );
 });

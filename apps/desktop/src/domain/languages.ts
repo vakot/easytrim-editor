@@ -15,12 +15,6 @@ export const SUPPORTED_LANGUAGES = [
     nativeName: "Русский",
     region: "RU",
   },
-  {
-    code: "sk",
-    englishName: "Slovak",
-    nativeName: "Slovenčina",
-    region: "SK",
-  },
 ] as const;
 
 export type Language = (typeof SUPPORTED_LANGUAGES)[number];

@@ -273,7 +273,7 @@ describe("ApplicationCommandsProvider", () => {
       "data-group",
       "Queue",
     );
-    for (const commandId of ["language-en", "language-sk", "language-ru"]) {
+    for (const commandId of ["language-en", "language-ru"]) {
       expect(screen.queryByRole("button", { name: commandId })).not.toBeInTheDocument();
     }
     expect(screen.getByRole("button", { name: "primary-color-amber" })).toHaveAttribute(

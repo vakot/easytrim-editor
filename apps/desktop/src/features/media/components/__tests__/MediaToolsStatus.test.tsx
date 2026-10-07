@@ -133,19 +133,16 @@ describe("MediaToolsStatus", () => {
     expect(screen.queryByText("C:/private/ffprobe.exe: private stderr")).not.toBeInTheDocument();
   });
 
-  it.each(["ru", "sk"] as const)(
-    "falls back to English capability copy in %s",
-    async (language) => {
-      await i18n.changeLanguage(language);
-      renderStatus({
-        ffmpeg: { available: false, errorId: "notFound" },
-        ffprobe: readyCapabilities.ffprobe,
-      });
-      fireEvent.click(screen.getByRole("button"));
+  it.each(["ru"] as const)("shows localized capability copy in %s", async (language) => {
+    await i18n.changeLanguage(language);
+    renderStatus({
+      ffmpeg: { available: false, errorId: "notFound" },
+      ffprobe: readyCapabilities.ffprobe,
+    });
+    fireEvent.click(screen.getByRole("button"));
 
-      expect(screen.getByText("FFmpeg is not installed or available on PATH.")).toBeInTheDocument();
-    },
-  );
+    expect(screen.getByText("FFmpeg не установлен или недоступен в PATH.")).toBeInTheDocument();
+  });
 
   it("shows check failure distinctly and allows a failed capability check to be retried", () => {
     const store = createAppStore();

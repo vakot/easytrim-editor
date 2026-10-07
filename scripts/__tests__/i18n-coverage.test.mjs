@@ -54,29 +54,12 @@ test("counts ordinary leaves and plural families as semantic translation units",
         },
         settings: { theme: "Тема" },
       } as const;`,
-      sk: `export const sk = {
-        queue: {
-          items_one: "{{count}} položka",
-          items_few: "{{count}} položky",
-          items_many: "{{count}} položiek",
-          items_other: "{{count}} položiek",
-        },
-        settings: { theme: "Téma" },
-      } as const;`,
     },
   );
 
   const russian = coverage.find((entry) => entry.locale === "ru");
-  const slovak = coverage.find((entry) => entry.locale === "sk");
   assert.deepEqual(russian, {
     locale: "ru",
-    translatedUnits: 2,
-    totalUnits: 3,
-    percentage: 67,
-    missingUnits: ["settings.language"],
-  });
-  assert.deepEqual(slovak, {
-    locale: "sk",
     translatedUnits: 2,
     totalUnits: 3,
     percentage: 67,
@@ -118,9 +101,23 @@ test("includes the structured AppError catalog in canonical coverage", async () 
   const diagnostics = "app.errors.diagnostics.diagnosticEventNameIsInvalid";
 
   assert.ok(report.translationUnits.some((unit) => unit.key === diagnostics));
-  assert.ok(
+  assert.equal(
     report.coverage.find((entry) => entry.locale === "ru")?.missingUnits.includes(diagnostics),
+    false,
   );
+});
+
+test("supports only English and Russian and completes Russian coverage", async () => {
+  const report = await validateI18n(repositoryRoot);
+
+  assert.deepEqual(
+    report.coverage.map(({ locale }) => locale),
+    ["en", "ru"],
+  );
+  const russian = report.coverage.find(({ locale }) => locale === "ru");
+  assert.ok(russian);
+  assert.equal(russian.percentage, 100);
+  assert.equal(russian.translatedUnits, russian.totalUnits);
 });
 
 test("formats concise and verbose summaries with optional detail filtering", () => {
@@ -133,29 +130,16 @@ test("formats concise and verbose summaries with optional detail filtering", () 
       percentage: 13,
       missingUnits: ["queue.items", "app.errors.example"],
     },
-    {
-      locale: "sk",
-      translatedUnits: 2,
-      totalUnits: 8,
-      percentage: 25,
-      missingUnits: ["settings.about"],
-    },
   ];
 
   assert.equal(
     formatCoverage(coverage, parseArguments([])),
-    "Translations:\nEnglish     100%\nRussian      13%\nSlovak       25%",
+    "Translations:\nEnglish     100%\nRussian      13%",
   );
   const verbose = formatCoverage(coverage, parseArguments(["--verbose"]));
   assert.match(verbose, /English\s+100%\s+8\/8/);
   assert.match(verbose, /ru:\n {2}app\.errors\.example\n {2}queue\.items/);
-  assert.match(verbose, /sk:\n {2}settings\.about/);
-  assert.equal(
-    formatCoverage(coverage, parseArguments(["--verbose", "ru"]))
-      .split("Missing translation units:")[1]
-      .includes("sk:"),
-    false,
-  );
+  assert.doesNotMatch(verbose, /sk:/);
   assert.match(formatCoverage(coverage, parseArguments(["--verbose", "en"])), /English\s+100%/);
   assert.doesNotMatch(
     formatCoverage(coverage, parseArguments(["--verbose", "en"])),
@@ -166,38 +150,29 @@ test("formats concise and verbose summaries with optional detail filtering", () 
 test("rejects locale-only filters and unsupported locales", () => {
   assert.throws(() => parseArguments(["ru"]), /requires --verbose/);
   assert.throws(() => parseArguments(["--verbose", "de"]), /Unsupported locale: de/);
-  assert.throws(() => parseArguments(["--verbose", "de"]), /Supported locales: en, ru, sk/);
+  assert.throws(() => parseArguments(["--verbose", "de"]), /Supported locales: en, ru/);
+  assert.throws(() => parseArguments(["--verbose", "sk"]), /Unsupported locale: sk/);
 });
 
 test("CLI prints concise coverage by default and verbose details when requested", () => {
   const concise = runCli();
   assert.equal(concise.status, 0, concise.stderr);
-  assert.match(concise.stdout, /^Translations:\nEnglish\s+100%\nRussian\s+\d+%\nSlovak\s+\d+%\n$/);
+  assert.match(concise.stdout, /^Translations:\nEnglish\s+100%\nRussian\s+\d+%\n$/);
   assert.doesNotMatch(concise.stdout, /validation passed|errors|keys checked/i);
 
   const verbose = runCli("--verbose");
   assert.equal(verbose.status, 0, verbose.stderr);
-  assert.match(verbose.stdout, /Missing translation units:/);
-  assert.match(verbose.stdout, /ru:\n/);
-  assert.match(verbose.stdout, /sk:\n/);
-  assert.doesNotMatch(verbose.stdout, /queue\.summary\.jobs_(one|few|many|other)/);
-  const russianMissing = verbose.stdout.split("ru:\n")[1].split("\nsk:\n")[0];
-  assert.equal((russianMissing.match(/queue\.summary\.jobs/g) ?? []).length, 1);
+  assert.match(verbose.stdout, /Russian\s+100%\s+\d+\/\d+/);
+  assert.doesNotMatch(verbose.stdout, /Missing translation units:/);
+  assert.doesNotMatch(verbose.stdout, /sk:/);
 
   const filtered = runCli("--verbose", "ru");
   assert.equal(filtered.status, 0, filtered.stderr);
   assert.match(filtered.stdout, /English\s+100%/);
-  assert.match(filtered.stdout, /Russian\s+\d+%/);
-  assert.match(filtered.stdout, /Slovak\s+\d+%/);
-  assert.match(filtered.stdout, /Missing translation units:\nru:\n/);
+  assert.match(filtered.stdout, /Russian\s+100%\s+\d+\/\d+/);
+  assert.doesNotMatch(filtered.stdout, /Slovak/);
+  assert.doesNotMatch(filtered.stdout, /Missing translation units:/);
   assert.doesNotMatch(filtered.stdout, /\nsk:\n/);
-  const missingUnits = filtered.stdout
-    .split("Missing translation units:\nru:\n")[1]
-    .trim()
-    .split("\n")
-    .map((line) => line.trim());
-
-  assert.deepEqual(missingUnits, [...missingUnits].sort());
 
   const english = runCli("--verbose", "en");
   assert.equal(english.status, 0, english.stderr);
@@ -213,7 +188,12 @@ test("CLI rejects locale-only filters and unknown verbose locales", () => {
   const unknownLocale = runCli("--verbose", "de");
   assert.notEqual(unknownLocale.status, 0);
   assert.match(unknownLocale.stderr, /Unsupported locale: de/);
-  assert.match(unknownLocale.stderr, /Supported locales: en, ru, sk/);
+  assert.match(unknownLocale.stderr, /Supported locales: en, ru/);
+
+  const unsupportedLocale = runCli("--verbose", "sk");
+  assert.notEqual(unsupportedLocale.status, 0);
+  assert.match(unsupportedLocale.stderr, /Unsupported locale: sk/);
+  assert.match(unsupportedLocale.stderr, /Supported locales: en, ru/);
 });
 
 test("generates compact serializable metadata from validated coverage", async () => {
@@ -229,9 +209,11 @@ test("generates compact serializable metadata from validated coverage", async ()
 
     const coverage = runInNewContext(executable);
 
-    assert.deepEqual(Object.keys(coverage), ["en", "ru", "sk"]);
+    assert.deepEqual(Object.keys(coverage), ["en", "ru"]);
     assert.deepEqual(Object.keys(coverage.en), ["translatedUnits", "totalUnits", "percentage"]);
     assert.equal(coverage.en.percentage, 100);
+    assert.equal(coverage.ru.translatedUnits, coverage.ru.totalUnits);
+    assert.equal(coverage.ru.percentage, 100);
     assert.doesNotThrow(() => JSON.stringify(coverage));
     assert.equal(await generateTranslationCoverage(repositoryRoot, destination), false);
   } finally {
