@@ -56,7 +56,7 @@ function createCommand(
 describe("CommandPalette semantic icons", () => {
   beforeEach(() => {
     mocks.commands = [
-      createCommand("reset-preferences-settings", "Reset to default", "destructive", <RotateCcw />),
+      createCommand("reset-editing-settings", "Reset to default", "destructive", <RotateCcw />),
       createCommand("check-for-updates", "Up to date", "success", <CheckCircle2 />, {
         keepOpen: true,
       }),
@@ -232,7 +232,7 @@ describe("CommandPalette semantic icons", () => {
 
   it("does not include menu-only commands in the palette", async () => {
     mocks.commands = [
-      createCommand("reset-preferences-settings", "Reset to default", "destructive", <RotateCcw />, {
+      createCommand("reset-editing-settings", "Reset to default", "destructive", <RotateCcw />, {
         surfaces: ["menu"],
       }),
     ];

@@ -61,7 +61,7 @@ function SettingsPreferences() {
         <SettingRow label={t("settings.pages.preferences.resetLabel")}>
           <CommandReset
             aria-label={t("settings.pages.preferences.resetLabel")}
-            commandId="reset-preferences-settings"
+            commandId="reset-editing-settings"
           />
         </SettingRow>
       </SettingsSection>

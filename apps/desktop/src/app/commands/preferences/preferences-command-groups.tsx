@@ -5,13 +5,13 @@ import { defineApplicationCommandGroup } from "@/app/commands/core/application-c
 import { useAudioPreferenceCommands } from "./definitions/audio.commands";
 import { useOpenSettingsCommand } from "./definitions/open-settings.command";
 import { usePlaybackPreferenceCommands } from "./definitions/playback.commands";
-import { useResetPreferencesSettingsCommand } from "./definitions/reset-preferences-settings.command";
+import { useResetEditingSettingsCommand } from "./definitions/reset-editing-settings.command";
 
 function usePreferencesCommandGroups() {
   const { t } = useTranslation();
   const playback = usePlaybackPreferenceCommands();
   const audio = useAudioPreferenceCommands();
-  const resetPreferencesSettings = useResetPreferencesSettingsCommand();
+  const resetEditingSettings = useResetEditingSettingsCommand();
   const openSettings = useOpenSettingsCommand();
   return [
     defineApplicationCommandGroup(
@@ -26,7 +26,7 @@ function usePreferencesCommandGroups() {
     ),
     defineApplicationCommandGroup("preferences", t("app.labels.commandSections.preferences"), [
       openSettings,
-      resetPreferencesSettings,
+      resetEditingSettings,
     ]),
   ] as const;
 }

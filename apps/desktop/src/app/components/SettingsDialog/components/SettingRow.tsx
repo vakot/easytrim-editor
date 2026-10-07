@@ -86,13 +86,12 @@ function CommandButton({
 }
 
 function CommandReset({
-  "aria-label": ariaLabel,
   commandId,
-}: {
-  "aria-label": string;
-  commandId: "reset-preferences-settings" | "reset-queue-settings";
+  ...props
+}: Omit<React.ComponentProps<typeof CommandButton>, "variant" | "commandId"> & {
+  commandId: "reset-editing-settings" | "reset-queue-settings";
 }) {
-  return <CommandButton aria-label={ariaLabel} commandId={commandId} variant="destructive" />;
+  return <CommandButton commandId={commandId} variant="destructive" {...props} />;
 }
 
 export { CommandButton, CommandReset, CommandSwitch, SettingRow, SettingsSection };

@@ -248,7 +248,7 @@ describe("MenuBarTest", () => {
         const payload = action.payload as { enabled: boolean; key: PreferenceKey };
         setPreference(payload.key, payload.enabled);
       }
-      if (action.type === "preferences/preferencesSettingsReset") {
+      if (action.type === "preferences/editingSettingsReset") {
         menuState.preferences.loopPlaybackEnabledDefault =
           DEFAULT_PREFERENCES.loopPlaybackEnabledDefault;
         menuState.preferences.mergeAudioEnabledDefault =
@@ -383,7 +383,7 @@ describe("MenuBarTest", () => {
     expect(screen.getByRole("combobox", { name: "On queue finished" })).toBeInTheDocument();
   });
 
-  it("does not expose a full Appearance reset", async () => {
+  it("keeps UI scaling reset local to Appearance", async () => {
     const user = userEvent.setup();
     renderMenus({ themePreference: "dark", primaryColor: "#4299e1" });
 

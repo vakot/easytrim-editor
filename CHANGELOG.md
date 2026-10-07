@@ -13,7 +13,7 @@ All notable changes to this project will be documented in this file.
 
 - Refined View menu actions to include main windows entry-points and layout controls
 - Replaced the Settings menu dropdown with a full preferences dialog for language, appearance, preferences, layout, and update/help options.
-- Renamed the Defaults page to Preferences in Settings.
+- Renamed the settings page to Preferences.
 - Moved queue settings into the Preferences page.
 - Renamed the Preferences settings section and reset label to Editing terminology.
 - Refined About page button variants and added a Ko-fi brand icon to the support link.
@@ -28,7 +28,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- Fixed Settings reset actions so they only reset settings owned by their page.
+- Scoped Settings reset actions to their owning sections and individual settings.
 - Localized audio track menu actions across English, Russian, and Slovak.
 - Localized source search result counts and breadcrumb navigation labels.
 - Fixed spacing and scrolling in the settings and audio effects libraries and sidebar layout.
