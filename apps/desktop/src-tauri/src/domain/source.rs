@@ -7,7 +7,7 @@ use std::{
 
 use serde::Serialize;
 
-use crate::error::AppError;
+use crate::error::{AppError, AppErrorMessageId};
 
 pub const SUPPORTED_VIDEO_EXTENSIONS: &[&str] = &[
     "avi", "flv", "m2ts", "m4v", "mkv", "mov", "mp4", "mts", "ts", "webm", "wmv",
@@ -66,24 +66,26 @@ pub struct SourceImportResult {
 
 pub fn validate_source(path: &Path) -> Result<ValidatedSource, AppError> {
     let canonical_path = fs::canonicalize(path)
-        .map_err(|_| AppError::io_failed("The selected video could not be opened."))?;
+        .map_err(|_| AppError::io_failed(AppErrorMessageId::SourceSelectedVideoCouldNotBeOpened))?;
 
     if !canonical_path.is_file() {
         return Err(AppError::invalid_request(
-            "Select a video file instead of a folder.",
+            AppErrorMessageId::SourceSelectAVideoFileInsteadOfAFolder,
         ));
     }
 
     if !is_supported_video_path(&canonical_path) {
         return Err(AppError::unsupported_media(
-            "This file type is not supported yet.",
+            AppErrorMessageId::SourceFileTypeIsNotSupportedYet,
         ));
     }
 
     canonical_path
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
-        .ok_or_else(|| AppError::invalid_request("The selected video has no usable file name."))?;
+        .ok_or_else(|| {
+            AppError::invalid_request(AppErrorMessageId::SourceSelectedVideoHasNoUsableFileName)
+        })?;
 
     Ok(ValidatedSource {
         path: canonical_path,
@@ -258,7 +260,9 @@ fn source_ref_from_path(path: PathBuf) -> Result<SourceRef, AppError> {
     let display_name = path
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
-        .ok_or_else(|| AppError::invalid_request("The selected source has no usable file name."))?;
+        .ok_or_else(|| {
+            AppError::invalid_request(AppErrorMessageId::SourceSelectedSourceHasNoUsableFileName)
+        })?;
 
     let metadata = fs::metadata(&path).ok();
 

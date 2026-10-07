@@ -8,7 +8,10 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{error::AppError, process::run_bounded_cancellable};
+use crate::{
+    error::{AppError, AppErrorMessageId},
+    process::run_bounded_cancellable,
+};
 
 const PROBE_TIMEOUT: Duration = Duration::from_secs(20);
 const PROBE_STDOUT_LIMIT: usize = 2 * 1024 * 1024;
@@ -127,14 +130,14 @@ pub fn inspect_media_cancellable(
 
     if !output.status.success() {
         return Err(AppError::probe_failed(
-            "FFprobe could not inspect this video.",
+            AppErrorMessageId::MediaProbeFfprobeCouldNotInspectThisVideo,
             diagnostics(&output.stderr, output.stderr_truncated, path),
         ));
     }
 
     if output.stdout_truncated {
         return Err(AppError::probe_failed(
-            "This video contains more metadata than the inspection limit allows.",
+            AppErrorMessageId::MediaProbeVideoContainsMoreMetadataThanTheInspectionLimitAllows,
             None::<String>,
         ));
     }
@@ -145,7 +148,7 @@ pub fn inspect_media_cancellable(
 fn parse_probe_output(output: &[u8]) -> Result<MediaInfo, AppError> {
     let probe: ProbeDocument = serde_json::from_slice(output).map_err(|error| {
         AppError::probe_failed(
-            "FFprobe returned unreadable metadata.",
+            AppErrorMessageId::MediaProbeFfprobeReturnedUnreadableMetadata,
             Some(format!("JSON parse error: {error}")),
         )
     })?;
@@ -166,7 +169,9 @@ fn parse_probe_output(output: &[u8]) -> Result<MediaInfo, AppError> {
                 std::cmp::Reverse(stream.index),
             )
         })
-        .ok_or_else(|| AppError::unsupported_media("No usable video stream was found."))?;
+        .ok_or_else(|| {
+            AppError::unsupported_media(AppErrorMessageId::MediaProbeNoUsableVideoStreamWasFound)
+        })?;
 
     let format = probe.format.unwrap_or_default();
     let duration_micros = primary_video
@@ -175,16 +180,22 @@ fn parse_probe_output(output: &[u8]) -> Result<MediaInfo, AppError> {
         .and_then(parse_seconds_to_micros)
         .or_else(|| format.duration.as_deref().and_then(parse_seconds_to_micros))
         .filter(|duration| *duration > 0)
-        .ok_or_else(|| AppError::unsupported_media("The video duration is unavailable."))?;
+        .ok_or_else(|| {
+            AppError::unsupported_media(AppErrorMessageId::MediaProbeVideoDurationIsUnavailable)
+        })?;
 
     let width = primary_video
         .width
         .filter(|value| *value > 0)
-        .ok_or_else(|| AppError::unsupported_media("The video width is unavailable."))?;
+        .ok_or_else(|| {
+            AppError::unsupported_media(AppErrorMessageId::MediaProbeVideoWidthIsUnavailable)
+        })?;
     let height = primary_video
         .height
         .filter(|value| *value > 0)
-        .ok_or_else(|| AppError::unsupported_media("The video height is unavailable."))?;
+        .ok_or_else(|| {
+            AppError::unsupported_media(AppErrorMessageId::MediaProbeVideoHeightIsUnavailable)
+        })?;
     let video = VideoStream {
         stream_index: primary_video.index,
         codec_name: primary_video
@@ -326,15 +337,15 @@ fn map_probe_io_error(error: io::Error, path: &Path) -> AppError {
     match error.kind() {
         io::ErrorKind::Interrupted => AppError::source_replaced(),
         io::ErrorKind::NotFound => AppError::probe_failed(
-            "FFprobe is required to inspect video files.",
+            AppErrorMessageId::MediaProbeFfprobeIsRequiredToInspectVideoFiles,
             Some("Install FFmpeg and make ffprobe available on PATH."),
         ),
         io::ErrorKind::TimedOut => AppError::probe_failed(
-            "Video inspection exceeded the 20-second limit.",
+            AppErrorMessageId::MediaProbeVideoInspectionExceededThe20SecondLimit,
             None::<String>,
         ),
         _ => AppError::probe_failed(
-            "FFprobe could not be started.",
+            AppErrorMessageId::MediaProbeFfprobeCouldNotBeStarted,
             Some(redact_source_path(&error.to_string(), path)),
         ),
     }

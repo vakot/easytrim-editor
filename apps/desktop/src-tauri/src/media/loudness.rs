@@ -9,7 +9,7 @@ use std::{
 use serde::Deserialize;
 
 use crate::{
-    error::AppError,
+    error::{AppError, AppErrorMessageId},
     media::export::{
         AudioLoudnessAnalysis, AudioTrackSelection, TrimSelection, pre_level_filter_chain,
         validate_loudness_analysis_request,
@@ -37,10 +37,11 @@ pub fn analyze_loudness(
     request: &LoudnessAnalysisRequest,
     operation_cancellation: &AtomicBool,
 ) -> Result<LoudnessAnalysis, AppError> {
-    let media = source
-        .media
-        .as_ref()
-        .ok_or_else(|| AppError::invalid_request("Inspect the video before analyzing audio."))?;
+    let media = source.media.as_ref().ok_or_else(|| {
+        AppError::invalid_request(
+            AppErrorMessageId::MediaLoudnessInspectTheVideoBeforeAnalyzingAudio,
+        )
+    })?;
     validate_loudness_analysis_request(media, &request.trim, &request.audio_track)?;
 
     let arguments = analysis_arguments(request, &source.path);
@@ -59,13 +60,13 @@ pub fn analyze_loudness(
 
     if !output.status.success() {
         return Err(AppError::render_failed_with_diagnostics(
-            "FFmpeg could not analyze audio loudness.",
+            AppErrorMessageId::MediaLoudnessFfmpegCouldNotAnalyzeAudioLoudness,
             diagnostics(&output, &source.path),
         ));
     }
     if output.stderr_truncated {
         return Err(AppError::render_failed(
-            "The loudness analysis output exceeded its safety limit.",
+            AppErrorMessageId::MediaLoudnessLoudnessAnalysisOutputExceededItsSafetyLimit,
         ));
     }
 
@@ -116,7 +117,7 @@ fn parse_loudness(stderr: &[u8]) -> Result<LoudnessAnalysis, AppError> {
     let text = String::from_utf8_lossy(stderr);
     let Some(start) = text.rfind('{') else {
         return Err(AppError::render_failed_with_diagnostics(
-            "FFmpeg did not return loudness measurements.",
+            AppErrorMessageId::MediaLoudnessFfmpegDidNotReturnLoudnessMeasurements,
             Some(text.trim().to_owned()),
         ));
     };
@@ -124,10 +125,16 @@ fn parse_loudness(stderr: &[u8]) -> Result<LoudnessAnalysis, AppError> {
         .find('}')
         .map(|offset| start + offset + 1)
         .ok_or_else(|| {
-            AppError::render_failed("FFmpeg returned incomplete loudness measurements.")
+            AppError::render_failed(
+                AppErrorMessageId::MediaLoudnessFfmpegReturnedIncompleteLoudnessMeasurements,
+            )
         })?;
-    let measurements: LoudnormMeasurements = serde_json::from_str(&text[start..end])
-        .map_err(|_| AppError::render_failed("FFmpeg returned invalid loudness measurements."))?;
+    let measurements: LoudnormMeasurements =
+        serde_json::from_str(&text[start..end]).map_err(|_| {
+            AppError::render_failed(
+                AppErrorMessageId::MediaLoudnessFfmpegReturnedInvalidLoudnessMeasurements,
+            )
+        })?;
     Ok(LoudnessAnalysis {
         input_lra: measurements
             .input_lra
@@ -160,12 +167,18 @@ fn format_seconds(micros: i64) -> String {
 
 fn process_error(error: io::Error) -> AppError {
     match error.kind() {
-        io::ErrorKind::Interrupted => AppError::cancelled("Loudness analysis was interrupted."),
-        io::ErrorKind::NotFound => {
-            AppError::render_failed("FFmpeg is required to analyze loudness.")
+        io::ErrorKind::Interrupted => {
+            AppError::cancelled(AppErrorMessageId::MediaLoudnessLoudnessAnalysisWasInterrupted)
         }
-        io::ErrorKind::TimedOut => AppError::render_failed("Loudness analysis took too long."),
-        _ => AppError::render_failed("FFmpeg could not analyze audio loudness."),
+        io::ErrorKind::NotFound => AppError::render_failed(
+            AppErrorMessageId::MediaLoudnessFfmpegIsRequiredToAnalyzeLoudness,
+        ),
+        io::ErrorKind::TimedOut => {
+            AppError::render_failed(AppErrorMessageId::MediaLoudnessLoudnessAnalysisTookTooLong)
+        }
+        _ => AppError::render_failed(
+            AppErrorMessageId::MediaLoudnessFfmpegCouldNotAnalyzeAudioLoudness,
+        ),
     }
 }
 

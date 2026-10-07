@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::{
-    error::AppError,
+    error::{AppError, AppErrorMessageId},
     media::export::{AudioTrackSelection, audio_filter_graph, validate_audio_track_selections},
     process::{ProcessOutput, run_bounded_cancellable},
     state::{ActiveSource, AudioPreviewArtifact},
@@ -23,7 +23,9 @@ pub fn generate_audio_previews(
     audio_tracks: &[AudioTrackSelection],
 ) -> Result<Vec<(AudioTrackSelection, AudioPreviewArtifact)>, AppError> {
     let media = source.media.as_ref().ok_or_else(|| {
-        AppError::invalid_request("Audio previews require inspected source media.")
+        AppError::invalid_request(
+            AppErrorMessageId::MediaAudioAudioPreviewsRequireInspectedSourceMedia,
+        )
     })?;
     validate_audio_track_selections(media, audio_tracks)?;
 
@@ -58,7 +60,7 @@ pub fn generate_audio_previews(
     }
 
     Err(AppError::preview_failed(
-        "The selected audio streams could not be prepared for preview.",
+        AppErrorMessageId::MediaAudioSelectedAudioStreamsCouldNotBePreparedForPreview,
         diagnostics(
             &output,
             &source.path,
@@ -119,14 +121,14 @@ fn create_artifact(stream_index: u32) -> Result<AudioPreviewArtifact, AppError> 
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
             Err(_) => {
                 return Err(AppError::io_failed(
-                    "A temporary audio preview directory could not be created.",
+                    AppErrorMessageId::MediaAudioTemporaryAudioPreviewDirectoryCouldNotBeCreated,
                 ));
             }
         }
     }
 
     Err(AppError::io_failed(
-        "A unique temporary audio preview directory could not be created.",
+        AppErrorMessageId::MediaAudioUniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated,
     ))
 }
 
@@ -134,13 +136,17 @@ fn process_error(error: io::Error) -> AppError {
     match error.kind() {
         io::ErrorKind::Interrupted => AppError::source_replaced(),
         io::ErrorKind::NotFound => AppError::preview_failed(
-            "FFmpeg is required to prepare audio preview.",
+            AppErrorMessageId::MediaAudioFfmpegIsRequiredToPrepareAudioPreview,
             None::<String>,
         ),
-        io::ErrorKind::TimedOut => {
-            AppError::preview_failed("Preparing audio preview took too long.", None::<String>)
-        }
-        _ => AppError::preview_failed("FFmpeg could not prepare audio preview.", None::<String>),
+        io::ErrorKind::TimedOut => AppError::preview_failed(
+            AppErrorMessageId::MediaAudioPreparingAudioPreviewTookTooLong,
+            None::<String>,
+        ),
+        _ => AppError::preview_failed(
+            AppErrorMessageId::MediaAudioFfmpegCouldNotPrepareAudioPreview,
+            None::<String>,
+        ),
     }
 }
 

@@ -16,7 +16,7 @@ use serde_json::{Map, Value, json};
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 use uuid::Uuid;
 
-use crate::error::AppError;
+use crate::error::{AppError, AppErrorMessageId};
 
 const LOG_RETENTION: usize = 8;
 const MAX_LOG_BYTES: u64 = 5 * 1024 * 1024;
@@ -267,7 +267,7 @@ impl DiagnosticsState {
     ) -> Result<Vec<DiagnosticEvent>, AppError> {
         if !valid_session_id(session_id) {
             return Err(AppError::invalid_request(
-                "The diagnostic session identifier is invalid.",
+                AppErrorMessageId::DiagnosticsDiagnosticSessionIdentifierIsInvalid,
             ));
         }
         if session_id == self.current_session_id()? {
@@ -444,7 +444,11 @@ impl DiagnosticsState {
             .recovery
             .as_ref()
             .filter(|recovery| recovery.report_id == report_id)
-            .ok_or_else(|| AppError::invalid_request("The diagnostic report is unavailable."))?;
+            .ok_or_else(|| {
+                AppError::invalid_request(
+                    AppErrorMessageId::DiagnosticsDiagnosticReportIsUnavailable,
+                )
+            })?;
         reveal_file(Path::new(&recovery.report_path))
     }
 
@@ -546,7 +550,7 @@ pub fn complete_global_session() {
 fn validate_event(input: &DiagnosticEventInput) -> Result<(), AppError> {
     if !valid_event_name(&input.event) || !valid_event_name(&input.category) {
         return Err(AppError::invalid_request(
-            "The diagnostic event name is invalid.",
+            AppErrorMessageId::DiagnosticsDiagnosticEventNameIsInvalid,
         ));
     }
     if !matches!(
@@ -554,7 +558,7 @@ fn validate_event(input: &DiagnosticEventInput) -> Result<(), AppError> {
         "trace" | "debug" | "info" | "warn" | "error" | "fatal"
     ) {
         return Err(AppError::invalid_request(
-            "The diagnostic level is invalid.",
+            AppErrorMessageId::DiagnosticsDiagnosticLevelIsInvalid,
         ));
     }
     Ok(())
@@ -1074,7 +1078,7 @@ fn reveal_file(path: &Path) -> Result<(), AppError> {
 fn reveal_directory(path: &Path) -> Result<(), AppError> {
     if !path.is_absolute() {
         return Err(AppError::invalid_request(
-            "The diagnostic logs path is invalid.",
+            AppErrorMessageId::DiagnosticsDiagnosticLogsPathIsInvalid,
         ));
     }
     Command::new("explorer.exe")
@@ -1106,7 +1110,7 @@ fn reveal_directory(path: &Path) -> Result<(), AppError> {
 fn reveal_command(path: &Path) -> Result<(&'static str, Vec<String>), AppError> {
     if !path.is_absolute() {
         return Err(AppError::invalid_request(
-            "The diagnostic report path is invalid.",
+            AppErrorMessageId::DiagnosticsDiagnosticReportPathIsInvalid,
         ));
     }
     Ok(("explorer.exe", vec![format!("/select,{}", path.display())]))
@@ -1124,9 +1128,9 @@ fn reveal_file(path: &Path) -> Result<(), AppError> {
 
 #[cfg(all(unix, not(target_os = "macos")))]
 fn reveal_file(path: &Path) -> Result<(), AppError> {
-    let parent = path
-        .parent()
-        .ok_or_else(|| AppError::invalid_request("The diagnostic report path is invalid."))?;
+    let parent = path.parent().ok_or_else(|| {
+        AppError::invalid_request(AppErrorMessageId::DiagnosticsDiagnosticReportPathIsInvalid)
+    })?;
     Command::new("xdg-open")
         .arg(parent)
         .spawn()

@@ -9,7 +9,7 @@ use std::{
 use serde::Serialize;
 
 use crate::{
-    error::AppError,
+    error::{AppError, AppErrorMessageId},
     media::export::{AudioTrackSelection, audio_filter_graph, validate_audio_track_selections},
     process::{ProcessOutput, run_bounded_cancellable},
     state::ActiveSource,
@@ -35,7 +35,9 @@ pub fn detect_silence_ranges(
     duration_micros: u64,
 ) -> Result<Vec<SilenceRange>, AppError> {
     let media = source.media.as_ref().ok_or_else(|| {
-        AppError::invalid_request("Inspect the video before detecting audio activity.")
+        AppError::invalid_request(
+            AppErrorMessageId::MediaAudioActivityInspectTheVideoBeforeDetectingAudioActivity,
+        )
     })?;
     validate_audio_track_selections(media, std::slice::from_ref(track))?;
 
@@ -52,13 +54,13 @@ pub fn detect_silence_ranges(
 
     if !output.status.success() {
         return Err(AppError::silence_detection_failed(
-            "FFmpeg could not analyze audio activity.",
+            AppErrorMessageId::MediaAudioActivityFfmpegCouldNotAnalyzeAudioActivity,
             diagnostics(&output, &source.path),
         ));
     }
     if output.stderr_truncated {
         return Err(AppError::silence_detection_failed(
-            "The audio activity analysis output exceeded its safety limit.",
+            AppErrorMessageId::MediaAudioActivityAudioActivityAnalysisOutputExceededItsSafetyLimit,
             None::<String>,
         ));
     }
@@ -114,7 +116,7 @@ fn parse_silence_ranges(
                 });
                 if ranges.len() > MAX_SILENCE_RANGES {
                     return Err(AppError::silence_detection_failed(
-                        "The audio activity analysis contains too many ranges.",
+                        AppErrorMessageId::MediaAudioActivityAudioActivityAnalysisContainsTooManyRanges,
                         None::<String>,
                     ));
                 }
@@ -130,7 +132,7 @@ fn parse_silence_ranges(
         });
         if ranges.len() > MAX_SILENCE_RANGES {
             return Err(AppError::silence_detection_failed(
-                "The audio activity analysis contains too many ranges.",
+                AppErrorMessageId::MediaAudioActivityAudioActivityAnalysisContainsTooManyRanges,
                 None::<String>,
             ));
         }
@@ -149,19 +151,19 @@ fn parse_timestamp(value: &str) -> Option<u64> {
 
 fn process_error(error: io::Error) -> AppError {
     match error.kind() {
-        io::ErrorKind::Interrupted => {
-            AppError::cancelled("Audio activity detection was interrupted.")
-        }
+        io::ErrorKind::Interrupted => AppError::cancelled(
+            AppErrorMessageId::MediaAudioActivityAudioActivityDetectionWasInterrupted,
+        ),
         io::ErrorKind::NotFound => AppError::silence_detection_failed(
-            "FFmpeg is required to analyze audio activity.",
+            AppErrorMessageId::MediaAudioActivityFfmpegIsRequiredToAnalyzeAudioActivity,
             None::<String>,
         ),
         io::ErrorKind::TimedOut => AppError::silence_detection_failed(
-            "Audio activity detection took too long.",
+            AppErrorMessageId::MediaAudioActivityAudioActivityDetectionTookTooLong,
             None::<String>,
         ),
         _ => AppError::silence_detection_failed(
-            "FFmpeg could not analyze audio activity.",
+            AppErrorMessageId::MediaAudioActivityFfmpegCouldNotAnalyzeAudioActivity,
             None::<String>,
         ),
     }

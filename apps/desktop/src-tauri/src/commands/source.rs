@@ -10,7 +10,7 @@ use crate::{
         SUPPORTED_VIDEO_EXTENSIONS, SourceImportResult, SourceRef, collect_source_import,
         is_supported_video_path,
     },
-    error::AppError,
+    error::{AppError, AppErrorMessageId},
     media::probe::MediaInfo,
     state::AppState,
 };
@@ -43,7 +43,9 @@ pub async fn choose_source(
         .into_iter()
         .map(|selected| {
             selected.into_path().map_err(|_| {
-                AppError::invalid_request("The selected source location is not supported.")
+                AppError::invalid_request(
+                    AppErrorMessageId::SourceSelectedSourceLocationIsNotSupported,
+                )
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
@@ -101,7 +103,8 @@ pub async fn delete_source_file(
         .await
         .map_err(|_| AppError::internal("Moving the source file to trash stopped unexpectedly."))?
         .map_err(|error| {
-            AppError::io_failed(format!("Could not move the source file to trash: {error}"))
+            AppError::io_failed(AppErrorMessageId::SourceFileCouldNotBeMovedToTrash)
+                .with_diagnostics(error.to_string())
         })
 }
 
@@ -147,12 +150,12 @@ fn is_trash_operation_aborted(error: &trash::Error) -> bool {
 pub fn restore_source_file(source_path: PathBuf) -> Result<(), AppError> {
     if !source_path.is_absolute() {
         return Err(AppError::invalid_request(
-            "The source path must be absolute.",
+            AppErrorMessageId::SourceSourcePathMustBeAbsolute,
         ));
     }
     if !is_supported_video_path(&source_path) {
         return Err(AppError::unsupported_media(
-            "This file type is not supported yet.",
+            AppErrorMessageId::SourceFileTypeIsNotSupportedYet,
         ));
     }
     if source_path.exists() {
@@ -168,20 +171,27 @@ pub fn restore_source_file(source_path: PathBuf) -> Result<(), AppError> {
 #[cfg(any(target_os = "freebsd", target_os = "linux", target_os = "windows"))]
 fn restore_source_from_trash(source_path: &std::path::Path) -> Result<(), AppError> {
     let item = trash::os_limited::list()
-        .map_err(|error| AppError::io_failed(format!("Could not read trash: {error}")))?
+        .map_err(|error| {
+            AppError::io_failed(AppErrorMessageId::SourceTrashCouldNotBeRead)
+                .with_diagnostics(error.to_string())
+        })?
         .into_iter()
         .filter(|item| trash_path_matches(&item.original_path(), source_path))
         .max_by_key(|item| item.time_deleted)
-        .ok_or_else(|| AppError::io_failed("The source file could not be found in trash."))?;
+        .ok_or_else(|| {
+            AppError::io_failed(AppErrorMessageId::SourceSourceFileCouldNotBeFoundInTrash)
+        })?;
 
-    trash::os_limited::restore_all([item])
-        .map_err(|error| AppError::io_failed(format!("Could not restore the source file: {error}")))
+    trash::os_limited::restore_all([item]).map_err(|error| {
+        AppError::io_failed(AppErrorMessageId::SourceFileCouldNotBeRestoredFromTrash)
+            .with_diagnostics(error.to_string())
+    })
 }
 
 #[cfg(not(any(target_os = "freebsd", target_os = "linux", target_os = "windows")))]
 fn restore_source_from_trash(_source_path: &std::path::Path) -> Result<(), AppError> {
     Err(AppError::invalid_request(
-        "Restoring source files from trash is not supported on this platform.",
+        AppErrorMessageId::SourceRestoringSourceFilesFromTrashIsNotSupportedOnThisPlatform,
     ))
 }
 

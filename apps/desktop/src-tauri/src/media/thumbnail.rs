@@ -12,7 +12,7 @@ use image::{DynamicImage, RgbImage, codecs::jpeg::JpegEncoder, imageops::FilterT
 use sha2::{Digest, Sha256};
 
 use crate::{
-    error::AppError,
+    error::{AppError, AppErrorMessageId},
     process::{ProcessOutput, run_bounded_cancellable},
     state::{ImportedThumbnailArtifact, PreviewArtifact},
 };
@@ -73,10 +73,12 @@ pub fn generate_thumbnail(
 }
 
 fn thumbnail_cache_key(source_path: &Path) -> Result<String, AppError> {
-    let canonical_path = fs::canonicalize(source_path)
-        .map_err(|_| AppError::io_failed("The source file is no longer available."))?;
-    let metadata = fs::metadata(&canonical_path)
-        .map_err(|_| AppError::io_failed("The source file metadata is unavailable."))?;
+    let canonical_path = fs::canonicalize(source_path).map_err(|_| {
+        AppError::io_failed(AppErrorMessageId::MediaThumbnailSourceFileIsNoLongerAvailable)
+    })?;
+    let metadata = fs::metadata(&canonical_path).map_err(|_| {
+        AppError::io_failed(AppErrorMessageId::MediaThumbnailSourceFileMetadataIsUnavailable)
+    })?;
     let modified_nanos = metadata
         .modified()
         .ok()
@@ -210,8 +212,9 @@ fn trim_thumbnail_cache_with_limits(cache_directory: &Path, max_bytes: u64, max_
 
 fn write_temporary_thumbnail(bytes: &[u8]) -> Result<ImportedThumbnailArtifact, AppError> {
     let artifact = create_artifact("jpg")?;
-    fs::write(artifact.path(), bytes)
-        .map_err(|_| AppError::io_failed("The thumbnail could not be saved temporarily."))?;
+    fs::write(artifact.path(), bytes).map_err(|_| {
+        AppError::io_failed(AppErrorMessageId::MediaThumbnailThumbnailCouldNotBeSavedTemporarily)
+    })?;
     Ok(ImportedThumbnailArtifact::from_temporary(artifact))
 }
 
@@ -225,7 +228,10 @@ fn encode_thumbnail(image: DynamicImage) -> Result<Vec<u8>, AppError> {
     JpegEncoder::new_with_quality(&mut bytes, 85)
         .encode_image(&image)
         .map_err(|_| {
-            AppError::preview_failed("The thumbnail could not be encoded.", None::<String>)
+            AppError::preview_failed(
+                AppErrorMessageId::MediaThumbnailThumbnailCouldNotBeEncoded,
+                None::<String>,
+            )
         })?;
     Ok(bytes)
 }
@@ -251,7 +257,7 @@ fn generate_ffmpeg_thumbnail(source_path: &Path) -> Result<PreviewArtifact, AppE
     }
 
     Err(AppError::preview_failed(
-        "A thumbnail could not be prepared for this video.",
+        AppErrorMessageId::MediaThumbnailThumbnailCouldNotBePreparedForThisVideo,
         diagnostics(&output, source_path, artifact.path()),
     ))
 }
@@ -316,24 +322,24 @@ pub(super) fn create_artifact(extension: &str) -> Result<PreviewArtifact, AppErr
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
             Err(_) => {
                 return Err(AppError::io_failed(
-                    "A temporary thumbnail directory could not be created.",
+                    AppErrorMessageId::MediaThumbnailTemporaryThumbnailDirectoryCouldNotBeCreated,
                 ));
             }
         }
     }
 
     Err(AppError::io_failed(
-        "A unique temporary thumbnail directory could not be created.",
+        AppErrorMessageId::MediaThumbnailUniqueTemporaryThumbnailDirectoryCouldNotBeCreated,
     ))
 }
 
 fn process_error(error: io::Error) -> AppError {
-    let message = match error.kind() {
-        io::ErrorKind::NotFound => "FFmpeg is required to prepare source thumbnails.",
-        io::ErrorKind::TimedOut => "Preparing a source thumbnail took too long.",
-        _ => "FFmpeg could not prepare a source thumbnail.",
+    let id = match error.kind() {
+        io::ErrorKind::NotFound => AppErrorMessageId::MediaThumbnailFfmpegRequired,
+        io::ErrorKind::TimedOut => AppErrorMessageId::MediaThumbnailPreparationTimedOut,
+        _ => AppErrorMessageId::MediaThumbnailPreparationFailed,
     };
-    AppError::preview_failed(message, None::<String>)
+    AppError::preview_failed(id, None::<String>)
 }
 
 fn diagnostics(

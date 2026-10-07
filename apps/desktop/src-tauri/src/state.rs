@@ -14,7 +14,7 @@ use crate::media::{
 };
 use crate::{
     domain::source::{ValidatedSource, validate_source},
-    error::AppError,
+    error::{AppError, AppErrorMessageId},
 };
 
 const STALE_ARTIFACT_AGE: std::time::Duration = std::time::Duration::from_secs(60 * 60);
@@ -218,7 +218,9 @@ impl AppState {
             .map_err(|_| AppError::internal("The in-memory output registry is unavailable."))?
             .get(output_id)
             .cloned()
-            .ok_or_else(|| AppError::invalid_request("The output location is no longer available."))
+            .ok_or_else(|| {
+                AppError::invalid_request(AppErrorMessageId::StateOutputLocationIsNoLongerAvailable)
+            })
     }
 
     pub fn resolve_registered_output(&self, output_id: &str) -> Result<Option<PathBuf>, AppError> {
@@ -260,7 +262,9 @@ impl AppState {
             .map_err(|_| AppError::internal("The in-memory operation registry is unavailable."))?
             .get(operation_id)
             .cloned()
-            .ok_or_else(|| AppError::invalid_request("The operation is no longer available."))
+            .ok_or_else(|| {
+                AppError::invalid_request(AppErrorMessageId::StateOperationIsNoLongerAvailable)
+            })
     }
 
     pub fn finish_operation(&self, operation_id: &str) -> Result<(), AppError> {
@@ -436,7 +440,9 @@ impl AppState {
                 .bytes()
                 .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
         {
-            return Err(AppError::invalid_request("The waveform job ID is invalid."));
+            return Err(AppError::invalid_request(
+                AppErrorMessageId::StateWaveformJobIdIsInvalid,
+            ));
         }
 
         let mut session = self.lock_session()?;
@@ -524,7 +530,9 @@ impl AppState {
             .waveforms
             .get(&stream_index)
             .map(|waveform| waveform.artifact.path().to_owned())
-            .ok_or_else(|| AppError::invalid_request("The waveform is not available."))
+            .ok_or_else(|| {
+                AppError::invalid_request(AppErrorMessageId::StateWaveformIsNotAvailable)
+            })
     }
 
     pub fn cached_scene_boundaries(&self, load_token: u64) -> Result<Option<Vec<u64>>, AppError> {
@@ -637,7 +645,9 @@ impl AppState {
             .get(&stream_index)
             .filter(|(revision, _)| *revision == preview_revision)
             .map(|(_, preview)| preview.path().to_owned())
-            .ok_or_else(|| AppError::invalid_request("The audio preview is not available."))
+            .ok_or_else(|| {
+                AppError::invalid_request(AppErrorMessageId::StateAudioPreviewIsNotAvailable)
+            })
     }
 
     pub fn resolve_preview_path(&self, load_token: u64) -> Result<PathBuf, AppError> {

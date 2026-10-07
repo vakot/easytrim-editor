@@ -1,6 +1,6 @@
 use crate::{
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
-    error::AppError,
+    error::{AppError, AppErrorMessageId},
     media::{
         audio::generate_audio_previews,
         export::{
@@ -172,7 +172,9 @@ pub async fn detect_silence(
 ) -> Result<Vec<SilenceRange>, AppError> {
     let source = state.resolve_source_by_path(&source_path)?;
     let media = source.media.as_ref().ok_or_else(|| {
-        AppError::invalid_request("Inspect the video before detecting audio activity.")
+        AppError::invalid_request(
+            AppErrorMessageId::MediaInspectTheVideoBeforeDetectingAudioActivity,
+        )
     })?;
     validate_audio_track_selections(media, std::slice::from_ref(&track))?;
     let cache_key = AudioTrackCacheKey::from(&track);
@@ -218,7 +220,7 @@ pub async fn prepare_imported_source_thumbnail(
     let cache_directory = app
         .path()
         .app_cache_dir()
-        .map_err(|_| AppError::io_failed("The thumbnail cache is unavailable."))?
+        .map_err(|_| AppError::io_failed(AppErrorMessageId::MediaThumbnailCacheIsUnavailable))?
         .join("thumbnails");
     let thumbnail = tauri::async_runtime::spawn_blocking(move || {
         generate_thumbnail(&source.path, &cache_directory)
@@ -268,7 +270,7 @@ pub async fn prepare_audio_previews(
 ) -> Result<Vec<AudioPreviewDescriptor>, AppError> {
     if audio_tracks.is_empty() || audio_tracks.len() > 32 {
         return Err(AppError::invalid_request(
-            "Select between one and 32 audio streams for preview.",
+            AppErrorMessageId::MediaSelectBetweenOneAnd32AudioStreamsForPreview,
         ));
     }
     let source = state.resolve_source_by_path(&source_path)?;
@@ -282,7 +284,7 @@ pub async fn prepare_audio_previews(
     unique_stream_indexes.dedup();
     if unique_stream_indexes.len() != audio_tracks.len() {
         return Err(AppError::invalid_request(
-            "Audio preview stream indexes must be unique.",
+            AppErrorMessageId::MediaAudioPreviewStreamIndexesMustBeUnique,
         ));
     }
 
@@ -318,7 +320,7 @@ pub async fn prepare_waveforms(
 ) -> Result<Vec<WaveformResult>, AppError> {
     if stream_indexes.is_empty() || stream_indexes.len() > 32 {
         return Err(AppError::invalid_request(
-            "Select between one and 32 audio streams for waveform generation.",
+            AppErrorMessageId::MediaSelectBetweenOneAnd32AudioStreamsForWaveformGeneration,
         ));
     }
     let mut unique_stream_indexes = stream_indexes.clone();
@@ -326,7 +328,7 @@ pub async fn prepare_waveforms(
     unique_stream_indexes.dedup();
     if unique_stream_indexes.len() != stream_indexes.len() {
         return Err(AppError::invalid_request(
-            "Waveform stream indexes must be unique.",
+            AppErrorMessageId::MediaWaveformStreamIndexesMustBeUnique,
         ));
     }
 
@@ -337,7 +339,7 @@ pub async fn prepare_waveforms(
         .any(|stream_index| !stream_indexes.contains(stream_index))
     {
         return Err(AppError::invalid_request(
-            "Waveform processing settings must match the selected audio streams.",
+            AppErrorMessageId::MediaWaveformProcessingSettingsMustMatchTheSelectedAudioStreams,
         ));
     }
     let processing_by_stream = stream_indexes
@@ -365,7 +367,9 @@ pub async fn prepare_waveforms(
         })
         .collect::<Vec<_>>();
     let media = waveform_source.source.media.as_ref().ok_or_else(|| {
-        AppError::invalid_request("Audio stream metadata is unavailable for waveform generation.")
+        AppError::invalid_request(
+            AppErrorMessageId::MediaAudioStreamMetadataIsUnavailableForWaveformGeneration,
+        )
     })?;
     validate_audio_track_selections(media, &validation_tracks)?;
     for stream_index in &stream_indexes {

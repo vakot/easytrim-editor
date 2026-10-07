@@ -3,7 +3,7 @@ use std::{fs, path::PathBuf};
 use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 
-use crate::error::AppError;
+use crate::error::{AppError, AppErrorMessageId};
 
 const MAX_FRAME_PNG_BYTES: usize = 100 * 1024 * 1024;
 const PNG_SIGNATURE: &[u8; 8] = b"\x89PNG\r\n\x1a\n";
@@ -34,9 +34,9 @@ pub async fn save_frame_png(
     let Some(selected) = selected else {
         return Ok(false);
     };
-    let path = selected
-        .into_path()
-        .map_err(|_| AppError::invalid_request("The selected image location is not supported."))?;
+    let path = selected.into_path().map_err(|_| {
+        AppError::invalid_request(AppErrorMessageId::FrameSelectedImageLocationIsNotSupported)
+    })?;
 
     tauri::async_runtime::spawn_blocking(move || write_frame_png(path, png_data))
         .await
@@ -55,7 +55,7 @@ fn validate_default_name(default_name: &str) -> Result<(), AppError> {
         || !default_name.to_ascii_lowercase().ends_with(".png")
     {
         return Err(AppError::invalid_request(
-            "The suggested frame filename is invalid.",
+            AppErrorMessageId::FrameSuggestedFrameFilenameIsInvalid,
         ));
     }
     Ok(())
@@ -64,12 +64,12 @@ fn validate_default_name(default_name: &str) -> Result<(), AppError> {
 fn validate_frame_png(png_data: &[u8]) -> Result<(), AppError> {
     if png_data.len() < PNG_SIGNATURE.len() || !png_data.starts_with(PNG_SIGNATURE) {
         return Err(AppError::invalid_request(
-            "The captured frame is not a PNG image.",
+            AppErrorMessageId::FrameCapturedFrameIsNotAPngImage,
         ));
     }
     if png_data.len() > MAX_FRAME_PNG_BYTES {
         return Err(AppError::invalid_request(
-            "The captured frame is too large to save.",
+            AppErrorMessageId::FrameCapturedFrameIsTooLargeToSave,
         ));
     }
     Ok(())
@@ -77,7 +77,7 @@ fn validate_frame_png(png_data: &[u8]) -> Result<(), AppError> {
 
 fn write_frame_png(path: PathBuf, png_data: Vec<u8>) -> Result<(), AppError> {
     fs::write(path, png_data)
-        .map_err(|_| AppError::io_failed("The captured frame could not be saved."))
+        .map_err(|_| AppError::io_failed(AppErrorMessageId::FrameCapturedFrameCouldNotBeSaved))
 }
 
 #[cfg(test)]
