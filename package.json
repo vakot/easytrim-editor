@@ -22,6 +22,7 @@
     "lint:fix": "eslint . --fix --max-warnings 0 && prettier --write .",
     "lint-format": "pnpm format && pnpm lint:fix",
     "i18n:check": "node scripts/validate-i18n.mjs",
+    "i18n:coverage:generate": "node scripts/generate-i18n-coverage.mjs",
     "knip": "knip --production",
     "typecheck": "pnpm changelog:prepare && pnpm --filter @easytrim-editor/desktop typecheck",
     "typecheck:storybook": "pnpm changelog:prepare && pnpm --filter @easytrim-editor/desktop typecheck:storybook",

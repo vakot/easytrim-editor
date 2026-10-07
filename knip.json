@@ -10,6 +10,7 @@
         "scripts/prepare-macos-icon.mjs!",
         "scripts/bump-version.mjs!",
         "scripts/generate-changelog.mjs!",
+        "scripts/generate-i18n-coverage.mjs!",
         "scripts/validate-i18n.mjs!",
         "scripts/release-local.mjs!",
         "scripts/release-linux-docker.mjs!"
@@ -18,7 +19,7 @@
       "ignore": ["scripts/**/__tests__/**"]
     },
     "apps/desktop": {
-      "entry": ["src/main.tsx!"],
+      "entry": ["src/main.tsx!", "src/i18n/resources.ts!"],
       "project": ["src/**/*.ts!", "src/**/*.tsx!"],
       "ignoreDependencies": ["@fontsource/inter", "shadcn", "tw-animate-css"],
       "ignore": [

@@ -4,6 +4,7 @@ import { basename, extname, join, relative } from "node:path";
 import ts from "typescript";
 
 const CANONICAL_LOCALE = "en";
+export const SUPPORTED_LOCALES = ["en", "ru", "sk"];
 const PLURAL_SUFFIXES = ["zero", "one", "two", "few", "many", "other"];
 const PLURAL_KEY = /^(.*)_(zero|one|two|few|many|other)$/;
 const SUSPICIOUS_CYRILLIC = /[\u0400-\u04ff]/;
@@ -26,16 +27,19 @@ const SHORTCUT_HINT_LABEL_LIMITS = [
 ];
 
 export async function validateI18n(repositoryRoot) {
-  const report = await auditI18n(repositoryRoot);
+  const { localeResources, report } = await analyzeI18n(repositoryRoot);
   if (report.issues.length > 0) {
     throw new Error(
       `i18n validation failed:\n${report.issues.map((issue) => `- ${issue}`).join("\n")}`,
     );
   }
-  return report;
+  return {
+    ...report,
+    coverage: getTranslationCoverage(localeResources),
+  };
 }
 
-export async function auditI18n(repositoryRoot) {
+async function analyzeI18n(repositoryRoot) {
   const desktopSource = join(repositoryRoot, "apps", "desktop", "src");
   const localeDirectory = join(desktopSource, "i18n", "locales");
   const localePaths = (await readdir(localeDirectory))
@@ -70,14 +74,48 @@ export async function auditI18n(repositoryRoot) {
   const units = getTranslationUnits(locales.get(CANONICAL_LOCALE)?.leaves ?? new Map());
 
   return {
-    issues,
-    localeCount: locales.size,
-    resourceLeafCount: locales.get(CANONICAL_LOCALE)?.leaves.size ?? 0,
-    usedResourceLeafCount: usageReport.usedResourceLeafCount,
-    resourceUnitCount: units.size,
-    usedResourceUnitCount: usageReport.usedResourceUnitCount,
-    translationUnits: [...units.values()],
+    report: {
+      issues,
+      localeCount: locales.size,
+      resourceLeafCount: locales.get(CANONICAL_LOCALE)?.leaves.size ?? 0,
+      usedResourceLeafCount: usageReport.usedResourceLeafCount,
+      resourceUnitCount: units.size,
+      usedResourceUnitCount: usageReport.usedResourceUnitCount,
+      translationUnits: [...units.values()],
+    },
+    localeResources: locales,
   };
+}
+
+export function getTranslationCoverage(locales) {
+  const canonical = locales.get(CANONICAL_LOCALE);
+  const canonicalUnits = getTranslationUnits(canonical?.leaves ?? new Map());
+  const totalUnits = canonicalUnits.size;
+
+  return SUPPORTED_LOCALES.map((locale) => {
+    const localized = locales.get(locale);
+    const missingUnits = [];
+
+    for (const unit of canonicalUnits.values()) {
+      const translated = unit.forms
+        ? Boolean(localized && missingPluralCategories(localized.leaves, unit, locale).length === 0)
+        : (localized?.leaves.has(unit.key) ?? false);
+
+      if (!translated) missingUnits.push(unit.key);
+    }
+
+    const translatedUnits = totalUnits - missingUnits.length;
+    return {
+      locale,
+      translatedUnits,
+      totalUnits,
+      percentage:
+        locale === CANONICAL_LOCALE || totalUnits === 0
+          ? 100
+          : Math.round((translatedUnits / totalUnits) * 100),
+      missingUnits: missingUnits.sort(),
+    };
+  });
 }
 
 // A plural family is one translation unit even when it has several resource leaves.
@@ -374,10 +412,8 @@ export function validateLocaleArchitecture(locales) {
       });
 
       if (localizedForms.length === 0) continue;
-      for (const category of requiredPluralForms(categories, unit.forms)) {
-        if (!locale.leaves.has(`${unit.key}_${category}`)) {
-          issues.push(`${localeName} plural family ${unit.key} requires an _${category} form`);
-        }
+      for (const category of missingPluralCategories(locale.leaves, unit, localeName)) {
+        issues.push(`${localeName} plural family ${unit.key} requires an _${category} form`);
       }
       const expected = familyParameters(canonical.leaves, unit.forms);
       for (const key of localizedForms) {
@@ -402,6 +438,12 @@ function requiredPluralForms(categories, canonicalForms) {
   // i18next checks an explicit _zero before the locale's cardinal category for count 0.
   if (canonicalForms.has("zero")) required.add("zero");
   return required;
+}
+
+function missingPluralCategories(leaves, unit, localeName) {
+  return [...requiredPluralForms(pluralCategories(localeName), unit.forms)].filter(
+    (category) => !leaves.has(`${unit.key}_${category}`),
+  );
 }
 
 function familyParameters(leaves, forms) {

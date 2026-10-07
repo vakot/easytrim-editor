@@ -32,12 +32,17 @@ Translate complete messages. Keep plural forms and interpolation on the complete
 fragments. Add a short `// Translators:` comment when a path and English text still leave an
 important concept ambiguous; avoid comments that only repeat the message.
 
-A pluralized message is one translation unit. Provide every cardinal form required by your
-language, with the same interpolation parameters, or leave the whole family untranslated for
-English fallback. Do not copy English suffixes blindly: `queue.summary.jobs` needs `_one` and
-`_other` in English, but also `_few` and `_many` in Russian and Slovak. If English defines an
-explicit `_zero` form, translate that form too. Remove all forms of an incomplete family until
-the missing translations have been reviewed.
+A translation unit is one ordinary message or one complete plural family. Provide every cardinal
+form required by your language, with the same interpolation parameters, or leave the whole family
+untranslated for English fallback. Do not copy English suffixes blindly:
+`queue.summary.jobs` needs `_one` and `_other` in English, but also `_few` and `_many` in Russian
+and Slovak. If English defines an explicit `_zero` form, translate that form too. Remove all forms
+of an incomplete family until the missing translations have been reviewed.
+
+Coverage is the percentage of canonical English translation units present in a locale. A plural
+family counts once and is present only when all required forms are available. Coverage measures
+presence and completeness, not translation quality or human review status. It has no minimum
+threshold and does not affect validation success.
 
 ## Editing and validation
 
@@ -53,6 +58,18 @@ partial locale types allow missing entries but reject unknown ones. `pnpm i18n:c
 invalid or unused English keys, duplicate keys, empty objects and values, invalid plural families,
 unknown partial-locale keys, mismatched interpolation parameters, missing call-site parameters,
 dynamic calls, and inline fallbacks. It never writes translations. `pnpm lint` also runs this check.
+
+Use the local coverage summary and optional missing-unit details with:
+
+```sh
+pnpm i18n:check
+pnpm i18n:check --verbose
+pnpm i18n:check --verbose ru
+```
+
+Verbose locale filtering changes only the missing-unit details; the summary always includes every
+supported locale. Build preparation generates the compact frontend coverage metadata from the
+validated resources.
 
 ## Terminology for contributors
 

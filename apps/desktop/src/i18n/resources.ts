@@ -1,6 +1,7 @@
 import { en } from "./locales/en";
 import { ru } from "./locales/ru";
 import { sk } from "./locales/sk";
+import { translationCoverage } from "./coverage.generated";
 import type { PartialTranslationSchema, TranslationSchema } from "./schema";
 
 export const DEFAULT_LANGUAGE = "en";
@@ -16,6 +17,8 @@ export const resources = {
   SupportedLanguage,
   { translation: PartialTranslationSchema }
 >;
+
+export { translationCoverage };
 
 function resolveInitialLanguage(
   preferredLanguages: readonly string[] = browserLanguages(),
