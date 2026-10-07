@@ -24,11 +24,7 @@ import {
   LanguageSelectorTrigger,
   LanguageSelectorValue,
 } from "@/components/language-selector";
-import { LANGUAGE_CATALOG } from "@/domain/languages";
-
-const commonLanguages = LANGUAGE_CATALOG.filter(({ code }) =>
-  ["aa", "de", "en", "es", "fr", "ja", "ru", "sk", "zh"].includes(code),
-);
+import { SUPPORTED_LANGUAGES } from "@/domain/languages";
 
 const meta = {
   title: "Design System/LanguageSelector",
@@ -46,19 +42,9 @@ export const ButtonTrigger: Story = {
   render: () => <ButtonTriggerExample />,
 };
 
-function ButtonTriggerExample({
-  defaultOpen = false,
-  longList = false,
-}: {
-  defaultOpen?: boolean;
-  longList?: boolean;
-}) {
+function ButtonTriggerExample({ defaultOpen = false }: { defaultOpen?: boolean }) {
   return (
-    <LanguageSelector
-      defaultOpen={defaultOpen}
-      defaultValue="ru"
-      languages={longList ? LANGUAGE_CATALOG : commonLanguages}
-    >
+    <LanguageSelector defaultOpen={defaultOpen} defaultValue="ru" languages={SUPPORTED_LANGUAGES}>
       <LanguageSelectorTrigger>
         <Button
           aria-label="Choose language"
@@ -83,7 +69,7 @@ function ButtonTriggerExample({
 
 export const InputTrigger: Story = {
   render: () => (
-    <LanguageSelector defaultValue="ja" languages={commonLanguages}>
+    <LanguageSelector defaultValue="sk" languages={SUPPORTED_LANGUAGES}>
       <LanguageSelectorInput
         aria-label="Choose language"
         className="w-72"
@@ -101,7 +87,9 @@ export const DropdownMenuSubmenu: Story = {
 };
 
 function DropdownMenuSubmenuExample() {
-  const [languageCode, setLanguageCode] = useState("en");
+  const [languageCode, setLanguageCode] =
+    useState<(typeof SUPPORTED_LANGUAGES)[number]["code"]>("en");
+
   const [submenuOpen, setSubmenuOpen] = useState(false);
 
   return (
@@ -116,7 +104,7 @@ function DropdownMenuSubmenuExample() {
         <DropdownMenuSeparator />
 
         <LanguageSelector
-          languages={commonLanguages}
+          languages={SUPPORTED_LANGUAGES}
           onValueChange={(code) => {
             setLanguageCode(code);
             setSubmenuOpen(false);
@@ -148,13 +136,9 @@ function DropdownMenuSubmenuExample() {
   );
 }
 
-export const LongLanguageList: Story = {
-  render: () => <ButtonTriggerExample defaultOpen longList />,
-};
-
 function NoResultsExample() {
   return (
-    <LanguageSelector defaultOpen languages={commonLanguages}>
+    <LanguageSelector defaultOpen languages={SUPPORTED_LANGUAGES}>
       <LanguageSelectorTrigger>
         <Button
           aria-label="Choose language"

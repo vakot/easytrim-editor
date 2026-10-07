@@ -1,15 +1,7 @@
-import CN from "country-flag-icons/react/3x2/CN";
-import DE from "country-flag-icons/react/3x2/DE";
-import ES from "country-flag-icons/react/3x2/ES";
-import FR from "country-flag-icons/react/3x2/FR";
 import GB from "country-flag-icons/react/3x2/GB";
-import JP from "country-flag-icons/react/3x2/JP";
-import KR from "country-flag-icons/react/3x2/KR";
-import PT from "country-flag-icons/react/3x2/PT";
 import RU from "country-flag-icons/react/3x2/RU";
 import SK from "country-flag-icons/react/3x2/SK";
-import UA from "country-flag-icons/react/3x2/UA";
-import { CheckIcon, LanguagesIcon } from "lucide-react";
+import { CheckIcon } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -28,10 +20,8 @@ import { MenuIcon } from "@/components/ui/menu";
 import {
   createLanguageSearcher,
   getLanguageDisplayName,
-  getLanguageRegion,
   type Language,
-  LANGUAGE_CATALOG,
-  type LanguageRegion,
+  SUPPORTED_LANGUAGES,
 } from "@/domain/languages";
 import { cn } from "@/lib/class-names.utils";
 
@@ -47,18 +37,10 @@ interface LanguageSelectorContextValue {
 const LanguageSelectorContext = React.createContext<LanguageSelectorContextValue | null>(null);
 const LanguageSelectorContentContext = React.createContext(false);
 
-const LANGUAGE_REGION_FLAGS: Record<LanguageRegion, typeof GB> = {
-  CN,
-  DE,
-  ES,
-  FR,
+const LANGUAGE_REGION_FLAGS: Record<Language["region"], typeof GB> = {
   GB,
-  JP,
-  KR,
-  PT,
   RU,
   SK,
-  UA,
 };
 
 function useLanguageSelector() {
@@ -84,7 +66,7 @@ function LanguageSelector({
   defaultValue,
   disabled = false,
   label,
-  languages = LANGUAGE_CATALOG,
+  languages = SUPPORTED_LANGUAGES,
   onValueChange,
   value,
   ...props
@@ -152,8 +134,7 @@ function LanguageSelectorValue({
 
   if (!language) return placeholder ?? null;
   const value = type === "displayName" ? getLanguageDisplayName(language) : language[type];
-  const regionCode = getLanguageRegion(language);
-  const Flag = regionCode ? LANGUAGE_REGION_FLAGS[regionCode] : null;
+  const Flag = LANGUAGE_REGION_FLAGS[language.region];
 
   return (
     <>
@@ -161,11 +142,7 @@ function LanguageSelectorValue({
         aria-hidden="true"
         className="mr-2 flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs"
       >
-        {Flag ? (
-          <Flag aria-hidden="true" className="block h-auto w-full" />
-        ) : (
-          <LanguagesIcon className="size-4 text-muted-foreground" />
-        )}
+        <Flag aria-hidden="true" className="block h-auto w-full" />
       </span>
       <span>{value}</span>
     </>
@@ -241,8 +218,7 @@ function LanguageSelectorList({
       <ComboboxGroup>
         {languages.map((language) => {
           const selected = selectedLanguage?.code === language.code;
-          const regionCode = getLanguageRegion(language);
-          const Flag = regionCode ? LANGUAGE_REGION_FLAGS[regionCode] : null;
+          const Flag = LANGUAGE_REGION_FLAGS[language.region];
 
           return (
             <ComboboxItem
@@ -264,11 +240,7 @@ function LanguageSelectorList({
                 aria-hidden="true"
                 className="mr-2 flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs"
               >
-                {Flag ? (
-                  <Flag aria-hidden="true" className="block h-auto w-full" />
-                ) : (
-                  <LanguagesIcon className="size-4 text-muted-foreground" />
-                )}
+                <Flag aria-hidden="true" className="block h-auto w-full" />
               </span>
               <span className="min-w-0 flex-1 truncate">{getLanguageDisplayName(language)}</span>
               <span className="ml-auto shrink-0 text-xs text-muted-foreground">

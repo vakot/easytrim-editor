@@ -1,16 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import CN from "country-flag-icons/react/3x2/CN";
-import DE from "country-flag-icons/react/3x2/DE";
-import ES from "country-flag-icons/react/3x2/ES";
-import FR from "country-flag-icons/react/3x2/FR";
 import GB from "country-flag-icons/react/3x2/GB";
-import JP from "country-flag-icons/react/3x2/JP";
-import KR from "country-flag-icons/react/3x2/KR";
-import PT from "country-flag-icons/react/3x2/PT";
 import RU from "country-flag-icons/react/3x2/RU";
 import SK from "country-flag-icons/react/3x2/SK";
-import UA from "country-flag-icons/react/3x2/UA";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -22,13 +14,9 @@ import {
   LanguageSelectorTrigger,
   LanguageSelectorValue,
 } from "@/components/language-selector";
-import { getLanguageDisplayName, type Language, LANGUAGE_CATALOG } from "@/domain/languages";
+import { getLanguageDisplayName, SUPPORTED_LANGUAGES } from "@/domain/languages";
 
-const languages: readonly Language[] = [
-  { code: "en", englishName: "English", nativeName: "English" },
-  { code: "es", englishName: "Spanish", nativeName: "Español" },
-  { code: "ru", englishName: "Russian", nativeName: "Русский" },
-];
+const languages = SUPPORTED_LANGUAGES;
 
 describe("LanguageSelector", () => {
   it("applies content sizing classes when wrapping custom submenu content", () => {
@@ -48,7 +36,7 @@ describe("LanguageSelector", () => {
     );
   });
 
-  it("filters by language names, selects by keyboard, and displays the selected language", async () => {
+  it("filters by language names, selects by keyboard, and displays the selected flag and language", async () => {
     const user = userEvent.setup();
     const onValueChange = vi.fn();
 
@@ -75,17 +63,22 @@ describe("LanguageSelector", () => {
 
     await user.click(screen.getByRole("button", { name: /choose language/i }));
     const search = screen.getByRole("combobox", { name: "Search languages" });
-    await user.type(search, "espanol");
+    await user.type(search, "slovencina");
 
-    expect(screen.getByRole("option", { name: "Español (Spanish), es" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Slovenčina (Slovak), sk" })).toBeVisible();
     expect(screen.queryByRole("option", { name: "Русский (Russian), ru" })).not.toBeInTheDocument();
 
     await user.keyboard("{ArrowDown}{Enter}");
 
-    expect(onValueChange).toHaveBeenCalledWith("es");
+    expect(onValueChange).toHaveBeenCalledWith("sk");
     expect(screen.getByRole("button", { name: "Choose language" })).toHaveTextContent(
-      "Español (Spanish)",
+      "Slovenčina (Slovak)",
     );
+    expect(
+      screen
+        .getByRole("button", { name: "Choose language" })
+        .querySelector("span[aria-hidden='true'] svg")?.outerHTML,
+    ).toBe(renderToStaticMarkup(<SK aria-hidden="true" className="block h-auto w-full" />));
     await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());
   });
 
@@ -110,8 +103,8 @@ describe("LanguageSelector", () => {
     fireEvent.pointerUp(input, { button: 0 });
     fireEvent.click(input);
     expect(screen.getByRole("listbox")).toBeVisible();
-    await user.type(input, "russian");
-    expect(input).toHaveValue("russian");
+    await user.type(input, "russan");
+    expect(input).toHaveValue("russan");
     expect(screen.getByRole("option", { name: "Русский (Russian), ru" })).toBeVisible();
 
     await user.keyboard("{ArrowDown}{Enter}");
@@ -173,19 +166,10 @@ describe("LanguageSelector", () => {
   });
 
   it.each([
-    { code: "en", Flag: GB },
-    { code: "ru", Flag: RU },
-    { code: "uk", Flag: UA },
-    { code: "sk", Flag: SK },
-    { code: "de", Flag: DE },
-    { code: "fr", Flag: FR },
-    { code: "es", Flag: ES },
-    { code: "pt", Flag: PT },
-    { code: "ja", Flag: JP },
-    { code: "ko", Flag: KR },
-    { code: "zh", Flag: CN },
-  ])("renders the mapped $code package flag in its option", ({ code, Flag }) => {
-    const language = LANGUAGE_CATALOG.find((entry) => entry.code === code)!;
+    { Flag: GB, language: SUPPORTED_LANGUAGES[0] },
+    { Flag: RU, language: SUPPORTED_LANGUAGES[1] },
+    { Flag: SK, language: SUPPORTED_LANGUAGES[2] },
+  ])("renders the package flag in its option", ({ Flag, language }) => {
     const label = `${getLanguageDisplayName(language)}, ${language.code}`;
 
     render(
@@ -204,24 +188,5 @@ describe("LanguageSelector", () => {
       renderToStaticMarkup(<Flag aria-hidden="true" className="block h-auto w-full" />),
     );
     expect(within(option).getByText(language.code)).toBeVisible();
-  });
-
-  it("renders a neutral flag fallback for languages without a mapped region", () => {
-    const language = LANGUAGE_CATALOG.find((entry) => entry.code === "aa")!;
-
-    render(
-      <LanguageSelector defaultOpen languages={[language]}>
-        <LanguageSelectorContent>
-          <LanguageSelectorList />
-        </LanguageSelectorContent>
-      </LanguageSelector>,
-    );
-
-    const option = screen.getByRole("option", {
-      name: `${getLanguageDisplayName(language)}, ${language.code}`,
-    });
-
-    const flagContainer = option.querySelector("span[aria-hidden='true']");
-    expect(flagContainer?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 });

@@ -11,12 +11,10 @@ import {
   LanguageSelectorTrigger,
   LanguageSelectorValue,
 } from "@/components/language-selector";
-import { LANGUAGE_CATALOG } from "@/domain/languages";
+import { SUPPORTED_LANGUAGES } from "@/domain/languages";
 import { isSupportedLanguage } from "@/i18n/resources";
 
 import { SettingRow, SettingsSection } from "../components/SettingRow";
-
-const supportedLanguages = LANGUAGE_CATALOG.filter(({ code }) => isSupportedLanguage(code));
 
 function SettingsGeneral() {
   const { i18n, t } = useTranslation();
@@ -29,7 +27,7 @@ function SettingsGeneral() {
         label={t("settings.labels.language")}
       >
         <LanguageSelector
-          languages={supportedLanguages}
+          languages={SUPPORTED_LANGUAGES}
           onValueChange={(nextLanguage) => {
             if (isSupportedLanguage(nextLanguage)) void i18n.changeLanguage(nextLanguage);
           }}

@@ -64,6 +64,6 @@ Plural families are treated atomically when checking usage. The validator report
 never removes translation data and is intentionally separate from `lint:fix`.
 
 To add a locale, create its file in `locales/`, make it satisfy `TranslationSchema`, register its
-language code in `SUPPORTED_LANGUAGES` and `resources`, and add its native name to
-[`LANGUAGE_CATALOG`](../domain/languages.ts). Language names are shared labels, not locale
+language code in `resources.ts`, and add its display metadata and representative region to
+[`SUPPORTED_LANGUAGES`](../domain/languages.ts). Language names are shared labels, not locale
 translation entries. Then run the full validation workflow.
