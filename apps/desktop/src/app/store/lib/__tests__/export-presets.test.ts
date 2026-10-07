@@ -80,6 +80,61 @@ describe("export presets", () => {
     expect(loaded.presets[2]?.argumentsText).toContain("-temporal-aq 1");
   });
 
+  it("migrates legacy built-in defaults without creating name overrides", () => {
+    const legacy = structuredClone(initialExportPresetState);
+    const legacyNames = [
+      "P1 · Fastest",
+      "P2 · Very fast",
+      "P3 · Fast",
+      "P4 · Quality",
+      "P5 · Smaller",
+      "P6 · Very small",
+      "P7 · Smallest",
+    ];
+    legacy.presets.forEach((preset, index) => {
+      preset.name = legacyNames[index]!;
+    });
+    localStorage.setItem(STORAGE_KEYS.exportPresets, JSON.stringify(legacy));
+
+    const loaded = loadExportPresetState();
+
+    expect(loaded.presets).toHaveLength(7);
+    expect(loaded.presets.every((preset) => preset.nameOverride === undefined)).toBe(true);
+  });
+
+  it("preserves renamed built-in presets as name overrides during migration", () => {
+    const legacy = structuredClone(initialExportPresetState);
+    legacy.presets[2]!.name = "My fast preset";
+    localStorage.setItem(STORAGE_KEYS.exportPresets, JSON.stringify(legacy));
+
+    const loaded = loadExportPresetState();
+
+    expect(loaded.presets[2]).toMatchObject({
+      id: "hevc-nvenc-p3",
+      name: "P3 · Fast",
+      nameOverride: "My fast preset",
+    });
+  });
+
+  it("leaves custom presets unchanged during built-in name migration", () => {
+    const legacy = structuredClone(initialExportPresetState);
+    legacy.presets.push({
+      id: "runtime-preset-1",
+      name: "My custom preset",
+      argumentsText: "-c:v libx264 -crf 20",
+    });
+    legacy.nextPresetSequence = 1;
+    localStorage.setItem(STORAGE_KEYS.exportPresets, JSON.stringify(legacy));
+
+    const loaded = loadExportPresetState();
+
+    expect(loaded.presets.at(-1)).toEqual({
+      id: "runtime-preset-1",
+      name: "My custom preset",
+      argumentsText: "-c:v libx264 -crf 20",
+    });
+  });
+
   it("round-trips presets through versioned storage", () => {
     const saved = exportPresetsReducer(
       exportPresetsReducer(initialExportPresetState, exportPresetCreated({ name: "Portable" })),

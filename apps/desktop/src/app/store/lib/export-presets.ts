@@ -12,6 +12,7 @@ interface ExportPreset {
   description?: string;
   id: string;
   name: string;
+  nameOverride?: string;
 }
 
 export type PresetNameError = "duplicate" | "required" | "tooLong";
@@ -76,6 +77,18 @@ const DEFAULT_PRESETS: ExportPreset[] = [
 
 const DEFAULT_PRESET_ID = "hevc-nvenc-p3";
 
+const LEGACY_BUILT_IN_PRESET_NAMES = {
+  "hevc-nvenc-p1": "P1 · Fastest",
+  "hevc-nvenc-p2": "P2 · Very fast",
+  "hevc-nvenc-p3": "P3 · Fast",
+  "hevc-nvenc-p4": "P4 · Quality",
+  "hevc-nvenc-p5": "P5 · Smaller",
+  "hevc-nvenc-p6": "P6 · Very small",
+  "hevc-nvenc-p7": "P7 · Smallest",
+} as const;
+
+type BuiltInPresetId = keyof typeof LEGACY_BUILT_IN_PRESET_NAMES;
+
 export const initialExportPresetState: ExportPresetState = {
   presets: DEFAULT_PRESETS,
   selectedPresetId: DEFAULT_PRESET_ID,
@@ -100,12 +113,13 @@ function loadExportPresetState(): ExportPresetState {
       Boolean(preset) &&
       typeof preset.id === "string" &&
       typeof preset.name === "string" &&
+      (preset.nameOverride === undefined || typeof preset.nameOverride === "string") &&
       typeof preset.argumentsText === "string",
   );
 
   const availablePresets =
     presets.length > 0
-      ? presets.map((preset) => migrateLegacyNvencPreset(preset))
+      ? presets.map((preset) => migrateLegacyNvencPreset(migrateLegacyBuiltInPresetName(preset)))
       : initialExportPresetState.presets;
 
   const selectedPresetId = availablePresets.some((preset) => preset.id === stored.selectedPresetId)
@@ -120,6 +134,25 @@ function loadExportPresetState(): ExportPresetState {
     argumentsText: selectedPreset?.argumentsText ?? stored.argumentsText,
     nextPresetSequence: stored.nextPresetSequence,
   };
+}
+
+function migrateLegacyBuiltInPresetName(preset: ExportPreset): ExportPreset {
+  const legacyName = LEGACY_BUILT_IN_PRESET_NAMES[preset.id as BuiltInPresetId];
+  if (!legacyName) return preset;
+
+  return {
+    ...preset,
+    name: legacyName,
+    ...(preset.nameOverride !== undefined
+      ? { nameOverride: preset.nameOverride }
+      : preset.name === legacyName
+        ? {}
+        : { nameOverride: preset.name }),
+  };
+}
+
+function isBuiltInPresetId(id: string): id is BuiltInPresetId {
+  return Object.hasOwn(LEGACY_BUILT_IN_PRESET_NAMES, id);
 }
 
 function migrateLegacyNvencPreset(preset: ExportPreset): ExportPreset {
@@ -158,6 +191,6 @@ function presetNameError(
   return null;
 }
 
-export { loadExportPresetState, persistExportPresetState, presetNameError };
+export { isBuiltInPresetId, loadExportPresetState, persistExportPresetState, presetNameError };
 
-export type { ExportPreset };
+export type { BuiltInPresetId, ExportPreset };

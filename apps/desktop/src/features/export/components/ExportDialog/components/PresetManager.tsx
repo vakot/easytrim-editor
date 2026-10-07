@@ -39,7 +39,9 @@ import { selectTriggerVariants } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 import {
+  type BuiltInPresetId,
   type ExportPreset,
+  isBuiltInPresetId,
   type PresetNameError,
   presetNameError,
 } from "@/app/store/lib/export-presets";
@@ -54,56 +56,44 @@ import {
   selectExportPresetList,
   selectSelectedExportPreset,
 } from "@/app/store/slices/export-presets-slice";
-import { en } from "@/i18n/locales/en";
-
 type PresetDialogMode = "create" | "edit";
 
 function PresetManager() {
   const { t } = useTranslation();
-  const builtInLabels: Record<
-    string,
-    { canonicalName: string; description: string; name: string }
-  > = {
+  const builtInLabels: Record<BuiltInPresetId, { description: string; name: string }> = {
     "hevc-nvenc-p1": {
-      canonicalName: en.export.preset.builtIn.p1.name,
       name: t("export.preset.builtIn.p1.name"),
       description: t("export.preset.builtIn.p1.description"),
     },
     "hevc-nvenc-p2": {
-      canonicalName: en.export.preset.builtIn.p2.name,
       name: t("export.preset.builtIn.p2.name"),
       description: t("export.preset.builtIn.p2.description"),
     },
     "hevc-nvenc-p3": {
-      canonicalName: en.export.preset.builtIn.p3.name,
       name: t("export.preset.builtIn.p3.name"),
       description: t("export.preset.builtIn.p3.description"),
     },
     "hevc-nvenc-p4": {
-      canonicalName: en.export.preset.builtIn.p4.name,
       name: t("export.preset.builtIn.p4.name"),
       description: t("export.preset.builtIn.p4.description"),
     },
     "hevc-nvenc-p5": {
-      canonicalName: en.export.preset.builtIn.p5.name,
       name: t("export.preset.builtIn.p5.name"),
       description: t("export.preset.builtIn.p5.description"),
     },
     "hevc-nvenc-p6": {
-      canonicalName: en.export.preset.builtIn.p6.name,
       name: t("export.preset.builtIn.p6.name"),
       description: t("export.preset.builtIn.p6.description"),
     },
     "hevc-nvenc-p7": {
-      canonicalName: en.export.preset.builtIn.p7.name,
       name: t("export.preset.builtIn.p7.name"),
       description: t("export.preset.builtIn.p7.description"),
     },
   };
 
   function displayPresetName(preset: ExportPreset): string {
-    const builtIn = builtInLabels[preset.id];
-    return builtIn && preset.name === builtIn.canonicalName ? builtIn.name : preset.name;
+    const builtInName = isBuiltInPresetId(preset.id) ? builtInLabels[preset.id].name : undefined;
+    return preset.nameOverride ?? builtInName ?? preset.name;
   }
 
   const dispatch = useAppDispatch();
@@ -112,6 +102,7 @@ function PresetManager() {
   const selectedPreset = useAppSelector(selectSelectedExportPreset);
   const [dialogMode, setDialogMode] = useState<PresetDialogMode | null>(null);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
+  const [editingPresetInitialName, setEditingPresetInitialName] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftArguments, setDraftArguments] = useState("");
   const [presetError, setPresetError] = useState<PresetNameError | null>(null);
@@ -124,6 +115,7 @@ function PresetManager() {
 
   function openCreateDialog() {
     setEditingPresetId(null);
+    setEditingPresetInitialName(null);
     setDraftName("");
     setDraftArguments(argumentsText);
     setPresetError(null);
@@ -131,15 +123,27 @@ function PresetManager() {
   }
 
   function openEditDialog(preset: ExportPreset) {
+    const initialName = displayPresetName(preset);
     setEditingPresetId(preset.id);
-    setDraftName(preset.name);
+    setEditingPresetInitialName(initialName);
+    setDraftName(initialName);
     setDraftArguments(preset.argumentsText);
     setPresetError(null);
     setDialogMode("edit");
   }
 
   function savePreset() {
-    const error = presetNameError(presets, draftName, editingPresetId ?? undefined);
+    const nameChanged = dialogMode === "edit" && draftName !== editingPresetInitialName;
+    const validationPresets = presets.map((preset) => ({
+      ...preset,
+      name: displayPresetName(preset),
+    }));
+
+    const error =
+      dialogMode === "create" || nameChanged
+        ? presetNameError(validationPresets, draftName, editingPresetId ?? undefined)
+        : null;
+
     if (error) {
       setPresetError(error);
       return;
@@ -148,7 +152,7 @@ function PresetManager() {
     if (dialogMode === "edit" && editingPresetId) {
       dispatch(exportPresetSelected(editingPresetId));
       dispatch(exportArgumentsChanged(draftArguments));
-      dispatch(exportPresetUpdated({ name: draftName }));
+      dispatch(exportPresetUpdated(nameChanged ? { name: draftName } : {}));
     } else {
       dispatch(exportArgumentsChanged(draftArguments));
       dispatch(exportPresetCreated({ name: draftName }));
@@ -186,7 +190,9 @@ function PresetManager() {
                     <span className="block truncate">{displayPresetName(preset)}</span>
                     {preset.description ? (
                       <span className="block truncate text-xs text-muted-foreground">
-                        {builtInLabels[preset.id]?.description ?? preset.description}
+                        {(isBuiltInPresetId(preset.id)
+                          ? builtInLabels[preset.id].description
+                          : undefined) ?? preset.description}
                       </span>
                     ) : null}
                   </span>
@@ -280,7 +286,7 @@ function PresetManager() {
             <AlertDialogTitle>{t("export.preset.delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t("export.preset.delete.description", {
-                name: presetToDelete?.name ?? "",
+                name: presetToDelete ? displayPresetName(presetToDelete) : "",
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -448,6 +448,40 @@ export const sk = {
       rendering: "Prebieha renderovanie…",
     },
     preset: {
+      builtIn: {
+        p1: {
+          name: "P1 · Najrýchlejší",
+          description:
+            "Najrýchlejšie kódovanie NVENC: najväčšie súbory a najnižšia efektivita kompresie.",
+        },
+        p2: {
+          name: "P2 · Veľmi rýchly",
+          description:
+            "Veľmi rýchly export s veľkými súbormi; vhodný, keď je najdôležitejšia rýchlosť.",
+        },
+        p3: {
+          name: "P3 · Rýchly",
+          description:
+            "Rýchly export NVENC s praktickou rovnováhou medzi rýchlosťou, veľkosťou a kvalitou.",
+        },
+        p4: {
+          name: "P4 · Kvalita",
+          description:
+            "Kódovanie NVENC so zameraním na kvalitu: menšie súbory a dlhší čas renderovania.",
+        },
+        p5: {
+          name: "P5 · Menší súbor",
+          description: "Menšie súbory za cenu mierne dlhšieho renderovania.",
+        },
+        p6: {
+          name: "P6 · Veľmi malý súbor",
+          description: "Efektívnejšia kompresia; pomalšie kódovanie pre veľmi malé súbory.",
+        },
+        p7: {
+          name: "P7 · Najmenší súbor",
+          description: "Najefektívnejší preset NVENC; najpomalšia možnosť v celom rozsahu.",
+        },
+      },
       actions: {
         add: "Pridať novú predvoľbu",
       },

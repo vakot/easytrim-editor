@@ -2,6 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
   type ExportPreset,
+  isBuiltInPresetId,
   loadExportPresetState,
   presetNameError,
 } from "@/app/store/lib/export-presets";
@@ -34,19 +35,19 @@ const exportPresetsSlice = createSlice({
       state.selectedPresetId = preset.id;
       state.nextPresetSequence = nextPresetSequence;
     },
-    exportPresetUpdated: (state, action: PayloadAction<{ name: string }>) => {
+    exportPresetUpdated: (state, action: PayloadAction<{ name?: string }>) => {
       const selectedPresetId = state.selectedPresetId;
-      if (
-        !selectedPresetId ||
-        presetNameError(state.presets, action.payload.name, selectedPresetId)
-      ) {
+      if (!selectedPresetId) {
         return;
       }
       const preset = state.presets.find((candidate) => candidate.id === selectedPresetId);
-      if (preset) {
-        preset.name = action.payload.name.trim();
-        preset.argumentsText = state.argumentsText;
-      }
+      if (!preset) return;
+
+      const name = action.payload.name?.trim();
+      if (name !== undefined && presetNameError(state.presets, name, selectedPresetId)) return;
+      if (name && isBuiltInPresetId(preset.id)) preset.nameOverride = name;
+      else if (name) preset.name = name;
+      preset.argumentsText = state.argumentsText;
     },
     exportPresetDeleted: (state) => {
       if (!state.selectedPresetId) return;
