@@ -26,17 +26,28 @@ describe("localizeAppError", () => {
     }
   });
 
-  it("interpolates safe arguments", () => {
-    expect(
-      localizeAppError(
-        {
-          code: "invalid_request",
-          messageId: "media.waveform.widthOutOfRange",
-          messageArgs: { minWidth: 64, maxWidth: 4096 },
-        },
-        i18n.getFixedT("en"),
-      ),
-    ).toBe("Waveform width must be between 64 and 4096 pixels.");
+  it("localizes the serialized native width arguments after normalization", () => {
+    const error = normalizeAppError({
+      code: "invalid_request",
+      messageId: "media.waveform.widthOutOfRange",
+      messageArgs: { minWidth: 64, maxWidth: 4096 },
+    });
+
+    expect(localizeAppError(error, i18n.getFixedT("en"))).toBe(
+      "Waveform width must be between 64 and 4096 pixels.",
+    );
+  });
+
+  it("localizes a serialized native stream index after normalization", () => {
+    const error = normalizeAppError({
+      code: "invalid_request",
+      messageId: "media.waveform.analysisFailed",
+      messageArgs: { streamIndex: 2 },
+    });
+
+    expect(localizeAppError(error, i18n.getFixedT("en"))).toBe(
+      "Waveform analysis failed for audio stream #2.",
+    );
   });
 
   it.each(malformedArgumentCases)(

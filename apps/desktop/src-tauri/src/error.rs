@@ -286,15 +286,31 @@ mod tests {
     #[test]
     fn serializes_semantic_message_and_safe_arguments_without_english_message() {
         let error = AppError::invalid_request(AppErrorMessageId::MediaWaveformWidthOutOfRange)
-            .with_arg("minWidth", 64)
-            .with_arg("maxWidth", 4096);
+            .with_arg("minWidth", 64_u32)
+            .with_arg("maxWidth", 4096_u32);
 
         assert_eq!(
             serde_json::to_value(error).unwrap(),
             json!({
                 "code": "invalid_request",
                 "messageId": "media.waveform.widthOutOfRange",
-                "messageArgs": { "minWidth": "64", "maxWidth": "4096" }
+                "messageArgs": { "minWidth": 64, "maxWidth": 4096 }
+            })
+        );
+    }
+
+    #[test]
+    fn serializes_stream_index_as_a_number() {
+        let error =
+            AppError::invalid_request(AppErrorMessageId::MediaWaveformStreamDoesNotBelongToSource)
+                .with_arg("streamIndex", 2_u32);
+
+        assert_eq!(
+            serde_json::to_value(error).unwrap(),
+            json!({
+                "code": "invalid_request",
+                "messageId": "media.waveform.streamDoesNotBelongToSource",
+                "messageArgs": { "streamIndex": 2 }
             })
         );
     }
@@ -320,9 +336,34 @@ pub struct AppError {
     pub code: &'static str,
     pub message_id: AppErrorMessageId,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub message_args: Option<BTreeMap<&'static str, String>>,
+    pub message_args: Option<BTreeMap<&'static str, AppErrorMessageArg>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub diagnostics: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(untagged)]
+pub enum AppErrorMessageArg {
+    String(String),
+    Number(u32),
+}
+
+impl From<String> for AppErrorMessageArg {
+    fn from(value: String) -> Self {
+        Self::String(value)
+    }
+}
+
+impl From<&str> for AppErrorMessageArg {
+    fn from(value: &str) -> Self {
+        Self::String(value.to_owned())
+    }
+}
+
+impl From<u32> for AppErrorMessageArg {
+    fn from(value: u32) -> Self {
+        Self::Number(value)
+    }
 }
 
 impl AppError {
@@ -335,10 +376,10 @@ impl AppError {
         }
     }
 
-    pub fn with_arg(mut self, name: &'static str, value: impl ToString) -> Self {
+    pub fn with_arg(mut self, name: &'static str, value: impl Into<AppErrorMessageArg>) -> Self {
         self.message_args
             .get_or_insert_with(BTreeMap::new)
-            .insert(name, value.to_string());
+            .insert(name, value.into());
         self
     }
 
