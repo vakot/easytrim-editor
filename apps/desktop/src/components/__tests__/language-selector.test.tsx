@@ -20,7 +20,7 @@ import { translationCoverage } from "@/i18n/resources";
 const languages = SUPPORTED_LANGUAGES;
 
 describe("LanguageSelector", () => {
-  it("applies content sizing classes when wrapping custom submenu content", () => {
+  it("passes custom classes when wrapping submenu content", () => {
     render(
       <LanguageSelector>
         <LanguageSelectorContent asChild className="custom-submenu-content">
@@ -29,12 +29,7 @@ describe("LanguageSelector", () => {
       </LanguageSelector>,
     );
 
-    expect(screen.getByTestId("submenu-content")).toHaveClass(
-      "w-[max(var(--radix-popover-trigger-width,16rem),16rem)]",
-      "max-w-[min(24rem,calc(100vw-2rem))]",
-      "min-w-[min(16rem,calc(100vw-2rem))]",
-      "custom-submenu-content",
-    );
+    expect(screen.getByTestId("submenu-content")).toHaveClass("custom-submenu-content");
   });
 
   it("filters by language names, selects by keyboard, and displays the selected flag and language", async () => {

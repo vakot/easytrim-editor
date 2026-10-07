@@ -151,21 +151,11 @@ function LanguageSelectorValue({
 function LanguageSelectorContent({
   asChild = false,
   children,
-  className,
   ...props
 }: React.ComponentProps<typeof ComboboxContent>) {
   return (
     <LanguageSelectorContentContext.Provider value>
-      <ComboboxContent
-        align="start"
-        asChild={asChild}
-        className={cn(
-          "w-[max(var(--radix-popover-trigger-width,16rem),16rem)] max-w-[min(24rem,calc(100vw-2rem))] min-w-[min(16rem,calc(100vw-2rem))]",
-          className,
-        )}
-        sideOffset={4}
-        {...props}
-      >
+      <ComboboxContent align="start" asChild={asChild} sideOffset={4} {...props}>
         {children}
       </ComboboxContent>
     </LanguageSelectorContentContext.Provider>
