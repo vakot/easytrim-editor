@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const native = vi.hoisted(() => ({ checkMediaCapabilities: vi.fn() }));
 
@@ -11,6 +11,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
 
 import { capabilitiesFailed, capabilitiesReady } from "@/app/store/slices/source-slice";
 import { createAppStore } from "@/app/store/store";
+import { i18n } from "@/i18n/config";
 import type { MediaCapabilities } from "@/lib/tauri/media.types";
 
 import {
@@ -50,6 +51,10 @@ function renderStatus(capabilities?: MediaCapabilities) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+afterEach(async () => {
+  await i18n.changeLanguage("en");
 });
 
 describe("MediaToolsStatus", () => {
@@ -106,7 +111,7 @@ describe("MediaToolsStatus", () => {
         ffmpeg: { available: false, diagnostics: "C:/private/ffmpeg.exe: private stderr", errorId },
         ffprobe: readyCapabilities.ffprobe,
       });
-      fireEvent.click(screen.getByRole("button", { name: "Media tools issue" }));
+      fireEvent.click(screen.getByRole("button"));
 
       expect(screen.getByText(copy)).toBeInTheDocument();
       expect(screen.queryByText("C:/private/ffmpeg.exe: private stderr")).not.toBeInTheDocument();
@@ -127,6 +132,20 @@ describe("MediaToolsStatus", () => {
     expect(screen.getByText("Could not check FFprobe.")).toBeInTheDocument();
     expect(screen.queryByText("C:/private/ffprobe.exe: private stderr")).not.toBeInTheDocument();
   });
+
+  it.each(["ru", "sk"] as const)(
+    "falls back to English capability copy in %s",
+    async (language) => {
+      await i18n.changeLanguage(language);
+      renderStatus({
+        ffmpeg: { available: false, errorId: "notFound" },
+        ffprobe: readyCapabilities.ffprobe,
+      });
+      fireEvent.click(screen.getByRole("button"));
+
+      expect(screen.getByText("FFmpeg is not installed or available on PATH.")).toBeInTheDocument();
+    },
+  );
 
   it("shows check failure distinctly and allows a failed capability check to be retried", () => {
     const store = createAppStore();
