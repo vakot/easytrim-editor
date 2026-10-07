@@ -207,16 +207,7 @@ function LanguageSelectorList({
   );
 }
 
-function LanguageSelectorItem({
-  className,
-  language,
-  ...props
-}: Omit<
-  React.ComponentProps<typeof ComboboxItem>,
-  "onSelect" | "disabled" | "value" | "children"
-> & {
-  language: Language;
-}) {
+function LanguageSelectorItem({ language }: { language: Language }) {
   const { t } = useTranslation();
   const { disabled, language: selectedLanguage, selectLanguage } = useLanguageSelector();
 
@@ -226,16 +217,12 @@ function LanguageSelectorItem({
   return (
     <ComboboxItem
       aria-label={`${getLanguageDisplayName(language)}, ${language.code}`}
-      className={cn(
-        "grid h-auto min-w-0 grid-cols-[1rem_minmax(0,1fr)_1rem] grid-rows-[auto_auto] gap-x-2 gap-y-1 px-2.5 py-2 pr-2 data-[language-selected=true]:font-medium",
-        className,
-      )}
+      className="grid h-auto min-w-0 grid-cols-[1rem_minmax(0,1fr)_1rem] grid-rows-[auto_auto] gap-x-2 gap-y-1 px-2.5 py-2 pr-2 data-[language-selected=true]:font-medium"
       data-language-selected={selected || undefined}
       disabled={disabled}
       keywords={[language.code, language.englishName, language.nativeName]}
       onSelect={() => selectLanguage(language)}
       value={language.code}
-      {...props}
     >
       <LanguageSelectorFlag className="col-start-1 row-start-1" language={language} />
 
