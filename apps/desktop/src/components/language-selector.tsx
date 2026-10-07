@@ -15,7 +15,7 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
-import { MenuIcon } from "@/components/ui/menu";
+import { Progress } from "@/components/ui/progress";
 
 import {
   createLanguageSearcher,
@@ -23,6 +23,7 @@ import {
   type Language,
   SUPPORTED_LANGUAGES,
 } from "@/domain/languages";
+import { translationCoverage } from "@/i18n/resources";
 import { cn } from "@/lib/class-names.utils";
 
 interface LanguageSelectorContextValue {
@@ -223,11 +224,14 @@ function LanguageSelectorList({
         {languages.map((language) => {
           const selected = selectedLanguage?.code === language.code;
           const Flag = LANGUAGE_REGION_FLAGS[language.region];
+          const percentage = translationCoverage[language.code].percentage;
 
           return (
             <ComboboxItem
               aria-label={`${getLanguageDisplayName(language)}, ${language.code}`}
-              className={cn("min-w-0 px-2.5 pr-8 data-[language-selected=true]:font-medium")}
+              className={cn(
+                "grid h-auto min-w-0 grid-cols-[1rem_minmax(0,1fr)_3rem] grid-rows-[auto_auto] gap-x-2 gap-y-1 px-2.5 py-2 pr-2 data-[language-selected=true]:font-medium",
+              )}
               data-language-selected={selected || undefined}
               disabled={disabled}
               key={language.code}
@@ -236,19 +240,29 @@ function LanguageSelectorList({
               value={language.code}
             >
               {selected ? (
-                <MenuIcon side="right">
+                <span aria-hidden="true" className="col-start-3 row-start-1 flex justify-end">
                   <CheckIcon aria-hidden="true" />
-                </MenuIcon>
+                </span>
               ) : null}
               <span
                 aria-hidden="true"
-                className="mr-2 flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs"
+                className="col-start-1 row-start-1 flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs"
               >
                 <Flag aria-hidden="true" className="block h-auto w-full" />
               </span>
-              <span className="min-w-0 flex-1 truncate">{getLanguageDisplayName(language)}</span>
-              <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                {language.code}
+              <span className="col-start-2 row-start-1 min-w-0 truncate">
+                {getLanguageDisplayName(language)}
+              </span>
+              <Progress
+                aria-label={t("settings.general.language.coverageAccessibleLabel", {
+                  language: language.nativeName,
+                  percentage,
+                })}
+                className="col-start-2 row-start-2 h-1"
+                value={percentage}
+              />
+              <span aria-hidden="true" className="col-start-3 row-start-2 text-right text-xs">
+                {percentage}%
               </span>
             </ComboboxItem>
           );

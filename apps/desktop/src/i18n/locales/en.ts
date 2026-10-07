@@ -306,6 +306,8 @@ export const en = {
   settings: {
     general: {
       language: {
+        coverageAccessibleLabel: "{{language}} translation coverage: {{percentage}}%",
+        helpTranslate: "Help translate EasyTrim",
         search: "Search languages",
         suggestions: "Suggestions",
         noResults: "No languages found.",

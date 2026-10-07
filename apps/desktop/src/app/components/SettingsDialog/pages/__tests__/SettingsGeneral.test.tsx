@@ -1,0 +1,48 @@
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { i18n } from "@/i18n/config";
+import { openExternalUrl } from "@/lib/open-external-url.utils";
+
+import { SettingsGeneral } from "../SettingsGeneral";
+
+vi.mock("@/lib/open-external-url.utils", () => ({ openExternalUrl: vi.fn() }));
+
+const TRANSLATION_GUIDE_URL =
+  "https://github.com/vakot/easytrim-editor/blob/master/apps/desktop/src/i18n/README.md";
+
+describe("SettingsGeneral", () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(openExternalUrl).mockClear();
+  });
+
+  it("keeps the translation contribution action outside the selector and opens the guide", async () => {
+    const user = userEvent.setup();
+    render(<SettingsGeneral />);
+
+    const helpTranslate = screen.getByRole("link", { name: "Help translate EasyTrim" });
+    expect(helpTranslate).toHaveAttribute("href", TRANSLATION_GUIDE_URL);
+
+    await user.click(screen.getByRole("button", { name: "Language" }));
+    const listbox = screen.getByRole("listbox");
+    expect(within(listbox).queryByRole("link", { name: "Help translate EasyTrim" })).toBeNull();
+    expect(helpTranslate).toBeVisible();
+
+    fireEvent.click(helpTranslate);
+    expect(openExternalUrl).toHaveBeenCalledWith(TRANSLATION_GUIDE_URL);
+  });
+
+  it("continues to change the application language from the selector", async () => {
+    const user = userEvent.setup();
+    render(<SettingsGeneral />);
+
+    await user.click(screen.getByRole("button", { name: "Language" }));
+    await user.type(screen.getByRole("combobox", { name: "Search languages" }), "slovencina");
+    await user.keyboard("{ArrowDown}{Enter}");
+
+    await waitFor(() => expect(i18n.resolvedLanguage).toBe("sk"));
+    expect(screen.getByRole("button", { name: "Jazyk" })).toHaveTextContent("Slovenčina");
+  });
+});

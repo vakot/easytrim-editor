@@ -14,7 +14,8 @@ import {
   LanguageSelectorTrigger,
   LanguageSelectorValue,
 } from "@/components/language-selector";
-import { getLanguageDisplayName, SUPPORTED_LANGUAGES } from "@/domain/languages";
+import { SUPPORTED_LANGUAGES } from "@/domain/languages";
+import { translationCoverage } from "@/i18n/resources";
 
 const languages = SUPPORTED_LANGUAGES;
 
@@ -55,7 +56,8 @@ describe("LanguageSelector", () => {
     );
 
     const trigger = screen.getByRole("button", { name: "Choose language" });
-    expect(trigger).toHaveTextContent("Русский (Russian)");
+    expect(trigger).toHaveTextContent("Русский");
+    expect(trigger).not.toHaveTextContent("76%");
     expect(trigger.querySelector("span[aria-hidden='true'] svg")?.outerHTML).toBe(
       renderToStaticMarkup(<RU aria-hidden="true" className="block h-auto w-full" />),
     );
@@ -65,15 +67,13 @@ describe("LanguageSelector", () => {
     const search = screen.getByRole("combobox", { name: "Search languages" });
     await user.type(search, "slovencina");
 
-    expect(screen.getByRole("option", { name: "Slovenčina (Slovak), sk" })).toBeVisible();
-    expect(screen.queryByRole("option", { name: "Русский (Russian), ru" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Slovenčina, sk" })).toBeVisible();
+    expect(screen.queryByRole("option", { name: "Русский, ru" })).not.toBeInTheDocument();
 
     await user.keyboard("{ArrowDown}{Enter}");
 
     expect(onValueChange).toHaveBeenCalledWith("sk");
-    expect(screen.getByRole("button", { name: "Choose language" })).toHaveTextContent(
-      "Slovenčina (Slovak)",
-    );
+    expect(screen.getByRole("button", { name: "Choose language" })).toHaveTextContent("Slovenčina");
     expect(
       screen
         .getByRole("button", { name: "Choose language" })
@@ -105,11 +105,11 @@ describe("LanguageSelector", () => {
     expect(screen.getByRole("listbox")).toBeVisible();
     await user.type(input, "russan");
     expect(input).toHaveValue("russan");
-    expect(screen.getByRole("option", { name: "Русский (Russian), ru" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Русский, ru" })).toBeVisible();
 
     await user.keyboard("{ArrowDown}{Enter}");
 
-    await waitFor(() => expect(input).toHaveValue("Русский (Russian)"));
+    await waitFor(() => expect(input).toHaveValue("Русский"));
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });
 
@@ -162,7 +162,7 @@ describe("LanguageSelector", () => {
     await user.click(screen.getByRole("button", { name: "Choose language" }));
 
     expect(screen.getByRole("option", { name: "English, en" })).toBeVisible();
-    expect(screen.getByRole("option", { name: "Русский (Russian), ru" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Русский, ru" })).toBeVisible();
   });
 
   it.each([
@@ -170,7 +170,7 @@ describe("LanguageSelector", () => {
     { Flag: RU, language: SUPPORTED_LANGUAGES[1] },
     { Flag: SK, language: SUPPORTED_LANGUAGES[2] },
   ])("renders the package flag in its option", ({ Flag, language }) => {
-    const label = `${getLanguageDisplayName(language)}, ${language.code}`;
+    const label = `${language.nativeName}, ${language.code}`;
 
     render(
       <LanguageSelector defaultOpen languages={[language]}>
@@ -187,6 +187,37 @@ describe("LanguageSelector", () => {
     expect(flagSvg?.outerHTML).toBe(
       renderToStaticMarkup(<Flag aria-hidden="true" className="block h-auto w-full" />),
     );
-    expect(within(option).getByText(language.code)).toBeVisible();
+    const percentage = translationCoverage[language.code].percentage;
+    expect(within(option).getByText(`${percentage}%`)).toBeVisible();
+    expect(
+      within(option).getByRole("progressbar", {
+        name: `${language.nativeName} translation coverage: ${percentage}%`,
+      }),
+    ).toHaveAttribute("aria-valuenow", String(percentage));
+    if (language.code !== "en") expect(option).not.toHaveTextContent(language.englishName);
+    expect(option.querySelector(".col-start-3.row-start-1 svg.lucide-check")).toBeNull();
+  });
+
+  it("shows English coverage and a selection check only for the selected language", () => {
+    render(
+      <LanguageSelector defaultOpen defaultValue="en" languages={languages}>
+        <LanguageSelectorContent>
+          <LanguageSelectorList />
+        </LanguageSelectorContent>
+      </LanguageSelector>,
+    );
+
+    const english = screen.getByRole("option", { name: "English, en" });
+    expect(within(english).getByText("100%")).toBeVisible();
+    expect(translationCoverage.en.percentage).toBe(100);
+    expect(english.querySelector(".col-start-3.row-start-1 svg.lucide-check")).toBeInTheDocument();
+
+    for (const language of languages.filter(({ code }) => code !== "en")) {
+      const option = screen.getByRole("option", {
+        name: `${language.nativeName}, ${language.code}`,
+      });
+
+      expect(option.querySelector(".col-start-3.row-start-1 svg.lucide-check")).toBeNull();
+    }
   });
 });
