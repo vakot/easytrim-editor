@@ -102,7 +102,7 @@ function PlaybackSpeedControl() {
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
-              aria-label={t("preview.playback.playbackSpeed")}
+              aria-label={t("preview.playback.speed")}
               aria-pressed={enabled}
               className={cn(enabled && "text-primary aria-expanded:text-primary")}
               size="icon-sm"
@@ -132,7 +132,7 @@ function PlaybackSpeedControl() {
 
           <div className="flex items-center gap-2">
             <Slider
-              aria-label={t("preview.playback.playbackSpeed")}
+              aria-label={t("preview.playback.speed")}
               className="mt-2 min-w-0 flex-1 **:data-[slot=slider-track]:h-1.5"
               markers={PLAYBACK_SPEED_MARKERS}
               max={PLAYBACK_SPEED_STEPS.length - 1}
@@ -192,7 +192,7 @@ function PlaybackVolumeControlToggle() {
     <Tooltip preserveOnTrigger>
       <TooltipTrigger asChild>
         <Button
-          aria-label={enabled ? t("audio.tracks.actions.mute") : t("audio.tracks.actions.unmute")}
+          aria-label={enabled ? t("audio.tracks.mute") : t("audio.tracks.unmute")}
           aria-pressed={enabled}
           className={cn(enabled && "text-primary")}
           onClick={() => dispatch(playbackVolumeToggled())}
@@ -229,7 +229,7 @@ function PlaybackVolumeControlSlider() {
       <div className="px-2">
         <div className="flex items-center">
           <Slider
-            aria-label={t("preview.playback.playbackVolume")}
+            aria-label={t("preview.playback.volume")}
             className="w-30"
             max={100}
             min={0}

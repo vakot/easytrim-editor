@@ -17,7 +17,7 @@ function useResetEditingSettingsCommand() {
   const loopPlaybackEnabledDefault = useAppSelector(selectLoopPlaybackEnabledDefault);
   const segmentPlaybackEnabledDefault = useAppSelector(selectSegmentPlaybackEnabledDefault);
   const mergeAudioEnabledDefault = useAppSelector(selectMergeAudioEnabledDefault);
-  const label = t("layout.resetToDefault");
+  const label = t("common.actions.resetToDefault");
 
   return {
     enabled:

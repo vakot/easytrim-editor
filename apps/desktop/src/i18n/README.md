@@ -15,8 +15,10 @@ category order.
 
 Keep `app` for application shell concepts. Commands, layout, media tools, and updates have their
 own top-level domains. Do not create a domain for a single React component or screen position.
-Use `common` only for universal language primitives, such as `common.actions.cancel` and
-`common.status.loading`. Identical English text does not imply shared meaning: a queue's
+Use `common` only for universal language primitives, such as `common.actions.cancel`,
+`common.actions.resetToDefault`, and `common.status.loading`. Queue export retry keeps its own
+`queue.actions.retryExport` key because its context and Slovak wording differ from the general
+retry action. Identical English text does not imply shared meaning: a queue's
 `queue.progress.tooltip` and `queue.progress.accessibleLabel` currently have the same English
 value but can differ by language and presentation context.
 

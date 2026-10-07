@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { resolutionOptions } from "../export-options.utils";
 
 const translate = ((key: string, values?: { height?: number; width?: number }) =>
-  key === "export.resolution.options.sourceResolution"
+  key === "export.resolution.sourceOption"
     ? `${values?.width} × ${values?.height} (source)`
     : key) as TFunction;
 

@@ -9,6 +9,7 @@ export const sk = {
       reset: "Obnoviť",
       retry: "Skúsiť znova",
       save: "Uložiť",
+      resetToDefault: "Obnoviť predvolené",
     },
     or: "alebo",
     search: {
@@ -23,7 +24,7 @@ export const sk = {
   },
   source: {
     actions: {
-      sourceActions: "Akcie zdroja",
+      title: "Akcie zdroja",
     },
     file: {
       closeFile: "Zavrieť súbor",
@@ -36,7 +37,7 @@ export const sk = {
       cancelled: "Odstraňovanie súboru bolo zrušené",
       failed: "Odstraňovanie súboru zlyhalo",
       interrupted: "Odstraňovanie súboru bolo prerušené",
-      deleted: "Súbor bol odstránený",
+      completed: "Súbor bol odstránený",
       confirmation: {
         description: "Týmto odstránite {{name}} z počítača. Túto akciu možno vrátiť späť.",
         folderDescription:
@@ -61,7 +62,7 @@ export const sk = {
       failed: "Obnovenie súboru zlyhalo",
       interrupted: "Obnovenie súboru bolo prerušené",
       restoring: "Súbor sa obnovuje…",
-      restored: "Súbor bol obnovený",
+      completed: "Súbor bol obnovený",
       previousSession_one: "Obnoviť predchádzajúcu reláciu · {{count}} zdroj",
       previousSession_other: "Obnoviť predchádzajúcu reláciu · {{count}} zdrojov",
     },
@@ -210,7 +211,6 @@ export const sk = {
       layoutControls: "Ovládanie rozloženia",
       panels: "Panely editora",
     },
-    resetToDefault: "Obnoviť predvolené",
     zoomIn: "Priblížiť (+25 %)",
     zoomOut: "Oddialiť (-25 %)",
     zoomReset: "Obnoviť mierku (100 %)",
@@ -283,7 +283,9 @@ export const sk = {
     },
     preferences: {
       title: "Predvoľby",
-      sectionTitle: "Úpravy",
+      editing: {
+        title: "Úpravy",
+      },
       description: "Vyberte predvolené správanie pre nové relácie úprav.",
       loopPlayback: {
         description: "V nových reláciách predvolene zapnúť opakovanie prehrávania.",
@@ -442,15 +444,9 @@ export const sk = {
       interrupted: "Rýchly strih bol prerušený",
       started: "Rýchly strih sa začal",
       cutting: "Prebieha rýchly strih…",
-      actions: {
-        fast: "Uložiť bez prekódovania",
-      },
-      messages: {
-        fastUnavailable: "Strih bez prekódovania nie je dostupný po transformácii videa.",
-      },
-      tooltips: {
-        fast: "Uložiť bez prekódovania (Ctrl+S)",
-      },
+      action: "Uložiť bez prekódovania",
+      unavailable: "Strih bez prekódovania nie je dostupný po transformácii videa.",
+      tooltip: "Uložiť bez prekódovania (Ctrl+S)",
     },
     render: {
       completed: "Optimalizované vykreslenie bolo dokončené",
@@ -462,7 +458,7 @@ export const sk = {
     },
     preset: {
       actions: {
-        addPreset: "Pridať novú predvoľbu",
+        add: "Pridať novú predvoľbu",
       },
       label: "Predvoľba",
       validation: {
@@ -470,34 +466,26 @@ export const sk = {
         required: "Názov predvoľby je povinný.",
         tooLong: "Názov predvoľby môže mať najviac 64 znakov.",
       },
-      dialog: {
-        createDescription: "Uložte opakovane použiteľnú konfiguráciu FFmpeg.",
-        createTitle: "Nová predvoľba",
-        deleteDescription: "Odstrániť „{{name}}“? Túto akciu nemožno vrátiť späť.",
-        deleteTitle: "Odstrániť predvoľbu?",
-        name: "Názov",
+      create: {
+        description: "Uložte opakovane použiteľnú konfiguráciu FFmpeg.",
+        title: "Nová predvoľba",
       },
-      accessibility: {
-        presetActions: "Akcie predvoľby",
+      delete: {
+        description: "Odstrániť „{{name}}“? Túto akciu nemožno vrátiť späť.",
+        title: "Odstrániť predvoľbu?",
       },
-      options: {
-        selectPreset: "Vybrať predvoľbu",
-      },
+      nameLabel: "Názov",
+      actionsLabel: "Akcie predvoľby",
+      selectPlaceholder: "Vybrať predvoľbu",
     },
     commandPreview: {
-      actions: {
-        copyCommand: "Kopírovať príkaz",
-      },
+      copy: "Kopírovať príkaz",
       copied: "Skopírované do schránky",
       preparing: "Pripravuje sa náhľad príkazu…",
     },
     optimized: {
-      actions: {
-        optimized: "Optimalizovať a exportovať",
-      },
-      tooltips: {
-        optimized: "Nastaviť a exportovať optimalizované video (Ctrl+E)",
-      },
+      action: "Optimalizovať a exportovať",
+      tooltip: "Nastaviť a exportovať optimalizované video (Ctrl+E)",
       dialog: {
         arguments: "Argumenty FFmpeg",
         description: "Pred výberom súboru nastavte optimalizované vykreslenie.",
@@ -506,66 +494,48 @@ export const sk = {
         saveNotice: "Po potvrdení sa otvorí systémové okno na uloženie.",
       },
     },
-    general: {
-      actions: {
-        saveChanges: "Uložiť zmeny",
-        start: "Exportovať",
-      },
-      labels: {
-        bitrate: "Dátový tok",
-        estimateSize: "Odhad veľkosti",
-        estimateTime: "Odhad času",
-      },
-      accessibility: {
-        actions: "Akcie exportu",
-      },
+    actions: {
+      saveChanges: "Uložiť zmeny",
+      start: "Exportovať",
+      accessibleLabel: "Akcie exportu",
+    },
+    bitrate: {
+      label: "Dátový tok",
+    },
+    estimate: {
+      sizeLabel: "Odhad veľkosti",
+      timeLabel: "Odhad času",
     },
     resolution: {
-      labels: {
-        customScaling: "Vlastné rozlíšenie",
-        height: "Výška",
-        width: "Šírka",
-      },
-      dialog: {
-        resolution: "Rozlíšenie",
-      },
-      options: {
-        sourceResolution: "{{height}}p · {{width}} × {{height}} (zdroj)",
-      },
+      customScaling: "Vlastné rozlíšenie",
+      heightLabel: "Výška",
+      widthLabel: "Šírka",
+      label: "Rozlíšenie",
+      sourceOption: "{{height}}p · {{width}} × {{height}} (zdroj)",
     },
     frameRate: {
-      labels: {
-        fps: "FPS",
-        frames: "Snímky",
-      },
-      dialog: {
-        frameRate: "Snímková frekvencia",
-      },
-      options: {
-        framesPerSecond: "{{value}} FPS",
-      },
+      fpsLabel: "FPS",
+      framesLabel: "Snímky",
+      label: "Snímková frekvencia",
+      value: "{{value}} FPS",
     },
     aspectRatio: {
-      tooltip: {
-        locked: "Pomer strán je uzamknutý",
-        unlocked: "Pomer strán je odomknutý",
-      },
-      accessibility: {
-        lockAspectRatio: "Uzamknúť pomer strán",
-        unlockAspectRatio: "Odomknúť pomer strán",
-      },
+      lockedTooltip: "Pomer strán je uzamknutý",
+      unlockedTooltip: "Pomer strán je odomknutý",
+      lockLabel: "Uzamknúť pomer strán",
+      unlockLabel: "Odomknúť pomer strán",
     },
   },
   queue: {
     actions: {
-      cancel: "Zrušiť export",
-      edit: "Upraviť export",
-      open: "Otvoriť front exportov",
+      cancelExport: "Zrušiť export",
+      editExport: "Upraviť export",
+      openExportQueue: "Otvoriť front exportov",
       restoreEdit: "Obnoviť úpravu",
       revealOutput: "Zobraziť výstup",
-      retry: "Opakovať",
-      start: "Spustiť front",
-      skip: "Preskočiť",
+      retryExport: "Opakovať",
+      startQueue: "Spustiť front",
+      skipExport: "Preskočiť",
     },
     deleteSource: {
       label: "Odstrániť zdroj",
@@ -637,29 +607,29 @@ export const sk = {
   },
   preview: {
     frame: {
-      nextFrame: "Nasledujúca snímka",
+      next: "Nasledujúca snímka",
       copyFrame: "Kopírovať snímku",
-      previousFrame: "Predchádzajúca snímka",
+      previous: "Predchádzajúca snímka",
       saveFrame: "Uložiť snímku",
-      frameCopied: "Snímka bola skopírovaná do schránky",
-      frameCopyFailed: "Snímku sa nepodarilo skopírovať do schránky.",
-      frameSaveFailed: "Snímku sa nepodarilo uložiť.",
-      frameSaved: "Snímka bola uložená",
+      copied: "Snímka bola skopírovaná do schránky",
+      copyFailed: "Snímku sa nepodarilo skopírovať do schránky.",
+      saveFailed: "Snímku sa nepodarilo uložiť.",
+      saved: "Snímka bola uložená",
       nextFrameTooltip: "Nasledujúca snímka (šípka doprava; podržaním prehrať 2×)",
       previousFrameTooltip: "Predchádzajúca snímka (šípka doľava; podržaním pretočiť späť 2×)",
     },
     markers: {
-      nextMarker: "Nasledujúca značka",
-      previousMarker: "Predchádzajúca značka",
+      next: "Nasledujúca značka",
+      previous: "Predchádzajúca značka",
     },
     playback: {
       pause: "Pozastaviť",
       play: "Prehrať",
       loopPlayback: "Opakovať prehrávanie",
-      playbackVolume: "Hlasitosť prehrávania",
-      playbackSpeed: "Rýchlosť prehrávania",
+      volume: "Hlasitosť prehrávania",
+      speed: "Rýchlosť prehrávania",
       segmentPlayback: "Prehrávanie segmentu",
-      playbackFailed: "Prehrávanie sa nepodarilo spustiť.",
+      failed: "Prehrávanie sa nepodarilo spustiť.",
       loopDisabledTooltip: "Po dosiahnutí konca sa prehrávanie zastaví",
       loopEnabledTooltip: "Po dosiahnutí konca sa prehrávanie reštartuje",
       pauseTooltip: "Pozastaviť (medzerník)",
@@ -685,16 +655,15 @@ export const sk = {
       rotate180: "Otočiť o 180°",
       rotate90Clockwise: "Otočiť o 90° vpravo",
       rotate90Counterclockwise: "Otočiť o 90° vľavo",
-      reset: "Obnoviť predvolené",
       cropTooltip: "Kliknite pravým tlačidlom na náhľad pre transformácie",
       resetConfirmation: {
         description: "Týmto sa obnoví orezanie, otočenie a prevrátenie aktuálneho videa.",
         title: "Obnoviť transformácie videa?",
       },
+      title: "Transformácia",
     },
     info: {
       compatible: "Kompatibilný náhľad",
-      transform: "Transformácia",
       playbackError: "Náhľad videa sa nepodarilo zobraziť",
       proxy:
         "Pôvodný zdroj nebolo možné prehrať priamo, preto EasyTrim pripravil kompatibilný náhľad, ktorý môže mať nižšiu kvalitu. Export stále používa pôvodný súbor.",
@@ -784,159 +753,122 @@ export const sk = {
   },
   audio: {
     loudness: {
-      actions: {
-        analyzeLoudness: "Analyzovať hlasitosť",
-        analyzingLoudness: "Analyzuje sa hlasitosť…",
-      },
+      analyze: "Analyzovať hlasitosť",
+      analyzing: "Analyzuje sa hlasitosť…",
     },
     activityDetection: {
-      actions: {
-        analyzeActivity: "Analyzovať aktivitu zvuku",
-        analyzingActivity: "Analyzuje sa aktivita zvuku…",
-        retryActivityDetection: "Zopakovať analýzu",
-        showActivity: "Zobraziť rozpoznané úseky",
-      },
+      analyze: "Analyzovať aktivitu zvuku",
+      analyzing: "Analyzuje sa aktivita zvuku…",
+      retry: "Zopakovať analýzu",
+      showRanges: "Zobraziť rozpoznané úseky",
     },
     effects: {
       open: "Efekty",
-      labels: {
-        effectStageCleanup: "Čistenie",
-        effectStageDynamics: "Dynamika",
-        effectStageLevel: "Úroveň",
-        effectStageProtection: "Ochrana",
+      stages: {
+        cleanup: "Čistenie",
+        dynamics: "Dynamika",
+        level: "Úroveň",
+        protection: "Ochrana",
       },
       dialog: {
         applyNotice: "Zmeny sa nepoužijú, kým nevyberiete možnosť Použiť.",
         description: "Efekty sa aplikujú v pevnom poradí zobrazenom v zozname.",
         title: "{{title}} — efekty",
       },
-      accessibility: {
-        appliedEffects: "Použité efekty: {{summary}}",
-      },
+      appliedSummaryLabel: "Použité efekty: {{summary}}",
     },
     output: {
-      actions: {
-        merge: "Zlúčiť vybrané stopy",
+      merge: {
+        action: "Zlúčiť vybrané stopy",
+        tooltip: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
       },
-      messages: {
-        merged_one: "{{count}} vybraná stopa sa zlúči do jednej stopy",
-        merged_few: "{{count}} vybrané stopy sa zlúčia do jednej stopy",
-        merged_other: "{{count}} vybraných stôp sa zlúči do jednej stopy",
-        oneTrack: "Jedna vybraná stopa — zlúčenie nie je potrebné",
-        separate_one: "{{count}} vybraná stopa zostane samostatná",
-        separate_few: "{{count}} vybrané stopy zostanú samostatné",
-        separate_other: "{{count}} vybraných stôp zostane samostatných",
-        videoOnly: "Výstup iba s videom",
-      },
-      tooltips: {
-        merge: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
-      },
+      merged_one: "{{count}} vybraná stopa sa zlúči do jednej stopy",
+      merged_few: "{{count}} vybrané stopy sa zlúčia do jednej stopy",
+      merged_other: "{{count}} vybraných stôp sa zlúči do jednej stopy",
+      oneTrack: "Jedna vybraná stopa — zlúčenie nie je potrebné",
+      separate_one: "{{count}} vybraná stopa zostane samostatná",
+      separate_few: "{{count}} vybrané stopy zostanú samostatné",
+      separate_other: "{{count}} vybraných stôp zostane samostatných",
+      videoOnly: "Výstup iba s videom",
     },
     tracks: {
-      actions: {
-        mute: "Stlmiť",
-        muteTrack: "Stlmiť ({{title}})",
-        unmute: "Zrušiť stlmenie",
-        unmuteTrack: "Zrušiť stlmenie ({{title}})",
-      },
-      labels: {
-        advanced: "Rozšírené",
-        defaultTrack: "Zvuk {{number}}",
-      },
+      mute: "Stlmiť",
+      muteWithTitle: "Stlmiť ({{title}})",
+      unmute: "Zrušiť stlmenie",
+      unmuteWithTitle: "Zrušiť stlmenie ({{title}})",
+      advanced: "Rozšírené",
+      defaultName: "Zvuk {{number}}",
       title: "Zvukové stopy",
-      messages: {
-        preparingProcessedPreview: "Pripravuje sa náhľad s týmito nastaveniami stopy…",
-      },
-      accessibility: {
-        trackActions: "Akcie zvukovej stopy {{number}}",
-        trackGain: "Zosilnenie zvukovej stopy {{number}} v decibeloch",
-      },
-      options: {
-        channels_one: "{{count}} kanál",
-        channels_few: "{{count}} kanály",
-        channels_other: "{{count}} kanálov",
-        unknownLayout: "neznáme rozloženie",
-      },
+      preparingPreview: "Pripravuje sa náhľad s týmito nastaveniami stopy…",
+      actionsLabel: "Akcie zvukovej stopy {{number}}",
+      gainLabel: "Zosilnenie zvukovej stopy {{number}} v decibeloch",
+      channels_one: "{{count}} kanál",
+      channels_few: "{{count}} kanály",
+      channels_other: "{{count}} kanálov",
+      unknownLayout: "neznáme rozloženie",
     },
     highPass: {
       label: "Hornopriepustný filter",
-      labelCutoff: "Hraničná frekvencia",
+      cutoffLabel: "Hraničná frekvencia",
       description: "Odstráňte nízkofrekvenčné dunenie z tejto stopy.",
-      messages: {
-        highPassEffectSummary: "Hornopriepustný filter ({{cutoff}} Hz)",
-      },
+      summary: "Hornopriepustný filter ({{cutoff}} Hz)",
     },
     limiter: {
       label: "Obmedzovač špičiek",
-      labelCeiling: "Výstupný limit",
+      ceilingLabel: "Výstupný limit",
       description: "Znížiť špičky tejto stopy.",
-      messages: {
-        limitedEffectSummary: "Obmedzovač špičiek ({{ceiling}} dB)",
-      },
+      summary: "Obmedzovač špičiek ({{ceiling}} dB)",
     },
     normalization: {
-      labels: {
-        loudnessNormalization: "Normalizácia hlasitosti",
-        maximumTruePeak: "Maximálny skutočný vrchol (dBTP)",
-        targetLufs: "Cieľová hlasitosť (LUFS)",
-      },
-      labelPreset: "Predvoľba",
-      messages: {
-        loudnessNormalizationDescription: "Normalizovať túto stopu na cieľovú hlasitosť.",
-        normalizedEffectSummary: "Normalizované - {{preset}}",
-        normalizedLevelSummary: "Cieľ {{target}} LUFS · limit špičky {{peak}} dBTP",
-      },
-      tooltips: {
-        normalizationReplacesGain:
-          "Manuálne zosilnenie nie je dostupné, keď je aktívna automatická normalizácia.",
-      },
-      options: {
+      label: "Normalizácia hlasitosti",
+      maxTruePeakLabel: "Maximálny skutočný vrchol (dBTP)",
+      targetLufsLabel: "Cieľová hlasitosť (LUFS)",
+      preset: {
+        label: "Predvoľba",
         custom: "Vlastné",
         webVideo: "Webové video",
         streaming: "Streamovanie",
         broadcast: "Vysielanie",
       },
+      description: "Normalizovať túto stopu na cieľovú hlasitosť.",
+      summary: "Normalizované - {{preset}}",
+      levelSummary: "Cieľ {{target}} LUFS · limit špičky {{peak}} dBTP",
+      manualGainUnavailable:
+        "Manuálne zosilnenie nie je dostupné, keď je aktívna automatická normalizácia.",
     },
     noiseReduction: {
       label: "Redukcia šumu",
-      labelStrength: "Sila redukcie šumu",
-      description: "Obmedziť šum v pozadí tejto zvukovej stopy.",
-      messages: {
-        noiseReductionEffectSummary: "Redukcia šumu - {{preset}}",
-      },
-      options: {
+      strength: {
+        label: "Sila redukcie šumu",
         light: "Jemná",
         medium: "Stredná",
         strong: "Silná",
       },
+      description: "Obmedziť šum v pozadí tejto zvukovej stopy.",
+      summary: "Redukcia šumu - {{preset}}",
     },
     waveform: {
-      status: {
-        preparingWaveform: "Pripravuje sa priebeh zvuku…",
-        waveformUnavailable: "Priebeh zvuku nie je dostupný",
-      },
+      preparing: "Pripravuje sa priebeh zvuku…",
+      unavailable: "Priebeh zvuku nie je dostupný",
     },
   },
   support: {
     changelog: {
-      actions: {
-        changelog: "Zoznam zmien",
-      },
-      labels: {
+      open: "Zoznam zmien",
+      categories: {
         added: "Pridané",
         changed: "Zmenené",
         deprecated: "Zastarané",
         fixed: "Opravené",
         removed: "Odstránené",
         security: "Bezpečnosť",
-        historyTitle: "Zoznam zmien",
       },
-      messages: {
-        emptyChangelog: "Zatiaľ nie sú dostupné žiadne vydané zmeny.",
-        emptyChangelogDescription:
-          "Vydané aktualizácie sa tu zobrazia, keď budú súčasťou nainštalovanej verzie.",
-        historyDescription: "Vydané zmeny zahrnuté v tejto verzii EasyTrim.",
+      title: "Zoznam zmien",
+      empty: {
+        title: "Zatiaľ nie sú dostupné žiadne vydané zmeny.",
+        description: "Vydané aktualizácie sa tu zobrazia, keď budú súčasťou nainštalovanej verzie.",
       },
+      description: "Vydané zmeny zahrnuté v tejto verzii EasyTrim.",
     },
     project: {
       actions: {
@@ -951,12 +883,8 @@ export const sk = {
       },
     },
     whatsNew: {
-      labels: {
-        whatsNewTitle: "Čo je nové",
-      },
-      messages: {
-        whatsNewDescription: "Tu sú zmeny od vášho posledného otvorenia EasyTrim.",
-      },
+      title: "Čo je nové",
+      description: "Tu sú zmeny od vášho posledného otvorenia EasyTrim.",
     },
   },
   units: {

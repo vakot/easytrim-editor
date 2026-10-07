@@ -119,7 +119,7 @@ function PlaybackControls({ className }: { className?: string }) {
             onEnd: () => playback.stopShuttle({ type: "button", id: "previous-frame" }),
             onStart: () => playback.startShuttle(-1, { type: "button", id: "previous-frame" }),
           }}
-          label={t("preview.frame.previousFrame")}
+          label={t("preview.frame.previous")}
           onClick={() => {
             playback.stepFrame(-1, { type: "button", id: "previous-frame" });
           }}
@@ -151,7 +151,7 @@ function PlaybackControls({ className }: { className?: string }) {
             onEnd: () => playback.stopShuttle({ type: "button", id: "next-frame" }),
             onStart: () => playback.startShuttle(1, { type: "button", id: "next-frame" }),
           }}
-          label={t("preview.frame.nextFrame")}
+          label={t("preview.frame.next")}
           onClick={() => {
             playback.stepFrame(1, { type: "button", id: "next-frame" });
           }}

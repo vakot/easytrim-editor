@@ -46,9 +46,7 @@ function CommandPreview({ command, error }: CommandPreviewProps) {
             <TooltipTrigger asChild>
               <InputGroupButton
                 aria-label={
-                  copied
-                    ? t("export.commandPreview.copied")
-                    : t("export.commandPreview.actions.copyCommand")
+                  copied ? t("export.commandPreview.copied") : t("export.commandPreview.copy")
                 }
                 className="ml-auto"
                 disabled={!command}
@@ -61,9 +59,7 @@ function CommandPreview({ command, error }: CommandPreviewProps) {
               </InputGroupButton>
             </TooltipTrigger>
             <TooltipContent>
-              {copied
-                ? t("export.commandPreview.copied")
-                : t("export.commandPreview.actions.copyCommand")}
+              {copied ? t("export.commandPreview.copied") : t("export.commandPreview.copy")}
             </TooltipContent>
           </Tooltip>
         </InputGroupAddon>

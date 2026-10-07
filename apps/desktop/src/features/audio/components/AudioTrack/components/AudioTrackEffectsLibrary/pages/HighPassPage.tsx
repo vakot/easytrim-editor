@@ -70,11 +70,11 @@ function HighPassPage({ streamIndex }: { streamIndex: number }) {
 
       <AudioTrackEffectsLibraryPageContent disabled={highPass === undefined}>
         <Label htmlFor={`track-high-pass-cutoff-${streamIndex}`}>
-          {t("audio.highPass.labelCutoff")}
+          {t("audio.highPass.cutoffLabel")}
         </Label>
         <div className="mt-2 flex max-w-md items-center gap-3">
           <Slider
-            aria-label={t("audio.highPass.labelCutoff")}
+            aria-label={t("audio.highPass.cutoffLabel")}
             aria-valuetext={`${cutoffHz} Hz`}
             id={`track-high-pass-cutoff-${streamIndex}`}
             markers={AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS.map((preset) => ({

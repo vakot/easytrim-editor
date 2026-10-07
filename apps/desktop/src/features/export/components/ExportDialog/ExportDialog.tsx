@@ -79,9 +79,7 @@ function ExportDialog() {
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>
-              {queueEdit
-                ? t("export.optimized.dialog.editTitle")
-                : t("export.general.actions.start")}
+              {queueEdit ? t("export.optimized.dialog.editTitle") : t("export.actions.start")}
             </DialogTitle>
             <DialogDescription>{t("export.optimized.dialog.description")}</DialogDescription>
           </DialogHeader>
@@ -100,9 +98,7 @@ function ExportDialog() {
                 {t("common.actions.cancel")}
               </Button>
               <Button onClick={() => void dispatch(startOptimizedExportRequested())}>
-                {queueEdit
-                  ? t("export.general.actions.saveChanges")
-                  : t("export.general.actions.start")}
+                {queueEdit ? t("export.actions.saveChanges") : t("export.actions.start")}
               </Button>
             </div>
           </DialogFooter>

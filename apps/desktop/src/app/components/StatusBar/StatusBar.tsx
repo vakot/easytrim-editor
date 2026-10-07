@@ -79,25 +79,25 @@ function StatusBar({ className }: StatusBarProps) {
             <span className="w-10 text-right tabular-nums">{progressPercent}%</span>
           </div>
           <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.frameRate.labels.frames")}>
+          <StatusMetricTooltip label={t("export.frameRate.framesLabel")}>
             {activeExport.attempt.metrics.currentFrame ?? 0}f /{" "}
             {activeExport.attempt.metrics.totalFrames ?? 0}f
           </StatusMetricTooltip>
           <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.frameRate.labels.fps")}>
+          <StatusMetricTooltip label={t("export.frameRate.fpsLabel")}>
             {Math.round(activeExport.attempt.metrics.fps ?? 0)} FPS
           </StatusMetricTooltip>
           <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.general.labels.bitrate")}>
+          <StatusMetricTooltip label={t("export.bitrate.label")}>
             {activeExport.attempt.metrics.bitrate ?? "0 kbits/s"}
           </StatusMetricTooltip>
           <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.general.labels.estimateSize")}>
+          <StatusMetricTooltip label={t("export.estimate.sizeLabel")}>
             {formatStatusFileSize(activeExport.attempt.metrics.fileSizeBytes)} /{" "}
             {formatStatusFileSize(activeExport.attempt.metrics.estimatedFileSizeBytes)}
           </StatusMetricTooltip>
           <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.general.labels.estimateTime")}>
+          <StatusMetricTooltip label={t("export.estimate.timeLabel")}>
             {formatExportDuration(activeExport.attempt.metrics.estimatedElapsedTimeMs ?? 0)} /{" "}
             {formatExportDuration(activeExport.attempt.metrics.estimatedTotalTimeMs ?? 0)}
           </StatusMetricTooltip>

@@ -9,6 +9,7 @@ export const ru = {
       reset: "Сбросить",
       retry: "Повторить",
       save: "Сохранить",
+      resetToDefault: "Сбросить настройки",
     },
     or: "или",
     search: {
@@ -23,7 +24,7 @@ export const ru = {
   },
   source: {
     actions: {
-      sourceActions: "Действия с источником",
+      title: "Действия с источником",
     },
     file: {
       closeFile: "Закрыть файл",
@@ -36,7 +37,7 @@ export const ru = {
       cancelled: "Удаление файла отменено",
       failed: "Не удалось удалить файл",
       interrupted: "Удаление файла прервано",
-      deleted: "Файл удалён",
+      completed: "Файл удалён",
       confirmation: {
         description: "Файл {{name}} будет удалён с компьютера. Это действие можно отменить.",
         folderDescription:
@@ -61,7 +62,7 @@ export const ru = {
       failed: "Не удалось восстановить файл",
       interrupted: "Восстановление файла прервано",
       restoring: "Восстановление файла…",
-      restored: "Файл восстановлен",
+      completed: "Файл восстановлен",
       previousSession_one: "Восстановить предыдущий сеанс · {{count}} источник",
       previousSession_other: "Восстановить предыдущий сеанс · источников: {{count}}",
     },
@@ -214,7 +215,6 @@ export const ru = {
       layoutControls: "Управление расположением",
       panels: "Панели редактора",
     },
-    resetToDefault: "Сбросить настройки",
     zoomIn: "Увеличить масштаб (+25%)",
     zoomOut: "Уменьшить масштаб (-25%)",
     zoomReset: "Сбросить масштаб (100%)",
@@ -287,7 +287,9 @@ export const ru = {
     },
     preferences: {
       title: "Предпочтения",
-      sectionTitle: "Редактирование",
+      editing: {
+        title: "Редактирование",
+      },
       description: "Выберите поведение по умолчанию для новых сеансов редактирования.",
       loopPlayback: {
         description: "Включать повтор воспроизведения для новых сеансов.",
@@ -446,15 +448,9 @@ export const ru = {
       interrupted: "Быстрая нарезка прервана",
       started: "Начата быстрая нарезка",
       cutting: "Быстрая нарезка…",
-      actions: {
-        fast: "Быстрое сохранение",
-      },
-      messages: {
-        fastUnavailable: "Сохранение без перекодирования недоступно после преобразования видео.",
-      },
-      tooltips: {
-        fast: "Сохранить без перекодирования (Ctrl+S)",
-      },
+      action: "Быстрое сохранение",
+      unavailable: "Сохранение без перекодирования недоступно после преобразования видео.",
+      tooltip: "Сохранить без перекодирования (Ctrl+S)",
     },
     render: {
       completed: "Оптимизированный рендеринг завершён",
@@ -466,7 +462,7 @@ export const ru = {
     },
     preset: {
       actions: {
-        addPreset: "Добавить пресет",
+        add: "Добавить пресет",
       },
       label: "Пресет",
       validation: {
@@ -474,34 +470,26 @@ export const ru = {
         required: "Введите имя пресета.",
         tooLong: "Имя пресета не может содержать более 64 символов.",
       },
-      dialog: {
-        createDescription: "Сохранить конфигурацию FFmpeg для повторного использования.",
-        createTitle: "Новый пресет",
-        deleteDescription: "Удалить «{{name}}»? Это действие нельзя отменить.",
-        deleteTitle: "Удалить пресет?",
-        name: "Имя",
+      create: {
+        description: "Сохранить конфигурацию FFmpeg для повторного использования.",
+        title: "Новый пресет",
       },
-      accessibility: {
-        presetActions: "Действия с пресетом",
+      delete: {
+        description: "Удалить «{{name}}»? Это действие нельзя отменить.",
+        title: "Удалить пресет?",
       },
-      options: {
-        selectPreset: "Выберите пресет",
-      },
+      nameLabel: "Имя",
+      actionsLabel: "Действия с пресетом",
+      selectPlaceholder: "Выберите пресет",
     },
     commandPreview: {
-      actions: {
-        copyCommand: "Копировать команду",
-      },
+      copy: "Копировать команду",
       copied: "Команда скопирована",
       preparing: "Подготовка предпросмотра команды…",
     },
     optimized: {
-      actions: {
-        optimized: "Оптимизированный экспорт",
-      },
-      tooltips: {
-        optimized: "Настроить и экспортировать оптимизированное видео (Ctrl+E)",
-      },
+      action: "Оптимизированный экспорт",
+      tooltip: "Настроить и экспортировать оптимизированное видео (Ctrl+E)",
       dialog: {
         arguments: "Аргументы FFmpeg",
         description: "Настройте оптимизированный рендеринг перед выбором файла.",
@@ -510,66 +498,48 @@ export const ru = {
         saveNotice: "После подтверждения откроется системный диалог сохранения.",
       },
     },
-    general: {
-      actions: {
-        saveChanges: "Сохранить изменения",
-        start: "Экспортировать",
-      },
-      labels: {
-        bitrate: "Битрейт",
-        estimateSize: "Оценить размер",
-        estimateTime: "Оценить время",
-      },
-      accessibility: {
-        actions: "Действия экспорта",
-      },
+    actions: {
+      saveChanges: "Сохранить изменения",
+      start: "Экспортировать",
+      accessibleLabel: "Действия экспорта",
+    },
+    bitrate: {
+      label: "Битрейт",
+    },
+    estimate: {
+      sizeLabel: "Оценить размер",
+      timeLabel: "Оценить время",
     },
     resolution: {
-      labels: {
-        customScaling: "Пользовательское масштабирование",
-        height: "Высота",
-        width: "Ширина",
-      },
-      dialog: {
-        resolution: "Разрешение",
-      },
-      options: {
-        sourceResolution: "{{height}}p · {{width}} × {{height}} (источник)",
-      },
+      customScaling: "Пользовательское масштабирование",
+      heightLabel: "Высота",
+      widthLabel: "Ширина",
+      label: "Разрешение",
+      sourceOption: "{{height}}p · {{width}} × {{height}} (источник)",
     },
     frameRate: {
-      labels: {
-        fps: "FPS",
-        frames: "Кадры",
-      },
-      dialog: {
-        frameRate: "Частота кадров",
-      },
-      options: {
-        framesPerSecond: "{{value}} FPS",
-      },
+      fpsLabel: "FPS",
+      framesLabel: "Кадры",
+      label: "Частота кадров",
+      value: "{{value}} FPS",
     },
     aspectRatio: {
-      tooltip: {
-        locked: "Соотношение сторон заблокировано",
-        unlocked: "Соотношение сторон разблокировано",
-      },
-      accessibility: {
-        lockAspectRatio: "Заблокировать соотношение сторон",
-        unlockAspectRatio: "Разблокировать соотношение сторон",
-      },
+      lockedTooltip: "Соотношение сторон заблокировано",
+      unlockedTooltip: "Соотношение сторон разблокировано",
+      lockLabel: "Заблокировать соотношение сторон",
+      unlockLabel: "Разблокировать соотношение сторон",
     },
   },
   queue: {
     actions: {
-      cancel: "Отменить экспорт",
-      edit: "Изменить экспорт",
-      open: "Открыть очередь экспорта",
+      cancelExport: "Отменить экспорт",
+      editExport: "Изменить экспорт",
+      openExportQueue: "Открыть очередь экспорта",
       restoreEdit: "Восстановить монтаж",
       revealOutput: "Показать результат",
-      retry: "Повторить",
-      start: "Запустить очередь",
-      skip: "Пропустить",
+      retryExport: "Повторить",
+      startQueue: "Запустить очередь",
+      skipExport: "Пропустить",
     },
     deleteSource: {
       label: "Удалить источник",
@@ -641,29 +611,29 @@ export const ru = {
   },
   preview: {
     frame: {
-      nextFrame: "Следующий кадр",
+      next: "Следующий кадр",
       copyFrame: "Скопировать кадр",
-      previousFrame: "Предыдущий кадр",
+      previous: "Предыдущий кадр",
       saveFrame: "Сохранить кадр",
-      frameCopied: "Кадр скопирован в буфер обмена",
-      frameCopyFailed: "Не удалось скопировать кадр в буфер обмена.",
-      frameSaveFailed: "Не удалось сохранить кадр.",
-      frameSaved: "Кадр сохранён",
+      copied: "Кадр скопирован в буфер обмена",
+      copyFailed: "Не удалось скопировать кадр в буфер обмена.",
+      saveFailed: "Не удалось сохранить кадр.",
+      saved: "Кадр сохранён",
       nextFrameTooltip: "Следующий кадр (правая стрелка; удерживайте для воспроизведения в 2×)",
       previousFrameTooltip: "Предыдущий кадр (левая стрелка; удерживайте для перемотки в 2×)",
     },
     markers: {
-      nextMarker: "Следующий маркер",
-      previousMarker: "Предыдущий маркер",
+      next: "Следующий маркер",
+      previous: "Предыдущий маркер",
     },
     playback: {
       pause: "Пауза",
       play: "Воспроизвести",
       loopPlayback: "Повтор воспроизведения",
-      playbackVolume: "Громкость воспроизведения",
-      playbackSpeed: "Скорость воспроизведения",
+      volume: "Громкость воспроизведения",
+      speed: "Скорость воспроизведения",
       segmentPlayback: "Воспроизведение сегмента",
-      playbackFailed: "Не удалось начать воспроизведение.",
+      failed: "Не удалось начать воспроизведение.",
       loopDisabledTooltip: "Остановиться в конце воспроизведения",
       loopEnabledTooltip: "Начать заново после окончания",
       pauseTooltip: "Пауза (Пробел)",
@@ -689,16 +659,15 @@ export const ru = {
       rotate180: "Повернуть на 180°",
       rotate90Clockwise: "Повернуть на 90° по часовой стрелке",
       rotate90Counterclockwise: "Повернуть на 90° против часовой стрелки",
-      reset: "Сбросить настройки",
       cropTooltip: "Щёлкните правой кнопкой по предпросмотру, чтобы изменить видео",
       resetConfirmation: {
         description: "Сбросить обрезку, поворот и отражения текущего видео.",
         title: "Сбросить преобразования видео?",
       },
+      title: "Преобразование",
     },
     info: {
       compatible: "Совместимый предпросмотр",
-      transform: "Преобразование",
       playbackError: "Не удалось просмотреть это видео",
       proxy:
         "Исходный файл нельзя воспроизвести напрямую, поэтому EasyTrim подготовил совместимый прокси-файл с возможным снижением качества. Для экспорта используется исходный файл.",
@@ -789,158 +758,121 @@ export const ru = {
   },
   audio: {
     loudness: {
-      actions: {
-        analyzeLoudness: "Анализировать громкость",
-        analyzingLoudness: "Анализ громкости…",
-      },
+      analyze: "Анализировать громкость",
+      analyzing: "Анализ громкости…",
     },
     activityDetection: {
-      actions: {
-        analyzeActivity: "Анализировать активность звука",
-        analyzingActivity: "Анализ активности звука…",
-        retryActivityDetection: "Повторить анализ",
-        showActivity: "Показать найденные интервалы",
-      },
+      analyze: "Анализировать активность звука",
+      analyzing: "Анализ активности звука…",
+      retry: "Повторить анализ",
+      showRanges: "Показать найденные интервалы",
     },
     effects: {
       open: "Эффекты",
-      labels: {
-        effectStageCleanup: "Очистка",
-        effectStageDynamics: "Динамика",
-        effectStageLevel: "Уровень",
-        effectStageProtection: "Защита",
+      stages: {
+        cleanup: "Очистка",
+        dynamics: "Динамика",
+        level: "Уровень",
+        protection: "Защита",
       },
       dialog: {
         applyNotice: "Изменения не будут применены, пока вы не нажмёте «Применить».",
         description: "Эффекты применяются в фиксированном порядке из списка.",
         title: "{{title}} — эффекты",
       },
-      accessibility: {
-        appliedEffects: "Применённые эффекты: {{summary}}",
-      },
+      appliedSummaryLabel: "Применённые эффекты: {{summary}}",
     },
     output: {
-      actions: {
-        merge: "Объединить выбранные дорожки",
+      merge: {
+        action: "Объединить выбранные дорожки",
+        tooltip: "Все выбранные дорожки объединяются в одну; это требует кодирования.",
       },
-      messages: {
-        merged_one: "{{count}} выбранная дорожка объединяется в одну дорожку",
-        merged_few: "{{count}} выбранные дорожки объединяются в одну дорожку",
-        merged_other: "{{count}} выбранных дорожек объединяются в одну дорожку",
-        oneTrack: "Выбрана одна дорожка — объединение не требуется",
-        separate_one: "{{count}} выбранная дорожка сохраняется отдельно",
-        separate_few: "{{count}} выбранные дорожки сохраняются отдельно",
-        separate_other: "{{count}} выбранных дорожек сохраняются отдельно",
-        videoOnly: "Только видео",
-      },
-      tooltips: {
-        merge: "Все выбранные дорожки объединяются в одну; это требует кодирования.",
-      },
+      merged_one: "{{count}} выбранная дорожка объединяется в одну дорожку",
+      merged_few: "{{count}} выбранные дорожки объединяются в одну дорожку",
+      merged_other: "{{count}} выбранных дорожек объединяются в одну дорожку",
+      oneTrack: "Выбрана одна дорожка — объединение не требуется",
+      separate_one: "{{count}} выбранная дорожка сохраняется отдельно",
+      separate_few: "{{count}} выбранные дорожки сохраняются отдельно",
+      separate_other: "{{count}} выбранных дорожек сохраняются отдельно",
+      videoOnly: "Только видео",
     },
     tracks: {
-      actions: {
-        mute: "Выключить звук",
-        muteTrack: "Выключить звук ({{title}})",
-        unmute: "Включить звук",
-        unmuteTrack: "Включить звук ({{title}})",
-      },
-      labels: {
-        advanced: "Дополнительно",
-        defaultTrack: "Аудио {{number}}",
-      },
+      mute: "Выключить звук",
+      muteWithTitle: "Выключить звук ({{title}})",
+      unmute: "Включить звук",
+      unmuteWithTitle: "Включить звук ({{title}})",
+      advanced: "Дополнительно",
+      defaultName: "Аудио {{number}}",
       title: "Аудиодорожки",
-      messages: {
-        preparingProcessedPreview: "Подготовка предпросмотра с этими настройками дорожки…",
-      },
-      accessibility: {
-        trackActions: "Действия аудиодорожки {{number}}",
-        trackGain: "Усиление аудиодорожки {{number}} в децибелах",
-      },
-      options: {
-        channels_one: "{{count}} канал",
-        channels_few: "{{count}} канала",
-        channels_other: "{{count}} каналов",
-        unknownLayout: "неизвестная конфигурация",
-      },
+      preparingPreview: "Подготовка предпросмотра с этими настройками дорожки…",
+      actionsLabel: "Действия аудиодорожки {{number}}",
+      gainLabel: "Усиление аудиодорожки {{number}} в децибелах",
+      channels_one: "{{count}} канал",
+      channels_few: "{{count}} канала",
+      channels_other: "{{count}} каналов",
+      unknownLayout: "неизвестная конфигурация",
     },
     highPass: {
       label: "Фильтр высоких частот",
-      labelCutoff: "Частота среза",
+      cutoffLabel: "Частота среза",
       description: "Уберите низкочастотный гул в этой дорожке.",
-      messages: {
-        highPassEffectSummary: "Фильтр высоких частот ({{cutoff}} Гц)",
-      },
+      summary: "Фильтр высоких частот ({{cutoff}} Гц)",
     },
     limiter: {
       label: "Лимитер",
-      labelCeiling: "Выходной предел",
+      ceilingLabel: "Выходной предел",
       description: "Ограничивать пики этой дорожки.",
-      messages: {
-        limitedEffectSummary: "Лимитер ({{ceiling}} дБ)",
-      },
+      summary: "Лимитер ({{ceiling}} дБ)",
     },
     normalization: {
-      labels: {
-        loudnessNormalization: "Нормализация громкости",
-        maximumTruePeak: "Максимальный истинный пик (дБTP)",
-        targetLufs: "Целевая громкость (LUFS)",
-      },
-      labelPreset: "Предустановка",
-      messages: {
-        loudnessNormalizationDescription: "Нормализовать дорожку до целевого уровня громкости.",
-        normalizedEffectSummary: "Нормализация - {{preset}}",
-        normalizedLevelSummary: "Цель {{target}} LUFS · предел пика {{peak}} дБTP",
-      },
-      tooltips: {
-        normalizationReplacesGain: "Ручное усиление недоступно при автоматической нормализации.",
-      },
-      options: {
+      label: "Нормализация громкости",
+      maxTruePeakLabel: "Максимальный истинный пик (дБTP)",
+      targetLufsLabel: "Целевая громкость (LUFS)",
+      preset: {
+        label: "Предустановка",
         custom: "Своя настройка",
         webVideo: "Веб-видео",
         streaming: "Стриминг",
         broadcast: "Вещание",
       },
+      description: "Нормализовать дорожку до целевого уровня громкости.",
+      summary: "Нормализация - {{preset}}",
+      levelSummary: "Цель {{target}} LUFS · предел пика {{peak}} дБTP",
+      manualGainUnavailable: "Ручное усиление недоступно при автоматической нормализации.",
     },
     noiseReduction: {
       label: "Шумоподавление",
-      labelStrength: "Сила шумоподавления",
-      description: "Уменьшает фоновый шум в этой аудиодорожке.",
-      messages: {
-        noiseReductionEffectSummary: "Шумоподавление - {{preset}}",
-      },
-      options: {
+      strength: {
+        label: "Сила шумоподавления",
         light: "Слабое",
         medium: "Среднее",
         strong: "Сильное",
       },
+      description: "Уменьшает фоновый шум в этой аудиодорожке.",
+      summary: "Шумоподавление - {{preset}}",
     },
     waveform: {
-      status: {
-        preparingWaveform: "Подготовка формы волны…",
-        waveformUnavailable: "Форма волны недоступна",
-      },
+      preparing: "Подготовка формы волны…",
+      unavailable: "Форма волны недоступна",
     },
   },
   support: {
     changelog: {
-      actions: {
-        changelog: "Список изменений",
-      },
-      labels: {
+      open: "Список изменений",
+      categories: {
         added: "Добавлено",
         changed: "Изменено",
         deprecated: "Устарело",
         fixed: "Исправлено",
         removed: "Удалено",
         security: "Безопасность",
-        historyTitle: "Список изменений",
       },
-      messages: {
-        emptyChangelog: "Выпущенных изменений пока нет.",
-        emptyChangelogDescription:
-          "Выпущенные обновления появятся здесь, когда войдут в установленную версию.",
-        historyDescription: "Выпущенные изменения, включённые в эту версию EasyTrim.",
+      title: "Список изменений",
+      empty: {
+        title: "Выпущенных изменений пока нет.",
+        description: "Выпущенные обновления появятся здесь, когда войдут в установленную версию.",
       },
+      description: "Выпущенные изменения, включённые в эту версию EasyTrim.",
     },
     project: {
       actions: {
@@ -955,12 +887,8 @@ export const ru = {
       },
     },
     whatsNew: {
-      labels: {
-        whatsNewTitle: "Что нового",
-      },
-      messages: {
-        whatsNewDescription: "Изменения с момента последнего открытия EasyTrim.",
-      },
+      title: "Что нового",
+      description: "Изменения с момента последнего открытия EasyTrim.",
     },
   },
   units: {

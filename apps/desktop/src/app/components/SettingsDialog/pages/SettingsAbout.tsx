@@ -48,8 +48,8 @@ function SettingsAbout() {
         </SettingRow>
       </SettingsSection>
 
-      <SettingsSection title={t("support.whatsNew.labels.whatsNewTitle")}>
-        <SettingRow label={t("support.changelog.actions.changelog")}>
+      <SettingsSection title={t("support.whatsNew.title")}>
+        <SettingRow label={t("support.changelog.open")}>
           <CommandButton commandId="open-changelog" variant="outline" />
         </SettingRow>
       </SettingsSection>

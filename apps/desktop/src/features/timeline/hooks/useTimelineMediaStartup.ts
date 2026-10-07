@@ -70,7 +70,7 @@ function useTimelineMediaStartup({
     setIsPlaying(false);
     setShuttleDirection(0);
     stopPlayheadAnimation();
-    setTransportError(t("preview.playback.playbackFailed"));
+    setTransportError(t("preview.playback.failed"));
   }, [
     isPlayingRef,
     cancelPendingPlaybackStart,

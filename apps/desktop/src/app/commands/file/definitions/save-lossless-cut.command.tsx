@@ -24,7 +24,7 @@ function useSaveLosslessCutCommand() {
       await dispatch(startFastCutRequested(commandOrigin("save-lossless-cut", surface)));
     },
     id: "save-lossless-cut" as const,
-    label: t("export.fastCut.actions.fast"),
+    label: t("export.fastCut.action"),
     searchTerms: commandSearchTerms(t("commands.searchTerms.saveLosslessCut")),
     shortcut: { code: "KeyS", key: "S", modifier: "control" } as const,
     variant: "default" as const,

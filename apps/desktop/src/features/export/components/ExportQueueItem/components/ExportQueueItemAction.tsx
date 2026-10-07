@@ -26,7 +26,7 @@ function ExportQueueItemCancel({ className }: { className?: string }) {
 
   return (
     <Button
-      aria-label={t("queue.actions.cancel")}
+      aria-label={t("queue.actions.cancelExport")}
       className={className}
       onClick={() =>
         void dispatch(
@@ -34,7 +34,7 @@ function ExportQueueItemCancel({ className }: { className?: string }) {
         )
       }
       size="icon-xs"
-      title={t("queue.actions.cancel")}
+      title={t("queue.actions.cancelExport")}
       type="button"
       variant="outline"
     >
@@ -56,7 +56,7 @@ function ExportQueueItemEdit({ className }: { className?: string }) {
       <TooltipTrigger asChild>
         <span className="inline-flex" tabIndex={isNativeDialogOpen ? 0 : undefined}>
           <Button
-            aria-label={t("queue.actions.edit")}
+            aria-label={t("queue.actions.editExport")}
             className={className}
             disabled={isNativeDialogOpen}
             onClick={() =>
@@ -72,7 +72,7 @@ function ExportQueueItemEdit({ className }: { className?: string }) {
           </Button>
         </span>
       </TooltipTrigger>
-      <TooltipContent>{t("queue.actions.edit")}</TooltipContent>
+      <TooltipContent>{t("queue.actions.editExport")}</TooltipContent>
     </Tooltip>
   );
 }
@@ -152,7 +152,7 @@ function ExportQueueItemRetry({ className }: { className?: string }) {
       variant="outline"
     >
       <RotateCcw aria-hidden="true" />
-      {t("queue.actions.retry")}
+      {t("queue.actions.retryExport")}
     </Button>
   );
 }

@@ -66,7 +66,7 @@ function VideoPreviewLoadingOverlay() {
             size="sm"
             variant="outline"
           >
-            {t("queue.actions.skip")}
+            {t("queue.actions.skipExport")}
           </Button>
         ) : null}
       </div>

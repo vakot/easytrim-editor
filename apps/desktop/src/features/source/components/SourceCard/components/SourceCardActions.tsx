@@ -49,7 +49,7 @@ function SourceCardActions({
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>{t("source.actions.sourceActions")}</TooltipContent>
+          <TooltipContent>{t("source.actions.title")}</TooltipContent>
         </Tooltip>
 
         <DropdownMenuContent align="end">

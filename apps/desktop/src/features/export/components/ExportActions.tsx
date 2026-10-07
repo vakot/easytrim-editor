@@ -59,7 +59,7 @@ function ExportActions() {
 
   return (
     <div
-      aria-label={t("export.general.accessibility.actions")}
+      aria-label={t("export.actions.accessibleLabel")}
       className="flex shrink-0 items-center gap-1"
       role="toolbar"
     >
@@ -98,8 +98,8 @@ function ExportActions() {
         disabled={!fastCutAvailable}
         tooltip={
           sourceReady && !fastCutAvailable
-            ? t("export.fastCut.messages.fastUnavailable")
-            : t("export.fastCut.tooltips.fast")
+            ? t("export.fastCut.unavailable")
+            : t("export.fastCut.tooltip")
         }
       >
         <ExportActionButton
@@ -110,14 +110,11 @@ function ExportActions() {
             void dispatch(startFastCutRequested({ id: "toolbar.fast-export", type: "button" }))
           }
         >
-          {t("export.fastCut.actions.fast")}
+          {t("export.fastCut.action")}
         </ExportActionButton>
       </ExportActionTooltip>
 
-      <ExportActionTooltip
-        disabled={!sourceReady}
-        tooltip={t("export.optimized.tooltips.optimized")}
-      >
+      <ExportActionTooltip disabled={!sourceReady} tooltip={t("export.optimized.tooltip")}>
         <ExportActionButton
           aria-keyshortcuts="Ctrl+E"
           disabled={!sourceReady}
@@ -128,7 +125,7 @@ function ExportActions() {
             )
           }
         >
-          {t("export.optimized.actions.optimized")}
+          {t("export.optimized.action")}
         </ExportActionButton>
       </ExportActionTooltip>
     </div>
@@ -222,7 +219,7 @@ function ExportQueueStartButton() {
       onClick={() => void dispatch(startExportQueue())}
       type="button"
     >
-      {t("queue.actions.start")}
+      {t("queue.actions.startQueue")}
     </Button>
   );
 }

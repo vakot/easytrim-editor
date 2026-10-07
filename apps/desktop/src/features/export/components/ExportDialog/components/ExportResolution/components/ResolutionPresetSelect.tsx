@@ -30,7 +30,7 @@ function ResolutionPresetSelect({
     >
       <SelectTrigger className="w-full" id="export-resolution">
         <SelectValue>
-          {!hasMatchingResolutionPreset ? t("export.resolution.labels.customScaling") : undefined}
+          {!hasMatchingResolutionPreset ? t("export.resolution.customScaling") : undefined}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>

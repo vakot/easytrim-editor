@@ -40,7 +40,7 @@ function ExportResolution({ cropResolution, settings }: ExportResolutionProps) {
 
   return (
     <section className="grid gap-1.5">
-      <Label htmlFor="export-resolution">{t("export.resolution.dialog.resolution")}</Label>
+      <Label htmlFor="export-resolution">{t("export.resolution.label")}</Label>
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-end gap-2">
         <ResolutionPresetSelect
           hasMatchingResolutionPreset={hasMatchingResolutionPreset}

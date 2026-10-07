@@ -85,11 +85,11 @@ function LimiterPage({ streamIndex }: { streamIndex: number }) {
 
       <AudioTrackEffectsLibraryPageContent disabled={limiter === undefined}>
         <Label htmlFor={`track-limiter-ceiling-${streamIndex}`}>
-          {t("audio.limiter.labelCeiling")}
+          {t("audio.limiter.ceilingLabel")}
         </Label>
         <div className="mt-2 flex max-w-md items-center gap-3">
           <Slider
-            aria-label={t("audio.limiter.labelCeiling")}
+            aria-label={t("audio.limiter.ceilingLabel")}
             aria-valuetext={`${formattedCeilingDb} dB`}
             id={`track-limiter-ceiling-${streamIndex}`}
             markers={[

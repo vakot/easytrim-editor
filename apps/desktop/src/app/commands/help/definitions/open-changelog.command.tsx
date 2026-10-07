@@ -12,10 +12,8 @@ function useOpenChangelogCommand() {
     icon: <ScrollText aria-hidden="true" />,
     run: openChangelog,
     id: "open-changelog" as const,
-    label: t("support.changelog.actions.changelog"),
-    searchTerms: commandSearchTerms(
-      `${t("support.changelog.actions.changelog")}|what's new|release notes`,
-    ),
+    label: t("support.changelog.open"),
+    searchTerms: commandSearchTerms(`${t("support.changelog.open")}|what's new|release notes`),
     variant: "default" as const,
   };
 }

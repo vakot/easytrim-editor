@@ -38,13 +38,11 @@ function ChangelogDialog({ mode, onClose, releases }: ChangelogDialogProps) {
   const { t } = useTranslation();
   const isWhatsNew = mode === "whats-new";
 
-  const title = isWhatsNew
-    ? t("support.whatsNew.labels.whatsNewTitle")
-    : t("support.changelog.labels.historyTitle");
+  const title = isWhatsNew ? t("support.whatsNew.title") : t("support.changelog.title");
 
   const description = isWhatsNew
-    ? t("support.whatsNew.messages.whatsNewDescription")
-    : t("support.changelog.messages.historyDescription");
+    ? t("support.whatsNew.description")
+    : t("support.changelog.description");
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={mode !== null}>
@@ -93,10 +91,8 @@ function ChangelogDialogEmpty() {
         <EmptyMedia>
           <ScrollText aria-hidden="true" />
         </EmptyMedia>
-        <EmptyTitle>{t("support.changelog.messages.emptyChangelog")}</EmptyTitle>
-        <EmptyDescription>
-          {t("support.changelog.messages.emptyChangelogDescription")}
-        </EmptyDescription>
+        <EmptyTitle>{t("support.changelog.empty.title")}</EmptyTitle>
+        <EmptyDescription>{t("support.changelog.empty.description")}</EmptyDescription>
       </EmptyHeader>
     </Empty>
   );
@@ -131,17 +127,17 @@ function ChangedDialogRelease({ release }: { release: ChangelogRelease }) {
 function translateCategory(t: TFunction, category: ChangelogCategory): string {
   switch (category) {
     case "Added":
-      return t("support.changelog.labels.added");
+      return t("support.changelog.categories.added");
     case "Changed":
-      return t("support.changelog.labels.changed");
+      return t("support.changelog.categories.changed");
     case "Deprecated":
-      return t("support.changelog.labels.deprecated");
+      return t("support.changelog.categories.deprecated");
     case "Fixed":
-      return t("support.changelog.labels.fixed");
+      return t("support.changelog.categories.fixed");
     case "Removed":
-      return t("support.changelog.labels.removed");
+      return t("support.changelog.categories.removed");
     case "Security":
-      return t("support.changelog.labels.security");
+      return t("support.changelog.categories.security");
   }
 }
 

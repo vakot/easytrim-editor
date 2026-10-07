@@ -68,7 +68,7 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
   const title =
     stream.title ??
     stream.language ??
-    t("audio.tracks.labels.defaultTrack", { number: controller.trackNumber });
+    t("audio.tracks.defaultName", { number: controller.trackNumber });
 
   const draftProcessing = getAudioTrackEffectsDraftProcessing(draft);
   const isDirty = isAudioTrackEffectsDraftDirty(draft, AUDIO_TRACK_EFFECTS);
@@ -87,7 +87,7 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
         <div className="-mx-4 border-t px-4 py-2">
           {track.preview.status === "loading" ? (
             <p className="text-xs text-muted-foreground" role="status">
-              {t("audio.tracks.messages.preparingProcessedPreview")}
+              {t("audio.tracks.preparingPreview")}
             </p>
           ) : (
             <Alert role="alert" variant="destructive">

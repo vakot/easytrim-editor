@@ -43,10 +43,10 @@ function AudioTrackEffectsLibrary({
 
   const { draft } = useAudioTrackEffectsDraft();
   const stageLabels: Record<AudioProcessingStage, string> = {
-    cleanup: t("audio.effects.labels.effectStageCleanup"),
-    dynamics: t("audio.effects.labels.effectStageDynamics"),
-    finalProtection: t("audio.effects.labels.effectStageProtection"),
-    levelPolicy: t("audio.effects.labels.effectStageLevel"),
+    cleanup: t("audio.effects.stages.cleanup"),
+    dynamics: t("audio.effects.stages.dynamics"),
+    finalProtection: t("audio.effects.stages.protection"),
+    levelPolicy: t("audio.effects.stages.level"),
   };
 
   return (

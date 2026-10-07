@@ -9,6 +9,7 @@ export const en = {
       reset: "Reset",
       retry: "Retry",
       save: "Save",
+      resetToDefault: "Reset to default",
     },
     or: "or",
     search: {
@@ -23,7 +24,7 @@ export const en = {
   },
   source: {
     actions: {
-      sourceActions: "Source actions",
+      title: "Source actions",
     },
     file: {
       closeFile: "Close File",
@@ -37,7 +38,7 @@ export const en = {
       cancelled: "File deletion cancelled",
       failed: "File deletion failed",
       interrupted: "File deletion interrupted",
-      deleted: "File deleted",
+      completed: "File deleted",
       confirmation: {
         description: "This deletes {{name}} from your computer. This action can be undone.",
         folderDescription:
@@ -62,7 +63,7 @@ export const en = {
       failed: "File restoration failed",
       interrupted: "File restoration interrupted",
       restoring: "Restoring file…",
-      restored: "File restored",
+      completed: "File restored",
       previousSession_one: "Restore previous session · {{count}} source",
       previousSession_other: "Restore previous session · {{count}} sources",
     },
@@ -213,7 +214,6 @@ export const en = {
       layoutControls: "Layout controls",
       panels: "Editor panels",
     },
-    resetToDefault: "Reset to default",
     zoomIn: "Zoom In (+25%)",
     zoomOut: "Zoom Out (-25%)",
     zoomReset: "Zoom Reset (100%)",
@@ -286,7 +286,9 @@ export const en = {
     },
     preferences: {
       title: "Preferences",
-      sectionTitle: "Editing",
+      editing: {
+        title: "Editing",
+      },
       description: "Choose the default behavior for new editing sessions.",
       loopPlayback: {
         description: "Start new sessions with loop playback enabled.",
@@ -445,15 +447,9 @@ export const en = {
       interrupted: "Fast cut interrupted",
       started: "Started fast cut",
       cutting: "Fast cutting…",
-      actions: {
-        fast: "Save Lossless Cut",
-      },
-      messages: {
-        fastUnavailable: "Lossless cut is unavailable after transforming the video.",
-      },
-      tooltips: {
-        fast: "Save a lossless cut (Ctrl+S)",
-      },
+      action: "Save Lossless Cut",
+      unavailable: "Lossless cut is unavailable after transforming the video.",
+      tooltip: "Save a lossless cut (Ctrl+S)",
     },
     render: {
       completed: "Optimized render completed",
@@ -465,7 +461,7 @@ export const en = {
     },
     preset: {
       actions: {
-        addPreset: "Add new preset",
+        add: "Add new preset",
         edit: "Edit",
         delete: "Delete",
       },
@@ -475,34 +471,26 @@ export const en = {
         required: "A preset name is required.",
         tooLong: "Preset names must be 64 characters or fewer.",
       },
-      dialog: {
-        createDescription: "Save a reusable FFmpeg configuration.",
-        createTitle: "New preset",
-        deleteDescription: "Delete “{{name}}”? This cannot be undone.",
-        deleteTitle: "Delete preset?",
-        name: "Name",
+      create: {
+        description: "Save a reusable FFmpeg configuration.",
+        title: "New preset",
       },
-      accessibility: {
-        presetActions: "Preset actions",
+      delete: {
+        description: "Delete “{{name}}”? This cannot be undone.",
+        title: "Delete preset?",
       },
-      options: {
-        selectPreset: "Select a preset",
-      },
+      nameLabel: "Name",
+      actionsLabel: "Preset actions",
+      selectPlaceholder: "Select a preset",
     },
     commandPreview: {
-      actions: {
-        copyCommand: "Copy command",
-      },
+      copy: "Copy command",
       copied: "Copied to clipboard",
       preparing: "Preparing command preview…",
     },
     optimized: {
-      actions: {
-        optimized: "Optimize & Export",
-      },
-      tooltips: {
-        optimized: "Configure and export an optimized video (Ctrl+E)",
-      },
+      action: "Optimize & Export",
+      tooltip: "Configure and export an optimized video (Ctrl+E)",
       dialog: {
         arguments: "FFmpeg arguments",
         description: "Configure the optimized render before choosing its file.",
@@ -511,66 +499,48 @@ export const en = {
         saveNotice: "The native save dialog opens after confirmation.",
       },
     },
-    general: {
-      actions: {
-        saveChanges: "Save changes",
-        start: "Export",
-      },
-      labels: {
-        bitrate: "Bitrate",
-        estimateSize: "Estimate size",
-        estimateTime: "Estimate time",
-      },
-      accessibility: {
-        actions: "Export actions",
-      },
+    actions: {
+      saveChanges: "Save changes",
+      start: "Export",
+      accessibleLabel: "Export actions",
+    },
+    bitrate: {
+      label: "Bitrate",
+    },
+    estimate: {
+      sizeLabel: "Estimate size",
+      timeLabel: "Estimate time",
     },
     resolution: {
-      labels: {
-        customScaling: "Custom scaling",
-        height: "Height",
-        width: "Width",
-      },
-      dialog: {
-        resolution: "Resolution",
-      },
-      options: {
-        sourceResolution: "{{height}}p · {{width}} × {{height}} (source)",
-      },
+      customScaling: "Custom scaling",
+      heightLabel: "Height",
+      widthLabel: "Width",
+      label: "Resolution",
+      sourceOption: "{{height}}p · {{width}} × {{height}} (source)",
     },
     frameRate: {
-      labels: {
-        fps: "FPS",
-        frames: "Frames",
-      },
-      dialog: {
-        frameRate: "Frame rate",
-      },
-      options: {
-        framesPerSecond: "{{value}} FPS",
-      },
+      fpsLabel: "FPS",
+      framesLabel: "Frames",
+      label: "Frame rate",
+      value: "{{value}} FPS",
     },
     aspectRatio: {
-      tooltip: {
-        locked: "Aspect ratio locked",
-        unlocked: "Aspect ratio unlocked",
-      },
-      accessibility: {
-        lockAspectRatio: "Lock aspect ratio",
-        unlockAspectRatio: "Unlock aspect ratio",
-      },
+      lockedTooltip: "Aspect ratio locked",
+      unlockedTooltip: "Aspect ratio unlocked",
+      lockLabel: "Lock aspect ratio",
+      unlockLabel: "Unlock aspect ratio",
     },
   },
   queue: {
     actions: {
-      cancel: "Cancel export",
-      edit: "Edit export",
-      open: "Open export queue",
+      cancelExport: "Cancel export",
+      editExport: "Edit export",
+      openExportQueue: "Open export queue",
       restoreEdit: "Restore edit",
       revealOutput: "Reveal output",
-      retry: "Retry",
-      start: "Start queue",
-      skip: "Skip",
+      retryExport: "Retry",
+      startQueue: "Start queue",
+      skipExport: "Skip",
     },
     deleteSource: {
       enable: "Enable",
@@ -643,29 +613,29 @@ export const en = {
   },
   preview: {
     frame: {
-      nextFrame: "Next frame",
+      next: "Next frame",
       copyFrame: "Copy frame",
-      previousFrame: "Previous frame",
+      previous: "Previous frame",
       saveFrame: "Save frame",
-      frameCopied: "Frame copied to clipboard",
-      frameCopyFailed: "Could not copy the frame to the clipboard.",
-      frameSaveFailed: "Could not save the frame.",
-      frameSaved: "Frame saved",
+      copied: "Frame copied to clipboard",
+      copyFailed: "Could not copy the frame to the clipboard.",
+      saveFailed: "Could not save the frame.",
+      saved: "Frame saved",
       nextFrameTooltip: "Next frame (Right Arrow; hold to play 2×)",
       previousFrameTooltip: "Previous frame (Left Arrow; hold to rewind 2×)",
     },
     markers: {
-      nextMarker: "Next marker",
-      previousMarker: "Previous marker",
+      next: "Next marker",
+      previous: "Previous marker",
     },
     playback: {
       pause: "Pause",
       play: "Play",
       loopPlayback: "Loop playback",
-      playbackVolume: "Playback volume",
-      playbackSpeed: "Playback speed",
+      volume: "Playback volume",
+      speed: "Playback speed",
       segmentPlayback: "Segment playback",
-      playbackFailed: "Playback could not start.",
+      failed: "Playback could not start.",
       loopDisabledTooltip: "Stop when playback reaches its end",
       loopEnabledTooltip: "Restart when playback reaches its end",
       pauseTooltip: "Pause (Space)",
@@ -691,16 +661,15 @@ export const en = {
       rotate180: "Rotate 180",
       rotate90Clockwise: "Rotate 90 CW",
       rotate90Counterclockwise: "Rotate 90 CCW",
-      reset: "Reset to default",
       cropTooltip: "Right-click preview to transform",
       resetConfirmation: {
         description: "This resets the crop, rotation, and flips for the current video.",
         title: "Reset video transformations?",
       },
+      title: "Transform",
     },
     info: {
       compatible: "Compatible preview",
-      transform: "Transform",
       playbackError: "Could not preview this video",
       proxy:
         "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file.",
@@ -790,159 +759,122 @@ export const en = {
   },
   audio: {
     loudness: {
-      actions: {
-        analyzeLoudness: "Analyze loudness",
-        analyzingLoudness: "Analyzing loudness…",
-      },
+      analyze: "Analyze loudness",
+      analyzing: "Analyzing loudness…",
     },
     activityDetection: {
-      actions: {
-        analyzeActivity: "Analyze audio activity",
-        analyzingActivity: "Analyzing audio activity…",
-        retryActivityDetection: "Retry analysis",
-        showActivity: "Show detected ranges",
-      },
+      analyze: "Analyze audio activity",
+      analyzing: "Analyzing audio activity…",
+      retry: "Retry analysis",
+      showRanges: "Show detected ranges",
     },
     effects: {
       open: "Effects",
-      labels: {
-        effectStageCleanup: "Cleanup",
-        effectStageDynamics: "Dynamics",
-        effectStageLevel: "Level",
-        effectStageProtection: "Protection",
+      stages: {
+        cleanup: "Cleanup",
+        dynamics: "Dynamics",
+        level: "Level",
+        protection: "Protection",
       },
       dialog: {
         applyNotice: "Changes stay unapplied until you choose Apply.",
         description: "Effects are applied in the fixed order shown in the list.",
         title: "{{title}} — Effects",
       },
-      accessibility: {
-        appliedEffects: "Applied effects: {{summary}}",
-      },
+      appliedSummaryLabel: "Applied effects: {{summary}}",
     },
     output: {
-      actions: {
-        merge: "Merge selected tracks",
+      merge: {
+        action: "Merge selected tracks",
+        tooltip: "All selected tracks are merged into one track; this requires encoding.",
       },
-      messages: {
-        merged_one: "{{count}} selected track is merged into one track",
-        merged_few: "{{count}} selected tracks are merged into one track",
-        merged_other: "{{count}} selected tracks are merged into one track",
-        oneTrack: "One selected track — no merge is needed",
-        separate_one: "{{count}} selected track kept separately",
-        separate_few: "{{count}} selected tracks kept separately",
-        separate_other: "{{count}} selected tracks kept separately",
-        videoOnly: "Video-only output",
-      },
-      tooltips: {
-        merge: "All selected tracks are merged into one track; this requires encoding.",
-      },
+      merged_one: "{{count}} selected track is merged into one track",
+      merged_few: "{{count}} selected tracks are merged into one track",
+      merged_other: "{{count}} selected tracks are merged into one track",
+      oneTrack: "One selected track — no merge is needed",
+      separate_one: "{{count}} selected track kept separately",
+      separate_few: "{{count}} selected tracks kept separately",
+      separate_other: "{{count}} selected tracks kept separately",
+      videoOnly: "Video-only output",
     },
     tracks: {
-      actions: {
-        mute: "Mute",
-        muteTrack: "Mute ({{title}})",
-        unmute: "Unmute",
-        unmuteTrack: "Unmute ({{title}})",
-      },
-      labels: {
-        advanced: "Advanced",
-        defaultTrack: "Audio {{number}}",
-      },
+      mute: "Mute",
+      muteWithTitle: "Mute ({{title}})",
+      unmute: "Unmute",
+      unmuteWithTitle: "Unmute ({{title}})",
+      advanced: "Advanced",
+      defaultName: "Audio {{number}}",
       title: "Audio tracks",
-      messages: {
-        preparingProcessedPreview: "Preparing preview with these track settings…",
-      },
-      accessibility: {
-        trackActions: "Audio {{number}} actions",
-        trackGain: "Audio {{number}} gain in decibels",
-      },
-      options: {
-        channels_one: "{{count}} channel",
-        channels_few: "{{count}} channels",
-        channels_other: "{{count}} channels",
-        unknownLayout: "unknown layout",
-      },
+      preparingPreview: "Preparing preview with these track settings…",
+      actionsLabel: "Audio {{number}} actions",
+      gainLabel: "Audio {{number}} gain in decibels",
+      channels_one: "{{count}} channel",
+      channels_few: "{{count}} channels",
+      channels_other: "{{count}} channels",
+      unknownLayout: "unknown layout",
     },
     highPass: {
       label: "High-pass filter",
-      labelCutoff: "Cutoff frequency",
+      cutoffLabel: "Cutoff frequency",
       description: "Reduce low-frequency rumble on this track.",
-      messages: {
-        highPassEffectSummary: "High-pass ({{cutoff}} Hz)",
-      },
+      summary: "High-pass ({{cutoff}} Hz)",
     },
     limiter: {
       label: "Limiter",
-      labelCeiling: "Output ceiling",
+      ceilingLabel: "Output ceiling",
       description: "Reduce peaks on this track",
-      messages: {
-        limitedEffectSummary: "Limiter ({{ceiling}} dB)",
-      },
+      summary: "Limiter ({{ceiling}} dB)",
     },
     normalization: {
-      labels: {
-        loudnessNormalization: "Loudness normalization",
-        maximumTruePeak: "Maximum true peak (dBTP)",
-        targetLufs: "Target loudness (LUFS)",
-      },
-      labelPreset: "Preset",
-      messages: {
-        loudnessNormalizationDescription: "Normalize this track to a consistent target loudness.",
-        normalizedEffectSummary: "Normalized - {{preset}}",
-        normalizedLevelSummary: "Target {{target}} LUFS · peak cap {{peak}} dBTP",
-      },
-      tooltips: {
-        normalizationReplacesGain:
-          "Manual gain is unavailable while automatic normalization is applied.",
-      },
-      options: {
+      label: "Loudness normalization",
+      maxTruePeakLabel: "Maximum true peak (dBTP)",
+      targetLufsLabel: "Target loudness (LUFS)",
+      preset: {
+        label: "Preset",
         custom: "Custom",
         webVideo: "Web Video",
         streaming: "Streaming",
         broadcast: "Broadcast",
       },
+      description: "Normalize this track to a consistent target loudness.",
+      summary: "Normalized - {{preset}}",
+      levelSummary: "Target {{target}} LUFS · peak cap {{peak}} dBTP",
+      manualGainUnavailable: "Manual gain is unavailable while automatic normalization is applied.",
     },
     noiseReduction: {
       label: "Noise reduction",
-      labelStrength: "Noise reduction strength",
-      description: "Reduce background noise on this audio track.",
-      messages: {
-        noiseReductionEffectSummary: "Noise reduction - {{preset}}",
-      },
-      options: {
+      strength: {
+        label: "Noise reduction strength",
         light: "Light",
         medium: "Medium",
         strong: "Strong",
       },
+      description: "Reduce background noise on this audio track.",
+      summary: "Noise reduction - {{preset}}",
     },
     waveform: {
-      status: {
-        preparingWaveform: "Preparing waveform…",
-        waveformUnavailable: "Waveform unavailable",
-      },
+      preparing: "Preparing waveform…",
+      unavailable: "Waveform unavailable",
     },
   },
   support: {
     changelog: {
-      actions: {
-        changelog: "Changelog",
-      },
-      labels: {
+      open: "Changelog",
+      categories: {
         added: "Added",
         changed: "Changed",
         deprecated: "Deprecated",
         fixed: "Fixed",
         removed: "Removed",
         security: "Security",
-        historyTitle: "Changelog",
       },
-      messages: {
-        emptyChangelog: "No released changes are available yet.",
-        emptyChangelogDescription:
+      title: "Changelog",
+      empty: {
+        title: "No released changes are available yet.",
+        description:
           "Released updates will appear here when they are included in your installed version.",
-        historyDescription: "Released changes included in this version of EasyTrim.",
       },
+      description: "Released changes included in this version of EasyTrim.",
     },
     project: {
       actions: {
@@ -957,12 +889,8 @@ export const en = {
       },
     },
     whatsNew: {
-      labels: {
-        whatsNewTitle: "What’s New",
-      },
-      messages: {
-        whatsNewDescription: "Here’s what changed since you last opened EasyTrim.",
-      },
+      title: "What’s New",
+      description: "Here’s what changed since you last opened EasyTrim.",
     },
   },
   units: {

@@ -20,22 +20,22 @@ describe("resolveInitialLanguage", () => {
   });
 
   it("interpolates selected-track counts in merged audio summaries", () => {
-    expect(i18n.getFixedT("en")("audio.output.messages.merged", { count: 3 })).toBe(
+    expect(i18n.getFixedT("en")("audio.output.merged", { count: 3 })).toBe(
       "3 selected tracks are merged into one track",
     );
-    expect(i18n.getFixedT("sk")("audio.output.messages.merged", { count: 3 })).toBe(
+    expect(i18n.getFixedT("sk")("audio.output.merged", { count: 3 })).toBe(
       "3 vybrané stopy sa zlúčia do jednej stopy",
     );
-    expect(i18n.getFixedT("ru")("audio.output.messages.merged", { count: 3 })).toBe(
+    expect(i18n.getFixedT("ru")("audio.output.merged", { count: 3 })).toBe(
       "3 выбранные дорожки объединяются в одну дорожку",
     );
-    expect(i18n.getFixedT("en")("audio.output.tooltips.merge")).toBe(
+    expect(i18n.getFixedT("en")("audio.output.merge.tooltip")).toBe(
       "All selected tracks are merged into one track; this requires encoding.",
     );
-    expect(i18n.getFixedT("sk")("audio.output.tooltips.merge")).toBe(
+    expect(i18n.getFixedT("sk")("audio.output.merge.tooltip")).toBe(
       "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
     );
-    expect(i18n.getFixedT("ru")("audio.output.tooltips.merge")).toBe(
+    expect(i18n.getFixedT("ru")("audio.output.merge.tooltip")).toBe(
       "Все выбранные дорожки объединяются в одну; это требует кодирования.",
     );
   });

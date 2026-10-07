@@ -54,7 +54,7 @@ const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
   {
     id: "loudnessNormalization",
     stage: "levelPolicy",
-    label: (t) => t("audio.normalization.labels.loudnessNormalization"),
+    label: (t) => t("audio.normalization.label"),
     Page: NormalizeLoudnessPage,
     isEnabled: (processing) => processing.loudnessNormalization !== undefined,
     isDirty: (initial, current) =>

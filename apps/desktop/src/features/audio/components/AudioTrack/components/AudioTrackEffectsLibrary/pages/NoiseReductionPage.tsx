@@ -33,9 +33,9 @@ function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
   );
 
   const presetLabels = [
-    t("audio.noiseReduction.options.light"),
-    t("audio.noiseReduction.options.medium"),
-    t("audio.noiseReduction.options.strong"),
+    t("audio.noiseReduction.strength.light"),
+    t("audio.noiseReduction.strength.medium"),
+    t("audio.noiseReduction.strength.strong"),
   ];
 
   const selectedPresetIndex = presets.indexOf(selectedPreset);
@@ -86,10 +86,10 @@ function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
       <AudioTrackEffectsLibraryPageContent disabled={preset === undefined}>
         <AudioTrackEffectsLibraryPageBasic className="space-y-4">
           <Label htmlFor={`track-noise-reduction-${streamIndex}`}>
-            {t("audio.noiseReduction.labelStrength")}
+            {t("audio.noiseReduction.strength.label")}
           </Label>
           <Slider
-            aria-label={t("audio.noiseReduction.labelStrength")}
+            aria-label={t("audio.noiseReduction.strength.label")}
             aria-valuetext={presetLabels[selectedPresetIndex]}
             id={`track-noise-reduction-${streamIndex}`}
             markers={presetLabels.map((label, value) => ({ label, value }))}

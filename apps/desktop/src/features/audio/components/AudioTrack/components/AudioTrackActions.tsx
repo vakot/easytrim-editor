@@ -29,10 +29,10 @@ function activityActionLabel(
   status: "idle" | "loading" | "ready" | "failed",
   t: ReturnType<typeof useTranslation>["t"],
 ) {
-  if (status === "ready") return t("audio.activityDetection.actions.showActivity");
-  if (status === "loading") return t("audio.activityDetection.actions.analyzingActivity");
-  if (status === "failed") return t("audio.activityDetection.actions.retryActivityDetection");
-  return t("audio.activityDetection.actions.analyzeActivity");
+  if (status === "ready") return t("audio.activityDetection.showRanges");
+  if (status === "loading") return t("audio.activityDetection.analyzing");
+  if (status === "failed") return t("audio.activityDetection.retry");
+  return t("audio.activityDetection.analyze");
 }
 
 function AudioTrackToggleMenuCheckboxItem({
@@ -44,14 +44,12 @@ function AudioTrackToggleMenuCheckboxItem({
   if (!track || !stream) return null;
 
   const streamTitle =
-    stream.title ??
-    stream.language ??
-    t("audio.tracks.labels.defaultTrack", { number: trackNumber });
+    stream.title ?? stream.language ?? t("audio.tracks.defaultName", { number: trackNumber });
 
   const commandProps = {
     "aria-label": controller.isEnabled
-      ? t("audio.tracks.actions.muteTrack", { title: streamTitle })
-      : t("audio.tracks.actions.unmuteTrack", { title: streamTitle }),
+      ? t("audio.tracks.muteWithTitle", { title: streamTitle })
+      : t("audio.tracks.unmuteWithTitle", { title: streamTitle }),
     onCheckedChange: controller.setEnabled,
     checked: controller.isEnabled,
   };

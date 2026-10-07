@@ -36,7 +36,7 @@ function CropViewportContextMenu({ children }: CropViewportContextMenuProps) {
         <ContextMenuSeparator />
         <PreviewCommandMenuItem commandId="crop-preview" />
         <ContextMenuSub>
-          <ContextMenuSubTrigger>{t("preview.info.transform")}</ContextMenuSubTrigger>
+          <ContextMenuSubTrigger>{t("preview.transform.title")}</ContextMenuSubTrigger>
           <ContextMenuSubContent>
             <PreviewCommandMenuItem commandId="rotate-90-cw" keepOpen />
             <PreviewCommandMenuItem commandId="rotate-90-ccw" keepOpen />

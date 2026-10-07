@@ -41,7 +41,7 @@ function VideoPreview() {
           </AlertDescription>
           <AlertAction>
             <Button className="mt-3" onClick={skipCurrentSource} size="sm" variant="outline">
-              {t("queue.actions.skip")}
+              {t("queue.actions.skipExport")}
             </Button>
           </AlertAction>
         </Alert>

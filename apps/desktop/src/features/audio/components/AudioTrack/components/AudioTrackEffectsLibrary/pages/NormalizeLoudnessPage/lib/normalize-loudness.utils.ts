@@ -10,7 +10,7 @@ function formatNormalizationPreset(preset: LoudnessPreset, language: string, t: 
   const format = (value: number) =>
     new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(value).replace(/-/g, "−");
 
-  return `${normalizationPresetLabel(preset, t)} · ${t("audio.normalization.messages.normalizedLevelSummary", { peak: format(maxTruePeakDb), target: format(targetLufs) })}`;
+  return `${normalizationPresetLabel(preset, t)} · ${t("audio.normalization.levelSummary", { peak: format(maxTruePeakDb), target: format(targetLufs) })}`;
 }
 
 function formatLoudnessAnalysis(analysis: LoudnessAnalysis, language: string): string {

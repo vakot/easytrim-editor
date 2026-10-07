@@ -57,12 +57,12 @@ function AudioPanel() {
                 }}
               />
               <Label className="text-xs text-muted-foreground" htmlFor="merge-audio">
-                {t("audio.output.actions.merge")}
+                {t("audio.output.merge.action")}
               </Label>
               <Info aria-hidden="true" className="size-3.5 text-muted-foreground" />
             </div>
           </TooltipTrigger>
-          <TooltipContent>{t("audio.output.tooltips.merge")}</TooltipContent>
+          <TooltipContent>{t("audio.output.merge.tooltip")}</TooltipContent>
         </Tooltip>
       </div>
 

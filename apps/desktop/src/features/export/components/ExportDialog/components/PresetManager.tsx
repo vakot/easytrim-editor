@@ -121,7 +121,7 @@ function PresetManager() {
           data-size="default"
         >
           <span className="truncate">
-            {selectedPreset?.name ?? t("export.preset.options.selectPreset")}
+            {selectedPreset?.name ?? t("export.preset.selectPlaceholder")}
           </span>
           <ChevronDownIcon className="pointer-events-none size-4 shrink-0" />
         </DropdownMenuTrigger>
@@ -144,7 +144,7 @@ function PresetManager() {
                 </DropdownMenuItem>
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger
-                    aria-label={t("export.preset.accessibility.presetActions")}
+                    aria-label={t("export.preset.actionsLabel")}
                     className="size-8 min-w-0 shrink-0 justify-center p-0 [&>span:last-child]:hidden"
                   >
                     <MoreHorizontal className="size-4" />
@@ -179,7 +179,7 @@ function PresetManager() {
               <DropdownMenuIcon>
                 <Plus className="size-3.5" />
               </DropdownMenuIcon>
-              {t("export.preset.actions.addPreset")}
+              {t("export.preset.actions.add")}
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
@@ -188,12 +188,12 @@ function PresetManager() {
       <Dialog onOpenChange={(open) => !open && setDialogMode(null)} open={dialogMode !== null}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{t("export.preset.dialog.createTitle")}</DialogTitle>
-            <DialogDescription>{t("export.preset.dialog.createDescription")}</DialogDescription>
+            <DialogTitle>{t("export.preset.create.title")}</DialogTitle>
+            <DialogDescription>{t("export.preset.create.description")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="preset-name">{t("export.preset.dialog.name")}</Label>
+              <Label htmlFor="preset-name">{t("export.preset.nameLabel")}</Label>
               <Input
                 id="preset-name"
                 onChange={(event) => setDraftName(event.target.value)}
@@ -228,9 +228,9 @@ function PresetManager() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("export.preset.dialog.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogTitle>{t("export.preset.delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("export.preset.dialog.deleteDescription", {
+              {t("export.preset.delete.description", {
                 name: presetToDelete?.name ?? "",
               })}
             </AlertDialogDescription>
