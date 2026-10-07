@@ -5,6 +5,15 @@ import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { localizeAppError } from "../app-errors";
 import { i18n } from "../config";
 
+const malformedArgumentCases: {
+  messageArgs: Record<string, number | string> | undefined;
+  messageId: string;
+}[] = [
+  { messageArgs: undefined, messageId: "media.waveform.widthOutOfRange" },
+  { messageArgs: { minWidth: 64 }, messageId: "media.waveform.widthOutOfRange" },
+  { messageArgs: { streamIndex: "2" }, messageId: "media.waveform.analysisFailed" },
+];
+
 describe("localizeAppError", () => {
   it("resolves a semantic native error in every supported locale", () => {
     for (const language of ["en", "ru", "sk"] as const) {
@@ -30,20 +39,7 @@ describe("localizeAppError", () => {
     ).toBe("Waveform width must be between 64 and 4096 pixels.");
   });
 
-  it.each([
-    {
-      messageArgs: undefined,
-      messageId: "media.waveform.widthOutOfRange",
-    },
-    {
-      messageArgs: { minWidth: 64 },
-      messageId: "media.waveform.widthOutOfRange",
-    },
-    {
-      messageArgs: { streamIndex: "2" },
-      messageId: "media.waveform.analysisFailed",
-    },
-  ])(
+  it.each(malformedArgumentCases)(
     "falls back when $messageId has missing or unusable arguments",
     ({ messageArgs, messageId }) => {
       expect(
