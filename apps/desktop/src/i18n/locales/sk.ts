@@ -500,6 +500,7 @@ export const sk = {
         title: "Odstrániť predvoľbu?",
       },
       nameLabel: "Názov",
+      namePlaceholder: "Názov predvoľby",
       actionsLabel: "Akcie predvoľby",
       selectPlaceholder: "Vybrať predvoľbu",
     },

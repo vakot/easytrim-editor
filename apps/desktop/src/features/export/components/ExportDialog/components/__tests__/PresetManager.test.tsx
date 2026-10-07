@@ -43,7 +43,53 @@ afterEach(async () => {
   localStorage.clear();
 });
 
+const customNamePlaceholderCases = [
+  {
+    language: "en",
+    builtInName: "P3 · Fast",
+    placeholder: "Preset name",
+    nameLabel: "Name",
+    addLabel: "Add new preset",
+    saveLabel: "Save",
+  },
+  {
+    language: "ru",
+    builtInName: "P3 · Быстрый",
+    placeholder: "Имя пресета",
+    nameLabel: "Имя",
+    addLabel: "Добавить пресет",
+    saveLabel: "Сохранить",
+  },
+  {
+    language: "sk",
+    builtInName: "P3 · Rýchly",
+    placeholder: "Názov predvoľby",
+    nameLabel: "Názov",
+    addLabel: "Pridať novú predvoľbu",
+    saveLabel: "Uložiť",
+  },
+];
+
 describe("PresetManager built-in localization", () => {
+  it.each(customNamePlaceholderCases)(
+    "uses the localized generic placeholder in $language custom Create and Edit dialogs",
+    async ({ addLabel, builtInName, language, nameLabel, placeholder, saveLabel }) => {
+      await i18n.changeLanguage(language);
+      renderPresetManager();
+
+      await userEvent.click(screen.getByRole("button", { name: builtInName }));
+      await userEvent.click(screen.getByRole("menuitem", { name: addLabel }));
+      expect(screen.getByLabelText(nameLabel)).toHaveAttribute("placeholder", placeholder);
+      await userEvent.type(screen.getByLabelText(nameLabel), "Custom");
+      await userEvent.click(screen.getByRole("button", { name: saveLabel }));
+
+      await openPresetActions("Custom", 7);
+      await userEvent.click(screen.getByRole("menuitem", { name: "Edit" }));
+      expect(screen.getByLabelText(nameLabel)).toHaveValue("Custom");
+      expect(screen.getByLabelText(nameLabel)).toHaveAttribute("placeholder", placeholder);
+    },
+  );
+
   it("localizes an untouched built-in across locales after an arguments-only edit", async () => {
     await i18n.changeLanguage("ru");
     const store = renderPresetManager();
@@ -118,7 +164,7 @@ describe("PresetManager built-in localization", () => {
     await userEvent.click(screen.getByRole("button", { name: "P3 · Быстрый" }));
     await userEvent.click(screen.getByRole("menuitem", { name: "Добавить пресет" }));
     expect(screen.getByLabelText("Имя")).toHaveValue("");
-    expect(screen.getByLabelText("Имя")).toHaveAttribute("placeholder", "Preset name");
+    expect(screen.getByLabelText("Имя")).toHaveAttribute("placeholder", "Имя пресета");
     await userEvent.type(screen.getByLabelText("Имя"), "P3 · Fast");
     await userEvent.click(screen.getByRole("button", { name: "Сохранить" }));
 
@@ -224,7 +270,7 @@ describe("PresetManager built-in localization", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "P3 · Быстрый" }));
     await userEvent.click(screen.getByRole("menuitem", { name: "Добавить пресет" }));
-    expect(screen.getByLabelText("Имя")).toHaveAttribute("placeholder", "Preset name");
+    expect(screen.getByLabelText("Имя")).toHaveAttribute("placeholder", "Имя пресета");
     await userEvent.click(screen.getByRole("button", { name: "Сохранить" }));
 
     expect(screen.getByText("Введите имя пресета.")).toBeInTheDocument();
@@ -247,7 +293,7 @@ describe("PresetManager built-in localization", () => {
     await openPresetActions("Second", 7);
     await userEvent.click(screen.getByRole("menuitem", { name: "Edit" }));
     expect(screen.getByLabelText("Имя")).toHaveValue("First");
-    expect(screen.getByLabelText("Имя")).toHaveAttribute("placeholder", "Preset name");
+    expect(screen.getByLabelText("Имя")).toHaveAttribute("placeholder", "Имя пресета");
     await userEvent.clear(screen.getByLabelText("Имя"));
     await userEvent.type(screen.getByLabelText("Имя"), "Second");
     await userEvent.click(screen.getByRole("button", { name: "Сохранить" }));

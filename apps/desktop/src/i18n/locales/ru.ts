@@ -501,6 +501,7 @@ export const ru = {
         title: "Удалить пресет?",
       },
       nameLabel: "Имя",
+      namePlaceholder: "Имя пресета",
       actionsLabel: "Действия с пресетом",
       selectPlaceholder: "Выберите пресет",
     },
