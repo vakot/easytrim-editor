@@ -19,6 +19,10 @@ const testStorage = {
   setItem: async () => undefined,
 };
 
+function presetActionLabel(english: string, russian: string) {
+  return i18n.language === "ru" ? russian : english;
+}
+
 function renderPresetManager() {
   const store = createAppStore(testStorage);
   render(
@@ -32,7 +36,7 @@ function renderPresetManager() {
 async function openPresetActions(presetName: string, position: number) {
   await userEvent.click(screen.getByRole("button", { name: presetName }));
   const actions = screen.getAllByRole("menuitem", {
-    name: /preset actions|akcie predvoľby|действия с пресетом/i,
+    name: presetActionLabel("Preset actions", "Действия с пресетом"),
   });
 
   await userEvent.click(actions[position]!);
@@ -76,7 +80,9 @@ describe("PresetManager built-in localization", () => {
       await userEvent.click(screen.getByRole("button", { name: saveLabel }));
 
       await openPresetActions("Custom", 7);
-      await userEvent.click(screen.getByRole("menuitem", { name: /^(Edit|Изменить)$/ }));
+      await userEvent.click(
+        screen.getByRole("menuitem", { name: presetActionLabel("Edit", "Изменить") }),
+      );
       expect(screen.getByLabelText(nameLabel)).toHaveValue("Custom");
       expect(screen.getByLabelText(nameLabel)).toHaveAttribute("placeholder", placeholder);
     },
@@ -91,7 +97,9 @@ describe("PresetManager built-in localization", () => {
     expect(screen.getByRole("button", { name: russianName })).toBeInTheDocument();
 
     await openPresetActions(russianName, 2);
-    await userEvent.click(screen.getByRole("menuitem", { name: /^(Edit|Изменить)$/ }));
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: presetActionLabel("Edit", "Изменить") }),
+    );
     expect(screen.getByLabelText("Имя")).toHaveValue("");
     expect(screen.getByLabelText("Имя")).toHaveAttribute("placeholder", russianName);
     fireEvent.change(screen.getByLabelText("Аргументы FFmpeg"), {
@@ -120,7 +128,9 @@ describe("PresetManager built-in localization", () => {
     await i18n.changeLanguage("ru");
     const store = renderPresetManager();
     await openPresetActions("P3 · Быстрый", 2);
-    await userEvent.click(screen.getByRole("menuitem", { name: /^(Edit|Изменить)$/ }));
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: presetActionLabel("Edit", "Изменить") }),
+    );
     await userEvent.clear(screen.getByLabelText("Имя"));
     await userEvent.type(screen.getByLabelText("Имя"), "My custom preset");
     await userEvent.click(screen.getByRole("button", { name: "Сохранить" }));
@@ -133,7 +143,9 @@ describe("PresetManager built-in localization", () => {
     ).toMatchObject({ customName: "My custom preset", kind: "builtIn" });
 
     await openPresetActions("My custom preset", 2);
-    await userEvent.click(screen.getByRole("menuitem", { name: /^(Edit|Изменить)$/ }));
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: presetActionLabel("Edit", "Изменить") }),
+    );
     expect(screen.getByLabelText("Name")).toHaveValue("My custom preset");
     expect(screen.getByLabelText("Name")).toHaveAttribute("placeholder", "P3 · Fast");
   });
@@ -189,7 +201,9 @@ describe("PresetManager built-in localization", () => {
     });
 
     await openPresetActions("My preset", 2);
-    await userEvent.click(screen.getByRole("menuitem", { name: /^(Edit|Изменить)$/ }));
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: presetActionLabel("Edit", "Изменить") }),
+    );
     expect(screen.getByLabelText("Имя")).toHaveValue("My preset");
     expect(screen.getByLabelText("Имя")).toHaveAttribute("placeholder", "P3 · Быстрый");
     await userEvent.clear(screen.getByLabelText("Имя"));
@@ -219,7 +233,9 @@ describe("PresetManager built-in localization", () => {
     });
 
     await openPresetActions("My preset", 2);
-    await userEvent.click(screen.getByRole("menuitem", { name: /^(Edit|Изменить)$/ }));
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: presetActionLabel("Edit", "Изменить") }),
+    );
     await userEvent.clear(screen.getByLabelText("Имя"));
     await userEvent.type(screen.getByLabelText("Имя"), "P3 · Быстрый");
     await userEvent.click(screen.getByRole("button", { name: "Сохранить" }));
@@ -239,7 +255,11 @@ describe("PresetManager built-in localization", () => {
     act(() => store.dispatch(exportPresetCreated({ name: "P3 · Быстрый" })));
 
     await openPresetActions("P3 · Быстрый", 2);
-    await userEvent.click(screen.getAllByRole("menuitem", { name: /^(Edit|Изменить)$/ })[0]!);
+    await userEvent.click(
+      screen.getAllByRole("menuitem", {
+        name: presetActionLabel("Edit", "Изменить"),
+      })[0]!,
+    );
     await userEvent.click(screen.getByRole("button", { name: "Сохранить" }));
 
     expect(
@@ -281,7 +301,9 @@ describe("PresetManager built-in localization", () => {
     await userEvent.click(screen.getByRole("button", { name: "Сохранить" }));
 
     await openPresetActions("Second", 7);
-    await userEvent.click(screen.getByRole("menuitem", { name: /^(Edit|Изменить)$/ }));
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: presetActionLabel("Edit", "Изменить") }),
+    );
     expect(screen.getByLabelText("Имя")).toHaveValue("First");
     expect(screen.getByLabelText("Имя")).toHaveAttribute("placeholder", "Имя пресета");
     await userEvent.clear(screen.getByLabelText("Имя"));

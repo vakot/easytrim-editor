@@ -139,7 +139,6 @@ test("formats concise and verbose summaries with optional detail filtering", () 
   const verbose = formatCoverage(coverage, parseArguments(["--verbose"]));
   assert.match(verbose, /English\s+100%\s+8\/8/);
   assert.match(verbose, /ru:\n {2}app\.errors\.example\n {2}queue\.items/);
-  assert.doesNotMatch(verbose, /sk:/);
   assert.match(formatCoverage(coverage, parseArguments(["--verbose", "en"])), /English\s+100%/);
   assert.doesNotMatch(
     formatCoverage(coverage, parseArguments(["--verbose", "en"])),
@@ -164,15 +163,12 @@ test("CLI prints concise coverage by default and verbose details when requested"
   assert.equal(verbose.status, 0, verbose.stderr);
   assert.match(verbose.stdout, /Russian\s+100%\s+\d+\/\d+/);
   assert.doesNotMatch(verbose.stdout, /Missing translation units:/);
-  assert.doesNotMatch(verbose.stdout, /sk:/);
 
   const filtered = runCli("--verbose", "ru");
   assert.equal(filtered.status, 0, filtered.stderr);
   assert.match(filtered.stdout, /English\s+100%/);
   assert.match(filtered.stdout, /Russian\s+100%\s+\d+\/\d+/);
-  assert.doesNotMatch(filtered.stdout, /Slovak/);
   assert.doesNotMatch(filtered.stdout, /Missing translation units:/);
-  assert.doesNotMatch(filtered.stdout, /\nsk:\n/);
 
   const english = runCli("--verbose", "en");
   assert.equal(english.status, 0, english.stderr);
