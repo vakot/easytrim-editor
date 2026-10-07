@@ -24,9 +24,8 @@ import { SettingsAppearance } from "./pages/SettingsAppearance";
 import { SettingsGeneral } from "./pages/SettingsGeneral";
 import { SettingsLayout } from "./pages/SettingsLayout";
 import { SettingsPreferences } from "./pages/SettingsPreferences";
-import { SettingsQueue } from "./pages/SettingsQueue";
 
-type SettingsPageId = "general" | "appearance" | "preferences" | "layout" | "queue" | "about";
+type SettingsPageId = "general" | "appearance" | "preferences" | "layout" | "about";
 
 function SettingsDialog() {
   const { t } = useTranslation();
@@ -53,7 +52,6 @@ function SettingsDialog() {
               <SettingsPageItem page="appearance" />
               <SettingsPageItem page="preferences" />
               <SettingsPageItem page="layout" />
-              <SettingsPageItem page="queue" />
               <SettingsPageItem page="about" />
             </LibraryNavigationGroup>
           </LibraryNavigation>
@@ -72,9 +70,6 @@ function SettingsDialog() {
             </SettingsPage>
             <SettingsPage page="layout">
               <SettingsLayout />
-            </SettingsPage>
-            <SettingsPage page="queue">
-              <SettingsQueue />
             </SettingsPage>
             <SettingsPage page="about">
               <SettingsAbout />
@@ -112,8 +107,6 @@ function getSettingsPageTitle(t: TFunction, page: SettingsPageId) {
       return t("settings.pages.preferences.title");
     case "layout":
       return t("settings.pages.layout.title");
-    case "queue":
-      return t("settings.pages.queue.title");
     case "about":
       return t("settings.pages.about.title");
   }
@@ -129,8 +122,6 @@ function getSettingsPageDescription(t: TFunction, page: SettingsPageId) {
       return t("settings.pages.preferences.description");
     case "layout":
       return t("settings.pages.layout.description");
-    case "queue":
-      return t("settings.pages.queue.description");
     case "about":
       return t("settings.pages.about.description");
   }
