@@ -2,8 +2,12 @@ import type { TFunction } from "i18next";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Badge } from "@/components/ui/badge";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Separator } from "@/components/ui/separator";
 
+import { SETTINGS_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
+import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import {
   Library,
@@ -60,6 +64,14 @@ function SettingsDialog() {
 
           <LibraryContent>
             <SettingsPage page="general">
+              <Badge className="h-8 border-primary/10 bg-primary/5" variant="outline">
+                {t("settings.pages.general.openSettingsShortcutLabel")}
+                <KbdGroup>
+                  {getShortcutDisplayKeys(SETTINGS_SHORTCUT).map((key) => (
+                    <Kbd key={key}>{key}</Kbd>
+                  ))}
+                </KbdGroup>
+              </Badge>
               <SettingsGeneral />
             </SettingsPage>
             <SettingsPage page="appearance">

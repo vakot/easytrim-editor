@@ -226,6 +226,7 @@ export const en = {
         title: "General",
         description: "Choose how EasyTrim presents its interface.",
         languageDescription: "Choose the language used throughout EasyTrim Editor.",
+        openSettingsShortcutLabel: "Open Settings with",
       },
       appearance: {
         title: "Appearance",
