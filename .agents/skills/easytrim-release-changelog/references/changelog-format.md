@@ -34,6 +34,25 @@ All notable changes to this project will be documented in this file.
   changes into one outcome.
 - Write concise English in plain language. Prefer the product behavior and user benefit over file
   names, commit hashes, component names, or internal architecture.
+- Treat each entry as a state delta between release boundaries, not as a chronological record of
+  development. Describe the final state users receive. If a feature was introduced during the
+  current unreleased cycle and then changed, renamed, moved, fixed, or refactored before release,
+  update or consolidate its existing entry instead of adding a separate lifecycle entry. Report a
+  `Fixed` item only when the defect existed in a prior release, unless an exceptional user-facing
+  reason justifies it; apply the same release-state test to `Changed` and `Removed` entries.
+- Consolidation is based on user-facing outcome, not on code area, feature family, PR, or
+  implementation timeline. Keep multiple distinct changes in the same UI area as separate entries
+  when users would notice or describe them independently. Do not optimize for the minimum possible
+  number of bullets; use the minimum number required to accurately describe the meaningful release
+  delta. For example, consolidate renames, moves, and fixes made while building a new Settings
+  dialog into its final feature entry, but keep distinct shortcut, menu-structure, and dialog
+  changes separate when each changes what users experience.
+- Keep entries concise and user-facing; do not turn them into feature inventories or implementation
+  notes. Do not enumerate screens, options, sub-features, renamed labels, routes, components, or
+  implementation details unless each detail is independently meaningful to someone upgrading from
+  the previous release. Ask, “Would a user upgrading from the previous release care about this
+  independently?” If not, omit it. Combine development steps that lead to the same user-facing
+  outcome, but preserve other distinct outcomes; do not make entries verbose to demonstrate coverage.
 - Keep established link-reference and comparison-link conventions when the existing changelog has
   them. Do not invent issue, PR, or release links.
 
