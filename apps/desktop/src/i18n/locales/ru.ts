@@ -465,7 +465,7 @@ export const ru = {
       toolsUnavailable: "Медиаинструменты недоступны",
     },
     requirements: "EasyTrim требуется FFmpeg и FFprobe.",
-    ready: "EasyTrim использует FFmpeg и FFprobe для анализа и обработки видео.",
+    ready: "EasyTrim использует FFmpeg и FFprobe для анализа и обработки медиафайлов.",
     restart:
       "После установки перезапустите EasyTrim, если FFmpeg или FFprobe по-прежнему не найдены.",
     together: "FFmpeg и FFprobe обычно поставляются вместе.",
@@ -1002,8 +1002,8 @@ export const ru = {
     activityDetection: {
       analyze: "Найти участки со звуком",
       analyzing: "Поиск участков со звуком…",
-      retry: "Повторить анализ",
-      showRanges: "Показать найденные интервалы",
+      retry: "Повторить поиск",
+      showRanges: "Показать участки со звуком",
     },
     effects: {
       open: "Эффекты",
