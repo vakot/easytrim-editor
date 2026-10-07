@@ -108,7 +108,11 @@ function LanguageSelector({
 
   return (
     <LanguageSelectorContext.Provider value={context}>
-      <Combobox label={label ?? t("common.labels.searchLanguages")} shouldFilter={false} {...props}>
+      <Combobox
+        label={label ?? t("settings.general.language.search")}
+        shouldFilter={false}
+        {...props}
+      >
         {children}
       </Combobox>
     </LanguageSelectorContext.Provider>
@@ -214,7 +218,7 @@ function LanguageSelectorList({
 
   return (
     <ComboboxList {...props}>
-      <ComboboxEmpty>{t("common.messages.noLanguagesFound")}</ComboboxEmpty>
+      <ComboboxEmpty>{t("settings.general.language.noResults")}</ComboboxEmpty>
       <ComboboxGroup>
         {languages.map((language) => {
           const selected = selectedLanguage?.code === language.code;

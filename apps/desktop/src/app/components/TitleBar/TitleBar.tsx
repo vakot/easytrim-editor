@@ -114,19 +114,19 @@ function TitleBarWindowActions() {
         role="group"
       >
         <button
-          aria-label={t("app.actions.minimize")}
+          aria-label={t("app.window.minimize")}
           className="inline-flex w-11 items-center justify-center transition-colors outline-none hover:bg-muted focus-visible:bg-accent"
           onClick={() => runWindowAction(minimizeWindow)}
-          title={t("app.actions.minimize")}
+          title={t("app.window.minimize")}
           type="button"
         >
           <Minus aria-hidden="true" className="size-4" strokeWidth={1.5} />
         </button>
         <button
-          aria-label={isMaximized ? t("app.actions.restore") : t("app.actions.maximize")}
+          aria-label={isMaximized ? t("app.workspaceRecovery.restore") : t("app.window.maximize")}
           className="inline-flex w-11 items-center justify-center transition-colors outline-none hover:bg-muted focus-visible:bg-accent"
           onClick={handleToggleMaximize}
-          title={isMaximized ? t("app.actions.restore") : t("app.actions.maximize")}
+          title={isMaximized ? t("app.workspaceRecovery.restore") : t("app.window.maximize")}
           type="button"
         >
           {isMaximized ? (
@@ -148,7 +148,7 @@ function TitleBarWindowActions() {
 
       {windowActionError ? (
         <span className="sr-only" role="alert">
-          {t("app.messages.windowActionFailed")}
+          {t("app.windowActionFailed")}
         </span>
       ) : null}
     </>

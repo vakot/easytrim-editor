@@ -14,11 +14,11 @@ function usePrimaryColorCommands() {
   const dispatch = useAppDispatch();
   const currentColor = useAppSelector((state) => state.preferences.primaryColor);
   const labels = {
-    amber: t("settings.options.colors.amber"),
-    blue: t("settings.options.colors.blue"),
-    emerald: t("settings.options.colors.emerald"),
-    rose: t("settings.options.colors.rose"),
-    violet: t("settings.options.colors.violet"),
+    amber: t("settings.appearance.primaryColor.presets.amber"),
+    blue: t("settings.appearance.primaryColor.presets.blue"),
+    emerald: t("settings.appearance.primaryColor.presets.emerald"),
+    rose: t("settings.appearance.primaryColor.presets.rose"),
+    violet: t("settings.appearance.primaryColor.presets.violet"),
   };
 
   return PRIMARY_COLOR_PRESETS.map((preset) => {

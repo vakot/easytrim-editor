@@ -11,8 +11,8 @@ import { cn } from "@/lib/class-names.utils";
 import type { ActivityAction, ActivityEntry } from "../../../lib/activity-projection";
 
 const activityActionPresentation = {
-  open: { getLabel: (t: TFunction) => t("app.actions.open"), icon: ExternalLink },
-  restore: { getLabel: (t: TFunction) => t("app.actions.restore"), icon: RotateCcw },
+  open: { getLabel: (t: TFunction) => t("source.file.open"), icon: ExternalLink },
+  restore: { getLabel: (t: TFunction) => t("app.workspaceRecovery.restore"), icon: RotateCcw },
 } satisfies Record<
   ActivityAction["kind"],
   { getLabel: (t: TFunction) => string; icon: LucideIcon }

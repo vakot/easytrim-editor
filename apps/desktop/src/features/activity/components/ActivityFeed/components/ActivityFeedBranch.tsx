@@ -34,8 +34,7 @@ function ActivityFeedBranch({ branch, onAction }: ActivityFeedBranchProps) {
   const { t } = useTranslation();
   const items = groupActivityEntriesForDisplay(branch.entries);
   const normalizedSourcePath = formatSourcePath(branch.path ?? "");
-  const filename =
-    normalizedSourcePath.split(/[\\/]/).filter(Boolean).pop() ?? t("app.labels.file");
+  const filename = normalizedSourcePath.split(/[\\/]/).filter(Boolean).pop() ?? t("app.menu.file");
 
   return (
     <motion.div
@@ -70,7 +69,7 @@ function ActivityFeedBranch({ branch, onAction }: ActivityFeedBranchProps) {
                   entries: item.group.entries,
                   icon: CircleX,
                   latestEntryAt: item.group.latestEntryAt,
-                  title: t("app.status.closedFiles", { count: item.group.count }),
+                  title: t("source.close.closedFiles", { count: item.group.count }),
                 }}
                 key={item.group.id}
               />

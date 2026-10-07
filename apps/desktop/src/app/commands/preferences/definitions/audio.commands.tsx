@@ -12,7 +12,7 @@ function useAudioPreferenceCommands() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const checked = useAppSelector(selectMergeAudioEnabledDefault);
-  const label = t("settings.options.commandLabels.mergeAudio");
+  const label = t("settings.preferences.mergeAudio.commandLabel");
   return [
     {
       checked,

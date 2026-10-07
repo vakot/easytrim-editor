@@ -49,7 +49,7 @@ function SourceCardContextMenu({ children }: { children: React.ReactNode }) {
             <ContextMenuIcon>
               <X aria-hidden="true" />
             </ContextMenuIcon>
-            {t("app.actions.closeFile")}
+            {t("source.file.closeFile")}
           </ContextMenuItem>
         </CloseSource>
 
@@ -61,7 +61,7 @@ function SourceCardContextMenu({ children }: { children: React.ReactNode }) {
               <ContextMenuIcon>
                 <RotateCcw aria-hidden="true" />
               </ContextMenuIcon>
-              {t("app.actions.restore")}
+              {t("app.workspaceRecovery.restore")}
             </ContextMenuItem>
           </RestoreSource>
         ) : (
@@ -70,7 +70,7 @@ function SourceCardContextMenu({ children }: { children: React.ReactNode }) {
               <ContextMenuIcon>
                 <Trash2 aria-hidden="true" />
               </ContextMenuIcon>
-              {t("app.actions.deleteFile")}
+              {t("source.file.deleteFile")}
             </ContextMenuItem>
           </DeleteSource>
         )}

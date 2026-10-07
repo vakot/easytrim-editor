@@ -67,15 +67,15 @@ function PreviewTransformProvider({ children }: PropsWithChildren) {
       <AlertDialog onOpenChange={(open) => !open && cancelReset()} open={resetRequested}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("preview.dialogs.reset.title")}</AlertDialogTitle>
+            <AlertDialogTitle>{t("preview.transform.resetConfirmation.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("preview.dialogs.reset.description")}
+              {t("preview.transform.resetConfirmation.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmReset} variant="destructive">
-              {t("preview.actions.transform.reset")}
+              {t("common.actions.resetToDefault")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

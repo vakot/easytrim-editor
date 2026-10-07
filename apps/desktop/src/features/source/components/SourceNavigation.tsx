@@ -38,7 +38,7 @@ function SourceNavigationButton({
   const { t } = useTranslation();
   const shortcut = command.shortcut ? getShortcutAriaValue(command.shortcut) : undefined;
   const tooltip = shortcut
-    ? t("source.tooltips.withShortcut", { label: command.label, shortcut })
+    ? t("source.shortcutTooltip", { label: command.label, shortcut })
     : command.label;
 
   return (

@@ -18,7 +18,7 @@ function SupportLink() {
       }}
     >
       <KofiIcon className="size-3 text-primary" />
-      <span>{t("support.actions.koFi")}</span>
+      <span>{t("support.project.actions.koFi")}</span>
     </a>
   );
 }

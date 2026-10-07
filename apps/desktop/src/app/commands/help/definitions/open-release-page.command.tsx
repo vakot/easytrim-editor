@@ -7,7 +7,7 @@ import { openExternalUrl } from "@/lib/open-external-url.utils";
 
 function useOpenReleasePageCommand() {
   const { t } = useTranslation();
-  const versionLabel = t("app.labels.version", { version: getCurrentVersion() });
+  const versionLabel = t("app.version", { version: getCurrentVersion() });
   return {
     enabled: true,
     icon: <ExternalLink aria-hidden="true" />,

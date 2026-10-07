@@ -40,7 +40,7 @@ function SourceBreadcrumb({ className }: SourceBreadcrumbProps) {
   const directories = getPathDirectories(sourcePath);
 
   return (
-    <Breadcrumb aria-label={t("common.labels.breadcrumb")} className={className}>
+    <Breadcrumb aria-label={t("app.navigation.breadcrumb")} className={className}>
       <BreadcrumbList className="flex-nowrap">
         <SourceBreadcrumbList>
           {directories.map((directory) => (
@@ -119,7 +119,7 @@ function SourceBreadcrumbMore() {
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>
               <Button
-                aria-label={t("source.labels.technicalDetails")}
+                aria-label={t("source.technicalDetails")}
                 className="h-auto gap-0 p-0"
                 size="xs"
                 variant="ghost"
@@ -128,7 +128,7 @@ function SourceBreadcrumbMore() {
               </Button>
             </PopoverTrigger>
           </TooltipTrigger>
-          <TooltipContent>{t("source.labels.technicalDetails")}</TooltipContent>
+          <TooltipContent>{t("source.technicalDetails")}</TooltipContent>
         </Tooltip>
 
         <PopoverContent align="start" className="w-80 p-2.5" side="bottom" sideOffset={5}>

@@ -36,7 +36,7 @@ function AudioPanel() {
         className="mx-3 mb-2 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         id="timeline-audio-title"
       >
-        {t("audio.labels.title")} ({audioTracks.length})
+        {t("audio.tracks.title")} ({audioTracks.length})
       </h3>
 
       <div className="flex min-w-0 items-center justify-between gap-4 px-3">
@@ -57,12 +57,12 @@ function AudioPanel() {
                 }}
               />
               <Label className="text-xs text-muted-foreground" htmlFor="merge-audio">
-                {t("audio.actions.merge")}
+                {t("audio.output.merge.action")}
               </Label>
               <Info aria-hidden="true" className="size-3.5 text-muted-foreground" />
             </div>
           </TooltipTrigger>
-          <TooltipContent>{t("audio.tooltips.merge")}</TooltipContent>
+          <TooltipContent>{t("audio.output.merge.tooltip")}</TooltipContent>
         </Tooltip>
       </div>
 

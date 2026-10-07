@@ -14,17 +14,17 @@ function useAppearanceCommandGroups() {
   return [
     defineApplicationCommandGroup(
       "appearance-ui-scaling",
-      t("app.labels.commandSections.appearanceUiScaling"),
+      t("commands.sections.appearanceUiScaling"),
       uiScaling,
     ),
     defineApplicationCommandGroup(
       "appearance-theme",
-      t("app.labels.commandSections.appearanceTheme"),
+      t("commands.sections.appearanceTheme"),
       themes,
     ),
     defineApplicationCommandGroup(
       "appearance-color",
-      t("app.labels.commandSections.appearanceColor"),
+      t("commands.sections.appearanceColor"),
       colors,
     ),
   ] as const;

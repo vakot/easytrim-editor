@@ -7,7 +7,7 @@ import { usePreviewTransform } from "@/features/preview";
 function useResetTransformCommand() {
   const { t } = useTranslation();
   const { isAvailable, requestReset } = usePreviewTransform();
-  const label = t("preview.actions.transform.reset");
+  const label = t("common.actions.resetToDefault");
   return {
     enabled: isAvailable,
     icon: <RotateCcw aria-hidden="true" />,

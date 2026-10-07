@@ -26,8 +26,8 @@ function useDeleteFileCommand() {
       if (activeSource) requestSourceDelete({ sourceIds: [activeSource.id] });
     },
     id: "delete-file" as const,
-    label: t("app.actions.deleteFile"),
-    searchTerms: commandSearchTerms(t("app.options.commandSearchTerms.deleteFile")),
+    label: t("source.file.deleteFile"),
+    searchTerms: commandSearchTerms(t("commands.searchTerms.deleteFile")),
     shortcut: { code: "KeyD", key: "D", modifier: "control" } as const,
     variant: "destructive" as const,
   };

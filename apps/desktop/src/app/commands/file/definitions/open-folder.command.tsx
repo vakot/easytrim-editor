@@ -25,8 +25,8 @@ function useOpenFolderCommand() {
       await dispatch(chooseSourceRequested(commandOrigin("open-folder", surface), "folders"));
     },
     id: "open-folder" as const,
-    label: t("app.actions.openFolder"),
-    searchTerms: commandSearchTerms(t("app.options.commandSearchTerms.openFolder")),
+    label: t("source.file.openFolder"),
+    searchTerms: commandSearchTerms(t("commands.searchTerms.openFolder")),
     shortcut: { code: "KeyK", key: "K", modifier: "control" } as const,
     variant: "default" as const,
   };

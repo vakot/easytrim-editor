@@ -55,14 +55,14 @@ function HighPassPage({ streamIndex }: { streamIndex: number }) {
       <AudioTrackEffectsLibraryPageHeader>
         <AudioTrackEffectsLibraryPageHeaderContent>
           <AudioTrackEffectsLibraryPageTitle>
-            {t("audio.labels.highPass")}
+            {t("audio.highPass.label")}
           </AudioTrackEffectsLibraryPageTitle>
           <AudioTrackEffectsLibraryPageDescription>
-            {t("audio.messages.highPassDescription")}
+            {t("audio.highPass.description")}
           </AudioTrackEffectsLibraryPageDescription>
         </AudioTrackEffectsLibraryPageHeaderContent>
         <AudioTrackEffectsLibraryPageToggle
-          aria-label={t("audio.labels.highPass")}
+          aria-label={t("audio.highPass.label")}
           checked={highPass !== undefined}
           onCheckedChange={(enabled) => updateHighPass(enabled)}
         />
@@ -70,11 +70,11 @@ function HighPassPage({ streamIndex }: { streamIndex: number }) {
 
       <AudioTrackEffectsLibraryPageContent disabled={highPass === undefined}>
         <Label htmlFor={`track-high-pass-cutoff-${streamIndex}`}>
-          {t("audio.labels.highPassCutoff")}
+          {t("audio.highPass.cutoffLabel")}
         </Label>
         <div className="mt-2 flex max-w-md items-center gap-3">
           <Slider
-            aria-label={t("audio.labels.highPassCutoff")}
+            aria-label={t("audio.highPass.cutoffLabel")}
             aria-valuetext={`${cutoffHz} Hz`}
             id={`track-high-pass-cutoff-${streamIndex}`}
             markers={AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS.map((preset) => ({

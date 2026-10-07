@@ -4,6 +4,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
+  getTranslationUnits,
   parseLocaleSource,
   scanTranslationSource,
   validateI18n,
@@ -19,6 +20,11 @@ test("validates the repository translation graph", async () => {
 
   assert.equal(report.localeCount, 3);
   assert.equal(report.resourceLeafCount, report.usedResourceLeafCount);
+  assert.equal(report.resourceUnitCount, report.usedResourceUnitCount);
+  assert.ok(report.resourceUnitCount < report.resourceLeafCount);
+  assert.ok(
+    report.translationUnits.some((unit) => unit.key === "queue.summary.jobs" && unit.forms),
+  );
 });
 
 test("rejects dynamic keys and inline fallbacks", () => {
@@ -82,7 +88,7 @@ test("accounts for plural families and reports missing interpolation and unused 
   assert.ok(!report.issues.some((issue) => issue.includes("audio.options.channels_")));
 });
 
-test("reports locale structure and interpolation mismatches", () => {
+test("accepts partial locales but rejects unknown keys and interpolation mismatches", () => {
   const locales = new Map([
     [
       "en",
@@ -107,6 +113,176 @@ test("reports locale structure and interpolation mismatches", () => {
 
   assert.ok(issues.includes("sk has extra translation key common.labels.extra"));
   assert.ok(issues.includes("sk interpolation parameters differ for common.labels.greeting"));
+  assert.ok(!issues.some((issue) => issue.includes("is missing translation key")));
+});
+
+test("rejects duplicate keys, empty strings, and incomplete canonical plural families", () => {
+  const en = parseLocaleSource(
+    `export const en = {
+      queue: { summary: { jobs_one: "{{count}} job", blank: "  ", blank: "Value" } },
+    } as const;`,
+    "en",
+  );
+
+  assert.ok(
+    en.issues.some((issue) => issue.includes("duplicate translation key queue.summary.blank")),
+  );
+  assert.ok(
+    en.issues.some((issue) => issue.includes("empty translation value at queue.summary.blank")),
+  );
+  assert.ok(
+    validateLocaleArchitecture(new Map([["en", en]])).includes(
+      "canonical plural family queue.summary.jobs requires an _other form",
+    ),
+  );
+});
+
+function pluralLocales(
+  language,
+  translatedForms = {},
+  canonicalForms = {
+    jobs_one: "{{count}} job",
+    jobs_other: "{{count}} jobs",
+  },
+) {
+  return new Map([
+    [
+      "en",
+      parseLocaleSource(
+        `export const en = { queue: { summary: ${JSON.stringify(canonicalForms)} } } as const;`,
+        "en",
+      ),
+    ],
+    [
+      language,
+      parseLocaleSource(
+        `export const ${language} = { queue: { summary: ${JSON.stringify(translatedForms)} } } as const;`,
+        language,
+      ),
+    ],
+  ]);
+}
+
+test("groups plural leaves into one translation unit", () => {
+  const en = pluralLocales("ru").get("en");
+  const units = getTranslationUnits(en.leaves);
+
+  assert.equal(units.size, 1);
+  assert.deepEqual([...units.get("queue.summary.jobs").forms.keys()], ["one", "other"]);
+});
+
+test("accepts a wholly untranslated plural family", () => {
+  const en = parseLocaleSource(
+    `export const en = { queue: {
+      title: "Queue",
+      summary: { jobs_one: "{{count}} job", jobs_other: "{{count}} jobs" },
+    } } as const;`,
+    "en",
+  );
+
+  const ru = parseLocaleSource(`export const ru = { queue: { title: "Очередь" } } as const;`, "ru");
+  const locales = new Map([
+    ["en", en],
+    ["ru", ru],
+  ]);
+
+  assert.deepEqual(ru.issues, []);
+  assert.deepEqual(validateLocaleArchitecture(locales), []);
+});
+
+test("accepts complete locale-specific cardinal forms absent from English", () => {
+  const forms = {
+    jobs_one: "{{count}} job",
+    jobs_few: "{{count}} jobs",
+    jobs_many: "{{count}} jobs",
+    jobs_other: "{{count}} jobs",
+  };
+
+  for (const language of ["ru", "sk"]) {
+    assert.deepEqual(validateLocaleArchitecture(pluralLocales(language, forms)), []);
+  }
+});
+
+test("rejects partially translated plural families", () => {
+  const oneOnly = pluralLocales("ru", { jobs_one: "{{count}} job" });
+  const issues = validateLocaleArchitecture(oneOnly);
+
+  for (const category of ["few", "many", "other"]) {
+    assert.ok(issues.includes(`ru plural family queue.summary.jobs requires an _${category} form`));
+  }
+  const missingMany = pluralLocales("sk", {
+    jobs_one: "{{count}} job",
+    jobs_few: "{{count}} jobs",
+    jobs_other: "{{count}} jobs",
+  });
+
+  assert.ok(
+    validateLocaleArchitecture(missingMany).includes(
+      "sk plural family queue.summary.jobs requires an _many form",
+    ),
+  );
+});
+
+test("rejects unsupported plural forms and ordinary unknown keys", () => {
+  const locales = pluralLocales("ru", {
+    jobs_one: "{{count}} job",
+    jobs_few: "{{count}} jobs",
+    jobs_many: "{{count}} jobs",
+    jobs_other: "{{count}} jobs",
+    jobs_two: "{{count}} jobs",
+    jobs_bogus: "{{count}} jobs",
+    foo: "Unexpected",
+  });
+
+  const issues = validateLocaleArchitecture(locales);
+
+  assert.ok(issues.includes("ru has unsupported plural form queue.summary.jobs_two"));
+  assert.ok(issues.includes("ru has extra translation key queue.summary.jobs_bogus"));
+  assert.ok(issues.includes("ru has extra translation key queue.summary.foo"));
+});
+
+test("checks interpolation in locale-specific plural forms", () => {
+  const locales = pluralLocales("ru", {
+    jobs_one: "{{count}} job",
+    jobs_few: "{{total}} jobs",
+    jobs_many: "{{count}} jobs",
+    jobs_other: "{{count}} jobs",
+  });
+
+  assert.ok(
+    validateLocaleArchitecture(locales).includes(
+      "ru interpolation parameters differ for queue.summary.jobs_few",
+    ),
+  );
+});
+
+test("requires explicit zero consistently when English defines one", () => {
+  const canonical = {
+    jobs_zero: "{{count}} jobs ready",
+    jobs_one: "{{count}} job",
+    jobs_other: "{{count}} jobs",
+  };
+
+  const complete = {
+    jobs_zero: "{{count}} jobs ready",
+    jobs_one: "{{count}} job",
+    jobs_few: "{{count}} jobs",
+    jobs_many: "{{count}} jobs",
+    jobs_other: "{{count}} jobs",
+  };
+
+  assert.deepEqual(validateLocaleArchitecture(pluralLocales("ru", complete, canonical)), []);
+  delete complete.jobs_zero;
+  assert.ok(
+    validateLocaleArchitecture(pluralLocales("ru", complete, canonical)).includes(
+      "ru plural family queue.summary.jobs requires an _zero form",
+    ),
+  );
+  assert.ok(
+    validateLocaleArchitecture(
+      pluralLocales("ru", { ...complete, jobs_zero: "{{count}} jobs ready" }),
+    ).includes("ru has unsupported plural form queue.summary.jobs_zero"),
+  );
 });
 
 test("enforces measured shortcut hint label limits for each locale and row", () => {
@@ -115,14 +291,12 @@ test("enforces measured shortcut hint label limits for each locale and row", () 
       "en",
       parseLocaleSource(
         `export const en = {
-          app: {
-            actions: { openFile: "Open File", openFolder: "Open Folder" },
-            labels: { commandPalette: "Command Palette" },
-          },
-          preview: { labels: {
-            shortcutPlayPause: "Play / Pause",
-            shortcutPreviousNextFrame: "Prev / Next Frame",
-            shortcutMarkInOut: "Mark In / Mark Out",
+          source: { file: { openFile: "Open File", openFolder: "Open Folder" } },
+          commands: { title: "Command Palette" },
+          preview: { shortcuts: {
+            playPause: "Play / Pause",
+            previousNextFrame: "Prev / Next Frame",
+            markInOut: "Mark In / Mark Out",
           } },
         } as const;`,
         "en",
@@ -132,14 +306,12 @@ test("enforces measured shortcut hint label limits for each locale and row", () 
       "ru",
       parseLocaleSource(
         `export const ru = {
-          app: {
-            actions: { openFile: "Открыть файл", openFolder: "Открыть папку" },
-            labels: { commandPalette: "Палитра команд" },
-          },
-          preview: { labels: {
-            shortcutPlayPause: "Пуск / Пауза",
-            shortcutPreviousNextFrame: "Предыдущий / Следующий кадр",
-            shortcutMarkInOut: "Начало / Конец",
+          source: { file: { openFile: "Открыть файл", openFolder: "Открыть папку" } },
+          commands: { title: "Палитра команд" },
+          preview: { shortcuts: {
+            playPause: "Пуск / Пауза",
+            previousNextFrame: "Предыдущий / Следующий кадр",
+            markInOut: "Начало / Конец",
           } },
         } as const;`,
         "ru",
@@ -151,6 +323,6 @@ test("enforces measured shortcut hint label limits for each locale and row", () 
   assert.equal(issues.length, 1);
   assert.match(
     issues[0],
-    /ru: preview\.labels\.shortcutPreviousNextFrame for the Previous \/ Next Frame hint row must not exceed 22 symbols/,
+    /ru: preview\.shortcuts\.previousNextFrame for the Previous \/ Next Frame hint row must not exceed 22 symbols/,
   );
 });

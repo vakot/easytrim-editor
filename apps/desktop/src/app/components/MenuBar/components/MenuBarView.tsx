@@ -53,7 +53,7 @@ function MenuBarView() {
     <MenubarMenu value="view">
       <MenubarTrigger asChild>
         <Button className="text-foreground/80" size="sm" type="button" variant="ghost">
-          {t("app.labels.view")}
+          {t("layout.view")}
         </Button>
       </MenubarTrigger>
       <MenubarContent>
@@ -75,7 +75,7 @@ function MenuBarViewContent() {
     <>
       <MenubarGroup>
         <MenubarItem onSelect={() => openCommandPalette()}>
-          {t("app.labels.commandPalette")}
+          {t("commands.title")}
           <MenubarShortcut>
             <Kbd>/</Kbd>
           </MenubarShortcut>
@@ -83,7 +83,7 @@ function MenuBarViewContent() {
 
         <ApplicationCommandMenuItem asChild commandId="open-export-queue">
           <MenubarItem>
-            {t("queue.labels.renderQueue")}
+            {t("queue.exportQueueTitle")}
             <MenubarShortcut className="text-xs">
               {finishedExports}/{queueSize}
             </MenubarShortcut>
@@ -95,7 +95,7 @@ function MenuBarViewContent() {
 
       <MenubarGroup>
         <MenubarSub>
-          <MenubarSubTrigger>{t("settings.pages.appearance.title")}</MenubarSubTrigger>
+          <MenubarSubTrigger>{t("settings.appearance.title")}</MenubarSubTrigger>
 
           <MenubarSubContent>
             <MenuBarViewAppearance />
@@ -103,7 +103,7 @@ function MenuBarViewContent() {
         </MenubarSub>
 
         <MenubarSub>
-          <MenubarSubTrigger>{t("settings.pages.layout.title")}</MenubarSubTrigger>
+          <MenubarSubTrigger>{t("settings.layout.title")}</MenubarSubTrigger>
 
           <MenubarSubContent>
             <MenuBarViewLayout />
@@ -130,7 +130,7 @@ function MenuBarViewAppearance() {
           <MenubarIcon>
             <ZoomIn aria-hidden="true" />
           </MenubarIcon>
-          {t("app.labels.uiScaling")}
+          {t("layout.uiScaling")}
           <MenubarShortcut>{uiScalePercent}%</MenubarShortcut>
         </MenubarSubTrigger>
 
@@ -158,7 +158,7 @@ function MenuBarViewAppearance() {
       <MenubarSub>
         <MenubarSubTrigger inset>
           <MenubarIcon>{currentThemeIcon}</MenubarIcon>
-          {t("settings.labels.theme")}
+          {t("settings.appearance.theme.label")}
         </MenubarSubTrigger>
 
         <MenubarSubContent>
@@ -182,7 +182,7 @@ function MenuBarViewAppearance() {
           <MenubarIcon>
             <ColorSample aria-selected color={primaryColor} />
           </MenubarIcon>
-          {t("settings.labels.color")}
+          {t("settings.appearance.color.label")}
         </MenubarSubTrigger>
 
         <MenubarSubContent>
@@ -229,7 +229,7 @@ function MenuBarViewLayout() {
   return (
     <>
       <MenubarGroup>
-        <MenubarLabel>{t("app.labels.panelsVisibility")}</MenubarLabel>
+        <MenubarLabel>{t("layout.panelsVisibility")}</MenubarLabel>
 
         <ApplicationCommandMenuItem asChild commandId="toggle-left-panel">
           <MenubarCheckboxItem inset keepOpen>
@@ -253,7 +253,7 @@ function MenuBarViewLayout() {
       <MenubarSeparator />
 
       <MenubarGroup>
-        <MenubarLabel>{t("app.labels.layoutDensity")}</MenubarLabel>
+        <MenubarLabel>{t("layout.layoutDensity")}</MenubarLabel>
 
         <MenubarRadioGroup value={layoutDensity}>
           <ApplicationCommandMenuItem asChild commandId="layout-density-default">
@@ -279,7 +279,7 @@ function MenuBarViewLayout() {
       <MenubarSeparator />
 
       <MenubarGroup>
-        <MenubarLabel>{t("settings.labels.activityFeedView")}</MenubarLabel>
+        <MenubarLabel>{t("settings.layout.activityFeedView.label")}</MenubarLabel>
 
         <MenubarRadioGroup value={activityFeedView ?? "default"}>
           <ApplicationCommandMenuItem asChild commandId="activity-feed-view-default">

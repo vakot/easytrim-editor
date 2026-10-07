@@ -16,20 +16,20 @@ function useLayoutCommandGroups() {
   return [
     defineApplicationCommandGroup(
       "layout-panels-visibility",
-      t("app.labels.commandSections.layoutPanelsVisibility"),
+      t("commands.sections.layoutPanelsVisibility"),
       panels,
     ),
     defineApplicationCommandGroup(
       "layout-density",
-      t("app.labels.commandSections.layoutDensity"),
+      t("commands.sections.layoutDensity"),
       densities,
     ),
     defineApplicationCommandGroup(
       "layout-activity-feed-view",
-      t("app.labels.commandSections.layoutActivityFeedView"),
+      t("commands.sections.layoutActivityFeedView"),
       feedViews,
     ),
-    defineApplicationCommandGroup("layout", t("app.labels.commandSections.layout"), [reset]),
+    defineApplicationCommandGroup("layout", t("commands.sections.layout"), [reset]),
   ] as const;
 }
 

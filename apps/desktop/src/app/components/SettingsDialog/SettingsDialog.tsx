@@ -51,7 +51,7 @@ function SettingsDialog() {
           onValueChange={(value) => setSelectedPage(value as SettingsPageId)}
           value={selectedPage}
         >
-          <LibraryNavigation aria-label={t("settings.pages.navigationLabel")}>
+          <LibraryNavigation aria-label={t("settings.navigationLabel")}>
             <LibraryNavigationGroup>
               <SettingsPageItem page="general" />
               <SettingsPageItem page="appearance" />
@@ -70,7 +70,7 @@ function SettingsDialog() {
                 variant="outline"
               >
                 <Keyboard aria-hidden="true" className="size-4" />
-                {t("settings.pages.general.openSettingsShortcutLabel")}
+                {t("settings.general.shortcutHint")}
                 <KbdGroup>
                   {getShortcutDisplayKeys(SETTINGS_SHORTCUT).map((key) => (
                     <Kbd key={key}>{key}</Kbd>
@@ -117,30 +117,30 @@ function SettingsPage({ children, page }: { children: ReactNode; page: SettingsP
 function getSettingsPageTitle(t: TFunction, page: SettingsPageId) {
   switch (page) {
     case "general":
-      return t("settings.pages.general.title");
+      return t("settings.general.title");
     case "appearance":
-      return t("settings.pages.appearance.title");
+      return t("settings.appearance.title");
     case "preferences":
-      return t("settings.pages.preferences.title");
+      return t("settings.preferences.title");
     case "layout":
-      return t("settings.pages.layout.title");
+      return t("settings.layout.title");
     case "about":
-      return t("settings.pages.about.title");
+      return t("settings.about.title");
   }
 }
 
 function getSettingsPageDescription(t: TFunction, page: SettingsPageId) {
   switch (page) {
     case "general":
-      return t("settings.pages.general.description");
+      return t("settings.general.description");
     case "appearance":
-      return t("settings.pages.appearance.description");
+      return t("settings.appearance.description");
     case "preferences":
-      return t("settings.pages.preferences.description");
+      return t("settings.preferences.description");
     case "layout":
-      return t("settings.pages.layout.description");
+      return t("settings.layout.description");
     case "about":
-      return t("settings.pages.about.description");
+      return t("settings.about.description");
   }
 }
 

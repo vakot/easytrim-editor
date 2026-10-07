@@ -21,10 +21,10 @@ function SettingsGeneral() {
   const language = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
 
   return (
-    <SettingsSection title={t("settings.labels.language")}>
+    <SettingsSection title={t("settings.general.language.label")}>
       <SettingRow
-        description={t("settings.pages.general.languageDescription")}
-        label={t("settings.labels.language")}
+        description={t("settings.general.language.description")}
+        label={t("settings.general.language.label")}
       >
         <LanguageSelector
           languages={SUPPORTED_LANGUAGES}
@@ -35,7 +35,7 @@ function SettingsGeneral() {
         >
           <LanguageSelectorTrigger>
             <Button
-              aria-label={t("settings.labels.language")}
+              aria-label={t("settings.general.language.label")}
               className="w-44 justify-start"
               type="button"
               variant="outline"
@@ -46,8 +46,8 @@ function SettingsGeneral() {
           </LanguageSelectorTrigger>
           <LanguageSelectorContent>
             <LanguageSelectorInput
-              aria-label={t("common.labels.searchLanguages")}
-              placeholder={t("common.labels.searchLanguages")}
+              aria-label={t("settings.general.language.search")}
+              placeholder={t("settings.general.language.search")}
             />
             <LanguageSelectorList />
           </LanguageSelectorContent>

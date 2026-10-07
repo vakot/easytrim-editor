@@ -123,7 +123,7 @@ function AudioTrackEffectsLibraryPageAdvanced({
       >
         <h4 className="flex shrink-0 items-center gap-1 text-sm font-medium text-muted-foreground">
           <Settings />
-          <span>{t("audio.labels.advanced")}</span>
+          <span>{t("audio.tracks.advanced")}</span>
         </h4>
         <Separator className="flex-1" />
       </div>

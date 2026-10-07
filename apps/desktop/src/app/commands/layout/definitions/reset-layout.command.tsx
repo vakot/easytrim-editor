@@ -24,7 +24,7 @@ function useResetLayoutCommand() {
     "editor-source-activity-feed",
   ]);
 
-  const label = t("app.actions.resetToDefault");
+  const label = t("common.actions.resetToDefault");
   const hasLayoutPreferencesToReset =
     activityFeedView !== DEFAULT_PREFERENCES.activityFeedView ||
     layoutDensity !== DEFAULT_PREFERENCES.layoutDensity;

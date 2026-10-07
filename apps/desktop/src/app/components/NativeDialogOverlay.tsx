@@ -18,9 +18,9 @@ function NativeDialogOverlay() {
       <Card className="min-w-64">
         <CardContent className="grid justify-items-center gap-3">
           <Spinner aria-hidden="true" className="size-6 text-primary" />
-          <strong className="text-sm">{t("app.dialogs.nativeSystem.title")}</strong>
+          <strong className="text-sm">{t("app.systemDialog.confirmation.title")}</strong>
           <span className="text-xs text-muted-foreground">
-            {t("app.dialogs.nativeSystem.description")}
+            {t("app.systemDialog.confirmation.description")}
           </span>
         </CardContent>
       </Card>

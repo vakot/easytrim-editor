@@ -73,12 +73,14 @@ function SourceDeleteDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {isFolder ? t("source.dialogs.delete.folderTitle") : t("source.dialogs.delete.title")}
+            {isFolder
+              ? t("source.delete.confirmation.folderTitle")
+              : t("source.delete.confirmation.title")}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {isFolder
-              ? t("source.dialogs.delete.folderDescription", { name: targetName })
-              : t("source.dialogs.delete.description", {
+              ? t("source.delete.confirmation.folderDescription", { name: targetName })
+              : t("source.delete.confirmation.description", {
                   name:
                     items.length > 1
                       ? `${item?.snapshot.source.displayName} and ${items.length - 1} more sources`
@@ -94,7 +96,7 @@ function SourceDeleteDialog({
             onClick={handleDeleteSource}
             variant="destructive"
           >
-            {t("common.actions.delete")}
+            {t("source.delete.action")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

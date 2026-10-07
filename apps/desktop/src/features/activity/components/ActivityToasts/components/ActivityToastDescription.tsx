@@ -25,10 +25,10 @@ function ActivityToastDescription({ attempt, entry }: ActivityToastDescriptionPr
   const renderTime = numberValue(entry.data?.durationMs) ?? attempt?.metrics.durationMs;
   const metrics = [
     fileSize !== undefined
-      ? t("app.messages.notifications.fileSize", { size: formatBytes(fileSize, "") })
+      ? t("activity.notification.fileSize", { size: formatBytes(fileSize, "") })
       : null,
     renderTime !== null && renderTime !== undefined
-      ? t("app.messages.notifications.renderTime", { duration: formatExportDuration(renderTime) })
+      ? t("activity.notification.renderTime", { duration: formatExportDuration(renderTime) })
       : null,
   ].filter((metric): metric is string => metric !== null);
 
@@ -36,12 +36,12 @@ function ActivityToastDescription({ attempt, entry }: ActivityToastDescriptionPr
     <div className="grid min-w-0 gap-0.5">
       {sourcePath ? (
         <span className="truncate" title={sourcePath}>
-          {t("app.messages.notifications.sourcePath", { path: formatSourcePath(sourcePath) })}
+          {t("activity.notification.sourcePath", { path: formatSourcePath(sourcePath) })}
         </span>
       ) : null}
       {outputPath ? (
         <span className="truncate" title={outputPath}>
-          {t("app.messages.notifications.outputPath", { path: formatSourcePath(outputPath) })}
+          {t("activity.notification.outputPath", { path: formatSourcePath(outputPath) })}
         </span>
       ) : null}
       {paths.length > 0 ? (
@@ -52,7 +52,7 @@ function ActivityToastDescription({ attempt, entry }: ActivityToastDescriptionPr
             </span>
           ))}
           {remainingPathCount > 0 ? (
-            <span>{t("app.messages.notifications.moreFiles", { count: remainingPathCount })}</span>
+            <span>{t("activity.notification.moreFiles", { count: remainingPathCount })}</span>
           ) : null}
         </div>
       ) : null}

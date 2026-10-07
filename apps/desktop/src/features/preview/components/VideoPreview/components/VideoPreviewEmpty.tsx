@@ -22,7 +22,7 @@ function VideoPreviewEmpty() {
 
   const command: Shortcut = {
     id: "command-palette",
-    label: t("app.labels.commandPalette"),
+    label: t("commands.title"),
     keys: [...getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT)],
     separator: undefined,
   };
@@ -30,31 +30,31 @@ function VideoPreviewEmpty() {
   const shortcuts: Shortcut[] = [
     {
       id: "open-file",
-      label: t("app.actions.openFile"),
+      label: t("source.file.openFile"),
       keys: ["Ctrl", "O"],
       separator: undefined,
     },
     {
       id: "open-folder",
-      label: t("app.actions.openFolder"),
+      label: t("source.file.openFolder"),
       keys: ["Ctrl", "K"],
       separator: undefined,
     },
     {
       id: "play-pause",
-      label: t("preview.labels.shortcutPlayPause"),
+      label: t("preview.shortcuts.playPause"),
       keys: ["Space"],
       separator: undefined,
     },
     {
       id: "previous-next-frame",
-      label: t("preview.labels.shortcutPreviousNextFrame"),
+      label: t("preview.shortcuts.previousNextFrame"),
       keys: ["←", "→"],
       separator: "/",
     },
     {
       id: "mark-in-out",
-      label: t("preview.labels.shortcutMarkInOut"),
+      label: t("preview.shortcuts.markInOut"),
       keys: ["I", "O"],
       separator: "/",
     },
@@ -78,7 +78,7 @@ function VideoPreviewEmpty() {
 
         <div className="grid w-full justify-items-center gap-4">
           <div
-            aria-label={t("preview.labels.shortcuts")}
+            aria-label={t("preview.shortcuts.title")}
             className={cn(
               styles.hints,
               "grid w-full gap-2 text-left text-sm text-muted-foreground",

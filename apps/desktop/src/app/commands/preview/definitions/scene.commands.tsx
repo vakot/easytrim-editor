@@ -54,10 +54,10 @@ function useSceneCommands() {
         sceneDetection.canDetect && !sceneDetection.hasDetected && !sceneDetection.isDetecting,
       icon: <Clapperboard aria-hidden="true" />,
       id: "detect-scenes" as const,
-      label: t("timeline.actions.detectScenes"),
+      label: t("timeline.sceneMarkers.actions.detectScenes"),
       run: sceneDetection.detect,
       searchTerms: commandSearchTerms(
-        `${t("timeline.actions.detectScenes")}|scene detection|analyze scenes`,
+        `${t("timeline.sceneMarkers.actions.detectScenes")}|scene detection|analyze scenes`,
       ),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
@@ -68,13 +68,13 @@ function useSceneCommands() {
       icon: <Eye aria-hidden="true" />,
       id: "show-scene-markers" as const,
       label: sceneMarkersEnabled
-        ? t("timeline.actions.disableSceneMarkers")
-        : t("timeline.actions.enableSceneMarkers"),
+        ? t("timeline.sceneMarkers.actions.disableSceneMarkers")
+        : t("timeline.sceneMarkers.actions.enableSceneMarkers"),
       run() {
         dispatch(sceneMarkersToggled());
       },
       searchTerms: commandSearchTerms(
-        `${t("timeline.actions.enableSceneMarkers")}|${t("timeline.actions.disableSceneMarkers")}|scene|markers|show`,
+        `${t("timeline.sceneMarkers.actions.enableSceneMarkers")}|${t("timeline.sceneMarkers.actions.disableSceneMarkers")}|scene|markers|show`,
       ),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
@@ -86,11 +86,11 @@ function useSceneCommands() {
       enabled: readiness.canInteract && previousMarkerMicros !== undefined,
       icon: <ChevronsLeft aria-hidden="true" />,
       id: "previous-marker" as const,
-      label: t("preview.actions.previousMarker"),
+      label: t("preview.markers.previous"),
       run() {
         if (previousMarkerMicros !== undefined) moveToMarker(previousMarkerMicros);
       },
-      searchTerms: commandSearchTerms(`${t("preview.actions.previousMarker")}|previous|marker`),
+      searchTerms: commandSearchTerms(`${t("preview.markers.previous")}|previous|marker`),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
     },
@@ -98,11 +98,11 @@ function useSceneCommands() {
       enabled: readiness.canInteract && nextMarkerMicros !== undefined,
       icon: <ChevronsRight aria-hidden="true" />,
       id: "next-marker" as const,
-      label: t("preview.actions.nextMarker"),
+      label: t("preview.markers.next"),
       run() {
         if (nextMarkerMicros !== undefined) moveToMarker(nextMarkerMicros);
       },
-      searchTerms: commandSearchTerms(`${t("preview.actions.nextMarker")}|next|marker`),
+      searchTerms: commandSearchTerms(`${t("preview.markers.next")}|next|marker`),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
     },

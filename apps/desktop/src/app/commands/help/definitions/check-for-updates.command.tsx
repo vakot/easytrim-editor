@@ -32,13 +32,13 @@ function useCheckForUpdatesCommand() {
     id: "check-for-updates" as const,
     label:
       status === "checking"
-        ? t("app.status.checkingForUpdates")
+        ? t("updates.checkingForUpdates")
         : availableVersion
-          ? t("app.actions.update")
+          ? t("updates.install")
           : status === "up-to-date"
-            ? t("app.status.upToDate")
-            : t("app.actions.checkForUpdates"),
-    searchTerms: commandSearchTerms(`${t("app.actions.checkForUpdates")}|update`),
+            ? t("updates.upToDate")
+            : t("updates.check"),
+    searchTerms: commandSearchTerms(`${t("updates.check")}|update`),
     variant:
       status === "up-to-date"
         ? ("success" as const)

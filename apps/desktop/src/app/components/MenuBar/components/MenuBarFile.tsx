@@ -23,7 +23,7 @@ function MenuBarFile() {
     <MenubarMenu value="file">
       <MenubarTrigger asChild>
         <Button className="text-foreground/80" size="sm" type="button" variant="ghost">
-          {t("app.labels.file")}
+          {t("app.menu.file")}
         </Button>
       </MenubarTrigger>
       <MenubarContent>

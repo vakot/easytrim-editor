@@ -16,8 +16,8 @@ function usePanelCommands() {
       icon: <PanelLeft aria-hidden="true" />,
       run: left.toggle,
       id: "toggle-left-panel" as const,
-      label: t("app.actions.showPanel", { panel: t("app.labels.leftPanel") }),
-      searchTerms: commandSearchTerms(`${t("app.labels.leftPanel")}|panel|sidebar`),
+      label: t("layout.showPanel", { panel: t("layout.leftPanel") }),
+      searchTerms: commandSearchTerms(`${t("layout.leftPanel")}|panel|sidebar`),
       variant: "default" as const,
     },
     {
@@ -26,8 +26,8 @@ function usePanelCommands() {
       icon: <PanelBottom aria-hidden="true" />,
       run: bottom.toggle,
       id: "toggle-bottom-panel" as const,
-      label: t("app.actions.showPanel", { panel: t("app.labels.bottomPanel") }),
-      searchTerms: commandSearchTerms(`${t("app.labels.bottomPanel")}|panel|timeline`),
+      label: t("layout.showPanel", { panel: t("layout.bottomPanel") }),
+      searchTerms: commandSearchTerms(`${t("layout.bottomPanel")}|panel|timeline`),
       variant: "default" as const,
     },
   ] as const;

@@ -22,7 +22,7 @@ function NormalizeLoudnessPreset({ streamIndex }: { streamIndex: number }) {
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={`track-loudness-preset-${streamIndex}`}>
-        {t("audio.labels.normalizationPreset")}
+        {t("audio.normalization.preset.label")}
       </Label>
       <div className="flex items-center">
         <Select
@@ -34,7 +34,7 @@ function NormalizeLoudnessPreset({ streamIndex }: { streamIndex: number }) {
           value={selectedPreset}
         >
           <SelectTrigger
-            aria-label={`${t("audio.labels.normalizationPreset")}: ${t("audio.labels.loudnessNormalization")}`}
+            aria-label={`${t("audio.normalization.preset.label")}: ${t("audio.normalization.label")}`}
             className="min-w-0 flex-1"
             id={`track-loudness-preset-${streamIndex}`}
           >
@@ -47,7 +47,7 @@ function NormalizeLoudnessPreset({ streamIndex }: { streamIndex: number }) {
               </SelectItem>
             ))}
             <SelectItem className="whitespace-nowrap" value="custom">
-              {t("audio.options.normalizationCustom")}
+              {t("audio.normalization.preset.custom")}
             </SelectItem>
           </SelectContent>
         </Select>

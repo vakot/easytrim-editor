@@ -118,21 +118,21 @@ function StereoAudioMeter() {
 
   return (
     <div
-      aria-label={t("timeline.accessibility.audioLevel")}
+      aria-label={t("timeline.audioMeter.accessibility.audioLevel")}
       className="flex w-full flex-col"
       role="group"
     >
       <StereoAudioMeterScale />
       <div className="relative flex flex-1 flex-col gap-1">
         <StereoAudioMeterChannel
-          label={t("timeline.accessibility.leftAudioChannelLevel")}
+          label={t("timeline.audioMeter.accessibility.leftAudioChannelLevel")}
           peakRef={leftPeakRef}
           ref={leftFillRef}
         >
           L
         </StereoAudioMeterChannel>
         <StereoAudioMeterChannel
-          label={t("timeline.accessibility.rightAudioChannelLevel")}
+          label={t("timeline.audioMeter.accessibility.rightAudioChannelLevel")}
           peakRef={rightPeakRef}
           ref={rightFillRef}
         >

@@ -45,9 +45,9 @@ function ActivityFeedView({
   );
 
   const sessionLabels = {
-    now: t("app.labels.now"),
-    today: t("app.labels.today"),
-    yesterday: t("app.labels.yesterday"),
+    now: t("activity.time.now"),
+    today: t("activity.time.today"),
+    yesterday: t("activity.time.yesterday"),
   };
 
   const currentDateTime = new Date(now);

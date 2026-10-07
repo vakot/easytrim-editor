@@ -75,7 +75,7 @@ const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>
 
     return (
       <CursorTooltip
-        aria-label={t("preview.accessibility.crop.preview")}
+        aria-label={t("preview.crop.preview")}
         className="group relative size-full bg-preview-surface focus-visible:outline-none"
         disabled={isOpen}
         onBlur={handleBlur}
@@ -87,7 +87,7 @@ const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>
         ref={setRefs}
         style={transitionStyle}
         tabIndex={0}
-        tooltipContent={t("preview.tooltips.crop")}
+        tooltipContent={t("preview.transform.cropTooltip")}
       >
         {children}
       </CursorTooltip>

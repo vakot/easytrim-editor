@@ -18,9 +18,9 @@ function useThemeCommands() {
   const dispatch = useAppDispatch();
   const currentTheme = useAppSelector(selectThemePreference);
   const labels = {
-    system: t("settings.options.themes.system"),
-    light: t("settings.options.themes.light"),
-    dark: t("settings.options.themes.dark"),
+    system: t("settings.appearance.theme.options.system"),
+    light: t("settings.appearance.theme.options.light"),
+    dark: t("settings.appearance.theme.options.dark"),
   };
 
   return (["system", "light", "dark"] as const).map((theme) => ({

@@ -25,8 +25,8 @@ function useOpenFileCommand() {
       await dispatch(chooseSourceRequested(commandOrigin("open-file", surface)));
     },
     id: "open-file" as const,
-    label: t("app.actions.openFile"),
-    searchTerms: commandSearchTerms(t("app.options.commandSearchTerms.openFile")),
+    label: t("source.file.openFile"),
+    searchTerms: commandSearchTerms(t("commands.searchTerms.openFile")),
     shortcut: { code: "KeyO", key: "O", modifier: "control" } as const,
     variant: "default" as const,
   };

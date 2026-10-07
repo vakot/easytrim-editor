@@ -12,8 +12,8 @@ function useFlipCommands() {
   const dispatch = useAppDispatch();
   const { isAvailable } = usePreviewTransform();
   const labels = {
-    horizontal: t("preview.actions.transform.flipHorizontal"),
-    vertical: t("preview.actions.transform.flipVertical"),
+    horizontal: t("preview.transform.flipHorizontal"),
+    vertical: t("preview.transform.flipVertical"),
   };
 
   return (

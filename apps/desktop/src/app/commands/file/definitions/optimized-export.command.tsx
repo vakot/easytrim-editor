@@ -21,8 +21,8 @@ function useOptimizedExportCommand() {
       await dispatch(openOptimizedExportDialog(commandOrigin("optimized-export", surface)));
     },
     id: "optimized-export" as const,
-    label: t("export.actions.optimized"),
-    searchTerms: commandSearchTerms(t("app.options.commandSearchTerms.optimizedExport")),
+    label: t("export.optimized.action"),
+    searchTerms: commandSearchTerms(t("commands.searchTerms.optimizedExport")),
     shortcut: { code: "KeyE", key: "E", modifier: "control" } as const,
     variant: "default" as const,
   };

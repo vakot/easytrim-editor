@@ -78,7 +78,7 @@ describe("StatusBar", () => {
     mocks.availableVersion = "2.0.0";
     renderStatusBar();
 
-    await user.click(screen.getByRole("button", { name: "app.actions.update" }));
+    await user.click(screen.getByRole("button", { name: "updates.install" }));
 
     expect(mocks.requestWindowShutdown).toHaveBeenCalledWith(mocks.installUpdate);
     expect(mocks.installUpdate).not.toHaveBeenCalled();

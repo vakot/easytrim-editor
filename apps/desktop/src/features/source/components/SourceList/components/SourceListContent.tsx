@@ -78,7 +78,7 @@ function SourceListContent({ className }: SourceListContentProps) {
     <ScrollArea className={cn("min-h-0 flex-1", className)} viewportRef={setScrollParent}>
       {search.trim() && sources.length === 0 ? (
         <div className="text-center text-sm text-muted-foreground" role="status">
-          {t("source.messages.noSearchResults")}
+          {t("source.search.noResults")}
         </div>
       ) : customScrollParent ? (
         <Virtuoso

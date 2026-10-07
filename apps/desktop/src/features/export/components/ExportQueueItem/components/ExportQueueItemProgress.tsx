@@ -10,7 +10,7 @@ function ExportQueueItemProgressBar() {
 
   return (
     <Progress
-      aria-label={t("queue.accessibility.progress")}
+      aria-label={t("queue.progress.accessibleLabel")}
       className="h-1.5 flex-1"
       value={attempt.metrics.progressPercent}
     />

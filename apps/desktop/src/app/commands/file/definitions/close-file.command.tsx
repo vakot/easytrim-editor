@@ -27,8 +27,8 @@ function useCloseFileCommand() {
       await dispatch(closeActiveEditingInstanceRequested(commandOrigin("close-file", surface)));
     },
     id: "close-file" as const,
-    label: t("app.actions.closeFile"),
-    searchTerms: commandSearchTerms(t("app.options.commandSearchTerms.closeFile")),
+    label: t("source.file.closeFile"),
+    searchTerms: commandSearchTerms(t("commands.searchTerms.closeFile")),
     shortcut: { code: "KeyQ", key: "Q", modifier: "control" } as const,
     variant: "default" as const,
   };

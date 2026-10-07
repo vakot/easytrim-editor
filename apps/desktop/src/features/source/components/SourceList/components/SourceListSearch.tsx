@@ -41,9 +41,9 @@ function SourceListSearch() {
       </InputGroupAddon>
 
       <InputGroupInput
-        aria-label={t("common.labels.search")}
+        aria-label={t("common.search.label")}
         onChange={(event) => setSearchInternal(event.currentTarget.value)}
-        placeholder={t("common.labels.search")}
+        placeholder={t("common.search.label")}
         ref={searchInputRef}
         type="search"
         value={searchInternal}
@@ -61,12 +61,10 @@ function SourceListSearch() {
             >
               <X aria-hidden="true" />
             </InputGroupButton>
-            <span className="pr-1">
-              {t("source.labels.searchResults", { count: sources.length })}
-            </span>
+            <span className="pr-1">{t("source.search.results", { count: sources.length })}</span>
           </>
         ) : (
-          <KbdGroup aria-label={t("source.accessibility.searchShortcut", { shortcut: "Ctrl + F" })}>
+          <KbdGroup aria-label={t("source.search.shortcutLabel", { shortcut: "Ctrl + F" })}>
             <Kbd>Ctrl</Kbd>
             <Kbd>F</Kbd>
           </KbdGroup>

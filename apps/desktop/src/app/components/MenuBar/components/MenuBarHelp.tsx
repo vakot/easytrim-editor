@@ -24,7 +24,7 @@ function MenuBarHelp() {
     <MenubarMenu value="help">
       <MenubarTrigger asChild>
         <Button className="text-foreground/80" size="sm" type="button" variant="ghost">
-          {t("app.labels.help")}
+          {t("app.menu.help")}
         </Button>
       </MenubarTrigger>
       <MenubarContent>

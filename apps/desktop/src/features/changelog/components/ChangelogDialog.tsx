@@ -38,10 +38,11 @@ function ChangelogDialog({ mode, onClose, releases }: ChangelogDialogProps) {
   const { t } = useTranslation();
   const isWhatsNew = mode === "whats-new";
 
-  const title = isWhatsNew ? t("support.labels.whatsNewTitle") : t("support.labels.historyTitle");
+  const title = isWhatsNew ? t("support.whatsNew.title") : t("support.changelog.title");
+
   const description = isWhatsNew
-    ? t("support.messages.whatsNewDescription")
-    : t("support.messages.historyDescription");
+    ? t("support.whatsNew.description")
+    : t("support.changelog.description");
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={mode !== null}>
@@ -58,7 +59,7 @@ function ChangelogDialog({ mode, onClose, releases }: ChangelogDialogProps) {
         <DialogFooter className="items-center sm:justify-between">
           <Button onClick={() => void openExternalUrl(CHANGELOG_URL)} type="button" variant="ghost">
             <ExternalLink aria-hidden="true" />
-            {t("support.actions.viewOnGitHub")}
+            {t("support.project.actions.viewOnGitHub")}
           </Button>
           <Button onClick={onClose} type="button">
             {t("common.actions.close")}
@@ -90,8 +91,8 @@ function ChangelogDialogEmpty() {
         <EmptyMedia>
           <ScrollText aria-hidden="true" />
         </EmptyMedia>
-        <EmptyTitle>{t("support.messages.emptyChangelog")}</EmptyTitle>
-        <EmptyDescription>{t("support.messages.emptyChangelogDescription")}</EmptyDescription>
+        <EmptyTitle>{t("support.changelog.empty.title")}</EmptyTitle>
+        <EmptyDescription>{t("support.changelog.empty.description")}</EmptyDescription>
       </EmptyHeader>
     </Empty>
   );
@@ -126,17 +127,17 @@ function ChangedDialogRelease({ release }: { release: ChangelogRelease }) {
 function translateCategory(t: TFunction, category: ChangelogCategory): string {
   switch (category) {
     case "Added":
-      return t("support.labels.categories.added");
+      return t("support.changelog.categories.added");
     case "Changed":
-      return t("support.labels.categories.changed");
+      return t("support.changelog.categories.changed");
     case "Deprecated":
-      return t("support.labels.categories.deprecated");
+      return t("support.changelog.categories.deprecated");
     case "Fixed":
-      return t("support.labels.categories.fixed");
+      return t("support.changelog.categories.fixed");
     case "Removed":
-      return t("support.labels.categories.removed");
+      return t("support.changelog.categories.removed");
     case "Security":
-      return t("support.labels.categories.security");
+      return t("support.changelog.categories.security");
   }
 }
 

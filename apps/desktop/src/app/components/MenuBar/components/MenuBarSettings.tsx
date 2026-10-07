@@ -16,7 +16,7 @@ function MenuBarSettings() {
       type="button"
       variant="ghost"
     >
-      {t("settings.labels.title")}
+      {t("settings.title")}
     </Button>
   );
 }

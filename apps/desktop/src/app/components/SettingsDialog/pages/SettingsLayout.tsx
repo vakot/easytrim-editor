@@ -25,22 +25,22 @@ function SettingsLayout() {
   const activityFeedView = useAppSelector(selectActivityFeedView);
   const layoutDensity = useAppSelector(selectLayoutDensity);
   const activityFeedViewLabels = {
-    default: t("settings.options.activityFeedViews.default"),
-    compact: t("settings.options.activityFeedViews.compact"),
-    branch: t("settings.options.activityFeedViews.branch"),
+    default: t("settings.layout.activityFeedView.options.default"),
+    compact: t("settings.layout.activityFeedView.options.compact"),
+    branch: t("settings.layout.activityFeedView.options.branch"),
   };
 
   return (
-    <SettingsSection title={t("settings.labels.panels")}>
-      <SettingRow label={t("app.labels.leftPanel")}>
-        <CommandSwitch aria-label={t("app.labels.leftPanel")} commandId="toggle-left-panel" />
+    <SettingsSection title={t("settings.layout.panels.label")}>
+      <SettingRow label={t("layout.leftPanel")}>
+        <CommandSwitch aria-label={t("layout.leftPanel")} commandId="toggle-left-panel" />
       </SettingRow>
 
-      <SettingRow label={t("app.labels.bottomPanel")}>
-        <CommandSwitch aria-label={t("app.labels.bottomPanel")} commandId="toggle-bottom-panel" />
+      <SettingRow label={t("layout.bottomPanel")}>
+        <CommandSwitch aria-label={t("layout.bottomPanel")} commandId="toggle-bottom-panel" />
       </SettingRow>
 
-      <SettingRow label={t("app.labels.layoutDensity")}>
+      <SettingRow label={t("layout.layoutDensity")}>
         <Select
           onValueChange={(value) =>
             void executeCommand(
@@ -50,17 +50,17 @@ function SettingsLayout() {
           }
           value={layoutDensity}
         >
-          <SelectTrigger aria-label={t("app.labels.layoutDensity")} className="w-44">
+          <SelectTrigger aria-label={t("layout.layoutDensity")} className="w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="default">{t("app.options.layoutDensities.default")}</SelectItem>
-            <SelectItem value="compact">{t("app.options.layoutDensities.compact")}</SelectItem>
+            <SelectItem value="default">{t("layout.density.default")}</SelectItem>
+            <SelectItem value="compact">{t("layout.density.compact")}</SelectItem>
           </SelectContent>
         </Select>
       </SettingRow>
 
-      <SettingRow label={t("settings.labels.activityFeedView")}>
+      <SettingRow label={t("settings.layout.activityFeedView.label")}>
         <Select
           onValueChange={(value) =>
             void executeCommand(
@@ -73,7 +73,7 @@ function SettingsLayout() {
           }
           value={activityFeedView}
         >
-          <SelectTrigger aria-label={t("settings.labels.activityFeedView")} className="w-44">
+          <SelectTrigger aria-label={t("settings.layout.activityFeedView.label")} className="w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -86,7 +86,7 @@ function SettingsLayout() {
         </Select>
       </SettingRow>
 
-      <SettingRow label={t("settings.pages.layout.resetLabel")}>
+      <SettingRow label={t("settings.layout.reset")}>
         <CommandButton commandId="reset-layout" variant="destructive" />
       </SettingRow>
     </SettingsSection>

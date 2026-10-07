@@ -69,7 +69,7 @@ function StatusBar({ className }: StatusBarProps) {
           <Separator className="mt-1 h-4 self-center" orientation="vertical" />
           <div className="flex shrink-0 items-center gap-2">
             <Progress
-              aria-label={t("queue.accessibility.progress")}
+              aria-label={t("queue.progress.accessibleLabel")}
               aria-valuemax={100}
               aria-valuemin={0}
               aria-valuenow={progressPercent}
@@ -79,25 +79,25 @@ function StatusBar({ className }: StatusBarProps) {
             <span className="w-10 text-right tabular-nums">{progressPercent}%</span>
           </div>
           <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.labels.frames")}>
+          <StatusMetricTooltip label={t("export.frameRate.framesLabel")}>
             {activeExport.attempt.metrics.currentFrame ?? 0}f /{" "}
             {activeExport.attempt.metrics.totalFrames ?? 0}f
           </StatusMetricTooltip>
           <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.labels.fps")}>
+          <StatusMetricTooltip label={t("export.frameRate.fpsLabel")}>
             {Math.round(activeExport.attempt.metrics.fps ?? 0)} FPS
           </StatusMetricTooltip>
           <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.labels.bitrate")}>
+          <StatusMetricTooltip label={t("export.bitrate.label")}>
             {activeExport.attempt.metrics.bitrate ?? "0 kbits/s"}
           </StatusMetricTooltip>
           <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.labels.estimateSize")}>
+          <StatusMetricTooltip label={t("export.estimate.sizeLabel")}>
             {formatStatusFileSize(activeExport.attempt.metrics.fileSizeBytes)} /{" "}
             {formatStatusFileSize(activeExport.attempt.metrics.estimatedFileSizeBytes)}
           </StatusMetricTooltip>
           <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.labels.estimateTime")}>
+          <StatusMetricTooltip label={t("export.estimate.timeLabel")}>
             {formatExportDuration(activeExport.attempt.metrics.estimatedElapsedTimeMs ?? 0)} /{" "}
             {formatExportDuration(activeExport.attempt.metrics.estimatedTotalTimeMs ?? 0)}
           </StatusMetricTooltip>
@@ -134,7 +134,7 @@ function StatusBarUpdateButton() {
 
   const updateAction = getUpdateButtonAction(updateStatus, availableVersion, isInstalling, {
     loading: t("common.status.loading"),
-    update: t("app.actions.update"),
+    update: t("updates.install"),
     error: t("common.status.error"),
   });
 

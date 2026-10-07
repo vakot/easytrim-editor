@@ -59,7 +59,7 @@ function ExportActions() {
 
   return (
     <div
-      aria-label={t("export.accessibility.actions")}
+      aria-label={t("export.actions.accessibleLabel")}
       className="flex shrink-0 items-center gap-1"
       role="toolbar"
     >
@@ -74,7 +74,7 @@ function ExportActions() {
 
           <DialogContent className="max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
             <DialogHeader className="-mx-4 border-b px-4 pb-4">
-              <DialogTitle>{t("queue.labels.renderQueue")}</DialogTitle>
+              <DialogTitle>{t("queue.exportQueueTitle")}</DialogTitle>
               <DialogDescription>
                 <ExportQueueSummary />
               </DialogDescription>
@@ -98,8 +98,8 @@ function ExportActions() {
         disabled={!fastCutAvailable}
         tooltip={
           sourceReady && !fastCutAvailable
-            ? t("export.messages.fastUnavailable")
-            : t("export.tooltips.fast")
+            ? t("export.fastCut.unavailable")
+            : t("export.fastCut.tooltip")
         }
       >
         <ExportActionButton
@@ -110,11 +110,11 @@ function ExportActions() {
             void dispatch(startFastCutRequested({ id: "toolbar.fast-export", type: "button" }))
           }
         >
-          {t("export.actions.fast")}
+          {t("export.fastCut.action")}
         </ExportActionButton>
       </ExportActionTooltip>
 
-      <ExportActionTooltip disabled={!sourceReady} tooltip={t("export.tooltips.optimized")}>
+      <ExportActionTooltip disabled={!sourceReady} tooltip={t("export.optimized.tooltip")}>
         <ExportActionButton
           aria-keyshortcuts="Ctrl+E"
           disabled={!sourceReady}
@@ -125,7 +125,7 @@ function ExportActions() {
             )
           }
         >
-          {t("export.actions.optimized")}
+          {t("export.optimized.action")}
         </ExportActionButton>
       </ExportActionTooltip>
     </div>
@@ -202,7 +202,7 @@ function ExportQueueTrigger({
         initial={false}
         variant="default"
       >
-        {t("queue.labels.renderQueue")}
+        {t("queue.exportQueueTitle")}
       </MotionExportActionButton>
     </DialogTrigger>
   );
@@ -219,7 +219,7 @@ function ExportQueueStartButton() {
       onClick={() => void dispatch(startExportQueue())}
       type="button"
     >
-      {t("queue.actions.start")}
+      {t("queue.actions.startQueue")}
     </Button>
   );
 }

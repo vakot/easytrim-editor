@@ -22,23 +22,23 @@ function TimelineValues({ className }: { className?: string }) {
 
   return (
     <dl
-      aria-label={t("timeline.accessibility.trimValues")}
+      aria-label={t("timeline.segment.accessibility.trimValues")}
       className={cn(styles.timelineValues, "m-0 flex gap-5 justify-self-end", className)}
       data-slot="timeline-values"
     >
       <TimelineTimeValue
         frameRate={frameRate}
-        label={t("timeline.labels.start")}
+        label={t("timeline.segment.labels.start")}
         micros={disabled ? null : range.startMicros}
       />
       <TimelineTimeValue
         frameRate={frameRate}
-        label={t("timeline.labels.end")}
+        label={t("timeline.segment.labels.end")}
         micros={disabled ? null : range.endMicros}
       />
       <TimelineTimeValue
         frameRate={frameRate}
-        label={t("timeline.labels.duration")}
+        label={t("timeline.playhead.labels.duration")}
         micros={disabled ? null : range.endMicros - range.startMicros}
       />
     </dl>

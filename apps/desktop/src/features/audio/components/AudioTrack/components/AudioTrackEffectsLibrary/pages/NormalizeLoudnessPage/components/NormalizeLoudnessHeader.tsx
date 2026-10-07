@@ -22,15 +22,15 @@ function NormalizeLoudnessHeader() {
     <AudioTrackEffectsLibraryPageHeader>
       <AudioTrackEffectsLibraryPageHeaderContent>
         <AudioTrackEffectsLibraryPageTitle>
-          {t("audio.labels.loudnessNormalization")}
+          {t("audio.normalization.label")}
         </AudioTrackEffectsLibraryPageTitle>
         <AudioTrackEffectsLibraryPageDescription>
-          {t("audio.messages.loudnessNormalizationDescription")}
+          {t("audio.normalization.description")}
         </AudioTrackEffectsLibraryPageDescription>
         <NormalizeLoudnessAnalysis />
       </AudioTrackEffectsLibraryPageHeaderContent>
       <AudioTrackEffectsLibraryPageToggle
-        aria-label={t("audio.labels.loudnessNormalization")}
+        aria-label={t("audio.normalization.label")}
         checked={form.enabled}
         onCheckedChange={(value) => dispatchForm({ type: "enabledChanged", value })}
       />
@@ -48,9 +48,7 @@ function NormalizeLoudnessAnalysis() {
         {!analysis.isReady ? (
           <Button
             aria-label={
-              analysis.isLoading
-                ? t("audio.actions.analyzingLoudness")
-                : t("audio.actions.analyzeLoudness")
+              analysis.isLoading ? t("audio.loudness.analyzing") : t("audio.loudness.analyze")
             }
             className="h-auto shrink-0 gap-1.5 px-0"
             disabled={analysis.isLoading}
@@ -59,9 +57,7 @@ function NormalizeLoudnessAnalysis() {
             variant="link"
           >
             {analysis.isLoading ? <Spinner aria-hidden="true" /> : null}
-            {analysis.isLoading
-              ? t("audio.actions.analyzingLoudness")
-              : t("audio.actions.analyzeLoudness")}
+            {analysis.isLoading ? t("audio.loudness.analyzing") : t("audio.loudness.analyze")}
           </Button>
         ) : null}
 

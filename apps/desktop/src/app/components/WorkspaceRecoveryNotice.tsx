@@ -42,14 +42,14 @@ function WorkspaceRecoveryNotice() {
 
   return (
     <aside
-      aria-label={t("app.messages.workspaceRecovery.title")}
+      aria-label={t("app.workspaceRecovery.title")}
       className="fixed right-5 bottom-5 z-50 grid w-[min(24rem,calc(100vw-2.5rem))] gap-3 rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl"
       role="status"
     >
       <div className="grid gap-1">
-        <strong className="text-sm">{t("app.messages.workspaceRecovery.title")}</strong>
+        <strong className="text-sm">{t("app.workspaceRecovery.title")}</strong>
         <p className="text-sm text-muted-foreground">
-          {t("app.messages.workspaceRecovery.description", { count: candidate.instances.length })}
+          {t("app.workspaceRecovery.description", { count: candidate.instances.length })}
         </p>
       </div>
       <div className="flex justify-end gap-2">
@@ -72,7 +72,7 @@ function WorkspaceRecoveryNotice() {
           }}
           type="button"
         >
-          {t("app.actions.restore")}
+          {t("app.workspaceRecovery.restore")}
         </Button>
       </div>
     </aside>

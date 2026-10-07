@@ -12,7 +12,9 @@ function NormalizeLoudnessCustomSettings({ streamIndex }: { streamIndex: number 
   return (
     <div className="grid gap-x-3 gap-y-1.5 sm:grid-cols-2 sm:grid-rows-[auto_auto]">
       <div className="grid min-w-0 gap-y-1.5 sm:row-span-2 sm:grid-rows-subgrid">
-        <Label htmlFor={`track-custom-lufs-${streamIndex}`}>{t("audio.labels.targetLufs")}</Label>
+        <Label htmlFor={`track-custom-lufs-${streamIndex}`}>
+          {t("audio.normalization.targetLufsLabel")}
+        </Label>
         <Input
           id={`track-custom-lufs-${streamIndex}`}
           max={-5}
@@ -28,7 +30,7 @@ function NormalizeLoudnessCustomSettings({ streamIndex }: { streamIndex: number 
       </div>
       <div className="grid min-w-0 gap-y-1.5 sm:row-span-2 sm:grid-rows-subgrid">
         <Label htmlFor={`track-custom-peak-${streamIndex}`}>
-          {t("audio.labels.maximumTruePeak")}
+          {t("audio.normalization.maxTruePeakLabel")}
         </Label>
         <Input
           id={`track-custom-peak-${streamIndex}`}

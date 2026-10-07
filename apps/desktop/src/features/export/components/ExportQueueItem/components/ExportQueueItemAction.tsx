@@ -26,7 +26,7 @@ function ExportQueueItemCancel({ className }: { className?: string }) {
 
   return (
     <Button
-      aria-label={t("queue.actions.cancel")}
+      aria-label={t("queue.actions.cancelExport")}
       className={className}
       onClick={() =>
         void dispatch(
@@ -34,7 +34,7 @@ function ExportQueueItemCancel({ className }: { className?: string }) {
         )
       }
       size="icon-xs"
-      title={t("queue.actions.cancel")}
+      title={t("queue.actions.cancelExport")}
       type="button"
       variant="outline"
     >
@@ -91,7 +91,7 @@ function ExportQueueItemRestore({ className }: { className?: string }) {
 
   return (
     <Button
-      aria-label={t("queue.actions.restore")}
+      aria-label={t("queue.actions.restoreEdit")}
       className={className}
       onClick={() =>
         void dispatch(
@@ -99,7 +99,7 @@ function ExportQueueItemRestore({ className }: { className?: string }) {
         )
       }
       size="icon-xs"
-      title={t("queue.actions.restore")}
+      title={t("queue.actions.restoreEdit")}
       type="button"
       variant="outline"
     >
@@ -152,7 +152,7 @@ function ExportQueueItemRetry({ className }: { className?: string }) {
       variant="outline"
     >
       <RotateCcw aria-hidden="true" />
-      {t("queue.actions.retry")}
+      {t("queue.actions.retryExport")}
     </Button>
   );
 }

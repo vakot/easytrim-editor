@@ -27,69 +27,69 @@ function SettingsPreferences() {
 
   return (
     <>
-      <SettingsSection title={t("settings.pages.preferences.sectionTitle")}>
+      <SettingsSection title={t("settings.preferences.editing.title")}>
         <SettingRow
-          description={t("settings.pages.preferences.loopDescription")}
-          label={t("settings.labels.loop")}
+          description={t("settings.preferences.loopPlayback.description")}
+          label={t("settings.preferences.loopPlayback.label")}
         >
           <CommandSwitch
-            aria-label={t("settings.labels.loop")}
+            aria-label={t("settings.preferences.loopPlayback.label")}
             commandId="preference-loop-playback"
           />
         </SettingRow>
 
         <SettingRow
-          description={t("settings.pages.preferences.followSegmentDescription")}
-          label={t("settings.labels.followSegment")}
+          description={t("settings.preferences.followSegment.description")}
+          label={t("settings.preferences.followSegment.label")}
         >
           <CommandSwitch
-            aria-label={t("settings.labels.followSegment")}
+            aria-label={t("settings.preferences.followSegment.label")}
             commandId="preference-segment-playback"
           />
         </SettingRow>
 
         <SettingRow
-          description={t("settings.pages.preferences.mergeAudioDescription")}
-          label={t("settings.labels.mergeAudio")}
+          description={t("settings.preferences.mergeAudio.description")}
+          label={t("settings.preferences.mergeAudio.label")}
         >
           <CommandSwitch
-            aria-label={t("settings.labels.mergeAudio")}
+            aria-label={t("settings.preferences.mergeAudio.label")}
             commandId="preference-merge-audio"
           />
         </SettingRow>
 
-        <SettingRow label={t("settings.pages.preferences.resetLabel")}>
+        <SettingRow label={t("settings.preferences.reset")}>
           <CommandReset
-            aria-label={t("settings.pages.preferences.resetLabel")}
+            aria-label={t("settings.preferences.reset")}
             commandId="reset-editing-settings"
           />
         </SettingRow>
       </SettingsSection>
 
-      <SettingsSection title={t("settings.pages.queue.title")}>
+      <SettingsSection title={t("settings.queue.title")}>
         <SettingRow
-          description={t("settings.pages.queue.autoStartDescription")}
-          label={t("settings.labels.autoStartQueue")}
+          description={t("settings.queue.autoStart.description")}
+          label={t("settings.queue.autoStart.label")}
         >
           <CommandSwitch
-            aria-label={t("settings.labels.autoStartQueue")}
+            aria-label={t("settings.queue.autoStart.label")}
             commandId="preference-auto-start-queue"
           />
         </SettingRow>
 
         <SettingRow
-          description={t("queue.tooltips.deleteSourceOnRenderFinish")}
-          label={t("queue.labels.deleteSource")}
+          description={t("queue.deleteSource.tooltip")}
+          label={t("queue.deleteSource.label")}
         >
           <CommandSwitch
-            aria-label={t("queue.labels.deleteSource")}
+            aria-label={t("queue.deleteSource.label")}
             commandId="delete-source-on-render-finish"
           />
         </SettingRow>
 
         <SettingRow
-          description={t("settings.pages.queue.onFinishedDescription")}
-          label={t("queue.labels.onFinish")}
+          description={t("settings.queue.onFinished.description")}
+          label={t("queue.onFinished.label")}
         >
           <Select
             onValueChange={(value) =>
@@ -97,7 +97,7 @@ function SettingsPreferences() {
             }
             value={queueFinishAction}
           >
-            <SelectTrigger aria-label={t("queue.labels.onFinish")} className="w-44">
+            <SelectTrigger aria-label={t("queue.onFinished.label")} className="w-44">
               <SelectValue />
             </SelectTrigger>
 
@@ -109,11 +109,8 @@ function SettingsPreferences() {
           </Select>
         </SettingRow>
 
-        <SettingRow label={t("settings.pages.queue.resetLabel")}>
-          <CommandReset
-            aria-label={t("settings.pages.queue.resetLabel")}
-            commandId="reset-queue-settings"
-          />
+        <SettingRow label={t("settings.queue.reset")}>
+          <CommandReset aria-label={t("settings.queue.reset")} commandId="reset-queue-settings" />
         </SettingRow>
       </SettingsSection>
     </>

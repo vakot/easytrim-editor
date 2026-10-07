@@ -65,7 +65,7 @@ function Combobox({
     >
       <Command
         className="contents"
-        label={label ?? t("common.labels.searchSuggestions")}
+        label={label ?? t("settings.general.language.suggestions")}
         shouldFilter={shouldFilter}
       >
         <Popover

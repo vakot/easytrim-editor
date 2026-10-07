@@ -150,7 +150,7 @@ function AudioTrackGainIndicator({ controller }: { controller: AudioTrackControl
   return (
     <AudioTrackIndicator
       aria-label={
-        normalizedSummary ?? t("audio.accessibility.trackGain", { number: controller.trackNumber })
+        normalizedSummary ?? t("audio.tracks.gainLabel", { number: controller.trackNumber })
       }
       className="absolute bottom-1 left-1 z-3"
       data-slot="audio-track-gain-indicator"
@@ -168,13 +168,13 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
       if (effect === "cleanupHighPass") {
         const cutoffHz = getAudioTrackSignalEffect(processing, "highPass", "cleanup")?.cutoffHz;
         if (cutoffHz !== undefined) {
-          summaries.push(t("audio.messages.highPassEffectSummary", { cutoff: cutoffHz }));
+          summaries.push(t("audio.highPass.summary", { cutoff: cutoffHz }));
         }
       } else if (effect === "noiseReduction") {
         const noiseReduction = getAudioTrackSignalEffect(processing, "noiseReduction");
         if (noiseReduction) {
           summaries.push(
-            t("audio.messages.noiseReductionEffectSummary", {
+            t("audio.noiseReduction.summary", {
               preset: noiseReductionPresetLabel(noiseReduction.preset, t),
             }),
           );
@@ -183,14 +183,14 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
         const normalization = processing.loudnessNormalization;
         if (typeof normalization === "string") {
           summaries.push(
-            t("audio.messages.normalizedEffectSummary", {
+            t("audio.normalization.summary", {
               preset: normalizationPresetLabel(normalization, t),
             }),
           );
         } else if (normalization) {
           summaries.push(
-            t("audio.messages.normalizedEffectSummary", {
-              preset: t("audio.options.normalizationCustom"),
+            t("audio.normalization.summary", {
+              preset: t("audio.normalization.preset.custom"),
             }),
           );
         }
@@ -198,7 +198,7 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
         const limiter = getAudioTrackSignalEffect(processing, "limiter");
         if (limiter) {
           summaries.push(
-            t("audio.messages.limitedEffectSummary", {
+            t("audio.limiter.summary", {
               ceiling: formatProcessingValue(limiter.ceilingDb, i18n.language),
             }),
           );
@@ -213,7 +213,7 @@ function AudioTrackEffectsIndicator({ processing }: { processing: AudioTrackProc
 
   return (
     <AudioTrackIndicator
-      aria-label={t("audio.accessibility.appliedEffects", { summary })}
+      aria-label={t("audio.effects.appliedSummaryLabel", { summary })}
       className="absolute top-1 left-1 z-3"
       data-slot="audio-track-effects-indicator"
     >
@@ -262,7 +262,7 @@ function formatNormalizationLevel(
   t: ReturnType<typeof useTranslation>["t"],
 ): string {
   const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(normalization);
-  return t("audio.messages.normalizedLevelSummary", {
+  return t("audio.normalization.levelSummary", {
     peak: formatProcessingValue(maxTruePeakDb, language),
     target: formatProcessingValue(targetLufs, language),
   });

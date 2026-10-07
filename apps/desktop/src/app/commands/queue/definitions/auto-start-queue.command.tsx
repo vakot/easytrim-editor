@@ -12,7 +12,7 @@ function useAutoStartQueueCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const checked = useAppSelector(selectAutoStartQueueEnabled);
-  const label = t("settings.labels.autoStartQueue");
+  const label = t("settings.queue.autoStart.label");
 
   return {
     checked,

@@ -22,8 +22,8 @@ function useSourceNavigationCommands() {
   const activeIndex = instances.findIndex((instance) => instance.id === activeInstanceId);
 
   const labels = {
-    next: t("source.labels.nextSource"),
-    previous: t("source.labels.previousSource"),
+    next: t("source.navigation.next"),
+    previous: t("source.navigation.previous"),
   };
 
   return [

@@ -24,34 +24,34 @@ function ExportQueueItemMetrics() {
   const metrics = useMemo(
     () =>
       [
-        withTooltip(getProgress(attempt, { status }), t("queue.tooltips.progress")),
+        withTooltip(getProgress(attempt, { status }), t("queue.progress.tooltip")),
         withTooltip(
           getDuration(attempt, {
             status,
-            formatValue: (value) => t("queue.messages.elapsed", { value }),
+            formatValue: (value) => t("queue.metrics.elapsed", { value }),
           }),
-          t("queue.tooltips.duration"),
+          t("queue.metrics.durationTooltip"),
         ),
         withTooltip(
           getRemaining(attempt, {
             status,
-            formatValue: (value) => t("queue.messages.remaining", { value }),
+            formatValue: (value) => t("queue.metrics.remaining", { value }),
           }),
-          t("queue.tooltips.remaining"),
+          t("queue.metrics.remainingTooltip"),
         ),
-        withTooltip(getFileSize(attempt, {}), t("queue.tooltips.fileSize")),
+        withTooltip(getFileSize(attempt, {}), t("queue.metrics.fileSizeTooltip")),
         withTooltip(
           getFps(attempt, {
-            formatValue: (value) => t("queue.messages.fps", { value }),
+            formatValue: (value) => t("queue.metrics.fps", { value }),
           }),
-          t("queue.tooltips.fps"),
+          t("queue.metrics.fpsTooltip"),
         ),
         withTooltip(
           getFileSizeChange(attempt, {
             status,
-            formatValue: (value) => t("queue.messages.fileSizeChange", { value }),
+            formatValue: (value) => t("queue.metrics.fileSizeChange", { value }),
           }),
-          t("queue.tooltips.fileSizeChange"),
+          t("queue.metrics.fileSizeChangeTooltip"),
         ),
       ].filter((metric): metric is ExportQueueItemMetricConfig => metric !== null),
     [attempt, status, t],

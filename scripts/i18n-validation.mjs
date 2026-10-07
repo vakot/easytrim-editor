@@ -4,34 +4,8 @@ import { basename, extname, join, relative } from "node:path";
 import ts from "typescript";
 
 const CANONICAL_LOCALE = "en";
-const CANONICAL_NAMESPACES = [
-  "common",
-  "app",
-  "settings",
-  "activity",
-  "queue",
-  "source",
-  "preview",
-  "timeline",
-  "audio",
-  "export",
-  "support",
-  "units",
-];
-
-const CATEGORY_ORDER = [
-  "pages",
-  "actions",
-  "labels",
-  "status",
-  "messages",
-  "tooltips",
-  "dialogs",
-  "accessibility",
-  "options",
-];
-
 const PLURAL_SUFFIXES = ["zero", "one", "two", "few", "many", "other"];
+const PLURAL_KEY = /^(.*)_(zero|one|two|few|many|other)$/;
 const SUSPICIOUS_CYRILLIC = /[\u0400-\u04ff]/;
 const SUSPICIOUS_MOJIBAKE = /[\ufffd]|Ã|Â/;
 
@@ -39,16 +13,16 @@ const SUSPICIOUS_MOJIBAKE = /[\ufffd]|Ã|Â/;
 // the dotted divider, and up to 68px for keycaps; the remaining 180px allows
 // 22 code points at about 8px each. Space uses fewer pixels, so allow 24 there.
 const SHORTCUT_HINT_LABEL_LIMITS = [
-  { key: "app.actions.openFile", maxSymbols: 22, row: "Open File" },
-  { key: "app.actions.openFolder", maxSymbols: 22, row: "Open Folder" },
-  { key: "preview.labels.shortcutPlayPause", maxSymbols: 24, row: "Play / Pause" },
+  { key: "source.file.openFile", maxSymbols: 22, row: "Open File" },
+  { key: "source.file.openFolder", maxSymbols: 22, row: "Open Folder" },
+  { key: "preview.shortcuts.playPause", maxSymbols: 24, row: "Play / Pause" },
   {
-    key: "preview.labels.shortcutPreviousNextFrame",
+    key: "preview.shortcuts.previousNextFrame",
     maxSymbols: 22,
     row: "Previous / Next Frame",
   },
-  { key: "preview.labels.shortcutMarkInOut", maxSymbols: 22, row: "Mark In / Mark Out" },
-  { key: "app.labels.commandPalette", maxSymbols: 22, row: "Command Palette" },
+  { key: "preview.shortcuts.markInOut", maxSymbols: 22, row: "Mark In / Mark Out" },
+  { key: "commands.title", maxSymbols: 22, row: "Command Palette" },
 ];
 
 export async function validateI18n(repositoryRoot) {
@@ -93,13 +67,42 @@ export async function auditI18n(repositoryRoot) {
   issues.push(...validateShortcutHintLabels(locales));
   const usageReport = validateResourceUsage(locales, usages);
   issues.push(...usageReport.issues);
+  const units = getTranslationUnits(locales.get(CANONICAL_LOCALE)?.leaves ?? new Map());
 
   return {
     issues,
     localeCount: locales.size,
     resourceLeafCount: locales.get(CANONICAL_LOCALE)?.leaves.size ?? 0,
     usedResourceLeafCount: usageReport.usedResourceLeafCount,
+    resourceUnitCount: units.size,
+    usedResourceUnitCount: usageReport.usedResourceUnitCount,
+    translationUnits: [...units.values()],
   };
+}
+
+// A plural family is one translation unit even when it has several resource leaves.
+export function getTranslationUnits(leaves) {
+  const families = new Map();
+  for (const key of leaves.keys()) {
+    const match = key.match(PLURAL_KEY);
+    if (!match) continue;
+    const forms = families.get(match[1]) ?? new Map();
+    forms.set(match[2], key);
+    families.set(match[1], forms);
+  }
+
+  const units = new Map();
+  for (const key of leaves.keys()) {
+    const match = key.match(PLURAL_KEY);
+    if (match) {
+      if (!units.has(match[1])) {
+        units.set(match[1], { key: match[1], forms: families.get(match[1]) });
+      }
+    } else if (!families.has(key)) {
+      units.set(key, { key, forms: null });
+    }
+  }
+  return units;
 }
 
 export function validateShortcutHintLabels(locales) {
@@ -158,6 +161,7 @@ export function parseLocaleSource(sourceText, localeName, fileName = `${localeNa
     if (ts.isStringLiteralLike(unwrapped)) {
       const key = path.join(".");
       if (leaves.has(key)) issues.push(`${fileName}: duplicate translation key ${key}`);
+      if (!unwrapped.text.trim()) issues.push(`${fileName}: empty translation value at ${key}`);
       if (
         SUSPICIOUS_MOJIBAKE.test(unwrapped.text) ||
         (localeName !== "ru" && SUSPICIOUS_CYRILLIC.test(unwrapped.text))
@@ -184,6 +188,9 @@ export function parseLocaleSource(sourceText, localeName, fileName = `${localeNa
       if (!name) {
         issues.push(`${fileName}: ${path.join(".") || "locale root"} uses a computed property`);
         continue;
+      }
+      if (childNames.includes(name)) {
+        issues.push(`${fileName}: duplicate translation key ${[...path, name].join(".")}`);
       }
       childNames.push(name);
       visitLocaleNode(property.initializer, [...path, name]);
@@ -251,7 +258,11 @@ export function validateResourceUsage(locales, usages) {
   const usedLeaves = new Set();
 
   if (!canonical) {
-    return { issues: [`missing canonical ${CANONICAL_LOCALE} locale`], usedResourceLeafCount: 0 };
+    return {
+      issues: [`missing canonical ${CANONICAL_LOCALE} locale`],
+      usedResourceLeafCount: 0,
+      usedResourceUnitCount: 0,
+    };
   }
 
   for (const usage of usages) {
@@ -287,55 +298,118 @@ export function validateResourceUsage(locales, usages) {
     if (!usedLeaves.has(key)) issues.push(`unused translation key ${key}`);
   }
 
-  return { issues, usedResourceLeafCount: usedLeaves.size };
+  const units = getTranslationUnits(canonical.leaves);
+  const usedResourceUnitCount = [...units.values()].filter((unit) =>
+    unit.forms
+      ? [...unit.forms.values()].some((key) => usedLeaves.has(key))
+      : usedLeaves.has(unit.key),
+  ).length;
+
+  return { issues, usedResourceLeafCount: usedLeaves.size, usedResourceUnitCount };
 }
 
 export function validateLocaleArchitecture(locales) {
   const issues = [];
   const canonical = locales.get(CANONICAL_LOCALE);
   if (!canonical) return [`missing canonical ${CANONICAL_LOCALE} locale`];
-
-  const rootChildren = canonical.objectChildren.get("") ?? [];
-  if (rootChildren.join("\0") !== CANONICAL_NAMESPACES.join("\0")) {
-    issues.push(`canonical namespaces must be ordered as ${CANONICAL_NAMESPACES.join(", ")}`);
-  }
-
-  for (const namespace of rootChildren) {
-    const categories = canonical.objectChildren.get(namespace) ?? [];
-    const unknownCategories = categories.filter((category) => !CATEGORY_ORDER.includes(category));
-    if (unknownCategories.length > 0) {
-      issues.push(`${namespace} uses unsupported categories: ${unknownCategories.join(", ")}`);
+  const units = getTranslationUnits(canonical.leaves);
+  const families = [...units.values()].filter((unit) => unit.forms);
+  const canonicalCategories = pluralCategories(CANONICAL_LOCALE);
+  for (const { forms, key } of families) {
+    const required = requiredPluralForms(canonicalCategories, forms);
+    for (const category of required) {
+      if (!forms.has(category)) {
+        issues.push(`canonical plural family ${key} requires an _${category} form`);
+      }
     }
-    const categoryIndexes = categories.map((category) => CATEGORY_ORDER.indexOf(category));
-    if (
-      categoryIndexes.some(
-        (index, position) => position > 0 && index < categoryIndexes[position - 1],
-      )
-    ) {
-      issues.push(`${namespace} categories must follow ${CATEGORY_ORDER.join(", ")}`);
+    for (const category of forms.keys()) {
+      if (!required.has(category)) {
+        issues.push(`canonical plural family ${key} has unsupported _${category} form`);
+      }
+    }
+    if (canonical.leaves.has(key)) {
+      issues.push(`canonical plural family ${key} conflicts with an unsuffixed key`);
+    }
+    const expected = familyParameters(canonical.leaves, forms);
+    for (const formKey of forms.values()) {
+      if (!sameParameters(expected, interpolationParameters(canonical.leaves.get(formKey)))) {
+        issues.push(`canonical interpolation parameters differ for ${formKey}`);
+      }
     }
   }
 
   for (const [localeName, locale] of locales) {
     if (localeName === CANONICAL_LOCALE) continue;
-    for (const key of canonical.leaves.keys()) {
-      if (!locale.leaves.has(key)) issues.push(`${localeName} is missing translation key ${key}`);
-    }
+    const categories = pluralCategories(localeName);
     for (const key of locale.leaves.keys()) {
-      if (!canonical.leaves.has(key)) issues.push(`${localeName} has extra translation key ${key}`);
+      const match = key.match(PLURAL_KEY);
+      const unit = match && units.get(match[1]);
+      if (unit?.forms) {
+        const allowed = requiredPluralForms(categories, unit.forms);
+        if (!allowed.has(match[2])) {
+          issues.push(`${localeName} has unsupported plural form ${key}`);
+        }
+      } else if (!canonical.leaves.has(key)) {
+        issues.push(`${localeName} has extra translation key ${key}`);
+      }
     }
-    for (const [key, canonicalValue] of canonical.leaves) {
-      const localeValue = locale.leaves.get(key);
-      if (localeValue === undefined) continue;
-      const canonicalParameters = interpolationParameters(canonicalValue);
-      const localeParameters = interpolationParameters(localeValue);
-      if ([...canonicalParameters].sort().join("\0") !== [...localeParameters].sort().join("\0")) {
-        issues.push(`${localeName} interpolation parameters differ for ${key}`);
+    for (const unit of units.values()) {
+      if (!unit.forms) {
+        const value = locale.leaves.get(unit.key);
+        if (
+          value !== undefined &&
+          !sameParameters(
+            interpolationParameters(canonical.leaves.get(unit.key)),
+            interpolationParameters(value),
+          )
+        ) {
+          issues.push(`${localeName} interpolation parameters differ for ${unit.key}`);
+        }
+        continue;
+      }
+      const localizedForms = [...locale.leaves.keys()].filter((key) => {
+        const match = key.match(PLURAL_KEY);
+        return match?.[1] === unit.key;
+      });
+
+      if (localizedForms.length === 0) continue;
+      for (const category of requiredPluralForms(categories, unit.forms)) {
+        if (!locale.leaves.has(`${unit.key}_${category}`)) {
+          issues.push(`${localeName} plural family ${unit.key} requires an _${category} form`);
+        }
+      }
+      const expected = familyParameters(canonical.leaves, unit.forms);
+      for (const key of localizedForms) {
+        if (!sameParameters(expected, interpolationParameters(locale.leaves.get(key)))) {
+          issues.push(`${localeName} interpolation parameters differ for ${key}`);
+        }
       }
     }
   }
 
   return issues;
+}
+
+function pluralCategories(localeName) {
+  return new Set(
+    new Intl.PluralRules(localeName, { type: "cardinal" }).resolvedOptions().pluralCategories,
+  );
+}
+
+function requiredPluralForms(categories, canonicalForms) {
+  const required = new Set(categories);
+  // i18next checks an explicit _zero before the locale's cardinal category for count 0.
+  if (canonicalForms.has("zero")) required.add("zero");
+  return required;
+}
+
+function familyParameters(leaves, forms) {
+  const reference = forms.get("other") ?? forms.values().next().value;
+  return interpolationParameters(leaves.get(reference));
+}
+
+function sameParameters(expected, actual) {
+  return [...expected].sort().join("\0") === [...actual].sort().join("\0");
 }
 
 async function collectTypeScriptFiles(directory) {

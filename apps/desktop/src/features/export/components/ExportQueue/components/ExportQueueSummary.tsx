@@ -7,16 +7,12 @@ function ExportQueueSummary() {
   const { summary } = useExportQueue();
 
   const parts = [
-    t("queue.messages.summary.jobs", { count: summary.total }),
-    summary.rendering > 0
-      ? t("queue.messages.summary.rendering", { count: summary.rendering })
-      : null,
-    summary.queued > 0 ? t("queue.messages.summary.queued", { count: summary.queued }) : null,
-    summary.failed > 0 ? t("queue.messages.summary.failed", { count: summary.failed }) : null,
-    summary.canceled > 0 ? t("queue.messages.summary.canceled", { count: summary.canceled }) : null,
-    summary.completed > 0
-      ? t("queue.messages.summary.completed", { count: summary.completed })
-      : null,
+    t("queue.summary.jobs", { count: summary.total }),
+    summary.rendering > 0 ? t("queue.summary.rendering", { count: summary.rendering }) : null,
+    summary.queued > 0 ? t("queue.summary.queued", { count: summary.queued }) : null,
+    summary.failed > 0 ? t("queue.summary.failed", { count: summary.failed }) : null,
+    summary.canceled > 0 ? t("queue.summary.canceled", { count: summary.canceled }) : null,
+    summary.completed > 0 ? t("queue.summary.completed", { count: summary.completed }) : null,
   ].filter((part): part is string => part !== null);
 
   return <>{parts.join(" · ")}</>;

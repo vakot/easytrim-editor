@@ -79,9 +79,9 @@ function MediaToolsStatusTrigger({
   const iconOnly = presentation === "compact" && ready;
 
   const statusText = checking
-    ? t("app.status.checkingTools")
+    ? t("mediaTools.status.checkingTools")
     : presentation === "default" && ready
-      ? t("app.status.toolsReady")
+      ? t("mediaTools.status.toolsReady")
       : getStatusText(state, t);
 
   const variant = ready
@@ -95,7 +95,7 @@ function MediaToolsStatusTrigger({
   return (
     <PopoverTrigger asChild>
       <Button
-        aria-label={iconOnly ? t("app.status.toolsReady") : statusText}
+        aria-label={iconOnly ? t("mediaTools.status.toolsReady") : statusText}
         className={cn(triggerButtonVariants({ variant }), className)}
         data-no-drag="true"
         size="xs"
@@ -143,7 +143,7 @@ function MediaToolsStatusContent({ className }: { className?: string }) {
       <div className="grid min-w-0 gap-3">
         <div className="grid gap-1">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="font-semibold">{t("app.labels.mediaTools")}</h2>
+            <h2 className="font-semibold">{t("mediaTools.title")}</h2>
             <span
               className={cn(
                 ready
@@ -160,8 +160,8 @@ function MediaToolsStatusContent({ className }: { className?: string }) {
             {capabilities.status === "failed"
               ? capabilities.error.message
               : ready
-                ? t("app.messages.mediaToolsReady")
-                : t("app.messages.mediaToolsUnavailable")}
+                ? t("mediaTools.ready")
+                : t("mediaTools.requirements")}
           </p>
         </div>
 
@@ -175,11 +175,9 @@ function MediaToolsStatusContent({ className }: { className?: string }) {
         {unavailable ? (
           <section className="grid gap-2 border-t pt-3">
             <div className="grid gap-1">
-              <h3 className="text-xs font-medium">{t("app.labels.installMediaTools")}</h3>
+              <h3 className="text-xs font-medium">{t("mediaTools.installOnWindows")}</h3>
               <p className="text-xs text-muted-foreground">
-                {partial
-                  ? t("app.messages.mediaToolsTogether")
-                  : t("app.messages.installMediaTools")}
+                {partial ? t("mediaTools.together") : t("mediaTools.requirements")}
               </p>
             </div>
             <div className="flex min-w-0 items-center gap-2 rounded-md border bg-muted/50 px-2 py-1.5">
@@ -187,12 +185,12 @@ function MediaToolsStatusContent({ className }: { className?: string }) {
                 {INSTALL_COMMAND}
               </code>
               <Button
-                aria-label={t("app.actions.copyInstallCommand")}
+                aria-label={t("mediaTools.copyInstallCommand")}
                 onClick={() =>
                   void copyText(
                     INSTALL_COMMAND,
-                    t("app.messages.copied"),
-                    t("app.messages.copyFailed"),
+                    t("app.clipboard.copied"),
+                    t("app.clipboard.copyFailed"),
                   )
                 }
                 size="xs"
@@ -203,7 +201,7 @@ function MediaToolsStatusContent({ className }: { className?: string }) {
               </Button>
             </div>
             {rechecked && unavailable ? (
-              <p className="text-xs text-muted-foreground">{t("app.messages.mediaToolsRestart")}</p>
+              <p className="text-xs text-muted-foreground">{t("mediaTools.restart")}</p>
             ) : null}
           </section>
         ) : null}
@@ -217,7 +215,7 @@ function MediaToolsStatusContent({ className }: { className?: string }) {
               size="xs"
               variant="link"
             >
-              {t("app.actions.ffmpegDownloads")}
+              {t("mediaTools.ffmpegDownloads")}
               <ExternalLink aria-hidden="true" />
             </Button>
           ) : (
@@ -235,7 +233,7 @@ function MediaToolsStatusContent({ className }: { className?: string }) {
             variant="outline"
           >
             <RotateCw aria-hidden="true" className={cn(checking && "animate-spin")} />
-            {checking ? t("app.status.checking") : t("app.actions.recheck")}
+            {checking ? t("app.status.checking") : t("mediaTools.recheck")}
           </Button>
         </div>
       </div>
@@ -247,7 +245,7 @@ function BinaryRow({ capability, label }: { capability: BinaryCapability; label:
   const { t } = useTranslation();
 
   function showInFolder(path: string) {
-    void openFileLocation(path).catch(() => toast.error(t("app.messages.locationOpenFailed")));
+    void openFileLocation(path).catch(() => toast.error(t("mediaTools.locationOpenFailed")));
   }
 
   return (
@@ -261,7 +259,9 @@ function BinaryRow({ capability, label }: { capability: BinaryCapability; label:
         <span className="shrink-0 font-medium">{label}</span>
         <span className="min-w-0 flex-1 truncate text-muted-foreground" title={capability.version}>
           {capability.version ??
-            (capability.available ? t("app.status.installed") : t("app.status.missing"))}
+            (capability.available
+              ? t("mediaTools.status.installed")
+              : t("mediaTools.status.missing"))}
         </span>
       </div>
       {capability.path ? (
@@ -273,25 +273,25 @@ function BinaryRow({ capability, label }: { capability: BinaryCapability; label:
             {capability.path}
           </code>
           <Button
-            aria-label={t("app.actions.copyPath", { label })}
+            aria-label={t("mediaTools.copyPath", { label })}
             onClick={() =>
               void copyText(
                 capability.path!,
-                t("app.messages.copied"),
-                t("app.messages.copyFailed"),
+                t("app.clipboard.copied"),
+                t("app.clipboard.copyFailed"),
               )
             }
             size="icon-xs"
-            title={t("app.actions.copyPath", { label })}
+            title={t("mediaTools.copyPath", { label })}
             variant="ghost"
           >
             <Clipboard aria-hidden="true" />
           </Button>
           <Button
-            aria-label={t("app.actions.showPathInFolder", { label })}
+            aria-label={t("mediaTools.showPathInFolder", { label })}
             onClick={() => showInFolder(capability.path!)}
             size="icon-xs"
-            title={t("app.actions.showPathInFolder", { label })}
+            title={t("mediaTools.showPathInFolder", { label })}
             variant="ghost"
           >
             <FolderOpen aria-hidden="true" />
@@ -346,10 +346,10 @@ function getMediaToolsState(capabilities: ReturnType<typeof selectCapabilities>)
 
 function getStatusText(state: MediaToolsState, t: TFunction): string {
   if (state.checking) return t("app.status.checking");
-  if (state.ready) return t("app.status.toolsReady");
-  if (state.partial) return t("app.status.toolsIssue");
-  if (state.failed) return t("app.status.toolsFailed");
-  return t("app.status.toolsUnavailable");
+  if (state.ready) return t("mediaTools.status.toolsReady");
+  if (state.partial) return t("mediaTools.status.toolsIssue");
+  if (state.failed) return t("mediaTools.status.toolsFailed");
+  return t("mediaTools.status.toolsUnavailable");
 }
 
 async function copyText(value: string, confirmation: string, failure: string): Promise<void> {

@@ -3,9 +3,9 @@ import type { TFunction } from "i18next";
 import { isWindowsRuntime } from "@/lib/tauri/updates.utils";
 
 function getRevealLabel(t: TFunction): string {
-  if (isMacOSRuntime()) return t("source.actions.revealInFinder");
-  if (isWindowsRuntime()) return t("source.actions.revealInFileExplorer");
-  return t("source.actions.revealInFileManager");
+  if (isMacOSRuntime()) return t("source.reveal.inFinder");
+  if (isWindowsRuntime()) return t("source.reveal.inFileExplorer");
+  return t("source.reveal.inFileManager");
 }
 
 function isMacOSRuntime(): boolean {

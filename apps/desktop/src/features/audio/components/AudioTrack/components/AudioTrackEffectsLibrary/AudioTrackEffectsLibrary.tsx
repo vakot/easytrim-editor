@@ -43,15 +43,15 @@ function AudioTrackEffectsLibrary({
 
   const { draft } = useAudioTrackEffectsDraft();
   const stageLabels: Record<AudioProcessingStage, string> = {
-    cleanup: t("audio.labels.effectStageCleanup"),
-    dynamics: t("audio.labels.effectStageDynamics"),
-    finalProtection: t("audio.labels.effectStageProtection"),
-    levelPolicy: t("audio.labels.effectStageLevel"),
+    cleanup: t("audio.effects.stages.cleanup"),
+    dynamics: t("audio.effects.stages.dynamics"),
+    finalProtection: t("audio.effects.stages.protection"),
+    levelPolicy: t("audio.effects.stages.level"),
   };
 
   return (
     <Library onValueChange={setSelectedEffect} value={selectedEffect}>
-      <LibraryNavigation aria-label={t("audio.actions.effects")}>
+      <LibraryNavigation aria-label={t("audio.effects.open")}>
         {stageGroups.map(({ effects: stageEffects, stage }) => (
           <LibraryNavigationGroup
             data-slot="audio-track-effects-stage"

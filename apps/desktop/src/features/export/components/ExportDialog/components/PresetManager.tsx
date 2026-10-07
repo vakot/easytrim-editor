@@ -70,9 +70,9 @@ function PresetManager() {
   const [presetError, setPresetError] = useState<PresetNameError | null>(null);
   const [presetToDelete, setPresetToDelete] = useState<ExportPreset | null>(null);
   const presetErrorMessages: Record<PresetNameError, string> = {
-    duplicate: t("export.messages.presetNameDuplicate"),
-    required: t("export.messages.presetNameRequired"),
-    tooLong: t("export.messages.presetNameTooLong"),
+    duplicate: t("export.preset.validation.duplicate"),
+    required: t("export.preset.validation.required"),
+    tooLong: t("export.preset.validation.tooLong"),
   };
 
   function openCreateDialog() {
@@ -111,7 +111,7 @@ function PresetManager() {
 
   return (
     <section className="grid gap-1.5">
-      <Label>{t("export.labels.preset")}</Label>
+      <Label>{t("export.preset.label")}</Label>
       <DropdownMenu>
         <DropdownMenuTrigger
           className={selectTriggerVariants({
@@ -121,7 +121,7 @@ function PresetManager() {
           data-size="default"
         >
           <span className="truncate">
-            {selectedPreset?.name ?? t("export.options.selectPreset")}
+            {selectedPreset?.name ?? t("export.preset.selectPlaceholder")}
           </span>
           <ChevronDownIcon className="pointer-events-none size-4 shrink-0" />
         </DropdownMenuTrigger>
@@ -144,7 +144,7 @@ function PresetManager() {
                 </DropdownMenuItem>
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger
-                    aria-label={t("export.accessibility.presetActions")}
+                    aria-label={t("export.preset.actionsLabel")}
                     className="size-8 min-w-0 shrink-0 justify-center p-0 [&>span:last-child]:hidden"
                   >
                     <MoreHorizontal className="size-4" />
@@ -155,7 +155,7 @@ function PresetManager() {
                         <DropdownMenuIcon>
                           <Pencil className="size-3.5" />
                         </DropdownMenuIcon>
-                        {t("common.actions.edit")}
+                        {t("export.preset.actions.edit")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         inset
@@ -165,7 +165,7 @@ function PresetManager() {
                         <DropdownMenuIcon>
                           <Trash2 className="size-3.5" />
                         </DropdownMenuIcon>
-                        {t("common.actions.delete")}
+                        {t("export.preset.actions.delete")}
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                   </DropdownMenuSubContent>
@@ -179,7 +179,7 @@ function PresetManager() {
               <DropdownMenuIcon>
                 <Plus className="size-3.5" />
               </DropdownMenuIcon>
-              {t("export.actions.addPreset")}
+              {t("export.preset.actions.add")}
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
@@ -188,12 +188,12 @@ function PresetManager() {
       <Dialog onOpenChange={(open) => !open && setDialogMode(null)} open={dialogMode !== null}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{t("export.dialogs.preset.createTitle")}</DialogTitle>
-            <DialogDescription>{t("export.dialogs.preset.createDescription")}</DialogDescription>
+            <DialogTitle>{t("export.preset.create.title")}</DialogTitle>
+            <DialogDescription>{t("export.preset.create.description")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="preset-name">{t("export.dialogs.preset.name")}</Label>
+              <Label htmlFor="preset-name">{t("export.preset.nameLabel")}</Label>
               <Input
                 id="preset-name"
                 onChange={(event) => setDraftName(event.target.value)}
@@ -201,7 +201,7 @@ function PresetManager() {
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="preset-arguments">{t("export.dialogs.optimized.arguments")}</Label>
+              <Label htmlFor="preset-arguments">{t("export.optimized.dialog.arguments")}</Label>
               <Textarea
                 className="min-h-28 resize-y font-mono text-xs"
                 id="preset-arguments"
@@ -228,9 +228,9 @@ function PresetManager() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("export.dialogs.preset.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogTitle>{t("export.preset.delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("export.dialogs.preset.deleteDescription", {
+              {t("export.preset.delete.description", {
                 name: presetToDelete?.name ?? "",
               })}
             </AlertDialogDescription>
@@ -247,7 +247,7 @@ function PresetManager() {
               }}
               variant="destructive"
             >
-              {t("common.actions.delete")}
+              {t("export.preset.actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

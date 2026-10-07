@@ -24,7 +24,7 @@ function TimelineScale() {
         className="text-[0.625rem] font-bold tracking-[0.08em] text-muted-foreground uppercase"
         data-slot="timeline-tools-title"
       >
-        {t("timeline.labels.tools")}
+        {t("timeline.playhead.labels.tools")}
       </span>
       <div className="flex justify-between font-mono text-[0.625rem] text-muted-foreground">
         {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (

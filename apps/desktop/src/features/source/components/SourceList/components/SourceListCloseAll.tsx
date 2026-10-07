@@ -12,7 +12,7 @@ import { CloseSources } from "../../SourceMenuActions";
 function SourceListCloseAll() {
   const { t } = useTranslation();
   const sources = useAppSelector(selectSourceListEntries);
-  const label = t("source.actions.closeAllSources");
+  const label = t("source.close.closeAllSources");
 
   return (
     <Tooltip>

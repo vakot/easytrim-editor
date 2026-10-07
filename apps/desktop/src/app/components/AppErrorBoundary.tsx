@@ -55,17 +55,17 @@ function AppErrorFallback() {
         aria-labelledby="app-error-title"
         className="w-full max-w-lg rounded-lg border border-border bg-card p-8 text-center shadow-lg"
       >
-        <p className="mb-2 text-sm font-medium text-muted-foreground">{t("common.labels.brand")}</p>
+        <p className="mb-2 text-sm font-medium text-muted-foreground">{t("app.brand")}</p>
         <h1 className="text-2xl font-semibold" id="app-error-title">
-          {t("app.messages.crashTitle")}
+          {t("app.crash.title")}
         </h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">{t("app.messages.crash")}</p>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">{t("app.crash.description")}</p>
         <button
           className="mt-6 inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           onClick={() => window.location.reload()}
           type="button"
         >
-          {t("app.actions.restart")}
+          {t("app.window.restart")}
         </button>
       </section>
     </main>
