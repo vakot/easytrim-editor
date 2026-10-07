@@ -374,6 +374,8 @@ describe("MenuBarTest", () => {
     await user.click(getMenuTrigger("Settings"));
     await user.click(screen.getByRole("tab", { name: "Preferences" }));
     expect(screen.queryByRole("tab", { name: "Queue" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset editing settings" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset queue settings" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: /Start queue/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Skip" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Cancel" })).not.toBeInTheDocument();
@@ -400,7 +402,7 @@ describe("MenuBarTest", () => {
 
     await user.click(getMenuTrigger("Settings"));
     await user.click(screen.getByRole("tab", { name: "Preferences" }));
-    await user.click(screen.getAllByRole("button", { name: "Reset to default" })[1]!);
+    await user.click(screen.getByRole("button", { name: "Reset queue settings" }));
 
     expect(menuState.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "queue/settingsReset" }),

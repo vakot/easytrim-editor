@@ -59,7 +59,10 @@ function SettingsPreferences() {
         </SettingRow>
 
         <SettingRow label={t("settings.pages.preferences.resetLabel")}>
-          <CommandReset commandId="reset-preferences-settings" />
+          <CommandReset
+            aria-label={t("settings.pages.preferences.resetLabel")}
+            commandId="reset-preferences-settings"
+          />
         </SettingRow>
       </SettingsSection>
 
@@ -107,7 +110,10 @@ function SettingsPreferences() {
         </SettingRow>
 
         <SettingRow label={t("settings.pages.queue.resetLabel")}>
-          <CommandReset commandId="reset-queue-settings" />
+          <CommandReset
+            aria-label={t("settings.pages.queue.resetLabel")}
+            commandId="reset-queue-settings"
+          />
         </SettingRow>
       </SettingsSection>
     </>

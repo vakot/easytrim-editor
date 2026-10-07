@@ -86,11 +86,13 @@ function CommandButton({
 }
 
 function CommandReset({
+  "aria-label": ariaLabel,
   commandId,
 }: {
+  "aria-label": string;
   commandId: "reset-preferences-settings" | "reset-queue-settings";
 }) {
-  return <CommandButton commandId={commandId} variant="destructive" />;
+  return <CommandButton aria-label={ariaLabel} commandId={commandId} variant="destructive" />;
 }
 
 export { CommandButton, CommandReset, CommandSwitch, SettingRow, SettingsSection };
