@@ -29,11 +29,21 @@ describe("localizeAppError", () => {
   });
 
   it("uses a generic localized fallback without displaying diagnostics or legacy text", () => {
+    const expectedByLanguage = {
+      en: "An unexpected application error occurred.",
+      ru: "Произошла непредвиденная ошибка приложения.",
+      sk: "V aplikácii sa vyskytla neočakávaná chyba.",
+    };
+
     for (const error of [
       { code: "internal", diagnostics: "private path C:/Media/secret.mp4" },
       { code: "future_code", messageId: "future.unknown", diagnostics: "private detail" },
     ]) {
-      expect(localizeAppError(error, i18n.getFixedT("en"))).toBe("Something went wrong.");
+      for (const language of ["en", "ru", "sk"] as const) {
+        expect(localizeAppError(error, i18n.getFixedT(language))).toBe(
+          expectedByLanguage[language],
+        );
+      }
     }
   });
 });

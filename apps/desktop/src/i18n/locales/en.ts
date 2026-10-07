@@ -83,7 +83,6 @@ export const en = {
     },
     delete: {
       action: "Delete",
-      blockedByExport: "The source cannot be deleted while an export is queued or rendering.",
       cancelled: "File deletion cancelled",
       failed: "File deletion failed",
       interrupted: "File deletion interrupted",
@@ -108,7 +107,6 @@ export const en = {
       },
     },
     restore: {
-      selectedFailed: "The selected source could not be restored.",
       cancelled: "File restoration cancelled",
       failed: "File restoration failed",
       interrupted: "File restoration interrupted",
@@ -133,7 +131,6 @@ export const en = {
       description: "Open one or more supported video files from your computer.",
       resetNotice: "The current edit will be reset.",
       title: "Drag and drop videos here",
-      emptySelection: "Drop a video file instead of an empty selection.",
     },
     explorer: "Source explorer",
     importedSources: "Imported Sources",
@@ -219,7 +216,6 @@ export const en = {
       restart: "Restart application",
     },
     workspaceRecovery: {
-      exportInterrupted: "The export was interrupted when EasyTrim closed unexpectedly.",
       restore: "Restore",
       restored_one: "Restored {{count}} source from previous session",
       restored_other: "Restored {{count}} sources from previous session",
@@ -835,7 +831,6 @@ export const en = {
     },
     info: {
       compatible: "Compatible preview",
-      compatiblePlaybackFailed: "The compatible preview could not be played.",
       playbackError: "Could not preview this video",
       proxy:
         "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file.",
@@ -1017,8 +1012,6 @@ export const en = {
     loudness: {
       analyze: "Analyze loudness",
       analyzing: "Analyzing loudness…",
-      requiredForPlayback: "Analyze track loudness to prepare audio playback.",
-      requiredForExport: "Analyze track loudness to continue.",
     },
     activityDetection: {
       analyze: "Analyze audio activity",
@@ -1108,7 +1101,6 @@ export const en = {
       summary: "Noise reduction - {{preset}}",
     },
     waveform: {
-      displayFailed: "The waveform preview could not be displayed.",
       preparing: "Preparing waveform…",
       unavailable: "Waveform unavailable",
     },

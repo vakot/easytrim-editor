@@ -29,14 +29,17 @@ describe("normalizeAppError", () => {
   it("normalizes malformed rejections into internal diagnostics", () => {
     expect(normalizeAppError(new Error("unexpected failure"))).toEqual({
       code: "internal",
+      messageId: "internal.unexpected",
       diagnostics: "unexpected failure",
     });
     expect(normalizeAppError("raw failure")).toEqual({
       code: "internal",
+      messageId: "internal.unexpected",
       diagnostics: "raw failure",
     });
     expect(normalizeAppError({ unexpected: "C:/private.mp4" })).toEqual({
       code: "internal",
+      messageId: "internal.unexpected",
       diagnostics: '{"unexpected":"C:/private.mp4"}',
     });
   });

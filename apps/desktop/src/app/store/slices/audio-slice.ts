@@ -16,7 +16,6 @@ import {
 } from "@/domain/audio-processing";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import type { AudioActivityRange, LoudnessAnalysis } from "@/domain/media";
-import { t } from "@/i18n/config";
 import type {
   AppError,
   AudioPreviewDescriptor,

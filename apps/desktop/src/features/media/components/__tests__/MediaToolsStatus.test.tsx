@@ -109,7 +109,7 @@ describe("MediaToolsStatus", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Media tools check failed" }));
 
-    expect(screen.getByText("Something went wrong.")).toBeInTheDocument();
+    expect(screen.getByText("An unexpected application error occurred.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Recheck" })).toBeEnabled();
     expect(screen.queryByText("Install on Windows")).not.toBeInTheDocument();
   });

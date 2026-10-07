@@ -79,7 +79,6 @@ import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
 import { normalizeSourceKey } from "@/domain/source";
-import { t } from "@/i18n/config";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin, DiagnosticValue } from "@/lib/tauri/diagnostics.types";
 import {
