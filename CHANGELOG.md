@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added searchable language selection with typo-tolerant matching and language flags in Settings.
+- Added searchable language selection with flags, translation coverage, and a contribution link in Settings.
 - Added panel visibility, layout density, and Activity Feed view controls to the View menu.
 - Added an Open export queue action to the Command Center.
 - Added Ctrl+H as a shortcut for opening Settings.

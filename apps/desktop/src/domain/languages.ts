@@ -41,7 +41,5 @@ export function createLanguageSearcher<T extends Language>(languages: readonly T
 }
 
 export function getLanguageDisplayName(language: Language): string {
-  return language.nativeName.toLowerCase() === language.englishName.toLowerCase()
-    ? language.nativeName
-    : `${language.nativeName} (${language.englishName})`;
+  return language.nativeName;
 }

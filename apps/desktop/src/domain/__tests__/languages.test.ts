@@ -51,6 +51,6 @@ describe("language display names", () => {
   });
 
   it("includes the English name when a language has a distinct native name", () => {
-    expect(getLanguageDisplayName(SUPPORTED_LANGUAGES[1])).toBe("Русский (Russian)");
+    expect(getLanguageDisplayName(SUPPORTED_LANGUAGES[1])).toBe("Русский");
   });
 });

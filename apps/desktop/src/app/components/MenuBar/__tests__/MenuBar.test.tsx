@@ -771,7 +771,7 @@ describe("MenuBarTest", () => {
     const options = screen.getAllByRole("option");
     expect(options).toHaveLength(3);
     expect(options.map((option) => option.getAttribute("aria-label"))).toEqual(
-      expect.arrayContaining(["English, en", "Slovenčina (Slovak), sk", "Русский (Russian), ru"]),
+      expect.arrayContaining(["English, en", "Slovenčina, sk", "Русский, ru"]),
     );
     expect(screen.queryByRole("option", { name: /Japanese/ })).not.toBeInTheDocument();
 

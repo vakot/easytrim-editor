@@ -15,7 +15,7 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
-import { MenuIcon } from "@/components/ui/menu";
+import { Progress } from "@/components/ui/progress";
 
 import {
   createLanguageSearcher,
@@ -23,6 +23,7 @@ import {
   type Language,
   SUPPORTED_LANGUAGES,
 } from "@/domain/languages";
+import { translationCoverage } from "@/i18n/resources";
 import { cn } from "@/lib/class-names.utils";
 
 interface LanguageSelectorContextValue {
@@ -138,16 +139,10 @@ function LanguageSelectorValue({
 
   if (!language) return placeholder ?? null;
   const value = type === "displayName" ? getLanguageDisplayName(language) : language[type];
-  const Flag = LANGUAGE_REGION_FLAGS[language.region];
 
   return (
     <span className={cn("flex min-w-0 items-center truncate text-left", className)} {...props}>
-      <span
-        aria-hidden="true"
-        className="mr-2 flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs"
-      >
-        <Flag aria-hidden="true" className="block h-auto w-full" />
-      </span>
+      <LanguageSelectorFlag className="mr-2" language={language} />
       <span className="truncate">{value}</span>
     </span>
   );
@@ -156,21 +151,11 @@ function LanguageSelectorValue({
 function LanguageSelectorContent({
   asChild = false,
   children,
-  className,
   ...props
 }: React.ComponentProps<typeof ComboboxContent>) {
   return (
     <LanguageSelectorContentContext.Provider value>
-      <ComboboxContent
-        align="start"
-        asChild={asChild}
-        className={cn(
-          "w-[max(var(--radix-popover-trigger-width,16rem),16rem)] max-w-[min(24rem,calc(100vw-2rem))] min-w-[min(16rem,calc(100vw-2rem))]",
-          className,
-        )}
-        sideOffset={4}
-        {...props}
-      >
+      <ComboboxContent align="start" asChild={asChild} sideOffset={4} {...props}>
         {children}
       </ComboboxContent>
     </LanguageSelectorContentContext.Provider>
@@ -206,13 +191,7 @@ function LanguageSelectorList({
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxList>, "children">) {
   const { t } = useTranslation();
-  const {
-    disabled,
-    language: selectedLanguage,
-    languages,
-    selectLanguage,
-    setQuery,
-  } = useLanguageSelector();
+  const { languages, setQuery } = useLanguageSelector();
 
   React.useEffect(() => () => setQuery(null), [setQuery]);
 
@@ -220,41 +199,78 @@ function LanguageSelectorList({
     <ComboboxList {...props}>
       <ComboboxEmpty>{t("settings.general.language.noResults")}</ComboboxEmpty>
       <ComboboxGroup>
-        {languages.map((language) => {
-          const selected = selectedLanguage?.code === language.code;
-          const Flag = LANGUAGE_REGION_FLAGS[language.region];
-
-          return (
-            <ComboboxItem
-              aria-label={`${getLanguageDisplayName(language)}, ${language.code}`}
-              className={cn("min-w-0 px-2.5 pr-8 data-[language-selected=true]:font-medium")}
-              data-language-selected={selected || undefined}
-              disabled={disabled}
-              key={language.code}
-              keywords={[language.code, language.englishName, language.nativeName]}
-              onSelect={() => selectLanguage(language)}
-              value={language.code}
-            >
-              {selected ? (
-                <MenuIcon side="right">
-                  <CheckIcon aria-hidden="true" />
-                </MenuIcon>
-              ) : null}
-              <span
-                aria-hidden="true"
-                className="mr-2 flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs"
-              >
-                <Flag aria-hidden="true" className="block h-auto w-full" />
-              </span>
-              <span className="min-w-0 flex-1 truncate">{getLanguageDisplayName(language)}</span>
-              <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                {language.code}
-              </span>
-            </ComboboxItem>
-          );
-        })}
+        {languages.map((language) => (
+          <LanguageSelectorItem key={language.code} language={language} />
+        ))}
       </ComboboxGroup>
     </ComboboxList>
+  );
+}
+
+function LanguageSelectorItem({ language }: { language: Language }) {
+  const { t } = useTranslation();
+  const { disabled, language: selectedLanguage, selectLanguage } = useLanguageSelector();
+
+  const selected = selectedLanguage?.code === language.code;
+  const percentage = translationCoverage[language.code].percentage;
+
+  return (
+    <ComboboxItem
+      aria-label={`${getLanguageDisplayName(language)}, ${language.code}`}
+      className="grid h-auto min-w-0 grid-cols-[1rem_minmax(0,1fr)_1rem] grid-rows-[auto_auto] gap-x-2 gap-y-1 px-2.5 py-2 pr-2 data-[language-selected=true]:font-medium"
+      data-language-selected={selected || undefined}
+      disabled={disabled}
+      keywords={[language.code, language.englishName, language.nativeName]}
+      onSelect={() => selectLanguage(language)}
+      value={language.code}
+    >
+      <LanguageSelectorFlag className="col-start-1 row-start-1" language={language} />
+
+      <span className="col-start-2 row-start-1 min-w-0 truncate">
+        {getLanguageDisplayName(language)}
+      </span>
+
+      <div className="col-start-2 row-start-2 flex items-center gap-1">
+        <Progress
+          aria-label={t("settings.general.language.coverageAccessibleLabel", {
+            language: language.nativeName,
+            percentage,
+          })}
+          className="h-1"
+          value={percentage}
+        />
+        <span aria-hidden="true" className="w-[4ch] shrink-0 text-right text-xs tabular-nums">
+          {percentage}%
+        </span>
+      </div>
+
+      {selected ? (
+        <span aria-hidden="true" className="col-start-3 row-start-1 flex justify-end">
+          <CheckIcon aria-hidden="true" />
+        </span>
+      ) : null}
+    </ComboboxItem>
+  );
+}
+
+function LanguageSelectorFlag({
+  className,
+  language,
+  ...props
+}: Omit<React.ComponentProps<"span">, "children"> & { language: Language }) {
+  const Flag = LANGUAGE_REGION_FLAGS[language.region];
+
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs",
+        className,
+      )}
+      {...props}
+    >
+      <Flag aria-hidden="true" className="block h-auto! w-full!" />
+    </span>
   );
 }
 
