@@ -41,7 +41,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   type BuiltInPresetId,
   type ExportPreset,
-  isBuiltInPresetId,
+  getPresetDisplayName,
   type PresetNameError,
   presetNameError,
 } from "@/app/store/lib/export-presets";
@@ -91,10 +91,8 @@ function PresetManager() {
     },
   };
 
-  function displayPresetName(preset: ExportPreset): string {
-    const builtInName = isBuiltInPresetId(preset.id) ? builtInLabels[preset.id].name : undefined;
-    return preset.nameOverride ?? builtInName ?? preset.name;
-  }
+  const displayPresetName = (preset: ExportPreset) =>
+    getPresetDisplayName(preset, (id) => builtInLabels[id].name);
 
   const dispatch = useAppDispatch();
   const presets = useAppSelector(selectExportPresetList);
@@ -134,14 +132,14 @@ function PresetManager() {
 
   function savePreset() {
     const nameChanged = dialogMode === "edit" && draftName !== editingPresetInitialName;
-    const validationPresets = presets.map((preset) => ({
-      ...preset,
-      name: displayPresetName(preset),
-    }));
-
     const error =
       dialogMode === "create" || nameChanged
-        ? presetNameError(validationPresets, draftName, editingPresetId ?? undefined)
+        ? presetNameError({
+            candidateName: draftName,
+            existingNames: presets
+              .filter((preset) => preset.id !== editingPresetId)
+              .map(displayPresetName),
+          })
         : null;
 
     if (error) {
@@ -151,8 +149,12 @@ function PresetManager() {
 
     if (dialogMode === "edit" && editingPresetId) {
       dispatch(exportPresetSelected(editingPresetId));
-      dispatch(exportArgumentsChanged(draftArguments));
-      dispatch(exportPresetUpdated(nameChanged ? { name: draftName } : {}));
+      dispatch(
+        exportPresetUpdated({
+          ...(nameChanged ? { name: draftName } : {}),
+          argumentsText: draftArguments,
+        }),
+      );
     } else {
       dispatch(exportArgumentsChanged(draftArguments));
       dispatch(exportPresetCreated({ name: draftName }));
@@ -188,11 +190,11 @@ function PresetManager() {
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{displayPresetName(preset)}</span>
-                    {preset.description ? (
+                    {preset.kind === "builtIn" || preset.description ? (
                       <span className="block truncate text-xs text-muted-foreground">
-                        {(isBuiltInPresetId(preset.id)
+                        {preset.kind === "builtIn"
                           ? builtInLabels[preset.id].description
-                          : undefined) ?? preset.description}
+                          : preset.description}
                       </span>
                     ) : null}
                   </span>

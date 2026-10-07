@@ -61,9 +61,10 @@ describe("PresetManager built-in localization", () => {
 
     expect(editedPreset).toMatchObject({
       argumentsText: "-c:v hevc_nvenc -preset p3 -cq 20",
-      name: "P3 · Fast",
+      id: "hevc-nvenc-p3",
+      kind: "builtIn",
     });
-    expect(editedPreset?.nameOverride).toBeUndefined();
+    expect(editedPreset).not.toHaveProperty("customName");
 
     await i18n.changeLanguage("sk");
     await waitFor(() =>
@@ -85,7 +86,7 @@ describe("PresetManager built-in localization", () => {
     expect(screen.getByRole("button", { name: "My custom preset" })).toBeInTheDocument();
     expect(
       store.getState().exportPresets.presets.find((preset) => preset.id === "hevc-nvenc-p3"),
-    ).toMatchObject({ nameOverride: "My custom preset" });
+    ).toMatchObject({ customName: "My custom preset", kind: "builtIn" });
   });
 
   it("uses the localized effective name in Delete confirmation", async () => {
@@ -97,5 +98,30 @@ describe("PresetManager built-in localization", () => {
     expect(
       screen.getByText("Odstrániť „P3 · Rýchly“? Túto akciu nemožno vrátiť späť."),
     ).toBeInTheDocument();
+  });
+
+  it("validates custom names against visible built-in names and updates state consistently", async () => {
+    await i18n.changeLanguage("ru");
+    const store = renderPresetManager();
+
+    await userEvent.click(screen.getByRole("button", { name: "P3 · Быстрый" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Добавить пресет" }));
+    await userEvent.type(screen.getByLabelText("Имя"), "P3 · Fast");
+    await userEvent.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect(screen.getByRole("button", { name: "P3 · Fast" })).toBeInTheDocument();
+    expect(
+      store.getState().exportPresets.presets.filter((preset) => preset.kind === "custom"),
+    ).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole("button", { name: "P3 · Fast" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Добавить пресет" }));
+    await userEvent.type(screen.getByLabelText("Имя"), "P3 · Быстрый");
+    await userEvent.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect(screen.getByText("Имена пресетов должны быть уникальными.")).toBeInTheDocument();
+    expect(
+      store.getState().exportPresets.presets.filter((preset) => preset.kind === "custom"),
+    ).toHaveLength(1);
   });
 });

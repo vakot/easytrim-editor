@@ -1,11 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import {
-  type ExportPreset,
-  isBuiltInPresetId,
-  loadExportPresetState,
-  presetNameError,
-} from "@/app/store/lib/export-presets";
+import { type ExportPreset, loadExportPresetState } from "@/app/store/lib/export-presets";
 
 import type { RootState } from "../store";
 
@@ -23,10 +18,10 @@ const exportPresetsSlice = createSlice({
       state.argumentsText = preset.argumentsText;
     },
     exportPresetCreated: (state, action: PayloadAction<{ name: string }>) => {
-      if (presetNameError(state.presets, action.payload.name)) return;
       const nextPresetSequence = state.nextPresetSequence + 1;
       const preset: ExportPreset = {
         id: `runtime-preset-${nextPresetSequence}`,
+        kind: "custom",
         name: action.payload.name.trim(),
         argumentsText: state.argumentsText,
       };
@@ -35,7 +30,10 @@ const exportPresetsSlice = createSlice({
       state.selectedPresetId = preset.id;
       state.nextPresetSequence = nextPresetSequence;
     },
-    exportPresetUpdated: (state, action: PayloadAction<{ name?: string }>) => {
+    exportPresetUpdated: (
+      state,
+      action: PayloadAction<{ argumentsText: string; name?: string }>,
+    ) => {
       const selectedPresetId = state.selectedPresetId;
       if (!selectedPresetId) {
         return;
@@ -44,10 +42,12 @@ const exportPresetsSlice = createSlice({
       if (!preset) return;
 
       const name = action.payload.name?.trim();
-      if (name !== undefined && presetNameError(state.presets, name, selectedPresetId)) return;
-      if (name && isBuiltInPresetId(preset.id)) preset.nameOverride = name;
-      else if (name) preset.name = name;
-      preset.argumentsText = state.argumentsText;
+      if (name !== undefined) {
+        if (preset.kind === "builtIn") preset.customName = name;
+        else preset.name = name;
+      }
+      preset.argumentsText = action.payload.argumentsText;
+      state.argumentsText = action.payload.argumentsText;
     },
     exportPresetDeleted: (state) => {
       if (!state.selectedPresetId) return;

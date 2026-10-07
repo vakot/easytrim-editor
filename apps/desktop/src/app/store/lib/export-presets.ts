@@ -7,15 +7,40 @@ const DEFAULT_OPTIMIZED_ARGUMENTS =
 const LEGACY_DEFAULT_OPTIMIZED_ARGUMENTS =
   "-c:v hevc_nvenc -preset p3 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart";
 
-interface ExportPreset {
+const DEFAULT_NVENC_ARGUMENTS = (preset: number) =>
+  DEFAULT_OPTIMIZED_ARGUMENTS.replace("-preset p3", `-preset p${preset}`);
+
+const LEGACY_NVENC_ARGUMENTS = (preset: number) =>
+  LEGACY_DEFAULT_OPTIMIZED_ARGUMENTS.replace("-preset p3", `-preset p${preset}`);
+
+const BUILT_IN_PRESETS = {
+  "hevc-nvenc-p1": { argumentsText: DEFAULT_NVENC_ARGUMENTS(1), presetNumber: 1 },
+  "hevc-nvenc-p2": { argumentsText: DEFAULT_NVENC_ARGUMENTS(2), presetNumber: 2 },
+  "hevc-nvenc-p3": { argumentsText: DEFAULT_NVENC_ARGUMENTS(3), presetNumber: 3 },
+  "hevc-nvenc-p4": { argumentsText: DEFAULT_NVENC_ARGUMENTS(4), presetNumber: 4 },
+  "hevc-nvenc-p5": { argumentsText: DEFAULT_NVENC_ARGUMENTS(5), presetNumber: 5 },
+  "hevc-nvenc-p6": { argumentsText: DEFAULT_NVENC_ARGUMENTS(6), presetNumber: 6 },
+  "hevc-nvenc-p7": { argumentsText: DEFAULT_NVENC_ARGUMENTS(7), presetNumber: 7 },
+} satisfies Record<string, { argumentsText: string; presetNumber: number }>;
+
+export type BuiltInPresetId = keyof typeof BUILT_IN_PRESETS;
+
+interface BuiltInPreset {
+  argumentsText: string;
+  customName?: string;
+  id: BuiltInPresetId;
+  kind: "builtIn";
+}
+
+interface CustomPreset {
   argumentsText: string;
   description?: string;
   id: string;
+  kind: "custom";
   name: string;
-  nameOverride?: string;
 }
 
-export type PresetNameError = "duplicate" | "required" | "tooLong";
+type ExportPreset = BuiltInPreset | CustomPreset;
 
 interface ExportPresetState {
   argumentsText: string;
@@ -24,166 +49,115 @@ interface ExportPresetState {
   selectedPresetId: string | null;
 }
 
-const DEFAULT_NVENC_ARGUMENTS = (preset: number) =>
-  DEFAULT_OPTIMIZED_ARGUMENTS.replace("-preset p3", `-preset p${preset}`);
+export type PresetNameError = "duplicate" | "required" | "tooLong";
 
-const LEGACY_NVENC_ARGUMENTS = (preset: number) =>
-  LEGACY_DEFAULT_OPTIMIZED_ARGUMENTS.replace("-preset p3", `-preset p${preset}`);
+interface PresetNameValidationInput {
+  candidateName: string;
+  existingNames: string[];
+}
 
-const DEFAULT_PRESETS: ExportPreset[] = [
-  {
-    id: "hevc-nvenc-p1",
-    name: "P1 · Fastest",
-    description: "Fastest NVENC encoding; largest files and lowest compression efficiency.",
-    argumentsText: DEFAULT_NVENC_ARGUMENTS(1),
-  },
-  {
-    id: "hevc-nvenc-p2",
-    name: "P2 · Very fast",
-    description: "Very fast export with large files; useful when turnaround matters most.",
-    argumentsText: DEFAULT_NVENC_ARGUMENTS(2),
-  },
-  {
-    id: "hevc-nvenc-p3",
-    name: "P3 · Fast",
-    description: "Fast NVENC export with a practical balance of speed, size, and quality.",
-    argumentsText: DEFAULT_NVENC_ARGUMENTS(3),
-  },
-  {
-    id: "hevc-nvenc-p4",
-    name: "P4 · Quality",
-    description: "Quality-focused NVENC encoding; smaller files with a longer render time.",
-    argumentsText: DEFAULT_NVENC_ARGUMENTS(4),
-  },
-  {
-    id: "hevc-nvenc-p5",
-    name: "P5 · Smaller",
-    description: "Smaller files with a moderate render-time tradeoff.",
-    argumentsText: DEFAULT_NVENC_ARGUMENTS(5),
-  },
-  {
-    id: "hevc-nvenc-p6",
-    name: "P6 · Very small",
-    description: "Higher compression efficiency; slower encoding for very small files.",
-    argumentsText: DEFAULT_NVENC_ARGUMENTS(6),
-  },
-  {
-    id: "hevc-nvenc-p7",
-    name: "P7 · Smallest",
-    description: "Highest-efficiency NVENC preset; slowest option in the full preset range.",
-    argumentsText: DEFAULT_NVENC_ARGUMENTS(7),
-  },
-];
+const DEFAULT_PRESET_ID: BuiltInPresetId = "hevc-nvenc-p3";
 
-const DEFAULT_PRESET_ID = "hevc-nvenc-p3";
+function isBuiltInPresetId(id: string): id is BuiltInPresetId {
+  return Object.hasOwn(BUILT_IN_PRESETS, id);
+}
 
-const LEGACY_BUILT_IN_PRESET_NAMES = {
-  "hevc-nvenc-p1": "P1 · Fastest",
-  "hevc-nvenc-p2": "P2 · Very fast",
-  "hevc-nvenc-p3": "P3 · Fast",
-  "hevc-nvenc-p4": "P4 · Quality",
-  "hevc-nvenc-p5": "P5 · Smaller",
-  "hevc-nvenc-p6": "P6 · Very small",
-  "hevc-nvenc-p7": "P7 · Smallest",
-} as const;
-
-type BuiltInPresetId = keyof typeof LEGACY_BUILT_IN_PRESET_NAMES;
+const DEFAULT_PRESETS: BuiltInPreset[] = Object.keys(BUILT_IN_PRESETS).map((id) => ({
+  id: id as BuiltInPresetId,
+  kind: "builtIn",
+  argumentsText: BUILT_IN_PRESETS[id as BuiltInPresetId].argumentsText,
+}));
 
 export const initialExportPresetState: ExportPresetState = {
   presets: DEFAULT_PRESETS,
   selectedPresetId: DEFAULT_PRESET_ID,
-  argumentsText: DEFAULT_PRESETS.find((preset) => preset.id === DEFAULT_PRESET_ID)!.argumentsText,
+  argumentsText: BUILT_IN_PRESETS[DEFAULT_PRESET_ID].argumentsText,
   nextPresetSequence: 0,
 };
 
-function loadExportPresetState(): ExportPresetState {
-  const stored = readStoredJson<Partial<ExportPresetState>>(STORAGE_KEYS.exportPresets);
-  if (
-    !stored ||
-    !Array.isArray(stored.presets) ||
-    typeof stored.argumentsText !== "string" ||
-    (stored.selectedPresetId !== null && typeof stored.selectedPresetId !== "string") ||
-    typeof stored.nextPresetSequence !== "number"
-  ) {
-    return initialExportPresetState;
+function isExportPreset(value: unknown): value is ExportPreset {
+  if (typeof value !== "object" || value === null) return false;
+  const preset = value as Record<string, unknown>;
+  if (typeof preset.id !== "string" || typeof preset.argumentsText !== "string") return false;
+
+  if (preset.kind === "builtIn") {
+    return (
+      isBuiltInPresetId(preset.id) &&
+      (preset.customName === undefined || typeof preset.customName === "string") &&
+      !("name" in preset)
+    );
   }
 
-  const presets = stored.presets.filter(
-    (preset): preset is ExportPreset =>
-      Boolean(preset) &&
-      typeof preset.id === "string" &&
-      typeof preset.name === "string" &&
-      (preset.nameOverride === undefined || typeof preset.nameOverride === "string") &&
-      typeof preset.argumentsText === "string",
+  return (
+    preset.kind === "custom" &&
+    !isBuiltInPresetId(preset.id) &&
+    typeof preset.name === "string" &&
+    (preset.description === undefined || typeof preset.description === "string")
   );
+}
 
-  const availablePresets =
-    presets.length > 0
-      ? presets.map((preset) => migrateLegacyNvencPreset(migrateLegacyBuiltInPresetName(preset)))
-      : initialExportPresetState.presets;
+function isExportPresetState(value: unknown): value is ExportPresetState {
+  if (typeof value !== "object" || value === null) return false;
+  const state = value as Record<string, unknown>;
+  return (
+    typeof state.argumentsText === "string" &&
+    Array.isArray(state.presets) &&
+    state.presets.every(isExportPreset) &&
+    (state.selectedPresetId === null || typeof state.selectedPresetId === "string") &&
+    typeof state.nextPresetSequence === "number" &&
+    Number.isFinite(state.nextPresetSequence)
+  );
+}
 
-  const selectedPresetId = availablePresets.some((preset) => preset.id === stored.selectedPresetId)
+function loadExportPresetState(): ExportPresetState {
+  const stored = readStoredJson<unknown>(STORAGE_KEYS.exportPresets);
+  if (!isExportPresetState(stored)) return initialExportPresetState;
+
+  const presets = stored.presets.map(migrateLegacyNvencPreset);
+  const selectedPresetId = presets.some((preset) => preset.id === stored.selectedPresetId)
     ? stored.selectedPresetId
-    : (availablePresets[0]?.id ?? null);
+    : (presets[0]?.id ?? null);
 
-  const selectedPreset = availablePresets.find((preset) => preset.id === selectedPresetId);
+  const selectedPreset = presets.find((preset) => preset.id === selectedPresetId);
 
   return {
-    presets: availablePresets,
+    presets,
     selectedPresetId,
     argumentsText: selectedPreset?.argumentsText ?? stored.argumentsText,
     nextPresetSequence: stored.nextPresetSequence,
   };
 }
 
-function migrateLegacyBuiltInPresetName(preset: ExportPreset): ExportPreset {
-  const legacyName = LEGACY_BUILT_IN_PRESET_NAMES[preset.id as BuiltInPresetId];
-  if (!legacyName) return preset;
-
-  return {
-    ...preset,
-    name: legacyName,
-    ...(preset.nameOverride !== undefined
-      ? { nameOverride: preset.nameOverride }
-      : preset.name === legacyName
-        ? {}
-        : { nameOverride: preset.name }),
-  };
-}
-
-function isBuiltInPresetId(id: string): id is BuiltInPresetId {
-  return Object.hasOwn(LEGACY_BUILT_IN_PRESET_NAMES, id);
-}
-
 function migrateLegacyNvencPreset(preset: ExportPreset): ExportPreset {
-  const match = /^hevc-nvenc-p([1-7])$/.exec(preset.id);
-  if (!match || preset.argumentsText !== LEGACY_NVENC_ARGUMENTS(Number(match[1]))) {
-    return preset;
-  }
-  return { ...preset, argumentsText: DEFAULT_NVENC_ARGUMENTS(Number(match[1])) };
+  if (preset.kind !== "builtIn") return preset;
+  const presetNumber = BUILT_IN_PRESETS[preset.id].presetNumber;
+  if (preset.argumentsText !== LEGACY_NVENC_ARGUMENTS(presetNumber)) return preset;
+  return { ...preset, argumentsText: DEFAULT_NVENC_ARGUMENTS(presetNumber) };
 }
 
 function persistExportPresetState(state: ExportPresetState): void {
   writeStoredJson(STORAGE_KEYS.exportPresets, state);
 }
 
-function presetNameError(
-  presets: ExportPreset[],
-  name: string,
-  excludedPresetId?: string,
-): PresetNameError | null {
-  const normalized = name.trim();
-  if (!normalized) {
-    return "required";
-  }
-  if (normalized.length > 64) {
-    return "tooLong";
-  }
+function getPresetDisplayName(
+  preset: ExportPreset,
+  localizedBuiltInName: (id: BuiltInPresetId) => string,
+): string {
+  return preset.kind === "builtIn"
+    ? (preset.customName ?? localizedBuiltInName(preset.id))
+    : preset.name;
+}
+
+function presetNameError({
+  candidateName,
+  existingNames,
+}: PresetNameValidationInput): PresetNameError | null {
+  const normalized = candidateName.trim();
+  if (!normalized) return "required";
+  if (normalized.length > 64) return "tooLong";
   if (
-    presets.some(
-      (preset) =>
-        preset.id !== excludedPresetId &&
-        preset.name.localeCompare(normalized, undefined, { sensitivity: "accent" }) === 0,
+    existingNames.some(
+      (name) => name.localeCompare(normalized, undefined, { sensitivity: "accent" }) === 0,
     )
   ) {
     return "duplicate";
@@ -191,6 +165,13 @@ function presetNameError(
   return null;
 }
 
-export { isBuiltInPresetId, loadExportPresetState, persistExportPresetState, presetNameError };
+export {
+  BUILT_IN_PRESETS,
+  getPresetDisplayName,
+  isBuiltInPresetId,
+  loadExportPresetState,
+  persistExportPresetState,
+  presetNameError,
+};
 
-export type { BuiltInPresetId, ExportPreset };
+export type { BuiltInPreset, CustomPreset, ExportPreset, PresetNameValidationInput };
