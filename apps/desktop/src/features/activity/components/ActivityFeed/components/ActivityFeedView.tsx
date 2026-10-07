@@ -4,12 +4,14 @@ import { useTranslation } from "react-i18next";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActivityFeedView } from "@/app/store/slices/preferences-slice";
 import { cn } from "@/lib/class-names.utils";
+import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 import type { DiagnosticSessionMetadata } from "@/lib/tauri/diagnostics.types";
 
 import {
   type ActivityAction,
   type ActivityEntry,
   groupActivityEntriesBySession,
+  groupActivitySessionsForDisplay,
 } from "../../../lib/activity-projection";
 
 import { ActivityFeedEmpty } from "./ActivityFeedEmpty";
@@ -20,7 +22,6 @@ interface ActivityFeedViewProps {
   currentAppVersion: string;
   currentSessionId: string | null;
   entries: readonly ActivityEntry[];
-  now: number;
   onAction?: (action: ActivityAction) => void;
   sessions: readonly DiagnosticSessionMetadata[];
 }
@@ -30,27 +31,25 @@ function ActivityFeedView({
   currentAppVersion,
   currentSessionId,
   entries,
-  now,
   onAction,
   sessions,
 }: ActivityFeedViewProps) {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
+  const now = useRelativeTimeNow();
   const activityFeedView = useAppSelector(selectActivityFeedView);
   const isCompact = activityFeedView === "compact";
   const isBranch = activityFeedView === "branch";
-  const locale = i18n.resolvedLanguage ?? i18n.language;
-  const groups = useMemo(
+  const sessionGroups = useMemo(
     () => groupActivityEntriesBySession(entries, sessions, currentSessionId),
     [currentSessionId, entries, sessions],
   );
 
-  const sessionLabels = {
-    now: t("activity.time.now"),
-    today: t("activity.time.today"),
-    yesterday: t("activity.time.yesterday"),
-  };
-
-  const currentDateTime = new Date(now);
+  const currentSessionLabel = t("activity.time.now");
+  const groups = useMemo(
+    () =>
+      groupActivitySessionsForDisplay(sessionGroups, currentAppVersion, currentSessionLabel, now),
+    [currentAppVersion, currentSessionLabel, now, sessionGroups],
+  );
 
   if (groups.length === 0) return <ActivityFeedEmpty />;
 
@@ -61,14 +60,12 @@ function ActivityFeedView({
       {groups.map((group) => (
         <ActivityFeedGroup
           currentAppVersion={currentAppVersion}
-          currentDateTime={currentDateTime}
           group={group}
           isBranch={isBranch}
           isCompact={isCompact}
-          key={group.sessionId}
-          locale={locale}
+          key={JSON.stringify(group.sessionIds)}
           onAction={onAction}
-          sessionLabels={sessionLabels}
+          sessionLabels={{ now: currentSessionLabel }}
         />
       ))}
     </div>

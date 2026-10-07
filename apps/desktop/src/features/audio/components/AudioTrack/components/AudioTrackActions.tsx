@@ -105,7 +105,7 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
   return (
     <DropdownMenuContent>
       <AudioTrackToggleMenuCheckboxItem controller={controller}>
-        <DropdownMenuCheckboxItem keepOpen>{t("common.enabled")}</DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem keepOpen>{t("common.actions.enable")}</DropdownMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
 
       <DropdownMenuSeparator />
@@ -140,7 +140,7 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
   return (
     <ContextMenuContent>
       <AudioTrackToggleMenuCheckboxItem controller={controller}>
-        <ContextMenuCheckboxItem keepOpen>{t("common.enabled")}</ContextMenuCheckboxItem>
+        <ContextMenuCheckboxItem keepOpen>{t("common.actions.enable")}</ContextMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
 
       <ContextMenuSeparator />

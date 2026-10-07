@@ -1,3 +1,4 @@
+import { getRelativeTimeBucketKey } from "@/lib/date-time.utils";
 import type {
   DiagnosticEvent,
   DiagnosticSessionMetadata,
@@ -41,6 +42,14 @@ interface ActivitySessionGroup extends DiagnosticSessionMetadata {
   entries: readonly ActivityEntry[];
   isCurrent: boolean;
 }
+interface ActivitySessionDisplayGroup {
+  appVersion: string | null;
+  displayKey: string;
+  entries: readonly ActivityEntry[];
+  isCurrent: boolean;
+  sessionIds: readonly string[];
+  startedAt: string;
+}
 interface ActivityProjectionLabels {
   fastCutCancelled: string;
   fastCutCompleted: string;
@@ -71,12 +80,9 @@ interface ActivityProjectionLabels {
 }
 interface ActivitySessionLabels {
   now: string;
-  today: string;
-  yesterday: string;
 }
 interface ActivitySessionPresentation {
   label: string;
-  timestamp?: string;
   tone: "current" | "default" | "warning";
 }
 interface ActivityBranch {
@@ -174,6 +180,48 @@ function groupActivityEntriesBySession(
   }
   return groups.sort(compareActivitySessionGroups);
 }
+function groupActivitySessionsForDisplay(
+  groups: readonly ActivitySessionGroup[],
+  currentAppVersion: string,
+  currentSessionLabel: string,
+  nowMs = Date.now(),
+): ActivitySessionDisplayGroup[] {
+  const displayGroups: ActivitySessionDisplayGroup[] = [];
+  for (const group of groups) {
+    const presentation = getActivitySessionPresentation(group, currentAppVersion, {
+      now: currentSessionLabel,
+    });
+    const timestampMs = Date.parse(group.startedAt);
+    const timeBucketKey = group.isCurrent
+      ? "current"
+      : getRelativeTimeBucketKey(
+          Number.isNaN(timestampMs) ? undefined : timestampMs * 1_000,
+          nowMs,
+        );
+    const displayKey = JSON.stringify([timeBucketKey, presentation.tone, presentation.label]);
+    const previous = displayGroups.at(-1);
+
+    if (previous && !group.isCurrent && !previous.isCurrent && previous.displayKey === displayKey) {
+      displayGroups[displayGroups.length - 1] = {
+        ...previous,
+        entries: [...previous.entries, ...group.entries].sort(compareActivityEntries),
+        sessionIds: [...previous.sessionIds, group.sessionId],
+      };
+      continue;
+    }
+
+    displayGroups.push({
+      appVersion: group.appVersion,
+      displayKey,
+      entries: group.entries,
+      isCurrent: group.isCurrent,
+      sessionIds: [group.sessionId],
+      startedAt: group.startedAt,
+    });
+  }
+
+  return displayGroups;
+}
 function groupActivityEntriesByBranch(entries: readonly ActivityEntry[]): ActivitySessionItem[] {
   const branches = new Map<string, ActivityBranch>();
   const standalone: ActivityEntry[] = [];
@@ -259,23 +307,18 @@ function groupActivityEntriesForDisplay(entries: readonly ActivityEntry[]): Acti
   return items;
 }
 function getActivitySessionPresentation(
-  group: ActivitySessionGroup,
+  group: Pick<ActivitySessionGroup, "appVersion" | "isCurrent">,
   currentAppVersion: string,
-  now: Date,
-  locale: string,
   labels: ActivitySessionLabels,
 ): ActivitySessionPresentation {
   if (group.isCurrent) return { label: labels.now, tone: "current" };
-  const startedAt = new Date(group.startedAt);
-  const dateLabel = formatSessionDate(startedAt, now, locale, labels);
   const versionLabel =
     group.appVersion !== null && group.appVersion !== currentAppVersion
-      ? `v${group.appVersion} · `
+      ? `v${group.appVersion}`
       : "";
 
   return {
-    label: `${versionLabel}${dateLabel}`,
-    timestamp: group.startedAt,
+    label: versionLabel,
     tone: versionLabel ? "warning" : "default",
   };
 }
@@ -771,32 +814,12 @@ function compareActivitySessionGroups(
   const timestampDifference = Date.parse(right.startedAt) - Date.parse(left.startedAt);
   return timestampDifference || right.sessionId.localeCompare(left.sessionId);
 }
-function formatSessionDate(
-  startedAt: Date,
-  now: Date,
-  locale: string,
-  labels: Pick<ActivitySessionLabels, "today" | "yesterday">,
-): string {
-  const dayDifference = calendarDayDifference(now, startedAt);
-  if (dayDifference === 0) return labels.today;
-  if (dayDifference === 1) return labels.yesterday;
-  return new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-    year: startedAt.getFullYear() === now.getFullYear() ? undefined : "numeric",
-  }).format(startedAt);
-}
-function calendarDayDifference(later: Date, earlier: Date): number {
-  const laterUtc = Date.UTC(later.getFullYear(), later.getMonth(), later.getDate());
-  const earlierUtc = Date.UTC(earlier.getFullYear(), earlier.getMonth(), earlier.getDate());
-  return Math.round((laterUtc - earlierUtc) / 86_400_000);
-}
-
 export {
   getActivitySessionPresentation,
   groupActivityEntriesByBranch,
   groupActivityEntriesBySession,
   groupActivityEntriesForDisplay,
+  groupActivitySessionsForDisplay,
   projectActivityEvent,
   projectActivityEvents,
   resolveAvailableActivityActions,
@@ -809,5 +832,6 @@ export type {
   ActivityProjectionLabels,
   ActivitySessionGroup,
   ActivitySessionLabels,
+  ActivitySessionDisplayGroup,
   ActivitySessionPresentation,
 };

@@ -76,7 +76,7 @@ describe("CommandPalette semantic icons", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open palette" }));
     const search = await screen.findByRole("combobox", { name: "Search commands" });
     fireEvent.change(search, { target: { value: "does not match" } });
-    expect(screen.getByText("No commands found.")).toBeInTheDocument();
+    expect(screen.getByText("No commands found")).toBeInTheDocument();
 
     fireEvent.keyDown(search, { key: "Escape", code: "Escape" });
     fireEvent.click(screen.getByRole("button", { name: "Open palette" }));

@@ -96,7 +96,7 @@ describe("ExportQueue", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Queue" })).toBeInTheDocument();
-    expect(screen.getByText("Export attempts will appear here.")).toBeInTheDocument();
+    expect(screen.getByText("Export attempts will appear here")).toBeInTheDocument();
   });
 
   it("keeps a queued attempt visible after its source is closed", () => {
@@ -216,7 +216,7 @@ describe("ExportQueue", () => {
     expect(screen.getAllByRole("button", { name: "Restore edit" })).toHaveLength(3);
     expect(screen.getByRole("button", { name: "Reveal output" })).toBeInTheDocument();
     expect(
-      screen.getByLabelText("Export error: FFmpeg could not render the selected segment."),
+      screen.getByLabelText("Export error: FFmpeg could not render the selected segment"),
     ).toHaveTextContent("Failed");
   });
 });

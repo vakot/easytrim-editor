@@ -43,7 +43,7 @@ function SourceListSearch() {
       <InputGroupInput
         aria-label={t("common.search.label")}
         onChange={(event) => setSearchInternal(event.currentTarget.value)}
-        placeholder={t("common.search.label")}
+        placeholder={t("common.search.placeholder")}
         ref={searchInputRef}
         type="search"
         value={searchInternal}

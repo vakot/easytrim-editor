@@ -169,7 +169,7 @@ describe("LanguageSelector", () => {
 
     await user.click(screen.getByRole("button", { name: "Choose language" }));
     await user.type(screen.getByRole("combobox", { name: "Search languages" }), "unknown");
-    expect(screen.getByText("No languages found.")).toBeVisible();
+    expect(screen.getByText("No languages found")).toBeVisible();
 
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());

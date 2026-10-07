@@ -13,5 +13,13 @@
   "tailwindStylesheet": "./apps/desktop/src/styles/globals.css",
   "tabWidth": 2,
   "trailingComma": "all",
-  "useTabs": false
+  "useTabs": false,
+  "overrides": [
+    {
+      "files": "apps/desktop/src/i18n/locales/*.ts",
+      "options": {
+        "printWidth": 10000
+      }
+    }
+  ]
 }

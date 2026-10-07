@@ -17,8 +17,8 @@ const malformedArgumentCases: {
 describe("localizeAppError", () => {
   it("resolves a semantic native error in every supported locale", () => {
     const expected = {
-      en: "This file type is not supported yet.",
-      ru: "Этот тип файла пока не поддерживается.",
+      en: "This file type is not supported yet",
+      ru: "Этот тип файла пока не поддерживается",
     } as const;
 
     for (const language of ["en", "ru"] as const) {
@@ -39,10 +39,10 @@ describe("localizeAppError", () => {
     });
 
     expect(localizeAppError(error, i18n.getFixedT("en"))).toBe(
-      "Waveform width must be between 64 and 4096 pixels.",
+      "Waveform width must be between 64 and 4096 pixels",
     );
     expect(localizeAppError(error, i18n.getFixedT("ru"))).toBe(
-      "Ширина формы волны должна быть от 64 до 4096 пикселей.",
+      "Ширина формы волны должна быть от 64 до 4096 пикселей",
     );
   });
 
@@ -54,7 +54,7 @@ describe("localizeAppError", () => {
     });
 
     expect(localizeAppError(error, i18n.getFixedT("en"))).toBe(
-      "Waveform analysis failed for audio stream #2.",
+      "Waveform analysis failed for audio stream #2",
     );
   });
 
@@ -84,8 +84,8 @@ describe("localizeAppError", () => {
 
   it("uses a generic localized fallback without displaying diagnostics or legacy text", () => {
     const expectedByLanguage = {
-      en: "An unexpected application error occurred.",
-      ru: "Произошла непредвиденная ошибка приложения.",
+      en: "An unexpected application error occurred",
+      ru: "Произошла непредвиденная ошибка приложения",
     };
 
     for (const error of [

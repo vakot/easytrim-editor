@@ -39,7 +39,7 @@ function TimelinePanel() {
   return (
     <section
       aria-labelledby="timeline-title"
-      className="min-w-0 p-3 select-none"
+      className="min-w-0 p-3"
       data-testid="timeline-fixed-content"
     >
       <div className={styles.timelineHeader}>

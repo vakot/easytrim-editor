@@ -167,7 +167,7 @@ describe("VideoPreview", () => {
       store,
     );
 
-    expect(screen.getByRole("alert")).toHaveTextContent("The selected video could not be opened.");
+    expect(screen.getByRole("alert")).toHaveTextContent("The selected video could not be opened");
     fireEvent.click(screen.getByRole("button", { name: "Skip" }));
     expect(selectSourceSelection(store.getState())).toBeNull();
   });
@@ -180,7 +180,7 @@ describe("VideoPreview", () => {
     fireEvent.focus(badge);
 
     expect(screen.getByRole("tooltip")).toHaveTextContent(
-      "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file.",
+      "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file",
     );
   });
 
@@ -207,7 +207,7 @@ describe("VideoPreview", () => {
     expect(screen.queryByRole("button", { name: /resize crop/i })).not.toBeInTheDocument();
   });
 
-  it("shows the delayed crop hint and opens crop from the transform menu", () => {
+  it("shows a delayed preview menu hint and opens crop from the transform menu", () => {
     vi.useFakeTimers();
     try {
       const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
@@ -221,6 +221,7 @@ describe("VideoPreview", () => {
       fireEvent.pointerEnter(viewport!, { clientX: 30, clientY: 50 });
       expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
       act(() => vi.advanceTimersByTime(500));
+      expect(screen.getByRole("tooltip")).toHaveTextContent("Right-click to open the preview menu");
       expect(screen.getByRole("tooltip")).toHaveStyle({ left: "42px", top: "62px" });
 
       openCropTool(viewport!);

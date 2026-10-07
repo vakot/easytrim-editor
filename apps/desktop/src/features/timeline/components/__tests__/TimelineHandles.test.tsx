@@ -2,8 +2,6 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { TooltipProvider } from "@/components/ui/tooltip";
-
 import { Playhead, SegmentDragHandle, TrimHandle } from "../TimelineHandles";
 
 const range = {
@@ -67,34 +65,19 @@ function TimelineHandle({ dragging, kind }: { dragging: boolean; kind: HandleKin
   );
 }
 
-function withTooltipProvider(kind: HandleKind, dragging: boolean) {
-  return (
-    <TooltipProvider delayDuration={0}>
-      <TimelineHandle dragging={dragging} kind={kind} />
-    </TooltipProvider>
-  );
-}
-
 describe("TimelineHandles", () => {
   it.each([
     ["trim-start", "Trim start"],
     ["trim-end", "Trim end"],
     ["segment", "Move selected segment"],
     ["playhead", "Playback position"],
-  ] as const)("hides the %s tooltip while dragging", async (kind, accessibleName) => {
+  ] as const)("does not show a tooltip for the %s handle", async (kind, accessibleName) => {
     const user = userEvent.setup();
-    const view = render(withTooltipProvider(kind, false));
+    render(<TimelineHandle dragging={false} kind={kind} />);
     const handle = screen.getByRole("slider", { name: accessibleName });
 
+    expect(handle).toHaveClass("select-none");
     await user.hover(handle);
-    expect(await screen.findByRole("tooltip")).toBeInTheDocument();
-
-    view.rerender(withTooltipProvider(kind, true));
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
-
-    view.rerender(withTooltipProvider(kind, false));
-    await user.unhover(handle);
-    await user.hover(handle);
-    expect(await screen.findByRole("tooltip")).toBeInTheDocument();
   });
 });

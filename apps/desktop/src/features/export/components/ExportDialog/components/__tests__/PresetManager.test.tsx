@@ -156,7 +156,7 @@ describe("PresetManager built-in localization", () => {
     await openPresetActions("P3 · Fast", 2);
     await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
 
-    expect(screen.getByText("Delete “P3 · Fast”? This cannot be undone.")).toBeInTheDocument();
+    expect(screen.getByText("Delete “P3 · Fast”? This cannot be undone")).toBeInTheDocument();
   });
 
   it("validates custom names against visible built-in names and updates state consistently", async () => {
@@ -180,7 +180,7 @@ describe("PresetManager built-in localization", () => {
     await userEvent.type(screen.getByLabelText("Имя"), "P3 · Быстрый");
     await userEvent.click(screen.getByRole("button", { name: "Сохранить" }));
 
-    expect(screen.getByText("Имена пресетов должны быть уникальными.")).toBeInTheDocument();
+    expect(screen.getByText("Имена пресетов должны быть уникальными")).toBeInTheDocument();
     expect(
       store.getState().exportPresets.presets.filter((preset) => preset.kind === "custom"),
     ).toHaveLength(1);
@@ -283,7 +283,7 @@ describe("PresetManager built-in localization", () => {
     expect(screen.getByLabelText("Имя")).toHaveAttribute("placeholder", "Имя пресета");
     await userEvent.click(screen.getByRole("button", { name: "Сохранить" }));
 
-    expect(screen.getByText("Введите имя пресета.")).toBeInTheDocument();
+    expect(screen.getByText("Введите имя пресета")).toBeInTheDocument();
     expect(store.getState().exportPresets.presets).toHaveLength(7);
   });
 
@@ -310,7 +310,7 @@ describe("PresetManager built-in localization", () => {
     await userEvent.type(screen.getByLabelText("Имя"), "Second");
     await userEvent.click(screen.getByRole("button", { name: "Сохранить" }));
 
-    expect(screen.getByText("Имена пресетов должны быть уникальными.")).toBeInTheDocument();
+    expect(screen.getByText("Имена пресетов должны быть уникальными")).toBeInTheDocument();
     expect(
       store.getState().exportPresets.presets.filter((preset) => preset.kind === "custom"),
     ).toMatchObject([{ name: "First" }, { name: "Second" }]);

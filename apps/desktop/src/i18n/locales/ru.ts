@@ -9,13 +9,14 @@ export const ru = {
       reset: "Сбросить",
       retry: "Повторить",
       save: "Сохранить",
-      resetToDefault: "Восстановить значение по умолчанию",
+      resetToDefault: "Восстановить по умолчанию",
+      enable: "Включить",
     },
     or: "или",
     search: {
       label: "Поиск",
+      placeholder: "Поиск…",
     },
-    enabled: "Включено",
     status: {
       error: "Ошибка",
       loading: "Загрузка…",
@@ -39,9 +40,8 @@ export const ru = {
       interrupted: "Удаление файла прервано",
       completed: "Файл удалён",
       confirmation: {
-        description: "Файл {{name}} будет перемещён в корзину. Его можно будет восстановить.",
-        folderDescription:
-          "Все импортированные исходные файлы в папке {{name}} будут перемещены в корзину. Их можно будет восстановить.",
+        description: "Файл {{name}} будет перемещён в корзину. Его можно будет восстановить",
+        folderDescription: "Все импортированные исходные файлы в папке {{name}} будут перемещены в корзину. Их можно будет восстановить",
         folderTitle: "Удалить папку?",
         title: "Удалить исходный файл?",
       },
@@ -51,8 +51,7 @@ export const ru = {
     close: {
       closeAllSources: "Закрыть все открытые источники",
       confirmation: {
-        description:
-          "Импортированные файлы ({{count}}) будут закрыты. Экспорты в очереди и завершённые экспорты останутся доступными.",
+        description: "Импортированные файлы ({{count}}) будут закрыты. Экспорты в очереди и завершённые экспорты останутся доступными",
         title: "Закрыть источники?",
       },
       closedFiles_one: "Закрыт {{count}} файл",
@@ -78,8 +77,8 @@ export const ru = {
     },
     drop: {
       action: "Перетащите видео, чтобы открыть",
-      description: "Откройте один или несколько поддерживаемых видеофайлов с компьютера.",
-      resetNotice: "Текущий монтаж будет сброшен.",
+      description: "Откройте один или несколько поддерживаемых видеофайлов с компьютера",
+      resetNotice: "Текущий монтаж будет сброшен",
       title: "Перетащите видео сюда",
     },
     explorer: "Источники",
@@ -93,7 +92,7 @@ export const ru = {
       results_few: "{{count}} результата",
       results_many: "{{count}} результатов",
       results_other: "{{count}} результата",
-      noResults: "Нет импортированных источников, соответствующих поиску.",
+      noResults: "Нет импортированных источников, соответствующих поиску",
       shortcutLabel: "Сочетание клавиш для поиска источников: {{shortcut}}",
     },
     metadata: {
@@ -115,7 +114,7 @@ export const ru = {
       missing: "Отсутствует",
     },
     empty: {
-      description: "Выберите файл или папку либо перетащите видео сюда, чтобы начать.",
+      description: "Выберите файл или папку либо перетащите видео сюда, чтобы начать",
       title: "Видео ещё не импортированы",
     },
     info: {
@@ -124,8 +123,8 @@ export const ru = {
       previewUnavailable: "Предпросмотр недоступен",
     },
     open: {
-      fileDescription: "Выберите один видеофайл, чтобы начать монтаж.",
-      folderDescription: "Импортируйте все поддерживаемые видео из папки.",
+      fileDescription: "Выберите один видеофайл, чтобы начать монтаж",
+      folderDescription: "Импортируйте все поддерживаемые видео из папки",
       videoFilter: "Видеофайлы",
       foldersDialogTitle: "Добавить папки",
     },
@@ -134,52 +133,46 @@ export const ru = {
       accessibleLabel: "Миниатюра файла {{name}}",
     },
     errors: {
-      restoringSourceFilesFromTrashIsNotSupportedOnThisPlatform:
-        "Восстановление исходных файлов из корзины не поддерживается на этой платформе.",
-      selectedSourceLocationIsNotSupported: "Выбранное расположение источника не поддерживается.",
-      sourceFileCouldNotBeFoundInTrash: "Исходный файл не найден в корзине.",
-      sourcePathMustBeAbsolute: "Путь к источнику должен быть абсолютным.",
-      fileTypeIsNotSupportedYet: "Этот тип файла пока не поддерживается.",
-      selectAVideoFileInsteadOfAFolder: "Выберите видеофайл, а не папку.",
-      selectedSourceHasNoUsableFileName: "У выбранного источника нет подходящего имени файла.",
-      selectedVideoCouldNotBeOpened: "Не удалось открыть выбранное видео.",
-      selectedVideoHasNoUsableFileName: "У выбранного видео нет подходящего имени файла.",
+      restoringSourceFilesFromTrashIsNotSupportedOnThisPlatform: "Восстановление исходных файлов из корзины не поддерживается на этой платформе",
+      selectedSourceLocationIsNotSupported: "Выбранное расположение источника не поддерживается",
+      sourceFileCouldNotBeFoundInTrash: "Исходный файл не найден в корзине",
+      sourcePathMustBeAbsolute: "Путь к источнику должен быть абсолютным",
+      fileTypeIsNotSupportedYet: "Этот тип файла пока не поддерживается",
+      selectAVideoFileInsteadOfAFolder: "Выберите видеофайл, а не папку",
+      selectedSourceHasNoUsableFileName: "У выбранного источника нет подходящего имени файла",
+      selectedVideoCouldNotBeOpened: "Не удалось открыть выбранное видео",
+      selectedVideoHasNoUsableFileName: "У выбранного видео нет подходящего имени файла",
       probe: {
-        ffprobeCouldNotBeStarted: "Не удалось запустить FFprobe.",
-        ffprobeCouldNotInspectThisVideo: "FFprobe не удалось проанализировать это видео.",
-        ffprobeIsRequiredToInspectVideoFiles: "Для анализа видеофайлов требуется FFprobe.",
-        ffprobeReturnedUnreadableMetadata: "FFprobe вернул нечитаемые метаданные.",
-        noUsableVideoStreamWasFound: "Не найден пригодный видеопоток.",
-        videoDurationIsUnavailable: "Не удалось определить длительность видео.",
-        videoHeightIsUnavailable: "Не удалось определить высоту видео.",
-        videoWidthIsUnavailable: "Не удалось определить ширину видео.",
-        videoContainsMoreMetadataThanTheInspectionLimitAllows:
-          "В видео больше метаданных, чем допускает лимит анализа.",
-        videoInspectionExceededThe20SecondLimit: "Анализ видео превысил лимит в 20 секунд.",
+        ffprobeCouldNotBeStarted: "Не удалось запустить FFprobe",
+        ffprobeCouldNotInspectThisVideo: "FFprobe не удалось проанализировать это видео",
+        ffprobeIsRequiredToInspectVideoFiles: "Для анализа видеофайлов требуется FFprobe",
+        ffprobeReturnedUnreadableMetadata: "FFprobe вернул нечитаемые метаданные",
+        noUsableVideoStreamWasFound: "Не найден пригодный видеопоток",
+        videoDurationIsUnavailable: "Не удалось определить длительность видео",
+        videoHeightIsUnavailable: "Не удалось определить высоту видео",
+        videoWidthIsUnavailable: "Не удалось определить ширину видео",
+        videoContainsMoreMetadataThanTheInspectionLimitAllows: "В видео больше метаданных, чем допускает лимит анализа",
+        videoInspectionExceededThe20SecondLimit: "Анализ видео превысил лимит в 20 секунд",
       },
       thumbnail: {
-        temporaryThumbnailDirectoryCouldNotBeCreated:
-          "Не удалось создать временную папку для миниатюры.",
-        thumbnailCouldNotBePreparedForThisVideo:
-          "Не удалось подготовить миниатюру для этого видео.",
-        uniqueTemporaryThumbnailDirectoryCouldNotBeCreated:
-          "Не удалось создать отдельную временную папку для миниатюры.",
-        sourceFileIsNoLongerAvailable: "Исходный файл больше недоступен.",
-        sourceFileMetadataIsUnavailable: "Метаданные исходного файла недоступны.",
-        thumbnailCouldNotBeEncoded: "Не удалось закодировать миниатюру.",
-        thumbnailCouldNotBeSavedTemporarily: "Не удалось временно сохранить миниатюру.",
-        ffmpegRequired: "Для подготовки миниатюр источника требуется FFmpeg.",
-        preparationTimedOut: "Подготовка миниатюры источника заняла слишком много времени.",
-        preparationFailed: "FFmpeg не удалось подготовить миниатюру источника.",
+        temporaryThumbnailDirectoryCouldNotBeCreated: "Не удалось создать временную папку для миниатюры",
+        thumbnailCouldNotBePreparedForThisVideo: "Не удалось подготовить миниатюру для этого видео",
+        uniqueTemporaryThumbnailDirectoryCouldNotBeCreated: "Не удалось создать отдельную временную папку для миниатюры",
+        sourceFileIsNoLongerAvailable: "Исходный файл больше недоступен",
+        sourceFileMetadataIsUnavailable: "Метаданные исходного файла недоступны",
+        thumbnailCouldNotBeEncoded: "Не удалось закодировать миниатюру",
+        thumbnailCouldNotBeSavedTemporarily: "Не удалось временно сохранить миниатюру",
+        ffmpegRequired: "Для подготовки миниатюр источника требуется FFmpeg",
+        preparationTimedOut: "Подготовка миниатюры источника заняла слишком много времени",
+        preparationFailed: "FFmpeg не удалось подготовить миниатюру источника",
       },
-      fileCouldNotBeMovedToTrash: "Не удалось переместить исходный файл в корзину.",
-      trashCouldNotBeRead: "Не удалось прочитать содержимое корзины.",
-      fileCouldNotBeRestoredFromTrash: "Не удалось восстановить исходный файл.",
-      replaced: "Выбранный источник изменился. Повторите попытку.",
-      dropVideoFileInsteadOfEmptySelection: "Перетащите видеофайл, а не пустое выделение.",
-      selectedSourceCouldNotBeRestored: "Не удалось восстановить выбранный источник.",
-      cannotDeleteWhileExportIsQueuedOrRendering:
-        "Нельзя удалить источник, пока экспорт находится в очереди или выполняется.",
+      fileCouldNotBeMovedToTrash: "Не удалось переместить исходный файл в корзину",
+      trashCouldNotBeRead: "Не удалось прочитать содержимое корзины",
+      fileCouldNotBeRestoredFromTrash: "Не удалось восстановить исходный файл",
+      replaced: "Выбранный источник изменился. Повторите попытку",
+      dropVideoFileInsteadOfEmptySelection: "Перетащите видеофайл, а не пустое выделение",
+      selectedSourceCouldNotBeRestored: "Не удалось восстановить выбранный источник",
+      cannotDeleteWhileExportIsQueuedOrRendering: "Нельзя удалить источник, пока экспорт находится в очереди или выполняется",
     },
     import: {
       openedFiles_one: "Открыт {{count}} файл",
@@ -195,21 +188,21 @@ export const ru = {
   app: {
     brand: "EasyTrim Editor",
     errors: {
-      unexpected: "Произошла непредвиденная ошибка приложения.",
+      unexpected: "Произошла непредвиденная ошибка приложения",
       diagnostics: {
-        diagnosticEventNameIsInvalid: "Недопустимое имя события диагностики.",
-        diagnosticLevelIsInvalid: "Недопустимый уровень диагностики.",
-        diagnosticLogsPathIsInvalid: "Недопустимый путь к файлам журнала диагностики.",
-        diagnosticReportIsUnavailable: "Отчёт диагностики недоступен.",
-        diagnosticReportPathIsInvalid: "Недопустимый путь к отчёту диагностики.",
-        diagnosticSessionIdentifierIsInvalid: "Недопустимый идентификатор сеанса диагностики.",
+        diagnosticEventNameIsInvalid: "Недопустимое имя события диагностики",
+        diagnosticLevelIsInvalid: "Недопустимый уровень диагностики",
+        diagnosticLogsPathIsInvalid: "Недопустимый путь к файлам журнала диагностики",
+        diagnosticReportIsUnavailable: "Отчёт диагностики недоступен",
+        diagnosticReportPathIsInvalid: "Недопустимый путь к отчёту диагностики",
+        diagnosticSessionIdentifierIsInvalid: "Недопустимый идентификатор сеанса диагностики",
       },
       state: {
-        audioPreviewIsNotAvailable: "Предпросмотр аудио недоступен.",
-        operationIsNoLongerAvailable: "Эта операция больше недоступна.",
-        outputLocationIsNoLongerAvailable: "Место сохранения больше недоступно.",
-        waveformIsNotAvailable: "Форма волны недоступна.",
-        waveformJobIdIsInvalid: "Недопустимый идентификатор задачи создания формы волны.",
+        audioPreviewIsNotAvailable: "Предпросмотр аудио недоступен",
+        operationIsNoLongerAvailable: "Эта операция больше недоступна",
+        outputLocationIsNoLongerAvailable: "Место сохранения больше недоступно",
+        waveformIsNotAvailable: "Форма волны недоступна",
+        waveformJobIdIsInvalid: "Недопустимый идентификатор задачи создания формы волны",
       },
     },
     navigation: {
@@ -235,14 +228,10 @@ export const ru = {
       restored_few: "Восстановлено {{count}} источника из предыдущего сеанса",
       restored_many: "Восстановлено {{count}} источников из предыдущего сеанса",
       restored_other: "Восстановлено {{count}} источника из предыдущего сеанса",
-      description_one:
-        "EasyTrim завершил работу некорректно. Можно восстановить {{count}} источник.",
-      description_few:
-        "EasyTrim завершил работу некорректно. Можно восстановить {{count}} источника.",
-      description_many:
-        "EasyTrim завершил работу некорректно. Можно восстановить {{count}} источников.",
-      description_other:
-        "EasyTrim завершил работу некорректно. Можно восстановить {{count}} источника.",
+      description_one: "EasyTrim завершил работу некорректно. Можно восстановить {{count}} источник",
+      description_few: "EasyTrim завершил работу некорректно. Можно восстановить {{count}} источника",
+      description_many: "EasyTrim завершил работу некорректно. Можно восстановить {{count}} источников",
+      description_other: "EasyTrim завершил работу некорректно. Можно восстановить {{count}} источника",
       toastDescription_one: "Восстановлен {{count}} источник",
       toastDescription_few: "Восстановлено {{count}} источника",
       toastDescription_many: "Восстановлено {{count}} источников",
@@ -258,34 +247,31 @@ export const ru = {
     },
     clipboard: {
       copied: "Скопировано",
-      copyFailed: "Не удалось скопировать в буфер обмена.",
+      copyFailed: "Не удалось скопировать в буфер обмена",
     },
     crash: {
-      description:
-        "В приложении произошла непредвиденная ошибка. Перезапустите его, чтобы продолжить.",
+      description: "В приложении произошла непредвиденная ошибка. Перезапустите его, чтобы продолжить",
       title: "Что-то пошло не так",
     },
     dragUnavailable: "Перетаскивание недоступно: {{message}}",
-    windowActionFailed: "Не удалось выполнить действие с окном.",
+    windowActionFailed: "Не удалось выполнить действие с окном",
     diagnosticsRecovery: {
       confirmation: {
-        description:
-          "В прошлый раз EasyTrim завершил работу некорректно. Диагностическая информация этой сессии была сохранена и может помочь определить причину.",
-        revealFailed: "Не удалось открыть расположение диагностического отчёта.",
+        description: "В прошлый раз EasyTrim завершил работу некорректно. Диагностическая информация этой сессии была сохранена и может помочь определить причину",
+        revealFailed: "Не удалось открыть расположение диагностического отчёта",
         showReport: "Показать отчёт",
         title: "EasyTrim завершил работу некорректно",
       },
     },
     shutdown: {
       confirmation: {
-        description:
-          "Активная очередь экспорта всё ещё выполняется. Все несохранённые данные монтажа будут потеряны.",
+        description: "Активная очередь экспорта всё ещё выполняется. Все несохранённые данные монтажа будут потеряны",
         title: "Выйти во время экспорта?",
       },
     },
     systemDialog: {
       confirmation: {
-        description: "Выберите расположение файла, чтобы продолжить.",
+        description: "Выберите расположение файла, чтобы продолжить",
         title: "Ожидание системного диалога",
       },
     },
@@ -297,27 +283,22 @@ export const ru = {
   },
   layout: {
     accessibility: {
-      layoutControls: "Настройка расположения",
+      layoutControls: "Настроить компоновку",
       panels: "Панели редактора",
     },
     zoomIn: "Увеличить масштаб (+25%)",
     zoomOut: "Уменьшить масштаб (-25%)",
     zoomReset: "Сбросить масштаб (100%)",
-    showPanel: "Показать: {{panel}}",
-    explorer: "Боковая панель",
+    showLeftPanel: "Показать левую панель",
+    showBottomPanel: "Показать нижнюю панель",
+    toggleLeftPanel: "Переключить левую панель",
+    toggleBottomPanel: "Переключить нижнюю панель",
+    explorer: "Источники",
     activityFeed: "Лента активности",
-    bottomPanel: "Нижняя панель",
-    leftPanel: "Левая панель",
     layoutDensity: "Плотность интерфейса",
     view: "Вид",
     uiScaling: "Масштаб интерфейса",
     panelsVisibility: "Видимость панелей",
-    customize: {
-      tooltip: "Настроить расположение",
-    },
-    panelToggle: {
-      tooltip: "Переключить {{panel}}",
-    },
     density: {
       compact: "Компактная",
       default: "Обычная",
@@ -327,26 +308,27 @@ export const ru = {
     general: {
       language: {
         search: "Поиск языков",
+        searchPlaceholder: "Поиск языков…",
         suggestions: "Предложения",
-        noResults: "Языки не найдены.",
-        description: "Выберите язык интерфейса EasyTrim Editor.",
+        noResults: "Языки не найдены",
+        description: "Выберите язык интерфейса EasyTrim Editor",
         label: "Язык",
         coverageAccessibleLabel: "Перевод интерфейса — {{language}}: {{percentage}}%",
         helpTranslate: "Помочь с переводом EasyTrim",
       },
       title: "Общие",
-      description: "Выберите, как EasyTrim отображает интерфейс.",
+      description: "Выберите, как EasyTrim отображает интерфейс",
       shortcutHint: "Открыть окно настроек можно в любое время сочетанием",
     },
     navigationLabel: "Разделы настроек",
     appearance: {
       title: "Внешний вид",
-      description: "Настройте масштаб интерфейса, тему и основной цвет.",
+      description: "Настройте масштаб интерфейса, тему и основной цвет",
       scaling: {
-        description: "Измените размер элементов управления и текста в приложении.",
+        description: "Измените размер элементов управления и текста в приложении",
       },
       primaryColor: {
-        description: "Выберите готовый или пользовательский основной цвет.",
+        description: "Выберите готовый или пользовательский основной цвет",
         label: "Основной цвет",
         pickerLabel: "Выбор цвета темы",
         saturationBrightnessLabel: "Насыщенность и яркость",
@@ -377,32 +359,32 @@ export const ru = {
       editing: {
         title: "Редактирование",
       },
-      description: "Выберите поведение по умолчанию для новых сеансов редактирования.",
+      description: "Выберите поведение по умолчанию для новых сеансов редактирования",
       loopPlayback: {
-        description: "Включать повтор воспроизведения для новых сеансов.",
+        description: "Включать повтор воспроизведения для новых сеансов",
         label: "Повтор",
         commandLabel: "Включать повтор по умолчанию",
       },
       followSegment: {
-        description: "По умолчанию ограничивать воспроизведение выбранным сегментом.",
+        description: "По умолчанию ограничивать воспроизведение выбранным сегментом",
         label: "Воспроизводить только сегмент",
         commandLabel: "По умолчанию воспроизводить только сегмент",
       },
       mergeAudio: {
-        description: "Объединять включённые аудиодорожки в новых экспортах.",
+        description: "Объединять включённые аудиодорожки в новых экспортах",
         label: "Объединять аудио",
         commandLabel: "Объединять аудио по умолчанию",
       },
       reset: "Сбросить настройки редактирования",
     },
     layout: {
-      title: "Расположение",
-      description: "Настройте видимость панелей и плотность интерфейса.",
-      reset: "Сбросить расположение",
+      title: "Компоновка",
+      description: "Настройте видимость панелей и плотность интерфейса",
+      reset: "Сбросить компоновку",
       activityFeedView: {
         label: "Вид ленты активности",
         options: {
-          branch: "По исходным файлам",
+          branch: "По файлам",
           compact: "Компактный",
           default: "Обычный",
         },
@@ -414,17 +396,17 @@ export const ru = {
     queue: {
       title: "Очередь",
       autoStart: {
-        description: "Начинать обработку сразу после добавления экспортов в очередь.",
+        description: "Начинать обработку сразу после добавления экспортов в очередь",
         label: "Автозапуск очереди",
       },
       onFinished: {
-        description: "Выберите действие после завершения всех экспортов в очереди.",
+        description: "Выберите действие после завершения всех экспортов в очереди",
       },
       reset: "Сбросить настройки очереди",
     },
     about: {
       title: "О программе",
-      description: "Версия приложения, обновления и ресурсы проекта.",
+      description: "Версия приложения, обновления и ресурсы проекта",
       more: {
         title: "Дополнительно",
       },
@@ -432,11 +414,11 @@ export const ru = {
         title: "Поддержка",
       },
       version: {
-        description: "Открыть заметки к выпуску этой версии.",
+        description: "Открыть заметки к выпуску этой версии",
       },
       updates: {
         label: "Обновления",
-        description: "Проверить наличие обновлений или установить доступное обновление.",
+        description: "Проверить наличие обновлений или установить доступное обновление",
       },
     },
     title: "Настройки",
@@ -454,27 +436,26 @@ export const ru = {
     recheck: "Проверить снова",
     showPathInFolder: "Показать {{label}} в папке",
     installOnWindows: "Установка в Windows",
-    title: "Медиаинструменты",
+    title: "Инструменты",
     status: {
-      checkingTools: "Проверка медиаинструментов…",
+      checkingTools: "Проверка инструментов…",
       installed: "Установлено",
       missing: "Не найдено",
-      toolsFailed: "Не удалось проверить медиаинструменты",
-      toolsIssue: "Проблема с медиаинструментами",
-      toolsReady: "Медиаинструменты готовы",
-      toolsUnavailable: "Медиаинструменты недоступны",
+      toolsFailed: "Не удалось проверить инструменты",
+      toolsIssue: "Проблема с инструментами",
+      toolsReady: "Инструменты готовы",
+      toolsUnavailable: "Инструменты недоступны",
     },
-    requirements: "EasyTrim требуется FFmpeg и FFprobe.",
-    ready: "EasyTrim использует FFmpeg и FFprobe для анализа и обработки медиафайлов.",
-    restart:
-      "После установки перезапустите EasyTrim, если FFmpeg или FFprobe по-прежнему не найдены.",
-    together: "FFmpeg и FFprobe обычно поставляются вместе.",
-    locationOpenFailed: "Не удалось открыть папку с исполняемым файлом.",
+    requirements: "Для работы EasyTrim требуются FFmpeg и FFprobe",
+    ready: "EasyTrim использует FFmpeg и FFprobe для анализа и обработки медиафайлов",
+    restart: "После установки перезапустите EasyTrim, если FFmpeg или FFprobe по-прежнему не найдены",
+    together: "FFmpeg и FFprobe обычно поставляются вместе",
+    locationOpenFailed: "Не удалось открыть папку с исполняемым файлом",
     errors: {
-      checkFailed: "Не удалось проверить {{label}}.",
-      notFound: "{{label}} не установлен или недоступен в PATH.",
-      startFailed: "Не удалось запустить {{label}}.",
-      timedOut: "За 3 секунды не получен ответ от {{label}}.",
+      checkFailed: "Не удалось проверить {{label}}",
+      notFound: "{{label}} не установлен или недоступен в PATH",
+      startFailed: "Не удалось запустить {{label}}",
+      timedOut: "За 3 секунды не получен ответ от {{label}}",
     },
   },
   commands: {
@@ -486,10 +467,10 @@ export const ru = {
       export: "Экспорт",
       file: "Файл",
       help: "Справка",
-      layout: "Расположение",
-      layoutActivityFeedView: "Расположение / Вид ленты активности",
-      layoutDensity: "Расположение / Плотность интерфейса",
-      layoutPanelsVisibility: "Расположение / Видимость панелей",
+      layout: "Компоновка",
+      layoutActivityFeedView: "Компоновка / Вид ленты активности",
+      layoutDensity: "Компоновка / Плотность интерфейса",
+      layoutPanelsVisibility: "Компоновка / Видимость панелей",
       preferences: "Параметры",
       preferencesAudio: "Параметры / Аудио",
       preferencesPlayback: "Параметры / Воспроизведение",
@@ -502,8 +483,8 @@ export const ru = {
       go: "Перейти",
     },
     searchLabel: "Поиск команд",
-    description: "Найдите действие EasyTrim, которое нужно выполнить.",
-    empty: "Команды не найдены.",
+    description: "Найдите действие EasyTrim, которое нужно выполнить",
+    empty: "Команды не найдены",
     placeholder: "Поиск команд…",
     searchTerms: {
       closeFile: "убрать|источник",
@@ -519,8 +500,6 @@ export const ru = {
   activity: {
     time: {
       now: "Сейчас",
-      today: "Сегодня",
-      yesterday: "Вчера",
     },
     notification: {
       fileSize: "Размер файла: {{size}}",
@@ -533,7 +512,7 @@ export const ru = {
       moreFiles_other: "+{{count}} файла",
     },
     empty: {
-      description: "Завершённые действия появятся здесь.",
+      description: "Завершённые действия появятся здесь",
       title: "Записей пока нет",
     },
   },
@@ -549,7 +528,7 @@ export const ru = {
       started: "Начата быстрая обрезка",
       cutting: "Быстрая обрезка…",
       action: "Сохранить обрезку без потерь",
-      unavailable: "Сохранение без перекодирования недоступно после преобразования видео.",
+      unavailable: "Сохранение без перекодирования недоступно после преобразования видео",
       tooltip: "Сохранить без перекодирования (Ctrl+S)",
     },
     render: {
@@ -564,34 +543,31 @@ export const ru = {
       builtIn: {
         p1: {
           name: "P1 · Самый быстрый",
-          description:
-            "Самое быстрое кодирование NVENC: самые большие файлы и наименьшая эффективность сжатия.",
+          description: "Самое быстрое кодирование NVENC: самые большие файлы и наименьшая эффективность сжатия",
         },
         p2: {
           name: "P2 · Очень быстрый",
-          description:
-            "Очень быстрый экспорт с большими файлами; подходит, когда важнее всего скорость.",
+          description: "Очень быстрый экспорт с большими файлами; подходит, когда важнее всего скорость",
         },
         p3: {
           name: "P3 · Быстрый",
-          description: "Быстрый экспорт NVENC с практичным балансом скорости, размера и качества.",
+          description: "Быстрый экспорт NVENC с практичным балансом скорости, размера и качества",
         },
         p4: {
           name: "P4 · Качество",
-          description: "Кодирование NVENC с упором на качество: файлы меньше, рендеринг дольше.",
+          description: "Кодирование NVENC с упором на качество: файлы меньше, рендеринг дольше",
         },
         p5: {
           name: "P5 · Меньший размер",
-          description: "Файлы меньше при умеренном увеличении времени рендеринга.",
+          description: "Файлы меньше при умеренном увеличении времени рендеринга",
         },
         p6: {
           name: "P6 · Очень малый размер",
-          description:
-            "Более эффективное сжатие; кодирование медленнее ради очень маленьких файлов.",
+          description: "Более эффективное сжатие; кодирование медленнее ради очень маленьких файлов",
         },
         p7: {
           name: "P7 · Наименьший размер",
-          description: "Наиболее эффективный пресет NVENC; самый медленный во всём диапазоне.",
+          description: "Наиболее эффективный пресет NVENC; самый медленный во всём диапазоне",
         },
       },
       actions: {
@@ -601,16 +577,16 @@ export const ru = {
       },
       label: "Пресет",
       validation: {
-        duplicate: "Имена пресетов должны быть уникальными.",
-        required: "Введите имя пресета.",
-        tooLong: "Имя пресета не может содержать более 64 символов.",
+        duplicate: "Имена пресетов должны быть уникальными",
+        required: "Введите имя пресета",
+        tooLong: "Имя пресета не может содержать более 64 символов",
       },
       create: {
-        description: "Сохранить конфигурацию FFmpeg для повторного использования.",
+        description: "Сохранить конфигурацию FFmpeg для повторного использования",
         title: "Новый пресет",
       },
       delete: {
-        description: "Удалить «{{name}}»? Это действие нельзя отменить.",
+        description: "Удалить «{{name}}»? Это действие нельзя отменить",
         title: "Удалить пресет?",
       },
       nameLabel: "Имя",
@@ -628,10 +604,10 @@ export const ru = {
       tooltip: "Настроить и экспортировать оптимизированное видео (Ctrl+E)",
       dialog: {
         arguments: "Аргументы FFmpeg",
-        description: "Настройте оптимизированный рендеринг перед выбором файла.",
+        description: "Настройте оптимизированный рендеринг перед выбором файла",
         editTitle: "Изменить экспорт в очереди",
         matchSource: "Как у исходного видео",
-        saveNotice: "После подтверждения откроется системный диалог сохранения.",
+        saveNotice: "После подтверждения откроется системный диалог сохранения",
       },
     },
     actions: {
@@ -666,36 +642,29 @@ export const ru = {
       unlockLabel: "Разблокировать соотношение сторон",
     },
     errors: {
-      ffmpegCouldNotRenderTheSelectedSegment:
-        "Не удалось выполнить рендеринг выбранного сегмента с помощью FFmpeg.",
-      ffmpegIsRequiredToExportVideoFiles: "Для экспорта видеофайлов требуется FFmpeg.",
-      inspectTheVideoBeforeExporting: "Сначала проанализируйте видео, затем экспортируйте его.",
-      exportWasCancelled: "Экспорт отменён.",
-      fileOrFolderIsNoLongerAvailable: "Файл или папка больше недоступны.",
-      outputNameIsRequired: "Укажите имя выходного файла.",
-      renderedOutputCouldNotBeVerified: "Не удалось проверить экспортированный файл.",
-      renderedOutputIsEmpty: "Экспортированный файл пуст.",
-      selectedOutputLocationIsNotSupported: "Выбранное место сохранения не поддерживается.",
-      audioStreamSelectionOrProcessingSettingIsInvalid:
-        "Выбор аудиопотока или параметр его обработки задан неверно.",
-      fastCutCannotApplyRotationUseOptimizedRender:
-        "Быстрая обрезка не поддерживает поворот. Используйте оптимизированный рендеринг.",
-      optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths:
-        "Параметры оптимизированного рендеринга не могут переопределять входной файл, обрезку, сопоставление потоков, фильтры, формат или пути выходных файлов.",
-      cropSelectionIsInvalid: "Область обрезки задана неверно.",
-      finalOptimizedFfmpegOptionIsMissingItsValue:
-        "Для последнего параметра FFmpeg не указано значение.",
-      optimizedFfmpegArgumentsContainAnUnclosedQuote:
-        "В параметрах FFmpeg для оптимизированного рендеринга есть незакрытая кавычка.",
-      outputFrameRateIsInvalid: "Задана недопустимая частота кадров для выходного видео.",
-      outputResolutionMustBeGreaterThanZero: "Выходное разрешение должно быть больше нуля.",
-      rotationMustBe090180Or270Degrees: "Угол поворота должен быть 0, 90, 180 или 270 градусов.",
-      selectedExportRangeIsInvalid: "Выбранный диапазон экспорта недопустим.",
-      fileLocationCouldNotBeOpened: "Не удалось открыть расположение файла.",
-      ffmpegCouldNotBeStarted: "Не удалось запустить FFmpeg.",
-      analyzeTrackLoudnessToContinue: "Проанализируйте громкость дорожки, чтобы продолжить.",
-      interruptedWhenEasyTrimClosedUnexpectedly:
-        "Экспорт прерван из-за неожиданного завершения работы EasyTrim.",
+      ffmpegCouldNotRenderTheSelectedSegment: "Не удалось выполнить рендеринг выбранного сегмента с помощью FFmpeg",
+      ffmpegIsRequiredToExportVideoFiles: "Для экспорта видеофайлов требуется FFmpeg",
+      inspectTheVideoBeforeExporting: "Сначала проанализируйте видео, затем экспортируйте его",
+      exportWasCancelled: "Экспорт отменён",
+      fileOrFolderIsNoLongerAvailable: "Файл или папка больше недоступны",
+      outputNameIsRequired: "Укажите имя выходного файла",
+      renderedOutputCouldNotBeVerified: "Не удалось проверить экспортированный файл",
+      renderedOutputIsEmpty: "Экспортированный файл пуст",
+      selectedOutputLocationIsNotSupported: "Выбранное место сохранения не поддерживается",
+      audioStreamSelectionOrProcessingSettingIsInvalid: "Выбор аудиопотока или параметр его обработки задан неверно",
+      fastCutCannotApplyRotationUseOptimizedRender: "Быстрая обрезка не поддерживает поворот. Используйте оптимизированный рендеринг",
+      optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths: "Параметры оптимизированного рендеринга не могут переопределять входной файл, обрезку, сопоставление потоков, фильтры, формат или пути выходных файлов",
+      cropSelectionIsInvalid: "Область обрезки задана неверно",
+      finalOptimizedFfmpegOptionIsMissingItsValue: "Для последнего параметра FFmpeg не указано значение",
+      optimizedFfmpegArgumentsContainAnUnclosedQuote: "В параметрах FFmpeg для оптимизированного рендеринга есть незакрытая кавычка",
+      outputFrameRateIsInvalid: "Задана недопустимая частота кадров для выходного видео",
+      outputResolutionMustBeGreaterThanZero: "Выходное разрешение должно быть больше нуля",
+      rotationMustBe090180Or270Degrees: "Угол поворота должен быть 0, 90, 180 или 270 градусов",
+      selectedExportRangeIsInvalid: "Выбранный диапазон экспорта недопустим",
+      fileLocationCouldNotBeOpened: "Не удалось открыть расположение файла",
+      ffmpegCouldNotBeStarted: "Не удалось запустить FFmpeg",
+      analyzeTrackLoudnessToContinue: "Проанализируйте громкость дорожки, чтобы продолжить",
+      interruptedWhenEasyTrimClosedUnexpectedly: "Экспорт прерван из-за неожиданного завершения работы EasyTrim",
     },
   },
   queue: {
@@ -713,8 +682,7 @@ export const ru = {
       label: "Удалить источник",
       tooltip: "Удалить источник после успешного рендеринга",
       confirmation: {
-        description:
-          "Исходный файл будет удалён после успешного завершения рендеринга. Это действие можно отменить.",
+        description: "Исходный файл будет удалён после успешного завершения рендеринга. Это действие можно отменить",
         title: "Удалить источник после рендеринга?",
       },
       enable: "Включить",
@@ -745,7 +713,7 @@ export const ru = {
       rendering: "Рендеринг…",
     },
     empty: {
-      description: "Экспорты появятся здесь.",
+      description: "Экспорты появятся здесь",
     },
     metrics: {
       elapsed: "Прошло {{value}}",
@@ -764,10 +732,10 @@ export const ru = {
       accessibleLabel: "Прогресс экспорта",
     },
     errors: {
-      systemShutdownIsNotAvailable: "Выключение компьютера недоступно.",
-      systemSleepIsNotAvailable: "Переход компьютера в спящий режим недоступен.",
-      selectedSystemActionCouldNotBeStarted: "Не удалось запустить выбранное действие.",
-      selectedSystemActionWasRejectedByTheSystem: "Система отклонила выбранное действие.",
+      systemShutdownIsNotAvailable: "Выключение компьютера недоступно",
+      systemSleepIsNotAvailable: "Переход компьютера в спящий режим недоступен",
+      selectedSystemActionCouldNotBeStarted: "Не удалось запустить выбранное действие",
+      selectedSystemActionWasRejectedByTheSystem: "Система отклонила выбранное действие",
     },
     summary: {
       canceled_one: "Отменено: {{count}}",
@@ -804,8 +772,8 @@ export const ru = {
       previous: "Предыдущий кадр",
       saveFrame: "Сохранить кадр",
       copied: "Кадр скопирован в буфер обмена",
-      copyFailed: "Не удалось скопировать кадр в буфер обмена.",
-      saveFailed: "Не удалось сохранить кадр.",
+      copyFailed: "Не удалось скопировать кадр в буфер обмена",
+      saveFailed: "Не удалось сохранить кадр",
       saved: "Кадр сохранён",
       nextFrameTooltip: "Следующий кадр (правая стрелка; удерживайте для воспроизведения в 2×)",
       previousFrameTooltip: "Предыдущий кадр (левая стрелка; удерживайте для перемотки в 2×)",
@@ -817,11 +785,11 @@ export const ru = {
     playback: {
       pause: "Пауза",
       play: "Воспроизвести",
-      loopPlayback: "Повтор воспроизведения",
+      loopPlayback: "Повторять воспроизведение",
       volume: "Громкость воспроизведения",
       speed: "Скорость воспроизведения",
-      segmentPlayback: "Воспроизведение сегмента",
-      failed: "Не удалось начать воспроизведение.",
+      segmentPlayback: "Воспроизводить выбранный сегмент",
+      failed: "Не удалось начать воспроизведение",
       loopDisabledTooltip: "Остановиться в конце воспроизведения",
       loopEnabledTooltip: "Начать заново после окончания",
       pauseTooltip: "Пауза (Пробел)",
@@ -847,18 +815,19 @@ export const ru = {
       rotate180: "Повернуть на 180°",
       rotate90Clockwise: "Повернуть на 90° по часовой стрелке",
       rotate90Counterclockwise: "Повернуть на 90° против часовой стрелки",
-      cropTooltip: "Щёлкните правой кнопкой по предпросмотру, чтобы настроить обрезку",
       resetConfirmation: {
-        description: "Сбросить обрезку, поворот и отражения текущего видео.",
+        description: "Сбросить обрезку, поворот и отражения текущего видео",
         title: "Сбросить преобразования видео?",
       },
       title: "Преобразование",
     },
+    contextMenu: {
+      tooltip: "Щёлкните правой кнопкой, чтобы открыть меню предпросмотра",
+    },
     info: {
       compatible: "Совместимый предпросмотр",
       playbackError: "Не удалось воспроизвести это видео",
-      proxy:
-        "Исходный файл нельзя воспроизвести напрямую. EasyTrim подготовил для предпросмотра совместимую копию с возможным снижением качества. При экспорте используется исходный файл.",
+      proxy: "Исходный файл нельзя воспроизвести напрямую. EasyTrim подготовил для предпросмотра совместимую копию с возможным снижением качества. При экспорте используется исходный файл",
     },
     shortcuts: {
       markInOut: "Начало / Конец",
@@ -889,28 +858,20 @@ export const ru = {
     },
     errors: {
       frame: {
-        capturedFrameCouldNotBeSaved: "Не удалось сохранить кадр.",
-        capturedFrameIsNotAPngImage: "Сохранённый кадр не является изображением PNG.",
-        capturedFrameIsTooLargeToSave: "Сохранённый кадр слишком велик для сохранения.",
-        selectedImageLocationIsNotSupported:
-          "Выбранное место сохранения изображения не поддерживается.",
-        suggestedFrameFilenameIsInvalid: "Предложенное имя файла кадра задано неверно.",
+        capturedFrameCouldNotBeSaved: "Не удалось сохранить кадр",
+        capturedFrameIsNotAPngImage: "Сохранённый кадр не является изображением PNG",
+        capturedFrameIsTooLargeToSave: "Сохранённый кадр слишком велик для сохранения",
+        selectedImageLocationIsNotSupported: "Выбранное место сохранения изображения не поддерживается",
+        suggestedFrameFilenameIsInvalid: "Предложенное имя файла кадра задано неверно",
       },
-      compatiblePreviewCouldNotBePreparedForThisVideo:
-        "Не удалось подготовить совместимый предпросмотр для этого видео.",
-      temporaryPreviewDirectoryCouldNotBeCreated:
-        "Не удалось создать временную папку для предпросмотра.",
-      uniqueTemporaryPreviewDirectoryCouldNotBeCreated:
-        "Не удалось создать отдельную временную папку для предпросмотра.",
-      ffmpegCouldNotPrepareACompatiblePreview:
-        "Не удалось подготовить совместимый предпросмотр с помощью FFmpeg.",
-      ffmpegIsRequiredToPrepareACompatiblePreview:
-        "Для подготовки совместимого предпросмотра требуется FFmpeg.",
-      inspectTheVideoBeforePreparingItsPreview:
-        "Сначала проанализируйте видео, затем подготовьте предпросмотр.",
-      preparingTheCompatiblePreviewTookTooLong:
-        "Подготовка совместимого предпросмотра заняла слишком много времени.",
-      compatiblePreviewCouldNotBePlayed: "Не удалось воспроизвести совместимый предпросмотр.",
+      compatiblePreviewCouldNotBePreparedForThisVideo: "Не удалось подготовить совместимый предпросмотр для этого видео",
+      temporaryPreviewDirectoryCouldNotBeCreated: "Не удалось создать временную папку для предпросмотра",
+      uniqueTemporaryPreviewDirectoryCouldNotBeCreated: "Не удалось создать отдельную временную папку для предпросмотра",
+      ffmpegCouldNotPrepareACompatiblePreview: "Не удалось подготовить совместимый предпросмотр с помощью FFmpeg",
+      ffmpegIsRequiredToPrepareACompatiblePreview: "Для подготовки совместимого предпросмотра требуется FFmpeg",
+      inspectTheVideoBeforePreparingItsPreview: "Сначала проанализируйте видео, затем подготовьте предпросмотр",
+      preparingTheCompatiblePreviewTookTooLong: "Подготовка совместимого предпросмотра заняла слишком много времени",
+      compatiblePreviewCouldNotBePlayed: "Не удалось воспроизвести совместимый предпросмотр",
     },
   },
   timeline: {
@@ -921,11 +882,10 @@ export const ru = {
         enableSceneMarkers: "Показать маркеры сцен",
       },
       status: {
-        sceneDetectionFailed: "Не удалось найти смены сцен. Попробуйте ещё раз.",
+        sceneDetectionFailed: "Не удалось найти смены сцен. Попробуйте ещё раз",
       },
       tooltips: {
-        detectScenes:
-          "Найти смены сцен в исходном видео. Удерживайте Shift при перетаскивании, чтобы привязаться к маркеру сцены или к границе участка со звуком.",
+        detectScenes: "Найти смены сцен в исходном видео. Удерживайте Shift при перетаскивании, чтобы привязаться к маркеру сцены или к границе участка со звуком",
       },
     },
     segment: {
@@ -936,11 +896,6 @@ export const ru = {
         end: "Конец",
         selectedSegment: "Выбранный сегмент",
         start: "Начало",
-      },
-      tooltips: {
-        moveSegment:
-          "Перетащите, чтобы переместить выбранный сегмент — удерживайте Shift для привязки",
-        trimReset: "{{label}} — удерживайте Shift для привязки — дважды щёлкните для сброса",
       },
       accessibility: {
         trimEnd: "Конец обрезки",
@@ -969,28 +924,24 @@ export const ru = {
       },
     },
     errors: {
-      inspectTheVideoBeforeDetectingAudioActivity:
-        "Сначала проанализируйте видео, чтобы найти участки со звуком.",
+      inspectTheVideoBeforeDetectingAudioActivity: "Сначала проанализируйте видео, чтобы найти участки со звуком",
       scene: {
-        ffmpegCouldNotDetectSceneChanges: "Не удалось найти смены сцен с помощью FFmpeg.",
-        ffmpegIsRequiredToDetectSceneChanges: "Для обнаружения смен сцен требуется FFmpeg.",
-        sceneDetectionTookTooLong: "Обнаружение смен сцен заняло слишком много времени.",
-        sceneDetectionWasInterrupted: "Обнаружение смен сцен прервано.",
-        activeSourceHasNotBeenInspected: "Активное видео ещё не проанализировано.",
-        sceneDetectionOutputExceededItsSafetyLimit:
-          "Результат обнаружения смен сцен превысил допустимый предел.",
-        sourceContainsTooManyDetectedSceneChanges: "В видео найдено слишком много смен сцен.",
+        ffmpegCouldNotDetectSceneChanges: "Не удалось найти смены сцен с помощью FFmpeg",
+        ffmpegIsRequiredToDetectSceneChanges: "Для обнаружения смен сцен требуется FFmpeg",
+        sceneDetectionTookTooLong: "Обнаружение смен сцен заняло слишком много времени",
+        sceneDetectionWasInterrupted: "Обнаружение смен сцен прервано",
+        activeSourceHasNotBeenInspected: "Активное видео ещё не проанализировано",
+        sceneDetectionOutputExceededItsSafetyLimit: "Результат обнаружения смен сцен превысил допустимый предел",
+        sourceContainsTooManyDetectedSceneChanges: "В видео найдено слишком много смен сцен",
       },
       audioActivity: {
-        audioActivityDetectionTookTooLong: "Поиск участков со звуком занял слишком много времени.",
-        audioActivityDetectionWasInterrupted: "Поиск участков со звуком прерван.",
-        ffmpegCouldNotAnalyzeAudioActivity: "Не удалось найти участки со звуком с помощью FFmpeg.",
-        ffmpegIsRequiredToAnalyzeAudioActivity: "Для поиска участков со звуком требуется FFmpeg.",
-        inspectTheVideoBeforeDetectingAudioActivity:
-          "Сначала проанализируйте видео, затем найдите участки со звуком.",
-        audioActivityAnalysisContainsTooManyRanges: "Найдено слишком много участков со звуком.",
-        audioActivityAnalysisOutputExceededItsSafetyLimit:
-          "Результат поиска участков со звуком превысил допустимый предел.",
+        audioActivityDetectionTookTooLong: "Поиск участков со звуком занял слишком много времени",
+        audioActivityDetectionWasInterrupted: "Поиск участков со звуком прерван",
+        ffmpegCouldNotAnalyzeAudioActivity: "Не удалось найти участки со звуком с помощью FFmpeg",
+        ffmpegIsRequiredToAnalyzeAudioActivity: "Для поиска участков со звуком требуется FFmpeg",
+        inspectTheVideoBeforeDetectingAudioActivity: "Сначала проанализируйте видео, затем найдите участки со звуком",
+        audioActivityAnalysisContainsTooManyRanges: "Найдено слишком много участков со звуком",
+        audioActivityAnalysisOutputExceededItsSafetyLimit: "Результат поиска участков со звуком превысил допустимый предел",
       },
     },
   },
@@ -1014,8 +965,8 @@ export const ru = {
         protection: "Защита",
       },
       dialog: {
-        applyNotice: "Изменения не будут применены, пока вы не нажмёте «Применить».",
-        description: "Эффекты применяются в фиксированном порядке из списка.",
+        applyNotice: "Изменения не будут применены, пока вы не нажмёте «Применить»",
+        description: "Эффекты применяются в фиксированном порядке из списка",
         title: "{{title}} — эффекты",
       },
       appliedSummaryLabel: "Применённые эффекты: {{summary}}",
@@ -1023,7 +974,7 @@ export const ru = {
     output: {
       merge: {
         action: "Объединить выбранные дорожки",
-        tooltip: "Все выбранные дорожки объединяются в одну; это требует кодирования.",
+        tooltip: "Все выбранные дорожки объединяются в одну; это требует кодирования",
       },
       oneTrack: "Выбрана одна дорожка — объединение не требуется",
       videoOnly: "Только видео",
@@ -1056,13 +1007,13 @@ export const ru = {
     highPass: {
       label: "Фильтр высоких частот",
       cutoffLabel: "Частота среза",
-      description: "Уменьшите низкочастотный гул в этой дорожке.",
+      description: "Уменьшите низкочастотный гул в этой дорожке",
       summary: "Фильтр высоких частот ({{cutoff}} Гц)",
     },
     limiter: {
       label: "Лимитер",
       ceilingLabel: "Предел пикового уровня",
-      description: "Ограничивать пики этой дорожки.",
+      description: "Ограничивать пики этой дорожки",
       summary: "Лимитер ({{ceiling}} дБ)",
     },
     normalization: {
@@ -1076,10 +1027,10 @@ export const ru = {
         streaming: "Стриминг",
         broadcast: "Вещание",
       },
-      description: "Нормализовать дорожку до целевого уровня громкости.",
+      description: "Нормализовать дорожку до целевого уровня громкости",
       summary: "Нормализовано — {{preset}}",
       levelSummary: "Цель {{target}} LUFS · предел пика {{peak}} dBTP",
-      manualGainUnavailable: "Ручное усиление недоступно при автоматической нормализации.",
+      manualGainUnavailable: "Ручное усиление недоступно при автоматической нормализации",
     },
     noiseReduction: {
       label: "Шумоподавление",
@@ -1089,7 +1040,7 @@ export const ru = {
         medium: "Среднее",
         strong: "Сильное",
       },
-      description: "Уменьшает фоновый шум в этой аудиодорожке.",
+      description: "Уменьшает фоновый шум в этой аудиодорожке",
       summary: "Шумоподавление: {{preset}}",
     },
     waveform: {
@@ -1097,75 +1048,50 @@ export const ru = {
       unavailable: "Форма волны недоступна",
     },
     errors: {
-      audioPreviewStreamIndexesMustBeUnique:
-        "Индексы аудиопотоков предпросмотра должны быть уникальными.",
-      audioStreamMetadataIsUnavailableForWaveformGeneration:
-        "Метаданные аудиопотока недоступны для создания формы волны.",
-      selectBetweenOneAnd32AudioStreamsForPreview:
-        "Для предпросмотра выберите от 1 до 32 аудиопотоков.",
-      selectBetweenOneAnd32AudioStreamsForWaveformGeneration:
-        "Для создания формы волны выберите от 1 до 32 аудиопотоков.",
-      thumbnailCacheIsUnavailable: "Кэш миниатюр недоступен.",
-      waveformProcessingSettingsMustMatchTheSelectedAudioStreams:
-        "Параметры обработки формы волны должны соответствовать выбранным аудиопотокам.",
-      waveformStreamIndexesMustBeUnique:
-        "Индексы аудиопотоков формы волны должны быть уникальными.",
+      audioPreviewStreamIndexesMustBeUnique: "Индексы аудиопотоков предпросмотра должны быть уникальными",
+      audioStreamMetadataIsUnavailableForWaveformGeneration: "Метаданные аудиопотока недоступны для создания формы волны",
+      selectBetweenOneAnd32AudioStreamsForPreview: "Для предпросмотра выберите от 1 до 32 аудиопотоков",
+      selectBetweenOneAnd32AudioStreamsForWaveformGeneration: "Для создания формы волны выберите от 1 до 32 аудиопотоков",
+      thumbnailCacheIsUnavailable: "Кэш миниатюр недоступен",
+      waveformProcessingSettingsMustMatchTheSelectedAudioStreams: "Параметры обработки формы волны должны соответствовать выбранным аудиопотокам",
+      waveformStreamIndexesMustBeUnique: "Индексы аудиопотоков формы волны должны быть уникальными",
       audio: {
-        temporaryAudioPreviewDirectoryCouldNotBeCreated:
-          "Не удалось создать временную папку для предпросмотра аудио.",
-        uniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated:
-          "Не удалось создать отдельную временную папку для предпросмотра аудио.",
-        audioPreviewsRequireInspectedSourceMedia:
-          "Для предпросмотра аудио сначала нужно проанализировать исходный файл.",
-        ffmpegCouldNotPrepareAudioPreview:
-          "Не удалось подготовить предпросмотр аудио с помощью FFmpeg.",
-        ffmpegIsRequiredToPrepareAudioPreview:
-          "Для подготовки предпросмотра аудио требуется FFmpeg.",
-        preparingAudioPreviewTookTooLong:
-          "Подготовка предпросмотра аудио заняла слишком много времени.",
-        selectedAudioStreamsCouldNotBePreparedForPreview:
-          "Не удалось подготовить выбранные аудиопотоки для предпросмотра.",
-        analyzeTrackLoudnessToPrepareAudioPlayback:
-          "Проанализируйте громкость дорожки, чтобы подготовить аудио к воспроизведению.",
+        temporaryAudioPreviewDirectoryCouldNotBeCreated: "Не удалось создать временную папку для предпросмотра аудио",
+        uniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated: "Не удалось создать отдельную временную папку для предпросмотра аудио",
+        audioPreviewsRequireInspectedSourceMedia: "Для предпросмотра аудио сначала нужно проанализировать исходный файл",
+        ffmpegCouldNotPrepareAudioPreview: "Не удалось подготовить предпросмотр аудио с помощью FFmpeg",
+        ffmpegIsRequiredToPrepareAudioPreview: "Для подготовки предпросмотра аудио требуется FFmpeg",
+        preparingAudioPreviewTookTooLong: "Подготовка предпросмотра аудио заняла слишком много времени",
+        selectedAudioStreamsCouldNotBePreparedForPreview: "Не удалось подготовить выбранные аудиопотоки для предпросмотра",
+        analyzeTrackLoudnessToPrepareAudioPlayback: "Проанализируйте громкость дорожки, чтобы подготовить аудио к воспроизведению",
       },
       loudness: {
-        ffmpegCouldNotAnalyzeAudioLoudness: "Не удалось измерить громкость аудио с помощью FFmpeg.",
-        ffmpegDidNotReturnLoudnessMeasurements: "FFmpeg не вернул измерения громкости.",
-        ffmpegIsRequiredToAnalyzeLoudness: "Для анализа громкости требуется FFmpeg.",
-        ffmpegReturnedIncompleteLoudnessMeasurements: "FFmpeg вернул неполные измерения громкости.",
-        ffmpegReturnedInvalidLoudnessMeasurements:
-          "FFmpeg вернул некорректные измерения громкости.",
-        inspectTheVideoBeforeAnalyzingAudio:
-          "Сначала проанализируйте видео, затем измерьте громкость аудио.",
-        loudnessAnalysisTookTooLong: "Анализ громкости занял слишком много времени.",
-        loudnessAnalysisWasInterrupted: "Анализ громкости прерван.",
-        loudnessAnalysisOutputExceededItsSafetyLimit:
-          "Результат анализа громкости превысил допустимый предел.",
+        ffmpegCouldNotAnalyzeAudioLoudness: "Не удалось измерить громкость аудио с помощью FFmpeg",
+        ffmpegDidNotReturnLoudnessMeasurements: "FFmpeg не вернул измерения громкости",
+        ffmpegIsRequiredToAnalyzeLoudness: "Для анализа громкости требуется FFmpeg",
+        ffmpegReturnedIncompleteLoudnessMeasurements: "FFmpeg вернул неполные измерения громкости",
+        ffmpegReturnedInvalidLoudnessMeasurements: "FFmpeg вернул некорректные измерения громкости",
+        inspectTheVideoBeforeAnalyzingAudio: "Сначала проанализируйте видео, затем измерьте громкость аудио",
+        loudnessAnalysisTookTooLong: "Анализ громкости занял слишком много времени",
+        loudnessAnalysisWasInterrupted: "Анализ громкости прерван",
+        loudnessAnalysisOutputExceededItsSafetyLimit: "Результат анализа громкости превысил допустимый предел",
       },
       waveform: {
-        temporaryWaveformDirectoryCouldNotBeCreated:
-          "Не удалось создать временную папку для формы волны.",
-        uniqueTemporaryWaveformDirectoryCouldNotBeCreated:
-          "Не удалось создать отдельную временную папку для формы волны.",
-        ffmpegCouldNotGenerateTheAudioWaveform:
-          "Не удалось создать форму волны аудио с помощью FFmpeg.",
-        ffmpegIsRequiredToGenerateAudioWaveforms: "Для создания форм волны аудио требуется FFmpeg.",
-        waveformGenerationTookTooLong: "Создание формы волны заняло слишком много времени.",
-        waveformGenerationWasReplaced: "Создание формы волны было заменено новой задачей.",
-        widthOutOfRange: "Ширина формы волны должна быть от {{minWidth}} до {{maxWidth}} пикселей.",
-        streamDoesNotBelongToSource:
-          "Аудиопоток №{{streamIndex}} не относится к активному источнику.",
-        analysisFailed: "Не удалось создать форму волны для аудиопотока №{{streamIndex}}.",
-        sampleCountUnavailable:
-          "FFmpeg не сообщил число аудиоотсчётов для потока №{{streamIndex}}.",
-        tooFewSamples:
-          "В аудиопотоке недостаточно отсчётов для ширины формы волны (поток №{{streamIndex}}).",
-        sampleReductionFailed:
-          "Не удалось уменьшить число отсчётов формы волны для аудиопотока №{{streamIndex}}.",
-        imageMissing: "Для аудиопотока №{{streamIndex}} не создано изображение формы волны.",
-        imageRenderingFailed:
-          "Не удалось отобразить изображение формы волны для аудиопотока №{{streamIndex}}.",
-        previewCouldNotBeDisplayed: "Не удалось показать предпросмотр формы волны.",
+        temporaryWaveformDirectoryCouldNotBeCreated: "Не удалось создать временную папку для формы волны",
+        uniqueTemporaryWaveformDirectoryCouldNotBeCreated: "Не удалось создать отдельную временную папку для формы волны",
+        ffmpegCouldNotGenerateTheAudioWaveform: "Не удалось создать форму волны аудио с помощью FFmpeg",
+        ffmpegIsRequiredToGenerateAudioWaveforms: "Для создания форм волны аудио требуется FFmpeg",
+        waveformGenerationTookTooLong: "Создание формы волны заняло слишком много времени",
+        waveformGenerationWasReplaced: "Создание формы волны было заменено новой задачей",
+        widthOutOfRange: "Ширина формы волны должна быть от {{minWidth}} до {{maxWidth}} пикселей",
+        streamDoesNotBelongToSource: "Аудиопоток №{{streamIndex}} не относится к активному источнику",
+        analysisFailed: "Не удалось создать форму волны для аудиопотока №{{streamIndex}}",
+        sampleCountUnavailable: "FFmpeg не сообщил число аудиоотсчётов для потока №{{streamIndex}}",
+        tooFewSamples: "В аудиопотоке недостаточно отсчётов для ширины формы волны (поток №{{streamIndex}})",
+        sampleReductionFailed: "Не удалось уменьшить число отсчётов формы волны для аудиопотока №{{streamIndex}}",
+        imageMissing: "Для аудиопотока №{{streamIndex}} не создано изображение формы волны",
+        imageRenderingFailed: "Не удалось отобразить изображение формы волны для аудиопотока №{{streamIndex}}",
+        previewCouldNotBeDisplayed: "Не удалось показать предпросмотр формы волны",
       },
     },
   },
@@ -1182,10 +1108,10 @@ export const ru = {
       },
       title: "Список изменений",
       empty: {
-        title: "Выпущенных изменений пока нет.",
-        description: "Выпущенные обновления появятся здесь, когда войдут в установленную версию.",
+        title: "Выпущенных изменений пока нет",
+        description: "Выпущенные обновления появятся здесь, когда войдут в установленную версию",
       },
-      description: "Выпущенные изменения, включённые в эту версию EasyTrim.",
+      description: "Выпущенные изменения, включённые в эту версию EasyTrim",
     },
     project: {
       actions: {
@@ -1201,7 +1127,7 @@ export const ru = {
     },
     whatsNew: {
       title: "Что нового",
-      description: "Изменения с момента последнего открытия EasyTrim.",
+      description: "Изменения с момента последнего открытия EasyTrim",
     },
   },
   units: {

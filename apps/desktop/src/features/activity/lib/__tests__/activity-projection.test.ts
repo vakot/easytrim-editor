@@ -46,7 +46,7 @@ const labels: ActivityProjectionLabels = {
 
 const outputPath = "C:/Exports/clip.mp4";
 const sourcePath = "C:/Media/source.mp4";
-const sessionLabels = { now: "Now", today: "Today", yesterday: "Yesterday" };
+const sessionLabels = { now: "Now" };
 
 function diagnosticEvent(
   event: DiagnosticEvent["event"],
@@ -974,28 +974,21 @@ describe("activity projection", () => {
     );
   });
 
-  it.each([
-    ["2026-08-31T12:34:00", "Today"],
-    ["2026-08-30T20:14:00", "Yesterday"],
-    ["2026-08-29T10:03:00", "Aug 29"],
-    ["2025-12-28T21:21:00", "Dec 28, 2025"],
-  ])("formats historical session start %s from metadata", (startedAt, expected) => {
-    const group = {
-      ...session("history-session", startedAt),
-      entries: [],
-      isCurrent: false,
-    };
+  it.each(["2026-08-31T12:34:00", "2026-08-30T20:14:00", "2026-08-29T10:03:00"])(
+    "leaves historical session timestamp formatting to the shared formatter for %s",
+    (startedAt) => {
+      const group = {
+        ...session("history-session", startedAt),
+        entries: [],
+        isCurrent: false,
+      };
 
-    expect(
-      getActivitySessionPresentation(
-        group,
-        "1.3.0",
-        new Date("2026-08-31T18:00:00"),
-        "en-US",
-        sessionLabels,
-      ),
-    ).toEqual({ label: expected, timestamp: startedAt, tone: "default" });
-  });
+      expect(getActivitySessionPresentation(group, "1.3.0", sessionLabels)).toEqual({
+        label: "",
+        tone: "default",
+      });
+    },
+  );
 
   it("labels the current session as Now", () => {
     const group = {
@@ -1004,15 +997,10 @@ describe("activity projection", () => {
       isCurrent: true,
     };
 
-    expect(
-      getActivitySessionPresentation(
-        group,
-        "1.3.0",
-        new Date("2026-08-31T18:00:00"),
-        "en-US",
-        sessionLabels,
-      ),
-    ).toEqual({ label: "Now", tone: "current" });
+    expect(getActivitySessionPresentation(group, "1.3.0", sessionLabels)).toEqual({
+      label: "Now",
+      tone: "current",
+    });
   });
 
   it("omits the current session when it has no projected activity", () => {
@@ -1038,28 +1026,13 @@ describe("activity projection", () => {
       isCurrent: false,
     };
 
-    expect(
-      getActivitySessionPresentation(
-        differentVersion,
-        "1.3.0",
-        new Date("2026-08-31T18:00:00"),
-        "en-US",
-        sessionLabels,
-      ),
-    ).toEqual({
-      label: "v1.4.2 · Yesterday",
-      timestamp: "2026-08-30T20:14:00",
+    expect(getActivitySessionPresentation(differentVersion, "1.3.0", sessionLabels)).toEqual({
+      label: "v1.4.2",
       tone: "warning",
     });
-    expect(
-      getActivitySessionPresentation(
-        unknownVersion,
-        "1.3.0",
-        new Date("2026-08-31T18:00:00"),
-        "en-US",
-        sessionLabels,
-      ).tone,
-    ).toBe("default");
+    expect(getActivitySessionPresentation(unknownVersion, "1.3.0", sessionLabels).tone).toBe(
+      "default",
+    );
   });
 
   it("projects workspace recovery as one standalone full or partial entry", () => {

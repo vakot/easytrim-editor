@@ -5,7 +5,6 @@ import type { DiagnosticSessionMetadata } from "@/lib/tauri/diagnostics.types";
 import type { ActivityEntry } from "../../../lib/activity-projection";
 import { ActivityFeedView } from "../ActivityFeed";
 
-const now = new Date(2026, 7, 31, 18).getTime();
 const entries: ActivityEntry[] = [
   {
     id: "current-session:render-pending:ffmpeg.export",
@@ -139,7 +138,6 @@ const meta = {
   args: {
     currentAppVersion: "1.3.0",
     currentSessionId: "current-session",
-    now,
     onAction: () => undefined,
     sessions,
   },

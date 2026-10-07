@@ -45,10 +45,10 @@ describe("resolveInitialLanguage", () => {
       "Объединено 5 выбранных дорожек",
     );
     expect(i18n.getFixedT("en")("audio.output.merge.tooltip")).toBe(
-      "All selected tracks are merged into one track; this requires encoding.",
+      "All selected tracks are merged into one track; this requires encoding",
     );
     expect(i18n.getFixedT("ru")("audio.output.merge.tooltip")).toBe(
-      "Все выбранные дорожки объединяются в одну; это требует кодирования.",
+      "Все выбранные дорожки объединяются в одну; это требует кодирования",
     );
   });
 

@@ -23,7 +23,7 @@ function ContextMenuTrigger({
 }: React.ComponentProps<typeof ContextMenuPrimitive.Trigger>) {
   return (
     <ContextMenuPrimitive.Trigger
-      className={cn("select-none", className)}
+      className={className}
       data-slot="context-menu-trigger"
       {...props}
     />

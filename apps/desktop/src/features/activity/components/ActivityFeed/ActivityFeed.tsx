@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openFileLocation } from "@/lib/tauri/media";
@@ -9,13 +9,7 @@ import type { ActivityAction } from "../../lib/activity-projection";
 import { ActivityFeedView } from "./components/ActivityFeedView";
 
 function ActivityFeed({ className }: { className?: string }) {
-  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const { currentSessionId, entries, sessions } = useActivityFeed();
-
-  useEffect(() => {
-    const interval = window.setInterval(() => setCurrentTime(Date.now()), 60_000);
-    return () => window.clearInterval(interval);
-  }, []);
 
   const handleAction = useCallback((action: ActivityAction) => {
     if (action.kind !== "open") return;
@@ -28,7 +22,6 @@ function ActivityFeed({ className }: { className?: string }) {
       currentAppVersion={getCurrentVersion()}
       currentSessionId={currentSessionId}
       entries={entries}
-      now={currentTime}
       onAction={handleAction}
       sessions={sessions}
     />

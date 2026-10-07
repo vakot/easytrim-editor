@@ -11,7 +11,7 @@ import {
   type ActivityAction,
   type ActivityEntry,
   type ActivityGroup,
-  type ActivitySessionGroup,
+  type ActivitySessionDisplayGroup,
   type ActivitySessionItem,
   type ActivitySessionLabels,
   getActivitySessionPresentation,
@@ -26,11 +26,9 @@ import { ActivityFeedGroupedEntry } from "./ActivityFeedGroupedEntry";
 
 interface ActivityFeedGroupProps {
   currentAppVersion: string;
-  currentDateTime: Date;
-  group: ActivitySessionGroup;
+  group: ActivitySessionDisplayGroup;
   isBranch: boolean;
   isCompact: boolean;
-  locale: string;
   onAction?: (action: ActivityAction) => void;
   sessionLabels: ActivitySessionLabels;
 }
@@ -43,22 +41,14 @@ const sessionSeparatorClassNames = {
 
 function ActivityFeedGroup({
   currentAppVersion,
-  currentDateTime,
   group,
   isBranch,
   isCompact,
-  locale,
   onAction,
   sessionLabels,
 }: ActivityFeedGroupProps) {
   const { t } = useTranslation();
-  const presentation = getActivitySessionPresentation(
-    group,
-    currentAppVersion,
-    currentDateTime,
-    locale,
-    sessionLabels,
-  );
+  const presentation = getActivitySessionPresentation(group, currentAppVersion, sessionLabels);
 
   const activityItems = isBranch
     ? groupBranchActivityEntriesForDisplay(groupActivityEntriesByBranch(group.entries))
@@ -69,16 +59,22 @@ function ActivityFeedGroup({
       <div className="sticky top-0 z-10 bg-card">
         <Marker className={sessionSeparatorClassNames[presentation.tone]} variant="separator">
           <MarkerContent className="flex-row items-center gap-1 text-xs font-medium">
-            {presentation.label}
-            {presentation.timestamp ? (
+            {group.isCurrent ? (
+              presentation.label
+            ) : (
               <>
-                <span>·</span>
+                {presentation.label ? (
+                  <>
+                    {presentation.label}
+                    <span>·</span>
+                  </>
+                ) : null}
                 <RelativeTimestamp
                   className="text-muted-foreground"
-                  timestamp={toTimestampMicros(presentation.timestamp)}
+                  timestamp={toTimestampMicros(group.startedAt)}
                 />
               </>
-            ) : null}
+            )}
           </MarkerContent>
         </Marker>
       </div>

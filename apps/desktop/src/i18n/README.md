@@ -40,7 +40,7 @@ quality or human review status.
 | ------------- | --------------- | ------------------ |
 | Source        | Source          | Источник           |
 | Source panel  | Source explorer | Источники          |
-| Layout        | Layout          | Расположение       |
+| Layout        | Layout          | Компоновка         |
 | Export        | Export          | Экспорт            |
 | Render        | Render          | Рендеринг          |
 | Lossless Cut  | Lossless Cut    | Обрезка без потерь |
