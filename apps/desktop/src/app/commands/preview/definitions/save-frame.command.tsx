@@ -9,7 +9,7 @@ function useSaveFrameCommand() {
   const { t } = useTranslation();
   const { isAvailable, requestSaveFrame } = usePreviewTransform();
   const { isPlaying } = useTimelineTransport();
-  const label = t("preview.actions.saveFrame");
+  const label = t("preview.frame.saveFrame");
 
   return {
     enabled: isAvailable && !isPlaying,
@@ -18,9 +18,7 @@ function useSaveFrameCommand() {
     run: requestSaveFrame,
     id: "save-current-frame" as const,
     label,
-    searchTerms: commandSearchTerms(
-      `${label}|${t("app.options.commandSearchTerms.saveCurrentFrame")}`,
-    ),
+    searchTerms: commandSearchTerms(`${label}|${t("commands.searchTerms.saveCurrentFrame")}`),
     variant: "default" as const,
   };
 }

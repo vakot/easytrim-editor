@@ -236,6 +236,13 @@ Project-specific rules refine the generic rules for EasyTrim Editor. When a proj
 
 Do not duplicate project-specific architecture into generic rule files. Keep reusable agent behavior in the generic rules and EasyTrim-specific contracts in the project-specific rules.
 
+## Translation Ownership
+
+English in `apps/desktop/src/i18n/locales/en.ts` is the canonical source for product copy.
+Automated agents must not add or modify Russian or Slovak translation wording unless the user
+explicitly requests work on that translation. Missing non-English keys intentionally fall back to
+English. For key organization and validation, follow `apps/desktop/src/i18n/README.md`.
+
 ## Project Skills
 
 EasyTrim Editor provides task-specific skills under `.agents/skills/`.

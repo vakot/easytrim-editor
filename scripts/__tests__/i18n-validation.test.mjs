@@ -82,7 +82,7 @@ test("accounts for plural families and reports missing interpolation and unused 
   assert.ok(!report.issues.some((issue) => issue.includes("audio.options.channels_")));
 });
 
-test("reports locale structure and interpolation mismatches", () => {
+test("accepts partial locales but rejects unknown keys and interpolation mismatches", () => {
   const locales = new Map([
     [
       "en",
@@ -107,6 +107,28 @@ test("reports locale structure and interpolation mismatches", () => {
 
   assert.ok(issues.includes("sk has extra translation key common.labels.extra"));
   assert.ok(issues.includes("sk interpolation parameters differ for common.labels.greeting"));
+  assert.ok(!issues.some((issue) => issue.includes("is missing translation key")));
+});
+
+test("rejects duplicate keys, empty strings, and incomplete canonical plural families", () => {
+  const en = parseLocaleSource(
+    `export const en = {
+      queue: { summary: { jobs_one: "{{count}} job", blank: "  ", blank: "Value" } },
+    } as const;`,
+    "en",
+  );
+
+  assert.ok(
+    en.issues.some((issue) => issue.includes("duplicate translation key queue.summary.blank")),
+  );
+  assert.ok(
+    en.issues.some((issue) => issue.includes("empty translation value at queue.summary.blank")),
+  );
+  assert.ok(
+    validateLocaleArchitecture(new Map([["en", en]])).includes(
+      "canonical plural family queue.summary.jobs requires an _other form",
+    ),
+  );
 });
 
 test("enforces measured shortcut hint label limits for each locale and row", () => {
@@ -115,14 +137,12 @@ test("enforces measured shortcut hint label limits for each locale and row", () 
       "en",
       parseLocaleSource(
         `export const en = {
-          app: {
-            actions: { openFile: "Open File", openFolder: "Open Folder" },
-            labels: { commandPalette: "Command Palette" },
-          },
-          preview: { labels: {
-            shortcutPlayPause: "Play / Pause",
-            shortcutPreviousNextFrame: "Prev / Next Frame",
-            shortcutMarkInOut: "Mark In / Mark Out",
+          source: { file: { openFile: "Open File", openFolder: "Open Folder" } },
+          commands: { title: "Command Palette" },
+          preview: { shortcuts: {
+            playPause: "Play / Pause",
+            previousNextFrame: "Prev / Next Frame",
+            markInOut: "Mark In / Mark Out",
           } },
         } as const;`,
         "en",
@@ -132,14 +152,12 @@ test("enforces measured shortcut hint label limits for each locale and row", () 
       "ru",
       parseLocaleSource(
         `export const ru = {
-          app: {
-            actions: { openFile: "Открыть файл", openFolder: "Открыть папку" },
-            labels: { commandPalette: "Палитра команд" },
-          },
-          preview: { labels: {
-            shortcutPlayPause: "Пуск / Пауза",
-            shortcutPreviousNextFrame: "Предыдущий / Следующий кадр",
-            shortcutMarkInOut: "Начало / Конец",
+          source: { file: { openFile: "Открыть файл", openFolder: "Открыть папку" } },
+          commands: { title: "Палитра команд" },
+          preview: { shortcuts: {
+            playPause: "Пуск / Пауза",
+            previousNextFrame: "Предыдущий / Следующий кадр",
+            markInOut: "Начало / Конец",
           } },
         } as const;`,
         "ru",
@@ -151,6 +169,6 @@ test("enforces measured shortcut hint label limits for each locale and row", () 
   assert.equal(issues.length, 1);
   assert.match(
     issues[0],
-    /ru: preview\.labels\.shortcutPreviousNextFrame for the Previous \/ Next Frame hint row must not exceed 22 symbols/,
+    /ru: preview\.shortcuts\.previousNextFrame for the Previous \/ Next Frame hint row must not exceed 22 symbols/,
   );
 });

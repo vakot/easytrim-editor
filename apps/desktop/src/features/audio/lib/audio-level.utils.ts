@@ -7,30 +7,30 @@ const MIN_SLIDER_DECIBELS = -24;
 function normalizationPresetLabel(preset: LoudnessPreset, t: TFunction): string {
   switch (preset) {
     case "broadcast":
-      return t("audio.options.normalizationBroadcast");
+      return t("audio.normalization.options.broadcast");
     case "streaming":
-      return t("audio.options.normalizationStreaming");
+      return t("audio.normalization.options.streaming");
     case "webVideo":
-      return t("audio.options.normalizationWebVideo");
+      return t("audio.normalization.options.webVideo");
   }
 }
 
 function noiseReductionPresetLabel(preset: NoiseReductionPreset, t: TFunction): string {
   switch (preset) {
     case "light":
-      return t("audio.options.noiseReductionLight");
+      return t("audio.noiseReduction.options.light");
     case "medium":
-      return t("audio.options.noiseReductionMedium");
+      return t("audio.noiseReduction.options.medium");
     case "strong":
-      return t("audio.options.noiseReductionStrong");
+      return t("audio.noiseReduction.options.strong");
   }
 }
 
 function formatChannels(stream: AudioStream, t: TFunction): string {
   if (stream.channelLayout) return stream.channelLayout;
   return stream.channels === undefined
-    ? t("audio.options.unknownLayout")
-    : t("audio.options.channels", { count: stream.channels });
+    ? t("audio.tracks.options.unknownLayout")
+    : t("audio.tracks.options.channels", { count: stream.channels });
 }
 
 function formatGain(gainDb: number, language: string): string {
@@ -45,12 +45,12 @@ function formatGain(gainDb: number, language: string): string {
 }
 
 function audioOutputSummary(enabledCount: number, mergeAudio: boolean, t: TFunction): string {
-  if (enabledCount === 0) return t("audio.messages.output.videoOnly");
+  if (enabledCount === 0) return t("audio.output.messages.videoOnly");
   if (mergeAudio && enabledCount > 1) {
-    return t("audio.messages.output.merged", { count: enabledCount });
+    return t("audio.output.messages.merged", { count: enabledCount });
   }
-  if (mergeAudio) return t("audio.messages.output.oneTrack");
-  return t("audio.messages.output.separate", { count: enabledCount });
+  if (mergeAudio) return t("audio.output.messages.oneTrack");
+  return t("audio.output.messages.separate", { count: enabledCount });
 }
 
 export {

@@ -8,7 +8,7 @@ import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 function useOpenSettingsCommand() {
   const { t } = useTranslation();
   const { openSettings } = useSettingsDialog();
-  const label = t("settings.labels.title");
+  const label = t("settings.title");
 
   return {
     enabled: true,

@@ -10,8 +10,8 @@ function useLayoutDensityCommands() {
   const dispatch = useAppDispatch();
   const selected = useAppSelector(selectLayoutDensity);
   const labels = {
-    default: t("app.options.layoutDensities.default"),
-    compact: t("app.options.layoutDensities.compact"),
+    default: t("layout.density.default"),
+    compact: t("layout.density.compact"),
   };
 
   return (["default", "compact"] as const).map((density) => ({

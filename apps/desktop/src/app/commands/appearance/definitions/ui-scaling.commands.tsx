@@ -20,9 +20,9 @@ function useUiScalingCommands() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const uiScalePercent = useAppSelector(selectUiScalePercent);
-  const zoomInLabel = t("app.actions.zoomIn");
-  const zoomOutLabel = t("app.actions.zoomOut");
-  const resetLabel = t("app.actions.zoomReset");
+  const zoomInLabel = t("layout.zoomIn");
+  const zoomOutLabel = t("layout.zoomOut");
+  const resetLabel = t("layout.zoomReset");
 
   return [
     {

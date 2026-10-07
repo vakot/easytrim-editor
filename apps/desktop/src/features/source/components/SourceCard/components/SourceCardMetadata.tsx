@@ -11,7 +11,7 @@ import { useSourceCardData } from "../hooks/useSourceCardData";
 function SourceCardMetadata({ className }: { className?: string }) {
   const source = useSourceCardData();
   const { t } = useTranslation();
-  const unknown = t("common.status.unknown");
+  const unknown = t("common.unknown");
   const fileSize = formatBytes(source.fileSizeBytes, unknown);
 
   return (
@@ -23,12 +23,12 @@ function SourceCardMetadata({ className }: { className?: string }) {
           </span>
         </TooltipTrigger>
         <TooltipContent>
-          {t("source.labels.metadata.fileSize")}: {fileSize}
+          {t("source.metadata.fileSize")}: {fileSize}
         </TooltipContent>
       </Tooltip>
       <span aria-hidden="true">·</span>
       <RelativeTimestamp
-        label={t("source.labels.metadata.updatedAt")}
+        label={t("source.metadata.updatedAt")}
         timestamp={source.updatedAtMicros}
       />
     </div>

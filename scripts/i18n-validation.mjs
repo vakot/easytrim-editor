@@ -4,33 +4,6 @@ import { basename, extname, join, relative } from "node:path";
 import ts from "typescript";
 
 const CANONICAL_LOCALE = "en";
-const CANONICAL_NAMESPACES = [
-  "common",
-  "app",
-  "settings",
-  "activity",
-  "queue",
-  "source",
-  "preview",
-  "timeline",
-  "audio",
-  "export",
-  "support",
-  "units",
-];
-
-const CATEGORY_ORDER = [
-  "pages",
-  "actions",
-  "labels",
-  "status",
-  "messages",
-  "tooltips",
-  "dialogs",
-  "accessibility",
-  "options",
-];
-
 const PLURAL_SUFFIXES = ["zero", "one", "two", "few", "many", "other"];
 const SUSPICIOUS_CYRILLIC = /[\u0400-\u04ff]/;
 const SUSPICIOUS_MOJIBAKE = /[\ufffd]|Ã|Â/;
@@ -39,16 +12,16 @@ const SUSPICIOUS_MOJIBAKE = /[\ufffd]|Ã|Â/;
 // the dotted divider, and up to 68px for keycaps; the remaining 180px allows
 // 22 code points at about 8px each. Space uses fewer pixels, so allow 24 there.
 const SHORTCUT_HINT_LABEL_LIMITS = [
-  { key: "app.actions.openFile", maxSymbols: 22, row: "Open File" },
-  { key: "app.actions.openFolder", maxSymbols: 22, row: "Open Folder" },
-  { key: "preview.labels.shortcutPlayPause", maxSymbols: 24, row: "Play / Pause" },
+  { key: "source.file.openFile", maxSymbols: 22, row: "Open File" },
+  { key: "source.file.openFolder", maxSymbols: 22, row: "Open Folder" },
+  { key: "preview.shortcuts.playPause", maxSymbols: 24, row: "Play / Pause" },
   {
-    key: "preview.labels.shortcutPreviousNextFrame",
+    key: "preview.shortcuts.previousNextFrame",
     maxSymbols: 22,
     row: "Previous / Next Frame",
   },
-  { key: "preview.labels.shortcutMarkInOut", maxSymbols: 22, row: "Mark In / Mark Out" },
-  { key: "app.labels.commandPalette", maxSymbols: 22, row: "Command Palette" },
+  { key: "preview.shortcuts.markInOut", maxSymbols: 22, row: "Mark In / Mark Out" },
+  { key: "commands.title", maxSymbols: 22, row: "Command Palette" },
 ];
 
 export async function validateI18n(repositoryRoot) {
@@ -158,6 +131,7 @@ export function parseLocaleSource(sourceText, localeName, fileName = `${localeNa
     if (ts.isStringLiteralLike(unwrapped)) {
       const key = path.join(".");
       if (leaves.has(key)) issues.push(`${fileName}: duplicate translation key ${key}`);
+      if (!unwrapped.text.trim()) issues.push(`${fileName}: empty translation value at ${key}`);
       if (
         SUSPICIOUS_MOJIBAKE.test(unwrapped.text) ||
         (localeName !== "ru" && SUSPICIOUS_CYRILLIC.test(unwrapped.text))
@@ -184,6 +158,9 @@ export function parseLocaleSource(sourceText, localeName, fileName = `${localeNa
       if (!name) {
         issues.push(`${fileName}: ${path.join(".") || "locale root"} uses a computed property`);
         continue;
+      }
+      if (childNames.includes(name)) {
+        issues.push(`${fileName}: duplicate translation key ${[...path, name].join(".")}`);
       }
       childNames.push(name);
       visitLocaleNode(property.initializer, [...path, name]);
@@ -294,33 +271,22 @@ export function validateLocaleArchitecture(locales) {
   const issues = [];
   const canonical = locales.get(CANONICAL_LOCALE);
   if (!canonical) return [`missing canonical ${CANONICAL_LOCALE} locale`];
-
-  const rootChildren = canonical.objectChildren.get("") ?? [];
-  if (rootChildren.join("\0") !== CANONICAL_NAMESPACES.join("\0")) {
-    issues.push(`canonical namespaces must be ordered as ${CANONICAL_NAMESPACES.join(", ")}`);
+  const pluralFamilies = new Set();
+  for (const key of canonical.leaves.keys()) {
+    const match = key.match(/^(.*)_(zero|one|two|few|many|other)$/);
+    if (match) pluralFamilies.add(match[1]);
   }
-
-  for (const namespace of rootChildren) {
-    const categories = canonical.objectChildren.get(namespace) ?? [];
-    const unknownCategories = categories.filter((category) => !CATEGORY_ORDER.includes(category));
-    if (unknownCategories.length > 0) {
-      issues.push(`${namespace} uses unsupported categories: ${unknownCategories.join(", ")}`);
+  for (const base of pluralFamilies) {
+    if (!canonical.leaves.has(`${base}_other`)) {
+      issues.push(`canonical plural family ${base} requires an _other form`);
     }
-    const categoryIndexes = categories.map((category) => CATEGORY_ORDER.indexOf(category));
-    if (
-      categoryIndexes.some(
-        (index, position) => position > 0 && index < categoryIndexes[position - 1],
-      )
-    ) {
-      issues.push(`${namespace} categories must follow ${CATEGORY_ORDER.join(", ")}`);
+    if (canonical.leaves.has(base)) {
+      issues.push(`canonical plural family ${base} conflicts with an unsuffixed key`);
     }
   }
 
   for (const [localeName, locale] of locales) {
     if (localeName === CANONICAL_LOCALE) continue;
-    for (const key of canonical.leaves.keys()) {
-      if (!locale.leaves.has(key)) issues.push(`${localeName} is missing translation key ${key}`);
-    }
     for (const key of locale.leaves.keys()) {
       if (!canonical.leaves.has(key)) issues.push(`${localeName} has extra translation key ${key}`);
     }

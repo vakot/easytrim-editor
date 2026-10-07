@@ -8,7 +8,7 @@ import { exportQueueDialogOpened } from "@/app/store/slices/export-slice";
 function useOpenExportQueueCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const label = t("queue.actions.openExportQueue");
+  const label = t("queue.actions.open");
 
   return {
     enabled: true,

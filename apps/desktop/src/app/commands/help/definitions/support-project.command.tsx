@@ -13,8 +13,10 @@ function useSupportProjectCommand() {
       await openExternalUrl("https://ko-fi.com/vakot");
     },
     id: "support-project" as const,
-    label: t("support.actions.projectSupport"),
-    searchTerms: commandSearchTerms(`${t("support.actions.projectSupport")}|donate|support`),
+    label: t("support.project.actions.projectSupport"),
+    searchTerms: commandSearchTerms(
+      `${t("support.project.actions.projectSupport")}|donate|support`,
+    ),
     variant: "default" as const,
   };
 }

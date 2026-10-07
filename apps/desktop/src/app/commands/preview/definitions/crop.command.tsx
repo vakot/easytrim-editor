@@ -7,7 +7,7 @@ import { usePreviewTransform } from "@/features/preview";
 function useCropPreviewCommand() {
   const { t } = useTranslation();
   const { isAvailable, requestCrop } = usePreviewTransform();
-  const label = t("preview.actions.transform.crop");
+  const label = t("preview.transform.crop");
   return {
     enabled: isAvailable,
     icon: <Crop aria-hidden="true" />,

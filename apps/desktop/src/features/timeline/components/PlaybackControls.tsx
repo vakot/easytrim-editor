@@ -57,15 +57,15 @@ function PlaybackControls({ className }: { className?: string }) {
       <div className="flex items-center gap-1.5">
         <TransportButton
           disabled={disabled || !editing.canSetSegmentStart}
-          label={t("preview.actions.setStart")}
+          label={t("preview.segment.setStart")}
           onClick={() => {
             editing.onSetSegmentBoundary("start", { type: "button", id: "set-start" });
           }}
           shortcut="I"
           title={
             editing.canSetSegmentStart
-              ? t("preview.tooltips.setStart")
-              : t("preview.messages.setStartUnavailable")
+              ? t("preview.segment.setStartTooltip")
+              : t("preview.segment.setStartUnavailable")
           }
         >
           <SquareArrowRight />
@@ -119,24 +119,28 @@ function PlaybackControls({ className }: { className?: string }) {
             onEnd: () => playback.stopShuttle({ type: "button", id: "previous-frame" }),
             onStart: () => playback.startShuttle(-1, { type: "button", id: "previous-frame" }),
           }}
-          label={t("preview.actions.previousFrame")}
+          label={t("preview.frame.previousFrame")}
           onClick={() => {
             playback.stepFrame(-1, { type: "button", id: "previous-frame" });
           }}
           shortcut="ArrowLeft"
-          title={t("preview.tooltips.previousFrame")}
+          title={t("preview.frame.previousFrameTooltip")}
         >
           <SkipBack />
         </TransportButton>
         <TransportButton
           disabled={disabled}
-          label={playback.isPlaying ? t("preview.actions.pause") : t("preview.actions.play")}
+          label={playback.isPlaying ? t("preview.playback.pause") : t("preview.playback.play")}
           onClick={() => {
             playback.toggle({ type: "button", id: "playback" });
           }}
           primary
           shortcut="Space"
-          title={playback.isPlaying ? t("preview.tooltips.pause") : t("preview.tooltips.play")}
+          title={
+            playback.isPlaying
+              ? t("preview.playback.pauseTooltip")
+              : t("preview.playback.playTooltip")
+          }
         >
           {playback.isPlaying ? <Pause /> : <Play />}
         </TransportButton>
@@ -147,12 +151,12 @@ function PlaybackControls({ className }: { className?: string }) {
             onEnd: () => playback.stopShuttle({ type: "button", id: "next-frame" }),
             onStart: () => playback.startShuttle(1, { type: "button", id: "next-frame" }),
           }}
-          label={t("preview.actions.nextFrame")}
+          label={t("preview.frame.nextFrame")}
           onClick={() => {
             playback.stepFrame(1, { type: "button", id: "next-frame" });
           }}
           shortcut="ArrowRight"
-          title={t("preview.tooltips.nextFrame")}
+          title={t("preview.frame.nextFrameTooltip")}
         >
           <SkipForward />
         </TransportButton>
@@ -200,15 +204,15 @@ function PlaybackControls({ className }: { className?: string }) {
         </AnimatePresence>
         <TransportButton
           disabled={disabled || !editing.canSetSegmentEnd}
-          label={t("preview.actions.setEnd")}
+          label={t("preview.segment.setEnd")}
           onClick={() => {
             editing.onSetSegmentBoundary("end", { type: "button", id: "set-end" });
           }}
           shortcut="O"
           title={
             editing.canSetSegmentEnd
-              ? t("preview.tooltips.setEnd")
-              : t("preview.messages.setEndUnavailable")
+              ? t("preview.segment.setEndTooltip")
+              : t("preview.segment.setEndUnavailable")
           }
         >
           <SquareArrowLeft />

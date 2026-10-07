@@ -91,9 +91,9 @@ function CloseSources({ children, sources = [] }: SourceActionProps) {
       <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{t("source.dialogs.close.title")}</AlertDialogTitle>
+          <AlertDialogTitle>{t("source.close.confirmation.title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t("source.dialogs.close.description", { count: sourceIds.length })}
+            {t("source.close.confirmation.description", { count: sourceIds.length })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -56,7 +56,7 @@ function ExportQueueItemEdit({ className }: { className?: string }) {
       <TooltipTrigger asChild>
         <span className="inline-flex" tabIndex={isNativeDialogOpen ? 0 : undefined}>
           <Button
-            aria-label={t("queue.actions.editExport")}
+            aria-label={t("queue.actions.edit")}
             className={className}
             disabled={isNativeDialogOpen}
             onClick={() =>
@@ -72,7 +72,7 @@ function ExportQueueItemEdit({ className }: { className?: string }) {
           </Button>
         </span>
       </TooltipTrigger>
-      <TooltipContent>{t("queue.actions.editExport")}</TooltipContent>
+      <TooltipContent>{t("queue.actions.edit")}</TooltipContent>
     </Tooltip>
   );
 }
@@ -91,7 +91,7 @@ function ExportQueueItemRestore({ className }: { className?: string }) {
 
   return (
     <Button
-      aria-label={t("queue.actions.restore")}
+      aria-label={t("queue.actions.restoreEdit")}
       className={className}
       onClick={() =>
         void dispatch(
@@ -99,7 +99,7 @@ function ExportQueueItemRestore({ className }: { className?: string }) {
         )
       }
       size="icon-xs"
-      title={t("queue.actions.restore")}
+      title={t("queue.actions.restoreEdit")}
       type="button"
       variant="outline"
     >

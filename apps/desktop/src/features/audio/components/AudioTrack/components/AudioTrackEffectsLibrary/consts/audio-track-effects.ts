@@ -32,7 +32,7 @@ const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
     defaultSelected: true,
     id: "highPass",
     stage: "cleanup",
-    label: (t) => t("audio.labels.highPass"),
+    label: (t) => t("audio.highPass.label"),
     Page: HighPassPage,
     isEnabled: (processing) =>
       getAudioTrackSignalEffect(processing, "highPass", "cleanup") !== undefined,
@@ -43,7 +43,7 @@ const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
   {
     id: "noiseReduction",
     stage: "cleanup",
-    label: (t) => t("audio.labels.noiseReduction"),
+    label: (t) => t("audio.noiseReduction.label"),
     Page: NoiseReductionPage,
     isEnabled: (processing) =>
       getAudioTrackSignalEffect(processing, "noiseReduction") !== undefined,
@@ -54,7 +54,7 @@ const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
   {
     id: "loudnessNormalization",
     stage: "levelPolicy",
-    label: (t) => t("audio.labels.loudnessNormalization"),
+    label: (t) => t("audio.normalization.labels.loudnessNormalization"),
     Page: NormalizeLoudnessPage,
     isEnabled: (processing) => processing.loudnessNormalization !== undefined,
     isDirty: (initial, current) =>
@@ -63,7 +63,7 @@ const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
   {
     id: "limiter",
     stage: "finalProtection",
-    label: (t) => t("audio.labels.limiter"),
+    label: (t) => t("audio.limiter.label"),
     Page: LimiterPage,
     isEnabled: (processing) => getAudioTrackSignalEffect(processing, "limiter") !== undefined,
     isDirty: (initial, current) => {

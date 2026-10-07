@@ -13,9 +13,9 @@ function useActivityFeedViewCommands() {
   const dispatch = useAppDispatch();
   const selected = useAppSelector(selectActivityFeedView);
   const labels = {
-    default: t("settings.options.activityFeedViews.default"),
-    compact: t("settings.options.activityFeedViews.compact"),
-    branch: t("settings.options.activityFeedViews.branch"),
+    default: t("settings.layout.activityFeedView.options.default"),
+    compact: t("settings.layout.activityFeedView.options.compact"),
+    branch: t("settings.layout.activityFeedView.options.branch"),
   };
 
   return (["default", "compact", "branch"] as const).map((view) => ({

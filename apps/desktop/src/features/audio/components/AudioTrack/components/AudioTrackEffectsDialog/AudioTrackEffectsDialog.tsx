@@ -68,7 +68,7 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
   const title =
     stream.title ??
     stream.language ??
-    t("audio.labels.defaultTrack", { number: controller.trackNumber });
+    t("audio.tracks.labels.defaultTrack", { number: controller.trackNumber });
 
   const draftProcessing = getAudioTrackEffectsDraftProcessing(draft);
   const isDirty = isAudioTrackEffectsDraftDirty(draft, AUDIO_TRACK_EFFECTS);
@@ -77,10 +77,8 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
   return (
     <LibraryDialogContent>
       <LibraryDialogHeader className="-mx-4 border-b px-4 pb-4">
-        <LibraryDialogTitle>{t("audio.dialogs.effects.title", { title })}</LibraryDialogTitle>
-        <LibraryDialogDescription>
-          {t("audio.dialogs.effects.description")}
-        </LibraryDialogDescription>
+        <LibraryDialogTitle>{t("audio.effects.dialog.title", { title })}</LibraryDialogTitle>
+        <LibraryDialogDescription>{t("audio.effects.dialog.description")}</LibraryDialogDescription>
       </LibraryDialogHeader>
 
       <AudioTrackEffectsLibrary streamIndex={track.streamIndex} />
@@ -89,7 +87,7 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
         <div className="-mx-4 border-t px-4 py-2">
           {track.preview.status === "loading" ? (
             <p className="text-xs text-muted-foreground" role="status">
-              {t("audio.messages.preparingProcessedPreview")}
+              {t("audio.tracks.messages.preparingProcessedPreview")}
             </p>
           ) : (
             <Alert role="alert" variant="destructive">
@@ -101,7 +99,7 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
 
       <LibraryDialogFooter className="min-w-0 items-center sm:justify-between">
         <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-          {t("audio.dialogs.effects.applyNotice")}
+          {t("audio.effects.dialog.applyNotice")}
         </p>
         <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
           <LibraryDialogClose asChild>

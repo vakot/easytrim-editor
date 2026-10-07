@@ -15,7 +15,7 @@ interface RelativeTimestampProps {
 
 function RelativeTimestamp({ className, label, timestamp }: RelativeTimestampProps) {
   const { i18n, t } = useTranslation();
-  const unknownLabel = t("common.status.unknown");
+  const unknownLabel = t("common.unknown");
   const now = useRelativeTimeNow();
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const relativeTime = formatRelativeTime(timestamp, locale, unknownLabel, now);

@@ -33,9 +33,9 @@ function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
   );
 
   const presetLabels = [
-    t("audio.options.noiseReductionLight"),
-    t("audio.options.noiseReductionMedium"),
-    t("audio.options.noiseReductionStrong"),
+    t("audio.noiseReduction.options.light"),
+    t("audio.noiseReduction.options.medium"),
+    t("audio.noiseReduction.options.strong"),
   ];
 
   const selectedPresetIndex = presets.indexOf(selectedPreset);
@@ -70,14 +70,14 @@ function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
       <AudioTrackEffectsLibraryPageHeader>
         <AudioTrackEffectsLibraryPageHeaderContent>
           <AudioTrackEffectsLibraryPageTitle>
-            {t("audio.labels.noiseReduction")}
+            {t("audio.noiseReduction.label")}
           </AudioTrackEffectsLibraryPageTitle>
           <AudioTrackEffectsLibraryPageDescription>
-            {t("audio.messages.noiseReductionDescription")}
+            {t("audio.noiseReduction.description")}
           </AudioTrackEffectsLibraryPageDescription>
         </AudioTrackEffectsLibraryPageHeaderContent>
         <AudioTrackEffectsLibraryPageToggle
-          aria-label={t("audio.labels.noiseReduction")}
+          aria-label={t("audio.noiseReduction.label")}
           checked={preset !== undefined}
           onCheckedChange={(enabled) => updatePreset(enabled ? selectedPreset : undefined)}
         />
@@ -86,10 +86,10 @@ function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
       <AudioTrackEffectsLibraryPageContent disabled={preset === undefined}>
         <AudioTrackEffectsLibraryPageBasic className="space-y-4">
           <Label htmlFor={`track-noise-reduction-${streamIndex}`}>
-            {t("audio.labels.noiseReductionStrength")}
+            {t("audio.noiseReduction.labelStrength")}
           </Label>
           <Slider
-            aria-label={t("audio.labels.noiseReductionStrength")}
+            aria-label={t("audio.noiseReduction.labelStrength")}
             aria-valuetext={presetLabels[selectedPresetIndex]}
             id={`track-noise-reduction-${streamIndex}`}
             markers={presetLabels.map((label, value) => ({ label, value }))}

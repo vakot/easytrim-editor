@@ -165,9 +165,9 @@ function CropViewport() {
       );
 
       const saved = await saveFramePng(new Uint8Array(await blob.arrayBuffer()), defaultName);
-      if (saved) toast.success(t("preview.messages.frameSaved"));
+      if (saved) toast.success(t("preview.frame.frameSaved"));
     } catch {
-      toast.error(t("preview.messages.frameSaveFailed"));
+      toast.error(t("preview.frame.frameSaveFailed"));
     }
   }, [captureCurrentFrame, isPlaying, sourceMedia, sourceSelection, t, videoRef]);
 
@@ -178,9 +178,9 @@ function CropViewport() {
       if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined")
         throw new Error("Image clipboard access is unavailable.");
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      toast.success(t("preview.messages.frameCopied"));
+      toast.success(t("preview.frame.frameCopied"));
     } catch {
-      toast.error(t("preview.messages.frameCopyFailed"));
+      toast.error(t("preview.frame.frameCopyFailed"));
     }
   }, [captureCurrentFrame, t]);
 

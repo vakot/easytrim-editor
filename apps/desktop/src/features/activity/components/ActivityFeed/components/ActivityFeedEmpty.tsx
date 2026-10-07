@@ -14,7 +14,7 @@ function ActivityFeedEmpty() {
 
   return (
     <section
-      aria-label={t("app.labels.activityFeed")}
+      aria-label={t("layout.activityFeed")}
       className="flex items-center justify-center overflow-hidden"
     >
       <Empty className="w-full max-w-md">
@@ -22,8 +22,8 @@ function ActivityFeedEmpty() {
           <EmptyMedia variant="icon">
             <History aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>{t("activity.labels.emptyTitle")}</EmptyTitle>
-          <EmptyDescription>{t("activity.labels.emptyDescription")}</EmptyDescription>
+          <EmptyTitle>{t("activity.empty.title")}</EmptyTitle>
+          <EmptyDescription>{t("activity.empty.description")}</EmptyDescription>
         </EmptyHeader>
       </Empty>
     </section>

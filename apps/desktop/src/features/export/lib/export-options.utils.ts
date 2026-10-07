@@ -12,7 +12,7 @@ interface ResolutionDimensions {
 function resolutionOptions(dimensions: ResolutionDimensions, t: TFunction) {
   const options: { label: string; value: string }[] = [
     {
-      label: t("export.options.sourceResolution", {
+      label: t("export.resolution.options.sourceResolution", {
         width: dimensions.width,
         height: dimensions.height,
       }),

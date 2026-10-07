@@ -35,17 +35,15 @@ function QueueDeleteSourceProvider({ children }: PropsWithChildren) {
       <AlertDialog onOpenChange={(open) => !open && close()} open={requested}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("queue.dialogs.deleteSourceOnRenderFinish.title")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t("queue.deleteSource.confirmation.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("queue.dialogs.deleteSourceOnRenderFinish.description")}
+              {t("queue.deleteSource.confirmation.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.actions.back")}</AlertDialogCancel>
             <AlertDialogAction onClick={confirm} variant="destructive">
-              {t("common.actions.enable")}
+              {t("queue.deleteSource.enable")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

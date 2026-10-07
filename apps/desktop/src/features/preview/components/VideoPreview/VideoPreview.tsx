@@ -27,12 +27,12 @@ function VideoPreview() {
       <div className="flex h-full items-center justify-center">
         <Alert className="max-w-md" variant="destructive">
           <AlertCircle />
-          <AlertTitle>{t("preview.messages.error")}</AlertTitle>
+          <AlertTitle>{t("preview.info.playbackError")}</AlertTitle>
           <AlertDescription>
             <p>{preview.error.message}</p>
             {preview.error.diagnostics ? (
               <details className="mt-2">
-                <summary>{t("source.labels.technicalDetails")}</summary>
+                <summary>{t("source.technicalDetails")}</summary>
                 <pre className="mt-2 max-h-48 overflow-auto text-xs whitespace-pre-wrap">
                   {preview.error.diagnostics}
                 </pre>
@@ -64,11 +64,11 @@ function VideoPreview() {
                 tabIndex={0}
                 variant="secondary"
               >
-                {t("preview.labels.compatible")}
+                {t("preview.info.compatible")}
               </Badge>
             </TooltipTrigger>
             <TooltipContent className="max-w-2xs text-center whitespace-normal" sideOffset={6}>
-              {t("preview.messages.proxy")}
+              {t("preview.info.proxy")}
             </TooltipContent>
           </Tooltip>
         ) : null}

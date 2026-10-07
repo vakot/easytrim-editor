@@ -57,8 +57,8 @@ function VideoPreviewLoadingOverlay() {
         <Spinner aria-hidden="true" className="size-7 text-primary" />
         <strong className="text-foreground">
           {preview.status === "loading" && preview.kind === "proxy"
-            ? t("preview.status.preparing")
-            : t("preview.status.opening")}
+            ? t("preview.loading.preparing")
+            : t("preview.loading.opening")}
         </strong>
         {skipAvailableFor === transitionKey ? (
           <Button

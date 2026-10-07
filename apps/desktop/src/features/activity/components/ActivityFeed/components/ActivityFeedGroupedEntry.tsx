@@ -29,7 +29,7 @@ function ActivityFeedGroupedEntry({ compact = false, group }: ActivityFeedGroupe
   const now = useRelativeTimeNow();
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const timestamp = toTimestampMicros(group.latestEntryAt);
-  const relativeTime = formatRelativeTime(timestamp, locale, t("common.status.unknown"), now);
+  const relativeTime = formatRelativeTime(timestamp, locale, t("common.unknown"), now);
   const Icon = group.icon;
   const groupLength = group.entries.length;
 

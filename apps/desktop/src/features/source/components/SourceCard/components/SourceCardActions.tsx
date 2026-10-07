@@ -69,7 +69,7 @@ function SourceCardActions({
               <DropdownMenuIcon>
                 <X aria-hidden="true" />
               </DropdownMenuIcon>
-              {t("app.actions.closeFile")}
+              {t("source.file.closeFile")}
             </DropdownMenuItem>
           </CloseSource>
 
@@ -81,7 +81,7 @@ function SourceCardActions({
                 <DropdownMenuIcon>
                   <RotateCcw aria-hidden="true" />
                 </DropdownMenuIcon>
-                {t("app.actions.restore")}
+                {t("app.workspaceRecovery.restore")}
               </DropdownMenuItem>
             </RestoreSource>
           ) : (
@@ -90,7 +90,7 @@ function SourceCardActions({
                 <DropdownMenuIcon>
                   <Trash2 aria-hidden="true" />
                 </DropdownMenuIcon>
-                {t("app.actions.deleteFile")}
+                {t("source.file.deleteFile")}
               </DropdownMenuItem>
             </DeleteSource>
           )}

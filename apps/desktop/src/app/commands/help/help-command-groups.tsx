@@ -18,7 +18,7 @@ function useHelpCommandGroups() {
   const supportProject = useSupportProjectCommand();
   const openReleasePage = useOpenReleasePageCommand();
   return [
-    defineApplicationCommandGroup("help", t("app.labels.commandSections.help"), [
+    defineApplicationCommandGroup("help", t("commands.sections.help"), [
       openChangelog,
       checkForUpdates,
       openProjectPage,

@@ -29,9 +29,9 @@ function useRotationCommands() {
   }, [degrees, reflected]);
   const labels = useMemo(
     () => ({
-      rotate180: t("preview.actions.transform.rotate180"),
-      rotate90Clockwise: t("preview.actions.transform.rotate90Clockwise"),
-      rotate90Counterclockwise: t("preview.actions.transform.rotate90Counterclockwise"),
+      rotate180: t("preview.transform.rotate180"),
+      rotate90Clockwise: t("preview.transform.rotate90Clockwise"),
+      rotate90Counterclockwise: t("preview.transform.rotate90Counterclockwise"),
     }),
     [t],
   );

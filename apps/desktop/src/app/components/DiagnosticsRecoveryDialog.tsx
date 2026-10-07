@@ -46,14 +46,14 @@ function DiagnosticsRecoveryDialog({
     <AlertDialog onOpenChange={setOpen} open={open}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{t("app.dialogs.diagnosticsRecovery.title")}</AlertDialogTitle>
+          <AlertDialogTitle>{t("app.diagnosticsRecovery.confirmation.title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t("app.dialogs.diagnosticsRecovery.description")}
+            {t("app.diagnosticsRecovery.confirmation.description")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {revealFailed ? (
           <p className="text-sm text-destructive">
-            {t("app.dialogs.diagnosticsRecovery.revealFailed")}
+            {t("app.diagnosticsRecovery.confirmation.revealFailed")}
           </p>
         ) : null}
         <AlertDialogFooter>
@@ -64,7 +64,7 @@ function DiagnosticsRecoveryDialog({
               void showReport();
             }}
           >
-            {t("app.dialogs.diagnosticsRecovery.showReport")}
+            {t("app.diagnosticsRecovery.confirmation.showReport")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

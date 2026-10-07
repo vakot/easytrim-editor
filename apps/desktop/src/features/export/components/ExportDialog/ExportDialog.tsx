@@ -79,9 +79,11 @@ function ExportDialog() {
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>
-              {queueEdit ? t("export.dialogs.optimized.editTitle") : t("export.actions.start")}
+              {queueEdit
+                ? t("export.optimized.dialog.editTitle")
+                : t("export.general.actions.start")}
             </DialogTitle>
-            <DialogDescription>{t("export.dialogs.optimized.description")}</DialogDescription>
+            <DialogDescription>{t("export.optimized.dialog.description")}</DialogDescription>
           </DialogHeader>
 
           <PresetManager />
@@ -91,14 +93,16 @@ function ExportDialog() {
 
           <DialogFooter className="min-w-0 items-center sm:justify-between">
             <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-              {t("export.dialogs.optimized.saveNotice")}
+              {t("export.optimized.dialog.saveNotice")}
             </p>
             <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
               <Button onClick={() => onOpenChange(false)} variant="outline">
                 {t("common.actions.cancel")}
               </Button>
               <Button onClick={() => void dispatch(startOptimizedExportRequested())}>
-                {queueEdit ? t("export.actions.saveChanges") : t("export.actions.start")}
+                {queueEdit
+                  ? t("export.general.actions.saveChanges")
+                  : t("export.general.actions.start")}
               </Button>
             </div>
           </DialogFooter>

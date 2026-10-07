@@ -16,15 +16,15 @@ function usePreferencesCommandGroups() {
   return [
     defineApplicationCommandGroup(
       "preferences-playback",
-      t("app.labels.commandSections.preferencesPlayback"),
+      t("commands.sections.preferencesPlayback"),
       playback,
     ),
     defineApplicationCommandGroup(
       "preferences-audio",
-      t("app.labels.commandSections.preferencesAudio"),
+      t("commands.sections.preferencesAudio"),
       audio,
     ),
-    defineApplicationCommandGroup("preferences", t("app.labels.commandSections.preferences"), [
+    defineApplicationCommandGroup("preferences", t("commands.sections.preferences"), [
       openSettings,
       resetEditingSettings,
     ]),

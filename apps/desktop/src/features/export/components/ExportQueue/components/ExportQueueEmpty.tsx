@@ -14,7 +14,7 @@ function ExportQueueEmpty() {
 
   return (
     <section
-      aria-label={t("queue.labels.title")}
+      aria-label={t("queue.title")}
       className="flex min-h-full items-center justify-center overflow-hidden"
     >
       <Empty className="w-full max-w-md border-0">
@@ -22,8 +22,8 @@ function ExportQueueEmpty() {
           <EmptyMedia variant="icon">
             <List aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>{t("queue.labels.title")}</EmptyTitle>
-          <EmptyDescription>{t("queue.messages.empty")}</EmptyDescription>
+          <EmptyTitle>{t("queue.title")}</EmptyTitle>
+          <EmptyDescription>{t("queue.empty.description")}</EmptyDescription>
         </EmptyHeader>
       </Empty>
     </section>

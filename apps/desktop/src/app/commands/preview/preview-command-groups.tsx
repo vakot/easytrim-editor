@@ -22,23 +22,24 @@ function usePreviewCommandGroups() {
   return [
     defineApplicationCommandGroup(
       "preview-markers-scene",
-      t("app.labels.commandSections.markersScene"),
+      t("commands.sections.markersScene"),
       sceneCommands,
     ),
     defineApplicationCommandGroup(
       "preview-markers-navigation",
-      t("app.labels.commandSections.markers"),
+      t("commands.sections.markers"),
       markerCommands,
     ),
-    defineApplicationCommandGroup("preview-frame", t("app.labels.commandSections.previewFrame"), [
+    defineApplicationCommandGroup("preview-frame", t("commands.sections.previewFrame"), [
       saveFrame,
       copyFrame,
     ] as const),
-    defineApplicationCommandGroup(
-      "preview-transform",
-      t("app.labels.commandSections.previewTransform"),
-      [crop, ...rotations, ...flips, reset] as const,
-    ),
+    defineApplicationCommandGroup("preview-transform", t("commands.sections.previewTransform"), [
+      crop,
+      ...rotations,
+      ...flips,
+      reset,
+    ] as const),
   ] as const;
 }
 

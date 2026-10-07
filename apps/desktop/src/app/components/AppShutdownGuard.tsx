@@ -102,13 +102,15 @@ function AppShutdownGuard() {
     <AlertDialog onOpenChange={setOpen} open={open}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{t("app.dialogs.shutdown.title")}</AlertDialogTitle>
-          <AlertDialogDescription>{t("app.dialogs.shutdown.description")}</AlertDialogDescription>
+          <AlertDialogTitle>{t("app.shutdown.confirmation.title")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("app.shutdown.confirmation.description")}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t("common.actions.back")}</AlertDialogCancel>
           <AlertDialogAction onClick={confirmClose} variant="destructive">
-            {t("queue.options.finish.exit")}
+            {t("queue.onFinished.shortOptions.exit")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

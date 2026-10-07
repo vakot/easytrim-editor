@@ -13,8 +13,10 @@ function useOpenProjectPageCommand() {
       await openExternalUrl("https://github.com/vakot/easytrim-editor");
     },
     id: "open-project-page" as const,
-    label: t("support.actions.projectPage"),
-    searchTerms: commandSearchTerms(`${t("support.actions.projectPage")}|github|repository`),
+    label: t("support.project.actions.projectPage"),
+    searchTerms: commandSearchTerms(
+      `${t("support.project.actions.projectPage")}|github|repository`,
+    ),
     variant: "default" as const,
   };
 }

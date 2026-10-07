@@ -39,7 +39,7 @@ function SourceListEmpty() {
 
   return (
     <section
-      aria-label={t("source.labels.explorer")}
+      aria-label={t("source.explorer")}
       className={cn(
         styles.container,
         "flex min-h-full w-full items-center justify-center overflow-hidden px-3 py-8",
@@ -50,26 +50,26 @@ function SourceListEmpty() {
           <EmptyMedia className={styles.hideOnShorterContainer} variant="icon">
             <FolderCode aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>{t("source.messages.emptyTitle")}</EmptyTitle>
-          <EmptyDescription>{t("source.messages.emptyDescription")}</EmptyDescription>
+          <EmptyTitle>{t("source.empty.title")}</EmptyTitle>
+          <EmptyDescription>{t("source.empty.description")}</EmptyDescription>
         </EmptyHeader>
 
         <EmptyContent>
           <div className="grid w-full gap-3">
             <SourceListEmptyAction
-              description={t("source.messages.openFileDescription")}
+              description={t("source.open.fileDescription")}
               icon={<FileVideo2 aria-hidden="true" />}
               keys={["Ctrl", "O"]}
-              label={t("app.actions.openFile")}
+              label={t("source.file.openFile")}
               onClick={() =>
                 void dispatch(chooseSourceRequested({ id: "explorer.open-file", type: "button" }))
               }
             />
             <SourceListEmptyAction
-              description={t("source.messages.openFolderDescription")}
+              description={t("source.open.folderDescription")}
               icon={<FolderOpen aria-hidden="true" />}
               keys={["Ctrl", "K"]}
-              label={t("app.actions.openFolder")}
+              label={t("source.file.openFolder")}
               onClick={() =>
                 void dispatch(
                   chooseSourceRequested({ id: "explorer.open-folder", type: "button" }, "folders"),
@@ -85,7 +85,7 @@ function SourceListEmpty() {
               type="button"
               variant="link"
             >
-              {t("source.messages.restorePreviousSession", {
+              {t("source.restore.previousSession", {
                 count: recoveryCandidate.instances.length,
               })}
             </Button>
@@ -93,7 +93,7 @@ function SourceListEmpty() {
 
           <div className={cn(styles.hideOnShortContainer, "flex w-full items-center gap-2")}>
             <Separator className="flex-1" />
-            <span className="text-muted-foreground">{t("common.labels.or")}</span>
+            <span className="text-muted-foreground">{t("common.or")}</span>
             <Separator className="flex-1" />
           </div>
 
@@ -106,13 +106,9 @@ function SourceListEmpty() {
             <span className="grid size-10 place-items-center rounded-full bg-primary/12 text-primary">
               <Upload aria-hidden="true" className="size-5" />
             </span>
-            <strong className="text-sm">{t("source.messages.dropTitle")}</strong>
-            <span className="text-xs font-medium text-primary">
-              {t("source.messages.extensions")}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {t("source.messages.dropDescription")}
-            </span>
+            <strong className="text-sm">{t("source.drop.title")}</strong>
+            <span className="text-xs font-medium text-primary">{t("source.info.extensions")}</span>
+            <span className="text-xs text-muted-foreground">{t("source.drop.description")}</span>
           </div>
         </EmptyContent>
       </Empty>

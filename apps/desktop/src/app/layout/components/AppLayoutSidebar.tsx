@@ -25,14 +25,14 @@ function AppLayoutSidebar() {
 
   return (
     <aside
-      aria-label={t("app.labels.explorer")}
+      aria-label={t("layout.explorer")}
       className="@container relative flex size-full flex-col pt-3"
     >
       <h3
         className="mx-3 mb-1 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         id="source-panel-title"
       >
-        {t("app.labels.explorer")}
+        {t("layout.explorer")}
       </h3>
 
       <ResizablePanelGroup
@@ -60,7 +60,7 @@ function AppLayoutSidebar() {
                   <ChevronRight
                     className={cn("shrink-0 transition-transform", isExpanded && "rotate-90")}
                   />
-                  {t("source.labels.importedSources")}
+                  {t("source.importedSources")}
                 </Button>
               </div>
             )}
@@ -101,7 +101,7 @@ function AppLayoutSidebar() {
                   <ChevronRight
                     className={cn("shrink-0 transition-transform", isExpanded && "rotate-90")}
                   />
-                  {t("app.labels.activityFeed")}
+                  {t("layout.activityFeed")}
                 </Button>
               </div>
             )}

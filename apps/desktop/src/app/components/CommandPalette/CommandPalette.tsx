@@ -102,16 +102,16 @@ function CommandPalette() {
     <CommandPaletteContext.Provider value={{ executeCommand }}>
       <CommandDialog
         className="top-1/2 h-[min(60dvh,32rem)] -translate-y-1/2 overflow-hidden rounded-xl! p-0 sm:max-w-md"
-        description={t("app.messages.commandPaletteDescription")}
+        description={t("commands.description")}
         onOpenChange={handleOpenChange}
         open={isCommandPaletteOpen}
-        title={t("app.labels.commandPalette")}
+        title={t("commands.title")}
       >
-        <Command label={t("app.labels.searchCommands")} shouldFilter={false}>
+        <Command label={t("commands.searchLabel")} shouldFilter={false}>
           <CommandInput
-            aria-label={t("app.labels.searchCommands")}
+            aria-label={t("commands.searchLabel")}
             onValueChange={setQuery}
-            placeholder={t("app.messages.commandPalettePlaceholder")}
+            placeholder={t("commands.placeholder")}
             value={query}
           />
           <CommandList>
@@ -140,7 +140,7 @@ function CommandPaletteContent({
 function CommandPaletteEmpty() {
   const { t } = useTranslation();
 
-  return <CommandEmpty>{t("app.messages.commandPaletteEmpty")}</CommandEmpty>;
+  return <CommandEmpty>{t("commands.empty")}</CommandEmpty>;
 }
 
 function CommandPaletteGroup({ group }: { group: CommandPaletteGroupMatches }) {

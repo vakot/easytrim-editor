@@ -112,11 +112,11 @@ function createActivityToast(
     const complete = restored === total;
     return {
       description: complete
-        ? t("app.messages.workspaceRecovery.toastDescription", { count: restored })
-        : t("app.messages.workspaceRecovery.toastPartialDescription", { restored, total }),
+        ? t("app.workspaceRecovery.toastDescription", { count: restored })
+        : t("app.workspaceRecovery.toastPartialDescription", { restored, total }),
       title: complete
-        ? t("app.messages.workspaceRecovery.toastTitle")
-        : t("app.messages.workspaceRecovery.toastPartialTitle"),
+        ? t("app.workspaceRecovery.toastTitle")
+        : t("app.workspaceRecovery.toastPartialTitle"),
       variant: "success",
     };
   }
@@ -135,7 +135,10 @@ function createActivityToast(
   return {
     action: entry.action
       ? {
-          label: entry.action.kind === "open" ? t("app.actions.open") : t("app.actions.restore"),
+          label:
+            entry.action.kind === "open"
+              ? t("source.file.open")
+              : t("app.workspaceRecovery.restore"),
           onClick: () => onAction(entry.action!),
         }
       : undefined,

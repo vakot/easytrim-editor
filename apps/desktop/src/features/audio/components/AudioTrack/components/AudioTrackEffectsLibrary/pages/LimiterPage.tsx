@@ -70,14 +70,14 @@ function LimiterPage({ streamIndex }: { streamIndex: number }) {
       <AudioTrackEffectsLibraryPageHeader>
         <AudioTrackEffectsLibraryPageHeaderContent>
           <AudioTrackEffectsLibraryPageTitle>
-            {t("audio.labels.limiter")}
+            {t("audio.limiter.label")}
           </AudioTrackEffectsLibraryPageTitle>
           <AudioTrackEffectsLibraryPageDescription>
-            {t("audio.messages.limiterDescription")}
+            {t("audio.limiter.description")}
           </AudioTrackEffectsLibraryPageDescription>
         </AudioTrackEffectsLibraryPageHeaderContent>
         <AudioTrackEffectsLibraryPageToggle
-          aria-label={t("audio.labels.limiter")}
+          aria-label={t("audio.limiter.label")}
           checked={limiter !== undefined}
           onCheckedChange={(enabled) => updateLimiter(enabled)}
         />
@@ -85,11 +85,11 @@ function LimiterPage({ streamIndex }: { streamIndex: number }) {
 
       <AudioTrackEffectsLibraryPageContent disabled={limiter === undefined}>
         <Label htmlFor={`track-limiter-ceiling-${streamIndex}`}>
-          {t("audio.labels.limiterCeiling")}
+          {t("audio.limiter.labelCeiling")}
         </Label>
         <div className="mt-2 flex max-w-md items-center gap-3">
           <Slider
-            aria-label={t("audio.labels.limiterCeiling")}
+            aria-label={t("audio.limiter.labelCeiling")}
             aria-valuetext={`${formattedCeilingDb} dB`}
             id={`track-limiter-ceiling-${streamIndex}`}
             markers={[

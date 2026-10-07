@@ -18,15 +18,15 @@ function useQueueCommandGroups() {
   return [
     defineApplicationCommandGroup(
       "queue-on-finished-source",
-      t("app.labels.commandSections.queueOnFinishedSource"),
+      t("commands.sections.queueOnFinishedSource"),
       [deleteSource],
     ),
     defineApplicationCommandGroup(
       "queue-on-finished-application",
-      t("app.labels.commandSections.queueOnFinishedApplication"),
+      t("commands.sections.queueOnFinishedApplication"),
       finishActions,
     ),
-    defineApplicationCommandGroup("queue", t("queue.labels.title"), [
+    defineApplicationCommandGroup("queue", t("queue.title"), [
       openExportQueue,
       autoStartQueue,
       resetQueueSettings,

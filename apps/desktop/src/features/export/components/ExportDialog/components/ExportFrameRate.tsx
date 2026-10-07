@@ -28,7 +28,7 @@ function ExportFrameRate({ settings }: ExportFrameRateProps) {
 
   return (
     <section className="grid gap-1.5">
-      <Label htmlFor="export-frame-rate">{t("export.dialogs.optimized.frameRate")}</Label>
+      <Label htmlFor="export-frame-rate">{t("export.frameRate.dialog.frameRate")}</Label>
       <Select
         onValueChange={(value) =>
           void dispatch(
@@ -44,10 +44,10 @@ function ExportFrameRate({ settings }: ExportFrameRateProps) {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="source">{t("export.dialogs.optimized.matchSource")}</SelectItem>
+          <SelectItem value="source">{t("export.optimized.dialog.matchSource")}</SelectItem>
           {FRAME_RATE_OPTIONS.map((rate) => (
             <SelectItem key={rate} value={`${rate}/1`}>
-              {t("export.options.framesPerSecond", { value: rate })}
+              {t("export.frameRate.options.framesPerSecond", { value: rate })}
             </SelectItem>
           ))}
         </SelectContent>

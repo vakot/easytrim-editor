@@ -33,25 +33,25 @@ function useQueueFinishCommands() {
       action: "exit",
       id: "queue-finish-exit",
       icon: <LogOut aria-hidden="true" />,
-      label: t("queue.options.finishActions.exit"),
+      label: t("queue.onFinished.options.exit"),
     },
     {
       action: "nothing",
       id: "queue-finish-nothing",
       icon: <CircleStop aria-hidden="true" />,
-      label: t("queue.options.finishActions.nothing"),
+      label: t("queue.onFinished.options.nothing"),
     },
     {
       action: "systemSleep",
       id: "queue-finish-system-sleep",
       icon: <Moon aria-hidden="true" />,
-      label: t("queue.options.finishActions.systemSleep"),
+      label: t("queue.onFinished.options.systemSleep"),
     },
     {
       action: "systemShutdown",
       id: "queue-finish-system-shutdown",
       icon: <Power aria-hidden="true" />,
-      label: t("queue.options.finishActions.systemShutdown"),
+      label: t("queue.onFinished.options.systemShutdown"),
     },
   ] as const;
 

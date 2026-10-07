@@ -43,14 +43,14 @@ function CropSelection({
   const isPresent = useIsPresent();
   const sourceCrop = sourceCropForRotation(crop, rotation);
   const handleLabels: Record<Exclude<CropHandle, "move">, string> = {
-    bottom: t("preview.accessibility.crop.bottom"),
-    "bottom-left": t("preview.accessibility.crop.bottomLeft"),
-    "bottom-right": t("preview.accessibility.crop.bottomRight"),
-    left: t("preview.accessibility.crop.left"),
-    right: t("preview.accessibility.crop.right"),
-    top: t("preview.accessibility.crop.top"),
-    "top-left": t("preview.accessibility.crop.topLeft"),
-    "top-right": t("preview.accessibility.crop.topRight"),
+    bottom: t("preview.crop.bottom"),
+    "bottom-left": t("preview.crop.bottomLeft"),
+    "bottom-right": t("preview.crop.bottomRight"),
+    left: t("preview.crop.left"),
+    right: t("preview.crop.right"),
+    top: t("preview.crop.top"),
+    "top-left": t("preview.crop.topLeft"),
+    "top-right": t("preview.crop.topRight"),
   };
 
   return (

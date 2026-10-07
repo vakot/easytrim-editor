@@ -9,7 +9,7 @@ function useSourceCommandGroups() {
   const [previous, next] = useSourceNavigationCommands();
 
   return [
-    defineApplicationCommandGroup("source-navigation", t("app.labels.commandSections.go"), [
+    defineApplicationCommandGroup("source-navigation", t("commands.sections.go"), [
       previous,
       next,
     ] as const),

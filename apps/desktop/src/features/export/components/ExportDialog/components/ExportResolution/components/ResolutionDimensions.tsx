@@ -29,7 +29,7 @@ function ResolutionDimensions({
   return (
     <div className="flex items-center gap-1.5">
       <Label className="sr-only" htmlFor="export-width">
-        {t("export.labels.width")}
+        {t("export.resolution.labels.width")}
       </Label>
       <div className="flex flex-1 items-center gap-2">
         <div className="flex flex-1 items-center gap-1">
@@ -53,7 +53,7 @@ function ResolutionDimensions({
           />
           <span aria-hidden="true">×</span>
           <Input
-            aria-label={t("export.labels.height")}
+            aria-label={t("export.resolution.labels.height")}
             className="flex-1"
             inputMode="numeric"
             min={1}
@@ -76,8 +76,8 @@ function ResolutionDimensions({
             <Button
               aria-label={
                 isAspectRatioLocked
-                  ? t("export.accessibility.unlockAspectRatio")
-                  : t("export.accessibility.lockAspectRatio")
+                  ? t("export.aspectRatio.accessibility.unlockAspectRatio")
+                  : t("export.aspectRatio.accessibility.lockAspectRatio")
               }
               aria-pressed={isAspectRatioLocked}
               className={cn(isAspectRatioLocked && "text-primary")}
@@ -91,8 +91,8 @@ function ResolutionDimensions({
           </TooltipTrigger>
           <TooltipContent>
             {isAspectRatioLocked
-              ? t("export.tooltips.aspectRatioLocked")
-              : t("export.tooltips.aspectRatioUnlocked")}
+              ? t("export.aspectRatio.tooltip.locked")
+              : t("export.aspectRatio.tooltip.unlocked")}
           </TooltipContent>
         </Tooltip>
       </div>

@@ -13,8 +13,8 @@ function useShowLogsCommand() {
       await revealDiagnosticLogs();
     },
     id: "show-logs" as const,
-    label: t("support.actions.showLogs"),
-    searchTerms: commandSearchTerms(`${t("support.actions.showLogs")}|diagnostics|logs`),
+    label: t("support.project.actions.showLogs"),
+    searchTerms: commandSearchTerms(`${t("support.project.actions.showLogs")}|diagnostics|logs`),
     variant: "default" as const,
   };
 }

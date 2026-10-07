@@ -22,7 +22,9 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
   if (!stream || !track) return null;
 
   const title =
-    stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
+    stream.title ??
+    stream.language ??
+    t("audio.tracks.labels.defaultTrack", { number: trackNumber });
 
   return (
     <div
@@ -55,7 +57,7 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            aria-label={t("audio.accessibility.trackActions", { number: trackNumber })}
+            aria-label={t("audio.tracks.accessibility.trackActions", { number: trackNumber })}
             size="icon-sm"
             type="button"
             variant="ghost"
@@ -112,7 +114,7 @@ function AudioTrackDetailsSection({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent>{t("audio.tooltips.normalizationReplacesGain")}</TooltipContent>
+      <TooltipContent>{t("audio.normalization.tooltips.normalizationReplacesGain")}</TooltipContent>
     </Tooltip>
   );
 }
@@ -136,7 +138,7 @@ function AudioTrackGainControl({ controller }: { controller: AudioTrackControlle
   return (
     <div className="flex h-4 min-w-0 items-center gap-1.5">
       <Slider
-        aria-label={t("audio.accessibility.trackGain", { number: trackNumber })}
+        aria-label={t("audio.tracks.accessibility.trackGain", { number: trackNumber })}
         className="min-w-0 flex-1 py-0 **:data-[slot=slider-thumb]:size-2.5"
         markers={[
           { label: "−∞", value: MIN_SLIDER_DECIBELS },

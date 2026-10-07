@@ -99,7 +99,7 @@ function ActivityFeedGroup({
                   entries: item.group.entries,
                   icon: CircleX,
                   latestEntryAt: item.group.latestEntryAt,
-                  title: t("app.status.closedFiles", { count: item.group.count }),
+                  title: t("source.close.closedFiles", { count: item.group.count }),
                 }}
                 key={item.group.id}
               />

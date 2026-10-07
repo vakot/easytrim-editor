@@ -14,7 +14,7 @@ function SourceDropOverlay() {
   if (!isSourceDragActive) return null;
 
   return (
-    <Backdrop aria-label={t("source.labels.drop")} role="status">
+    <Backdrop aria-label={t("source.drop.action")} role="status">
       <Card className="min-w-64">
         <CardContent className="grid justify-items-center gap-3">
           <span className="relative grid size-12 place-items-center rounded-full bg-primary/12 text-primary">
@@ -24,8 +24,8 @@ function SourceDropOverlay() {
               className="absolute -right-0.5 -bottom-0.5 size-4 rounded-full bg-primary p-0.5 text-primary-foreground"
             />
           </span>
-          <strong className="text-sm">{t("source.labels.drop")}</strong>
-          <span className="text-xs text-muted-foreground">{t("source.messages.dropReset")}</span>
+          <strong className="text-sm">{t("source.drop.action")}</strong>
+          <span className="text-xs text-muted-foreground">{t("source.drop.resetNotice")}</span>
         </CardContent>
       </Card>
     </Backdrop>

@@ -18,13 +18,13 @@ function useFileCommandGroups() {
   const saveLosslessCut = useSaveLosslessCutCommand();
   const optimizedExport = useOptimizedExportCommand();
   return [
-    defineApplicationCommandGroup("file", t("app.labels.commandSections.file"), [
+    defineApplicationCommandGroup("file", t("commands.sections.file"), [
       openFile,
       openFolder,
       closeFile,
       deleteFile,
     ] as const),
-    defineApplicationCommandGroup("export", t("app.labels.commandSections.export"), [
+    defineApplicationCommandGroup("export", t("commands.sections.export"), [
       saveLosslessCut,
       optimizedExport,
     ] as const),

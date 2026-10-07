@@ -29,10 +29,10 @@ function activityActionLabel(
   status: "idle" | "loading" | "ready" | "failed",
   t: ReturnType<typeof useTranslation>["t"],
 ) {
-  if (status === "ready") return t("audio.actions.showActivity");
-  if (status === "loading") return t("audio.actions.analyzingActivity");
-  if (status === "failed") return t("audio.actions.retryActivityDetection");
-  return t("audio.actions.analyzeActivity");
+  if (status === "ready") return t("audio.activityDetection.actions.showActivity");
+  if (status === "loading") return t("audio.activityDetection.actions.analyzingActivity");
+  if (status === "failed") return t("audio.activityDetection.actions.retryActivityDetection");
+  return t("audio.activityDetection.actions.analyzeActivity");
 }
 
 function AudioTrackToggleMenuCheckboxItem({
@@ -44,12 +44,14 @@ function AudioTrackToggleMenuCheckboxItem({
   if (!track || !stream) return null;
 
   const streamTitle =
-    stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
+    stream.title ??
+    stream.language ??
+    t("audio.tracks.labels.defaultTrack", { number: trackNumber });
 
   const commandProps = {
     "aria-label": controller.isEnabled
-      ? t("audio.actions.muteTrack", { title: streamTitle })
-      : t("audio.actions.unmuteTrack", { title: streamTitle }),
+      ? t("audio.tracks.actions.muteTrack", { title: streamTitle })
+      : t("audio.tracks.actions.unmuteTrack", { title: streamTitle }),
     onCheckedChange: controller.setEnabled,
     checked: controller.isEnabled,
   };
@@ -85,7 +87,7 @@ function AudioTrackEffectsMenuItem({
   const { openEffects } = useAudioTrackEffectsDialog();
 
   const commandProps = {
-    "aria-label": t("audio.actions.effects"),
+    "aria-label": t("audio.effects.open"),
     onSelect: openEffects,
   };
 
@@ -99,7 +101,7 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
   return (
     <DropdownMenuContent>
       <AudioTrackToggleMenuCheckboxItem controller={controller}>
-        <DropdownMenuCheckboxItem keepOpen>{t("common.status.enabled")}</DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem keepOpen>{t("common.enabled")}</DropdownMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
 
       <DropdownMenuSeparator />
@@ -117,7 +119,7 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
           <DropdownMenuIcon side="left">
             <WandSparkles />
           </DropdownMenuIcon>
-          {t("audio.actions.effects")}
+          {t("audio.effects.open")}
           <DropdownMenuIcon side="right">
             <ChevronRight />
           </DropdownMenuIcon>
@@ -134,7 +136,7 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
   return (
     <ContextMenuContent>
       <AudioTrackToggleMenuCheckboxItem controller={controller}>
-        <ContextMenuCheckboxItem keepOpen>{t("common.status.enabled")}</ContextMenuCheckboxItem>
+        <ContextMenuCheckboxItem keepOpen>{t("common.enabled")}</ContextMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
 
       <ContextMenuSeparator />
@@ -152,7 +154,7 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
           <ContextMenuIcon side="left">
             <WandSparkles />
           </ContextMenuIcon>
-          {t("audio.actions.effects")}
+          {t("audio.effects.open")}
           <ContextMenuIcon side="right">
             <ChevronRight />
           </ContextMenuIcon>

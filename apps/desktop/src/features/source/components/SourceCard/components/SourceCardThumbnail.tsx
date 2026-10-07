@@ -42,8 +42,8 @@ function SourceCardThumbnail({
       {thumbnailUrl ? (
         <>
           <img
-            alt={t("source.accessibility.thumbnail", { name: displayName })}
-            aria-label={t("source.accessibility.thumbnail", { name: displayName })}
+            alt={t("source.thumbnail.accessibleLabel", { name: displayName })}
+            aria-label={t("source.thumbnail.accessibleLabel", { name: displayName })}
             className="size-full object-cover transition-transform"
             decoding="async"
             fetchPriority="low"
@@ -59,7 +59,7 @@ function SourceCardThumbnail({
         </>
       ) : thumbnailLoading ? (
         <span
-          aria-label={t("source.status.loading")}
+          aria-label={t("common.status.loading")}
           className="grid size-full place-items-center bg-linear-to-br from-muted to-background"
           role="status"
         >
@@ -69,7 +69,7 @@ function SourceCardThumbnail({
         <span className="grid size-full place-items-center bg-linear-to-br from-muted to-background">
           <span className="grid justify-items-center gap-2">
             <FileVideo aria-hidden="true" className="size-8 opacity-40" />
-            <span className="text-[0.625rem]">{t("source.messages.previewUnavailable")}</span>
+            <span className="text-[0.625rem]">{t("source.info.previewUnavailable")}</span>
           </span>
         </span>
       )}

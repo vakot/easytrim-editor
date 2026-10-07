@@ -40,7 +40,7 @@ function AudioTrackWaveformLoading() {
       className="absolute inset-0 grid place-items-center text-xs text-muted-foreground"
       role="status"
     >
-      {t("audio.status.preparingWaveform")}
+      {t("audio.waveform.status.preparingWaveform")}
     </span>
   );
 }
@@ -91,7 +91,7 @@ function AudioTrackWaveformError({
     <div className="absolute inset-0 flex items-center justify-center gap-2 text-xs text-muted-foreground">
       <Tooltip>
         <TooltipTrigger asChild>
-          <span>{t("audio.status.waveformUnavailable")}</span>
+          <span>{t("audio.waveform.status.waveformUnavailable")}</span>
         </TooltipTrigger>
         <TooltipContent>{waveform.error.message}</TooltipContent>
       </Tooltip>

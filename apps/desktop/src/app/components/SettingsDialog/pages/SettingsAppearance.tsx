@@ -77,21 +77,29 @@ function SettingsAppearance() {
   }, [primaryColor]);
 
   const colorPresetLabels = {
-    amber: t("settings.options.colors.amber"),
-    blue: t("settings.options.colors.blue"),
-    emerald: t("settings.options.colors.emerald"),
-    rose: t("settings.options.colors.rose"),
-    violet: t("settings.options.colors.violet"),
+    amber: t("settings.appearance.primaryColor.presets.amber"),
+    blue: t("settings.appearance.primaryColor.presets.blue"),
+    emerald: t("settings.appearance.primaryColor.presets.emerald"),
+    rose: t("settings.appearance.primaryColor.presets.rose"),
+    violet: t("settings.appearance.primaryColor.presets.violet"),
   };
 
   const themeOptions = [
     {
       id: "system",
       icon: <Monitor aria-hidden="true" />,
-      label: t("settings.options.themes.system"),
+      label: t("settings.appearance.theme.options.system"),
     },
-    { id: "light", icon: <Sun aria-hidden="true" />, label: t("settings.options.themes.light") },
-    { id: "dark", icon: <Moon aria-hidden="true" />, label: t("settings.options.themes.dark") },
+    {
+      id: "light",
+      icon: <Sun aria-hidden="true" />,
+      label: t("settings.appearance.theme.options.light"),
+    },
+    {
+      id: "dark",
+      icon: <Moon aria-hidden="true" />,
+      label: t("settings.appearance.theme.options.dark"),
+    },
   ] as const;
 
   const handleUiScaleChange = async (value: string) => {
@@ -108,15 +116,15 @@ function SettingsAppearance() {
   };
 
   return (
-    <SettingsSection title={t("settings.labels.theme")}>
-      <SettingRow label={t("settings.labels.theme")}>
+    <SettingsSection title={t("settings.appearance.theme.label")}>
+      <SettingRow label={t("settings.appearance.theme.label")}>
         <Select
           onValueChange={(value) =>
             void executeCommand(getThemeCommandId(value as "system" | "light" | "dark"), "dialog")
           }
           value={theme}
         >
-          <SelectTrigger aria-label={t("settings.labels.theme")} className="w-44">
+          <SelectTrigger aria-label={t("settings.appearance.theme.label")} className="w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -133,12 +141,12 @@ function SettingsAppearance() {
       <Collapsible>
         <div>
           <SettingRow
-            description={t("settings.pages.appearance.colorDescription")}
-            label={t("settings.labels.primaryAccent")}
+            description={t("settings.appearance.primaryColor.description")}
+            label={t("settings.appearance.primaryColor.label")}
           >
             <CollapsibleTrigger asChild>
               <Button
-                aria-label={t("settings.labels.primaryAccent")}
+                aria-label={t("settings.appearance.primaryColor.label")}
                 className="w-44"
                 variant="outline"
               >
@@ -164,16 +172,16 @@ function SettingsAppearance() {
               }}
             >
               <div className="w-full space-y-3">
-                <ColorPickerSpectrum aria-label={t("settings.accessibility.colorSpectrum")}>
+                <ColorPickerSpectrum aria-label={t("settings.appearance.primaryColor.pickerLabel")}>
                   <ColorPickerSaturationValue
-                    aria-label={t("settings.accessibility.colorSaturationValue")}
+                    aria-label={t("settings.appearance.primaryColor.saturationBrightnessLabel")}
                   />
-                  <ColorPickerHue aria-label={t("settings.accessibility.colorHue")} />
+                  <ColorPickerHue aria-label={t("settings.appearance.primaryColor.hueLabel")} />
                 </ColorPickerSpectrum>
 
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
-                    <ColorPickerInput aria-label={t("settings.accessibility.primaryColorHex")} />
+                    <ColorPickerInput aria-label={t("settings.appearance.primaryColor.hexLabel")} />
                   </div>
 
                   {PRIMARY_COLOR_PRESETS.map((preset) => (
@@ -197,10 +205,10 @@ function SettingsAppearance() {
       </Collapsible>
 
       <SettingRow
-        description={t("settings.pages.appearance.scalingDescription")}
+        description={t("settings.appearance.scaling.description")}
         label={
           <span className="flex items-center gap-2">
-            {t("app.labels.uiScaling")}
+            {t("layout.uiScaling")}
             <CommandButton
               className="h-auto p-0"
               commandId="ui-scale-reset"
@@ -216,7 +224,7 @@ function SettingsAppearance() {
           onValueChange={(value) => void handleUiScaleChange(value)}
           value={String(uiScalePercent)}
         >
-          <SelectTrigger aria-label={t("app.labels.uiScaling")} className="w-44">
+          <SelectTrigger aria-label={t("layout.uiScaling")} className="w-44">
             <SelectValue />
           </SelectTrigger>
 
@@ -229,7 +237,6 @@ function SettingsAppearance() {
           </SelectContent>
         </Select>
       </SettingRow>
-
     </SettingsSection>
   );
 }

@@ -27,7 +27,7 @@ function TimelineToolbar() {
 
   return (
     <div
-      aria-label={t("timeline.accessibility.tools")}
+      aria-label={t("timeline.playhead.accessibility.tools")}
       className="flex w-full items-stretch gap-1"
       data-slot="timeline-toolbar"
       role="toolbar"
@@ -59,9 +59,9 @@ function SceneDetectionTool() {
 
   const label = hasDetected
     ? sceneMarkersEnabled
-      ? t("timeline.actions.disableSceneMarkers")
-      : t("timeline.actions.enableSceneMarkers")
-    : t("timeline.actions.detectScenes");
+      ? t("timeline.sceneMarkers.actions.disableSceneMarkers")
+      : t("timeline.sceneMarkers.actions.enableSceneMarkers")
+    : t("timeline.sceneMarkers.actions.detectScenes");
 
   const button = (
     <Button
@@ -90,7 +90,7 @@ function SceneDetectionTool() {
       <Popover>
         <PopoverTrigger asChild>{button}</PopoverTrigger>
         <PopoverContent align="start" className="space-y-3">
-          <p role="alert">{error || t("timeline.status.sceneDetectionFailed")}</p>
+          <p role="alert">{error || t("timeline.sceneMarkers.status.sceneDetectionFailed")}</p>
           <Button
             disabled={loading}
             onClick={() => void executeCommand("detect-scenes", "button")}
@@ -107,7 +107,9 @@ function SceneDetectionTool() {
   return (
     <Tooltip preserveOnTrigger>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent>{hasDetected ? label : t("timeline.tooltips.detectScenes")}</TooltipContent>
+      <TooltipContent>
+        {hasDetected ? label : t("timeline.sceneMarkers.tooltips.detectScenes")}
+      </TooltipContent>
     </Tooltip>
   );
 }
@@ -120,9 +122,13 @@ function LoopPlaybackTool() {
   return (
     <TimelineToolButton
       enabled={enabled}
-      label={t("preview.labels.loopPlayback")}
+      label={t("preview.playback.loopPlayback")}
       onClick={() => dispatch(loopPlaybackToggled())}
-      title={enabled ? t("preview.tooltips.loopEnabled") : t("preview.tooltips.loopDisabled")}
+      title={
+        enabled
+          ? t("preview.playback.loopEnabledTooltip")
+          : t("preview.playback.loopDisabledTooltip")
+      }
     >
       <Repeat />
     </TimelineToolButton>
@@ -137,9 +143,13 @@ function SegmentPlaybackTool() {
   return (
     <TimelineToolButton
       enabled={enabled}
-      label={t("preview.labels.segmentPlayback")}
+      label={t("preview.playback.segmentPlayback")}
       onClick={() => dispatch(segmentPlaybackToggled())}
-      title={enabled ? t("preview.tooltips.segmentEnabled") : t("preview.tooltips.segmentDisabled")}
+      title={
+        enabled
+          ? t("preview.segment.segmentEnabledTooltip")
+          : t("preview.segment.segmentDisabledTooltip")
+      }
     >
       <BetweenVerticalStart />
     </TimelineToolButton>

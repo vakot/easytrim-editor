@@ -49,7 +49,7 @@ function TimelinePanel() {
               className="mb-0.5 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
               id="timeline-title"
             >
-              {t("timeline.labels.selectedSegment")}
+              {t("timeline.segment.labels.selectedSegment")}
             </h2>
             <PlaybackTimecode />
           </div>
@@ -102,7 +102,7 @@ function PlaybackSpeedControl() {
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
-              aria-label={t("preview.labels.playbackSpeed")}
+              aria-label={t("preview.playback.playbackSpeed")}
               aria-pressed={enabled}
               className={cn(enabled && "text-primary aria-expanded:text-primary")}
               size="icon-sm"
@@ -113,7 +113,7 @@ function PlaybackSpeedControl() {
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
-        <TooltipContent>{t("preview.tooltips.playbackSpeed")}</TooltipContent>
+        <TooltipContent>{t("preview.playback.playbackSpeedTooltip")}</TooltipContent>
 
         <PopoverContent align="start" className="grid w-56 gap-2 p-2.5" side="bottom">
           <div className="flex items-center gap-1">
@@ -132,7 +132,7 @@ function PlaybackSpeedControl() {
 
           <div className="flex items-center gap-2">
             <Slider
-              aria-label={t("preview.labels.playbackSpeed")}
+              aria-label={t("preview.playback.playbackSpeed")}
               className="mt-2 min-w-0 flex-1 **:data-[slot=slider-track]:h-1.5"
               markers={PLAYBACK_SPEED_MARKERS}
               max={PLAYBACK_SPEED_STEPS.length - 1}
@@ -192,7 +192,7 @@ function PlaybackVolumeControlToggle() {
     <Tooltip preserveOnTrigger>
       <TooltipTrigger asChild>
         <Button
-          aria-label={enabled ? t("audio.actions.mute") : t("audio.actions.unmute")}
+          aria-label={enabled ? t("audio.tracks.actions.mute") : t("audio.tracks.actions.unmute")}
           aria-pressed={enabled}
           className={cn(enabled && "text-primary")}
           onClick={() => dispatch(playbackVolumeToggled())}
@@ -205,8 +205,8 @@ function PlaybackVolumeControlToggle() {
       </TooltipTrigger>
       <TooltipContent>
         {enabled
-          ? t("preview.tooltips.playbackVolumeMute")
-          : t("preview.tooltips.playbackVolumeUnmute")}
+          ? t("preview.playback.playbackVolumeMuteTooltip")
+          : t("preview.playback.playbackVolumeUnmuteTooltip")}
       </TooltipContent>
     </Tooltip>
   );
@@ -229,7 +229,7 @@ function PlaybackVolumeControlSlider() {
       <div className="px-2">
         <div className="flex items-center">
           <Slider
-            aria-label={t("preview.labels.playbackVolume")}
+            aria-label={t("preview.playback.playbackVolume")}
             className="w-30"
             max={100}
             min={0}

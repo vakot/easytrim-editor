@@ -7,7 +7,7 @@ import { usePreviewTransform } from "@/features/preview";
 function useCopyFrameCommand() {
   const { t } = useTranslation();
   const { isAvailable, requestCopyFrame } = usePreviewTransform();
-  const label = t("preview.actions.copyFrame");
+  const label = t("preview.frame.copyFrame");
 
   return {
     enabled: isAvailable,
@@ -16,9 +16,7 @@ function useCopyFrameCommand() {
     run: requestCopyFrame,
     id: "copy-current-frame" as const,
     label,
-    searchTerms: commandSearchTerms(
-      `${label}|${t("app.options.commandSearchTerms.copyCurrentFrame")}`,
-    ),
+    searchTerms: commandSearchTerms(`${label}|${t("commands.searchTerms.copyCurrentFrame")}`),
     variant: "default" as const,
   };
 }

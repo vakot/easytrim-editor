@@ -19,16 +19,16 @@ function SourceDetails() {
   const media = useAppSelector(selectSourceMedia);
   const source = useAppSelector(selectSourceSelection);
   const { t } = useTranslation();
-  const noSource = t("source.messages.noSource");
+  const noSource = t("source.info.noSourceSelected");
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
-  const unknown = media ? t("common.status.unknown") : noSource;
+  const unknown = media ? t("common.unknown") : noSource;
   const metadata: readonly [string, ReactNode][] = [
-    [t("source.labels.metadata.filename"), source ? source.displayName : noSource],
+    [t("source.metadata.filename"), source ? source.displayName : noSource],
     [
-      t("source.labels.metadata.createdAt"),
+      t("source.metadata.createdAt"),
       source ? (
         <RelativeTimestamp
-          label={t("source.labels.metadata.createdAt")}
+          label={t("source.metadata.createdAt")}
           timestamp={source.createdAtMicros}
         />
       ) : (
@@ -36,53 +36,40 @@ function SourceDetails() {
       ),
     ],
     [
-      t("source.labels.metadata.updatedAt"),
+      t("source.metadata.updatedAt"),
       source ? (
         <RelativeTimestamp
-          label={t("source.labels.metadata.updatedAt")}
+          label={t("source.metadata.updatedAt")}
           timestamp={source.updatedAtMicros}
         />
       ) : (
         noSource
       ),
     ],
+    [t("source.metadata.container"), media ? (media.formatLongName ?? media.formatName) : noSource],
+    [t("source.metadata.duration"), media ? formatDuration(media.durationMicros) : noSource],
     [
-      t("source.labels.metadata.container"),
-      media ? (media.formatLongName ?? media.formatName) : noSource,
-    ],
-    [t("source.labels.metadata.duration"), media ? formatDuration(media.durationMicros) : noSource],
-    [
-      t("source.labels.metadata.resolution"),
+      t("source.metadata.resolution"),
       media ? `${media.video.width} \u00d7 ${media.video.height}` : noSource,
     ],
     [
-      t("source.labels.metadata.frameRate"),
+      t("source.metadata.frameRate"),
       media
-        ? formatFrameRate(frameRate, unknown, (value) =>
-            t("units.labels.framesPerSecond", { value }),
-          )
+        ? formatFrameRate(frameRate, unknown, (value) => t("units.framesPerSecond", { value }))
         : noSource,
     ],
+    [t("source.metadata.videoCodec"), media ? media.video.codecName.toUpperCase() : noSource],
+    [t("source.metadata.fileSize"), media ? formatBytes(media.sizeBytes, unknown) : noSource],
     [
-      t("source.labels.metadata.videoCodec"),
-      media ? media.video.codecName.toUpperCase() : noSource,
-    ],
-    [
-      t("source.labels.metadata.fileSize"),
-      media ? formatBytes(media.sizeBytes, unknown) : noSource,
-    ],
-    [
-      t("source.labels.metadata.bitrate"),
+      t("source.metadata.bitrate"),
       media
-        ? formatBitrate(media.bitrate, unknown, (value) =>
-            t("units.labels.megabitsPerSecond", { value }),
-          )
+        ? formatBitrate(media.bitrate, unknown, (value) => t("units.megabitsPerSecond", { value }))
         : noSource,
     ],
   ] as const;
 
   return (
-    <dl aria-label={t("source.accessibility.metadata")}>
+    <dl aria-label={t("source.metadata.accessibleLabel")}>
       {metadata.map(([label, value], index) => (
         <Fragment key={label}>
           <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-3 py-2">

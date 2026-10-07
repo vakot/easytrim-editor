@@ -52,7 +52,7 @@ function AppLayoutControls() {
 
   return (
     <div
-      aria-label={t("app.accessibility.panels")}
+      aria-label={t("layout.accessibility.panels")}
       className="flex items-center gap-0.5"
       role="group"
     >
@@ -61,7 +61,7 @@ function AppLayoutControls() {
           <DropdownMenuTrigger asChild>
             <TooltipTrigger asChild>
               <Button
-                aria-label={t("app.accessibility.layoutControls")}
+                aria-label={t("layout.accessibility.layoutControls")}
                 className="text-secondary-foreground"
                 size="icon-sm"
                 type="button"
@@ -74,7 +74,7 @@ function AppLayoutControls() {
 
           <DropdownMenuContent>
             <DropdownMenuGroup>
-              <DropdownMenuLabel>{t("app.labels.panelsVisibility")}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("layout.panelsVisibility")}</DropdownMenuLabel>
 
               <ApplicationCommandMenuItem asChild commandId="toggle-left-panel">
                 <DropdownMenuCheckboxItem inset keepOpen>
@@ -98,7 +98,7 @@ function AppLayoutControls() {
             <DropdownMenuSeparator />
 
             <DropdownMenuGroup>
-              <DropdownMenuLabel>{t("app.labels.layoutDensity")}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("layout.layoutDensity")}</DropdownMenuLabel>
 
               <DropdownMenuRadioGroup value={layoutDensity}>
                 <ApplicationCommandMenuItem asChild commandId="layout-density-default">
@@ -124,7 +124,7 @@ function AppLayoutControls() {
             <DropdownMenuSeparator />
 
             <DropdownMenuGroup>
-              <DropdownMenuLabel>{t("settings.labels.activityFeedView")}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("settings.layout.activityFeedView.label")}</DropdownMenuLabel>
 
               <DropdownMenuRadioGroup value={activityFeedView ?? "default"}>
                 <ApplicationCommandMenuItem asChild commandId="activity-feed-view-default">
@@ -170,14 +170,14 @@ function AppLayoutControls() {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <TooltipContent>{t("app.tooltips.customizeLayout")}</TooltipContent>
+        <TooltipContent>{t("layout.customize.tooltip")}</TooltipContent>
       </Tooltip>
 
       <Tooltip preserveOnTrigger>
         <TooltipTrigger asChild>
           <Button
-            aria-label={t("app.tooltips.togglePanel", {
-              panel: t("app.labels.leftPanel"),
+            aria-label={t("layout.panelToggle.tooltip", {
+              panel: t("layout.leftPanel"),
             })}
             className="size-7 p-0 text-secondary-foreground"
             onClick={() => void executeCommand("toggle-left-panel", "button")}
@@ -192,15 +192,15 @@ function AppLayoutControls() {
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {t("app.tooltips.togglePanel", { panel: t("app.labels.leftPanel") })}
+          {t("layout.panelToggle.tooltip", { panel: t("layout.leftPanel") })}
         </TooltipContent>
       </Tooltip>
 
       <Tooltip preserveOnTrigger>
         <TooltipTrigger asChild>
           <Button
-            aria-label={t("app.tooltips.togglePanel", {
-              panel: t("app.labels.bottomPanel"),
+            aria-label={t("layout.panelToggle.tooltip", {
+              panel: t("layout.bottomPanel"),
             })}
             className="size-7 p-0 text-secondary-foreground"
             disabled={!bottomPanel.enabled || bottomPanel.pending}
@@ -216,7 +216,7 @@ function AppLayoutControls() {
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {t("app.tooltips.togglePanel", { panel: t("app.labels.bottomPanel") })}
+          {t("layout.panelToggle.tooltip", { panel: t("layout.bottomPanel") })}
         </TooltipContent>
       </Tooltip>
     </div>

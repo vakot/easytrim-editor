@@ -21,11 +21,13 @@ const AudioTrackToggle = forwardRef<HTMLButtonElement, AudioTrackToggleProps>(
     const { isEnabled, setEnabled, stream, track, trackNumber } = controller;
     if (!stream || !track) return null;
     const title =
-      stream.title ?? stream.language ?? t("audio.labels.defaultTrack", { number: trackNumber });
+      stream.title ??
+      stream.language ??
+      t("audio.tracks.labels.defaultTrack", { number: trackNumber });
 
     const label = isEnabled
-      ? t("audio.actions.muteTrack", { title })
-      : t("audio.actions.unmuteTrack", { title });
+      ? t("audio.tracks.actions.muteTrack", { title })
+      : t("audio.tracks.actions.unmuteTrack", { title });
 
     return (
       <Tooltip preserveOnTrigger>

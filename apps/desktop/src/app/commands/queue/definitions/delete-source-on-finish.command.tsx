@@ -14,7 +14,7 @@ function useDeleteSourceOnFinishCommand() {
   const dispatch = useAppDispatch();
   const { requestEnableSourceDeletion } = useQueueDeleteSource();
   const checked = useAppSelector(selectDeleteSourceOnRenderFinish);
-  const label = t("queue.labels.deleteSource");
+  const label = t("queue.deleteSource.label");
   return {
     checked,
     enabled: true,

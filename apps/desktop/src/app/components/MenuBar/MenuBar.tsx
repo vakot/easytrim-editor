@@ -79,19 +79,19 @@ function MenuBar() {
             </MenubarTrigger>
 
             <MenubarContent align="start">
-              <CompactMenuSub id="file" label={t("app.labels.file")}>
+              <CompactMenuSub id="file" label={t("app.menu.file")}>
                 <MenuBarFileContent />
               </CompactMenuSub>
 
-              <CompactMenuSub id="view" label={t("app.labels.view")}>
+              <CompactMenuSub id="view" label={t("layout.view")}>
                 <MenuBarViewContent />
               </CompactMenuSub>
 
               <MenubarItem onSelect={() => void executeCommand("open-settings", "menu")}>
-                {t("settings.labels.title")}
+                {t("settings.title")}
               </MenubarItem>
 
-              <CompactMenuSub id="help" label={t("app.labels.help")}>
+              <CompactMenuSub id="help" label={t("app.menu.help")}>
                 <MenuBarHelpContent />
               </CompactMenuSub>
             </MenubarContent>

@@ -7,3 +7,9 @@ type TranslationShape<Translation> = {
 };
 
 export type TranslationSchema = TranslationShape<typeof en>;
+
+export type PartialTranslationSchema<Translation = TranslationSchema> = {
+  [Key in keyof Translation]?: Translation[Key] extends string
+    ? string
+    : PartialTranslationSchema<Translation[Key]>;
+};

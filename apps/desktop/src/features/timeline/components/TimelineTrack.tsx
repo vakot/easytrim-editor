@@ -96,7 +96,7 @@ function TimelineTrack() {
 
   return (
     <div
-      aria-label={t("timeline.accessibility.track")}
+      aria-label={t("timeline.playhead.accessibility.track")}
       className={cn(
         styles.track,
         disabled && "cursor-not-allowed",
