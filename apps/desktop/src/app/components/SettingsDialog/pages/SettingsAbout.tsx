@@ -13,7 +13,7 @@ function SettingsAbout() {
           description={t("support.messages.buyMeCoffee")}
           label={t("support.actions.projectSupport")}
         >
-          <CommandButton commandId="support-project" />
+          <CommandButton commandId="support-project" variant="secondary" />
         </SettingRow>
       </SettingsSection>
 
@@ -22,7 +22,7 @@ function SettingsAbout() {
           description={t("settings.pages.about.versionDescription")}
           label={t("app.labels.version", { version: getCurrentVersion() })}
         >
-          <CommandButton commandId="open-release-page" />
+          <CommandButton commandId="open-release-page" variant="outline" />
         </SettingRow>
 
         <SettingRow
@@ -35,17 +35,17 @@ function SettingsAbout() {
 
       <SettingsSection title={t("settings.pages.about.moreSection")}>
         <SettingRow label={t("support.actions.projectPage")}>
-          <CommandButton commandId="open-project-page" />
+          <CommandButton commandId="open-project-page" variant="outline" />
         </SettingRow>
 
         <SettingRow label={t("support.actions.showLogs")}>
-          <CommandButton commandId="show-logs" />
+          <CommandButton commandId="show-logs" variant="outline" />
         </SettingRow>
       </SettingsSection>
 
       <SettingsSection title={t("support.labels.whatsNewTitle")}>
         <SettingRow label={t("support.actions.changelog")}>
-          <CommandButton commandId="open-changelog" />
+          <CommandButton commandId="open-changelog" variant="outline" />
         </SettingRow>
       </SettingsSection>
     </>
