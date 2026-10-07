@@ -81,7 +81,7 @@ describe("MediaToolsStatus", () => {
     );
     const partial: MediaCapabilities = {
       ffmpeg: readyCapabilities.ffmpeg,
-      ffprobe: { available: false, error: "ffprobe is not available on PATH." },
+      ffprobe: { available: false, errorId: "notFound" },
     };
 
     renderStatus(partial);
@@ -92,6 +92,40 @@ describe("MediaToolsStatus", () => {
     fireEvent.click(screen.getByRole("button", { name: "Recheck" }));
     expect(await screen.findByRole("button", { name: "Checking…" })).toBeDisabled();
     expect(native.checkMediaCapabilities).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["notFound", "FFmpeg is not installed or available on PATH."],
+    ["timedOut", "FFmpeg did not respond within 3 seconds."],
+    ["startFailed", "Could not start FFmpeg."],
+    ["checkFailed", "Could not check FFmpeg."],
+  ] as const)(
+    "localizes the %s capability failure without showing diagnostics",
+    (errorId, copy) => {
+      renderStatus({
+        ffmpeg: { available: false, diagnostics: "C:/private/ffmpeg.exe: private stderr", errorId },
+        ffprobe: readyCapabilities.ffprobe,
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Media tools issue" }));
+
+      expect(screen.getByText(copy)).toBeInTheDocument();
+      expect(screen.queryByText("C:/private/ffmpeg.exe: private stderr")).not.toBeInTheDocument();
+    },
+  );
+
+  it("interpolates the FFprobe label and safely handles an unknown error ID", () => {
+    renderStatus({
+      ffmpeg: readyCapabilities.ffmpeg,
+      ffprobe: {
+        available: false,
+        diagnostics: "C:/private/ffprobe.exe: private stderr",
+        errorId: undefined,
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Media tools issue" }));
+
+    expect(screen.getByText("Could not check FFprobe.")).toBeInTheDocument();
+    expect(screen.queryByText("C:/private/ffprobe.exe: private stderr")).not.toBeInTheDocument();
   });
 
   it("shows check failure distinctly and allows a failed capability check to be retried", () => {

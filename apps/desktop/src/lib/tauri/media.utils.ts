@@ -10,6 +10,7 @@ import type {
   AudioPreviewDescriptor,
   AudioStream,
   BinaryCapability,
+  BinaryCapabilityErrorId,
   ChapterInfo,
   ExportProgress,
   ExportResult,
@@ -279,8 +280,21 @@ function parseBinaryCapability(value: unknown): BinaryCapability {
     available: capability.available,
     version: optionalString(capability.version),
     path: optionalString(capability.path),
-    error: optionalString(capability.error),
+    errorId: parseBinaryCapabilityErrorId(capability.errorId),
+    diagnostics: optionalString(capability.diagnostics) ?? optionalString(capability.error),
   };
+}
+
+function parseBinaryCapabilityErrorId(value: unknown): BinaryCapabilityErrorId | undefined {
+  switch (value) {
+    case "notFound":
+    case "timedOut":
+    case "startFailed":
+    case "checkFailed":
+      return value;
+    default:
+      return undefined;
+  }
 }
 
 function parseAudioPreviewDescriptor(value: unknown): AudioPreviewDescriptor {

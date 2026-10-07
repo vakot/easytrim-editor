@@ -428,6 +428,12 @@ export const en = {
   mediaTools: {
     copyInstallCommand: "Copy FFmpeg install command",
     copyPath: "Copy {{label}} path",
+    errors: {
+      checkFailed: "Could not check {{label}}.",
+      notFound: "{{label}} is not installed or available on PATH.",
+      startFailed: "Could not start {{label}}.",
+      timedOut: "{{label}} did not respond within 3 seconds.",
+    },
     ffmpegDownloads: "FFmpeg downloads",
     recheck: "Recheck",
     showPathInFolder: "Show {{label}} in folder",

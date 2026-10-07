@@ -71,15 +71,15 @@ function AppCommandCenterStory({ state }: AppCommandCenterStoryArgs) {
         store.dispatch(
           capabilitiesReady({
             ffmpeg: readyCapabilities.ffmpeg,
-            ffprobe: { available: false, error: "ffprobe is not available on PATH." },
+            ffprobe: { available: false, errorId: "notFound" },
           }),
         );
         break;
       case "unavailable":
         store.dispatch(
           capabilitiesReady({
-            ffmpeg: { available: false, error: "ffmpeg is not available on PATH." },
-            ffprobe: { available: false, error: "ffprobe is not available on PATH." },
+            ffmpeg: { available: false, errorId: "notFound" },
+            ffprobe: { available: false, errorId: "notFound" },
           }),
         );
         break;

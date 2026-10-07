@@ -2685,8 +2685,8 @@ describe("App", () => {
 
   it("shows a clear missing-binary capability state", async () => {
     mocks.checkMediaCapabilities.mockResolvedValue({
-      ffmpeg: { available: false, error: "ffmpeg is not installed or available on PATH." },
-      ffprobe: { available: false, error: "ffprobe is not installed or available on PATH." },
+      ffmpeg: { available: false, errorId: "notFound" },
+      ffprobe: { available: false, errorId: "notFound" },
     });
     await store.dispatch(checkMediaCapabilitiesRequested());
     render(<App />);
@@ -2694,7 +2694,7 @@ describe("App", () => {
     const status = await screen.findByRole("button", { name: "Media tools unavailable" });
     await userEvent.setup().click(status);
 
-    expect(await screen.findByText(/ffprobe is not installed/)).toBeInTheDocument();
+    expect(await screen.findByText(/FFprobe is not installed/)).toBeInTheDocument();
     expect(screen.getByText("winget install --id Gyan.FFmpeg --exact")).toBeInTheDocument();
   });
 

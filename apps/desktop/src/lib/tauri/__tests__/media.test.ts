@@ -35,7 +35,7 @@ import {
   saveFramePng,
 } from "../media";
 import type { MediaInfo } from "../media.types";
-import { parseSourceRef } from "../media.utils";
+import { parseMediaCapabilities, parseSourceRef } from "../media.utils";
 
 type NativeDropEvent =
   | { payload: { paths: string[]; type: "enter" } }
@@ -56,6 +56,53 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
+  it("parses semantic capability failures and preserves diagnostics separately", () => {
+    expect(
+      parseMediaCapabilities({
+        ffmpeg: {
+          available: false,
+          errorId: "checkFailed",
+          diagnostics: "C:/private/ffmpeg.exe: codec check failed",
+        },
+        ffprobe: {
+          available: true,
+          path: "C:/Tools/ffprobe.exe",
+          version: "ffprobe version 7.1",
+        },
+      }),
+    ).toEqual({
+      ffmpeg: {
+        available: false,
+        errorId: "checkFailed",
+        diagnostics: "C:/private/ffmpeg.exe: codec check failed",
+        path: undefined,
+        version: undefined,
+      },
+      ffprobe: {
+        available: true,
+        errorId: undefined,
+        diagnostics: undefined,
+        path: "C:/Tools/ffprobe.exe",
+        version: "ffprobe version 7.1",
+      },
+    });
+  });
+
+  it("uses unknown capability error IDs as an unspecified failure", () => {
+    expect(
+      parseMediaCapabilities({
+        ffmpeg: { available: false, errorId: "futureFailure", diagnostics: "private detail" },
+        ffprobe: { available: true },
+      }).ffmpeg,
+    ).toEqual({
+      available: false,
+      errorId: undefined,
+      diagnostics: "private detail",
+      path: undefined,
+      version: undefined,
+    });
+  });
+
   it("parses audio preview descriptors and preserves canonical signal effects", async () => {
     const audioTracks = [
       {
