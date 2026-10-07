@@ -40,9 +40,7 @@ function SettingsGeneral() {
               type="button"
               variant="outline"
             >
-              <span className="min-w-0 flex-1 truncate text-left">
-                <LanguageSelectorValue />
-              </span>
+              <LanguageSelectorValue className="flex-1" />
               <ChevronsUpDown aria-hidden="true" className="ml-auto size-4 text-muted-foreground" />
             </Button>
           </LanguageSelectorTrigger>
