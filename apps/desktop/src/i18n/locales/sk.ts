@@ -9,7 +9,7 @@ export const sk = {
       reset: "Obnoviť",
       retry: "Skúsiť znova",
       save: "Uložiť",
-      resetToDefault: "Obnoviť predvolené",
+      resetToDefault: "Obnoviť predvolenú hodnotu",
     },
     or: "alebo",
     search: {
@@ -70,7 +70,7 @@ export const sk = {
     drop: {
       action: "Pustením otvoríte video",
       description: "Otvorte jeden alebo viac podporovaných videosúborov z počítača.",
-      resetNotice: "Aktuálne úpravy sa obnovia.",
+      resetNotice: "Aktuálne úpravy sa zrušia.",
       title: "Presuňte videá sem",
     },
     explorer: "Prieskumník zdrojov",
@@ -117,6 +117,8 @@ export const sk = {
     open: {
       fileDescription: "Vyberte jeden videosúbor a začnite upravovať.",
       folderDescription: "Importujte všetky podporované videá z priečinka.",
+      videoFilter: "Videosúbory",
+      foldersDialogTitle: "Pridať priečinky",
     },
     shortcutTooltip: "{{label}} ({{shortcut}})",
     thumbnail: {
@@ -125,6 +127,9 @@ export const sk = {
   },
   app: {
     brand: "EasyTrim Editor",
+    errors: {
+      unexpected: "V aplikácii sa vyskytla neočakávaná chyba.",
+    },
     navigation: {
       breadcrumb: "Navigačná cesta",
     },
@@ -278,8 +283,8 @@ export const sk = {
       },
       followSegment: {
         description: "Predvolene obmedziť prehrávanie na vybraný segment.",
-        label: "Sledovať segment",
-        commandLabel: "Predvolene sledovať segment",
+        label: "Prehrávať iba segment",
+        commandLabel: "Predvolene prehrávať iba segment",
       },
       mergeAudio: {
         description: "Predvolene zlúčiť povolené zvukové stopy pri nových exportoch.",
@@ -397,8 +402,8 @@ export const sk = {
       deleteFile: "odstrániť|kôš|zdroj",
       openFile: "importovať|video|zdroj",
       openFolder: "adresár|importovať|zdroj",
-      optimizedExport: "kódovať|vykresliť|prekódovať",
-      saveLosslessCut: "rýchly strih|bezstratový|vykresliť",
+      optimizedExport: "kódovať|renderovať|prekódovať",
+      saveLosslessCut: "rýchly strih|bezstratový|bez prekódovania",
       saveCurrentFrame: "uložiť|snímka|obrázok|png",
     },
   },
@@ -410,7 +415,6 @@ export const sk = {
     },
     notification: {
       fileSize: "Veľkosť súboru: {{size}}",
-      moreFiles: "+{{count}} ďalších súborov",
       outputPath: "Výstup: {{path}}",
       renderTime: "Čas vykresľovania: {{duration}}",
       sourcePath: "Zdroj: {{path}}",
@@ -421,6 +425,9 @@ export const sk = {
     },
   },
   export: {
+    outputDialog: {
+      videoFilter: "Videosúbory",
+    },
     fastCut: {
       cancelled: "Rýchly strih bol zrušený",
       completed: "Rýchly strih bol dokončený",
@@ -428,19 +435,53 @@ export const sk = {
       interrupted: "Rýchly strih bol prerušený",
       started: "Rýchly strih sa začal",
       cutting: "Prebieha rýchly strih…",
-      action: "Uložiť bez prekódovania",
+      action: "Uložiť strih bez prekódovania",
       unavailable: "Strih bez prekódovania nie je dostupný po transformácii videa.",
       tooltip: "Uložiť bez prekódovania (Ctrl+S)",
     },
     render: {
-      completed: "Optimalizované vykreslenie bolo dokončené",
-      cancelled: "Vykreslenie bolo zrušené",
-      failed: "Vykreslenie zlyhalo",
-      interrupted: "Vykreslenie bolo prerušené",
-      started: "Vykreslenie sa začalo",
-      rendering: "Prebieha vykresľovanie…",
+      completed: "Optimalizované renderovanie bolo dokončené",
+      cancelled: "Renderovanie bolo zrušené",
+      failed: "Renderovanie zlyhalo",
+      interrupted: "Renderovanie bolo prerušené",
+      started: "Renderovanie sa začalo",
+      rendering: "Prebieha renderovanie…",
     },
     preset: {
+      builtIn: {
+        p1: {
+          name: "P1 · Najrýchlejší",
+          description:
+            "Najrýchlejšie kódovanie NVENC: najväčšie súbory a najnižšia efektivita kompresie.",
+        },
+        p2: {
+          name: "P2 · Veľmi rýchly",
+          description:
+            "Veľmi rýchly export s veľkými súbormi; vhodný, keď je najdôležitejšia rýchlosť.",
+        },
+        p3: {
+          name: "P3 · Rýchly",
+          description:
+            "Rýchly export NVENC s praktickou rovnováhou medzi rýchlosťou, veľkosťou a kvalitou.",
+        },
+        p4: {
+          name: "P4 · Kvalita",
+          description:
+            "Kódovanie NVENC so zameraním na kvalitu: menšie súbory a dlhší čas renderovania.",
+        },
+        p5: {
+          name: "P5 · Menší súbor",
+          description: "Menšie súbory za cenu mierne dlhšieho renderovania.",
+        },
+        p6: {
+          name: "P6 · Veľmi malý súbor",
+          description: "Efektívnejšia kompresia; pomalšie kódovanie pre veľmi malé súbory.",
+        },
+        p7: {
+          name: "P7 · Najmenší súbor",
+          description: "Najefektívnejší preset NVENC; najpomalšia možnosť v celom rozsahu.",
+        },
+      },
       actions: {
         add: "Pridať novú predvoľbu",
       },
@@ -459,6 +500,7 @@ export const sk = {
         title: "Odstrániť predvoľbu?",
       },
       nameLabel: "Názov",
+      namePlaceholder: "Názov predvoľby",
       actionsLabel: "Akcie predvoľby",
       selectPlaceholder: "Vybrať predvoľbu",
     },
@@ -472,7 +514,7 @@ export const sk = {
       tooltip: "Nastaviť a exportovať optimalizované video (Ctrl+E)",
       dialog: {
         arguments: "Argumenty FFmpeg",
-        description: "Pred výberom súboru nastavte optimalizované vykreslenie.",
+        description: "Pred výberom súboru nastavte optimalizované renderovanie.",
         editTitle: "Upraviť export vo fronte",
         matchSource: "Podľa zdroja",
         saveNotice: "Po potvrdení sa otvorí systémové okno na uloženie.",
@@ -491,7 +533,7 @@ export const sk = {
       timeLabel: "Odhad času",
     },
     resolution: {
-      customScaling: "Vlastné rozlíšenie",
+      customScaling: "Vlastné škálovanie",
       heightLabel: "Výška",
       widthLabel: "Šírka",
       label: "Rozlíšenie",
@@ -523,11 +565,11 @@ export const sk = {
     },
     deleteSource: {
       label: "Odstrániť zdroj",
-      tooltip: "Po úspešnom vykreslení odstráni zdroj",
+      tooltip: "Po úspešnom renderovaní odstráni zdroj",
       confirmation: {
         description:
-          "Pôvodný zdrojový súbor sa po úspešnom dokončení vykreslenia odstráni. Túto akciu možno vrátiť späť.",
-        title: "Odstrániť zdroj po vykreslení?",
+          "Pôvodný zdrojový súbor sa po úspešnom dokončení renderovania odstráni. Túto akciu možno vrátiť späť.",
+        title: "Odstrániť zdroj po renderovaní?",
       },
     },
     onFinished: {
@@ -567,7 +609,7 @@ export const sk = {
       durationTooltip: "Trvanie exportu",
       fileSizeTooltip: "Veľkosť výstupného súboru",
       fileSizeChangeTooltip: "Zmena veľkosti súboru oproti zdroju",
-      fpsTooltip: "Počet vykreslených snímok za sekundu",
+      fpsTooltip: "Počet renderovaných snímok za sekundu",
       remainingTooltip: "Odhadovaný zostávajúci čas",
     },
     progress: {
@@ -577,6 +619,7 @@ export const sk = {
   },
   preview: {
     frame: {
+      pngFilter: "Obrázok PNG",
       next: "Nasledujúca snímka",
       copyFrame: "Kopírovať snímku",
       previous: "Predchádzajúca snímka",
@@ -613,8 +656,8 @@ export const sk = {
       setStart: "Nastaviť začiatok segmentu na aktuálnu pozíciu",
       setEndUnavailable: "Koniec segmentu nastavíte presunutím za začiatok zdroja",
       setStartUnavailable: "Začiatok segmentu nastavíte presunutím pred koniec zdroja",
-      segmentDisabledTooltip: "Prehráva sa celá časová os",
-      segmentEnabledTooltip: "Prehrávanie je obmedzené na vybraný segment",
+      segmentDisabledTooltip: "Prehrávať celú časovú os",
+      segmentEnabledTooltip: "Obmedziť prehrávanie na vybraný segment",
       setEndTooltip: "Nastaviť koniec segmentu na aktuálnu pozíciu (O)",
       setStartTooltip: "Nastaviť začiatok segmentu na aktuálnu pozíciu (I)",
     },
@@ -636,7 +679,7 @@ export const sk = {
       compatible: "Kompatibilný náhľad",
       playbackError: "Náhľad videa sa nepodarilo zobraziť",
       proxy:
-        "Pôvodný zdroj nebolo možné prehrať priamo, preto EasyTrim pripravil kompatibilný náhľad, ktorý môže mať nižšiu kvalitu. Export stále používa pôvodný súbor.",
+        "Pôvodný zdroj nebolo možné prehrať priamo, preto EasyTrim pripravil kompatibilný proxy súbor, ktorý môže mať nižšiu kvalitu. Export stále používa pôvodný súbor.",
     },
     shortcuts: {
       markInOut: "Začiatok / Koniec",
@@ -707,7 +750,7 @@ export const sk = {
       },
       accessibility: {
         playbackPosition: "Pozícia prehrávania",
-        seconds: "{{value}} sekundy",
+        seconds: "{{value}} s",
         startsAt: "Začína v čase {{time}}",
         tools: "Nástroje časovej osi videa",
         track: "Časová os strihu videa",
@@ -771,7 +814,7 @@ export const sk = {
     highPass: {
       label: "Hornopriepustný filter",
       cutoffLabel: "Hraničná frekvencia",
-      description: "Odstráňte nízkofrekvenčné dunenie z tejto stopy.",
+      description: "Znížte nízkofrekvenčné dunenie na tejto stope.",
       summary: "Hornopriepustný filter ({{cutoff}} Hz)",
     },
     limiter: {

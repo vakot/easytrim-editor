@@ -19,17 +19,19 @@ use crate::{
 pub async fn choose_source(
     app: AppHandle,
     mode: Option<SourcePickerMode>,
+    video_filter: String,
+    folders_dialog_title: String,
 ) -> Result<Option<SourceImportResult>, AppError> {
     let selected_paths = match mode.unwrap_or_default() {
         SourcePickerMode::Files => app
             .dialog()
             .file()
-            .add_filter("Video", SUPPORTED_VIDEO_EXTENSIONS)
+            .add_filter(&video_filter, SUPPORTED_VIDEO_EXTENSIONS)
             .blocking_pick_files(),
         SourcePickerMode::Folders => app
             .dialog()
             .file()
-            .set_title("Add folders")
+            .set_title(&folders_dialog_title)
             .blocking_pick_folders(),
     };
 

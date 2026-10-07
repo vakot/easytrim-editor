@@ -1,12 +1,12 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import {
-  type ExportPreset,
-  loadExportPresetState,
-  presetNameError,
-} from "@/app/store/lib/export-presets";
+import { type ExportPreset, loadExportPresetState } from "@/app/store/lib/export-presets";
 
 import type { RootState } from "../store";
+
+type ExportPresetUpdate =
+  | { argumentsText: string; customName: string | null; presetKind: "builtIn" }
+  | { argumentsText: string; name: string; presetKind: "custom" };
 
 const exportPresetsSlice = createSlice({
   name: "exportPresets",
@@ -22,10 +22,10 @@ const exportPresetsSlice = createSlice({
       state.argumentsText = preset.argumentsText;
     },
     exportPresetCreated: (state, action: PayloadAction<{ name: string }>) => {
-      if (presetNameError(state.presets, action.payload.name)) return;
       const nextPresetSequence = state.nextPresetSequence + 1;
       const preset: ExportPreset = {
         id: `runtime-preset-${nextPresetSequence}`,
+        kind: "custom",
         name: action.payload.name.trim(),
         argumentsText: state.argumentsText,
       };
@@ -34,19 +34,24 @@ const exportPresetsSlice = createSlice({
       state.selectedPresetId = preset.id;
       state.nextPresetSequence = nextPresetSequence;
     },
-    exportPresetUpdated: (state, action: PayloadAction<{ name: string }>) => {
+    exportPresetUpdated: (state, action: PayloadAction<ExportPresetUpdate>) => {
       const selectedPresetId = state.selectedPresetId;
-      if (
-        !selectedPresetId ||
-        presetNameError(state.presets, action.payload.name, selectedPresetId)
-      ) {
+      if (!selectedPresetId) {
         return;
       }
       const preset = state.presets.find((candidate) => candidate.id === selectedPresetId);
-      if (preset) {
+      if (!preset) return;
+
+      if (preset.kind === "builtIn" && action.payload.presetKind === "builtIn") {
+        if (action.payload.customName === null) delete preset.customName;
+        else preset.customName = action.payload.customName;
+      } else if (preset.kind === "custom" && action.payload.presetKind === "custom") {
         preset.name = action.payload.name.trim();
-        preset.argumentsText = state.argumentsText;
+      } else {
+        return;
       }
+      preset.argumentsText = action.payload.argumentsText;
+      state.argumentsText = action.payload.argumentsText;
     },
     exportPresetDeleted: (state) => {
       if (!state.selectedPresetId) return;

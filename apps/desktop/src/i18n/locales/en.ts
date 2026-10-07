@@ -35,6 +35,7 @@ export const en = {
     },
     delete: {
       action: "Delete",
+      blockedByExport: "The source cannot be deleted while an export is queued or rendering.",
       cancelled: "File deletion cancelled",
       failed: "File deletion failed",
       interrupted: "File deletion interrupted",
@@ -59,6 +60,7 @@ export const en = {
       },
     },
     restore: {
+      selectedFailed: "The selected source could not be restored.",
       cancelled: "File restoration cancelled",
       failed: "File restoration failed",
       interrupted: "File restoration interrupted",
@@ -83,6 +85,7 @@ export const en = {
       description: "Open one or more supported video files from your computer.",
       resetNotice: "The current edit will be reset.",
       title: "Drag and drop videos here",
+      emptySelection: "Drop a video file instead of an empty selection.",
     },
     explorer: "Source explorer",
     importedSources: "Imported Sources",
@@ -127,6 +130,8 @@ export const en = {
     open: {
       fileDescription: "Choose a single video file to start editing.",
       folderDescription: "Import all supported videos from a folder.",
+      videoFilter: "Video files",
+      foldersDialogTitle: "Add folders",
     },
     shortcutTooltip: "{{label}} ({{shortcut}})",
     thumbnail: {
@@ -135,6 +140,9 @@ export const en = {
   },
   app: {
     brand: "EasyTrim Editor",
+    errors: {
+      unexpected: "An unexpected application error occurred.",
+    },
     navigation: {
       breadcrumb: "Breadcrumb",
     },
@@ -148,6 +156,7 @@ export const en = {
       restart: "Restart application",
     },
     workspaceRecovery: {
+      exportInterrupted: "The export was interrupted when EasyTrim closed unexpectedly.",
       restore: "Restore",
       restored_one: "Restored {{count}} source from previous session",
       restored_other: "Restored {{count}} sources from previous session",
@@ -427,7 +436,8 @@ export const en = {
     },
     notification: {
       fileSize: "File size: {{size}}",
-      moreFiles: "+{{count}} more files",
+      moreFiles_one: "+{{count}} more file",
+      moreFiles_other: "+{{count}} more files",
       outputPath: "Output: {{path}}",
       renderTime: "Render time: {{duration}}",
       sourcePath: "Source: {{path}}",
@@ -438,6 +448,9 @@ export const en = {
     },
   },
   export: {
+    outputDialog: {
+      videoFilter: "Video files",
+    },
     fastCut: {
       cancelled: "Fast cut cancelled",
       completed: "Fast cut completed",
@@ -458,6 +471,36 @@ export const en = {
       rendering: "Rendering…",
     },
     preset: {
+      builtIn: {
+        p1: {
+          name: "P1 · Fastest",
+          description: "Fastest NVENC encoding; largest files and lowest compression efficiency.",
+        },
+        p2: {
+          name: "P2 · Very fast",
+          description: "Very fast export with large files; useful when turnaround matters most.",
+        },
+        p3: {
+          name: "P3 · Fast",
+          description: "Fast NVENC export with a practical balance of speed, size, and quality.",
+        },
+        p4: {
+          name: "P4 · Quality",
+          description: "Quality-focused NVENC encoding; smaller files with a longer render time.",
+        },
+        p5: {
+          name: "P5 · Smaller",
+          description: "Smaller files with a moderate render-time tradeoff.",
+        },
+        p6: {
+          name: "P6 · Very small",
+          description: "Higher compression efficiency; slower encoding for very small files.",
+        },
+        p7: {
+          name: "P7 · Smallest",
+          description: "Highest-efficiency NVENC preset; slowest option in the full preset range.",
+        },
+      },
       actions: {
         add: "Add new preset",
         edit: "Edit",
@@ -478,6 +521,7 @@ export const en = {
         title: "Delete preset?",
       },
       nameLabel: "Name",
+      namePlaceholder: "Preset name",
       actionsLabel: "Preset actions",
       selectPlaceholder: "Select a preset",
     },
@@ -611,6 +655,7 @@ export const en = {
   },
   preview: {
     frame: {
+      pngFilter: "PNG image",
       next: "Next frame",
       copyFrame: "Copy frame",
       previous: "Previous frame",
@@ -668,6 +713,7 @@ export const en = {
     },
     info: {
       compatible: "Compatible preview",
+      compatiblePlaybackFailed: "The compatible preview could not be played.",
       playbackError: "Could not preview this video",
       proxy:
         "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file.",
@@ -759,6 +805,8 @@ export const en = {
     loudness: {
       analyze: "Analyze loudness",
       analyzing: "Analyzing loudness…",
+      requiredForPlayback: "Analyze track loudness to prepare audio playback.",
+      requiredForExport: "Analyze track loudness to continue.",
     },
     activityDetection: {
       analyze: "Analyze audio activity",
@@ -848,6 +896,7 @@ export const en = {
       summary: "Noise reduction - {{preset}}",
     },
     waveform: {
+      displayFailed: "The waveform preview could not be displayed.",
       preparing: "Preparing waveform…",
       unavailable: "Waveform unavailable",
     },

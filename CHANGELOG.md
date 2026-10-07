@@ -27,6 +27,8 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Fixed missing translations in audio track actions and source navigation.
+- Corrected Russian and Slovak interface wording, including built-in export preset names and descriptions and native file dialog labels.
+- Fixed the Activity Feed's singular "more file" count.
 - Fixed spacing and scrolling in the audio effects library and editor panels.
 
 ## [1.13.0]

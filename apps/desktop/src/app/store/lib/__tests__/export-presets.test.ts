@@ -11,7 +11,9 @@ import {
 import { STORAGE_KEYS } from "@/lib/storage.consts";
 
 import {
+  getPresetDisplayName,
   initialExportPresetState,
+  isBuiltInPresetId,
   loadExportPresetState,
   persistExportPresetState,
   presetNameError,
@@ -26,6 +28,7 @@ describe("export presets", () => {
 
     const created = exportPresetsReducer(edited, exportPresetCreated({ name: "CPU fallback" }));
     expect(created.presets.find((preset) => preset.id === created.selectedPresetId)).toMatchObject({
+      kind: "custom",
       name: "CPU fallback",
       argumentsText: "-c:v libx264 -crf 20",
     });
@@ -33,7 +36,11 @@ describe("export presets", () => {
     const selected = exportPresetsReducer(created, exportPresetSelected("runtime-preset-1"));
     const updated = exportPresetsReducer(
       exportPresetsReducer(selected, exportArgumentsChanged("-c:v libx264 -crf 18")),
-      exportPresetUpdated({ name: "High quality CPU" }),
+      exportPresetUpdated({
+        presetKind: "custom",
+        name: "High quality CPU",
+        argumentsText: "-c:v libx264 -crf 18",
+      }),
     );
 
     expect(updated.presets.find((preset) => preset.id === updated.selectedPresetId)).toMatchObject({
@@ -43,16 +50,31 @@ describe("export presets", () => {
 
     const deleted = exportPresetsReducer(updated, exportPresetDeleted());
     expect(deleted.presets).toHaveLength(7);
-    expect(deleted.presets[0]?.name).toBe("P1 · Fastest");
+    expect(deleted.presets[0]).toMatchObject({ id: "hevc-nvenc-p1", kind: "builtIn" });
   });
 
-  it("rejects blank, long, and duplicate names without changing state", () => {
-    expect(presetNameError(initialExportPresetState.presets, " ")).toBe("required");
-    expect(presetNameError(initialExportPresetState.presets, "x".repeat(65))).toBe("tooLong");
-    expect(presetNameError(initialExportPresetState.presets, "P3 · Fast")).toBe("duplicate");
+  it("validates names against the supplied visible names", () => {
+    expect(presetNameError({ candidateName: " ", existingNames: [] })).toBe("required");
+    expect(presetNameError({ candidateName: "x".repeat(65), existingNames: [] })).toBe("tooLong");
     expect(
-      exportPresetsReducer(initialExportPresetState, exportPresetCreated({ name: "P3 · Fast" })),
-    ).toBe(initialExportPresetState);
+      presetNameError({ candidateName: "P3 · Быстрый", existingNames: ["P3 · Быстрый"] }),
+    ).toBe("duplicate");
+    expect(
+      presetNameError({ candidateName: "P3 · Fast", existingNames: ["P3 · Быстрый"] }),
+    ).toBeNull();
+  });
+
+  it("identifies built-in presets only by stable ID and keeps localized names out of state", () => {
+    const preset = initialExportPresetState.presets[2]!;
+
+    expect(preset).toEqual({
+      id: "hevc-nvenc-p3",
+      kind: "builtIn",
+      argumentsText: expect.stringContaining("-preset p3"),
+    });
+    expect(isBuiltInPresetId(preset.id)).toBe(true);
+    expect(isBuiltInPresetId("runtime-preset-1")).toBe(false);
+    expect(getPresetDisplayName(preset, () => "P3 · Быстрый")).toBe("P3 · Быстрый");
   });
 
   it("provides the full NVENC preset range", () => {
@@ -65,7 +87,7 @@ describe("export presets", () => {
     expect(initialExportPresetState.presets[2]?.argumentsText).not.toContain("_aq");
   });
 
-  it("repairs unchanged built-in presets saved with legacy NVENC option names", () => {
+  it("repairs built-in arguments saved with legacy NVENC option names", () => {
     const legacy = structuredClone(initialExportPresetState);
     legacy.presets[2]!.argumentsText = legacy.presets[2]!.argumentsText.replace(
       "-spatial-aq",
@@ -78,6 +100,24 @@ describe("export presets", () => {
 
     expect(loaded.presets[2]?.argumentsText).toContain("-spatial-aq 1");
     expect(loaded.presets[2]?.argumentsText).toContain("-temporal-aq 1");
+  });
+
+  it("ignores incompatible v1 preset storage and loads the new defaults", () => {
+    localStorage.setItem(
+      "easytrim.export-presets.v1",
+      JSON.stringify({
+        ...initialExportPresetState,
+        presets: initialExportPresetState.presets.map((preset) => ({
+          ...preset,
+          name: "legacy display name",
+        })),
+      }),
+    );
+
+    const loaded = loadExportPresetState();
+
+    expect(loaded).toEqual(initialExportPresetState);
+    expect(loaded.presets.every((preset) => preset.kind === "builtIn")).toBe(true);
   });
 
   it("round-trips presets through versioned storage", () => {

@@ -55,6 +55,7 @@ import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeTransformForExport } from "@/domain/rotation";
 import { normalizeSourceKey } from "@/domain/source";
+import { t } from "@/i18n/config";
 import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 import {
@@ -293,7 +294,7 @@ const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) =>
         requestId,
         error: {
           code: "loudness_analysis_required",
-          message: "Analyze track loudness to continue.",
+          message: t("audio.loudness.requiredForExport"),
         },
       }),
     );
@@ -362,7 +363,7 @@ async function startEditingInstanceExport(
     dispatch(
       exportLaunchFailed({
         code: "loudness_analysis_required",
-        message: "Analyze track loudness to continue.",
+        message: t("audio.loudness.requiredForExport"),
       }),
     );
     return;

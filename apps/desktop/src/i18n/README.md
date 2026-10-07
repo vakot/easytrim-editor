@@ -53,3 +53,30 @@ partial locale types allow missing entries but reject unknown ones. `pnpm i18n:c
 invalid or unused English keys, duplicate keys, empty objects and values, invalid plural families,
 unknown partial-locale keys, mismatched interpolation parameters, missing call-site parameters,
 dynamic calls, and inline fallbacks. It never writes translations. `pnpm lint` also runs this check.
+
+## Terminology for contributors
+
+Use these terms consistently in labels, help text, and search terms. Keep product names and units
+such as EasyTrim, FFmpeg, FFprobe, GitHub, Ko-fi, LUFS, dB, dBTP, FPS, codec names, and container
+formats unchanged. Prefer English fallback when a technical translation is uncertain.
+
+| Concept                       | English         | Russian            | Slovak                 |
+| ----------------------------- | --------------- | ------------------ | ---------------------- |
+| Imported media                | Source          | Источник           | Zdroj                  |
+| Saved output action           | Export          | Экспорт            | Export                 |
+| Encoded output process        | Render          | Рендеринг          | Renderovanie           |
+| Cut without re-encoding       | Lossless Cut    | Обрезка без потерь | Strih bez prekódovania |
+| Pending exports               | Export Queue    | Очередь экспорта   | Front exportov         |
+| Reusable export configuration | Preset          | Пресет             | Predvoľba              |
+| Audio stream row              | Track           | Дорожка            | Stopa                  |
+| Time ruler                    | Timeline        | Временная шкала    | Časová os              |
+| Selected time range           | Segment         | Сегмент            | Segment                |
+| Playback view                 | Preview         | Предпросмотр       | Náhľad                 |
+| Video framing                 | Crop            | Обрезка кадра      | Orezanie obrazu        |
+| Audio level adjustment        | Gain            | Усиление           | Zosilnenie             |
+| Perceived audio level         | Loudness        | Громкость          | Hlasitosť              |
+| Peak protection               | Limiter         | Лимитер            | Obmedzovač špičiek     |
+| Background audio cleanup      | Noise Reduction | Шумоподавление     | Redukcia šumu          |
+| Completed actions list        | Activity Feed   | Лента активности   | Prehľad aktivít        |
+| Panel arrangement             | Layout          | Макет              | Rozloženie             |
+| Editing area                  | Workspace       | Рабочая область    | Pracovný priestor      |
