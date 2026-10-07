@@ -79,6 +79,7 @@ import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
 import { normalizeSourceKey } from "@/domain/source";
+import { t } from "@/i18n/config";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin, DiagnosticValue } from "@/lib/tauri/diagnostics.types";
 import {
@@ -581,7 +582,7 @@ async function prepareSelectedSource(
     if (audioTrackSelections.length !== requiredIndexes.length) {
       const error = {
         code: "loudness_analysis_required",
-        message: "Analyze track loudness to prepare audio playback.",
+        message: t("audio.loudness.requiredForPlayback"),
       };
 
       dispatch(audioPreviewsUnavailable({ error }));
@@ -767,7 +768,7 @@ const restoreActiveEditingInstanceRequested =
           sourceErrorReported(
             state.source.error ?? {
               code: "source_restore_failed",
-              message: "The selected source could not be restored.",
+              message: t("source.restore.selectedFailed"),
             },
           ),
         );
@@ -1101,7 +1102,7 @@ const deleteActiveEditingInstanceSourceRequested =
     if (hasActiveExport) {
       const error: AppError = {
         code: "source_in_use",
-        message: "The source cannot be deleted while an export is queued or rendering.",
+        message: t("source.delete.blockedByExport"),
       };
 
       diagnostics.event("source.file.delete.ignored", {
@@ -1180,7 +1181,7 @@ const handlePreviewPlaybackError =
         previewFailed({
           error: {
             code: "preview_playback_failed",
-            message: "The compatible preview could not be played.",
+            message: t("preview.info.compatiblePlaybackFailed"),
           },
         }),
       );

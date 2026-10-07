@@ -235,6 +235,7 @@ describe("media IPC adapter", () => {
     expect(mocks.invoke).toHaveBeenCalledWith("save_frame_png", {
       defaultName: "clip_42.png",
       pngData: [137, 80, 78, 71, 13, 10, 26, 10],
+      pngFilter: "PNG image",
     });
   });
 
@@ -285,7 +286,11 @@ describe("media IPC adapter", () => {
         { displayName: "third.mp4", sourcePath: "C:/Media/third.mp4" },
       ],
     });
-    expect(mocks.invoke).toHaveBeenCalledWith("choose_source", { mode: "files" });
+    expect(mocks.invoke).toHaveBeenCalledWith("choose_source", {
+      mode: "files",
+      videoFilter: "Video files",
+      foldersDialogTitle: "Add folders",
+    });
   });
 
   it("selects folders through the same command without changing file selection mode", async () => {
@@ -311,7 +316,11 @@ describe("media IPC adapter", () => {
         { displayName: "second.mp4", sourcePath: "C:/Media/Folder/second.mp4" },
       ],
     });
-    expect(mocks.invoke).toHaveBeenCalledWith("choose_source", { mode: "folders" });
+    expect(mocks.invoke).toHaveBeenCalledWith("choose_source", {
+      mode: "folders",
+      videoFilter: "Video files",
+      foldersDialogTitle: "Add folders",
+    });
   });
 
   it("imports a source by its physical path", async () => {

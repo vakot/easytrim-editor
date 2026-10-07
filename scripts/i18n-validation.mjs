@@ -219,7 +219,8 @@ export function scanTranslationSource(sourceText, fileName = "source.ts") {
       ts.isImportDeclaration(statement) &&
       ts.isStringLiteral(statement.moduleSpecifier) &&
       (statement.moduleSpecifier.text === "i18next" ||
-        statement.moduleSpecifier.text === "react-i18next"),
+        statement.moduleSpecifier.text === "react-i18next" ||
+        statement.moduleSpecifier.text === "@/i18n/config"),
   );
 
   if (!isTranslationConsumer) return { issues, usages };

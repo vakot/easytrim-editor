@@ -43,6 +43,19 @@ test("rejects dynamic keys and inline fallbacks", () => {
   assert.equal(result.issues.filter((issue) => issue.includes("fallbacks")).length, 2);
 });
 
+test("scans translation calls in non-React consumers", () => {
+  const result = scanTranslationSource(
+    `
+      import { t } from "@/i18n/config";
+      const message = t("source.drop.emptySelection");
+    `,
+    "adapter.ts",
+  );
+
+  assert.deepEqual(result.issues, []);
+  assert.equal(result.usages[0]?.key, "source.drop.emptySelection");
+});
+
 test("accounts for plural families and reports missing interpolation and unused keys", () => {
   const locales = new Map([
     [

@@ -4,6 +4,7 @@ import {
   parseAudioTrackSignalEffects as parseSignalEffects,
 } from "@/domain/audio-processing";
 import type { SourceRef } from "@/domain/source";
+import { t } from "@/i18n/config";
 
 import type {
   AppError,
@@ -38,7 +39,7 @@ function normalizeAppError(error: unknown): AppError {
   }
   if (error instanceof Error) return { code: "internal", message: error.message };
   if (typeof error === "string") return { code: "internal", message: error };
-  return { code: "internal", message: "An unexpected application error occurred." };
+  return { code: "internal", message: t("app.errors.unexpected") };
 }
 
 function parseSourceRef(value: unknown): SourceRef {

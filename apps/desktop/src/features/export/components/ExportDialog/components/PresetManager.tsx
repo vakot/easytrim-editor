@@ -54,11 +54,58 @@ import {
   selectExportPresetList,
   selectSelectedExportPreset,
 } from "@/app/store/slices/export-presets-slice";
+import { en } from "@/i18n/locales/en";
 
 type PresetDialogMode = "create" | "edit";
 
 function PresetManager() {
   const { t } = useTranslation();
+  const builtInLabels: Record<
+    string,
+    { canonicalName: string; description: string; name: string }
+  > = {
+    "hevc-nvenc-p1": {
+      canonicalName: en.export.preset.builtIn.p1.name,
+      name: t("export.preset.builtIn.p1.name"),
+      description: t("export.preset.builtIn.p1.description"),
+    },
+    "hevc-nvenc-p2": {
+      canonicalName: en.export.preset.builtIn.p2.name,
+      name: t("export.preset.builtIn.p2.name"),
+      description: t("export.preset.builtIn.p2.description"),
+    },
+    "hevc-nvenc-p3": {
+      canonicalName: en.export.preset.builtIn.p3.name,
+      name: t("export.preset.builtIn.p3.name"),
+      description: t("export.preset.builtIn.p3.description"),
+    },
+    "hevc-nvenc-p4": {
+      canonicalName: en.export.preset.builtIn.p4.name,
+      name: t("export.preset.builtIn.p4.name"),
+      description: t("export.preset.builtIn.p4.description"),
+    },
+    "hevc-nvenc-p5": {
+      canonicalName: en.export.preset.builtIn.p5.name,
+      name: t("export.preset.builtIn.p5.name"),
+      description: t("export.preset.builtIn.p5.description"),
+    },
+    "hevc-nvenc-p6": {
+      canonicalName: en.export.preset.builtIn.p6.name,
+      name: t("export.preset.builtIn.p6.name"),
+      description: t("export.preset.builtIn.p6.description"),
+    },
+    "hevc-nvenc-p7": {
+      canonicalName: en.export.preset.builtIn.p7.name,
+      name: t("export.preset.builtIn.p7.name"),
+      description: t("export.preset.builtIn.p7.description"),
+    },
+  };
+
+  function displayPresetName(preset: ExportPreset): string {
+    const builtIn = builtInLabels[preset.id];
+    return builtIn && preset.name === builtIn.canonicalName ? builtIn.name : preset.name;
+  }
+
   const dispatch = useAppDispatch();
   const presets = useAppSelector(selectExportPresetList);
   const argumentsText = useAppSelector(selectExportArguments);
@@ -121,7 +168,9 @@ function PresetManager() {
           data-size="default"
         >
           <span className="truncate">
-            {selectedPreset?.name ?? t("export.preset.selectPlaceholder")}
+            {selectedPreset
+              ? displayPresetName(selectedPreset)
+              : t("export.preset.selectPlaceholder")}
           </span>
           <ChevronDownIcon className="pointer-events-none size-4 shrink-0" />
         </DropdownMenuTrigger>
@@ -134,10 +183,10 @@ function PresetManager() {
                   onSelect={() => dispatch(exportPresetSelected(preset.id))}
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate">{preset.name}</span>
+                    <span className="block truncate">{displayPresetName(preset)}</span>
                     {preset.description ? (
                       <span className="block truncate text-xs text-muted-foreground">
-                        {preset.description}
+                        {builtInLabels[preset.id]?.description ?? preset.description}
                       </span>
                     ) : null}
                   </span>

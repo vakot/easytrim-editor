@@ -13,6 +13,7 @@ pub async fn save_frame_png(
     app: AppHandle,
     png_data: Vec<u8>,
     default_name: String,
+    png_filter: String,
 ) -> Result<bool, AppError> {
     validate_frame_png(&png_data)?;
     validate_default_name(&default_name)?;
@@ -21,7 +22,7 @@ pub async fn save_frame_png(
     app.dialog()
         .file()
         .set_file_name(default_name)
-        .add_filter("PNG Image", &["png"])
+        .add_filter(&png_filter, &["png"])
         .save_file(move |selected| {
             let _ = sender.send(selected);
         });

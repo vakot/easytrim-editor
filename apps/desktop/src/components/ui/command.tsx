@@ -45,15 +45,15 @@ function Command({ className, ...props }: React.ComponentProps<typeof CommandPri
 function CommandDialog({
   children,
   className,
-  description = "Search for a command to run...",
+  description,
   showCloseButton = false,
-  title = "Command Palette",
+  title,
   ...props
 }: React.ComponentProps<typeof Dialog> & {
   className?: string;
-  description?: string;
+  description: string;
   showCloseButton?: boolean;
-  title?: string;
+  title: string;
 }) {
   return (
     <Dialog {...props}>

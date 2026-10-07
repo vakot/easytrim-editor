@@ -9,7 +9,7 @@ export const ru = {
       reset: "Сбросить",
       retry: "Повторить",
       save: "Сохранить",
-      resetToDefault: "Сбросить настройки",
+      resetToDefault: "Восстановить значение по умолчанию",
     },
     or: "или",
     search: {
@@ -51,7 +51,7 @@ export const ru = {
       closeAllSources: "Закрыть все открытые источники",
       confirmation: {
         description:
-          "Будет закрыто импортированных файлов: {{count}}. Экспорты в очереди и завершённые экспорты останутся доступными.",
+          "Импортированные файлы ({{count}}) будут закрыты. Экспорты в очереди и завершённые экспорты останутся доступными.",
         title: "Закрыть источники?",
       },
     },
@@ -103,7 +103,7 @@ export const ru = {
     technicalDetails: "Технические сведения",
     status: {
       deleted: "Удалено",
-      missing: "Отсутствуют",
+      missing: "Отсутствует",
     },
     empty: {
       description: "Выберите файл или папку либо перетащите видео сюда, чтобы начать.",
@@ -117,6 +117,8 @@ export const ru = {
     open: {
       fileDescription: "Выберите один видеофайл, чтобы начать монтаж.",
       folderDescription: "Импортируйте все поддерживаемые видео из папки.",
+      videoFilter: "Видеофайлы",
+      foldersDialogTitle: "Добавить папки",
     },
     shortcutTooltip: "{{label}} ({{shortcut}})",
     thumbnail: {
@@ -125,6 +127,9 @@ export const ru = {
   },
   app: {
     brand: "EasyTrim Editor",
+    errors: {
+      unexpected: "Произошла непредвиденная ошибка приложения.",
+    },
     navigation: {
       breadcrumb: "Хлебные крошки",
     },
@@ -280,8 +285,8 @@ export const ru = {
       },
       followSegment: {
         description: "По умолчанию ограничивать воспроизведение выбранным сегментом.",
-        label: "Следовать за сегментом",
-        commandLabel: "Следовать за сегментом по умолчанию",
+        label: "Воспроизводить только сегмент",
+        commandLabel: "По умолчанию воспроизводить только сегмент",
       },
       mergeAudio: {
         description: "Объединять включённые аудиодорожки в новых экспортах.",
@@ -349,15 +354,15 @@ export const ru = {
     recheck: "Проверить снова",
     showPathInFolder: "Показать {{label}} в папке",
     installOnWindows: "Установка в Windows",
-    title: "Медиатулы",
+    title: "Медиаинструменты",
     status: {
-      checkingTools: "Проверка медиатулов…",
+      checkingTools: "Проверка медиаинструментов…",
       installed: "Установлено",
       missing: "Не найдено",
-      toolsFailed: "Не удалось проверить медиатулы",
-      toolsIssue: "Проблема с медиатулами",
-      toolsReady: "Медиатулы готовы",
-      toolsUnavailable: "Медиатулы недоступны",
+      toolsFailed: "Не удалось проверить медиаинструменты",
+      toolsIssue: "Проблема с медиаинструментами",
+      toolsReady: "Медиаинструменты готовы",
+      toolsUnavailable: "Медиаинструменты недоступны",
     },
     requirements: "EasyTrim требуется FFmpeg и FFprobe.",
     ready: "EasyTrim использует FFmpeg и FFprobe для проверки и обработки медиа.",
@@ -412,7 +417,6 @@ export const ru = {
     },
     notification: {
       fileSize: "Размер файла: {{size}}",
-      moreFiles: "+{{count}} ещё",
       outputPath: "Путь вывода: {{path}}",
       renderTime: "Время рендеринга: {{duration}}",
       sourcePath: "Путь источника: {{path}}",
@@ -423,14 +427,17 @@ export const ru = {
     },
   },
   export: {
+    outputDialog: {
+      videoFilter: "Видеофайлы",
+    },
     fastCut: {
-      cancelled: "Быстрая нарезка отменена",
-      completed: "Быстрая нарезка завершена",
-      failed: "Быстрая нарезка не удалась",
-      interrupted: "Быстрая нарезка прервана",
-      started: "Начата быстрая нарезка",
-      cutting: "Быстрая нарезка…",
-      action: "Быстрое сохранение",
+      cancelled: "Быстрая обрезка отменена",
+      completed: "Быстрая обрезка завершена",
+      failed: "Быстрая обрезка не удалась",
+      interrupted: "Быстрая обрезка прервана",
+      started: "Начата быстрая обрезка",
+      cutting: "Быстрая обрезка…",
+      action: "Сохранить обрезку без потерь",
       unavailable: "Сохранение без перекодирования недоступно после преобразования видео.",
       tooltip: "Сохранить без перекодирования (Ctrl+S)",
     },
@@ -467,7 +474,7 @@ export const ru = {
     commandPreview: {
       copy: "Копировать команду",
       copied: "Команда скопирована",
-      preparing: "Подготовка предпросмотра команды…",
+      preparing: "Подготовка просмотра команды…",
     },
     optimized: {
       action: "Оптимизированный экспорт",
@@ -493,7 +500,7 @@ export const ru = {
       timeLabel: "Оценить время",
     },
     resolution: {
-      customScaling: "Пользовательское масштабирование",
+      customScaling: "Произвольное масштабирование",
       heightLabel: "Высота",
       widthLabel: "Ширина",
       label: "Разрешение",
@@ -546,7 +553,7 @@ export const ru = {
     },
     exportQueueTitle: "Очередь экспорта",
     routes: {
-      fastCut: "Быстрая нарезка",
+      fastCut: "Быстрая обрезка",
       optimized: "Оптимизированный",
     },
     title: "Очередь",
@@ -561,7 +568,7 @@ export const ru = {
       description: "Экспорты появятся здесь.",
     },
     metrics: {
-      elapsed: "{{value}} прошло",
+      elapsed: "Прошло {{value}}",
       error: "Ошибка экспорта: {{message}}",
       fileSizeChange: "Изменение размера файла: {{value}}",
       fps: "{{value}} FPS",
@@ -579,6 +586,7 @@ export const ru = {
   },
   preview: {
     frame: {
+      pngFilter: "Изображение PNG",
       next: "Следующий кадр",
       copyFrame: "Скопировать кадр",
       previous: "Предыдущий кадр",
@@ -710,7 +718,7 @@ export const ru = {
       },
       accessibility: {
         playbackPosition: "Позиция воспроизведения",
-        seconds: "{{value}} секунд",
+        seconds: "{{value}} с",
         startsAt: "Начинается в {{time}}",
         tools: "Инструменты временной шкалы видео",
         track: "Временная шкала обрезки видео",
@@ -774,7 +782,7 @@ export const ru = {
     highPass: {
       label: "Фильтр высоких частот",
       cutoffLabel: "Частота среза",
-      description: "Уберите низкочастотный гул в этой дорожке.",
+      description: "Уменьшите низкочастотный гул в этой дорожке.",
       summary: "Фильтр высоких частот ({{cutoff}} Гц)",
     },
     limiter: {
@@ -785,18 +793,18 @@ export const ru = {
     },
     normalization: {
       label: "Нормализация громкости",
-      maxTruePeakLabel: "Максимальный истинный пик (дБTP)",
+      maxTruePeakLabel: "Максимальный истинный пик (dBTP)",
       targetLufsLabel: "Целевая громкость (LUFS)",
       preset: {
-        label: "Предустановка",
+        label: "Пресет",
         custom: "Своя настройка",
         webVideo: "Веб-видео",
         streaming: "Стриминг",
         broadcast: "Вещание",
       },
       description: "Нормализовать дорожку до целевого уровня громкости.",
-      summary: "Нормализация - {{preset}}",
-      levelSummary: "Цель {{target}} LUFS · предел пика {{peak}} дБTP",
+      summary: "Нормализовано — {{preset}}",
+      levelSummary: "Цель {{target}} LUFS · предел пика {{peak}} dBTP",
       manualGainUnavailable: "Ручное усиление недоступно при автоматической нормализации.",
     },
     noiseReduction: {
