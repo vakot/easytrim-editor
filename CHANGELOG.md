@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file.
 - Replaced the Settings menu dropdown with a full preferences dialog for language, appearance, preferences, layout, and update/help options.
 - Renamed the Defaults page to Preferences in Settings.
 - Moved queue settings into the Preferences page.
-- Renamed the Preferences settings section to Editing.
+- Renamed the Preferences settings section and reset label to Editing terminology.
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
 - Localized the primary color picker's saturation, brightness, and hue labels for assistive technology.
 

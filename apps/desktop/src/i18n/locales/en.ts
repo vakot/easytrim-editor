@@ -240,7 +240,7 @@ export const en = {
         loopDescription: "Start new sessions with loop playback enabled.",
         followSegmentDescription: "Keep playback within the selected segment by default.",
         mergeAudioDescription: "Merge enabled audio tracks for new exports by default.",
-        resetLabel: "Reset preferences",
+        resetLabel: "Reset editing settings",
       },
       layout: {
         title: "Layout",

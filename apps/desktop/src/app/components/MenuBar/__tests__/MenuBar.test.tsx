@@ -632,6 +632,7 @@ describe("MenuBarTest", () => {
     await user.click(preferencesTab);
     expect(preferencesTab).toHaveAttribute("aria-selected", "true");
     expect(screen.getByText("Editing")).toBeInTheDocument();
+    expect(screen.getByText("Reset editing settings")).toBeInTheDocument();
 
     const loopSwitch = screen.getByRole("switch", { name: "Loop" });
     expect(loopSwitch).toBeChecked();

@@ -240,7 +240,7 @@ export const sk = {
         loopDescription: "V nových reláciách predvolene zapnúť opakovanie prehrávania.",
         followSegmentDescription: "Predvolene obmedziť prehrávanie na vybraný segment.",
         mergeAudioDescription: "Predvolene zlúčiť povolené zvukové stopy pri nových exportoch.",
-        resetLabel: "Obnoviť predvoľby",
+        resetLabel: "Obnoviť nastavenia úprav",
       },
       layout: {
         title: "Rozloženie",
