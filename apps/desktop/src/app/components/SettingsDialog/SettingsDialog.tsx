@@ -65,7 +65,10 @@ function SettingsDialog() {
 
           <LibraryContent>
             <SettingsPage page="general">
-              <Badge className="h-8 border-primary/10 bg-primary/5" variant="outline">
+              <Badge
+                className="h-8 gap-2 border-primary/10 bg-primary/5 text-muted-foreground"
+                variant="outline"
+              >
                 <Keyboard aria-hidden="true" className="size-4" />
                 {t("settings.pages.general.openSettingsShortcutLabel")}
                 <KbdGroup>
