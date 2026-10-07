@@ -239,9 +239,9 @@ Do not duplicate project-specific architecture into generic rule files. Keep reu
 ## Translation Ownership
 
 English in `apps/desktop/src/i18n/locales/en.ts` is the canonical source for product copy.
-Automated agents must not add or modify Russian or Slovak translation wording unless the user
-explicitly requests work on that translation. Missing non-English keys intentionally fall back to
-English. For key organization and validation, follow `apps/desktop/src/i18n/README.md`.
+Automated agents must not add or modify Russian translation wording unless the user explicitly
+requests work on that translation. Missing non-English keys intentionally fall back to English.
+For key organization and validation, follow `apps/desktop/src/i18n/README.md`.
 
 ## Project Skills
 
