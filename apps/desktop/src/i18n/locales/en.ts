@@ -235,6 +235,7 @@ export const en = {
       },
       preferences: {
         title: "Preferences",
+        sectionTitle: "Editing",
         description: "Choose the default behavior for new editing sessions.",
         loopDescription: "Start new sessions with loop playback enabled.",
         followSegmentDescription: "Keep playback within the selected segment by default.",
@@ -248,7 +249,6 @@ export const en = {
       },
       queue: {
         title: "Queue",
-        description: "Choose how the export queue starts and finishes.",
         autoStartDescription: "Start processing as soon as exports are added to the queue.",
         onFinishedDescription: "Choose what happens when every queued export finishes.",
         resetLabel: "Reset queue settings",

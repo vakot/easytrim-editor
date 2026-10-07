@@ -235,6 +235,7 @@ export const sk = {
       },
       preferences: {
         title: "Predvoľby",
+        sectionTitle: "Úpravy",
         description: "Vyberte predvolené správanie pre nové relácie úprav.",
         loopDescription: "V nových reláciách predvolene zapnúť opakovanie prehrávania.",
         followSegmentDescription: "Predvolene obmedziť prehrávanie na vybraný segment.",
@@ -248,7 +249,6 @@ export const sk = {
       },
       queue: {
         title: "Front",
-        description: "Vyberte, ako sa front exportov spúšťa a dokončuje.",
         autoStartDescription: "Spustiť spracovanie hneď po pridaní exportov do frontu.",
         onFinishedDescription: "Vyberte, čo sa stane po dokončení všetkých exportov vo fronte.",
         resetLabel: "Obnoviť nastavenia frontu",

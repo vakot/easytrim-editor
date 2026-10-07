@@ -631,6 +631,7 @@ describe("MenuBarTest", () => {
     expect(screen.getByRole("tab", { name: "General" })).toHaveAttribute("aria-selected", "true");
     await user.click(preferencesTab);
     expect(preferencesTab).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Editing")).toBeInTheDocument();
 
     const loopSwitch = screen.getByRole("switch", { name: "Loop" });
     expect(loopSwitch).toBeChecked();

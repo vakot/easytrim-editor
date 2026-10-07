@@ -27,7 +27,7 @@ function SettingsPreferences() {
 
   return (
     <>
-      <SettingsSection title={t("settings.pages.preferences.title")}>
+      <SettingsSection title={t("settings.pages.preferences.sectionTitle")}>
         <SettingRow
           description={t("settings.pages.preferences.loopDescription")}
           label={t("settings.labels.loop")}
