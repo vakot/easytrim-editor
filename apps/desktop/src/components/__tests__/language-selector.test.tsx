@@ -1,5 +1,17 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import CN from "country-flag-icons/react/3x2/CN";
+import DE from "country-flag-icons/react/3x2/DE";
+import ES from "country-flag-icons/react/3x2/ES";
+import FR from "country-flag-icons/react/3x2/FR";
+import GB from "country-flag-icons/react/3x2/GB";
+import JP from "country-flag-icons/react/3x2/JP";
+import KR from "country-flag-icons/react/3x2/KR";
+import PT from "country-flag-icons/react/3x2/PT";
+import RU from "country-flag-icons/react/3x2/RU";
+import SK from "country-flag-icons/react/3x2/SK";
+import UA from "country-flag-icons/react/3x2/UA";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -56,9 +68,8 @@ describe("LanguageSelector", () => {
 
     const trigger = screen.getByRole("button", { name: "Choose language" });
     expect(trigger).toHaveTextContent("Русский (Russian)");
-    expect(trigger.querySelector("span[aria-hidden='true'] img")).toHaveAttribute(
-      "src",
-      "/flags/ru.svg",
+    expect(trigger.querySelector("span[aria-hidden='true'] svg")?.outerHTML).toBe(
+      renderToStaticMarkup(<RU aria-hidden="true" className="block h-auto w-full" />),
     );
     expect(trigger.querySelector("span[aria-hidden='true']")).toBeInTheDocument();
 
@@ -162,18 +173,18 @@ describe("LanguageSelector", () => {
   });
 
   it.each([
-    ["en", "gb"],
-    ["ru", "ru"],
-    ["uk", "ua"],
-    ["sk", "sk"],
-    ["de", "de"],
-    ["fr", "fr"],
-    ["es", "es"],
-    ["pt", "pt"],
-    ["ja", "jp"],
-    ["ko", "kr"],
-    ["zh", "cn"],
-  ])("renders the mapped %s flag in its option", (code, flagAsset) => {
+    { code: "en", Flag: GB },
+    { code: "ru", Flag: RU },
+    { code: "uk", Flag: UA },
+    { code: "sk", Flag: SK },
+    { code: "de", Flag: DE },
+    { code: "fr", Flag: FR },
+    { code: "es", Flag: ES },
+    { code: "pt", Flag: PT },
+    { code: "ja", Flag: JP },
+    { code: "ko", Flag: KR },
+    { code: "zh", Flag: CN },
+  ])("renders the mapped $code package flag in its option", ({ code, Flag }) => {
     const language = LANGUAGE_CATALOG.find((entry) => entry.code === code)!;
     const label = `${getLanguageDisplayName(language)}, ${language.code}`;
 
@@ -187,9 +198,11 @@ describe("LanguageSelector", () => {
 
     const option = screen.getByRole("option", { name: label });
     const flagContainer = option.querySelector("span[aria-hidden='true']");
-    expect(flagContainer?.querySelector("img")).toHaveAttribute("src", `/flags/${flagAsset}.svg`);
+    const flagSvg = flagContainer?.querySelector("svg");
     expect(flagContainer).toBeInTheDocument();
-    expect(flagContainer?.querySelector("img")).toHaveAttribute("alt", "");
+    expect(flagSvg?.outerHTML).toBe(
+      renderToStaticMarkup(<Flag aria-hidden="true" className="block h-auto w-full" />),
+    );
     expect(within(option).getByText(language.code)).toBeVisible();
   });
 
@@ -209,7 +222,6 @@ describe("LanguageSelector", () => {
     });
 
     const flagContainer = option.querySelector("span[aria-hidden='true']");
-    expect(flagContainer?.querySelector("img")).not.toBeInTheDocument();
     expect(flagContainer?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 });

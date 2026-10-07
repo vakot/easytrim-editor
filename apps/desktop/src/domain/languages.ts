@@ -9,7 +9,7 @@ export type Language = {
   nativeName: string;
 };
 
-const LANGUAGE_REGIONS: Readonly<Record<string, string>> = {
+const LANGUAGE_REGIONS = {
   de: "DE",
   en: "GB",
   es: "ES",
@@ -21,7 +21,9 @@ const LANGUAGE_REGIONS: Readonly<Record<string, string>> = {
   sk: "SK",
   uk: "UA",
   zh: "CN",
-};
+} as const;
+
+export type LanguageRegion = (typeof LANGUAGE_REGIONS)[keyof typeof LANGUAGE_REGIONS];
 
 const LANGUAGE_CODES = [
   "aa",
@@ -221,8 +223,8 @@ export const LANGUAGE_CATALOG: readonly Language[] = LANGUAGE_CODES.map((code) =
   return { code, englishName, nativeName };
 });
 
-export function getLanguageRegion(language: Language): string | undefined {
-  return LANGUAGE_REGIONS[language.code];
+export function getLanguageRegion(language: Language): LanguageRegion | undefined {
+  return LANGUAGE_REGIONS[language.code as keyof typeof LANGUAGE_REGIONS];
 }
 
 export function filterLanguages<T extends Language>(languages: readonly T[], query: string): T[] {

@@ -1,3 +1,14 @@
+import CN from "country-flag-icons/react/3x2/CN";
+import DE from "country-flag-icons/react/3x2/DE";
+import ES from "country-flag-icons/react/3x2/ES";
+import FR from "country-flag-icons/react/3x2/FR";
+import GB from "country-flag-icons/react/3x2/GB";
+import JP from "country-flag-icons/react/3x2/JP";
+import KR from "country-flag-icons/react/3x2/KR";
+import PT from "country-flag-icons/react/3x2/PT";
+import RU from "country-flag-icons/react/3x2/RU";
+import SK from "country-flag-icons/react/3x2/SK";
+import UA from "country-flag-icons/react/3x2/UA";
 import { CheckIcon, LanguagesIcon } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
@@ -20,6 +31,7 @@ import {
   getLanguageRegion,
   type Language,
   LANGUAGE_CATALOG,
+  type LanguageRegion,
 } from "@/domain/languages";
 import { cn } from "@/lib/class-names.utils";
 
@@ -35,26 +47,19 @@ interface LanguageSelectorContextValue {
 const LanguageSelectorContext = React.createContext<LanguageSelectorContextValue | null>(null);
 const LanguageSelectorContentContext = React.createContext(false);
 
-function LanguageFlag({ language }: { language: Language }) {
-  const regionCode = getLanguageRegion(language);
-
-  return (
-    <span
-      aria-hidden="true"
-      className="mr-2 flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs"
-    >
-      {regionCode ? (
-        <img
-          alt=""
-          className="block aspect-4/3 w-full object-cover"
-          src={`/flags/${regionCode.toLowerCase()}.svg`}
-        />
-      ) : (
-        <LanguagesIcon className="size-4 text-muted-foreground" />
-      )}
-    </span>
-  );
-}
+const LANGUAGE_REGION_FLAGS: Record<LanguageRegion, typeof GB> = {
+  CN,
+  DE,
+  ES,
+  FR,
+  GB,
+  JP,
+  KR,
+  PT,
+  RU,
+  SK,
+  UA,
+};
 
 function useLanguageSelector() {
   const context = React.useContext(LanguageSelectorContext);
@@ -147,10 +152,21 @@ function LanguageSelectorValue({
 
   if (!language) return placeholder ?? null;
   const value = type === "displayName" ? getLanguageDisplayName(language) : language[type];
+  const regionCode = getLanguageRegion(language);
+  const Flag = regionCode ? LANGUAGE_REGION_FLAGS[regionCode] : null;
 
   return (
     <>
-      <LanguageFlag language={language} />
+      <span
+        aria-hidden="true"
+        className="mr-2 flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs"
+      >
+        {Flag ? (
+          <Flag aria-hidden="true" className="block h-auto w-full" />
+        ) : (
+          <LanguagesIcon className="size-4 text-muted-foreground" />
+        )}
+      </span>
       <span>{value}</span>
     </>
   );
@@ -225,6 +241,8 @@ function LanguageSelectorList({
       <ComboboxGroup>
         {languages.map((language) => {
           const selected = selectedLanguage?.code === language.code;
+          const regionCode = getLanguageRegion(language);
+          const Flag = regionCode ? LANGUAGE_REGION_FLAGS[regionCode] : null;
 
           return (
             <ComboboxItem
@@ -242,7 +260,16 @@ function LanguageSelectorList({
                   <CheckIcon aria-hidden="true" />
                 </MenuIcon>
               ) : null}
-              <LanguageFlag language={language} />
+              <span
+                aria-hidden="true"
+                className="mr-2 flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs"
+              >
+                {Flag ? (
+                  <Flag aria-hidden="true" className="block h-auto w-full" />
+                ) : (
+                  <LanguagesIcon className="size-4 text-muted-foreground" />
+                )}
+              </span>
               <span className="min-w-0 flex-1 truncate">{getLanguageDisplayName(language)}</span>
               <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                 {language.code}
