@@ -100,11 +100,16 @@ function PresetManager() {
   const selectedPreset = useAppSelector(selectSelectedExportPreset);
   const [dialogMode, setDialogMode] = useState<PresetDialogMode | null>(null);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
-  const [editingPresetInitialName, setEditingPresetInitialName] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftArguments, setDraftArguments] = useState("");
   const [presetError, setPresetError] = useState<PresetNameError | null>(null);
   const [presetToDelete, setPresetToDelete] = useState<ExportPreset | null>(null);
+  const editingPreset = presets.find((preset) => preset.id === editingPresetId);
+  const namePlaceholder =
+    dialogMode === "edit" && editingPreset?.kind === "builtIn"
+      ? builtInLabels[editingPreset.id].name
+      : t("export.preset.namePlaceholder");
+
   const presetErrorMessages: Record<PresetNameError, string> = {
     duplicate: t("export.preset.validation.duplicate"),
     required: t("export.preset.validation.required"),
@@ -113,7 +118,6 @@ function PresetManager() {
 
   function openCreateDialog() {
     setEditingPresetId(null);
-    setEditingPresetInitialName(null);
     setDraftName("");
     setDraftArguments(argumentsText);
     setPresetError(null);
@@ -121,41 +125,60 @@ function PresetManager() {
   }
 
   function openEditDialog(preset: ExportPreset) {
-    const initialName = displayPresetName(preset);
     setEditingPresetId(preset.id);
-    setEditingPresetInitialName(initialName);
-    setDraftName(initialName);
+    setDraftName(preset.kind === "builtIn" ? (preset.customName ?? "") : preset.name);
     setDraftArguments(preset.argumentsText);
     setPresetError(null);
     setDialogMode("edit");
   }
 
   function savePreset() {
-    const nameChanged = dialogMode === "edit" && draftName !== editingPresetInitialName;
-    const error =
-      dialogMode === "create" || nameChanged
-        ? presetNameError({
-            candidateName: draftName,
-            existingNames: presets
-              .filter((preset) => preset.id !== editingPresetId)
-              .map(displayPresetName),
-          })
-        : null;
+    const existingNames = presets
+      .filter((preset) => preset.id !== editingPresetId)
+      .map(displayPresetName);
+
+    let error: PresetNameError | null = null;
+
+    if (dialogMode === "create") {
+      error = presetNameError({ candidateName: draftName, existingNames });
+    } else if (editingPreset?.kind === "builtIn") {
+      const normalizedName = draftName.trim();
+      const systemName = builtInLabels[editingPreset.id].name;
+      if (normalizedName && normalizedName !== systemName) {
+        error = presetNameError({ candidateName: normalizedName, existingNames });
+      }
+    } else if (editingPreset?.kind === "custom") {
+      error = presetNameError({ candidateName: draftName, existingNames });
+    }
 
     if (error) {
       setPresetError(error);
       return;
     }
 
-    if (dialogMode === "edit" && editingPresetId) {
-      dispatch(exportPresetSelected(editingPresetId));
-      dispatch(
-        exportPresetUpdated({
-          ...(nameChanged ? { name: draftName } : {}),
-          argumentsText: draftArguments,
-        }),
-      );
+    if (dialogMode === "edit" && editingPreset) {
+      dispatch(exportPresetSelected(editingPreset.id));
+      if (editingPreset.kind === "builtIn") {
+        const normalizedName = draftName.trim();
+        const systemName = builtInLabels[editingPreset.id].name;
+        dispatch(
+          exportPresetUpdated({
+            presetKind: "builtIn",
+            customName: normalizedName && normalizedName !== systemName ? normalizedName : null,
+            argumentsText: draftArguments,
+          }),
+        );
+      } else {
+        dispatch(
+          exportPresetUpdated({
+            presetKind: "custom",
+            name: draftName.trim(),
+            argumentsText: draftArguments,
+          }),
+        );
+      }
     } else {
+      if (dialogMode !== "create") return;
       dispatch(exportArgumentsChanged(draftArguments));
       dispatch(exportPresetCreated({ name: draftName }));
     }
@@ -254,6 +277,7 @@ function PresetManager() {
               <Input
                 id="preset-name"
                 onChange={(event) => setDraftName(event.target.value)}
+                placeholder={namePlaceholder}
                 value={draftName}
               />
             </div>

@@ -4,6 +4,10 @@ import { type ExportPreset, loadExportPresetState } from "@/app/store/lib/export
 
 import type { RootState } from "../store";
 
+type ExportPresetUpdate =
+  | { argumentsText: string; customName: string | null; presetKind: "builtIn" }
+  | { argumentsText: string; name: string; presetKind: "custom" };
+
 const exportPresetsSlice = createSlice({
   name: "exportPresets",
   initialState: loadExportPresetState(),
@@ -30,10 +34,7 @@ const exportPresetsSlice = createSlice({
       state.selectedPresetId = preset.id;
       state.nextPresetSequence = nextPresetSequence;
     },
-    exportPresetUpdated: (
-      state,
-      action: PayloadAction<{ argumentsText: string; name?: string }>,
-    ) => {
+    exportPresetUpdated: (state, action: PayloadAction<ExportPresetUpdate>) => {
       const selectedPresetId = state.selectedPresetId;
       if (!selectedPresetId) {
         return;
@@ -41,10 +42,13 @@ const exportPresetsSlice = createSlice({
       const preset = state.presets.find((candidate) => candidate.id === selectedPresetId);
       if (!preset) return;
 
-      const name = action.payload.name?.trim();
-      if (name !== undefined) {
-        if (preset.kind === "builtIn") preset.customName = name;
-        else preset.name = name;
+      if (preset.kind === "builtIn" && action.payload.presetKind === "builtIn") {
+        if (action.payload.customName === null) delete preset.customName;
+        else preset.customName = action.payload.customName;
+      } else if (preset.kind === "custom" && action.payload.presetKind === "custom") {
+        preset.name = action.payload.name.trim();
+      } else {
+        return;
       }
       preset.argumentsText = action.payload.argumentsText;
       state.argumentsText = action.payload.argumentsText;

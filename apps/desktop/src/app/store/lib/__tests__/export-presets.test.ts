@@ -36,7 +36,11 @@ describe("export presets", () => {
     const selected = exportPresetsReducer(created, exportPresetSelected("runtime-preset-1"));
     const updated = exportPresetsReducer(
       exportPresetsReducer(selected, exportArgumentsChanged("-c:v libx264 -crf 18")),
-      exportPresetUpdated({ name: "High quality CPU", argumentsText: "-c:v libx264 -crf 18" }),
+      exportPresetUpdated({
+        presetKind: "custom",
+        name: "High quality CPU",
+        argumentsText: "-c:v libx264 -crf 18",
+      }),
     );
 
     expect(updated.presets.find((preset) => preset.id === updated.selectedPresetId)).toMatchObject({

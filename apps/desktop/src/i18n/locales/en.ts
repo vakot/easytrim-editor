@@ -521,6 +521,7 @@ export const en = {
         title: "Delete preset?",
       },
       nameLabel: "Name",
+      namePlaceholder: "Preset name",
       actionsLabel: "Preset actions",
       selectPlaceholder: "Select a preset",
     },
