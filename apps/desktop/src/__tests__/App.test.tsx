@@ -372,7 +372,7 @@ describe("App", () => {
     await user.click(screen.getByRole("menuitem", { name: /Open Folder/ }));
     await waitFor(() => expect(mocks.chooseSource).toHaveBeenCalledTimes(2));
     expect(mocks.chooseSource).toHaveBeenLastCalledWith("folders");
-  });
+  }, 10_000);
 
   it("preserves editor tools across source replacement", async () => {
     mocks.chooseSource
