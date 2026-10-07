@@ -181,7 +181,7 @@ describe("ExportQueue", () => {
       editingInstanceExportFailed({
         attemptId: failed.attempt.id,
         durationMs: 500,
-        error: { code: "failed", message: "Render failed" },
+        error: { code: "failed", messageId: "export.ffmpegCouldNotRenderTheSelectedSegment" },
         id: failed.source.id,
       }),
     );
@@ -215,6 +215,8 @@ describe("ExportQueue", () => {
     expect(screen.getByText("Queued")).toHaveAttribute("data-variant", "outline");
     expect(screen.getAllByRole("button", { name: "Restore edit" })).toHaveLength(3);
     expect(screen.getByRole("button", { name: "Reveal output" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Export error: Render failed")).toHaveTextContent("Failed");
+    expect(
+      screen.getByLabelText("Export error: FFmpeg could not render the selected segment."),
+    ).toHaveTextContent("Failed");
   });
 });

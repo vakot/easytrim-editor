@@ -30,6 +30,7 @@ import {
   refreshOptimizedExportPlan,
   startOptimizedExportRequested,
 } from "@/app/store/thunks/export-thunks";
+import { localizeAppError } from "@/i18n/app-errors";
 
 import { CommandPreview } from "./components/CommandPreview";
 import { ExportFrameRate } from "./components/ExportFrameRate";
@@ -87,7 +88,10 @@ function ExportDialog() {
           <PresetManager />
           <ExportResolution cropResolution={cropResolution} settings={settings} />
           <ExportFrameRate settings={settings} />
-          <CommandPreview command={commandPreview} error={commandPreviewError?.message} />
+          <CommandPreview
+            command={commandPreview}
+            error={commandPreviewError ? localizeAppError(commandPreviewError, t) : undefined}
+          />
 
           <DialogFooter className="min-w-0 items-center sm:justify-between">
             <p className="min-w-0 flex-1 text-xs text-muted-foreground">
@@ -107,7 +111,7 @@ function ExportDialog() {
 
       {launchError ? (
         <Alert className="absolute top-full right-5 z-40 mt-2 w-80" variant="destructive">
-          <AlertDescription>{launchError.message}</AlertDescription>
+          <AlertDescription>{localizeAppError(launchError, t)}</AlertDescription>
         </Alert>
       ) : null}
     </>

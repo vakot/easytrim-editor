@@ -64,7 +64,7 @@ function toRecoveryAttempt(attempt: ExportAttempt): ExportAttempt {
         attempt.state.status === "queued" ? attempt.state.queuedAt : attempt.state.startedAt,
       error: {
         code: "export_interrupted",
-        message: t("app.workspaceRecovery.exportInterrupted"),
+        messageId: "export.interruptedWhenEasyTrimClosedUnexpectedly",
       },
       status: "canceled",
     },

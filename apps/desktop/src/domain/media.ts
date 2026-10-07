@@ -5,7 +5,8 @@ type LoudnessAnalysis = AudioLoudnessAnalysis;
 interface AppError {
   code: string;
   diagnostics?: string;
-  message: string;
+  messageArgs?: Record<string, number | string>;
+  messageId?: string;
 }
 
 interface TrimSelection {

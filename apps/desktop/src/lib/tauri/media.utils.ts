@@ -4,7 +4,6 @@ import {
   parseAudioTrackSignalEffects as parseSignalEffects,
 } from "@/domain/audio-processing";
 import type { SourceRef } from "@/domain/source";
-import { t } from "@/i18n/config";
 
 import type {
   AppError,
@@ -30,16 +29,49 @@ import type {
 
 function normalizeAppError(error: unknown): AppError {
   const value = asRecord(error);
-  if (value && typeof value.code === "string" && typeof value.message === "string") {
+  if (value && typeof value.code === "string") {
+    const diagnostics = optionalString(value.diagnostics);
+    const legacyMessage = optionalString(value.message);
+    const messageArgs = parseMessageArgs(value.messageArgs);
     return {
       code: value.code,
-      message: value.message,
-      diagnostics: optionalString(value.diagnostics),
+      ...(typeof value.messageId === "string" ? { messageId: value.messageId } : {}),
+      ...(messageArgs ? { messageArgs } : {}),
+      ...(diagnostics || legacyMessage
+        ? { diagnostics: [legacyMessage, diagnostics].filter(Boolean).join("\n") }
+        : {}),
     };
   }
-  if (error instanceof Error) return { code: "internal", message: error.message };
-  if (typeof error === "string") return { code: "internal", message: error };
-  return { code: "internal", message: t("app.errors.unexpected") };
+  if (error instanceof Error) {
+    return { code: "internal", messageId: "internal.unexpected", diagnostics: error.message };
+  }
+  if (typeof error === "string") {
+    return { code: "internal", messageId: "internal.unexpected", diagnostics: error };
+  }
+  try {
+    return {
+      code: "internal",
+      messageId: "internal.unexpected",
+      diagnostics: JSON.stringify(error) ?? String(error),
+    };
+  } catch {
+    return { code: "internal", messageId: "internal.unexpected", diagnostics: String(error) };
+  }
+}
+
+function parseMessageArgs(value: unknown): Record<string, number | string> | undefined {
+  const args = asRecord(value);
+  if (!args) return undefined;
+  const parsed: Record<string, number | string> = {};
+  for (const [key, argument] of Object.entries(args)) {
+    if (
+      typeof argument === "string" ||
+      (typeof argument === "number" && Number.isFinite(argument))
+    ) {
+      parsed[key] = argument;
+    }
+  }
+  return Object.keys(parsed).length > 0 ? parsed : undefined;
 }
 
 function parseSourceRef(value: unknown): SourceRef {
@@ -327,11 +359,8 @@ function parseWaveformResult(value: unknown): WaveformResult {
 
 function parseAppError(value: unknown, label: string): AppError {
   const error = requireRecord(value, label);
-  return {
-    code: requireString(error.code, `${label} code`),
-    message: requireString(error.message, `${label} message`),
-    diagnostics: optionalString(error.diagnostics),
-  };
+  requireString(error.code, `${label} code`);
+  return normalizeAppError(error);
 }
 
 function parseVideoStream(value: unknown): VideoStream {
@@ -458,7 +487,7 @@ function optionalFiniteNumber(value: unknown, label: string): number | undefined
 function invalidResponse(label: string): AppError {
   return {
     code: "internal",
-    message: `The native application returned an invalid ${label}.`,
+    diagnostics: `The native application returned an invalid ${label}.`,
   };
 }
 

@@ -96,7 +96,9 @@ describe("MediaToolsStatus", () => {
 
   it("shows check failure distinctly and allows a failed capability check to be retried", () => {
     const store = createAppStore();
-    store.dispatch(capabilitiesFailed({ code: "internal", message: "Capability check failed." }));
+    store.dispatch(
+      capabilitiesFailed({ code: "internal", diagnostics: "Capability check failed." }),
+    );
     render(
       <Provider store={store}>
         <MediaToolsStatus>
@@ -107,7 +109,7 @@ describe("MediaToolsStatus", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Media tools check failed" }));
 
-    expect(screen.getByText("Capability check failed.")).toBeInTheDocument();
+    expect(screen.getByText("Something went wrong.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Recheck" })).toBeEnabled();
     expect(screen.queryByText("Install on Windows")).not.toBeInTheDocument();
   });

@@ -620,7 +620,7 @@ describe("export queue runtime", () => {
       store.getState().editingInstances.entities["instance-retry-failure"]?.exportAttempts[0];
 
     expect(failedAttempt?.state.status).toBe("failed");
-    expect(failedAttempt?.state.status === "failed" && failedAttempt.state.error.message).toBe(
+    expect(failedAttempt?.state.status === "failed" && failedAttempt.state.error.diagnostics).toBe(
       "source is unavailable",
     );
   });

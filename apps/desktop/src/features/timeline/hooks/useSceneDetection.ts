@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -13,9 +14,12 @@ import {
 } from "@/app/store/slices/editor-tools-slice";
 import { selectSourceLoadToken, selectSourceSelection } from "@/app/store/slices/source-slice";
 import { normalizeSourceKey } from "@/domain/source";
+import { localizeAppError } from "@/i18n/app-errors";
 import { detectScenes } from "@/lib/tauri/media";
+import { normalizeAppError } from "@/lib/tauri/media.utils";
 
 function useSceneDetection(enabled: boolean) {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const source = useAppSelector(selectSourceSelection);
   const loadToken = useAppSelector(selectSourceLoadToken);
@@ -63,15 +67,7 @@ function useSceneDetection(enabled: boolean) {
       if (requestId.current !== currentRequestId) return;
       dispatch(
         sceneDetectionFailed({
-          error:
-            error instanceof Error
-              ? error.message
-              : typeof error === "object" &&
-                  error !== null &&
-                  "message" in error &&
-                  typeof error.message === "string"
-                ? error.message
-                : null,
+          error: normalizeAppError(error),
           sourceKey,
         }),
       );
@@ -87,7 +83,10 @@ function useSceneDetection(enabled: boolean) {
     boundariesMicros: sceneBoundariesMicros ?? [],
     canDetect: enabled && source !== null && activeInstanceMatchesSource,
     detect,
-    error: currentOperation?.status === "failed" ? currentOperation.error : null,
+    error:
+      currentOperation?.status === "failed" && currentOperation.error
+        ? localizeAppError(currentOperation.error, t)
+        : null,
     hasFailed: currentOperation?.status === "failed",
     hasDetected: sceneBoundariesMicros !== undefined,
     isDetecting: currentOperation?.status === "loading",

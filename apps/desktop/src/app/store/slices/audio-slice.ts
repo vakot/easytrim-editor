@@ -442,7 +442,7 @@ const audioSlice = createSlice({
           width: track.waveform.width,
           error: {
             code: "waveform_failed",
-            message: t("audio.waveform.displayFailed"),
+            messageId: "media.waveform.previewCouldNotBeDisplayed",
           },
         };
       }

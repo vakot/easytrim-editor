@@ -2709,7 +2709,7 @@ describe("App", () => {
     act(() => {
       sourceDropListener?.({
         status: "failed",
-        error: { code: "unsupported_media", message: "This file type is not supported yet." },
+        error: { code: "unsupported_media", messageId: "source.fileTypeIsNotSupportedYet" },
       });
     });
 

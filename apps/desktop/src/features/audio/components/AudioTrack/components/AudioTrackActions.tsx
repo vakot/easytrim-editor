@@ -27,7 +27,13 @@ interface AudioTrackActionsProps {
 
 function activityActionLabel(
   status: "idle" | "loading" | "ready" | "failed",
-  t: ReturnType<typeof useTranslation>["t"],
+  t: (
+    key:
+      | "audio.activityDetection.showRanges"
+      | "audio.activityDetection.analyzing"
+      | "audio.activityDetection.retry"
+      | "audio.activityDetection.analyze",
+  ) => string,
 ) {
   if (status === "ready") return t("audio.activityDetection.showRanges");
   if (status === "loading") return t("audio.activityDetection.analyzing");

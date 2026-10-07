@@ -23,6 +23,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
 import { checkMediaCapabilitiesRequested } from "@/app/store/thunks/source-media-thunks";
+import { localizeAppError } from "@/i18n/app-errors";
 import { cn } from "@/lib/class-names.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import { openFileLocation } from "@/lib/tauri/media";
@@ -158,7 +159,7 @@ function MediaToolsStatusContent({ className }: { className?: string }) {
           </div>
           <p className="text-xs text-muted-foreground">
             {capabilities.status === "failed"
-              ? capabilities.error.message
+              ? localizeAppError(capabilities.error, t)
               : ready
                 ? t("mediaTools.ready")
                 : t("mediaTools.requirements")}

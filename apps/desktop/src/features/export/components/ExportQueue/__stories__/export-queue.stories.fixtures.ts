@@ -145,7 +145,10 @@ function applyStoryStatus(
       editingInstanceExportFailed({
         attemptId,
         durationMs: 1_800,
-        error: { code: "render-failed", message: "The source could not be rendered." },
+        error: {
+          code: "render-failed",
+          messageId: "export.ffmpegCouldNotRenderTheSelectedSegment",
+        },
         id: instanceId,
       }),
     );

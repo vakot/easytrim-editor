@@ -55,7 +55,8 @@ import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeTransformForExport } from "@/domain/rotation";
 import { normalizeSourceKey } from "@/domain/source";
-import { t } from "@/i18n/config";
+import { localizeAppError } from "@/i18n/app-errors";
+import { i18n } from "@/i18n/config";
 import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 import {
@@ -181,7 +182,7 @@ const editExportAttemptRequested =
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
       diagnostics.error("export.queue.edit.failed", normalized, { snapshotId: instanceId });
-      toast.error(normalized.message);
+      toast.error(localizeAppError(normalized, i18n.t));
     } finally {
       if (selectQueueEdit(getState())?.attemptId !== attemptId) {
         releaseQueuedExportEdit(attemptId, dispatch, getState);
@@ -240,7 +241,7 @@ async function finishQueuedExportEdit(
   } catch (error: unknown) {
     const normalized = normalizeAppError(error);
     diagnostics.error("export.queue.edit.failed", normalized, { snapshotId: instanceId });
-    toast.error(normalized.message);
+    toast.error(localizeAppError(normalized, i18n.t));
   } finally {
     dispatch(nativeDialogStateChanged(false));
     dispatch(queueEditFinished());
@@ -294,7 +295,7 @@ const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) =>
         requestId,
         error: {
           code: "loudness_analysis_required",
-          message: t("audio.loudness.requiredForExport"),
+          messageId: "export.analyzeTrackLoudnessToContinue",
         },
       }),
     );
@@ -363,7 +364,7 @@ async function startEditingInstanceExport(
     dispatch(
       exportLaunchFailed({
         code: "loudness_analysis_required",
-        message: t("audio.loudness.requiredForExport"),
+        messageId: "export.analyzeTrackLoudnessToContinue",
       }),
     );
     return;

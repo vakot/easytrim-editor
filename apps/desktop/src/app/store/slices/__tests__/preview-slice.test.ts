@@ -29,13 +29,13 @@ describe("preview slice", () => {
     const failed = previewReducer(
       selected,
       previewFailed({
-        error: { code: "preview_failed", message: "Preview failed." },
+        error: { code: "preview_failed", diagnostics: "Preview failed." },
       }),
     );
 
     expect(selectPreview({ preview: failed } as never)).toEqual({
       status: "failed",
-      error: { code: "preview_failed", message: "Preview failed." },
+      error: { code: "preview_failed", diagnostics: "Preview failed." },
     });
   });
 });

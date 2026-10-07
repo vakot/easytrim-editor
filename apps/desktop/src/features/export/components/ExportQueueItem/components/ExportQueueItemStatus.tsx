@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 
+import { localizeAppError } from "@/i18n/app-errors";
 import { cn } from "@/lib/class-names.utils";
 
 import { useExportQueueItem } from "../contexts/ExportQueueItemContext";
@@ -33,9 +34,11 @@ function ExportQueueItemStatus() {
   return (
     <div className="flex shrink-0 items-center gap-1">
       <Badge
-        aria-label={error ? t("queue.metrics.error", { message: error.message }) : undefined}
+        aria-label={
+          error ? t("queue.metrics.error", { message: localizeAppError(error, t) }) : undefined
+        }
         className={cn(status === "rendering" && "bg-primary/20 text-primary")}
-        title={error ? error.message : undefined}
+        title={error ? localizeAppError(error, t) : undefined}
         variant={statusVariants[status]}
       >
         {error ? <CircleAlert aria-hidden="true" /> : null}

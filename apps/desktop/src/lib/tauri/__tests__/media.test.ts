@@ -383,7 +383,7 @@ describe("media IPC adapter", () => {
 
     await expect(inspectMedia("C:/Media/clip.mp4")).rejects.toEqual({
       code: "internal",
-      message: "The native application returned an invalid duration.",
+      diagnostics: "The native application returned an invalid duration.",
     });
   });
 
@@ -495,7 +495,7 @@ describe("media IPC adapter", () => {
 
     await expect(prepareSourcePreview("C:/Media/clip.mp4")).rejects.toEqual({
       code: "internal",
-      message: "The native application returned an invalid preview kind.",
+      diagnostics: "The native application returned an invalid preview kind.",
     });
   });
 
@@ -553,8 +553,7 @@ describe("media IPC adapter", () => {
 
     await expect(prepareWaveforms("C:/Media/clip.mp4", "waveform-7", [2], 1280)).rejects.toEqual({
       code: "internal",
-      message: "The native application returned an invalid waveform width.",
-      diagnostics: undefined,
+      diagnostics: "The native application returned an invalid waveform width.",
     });
   });
 
@@ -597,7 +596,7 @@ describe("media IPC adapter", () => {
   it("normalizes a rejected dropped path into a structured failure", async () => {
     mocks.invoke.mockRejectedValue({
       code: "unsupported_media",
-      message: "This file type is not supported yet.",
+      messageId: "source.fileTypeIsNotSupportedYet",
     });
     const onEvent = vi.fn();
     await listenForSourceDrops(onEvent);
@@ -609,8 +608,7 @@ describe("media IPC adapter", () => {
         status: "failed",
         error: {
           code: "unsupported_media",
-          message: "This file type is not supported yet.",
-          diagnostics: undefined,
+          messageId: "source.fileTypeIsNotSupportedYet",
         },
       });
     });
@@ -660,7 +658,7 @@ describe("media IPC adapter", () => {
       status: "failed",
       error: {
         code: "invalid_request",
-        message: "Drop a video file instead of an empty selection.",
+        messageId: "source.dropVideoFileInsteadOfEmptySelection",
       },
     });
   });

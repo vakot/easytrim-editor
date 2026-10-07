@@ -13,6 +13,7 @@ import {
   LibraryDialogHeader,
   LibraryDialogTitle,
 } from "@/components/library";
+import { localizeAppError } from "@/i18n/app-errors";
 
 import type { AudioTrackController } from "../../../../hooks/useAudioTrackController";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
@@ -91,7 +92,7 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
             </p>
           ) : (
             <Alert role="alert" variant="destructive">
-              <AlertDescription>{track.preview.error.message}</AlertDescription>
+              <AlertDescription>{localizeAppError(track.preview.error, t)}</AlertDescription>
             </Alert>
           )}
         </div>

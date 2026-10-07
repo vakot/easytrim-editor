@@ -85,7 +85,7 @@ function AppCommandCenterStory({ state }: AppCommandCenterStoryArgs) {
         break;
       case "failed":
         store.dispatch(
-          capabilitiesFailed({ code: "internal", message: "Capability check failed." }),
+          capabilitiesFailed({ code: "internal", diagnostics: "Capability check failed." }),
         );
         break;
     }
