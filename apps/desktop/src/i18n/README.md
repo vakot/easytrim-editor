@@ -32,6 +32,13 @@ Translate complete messages. Keep plural forms and interpolation on the complete
 fragments. Add a short `// Translators:` comment when a path and English text still leave an
 important concept ambiguous; avoid comments that only repeat the message.
 
+A pluralized message is one translation unit. Provide every cardinal form required by your
+language, with the same interpolation parameters, or leave the whole family untranslated for
+English fallback. Do not copy English suffixes blindly: `queue.summary.jobs` needs `_one` and
+`_other` in English, but also `_few` and `_many` in Russian and Slovak. If English defines an
+explicit `_zero` form, translate that form too. Remove all forms of an incomplete family until
+the missing translations have been reviewed.
+
 ## Editing and validation
 
 Agents adding or changing product copy must edit English only. Do not add, rewrite, or invent

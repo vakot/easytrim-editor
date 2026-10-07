@@ -48,8 +48,6 @@ export const ru = {
       deleting: "Удаление файла…",
     },
     close: {
-      closedFiles_one: "Закрыт {{count}} файл",
-      closedFiles_other: "Закрыто файлов: {{count}}",
       closeAllSources: "Закрыть все открытые источники",
       confirmation: {
         description:
@@ -63,14 +61,6 @@ export const ru = {
       interrupted: "Восстановление файла прервано",
       restoring: "Восстановление файла…",
       completed: "Файл восстановлен",
-      previousSession_one: "Восстановить предыдущий сеанс · {{count}} источник",
-      previousSession_other: "Восстановить предыдущий сеанс · источников: {{count}}",
-    },
-    import: {
-      openedFiles_one: "Открыт {{count}} файл",
-      openedFiles_other: "Открыто файлов: {{count}}",
-      fromFolders_one: "из {{count}} папки",
-      fromFolders_other: "из папок: {{count}}",
     },
     reveal: {
       inFileExplorer: "Показать в Проводнике",
@@ -149,16 +139,8 @@ export const ru = {
     },
     workspaceRecovery: {
       restore: "Восстановить",
-      restored_one: "Восстановлен {{count}} источник из предыдущего сеанса",
-      restored_other: "Восстановлено источников: {{count}} из предыдущего сеанса",
       partiallyRestored: "Восстановлено {{restored}} из {{total}} источников из предыдущего сеанса",
-      description_one:
-        "EasyTrim завершил работу некорректно. Можно восстановить {{count}} источник.",
-      description_other:
-        "EasyTrim завершил работу некорректно. Можно восстановить источников: {{count}}.",
       title: "Восстановить предыдущий сеанс?",
-      toastDescription_one: "Восстановлен {{count}} источник",
-      toastDescription_other: "Восстановлено источников: {{count}}",
       toastPartialDescription: "Восстановлено {{restored}} из {{total}} источников",
       toastPartialTitle: "Предыдущий сеанс восстановлен частично",
       toastTitle: "Предыдущий сеанс восстановлен",
@@ -578,20 +560,6 @@ export const ru = {
     empty: {
       description: "Экспорты появятся здесь.",
     },
-    summary: {
-      canceled_one: "Отменено: {{count}}",
-      canceled_other: "Отменено: {{count}}",
-      completed_one: "Завершено: {{count}}",
-      completed_other: "Завершено: {{count}}",
-      failed_one: "Ошибок: {{count}}",
-      failed_other: "Ошибок: {{count}}",
-      jobs_one: "Задание: {{count}}",
-      jobs_other: "Заданий: {{count}}",
-      queued_one: "В очереди: {{count}}",
-      queued_other: "В очереди: {{count}}",
-      rendering_one: "Рендеринг: {{count}}",
-      rendering_other: "Рендеринг: {{count}}",
-    },
     metrics: {
       elapsed: "{{value}} прошло",
       error: "Ошибка экспорта: {{message}}",
@@ -787,13 +755,7 @@ export const ru = {
         action: "Объединить выбранные дорожки",
         tooltip: "Все выбранные дорожки объединяются в одну; это требует кодирования.",
       },
-      merged_one: "{{count}} выбранная дорожка объединяется в одну дорожку",
-      merged_few: "{{count}} выбранные дорожки объединяются в одну дорожку",
-      merged_other: "{{count}} выбранных дорожек объединяются в одну дорожку",
       oneTrack: "Выбрана одна дорожка — объединение не требуется",
-      separate_one: "{{count}} выбранная дорожка сохраняется отдельно",
-      separate_few: "{{count}} выбранные дорожки сохраняются отдельно",
-      separate_other: "{{count}} выбранных дорожек сохраняются отдельно",
       videoOnly: "Только видео",
     },
     tracks: {
@@ -807,9 +769,6 @@ export const ru = {
       preparingPreview: "Подготовка предпросмотра с этими настройками дорожки…",
       actionsLabel: "Действия аудиодорожки {{number}}",
       gainLabel: "Усиление аудиодорожки {{number}} в децибелах",
-      channels_one: "{{count}} канал",
-      channels_few: "{{count}} канала",
-      channels_other: "{{count}} каналов",
       unknownLayout: "неизвестная конфигурация",
     },
     highPass: {

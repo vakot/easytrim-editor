@@ -19,16 +19,24 @@ describe("resolveInitialLanguage", () => {
     expect(resolveInitialLanguage([])).toBe("en");
   });
 
-  it("interpolates selected-track counts in merged audio summaries", () => {
+  it("falls back for incomplete plural translations while retaining translated messages", () => {
     expect(i18n.getFixedT("en")("audio.output.merged", { count: 3 })).toBe(
       "3 selected tracks are merged into one track",
     );
     expect(i18n.getFixedT("sk")("audio.output.merged", { count: 3 })).toBe(
-      "3 vybrané stopy sa zlúčia do jednej stopy",
+      "3 selected tracks are merged into one track",
     );
     expect(i18n.getFixedT("ru")("audio.output.merged", { count: 3 })).toBe(
-      "3 выбранные дорожки объединяются в одну дорожку",
+      "3 selected tracks are merged into one track",
     );
+    for (const language of ["ru", "sk"] as const) {
+      expect(i18n.getFixedT(language)("audio.output.merged", { count: 1 })).toBe(
+        "1 selected track is merged into one track",
+      );
+      expect(i18n.getFixedT(language)("audio.output.merged", { count: 5 })).toBe(
+        "5 selected tracks are merged into one track",
+      );
+    }
     expect(i18n.getFixedT("en")("audio.output.merge.tooltip")).toBe(
       "All selected tracks are merged into one track; this requires encoding.",
     );
@@ -38,6 +46,13 @@ describe("resolveInitialLanguage", () => {
     expect(i18n.getFixedT("ru")("audio.output.merge.tooltip")).toBe(
       "Все выбранные дорожки объединяются в одну; это требует кодирования.",
     );
+  });
+
+  it("uses locale-specific forms for a complete plural family", () => {
+    expect(i18n.getFixedT("ru")("source.search.results", { count: 3 })).toBe("3 результата");
+    expect(i18n.getFixedT("ru")("source.search.results", { count: 5 })).toBe("5 результатов");
+    expect(i18n.getFixedT("sk")("source.search.results", { count: 3 })).toBe("3 výsledky");
+    expect(i18n.getFixedT("sk")("source.search.results", { count: 5 })).toBe("5 výsledkov");
   });
 
   it("localizes accessible stereo-meter labels", () => {

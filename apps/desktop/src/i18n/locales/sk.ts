@@ -48,8 +48,6 @@ export const sk = {
       deleting: "Súbor sa odstraňuje…",
     },
     close: {
-      closedFiles_one: "Zavretý {{count}} súbor",
-      closedFiles_other: "Zavretých {{count}} súborov",
       closeAllSources: "Zavrieť všetky otvorené zdroje",
       confirmation: {
         description:
@@ -63,14 +61,6 @@ export const sk = {
       interrupted: "Obnovenie súboru bolo prerušené",
       restoring: "Súbor sa obnovuje…",
       completed: "Súbor bol obnovený",
-      previousSession_one: "Obnoviť predchádzajúcu reláciu · {{count}} zdroj",
-      previousSession_other: "Obnoviť predchádzajúcu reláciu · {{count}} zdrojov",
-    },
-    import: {
-      openedFiles_one: "Otvorený {{count}} súbor",
-      openedFiles_other: "Otvorených {{count}} súborov",
-      fromFolders_one: "z {{count}} priečinka",
-      fromFolders_other: "z {{count}} priečinkov",
     },
     reveal: {
       inFileExplorer: "Zobraziť v Prieskumníkovi súborov",
@@ -149,14 +139,8 @@ export const sk = {
     },
     workspaceRecovery: {
       restore: "Obnoviť",
-      restored_one: "Obnovený {{count}} zdroj z predchádzajúcej relácie",
-      restored_other: "Obnovených {{count}} zdrojov z predchádzajúcej relácie",
       partiallyRestored: "Obnovené {{restored}} z {{total}} zdrojov z predchádzajúcej relácie",
-      description_one: "EasyTrim sa neukončil normálne. Obnoviť možno {{count}} zdroj.",
-      description_other: "EasyTrim sa neukončil normálne. Obnoviť možno {{count}} zdrojov.",
       title: "Obnoviť predchádzajúcu reláciu?",
-      toastDescription_one: "Obnovený {{count}} zdroj",
-      toastDescription_other: "Obnovených {{count}} zdrojov",
       toastPartialDescription: "Obnovené {{restored}} z {{total}} zdrojov",
       toastPartialTitle: "Predchádzajúca relácia bola čiastočne obnovená",
       toastTitle: "Predchádzajúca relácia bola obnovená",
@@ -574,20 +558,6 @@ export const sk = {
     empty: {
       description: "Exporty sa zobrazia tu.",
     },
-    summary: {
-      canceled_one: "{{count}} zrušený",
-      canceled_other: "{{count}} zrušených",
-      completed_one: "{{count}} dokončený",
-      completed_other: "{{count}} dokončených",
-      failed_one: "{{count}} zlyhaný",
-      failed_other: "{{count}} zlyhaných",
-      jobs_one: "{{count}} úloha",
-      jobs_other: "{{count}} úloh",
-      queued_one: "{{count}} vo fronte",
-      queued_other: "{{count}} vo fronte",
-      rendering_one: "{{count}} sa vykresľuje",
-      rendering_other: "{{count}} sa vykresľuje",
-    },
     metrics: {
       elapsed: "{{value}} uplynulo",
       error: "Chyba exportu: {{message}}",
@@ -782,13 +752,7 @@ export const sk = {
         action: "Zlúčiť vybrané stopy",
         tooltip: "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
       },
-      merged_one: "{{count}} vybraná stopa sa zlúči do jednej stopy",
-      merged_few: "{{count}} vybrané stopy sa zlúčia do jednej stopy",
-      merged_other: "{{count}} vybraných stôp sa zlúči do jednej stopy",
       oneTrack: "Jedna vybraná stopa — zlúčenie nie je potrebné",
-      separate_one: "{{count}} vybraná stopa zostane samostatná",
-      separate_few: "{{count}} vybrané stopy zostanú samostatné",
-      separate_other: "{{count}} vybraných stôp zostane samostatných",
       videoOnly: "Výstup iba s videom",
     },
     tracks: {
@@ -802,9 +766,6 @@ export const sk = {
       preparingPreview: "Pripravuje sa náhľad s týmito nastaveniami stopy…",
       actionsLabel: "Akcie zvukovej stopy {{number}}",
       gainLabel: "Zosilnenie zvukovej stopy {{number}} v decibeloch",
-      channels_one: "{{count}} kanál",
-      channels_few: "{{count}} kanály",
-      channels_other: "{{count}} kanálov",
       unknownLayout: "neznáme rozloženie",
     },
     highPass: {
