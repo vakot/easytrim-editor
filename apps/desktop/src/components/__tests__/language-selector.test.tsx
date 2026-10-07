@@ -59,7 +59,7 @@ describe("LanguageSelector", () => {
     expect(trigger).toHaveTextContent("Русский");
     expect(trigger).not.toHaveTextContent("76%");
     expect(trigger.querySelector("span[aria-hidden='true'] svg")?.outerHTML).toBe(
-      renderToStaticMarkup(<RU aria-hidden="true" className="block h-auto w-full" />),
+      renderToStaticMarkup(<RU aria-hidden="true" className="block h-auto! w-full!" />),
     );
     expect(trigger.querySelector("span[aria-hidden='true']")).toBeInTheDocument();
 
@@ -78,7 +78,7 @@ describe("LanguageSelector", () => {
       screen
         .getByRole("button", { name: "Choose language" })
         .querySelector("span[aria-hidden='true'] svg")?.outerHTML,
-    ).toBe(renderToStaticMarkup(<SK aria-hidden="true" className="block h-auto w-full" />));
+    ).toBe(renderToStaticMarkup(<SK aria-hidden="true" className="block h-auto! w-full!" />));
     await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());
   });
 
@@ -185,7 +185,7 @@ describe("LanguageSelector", () => {
     const flagSvg = flagContainer?.querySelector("svg");
     expect(flagContainer).toBeInTheDocument();
     expect(flagSvg?.outerHTML).toBe(
-      renderToStaticMarkup(<Flag aria-hidden="true" className="block h-auto w-full" />),
+      renderToStaticMarkup(<Flag aria-hidden="true" className="block h-auto! w-full!" />),
     );
     const percentage = translationCoverage[language.code].percentage;
     expect(within(option).getByText(`${percentage}%`)).toBeVisible();

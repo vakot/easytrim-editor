@@ -139,16 +139,10 @@ function LanguageSelectorValue({
 
   if (!language) return placeholder ?? null;
   const value = type === "displayName" ? getLanguageDisplayName(language) : language[type];
-  const Flag = LANGUAGE_REGION_FLAGS[language.region];
 
   return (
     <span className={cn("flex min-w-0 items-center truncate text-left", className)} {...props}>
-      <span
-        aria-hidden="true"
-        className="mr-2 flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs"
-      >
-        <Flag aria-hidden="true" className="block h-auto w-full" />
-      </span>
+      <LanguageSelectorFlag className="mr-2" language={language} />
       <span className="truncate">{value}</span>
     </span>
   );
@@ -207,13 +201,7 @@ function LanguageSelectorList({
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxList>, "children">) {
   const { t } = useTranslation();
-  const {
-    disabled,
-    language: selectedLanguage,
-    languages,
-    selectLanguage,
-    setQuery,
-  } = useLanguageSelector();
+  const { languages, setQuery } = useLanguageSelector();
 
   React.useEffect(() => () => setQuery(null), [setQuery]);
 
@@ -221,54 +209,91 @@ function LanguageSelectorList({
     <ComboboxList {...props}>
       <ComboboxEmpty>{t("settings.general.language.noResults")}</ComboboxEmpty>
       <ComboboxGroup>
-        {languages.map((language) => {
-          const selected = selectedLanguage?.code === language.code;
-          const Flag = LANGUAGE_REGION_FLAGS[language.region];
-          const percentage = translationCoverage[language.code].percentage;
-
-          return (
-            <ComboboxItem
-              aria-label={`${getLanguageDisplayName(language)}, ${language.code}`}
-              className={cn(
-                "grid h-auto min-w-0 grid-cols-[1rem_minmax(0,1fr)_3rem] grid-rows-[auto_auto] gap-x-2 gap-y-1 px-2.5 py-2 pr-2 data-[language-selected=true]:font-medium",
-              )}
-              data-language-selected={selected || undefined}
-              disabled={disabled}
-              key={language.code}
-              keywords={[language.code, language.englishName, language.nativeName]}
-              onSelect={() => selectLanguage(language)}
-              value={language.code}
-            >
-              {selected ? (
-                <span aria-hidden="true" className="col-start-3 row-start-1 flex justify-end">
-                  <CheckIcon aria-hidden="true" />
-                </span>
-              ) : null}
-              <span
-                aria-hidden="true"
-                className="col-start-1 row-start-1 flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs"
-              >
-                <Flag aria-hidden="true" className="block h-auto w-full" />
-              </span>
-              <span className="col-start-2 row-start-1 min-w-0 truncate">
-                {getLanguageDisplayName(language)}
-              </span>
-              <Progress
-                aria-label={t("settings.general.language.coverageAccessibleLabel", {
-                  language: language.nativeName,
-                  percentage,
-                })}
-                className="col-start-2 row-start-2 h-1"
-                value={percentage}
-              />
-              <span aria-hidden="true" className="col-start-3 row-start-2 text-right text-xs">
-                {percentage}%
-              </span>
-            </ComboboxItem>
-          );
-        })}
+        {languages.map((language) => (
+          <LanguageSelectorItem key={language.code} language={language} />
+        ))}
       </ComboboxGroup>
     </ComboboxList>
+  );
+}
+
+function LanguageSelectorItem({
+  className,
+  language,
+  ...props
+}: Omit<
+  React.ComponentProps<typeof ComboboxItem>,
+  "onSelect" | "disabled" | "value" | "children"
+> & {
+  language: Language;
+}) {
+  const { t } = useTranslation();
+  const { disabled, language: selectedLanguage, selectLanguage } = useLanguageSelector();
+
+  const selected = selectedLanguage?.code === language.code;
+  const percentage = translationCoverage[language.code].percentage;
+
+  return (
+    <ComboboxItem
+      aria-label={`${getLanguageDisplayName(language)}, ${language.code}`}
+      className={cn(
+        "grid h-auto min-w-0 grid-cols-[1rem_minmax(0,1fr)_1rem] grid-rows-[auto_auto] gap-x-2 gap-y-1 px-2.5 py-2 pr-2 data-[language-selected=true]:font-medium",
+        className,
+      )}
+      data-language-selected={selected || undefined}
+      disabled={disabled}
+      keywords={[language.code, language.englishName, language.nativeName]}
+      onSelect={() => selectLanguage(language)}
+      value={language.code}
+      {...props}
+    >
+      <LanguageSelectorFlag className="col-start-1 row-start-1" language={language} />
+
+      <span className="col-start-2 row-start-1 min-w-0 truncate">
+        {getLanguageDisplayName(language)}
+      </span>
+
+      <div className="col-start-2 row-start-2 flex items-center gap-1">
+        <Progress
+          aria-label={t("settings.general.language.coverageAccessibleLabel", {
+            language: language.nativeName,
+            percentage,
+          })}
+          className="h-1"
+          value={percentage}
+        />
+        <span aria-hidden="true" className="w-[4ch] shrink-0 text-right text-xs tabular-nums">
+          {percentage}%
+        </span>
+      </div>
+
+      {selected ? (
+        <span aria-hidden="true" className="col-start-3 row-start-1 flex justify-end">
+          <CheckIcon aria-hidden="true" />
+        </span>
+      ) : null}
+    </ComboboxItem>
+  );
+}
+
+function LanguageSelectorFlag({
+  className,
+  language,
+  ...props
+}: Omit<React.ComponentProps<"span">, "children"> & { language: Language }) {
+  const Flag = LANGUAGE_REGION_FLAGS[language.region];
+
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs",
+        className,
+      )}
+      {...props}
+    >
+      <Flag aria-hidden="true" className="block h-auto! w-full!" />
+    </span>
   );
 }
 
