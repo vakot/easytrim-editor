@@ -32,6 +32,35 @@ Do not infer one scope from the other, silently default to release scope, or com
 in one invocation. If the invocation does not select exactly one scope, stop without modifying
 `CHANGELOG.md` and report that the scope must be explicit.
 
+## Release-state delta
+
+A changelog describes the user-visible state delta between release boundaries, not the chronology
+of work during development. Before creating a `Changed`, `Fixed`, `Removed`, or similar entry,
+determine whether the affected behavior existed in the latest stable released version. The final
+changelog describes the state users will receive when upgrading from that release.
+
+If a feature was introduced during the current unreleased cycle and then modified, renamed, moved,
+fixed, or refactored before release, do not add another entry for that intermediate transition.
+Update or consolidate its existing entry to describe its final shipped state. Consolidation is
+based on user-facing outcome, not on code area, feature family, PR, or implementation timeline.
+Multiple distinct changes in the same UI area should remain separate when users would notice or
+describe them independently. For example, adding a Settings dialog, changing the Command Center
+shortcut, adding a Settings shortcut, changing the View menu, and removing a Queue menu are
+separate outcomes; renaming or rearranging pages and refining controls inside the new dialog are
+development steps toward its final state. Do not optimize for the minimum possible number of
+bullets. Optimize for the minimum number required to accurately describe the meaningful release
+delta. A `Fixed` entry is appropriate for a defect that existed in a previously released version,
+unless another exceptional user-facing reason justifies calling it out. Apply the same rule to
+`Changed` and `Removed`: do not describe lifecycle transitions of behavior users have never received.
+
+For release scope, compare the complete `[Unreleased]` section with the latest stable release tag
+and remove development-only transitions from the section. For PR scope, the PR base is an
+attribution boundary, not necessarily the previous user-visible state: it may contain unreleased
+features. Use the latest stable release tag as timeline context (`release → existing Unreleased
+work → current PR`). If a PR only refines a feature introduced since that tag, update or consolidate
+its existing `[Unreleased]` entry instead of adding a new `Fixed` or `Changed` bullet. Still limit
+PR-scope edits to entries related to that PR; do not rewrite unrelated changelog content.
+
 ## Release scope
 
 The following release-range rules apply only after release scope has been selected. They do not
@@ -77,9 +106,13 @@ verified in the selected scope range.
    release sections, links, ordering, and existing entries. Do not rewrite historical entries for
    style consistency.
 2. Build a change inventory from the verified scope diff. In release scope, consolidate related
-   commits, files, and PRs into release-level outcomes. In PR scope, consolidate only work
-   introduced by the current PR. In both cases, consolidate related work into one concise
-   user-facing entry when it describes one outcome. Do not emit a commit-by-commit list.
+   commits, files, and PRs only when they produce the same user-facing outcome. In PR scope,
+   consolidate only work introduced by the current PR and only when it produces the same outcome.
+   Consolidation is based on user-facing outcome, not code area, feature family, PR, or development
+   timeline. Preserve distinct changes users would notice or describe independently, even when they
+   affect the same UI or feature. Do not optimize for the minimum possible number of bullets;
+   include the minimum number required to accurately describe the meaningful release delta. Do not
+   emit a commit-by-commit list.
 3. Exclude implementation-only work: refactors, tests, formatting, CI, dependency maintenance,
    architecture changes, internal tooling, and developer-only documentation. Include one of these
    only when the final diff verifies a material user-facing effect.

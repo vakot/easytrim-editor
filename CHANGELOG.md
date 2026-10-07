@@ -6,32 +6,28 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added searchable language selection in Settings.
 - Added panel visibility, layout density, and Activity Feed view controls to the View menu.
-- Added searchable language selection to the Settings menu.
+- Added an Open export queue action to the Command Center.
+- Added Ctrl+H as a shortcut for opening Settings.
 
 ### Changed
 
-- Refined View menu actions to include main windows entry-points and layout controls
-- Replaced the Settings menu dropdown with a full preferences dialog for language, appearance, preferences, layout, and update/help options.
-- Renamed the settings page to Preferences.
-- Moved queue settings into the Preferences page.
-- Renamed the Preferences settings section and reset label to Editing terminology.
-- Refined About page button variants and added a Ko-fi brand icon to the support link.
-- Added a Ctrl+H shortcut and visible hint for opening Settings.
+- Refined View menu actions to include main window entry points and layout controls.
+- Replaced the Settings menu dropdown with a full preferences dialog.
+- Moved queue access into View.
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
-- Localized the primary color picker's saturation, brightness, and hue labels for assistive technology.
+- Improved accessibility labels for the primary color controls.
 
 ### Removed
 
-- Removed language changing commands from the Command Center.
-- Removed Queue menu from menubar
+- Removed language switching commands from the Command Center.
+- Removed the Queue menu from the menubar.
 
 ### Fixed
 
-- Scoped Settings reset actions to their owning sections and individual settings.
-- Localized audio track menu actions across English, Russian, and Slovak.
-- Localized source search result counts and breadcrumb navigation labels.
-- Fixed spacing and scrolling in the settings and audio effects libraries and sidebar layout.
+- Fixed missing translations in audio track actions and source navigation.
+- Fixed spacing and scrolling in the audio effects library and editor panels.
 
 ## [1.13.0]
 
