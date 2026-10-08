@@ -18,8 +18,8 @@ export const ru = {
       commandsPlaceholder: "Поиск команд…",
       languages: "Поиск языков",
       languagesPlaceholder: "Поиск языков…",
-      sources: "Поиск",
-      sourcesPlaceholder: "Поиск…",
+      sources: "Поиск источников",
+      sourcesPlaceholder: "Поиск источников…",
     },
     status: {
       error: "Ошибка",

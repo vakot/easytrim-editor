@@ -64,8 +64,8 @@ describe("resolveInitialLanguage", () => {
     expect(t("common.search.languagesPlaceholder")).toBe("Поиск языков…");
     expect(t("common.search.commands")).toBe("Поиск команд");
     expect(t("common.search.commandsPlaceholder")).toBe("Поиск команд…");
-    expect(t("common.search.sources")).toBe("Поиск");
-    expect(t("common.search.sourcesPlaceholder")).toBe("Поиск…");
+    expect(t("common.search.sources")).toBe("Поиск источников");
+    expect(t("common.search.sourcesPlaceholder")).toBe("Поиск источников…");
   });
 
   it("localizes accessible stereo-meter labels", () => {
