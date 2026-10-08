@@ -778,7 +778,9 @@ export const en = {
     },
     segment: {
       setEnd: "Set segment end",
+      setEndUnavailable: "Move after the source start to set segment end",
       setStart: "Set segment start",
+      setStartUnavailable: "Move before the source end to set segment start",
       segmentDisabledTooltip: "Play the complete timeline",
       segmentEnabledTooltip: "Constrain playback to the selected segment",
     },

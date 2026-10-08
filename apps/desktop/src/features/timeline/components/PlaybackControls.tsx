@@ -65,7 +65,11 @@ function PlaybackControls({ className }: { className?: string }) {
             editing.onSetSegmentBoundary("start", { type: "button", id: "set-start" });
           }}
           shortcut={{ code: "KeyI", key: "I", modifier: "none" }}
-          title={t("preview.segment.setStart")}
+          title={
+            editing.canSetSegmentStart
+              ? t("preview.segment.setStart")
+              : t("preview.segment.setStartUnavailable")
+          }
         >
           <SquareArrowRight />
         </TransportButton>
@@ -208,7 +212,11 @@ function PlaybackControls({ className }: { className?: string }) {
             editing.onSetSegmentBoundary("end", { type: "button", id: "set-end" });
           }}
           shortcut={{ code: "KeyO", key: "O", modifier: "none" }}
-          title={t("preview.segment.setEnd")}
+          title={
+            editing.canSetSegmentEnd
+              ? t("preview.segment.setEnd")
+              : t("preview.segment.setEndUnavailable")
+          }
         >
           <SquareArrowLeft />
         </TransportButton>
@@ -289,54 +297,62 @@ function TransportButton({
     });
   }
 
+  const button = (
+    <Button
+      aria-keyshortcuts={getShortcutAriaValue(shortcut)}
+      aria-label={label}
+      aria-pressed={hold ? hold.active : undefined}
+      className={cn(
+        primary && "rounded-full",
+        hold && "touch-none",
+        hold?.active && "bg-accent text-accent-foreground",
+      )}
+      data-editor-keyboard="timeline-transport"
+      disabled={disabled}
+      onClick={() => {
+        if (suppressClickRef.current) {
+          if (suppressClickClearTimerRef.current !== null) {
+            window.clearTimeout(suppressClickClearTimerRef.current);
+            suppressClickClearTimerRef.current = null;
+          }
+          suppressClickRef.current = false;
+          return;
+        }
+        onClick();
+      }}
+      onLostPointerCapture={(event) => finishPointerPress(event, false)}
+      onPointerCancel={(event) => finishPointerPress(event, false)}
+      onPointerDown={(event) => {
+        if (!hold || event.button !== 0 || event.isPrimary === false) return;
+        pointerActiveRef.current = true;
+        pointerIdRef.current = event.pointerId;
+        suppressClickRef.current = true;
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+        onClick();
+        holdTimerRef.current = window.setTimeout(() => {
+          if (!pointerActiveRef.current) return;
+          holdStartedRef.current = true;
+          holdRef.current?.onStart();
+        }, FRAME_SHUTTLE_HOLD_DELAY_MS);
+      }}
+      onPointerUp={(event) => finishPointerPress(event, true)}
+      size={primary ? "icon-lg" : "icon-sm"}
+      type="button"
+      variant={primary ? "default" : "ghost"}
+    >
+      {children}
+    </Button>
+  );
+
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          aria-keyshortcuts={getShortcutAriaValue(shortcut)}
-          aria-label={label}
-          aria-pressed={hold ? hold.active : undefined}
-          className={cn(
-            primary && "rounded-full",
-            hold && "touch-none",
-            hold?.active && "bg-accent text-accent-foreground",
-          )}
-          data-editor-keyboard="timeline-transport"
-          disabled={disabled}
-          onClick={() => {
-            if (suppressClickRef.current) {
-              if (suppressClickClearTimerRef.current !== null) {
-                window.clearTimeout(suppressClickClearTimerRef.current);
-                suppressClickClearTimerRef.current = null;
-              }
-              suppressClickRef.current = false;
-              return;
-            }
-            onClick();
-          }}
-          onLostPointerCapture={(event) => finishPointerPress(event, false)}
-          onPointerCancel={(event) => finishPointerPress(event, false)}
-          onPointerDown={(event) => {
-            if (!hold || event.button !== 0 || event.isPrimary === false) return;
-            pointerActiveRef.current = true;
-            pointerIdRef.current = event.pointerId;
-            suppressClickRef.current = true;
-            event.currentTarget.setPointerCapture?.(event.pointerId);
-            onClick();
-            holdTimerRef.current = window.setTimeout(() => {
-              if (!pointerActiveRef.current) return;
-              holdStartedRef.current = true;
-              holdRef.current?.onStart();
-            }, FRAME_SHUTTLE_HOLD_DELAY_MS);
-          }}
-          onPointerUp={(event) => finishPointerPress(event, true)}
-          size={primary ? "icon-lg" : "icon-sm"}
-          type="button"
-          variant={primary ? "default" : "ghost"}
-        >
-          {children}
-        </Button>
-      </TooltipTrigger>
+      {disabled ? (
+        <TooltipTrigger asChild>
+          <span className="inline-flex">{button}</span>
+        </TooltipTrigger>
+      ) : (
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+      )}
       <ShortcutTooltipContent shortcut={shortcut} title={title} />
     </Tooltip>
   );

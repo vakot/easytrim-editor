@@ -60,6 +60,8 @@ function TestProvider({ children }: { children: ReactNode }) {
 afterEach(() => {
   vi.clearAllMocks();
   vi.useRealTimers();
+  mocks.editing.canSetSegmentStart = true;
+  mocks.editing.canSetSegmentEnd = true;
 });
 
 describe("PlaybackControls", () => {
@@ -83,12 +85,57 @@ describe("PlaybackControls", () => {
     const user = userEvent.setup();
     render(<PlaybackControls />, { wrapper: TestProvider });
 
-    await user.hover(screen.getByRole("button", { name: "Next frame" }));
+    const nextFrameButton = screen.getByRole("button", { name: "Next frame" });
+    expect(nextFrameButton.parentElement?.tagName).not.toBe("SPAN");
+    await user.hover(nextFrameButton);
 
     expect(await screen.findByText("Next frame")).toBeInTheDocument();
     expect(
       screen.getByRole("tooltip").querySelector('[data-slot="kbd"] svg[aria-hidden="true"]'),
     ).toBeInTheDocument();
+  });
+
+  it("shows separate unavailable tooltips on disabled segment boundary buttons", async () => {
+    const user = userEvent.setup();
+    mocks.editing.canSetSegmentStart = false;
+    mocks.editing.canSetSegmentEnd = false;
+    const { unmount } = render(<PlaybackControls />, { wrapper: TestProvider });
+
+    const startButton = screen.getByRole("button", { name: "Set segment start" });
+    const endButton = screen.getByRole("button", { name: "Set segment end" });
+    expect(startButton).toBeDisabled();
+    expect(endButton).toBeDisabled();
+    expect(startButton).not.toHaveAttribute("aria-disabled");
+    expect(startButton).toHaveAttribute("aria-keyshortcuts", "I");
+    expect(endButton).toHaveAttribute("aria-keyshortcuts", "O");
+
+    await user.click(startButton);
+    expect(mocks.editing.onSetSegmentBoundary).not.toHaveBeenCalled();
+
+    const startTrigger = startButton.parentElement;
+    const endTrigger = endButton.parentElement;
+    expect(startTrigger?.tagName).toBe("SPAN");
+    expect(endTrigger?.tagName).toBe("SPAN");
+    expect(startTrigger).not.toHaveAttribute("tabindex");
+    expect(startTrigger).not.toHaveAttribute("role");
+
+    await user.hover(startTrigger!);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "Move before the source end to set segment start",
+    );
+
+    unmount();
+    mocks.editing.canSetSegmentStart = true;
+    render(<PlaybackControls />, { wrapper: TestProvider });
+    const unavailableEndButton = screen.getByRole("button", { name: "Set segment end" });
+    expect(unavailableEndButton).toBeDisabled();
+    const unavailableEndTrigger = unavailableEndButton.parentElement;
+    expect(unavailableEndTrigger?.tagName).toBe("SPAN");
+
+    await user.hover(unavailableEndTrigger!);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "Move after the source start to set segment end",
+    );
   });
 
   it("steps once on press and starts a held shuttle without a duplicate click", () => {
