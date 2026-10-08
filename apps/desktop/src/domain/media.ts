@@ -59,6 +59,17 @@ interface OptimizedExportRequest extends FastExportRequest {
   resolution: { height: number; width: number };
 }
 
+interface GifExportRequest {
+  crop?: { height: number; width: number; x: number; y: number };
+  flipHorizontal: boolean;
+  flipVertical: boolean;
+  frameRate: { denominator: number; numerator: number };
+  rotationDegrees: import("./rotation").RotationDegrees;
+  sourcePath: string;
+  trim: TrimSelection;
+  width: number;
+}
+
 interface LoudnessAnalysisRequest {
   audioTrack: AudioTrackSelection;
   sourcePath: string;
@@ -128,6 +139,7 @@ export type {
   ExportResult,
   FastExportRequest,
   FrameRate,
+  GifExportRequest,
   LoudnessAnalysis,
   LoudnessAnalysisRequest,
   MediaInfo,

@@ -228,6 +228,21 @@ pub struct OptimizedExportRequest {
     pub arguments: String,
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct GifExportRequest {
+    pub source_path: String,
+    pub trim: TrimSelection,
+    pub rotation_degrees: u16,
+    pub crop: Option<CropSelection>,
+    #[serde(default)]
+    pub flip_horizontal: bool,
+    #[serde(default)]
+    pub flip_vertical: bool,
+    pub width: u32,
+    pub frame_rate: FrameRateSelection,
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Hash, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum LoudnessPreset {
@@ -470,6 +485,98 @@ pub fn build_optimized_arguments(
     arguments.extend([
         OsString::from("-sn"),
         OsString::from("-dn"),
+        OsString::from("-y"),
+        output_path.as_os_str().to_owned(),
+    ]);
+    Ok(arguments)
+}
+
+pub fn build_gif_arguments(
+    source: &MediaInfo,
+    request: &GifExportRequest,
+    source_path: &Path,
+    output_path: &Path,
+) -> Result<Vec<OsString>, AppError> {
+    validate_trim_selection(source, &request.trim)?;
+    validate_rotation(request.rotation_degrees)?;
+    validate_crop(request.crop.as_ref())?;
+    if !(16..=1920).contains(&request.width) {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportOutputResolutionMustBeGreaterThanZero,
+        ));
+    }
+    if request.frame_rate.numerator == 0
+        || request.frame_rate.denominator == 0
+        || request.frame_rate.numerator as u128 > request.frame_rate.denominator as u128 * 60
+    {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportOutputFrameRateIsInvalid,
+        ));
+    }
+
+    let (rotation_degrees, flip_horizontal, flip_vertical, crop) =
+        if request.rotation_degrees == 180 && request.flip_horizontal && request.flip_vertical {
+            (
+                0,
+                false,
+                false,
+                request.crop.as_ref().map(|crop| CropSelection {
+                    x: 1.0 - crop.x - crop.width,
+                    y: 1.0 - crop.y - crop.height,
+                    width: crop.width,
+                    height: crop.height,
+                }),
+            )
+        } else {
+            (
+                request.rotation_degrees,
+                request.flip_horizontal,
+                request.flip_vertical,
+                request.crop.clone(),
+            )
+        };
+    let mut video_filters = Vec::new();
+    if rotation_degrees != 0 {
+        video_filters.push(rotation_filter(rotation_degrees));
+    }
+    if let Some(crop) = crop {
+        video_filters.push(format!(
+            "crop=iw*{}:ih*{}:iw*{}:ih*{}",
+            crop.width, crop.height, crop.x, crop.y
+        ));
+    }
+    if flip_horizontal {
+        video_filters.push("hflip".to_owned());
+    }
+    if flip_vertical {
+        video_filters.push("vflip".to_owned());
+    }
+    video_filters.extend([
+        format!(
+            "fps={}/{}",
+            request.frame_rate.numerator, request.frame_rate.denominator
+        ),
+        format!("scale={}:{}:flags=lanczos", request.width, -1),
+    ]);
+    let filter = format!(
+        "[0:{}]{},split[v1][v2];[v1]palettegen=stats_mode=diff[palette];[v2][palette]paletteuse=dither=sierra2_4a[out]",
+        source.video.stream_index,
+        video_filters.join(",")
+    );
+
+    let mut arguments = common_input_arguments(source_path, &request.trim);
+    arguments.extend([
+        OsString::from("-filter_complex"),
+        OsString::from(filter),
+        OsString::from("-map"),
+        OsString::from("[out]"),
+        OsString::from("-an"),
+        OsString::from("-sn"),
+        OsString::from("-dn"),
+        OsString::from("-loop"),
+        OsString::from("0"),
+        OsString::from("-f"),
+        OsString::from("gif"),
         OsString::from("-y"),
         output_path.as_os_str().to_owned(),
     ]);

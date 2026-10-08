@@ -11,6 +11,7 @@ import type {
   ExportProgress,
   ExportResult,
   FastExportRequest,
+  GifExportRequest,
   LoudnessAnalysis,
   LoudnessAnalysisRequest,
   MediaCapabilities,
@@ -133,6 +134,15 @@ async function chooseOutputPath(defaultName: string): Promise<OutputSelection | 
   }
 }
 
+async function chooseGifOutputPath(defaultName: string): Promise<OutputSelection | null> {
+  try {
+    const value = await invoke<unknown>("choose_gif_output_path", { defaultName });
+    return value === null ? null : parseOutputSelection(value);
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 async function saveFramePng(pngData: Uint8Array, defaultName: string): Promise<boolean> {
   try {
     return await invoke<boolean>("save_frame_png", {
@@ -179,6 +189,23 @@ async function renderOptimized(
 ): Promise<ExportResult> {
   return render(
     "render_optimized",
+    request,
+    outputId,
+    onProgress,
+    diagnosticParentOperationId,
+    diagnosticSnapshotId,
+  );
+}
+
+async function renderGif(
+  request: GifExportRequest,
+  outputId: string,
+  onProgress: (progress: ExportProgress) => void,
+  diagnosticParentOperationId?: string,
+  diagnosticSnapshotId?: string,
+): Promise<ExportResult> {
+  return render(
+    "render_gif",
     request,
     outputId,
     onProgress,
@@ -259,8 +286,8 @@ async function openFileLocation(path: string): Promise<void> {
 }
 
 async function render(
-  command: "export_fast" | "render_optimized",
-  request: FastExportRequest | OptimizedExportRequest,
+  command: "export_fast" | "render_optimized" | "render_gif",
+  request: FastExportRequest | OptimizedExportRequest | GifExportRequest,
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
   diagnosticParentOperationId?: string,
@@ -427,6 +454,7 @@ export {
   analyzeAudioLoudness,
   cancelOperation,
   checkMediaCapabilities,
+  chooseGifOutputPath,
   chooseOutputPath,
   chooseSource,
   detectAudioActivity,
@@ -444,6 +472,7 @@ export {
   prepareWaveforms,
   releaseExportSource,
   releaseImportedSourceThumbnail,
+  renderGif,
   renderOptimized,
   reserveExportSource,
   resolveOutputSelection,

@@ -17,8 +17,8 @@ use crate::{
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
     error::{AppError, AppErrorMessageId},
     media::export::{
-        FastExportRequest, OptimizedExportRequest, build_fast_arguments, build_optimized_arguments,
-        optimized_command_preview,
+        FastExportRequest, GifExportRequest, OptimizedExportRequest, build_fast_arguments,
+        build_gif_arguments, build_optimized_arguments, optimized_command_preview,
     },
     media::loudness::{LoudnessAnalysis, LoudnessAnalysisRequest, analyze_loudness},
     media::probe::MediaInfo,
@@ -114,6 +114,32 @@ pub async fn choose_output_path(
     state: State<'_, AppState>,
     default_name: String,
 ) -> Result<Option<OutputSelection>, AppError> {
+    choose_output_path_with_filter(
+        app,
+        state,
+        default_name,
+        "Video",
+        &["mkv", "mp4", "mov", "webm"],
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn choose_gif_output_path(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    default_name: String,
+) -> Result<Option<OutputSelection>, AppError> {
+    choose_output_path_with_filter(app, state, default_name, "GIF", &["gif"]).await
+}
+
+async fn choose_output_path_with_filter(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    default_name: String,
+    filter_name: &'static str,
+    extensions: &'static [&'static str],
+) -> Result<Option<OutputSelection>, AppError> {
     if default_name.trim().is_empty() || default_name.len() > 255 {
         return Err(AppError::invalid_request(
             AppErrorMessageId::ExportOutputNameIsRequired,
@@ -123,7 +149,7 @@ pub async fn choose_output_path(
     app.dialog()
         .file()
         .set_file_name(default_name)
-        .add_filter("Video", &["mkv", "mp4", "mov", "webm"])
+        .add_filter(filter_name, extensions)
         .save_file(move |selected| {
             let _ = sender.send(selected);
         });
@@ -225,6 +251,42 @@ pub async fn render_optimized(
         let output_path = state.resolve_output(&output_id)?;
         let display_name = output_display_name(&output_path)?;
         let arguments = build_optimized_arguments(&media, &request, &source.path, &output_path)?;
+        run_export(
+            state.clone(),
+            Arc::clone(&diagnostics),
+            source.path,
+            output_path,
+            display_name,
+            arguments,
+            on_progress,
+            ExportDiagnosticContext {
+                parent_operation_id: diagnostic_parent_operation_id,
+                snapshot_id: diagnostic_snapshot_id,
+            },
+        )
+        .await
+    }
+    .await
+}
+
+#[tauri::command]
+pub async fn render_gif(
+    request: GifExportRequest,
+    output_id: String,
+    on_progress: Channel<ExportProgress>,
+    diagnostic_parent_operation_id: Option<String>,
+    diagnostic_snapshot_id: Option<String>,
+    state: State<'_, AppState>,
+    diagnostics: State<'_, Arc<DiagnosticsState>>,
+) -> Result<ExportResult, AppError> {
+    async {
+        let source = state.resolve_export_source(&request.source_path)?;
+        let media = source.media.clone().ok_or_else(|| {
+            AppError::invalid_request(AppErrorMessageId::ExportInspectTheVideoBeforeExporting)
+        })?;
+        let output_path = state.resolve_output(&output_id)?;
+        let display_name = output_display_name(&output_path)?;
+        let arguments = build_gif_arguments(&media, &request, &source.path, &output_path)?;
         run_export(
             state.clone(),
             Arc::clone(&diagnostics),
