@@ -29,6 +29,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Fixed missing translations in audio track actions and source navigation.
+- Fixed duplicate Activity Feed session separators for sessions in the same displayed time bucket.
 - Fixed the Activity Feed's singular "more file" count.
 - Fixed spacing and scrolling in the audio effects library and editor panels.
 
