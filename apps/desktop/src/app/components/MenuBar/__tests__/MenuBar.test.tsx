@@ -63,6 +63,7 @@ const menuState = vi.hoisted(() => ({
     deleteSourceOnRenderFinish: false,
     lastSeenChangelogVersion: "1.10.4",
     mergeAudioEnabledDefault: false,
+    stripMetadataOnExport: false,
     theme: "system",
     primaryColor: "#efbf04",
     lastAudiblePlaybackVolumePercent: 100,

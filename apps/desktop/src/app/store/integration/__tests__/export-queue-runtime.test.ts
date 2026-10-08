@@ -160,7 +160,12 @@ describe("export queue runtime", () => {
         )?.state.status,
     ).toBe("queued");
 
-    const request = { ...attempt.request, trim: { startMicros: 200_000, endMicros: 900_000 } };
+    const request = {
+      ...attempt.request,
+      stripMetadata: false,
+      trim: { startMicros: 200_000, endMicros: 900_000 },
+    };
+
     const output = {
       displayName: "edited.mp4",
       displayPath: "C:/Exports/edited.mp4",
@@ -264,10 +269,12 @@ describe("export queue runtime", () => {
       operationId: "op",
     });
 
+    store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(startExportQueue());
 
     await vi.waitFor(() => expect(mocks.exportFast).toHaveBeenCalledTimes(2));
     expect(mocks.exportFast.mock.calls.map((call) => call[1])).toEqual(["a", "b"]);
+    expect(mocks.exportFast.mock.calls.map((call) => call[0].stripMetadata)).toEqual([true, true]);
   });
 
   it("cancels a waiting source without interrupting another source's render", async () => {

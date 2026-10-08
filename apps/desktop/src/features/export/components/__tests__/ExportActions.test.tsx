@@ -41,8 +41,9 @@ describe("ExportActions", () => {
 
   it("keeps the dialog footer stable and disables Start queue without queued work", async () => {
     const user = userEvent.setup();
+    const store = createAppStore();
     render(
-      <Provider store={createAppStore()}>
+      <Provider store={store}>
         <TooltipProvider>
           <ExportActions />
         </TooltipProvider>
@@ -52,6 +53,13 @@ describe("ExportActions", () => {
     await user.click(screen.getByRole("button", { name: /Export Queue$/ }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+    const stripMetadata = screen.getByRole("checkbox", {
+      name: "Strip metadata and chapters from exports",
+    });
+
+    expect(stripMetadata).not.toBeChecked();
+    await user.click(stripMetadata);
+    expect(store.getState().preferences.stripMetadataOnExport).toBe(true);
     expect(screen.getByRole("button", { name: "Start queue" })).toBeDisabled();
     expect(
       within(screen.getByRole("dialog")).getAllByRole("button", { name: "Close" }),

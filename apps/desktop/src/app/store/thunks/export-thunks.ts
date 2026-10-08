@@ -498,6 +498,7 @@ function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportR
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: exportAudioTracks(state),
     mergeAudio: selectMergeAudio(state),
+    stripMetadata: state.preferences.stripMetadataOnExport,
     rotationDegrees: transform.rotationDegrees,
   };
 }
@@ -516,6 +517,7 @@ function getOptimizedRequest(
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: exportAudioTracks(state),
     mergeAudio: selectMergeAudio(state),
+    stripMetadata: state.preferences.stripMetadataOnExport,
     rotationDegrees: transform.rotationDegrees,
     resolution: settings.resolution,
     crop: selectCropApplied(state) ? transform.crop : undefined,

@@ -42,6 +42,7 @@ interface FastExportRequest {
   mergeAudio: boolean;
   rotationDegrees: import("./rotation").RotationDegrees;
   sourcePath: string;
+  stripMetadata?: boolean;
   trim: TrimSelection;
 }
 

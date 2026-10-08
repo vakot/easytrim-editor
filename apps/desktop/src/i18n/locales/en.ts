@@ -358,6 +358,9 @@ export const en = {
         label: "Merge audio",
         commandLabel: "Merge audio by default",
       },
+      stripMetadata: {
+        commandLabel: "Strip metadata and chapters from exports",
+      },
       reset: "Reset editing settings",
     },
     layout: {
@@ -456,6 +459,7 @@ export const en = {
       layoutPanelsVisibility: "Layout / Panels visibility",
       preferences: "Preferences",
       preferencesAudio: "Preferences / Audio",
+      preferencesExport: "Preferences / Export",
       preferencesPlayback: "Preferences / Playback",
       previewFrame: "Preview / Frame",
       previewTransform: "Preview / Transform",
@@ -686,6 +690,9 @@ export const en = {
       optimizedExport: "Optimized Export",
     },
     title: "Export Queue",
+    stripMetadata: {
+      label: "Strip metadata and chapters from exports",
+    },
     jobStatus: {
       canceled: "Canceled",
       completed: "Completed",

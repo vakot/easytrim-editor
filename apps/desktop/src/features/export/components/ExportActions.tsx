@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -16,6 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -37,6 +39,10 @@ import {
   exportQueueDialogOpened,
   selectExportQueueDialogOpen,
 } from "@/app/store/slices/export-slice";
+import {
+  preferenceChanged,
+  selectStripMetadataOnExport,
+} from "@/app/store/slices/preferences-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   openOptimizedExportDialog,
@@ -59,6 +65,7 @@ function ExportActions() {
   const cropApplied = useAppSelector(selectCropApplied);
   const transformApplied = useAppSelector(selectTransformApplied);
   const queueSummary = useAppSelector(selectExportQueueSummary);
+  const stripMetadataOnExport = useAppSelector(selectStripMetadataOnExport);
   const finishedExports = queueSummary.completed + queueSummary.failed;
   const queueSize = finishedExports + queueSummary.queued + queueSummary.rendering;
 
@@ -85,6 +92,21 @@ function ExportActions() {
               <DialogDescription>
                 <ExportQueueSummary />
               </DialogDescription>
+              <div className="flex items-center gap-2 pt-2">
+                <Checkbox
+                  checked={stripMetadataOnExport}
+                  id="queue-strip-metadata"
+                  onCheckedChange={(checked) =>
+                    dispatch(
+                      preferenceChanged({
+                        key: "stripMetadataOnExport",
+                        enabled: checked === true,
+                      }),
+                    )
+                  }
+                />
+                <Label htmlFor="queue-strip-metadata">{t("queue.stripMetadata.label")}</Label>
+              </div>
             </DialogHeader>
 
             <ScrollArea className="-mx-4 min-h-0 px-4" data-testid="export-queue-scroll-area">

@@ -122,6 +122,7 @@ function createDeferred<T>() {
 describe("export snapshot restoration", () => {
   it("builds the queued request and snapshot from the same state after loudness analysis", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
+    store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(
       audioTrackProcessingChanged({
         streamIndex: 2,
@@ -145,6 +146,7 @@ describe("export snapshot restoration", () => {
       const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
       expect(attempt?.state.status).toBe("queued");
       expect(attempt?.request.audioTracks[0]?.processing.gainDb).toBe(-2);
+      expect(attempt?.request.stripMetadata).toBe(true);
       expect(attempt?.snapshot.audio.tracks[0]?.processing.gainDb).toBe(-2);
       expect(attempt?.request.audioTracks[0]?.loudnessAnalysis).toMatchObject({
         integratedLufs: -18,
@@ -539,6 +541,7 @@ describe("export snapshot restoration", () => {
 
   it("queues successive edits of the retained draft without changing earlier snapshots", async () => {
     const { snapshot, store } = setup();
+    store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(startFastExportRequested());
     await vi.waitFor(() =>
       expect(
@@ -550,6 +553,8 @@ describe("export snapshot restoration", () => {
     const first = selectExportQueue(store.getState()).find(
       ({ attempt }) => attempt.state.status === "queued",
     )!;
+
+    expect(first.attempt.request.stripMetadata).toBe(true);
 
     expect(store.getState().editingInstances.activeInstanceId).toBe("original");
     expect(store.getState().source.status).toBe("ready");

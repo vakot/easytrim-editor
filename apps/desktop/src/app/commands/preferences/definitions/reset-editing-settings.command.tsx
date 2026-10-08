@@ -9,6 +9,7 @@ import {
   selectLoopPlaybackEnabledDefault,
   selectMergeAudioEnabledDefault,
   selectSegmentPlaybackEnabledDefault,
+  selectStripMetadataOnExport,
 } from "@/app/store/slices/preferences-slice";
 
 function useResetEditingSettingsCommand() {
@@ -17,13 +18,15 @@ function useResetEditingSettingsCommand() {
   const loopPlaybackEnabledDefault = useAppSelector(selectLoopPlaybackEnabledDefault);
   const segmentPlaybackEnabledDefault = useAppSelector(selectSegmentPlaybackEnabledDefault);
   const mergeAudioEnabledDefault = useAppSelector(selectMergeAudioEnabledDefault);
+  const stripMetadataOnExport = useAppSelector(selectStripMetadataOnExport);
   const label = t("common.actions.resetToDefault");
 
   return {
     enabled:
       loopPlaybackEnabledDefault !== DEFAULT_PREFERENCES.loopPlaybackEnabledDefault ||
       segmentPlaybackEnabledDefault !== DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault ||
-      mergeAudioEnabledDefault !== DEFAULT_PREFERENCES.mergeAudioEnabledDefault,
+      mergeAudioEnabledDefault !== DEFAULT_PREFERENCES.mergeAudioEnabledDefault ||
+      stripMetadataOnExport !== DEFAULT_PREFERENCES.stripMetadataOnExport,
     icon: <RotateCcw aria-hidden="true" />,
     surfaces: ["dialog", "menu"] as const,
     run() {
