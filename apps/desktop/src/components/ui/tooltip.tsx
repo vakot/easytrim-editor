@@ -7,12 +7,6 @@ import { cn } from "@/lib/class-names.utils";
 
 const DEFAULT_TOOLTIP_DELAY_MS = 500;
 
-type TooltipContextType = {
-  setPreservingTrigger: (preserving: boolean) => void;
-};
-
-const TooltipContext = React.createContext<TooltipContextType | null>(null);
-
 function TooltipProvider({
   delayDuration = DEFAULT_TOOLTIP_DELAY_MS,
   ...props
@@ -123,6 +117,10 @@ function TooltipContent({
     </TooltipPrimitive.Portal>
   );
 }
+
+const TooltipContext = React.createContext<{
+  setPreservingTrigger: (preserving: boolean) => void;
+} | null>(null);
 
 function useTooltip() {
   const context = React.useContext(TooltipContext);
