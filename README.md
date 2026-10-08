@@ -10,7 +10,7 @@ project files.
 - Import and preview video with precise timeline controls.
 - Trim, move, crop, and loop a selected segment.
 - Preview and mix audio tracks with waveform guidance.
-- Save fast stream-copy cuts or export optimized renders.
+- Export selected segments with Fast Export or Optimized Export.
 - Track active and completed exports in the desktop queue.
 
 ## Requirements

@@ -30,21 +30,15 @@ describe("formatRelativeTime", () => {
     [59 * 60_000, "59 minutes ago"],
     [60 * 60_000, "1 hour ago"],
     [23 * 60 * 60_000, "23 hours ago"],
+    [23 * 60 * 60_000 + 59 * 60_000 + 59_000, "23 hours ago"],
+    [24 * 60 * 60_000, "yesterday"],
+    [47 * 60 * 60_000 + 59 * 60_000 + 59_000, "yesterday"],
   ])("formats %s as %s", (ageMs, expected) => {
     expect(formatRelativeTime(microsAgo(ageMs), "en-US", "Unknown", now)).toBe(expected);
   });
 
-  it("uses yesterday after the relative hour range", () => {
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    expect(formatRelativeTime(yesterday.getTime() * 1_000, "en-US", "Unknown", now)).toBe(
-      "yesterday",
-    );
-  });
-
-  it("uses an absolute date without time for older timestamps", () => {
-    const older = new Date(now);
-    older.setDate(older.getDate() - 2);
+  it("uses an absolute date without time at 48 hours", () => {
+    const older = new Date(now - 48 * 60 * 60_000);
     const expected = new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(older);
 
     expect(formatRelativeTime(older.getTime() * 1_000, "en-US", "Unknown", now)).toBe(expected);

@@ -28,7 +28,7 @@ function InputGroupAddon({
   return (
     <div
       className={cn(
-        "flex items-center justify-center gap-2 py-1.5 text-sm font-medium text-muted-foreground select-none [&>svg:not([class*='size-'])]:size-4",
+        "flex items-center justify-center gap-2 py-1.5 text-sm font-medium text-muted-foreground [&>svg:not([class*='size-'])]:size-4",
         {
           "order-first pl-2.5": align === "inline-start",
           "order-last pr-2.5": align === "inline-end",

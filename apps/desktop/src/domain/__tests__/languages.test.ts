@@ -6,7 +6,7 @@ const searchLanguages = createLanguageSearcher(SUPPORTED_LANGUAGES);
 
 describe("supported languages", () => {
   it("contains only the languages currently supported by the application", () => {
-    expect(SUPPORTED_LANGUAGES.map(({ code }) => code)).toEqual(["en", "ru", "sk"]);
+    expect(SUPPORTED_LANGUAGES.map(({ code }) => code)).toEqual(["en", "ru"]);
   });
 });
 
@@ -21,27 +21,18 @@ describe("createLanguageSearcher", () => {
   it.each([
     ["englsh", "en"],
     ["russan", "ru"],
-    ["slovak", "sk"],
   ])("tolerates the typo or partial query %s", (query, expectedCode) => {
     expect(searchLanguages(query)[0]?.code).toBe(expectedCode);
   });
 
-  it("matches multiple partial tokens", () => {
-    expect(searchLanguages("slovenc sk")[0]?.code).toBe("sk");
-  });
-
-  it("searches both native and English names", () => {
-    expect(searchLanguages("русский")[0]?.code).toBe("ru");
-    expect(searchLanguages("slovak")[0]?.code).toBe("sk");
-  });
-
-  it("ignores diacritics in native language names", () => {
-    expect(searchLanguages("slovencina")[0]?.code).toBe("sk");
+  it("matches the native and English Russian names", () => {
+    expect(searchLanguages("Русский")[0]?.code).toBe("ru");
+    expect(searchLanguages("Russian")[0]?.code).toBe("ru");
   });
 
   it("matches ISO language codes", () => {
     expect(searchLanguages("ru")[0]?.code).toBe("ru");
-    expect(searchLanguages("sk")[0]?.code).toBe("sk");
+    expect(searchLanguages("en")[0]?.code).toBe("en");
   });
 });
 

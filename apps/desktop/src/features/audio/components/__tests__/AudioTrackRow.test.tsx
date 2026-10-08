@@ -328,7 +328,7 @@ describe("AudioTrackRow", () => {
         '[data-slot="audio-track-effects-library-page-description"]',
       ),
     ).find(
-      (element) => element.textContent === "Normalize this track to a consistent target loudness.",
+      (element) => element.textContent === "Normalize this track to a consistent target loudness",
     );
 
     expect(fieldset).not.toBeNull();
@@ -373,7 +373,7 @@ describe("AudioTrackRow", () => {
     expect(notice).toHaveClass("text-xs", "text-muted-foreground");
     expect(notice.closest('[data-slot="dialog-footer"]')).not.toBeNull();
     expect(screen.getByRole("dialog")).toHaveAccessibleDescription(
-      "Effects are applied in the fixed order shown in the list.",
+      "Effects are applied in the fixed order shown in the list",
     );
   });
 
@@ -557,13 +557,23 @@ describe("AudioTrackRow", () => {
 
     await user.pointer({ keys: "[MouseRight]", target: screen.getByText(/#1 ·/) });
 
-    expect(screen.getByRole("menuitemcheckbox", { name: /mute.*eng/i })).toBeInTheDocument();
+    expect(screen.getByText("Enable")).toBeInTheDocument();
+    expect(screen.getByRole("menuitemcheckbox", { name: "Enable" })).toBeInTheDocument();
     expect(
       screen.getByRole("menuitemcheckbox", { name: /analyze audio activity/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: /effects/i })).toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+  });
+
+  it("uses an action label for the enabled audio track in its dropdown menu", async () => {
+    const user = userEvent.setup();
+    renderRow();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+
+    expect(screen.getByText("Enable")).toBeInTheDocument();
   });
 
   it("allows detected activity ranges to be hidden", async () => {

@@ -170,15 +170,13 @@ function AppLayoutControls() {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <TooltipContent>{t("layout.customize.tooltip")}</TooltipContent>
+        <TooltipContent>{t("layout.accessibility.layoutControls")}</TooltipContent>
       </Tooltip>
 
       <Tooltip preserveOnTrigger>
         <TooltipTrigger asChild>
           <Button
-            aria-label={t("layout.panelToggle.tooltip", {
-              panel: t("layout.leftPanel"),
-            })}
+            aria-label={t("layout.toggleLeftPanel")}
             className="size-7 p-0 text-secondary-foreground"
             onClick={() => void executeCommand("toggle-left-panel", "button")}
             size="icon-sm"
@@ -191,17 +189,13 @@ function AppLayoutControls() {
             )}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>
-          {t("layout.panelToggle.tooltip", { panel: t("layout.leftPanel") })}
-        </TooltipContent>
+        <TooltipContent>{t("layout.toggleLeftPanel")}</TooltipContent>
       </Tooltip>
 
       <Tooltip preserveOnTrigger>
         <TooltipTrigger asChild>
           <Button
-            aria-label={t("layout.panelToggle.tooltip", {
-              panel: t("layout.bottomPanel"),
-            })}
+            aria-label={t("layout.toggleBottomPanel")}
             className="size-7 p-0 text-secondary-foreground"
             disabled={!bottomPanel.enabled || bottomPanel.pending}
             onClick={() => void executeCommand("toggle-bottom-panel", "button")}
@@ -215,9 +209,7 @@ function AppLayoutControls() {
             )}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>
-          {t("layout.panelToggle.tooltip", { panel: t("layout.bottomPanel") })}
-        </TooltipContent>
+        <TooltipContent>{t("layout.toggleBottomPanel")}</TooltipContent>
       </Tooltip>
     </div>
   );

@@ -82,7 +82,7 @@ function TitleBar({ children, className }: TitleBarProps) {
     <header
       aria-label={t("app.accessibility.titleBar")}
       className={cn(
-        "relative flex h-9 min-h-9 items-center justify-between gap-3 bg-background/95 text-foreground select-none",
+        "relative flex h-9 min-h-9 items-center justify-between gap-3 bg-background/95 text-foreground",
         className,
       )}
       onDoubleClickCapture={handleDoubleClickCapture}

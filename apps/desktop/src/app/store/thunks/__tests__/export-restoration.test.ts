@@ -30,7 +30,7 @@ import { firstSource, media, mediaWithAudio, secondSource } from "@/test/source.
 import {
   cancelOptimizedExportDialogRequested,
   editExportAttemptRequested,
-  startFastCutRequested,
+  startFastExportRequested,
   startOptimizedExportRequested,
 } from "../export-thunks";
 import {
@@ -47,7 +47,7 @@ const native = vi.hoisted(() => ({
   planOptimizedExport: vi.fn(),
   reserveExportSource: vi.fn(),
   releaseExportSource: vi.fn(),
-  renderFast: vi.fn(),
+  exportFast: vi.fn(),
   moveSourceToTrash: vi.fn(),
 }));
 
@@ -74,7 +74,7 @@ beforeEach(() => {
   native.planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg ..." });
   native.reserveExportSource.mockResolvedValue(undefined);
   native.releaseExportSource.mockResolvedValue(undefined);
-  native.renderFast.mockResolvedValue({
+  native.exportFast.mockResolvedValue({
     displayName: "out.mp4",
     displayPath: "C:/out.mp4",
     operationId: "op",
@@ -261,7 +261,7 @@ describe("export snapshot restoration", () => {
         processing: { gainDb: 0, loudnessNormalization: "streaming" },
       }),
     );
-    const exportPromise = store.dispatch(startFastCutRequested());
+    const exportPromise = store.dispatch(startFastExportRequested());
     await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(1));
 
     store.dispatch(sourceSelected({ source: secondSource, loadToken: 2 }));
@@ -282,7 +282,7 @@ describe("export snapshot restoration", () => {
         processing: { gainDb: 0, loudnessNormalization: "streaming" },
       }),
     );
-    const exportPromise = store.dispatch(startFastCutRequested());
+    const exportPromise = store.dispatch(startFastExportRequested());
     await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(1));
 
     const nextSnapshot = createDefaultEditorSnapshot(secondSource, false);
@@ -473,7 +473,7 @@ describe("export snapshot restoration", () => {
     expect(store.getState().export.optimizedDialogOpen).toBe(false);
   });
 
-  it("edits a queued lossless cut output in place", async () => {
+  it("edits a queued fast export output in place", async () => {
     const { snapshot, store } = setup();
     const attempt = createExportAttempt({
       capturedAt: 1,
@@ -506,7 +506,7 @@ describe("export snapshot restoration", () => {
     expect(selectExportQueue(store.getState())).toHaveLength(1);
   });
 
-  it("leaves a queued lossless cut unchanged when output selection is canceled", async () => {
+  it("leaves a queued fast export unchanged when output selection is canceled", async () => {
     const { snapshot, store } = setup();
     const attempt = createExportAttempt({
       capturedAt: 1,
@@ -539,7 +539,7 @@ describe("export snapshot restoration", () => {
 
   it("queues successive edits of the retained draft without changing earlier snapshots", async () => {
     const { snapshot, store } = setup();
-    store.dispatch(startFastCutRequested());
+    store.dispatch(startFastExportRequested());
     await vi.waitFor(() =>
       expect(
         selectExportQueue(store.getState()).filter(
@@ -560,7 +560,7 @@ describe("export snapshot restoration", () => {
         trim: { startMicros: 500_000, endMicros: 3_000_000, sourceDurationMicros: 5_000_000 },
       }),
     );
-    store.dispatch(startFastCutRequested());
+    store.dispatch(startFastExportRequested());
     await vi.waitFor(() =>
       expect(
         selectExportQueue(store.getState()).filter(
@@ -622,7 +622,7 @@ describe("export snapshot restoration", () => {
   it("auto-starts an export while keeping its editable draft active in Imported Sources", async () => {
     const { store } = setup();
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: true }));
-    store.dispatch(startFastCutRequested());
+    store.dispatch(startFastExportRequested());
     await vi.waitFor(() =>
       expect(
         store.getState().editingInstances.entities.original?.exportAttempts[0]?.state.status,
@@ -636,7 +636,7 @@ describe("export snapshot restoration", () => {
 
   it("keeps a queued export visible when its source draft is closed", async () => {
     const { store } = setup();
-    store.dispatch(startFastCutRequested());
+    store.dispatch(startFastExportRequested());
     await vi.waitFor(() =>
       expect(
         selectExportQueue(store.getState()).filter(
@@ -676,7 +676,7 @@ describe("export snapshot restoration", () => {
     );
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: true }));
     store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
-    store.dispatch(startFastCutRequested());
+    store.dispatch(startFastExportRequested());
     await vi.waitFor(() =>
       expect(
         store.getState().editingInstances.entities.original?.exportAttempts[0]?.state.status,
@@ -693,7 +693,7 @@ describe("export snapshot restoration", () => {
 
   it("reopens a queued export in the same draft and requeues the edited snapshot", async () => {
     const { snapshot, store } = setup();
-    store.dispatch(startFastCutRequested());
+    store.dispatch(startFastExportRequested());
     await vi.waitFor(() =>
       expect(
         selectExportQueue(store.getState()).filter(
@@ -729,7 +729,7 @@ describe("export snapshot restoration", () => {
         trim: { startMicros: 500_000, endMicros: 3_000_000, sourceDurationMicros: 5_000_000 },
       }),
     );
-    store.dispatch(startFastCutRequested());
+    store.dispatch(startFastExportRequested());
     await vi.waitFor(() =>
       expect(
         selectExportQueue(store.getState()).filter(
@@ -749,7 +749,7 @@ describe("export snapshot restoration", () => {
         store.getState().editingInstances.entities[restored.id]?.exportAttempts[0]?.state.status,
       ).toBe("completed"),
     );
-    expect(native.renderFast).toHaveBeenCalledOnce();
+    expect(native.exportFast).toHaveBeenCalledOnce();
     expect(selectImportedEditingInstances(store.getState()).map(({ id }) => id)).toContain(
       "original",
     );
@@ -829,7 +829,7 @@ describe("export snapshot restoration", () => {
 
     setExportQueueExecutionEnabled(true, store.dispatch, store.getState);
     expect(await restoration).toBe(false);
-    expect(native.renderFast).not.toHaveBeenCalled();
+    expect(native.exportFast).not.toHaveBeenCalled();
     expect(selectImportedEditingInstances(store.getState())).toHaveLength(1);
     expect(
       selectExportQueue(store.getState()).filter(

@@ -140,7 +140,6 @@ function TimelineTrack() {
       <Playhead
         disabled={disabled}
         dragging={scrubDragging}
-        frameRate={frameRate}
         maximum={range.sourceDurationMicros}
         onKeyDown={handlePlayheadKeyboard}
         onLostPointerCapture={(event) => finishScrub(event, false)}

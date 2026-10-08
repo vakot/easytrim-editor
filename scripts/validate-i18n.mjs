@@ -6,7 +6,6 @@ import { SUPPORTED_LOCALES, validateI18n } from "./i18n-validation.mjs";
 const LOCALE_NAMES = {
   en: "English",
   ru: "Russian",
-  sk: "Slovak",
 };
 
 const USAGE = [

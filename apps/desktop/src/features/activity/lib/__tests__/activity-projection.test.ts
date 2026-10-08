@@ -14,12 +14,12 @@ import {
 } from "../activity-projection";
 
 const labels: ActivityProjectionLabels = {
-  fastCutCancelled: "Fast cut cancelled",
-  fastCutCompleted: "Fast cut completed",
-  fastCutFailed: "Fast cut failed",
-  fastCutInterrupted: "Fast cut interrupted",
-  fastCutStarted: "Started fast cut",
-  fastCutting: "Fast cutting…",
+  fastExportCancelled: "Fast Export cancelled",
+  fastExportCompleted: "Fast Export completed",
+  fastExportFailed: "Fast Export failed",
+  fastExportInterrupted: "Fast Export interrupted",
+  fastExportStarted: "Fast Export started",
+  fastExporting: "Fast Export…",
   fileCloseCompleted: (count) => `Closed ${count} file${count === 1 ? "" : "s"}`,
   fileDeleteCancelled: "File deletion cancelled",
   fileDeleteFailed: "File deletion failed",
@@ -34,19 +34,19 @@ const labels: ActivityProjectionLabels = {
   importOpenedFiles: (count) => `Opened ${count} file${count === 1 ? "" : "s"}`,
   importOpenedFilesFromFolders: (fileCount, folderCount) =>
     `Opened ${fileCount} file${fileCount === 1 ? "" : "s"} from ${folderCount} folder${folderCount === 1 ? "" : "s"}`,
-  renderCancelled: "Render cancelled",
-  renderCompleted: "Optimized render completed",
-  renderFailed: "Render failed",
-  renderInterrupted: "Render interrupted",
-  renderStarted: "Started rendering",
-  rendering: "Rendering…",
+  optimizedExportCancelled: "Optimized export cancelled",
+  optimizedExportCompleted: "Optimized export completed",
+  optimizedExportFailed: "Optimized export failed",
+  optimizedExportInterrupted: "Optimized export interrupted",
+  optimizedExportStarted: "Optimized export started",
+  optimizedExporting: "Optimized export…",
   workspaceRestored: (restored, total) =>
     restored === total ? `Restored ${restored}` : `Restored ${restored} of ${total}`,
 };
 
 const outputPath = "C:/Exports/clip.mp4";
 const sourcePath = "C:/Media/source.mp4";
-const sessionLabels = { now: "Now", today: "Today", yesterday: "Yesterday" };
+const sessionLabels = { now: "Now" };
 
 function diagnosticEvent(
   event: DiagnosticEvent["event"],
@@ -167,8 +167,8 @@ describe("activity projection", () => {
   });
 
   it.each([
-    ["fast", "fast-cut", "Fast cut completed"],
-    ["optimized", "render", "Optimized render completed"],
+    ["fast", "fast-export", "Fast Export completed"],
+    ["optimized", "optimized-export", "Optimized export completed"],
   ] as const)("projects a completed %s export", (outputType, kind, title) => {
     const entry = projectActivityEvent(
       diagnosticEvent("ffmpeg.export.completed", { data: { outputPath, outputType } }),
@@ -186,8 +186,8 @@ describe("activity projection", () => {
   });
 
   it.each([
-    ["fast", "Started fast cut", "Fast cut completed"],
-    ["optimized", "Started rendering", "Optimized render completed"],
+    ["fast", "Fast Export started", "Fast Export completed"],
+    ["optimized", "Optimized export started", "Optimized export completed"],
   ] as const)(
     "projects the %s export start separately from its lifecycle",
     (outputType, startTitle, completedTitle) => {
@@ -267,7 +267,7 @@ describe("activity projection", () => {
 
     expect(pending?.id).toBe(completed?.id);
     expect(completed?.startedAt).toBe("2026-08-31T08:01:00.000Z");
-    expect(completed?.title).toBe("Optimized render completed");
+    expect(completed?.title).toBe("Optimized export completed");
   });
 
   it("correlates native export terminals with their frontend parent operation", () => {
@@ -295,11 +295,11 @@ describe("activity projection", () => {
       id: pending?.id,
       operationId: "frontend-export-1",
       status: "completed",
-      title: "Optimized render completed",
+      title: "Optimized export completed",
     });
   });
 
-  it("keeps historical optimized render output actions separate from source branch identity", () => {
+  it("keeps historical optimized export output actions separate from source branch identity", () => {
     const entries = projectActivityEvents(
       [
         diagnosticEvent("export.prepare.started", {
@@ -328,13 +328,13 @@ describe("activity projection", () => {
       "current-session",
     );
 
-    const render = entries.find((entry) => entry.title === "Optimized render completed");
+    const optimizedExport = entries.find((entry) => entry.title === "Optimized export completed");
     const branch = groupActivityEntriesByBranch(entries).find(
       (item): item is Extract<typeof item, { kind: "branch" }> =>
         item.kind === "branch" && item.branch.snapshotId === "snapshot-1",
     );
 
-    expect(render).toMatchObject({
+    expect(optimizedExport).toMatchObject({
       action: { kind: "open", path: outputPath },
       path: outputPath,
       snapshotId: "snapshot-1",
@@ -343,13 +343,13 @@ describe("activity projection", () => {
     expect(branch?.branch.path).toBe(sourcePath);
     expect(branch?.branch.entries).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ title: "Started rendering", snapshotId: "snapshot-1" }),
-        expect.objectContaining({ title: "Optimized render completed", snapshotId: "snapshot-1" }),
+        expect.objectContaining({ title: "Optimized export started", snapshotId: "snapshot-1" }),
+        expect.objectContaining({ title: "Optimized export completed", snapshotId: "snapshot-1" }),
       ]),
     );
   });
 
-  it("keeps render branches separate when similarly named outputs belong to different snapshots", () => {
+  it("keeps optimized export branches separate when similarly named outputs belong to different snapshots", () => {
     const entries = projectActivityEvents(
       [
         diagnosticEvent("ffmpeg.export.completed", {
@@ -358,7 +358,7 @@ describe("activity projection", () => {
             outputType: "optimized",
             sourcePath: "C:/Media/first/clip.mp4",
           },
-          operationId: "render-1",
+          operationId: "optimized-export-1",
           snapshotId: "snapshot-1",
           timestamp: "2026-08-31T08:01:00.000Z",
         }),
@@ -368,7 +368,7 @@ describe("activity projection", () => {
             outputType: "optimized",
             sourcePath: "C:/Media/second/clip.mp4",
           },
-          operationId: "render-2",
+          operationId: "optimized-export-2",
           snapshotId: "snapshot-2",
           timestamp: "2026-08-31T08:02:00.000Z",
         }),
@@ -393,7 +393,7 @@ describe("activity projection", () => {
       startedAt: string,
     ): ActivityEntry => ({
       id,
-      kind: "render",
+      kind: "optimized-export",
       path,
       sessionId,
       ...(snapshotId ? { snapshotId } : {}),
@@ -703,7 +703,7 @@ describe("activity projection", () => {
       [
         diagnosticEvent("ffmpeg.export.started", {
           data: { outputPath, outputType: "optimized" },
-          operationId: "render-1",
+          operationId: "optimized-export-1",
           sessionId: "current-session",
         }),
       ],
@@ -713,33 +713,33 @@ describe("activity projection", () => {
 
     expect(entries).toEqual([
       expect.objectContaining({
-        id: "current-session:render-1:ffmpeg.export",
-        operationId: "render-1",
+        id: "current-session:optimized-export-1:ffmpeg.export",
+        operationId: "optimized-export-1",
         path: outputPath,
         startedAt: "2026-08-31T09:00:00.000Z",
         status: "pending",
-        title: "Rendering…",
+        title: "Optimized export…",
       }),
     ]);
     expect(entries[0]?.action).toBeUndefined();
   });
 
   it.each([
-    ["ffmpeg.export.completed", "completed", "Optimized render completed", true],
-    ["ffmpeg.export.failed", "failed", "Render failed", false],
-    ["ffmpeg.export.cancelled", "cancelled", "Render cancelled", false],
+    ["ffmpeg.export.completed", "completed", "Optimized export completed", true],
+    ["ffmpeg.export.failed", "failed", "Optimized export failed", false],
+    ["ffmpeg.export.cancelled", "cancelled", "Optimized export cancelled", false],
   ] as const)("replaces a started export with %s", (event, status, title, hasOpenAction) => {
     const entries = projectActivityEvents(
       [
         diagnosticEvent("ffmpeg.export.started", {
           data: { outputPath, outputType: "optimized" },
-          operationId: "render-1",
+          operationId: "optimized-export-1",
           sessionId: "current-session",
           timestamp: "2026-08-31T08:30:00.000Z",
         }),
         diagnosticEvent(event, {
           data: event === "ffmpeg.export.completed" ? { outputPath, outputType: "optimized" } : {},
-          operationId: "render-1",
+          operationId: "optimized-export-1",
           sessionId: "current-session",
           timestamp: "2026-08-31T09:00:00.000Z",
         }),
@@ -750,7 +750,7 @@ describe("activity projection", () => {
 
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({
-      id: "current-session:render-1:ffmpeg.export",
+      id: "current-session:optimized-export-1:ffmpeg.export",
       startedAt: "2026-08-31T08:30:00.000Z",
       status,
       title,
@@ -769,7 +769,7 @@ describe("activity projection", () => {
         }),
         diagnosticEvent("ffmpeg.export.started", {
           data: { outputPath: "C:/Exports/render.mp4", outputType: "optimized" },
-          operationId: "render-1",
+          operationId: "optimized-export-1",
           sessionId: "history-session",
           timestamp: "2026-08-30T09:05:00.000Z",
         }),
@@ -785,7 +785,7 @@ describe("activity projection", () => {
           status: "interrupted",
         }),
         expect.objectContaining({
-          id: "history-session:render-1:ffmpeg.export",
+          id: "history-session:optimized-export-1:ffmpeg.export",
           status: "interrupted",
         }),
       ]),
@@ -804,7 +804,7 @@ describe("activity projection", () => {
       "current-session",
     )[0];
 
-    expect(entry).toMatchObject({ status: "completed", title: "Fast cut completed" });
+    expect(entry).toMatchObject({ status: "completed", title: "Fast Export completed" });
     expect(entry?.action).toEqual({ kind: "open", path: outputPath });
   });
 
@@ -974,28 +974,21 @@ describe("activity projection", () => {
     );
   });
 
-  it.each([
-    ["2026-08-31T12:34:00", "Today"],
-    ["2026-08-30T20:14:00", "Yesterday"],
-    ["2026-08-29T10:03:00", "Aug 29"],
-    ["2025-12-28T21:21:00", "Dec 28, 2025"],
-  ])("formats historical session start %s from metadata", (startedAt, expected) => {
-    const group = {
-      ...session("history-session", startedAt),
-      entries: [],
-      isCurrent: false,
-    };
+  it.each(["2026-08-31T12:34:00", "2026-08-30T20:14:00", "2026-08-29T10:03:00"])(
+    "leaves historical session timestamp formatting to the shared formatter for %s",
+    (startedAt) => {
+      const group = {
+        ...session("history-session", startedAt),
+        entries: [],
+        isCurrent: false,
+      };
 
-    expect(
-      getActivitySessionPresentation(
-        group,
-        "1.3.0",
-        new Date("2026-08-31T18:00:00"),
-        "en-US",
-        sessionLabels,
-      ),
-    ).toEqual({ label: expected, timestamp: startedAt, tone: "default" });
-  });
+      expect(getActivitySessionPresentation(group, "1.3.0", sessionLabels)).toEqual({
+        label: "",
+        tone: "default",
+      });
+    },
+  );
 
   it("labels the current session as Now", () => {
     const group = {
@@ -1004,15 +997,10 @@ describe("activity projection", () => {
       isCurrent: true,
     };
 
-    expect(
-      getActivitySessionPresentation(
-        group,
-        "1.3.0",
-        new Date("2026-08-31T18:00:00"),
-        "en-US",
-        sessionLabels,
-      ),
-    ).toEqual({ label: "Now", tone: "current" });
+    expect(getActivitySessionPresentation(group, "1.3.0", sessionLabels)).toEqual({
+      label: "Now",
+      tone: "current",
+    });
   });
 
   it("omits the current session when it has no projected activity", () => {
@@ -1038,28 +1026,13 @@ describe("activity projection", () => {
       isCurrent: false,
     };
 
-    expect(
-      getActivitySessionPresentation(
-        differentVersion,
-        "1.3.0",
-        new Date("2026-08-31T18:00:00"),
-        "en-US",
-        sessionLabels,
-      ),
-    ).toEqual({
-      label: "v1.4.2 · Yesterday",
-      timestamp: "2026-08-30T20:14:00",
+    expect(getActivitySessionPresentation(differentVersion, "1.3.0", sessionLabels)).toEqual({
+      label: "v1.4.2",
       tone: "warning",
     });
-    expect(
-      getActivitySessionPresentation(
-        unknownVersion,
-        "1.3.0",
-        new Date("2026-08-31T18:00:00"),
-        "en-US",
-        sessionLabels,
-      ).tone,
-    ).toBe("default");
+    expect(getActivitySessionPresentation(unknownVersion, "1.3.0", sessionLabels).tone).toBe(
+      "default",
+    );
   });
 
   it("projects workspace recovery as one standalone full or partial entry", () => {

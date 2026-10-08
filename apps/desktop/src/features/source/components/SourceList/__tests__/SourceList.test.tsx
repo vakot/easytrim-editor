@@ -359,9 +359,7 @@ describe("source queue controls", () => {
     await user.clear(screen.getByRole("searchbox", { name: "Search" }));
     await user.type(screen.getByRole("searchbox", { name: "Search" }), "missing file");
     await waitFor(() => {
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "No imported sources match your search.",
-      );
+      expect(screen.getByRole("status")).toHaveTextContent("No imported sources match your search");
     });
     expect(screen.queryByTestId("virtuoso")).not.toBeInTheDocument();
   });

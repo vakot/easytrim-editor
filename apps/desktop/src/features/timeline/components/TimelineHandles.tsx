@@ -1,12 +1,8 @@
 import type { KeyboardEvent, PointerEvent, RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-
-import { formatPlaybackTime } from "@/domain/playback";
 import type { TrimBoundary, TrimRange } from "@/domain/trim";
 import { cn } from "@/lib/class-names.utils";
-import type { FrameRate } from "@/lib/tauri/media.types";
 
 import styles from "./TimelinePanel.module.css";
 
@@ -42,44 +38,40 @@ function SegmentDragHandle({
   const { t } = useTranslation();
   const durationMicros = range.endMicros - range.startMicros;
   return (
-    <Tooltip open={dragging ? false : undefined}>
-      <TooltipTrigger asChild>
-        <button
-          aria-label={t("timeline.segment.actions.moveSegment")}
-          aria-valuemax={range.sourceDurationMicros - durationMicros}
-          aria-valuemin={0}
-          aria-valuenow={range.startMicros}
-          aria-valuetext={t("timeline.playhead.accessibility.startsAt", {
-            time: t("timeline.playhead.accessibility.seconds", {
-              value: formatAccessibleTime(range.startMicros),
-            }),
-          })}
-          className={cn(
-            "segment-drag-handle",
-            styles.segment,
-            disabled && ["cursor-not-allowed", styles.segmentDisabled],
-          )}
-          data-dragging={dragging ? "true" : undefined}
-          data-editor-keyboard="timeline-slider"
-          data-snap-active={snapActive ? "true" : undefined}
-          disabled={disabled}
-          onKeyDown={onKeyDown}
-          onLostPointerCapture={onLostPointerCapture}
-          onPointerCancel={onPointerCancel}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          role="slider"
-          style={{ left: "var(--timeline-trim-center)" }}
-          type="button"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="m7 7-5 5 5 5v-3h10v3l5-5-5-5v3H7z" />
-          </svg>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>{t("timeline.segment.tooltips.moveSegment")}</TooltipContent>
-    </Tooltip>
+    <button
+      aria-label={t("timeline.segment.actions.moveSegment")}
+      aria-valuemax={range.sourceDurationMicros - durationMicros}
+      aria-valuemin={0}
+      aria-valuenow={range.startMicros}
+      aria-valuetext={t("timeline.playhead.accessibility.startsAt", {
+        time: t("timeline.playhead.accessibility.seconds", {
+          value: formatAccessibleTime(range.startMicros),
+        }),
+      })}
+      className={cn(
+        "segment-drag-handle",
+        styles.segment,
+        "select-none",
+        disabled && ["cursor-not-allowed", styles.segmentDisabled],
+      )}
+      data-dragging={dragging ? "true" : undefined}
+      data-editor-keyboard="timeline-slider"
+      data-snap-active={snapActive ? "true" : undefined}
+      disabled={disabled}
+      onKeyDown={onKeyDown}
+      onLostPointerCapture={onLostPointerCapture}
+      onPointerCancel={onPointerCancel}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      role="slider"
+      style={{ left: "var(--timeline-trim-center)" }}
+      type="button"
+    >
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="m7 7-5 5 5 5v-3h10v3l5-5-5-5v3H7z" />
+      </svg>
+    </button>
   );
 }
 
@@ -119,52 +111,47 @@ function TrimHandle({
       : t("timeline.segment.accessibility.trimEnd");
 
   return (
-    <Tooltip open={dragging ? false : undefined}>
-      <TooltipTrigger asChild>
-        <button
-          aria-label={label}
-          aria-valuemax={maximum}
-          aria-valuemin={minimum}
-          aria-valuenow={value}
-          aria-valuetext={t("timeline.playhead.accessibility.seconds", {
-            value: formatAccessibleTime(value),
-          })}
-          className={cn(
-            "trim-handle",
-            `trim-handle-${boundary}`,
-            styles.trim,
-            boundary === "start" ? styles.start : styles.end,
-            disabled && cn("cursor-not-allowed", styles.trimDisabled),
-          )}
-          data-dragging={dragging ? "true" : undefined}
-          data-editor-keyboard="timeline-slider"
-          data-snap-active={snapActive ? "true" : undefined}
-          disabled={disabled}
-          onDoubleClick={onDoubleClick}
-          onKeyDown={onKeyDown}
-          onLostPointerCapture={onPointerEnd}
-          onPointerCancel={onPointerEnd}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerEnd}
-          role="slider"
-          style={{
-            left: boundary === "start" ? "var(--timeline-trim-start)" : "var(--timeline-trim-end)",
-          }}
-          type="button"
-        >
-          <span aria-hidden="true" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>{t("timeline.segment.tooltips.trimReset", { label })}</TooltipContent>
-    </Tooltip>
+    <button
+      aria-label={label}
+      aria-valuemax={maximum}
+      aria-valuemin={minimum}
+      aria-valuenow={value}
+      aria-valuetext={t("timeline.playhead.accessibility.seconds", {
+        value: formatAccessibleTime(value),
+      })}
+      className={cn(
+        "trim-handle",
+        `trim-handle-${boundary}`,
+        styles.trim,
+        boundary === "start" ? styles.start : styles.end,
+        "select-none",
+        disabled && cn("cursor-not-allowed", styles.trimDisabled),
+      )}
+      data-dragging={dragging ? "true" : undefined}
+      data-editor-keyboard="timeline-slider"
+      data-snap-active={snapActive ? "true" : undefined}
+      disabled={disabled}
+      onDoubleClick={onDoubleClick}
+      onKeyDown={onKeyDown}
+      onLostPointerCapture={onPointerEnd}
+      onPointerCancel={onPointerEnd}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerEnd}
+      role="slider"
+      style={{
+        left: boundary === "start" ? "var(--timeline-trim-start)" : "var(--timeline-trim-end)",
+      }}
+      type="button"
+    >
+      <span aria-hidden="true" />
+    </button>
   );
 }
 
 function Playhead({
   disabled = false,
   dragging,
-  frameRate,
   maximum,
   onKeyDown,
   onLostPointerCapture,
@@ -178,7 +165,6 @@ function Playhead({
 }: {
   disabled?: boolean;
   dragging: boolean;
-  frameRate?: FrameRate;
   maximum: number;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
   onLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void;
@@ -192,34 +178,29 @@ function Playhead({
 }) {
   const { t } = useTranslation();
   return (
-    <Tooltip open={dragging ? false : undefined}>
-      <TooltipTrigger asChild>
-        <button
-          aria-label={t("timeline.playhead.accessibility.playbackPosition")}
-          aria-valuemax={maximum}
-          aria-valuemin={0}
-          aria-valuenow={value}
-          aria-valuetext={t("timeline.playhead.accessibility.seconds", {
-            value: formatAccessibleTime(value),
-          })}
-          className={cn("playhead", disabled && "opacity-30", styles.playhead)}
-          data-dragging={dragging ? "true" : undefined}
-          data-editor-keyboard="timeline-slider"
-          disabled={disabled}
-          onKeyDown={onKeyDown}
-          onLostPointerCapture={onLostPointerCapture}
-          onPointerCancel={onPointerCancel}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          ref={playheadRef}
-          role="slider"
-          style={{ left: `${percent}%` }}
-          type="button"
-        />
-      </TooltipTrigger>
-      <TooltipContent>{formatPlaybackTime(value, frameRate)}</TooltipContent>
-    </Tooltip>
+    <button
+      aria-label={t("timeline.playhead.accessibility.playbackPosition")}
+      aria-valuemax={maximum}
+      aria-valuemin={0}
+      aria-valuenow={value}
+      aria-valuetext={t("timeline.playhead.accessibility.seconds", {
+        value: formatAccessibleTime(value),
+      })}
+      className={cn("playhead", "select-none", disabled && "opacity-30", styles.playhead)}
+      data-dragging={dragging ? "true" : undefined}
+      data-editor-keyboard="timeline-slider"
+      disabled={disabled}
+      onKeyDown={onKeyDown}
+      onLostPointerCapture={onLostPointerCapture}
+      onPointerCancel={onPointerCancel}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      ref={playheadRef}
+      role="slider"
+      style={{ left: `${percent}%` }}
+      type="button"
+    />
   );
 }
 

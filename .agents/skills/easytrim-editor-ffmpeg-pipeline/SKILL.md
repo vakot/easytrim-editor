@@ -1,6 +1,6 @@
 ---
 name: easytrim-editor-ffmpeg-pipeline
-description: Implement and review EasyTrim Editor media behavior with FFmpeg and FFprobe. Use for media inspection, stream metadata, preview proxies, audio waveforms, trim math, stream mapping, fast lossless cuts, hybrid audio merging, optimized rendering, scaling, frame-rate conversion, NVENC/CPU presets, custom FFmpeg arguments, progress parsing, codec/container compatibility, or media-focused tests and benchmarks. Pair with easytrim-editor-tauri-rust for process execution and easytrim-editor-react-interface for controls or user-facing media states.
+description: Implement and review EasyTrim Editor media behavior with FFmpeg and FFprobe. Use for media inspection, stream metadata, preview proxies, audio waveforms, trim math, stream mapping, Fast Export stream copy, hybrid audio merging, Optimized Export re-encoding, scaling, frame-rate conversion, NVENC/CPU presets, custom FFmpeg arguments, progress parsing, codec/container compatibility, or media-focused tests and benchmarks. Pair with easytrim-editor-tauri-rust for process execution and easytrim-editor-react-interface for controls or user-facing media states.
 ---
 
 # EasyTrim Editor FFmpeg Pipeline
@@ -27,7 +27,7 @@ Use `easytrim-editor-tauri-rust` for process/IPC changes and `easytrim-editor-re
 - Keep source resolution and frame rate in fast video-copy mode.
 - Generate preview/waveform helpers from the source but never use them as final export inputs.
 - Interpret “merge audio” as one output audio stream; preserve stereo unless mono is explicitly requested.
-- Never describe fast stream-copy cuts as frame-accurate.
+- Never describe Fast Export stream-copy output as frame-accurate.
 
 ## Probe deliberately
 
@@ -54,7 +54,7 @@ The shared runtime/security rule owns process construction. Additionally:
 - detect conflicts with UI-owned maps, scale, frame-rate, audio filters, and filter graphs;
 - show the parsed/assembled command preview and return validation errors instead of guessing precedence.
 
-## Fast cut
+## Fast Export
 
 - Copy video and each enabled compatible stream with explicit maps.
 - Preserve a compatible source container for ordinary stream-copy output.
@@ -62,13 +62,13 @@ The shared runtime/security rule owns process construction. Additionally:
 - With merge disabled, copy enabled audio streams.
 - With zero selected audio streams, export video only.
 - With one selected audio stream and merge enabled, copy it because merge is a no-op.
-- With two or more selected tracks, copy video and mix to one normalized stereo AAC stream at 160 kbit/s, padded/capped to the segment; label the route “fast cut + audio merge.”
+- With two or more selected tracks, copy video and mix to one normalized stereo AAC stream at 160 kbit/s, padded/capped to the segment; label the route “Fast Export + audio merge.”
 - Preserve the container for merged output only when compatible; otherwise select Matroska and show the extension before export.
 - Fail instead of silently dropping or transcoding an incompatible selected stream.
 
 Do not add hidden exact-cut repair encoding to the fast route.
 
-## Optimized render
+## Optimized Export
 
 - Encode only the selected interval.
 - Preserve aspect ratio, even dimensions, and avoid accidental upscaling.

@@ -30,7 +30,7 @@ function SettingsGeneral() {
         description={t("settings.general.language.description")}
         label={t("settings.general.language.label")}
       >
-        <div className="flex flex-col items-start gap-2">
+        <div className="inline-grid min-w-44 items-end gap-2">
           <LanguageSelector
             languages={SUPPORTED_LANGUAGES}
             onValueChange={(nextLanguage) => {
@@ -41,7 +41,7 @@ function SettingsGeneral() {
             <LanguageSelectorTrigger>
               <Button
                 aria-label={t("settings.general.language.label")}
-                className="w-44 justify-start"
+                className="w-full justify-start"
                 type="button"
                 variant="outline"
               >
@@ -52,16 +52,18 @@ function SettingsGeneral() {
                 />
               </Button>
             </LanguageSelectorTrigger>
+
             <LanguageSelectorContent>
               <LanguageSelectorInput
                 aria-label={t("settings.general.language.search")}
-                placeholder={t("settings.general.language.search")}
+                placeholder={t("settings.general.language.searchPlaceholder")}
               />
               <LanguageSelectorList />
             </LanguageSelectorContent>
           </LanguageSelector>
+
           <a
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            className="inline-flex w-full items-center justify-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
             href={TRANSLATION_GUIDE_URL}
             onClick={(event) => {
               event.preventDefault();

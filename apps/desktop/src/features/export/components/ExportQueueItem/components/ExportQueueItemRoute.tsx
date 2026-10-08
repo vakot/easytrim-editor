@@ -6,7 +6,8 @@ function ExportQueueItemRoute({ className }: { className?: string }) {
   const { t } = useTranslation();
   const { attempt } = useExportQueueItem();
 
-  const label = attempt.route === "fast" ? t("queue.routes.fastCut") : t("queue.routes.optimized");
+  const label =
+    attempt.route === "fast" ? t("queue.routes.fastExport") : t("queue.routes.optimizedExport");
 
   return <span className={className}>{label}</span>;
 }

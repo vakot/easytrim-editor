@@ -83,7 +83,7 @@ describe("AppShutdownGuard", () => {
 
     await waitFor(() =>
       expect(screen.getByRole("alertdialog")).toHaveTextContent(
-        "The active export queue is still running. Any unsaved editing data will be lost.",
+        "The active export queue is still running. Any unsaved editing data will be lost",
       ),
     );
     await user.click(screen.getByRole("button", { name: "Exit" }));

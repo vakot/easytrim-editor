@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Completed Russian interface localization.
 - Standardized error messages across source, media, and export workflows while keeping technical details available for diagnostics.
 - Refined View menu actions to include main window entry points and layout controls.
 - Replaced the Settings menu dropdown with a full preferences dialog.
@@ -28,7 +29,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Fixed missing translations in audio track actions and source navigation.
-- Corrected Russian and Slovak interface wording, including built-in export preset names and descriptions and native file dialog labels.
+- Fixed duplicate Activity Feed session separators for sessions in the same displayed time bucket.
 - Fixed the Activity Feed's singular "more file" count.
 - Fixed spacing and scrolling in the audio effects library and editor panels.
 

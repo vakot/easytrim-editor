@@ -4,10 +4,10 @@ import { defineApplicationCommandGroup } from "@/app/commands/core/application-c
 
 import { useCloseFileCommand } from "./definitions/close-file.command";
 import { useDeleteFileCommand } from "./definitions/delete-file.command";
+import { useFastExportCommand } from "./definitions/fast-export.command";
 import { useOpenFileCommand } from "./definitions/open-file.command";
 import { useOpenFolderCommand } from "./definitions/open-folder.command";
 import { useOptimizedExportCommand } from "./definitions/optimized-export.command";
-import { useSaveLosslessCutCommand } from "./definitions/save-lossless-cut.command";
 
 function useFileCommandGroups() {
   const { t } = useTranslation();
@@ -15,7 +15,7 @@ function useFileCommandGroups() {
   const openFolder = useOpenFolderCommand();
   const closeFile = useCloseFileCommand();
   const deleteFile = useDeleteFileCommand();
-  const saveLosslessCut = useSaveLosslessCutCommand();
+  const fastExport = useFastExportCommand();
   const optimizedExport = useOptimizedExportCommand();
   return [
     defineApplicationCommandGroup("file", t("commands.sections.file"), [
@@ -25,7 +25,7 @@ function useFileCommandGroups() {
       deleteFile,
     ] as const),
     defineApplicationCommandGroup("export", t("commands.sections.export"), [
-      saveLosslessCut,
+      fastExport,
       optimizedExport,
     ] as const),
   ] as const;

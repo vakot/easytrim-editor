@@ -10,12 +10,13 @@ export const en = {
       retry: "Retry",
       save: "Save",
       resetToDefault: "Reset to default",
+      enable: "Enable",
     },
     or: "or",
     search: {
       label: "Search",
+      placeholder: "Search…",
     },
-    enabled: "Enabled",
     status: {
       error: "Error",
       loading: "Loading…",
@@ -24,52 +25,46 @@ export const en = {
   },
   source: {
     errors: {
-      restoringSourceFilesFromTrashIsNotSupportedOnThisPlatform:
-        "Restoring source files from trash is not supported on this platform.",
-      selectedSourceLocationIsNotSupported: "The selected source location is not supported.",
-      sourceFileCouldNotBeFoundInTrash: "The source file could not be found in trash.",
-      sourcePathMustBeAbsolute: "The source path must be absolute.",
-      fileTypeIsNotSupportedYet: "This file type is not supported yet.",
-      selectAVideoFileInsteadOfAFolder: "Select a video file instead of a folder.",
-      selectedSourceHasNoUsableFileName: "The selected source has no usable file name.",
-      selectedVideoCouldNotBeOpened: "The selected video could not be opened.",
-      selectedVideoHasNoUsableFileName: "The selected video has no usable file name.",
+      restoringSourceFilesFromTrashIsNotSupportedOnThisPlatform: "Restoring source files from trash is not supported on this platform",
+      selectedSourceLocationIsNotSupported: "The selected source location is not supported",
+      sourceFileCouldNotBeFoundInTrash: "The source file could not be found in trash",
+      sourcePathMustBeAbsolute: "The source path must be absolute",
+      fileTypeIsNotSupportedYet: "This file type is not supported yet",
+      selectAVideoFileInsteadOfAFolder: "Select a video file instead of a folder",
+      selectedSourceHasNoUsableFileName: "The selected source has no usable file name",
+      selectedVideoCouldNotBeOpened: "The selected video could not be opened",
+      selectedVideoHasNoUsableFileName: "The selected video has no usable file name",
       probe: {
-        ffprobeCouldNotBeStarted: "FFprobe could not be started.",
-        ffprobeCouldNotInspectThisVideo: "FFprobe could not inspect this video.",
-        ffprobeIsRequiredToInspectVideoFiles: "FFprobe is required to inspect video files.",
-        ffprobeReturnedUnreadableMetadata: "FFprobe returned unreadable metadata.",
-        noUsableVideoStreamWasFound: "No usable video stream was found.",
-        videoDurationIsUnavailable: "The video duration is unavailable.",
-        videoHeightIsUnavailable: "The video height is unavailable.",
-        videoWidthIsUnavailable: "The video width is unavailable.",
-        videoContainsMoreMetadataThanTheInspectionLimitAllows:
-          "This video contains more metadata than the inspection limit allows.",
-        videoInspectionExceededThe20SecondLimit: "Video inspection exceeded the 20-second limit.",
+        ffprobeCouldNotBeStarted: "FFprobe could not be started",
+        ffprobeCouldNotInspectThisVideo: "FFprobe could not inspect this video",
+        ffprobeIsRequiredToInspectVideoFiles: "FFprobe is required to inspect video files",
+        ffprobeReturnedUnreadableMetadata: "FFprobe returned unreadable metadata",
+        noUsableVideoStreamWasFound: "No usable video stream was found",
+        videoDurationIsUnavailable: "The video duration is unavailable",
+        videoHeightIsUnavailable: "The video height is unavailable",
+        videoWidthIsUnavailable: "The video width is unavailable",
+        videoContainsMoreMetadataThanTheInspectionLimitAllows: "This video contains more metadata than the inspection limit allows",
+        videoInspectionExceededThe20SecondLimit: "Video inspection exceeded the 20-second limit",
       },
       thumbnail: {
-        temporaryThumbnailDirectoryCouldNotBeCreated:
-          "A temporary thumbnail directory could not be created.",
-        thumbnailCouldNotBePreparedForThisVideo:
-          "A thumbnail could not be prepared for this video.",
-        uniqueTemporaryThumbnailDirectoryCouldNotBeCreated:
-          "A unique temporary thumbnail directory could not be created.",
-        sourceFileIsNoLongerAvailable: "The source file is no longer available.",
-        sourceFileMetadataIsUnavailable: "The source file metadata is unavailable.",
-        thumbnailCouldNotBeEncoded: "The thumbnail could not be encoded.",
-        thumbnailCouldNotBeSavedTemporarily: "The thumbnail could not be saved temporarily.",
-        ffmpegRequired: "FFmpeg is required to prepare source thumbnails.",
-        preparationTimedOut: "Preparing a source thumbnail took too long.",
-        preparationFailed: "FFmpeg could not prepare a source thumbnail.",
+        temporaryThumbnailDirectoryCouldNotBeCreated: "A temporary thumbnail directory could not be created",
+        thumbnailCouldNotBePreparedForThisVideo: "A thumbnail could not be prepared for this video",
+        uniqueTemporaryThumbnailDirectoryCouldNotBeCreated: "A unique temporary thumbnail directory could not be created",
+        sourceFileIsNoLongerAvailable: "The source file is no longer available",
+        sourceFileMetadataIsUnavailable: "The source file metadata is unavailable",
+        thumbnailCouldNotBeEncoded: "The thumbnail could not be encoded",
+        thumbnailCouldNotBeSavedTemporarily: "The thumbnail could not be saved temporarily",
+        ffmpegRequired: "FFmpeg is required to prepare source thumbnails",
+        preparationTimedOut: "Preparing a source thumbnail took too long",
+        preparationFailed: "FFmpeg could not prepare a source thumbnail",
       },
-      fileCouldNotBeMovedToTrash: "Could not move the source file to trash.",
-      trashCouldNotBeRead: "Could not read trash.",
-      fileCouldNotBeRestoredFromTrash: "Could not restore the source file.",
-      replaced: "The selected source changed. Try again.",
-      dropVideoFileInsteadOfEmptySelection: "Drop a video file instead of an empty selection.",
-      selectedSourceCouldNotBeRestored: "The selected source could not be restored.",
-      cannotDeleteWhileExportIsQueuedOrRendering:
-        "The source cannot be deleted while an export is queued or rendering.",
+      fileCouldNotBeMovedToTrash: "Could not move the source file to trash",
+      trashCouldNotBeRead: "Could not read trash",
+      fileCouldNotBeRestoredFromTrash: "Could not restore the source file",
+      replaced: "The selected source changed. Try again",
+      dropVideoFileInsteadOfEmptySelection: "Drop a video file instead of an empty selection",
+      selectedSourceCouldNotBeRestored: "The selected source could not be restored",
+      cannotDeleteWhileExportIsQueuedOrRendering: "The source cannot be deleted while an export is queued or processing",
     },
     actions: {
       title: "Source actions",
@@ -88,9 +83,8 @@ export const en = {
       interrupted: "File deletion interrupted",
       completed: "File deleted",
       confirmation: {
-        description: "This deletes {{name}} from your computer. This action can be undone.",
-        folderDescription:
-          "This moves all imported source files in {{name}} to the trash. This action can be undone.",
+        description: "This deletes {{name}} from your computer. This action can be undone",
+        folderDescription: "This moves all imported source files in {{name}} to the trash. This action can be undone",
         folderTitle: "Delete folder?",
         title: "Delete source file?",
       },
@@ -101,8 +95,7 @@ export const en = {
       closedFiles_other: "Closed {{count}} files",
       closeAllSources: "Close all open sources",
       confirmation: {
-        description:
-          "This will close {{count}} imported source files. Queued and completed exports will remain available.",
+        description: "This will close {{count}} imported source files. Queued and completed exports will remain available",
         title: "Close sources?",
       },
     },
@@ -128,8 +121,8 @@ export const en = {
     },
     drop: {
       action: "Drop video to open",
-      description: "Open one or more supported video files from your computer.",
-      resetNotice: "The current edit will be reset.",
+      description: "Open one or more supported video files from your computer",
+      resetNotice: "The current edit will be reset",
       title: "Drag and drop videos here",
     },
     explorer: "Source explorer",
@@ -141,7 +134,7 @@ export const en = {
     search: {
       results_one: "{{count}} result",
       results_other: "{{count}} results",
-      noResults: "No imported sources match your search.",
+      noResults: "No imported sources match your search",
       shortcutLabel: "Source search keyboard shortcut: {{shortcut}}",
     },
     metadata: {
@@ -164,7 +157,7 @@ export const en = {
       missing: "Missing",
     },
     empty: {
-      description: "Choose a file or folder, or drag and drop videos here to get started.",
+      description: "Choose a file or folder, or drag and drop videos here to get started",
       title: "No videos imported yet",
     },
     info: {
@@ -173,8 +166,8 @@ export const en = {
       previewUnavailable: "Preview unavailable",
     },
     open: {
-      fileDescription: "Choose a single video file to start editing.",
-      folderDescription: "Import all supported videos from a folder.",
+      fileDescription: "Choose a single video file to start editing",
+      folderDescription: "Import all supported videos from a folder",
       videoFilter: "Video files",
       foldersDialogTitle: "Add folders",
     },
@@ -186,21 +179,21 @@ export const en = {
   app: {
     brand: "EasyTrim Editor",
     errors: {
-      unexpected: "An unexpected application error occurred.",
+      unexpected: "An unexpected application error occurred",
       diagnostics: {
-        diagnosticEventNameIsInvalid: "The diagnostic event name is invalid.",
-        diagnosticLevelIsInvalid: "The diagnostic level is invalid.",
-        diagnosticLogsPathIsInvalid: "The diagnostic logs path is invalid.",
-        diagnosticReportIsUnavailable: "The diagnostic report is unavailable.",
-        diagnosticReportPathIsInvalid: "The diagnostic report path is invalid.",
-        diagnosticSessionIdentifierIsInvalid: "The diagnostic session identifier is invalid.",
+        diagnosticEventNameIsInvalid: "The diagnostic event name is invalid",
+        diagnosticLevelIsInvalid: "The diagnostic level is invalid",
+        diagnosticLogsPathIsInvalid: "The diagnostic logs path is invalid",
+        diagnosticReportIsUnavailable: "The diagnostic report is unavailable",
+        diagnosticReportPathIsInvalid: "The diagnostic report path is invalid",
+        diagnosticSessionIdentifierIsInvalid: "The diagnostic session identifier is invalid",
       },
       state: {
-        audioPreviewIsNotAvailable: "The audio preview is not available.",
-        operationIsNoLongerAvailable: "The operation is no longer available.",
-        outputLocationIsNoLongerAvailable: "The output location is no longer available.",
-        waveformIsNotAvailable: "The waveform is not available.",
-        waveformJobIdIsInvalid: "The waveform job ID is invalid.",
+        audioPreviewIsNotAvailable: "The audio preview is not available",
+        operationIsNoLongerAvailable: "The operation is no longer available",
+        outputLocationIsNoLongerAvailable: "The output location is no longer available",
+        waveformIsNotAvailable: "The waveform is not available",
+        waveformJobIdIsInvalid: "The waveform job ID is invalid",
       },
     },
     navigation: {
@@ -220,8 +213,8 @@ export const en = {
       restored_one: "Restored {{count}} source from previous session",
       restored_other: "Restored {{count}} sources from previous session",
       partiallyRestored: "Restored {{restored}} of {{total}} sources from previous session",
-      description_one: "EasyTrim didn't close normally. {{count}} source can be restored.",
-      description_other: "EasyTrim didn't close normally. {{count}} sources can be restored.",
+      description_one: "EasyTrim didn't close normally. {{count}} source can be restored",
+      description_other: "EasyTrim didn't close normally. {{count}} sources can be restored",
       title: "Restore previous session?",
       toastDescription_one: "{{count}} source restored",
       toastDescription_other: "{{count}} sources restored",
@@ -239,33 +232,31 @@ export const en = {
     },
     clipboard: {
       copied: "Copied to clipboard",
-      copyFailed: "Could not copy to clipboard.",
+      copyFailed: "Could not copy to clipboard",
     },
     crash: {
-      description: "The application encountered an unexpected error. Restart it to continue.",
+      description: "The application encountered an unexpected error. Restart it to continue",
       title: "Something went wrong",
     },
     dragUnavailable: "Drag and drop is unavailable: {{message}}",
-    windowActionFailed: "The window control could not be completed.",
+    windowActionFailed: "The window control could not be completed",
     diagnosticsRecovery: {
       confirmation: {
-        description:
-          "EasyTrim did not complete its normal shutdown the last time it was running. Diagnostic information from that session was saved and may help identify the cause.",
-        revealFailed: "The diagnostic report could not be shown in the file manager.",
+        description: "EasyTrim did not complete its normal shutdown the last time it was running. Diagnostic information from that session was saved and may help identify the cause",
+        revealFailed: "The diagnostic report could not be shown in the file manager",
         showReport: "Show Report",
         title: "EasyTrim did not shut down normally",
       },
     },
     shutdown: {
       confirmation: {
-        description:
-          "The active export queue is still running. Any unsaved editing data will be lost.",
+        description: "The active export queue is still running. Any unsaved editing data will be lost",
         title: "Exit while exports are running?",
       },
     },
     systemDialog: {
       confirmation: {
-        description: "Choose a file location to continue.",
+        description: "Choose a file location to continue",
         title: "Waiting for system dialog",
       },
     },
@@ -277,27 +268,22 @@ export const en = {
   },
   layout: {
     accessibility: {
-      layoutControls: "Layout controls",
+      layoutControls: "Configure layout",
       panels: "Editor panels",
     },
     zoomIn: "Zoom In (+25%)",
     zoomOut: "Zoom Out (-25%)",
     zoomReset: "Zoom Reset (100%)",
-    showPanel: "Show {{panel}}",
+    showLeftPanel: "Show left panel",
+    showBottomPanel: "Show bottom panel",
+    toggleLeftPanel: "Toggle left panel",
+    toggleBottomPanel: "Toggle bottom panel",
     explorer: "Explorer",
     activityFeed: "Activity Feed",
-    bottomPanel: "Bottom panel",
-    leftPanel: "Left panel",
     layoutDensity: "Layout Density",
     view: "View",
     uiScaling: "UI Scaling",
     panelsVisibility: "Panels Visibility",
-    customize: {
-      tooltip: "Customize layout",
-    },
-    panelToggle: {
-      tooltip: "Toggle {{panel}}",
-    },
     density: {
       compact: "Compact",
       default: "Default",
@@ -309,24 +295,25 @@ export const en = {
         coverageAccessibleLabel: "{{language}} translation coverage: {{percentage}}%",
         helpTranslate: "Help translate EasyTrim",
         search: "Search languages",
+        searchPlaceholder: "Search languages…",
         suggestions: "Suggestions",
-        noResults: "No languages found.",
-        description: "Choose the language used throughout EasyTrim Editor.",
+        noResults: "No languages found",
+        description: "Choose the language used throughout EasyTrim Editor",
         label: "Language",
       },
       title: "General",
-      description: "Choose how EasyTrim presents its interface.",
+      description: "Choose how EasyTrim presents its interface",
       shortcutHint: "Open the Settings dialog at any time with",
     },
     navigationLabel: "Settings pages",
     appearance: {
       title: "Appearance",
-      description: "Adjust the interface scale, theme, and primary color.",
+      description: "Adjust the interface scale, theme, and primary color",
       scaling: {
-        description: "Change the size of controls and text across the app.",
+        description: "Change the size of controls and text across the app",
       },
       primaryColor: {
-        description: "Choose a preset or pick a custom primary color.",
+        description: "Choose a preset or pick a custom primary color",
         label: "Primary accent",
         pickerLabel: "Theme color picker",
         saturationBrightnessLabel: "Saturation and brightness",
@@ -357,19 +344,19 @@ export const en = {
       editing: {
         title: "Editing",
       },
-      description: "Choose the default behavior for new editing sessions.",
+      description: "Choose the default behavior for new editing sessions",
       loopPlayback: {
-        description: "Start new sessions with loop playback enabled.",
+        description: "Start new sessions with loop playback enabled",
         label: "Loop",
         commandLabel: "Enable loop playback by default",
       },
       followSegment: {
-        description: "Keep playback within the selected segment by default.",
+        description: "Keep playback within the selected segment by default",
         label: "Follow segment",
         commandLabel: "Follow segment by default",
       },
       mergeAudio: {
-        description: "Merge enabled audio tracks for new exports by default.",
+        description: "Merge enabled audio tracks for new exports by default",
         label: "Merge audio",
         commandLabel: "Merge audio by default",
       },
@@ -377,7 +364,7 @@ export const en = {
     },
     layout: {
       title: "Layout",
-      description: "Control panel visibility and workspace density.",
+      description: "Control panel visibility and workspace density",
       reset: "Reset layout",
       activityFeedView: {
         label: "Activity Feed View",
@@ -394,17 +381,17 @@ export const en = {
     queue: {
       title: "Queue",
       autoStart: {
-        description: "Start processing as soon as exports are added to the queue.",
+        description: "Start processing as soon as exports are added to the queue",
         label: "Auto-start Queue",
       },
       onFinished: {
-        description: "Choose what happens when every queued export finishes.",
+        description: "Choose what happens when every queued export finishes",
       },
       reset: "Reset queue settings",
     },
     about: {
       title: "About",
-      description: "Application version, updates, and project resources.",
+      description: "Application version, updates, and project resources",
       more: {
         title: "More",
       },
@@ -412,11 +399,11 @@ export const en = {
         title: "Support",
       },
       version: {
-        description: "View this version's release notes.",
+        description: "View this version's release notes",
       },
       updates: {
         label: "Updates",
-        description: "Check for updates or install an available update.",
+        description: "Check for updates or install an available update",
       },
     },
     title: "Settings",
@@ -431,10 +418,10 @@ export const en = {
     copyInstallCommand: "Copy FFmpeg install command",
     copyPath: "Copy {{label}} path",
     errors: {
-      checkFailed: "Could not check {{label}}.",
-      notFound: "{{label}} is not installed or available on PATH.",
-      startFailed: "Could not start {{label}}.",
-      timedOut: "{{label}} did not respond within 3 seconds.",
+      checkFailed: "Could not check {{label}}",
+      notFound: "{{label}} is not installed or available on PATH",
+      startFailed: "Could not start {{label}}",
+      timedOut: "{{label}} did not respond within 3 seconds",
     },
     ffmpegDownloads: "FFmpeg downloads",
     recheck: "Recheck",
@@ -450,11 +437,11 @@ export const en = {
       toolsReady: "Media tools ready",
       toolsUnavailable: "Media tools unavailable",
     },
-    requirements: "EasyTrim requires FFmpeg and FFprobe.",
-    ready: "FFmpeg and FFprobe are used by EasyTrim for media inspection and processing.",
-    restart: "Still not detected? Restart EasyTrim after installation.",
-    together: "FFmpeg and FFprobe normally ship together.",
-    locationOpenFailed: "Could not show the executable in its folder.",
+    requirements: "EasyTrim requires FFmpeg and FFprobe",
+    ready: "FFmpeg and FFprobe are used by EasyTrim for media inspection and processing",
+    restart: "Still not detected? Restart EasyTrim after installation",
+    together: "FFmpeg and FFprobe normally ship together",
+    locationOpenFailed: "Could not show the executable in its folder",
   },
   commands: {
     title: "Command Palette",
@@ -481,8 +468,8 @@ export const en = {
       go: "Go",
     },
     searchLabel: "Search commands",
-    description: "Search for an EasyTrim action to run.",
-    empty: "No commands found.",
+    description: "Search for an EasyTrim action to run",
+    empty: "No commands found",
     placeholder: "Search commands…",
     searchTerms: {
       closeFile: "remove|source",
@@ -490,113 +477,97 @@ export const en = {
       deleteFile: "remove|trash|source",
       openFile: "import|video|source",
       openFolder: "directory|import|source",
-      optimizedExport: "encode|render|transcode",
-      saveLosslessCut: "fast cut|lossless|render",
+      optimizedExport: "optimized export|optimize|export",
+      fastExport: "fast export|fast|export",
       saveCurrentFrame: "save|frame|screenshot|image|png",
     },
   },
   activity: {
     time: {
       now: "Now",
-      today: "Today",
-      yesterday: "Yesterday",
     },
     notification: {
       fileSize: "File size: {{size}}",
       moreFiles_one: "+{{count}} more file",
       moreFiles_other: "+{{count}} more files",
       outputPath: "Output: {{path}}",
-      renderTime: "Render time: {{duration}}",
+      exportTime: "Export time: {{duration}}",
       sourcePath: "Source: {{path}}",
     },
     empty: {
-      description: "Completed actions will appear here.",
+      description: "Completed actions will appear here",
       title: "No activity yet",
     },
   },
   export: {
     errors: {
-      ffmpegCouldNotRenderTheSelectedSegment: "FFmpeg could not render the selected segment.",
-      ffmpegIsRequiredToExportVideoFiles: "FFmpeg is required to export video files.",
-      inspectTheVideoBeforeExporting: "Inspect the video before exporting.",
-      exportWasCancelled: "The export was cancelled.",
-      fileOrFolderIsNoLongerAvailable: "The file or folder is no longer available.",
-      outputNameIsRequired: "The output name is required.",
-      renderedOutputCouldNotBeVerified: "The rendered output could not be verified.",
-      renderedOutputIsEmpty: "The rendered output is empty.",
-      selectedOutputLocationIsNotSupported: "The selected output location is not supported.",
-      audioStreamSelectionOrProcessingSettingIsInvalid:
-        "An audio stream selection or processing setting is invalid.",
-      fastCutCannotApplyRotationUseOptimizedRender:
-        "Fast cut cannot apply rotation; use optimized render.",
-      optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths:
-        "Optimized arguments cannot override input, trim, mapping, filters, output format, or output paths.",
-      cropSelectionIsInvalid: "The crop selection is invalid.",
-      finalOptimizedFfmpegOptionIsMissingItsValue:
-        "The final optimized FFmpeg option is missing its value.",
-      optimizedFfmpegArgumentsContainAnUnclosedQuote:
-        "The optimized FFmpeg arguments contain an unclosed quote.",
-      outputFrameRateIsInvalid: "The output frame rate is invalid.",
-      outputResolutionMustBeGreaterThanZero: "The output resolution must be greater than zero.",
-      rotationMustBe090180Or270Degrees: "The rotation must be 0, 90, 180, or 270 degrees.",
-      selectedExportRangeIsInvalid: "The selected export range is invalid.",
-      fileLocationCouldNotBeOpened: "Could not open the file location.",
-      ffmpegCouldNotBeStarted: "FFmpeg could not be started.",
-      analyzeTrackLoudnessToContinue: "Analyze track loudness to continue.",
-      interruptedWhenEasyTrimClosedUnexpectedly:
-        "The export was interrupted when EasyTrim closed unexpectedly.",
+      ffmpegCouldNotRenderTheSelectedSegment: "FFmpeg could not render the selected segment",
+      ffmpegIsRequiredToExportVideoFiles: "FFmpeg is required to export video files",
+      inspectTheVideoBeforeExporting: "Inspect the video before exporting",
+      exportWasCancelled: "The export was cancelled",
+      fileOrFolderIsNoLongerAvailable: "The file or folder is no longer available",
+      outputNameIsRequired: "The output name is required",
+      renderedOutputCouldNotBeVerified: "The rendered output could not be verified",
+      renderedOutputIsEmpty: "The rendered output is empty",
+      selectedOutputLocationIsNotSupported: "The selected output location is not supported",
+      audioStreamSelectionOrProcessingSettingIsInvalid: "An audio stream selection or processing setting is invalid",
+      fastExportCannotApplyRotationUseOptimizedExport: "Fast Export cannot apply rotation; use Optimized Export",
+      optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths: "Optimized export arguments cannot override input, trim, mapping, filters, output format, or output paths",
+      cropSelectionIsInvalid: "The crop selection is invalid",
+      finalOptimizedFfmpegOptionIsMissingItsValue: "The final optimized FFmpeg option is missing its value",
+      optimizedFfmpegArgumentsContainAnUnclosedQuote: "The optimized FFmpeg arguments contain an unclosed quote",
+      outputFrameRateIsInvalid: "The output frame rate is invalid",
+      outputResolutionMustBeGreaterThanZero: "The output resolution must be greater than zero",
+      rotationMustBe090180Or270Degrees: "The rotation must be 0, 90, 180, or 270 degrees",
+      selectedExportRangeIsInvalid: "The selected export range is invalid",
+      fileLocationCouldNotBeOpened: "Could not open the file location",
+      ffmpegCouldNotBeStarted: "FFmpeg could not be started",
+      analyzeTrackLoudnessToContinue: "Analyze track loudness to continue",
+      interruptedWhenEasyTrimClosedUnexpectedly: "The export was interrupted when EasyTrim closed unexpectedly",
     },
     outputDialog: {
       videoFilter: "Video files",
     },
-    fastCut: {
-      cancelled: "Fast cut cancelled",
-      completed: "Fast cut completed",
-      failed: "Fast cut failed",
-      interrupted: "Fast cut interrupted",
-      started: "Started fast cut",
-      cutting: "Fast cutting…",
-      action: "Save Lossless Cut",
-      unavailable: "Lossless cut is unavailable after transforming the video.",
-      tooltip: "Save a lossless cut (Ctrl+S)",
-    },
-    render: {
-      completed: "Optimized render completed",
-      cancelled: "Render cancelled",
-      failed: "Render failed",
-      interrupted: "Render interrupted",
-      started: "Started rendering",
-      rendering: "Rendering…",
+    fastExport: {
+      cancelled: "Fast Export cancelled",
+      completed: "Fast Export completed",
+      failed: "Fast Export failed",
+      interrupted: "Fast Export interrupted",
+      started: "Fast Export started",
+      exporting: "Fast Export…",
+      action: "Fast Export",
+      unavailable: "Fast Export is unavailable after transforming the video",
+      tooltip: "Export the selected segment without re-encoding (Ctrl+S)",
     },
     preset: {
       builtIn: {
         p1: {
           name: "P1 · Fastest",
-          description: "Fastest NVENC encoding; largest files and lowest compression efficiency.",
+          description: "Fastest NVENC encoding; largest files and lowest compression efficiency",
         },
         p2: {
           name: "P2 · Very fast",
-          description: "Very fast export with large files; useful when turnaround matters most.",
+          description: "Very fast export with large files; useful when turnaround matters most",
         },
         p3: {
           name: "P3 · Fast",
-          description: "Fast NVENC export with a practical balance of speed, size, and quality.",
+          description: "Fast NVENC export with a practical balance of speed, size, and quality",
         },
         p4: {
           name: "P4 · Quality",
-          description: "Quality-focused NVENC encoding; smaller files with a longer render time.",
+          description: "Quality-focused NVENC encoding; smaller files with a longer render time",
         },
         p5: {
           name: "P5 · Smaller",
-          description: "Smaller files with a moderate render-time tradeoff.",
+          description: "Smaller files with a moderate render-time tradeoff",
         },
         p6: {
           name: "P6 · Very small",
-          description: "Higher compression efficiency; slower encoding for very small files.",
+          description: "Higher compression efficiency; slower encoding for very small files",
         },
         p7: {
           name: "P7 · Smallest",
-          description: "Highest-efficiency NVENC preset; slowest option in the full preset range.",
+          description: "Highest-efficiency NVENC preset; slowest option in the full preset range",
         },
       },
       actions: {
@@ -606,16 +577,16 @@ export const en = {
       },
       label: "Preset",
       validation: {
-        duplicate: "Preset names must be unique.",
-        required: "A preset name is required.",
-        tooLong: "Preset names must be 64 characters or fewer.",
+        duplicate: "Preset names must be unique",
+        required: "A preset name is required",
+        tooLong: "Preset names must be 64 characters or fewer",
       },
       create: {
-        description: "Save a reusable FFmpeg configuration.",
+        description: "Save a reusable FFmpeg configuration",
         title: "New preset",
       },
       delete: {
-        description: "Delete “{{name}}”? This cannot be undone.",
+        description: "Delete “{{name}}”? This cannot be undone",
         title: "Delete preset?",
       },
       nameLabel: "Name",
@@ -629,14 +600,20 @@ export const en = {
       preparing: "Preparing command preview…",
     },
     optimized: {
-      action: "Optimize & Export",
-      tooltip: "Configure and export an optimized video (Ctrl+E)",
+      action: "Optimized Export",
+      tooltip: "Export the selected segment with optimized re-encoding (Ctrl+E)",
+      started: "Optimized export started",
+      running: "Optimized export…",
+      completed: "Optimized export completed",
+      cancelled: "Optimized export cancelled",
+      failed: "Optimized export failed",
+      interrupted: "Optimized export interrupted",
       dialog: {
         arguments: "FFmpeg arguments",
-        description: "Configure the optimized render before choosing its file.",
+        description: "Configure the optimized export before choosing its file",
         editTitle: "Edit queued export",
         matchSource: "Match source",
-        saveNotice: "The native save dialog opens after confirmation.",
+        saveNotice: "The native save dialog opens after confirmation",
       },
     },
     actions: {
@@ -673,11 +650,10 @@ export const en = {
   },
   queue: {
     errors: {
-      systemShutdownIsNotAvailable: "System shutdown is not available.",
-      systemSleepIsNotAvailable: "System sleep is not available.",
-      selectedSystemActionCouldNotBeStarted: "The selected system action could not be started.",
-      selectedSystemActionWasRejectedByTheSystem:
-        "The selected system action was rejected by the system.",
+      systemShutdownIsNotAvailable: "System shutdown is not available",
+      systemSleepIsNotAvailable: "System sleep is not available",
+      selectedSystemActionCouldNotBeStarted: "The selected system action could not be started",
+      selectedSystemActionWasRejectedByTheSystem: "The selected system action was rejected by the system",
     },
     actions: {
       cancelExport: "Cancel export",
@@ -692,11 +668,10 @@ export const en = {
     deleteSource: {
       enable: "Enable",
       label: "Delete source",
-      tooltip: "Delete the source after a successful render",
+      tooltip: "Delete the source after a successful export",
       confirmation: {
-        description:
-          "The original source file will be deleted after a render finishes successfully. This action can be undone.",
-        title: "Delete source after rendering?",
+        description: "The original source file will be deleted after an export finishes successfully. This action can be undone",
+        title: "Delete source after export?",
       },
     },
     onFinished: {
@@ -711,21 +686,20 @@ export const en = {
         systemSleep: "Put system to sleep",
       },
     },
-    exportQueueTitle: "Export Queue",
     routes: {
-      fastCut: "Fast Cut",
-      optimized: "Optimized",
+      fastExport: "Fast Export",
+      optimizedExport: "Optimized Export",
     },
-    title: "Queue",
+    title: "Export Queue",
     jobStatus: {
       canceled: "Canceled",
       completed: "Completed",
       failed: "Failed",
       queued: "Queued",
-      rendering: "Rendering…",
+      processing: "Processing…",
     },
     empty: {
-      description: "Export attempts will appear here.",
+      description: "Export attempts will appear here",
     },
     summary: {
       canceled_one: "{{count}} canceled",
@@ -738,8 +712,8 @@ export const en = {
       jobs_other: "{{count}} jobs",
       queued_one: "{{count}} queued",
       queued_other: "{{count}} queued",
-      rendering_one: "{{count}} rendering",
-      rendering_other: "{{count}} rendering",
+      processing_one: "{{count}} processing",
+      processing_other: "{{count}} processing",
     },
     metrics: {
       elapsed: "{{value}} elapsed",
@@ -754,31 +728,26 @@ export const en = {
       remainingTooltip: "Estimated time remaining",
     },
     progress: {
-      tooltip: "Export progress",
       accessibleLabel: "Export progress",
     },
   },
   preview: {
     errors: {
       frame: {
-        capturedFrameCouldNotBeSaved: "The captured frame could not be saved.",
-        capturedFrameIsNotAPngImage: "The captured frame is not a PNG image.",
-        capturedFrameIsTooLargeToSave: "The captured frame is too large to save.",
-        selectedImageLocationIsNotSupported: "The selected image location is not supported.",
-        suggestedFrameFilenameIsInvalid: "The suggested frame filename is invalid.",
+        capturedFrameCouldNotBeSaved: "The captured frame could not be saved",
+        capturedFrameIsNotAPngImage: "The captured frame is not a PNG image",
+        capturedFrameIsTooLargeToSave: "The captured frame is too large to save",
+        selectedImageLocationIsNotSupported: "The selected image location is not supported",
+        suggestedFrameFilenameIsInvalid: "The suggested frame filename is invalid",
       },
-      compatiblePreviewCouldNotBePreparedForThisVideo:
-        "A compatible preview could not be prepared for this video.",
-      temporaryPreviewDirectoryCouldNotBeCreated:
-        "A temporary preview directory could not be created.",
-      uniqueTemporaryPreviewDirectoryCouldNotBeCreated:
-        "A unique temporary preview directory could not be created.",
-      ffmpegCouldNotPrepareACompatiblePreview: "FFmpeg could not prepare a compatible preview.",
-      ffmpegIsRequiredToPrepareACompatiblePreview:
-        "FFmpeg is required to prepare a compatible preview.",
-      inspectTheVideoBeforePreparingItsPreview: "Inspect the video before preparing its preview.",
-      preparingTheCompatiblePreviewTookTooLong: "Preparing the compatible preview took too long.",
-      compatiblePreviewCouldNotBePlayed: "The compatible preview could not be played.",
+      compatiblePreviewCouldNotBePreparedForThisVideo: "A compatible preview could not be prepared for this video",
+      temporaryPreviewDirectoryCouldNotBeCreated: "A temporary preview directory could not be created",
+      uniqueTemporaryPreviewDirectoryCouldNotBeCreated: "A unique temporary preview directory could not be created",
+      ffmpegCouldNotPrepareACompatiblePreview: "FFmpeg could not prepare a compatible preview",
+      ffmpegIsRequiredToPrepareACompatiblePreview: "FFmpeg is required to prepare a compatible preview",
+      inspectTheVideoBeforePreparingItsPreview: "Inspect the video before preparing its preview",
+      preparingTheCompatiblePreviewTookTooLong: "Preparing the compatible preview took too long",
+      compatiblePreviewCouldNotBePlayed: "The compatible preview could not be played",
     },
     frame: {
       pngFilter: "PNG image",
@@ -787,11 +756,11 @@ export const en = {
       previous: "Previous frame",
       saveFrame: "Save frame",
       copied: "Frame copied to clipboard",
-      copyFailed: "Could not copy the frame to the clipboard.",
-      saveFailed: "Could not save the frame.",
+      copyFailed: "Could not copy the frame to the clipboard",
+      saveFailed: "Could not save the frame",
       saved: "Frame saved",
-      nextFrameTooltip: "Next frame (Right Arrow; hold to play 2×)",
-      previousFrameTooltip: "Previous frame (Left Arrow; hold to rewind 2×)",
+      nextFrameTooltip: "Next frame (Right Arrow)",
+      previousFrameTooltip: "Previous frame (Left Arrow)",
     },
     markers: {
       next: "Next marker",
@@ -803,8 +772,8 @@ export const en = {
       loopPlayback: "Loop playback",
       volume: "Playback volume",
       speed: "Playback speed",
-      segmentPlayback: "Segment playback",
-      failed: "Playback could not start.",
+      segmentPlayback: "Play selected segment",
+      failed: "Playback could not start",
       loopDisabledTooltip: "Stop when playback reaches its end",
       loopEnabledTooltip: "Restart when playback reaches its end",
       pauseTooltip: "Pause (Space)",
@@ -830,18 +799,19 @@ export const en = {
       rotate180: "Rotate 180",
       rotate90Clockwise: "Rotate 90 CW",
       rotate90Counterclockwise: "Rotate 90 CCW",
-      cropTooltip: "Right-click preview to transform",
       resetConfirmation: {
-        description: "This resets the crop, rotation, and flips for the current video.",
+        description: "This resets the crop, rotation, and flips for the current video",
         title: "Reset video transformations?",
       },
       title: "Transform",
     },
+    contextMenu: {
+      tooltip: "Right-click to open the preview menu",
+    },
     info: {
       compatible: "Compatible preview",
       playbackError: "Could not preview this video",
-      proxy:
-        "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file.",
+      proxy: "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file",
     },
     shortcuts: {
       markInOut: "Mark In / Mark Out",
@@ -873,44 +843,28 @@ export const en = {
   },
   timeline: {
     errors: {
-      inspectTheVideoBeforeDetectingAudioActivity:
-        "Inspect the video before detecting audio activity.",
       scene: {
-        ffmpegCouldNotDetectSceneChanges: "FFmpeg could not detect scene changes.",
-        ffmpegIsRequiredToDetectSceneChanges: "FFmpeg is required to detect scene changes.",
-        sceneDetectionTookTooLong: "Scene detection took too long.",
-        sceneDetectionWasInterrupted: "Scene detection was interrupted.",
-        activeSourceHasNotBeenInspected: "The active source has not been inspected.",
-        sceneDetectionOutputExceededItsSafetyLimit:
-          "The scene detection output exceeded its safety limit.",
-        sourceContainsTooManyDetectedSceneChanges:
-          "The source contains too many detected scene changes.",
-      },
-      audioActivity: {
-        audioActivityDetectionTookTooLong: "Audio activity detection took too long.",
-        audioActivityDetectionWasInterrupted: "Audio activity detection was interrupted.",
-        ffmpegCouldNotAnalyzeAudioActivity: "FFmpeg could not analyze audio activity.",
-        ffmpegIsRequiredToAnalyzeAudioActivity: "FFmpeg is required to analyze audio activity.",
-        inspectTheVideoBeforeDetectingAudioActivity:
-          "Inspect the video before detecting audio activity.",
-        audioActivityAnalysisContainsTooManyRanges:
-          "The audio activity analysis contains too many ranges.",
-        audioActivityAnalysisOutputExceededItsSafetyLimit:
-          "The audio activity analysis output exceeded its safety limit.",
+        ffmpegCouldNotDetectSceneChanges: "FFmpeg could not find scene changes",
+        ffmpegIsRequiredToDetectSceneChanges: "FFmpeg is required to find scene changes",
+        sceneDetectionTookTooLong: "Finding scene changes took too long",
+        sceneDetectionWasInterrupted: "Finding scene changes was interrupted",
+        activeSourceHasNotBeenInspected: "The active source has not been inspected",
+        sceneDetectionOutputExceededItsSafetyLimit: "The scene search output exceeded its safety limit",
+        sourceContainsTooManyDetectedSceneChanges: "The source contains too many detected scene changes",
       },
     },
     sceneMarkers: {
       actions: {
-        detectScenes: "Detect scene changes",
+        findSceneChanges: "Find scene changes",
+        findingSceneChanges: "Finding scene changes…",
         disableSceneMarkers: "Hide scene markers",
         enableSceneMarkers: "Show scene markers",
       },
       status: {
-        sceneDetectionFailed: "Scene detection failed. Try again.",
+        sceneDetectionFailed: "Could not find scene changes. Try again",
       },
       tooltips: {
-        detectScenes:
-          "Analyze the source video for scene changes. Hold Shift while dragging to snap to scene markers or either edge of an audio activity range.",
+        findSceneChanges: "Find scene changes in the source video",
       },
     },
     segment: {
@@ -921,10 +875,6 @@ export const en = {
         end: "End",
         selectedSegment: "Selected Segment",
         start: "Start",
-      },
-      tooltips: {
-        moveSegment: "Drag to move the selected segment — hold Shift to snap",
-        trimReset: "{{label}} — hold Shift to snap — double-click to reset",
       },
       accessibility: {
         trimEnd: "Trim end",
@@ -955,66 +905,50 @@ export const en = {
   },
   audio: {
     errors: {
-      audioPreviewStreamIndexesMustBeUnique: "Audio preview stream indexes must be unique.",
-      audioStreamMetadataIsUnavailableForWaveformGeneration:
-        "Audio stream metadata is unavailable for waveform generation.",
-      selectBetweenOneAnd32AudioStreamsForPreview:
-        "Select between one and 32 audio streams for preview.",
-      selectBetweenOneAnd32AudioStreamsForWaveformGeneration:
-        "Select between one and 32 audio streams for waveform generation.",
-      thumbnailCacheIsUnavailable: "The thumbnail cache is unavailable.",
-      waveformProcessingSettingsMustMatchTheSelectedAudioStreams:
-        "Waveform processing settings must match the selected audio streams.",
-      waveformStreamIndexesMustBeUnique: "Waveform stream indexes must be unique.",
+      audioPreviewStreamIndexesMustBeUnique: "Audio preview stream indexes must be unique",
+      audioStreamMetadataIsUnavailableForWaveformGeneration: "Audio stream metadata is unavailable for waveform generation",
+      selectBetweenOneAnd32AudioStreamsForPreview: "Select between one and 32 audio streams for preview",
+      selectBetweenOneAnd32AudioStreamsForWaveformGeneration: "Select between one and 32 audio streams for waveform generation",
+      thumbnailCacheIsUnavailable: "The thumbnail cache is unavailable",
+      waveformProcessingSettingsMustMatchTheSelectedAudioStreams: "Waveform processing settings must match the selected audio streams",
+      waveformStreamIndexesMustBeUnique: "Waveform stream indexes must be unique",
       audio: {
-        temporaryAudioPreviewDirectoryCouldNotBeCreated:
-          "A temporary audio preview directory could not be created.",
-        uniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated:
-          "A unique temporary audio preview directory could not be created.",
-        audioPreviewsRequireInspectedSourceMedia: "Audio previews require inspected source media.",
-        ffmpegCouldNotPrepareAudioPreview: "FFmpeg could not prepare audio preview.",
-        ffmpegIsRequiredToPrepareAudioPreview: "FFmpeg is required to prepare audio preview.",
-        preparingAudioPreviewTookTooLong: "Preparing audio preview took too long.",
-        selectedAudioStreamsCouldNotBePreparedForPreview:
-          "The selected audio streams could not be prepared for preview.",
-        analyzeTrackLoudnessToPrepareAudioPlayback:
-          "Analyze track loudness to prepare audio playback.",
+        temporaryAudioPreviewDirectoryCouldNotBeCreated: "A temporary audio preview directory could not be created",
+        uniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated: "A unique temporary audio preview directory could not be created",
+        audioPreviewsRequireInspectedSourceMedia: "Audio previews require inspected source media",
+        ffmpegCouldNotPrepareAudioPreview: "FFmpeg could not prepare audio preview",
+        ffmpegIsRequiredToPrepareAudioPreview: "FFmpeg is required to prepare audio preview",
+        preparingAudioPreviewTookTooLong: "Preparing audio preview took too long",
+        selectedAudioStreamsCouldNotBePreparedForPreview: "The selected audio streams could not be prepared for preview",
+        analyzeTrackLoudnessToPrepareAudioPlayback: "Analyze track loudness to prepare audio playback",
       },
       loudness: {
-        ffmpegCouldNotAnalyzeAudioLoudness: "FFmpeg could not analyze audio loudness.",
-        ffmpegDidNotReturnLoudnessMeasurements: "FFmpeg did not return loudness measurements.",
-        ffmpegIsRequiredToAnalyzeLoudness: "FFmpeg is required to analyze loudness.",
-        ffmpegReturnedIncompleteLoudnessMeasurements:
-          "FFmpeg returned incomplete loudness measurements.",
-        ffmpegReturnedInvalidLoudnessMeasurements: "FFmpeg returned invalid loudness measurements.",
-        inspectTheVideoBeforeAnalyzingAudio: "Inspect the video before analyzing audio.",
-        loudnessAnalysisTookTooLong: "Loudness analysis took too long.",
-        loudnessAnalysisWasInterrupted: "Loudness analysis was interrupted.",
-        loudnessAnalysisOutputExceededItsSafetyLimit:
-          "The loudness analysis output exceeded its safety limit.",
+        ffmpegCouldNotAnalyzeAudioLoudness: "FFmpeg could not analyze audio loudness",
+        ffmpegDidNotReturnLoudnessMeasurements: "FFmpeg did not return loudness measurements",
+        ffmpegIsRequiredToAnalyzeLoudness: "FFmpeg is required to analyze loudness",
+        ffmpegReturnedIncompleteLoudnessMeasurements: "FFmpeg returned incomplete loudness measurements",
+        ffmpegReturnedInvalidLoudnessMeasurements: "FFmpeg returned invalid loudness measurements",
+        inspectTheVideoBeforeAnalyzingAudio: "Inspect the video before analyzing audio",
+        loudnessAnalysisTookTooLong: "Loudness analysis took too long",
+        loudnessAnalysisWasInterrupted: "Loudness analysis was interrupted",
+        loudnessAnalysisOutputExceededItsSafetyLimit: "The loudness analysis output exceeded its safety limit",
       },
       waveform: {
-        temporaryWaveformDirectoryCouldNotBeCreated:
-          "A temporary waveform directory could not be created.",
-        uniqueTemporaryWaveformDirectoryCouldNotBeCreated:
-          "A unique temporary waveform directory could not be created.",
-        ffmpegCouldNotGenerateTheAudioWaveform: "FFmpeg could not generate the audio waveform.",
-        ffmpegIsRequiredToGenerateAudioWaveforms: "FFmpeg is required to generate audio waveforms.",
-        waveformGenerationTookTooLong: "Waveform generation took too long.",
-        waveformGenerationWasReplaced: "Waveform generation was replaced.",
-        widthOutOfRange: "Waveform width must be between {{minWidth}} and {{maxWidth}} pixels.",
-        streamDoesNotBelongToSource:
-          "Audio stream #{{streamIndex}} does not belong to the active source.",
-        analysisFailed: "Waveform analysis failed for audio stream #{{streamIndex}}.",
-        sampleCountUnavailable:
-          "FFmpeg did not report the audio sample count for audio stream #{{streamIndex}}.",
-        tooFewSamples:
-          "The audio stream has too few samples for its waveform width (stream #{{streamIndex}}).",
-        sampleReductionFailed:
-          "Waveform sample reduction failed for audio stream #{{streamIndex}}.",
-        imageMissing: "Waveform generation produced no image for audio stream #{{streamIndex}}.",
-        imageRenderingFailed: "Waveform image rendering failed for audio stream #{{streamIndex}}.",
-        previewCouldNotBeDisplayed: "The waveform preview could not be displayed.",
+        temporaryWaveformDirectoryCouldNotBeCreated: "A temporary waveform directory could not be created",
+        uniqueTemporaryWaveformDirectoryCouldNotBeCreated: "A unique temporary waveform directory could not be created",
+        ffmpegCouldNotGenerateTheAudioWaveform: "FFmpeg could not generate the audio waveform",
+        ffmpegIsRequiredToGenerateAudioWaveforms: "FFmpeg is required to generate audio waveforms",
+        waveformGenerationTookTooLong: "Waveform generation took too long",
+        waveformGenerationWasReplaced: "Waveform generation was replaced",
+        widthOutOfRange: "Waveform width must be between {{minWidth}} and {{maxWidth}} pixels",
+        streamDoesNotBelongToSource: "Audio stream #{{streamIndex}} does not belong to the active source",
+        analysisFailed: "Waveform analysis failed for audio stream #{{streamIndex}}",
+        sampleCountUnavailable: "FFmpeg did not report the audio sample count for audio stream #{{streamIndex}}",
+        tooFewSamples: "The audio stream has too few samples for its waveform width (stream #{{streamIndex}})",
+        sampleReductionFailed: "Waveform sample reduction failed for audio stream #{{streamIndex}}",
+        imageMissing: "Waveform generation produced no image for audio stream #{{streamIndex}}",
+        imageRenderingFailed: "Waveform image rendering failed for audio stream #{{streamIndex}}",
+        previewCouldNotBeDisplayed: "The waveform preview could not be displayed",
       },
     },
     loudness: {
@@ -1022,6 +956,15 @@ export const en = {
       analyzing: "Analyzing loudness…",
     },
     activityDetection: {
+      errors: {
+        audioActivityDetectionTookTooLong: "Finding sound sections took too long",
+        audioActivityDetectionWasInterrupted: "Finding sound sections was interrupted",
+        ffmpegCouldNotAnalyzeAudioActivity: "FFmpeg could not find sound sections",
+        ffmpegIsRequiredToAnalyzeAudioActivity: "FFmpeg is required to find sound sections",
+        inspectVideoBeforeDetectingAudioActivity: "Inspect the video before finding sound sections",
+        audioActivityAnalysisContainsTooManyRanges: "Too many sound sections were found",
+        audioActivityAnalysisOutputExceededItsSafetyLimit: "The sound-section search output exceeded its safety limit",
+      },
       analyze: "Analyze audio activity",
       analyzing: "Analyzing audio activity…",
       retry: "Retry analysis",
@@ -1036,8 +979,8 @@ export const en = {
         protection: "Protection",
       },
       dialog: {
-        applyNotice: "Changes stay unapplied until you choose Apply.",
-        description: "Effects are applied in the fixed order shown in the list.",
+        applyNotice: "Changes stay unapplied until you choose Apply",
+        description: "Effects are applied in the fixed order shown in the list",
         title: "{{title}} — Effects",
       },
       appliedSummaryLabel: "Applied effects: {{summary}}",
@@ -1045,7 +988,7 @@ export const en = {
     output: {
       merge: {
         action: "Merge selected tracks",
-        tooltip: "All selected tracks are merged into one track; this requires encoding.",
+        tooltip: "All selected tracks are merged into one track; this requires encoding",
       },
       merged_one: "{{count}} selected track is merged into one track",
       merged_other: "{{count}} selected tracks are merged into one track",
@@ -1072,7 +1015,7 @@ export const en = {
     highPass: {
       label: "High-pass filter",
       cutoffLabel: "Cutoff frequency",
-      description: "Reduce low-frequency rumble on this track.",
+      description: "Reduce low-frequency rumble on this track",
       summary: "High-pass ({{cutoff}} Hz)",
     },
     limiter: {
@@ -1092,10 +1035,10 @@ export const en = {
         streaming: "Streaming",
         broadcast: "Broadcast",
       },
-      description: "Normalize this track to a consistent target loudness.",
+      description: "Normalize this track to a consistent target loudness",
       summary: "Normalized - {{preset}}",
       levelSummary: "Target {{target}} LUFS · peak cap {{peak}} dBTP",
-      manualGainUnavailable: "Manual gain is unavailable while automatic normalization is applied.",
+      manualGainUnavailable: "Manual gain is unavailable while automatic normalization is applied",
     },
     noiseReduction: {
       label: "Noise reduction",
@@ -1105,7 +1048,7 @@ export const en = {
         medium: "Medium",
         strong: "Strong",
       },
-      description: "Reduce background noise on this audio track.",
+      description: "Reduce background noise on this audio track",
       summary: "Noise reduction - {{preset}}",
     },
     waveform: {
@@ -1126,11 +1069,10 @@ export const en = {
       },
       title: "Changelog",
       empty: {
-        title: "No released changes are available yet.",
-        description:
-          "Released updates will appear here when they are included in your installed version.",
+        title: "No released changes are available yet",
+        description: "Released updates will appear here when they are included in your installed version",
       },
-      description: "Released changes included in this version of EasyTrim.",
+      description: "Released changes included in this version of EasyTrim",
     },
     project: {
       actions: {
@@ -1146,7 +1088,7 @@ export const en = {
     },
     whatsNew: {
       title: "What’s New",
-      description: "Here’s what changed since you last opened EasyTrim.",
+      description: "Here’s what changed since you last opened EasyTrim",
     },
   },
   units: {

@@ -162,7 +162,7 @@ async function resolveOutputSelection(outputId: string): Promise<OutputSelection
   }
 }
 
-async function renderFast(
+async function exportFast(
   request: FastExportRequest,
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
@@ -170,7 +170,7 @@ async function renderFast(
   diagnosticSnapshotId?: string,
 ): Promise<ExportResult> {
   return render(
-    "render_fast",
+    "export_fast",
     request,
     outputId,
     onProgress,
@@ -268,7 +268,7 @@ async function openFileLocation(path: string): Promise<void> {
 }
 
 async function render(
-  command: "render_fast" | "render_optimized",
+  command: "export_fast" | "render_optimized",
   request: FastExportRequest | OptimizedExportRequest,
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
@@ -440,6 +440,7 @@ export {
   chooseSource,
   detectAudioActivity,
   detectScenes,
+  exportFast,
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,
@@ -452,7 +453,6 @@ export {
   prepareWaveforms,
   releaseExportSource,
   releaseImportedSourceThumbnail,
-  renderFast,
   renderOptimized,
   reserveExportSource,
   resolveOutputSelection,

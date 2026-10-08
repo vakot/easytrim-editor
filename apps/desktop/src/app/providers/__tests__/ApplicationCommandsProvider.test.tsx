@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
   resetPanels: vi.fn(),
   panelCommandIds: [] as (string | string[])[],
   panelsAreReset: true,
-  startFastCutRequested: vi.fn((origin: unknown) => ({
+  startFastExportRequested: vi.fn((origin: unknown) => ({
     origin,
     type: "export/fast",
   })),
@@ -80,7 +80,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
 }));
 vi.mock("@/app/store/thunks/export-thunks", () => ({
   openOptimizedExportDialog: mocks.openOptimizedExportDialog,
-  startFastCutRequested: mocks.startFastCutRequested,
+  startFastExportRequested: mocks.startFastExportRequested,
 }));
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
   chooseSourceRequested: mocks.chooseSourceRequested,
@@ -271,9 +271,9 @@ describe("ApplicationCommandsProvider", () => {
     }
     expect(screen.getByRole("button", { name: "reset-queue-settings" })).toHaveAttribute(
       "data-group",
-      "Queue",
+      "Export Queue",
     );
-    for (const commandId of ["language-en", "language-sk", "language-ru"]) {
+    for (const commandId of ["language-en", "language-ru"]) {
       expect(screen.queryByRole("button", { name: commandId })).not.toBeInTheDocument();
     }
     expect(screen.getByRole("button", { name: "primary-color-amber" })).toHaveAttribute(
@@ -302,7 +302,7 @@ describe("ApplicationCommandsProvider", () => {
     );
     expect(screen.getByRole("button", { name: "preference-auto-start-queue" })).toHaveAttribute(
       "data-group",
-      "Queue",
+      "Export Queue",
     );
     expect(screen.getByRole("button", { name: "preference-merge-audio" })).toHaveAttribute(
       "data-group",

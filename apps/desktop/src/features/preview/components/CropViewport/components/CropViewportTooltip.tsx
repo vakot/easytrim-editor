@@ -87,7 +87,7 @@ const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>
         ref={setRefs}
         style={transitionStyle}
         tabIndex={0}
-        tooltipContent={t("preview.transform.cropTooltip")}
+        tooltipContent={t("preview.contextMenu.tooltip")}
       >
         {children}
       </CursorTooltip>

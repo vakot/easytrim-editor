@@ -13,32 +13,56 @@ function formatRelativeTime(
   unknownLabel: string,
   nowMs = Date.now(),
 ): string {
-  if (micros === undefined) return unknownLabel;
-
-  const updatedAtMs = micros / 1_000;
-  const elapsedSeconds = Math.floor((nowMs - updatedAtMs) / 1_000);
-  if (!Number.isFinite(elapsedSeconds) || !Number.isFinite(updatedAtMs)) return unknownLabel;
-
-  if (elapsedSeconds < 0) return formatDateOnly(updatedAtMs, locale, unknownLabel);
-
-  const relativeTimeFormatter = new Intl.RelativeTimeFormat(locale, { numeric: "always" });
-  if (elapsedSeconds < 60) {
-    return relativeTimeFormatter.format(-Math.max(1, elapsedSeconds), "second");
-  }
-  if (elapsedSeconds < 3_600) {
-    return relativeTimeFormatter.format(-Math.floor(elapsedSeconds / 60), "minute");
-  }
-  if (elapsedSeconds < 86_400) {
-    return relativeTimeFormatter.format(-Math.floor(elapsedSeconds / 3_600), "hour");
-  }
-
-  const updatedAt = new Date(updatedAtMs);
-  const now = new Date(nowMs);
-  if (isYesterday(updatedAt, now)) {
+  const bucket = getRelativeTimeBucket(micros, nowMs);
+  if (bucket.kind === "unknown") return unknownLabel;
+  if (bucket.kind === "date") return formatDateOnly(bucket.timestampMs, locale, unknownLabel);
+  if (bucket.kind === "yesterday") {
     return new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(-1, "day");
   }
 
-  return formatDateOnly(updatedAtMs, locale, unknownLabel);
+  return new Intl.RelativeTimeFormat(locale, { numeric: "always" }).format(
+    -bucket.value,
+    bucket.unit,
+  );
+}
+
+type RelativeTimeBucket =
+  | { kind: "date"; timestampMs: number }
+  | { kind: "relative"; unit: "hour" | "minute" | "second"; value: number }
+  | { kind: "unknown" }
+  | { kind: "yesterday" };
+
+function getRelativeTimeBucket(micros: number | undefined, nowMs = Date.now()): RelativeTimeBucket {
+  if (micros === undefined) return { kind: "unknown" };
+
+  const timestampMs = micros / 1_000;
+  const elapsedSeconds = Math.floor((nowMs - timestampMs) / 1_000);
+  if (!Number.isFinite(elapsedSeconds) || !Number.isFinite(timestampMs)) return { kind: "unknown" };
+
+  if (elapsedSeconds < 0 || elapsedSeconds >= 172_800) return { kind: "date", timestampMs };
+  if (elapsedSeconds < 60) {
+    return { kind: "relative", unit: "second", value: Math.max(1, elapsedSeconds) };
+  }
+  if (elapsedSeconds < 3_600) {
+    return { kind: "relative", unit: "minute", value: Math.floor(elapsedSeconds / 60) };
+  }
+  if (elapsedSeconds < 86_400) {
+    return { kind: "relative", unit: "hour", value: Math.floor(elapsedSeconds / 3_600) };
+  }
+
+  return { kind: "yesterday" };
+}
+
+function getRelativeTimeBucketKey(micros: number | undefined, nowMs = Date.now()): string {
+  const bucket = getRelativeTimeBucket(micros, nowMs);
+  if (bucket.kind === "unknown") return "unknown";
+  if (bucket.kind === "yesterday") return "yesterday";
+  if (bucket.kind === "date") {
+    const date = new Date(bucket.timestampMs);
+    return `date:${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  }
+
+  return `relative:${bucket.unit}:${bucket.value}`;
 }
 
 function formatDateOnly(ms: number, locale: string, unknownLabel: string): string {
@@ -48,13 +72,4 @@ function formatDateOnly(ms: number, locale: string, unknownLabel: string): strin
     : new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
 }
 
-function isYesterday(date: Date, now: Date): boolean {
-  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-  return (
-    date.getFullYear() === yesterday.getFullYear() &&
-    date.getMonth() === yesterday.getMonth() &&
-    date.getDate() === yesterday.getDate()
-  );
-}
-
-export { formatDateTime, formatRelativeTime };
+export { formatDateTime, formatRelativeTime, getRelativeTimeBucketKey };

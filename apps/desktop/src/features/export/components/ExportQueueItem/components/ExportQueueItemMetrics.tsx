@@ -24,7 +24,7 @@ function ExportQueueItemMetrics() {
   const metrics = useMemo(
     () =>
       [
-        withTooltip(getProgress(attempt, { status }), t("queue.progress.tooltip")),
+        withTooltip(getProgress(attempt, { status }), t("queue.progress.accessibleLabel")),
         withTooltip(
           getDuration(attempt, {
             status,

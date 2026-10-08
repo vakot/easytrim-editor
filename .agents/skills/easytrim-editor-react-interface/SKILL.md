@@ -113,7 +113,7 @@ Keep these regions visible without navigation:
 4. one waveform/toggle row per audio stream;
 5. compact optimized settings and runtime preset editor;
 6. required output name;
-7. side-by-side `Fast cut` and `Optimized render` buttons;
+7. side-by-side `Fast Export` and `Optimized Export` buttons;
 8. progress and cancellation.
 
 - Replace the current source in one action without confirmation.

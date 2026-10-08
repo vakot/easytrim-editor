@@ -69,7 +69,7 @@ function ButtonTriggerExample({ defaultOpen = false }: { defaultOpen?: boolean }
 
 export const InputTrigger: Story = {
   render: () => (
-    <LanguageSelector defaultValue="sk" languages={SUPPORTED_LANGUAGES}>
+    <LanguageSelector defaultValue="ru" languages={SUPPORTED_LANGUAGES}>
       <LanguageSelectorInput
         aria-label="Choose language"
         className="w-72"

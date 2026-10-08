@@ -13,7 +13,7 @@ function AppLayoutHeader() {
   return (
     <TitleBar className="w-full justify-between">
       <div className="flex h-full flex-1 gap-2">
-        <div className="flex h-full items-center gap-2 px-3 text-left">
+        <div className="flex h-full items-center gap-2 px-3 text-left select-none">
           <img alt="" className="size-5" src="/logo-symbol.svg" />
           <span className="text-sm font-semibold tracking-wide whitespace-nowrap text-foreground/80">
             {t("app.brand")}

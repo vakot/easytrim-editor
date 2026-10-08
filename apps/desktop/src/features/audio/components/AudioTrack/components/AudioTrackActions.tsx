@@ -45,17 +45,10 @@ function AudioTrackToggleMenuCheckboxItem({
   children,
   controller,
 }: { children?: React.ReactNode } & AudioTrackActionsProps) {
-  const { t } = useTranslation();
-  const { stream, track, trackNumber } = controller;
-  if (!track || !stream) return null;
-
-  const streamTitle =
-    stream.title ?? stream.language ?? t("audio.tracks.defaultName", { number: trackNumber });
+  const { track } = controller;
+  if (!track) return null;
 
   const commandProps = {
-    "aria-label": controller.isEnabled
-      ? t("audio.tracks.muteWithTitle", { title: streamTitle })
-      : t("audio.tracks.unmuteWithTitle", { title: streamTitle }),
     onCheckedChange: controller.setEnabled,
     checked: controller.isEnabled,
   };
@@ -105,7 +98,7 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
   return (
     <DropdownMenuContent>
       <AudioTrackToggleMenuCheckboxItem controller={controller}>
-        <DropdownMenuCheckboxItem keepOpen>{t("common.enabled")}</DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem keepOpen>{t("common.actions.enable")}</DropdownMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
 
       <DropdownMenuSeparator />
@@ -140,7 +133,7 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
   return (
     <ContextMenuContent>
       <AudioTrackToggleMenuCheckboxItem controller={controller}>
-        <ContextMenuCheckboxItem keepOpen>{t("common.enabled")}</ContextMenuCheckboxItem>
+        <ContextMenuCheckboxItem keepOpen>{t("common.actions.enable")}</ContextMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
 
       <ContextMenuSeparator />

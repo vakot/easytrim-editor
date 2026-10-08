@@ -92,7 +92,7 @@ describe("MediaToolsStatus", () => {
     renderStatus(partial);
     fireEvent.click(screen.getByRole("button", { name: "Media tools issue" }));
 
-    expect(screen.getByText("FFmpeg and FFprobe normally ship together.")).toBeInTheDocument();
+    expect(screen.getByText("FFmpeg and FFprobe normally ship together")).toBeInTheDocument();
     expect(screen.getByText("winget install --id Gyan.FFmpeg --exact")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Recheck" }));
     expect(await screen.findByRole("button", { name: "Checking…" })).toBeDisabled();
@@ -100,10 +100,10 @@ describe("MediaToolsStatus", () => {
   });
 
   it.each([
-    ["notFound", "FFmpeg is not installed or available on PATH."],
-    ["timedOut", "FFmpeg did not respond within 3 seconds."],
-    ["startFailed", "Could not start FFmpeg."],
-    ["checkFailed", "Could not check FFmpeg."],
+    ["notFound", "FFmpeg is not installed or available on PATH"],
+    ["timedOut", "FFmpeg did not respond within 3 seconds"],
+    ["startFailed", "Could not start FFmpeg"],
+    ["checkFailed", "Could not check FFmpeg"],
   ] as const)(
     "localizes the %s capability failure without showing diagnostics",
     (errorId, copy) => {
@@ -129,23 +129,20 @@ describe("MediaToolsStatus", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Media tools issue" }));
 
-    expect(screen.getByText("Could not check FFprobe.")).toBeInTheDocument();
+    expect(screen.getByText("Could not check FFprobe")).toBeInTheDocument();
     expect(screen.queryByText("C:/private/ffprobe.exe: private stderr")).not.toBeInTheDocument();
   });
 
-  it.each(["ru", "sk"] as const)(
-    "falls back to English capability copy in %s",
-    async (language) => {
-      await i18n.changeLanguage(language);
-      renderStatus({
-        ffmpeg: { available: false, errorId: "notFound" },
-        ffprobe: readyCapabilities.ffprobe,
-      });
-      fireEvent.click(screen.getByRole("button"));
+  it.each(["ru"] as const)("shows localized capability copy in %s", async (language) => {
+    await i18n.changeLanguage(language);
+    renderStatus({
+      ffmpeg: { available: false, errorId: "notFound" },
+      ffprobe: readyCapabilities.ffprobe,
+    });
+    fireEvent.click(screen.getByRole("button"));
 
-      expect(screen.getByText("FFmpeg is not installed or available on PATH.")).toBeInTheDocument();
-    },
-  );
+    expect(screen.getByText("FFmpeg не установлен или недоступен в PATH")).toBeInTheDocument();
+  });
 
   it("shows check failure distinctly and allows a failed capability check to be retried", () => {
     const store = createAppStore();
@@ -162,7 +159,7 @@ describe("MediaToolsStatus", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Media tools check failed" }));
 
-    expect(screen.getByText("An unexpected application error occurred.")).toBeInTheDocument();
+    expect(screen.getByText("An unexpected application error occurred")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Recheck" })).toBeEnabled();
     expect(screen.queryByText("Install on Windows")).not.toBeInTheDocument();
   });

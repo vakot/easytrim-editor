@@ -41,12 +41,12 @@ function useActivityFeed() {
 
   const labels = useMemo<ActivityProjectionLabels>(
     () => ({
-      fastCutCompleted: t("export.fastCut.completed"),
-      fastCutCancelled: t("export.fastCut.cancelled"),
-      fastCutFailed: t("export.fastCut.failed"),
-      fastCutInterrupted: t("export.fastCut.interrupted"),
-      fastCutStarted: t("export.fastCut.started"),
-      fastCutting: t("export.fastCut.cutting"),
+      fastExportCompleted: t("export.fastExport.completed"),
+      fastExportCancelled: t("export.fastExport.cancelled"),
+      fastExportFailed: t("export.fastExport.failed"),
+      fastExportInterrupted: t("export.fastExport.interrupted"),
+      fastExportStarted: t("export.fastExport.started"),
+      fastExporting: t("export.fastExport.exporting"),
       fileCloseCompleted: (count) => t("source.close.closedFiles", { count }),
       fileDeleteCancelled: t("source.delete.cancelled"),
       fileDeleted: t("source.delete.completed"),
@@ -61,12 +61,12 @@ function useActivityFeed() {
       importOpenedFiles: (count) => t("source.import.openedFiles", { count }),
       importOpenedFilesFromFolders: (fileCount, folderCount) =>
         `${t("source.import.openedFiles", { count: fileCount })} ${t("source.import.fromFolders", { count: folderCount })}`,
-      renderCompleted: t("export.render.completed"),
-      renderCancelled: t("export.render.cancelled"),
-      renderFailed: t("export.render.failed"),
-      renderInterrupted: t("export.render.interrupted"),
-      renderStarted: t("export.render.started"),
-      rendering: t("export.render.rendering"),
+      optimizedExportCompleted: t("export.optimized.completed"),
+      optimizedExportCancelled: t("export.optimized.cancelled"),
+      optimizedExportFailed: t("export.optimized.failed"),
+      optimizedExportInterrupted: t("export.optimized.interrupted"),
+      optimizedExportStarted: t("export.optimized.started"),
+      optimizedExporting: t("export.optimized.running"),
       workspaceRestored: (restored, total) =>
         restored === total
           ? t("app.workspaceRecovery.restored", { count: restored })

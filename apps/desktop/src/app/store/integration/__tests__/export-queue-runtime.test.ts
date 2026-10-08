@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   performQueueFinishAction: vi.fn().mockResolvedValue(undefined),
   reserveExportSource: vi.fn().mockResolvedValue(undefined),
   releaseExportSource: vi.fn().mockResolvedValue(undefined),
-  renderFast: vi.fn(),
+  exportFast: vi.fn(),
   renderOptimized: vi.fn(),
   resolveOutputSelection: vi.fn(),
   startOperation: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock("@/lib/tauri/media", () => ({
   moveSourceToTrash: mocks.moveSourceToTrash,
   reserveExportSource: mocks.reserveExportSource,
   releaseExportSource: mocks.releaseExportSource,
-  renderFast: mocks.renderFast,
+  exportFast: mocks.exportFast,
   renderOptimized: mocks.renderOptimized,
   resolveOutputSelection: mocks.resolveOutputSelection,
 }));
@@ -138,7 +138,7 @@ describe("export queue runtime", () => {
     store.dispatch(
       editingInstanceExportAttemptQueued({ id: "instance-edit", attempt: nextAttempt }),
     );
-    mocks.renderFast.mockResolvedValue({
+    mocks.exportFast.mockResolvedValue({
       displayName: "edited.mp4",
       displayPath: "C:/Exports/edited.mp4",
       operationId: "edit-op",
@@ -150,8 +150,8 @@ describe("export queue runtime", () => {
     expect(enqueueExport("instance-edit", attempt, store.dispatch, getState)).toBe(true);
     expect(enqueueExport("instance-edit", nextAttempt, store.dispatch, getState)).toBe(true);
     setExportQueueExecutionEnabled(true, store.dispatch, getState);
-    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(1));
-    expect(mocks.renderFast.mock.calls[0]?.[1]).toBe(nextAttempt.id);
+    await vi.waitFor(() => expect(mocks.exportFast).toHaveBeenCalledTimes(1));
+    expect(mocks.exportFast.mock.calls[0]?.[1]).toBe(nextAttempt.id);
     expect(
       store
         .getState()
@@ -180,8 +180,8 @@ describe("export queue runtime", () => {
     ).toBe(true);
     releaseQueuedExportEdit(attempt.id, store.dispatch, getState);
 
-    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
-    expect(mocks.renderFast).toHaveBeenCalledWith(
+    await vi.waitFor(() => expect(mocks.exportFast).toHaveBeenCalledTimes(2));
+    expect(mocks.exportFast).toHaveBeenCalledWith(
       request,
       "edited-output",
       expect.any(Function),
@@ -200,14 +200,14 @@ describe("export queue runtime", () => {
       store.dispatch(editingInstanceExportAttemptQueued({ id, attempt }));
       enqueueExport(id, attempt, store.dispatch, store.getState);
     }
-    mocks.renderFast.mockResolvedValue({
+    mocks.exportFast.mockResolvedValue({
       displayName: "out",
       displayPath: "out",
       operationId: "op",
     });
     store.dispatch(startSourceExportQueue("b"));
     await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(1));
-    expect(mocks.renderFast.mock.calls.map((call) => call[1])).toEqual(["b"]);
+    expect(mocks.exportFast.mock.calls.map((call) => call[1])).toEqual(["b"]);
     expect(store.getState().editingInstances.entities.a?.exportAttempts[0]?.state.status).toBe(
       "queued",
     );
@@ -216,7 +216,7 @@ describe("export queue runtime", () => {
     expect(mocks.moveSourceToTrash).not.toHaveBeenCalled();
     store.dispatch(startSourceExportQueue("a"));
     await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(2));
-    expect(mocks.renderFast.mock.calls.map((call) => call[1])).toEqual(["b", "a"]);
+    expect(mocks.exportFast.mock.calls.map((call) => call[1])).toEqual(["b", "a"]);
     await vi.waitFor(() =>
       expect(mocks.moveSourceToTrash).toHaveBeenCalledExactlyOnceWith(firstSource.sourcePath),
     );
@@ -230,7 +230,7 @@ describe("export queue runtime", () => {
     store.dispatch(editingInstanceExportAttemptQueued({ id: "a", attempt: first }));
     enqueueExport("a", first, store.dispatch, store.getState);
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: true }));
-    mocks.renderFast.mockResolvedValue({
+    mocks.exportFast.mockResolvedValue({
       displayName: "out",
       displayPath: "out",
       operationId: "op",
@@ -239,7 +239,7 @@ describe("export queue runtime", () => {
     store.dispatch(editingInstanceExportAttemptQueued({ id: "b", attempt: second }));
     enqueueExport("b", second, store.dispatch, store.getState);
     await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(1));
-    expect(mocks.renderFast.mock.calls.map((call) => call[1])).toEqual(["b"]);
+    expect(mocks.exportFast.mock.calls.map((call) => call[1])).toEqual(["b"]);
     expect(selectSourceQueueStarted(store.getState(), "a")).toBe(false);
     expect(store.getState().editingInstances.entities.a?.exportAttempts[0]?.state.status).toBe(
       "queued",
@@ -258,7 +258,7 @@ describe("export queue runtime", () => {
       enqueueExport(instanceId, attempt, store.dispatch, store.getState);
     }
 
-    mocks.renderFast.mockResolvedValue({
+    mocks.exportFast.mockResolvedValue({
       displayName: "out",
       displayPath: "out",
       operationId: "op",
@@ -266,8 +266,8 @@ describe("export queue runtime", () => {
 
     store.dispatch(startExportQueue());
 
-    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
-    expect(mocks.renderFast.mock.calls.map((call) => call[1])).toEqual(["a", "b"]);
+    await vi.waitFor(() => expect(mocks.exportFast).toHaveBeenCalledTimes(2));
+    expect(mocks.exportFast.mock.calls.map((call) => call[1])).toEqual(["a", "b"]);
   });
 
   it("cancels a waiting source without interrupting another source's render", async () => {
@@ -280,7 +280,7 @@ describe("export queue runtime", () => {
       enqueueExport(id, attempt, store.dispatch, store.getState);
     }
     let finish = () => {};
-    mocks.renderFast.mockImplementationOnce(
+    mocks.exportFast.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           finish = () => resolve({ displayName: "out", displayPath: "out", operationId: "op" });
@@ -294,7 +294,7 @@ describe("export queue runtime", () => {
     expect(selectSourceQueueStarted(store.getState(), "b")).toBe(false);
     finish();
     await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(1));
-    expect(mocks.renderFast).toHaveBeenCalledTimes(1);
+    expect(mocks.exportFast).toHaveBeenCalledTimes(1);
     expect(store.getState().editingInstances.entities.b?.exportAttempts[0]?.state.status).toBe(
       "queued",
     );
@@ -314,7 +314,7 @@ describe("export queue runtime", () => {
       enqueueExport(id, attempt, store.dispatch, store.getState);
     }
     let finish = () => {};
-    mocks.renderFast
+    mocks.exportFast
       .mockImplementationOnce((_request, _output, onProgress) => {
         onProgress(progress("op-a", 3));
         return new Promise((resolve) => {
@@ -327,8 +327,8 @@ describe("export queue runtime", () => {
     const stopping = stopSourceQueue(store, "a");
     finish();
     await stopping;
-    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
-    expect(mocks.renderFast.mock.calls.map((call) => call[1])).toEqual(["a1", "b1"]);
+    await vi.waitFor(() => expect(mocks.exportFast).toHaveBeenCalledTimes(2));
+    expect(mocks.exportFast.mock.calls.map((call) => call[1])).toEqual(["a1", "b1"]);
     expect(
       store
         .getState()
@@ -344,8 +344,8 @@ describe("export queue runtime", () => {
     expect(selectSourceQueueStarted(store.getState(), "a")).toBe(false);
     expect(mocks.cancelOperation).toHaveBeenCalledWith("op-a");
     store.dispatch(startSourceExportQueue("a"));
-    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(4));
-    expect(mocks.renderFast.mock.calls.map((call) => call[1])).toEqual(["a1", "b1", "a1", "a2"]);
+    await vi.waitFor(() => expect(mocks.exportFast).toHaveBeenCalledTimes(4));
+    expect(mocks.exportFast.mock.calls.map((call) => call[1])).toEqual(["a1", "b1", "a1", "a2"]);
     await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(3));
   });
 
@@ -358,7 +358,7 @@ describe("export queue runtime", () => {
       store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
       store.dispatch(editingInstancesAdded([createInstance("first"), createInstance("second")]));
       const finish: Array<() => void> = [];
-      mocks.renderFast.mockImplementation(
+      mocks.exportFast.mockImplementation(
         () =>
           new Promise((resolve) => {
             finish.push(() =>
@@ -380,7 +380,7 @@ describe("export queue runtime", () => {
         ).toBe("completed"),
       );
       expect(mocks.moveSourceToTrash).not.toHaveBeenCalled();
-      expect(mocks.renderFast).toHaveBeenCalledTimes(1);
+      expect(mocks.exportFast).toHaveBeenCalledTimes(1);
       setExportQueueExecutionEnabled(true, store.dispatch, store.getState);
       await vi.waitFor(() => expect(finish).toHaveLength(2));
       expect(mocks.moveSourceToTrash).not.toHaveBeenCalled();
@@ -403,7 +403,7 @@ describe("export queue runtime", () => {
       expect(enqueueExport("source", attempt, store.dispatch, store.getState)).toBe(true);
     }
     let finish: () => void = () => undefined;
-    mocks.renderFast
+    mocks.exportFast
       .mockImplementationOnce(
         () =>
           new Promise((resolve) => {
@@ -416,8 +416,8 @@ describe("export queue runtime", () => {
     expect(withdrawPendingExport("source", "one", store.getState)).toBe(false);
     expect(withdrawPendingExport("source", "two", store.getState)).toBe(true);
     finish();
-    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
-    expect(mocks.renderFast.mock.calls.map((call) => call[1])).toEqual(["one", "three"]);
+    await vi.waitFor(() => expect(mocks.exportFast).toHaveBeenCalledTimes(2));
+    expect(mocks.exportFast.mock.calls.map((call) => call[1])).toEqual(["one", "three"]);
     await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(3));
   });
   it("runs pending exports in order and keeps one active job per instance", async () => {
@@ -431,7 +431,7 @@ describe("export queue runtime", () => {
     );
     store.dispatch(editingInstanceExportAttemptQueued({ id: "instance-1", attempt: first }));
     store.dispatch(editingInstanceExportAttemptQueued({ id: "instance-2", attempt: second }));
-    mocks.renderFast.mockImplementation(async (request: { sourcePath: string }) => ({
+    mocks.exportFast.mockImplementation(async (request: { sourcePath: string }) => ({
       displayName: "output.mp4",
       displayPath: "C:/Exports/output.mp4",
       operationId: `operation-${request.sourcePath}`,
@@ -442,8 +442,8 @@ describe("export queue runtime", () => {
     enqueueExport("instance-1", first, store.dispatch, getState);
     enqueueExport("instance-2", second, store.dispatch, getState);
 
-    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
-    expect(mocks.renderFast.mock.calls.map(([request]) => request.sourcePath)).toEqual([
+    await vi.waitFor(() => expect(mocks.exportFast).toHaveBeenCalledTimes(2));
+    expect(mocks.exportFast.mock.calls.map(([request]) => request.sourcePath)).toEqual([
       firstSource.sourcePath,
       secondSource.sourcePath,
     ]);
@@ -475,7 +475,7 @@ describe("export queue runtime", () => {
     enqueueExport("instance-cancel", attempt, store.dispatch, getState);
     await cancelQueuedExport("instance-cancel", attempt.id, getState);
 
-    expect(mocks.renderFast).not.toHaveBeenCalled();
+    expect(mocks.exportFast).not.toHaveBeenCalled();
     expect(mocks.releaseExportSource).toHaveBeenCalledWith(firstSource.sourcePath);
     expect(
       store.getState().editingInstances.entities["instance-cancel"]?.exportAttempts[0]?.state
@@ -496,7 +496,7 @@ describe("export queue runtime", () => {
 
     let onProgress: ((value: ExportProgress) => void) | undefined;
 
-    mocks.renderFast
+    mocks.exportFast
       .mockImplementationOnce(
         async (
           _request: unknown,
@@ -528,7 +528,7 @@ describe("export queue runtime", () => {
     await requeue;
 
     expect(mocks.cancelOperation).toHaveBeenCalledWith("op-1");
-    expect(mocks.renderFast).toHaveBeenCalledTimes(1);
+    expect(mocks.exportFast).toHaveBeenCalledTimes(1);
     expect(
       store.getState().editingInstances.entities["instance-requeue"]?.exportAttempts[0]?.state
         .status,
@@ -536,7 +536,7 @@ describe("export queue runtime", () => {
     expect(mocks.releaseExportSource).not.toHaveBeenCalled();
 
     setExportQueueExecutionEnabled(true, store.dispatch, getState);
-    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(mocks.exportFast).toHaveBeenCalledTimes(2));
     onProgress!(progress("op-1", 9));
     expect(
       store.getState().editingInstances.entities["instance-requeue"]?.exportAttempts[0]?.metrics
@@ -553,7 +553,7 @@ describe("export queue runtime", () => {
     const attempt = createAttempt("attempt-failed-retry");
     store.dispatch(editingInstancesAdded([createInstance("instance-failed-retry")]));
     store.dispatch(editingInstanceExportAttemptQueued({ id: "instance-failed-retry", attempt }));
-    mocks.renderFast
+    mocks.exportFast
       .mockRejectedValueOnce(new Error("first render failed"))
       .mockResolvedValueOnce({ displayName: "output", displayPath: "output", operationId: "op-2" });
 
@@ -587,7 +587,7 @@ describe("export queue runtime", () => {
     ).toBe("retry-output");
 
     setExportQueueExecutionEnabled(true, store.dispatch, getState);
-    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(mocks.exportFast).toHaveBeenCalledTimes(2));
     await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(2));
     expect(
       store.getState().editingInstances.entities["instance-failed-retry"]?.exportAttempts[0]?.state
@@ -601,7 +601,7 @@ describe("export queue runtime", () => {
     const attempt = createAttempt("attempt-retry-failure");
     store.dispatch(editingInstancesAdded([createInstance("instance-retry-failure")]));
     store.dispatch(editingInstanceExportAttemptQueued({ id: "instance-retry-failure", attempt }));
-    mocks.renderFast.mockRejectedValueOnce(new Error("initial render failed"));
+    mocks.exportFast.mockRejectedValueOnce(new Error("initial render failed"));
 
     enqueueExport("instance-retry-failure", attempt, store.dispatch, getState);
     setExportQueueExecutionEnabled(true, store.dispatch, getState);
@@ -634,7 +634,7 @@ describe("export queue runtime", () => {
     store.dispatch(
       editingInstanceExportAttemptQueued({ id: "instance-failed-auto-retry", attempt }),
     );
-    mocks.renderFast.mockRejectedValueOnce(new Error("first render failed")).mockResolvedValueOnce({
+    mocks.exportFast.mockRejectedValueOnce(new Error("first render failed")).mockResolvedValueOnce({
       displayName: "output",
       displayPath: "output",
       operationId: "op-retry",
@@ -654,7 +654,7 @@ describe("export queue runtime", () => {
     await expect(
       retryFailedExport("instance-failed-auto-retry", attempt.id, store.dispatch, getState),
     ).resolves.toBe(true);
-    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(mocks.exportFast).toHaveBeenCalledTimes(2));
     expect(
       store.getState().editingInstances.entities["instance-failed-auto-retry"]?.exportAttempts[0]
         ?.state.status,
@@ -673,7 +673,7 @@ describe("export queue runtime", () => {
     }) => void = () => undefined;
 
     let onProgress: ((value: ExportProgress) => void) | undefined;
-    mocks.renderFast.mockImplementation(
+    mocks.exportFast.mockImplementation(
       async (
         _request: unknown,
         _outputId: string,

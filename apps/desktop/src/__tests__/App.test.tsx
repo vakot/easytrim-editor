@@ -354,8 +354,8 @@ describe("App", () => {
 
     await user.clear(search);
     await user.type(search, "export");
-    expect(screen.getByRole("option", { name: /Save Lossless Cut/ })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /Optimize & Export/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Fast Export/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Optimized Export/ })).toBeInTheDocument();
 
     await user.clear(search);
     await user.type(search, "folder");
@@ -430,7 +430,7 @@ describe("App", () => {
       expect(within(shortcutList).getByText(label)).toBeInTheDocument();
     }
     expect(within(shortcutList).getByLabelText("/")).toBeInTheDocument();
-    expect(within(shortcutList).queryByText("Save Lossless Cut")).not.toBeInTheDocument();
+    expect(within(shortcutList).queryByText("Fast Export")).not.toBeInTheDocument();
     expect(within(shortcutList).queryByText("Optimize & Export")).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Support on Ko-fi.com" })).not.toHaveLength(0);
     expect(
@@ -446,7 +446,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Next frame" })).toBeDisabled();
     expect(screen.getByRole("slider", { name: "Move selected segment" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Loop playback" })).not.toBeDisabled();
-    expect(screen.getByRole("button", { name: "Segment playback" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Play selected segment" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Playback speed" })).not.toBeDisabled();
     expect(screen.getAllByText("00:00:00:00f").length).toBeGreaterThanOrEqual(8);
     expect(screen.queryByRole("slider", { name: "Playback position" })).toBeDisabled();
@@ -582,7 +582,10 @@ describe("App", () => {
         screen.getByRole("checkbox", { name: replacementSelection.displayName }),
       ).toHaveAttribute("data-active", "true"),
     );
-    expect(screen.getByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
+    const selectedSegmentHeading = screen.getByRole("heading", { name: "Selected Segment" });
+    expect(selectedSegmentHeading).toBeInTheDocument();
+    expect(selectedSegmentHeading.closest(".select-none")).toBeNull();
+    expect(screen.getByLabelText("Current playback time").closest(".select-none")).toBeNull();
     expect(screen.getByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
 
     await waitFor(() => {
@@ -828,7 +831,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       within(deleteDialog).getByText(
-        "This deletes holiday.mp4 from your computer. This action can be undone.",
+        "This deletes holiday.mp4 from your computer. This action can be undone",
       ),
     ).toBeInTheDocument();
 
@@ -914,13 +917,12 @@ describe("App", () => {
         .getByRole("button", { name: "Loop playback" })
         .querySelector(".lucide-repeat"),
     ).not.toBeNull();
-    expect(within(videoToolbar).getByRole("button", { name: "Segment playback" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(
+      within(videoToolbar).getByRole("button", { name: "Play selected segment" }),
+    ).toHaveAttribute("aria-pressed", "true");
     expect(
       within(videoToolbar)
-        .getByRole("button", { name: "Segment playback" })
+        .getByRole("button", { name: "Play selected segment" })
         .querySelector(".lucide-between-vertical-start"),
     ).not.toBeNull();
     expect(within(videoToolbar).queryByRole("button", { name: "Reset tools" })).toBeNull();
@@ -1041,7 +1043,7 @@ describe("App", () => {
     await user.keyboard("{Enter}");
     fireEvent.keyDown(window, { key: "i", code: "KeyI" });
     expect(startHandle).toHaveAttribute("aria-valuenow", "0");
-    await user.click(screen.getByRole("menuitem", { name: /Optimize & Export/ }));
+    await user.click(screen.getByRole("menuitem", { name: /Optimized Export/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: " ", code: "Space" });
@@ -1163,15 +1165,21 @@ describe("App", () => {
       expect(mocks.prepareWaveforms).toHaveBeenCalledTimes(1);
 
       await user.click(screen.getByRole("button", { name: "Mute (Commentary)" }));
-      expect(screen.getByText("1 selected track kept separately")).toBeInTheDocument();
+      const outputSummary = screen.getByText("1 selected track kept separately");
+      expect(outputSummary).toBeInTheDocument();
+      expect(outputSummary.closest(".select-none")).toBeNull();
+      const mergeAudioLabel = screen.getByText("Merge selected tracks");
+      expect(mergeAudioLabel.closest(".select-none")).toBeNull();
       const mergeAudio = screen.getByRole("checkbox", { name: "Merge selected tracks" });
       await user.hover(mergeAudio);
       expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
       expect(await screen.findByRole("tooltip")).toHaveTextContent(
-        "All selected tracks are merged into one track; this requires encoding.",
+        "All selected tracks are merged into one track; this requires encoding",
       );
       await user.click(mergeAudio);
-      expect(screen.getByText("One selected track — no merge is needed")).toBeInTheDocument();
+      const mergedOutputSummary = screen.getByText("One selected track — no merge is needed");
+      expect(mergedOutputSummary).toBeInTheDocument();
+      expect(mergedOutputSummary.closest(".select-none")).toBeNull();
       expect(screen.getByRole("button", { name: "Mute (eng)" })).toHaveAttribute(
         "aria-pressed",
         "true",
@@ -1359,7 +1367,7 @@ describe("App", () => {
 
       await user.click(screen.getByRole("button", { name: "Play" }));
 
-      expect(await screen.findByRole("alert")).toHaveTextContent("Playback could not start.");
+      expect(await screen.findByRole("alert")).toHaveTextContent("Playback could not start");
       expect(audioContext.resume).toHaveBeenCalledOnce();
       expect(videoPause).toHaveBeenCalledOnce();
       expect(audioPause).toHaveBeenCalled();
@@ -1460,7 +1468,7 @@ describe("App", () => {
     fireEvent.timeUpdate(video);
     fireEvent.keyDown(window, { key: "o", code: "KeyO" });
 
-    const segmentToggle = screen.getByRole("button", { name: "Segment playback" });
+    const segmentToggle = screen.getByRole("button", { name: "Play selected segment" });
     const loopToggle = screen.getByRole("button", { name: "Loop playback" });
     const playhead = screen.getByRole("slider", { name: "Playback position" });
     expect(segmentToggle).toHaveAttribute("aria-pressed", "true");
@@ -1505,7 +1513,7 @@ describe("App", () => {
     const play = vi.spyOn(video, "play").mockResolvedValue();
     vi.spyOn(video, "pause").mockImplementation(() => undefined);
 
-    const segmentToggle = screen.getByRole("button", { name: "Segment playback" });
+    const segmentToggle = screen.getByRole("button", { name: "Play selected segment" });
     await user.click(segmentToggle);
     expect(segmentToggle).toHaveAttribute("aria-pressed", "false");
     expect(video.loop).toBe(true);
@@ -2070,7 +2078,7 @@ describe("App", () => {
     expect(endHandle).toHaveAttribute("aria-valuenow", "65000000");
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
     await user.hover(startHandle);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Trim start");
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
   it("resumes playback after both pointer cycles of a trim-handle double-click", async () => {
@@ -2662,7 +2670,7 @@ describe("App", () => {
     fireEvent.error(screen.getByLabelText("Source video preview"));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "The compatible preview could not be played.",
+      "The compatible preview could not be played",
     );
     expect(selectHasSource(store.getState())).toBe(true);
   });

@@ -1,3 +1,4 @@
+import { getRelativeTimeBucketKey } from "@/lib/date-time.utils";
 import type {
   DiagnosticEvent,
   DiagnosticSessionMetadata,
@@ -5,14 +6,14 @@ import type {
 } from "@/lib/tauri/diagnostics.types";
 
 export type ActivityKind =
-  | "fast-cut"
+  | "fast-export"
   | "file-deleted"
   | "file-restored"
   | "files-closed"
   | "files-imported"
   | "folders-imported"
   | "workspace-restored"
-  | "render";
+  | "optimized-export";
 export type ActivityStatus = "cancelled" | "completed" | "failed" | "interrupted" | "pending";
 export type ActivityAction =
   { kind: "open"; path: string } | { kind: "restore"; path: string; targetId: string };
@@ -41,13 +42,21 @@ interface ActivitySessionGroup extends DiagnosticSessionMetadata {
   entries: readonly ActivityEntry[];
   isCurrent: boolean;
 }
+interface ActivitySessionDisplayGroup {
+  appVersion: string | null;
+  displayKey: string;
+  entries: readonly ActivityEntry[];
+  isCurrent: boolean;
+  sessionIds: readonly string[];
+  startedAt: string;
+}
 interface ActivityProjectionLabels {
-  fastCutCancelled: string;
-  fastCutCompleted: string;
-  fastCutFailed: string;
-  fastCutInterrupted: string;
-  fastCutStarted: string;
-  fastCutting: string;
+  fastExportCancelled: string;
+  fastExportCompleted: string;
+  fastExportFailed: string;
+  fastExporting: string;
+  fastExportInterrupted: string;
+  fastExportStarted: string;
   fileCloseCompleted: (count: number) => string;
   fileDeleteCancelled: string;
   fileDeleted: string;
@@ -61,22 +70,19 @@ interface ActivityProjectionLabels {
   fileRestoring: string;
   importOpenedFiles: (count: number) => string;
   importOpenedFilesFromFolders: (fileCount: number, folderCount: number) => string;
-  renderCancelled: string;
-  renderCompleted: string;
-  renderFailed: string;
-  rendering: string;
-  renderInterrupted: string;
-  renderStarted: string;
+  optimizedExportCancelled: string;
+  optimizedExportCompleted: string;
+  optimizedExportFailed: string;
+  optimizedExporting: string;
+  optimizedExportInterrupted: string;
+  optimizedExportStarted: string;
   workspaceRestored: (restored: number, total: number) => string;
 }
 interface ActivitySessionLabels {
   now: string;
-  today: string;
-  yesterday: string;
 }
 interface ActivitySessionPresentation {
   label: string;
-  timestamp?: string;
   tone: "current" | "default" | "warning";
 }
 interface ActivityBranch {
@@ -174,6 +180,50 @@ function groupActivityEntriesBySession(
   }
   return groups.sort(compareActivitySessionGroups);
 }
+function groupActivitySessionsForDisplay(
+  groups: readonly ActivitySessionGroup[],
+  currentAppVersion: string,
+  currentSessionLabel: string,
+  nowMs = Date.now(),
+): ActivitySessionDisplayGroup[] {
+  const displayGroups: ActivitySessionDisplayGroup[] = [];
+  for (const group of groups) {
+    const presentation = getActivitySessionPresentation(group, currentAppVersion, {
+      now: currentSessionLabel,
+    });
+
+    const timestampMs = Date.parse(group.startedAt);
+    const timeBucketKey = group.isCurrent
+      ? "current"
+      : getRelativeTimeBucketKey(
+          Number.isNaN(timestampMs) ? undefined : timestampMs * 1_000,
+          nowMs,
+        );
+
+    const displayKey = JSON.stringify([timeBucketKey, presentation.tone, presentation.label]);
+    const previous = displayGroups.at(-1);
+
+    if (previous && !group.isCurrent && !previous.isCurrent && previous.displayKey === displayKey) {
+      displayGroups[displayGroups.length - 1] = {
+        ...previous,
+        entries: [...previous.entries, ...group.entries].sort(compareActivityEntries),
+        sessionIds: [...previous.sessionIds, group.sessionId],
+      };
+      continue;
+    }
+
+    displayGroups.push({
+      appVersion: group.appVersion,
+      displayKey,
+      entries: group.entries,
+      isCurrent: group.isCurrent,
+      sessionIds: [group.sessionId],
+      startedAt: group.startedAt,
+    });
+  }
+
+  return displayGroups;
+}
 function groupActivityEntriesByBranch(entries: readonly ActivityEntry[]): ActivitySessionItem[] {
   const branches = new Map<string, ActivityBranch>();
   const standalone: ActivityEntry[] = [];
@@ -259,23 +309,18 @@ function groupActivityEntriesForDisplay(entries: readonly ActivityEntry[]): Acti
   return items;
 }
 function getActivitySessionPresentation(
-  group: ActivitySessionGroup,
+  group: Pick<ActivitySessionGroup, "appVersion" | "isCurrent">,
   currentAppVersion: string,
-  now: Date,
-  locale: string,
   labels: ActivitySessionLabels,
 ): ActivitySessionPresentation {
   if (group.isCurrent) return { label: labels.now, tone: "current" };
-  const startedAt = new Date(group.startedAt);
-  const dateLabel = formatSessionDate(startedAt, now, locale, labels);
   const versionLabel =
     group.appVersion !== null && group.appVersion !== currentAppVersion
-      ? `v${group.appVersion} · `
+      ? `v${group.appVersion}`
       : "";
 
   return {
-    label: `${versionLabel}${dateLabel}`,
-    timestamp: group.startedAt,
+    label: versionLabel,
     tone: versionLabel ? "warning" : "default",
   };
 }
@@ -417,7 +462,7 @@ function projectExportStart(
   return createActivityEntry(
     event,
     metadata.kind,
-    metadata.kind === "fast-cut" ? labels.fastCutStarted : labels.renderStarted,
+    metadata.kind === "fast-export" ? labels.fastExportStarted : labels.optimizedExportStarted,
     {
       path: metadata.path,
       ...(snapshotId ? { snapshotId } : {}),
@@ -543,11 +588,11 @@ function isExportTerminalEvent(event: DiagnosticEvent): boolean {
 }
 function exportMetadata(
   data: Record<string, DiagnosticValue> | undefined,
-): { kind: Extract<ActivityKind, "fast-cut" | "render">; path?: string } | null {
+): { kind: Extract<ActivityKind, "fast-export" | "optimized-export">; path?: string } | null {
   const outputType = data?.outputType ?? data?.route;
   if (outputType !== "fast" && outputType !== "optimized") return null;
   return {
-    kind: outputType === "fast" ? "fast-cut" : "render",
+    kind: outputType === "fast" ? "fast-export" : "optimized-export",
     path: diagnosticString(data?.outputPath),
   };
 }
@@ -559,26 +604,29 @@ function exportStatus(
   return "completed";
 }
 function exportTitle(
-  kind: Extract<ActivityKind, "fast-cut" | "render">,
+  kind: Extract<ActivityKind, "fast-export" | "optimized-export">,
   status: ActivityStatus,
   labels: ActivityProjectionLabels,
 ): string {
   const titles = {
-    "fast-cut": {
-      cancelled: labels.fastCutCancelled,
-      completed: labels.fastCutCompleted,
-      failed: labels.fastCutFailed,
-      interrupted: labels.fastCutInterrupted,
-      pending: labels.fastCutting,
+    "fast-export": {
+      cancelled: labels.fastExportCancelled,
+      completed: labels.fastExportCompleted,
+      failed: labels.fastExportFailed,
+      interrupted: labels.fastExportInterrupted,
+      pending: labels.fastExporting,
     },
-    render: {
-      cancelled: labels.renderCancelled,
-      completed: labels.renderCompleted,
-      failed: labels.renderFailed,
-      interrupted: labels.renderInterrupted,
-      pending: labels.rendering,
+    "optimized-export": {
+      cancelled: labels.optimizedExportCancelled,
+      completed: labels.optimizedExportCompleted,
+      failed: labels.optimizedExportFailed,
+      interrupted: labels.optimizedExportInterrupted,
+      pending: labels.optimizedExporting,
     },
-  } satisfies Record<Extract<ActivityKind, "fast-cut" | "render">, Record<ActivityStatus, string>>;
+  } satisfies Record<
+    Extract<ActivityKind, "fast-export" | "optimized-export">,
+    Record<ActivityStatus, string>
+  >;
 
   return titles[kind][status];
 }
@@ -771,32 +819,12 @@ function compareActivitySessionGroups(
   const timestampDifference = Date.parse(right.startedAt) - Date.parse(left.startedAt);
   return timestampDifference || right.sessionId.localeCompare(left.sessionId);
 }
-function formatSessionDate(
-  startedAt: Date,
-  now: Date,
-  locale: string,
-  labels: Pick<ActivitySessionLabels, "today" | "yesterday">,
-): string {
-  const dayDifference = calendarDayDifference(now, startedAt);
-  if (dayDifference === 0) return labels.today;
-  if (dayDifference === 1) return labels.yesterday;
-  return new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-    year: startedAt.getFullYear() === now.getFullYear() ? undefined : "numeric",
-  }).format(startedAt);
-}
-function calendarDayDifference(later: Date, earlier: Date): number {
-  const laterUtc = Date.UTC(later.getFullYear(), later.getMonth(), later.getDate());
-  const earlierUtc = Date.UTC(earlier.getFullYear(), earlier.getMonth(), earlier.getDate());
-  return Math.round((laterUtc - earlierUtc) / 86_400_000);
-}
-
 export {
   getActivitySessionPresentation,
   groupActivityEntriesByBranch,
   groupActivityEntriesBySession,
   groupActivityEntriesForDisplay,
+  groupActivitySessionsForDisplay,
   projectActivityEvent,
   projectActivityEvents,
   resolveAvailableActivityActions,
@@ -807,6 +835,7 @@ export type {
   ActivityEntry,
   ActivityGroup,
   ActivityProjectionLabels,
+  ActivitySessionDisplayGroup,
   ActivitySessionGroup,
   ActivitySessionLabels,
   ActivitySessionPresentation,

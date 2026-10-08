@@ -26,7 +26,7 @@ function useDeleteSourceOnFinishCommand() {
     },
     id: "delete-source-on-render-finish" as const,
     label,
-    searchTerms: commandSearchTerms(`${label}|render|queue`),
+    searchTerms: commandSearchTerms(label),
     variant: "destructive" as const,
   };
 }

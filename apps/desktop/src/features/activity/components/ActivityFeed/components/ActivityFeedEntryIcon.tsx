@@ -16,13 +16,13 @@ import { Spinner } from "@/components/ui/spinner";
 import type { ActivityEntry, ActivityKind, ActivityStatus } from "../../../lib/activity-projection";
 
 const activityIcons: Record<ActivityKind, LucideIcon> = {
-  "fast-cut": Scissors,
+  "fast-export": Scissors,
   "file-deleted": Trash2,
   "files-closed": CircleX,
   "file-restored": RotateCcw,
   "files-imported": FileVideo,
   "folders-imported": FolderOpen,
-  render: Film,
+  "optimized-export": Film,
   "workspace-restored": RotateCcw,
 };
 

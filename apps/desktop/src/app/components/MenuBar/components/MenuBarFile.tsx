@@ -58,7 +58,7 @@ function MenuBarFileContent() {
       </MenubarGroup>
       <MenubarSeparator />
       <MenubarGroup>
-        <ApplicationCommandMenuItem asChild commandId="save-lossless-cut">
+        <ApplicationCommandMenuItem asChild commandId="fast-export">
           <MenubarItem>
             <ApplicationCommandLabel />
             <ApplicationCommandShortcut />

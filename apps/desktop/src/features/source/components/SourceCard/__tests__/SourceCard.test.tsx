@@ -117,7 +117,7 @@ describe("SourceCard", () => {
       "active",
     );
     expect(screen.queryByText("Queued")).not.toBeInTheDocument();
-    expect(screen.queryByText("Rendering…")).not.toBeInTheDocument();
+    expect(screen.queryByText("Processing…")).not.toBeInTheDocument();
     expect(screen.queryByText("Completed")).not.toBeInTheDocument();
   });
 

@@ -16,13 +16,18 @@ const malformedArgumentCases: {
 
 describe("localizeAppError", () => {
   it("resolves a semantic native error in every supported locale", () => {
-    for (const language of ["en", "ru", "sk"] as const) {
+    const expected = {
+      en: "This file type is not supported yet",
+      ru: "Этот тип файла пока не поддерживается",
+    } as const;
+
+    for (const language of ["en", "ru"] as const) {
       expect(
         localizeAppError(
           { code: "unsupported_media", messageId: "source.fileTypeIsNotSupportedYet" },
           i18n.getFixedT(language),
         ),
-      ).toBe("This file type is not supported yet.");
+      ).toBe(expected[language]);
     }
   });
 
@@ -34,7 +39,10 @@ describe("localizeAppError", () => {
     });
 
     expect(localizeAppError(error, i18n.getFixedT("en"))).toBe(
-      "Waveform width must be between 64 and 4096 pixels.",
+      "Waveform width must be between 64 and 4096 pixels",
+    );
+    expect(localizeAppError(error, i18n.getFixedT("ru"))).toBe(
+      "Ширина формы волны должна быть от 64 до 4096 пикселей",
     );
   });
 
@@ -46,7 +54,7 @@ describe("localizeAppError", () => {
     });
 
     expect(localizeAppError(error, i18n.getFixedT("en"))).toBe(
-      "Waveform analysis failed for audio stream #2.",
+      "Waveform analysis failed for audio stream #2",
     );
   });
 
@@ -76,16 +84,15 @@ describe("localizeAppError", () => {
 
   it("uses a generic localized fallback without displaying diagnostics or legacy text", () => {
     const expectedByLanguage = {
-      en: "An unexpected application error occurred.",
-      ru: "Произошла непредвиденная ошибка приложения.",
-      sk: "V aplikácii sa vyskytla neočakávaná chyba.",
+      en: "An unexpected application error occurred",
+      ru: "Произошла непредвиденная ошибка приложения",
     };
 
     for (const error of [
       { code: "internal", diagnostics: "private path C:/Media/secret.mp4" },
       { code: "future_code", messageId: "future.unknown", diagnostics: "private detail" },
     ]) {
-      for (const language of ["en", "ru", "sk"] as const) {
+      for (const language of ["en", "ru"] as const) {
         expect(localizeAppError(error, i18n.getFixedT(language))).toBe(
           expectedByLanguage[language],
         );
