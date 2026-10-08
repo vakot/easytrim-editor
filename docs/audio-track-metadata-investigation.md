@@ -60,21 +60,22 @@ mixed stream can retain metadata from each source track.
 
 Reference: [FFmpeg documentation for stream specifiers, metadata, and dispositions](https://ffmpeg.org/ffmpeg.html).
 
-## Bounded implementation plan
+## Implementation scope
 
-1. Add optional output metadata settings to each audio track's serializable editor snapshot. Keep
-   the source probe result as the initial display value and store only user-edited output values.
-2. Include the settings in Fast and Optimized Export requests. Validate that the designated default
-   belongs to an enabled output track, and reject duplicate or stale stream indexes as the existing
-   export boundary does for audio selections.
-3. Build output metadata by output audio ordinal after all maps are finalized. Set language and
-   title for mapped tracks and explicitly set `default` or `0` on every output audio stream. Keep
-   merged output's established metadata policy.
-4. Add small controls to each audio row for title, language, and default selection. Keep editing
-   state source-bound and ensure snapshots, queued exports, and queue edits retain it.
-5. Verify real FFmpeg output with `ffprobe` for stream-copy and encoded audio, disabled tracks,
-   source defaults, changed defaults, and merged audio. Cover at least Matroska and MP4 if both
-   remain supported export containers; assert stream count, language/title tags, and dispositions.
+This PR adds a per-track output metadata dialog and a default-track action to the audio row menu.
+The source title and language remain the displayed/output values until edited. Metadata overrides
+and the selected default are kept in the existing serializable editor snapshot, so editing
+instances and queued exports retain them.
+
+Fast and Optimized Export requests now carry metadata for enabled tracks. The native export boundary
+checks that metadata matches the selected streams, contains one default for non-empty audio output,
+and stays within title and language limits. It applies title, language, and disposition settings by
+output audio ordinal after mapping. This works with copied and processed audio. Multi-track merged
+output uses one `Merged audio` stream with language `und` and the default disposition.
+
+The remaining verification for reviewers is to inspect output with `ffprobe` for stream-copy and
+processed audio, disabled tracks, changed defaults, and merged audio in Matroska and MP4. This
+implementation was compile-checked but did not run application tests in this environment.
 
 The main scope cost is settings propagation through editor snapshots and queued exports, not the
 FFmpeg command syntax. This should stay separate from broader chapter, video, or container-level
