@@ -266,4 +266,20 @@ describe("LanguageSelector", () => {
       expect(option).not.toHaveTextContent(language.region);
     }
   });
+
+  it("renders no flag for malformed regions without throwing", () => {
+    const { container } = render(
+      <LanguageSelectorFlag
+        language={{
+          code: "xx",
+          englishName: "Unknown",
+          nativeName: "Unknown",
+          region: "X",
+        }}
+      />,
+    );
+
+    expect(container.querySelector("svg")).not.toBeInTheDocument();
+    expect(container.querySelector("span[aria-hidden='true']")).toBeEmptyDOMElement();
+  });
 });

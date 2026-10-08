@@ -359,7 +359,10 @@ function LanguageSelectorFlag({
     ? REGION_FLAGS[language.region as keyof typeof REGION_FLAGS]
     : undefined;
 
-  const unicodeFlag = language.region ? getCountryFlag(language.region) : undefined;
+  const unicodeFlag =
+    language.region && /^[a-z]{2}$/i.test(language.region)
+      ? getCountryFlag(language.region)
+      : undefined;
 
   return (
     <span
@@ -374,9 +377,9 @@ function LanguageSelectorFlag({
         language.flag
       ) : CountryFlag ? (
         <CountryFlag aria-hidden="true" className="block h-auto! w-full!" />
-      ) : (
+      ) : unicodeFlag ? (
         <span className="text-xs leading-none">{unicodeFlag}</span>
-      )}
+      ) : null}
     </span>
   );
 }

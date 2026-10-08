@@ -32,7 +32,17 @@ describe("SettingsGeneral", () => {
     expect(within(listbox).getAllByRole("progressbar")).toHaveLength(2);
     expect(
       within(listbox)
+        .getByRole("option", { name: "English, en" })
+        .querySelector("span[aria-hidden='true'] svg"),
+    ).toBeInTheDocument();
+    expect(
+      within(listbox)
         .getByRole("option", { name: "Русский (Russian), ru" })
+        .querySelector("span[aria-hidden='true'] svg"),
+    ).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole("button", { name: "Language" })
         .querySelector("span[aria-hidden='true'] svg"),
     ).toBeInTheDocument();
     expect(within(listbox).queryByRole("link", { name: "Help translate EasyTrim" })).toBeNull();

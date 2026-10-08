@@ -1,5 +1,3 @@
-import GB from "country-flag-icons/react/3x2/GB";
-import RU from "country-flag-icons/react/3x2/RU";
 import { ChevronsUpDown, ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -24,16 +22,6 @@ import { SettingRow, SettingsSection } from "../components/SettingRow";
 const TRANSLATION_GUIDE_URL =
   "https://github.com/vakot/easytrim-editor/blob/master/apps/desktop/src/i18n/README.md";
 
-const SETTINGS_LANGUAGES = SUPPORTED_LANGUAGES.map((language) => ({
-  ...language,
-  flag:
-    language.region === "GB" ? (
-      <GB aria-hidden="true" className="block h-auto! w-full!" />
-    ) : (
-      <RU aria-hidden="true" className="block h-auto! w-full!" />
-    ),
-}));
-
 function SettingsGeneral() {
   const { i18n, t } = useTranslation();
   const language = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
@@ -47,7 +35,7 @@ function SettingsGeneral() {
         <div className="inline-grid min-w-44 items-end gap-2">
           <LanguageSelector
             label={t("common.search.languages")}
-            languages={SETTINGS_LANGUAGES}
+            languages={SUPPORTED_LANGUAGES}
             onValueChange={(nextLanguage) => {
               if (isSupportedLanguage(nextLanguage)) void i18n.changeLanguage(nextLanguage);
             }}
