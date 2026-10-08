@@ -34,10 +34,6 @@ function Slider({
     [value, defaultValue, min, max],
   );
 
-  React.useEffect(() => {
-    if (disabled) setDragging(false);
-  }, [disabled]);
-
   return (
     <SliderPrimitive.Root
       className={cn(
@@ -108,8 +104,9 @@ function Slider({
           </span>
         );
       })}
+
       {Array.from({ length: _values.length }, (_, index) => (
-        <Tooltip key={index} open={disabled ? false : dragging || undefined} preserveOnTrigger>
+        <Tooltip key={index} open={!disabled && dragging} preserveOnTrigger>
           <TooltipTrigger asChild>
             <SliderPrimitive.Thumb
               aria-label={ariaLabel}
