@@ -58,6 +58,17 @@ describe("localizeAppError", () => {
     );
   });
 
+  it("localizes incompatible output containers", () => {
+    const error = normalizeAppError({
+      code: "invalid_request",
+      messageId: "export.outputContainerIsNotCompatibleWithSelectedStreams",
+    });
+
+    expect(localizeAppError(error, i18n.getFixedT("en"))).toBe(
+      "The selected container is not compatible with the selected video and audio streams",
+    );
+  });
+
   it.each(malformedArgumentCases)(
     "falls back when $messageId has missing or unusable arguments",
     ({ messageArgs, messageId }) => {

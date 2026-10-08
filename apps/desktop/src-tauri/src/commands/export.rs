@@ -18,7 +18,7 @@ use crate::{
     error::{AppError, AppErrorMessageId},
     media::export::{
         FastExportRequest, OptimizedExportRequest, build_fast_arguments, build_optimized_arguments,
-        optimized_command_preview,
+        fast_export_output_extensions, optimized_command_preview,
     },
     media::loudness::{LoudnessAnalysis, LoudnessAnalysisRequest, analyze_loudness},
     media::probe::MediaInfo,
@@ -113,20 +113,50 @@ pub async fn choose_output_path(
     app: AppHandle,
     state: State<'_, AppState>,
     default_name: String,
+    fast_export_request: Option<FastExportRequest>,
 ) -> Result<Option<OutputSelection>, AppError> {
     if default_name.trim().is_empty() || default_name.len() > 255 {
         return Err(AppError::invalid_request(
             AppErrorMessageId::ExportOutputNameIsRequired,
         ));
     }
+    let extensions = if let Some(request) = &fast_export_request {
+        let source = state.resolve_export_source(&request.source_path)?;
+        let media = source.media.as_ref().ok_or_else(|| {
+            AppError::invalid_request(AppErrorMessageId::ExportInspectTheVideoBeforeExporting)
+        })?;
+        fast_export_output_extensions(media, request)?
+    } else {
+        vec!["mkv", "mp4", "mov", "webm"]
+    };
+    if extensions.is_empty() {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportOutputContainerIsNotCompatibleWithSelectedStreams,
+        ));
+    }
+    let mut default_path = PathBuf::from(default_name);
+    let current_extension = default_path
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(str::to_ascii_lowercase);
+    if !current_extension
+        .as_deref()
+        .is_some_and(|current| extensions.contains(&current))
+    {
+        default_path.set_extension(extensions[0]);
+    }
+
     let (sender, receiver) = std::sync::mpsc::channel();
-    app.dialog()
+    let dialog = app
+        .dialog()
         .file()
-        .set_file_name(default_name)
-        .add_filter("Video", &["mkv", "mp4", "mov", "webm"])
-        .save_file(move |selected| {
-            let _ = sender.send(selected);
-        });
+        .set_file_name(default_path.to_string_lossy());
+    let dialog = extensions.iter().fold(dialog, |dialog, extension| {
+        dialog.add_filter(container_filter_label(extension), &[extension])
+    });
+    dialog.save_file(move |selected| {
+        let _ = sender.send(selected);
+    });
     let selected = tauri::async_runtime::spawn_blocking(move || receiver.recv())
         .await
         .map_err(|_| AppError::internal("The output dialog task stopped unexpectedly."))?
@@ -726,6 +756,16 @@ fn output_display_name(path: &std::path::Path) -> Result<String, AppError> {
         .and_then(|value| value.to_str())
         .map(ToOwned::to_owned)
         .ok_or_else(|| AppError::invalid_request(AppErrorMessageId::ExportOutputNameIsRequired))
+}
+
+fn container_filter_label(extension: &str) -> &'static str {
+    match extension {
+        "mkv" => "Matroska video (*.mkv)",
+        "mp4" => "MPEG-4 video (*.mp4)",
+        "mov" => "QuickTime video (*.mov)",
+        "webm" => "WebM video (*.webm)",
+        _ => "Video",
+    }
 }
 
 #[cfg(test)]

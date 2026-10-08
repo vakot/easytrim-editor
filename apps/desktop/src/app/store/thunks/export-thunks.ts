@@ -217,7 +217,11 @@ async function finishQueuedExportEdit(
   dispatch(optimizedExportDialogClosed());
   dispatch(nativeDialogStateChanged(true));
   try {
-    const output = await chooseOutputPath(attempt.output.displayName);
+    const output = await chooseOutputPath(
+      attempt.output.displayName,
+      route === "fast" ? (attempt.request as FastExportRequest) : undefined,
+    );
+
     if (!output) return;
 
     let request = attempt.request;
@@ -404,7 +408,11 @@ async function startEditingInstanceExport(
   const attemptId = nextAttemptId();
   dispatch(nativeDialogStateChanged(true));
   try {
-    const output = await chooseOutputPath(outputDefaults(source.displayName)[route]);
+    const output = await chooseOutputPath(
+      outputDefaults(source.displayName)[route],
+      route === "fast" ? (request as FastExportRequest) : undefined,
+    );
+
     if (!output) return;
     if (
       selectActiveInstanceId(getState()) !== instance.id ||

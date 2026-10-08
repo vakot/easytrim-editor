@@ -35,7 +35,7 @@ import {
   releaseImportedSourceThumbnail,
   saveFramePng,
 } from "../media";
-import type { MediaInfo } from "../media.types";
+import type { FastExportRequest, MediaInfo } from "../media.types";
 import { parseMediaCapabilities, parseSourceRef } from "../media.utils";
 
 type NativeDropEvent =
@@ -373,6 +373,25 @@ describe("media IPC adapter", () => {
 
     expect(mocks.invoke).toHaveBeenCalledWith("choose_output_path", {
       defaultName: "clip_fast.mkv",
+      fastExportRequest: null,
+    });
+  });
+
+  it("passes the selected fast export streams to the output picker", async () => {
+    mocks.invoke.mockResolvedValue(null);
+    const request = {
+      sourcePath: "C:/Media/clip.mkv",
+      trim: { startMicros: 0, endMicros: 2_000_000 },
+      audioTracks: [],
+      mergeAudio: false,
+      rotationDegrees: 0,
+    } satisfies FastExportRequest;
+
+    await expect(chooseOutputPath("clip_fast.mkv", request)).resolves.toBeNull();
+
+    expect(mocks.invoke).toHaveBeenCalledWith("choose_output_path", {
+      defaultName: "clip_fast.mkv",
+      fastExportRequest: request,
     });
   });
 

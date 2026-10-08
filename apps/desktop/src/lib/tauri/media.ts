@@ -123,9 +123,15 @@ async function restoreSourceFromTrash(sourcePath: string): Promise<void> {
   }
 }
 
-async function chooseOutputPath(defaultName: string): Promise<OutputSelection | null> {
+async function chooseOutputPath(
+  defaultName: string,
+  fastExportRequest?: FastExportRequest,
+): Promise<OutputSelection | null> {
   try {
-    const value = await invoke<unknown>("choose_output_path", { defaultName });
+    const value = await invoke<unknown>("choose_output_path", {
+      defaultName,
+      fastExportRequest: fastExportRequest ?? null,
+    });
 
     return value === null ? null : parseOutputSelection(value);
   } catch (error: unknown) {

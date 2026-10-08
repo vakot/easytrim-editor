@@ -379,7 +379,7 @@ pub fn build_fast_arguments(
     Ok(arguments)
 }
 
-pub fn compatible_remux_extensions(
+pub fn fast_export_output_extensions(
     source: &MediaInfo,
     request: &FastExportRequest,
 ) -> Result<Vec<&'static str>, AppError> {
@@ -1164,7 +1164,7 @@ mod tests {
         AudioTrackSelection, AudioTrackSignalEffect, CropSelection, FastExportRequest,
         FrameRateSelection, LoudnessNormalization, LoudnessPreset, NoiseReductionPreset,
         OptimizedExportRequest, ResolutionSelection, TrimSelection, audio_filter_graph,
-        build_fast_arguments, build_optimized_arguments, compatible_remux_extensions,
+        build_fast_arguments, build_optimized_arguments, fast_export_output_extensions,
         optimized_command_preview, pre_level_filter_chain, validate_audio_track_selections,
         waveform_signal_filter_chain,
     };
@@ -1282,7 +1282,7 @@ mod tests {
         source.video.codec_name = "vp9".to_owned();
         source.audio_streams[0].codec_name = "opus".to_owned();
 
-        let extensions = compatible_remux_extensions(&source, &fast_request(vec![copy_track(1)]))
+        let extensions = fast_export_output_extensions(&source, &fast_request(vec![copy_track(1)]))
             .expect("valid selection");
 
         assert_eq!(extensions, ["mkv", "webm"]);
@@ -1294,7 +1294,7 @@ mod tests {
         request.audio_tracks[0].processing.gain_db = 3.0;
 
         assert_eq!(
-            compatible_remux_extensions(&media(), &request).expect("valid selection"),
+            fast_export_output_extensions(&media(), &request).expect("valid selection"),
             ["mkv"]
         );
     }

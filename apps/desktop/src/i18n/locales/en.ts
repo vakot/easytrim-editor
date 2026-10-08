@@ -505,8 +505,7 @@ export const en = {
       exportWasCancelled: "The export was cancelled",
       fileOrFolderIsNoLongerAvailable: "The file or folder is no longer available",
       outputNameIsRequired: "The output name is required",
-      outputContainerIsNotCompatibleWithSelectedStreams:
-        "The selected container cannot store the selected video and audio streams without re-encoding",
+      outputContainerIsNotCompatibleWithSelectedStreams: "The selected container is not compatible with the selected video and audio streams",
       renderedOutputCouldNotBeVerified: "The rendered output could not be verified",
       renderedOutputIsEmpty: "The rendered output is empty",
       selectedOutputLocationIsNotSupported: "The selected output location is not supported",

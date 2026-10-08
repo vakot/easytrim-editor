@@ -68,7 +68,9 @@ pub enum AppErrorMessageId {
     ExportFinalOptimizedFfmpegOptionIsMissingItsValue,
     #[serde(rename = "export.inspectTheVideoBeforeExporting")]
     ExportInspectTheVideoBeforeExporting,
-    #[serde(rename = "export.optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths")]
+    #[serde(
+        rename = "export.optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths"
+    )]
     ExportOptimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths,
     #[serde(rename = "export.optimizedFfmpegArgumentsContainAnUnclosedQuote")]
     ExportOptimizedFfmpegArgumentsContainAnUnclosedQuote,

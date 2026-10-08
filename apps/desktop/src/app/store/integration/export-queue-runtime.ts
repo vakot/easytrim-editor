@@ -37,7 +37,11 @@ import {
   reserveExportSource,
   resolveOutputSelection,
 } from "@/lib/tauri/media";
-import type { ExportProgress, OptimizedExportRequest } from "@/lib/tauri/media.types";
+import type {
+  ExportProgress,
+  FastExportRequest,
+  OptimizedExportRequest,
+} from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { performQueueFinishAction } from "@/lib/tauri/queue";
 
@@ -315,7 +319,10 @@ async function retryFailedExport(
 
     const output =
       (await resolveOutputSelection(attempt.output.outputId)) ??
-      (await chooseOutputPath(attempt.output.displayName));
+      (await chooseOutputPath(
+        attempt.output.displayName,
+        attempt.route === "fast" ? (attempt.request as FastExportRequest) : undefined,
+      ));
 
     if (!output) return false;
     dispatch(editingInstanceExportRetried({ id: instanceId, attemptId, output }));
