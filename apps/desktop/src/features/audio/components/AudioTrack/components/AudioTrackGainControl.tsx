@@ -14,6 +14,11 @@ import { useAudioPlayback } from "@/features/audio";
 
 import { formatGain } from "../../../lib/audio-level.utils";
 
+const MIN_GAIN_DB_SLIDER = -24;
+const MAX_GAIN_DB_SLIDER = 12;
+const MIN_GAIN_DB = -60;
+const MAX_GAIN_DB = 24;
+
 function AudioTrackGainControl({
   onLiveGainChange,
   streamIndex,
@@ -131,12 +136,12 @@ function AudioTrackGainSlider({
         aria-label={t("audio.tracks.gainLabel", { number: trackNumber })}
         className="min-w-0 flex-1 py-0 **:data-[slot=slider-thumb]:size-2.5"
         markers={[
-          { label: "−24", value: -24 },
+          { label: MIN_GAIN_DB_SLIDER, value: MIN_GAIN_DB_SLIDER },
           { label: "0", value: 0 },
-          { label: "12", value: 12 },
+          { label: MIN_GAIN_DB_SLIDER, value: MAX_GAIN_DB_SLIDER },
         ]}
-        max={12}
-        min={-24}
+        max={MAX_GAIN_DB_SLIDER}
+        min={MIN_GAIN_DB_SLIDER}
         onDoubleClick={() => commitGain(0)}
         onValueChange={([gainDb]) => {
           if (gainDb !== undefined) updateGain(gainDb);
@@ -179,7 +184,9 @@ function AudioTrackGainInput({
     const parsed = Number(value);
 
     commitGain(
-      value.trim() && Number.isFinite(parsed) ? Math.max(-60, Math.min(24, parsed)) : gainDb,
+      value.trim() && Number.isFinite(parsed)
+        ? Math.max(MIN_GAIN_DB, Math.min(MAX_GAIN_DB, parsed))
+        : gainDb,
     );
 
     setEditing(false);
@@ -189,8 +196,8 @@ function AudioTrackGainInput({
     <Input
       aria-label={t("audio.tracks.gainLabel", { number: trackNumber })}
       autoFocus
-      max={24}
-      min={-60}
+      max={MAX_GAIN_DB}
+      min={MIN_GAIN_DB}
       onBlur={commit}
       onChange={(event) => {
         const nextValue = event.target.value;

@@ -3,7 +3,6 @@ import type { TFunction } from "i18next";
 import type { LoudnessPreset, NoiseReductionPreset } from "@/domain/audio-processing";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
-const MIN_SLIDER_DECIBELS = -60;
 function normalizationPresetLabel(preset: LoudnessPreset, t: TFunction): string {
   switch (preset) {
     case "broadcast":
@@ -55,7 +54,6 @@ export {
   audioOutputSummary,
   formatChannels,
   formatGain,
-  MIN_SLIDER_DECIBELS,
   noiseReductionPresetLabel,
   normalizationPresetLabel,
 };
