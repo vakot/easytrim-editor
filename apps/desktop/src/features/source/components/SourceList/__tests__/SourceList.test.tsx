@@ -166,7 +166,8 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    const search = screen.getByRole("searchbox", { name: "Search" });
+    const search = screen.getByRole("searchbox", { name: "Search sources" });
+    expect(search).toHaveAttribute("placeholder", "Search sources…");
     expect(screen.getByLabelText("Source search keyboard shortcut: Ctrl + F")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { code: "KeyF", ctrlKey: true });
@@ -198,7 +199,7 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    const search = screen.getByRole("searchbox", { name: "Search" });
+    const search = screen.getByRole("searchbox", { name: "Search sources" });
     search.focus();
     const event = createEvent.keyDown(search, { code: "KeyF", ctrlKey: true });
 
@@ -232,7 +233,7 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    const search = screen.getByRole("searchbox", { name: "Search" });
+    const search = screen.getByRole("searchbox", { name: "Search sources" });
     await user.type(search, "sample");
     await user.click(await screen.findByRole("button", { name: "Clear" }));
 
@@ -351,13 +352,13 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    await user.type(screen.getByRole("searchbox", { name: "Search" }), "second");
+    await user.type(screen.getByRole("searchbox", { name: "Search sources" }), "second");
     await waitFor(() => {
       expect(virtuosoHarness.props?.data.map(({ id }) => id)).toEqual(["source-1"]);
     });
 
-    await user.clear(screen.getByRole("searchbox", { name: "Search" }));
-    await user.type(screen.getByRole("searchbox", { name: "Search" }), "missing file");
+    await user.clear(screen.getByRole("searchbox", { name: "Search sources" }));
+    await user.type(screen.getByRole("searchbox", { name: "Search sources" }), "missing file");
     await waitFor(() => {
       expect(screen.getByRole("status")).toHaveTextContent("No imported sources match your search");
     });
@@ -426,10 +427,10 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    await user.type(screen.getByRole("searchbox", { name: "Search" }), "clip-0");
+    await user.type(screen.getByRole("searchbox", { name: "Search sources" }), "clip-0");
     await waitFor(() => expect(thumbnailActions.release).toHaveBeenCalledWith("source-1"));
 
-    await user.clear(screen.getByRole("searchbox", { name: "Search" }));
+    await user.clear(screen.getByRole("searchbox", { name: "Search sources" }));
     await waitFor(() => expect(virtuosoHarness.props?.data).toHaveLength(12));
     thumbnailActions.prepare.mockClear();
     await user.click(screen.getByRole("button", { name: "Mock enter scroll seek" }));

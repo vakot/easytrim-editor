@@ -46,7 +46,7 @@ function SettingsGeneral() {
       >
         <div className="inline-grid min-w-44 items-end gap-2">
           <LanguageSelector
-            label={t("settings.general.language.search")}
+            label={t("common.search.languages")}
             languages={SETTINGS_LANGUAGES}
             onValueChange={(nextLanguage) => {
               if (isSupportedLanguage(nextLanguage)) void i18n.changeLanguage(nextLanguage);
@@ -70,8 +70,8 @@ function SettingsGeneral() {
 
             <LanguageSelectorContent>
               <LanguageSelectorInput
-                aria-label={t("settings.general.language.search")}
-                placeholder={t("settings.general.language.searchPlaceholder")}
+                aria-label={t("common.search.languages")}
+                placeholder={t("common.search.languagesPlaceholder")}
               />
               <LanguageSelectorList
                 emptyState={t("settings.general.language.noResults")}

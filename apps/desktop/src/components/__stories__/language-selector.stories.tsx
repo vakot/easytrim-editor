@@ -66,7 +66,7 @@ function ButtonTriggerExample({ defaultOpen = false }: { defaultOpen?: boolean }
       </LanguageSelectorTrigger>
 
       <LanguageSelectorContent>
-        <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages..." />
+        <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages…" />
         <LanguageSelectorList emptyState="No languages found" />
       </LanguageSelectorContent>
     </LanguageSelector>
@@ -79,7 +79,7 @@ export const InputTrigger: Story = {
       <LanguageSelectorInput
         aria-label="Choose language"
         className="w-72"
-        placeholder="Search languages..."
+        placeholder="Search languages…"
       />
       <LanguageSelectorContent>
         <LanguageSelectorList emptyState="No languages found" />
@@ -130,7 +130,7 @@ function DropdownMenuSubmenuExample() {
                 <LanguageSelectorInput
                   aria-label="Search languages"
                   className="h-7"
-                  placeholder="Search languages..."
+                  placeholder="Search languages…"
                 />
                 <LanguageSelectorList emptyState="No languages found" />
               </DropdownMenuSubContent>
@@ -158,7 +158,7 @@ function NoResultsExample() {
       </LanguageSelectorTrigger>
 
       <LanguageSelectorContent>
-        <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages..." />
+        <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages…" />
         <LanguageSelectorList emptyState="No languages found" />
       </LanguageSelectorContent>
     </LanguageSelector>

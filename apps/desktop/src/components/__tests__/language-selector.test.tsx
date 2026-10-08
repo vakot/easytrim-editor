@@ -45,7 +45,7 @@ describe("LanguageSelector", () => {
           </button>
         </LanguageSelectorTrigger>
         <LanguageSelectorContent>
-          <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages" />
+          <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages…" />
           <LanguageSelectorList emptyState="No languages found" />
         </LanguageSelectorContent>
       </LanguageSelector>,
@@ -98,7 +98,7 @@ describe("LanguageSelector", () => {
 
     render(
       <LanguageSelector defaultValue="en" label="Choose language" languages={languages}>
-        <LanguageSelectorInput aria-label="Choose language" placeholder="Search languages" />
+        <LanguageSelectorInput aria-label="Choose language" placeholder="Search languages…" />
         <LanguageSelectorContent>
           <LanguageSelectorList emptyState="No languages found" />
         </LanguageSelectorContent>

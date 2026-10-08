@@ -89,7 +89,7 @@ function ButtonTriggerStory() {
       </ComboboxTrigger>
 
       <ComboboxContent>
-        <ComboboxInput placeholder="Search framework..." />
+        <ComboboxInput placeholder="Search framework…" />
 
         <ComboboxList>
           <ComboboxEmpty>No framework found.</ComboboxEmpty>
@@ -132,7 +132,7 @@ function InputTriggerStory() {
       <ComboboxInput
         className="w-64"
         onValueChange={setValue}
-        placeholder="Search framework..."
+        placeholder="Search framework…"
         value={value}
       />
 
@@ -171,7 +171,7 @@ function InputTriggerWithGroupsStory() {
       <ComboboxInput
         className="w-64"
         onValueChange={setValue}
-        placeholder="Search codec..."
+        placeholder="Search codec…"
         value={value}
       />
 
@@ -242,7 +242,7 @@ function MenuItemTriggerStory() {
 
             <ComboboxContent asChild>
               <DropdownMenuSubContent className="w-52 p-0">
-                <ComboboxInput className="h-7" placeholder="Search framework..." />
+                <ComboboxInput className="h-7" placeholder="Search framework…" />
 
                 <ComboboxList>
                   <ComboboxEmpty>No framework found.</ComboboxEmpty>
@@ -329,7 +329,7 @@ export const Groups: Story = {
       </ComboboxTrigger>
 
       <ComboboxContent>
-        <ComboboxInput placeholder="Search codec..." />
+        <ComboboxInput placeholder="Search codec…" />
 
         <ComboboxList>
           <ComboboxEmpty>No codec found.</ComboboxEmpty>
@@ -363,7 +363,7 @@ export const DisabledItems: Story = {
       </ComboboxTrigger>
 
       <ComboboxContent>
-        <ComboboxInput placeholder="Search framework..." />
+        <ComboboxInput placeholder="Search framework…" />
 
         <ComboboxList>
           <ComboboxEmpty>No framework found.</ComboboxEmpty>

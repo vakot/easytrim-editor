@@ -47,7 +47,9 @@ describe("SettingsGeneral", () => {
     render(<SettingsGeneral />);
 
     await user.click(screen.getByRole("button", { name: "Language" }));
-    await user.type(screen.getByRole("combobox", { name: "Search languages" }), "Русский");
+    const languageSearch = screen.getByRole("combobox", { name: "Search languages" });
+    expect(languageSearch).toHaveAttribute("placeholder", "Search languages…");
+    await user.type(languageSearch, "Русский");
     await user.keyboard("{ArrowDown}{Enter}");
 
     await waitFor(() => expect(i18n.resolvedLanguage).toBe("ru"));

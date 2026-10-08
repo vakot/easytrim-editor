@@ -13,10 +13,6 @@ export const ru = {
       enable: "Включить",
     },
     or: "или",
-    search: {
-      label: "Поиск",
-      placeholder: "Поиск…",
-    },
     status: {
       error: "Ошибка",
       loading: "Загрузка…",
@@ -305,8 +301,6 @@ export const ru = {
   settings: {
     general: {
       language: {
-        search: "Поиск языков",
-        searchPlaceholder: "Поиск языков…",
         suggestions: "Предложения",
         noResults: "Языки не найдены",
         description: "Выберите язык интерфейса EasyTrim Editor",
@@ -480,10 +474,8 @@ export const ru = {
       queueOnFinishedSource: "Очередь / После завершения / Источник",
       go: "Перейти",
     },
-    searchLabel: "Поиск команд",
     description: "Найдите действие EasyTrim, которое нужно выполнить",
     empty: "Команды не найдены",
-    placeholder: "Поиск команд…",
     searchTerms: {
       closeFile: "убрать|источник",
       copyCurrentFrame: "копировать|кадр|изображение|буфер обмена",

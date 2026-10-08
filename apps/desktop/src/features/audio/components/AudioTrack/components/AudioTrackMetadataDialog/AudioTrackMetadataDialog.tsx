@@ -118,7 +118,7 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
         <div className="grid gap-2">
           <Label>{t("audio.tracks.languageLabel")}</Label>
           <LanguageSelector
-            label={t("audio.tracks.languageSearchLabel")}
+            label={t("common.search.languages")}
             languages={AUDIO_METADATA_LANGUAGES}
             onValueChange={(language) => {
               setMetadataLanguage(language);
@@ -162,8 +162,8 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
 
             <LanguageSelectorContent>
               <LanguageSelectorInput
-                aria-label={t("audio.tracks.languageSearchLabel")}
-                placeholder={t("audio.tracks.languageSearchLabel")}
+                aria-label={t("common.search.languages")}
+                placeholder={t("common.search.languagesPlaceholder")}
               />
               <LanguageSelectorList emptyState={t("audio.tracks.languageNoResults")} />
             </LanguageSelectorContent>
