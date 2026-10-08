@@ -7,11 +7,17 @@ import { Progress } from "@/components/ui/progress";
 import {
   LanguageSelector,
   LanguageSelectorContent,
-  LanguageSelectorFlag,
+  LanguageSelectorEmpty,
+  LanguageSelectorGroup,
   LanguageSelectorInput,
+  LanguageSelectorItem,
+  LanguageSelectorItemFlag,
+  LanguageSelectorItemIndicator,
+  LanguageSelectorItemText,
   LanguageSelectorList,
   LanguageSelectorTrigger,
   LanguageSelectorValue,
+  useLanguageSelectorOptions,
 } from "@/components/language-selector";
 import { SUPPORTED_LANGUAGES } from "@/domain/languages";
 import { isSupportedLanguage, type SupportedLanguage, translationCoverage } from "@/i18n/resources";
@@ -21,6 +27,50 @@ import { SettingRow, SettingsSection } from "../components/SettingRow";
 
 const TRANSLATION_GUIDE_URL =
   "https://github.com/vakot/easytrim-editor/blob/master/apps/desktop/src/i18n/README.md";
+
+function SettingsLanguageOptions() {
+  const languages = useLanguageSelectorOptions();
+
+  return languages.map((language) => (
+    <LanguageSelectorItem key={language.code} value={language.code}>
+      <LanguageSelectorItemFlag />
+      <LanguageSelectorItemText>
+        <SettingsLanguageCoverage
+          language={language.code as SupportedLanguage}
+          nativeName={language.nativeName}
+        />
+      </LanguageSelectorItemText>
+      <LanguageSelectorItemIndicator />
+    </LanguageSelectorItem>
+  ));
+}
+
+function SettingsLanguageCoverage({
+  language,
+  nativeName,
+}: {
+  language: SupportedLanguage;
+  nativeName: string;
+}) {
+  const { t } = useTranslation();
+  const percentage = translationCoverage[language].percentage;
+
+  return (
+    <div className="flex items-center gap-1">
+      <Progress
+        aria-label={t("settings.general.language.coverageAccessibleLabel", {
+          language: nativeName,
+          percentage,
+        })}
+        className="h-1"
+        value={percentage}
+      />
+      <span aria-hidden="true" className="w-[4ch] shrink-0 text-right text-xs tabular-nums">
+        {percentage}%
+      </span>
+    </div>
+  );
+}
 
 function SettingsGeneral() {
   const { i18n, t } = useTranslation();
@@ -61,38 +111,14 @@ function SettingsGeneral() {
                 aria-label={t("common.search.languages")}
                 placeholder={t("common.search.languagesPlaceholder")}
               />
-              <LanguageSelectorList
-                emptyState={t("settings.general.language.noResults")}
-                renderOption={(option, { displayName }) => {
-                  const percentage =
-                    translationCoverage[option.code as SupportedLanguage].percentage;
-
-                  return (
-                    <>
-                      <LanguageSelectorFlag className="col-start-1 row-start-1" language={option} />
-                      <span className="col-start-2 row-start-1 min-w-0 truncate">
-                        {displayName}
-                      </span>
-                      <div className="col-start-2 row-start-2 flex items-center gap-1">
-                        <Progress
-                          aria-label={t("settings.general.language.coverageAccessibleLabel", {
-                            language: option.nativeName,
-                            percentage,
-                          })}
-                          className="h-1"
-                          value={percentage}
-                        />
-                        <span
-                          aria-hidden="true"
-                          className="w-[4ch] shrink-0 text-right text-xs tabular-nums"
-                        >
-                          {percentage}%
-                        </span>
-                      </div>
-                    </>
-                  );
-                }}
-              />
+              <LanguageSelectorList>
+                <LanguageSelectorEmpty>
+                  {t("settings.general.language.noResults")}
+                </LanguageSelectorEmpty>
+                <LanguageSelectorGroup>
+                  <SettingsLanguageOptions />
+                </LanguageSelectorGroup>
+              </LanguageSelectorList>
             </LanguageSelectorContent>
           </LanguageSelector>
 

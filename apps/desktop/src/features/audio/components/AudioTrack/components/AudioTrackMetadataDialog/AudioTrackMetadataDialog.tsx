@@ -17,8 +17,10 @@ import { Label } from "@/components/ui/label";
 import {
   LanguageSelector,
   LanguageSelectorContent,
+  LanguageSelectorEmpty,
   LanguageSelectorInput,
   LanguageSelectorList,
+  LanguageSelectorOptions,
   LanguageSelectorTrigger,
   LanguageSelectorValue,
 } from "@/components/language-selector";
@@ -161,7 +163,10 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
                 aria-label={t("common.search.languages")}
                 placeholder={t("common.search.languagesPlaceholder")}
               />
-              <LanguageSelectorList emptyState={t("audio.tracks.languageNoResults")} />
+              <LanguageSelectorList>
+                <LanguageSelectorEmpty>{t("audio.tracks.languageNoResults")}</LanguageSelectorEmpty>
+                <LanguageSelectorOptions />
+              </LanguageSelectorList>
             </LanguageSelectorContent>
           </LanguageSelector>
         </div>

@@ -19,8 +19,10 @@ import {
 import {
   LanguageSelector,
   LanguageSelectorContent,
+  LanguageSelectorEmpty,
   LanguageSelectorInput,
   LanguageSelectorList,
+  LanguageSelectorOptions,
   LanguageSelectorTrigger,
   LanguageSelectorValue,
 } from "@/components/language-selector";
@@ -67,7 +69,10 @@ function ButtonTriggerExample({ defaultOpen = false }: { defaultOpen?: boolean }
 
       <LanguageSelectorContent>
         <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages…" />
-        <LanguageSelectorList emptyState="No languages found" />
+        <LanguageSelectorList>
+          <LanguageSelectorEmpty>No languages found</LanguageSelectorEmpty>
+          <LanguageSelectorOptions />
+        </LanguageSelectorList>
       </LanguageSelectorContent>
     </LanguageSelector>
   );
@@ -82,7 +87,10 @@ export const InputTrigger: Story = {
         placeholder="Search languages…"
       />
       <LanguageSelectorContent>
-        <LanguageSelectorList emptyState="No languages found" />
+        <LanguageSelectorList>
+          <LanguageSelectorEmpty>No languages found</LanguageSelectorEmpty>
+          <LanguageSelectorOptions />
+        </LanguageSelectorList>
       </LanguageSelectorContent>
     </LanguageSelector>
   ),
@@ -132,7 +140,10 @@ function DropdownMenuSubmenuExample() {
                   className="h-7"
                   placeholder="Search languages…"
                 />
-                <LanguageSelectorList emptyState="No languages found" />
+                <LanguageSelectorList>
+                  <LanguageSelectorEmpty>No languages found</LanguageSelectorEmpty>
+                  <LanguageSelectorOptions />
+                </LanguageSelectorList>
               </DropdownMenuSubContent>
             </LanguageSelectorContent>
           </DropdownMenuSub>
@@ -159,7 +170,10 @@ function NoResultsExample() {
 
       <LanguageSelectorContent>
         <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages…" />
-        <LanguageSelectorList emptyState="No languages found" />
+        <LanguageSelectorList>
+          <LanguageSelectorEmpty>No languages found</LanguageSelectorEmpty>
+          <LanguageSelectorOptions />
+        </LanguageSelectorList>
       </LanguageSelectorContent>
     </LanguageSelector>
   );

@@ -5,15 +5,45 @@ import { describe, expect, it, vi } from "vitest";
 import {
   LanguageSelector,
   LanguageSelectorContent,
-  LanguageSelectorFlag,
+  LanguageSelectorEmpty,
+  LanguageSelectorGroup,
   LanguageSelectorInput,
+  LanguageSelectorItem,
+  LanguageSelectorItemFlag,
+  LanguageSelectorItemIndicator,
+  LanguageSelectorItemText,
   LanguageSelectorList,
+  LanguageSelectorOptions,
   LanguageSelectorTrigger,
   LanguageSelectorValue,
+  useLanguageSelectorOptions,
 } from "@/components/language-selector";
 import { AUDIO_METADATA_LANGUAGES, SUPPORTED_LANGUAGES } from "@/domain/languages";
 
 const languages = SUPPORTED_LANGUAGES;
+
+function LanguageResults({ emptyState }: { emptyState: string }) {
+  return (
+    <>
+      <LanguageSelectorEmpty>{emptyState}</LanguageSelectorEmpty>
+      <LanguageSelectorOptions />
+    </>
+  );
+}
+
+function CustomLanguageOptions() {
+  const options = useLanguageSelectorOptions();
+
+  return options.map((language) => (
+    <LanguageSelectorItem key={language.code} value={language.code}>
+      <LanguageSelectorItemFlag />
+      <LanguageSelectorItemText>
+        <span> · metadata</span>
+      </LanguageSelectorItemText>
+      <LanguageSelectorItemIndicator />
+    </LanguageSelectorItem>
+  ));
+}
 
 describe("LanguageSelector", () => {
   it("passes custom classes when wrapping submenu content", () => {
@@ -46,7 +76,9 @@ describe("LanguageSelector", () => {
         </LanguageSelectorTrigger>
         <LanguageSelectorContent>
           <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages…" />
-          <LanguageSelectorList emptyState="No languages found" />
+          <LanguageSelectorList>
+            <LanguageResults emptyState="No languages found" />
+          </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -79,7 +111,9 @@ describe("LanguageSelector", () => {
       <LanguageSelector defaultOpen label="Search languages" languages={languages}>
         <LanguageSelectorContent>
           <LanguageSelectorInput aria-label="Search languages" />
-          <LanguageSelectorList emptyState="No languages found" />
+          <LanguageSelectorList>
+            <LanguageResults emptyState="No languages found" />
+          </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -99,7 +133,9 @@ describe("LanguageSelector", () => {
       <LanguageSelector defaultValue="en" label="Choose language" languages={languages}>
         <LanguageSelectorInput aria-label="Choose language" placeholder="Search languages…" />
         <LanguageSelectorContent>
-          <LanguageSelectorList emptyState="No languages found" />
+          <LanguageSelectorList>
+            <LanguageResults emptyState="No languages found" />
+          </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -135,7 +171,9 @@ describe("LanguageSelector", () => {
         </LanguageSelectorTrigger>
         <LanguageSelectorContent>
           <LanguageSelectorInput aria-label="Search languages" />
-          <LanguageSelectorList emptyState="No languages found" />
+          <LanguageSelectorList>
+            <LanguageResults emptyState="No languages found" />
+          </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -158,7 +196,9 @@ describe("LanguageSelector", () => {
         </LanguageSelectorTrigger>
         <LanguageSelectorContent>
           <LanguageSelectorInput aria-label="Search languages" />
-          <LanguageSelectorList emptyState="No languages found" />
+          <LanguageSelectorList>
+            <LanguageResults emptyState="No languages found" />
+          </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -185,7 +225,9 @@ describe("LanguageSelector", () => {
         languages={languages}
       >
         <LanguageSelectorContent>
-          <LanguageSelectorList emptyState="No languages found" />
+          <LanguageSelectorList>
+            <LanguageResults emptyState="No languages found" />
+          </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -196,7 +238,9 @@ describe("LanguageSelector", () => {
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 
-  it("accepts a consumer language dataset and custom option composition", () => {
+  it("supports custom item composition using the filtered options hook", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
     const audioLanguage = {
       code: "de",
       englishName: "German",
@@ -204,18 +248,28 @@ describe("LanguageSelector", () => {
       region: "DE",
     };
 
+    const anotherAudioLanguage = {
+      code: "ja",
+      englishName: "Japanese",
+      nativeName: "日本語",
+      region: "JP",
+    };
+
     render(
-      <LanguageSelector defaultOpen label="Search audio languages" languages={[audioLanguage]}>
+      <LanguageSelector
+        defaultOpen
+        label="Search audio languages"
+        languages={[audioLanguage, anotherAudioLanguage]}
+        onValueChange={onValueChange}
+      >
         <LanguageSelectorContent>
-          <LanguageSelectorList
-            emptyState="No audio languages found"
-            renderOption={(language, { displayName }) => (
-              <>
-                <LanguageSelectorFlag className="col-start-1 row-start-1" language={language} />
-                <span className="col-start-2 row-start-1">{displayName} · metadata</span>
-              </>
-            )}
-          />
+          <LanguageSelectorInput aria-label="Search audio languages" />
+          <LanguageSelectorList>
+            <LanguageSelectorEmpty>No audio languages found</LanguageSelectorEmpty>
+            <LanguageSelectorGroup>
+              <CustomLanguageOptions />
+            </LanguageSelectorGroup>
+          </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -223,7 +277,15 @@ describe("LanguageSelector", () => {
     const option = screen.getByRole("option", { name: "Deutsch (German), de" });
     expect(option).toHaveTextContent("Deutsch (German) · metadata");
     expect(option.querySelector("span[aria-hidden='true'] svg")).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "日本語 (Japanese), ja" })).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+
+    await user.type(screen.getByRole("combobox", { name: "Search audio languages" }), "German");
+
+    expect(screen.getByRole("option", { name: "Deutsch (German), de" })).toBeVisible();
+    expect(screen.queryByRole("option", { name: "日本語 (Japanese), ja" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("option", { name: "Deutsch (German), de" }));
+    expect(onValueChange).toHaveBeenCalledWith("de");
   });
 
   it("renders SVG flags for audio language options and the selected value", () => {
@@ -243,7 +305,9 @@ describe("LanguageSelector", () => {
           </button>
         </LanguageSelectorTrigger>
         <LanguageSelectorContent>
-          <LanguageSelectorList emptyState="No audio languages found" />
+          <LanguageSelectorList>
+            <LanguageResults emptyState="No audio languages found" />
+          </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -268,18 +332,25 @@ describe("LanguageSelector", () => {
   });
 
   it("renders no flag for malformed regions without throwing", () => {
-    const { container } = render(
-      <LanguageSelectorFlag
-        language={{
-          code: "xx",
-          englishName: "Unknown",
-          nativeName: "Unknown",
-          region: "X",
-        }}
-      />,
+    const unknownLanguage = {
+      code: "xx",
+      englishName: "Unknown",
+      nativeName: "Unknown",
+      region: "X",
+    };
+
+    render(
+      <LanguageSelector defaultOpen label="Search languages" languages={[unknownLanguage]}>
+        <LanguageSelectorContent>
+          <LanguageSelectorList>
+            <LanguageSelectorEmpty>No languages found</LanguageSelectorEmpty>
+            <LanguageSelectorOptions />
+          </LanguageSelectorList>
+        </LanguageSelectorContent>
+      </LanguageSelector>,
     );
 
-    expect(container.querySelector("svg")).not.toBeInTheDocument();
-    expect(container.querySelector("span[aria-hidden='true']")).toBeEmptyDOMElement();
+    const option = screen.getByRole("option", { name: "Unknown, xx" });
+    expect(option.querySelector("span[aria-hidden='true']")).toBeEmptyDOMElement();
   });
 });
