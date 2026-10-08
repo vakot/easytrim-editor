@@ -998,14 +998,26 @@ export const en = {
       defaultName: "Audio {{number}}",
       title: "Audio tracks",
       default: "Default for separate output",
-      editMetadata: "Edit output metadata",
-      metadataTitle: "Output audio metadata",
-      metadataDescription: "Set the title and language written to exported audio tracks.",
-      titleLabel: "Track title",
-      languageLabel: "Language",
-      languageNoResults: "No languages found",
-      languageSelectPlaceholder: "Select a language",
-      useSourceLanguage: "Use source language",
+      metadata: {
+        title: "Output audio metadata",
+        description: "Set the title and language written to exported audio tracks.",
+        actions: {
+          edit: "Edit output metadata",
+        },
+        fields: {
+          title: {
+            label: "Track title",
+          },
+          language: {
+            label: "Language",
+            noResults: "No languages found",
+            actions: {
+              select: "Select a language",
+              reset: "Use source language",
+            },
+          },
+        },
+      },
       preparingPreview: "Preparing preview with these track settings…",
       actionsLabel: "Audio {{number}} actions",
       gainLabel: "Audio {{number}} gain in decibels",

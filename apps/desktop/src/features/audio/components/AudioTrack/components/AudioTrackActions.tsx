@@ -50,7 +50,7 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
       </AudioTrackDefaultMenuCheckboxItem>
 
       <DropdownMenuItem inset onSelect={openMetadataDialog}>
-        {t("audio.tracks.editMetadata")}
+        {t("audio.tracks.metadata.actions.edit")}
       </DropdownMenuItem>
 
       <DropdownMenuSeparator />
@@ -94,7 +94,7 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
       </AudioTrackDefaultMenuCheckboxItem>
 
       <ContextMenuItem inset onSelect={openMetadataDialog}>
-        {t("audio.tracks.editMetadata")}
+        {t("audio.tracks.metadata.actions.edit")}
       </ContextMenuItem>
 
       <ContextMenuSeparator />

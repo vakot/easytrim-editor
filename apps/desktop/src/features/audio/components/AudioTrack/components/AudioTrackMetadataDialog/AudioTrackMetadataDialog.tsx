@@ -99,12 +99,12 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
         }}
       >
         <DialogHeader>
-          <DialogTitle>{t("audio.tracks.metadataTitle")}</DialogTitle>
-          <DialogDescription>{t("audio.tracks.metadataDescription")}</DialogDescription>
+          <DialogTitle>{t("audio.tracks.metadata.title")}</DialogTitle>
+          <DialogDescription>{t("audio.tracks.metadata.description")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
           <Label htmlFor={`audio-track-title-${track.streamIndex}`}>
-            {t("audio.tracks.titleLabel")}
+            {t("audio.tracks.metadata.fields.title.label")}
           </Label>
           <Input
             autoComplete="off"
@@ -119,7 +119,7 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
           />
         </div>
         <div className="grid gap-2">
-          <Label>{t("audio.tracks.languageLabel")}</Label>
+          <Label>{t("audio.tracks.metadata.fields.language.label")}</Label>
           <LanguageSelector
             label={t("common.search.languages")}
             languages={AUDIO_METADATA_LANGUAGES}
@@ -132,13 +132,13 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
             <div className="flex items-center gap-1">
               <LanguageSelectorTrigger asChild>
                 <Button
-                  aria-label={t("audio.tracks.languageLabel")}
+                  aria-label={t("audio.tracks.metadata.fields.language.label")}
                   className="flex-1 justify-start"
                   type="button"
                   variant="outline"
                 >
                   <LanguageSelectorValue
-                    placeholder={t("audio.tracks.languageSelectPlaceholder")}
+                    placeholder={t("audio.tracks.metadata.fields.language.actions.select")}
                   />
 
                   <ChevronsUpDown aria-hidden="true" className="ml-auto text-muted-foreground" />
@@ -146,7 +146,7 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
               </LanguageSelectorTrigger>
 
               <Button
-                aria-label={t("audio.tracks.useSourceLanguage")}
+                aria-label={t("audio.tracks.metadata.fields.language.actions.reset")}
                 onClick={() => {
                   setMetadataLanguage(languageCodeFromMetadata(stream.language) ?? null);
                   setMetadataLanguageChanged(true);
@@ -165,7 +165,9 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
                 placeholder={t("common.search.languagesPlaceholder")}
               />
               <LanguageSelectorList>
-                <LanguageSelectorEmpty>{t("audio.tracks.languageNoResults")}</LanguageSelectorEmpty>
+                <LanguageSelectorEmpty>
+                  {t("audio.tracks.metadata.fields.language.noResults")}
+                </LanguageSelectorEmpty>
                 <LanguageSelectorOptions />
               </LanguageSelectorList>
             </LanguageSelectorContent>

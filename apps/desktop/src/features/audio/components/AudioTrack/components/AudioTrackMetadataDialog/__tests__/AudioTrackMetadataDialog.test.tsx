@@ -26,7 +26,7 @@ describe("AudioTrackMetadataDialog", () => {
       const user = userEvent.setup();
       const controller = {
         stream: { language: sourceLanguage, streamIndex: 0, title: "Source title" },
-        track: { language: "ces", streamIndex: 0, title: "Custom title" },
+        track: { metadata: { language: "ces" }, streamIndex: 0 },
         updateMetadata: () => {},
       } as unknown as AudioTrackController;
 
