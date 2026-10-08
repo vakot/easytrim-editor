@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/combobox";
 
 describe("Combobox", () => {
-  it("scrolls the list with mouse-wheel input", () => {
+  it("constrains the ScrollArea root and leaves scrolling to its native viewport", () => {
     render(
       <Combobox defaultOpen label="Search items">
         <ComboboxContent>
@@ -32,8 +32,12 @@ describe("Combobox", () => {
     );
 
     const list = screen.getByRole("listbox");
+    const scrollArea = list.closest<HTMLElement>('[data-slot="scroll-area"]');
     const viewport = list.closest<HTMLElement>('[data-slot="scroll-area-viewport"]');
-    expect(viewport).not.toBeNull();
+
+    expect(scrollArea).toHaveClass("max-h-72");
+    expect(viewport).not.toHaveClass("max-h-72");
+    expect(viewport).toHaveStyle({ overflowY: "scroll" });
     if (!viewport) throw new Error("Combobox scroll viewport is missing");
 
     Object.defineProperties(viewport, {
@@ -41,8 +45,11 @@ describe("Combobox", () => {
       scrollHeight: { configurable: true, value: 500 },
     });
 
-    fireEvent.wheel(screen.getByRole("option", { name: "Item 0" }), { deltaY: 120 });
+    const wheelWasNotPrevented = fireEvent.wheel(screen.getByRole("option", { name: "Item 0" }), {
+      deltaY: 120,
+    });
 
-    expect(viewport.scrollTop).toBe(120);
+    expect(wheelWasNotPrevented).toBe(true);
+    expect(viewport.scrollTop).toBe(0);
   });
 });
