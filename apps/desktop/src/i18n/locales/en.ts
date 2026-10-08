@@ -1051,6 +1051,7 @@ export const en = {
         broadcast: "Broadcast",
       },
       description: "Normalize this track to a consistent target loudness",
+      manualGainUnavailable: "Manual Gain is unavailable while automatic normalization is applied",
       summary: "Normalized - {{preset}}",
       levelSummary: "{{target}} LUFS · {{peak}} dBTP",
     },

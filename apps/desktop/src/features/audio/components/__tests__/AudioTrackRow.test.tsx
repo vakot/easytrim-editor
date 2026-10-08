@@ -142,6 +142,38 @@ describe("AudioTrackRow", () => {
     expect(gainCommits).toEqual([0]);
   });
 
+  it("disables manual Gain and blocks double-click reset during normalization", async () => {
+    const user = userEvent.setup();
+    const { gainCommits, store } = renderGainControl();
+    act(() => {
+      store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -2.5 }));
+      store.dispatch(
+        audioTrackProcessingChanged({
+          streamIndex: 2,
+          processing: { gainDb: -2.5, loudnessNormalization: "streaming" },
+        }),
+      );
+    });
+
+    const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
+    expect(document.querySelector('[data-slot="slider"]')).toHaveAttribute("data-disabled");
+    expect(gainSlider).toHaveAttribute("aria-valuenow", "-2.5");
+    expect(screen.getByText("−2.5 dB")).toBeInTheDocument();
+
+    const gainCommitCount = gainCommits.length;
+    await user.hover(gainSlider);
+    expect(
+      await screen.findByText("Manual Gain is unavailable while automatic normalization is applied"),
+    ).toBeInTheDocument();
+
+    fireEvent.doubleClick(gainSlider);
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: true,
+      processing: { gainDb: -2.5, loudnessNormalization: "streaming" },
+    });
+    expect(gainCommits).toHaveLength(gainCommitCount);
+  });
+
   it("scales the existing waveform during live gain adjustment", async () => {
     const { store } = renderRow();
     act(() => {
@@ -591,7 +623,6 @@ describe("AudioTrackRow", () => {
     expect(await screen.findByText("−16 LUFS · −1.5 dBTP")).toBeInTheDocument();
 
     await user.hover(screen.getByText(/#1 ·/));
-    expect(screen.queryByRole("slider", { name: /audio 1 gain/i })).not.toBeInTheDocument();
     expect(screen.getByText("Normalized - Streaming")).toBeInTheDocument();
     expect(screen.getByText("−16 LUFS · −1.5 dBTP")).toBeInTheDocument();
     const normalizedTooltip = await screen.findByRole("tooltip");

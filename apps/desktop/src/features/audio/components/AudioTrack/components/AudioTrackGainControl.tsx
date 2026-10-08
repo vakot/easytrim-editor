@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -33,6 +34,7 @@ function AudioTrackGainControl({
   const [draftGainDb, setDraftGainDb] = useState<number | null>(null);
   const gainSliderDb =
     draftGainDb ?? (track?.enabled ? (track.processing.gainDb ?? 0) : MIN_SLIDER_DECIBELS);
+  const manualGainUnavailable = track?.processing.loudnessNormalization !== undefined;
 
   useEffect(
     () => () => {
@@ -72,27 +74,41 @@ function AudioTrackGainControl({
     setDraftGainDb(null);
   };
 
+  const gainSlider = (
+    <Slider
+      aria-label={t("audio.tracks.gainLabel", { number: trackNumber })}
+      className="min-w-0 flex-1 py-0 **:data-[slot=slider-thumb]:size-2.5"
+      disabled={manualGainUnavailable}
+      markers={[
+        { label: "−∞", value: MIN_SLIDER_DECIBELS },
+        { label: "0 dB", value: 0 },
+      ]}
+      max={12}
+      min={MIN_SLIDER_DECIBELS}
+      onDoubleClick={manualGainUnavailable ? undefined : () => commitGain(0)}
+      onValueChange={([gainDb]) => {
+        if (gainDb !== undefined) updateGain(gainDb);
+      }}
+      onValueCommit={([gainDb]) => {
+        if (gainDb !== undefined) commitGain(gainDb);
+      }}
+      step={0.5}
+      value={[gainSliderDb]}
+    />
+  );
+
   return (
     <div className="flex h-4 min-w-0 items-center gap-1.5">
-      <Slider
-        aria-label={t("audio.tracks.gainLabel", { number: trackNumber })}
-        className="min-w-0 flex-1 py-0 **:data-[slot=slider-thumb]:size-2.5"
-        markers={[
-          { label: "−∞", value: MIN_SLIDER_DECIBELS },
-          { label: "0 dB", value: 0 },
-        ]}
-        max={12}
-        min={MIN_SLIDER_DECIBELS}
-        onDoubleClick={() => commitGain(0)}
-        onValueChange={([gainDb]) => {
-          if (gainDb !== undefined) updateGain(gainDb);
-        }}
-        onValueCommit={([gainDb]) => {
-          if (gainDb !== undefined) commitGain(gainDb);
-        }}
-        step={0.5}
-        value={[gainSliderDb]}
-      />
+      {manualGainUnavailable ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="min-w-0 flex-1">{gainSlider}</div>
+          </TooltipTrigger>
+          <TooltipContent>{t("audio.normalization.manualGainUnavailable")}</TooltipContent>
+        </Tooltip>
+      ) : (
+        gainSlider
+      )}
       <output className="w-[7ch] shrink-0 text-right text-xs leading-none text-muted-foreground">
         {formatGain(gainSliderDb, i18n.language)}
       </output>
