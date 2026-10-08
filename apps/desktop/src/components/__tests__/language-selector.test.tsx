@@ -1,27 +1,24 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import GB from "country-flag-icons/react/3x2/GB";
-import RU from "country-flag-icons/react/3x2/RU";
-import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import {
   LanguageSelector,
   LanguageSelectorContent,
+  LanguageSelectorFlag,
   LanguageSelectorInput,
   LanguageSelectorList,
   LanguageSelectorTrigger,
   LanguageSelectorValue,
 } from "@/components/language-selector";
 import { SUPPORTED_LANGUAGES } from "@/domain/languages";
-import { translationCoverage } from "@/i18n/resources";
 
 const languages = SUPPORTED_LANGUAGES;
 
 describe("LanguageSelector", () => {
   it("passes custom classes when wrapping submenu content", () => {
     render(
-      <LanguageSelector>
+      <LanguageSelector label="Search languages" languages={languages}>
         <LanguageSelectorContent asChild className="custom-submenu-content">
           <div data-testid="submenu-content" />
         </LanguageSelectorContent>
@@ -36,7 +33,12 @@ describe("LanguageSelector", () => {
     const onValueChange = vi.fn();
 
     render(
-      <LanguageSelector defaultValue="ru" languages={languages} onValueChange={onValueChange}>
+      <LanguageSelector
+        defaultValue="ru"
+        label="Search languages"
+        languages={languages}
+        onValueChange={onValueChange}
+      >
         <LanguageSelectorTrigger>
           <button aria-label="Choose language" type="button">
             <LanguageSelectorValue placeholder="Select language" />
@@ -44,7 +46,7 @@ describe("LanguageSelector", () => {
         </LanguageSelectorTrigger>
         <LanguageSelectorContent>
           <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages" />
-          <LanguageSelectorList />
+          <LanguageSelectorList emptyState="No languages found" />
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -52,9 +54,7 @@ describe("LanguageSelector", () => {
     const trigger = screen.getByRole("button", { name: "Choose language" });
     expect(trigger).toHaveTextContent("Русский");
     expect(trigger).not.toHaveTextContent("76%");
-    expect(trigger.querySelector("span[aria-hidden='true'] svg")?.outerHTML).toBe(
-      renderToStaticMarkup(<RU aria-hidden="true" className="block h-auto! w-full!" />),
-    );
+    expect(trigger.querySelector("span[aria-hidden='true']")).toHaveTextContent("🇷🇺");
     expect(trigger.querySelector("span[aria-hidden='true']")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /choose language/i }));
@@ -70,11 +70,6 @@ describe("LanguageSelector", () => {
     expect(screen.getByRole("button", { name: "Choose language" })).toHaveTextContent(
       "Русский (Russian)",
     );
-    expect(
-      screen
-        .getByRole("button", { name: "Choose language" })
-        .querySelector("span[aria-hidden='true'] svg")?.outerHTML,
-    ).toBe(renderToStaticMarkup(<RU aria-hidden="true" className="block h-auto! w-full!" />));
     await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());
   });
 
@@ -82,10 +77,10 @@ describe("LanguageSelector", () => {
     const user = userEvent.setup();
 
     render(
-      <LanguageSelector defaultOpen languages={languages}>
+      <LanguageSelector defaultOpen label="Search languages" languages={languages}>
         <LanguageSelectorContent>
           <LanguageSelectorInput aria-label="Search languages" />
-          <LanguageSelectorList />
+          <LanguageSelectorList emptyState="No languages found" />
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -105,7 +100,7 @@ describe("LanguageSelector", () => {
       <LanguageSelector defaultValue="en" label="Choose language" languages={languages}>
         <LanguageSelectorInput aria-label="Choose language" placeholder="Search languages" />
         <LanguageSelectorContent>
-          <LanguageSelectorList />
+          <LanguageSelectorList emptyState="No languages found" />
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -133,7 +128,7 @@ describe("LanguageSelector", () => {
     const user = userEvent.setup();
 
     render(
-      <LanguageSelector disabled languages={languages}>
+      <LanguageSelector disabled label="Search languages" languages={languages}>
         <LanguageSelectorTrigger>
           <button aria-label="Choose language" type="button">
             <LanguageSelectorValue placeholder="Select language" />
@@ -141,7 +136,7 @@ describe("LanguageSelector", () => {
         </LanguageSelectorTrigger>
         <LanguageSelectorContent>
           <LanguageSelectorInput aria-label="Search languages" />
-          <LanguageSelectorList />
+          <LanguageSelectorList emptyState="No languages found" />
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -156,7 +151,7 @@ describe("LanguageSelector", () => {
     const user = userEvent.setup();
 
     render(
-      <LanguageSelector languages={languages}>
+      <LanguageSelector label="Search languages" languages={languages}>
         <LanguageSelectorTrigger>
           <button aria-label="Choose language" type="button">
             <LanguageSelectorValue placeholder="Select language" />
@@ -164,7 +159,7 @@ describe("LanguageSelector", () => {
         </LanguageSelectorTrigger>
         <LanguageSelectorContent>
           <LanguageSelectorInput aria-label="Search languages" />
-          <LanguageSelectorList />
+          <LanguageSelectorList emptyState="No languages found" />
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
@@ -182,63 +177,53 @@ describe("LanguageSelector", () => {
     expect(screen.getAllByRole("option")).toHaveLength(2);
   });
 
-  it.each([
-    { Flag: GB, language: SUPPORTED_LANGUAGES[0] },
-    { Flag: RU, language: SUPPORTED_LANGUAGES[1] },
-  ])("renders the package flag in its option", ({ Flag, language }) => {
-    const displayName =
-      language.nativeName === language.englishName
-        ? language.nativeName
-        : `${language.nativeName} (${language.englishName})`;
-
-    const label = `${displayName}, ${language.code}`;
-
+  it("renders a flag, display name, and selection state without settings coverage", () => {
     render(
-      <LanguageSelector defaultOpen languages={[language]}>
+      <LanguageSelector
+        defaultOpen
+        defaultValue="ru"
+        label="Search languages"
+        languages={languages}
+      >
         <LanguageSelectorContent>
-          <LanguageSelectorList />
+          <LanguageSelectorList emptyState="No languages found" />
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
 
-    const option = screen.getByRole("option", { name: label });
-    const flagContainer = option.querySelector("span[aria-hidden='true']");
-    const flagSvg = flagContainer?.querySelector("svg");
-    expect(flagContainer).toBeInTheDocument();
-    expect(flagSvg?.outerHTML).toBe(
-      renderToStaticMarkup(<Flag aria-hidden="true" className="block h-auto! w-full!" />),
-    );
-    const percentage = translationCoverage[language.code].percentage;
-    expect(within(option).getByText(`${percentage}%`)).toBeVisible();
-    expect(
-      within(option).getByRole("progressbar", {
-        name: `${language.nativeName} translation coverage: ${percentage}%`,
-      }),
-    ).toHaveAttribute("aria-valuenow", String(percentage));
-    if (language.code !== "en") expect(option).toHaveTextContent(language.englishName);
-    expect(option.querySelector(".col-start-3.row-start-1 svg.lucide-check")).toBeNull();
+    const russian = screen.getByRole("option", { name: "Русский (Russian), ru" });
+    expect(russian).toHaveTextContent("🇷🇺");
+    expect(russian.querySelector(".col-start-3.row-start-1 svg.lucide-check")).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 
-  it("shows English coverage and a selection check only for the selected language", () => {
+  it("accepts a consumer language dataset and custom option composition", () => {
+    const audioLanguage = {
+      code: "de",
+      englishName: "German",
+      nativeName: "Deutsch",
+      region: "DE",
+    };
+
     render(
-      <LanguageSelector defaultOpen defaultValue="en" languages={languages}>
+      <LanguageSelector defaultOpen label="Search audio languages" languages={[audioLanguage]}>
         <LanguageSelectorContent>
-          <LanguageSelectorList />
+          <LanguageSelectorList
+            emptyState="No audio languages found"
+            renderOption={(language, { displayName }) => (
+              <>
+                <LanguageSelectorFlag className="col-start-1 row-start-1" language={language} />
+                <span className="col-start-2 row-start-1">{displayName} · metadata</span>
+              </>
+            )}
+          />
         </LanguageSelectorContent>
       </LanguageSelector>,
     );
 
-    const english = screen.getByRole("option", { name: "English, en" });
-    expect(within(english).getByText("100%")).toBeVisible();
-    expect(translationCoverage.en.percentage).toBe(100);
-    expect(english.querySelector(".col-start-3.row-start-1 svg.lucide-check")).toBeInTheDocument();
-
-    for (const language of languages.filter(({ code }) => code !== "en")) {
-      const option = screen.getByRole("option", {
-        name: `${language.nativeName} (${language.englishName}), ${language.code}`,
-      });
-
-      expect(option.querySelector(".col-start-3.row-start-1 svg.lucide-check")).toBeNull();
-    }
+    const option = screen.getByRole("option", { name: "Deutsch (German), de" });
+    expect(option).toHaveTextContent("Deutsch (German) · metadata");
+    expect(option).toHaveTextContent("🇩🇪");
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 });

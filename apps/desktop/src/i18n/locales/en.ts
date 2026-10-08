@@ -1003,6 +1003,7 @@ export const en = {
       metadataDescription: "Set the title and language written to exported audio tracks.",
       titleLabel: "Track title",
       languageLabel: "Language",
+      languageNoResults: "No languages found",
       languageSearchLabel: "Search languages",
       languageSelectPlaceholder: "Select a language",
       useSourceLanguage: "Use source language",

@@ -1,8 +1,7 @@
-import GB from "country-flag-icons/react/3x2/GB";
-import RU from "country-flag-icons/react/3x2/RU";
+import getCountryFlag from "country-flag-icons/unicode";
+import Fuse from "fuse.js";
 import { CheckIcon } from "lucide-react";
 import * as React from "react";
-import { useTranslation } from "react-i18next";
 
 import {
   Combobox,
@@ -14,33 +13,42 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
-import { Progress } from "@/components/ui/progress";
 
-import {
-  createLanguageSearcher,
-  getLanguageDisplayName,
-  type Language,
-  SUPPORTED_LANGUAGES,
-} from "@/domain/languages";
-import { translationCoverage } from "@/i18n/resources";
 import { cn } from "@/lib/class-names.utils";
+import { FUZZY_SEARCH_OPTIONS } from "@/lib/fuzzy-search.consts";
+
+interface LanguageOption {
+  code: string;
+  englishName: string;
+  flag?: React.ReactNode;
+  nativeName: string;
+  region?: string;
+}
 
 interface LanguageSelectorContextValue {
   disabled: boolean;
-  language: Language | undefined;
-  languages: readonly Language[];
+  language: LanguageOption | undefined;
+  languages: readonly LanguageOption[];
   query: string | null;
-  selectLanguage: (language: Language) => void;
+  selectLanguage: (language: LanguageOption) => void;
   setQuery: (query: string | null) => void;
 }
 
+interface LanguageSelectorRenderOptionContext {
+  displayName: string;
+  selected: boolean;
+}
+
+type LanguageSelectorListProps = Omit<React.ComponentProps<typeof ComboboxList>, "children"> & {
+  emptyState: React.ReactNode;
+  renderOption?: (
+    language: LanguageOption,
+    context: LanguageSelectorRenderOptionContext,
+  ) => React.ReactNode;
+};
+
 const LanguageSelectorContext = React.createContext<LanguageSelectorContextValue | null>(null);
 const LanguageSelectorContentContext = React.createContext(false);
-
-const LANGUAGE_REGION_FLAGS: Record<Language["region"], typeof GB> = {
-  GB,
-  RU,
-};
 
 function useLanguageSelector() {
   const context = React.useContext(LanguageSelectorContext);
@@ -52,23 +60,29 @@ function useLanguageSelector() {
   return context;
 }
 
+function getLanguageDisplayName(language: LanguageOption): string {
+  return language.nativeName === language.englishName
+    ? language.nativeName
+    : `${language.nativeName} (${language.englishName})`;
+}
+
 function LanguageSelector({
   children,
   defaultValue,
   disabled = false,
   label,
-  languages = SUPPORTED_LANGUAGES,
+  languages,
   onValueChange,
   value,
   ...props
-}: Omit<React.ComponentProps<typeof Combobox>, "shouldFilter"> & {
-  defaultValue?: Language["code"];
+}: Omit<React.ComponentProps<typeof Combobox>, "label" | "shouldFilter"> & {
+  defaultValue?: string;
   disabled?: boolean;
-  languages?: readonly Language[];
-  onValueChange?: (value: Language["code"]) => void;
-  value?: Language["code"];
+  label: string;
+  languages: readonly LanguageOption[];
+  onValueChange?: (value: string) => void;
+  value?: string;
 }) {
-  const { t } = useTranslation();
   const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue);
   const [query, setQuery] = React.useState<string | null>(null);
 
@@ -78,14 +92,24 @@ function LanguageSelector({
     [languages, selectedValue],
   );
 
-  const searchLanguages = React.useMemo(() => createLanguageSearcher(languages), [languages]);
+  const searchLanguages = React.useMemo(
+    () =>
+      new Fuse(languages, {
+        ...FUZZY_SEARCH_OPTIONS,
+        ignoreDiacritics: true,
+        keys: ["code", "englishName", "nativeName"],
+      }),
+    [languages],
+  );
+
   const filteredLanguages = React.useMemo(
-    () => searchLanguages(query ?? ""),
-    [query, searchLanguages],
+    () =>
+      query?.trim() ? searchLanguages.search(query.trim()).map(({ item }) => item) : [...languages],
+    [languages, query, searchLanguages],
   );
 
   const selectLanguage = React.useCallback(
-    (nextLanguage: Language) => {
+    (nextLanguage: LanguageOption) => {
       if (value === undefined) setUncontrolledValue(nextLanguage.code);
       onValueChange?.(nextLanguage.code);
       setQuery(null);
@@ -107,11 +131,7 @@ function LanguageSelector({
 
   return (
     <LanguageSelectorContext.Provider value={context}>
-      <Combobox
-        label={label ?? t("settings.general.language.search")}
-        shouldFilter={false}
-        {...props}
-      >
+      <Combobox label={label} shouldFilter={false} {...props}>
         {children}
       </Combobox>
     </LanguageSelectorContext.Provider>
@@ -131,7 +151,7 @@ function LanguageSelectorValue({
   ...props
 }: Omit<React.ComponentProps<"span">, "children"> & {
   placeholder?: React.ReactNode;
-  type?: keyof Language | "displayName";
+  type?: keyof Pick<LanguageOption, "code" | "englishName" | "nativeName"> | "displayName";
 }) {
   const { language } = useLanguageSelector();
 
@@ -185,61 +205,60 @@ function LanguageSelectorInput({
   );
 }
 
-function LanguageSelectorList({
-  ...props
-}: Omit<React.ComponentProps<typeof ComboboxList>, "children">) {
-  const { t } = useTranslation();
+function LanguageSelectorList({ emptyState, renderOption, ...props }: LanguageSelectorListProps) {
   const { languages, setQuery } = useLanguageSelector();
 
   React.useEffect(() => () => setQuery(null), [setQuery]);
 
   return (
     <ComboboxList {...props}>
-      <ComboboxEmpty>{t("settings.general.language.noResults")}</ComboboxEmpty>
+      <ComboboxEmpty>{emptyState}</ComboboxEmpty>
       <ComboboxGroup>
         {languages.map((language) => (
-          <LanguageSelectorItem key={language.code} language={language} />
+          <LanguageSelectorItem
+            key={language.code}
+            language={language}
+            renderOption={renderOption}
+          />
         ))}
       </ComboboxGroup>
     </ComboboxList>
   );
 }
 
-function LanguageSelectorItem({ language }: { language: Language }) {
-  const { t } = useTranslation();
+function LanguageSelectorItem({
+  language,
+  renderOption,
+}: {
+  language: LanguageOption;
+  renderOption: LanguageSelectorListProps["renderOption"];
+}) {
   const { disabled, language: selectedLanguage, selectLanguage } = useLanguageSelector();
 
   const selected = selectedLanguage?.code === language.code;
-  const percentage = translationCoverage[language.code].percentage;
   const displayName = getLanguageDisplayName(language);
 
   return (
     <ComboboxItem
       aria-label={`${displayName}, ${language.code}`}
-      className="grid h-auto min-w-0 grid-cols-[1rem_minmax(0,1fr)_1rem] grid-rows-[auto_auto] gap-x-2 gap-y-1 px-2.5 py-2 pr-2 data-[language-selected=true]:font-medium"
+      className={cn(
+        "grid h-auto min-w-0 grid-cols-[1rem_minmax(0,1fr)_1rem] gap-x-2 px-2.5 py-2 pr-2 data-[language-selected=true]:font-medium",
+        renderOption && "grid-rows-[auto_auto] gap-y-1",
+      )}
       data-language-selected={selected || undefined}
       disabled={disabled}
       keywords={[language.code, language.englishName, language.nativeName]}
       onSelect={() => selectLanguage(language)}
       value={language.code}
     >
-      <LanguageSelectorFlag className="col-start-1 row-start-1" language={language} />
-
-      <span className="col-start-2 row-start-1 min-w-0 truncate">{displayName}</span>
-
-      <div className="col-start-2 row-start-2 flex items-center gap-1">
-        <Progress
-          aria-label={t("settings.general.language.coverageAccessibleLabel", {
-            language: language.nativeName,
-            percentage,
-          })}
-          className="h-1"
-          value={percentage}
-        />
-        <span aria-hidden="true" className="w-[4ch] shrink-0 text-right text-xs tabular-nums">
-          {percentage}%
-        </span>
-      </div>
+      {renderOption ? (
+        renderOption(language, { displayName, selected })
+      ) : (
+        <>
+          <LanguageSelectorFlag className="col-start-1 row-start-1" language={language} />
+          <span className="col-start-2 row-start-1 min-w-0 truncate">{displayName}</span>
+        </>
+      )}
 
       {selected ? (
         <span aria-hidden="true" className="col-start-3 row-start-1 flex justify-end">
@@ -254,8 +273,8 @@ function LanguageSelectorFlag({
   className,
   language,
   ...props
-}: Omit<React.ComponentProps<"span">, "children"> & { language: Language }) {
-  const Flag = LANGUAGE_REGION_FLAGS[language.region];
+}: Omit<React.ComponentProps<"span">, "children"> & { language: LanguageOption }) {
+  const unicodeFlag = language.region ? getCountryFlag(language.region) : undefined;
 
   return (
     <span
@@ -266,14 +285,20 @@ function LanguageSelectorFlag({
       )}
       {...props}
     >
-      <Flag aria-hidden="true" className="block h-auto! w-full!" />
+      {language.flag !== undefined ? (
+        language.flag
+      ) : (
+        <span className="text-xs leading-none">{unicodeFlag}</span>
+      )}
     </span>
   );
 }
 
 export {
+  type LanguageOption,
   LanguageSelector,
   LanguageSelectorContent,
+  LanguageSelectorFlag,
   LanguageSelectorInput,
   LanguageSelectorList,
   LanguageSelectorTrigger,

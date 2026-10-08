@@ -29,6 +29,7 @@ import { SUPPORTED_LANGUAGES } from "@/domain/languages";
 const meta = {
   title: "Design System/LanguageSelector",
   component: LanguageSelector,
+  args: { label: "Search languages", languages: SUPPORTED_LANGUAGES },
   parameters: {
     layout: "centered",
   },
@@ -44,7 +45,12 @@ export const ButtonTrigger: Story = {
 
 function ButtonTriggerExample({ defaultOpen = false }: { defaultOpen?: boolean }) {
   return (
-    <LanguageSelector defaultOpen={defaultOpen} defaultValue="ru" languages={SUPPORTED_LANGUAGES}>
+    <LanguageSelector
+      defaultOpen={defaultOpen}
+      defaultValue="ru"
+      label="Search languages"
+      languages={SUPPORTED_LANGUAGES}
+    >
       <LanguageSelectorTrigger>
         <Button
           aria-label="Choose language"
@@ -61,7 +67,7 @@ function ButtonTriggerExample({ defaultOpen = false }: { defaultOpen?: boolean }
 
       <LanguageSelectorContent>
         <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages..." />
-        <LanguageSelectorList />
+        <LanguageSelectorList emptyState="No languages found" />
       </LanguageSelectorContent>
     </LanguageSelector>
   );
@@ -69,14 +75,14 @@ function ButtonTriggerExample({ defaultOpen = false }: { defaultOpen?: boolean }
 
 export const InputTrigger: Story = {
   render: () => (
-    <LanguageSelector defaultValue="ru" languages={SUPPORTED_LANGUAGES}>
+    <LanguageSelector defaultValue="ru" label="Search languages" languages={SUPPORTED_LANGUAGES}>
       <LanguageSelectorInput
         aria-label="Choose language"
         className="w-72"
         placeholder="Search languages..."
       />
       <LanguageSelectorContent>
-        <LanguageSelectorList />
+        <LanguageSelectorList emptyState="No languages found" />
       </LanguageSelectorContent>
     </LanguageSelector>
   ),
@@ -87,8 +93,7 @@ export const DropdownMenuSubmenu: Story = {
 };
 
 function DropdownMenuSubmenuExample() {
-  const [languageCode, setLanguageCode] =
-    useState<(typeof SUPPORTED_LANGUAGES)[number]["code"]>("en");
+  const [languageCode, setLanguageCode] = useState<string>("en");
 
   const [submenuOpen, setSubmenuOpen] = useState(false);
 
@@ -104,6 +109,7 @@ function DropdownMenuSubmenuExample() {
         <DropdownMenuSeparator />
 
         <LanguageSelector
+          label="Search languages"
           languages={SUPPORTED_LANGUAGES}
           onValueChange={(code) => {
             setLanguageCode(code);
@@ -126,7 +132,7 @@ function DropdownMenuSubmenuExample() {
                   className="h-7"
                   placeholder="Search languages..."
                 />
-                <LanguageSelectorList />
+                <LanguageSelectorList emptyState="No languages found" />
               </DropdownMenuSubContent>
             </LanguageSelectorContent>
           </DropdownMenuSub>
@@ -138,7 +144,7 @@ function DropdownMenuSubmenuExample() {
 
 function NoResultsExample() {
   return (
-    <LanguageSelector defaultOpen languages={SUPPORTED_LANGUAGES}>
+    <LanguageSelector defaultOpen label="Search languages" languages={SUPPORTED_LANGUAGES}>
       <LanguageSelectorTrigger>
         <Button
           aria-label="Choose language"
@@ -153,7 +159,7 @@ function NoResultsExample() {
 
       <LanguageSelectorContent>
         <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages..." />
-        <LanguageSelectorList />
+        <LanguageSelectorList emptyState="No languages found" />
       </LanguageSelectorContent>
     </LanguageSelector>
   );

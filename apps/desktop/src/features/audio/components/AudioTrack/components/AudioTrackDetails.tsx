@@ -1,4 +1,4 @@
-import { MoreVertical } from "lucide-react";
+import { ChevronsUpDown, MoreVertical, RotateCcw } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -26,7 +26,11 @@ import {
   LanguageSelectorTrigger,
   LanguageSelectorValue,
 } from "@/components/language-selector";
-import { type Language, languageCodeFromMetadata } from "@/domain/languages";
+import {
+  AUDIO_METADATA_LANGUAGES,
+  type Language,
+  languageCodeFromMetadata,
+} from "@/domain/languages";
 
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 import { formatChannels, formatGain, MIN_SLIDER_DECIBELS } from "../../../lib/audio-level.utils";
@@ -112,6 +116,7 @@ function AudioTrackDetails({
           onOpenMetadata={openMetadataDialog}
         />
       </DropdownMenu>
+
       <Dialog onOpenChange={onMetadataDialogOpenChange} open={metadataDialogOpen}>
         <DialogContent>
           <form
@@ -150,46 +155,59 @@ function AudioTrackDetails({
             <div className="grid gap-2">
               <Label>{t("audio.tracks.languageLabel")}</Label>
               <LanguageSelector
+                label={t("audio.tracks.languageSearchLabel")}
+                languages={AUDIO_METADATA_LANGUAGES}
                 onValueChange={(language) => {
                   setMetadataLanguage(language);
                   setMetadataLanguageChanged(true);
                 }}
                 value={metadataLanguage}
               >
-                <LanguageSelectorTrigger
-                  aria-label={t("audio.tracks.languageLabel")}
-                  className="w-full justify-start"
-                  id={`audio-track-language-${track.streamIndex}`}
-                >
-                  <Button className="w-full justify-start" type="button" variant="outline">
-                    <LanguageSelectorValue
-                      placeholder={
-                        track.language ??
-                        stream.language ??
-                        t("audio.tracks.languageSelectPlaceholder")
-                      }
-                    />
+                <div className="flex items-center gap-1">
+                  <LanguageSelectorTrigger asChild>
+                    <Button
+                      aria-label={t("audio.tracks.languageLabel")}
+                      className="flex-1 justify-start"
+                      type="button"
+                      variant="outline"
+                    >
+                      <LanguageSelectorValue
+                        placeholder={
+                          track.language ??
+                          stream.language ??
+                          t("audio.tracks.languageSelectPlaceholder")
+                        }
+                      />
+
+                      <ChevronsUpDown
+                        aria-hidden="true"
+                        className="ml-auto text-muted-foreground"
+                      />
+                    </Button>
+                  </LanguageSelectorTrigger>
+
+                  <Button
+                    aria-label={t("audio.tracks.useSourceLanguage")}
+                    onClick={() => {
+                      setMetadataLanguage(languageCodeFromMetadata(stream.language));
+                      setMetadataLanguageChanged(true);
+                    }}
+                    size="icon"
+                    type="button"
+                    variant="outline"
+                  >
+                    <RotateCcw aria-hidden="true" />
                   </Button>
-                </LanguageSelectorTrigger>
+                </div>
+
                 <LanguageSelectorContent>
                   <LanguageSelectorInput
                     aria-label={t("audio.tracks.languageSearchLabel")}
                     placeholder={t("audio.tracks.languageSearchLabel")}
                   />
-                  <LanguageSelectorList />
+                  <LanguageSelectorList emptyState={t("audio.tracks.languageNoResults")} />
                 </LanguageSelectorContent>
               </LanguageSelector>
-              <Button
-                onClick={() => {
-                  setMetadataLanguage(languageCodeFromMetadata(stream.language));
-                  setMetadataLanguageChanged(true);
-                }}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                {t("audio.tracks.useSourceLanguage")}
-              </Button>
             </div>
             <DialogFooter>
               <Button type="submit">{t("common.actions.save")}</Button>

@@ -654,6 +654,15 @@ describe("AudioTrackRow", () => {
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(store.getState().audio.tracks[0]?.language).toBeUndefined();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.click(screen.getByRole("button", { name: "Language" }));
+    await user.type(screen.getByRole("combobox", { name: /search languages/i }), "French");
+    await user.click(screen.getByRole("option", { name: "Français (French), fr" }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]?.language).toBe("fra");
   });
 
   it("uses an action label for the enabled audio track in its dropdown menu", async () => {
