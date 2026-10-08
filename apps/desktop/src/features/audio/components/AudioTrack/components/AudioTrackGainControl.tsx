@@ -93,6 +93,7 @@ function AudioTrackGainControl({
         ]}
         max={12}
         min={MIN_SLIDER_DECIBELS}
+        onDoubleClick={() => commitGain(0)}
         onValueChange={([gainDb]) => {
           if (gainDb !== undefined) updateGain(gainDb);
         }}

@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -31,6 +31,7 @@ import {
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
+import { AudioTrackGainControl } from "../AudioTrack/components/AudioTrackGainControl";
 
 const audioPlayback = {
   audioMeterRef: { current: null },
@@ -70,7 +71,77 @@ function renderTrack(store: ReturnType<typeof createAppStore>, streamIndex: numb
   );
 }
 
+function renderGainControl(enabled = true) {
+  const store = createAppStore({
+    getItem: async () => null,
+    setItem: async () => undefined,
+    removeItem: async () => undefined,
+  });
+  const media = mediaWithAudio(firstSource.sourcePath);
+  store.dispatch(sourceSelected({ source: firstSource }));
+  store.dispatch(sourceReady({ loadToken: 1, media }));
+  if (!enabled) {
+    store.dispatch(audioTrackToggled({ streamIndex: 2 }));
+    store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -6 }));
+  }
+
+  const clearLiveAudioTrackGain = vi.fn();
+  const gainCommits: number[] = [];
+  const dispatch = store.dispatch;
+  store.dispatch = ((action: Parameters<typeof dispatch>[0]) => {
+    if (audioTrackGainChanged.match(action)) gainCommits.push(action.payload.gainDb);
+    return dispatch(action);
+  }) as typeof store.dispatch;
+
+  render(
+    <Provider store={store}>
+      <AudioPlaybackContext.Provider value={{ ...audioPlayback, clearLiveAudioTrackGain }}>
+        <TooltipProvider>
+          <AudioTrackGainControl
+            onLiveGainChange={() => undefined}
+            streamIndex={2}
+            trackNumber={1}
+          />
+        </TooltipProvider>
+      </AudioPlaybackContext.Provider>
+    </Provider>,
+  );
+
+  return { clearLiveAudioTrackGain, gainCommits, store };
+}
+
 describe("AudioTrackRow", () => {
+  it("double-click resets an adjusted gain with one final commit", () => {
+    const { gainCommits, store } = renderGainControl();
+    const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
+
+    fireEvent.keyDown(gainSlider, { key: "ArrowLeft" });
+    fireEvent.keyUp(gainSlider, { key: "ArrowLeft" });
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(-0.5);
+
+    fireEvent.doubleClick(gainSlider);
+
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: true,
+      processing: { gainDb: 0 },
+    });
+    expect(gainCommits).toEqual([-0.5, 0]);
+  });
+
+  it("double-click enables a muted track and updates playback at unity gain", () => {
+    const { clearLiveAudioTrackGain, gainCommits, store } = renderGainControl(false);
+    const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
+
+    fireEvent.doubleClick(gainSlider);
+
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: true,
+      processing: { gainDb: 0 },
+    });
+    expect(clearLiveAudioTrackGain).toHaveBeenLastCalledWith(2, 0);
+    expect(gainCommits).toEqual([0]);
+  });
+
   it("scales the existing waveform during live gain adjustment", async () => {
     const { store } = renderRow();
     act(() => {
