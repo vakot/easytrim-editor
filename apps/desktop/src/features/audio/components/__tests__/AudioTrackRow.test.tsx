@@ -13,6 +13,7 @@ import {
   audioTrackLoudnessAnalysisFailed,
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
+  audioTrackMetadataChanged,
   audioTrackProcessingChanged,
   audioTrackToggled,
   waveformReady,
@@ -585,6 +586,52 @@ describe("AudioTrackRow", () => {
     expect(store.getState().audio.tracks.find((track) => track.streamIndex === 4)?.title).toBe(
       undefined,
     );
+  });
+
+  it("preserves an untouched title while editing language and allows an explicit title reset", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    store.dispatch(
+      audioTrackMetadataChanged({ streamIndex: 2, title: "Custom title", language: "rus" }),
+    );
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      title: "Custom title",
+      language: "rus",
+    });
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.click(screen.getByRole("button", { name: /use source language/i }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]).toMatchObject({ title: "Custom title" });
+    expect(store.getState().audio.tracks[0]?.language).toBeUndefined();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.click(screen.getByRole("button", { name: "Language" }));
+    await user.click(screen.getByRole("option", { name: "Русский (Russian), ru" }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      title: "Custom title",
+      language: "rus",
+    });
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    const titleInput = screen.getByLabelText(/title/i);
+    await user.type(titleInput, "Temporary title");
+    await user.clear(titleInput);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]?.title).toBeUndefined();
+    expect(store.getState().audio.tracks[0]?.language).toBe("rus");
   });
 
   it("selects and resets a language override using source metadata codes", async () => {

@@ -193,9 +193,14 @@ function useAudioTrackController(streamIndex: number) {
   }, [dispatch, streamIndex, track]);
 
   const updateMetadata = useCallback(
-    (title: string, language: Language["code"] | undefined, languageChanged: boolean) => {
+    (
+      title: string,
+      titleChanged: boolean,
+      language: Language["code"] | undefined,
+      languageChanged: boolean,
+    ) => {
       if (!track || !stream) return;
-      const nextTitle = title === "" ? undefined : title;
+      const nextTitle = titleChanged ? (title === "" ? undefined : title) : track.title;
       const nextLanguage = languageChanged
         ? language === languageCodeFromMetadata(stream.language)
           ? undefined

@@ -47,6 +47,7 @@ function AudioTrackDetails({
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [metadataTitle, setMetadataTitle] = useState("");
+  const [metadataTitleChanged, setMetadataTitleChanged] = useState(false);
   const [metadataLanguage, setMetadataLanguage] = useState<Language["code"] | undefined>();
   const [metadataLanguageChanged, setMetadataLanguageChanged] = useState(false);
   const { stream, track, trackNumber } = controller;
@@ -60,6 +61,7 @@ function AudioTrackDetails({
 
   const openMetadataDialog = () => {
     setMetadataTitle("");
+    setMetadataTitleChanged(false);
     setMetadataLanguage(languageCodeFromMetadata(track.language ?? stream.language));
     setMetadataLanguageChanged(false);
     onMetadataDialogOpenChange(true);
@@ -116,7 +118,12 @@ function AudioTrackDetails({
             className="grid gap-4"
             onSubmit={(event) => {
               event.preventDefault();
-              controller.updateMetadata(metadataTitle, metadataLanguage, metadataLanguageChanged);
+              controller.updateMetadata(
+                metadataTitle,
+                metadataTitleChanged,
+                metadataLanguage,
+                metadataLanguageChanged,
+              );
               onMetadataDialogOpenChange(false);
             }}
           >
@@ -132,7 +139,10 @@ function AudioTrackDetails({
                 autoComplete="off"
                 id={`audio-track-title-${track.streamIndex}`}
                 maxLength={256}
-                onChange={(event) => setMetadataTitle(event.currentTarget.value)}
+                onChange={(event) => {
+                  setMetadataTitle(event.currentTarget.value);
+                  setMetadataTitleChanged(true);
+                }}
                 placeholder={stream.title ?? ""}
                 value={metadataTitle}
               />
