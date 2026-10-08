@@ -17,7 +17,6 @@ import {
   LanguageSelectorList,
   LanguageSelectorTrigger,
   LanguageSelectorValue,
-  useLanguageSelectorOptions,
 } from "@/components/language-selector";
 import { SUPPORTED_LANGUAGES } from "@/domain/languages";
 import { isSupportedLanguage, type SupportedLanguage, translationCoverage } from "@/i18n/resources";
@@ -73,9 +72,22 @@ function SettingsGeneral() {
                 <LanguageSelectorEmpty>
                   {t("settings.general.language.noResults")}
                 </LanguageSelectorEmpty>
-                <LanguageSelectorGroup>
-                  <SettingsLanguageOptions />
-                </LanguageSelectorGroup>
+                {({ languages }) => (
+                  <LanguageSelectorGroup>
+                    {languages.map((language) => (
+                      <LanguageSelectorItem key={language.code} language={language}>
+                        <LanguageSelectorItemFlag />
+                        <LanguageSelectorItemText>
+                          <SettingsLanguageCoverage
+                            language={language.code as SupportedLanguage}
+                            nativeName={language.nativeName}
+                          />
+                        </LanguageSelectorItemText>
+                        <LanguageSelectorItemIndicator />
+                      </LanguageSelectorItem>
+                    ))}
+                  </LanguageSelectorGroup>
+                )}
               </LanguageSelectorList>
             </LanguageSelectorContent>
           </LanguageSelector>
@@ -95,23 +107,6 @@ function SettingsGeneral() {
       </SettingRow>
     </SettingsSection>
   );
-}
-
-function SettingsLanguageOptions() {
-  const languages = useLanguageSelectorOptions();
-
-  return languages.map((language) => (
-    <LanguageSelectorItem key={language.code} language={language}>
-      <LanguageSelectorItemFlag />
-      <LanguageSelectorItemText>
-        <SettingsLanguageCoverage
-          language={language.code as SupportedLanguage}
-          nativeName={language.nativeName}
-        />
-      </LanguageSelectorItemText>
-      <LanguageSelectorItemIndicator />
-    </LanguageSelectorItem>
-  ));
 }
 
 function SettingsLanguageCoverage({

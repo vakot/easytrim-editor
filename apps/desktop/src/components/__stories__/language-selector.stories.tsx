@@ -20,7 +20,12 @@ import {
   LanguageSelector,
   LanguageSelectorContent,
   LanguageSelectorEmpty,
+  LanguageSelectorGroup,
   LanguageSelectorInput,
+  LanguageSelectorItem,
+  LanguageSelectorItemFlag,
+  LanguageSelectorItemIndicator,
+  LanguageSelectorItemText,
   LanguageSelectorList,
   LanguageSelectorOptions,
   LanguageSelectorTrigger,
@@ -142,7 +147,19 @@ function DropdownMenuSubmenuExample() {
                 />
                 <LanguageSelectorList>
                   <LanguageSelectorEmpty>No languages found</LanguageSelectorEmpty>
-                  <LanguageSelectorOptions />
+                  {({ languages }) => (
+                    <LanguageSelectorGroup>
+                      {languages.map((language) => (
+                        <LanguageSelectorItem key={language.code} language={language}>
+                          <LanguageSelectorItemFlag />
+                          <LanguageSelectorItemText>
+                            <span className="text-xs text-muted-foreground">{language.code}</span>
+                          </LanguageSelectorItemText>
+                          <LanguageSelectorItemIndicator />
+                        </LanguageSelectorItem>
+                      ))}
+                    </LanguageSelectorGroup>
+                  )}
                 </LanguageSelectorList>
               </DropdownMenuSubContent>
             </LanguageSelectorContent>

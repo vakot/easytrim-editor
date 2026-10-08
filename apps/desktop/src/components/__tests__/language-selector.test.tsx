@@ -16,7 +16,6 @@ import {
   LanguageSelectorOptions,
   LanguageSelectorTrigger,
   LanguageSelectorValue,
-  useLanguageSelectorOptions,
 } from "@/components/language-selector";
 import { AUDIO_METADATA_LANGUAGES, SUPPORTED_LANGUAGES } from "@/domain/languages";
 
@@ -29,20 +28,6 @@ function LanguageResults({ message }: { message: string }) {
       <LanguageSelectorOptions />
     </>
   );
-}
-
-function CustomLanguageOptions() {
-  const options = useLanguageSelectorOptions();
-
-  return options.map((language) => (
-    <LanguageSelectorItem key={language.code} language={language}>
-      <LanguageSelectorItemFlag />
-      <LanguageSelectorItemText>
-        <span> · metadata</span>
-      </LanguageSelectorItemText>
-      <LanguageSelectorItemIndicator />
-    </LanguageSelectorItem>
-  ));
 }
 
 describe("LanguageSelector", () => {
@@ -296,7 +281,7 @@ describe("LanguageSelector", () => {
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 
-  it("supports custom item composition using the filtered options hook", async () => {
+  it("supports custom item composition with filtered languages from the list", async () => {
     const user = userEvent.setup();
     const onValueChange = vi.fn();
     const audioLanguage = {
@@ -324,9 +309,19 @@ describe("LanguageSelector", () => {
           <LanguageSelectorInput aria-label="Search audio languages" />
           <LanguageSelectorList>
             <LanguageSelectorEmpty>No audio languages found</LanguageSelectorEmpty>
-            <LanguageSelectorGroup>
-              <CustomLanguageOptions />
-            </LanguageSelectorGroup>
+            {({ languages }) => (
+              <LanguageSelectorGroup>
+                {languages.map((language) => (
+                  <LanguageSelectorItem key={language.code} language={language}>
+                    <LanguageSelectorItemFlag />
+                    <LanguageSelectorItemText>
+                      <span> · metadata</span>
+                    </LanguageSelectorItemText>
+                    <LanguageSelectorItemIndicator />
+                  </LanguageSelectorItem>
+                ))}
+              </LanguageSelectorGroup>
+            )}
           </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,

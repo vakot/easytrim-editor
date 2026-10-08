@@ -76,6 +76,17 @@ interface LanguageSelectorItemContextValue {
   selected: boolean;
 }
 
+type LanguageSelectorListChild =
+  React.ReactNode | ((options: { languages: readonly LanguageOption[] }) => React.ReactNode);
+
+type LanguageSelectorListProps = Omit<
+  React.ComponentProps<typeof ComboboxList>,
+  "children" | "className"
+> & {
+  children?: LanguageSelectorListChild | LanguageSelectorListChild[];
+  className?: string;
+};
+
 interface LanguageSelectorProps extends Omit<
   React.ComponentProps<typeof Combobox>,
   "defaultValue" | "label" | "onValueChange" | "shouldFilter" | "value"
@@ -289,8 +300,17 @@ function LanguageSelectorInput({
   );
 }
 
-function LanguageSelectorList({ children, ...props }: React.ComponentProps<typeof ComboboxList>) {
-  return <ComboboxList {...props}>{children}</ComboboxList>;
+function LanguageSelectorList({ children, ...props }: LanguageSelectorListProps) {
+  const { options } = useLanguageSelector();
+  const renderChild = (child: LanguageSelectorListProps["children"]): React.ReactNode => {
+    if (typeof child === "function") return child({ languages: options });
+    if (Array.isArray(child)) return child.map(renderChild);
+    return child;
+  };
+
+  const content = renderChild(children);
+
+  return <ComboboxList {...props}>{content}</ComboboxList>;
 }
 
 function LanguageSelectorEmpty(props: React.ComponentProps<typeof ComboboxEmpty>) {
@@ -386,7 +406,7 @@ function LanguageSelectorItemIndicator({
 }
 
 function LanguageSelectorOptions() {
-  const options = useLanguageSelectorOptions();
+  const { options } = useLanguageSelector();
 
   return (
     <LanguageSelectorGroup>
@@ -460,11 +480,6 @@ function useLanguageSelectorItem() {
   return context;
 }
 
-/** Returns the selector's current options after applying its active search query. */
-function useLanguageSelectorOptions(): readonly LanguageOption[] {
-  return useLanguageSelector().options;
-}
-
 function getLanguageDisplayName(language: LanguageOption): string {
   return language.nativeName === language.englishName
     ? language.nativeName
@@ -486,6 +501,4 @@ export {
   LanguageSelectorOptions,
   LanguageSelectorTrigger,
   LanguageSelectorValue,
-  // eslint-disable-next-line react-refresh/only-export-components -- This hook exposes selector-owned filtering to custom compound consumers.
-  useLanguageSelectorOptions,
 };
