@@ -224,7 +224,22 @@ function LanguageSelectorValue({
 }) {
   const { language } = useLanguageSelector();
 
-  if (!language) return placeholder ?? null;
+  if (!language) {
+    if (placeholder == null) return null;
+
+    return (
+      <span
+        className={cn(
+          "flex min-w-0 items-center truncate text-left font-normal text-muted-foreground",
+          className,
+        )}
+        {...props}
+      >
+        {placeholder}
+      </span>
+    );
+  }
+
   const value = type === "displayName" ? getLanguageDisplayName(language) : language[type];
 
   return (
