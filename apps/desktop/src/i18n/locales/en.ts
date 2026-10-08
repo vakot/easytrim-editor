@@ -740,6 +740,7 @@ export const en = {
     },
     progress: {
       accessibleLabel: "Export progress",
+      preparingGifPalette: "Preparing GIF palette",
     },
   },
   preview: {

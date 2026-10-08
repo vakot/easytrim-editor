@@ -52,9 +52,10 @@ pub struct ExportProgress {
     pub phase: ExportPhase,
 }
 
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ExportPhase {
+    Preparing,
     Running,
     Completed,
 }
@@ -222,6 +223,7 @@ pub async fn export_fast(
             output_path,
             display_name,
             arguments,
+            ExportPhase::Running,
             on_progress,
             ExportDiagnosticContext {
                 parent_operation_id: diagnostic_parent_operation_id,
@@ -259,6 +261,7 @@ pub async fn render_optimized(
             output_path,
             display_name,
             arguments,
+            ExportPhase::Running,
             on_progress,
             ExportDiagnosticContext {
                 parent_operation_id: diagnostic_parent_operation_id,
@@ -295,6 +298,7 @@ pub async fn render_gif(
             output_path,
             display_name,
             arguments,
+            ExportPhase::Preparing,
             on_progress,
             ExportDiagnosticContext {
                 parent_operation_id: diagnostic_parent_operation_id,
@@ -404,6 +408,7 @@ async fn run_export(
     output_path: PathBuf,
     display_name: String,
     arguments: Vec<std::ffi::OsString>,
+    initial_phase: ExportPhase,
     on_progress: Channel<ExportProgress>,
     diagnostic: ExportDiagnosticContext,
 ) -> Result<ExportResult, AppError> {
@@ -434,12 +439,13 @@ async fn run_export(
         speed: None,
         bitrate: None,
         total_size: None,
-        phase: ExportPhase::Running,
+        phase: initial_phase,
     });
     let cancellation_for_check = cancellation.clone();
     let operation_for_task = operation_id.clone();
     let task_result = tauri::async_runtime::spawn_blocking(move || {
         let mut progress_values = HashMap::new();
+        let mut phase = initial_phase;
         let process = run_progress_cancellable(
             OsStr::new("ffmpeg"),
             &arguments,
@@ -455,6 +461,7 @@ async fn run_export(
                             .get("out_time_us")
                             .and_then(|value| value.parse::<i64>().ok())
                             .unwrap_or_default();
+                        phase = next_export_phase(phase, key, value, elapsed_micros);
                         let _ = on_progress.send(ExportProgress {
                             operation_id: operation_for_task.clone(),
                             elapsed_micros,
@@ -467,11 +474,7 @@ async fn run_export(
                             total_size: progress_values
                                 .get("total_size")
                                 .and_then(|value| value.parse::<u64>().ok()),
-                            phase: if value == "end" {
-                                ExportPhase::Completed
-                            } else {
-                                ExportPhase::Running
-                            },
+                            phase,
                         });
                     }
                 }
@@ -627,6 +630,21 @@ async fn run_export(
         display_name,
         display_path: output_path.display().to_string(),
     })
+}
+
+fn next_export_phase(
+    phase: ExportPhase,
+    key: &str,
+    value: &str,
+    elapsed_micros: i64,
+) -> ExportPhase {
+    if key == "progress" && value == "end" {
+        ExportPhase::Completed
+    } else if phase == ExportPhase::Preparing && key == "out_time_us" && elapsed_micros > 0 {
+        ExportPhase::Running
+    } else {
+        phase
+    }
 }
 
 fn record_ffmpeg_event(
@@ -809,7 +827,27 @@ fn output_display_name(path: &std::path::Path) -> Result<String, AppError> {
 mod tests {
     use std::{ffi::OsString, path::Path};
 
-    use super::ffmpeg_arguments_data;
+    use super::{ExportPhase, ffmpeg_arguments_data, next_export_phase};
+
+    #[test]
+    fn gif_progress_stays_indeterminate_until_ffmpeg_emits_output_time() {
+        assert_eq!(
+            next_export_phase(ExportPhase::Preparing, "progress", "continue", 0),
+            ExportPhase::Preparing
+        );
+        assert_eq!(
+            next_export_phase(ExportPhase::Preparing, "out_time_us", "1000000", 0),
+            ExportPhase::Preparing
+        );
+        assert_eq!(
+            next_export_phase(ExportPhase::Preparing, "out_time_us", "1000000", 1_000_000),
+            ExportPhase::Running
+        );
+        assert_eq!(
+            next_export_phase(ExportPhase::Running, "progress", "end", 1_000_000),
+            ExportPhase::Completed
+        );
+    }
 
     #[test]
     fn ffmpeg_diagnostic_arguments_redact_source_and_output_paths() {

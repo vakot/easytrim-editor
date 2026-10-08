@@ -1,5 +1,6 @@
 import type {
   AppError,
+  ExportProgress,
   ExportResult,
   FastExportRequest,
   FrameRate,
@@ -53,6 +54,7 @@ interface ExportAttemptMetrics {
   estimatedTotalTimeMs?: number;
   fileSizeBytes?: number;
   fps?: number;
+  phase?: ExportProgress["phase"];
   progressPercent: number;
   totalFrames?: number;
 }

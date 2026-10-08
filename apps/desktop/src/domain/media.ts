@@ -20,7 +20,7 @@ interface ExportProgress {
   fps?: string;
   frame?: number;
   operationId: string;
-  phase: "running" | "completed";
+  phase: "preparing" | "running" | "completed";
   speed?: string;
   totalSize?: number;
 }
