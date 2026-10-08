@@ -169,6 +169,7 @@ function LanguageSelector(
     disabled = false,
     label,
     languages,
+    onOpenChange,
     onValueChange,
     value,
     ...props
@@ -224,7 +225,15 @@ function LanguageSelector(
 
   return (
     <LanguageSelectorContext.Provider value={context}>
-      <Combobox label={label} shouldFilter={false} {...props}>
+      <Combobox
+        label={label}
+        onOpenChange={(open) => {
+          if (!open) setQuery(null);
+          onOpenChange?.(open);
+        }}
+        shouldFilter={false}
+        {...props}
+      >
         {children}
       </Combobox>
     </LanguageSelectorContext.Provider>
@@ -299,10 +308,6 @@ function LanguageSelectorInput({
 }
 
 function LanguageSelectorList({ children, ...props }: React.ComponentProps<typeof ComboboxList>) {
-  const { setQuery } = useLanguageSelector();
-
-  React.useEffect(() => () => setQuery(null), [setQuery]);
-
   return <ComboboxList {...props}>{children}</ComboboxList>;
 }
 

@@ -38,6 +38,7 @@ function useCombobox() {
 
 type ComboboxProps = Omit<React.ComponentProps<typeof Popover>, "open" | "onOpenChange"> & {
   label?: string;
+  onOpenChange?: (open: boolean) => void;
   shouldFilter?: boolean;
 };
 
@@ -45,6 +46,7 @@ function Combobox({
   children,
   defaultOpen = false,
   label,
+  onOpenChange,
   shouldFilter = true,
   ...props
 }: ComboboxProps) {
@@ -73,6 +75,7 @@ function Combobox({
           defaultOpen={defaultOpen}
           onOpenChange={(open) => {
             openRef.current = open;
+            onOpenChange?.(open);
           }}
         >
           {children}

@@ -22,10 +22,10 @@ import { AUDIO_METADATA_LANGUAGES, SUPPORTED_LANGUAGES } from "@/domain/language
 
 const languages = SUPPORTED_LANGUAGES;
 
-function LanguageResults({ emptyState }: { emptyState: string }) {
+function LanguageResults({ message }: { message: string }) {
   return (
     <>
-      <LanguageSelectorEmpty>{emptyState}</LanguageSelectorEmpty>
+      <LanguageSelectorEmpty>{message}</LanguageSelectorEmpty>
       <LanguageSelectorOptions />
     </>
   );
@@ -77,7 +77,7 @@ describe("LanguageSelector", () => {
         <LanguageSelectorContent>
           <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages…" />
           <LanguageSelectorList>
-            <LanguageResults emptyState="No languages found" />
+            <LanguageResults message="No languages found" />
           </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
@@ -112,7 +112,7 @@ describe("LanguageSelector", () => {
         <LanguageSelectorContent>
           <LanguageSelectorInput aria-label="Search languages" />
           <LanguageSelectorList>
-            <LanguageResults emptyState="No languages found" />
+            <LanguageResults message="No languages found" />
           </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
@@ -134,7 +134,7 @@ describe("LanguageSelector", () => {
         <LanguageSelectorInput aria-label="Choose language" placeholder="Search languages…" />
         <LanguageSelectorContent>
           <LanguageSelectorList>
-            <LanguageResults emptyState="No languages found" />
+            <LanguageResults message="No languages found" />
           </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
@@ -172,7 +172,7 @@ describe("LanguageSelector", () => {
         <LanguageSelectorContent>
           <LanguageSelectorInput aria-label="Search languages" />
           <LanguageSelectorList>
-            <LanguageResults emptyState="No languages found" />
+            <LanguageResults message="No languages found" />
           </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
@@ -197,7 +197,7 @@ describe("LanguageSelector", () => {
         <LanguageSelectorContent>
           <LanguageSelectorInput aria-label="Search languages" />
           <LanguageSelectorList>
-            <LanguageResults emptyState="No languages found" />
+            <LanguageResults message="No languages found" />
           </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
@@ -226,7 +226,7 @@ describe("LanguageSelector", () => {
       >
         <LanguageSelectorContent>
           <LanguageSelectorList>
-            <LanguageResults emptyState="No languages found" />
+            <LanguageResults message="No languages found" />
           </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
@@ -306,7 +306,7 @@ describe("LanguageSelector", () => {
         </LanguageSelectorTrigger>
         <LanguageSelectorContent>
           <LanguageSelectorList>
-            <LanguageResults emptyState="No audio languages found" />
+            <LanguageResults message="No audio languages found" />
           </LanguageSelectorList>
         </LanguageSelectorContent>
       </LanguageSelector>,
