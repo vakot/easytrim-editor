@@ -184,6 +184,26 @@ describe("AudioTrackRow", () => {
     expect(store.getState().audio.tracks[0]?.processing).toEqual({ gainDb: 0 });
   });
 
+  it("explains why the default track action is disabled", async () => {
+    const user = userEvent.setup();
+    renderRow(false);
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+
+    const defaultAction = screen.getByRole("menuitemcheckbox", { name: "Default" });
+    expect(defaultAction).toHaveAttribute("aria-disabled", "true");
+
+    const tooltipTrigger = defaultAction.parentElement;
+    expect(tooltipTrigger).toHaveAttribute("data-slot", "tooltip-trigger");
+    await user.hover(tooltipTrigger!);
+
+    await waitFor(() => {
+      const tooltip = screen.getByRole("tooltip");
+      expect(tooltip).toHaveTextContent("Enable this track first");
+      expect(tooltip).toHaveAttribute("data-side", "right");
+    });
+  });
+
   it("applies the effects draft once and shows the committed processing on its waveform", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();
@@ -565,7 +585,10 @@ describe("AudioTrackRow", () => {
       screen.getByRole("menuitemcheckbox", { name: /analyze audio activity/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: /effects/i })).toBeInTheDocument();
-    expect(screen.getByRole("menuitemcheckbox", { name: /default/i })).toBeInTheDocument();
+    const defaultAction = screen.getByRole("menuitemcheckbox", { name: "Default" });
+    expect(defaultAction).toBeInTheDocument();
+    expect(defaultAction).not.toHaveAttribute("aria-disabled", "true");
+    expect(defaultAction.parentElement).not.toHaveAttribute("data-slot", "tooltip-trigger");
     expect(screen.getByRole("menuitem", { name: /edit output metadata/i })).toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();

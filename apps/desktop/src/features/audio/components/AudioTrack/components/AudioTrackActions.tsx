@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Slot } from "@/components/ui/slot";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 
@@ -154,6 +155,7 @@ function AudioTrackDefaultMenuCheckboxItem({
   children,
   controller,
 }: { children?: React.ReactNode } & AudioTrackActionsProps) {
+  const { t } = useTranslation();
   const track = controller.track;
   if (!track) return null;
 
@@ -163,7 +165,17 @@ function AudioTrackDefaultMenuCheckboxItem({
     onCheckedChange: controller.setDefault,
   };
 
-  return <Slot {...commandProps}>{children}</Slot>;
+  const menuItem = <Slot {...commandProps}>{children}</Slot>;
+  if (track.enabled) return menuItem;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="block">{menuItem}</span>
+      </TooltipTrigger>
+      <TooltipContent side="right">{t("audio.tracks.defaultDisabledTooltip")}</TooltipContent>
+    </Tooltip>
+  );
 }
 
 function AudioTrackEffectsMenuItem({
