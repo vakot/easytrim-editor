@@ -24,27 +24,34 @@ import { formatChannels, formatGain, MIN_SLIDER_DECIBELS } from "../../../lib/au
 import { AudioTrackDropdownMenuContent } from "./AudioTrackActions";
 import { AudioTrackToggle } from "./AudioTrackToggle";
 
-function AudioTrackDetails({ controller }: { controller: AudioTrackController }) {
+function AudioTrackDetails({
+  controller,
+  metadataDialogOpen,
+  onMetadataDialogOpenChange,
+}: {
+  controller: AudioTrackController;
+  metadataDialogOpen: boolean;
+  onMetadataDialogOpenChange: (open: boolean) => void;
+}) {
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [metadataDialogOpen, setMetadataDialogOpen] = useState(false);
   const [metadataTitle, setMetadataTitle] = useState("");
   const [metadataLanguage, setMetadataLanguage] = useState("");
   const { stream, track, trackNumber } = controller;
   if (!stream || !track) return null;
 
   const title =
-    track.title ||
-    stream.title ||
-    track.language ||
-    stream.language ||
+    track.title ??
+    stream.title ??
+    track.language ??
+    stream.language ??
     t("audio.tracks.defaultName", { number: trackNumber });
 
   const openMetadataDialog = () => {
     setMetadataTitle(track.title ?? stream.title ?? "");
     setMetadataLanguage(track.language ?? stream.language ?? "");
-    setMetadataDialogOpen(true);
+    onMetadataDialogOpenChange(true);
   };
 
   return (
@@ -92,14 +99,14 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
           onOpenMetadata={openMetadataDialog}
         />
       </DropdownMenu>
-      <Dialog onOpenChange={setMetadataDialogOpen} open={metadataDialogOpen}>
+      <Dialog onOpenChange={onMetadataDialogOpenChange} open={metadataDialogOpen}>
         <DialogContent>
           <form
             className="grid gap-4"
             onSubmit={(event) => {
               event.preventDefault();
               controller.updateMetadata(metadataTitle, metadataLanguage);
-              setMetadataDialogOpen(false);
+              onMetadataDialogOpenChange(false);
             }}
           >
             <DialogHeader>

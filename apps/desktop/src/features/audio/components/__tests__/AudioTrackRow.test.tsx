@@ -38,7 +38,7 @@ const audioPlayback = {
   setLiveAudioTrackGain: () => undefined,
 } satisfies AudioPlaybackContract;
 
-function renderRow(enabled = true) {
+function renderRow(enabled = true, streamIndex = 2) {
   const store = createAppStore({
     getItem: async () => null,
     setItem: async () => undefined,
@@ -51,7 +51,7 @@ function renderRow(enabled = true) {
   const stream = media.audioStreams[0]!;
   if (!enabled) store.dispatch(audioTrackToggled({ streamIndex: stream.streamIndex }));
 
-  renderTrack(store, media.audioStreams[0]!.streamIndex);
+  renderTrack(store, streamIndex);
 
   return { store };
 }
@@ -563,8 +563,25 @@ describe("AudioTrackRow", () => {
       screen.getByRole("menuitemcheckbox", { name: /analyze audio activity/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: /effects/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitemcheckbox", { name: /default/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /edit output metadata/i })).toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+  });
+
+  it("keeps an explicitly cleared source title cleared in the track display", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow(true, 4);
+    expect(screen.getByText("Surround")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /audio 2 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    const titleInput = screen.getByLabelText(/title/i);
+    await user.clear(titleInput);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(screen.queryByText("Surround")).not.toBeInTheDocument();
+    expect(store.getState().audio.tracks.find((track) => track.streamIndex === 4)?.title).toBe("");
   });
 
   it("uses an action label for the enabled audio track in its dropdown menu", async () => {

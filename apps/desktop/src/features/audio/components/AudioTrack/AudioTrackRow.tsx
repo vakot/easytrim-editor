@@ -1,5 +1,5 @@
 import { WandSparkles } from "lucide-react";
-import { type CSSProperties, memo, type ReactNode, useMemo } from "react";
+import { type CSSProperties, memo, type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,7 @@ interface AudioTrackRowProps {
 const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: AudioTrackRowProps) {
   const controller = useAudioTrackController(streamIndex);
   const { track, trackColor } = controller;
+  const [metadataDialogOpen, setMetadataDialogOpen] = useState(false);
 
   if (!track || !controller.stream) return null;
 
@@ -53,11 +54,18 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: AudioTrackRow
             data-slot="audio-track-row"
             style={{ "--audio-track-color": trackColor } as CSSProperties}
           >
-            <AudioTrackDetails controller={controller} />
+            <AudioTrackDetails
+              controller={controller}
+              metadataDialogOpen={metadataDialogOpen}
+              onMetadataDialogOpenChange={setMetadataDialogOpen}
+            />
             <AudioTrackRowWaveform controller={controller} />
           </div>
         </ContextMenuTrigger>
-        <AudioTrackContextMenuContent controller={controller} />
+        <AudioTrackContextMenuContent
+          controller={controller}
+          onOpenMetadata={() => setMetadataDialogOpen(true)}
+        />
       </ContextMenu>
     </AudioTrackEffectsDialog>
   );
