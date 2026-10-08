@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,10 @@ const MIN_GAIN_DB_SLIDER = -24;
 const MAX_GAIN_DB_SLIDER = 12;
 const MIN_GAIN_DB = -60;
 const MAX_GAIN_DB = 24;
+
+function clampGainDb(gainDb: number) {
+  return Math.max(MIN_GAIN_DB, Math.min(MAX_GAIN_DB, gainDb));
+}
 
 function AudioTrackGainControl({
   onLiveGainChange,
@@ -71,6 +75,12 @@ function AudioTrackGainControl({
     setDraftGainDb(null);
   };
 
+  const cancelGain = () => {
+    clearLiveAudioTrackGain(streamIndex);
+    onLiveGainChange(null);
+    setDraftGainDb(null);
+  };
+
   if (!track) return null;
 
   const normalization = track.processing.loudnessNormalization;
@@ -80,6 +90,7 @@ function AudioTrackGainControl({
       <div className="p-2">
         {editing ? (
           <AudioTrackGainInput
+            cancelGain={cancelGain}
             commitGain={commitGain}
             gainDb={gainDb}
             setEditing={setEditing}
@@ -176,12 +187,14 @@ function AudioTrackGainSlider({
 }
 
 function AudioTrackGainInput({
+  cancelGain,
   commitGain,
   gainDb,
   setEditing,
   trackNumber,
   updateGain,
 }: {
+  cancelGain: () => void;
   commitGain: (gainDb: number) => void;
   gainDb: number;
   setEditing: (editing: boolean) => void;
@@ -189,16 +202,13 @@ function AudioTrackGainInput({
   updateGain: (gainDb: number) => void;
 }) {
   const { t } = useTranslation();
+  const initialGainDb = useRef(gainDb);
   const [value, setValue] = useState(String(gainDb));
 
   const commit = () => {
     const parsed = Number(value);
 
-    commitGain(
-      value.trim() && Number.isFinite(parsed)
-        ? Math.max(MIN_GAIN_DB, Math.min(MAX_GAIN_DB, parsed))
-        : gainDb,
-    );
+    commitGain(value.trim() && Number.isFinite(parsed) ? clampGainDb(parsed) : gainDb);
 
     setEditing(false);
   };
@@ -206,31 +216,45 @@ function AudioTrackGainInput({
   return (
     <Input
       aria-label={t("audio.tracks.gainLabel", { number: trackNumber })}
+      aria-valuemax={MAX_GAIN_DB}
+      aria-valuemin={MIN_GAIN_DB}
+      aria-valuenow={gainDb}
       autoFocus
-      max={MAX_GAIN_DB}
-      min={MIN_GAIN_DB}
+      inputMode="decimal"
       onBlur={commit}
       onChange={(event) => {
         const nextValue = event.target.value;
         setValue(nextValue);
         const num = Number(nextValue);
         if (nextValue.trim() && Number.isFinite(num)) {
-          updateGain(num);
+          updateGain(clampGainDb(num));
         }
       }}
       onFocus={(event) => event.target.select()}
       onKeyDown={(event) => {
+        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+          event.preventDefault();
+          const parsed = Number(value);
+          const currentGainDb = value.trim() && Number.isFinite(parsed) ? parsed : gainDb;
+          const direction = event.key === "ArrowUp" ? 1 : -1;
+          const nextGainDb = clampGainDb(Number((currentGainDb + direction * 0.1).toFixed(1)));
+          setValue(String(nextGainDb));
+          updateGain(nextGainDb);
+        }
+
         if (event.key === "Enter") {
           event.currentTarget.blur();
         }
 
         if (event.key === "Escape") {
-          setValue(String(gainDb));
-          event.currentTarget.blur();
+          event.preventDefault();
+          setValue(String(initialGainDb.current));
+          cancelGain();
+          setEditing(false);
         }
       }}
-      step={0.1}
-      type="number"
+      role="spinbutton"
+      type="text"
       value={value}
     />
   );

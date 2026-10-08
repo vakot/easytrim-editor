@@ -88,6 +88,7 @@ function renderGainControl(enabled = true) {
   }
 
   const clearLiveAudioTrackGain = vi.fn();
+  const setLiveAudioTrackGain = vi.fn();
   const openEffects = vi.fn();
   const gainCommits: number[] = [];
   const dispatch = store.dispatch;
@@ -98,7 +99,9 @@ function renderGainControl(enabled = true) {
 
   render(
     <Provider store={store}>
-      <AudioPlaybackContext.Provider value={{ ...audioPlayback, clearLiveAudioTrackGain }}>
+      <AudioPlaybackContext.Provider
+        value={{ ...audioPlayback, clearLiveAudioTrackGain, setLiveAudioTrackGain }}
+      >
         <AudioTrackEffectsDialogContext.Provider value={{ openEffects }}>
           <TooltipProvider>
             <AudioTrackGainControl
@@ -112,7 +115,7 @@ function renderGainControl(enabled = true) {
     </Provider>,
   );
 
-  return { clearLiveAudioTrackGain, gainCommits, store };
+  return { clearLiveAudioTrackGain, gainCommits, setLiveAudioTrackGain, store };
 }
 
 describe("AudioTrackRow", () => {
@@ -155,6 +158,64 @@ describe("AudioTrackRow", () => {
       processing: { gainDb: -0.5 },
     });
     expect(gainCommits).toEqual([0, -0.5]);
+  });
+
+  it("cancels manual Gain edits on Escape without committing", async () => {
+    const user = userEvent.setup();
+    const { clearLiveAudioTrackGain, gainCommits, setLiveAudioTrackGain, store } =
+      renderGainControl();
+
+    await user.click(screen.getByRole("button", { name: /0 dB/i }));
+    const gainInput = screen.getByRole("spinbutton", { name: /audio 1 gain/i });
+    await user.clear(gainInput);
+    await user.type(gainInput, "-10");
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("spinbutton", { name: /audio 1 gain/i })).not.toBeInTheDocument();
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0);
+    expect(gainCommits).toEqual([]);
+    expect(setLiveAudioTrackGain).toHaveBeenLastCalledWith(2, -10);
+    expect(clearLiveAudioTrackGain).toHaveBeenCalledWith(2);
+  });
+
+  it("clamps live Gain previews and commits while keeping the typed value visible", async () => {
+    const user = userEvent.setup();
+    const { gainCommits, setLiveAudioTrackGain, store } = renderGainControl();
+
+    await user.click(screen.getByRole("button", { name: /0 dB/i }));
+    const gainInput = screen.getByRole("spinbutton", { name: /audio 1 gain/i });
+    await user.clear(gainInput);
+    await user.type(gainInput, "100");
+
+    expect(gainInput).toHaveValue("100");
+    expect(setLiveAudioTrackGain).toHaveBeenLastCalledWith(2, 24);
+    expect(gainInput).toHaveAttribute("aria-valuemin", "-60");
+    expect(gainInput).toHaveAttribute("aria-valuemax", "24");
+    expect(gainInput).toHaveAttribute("aria-valuenow", "24");
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0);
+
+    fireEvent.blur(gainInput);
+
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(24);
+    expect(gainCommits).toEqual([24]);
+
+    await user.click(screen.getByRole("button", { name: /24\.0 dB/i }));
+    const lowerGainInput = screen.getByRole("spinbutton", { name: /audio 1 gain/i });
+    await user.clear(lowerGainInput);
+    expect((lowerGainInput as HTMLInputElement).value).toBe("");
+    expect(setLiveAudioTrackGain).toHaveBeenLastCalledWith(2, 24);
+
+    await user.type(lowerGainInput, "-");
+    expect(lowerGainInput).toHaveValue("-");
+    expect(setLiveAudioTrackGain).toHaveBeenLastCalledWith(2, 24);
+    await user.clear(lowerGainInput);
+    await user.paste("-100");
+    expect(lowerGainInput).toHaveValue("-100");
+    expect(setLiveAudioTrackGain).toHaveBeenLastCalledWith(2, -60);
+    fireEvent.blur(lowerGainInput);
+
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(-60);
+    expect(gainCommits).toEqual([24, -60]);
   });
 
   it("shows normalization levels and blocks manual Gain changes while active", async () => {
