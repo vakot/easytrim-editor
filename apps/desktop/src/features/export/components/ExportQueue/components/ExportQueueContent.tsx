@@ -1,4 +1,4 @@
-import { Film } from "lucide-react";
+import { AudioLines, Film } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -54,11 +54,12 @@ function ExportQueueListItem() {
   const { attempt } = useExportQueueItem();
 
   const status = attempt.state.status;
+  const Icon = attempt.route === "audio" ? AudioLines : Film;
 
   return (
     <ExportQueueItemContent className="text-xs">
       <Card className="size-10 shrink-0 items-center justify-center bg-primary/5 p-0 ring-primary/10">
-        <Film className="size-6 text-muted-foreground" />
+        <Icon aria-hidden="true" className="size-6 text-muted-foreground" />
       </Card>
 
       <div className="grid min-w-0 flex-1 gap-1">
