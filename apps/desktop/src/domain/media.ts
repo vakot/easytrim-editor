@@ -38,11 +38,19 @@ interface ExportResult {
 }
 
 interface FastExportRequest {
+  audioMetadata?: AudioTrackMetadataSelection[];
   audioTracks: AudioTrackSelection[];
   mergeAudio: boolean;
   rotationDegrees: import("./rotation").RotationDegrees;
   sourcePath: string;
   trim: TrimSelection;
+}
+
+interface AudioTrackMetadataSelection {
+  isDefault: boolean;
+  language?: string;
+  streamIndex: number;
+  title?: string;
 }
 
 interface AudioActivityRange {
@@ -123,6 +131,7 @@ export type {
   AppError,
   AudioActivityRange,
   AudioStream,
+  AudioTrackMetadataSelection,
   ChapterInfo,
   ExportProgress,
   ExportResult,

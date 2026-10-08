@@ -56,8 +56,21 @@ pub struct FastExportRequest {
     pub source_path: String,
     pub trim: TrimSelection,
     pub audio_tracks: Vec<AudioTrackSelection>,
+    #[serde(default)]
+    pub audio_metadata: Vec<AudioTrackMetadataSelection>,
     pub merge_audio: bool,
     pub rotation_degrees: u16,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioTrackMetadataSelection {
+    pub stream_index: u32,
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub language: Option<String>,
+    pub is_default: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -216,6 +229,8 @@ pub struct OptimizedExportRequest {
     pub source_path: String,
     pub trim: TrimSelection,
     pub audio_tracks: Vec<AudioTrackSelection>,
+    #[serde(default)]
+    pub audio_metadata: Vec<AudioTrackMetadataSelection>,
     pub merge_audio: bool,
     pub rotation_degrees: u16,
     pub resolution: ResolutionSelection,
@@ -304,6 +319,7 @@ pub fn build_fast_arguments(
     output_path: &Path,
 ) -> Result<Vec<OsString>, AppError> {
     validate_common_request(source, &request.trim, &request.audio_tracks)?;
+    validate_audio_metadata_selection(source, &request.audio_tracks, &request.audio_metadata)?;
     validate_rotation(request.rotation_degrees)?;
     if request.rotation_degrees != 0 {
         return Err(AppError::invalid_request(
@@ -365,6 +381,14 @@ pub fn build_fast_arguments(
         arguments.extend([OsString::from("-c"), OsString::from("copy")]);
     }
 
+    append_audio_metadata_arguments(
+        &mut arguments,
+        source,
+        &request.audio_tracks,
+        &request.audio_metadata,
+        request.merge_audio && request.audio_tracks.len() > 1,
+    );
+
     arguments.extend([
         OsString::from("-sn"),
         OsString::from("-dn"),
@@ -385,6 +409,7 @@ pub fn build_optimized_arguments(
     output_path: &Path,
 ) -> Result<Vec<OsString>, AppError> {
     validate_common_request(source, &request.trim, &request.audio_tracks)?;
+    validate_audio_metadata_selection(source, &request.audio_tracks, &request.audio_metadata)?;
     validate_resolution(&request.resolution)?;
     validate_crop(request.crop.as_ref())?;
     validate_rotation(request.rotation_degrees)?;
@@ -467,6 +492,13 @@ pub fn build_optimized_arguments(
     let user_arguments = parse_arguments(&request.arguments)?;
     validate_user_arguments(&user_arguments)?;
     arguments.extend(user_arguments);
+    append_audio_metadata_arguments(
+        &mut arguments,
+        source,
+        &request.audio_tracks,
+        &request.audio_metadata,
+        request.merge_audio && request.audio_tracks.len() > 1,
+    );
     arguments.extend([
         OsString::from("-sn"),
         OsString::from("-dn"),
@@ -615,6 +647,127 @@ fn validate_audio_track_selections_inner(
         }
     }
     Ok(())
+}
+
+fn validate_audio_metadata_selection(
+    source: &MediaInfo,
+    audio_tracks: &[AudioTrackSelection],
+    audio_metadata: &[AudioTrackMetadataSelection],
+) -> Result<(), AppError> {
+    if audio_metadata.is_empty() {
+        return Ok(());
+    }
+
+    let selected_streams = audio_tracks
+        .iter()
+        .map(|track| track.stream_index)
+        .collect::<HashSet<_>>();
+    let mut metadata_streams = HashSet::new();
+    let default_count = audio_metadata
+        .iter()
+        .filter(|metadata| metadata.is_default)
+        .count();
+
+    if audio_metadata.len() != audio_tracks.len()
+        || audio_metadata.iter().any(|metadata| {
+            !selected_streams.contains(&metadata.stream_index)
+                || !metadata_streams.insert(metadata.stream_index)
+                || !source
+                    .audio_streams
+                    .iter()
+                    .any(|stream| stream.stream_index == metadata.stream_index)
+                || metadata.title.as_ref().is_some_and(|title| {
+                    title.chars().count() > 256 || title.chars().any(char::is_control)
+                })
+                || metadata.language.as_ref().is_some_and(|language| {
+                    language.len() > 16
+                        || !language
+                            .chars()
+                            .all(|character| character.is_ascii_alphanumeric() || character == '-')
+                })
+        })
+        || (!audio_tracks.is_empty() && default_count != 1)
+    {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportAudioStreamSelectionOrProcessingSettingIsInvalid,
+        ));
+    }
+
+    Ok(())
+}
+
+fn append_audio_metadata_arguments(
+    arguments: &mut Vec<OsString>,
+    source: &MediaInfo,
+    audio_tracks: &[AudioTrackSelection],
+    audio_metadata: &[AudioTrackMetadataSelection],
+    merged: bool,
+) {
+    if audio_tracks.is_empty() {
+        return;
+    }
+
+    if merged {
+        arguments.extend([
+            OsString::from("-metadata:s:a:0"),
+            OsString::from("title=Merged audio"),
+            OsString::from("-metadata:s:a:0"),
+            OsString::from("language=und"),
+            OsString::from("-disposition:a:0"),
+            OsString::from("default"),
+        ]);
+        return;
+    }
+
+    let selected_default = audio_metadata
+        .iter()
+        .find(|metadata| metadata.is_default)
+        .map(|metadata| metadata.stream_index)
+        .or_else(|| {
+            source
+                .audio_streams
+                .iter()
+                .find(|stream| {
+                    stream.is_default
+                        && audio_tracks
+                            .iter()
+                            .any(|track| track.stream_index == stream.stream_index)
+                })
+                .map(|stream| stream.stream_index)
+        })
+        .unwrap_or(audio_tracks[0].stream_index);
+
+    for (output_index, track) in audio_tracks.iter().enumerate() {
+        let metadata = audio_metadata
+            .iter()
+            .find(|metadata| metadata.stream_index == track.stream_index);
+        let source_stream = source
+            .audio_streams
+            .iter()
+            .find(|stream| stream.stream_index == track.stream_index);
+        let title = metadata
+            .and_then(|metadata| metadata.title.as_deref())
+            .or(source_stream.and_then(|stream| stream.title.as_deref()))
+            .unwrap_or_default();
+        let language = metadata
+            .and_then(|metadata| metadata.language.as_deref())
+            .or(source_stream.and_then(|stream| stream.language.as_deref()))
+            .unwrap_or_default();
+        let disposition = if track.stream_index == selected_default {
+            "default"
+        } else {
+            "0"
+        };
+
+        arguments.extend([
+            OsString::from(format!("-metadata:s:a:{output_index}")),
+            OsString::from(format!("title={title}")),
+            OsString::from(format!("-metadata:s:a:{output_index}")),
+            OsString::from(format!("language={language}")),
+            OsString::from(format!("-disposition:a:{output_index}")),
+            OsString::from(disposition),
+        ]);
+    }
 }
 
 fn is_valid_loudness_normalization(normalization: Option<&LoudnessNormalization>) -> bool {
@@ -1124,6 +1277,7 @@ mod tests {
                     effects: Vec::new(),
                 },
             }],
+            audio_metadata: Vec::new(),
             merge_audio: false,
             rotation_degrees: 0,
             resolution: ResolutionSelection {
@@ -1157,6 +1311,7 @@ mod tests {
                         effects: Vec::new(),
                     },
                 }],
+                audio_metadata: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 0,
             },
@@ -1187,6 +1342,7 @@ mod tests {
                     end_micros: 4_000_000,
                 },
                 audio_tracks: Vec::new(),
+                audio_metadata: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 0,
             },
@@ -1213,6 +1369,7 @@ mod tests {
                     end_micros: 2_000_000,
                 },
                 audio_tracks: Vec::new(),
+                audio_metadata: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 90,
             },
@@ -1254,6 +1411,7 @@ mod tests {
                         },
                     },
                 ],
+                audio_metadata: Vec::new(),
                 merge_audio: true,
                 rotation_degrees: 0,
             },
@@ -1292,6 +1450,7 @@ mod tests {
                         effects: Vec::new(),
                     },
                 }],
+                audio_metadata: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 0,
             },
@@ -1874,6 +2033,7 @@ mod tests {
                         effects: Vec::new(),
                     },
                 }],
+                audio_metadata: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 0,
                 resolution: ResolutionSelection {
@@ -2280,6 +2440,7 @@ mod tests {
                     end_micros: 2_000_000,
                 },
                 audio_tracks: vec![track.clone()],
+                audio_metadata: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 0,
             },

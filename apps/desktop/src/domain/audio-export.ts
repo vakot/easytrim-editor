@@ -13,4 +13,15 @@ function selectedAudioTracks(tracks: readonly AudioTrackSettings[]): AudioTrackS
     }));
 }
 
-export { selectedAudioTracks };
+function selectedAudioMetadata(tracks: readonly AudioTrackSettings[]) {
+  return tracks
+    .filter((track) => track.enabled)
+    .map(({ isDefault, language, streamIndex, title }) => ({
+      isDefault: isDefault ?? false,
+      ...(language === undefined ? {} : { language }),
+      streamIndex,
+      ...(title === undefined ? {} : { title }),
+    }));
+}
+
+export { selectedAudioMetadata, selectedAudioTracks };
