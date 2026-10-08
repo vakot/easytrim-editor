@@ -1543,6 +1543,177 @@ mod tests {
     }
 
     #[test]
+    fn fast_and_optimized_exports_apply_default_and_language_metadata() {
+        let ffmpeg = which::which("ffmpeg").expect("FFmpeg is required for this integration test");
+        let ffprobe =
+            which::which("ffprobe").expect("FFprobe is required for this integration test");
+        let directory = std::env::temp_dir().join(format!(
+            "easytrim-fast-audio-metadata-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&directory).expect("temporary fixture directory should be created");
+        let source_path = directory.join("source.mkv");
+        let source = Command::new(&ffmpeg)
+            .args([
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=c=black:s=32x32:r=25:d=1",
+                "-f",
+                "lavfi",
+                "-i",
+                "sine=frequency=440:duration=1",
+                "-f",
+                "lavfi",
+                "-i",
+                "sine=frequency=880:duration=1",
+                "-map",
+                "0:v:0",
+                "-map",
+                "1:a:0",
+                "-map",
+                "2:a:0",
+                "-c:v",
+                "mpeg4",
+                "-c:a",
+                "aac",
+                "-metadata:s:a:0",
+                "title=Source English",
+                "-metadata:s:a:0",
+                "language=eng",
+                "-metadata:s:a:1",
+                "title=Source Russian",
+                "-metadata:s:a:1",
+                "language=rus",
+                "-disposition:a:0",
+                "default+forced+comment+original+hearing_impaired",
+                "-disposition:a:1",
+                "0",
+                "-y",
+            ])
+            .arg(&source_path)
+            .output()
+            .expect("ffmpeg should launch");
+        assert!(
+            source.status.success(),
+            "fixture generation failed: {}",
+            String::from_utf8_lossy(&source.stderr)
+        );
+
+        let mut source_media = media();
+        source_media.audio_streams[0].title = Some("Source English".to_owned());
+        source_media.audio_streams[0].language = Some("eng".to_owned());
+        source_media.audio_streams[1].title = Some("Source Russian".to_owned());
+        source_media.audio_streams[1].language = Some("rus".to_owned());
+        let audio_metadata = vec![
+            AudioTrackMetadataSelection {
+                stream_index: 1,
+                title: Some("English commentary".to_owned()),
+                language: Some("eng".to_owned()),
+                is_default: false,
+            },
+            AudioTrackMetadataSelection {
+                stream_index: 2,
+                title: None,
+                language: Some("rus".to_owned()),
+                is_default: true,
+            },
+        ];
+
+        for container in ["mp4", "mkv"] {
+            for route in ["fast", "optimized"] {
+                let output_path = directory.join(format!("{route}.{container}"));
+                let arguments = if route == "fast" {
+                    build_fast_arguments(
+                        &source_media,
+                        &FastExportRequest {
+                            source_path: source_path.to_string_lossy().into_owned(),
+                            trim: TrimSelection {
+                                start_micros: 0,
+                                end_micros: 1_000_000,
+                            },
+                            audio_tracks: vec![audio_track(1), audio_track(2)],
+                            audio_metadata: audio_metadata.clone(),
+                            merge_audio: false,
+                            rotation_degrees: 0,
+                        },
+                        &source_path,
+                        &output_path,
+                    )
+                    .expect("Fast Export arguments should be valid")
+                } else {
+                    let mut request = optimized_request("-c:v mpeg4");
+                    request.source_path = source_path.to_string_lossy().into_owned();
+                    request.trim.end_micros = 1_000_000;
+                    request.audio_tracks = vec![audio_track(1), audio_track(2)];
+                    request.audio_metadata = audio_metadata.clone();
+                    request.resolution = ResolutionSelection {
+                        width: 32,
+                        height: 32,
+                    };
+                    build_optimized_arguments(&source_media, &request, &source_path, &output_path)
+                        .expect("Optimized Export arguments should be valid")
+                };
+                let exported = Command::new(&ffmpeg)
+                    .args(arguments)
+                    .output()
+                    .expect("ffmpeg should launch");
+                assert!(
+                    exported.status.success(),
+                    "{route} {container} export failed: {}",
+                    String::from_utf8_lossy(&exported.stderr)
+                );
+
+                let probe = Command::new(&ffprobe)
+                    .args([
+                        "-v",
+                        "error",
+                        "-select_streams",
+                        "a",
+                        "-show_entries",
+                        "stream_tags=language,title,name:stream_disposition=default",
+                        "-of",
+                        "json",
+                    ])
+                    .arg(&output_path)
+                    .output()
+                    .expect("ffprobe should launch");
+                assert!(
+                    probe.status.success(),
+                    "ffprobe failed for {route} {container}"
+                );
+                let json: serde_json::Value =
+                    serde_json::from_slice(&probe.stdout).expect("ffprobe output should be JSON");
+                let streams = json["streams"]
+                    .as_array()
+                    .expect("audio streams should be present");
+                assert_eq!(streams.len(), 2, "{route} {container} output order");
+                assert_eq!(streams[0]["disposition"]["default"], 0);
+                assert_eq!(streams[1]["disposition"]["default"], 1);
+                assert_eq!(
+                    streams[0]["tags"]["title"]
+                        .as_str()
+                        .or_else(|| streams[0]["tags"]["name"].as_str()),
+                    Some("English commentary")
+                );
+                assert_eq!(streams[0]["tags"]["language"], "eng");
+                assert_eq!(
+                    streams[1]["tags"]["title"]
+                        .as_str()
+                        .or_else(|| streams[1]["tags"]["name"].as_str()),
+                    Some("Source Russian")
+                );
+                assert_eq!(streams[1]["tags"]["language"], "rus");
+            }
+        }
+
+        std::fs::remove_dir_all(directory).expect("temporary fixtures should be removed");
+    }
+
+    #[test]
     fn fast_copy_maps_only_selected_streams() {
         let args = build_fast_arguments(
             &media(),
