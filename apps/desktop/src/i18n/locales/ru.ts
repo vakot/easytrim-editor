@@ -309,7 +309,6 @@ export const ru = {
   settings: {
     general: {
       language: {
-        suggestions: "Предложения",
         noResults: "Языки не найдены",
         description: "Выберите язык интерфейса EasyTrim Editor",
         label: "Язык",
@@ -1018,7 +1017,6 @@ export const ru = {
       description: "Нормализовать дорожку до целевого уровня громкости",
       summary: "Нормализовано — {{preset}}",
       levelSummary: "{{target}} LUFS · {{peak}} dBTP",
-      manualGainUnavailable: "Ручное усиление недоступно при автоматической нормализации",
     },
     noiseReduction: {
       label: "Шумоподавление",
