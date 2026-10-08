@@ -125,8 +125,6 @@ export const ru = {
     open: {
       fileDescription: "Выберите один видеофайл, чтобы начать монтаж",
       folderDescription: "Импортируйте все поддерживаемые видео из папки",
-      videoFilter: "Видеофайлы",
-      foldersDialogTitle: "Добавить папки",
     },
     shortcutTooltip: "{{label}} ({{shortcut}})",
     thumbnail: {
@@ -517,9 +515,6 @@ export const ru = {
     },
   },
   export: {
-    outputDialog: {
-      videoFilter: "Видеофайлы",
-    },
     fastExport: {
       cancelled: "Быстрый экспорт отменён",
       completed: "Быстрый экспорт завершён",
@@ -529,7 +524,7 @@ export const ru = {
       exporting: "Быстрый экспорт…",
       action: "Быстрый экспорт",
       unavailable: "Быстрый экспорт недоступен после преобразования видео",
-      tooltip: "Экспортировать выбранный сегмент без перекодирования (Ctrl+S)",
+      tooltip: "Экспортировать выбранный сегмент без перекодирования",
     },
     preset: {
       builtIn: {
@@ -593,7 +588,7 @@ export const ru = {
     },
     optimized: {
       action: "Оптимизированный экспорт",
-      tooltip: "Экспортировать выбранный сегмент с оптимизированным перекодированием (Ctrl+E)",
+      tooltip: "Экспортировать выбранный сегмент с оптимизированным перекодированием",
       started: "Оптимизированный экспорт начат",
       running: "Оптимизированный экспорт…",
       completed: "Оптимизированный экспорт завершён",
@@ -762,7 +757,6 @@ export const ru = {
   },
   preview: {
     frame: {
-      pngFilter: "Изображение PNG",
       next: "Следующий кадр",
       copyFrame: "Скопировать кадр",
       previous: "Предыдущий кадр",
@@ -771,8 +765,8 @@ export const ru = {
       copyFailed: "Не удалось скопировать кадр в буфер обмена",
       saveFailed: "Не удалось сохранить кадр",
       saved: "Кадр сохранён",
-      nextFrameTooltip: "Следующий кадр (стрелка вправо)",
-      previousFrameTooltip: "Предыдущий кадр (стрелка влево)",
+      nextFrameTooltip: "Следующий кадр",
+      previousFrameTooltip: "Предыдущий кадр",
     },
     markers: {
       next: "Следующий маркер",
@@ -788,21 +782,19 @@ export const ru = {
       failed: "Не удалось начать воспроизведение",
       loopDisabledTooltip: "Остановиться в конце воспроизведения",
       loopEnabledTooltip: "Начать заново после окончания",
-      pauseTooltip: "Пауза (Пробел)",
-      playTooltip: "Воспроизвести (Пробел)",
+      pauseTooltip: "Пауза",
+      playTooltip: "Воспроизвести",
       playbackSpeedTooltip: "Настроить скорость предпросмотра",
       playbackVolumeMuteTooltip: "Громкость воспроизведения (Выключить звук)",
       playbackVolumeUnmuteTooltip: "Громкость воспроизведения (Включить звук)",
     },
     segment: {
-      setEnd: "Установить конец сегмента в текущей позиции",
-      setStart: "Установить начало сегмента в текущей позиции",
-      setEndUnavailable: "Переместитесь после начала источника, чтобы установить конец сегмента",
-      setStartUnavailable: "Переместитесь до конца источника, чтобы установить начало сегмента",
+      setEnd: "Установить конец сегмента",
+      setEndUnavailable: "Сегмент не может заканчиваться в начале источника",
+      setStart: "Установить начало сегмента",
+      setStartUnavailable: "Сегмент не может начинаться в конце источника",
       segmentDisabledTooltip: "Воспроизводить всю временную шкалу",
       segmentEnabledTooltip: "Ограничить воспроизведение выбранным сегментом",
-      setEndTooltip: "Установить конец сегмента в текущей позиции (O)",
-      setStartTooltip: "Установить начало сегмента в текущей позиции (I)",
     },
     transform: {
       crop: "Обрезка",
@@ -1025,7 +1017,7 @@ export const ru = {
       },
       description: "Нормализовать дорожку до целевого уровня громкости",
       summary: "Нормализовано — {{preset}}",
-      levelSummary: "Цель {{target}} LUFS · предел пика {{peak}} dBTP",
+      levelSummary: "{{target}} LUFS · {{peak}} dBTP",
       manualGainUnavailable: "Ручное усиление недоступно при автоматической нормализации",
     },
     noiseReduction: {

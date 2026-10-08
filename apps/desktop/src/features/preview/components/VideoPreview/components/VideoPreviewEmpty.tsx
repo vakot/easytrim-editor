@@ -1,9 +1,14 @@
-import { Fragment, type ReactNode } from "react";
+import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
 
-import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
+import {
+  COMMAND_PALETTE_SHORTCUT,
+  OPEN_FILE_SHORTCUT,
+  OPEN_FOLDER_SHORTCUT,
+  SETTINGS_SHORTCUT,
+} from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { SupportLink } from "@/app/components/SupportLink";
 import { cn } from "@/lib/class-names.utils";
@@ -14,7 +19,7 @@ type Shortcut = {
   id: string;
   keys: string[];
   label: string;
-  separator: ReactNode;
+  separator?: string;
 };
 
 function VideoPreviewEmpty() {
@@ -24,27 +29,29 @@ function VideoPreviewEmpty() {
     id: "command-palette",
     label: t("commands.title"),
     keys: [...getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT)],
-    separator: undefined,
+  };
+
+  const settings: Shortcut = {
+    id: "settings-dialog",
+    label: t("settings.title"),
+    keys: [...getShortcutDisplayKeys(SETTINGS_SHORTCUT)],
   };
 
   const shortcuts: Shortcut[] = [
     {
       id: "open-file",
       label: t("source.file.openFile"),
-      keys: ["Ctrl", "O"],
-      separator: undefined,
+      keys: [...getShortcutDisplayKeys(OPEN_FILE_SHORTCUT)],
     },
     {
       id: "open-folder",
       label: t("source.file.openFolder"),
-      keys: ["Ctrl", "K"],
-      separator: undefined,
+      keys: [...getShortcutDisplayKeys(OPEN_FOLDER_SHORTCUT)],
     },
     {
       id: "play-pause",
       label: t("preview.shortcuts.playPause"),
       keys: ["Space"],
-      separator: undefined,
     },
     {
       id: "previous-next-frame",
@@ -89,10 +96,10 @@ function VideoPreviewEmpty() {
               <VideoPreviewEmptyShortcut key={shortcut.id} shortcut={shortcut} />
             ))}
 
-            <VideoPreviewEmptyShortcut
-              className="-mx-2 rounded-xl border border-dashed p-2"
-              shortcut={command}
-            />
+            <div className="-mx-2 grid gap-2 rounded-xl border border-dashed p-2">
+              <VideoPreviewEmptyShortcut shortcut={settings} />
+              <VideoPreviewEmptyShortcut shortcut={command} />
+            </div>
           </div>
 
           <SupportLink />
@@ -111,15 +118,19 @@ function VideoPreviewEmptyShortcut({
 }) {
   return (
     <div className={cn("flex min-w-0 items-center gap-3", className)} role="listitem">
-      <span className="shrink-0">{shortcut.label}</span>
+      <span className="inline-flex h-5 shrink-0 items-center leading-none">{shortcut.label}</span>
       <span
         aria-hidden="true"
         className="min-w-4 flex-1 border-b border-dotted border-muted-foreground/40"
       />
-      <KbdGroup aria-label={shortcut.keys.join(` ${shortcut.separator ?? "+"} `)}>
-        {shortcut.keys.map((key) => (
-          <Fragment key={key}>
-            {key !== shortcut.keys[0] && <KbdSeparator>{shortcut.separator ?? "+"}</KbdSeparator>}
+      <KbdGroup
+        aria-label={shortcut.keys.join(shortcut.separator ? ` ${shortcut.separator} ` : " ")}
+      >
+        {shortcut.keys.map((key, index) => (
+          <Fragment key={`${key}-${index}`}>
+            {index > 0 && shortcut.separator ? (
+              <KbdSeparator>{shortcut.separator}</KbdSeparator>
+            ) : null}
             <Kbd>{key}</Kbd>
           </Fragment>
         ))}

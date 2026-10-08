@@ -495,12 +495,12 @@ describe("AudioTrackRow", () => {
       loudnessNormalization: "streaming",
     });
     expect(await screen.findByText("Normalized - Streaming")).toBeInTheDocument();
-    expect(await screen.findByText("Target −16 LUFS · peak cap −1.5 dBTP")).toBeInTheDocument();
+    expect(await screen.findByText("−16 LUFS · −1.5 dBTP")).toBeInTheDocument();
 
     await user.hover(screen.getByText(/#1 ·/));
     expect(screen.queryByRole("slider", { name: /audio 1 gain/i })).not.toBeInTheDocument();
     expect(screen.getByText("Normalized - Streaming")).toBeInTheDocument();
-    expect(screen.getByText("Target −16 LUFS · peak cap −1.5 dBTP")).toBeInTheDocument();
+    expect(screen.getByText("−16 LUFS · −1.5 dBTP")).toBeInTheDocument();
     const normalizedTooltip = await screen.findByRole("tooltip");
     expect(normalizedTooltip).toHaveTextContent(
       /manual gain is unavailable while automatic normalization is applied/i,

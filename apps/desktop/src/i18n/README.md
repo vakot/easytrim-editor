@@ -61,7 +61,13 @@ FFprobe, GitHub, Ko-fi, LUFS, dB, dBTP, FPS, codec names, and container names.
 ## For developers
 
 - `locales/en.ts` defines canonical keys. Other locale files may be partial and use English fallback.
+- Translate only EasyTrim-owned UI. Keep native/system-dialog metadata, such as file-filter labels,
+  neutral and standardized at the native boundary; do not localize it unless there is a strong
+  product reason.
 - Keep each key with its semantic owner. Use `common` only for genuinely universal concepts.
 - Use literal keys in translation calls, such as `t("queue.deleteSource.label")`.
 - The validator checks key structure and usage, interpolation parameters, plural families, and
   missing translation units. Coverage does not affect validation success.
+- In React components, use `useTranslation()`. In non-React runtime code, import the configured
+  `i18n` instance and call `i18n.t(...)`. Do not export or import a standalone `t` helper from
+  `i18n/config`.

@@ -197,7 +197,7 @@ describe("application command shortcuts", () => {
       code: "ArrowLeft",
     });
 
-    expect(getShortcutDisplayKeys(sourceNavigationShortcut)).toEqual(["Alt", "LeftArrow"]);
+    expect(getShortcutDisplayKeys(sourceNavigationShortcut)).toEqual(["Alt", "←"]);
     expect(getShortcutAriaValue(sourceNavigationShortcut)).toBe("Alt+LeftArrow");
     expect(isShortcutEvent(altArrowLeft, sourceNavigationShortcut)).toBe(true);
     expect(
@@ -206,6 +206,15 @@ describe("application command shortcuts", () => {
         sourceNavigationShortcut,
       ),
     ).toBe(false);
+  });
+
+  it("uses arrow glyphs for timeline arrow shortcuts", () => {
+    expect(
+      getShortcutDisplayKeys({ code: "ArrowLeft", key: "ArrowLeft", modifier: "none" }),
+    ).toEqual(["←"]);
+    expect(
+      getShortcutDisplayKeys({ code: "ArrowRight", key: "ArrowRight", modifier: "none" }),
+    ).toEqual(["→"]);
   });
 
   it("detects duplicate command ids while aggregating groups", () => {

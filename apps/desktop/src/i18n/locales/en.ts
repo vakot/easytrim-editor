@@ -168,8 +168,6 @@ export const en = {
     open: {
       fileDescription: "Choose a single video file to start editing",
       folderDescription: "Import all supported videos from a folder",
-      videoFilter: "Video files",
-      foldersDialogTitle: "Add folders",
     },
     shortcutTooltip: "{{label}} ({{shortcut}})",
     thumbnail: {
@@ -525,9 +523,6 @@ export const en = {
       analyzeTrackLoudnessToContinue: "Analyze track loudness to continue",
       interruptedWhenEasyTrimClosedUnexpectedly: "The export was interrupted when EasyTrim closed unexpectedly",
     },
-    outputDialog: {
-      videoFilter: "Video files",
-    },
     fastExport: {
       cancelled: "Fast Export cancelled",
       completed: "Fast Export completed",
@@ -537,7 +532,7 @@ export const en = {
       exporting: "Fast Export…",
       action: "Fast Export",
       unavailable: "Fast Export is unavailable after transforming the video",
-      tooltip: "Export the selected segment without re-encoding (Ctrl+S)",
+      tooltip: "Export the selected segment without re-encoding",
     },
     preset: {
       builtIn: {
@@ -601,7 +596,7 @@ export const en = {
     },
     optimized: {
       action: "Optimized Export",
-      tooltip: "Export the selected segment with optimized re-encoding (Ctrl+E)",
+      tooltip: "Export the selected segment with optimized re-encoding",
       started: "Optimized export started",
       running: "Optimized export…",
       completed: "Optimized export completed",
@@ -750,7 +745,6 @@ export const en = {
       compatiblePreviewCouldNotBePlayed: "The compatible preview could not be played",
     },
     frame: {
-      pngFilter: "PNG image",
       next: "Next frame",
       copyFrame: "Copy frame",
       previous: "Previous frame",
@@ -759,8 +753,8 @@ export const en = {
       copyFailed: "Could not copy the frame to the clipboard",
       saveFailed: "Could not save the frame",
       saved: "Frame saved",
-      nextFrameTooltip: "Next frame (Right Arrow)",
-      previousFrameTooltip: "Previous frame (Left Arrow)",
+      nextFrameTooltip: "Next frame",
+      previousFrameTooltip: "Previous frame",
     },
     markers: {
       next: "Next marker",
@@ -776,21 +770,19 @@ export const en = {
       failed: "Playback could not start",
       loopDisabledTooltip: "Stop when playback reaches its end",
       loopEnabledTooltip: "Restart when playback reaches its end",
-      pauseTooltip: "Pause (Space)",
-      playTooltip: "Play (Space)",
+      pauseTooltip: "Pause",
+      playTooltip: "Play",
       playbackSpeedTooltip: "Adjust preview playback speed",
       playbackVolumeMuteTooltip: "Playback volume (Mute)",
       playbackVolumeUnmuteTooltip: "Playback volume (Unmute)",
     },
     segment: {
-      setEnd: "Set segment end to current position",
-      setStart: "Set segment start to current position",
-      setEndUnavailable: "Move after the source start to set segment end",
-      setStartUnavailable: "Move before the source end to set segment start",
+      setEnd: "Set segment end",
+      setEndUnavailable: "The segment cannot end at the start of the source",
+      setStart: "Set segment start",
+      setStartUnavailable: "The segment cannot start at the end of the source",
       segmentDisabledTooltip: "Play the complete timeline",
       segmentEnabledTooltip: "Constrain playback to the selected segment",
-      setEndTooltip: "Set segment end to current position (O)",
-      setStartTooltip: "Set segment start to current position (I)",
     },
     transform: {
       crop: "Crop",
@@ -1037,7 +1029,7 @@ export const en = {
       },
       description: "Normalize this track to a consistent target loudness",
       summary: "Normalized - {{preset}}",
-      levelSummary: "Target {{target}} LUFS · peak cap {{peak}} dBTP",
+      levelSummary: "{{target}} LUFS · {{peak}} dBTP",
       manualGainUnavailable: "Manual gain is unavailable while automatic normalization is applied",
     },
     noiseReduction: {

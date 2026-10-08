@@ -17,8 +17,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 
+import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
+import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
+import {
+  FAST_EXPORT_SHORTCUT,
+  OPTIMIZED_EXPORT_SHORTCUT,
+} from "@/app/commands/file/file-shortcuts.constants";
+import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/app/store/redux-hooks";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import {
@@ -96,6 +103,7 @@ function ExportActions() {
 
       <ExportActionTooltip
         disabled={!fastExportAvailable}
+        shortcut={FAST_EXPORT_SHORTCUT}
         tooltip={
           sourceReady && !fastExportAvailable
             ? t("export.fastExport.unavailable")
@@ -103,7 +111,7 @@ function ExportActions() {
         }
       >
         <ExportActionButton
-          aria-keyshortcuts="Ctrl+S"
+          aria-keyshortcuts={getShortcutAriaValue(FAST_EXPORT_SHORTCUT)}
           disabled={!fastExportAvailable}
           icon={<Scissors aria-hidden="true" />}
           onClick={() =>
@@ -114,9 +122,13 @@ function ExportActions() {
         </ExportActionButton>
       </ExportActionTooltip>
 
-      <ExportActionTooltip disabled={!sourceReady} tooltip={t("export.optimized.tooltip")}>
+      <ExportActionTooltip
+        disabled={!sourceReady}
+        shortcut={OPTIMIZED_EXPORT_SHORTCUT}
+        tooltip={t("export.optimized.tooltip")}
+      >
         <ExportActionButton
-          aria-keyshortcuts="Ctrl+E"
+          aria-keyshortcuts={getShortcutAriaValue(OPTIMIZED_EXPORT_SHORTCUT)}
           disabled={!sourceReady}
           icon={<Settings2 aria-hidden="true" />}
           onClick={() =>
@@ -258,10 +270,12 @@ const MotionExportActionButton = motion.create(ExportActionButton);
 function ExportActionTooltip({
   children,
   disabled,
+  shortcut,
   tooltip,
 }: {
   children: React.ReactNode;
   disabled?: boolean;
+  shortcut: ApplicationShortcut;
   tooltip: string;
 }) {
   return (
@@ -271,7 +285,7 @@ function ExportActionTooltip({
           {children}
         </span>
       </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
+      <ShortcutTooltipContent shortcut={shortcut} title={tooltip} />
     </Tooltip>
   );
 }

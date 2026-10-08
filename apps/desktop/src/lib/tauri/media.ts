@@ -5,7 +5,6 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { audioActivityRangesFromSilence } from "@/domain/audio-activity";
 import type { AudioTrackProcessing, AudioTrackSelection } from "@/domain/audio-processing";
 import type { SourceRef } from "@/domain/source";
-import { t } from "@/i18n/config";
 
 import type {
   AudioPreviewDescriptor,
@@ -47,11 +46,7 @@ import {
 
 async function chooseSource(mode: SourcePickerMode = "files"): Promise<SourceImportResult | null> {
   try {
-    const value = await invoke<unknown>("choose_source", {
-      mode,
-      videoFilter: t("source.open.videoFilter"),
-      foldersDialogTitle: t("source.open.foldersDialogTitle"),
-    });
+    const value = await invoke<unknown>("choose_source", { mode });
 
     return parseSourceImportResult(value);
   } catch (error: unknown) {
@@ -130,10 +125,7 @@ async function restoreSourceFromTrash(sourcePath: string): Promise<void> {
 
 async function chooseOutputPath(defaultName: string): Promise<OutputSelection | null> {
   try {
-    const value = await invoke<unknown>("choose_output_path", {
-      defaultName,
-      videoFilter: t("export.outputDialog.videoFilter"),
-    });
+    const value = await invoke<unknown>("choose_output_path", { defaultName });
 
     return value === null ? null : parseOutputSelection(value);
   } catch (error: unknown) {
@@ -146,7 +138,6 @@ async function saveFramePng(pngData: Uint8Array, defaultName: string): Promise<b
     return await invoke<boolean>("save_frame_png", {
       defaultName,
       pngData: Array.from(pngData),
-      pngFilter: t("preview.frame.pngFilter"),
     });
   } catch (error: unknown) {
     throw normalizeAppError(error);

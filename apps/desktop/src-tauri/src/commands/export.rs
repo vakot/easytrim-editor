@@ -113,7 +113,6 @@ pub async fn choose_output_path(
     app: AppHandle,
     state: State<'_, AppState>,
     default_name: String,
-    video_filter: String,
 ) -> Result<Option<OutputSelection>, AppError> {
     if default_name.trim().is_empty() || default_name.len() > 255 {
         return Err(AppError::invalid_request(
@@ -124,7 +123,7 @@ pub async fn choose_output_path(
     app.dialog()
         .file()
         .set_file_name(default_name)
-        .add_filter(&video_filter, &["mkv", "mp4", "mov", "webm"])
+        .add_filter("Video", &["mkv", "mp4", "mov", "webm"])
         .save_file(move |selected| {
             let _ = sender.send(selected);
         });

@@ -73,7 +73,14 @@ function getShortcutDisplayKeys(
   shortcut: ApplicationShortcut,
   platform = getShortcutPlatform(),
 ): readonly string[] {
-  if (shortcut.modifier === "none") return [shortcut.key];
+  const key =
+    shortcut.code === "ArrowLeft" || shortcut.key === "LeftArrow"
+      ? "←"
+      : shortcut.code === "ArrowRight" || shortcut.key === "RightArrow"
+        ? "→"
+        : shortcut.key;
+
+  if (shortcut.modifier === "none") return [key];
 
   const modifier =
     shortcut.modifier === "alt"
@@ -82,7 +89,7 @@ function getShortcutDisplayKeys(
         ? "Cmd"
         : "Ctrl";
 
-  return [modifier, shortcut.key];
+  return [modifier, key];
 }
 
 function getShortcutAriaValue(

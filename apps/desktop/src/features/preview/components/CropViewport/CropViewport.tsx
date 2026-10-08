@@ -11,6 +11,7 @@ import {
   selectFlipVertical,
   selectRotationDegrees,
 } from "@/app/store/slices/crop-slice";
+import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import {
   selectSourceLoadToken,
@@ -164,12 +165,20 @@ function CropViewport() {
         ),
       );
 
-      const saved = await saveFramePng(new Uint8Array(await blob.arrayBuffer()), defaultName);
+      const pngData = new Uint8Array(await blob.arrayBuffer());
+
+      dispatch(nativeDialogStateChanged(true));
+      let saved: boolean;
+      try {
+        saved = await saveFramePng(pngData, defaultName);
+      } finally {
+        dispatch(nativeDialogStateChanged(false));
+      }
       if (saved) toast.success(t("preview.frame.saved"));
     } catch {
       toast.error(t("preview.frame.saveFailed"));
     }
-  }, [captureCurrentFrame, isPlaying, sourceMedia, sourceSelection, t, videoRef]);
+  }, [captureCurrentFrame, dispatch, isPlaying, sourceMedia, sourceSelection, t, videoRef]);
 
   const copyFrame = useCallback(async () => {
     try {

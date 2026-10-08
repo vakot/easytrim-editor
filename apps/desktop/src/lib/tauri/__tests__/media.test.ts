@@ -19,6 +19,7 @@ import {
   activateSourcePath,
   analyzeAudioLoudness,
   checkMediaCapabilities,
+  chooseOutputPath,
   chooseSource,
   detectAudioActivity,
   exportFast,
@@ -282,7 +283,6 @@ describe("media IPC adapter", () => {
     expect(mocks.invoke).toHaveBeenCalledWith("save_frame_png", {
       defaultName: "clip_42.png",
       pngData: [137, 80, 78, 71, 13, 10, 26, 10],
-      pngFilter: "PNG image",
     });
   });
 
@@ -335,8 +335,6 @@ describe("media IPC adapter", () => {
     });
     expect(mocks.invoke).toHaveBeenCalledWith("choose_source", {
       mode: "files",
-      videoFilter: "Video files",
-      foldersDialogTitle: "Add folders",
     });
   });
 
@@ -365,8 +363,16 @@ describe("media IPC adapter", () => {
     });
     expect(mocks.invoke).toHaveBeenCalledWith("choose_source", {
       mode: "folders",
-      videoFilter: "Video files",
-      foldersDialogTitle: "Add folders",
+    });
+  });
+
+  it("chooses an output path without localized native dialog metadata", async () => {
+    mocks.invoke.mockResolvedValue(null);
+
+    await expect(chooseOutputPath("clip_fast.mkv")).resolves.toBeNull();
+
+    expect(mocks.invoke).toHaveBeenCalledWith("choose_output_path", {
+      defaultName: "clip_fast.mkv",
     });
   });
 

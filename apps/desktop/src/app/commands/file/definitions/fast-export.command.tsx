@@ -11,6 +11,8 @@ import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/cr
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { startFastExportRequested } from "@/app/store/thunks/export-thunks";
 
+import { FAST_EXPORT_SHORTCUT } from "../file-shortcuts.constants";
+
 function useFastExportCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -26,7 +28,7 @@ function useFastExportCommand() {
     id: "fast-export" as const,
     label: t("export.fastExport.action"),
     searchTerms: commandSearchTerms(t("commands.searchTerms.fastExport")),
-    shortcut: { code: "KeyS", key: "S", modifier: "control" } as const,
+    shortcut: FAST_EXPORT_SHORTCUT,
     variant: "default" as const,
   };
 }

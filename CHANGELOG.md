@@ -6,23 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added searchable language selection with flags, translation coverage, and a contribution link in Settings.
-- Added panel visibility, layout density, and Activity Feed view controls to the View menu.
-- Added an Open export queue action to the Command Center.
-- Added Ctrl+H as a shortcut for opening Settings.
+- Added a full Preferences dialog, accessible with Ctrl+H.
+- Added View menu controls for opening main windows, accessing the Export Queue, managing panel visibility, changing layout density, and selecting the Activity Feed view.
+- Added an Open Export Queue action to the Command Center.
 
 ### Changed
 
-- Completed Russian interface localization.
-- Standardized error messages across source, media, and export workflows while keeping technical details available for diagnostics.
-- Refined View menu actions to include main window entry points and layout controls.
-- Replaced the Settings menu dropdown with a full preferences dialog.
-- Moved queue access into View.
+- Updated the language selection UI with flags, translation coverage, search, and a contribution link.
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
-- Improved accessibility labels for the primary color controls.
 
 ### Removed
 
+- Removed the Settings dropdown from the menubar.
 - Removed language switching commands from the Command Center.
 - Removed the Queue menu from the menubar.
 
@@ -31,7 +26,7 @@ All notable changes to this project will be documented in this file.
 - Fixed missing translations in audio track actions and source navigation.
 - Fixed duplicate Activity Feed session separators for sessions in the same displayed time bucket.
 - Fixed the Activity Feed's singular "more file" count.
-- Fixed spacing and scrolling in the audio effects library and editor panels.
+- Fixed scrolling in the audio effects library and editor panels.
 
 ## [1.13.0]
 

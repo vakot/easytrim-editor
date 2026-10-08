@@ -1033,7 +1033,7 @@ describe("MenuBarTest", () => {
     appearanceItem.focus();
     await user.keyboard("{ArrowRight}");
     const themeItem = screen.getByRole("menuitem", { name: "Theme" });
-    const colorItem = screen.getByRole("menuitem", { name: "Color" });
+    const colorItem = screen.getByRole("menuitem", { name: /^Color/ });
 
     await user.hover(themeItem);
     await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(3));
