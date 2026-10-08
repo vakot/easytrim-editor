@@ -566,8 +566,11 @@ pub fn build_gif_arguments(
         ));
     }
     video_filters.push(format!(
-        "scale={}:{}:flags=lanczos,setsar=1",
-        request.resolution.width, request.resolution.height,
+        "scale=w='min({},{}*dar)':h='min({},{}/dar)':eval=init:flags=lanczos,setsar=1",
+        request.resolution.width,
+        request.resolution.height,
+        request.resolution.height,
+        request.resolution.width,
     ));
     let filter = format!(
         "[0:{}]{},split[v1][v2];[v1]palettegen=stats_mode=diff[palette];[v2][palette]paletteuse=dither=sierra2_4a[out]",
@@ -2495,7 +2498,7 @@ mod tests {
 
         assert_eq!(preview, expected);
         assert!(preview.contains("-ss 1.250000 -i <source> -t 3.500000"));
-        assert!(preview.contains("transpose=1,crop=iw*0.7:ih*0.6:iw*0.1:ih*0.2,hflip,vflip,fps=24/1,scale=640:480:flags=lanczos,setsar=1"));
+        assert!(preview.contains("transpose=1,crop=iw*0.7:ih*0.6:iw*0.1:ih*0.2,hflip,vflip,fps=24/1,scale=w='min(640,480*dar)':h='min(480,640/dar)':eval=init:flags=lanczos,setsar=1"));
         assert!(preview.contains("palettegen=stats_mode=diff"));
         assert!(preview.contains("paletteuse=dither=sierra2_4a"));
         assert!(preview.contains("-loop 0 -f gif -y <output>"));
@@ -2518,6 +2521,71 @@ mod tests {
                 .message_id,
             crate::error::AppErrorMessageId::ExportOutputFrameRateIsInvalid,
         );
+    }
+
+    #[test]
+    fn gif_scaling_preserves_display_aspect_for_anamorphic_sources() {
+        let mut source = media();
+        source.video.width = 720;
+        source.video.height = 576;
+        source.video.sample_aspect_ratio = Some("16:15".to_owned());
+        let request = GifExportRequest {
+            source_path: "source.mkv".to_owned(),
+            trim: TrimSelection {
+                start_micros: 0,
+                end_micros: 1_000_000,
+            },
+            audio_tracks: Vec::new(),
+            merge_audio: false,
+            rotation_degrees: 0,
+            crop: None,
+            flip_horizontal: false,
+            flip_vertical: false,
+            resolution: ResolutionSelection {
+                width: 480,
+                height: 384,
+            },
+            frame_rate: None,
+        };
+
+        let arguments = build_gif_arguments(
+            &source,
+            &request,
+            Path::new("<source>"),
+            Path::new("<output>"),
+        )
+        .expect("anamorphic GIF request is valid");
+        let preview = gif_command_preview(&source, &request).expect("preview is valid");
+        let expected_scale =
+            "scale=w='min(480,384*dar)':h='min(384,480/dar)':eval=init:flags=lanczos,setsar=1";
+
+        assert!(
+            arguments
+                .iter()
+                .any(|argument| argument.to_string_lossy().contains(expected_scale))
+        );
+        assert!(preview.contains(expected_scale));
+
+        let mut transformed_request = request;
+        transformed_request.rotation_degrees = 90;
+        transformed_request.crop = Some(CropSelection {
+            x: 0.1,
+            y: 0.2,
+            width: 0.7,
+            height: 0.6,
+        });
+        let transformed_arguments = build_gif_arguments(
+            &source,
+            &transformed_request,
+            Path::new("<source>"),
+            Path::new("<output>"),
+        )
+        .expect("transformed anamorphic GIF request is valid");
+        assert!(transformed_arguments.iter().any(|argument| {
+            argument.to_string_lossy().contains(
+                "transpose=1,crop=iw*0.7:ih*0.6:iw*0.1:ih*0.2,scale=w='min(480,384*dar)':h='min(384,480/dar)'",
+            )
+        }));
     }
 
     #[test]
