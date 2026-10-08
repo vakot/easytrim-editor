@@ -144,8 +144,32 @@ describe("workspace recovery contract", () => {
       state: { operationId: "native-running", startedAt: 501, status: "rendering" as const },
     };
 
+    const queuedGifAttempt = createExportAttempt({
+      capturedAt: 600,
+      id: "export-gif",
+      output: {
+        displayName: "pending.gif",
+        displayPath: "C:/Exports/pending.gif",
+        outputId: "out-gif",
+      },
+      request: {
+        audioTracks: [],
+        flipHorizontal: true,
+        flipVertical: false,
+        frameRate: { denominator: 1, numerator: 15 },
+        mergeAudio: false,
+        resolution: { height: 360, width: 480 },
+        rotationDegrees: 90,
+        sourcePath: secondSource.sourcePath,
+        trim: { endMicros: 4_000_000, startMicros: 1_000_000 },
+      },
+      route: "gif",
+      snapshot: second.snapshot,
+    });
+
     store.dispatch(editingInstanceExportAttemptQueued({ attempt: completedAttempt, id: "second" }));
     store.dispatch(editingInstanceExportAttemptQueued({ attempt: renderingAttempt, id: "second" }));
+    store.dispatch(editingInstanceExportAttemptQueued({ attempt: queuedGifAttempt, id: "second" }));
 
     const backup = createWorkspaceRecoveryBackup(store.getState(), { sessionId: "session-1" });
 
@@ -182,6 +206,17 @@ describe("workspace recovery contract", () => {
       state: { status: "canceled" },
     });
     expect(backup.instances[1]?.exportAttempts[1]?.state).not.toHaveProperty("operationId");
+    expect(backup.instances[1]?.exportAttempts[2]).toMatchObject({
+      request: {
+        flipHorizontal: true,
+        frameRate: { denominator: 1, numerator: 15 },
+        resolution: { height: 360, width: 480 },
+        rotationDegrees: 90,
+        trim: { endMicros: 4_000_000, startMicros: 1_000_000 },
+      },
+      route: "gif",
+      state: { status: "canceled" },
+    });
     expect(backup.instances[1]).not.toHaveProperty("media");
     expect(backup.instances[1]?.snapshot.source).toEqual(secondSource);
   });
