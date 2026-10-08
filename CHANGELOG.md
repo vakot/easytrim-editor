@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added a global option to strip container metadata and chapters from queued exports.
+
 ## [1.13.1]
 
 ### Added
