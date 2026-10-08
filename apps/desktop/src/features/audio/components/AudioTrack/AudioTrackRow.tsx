@@ -1,5 +1,5 @@
 import { WandSparkles } from "lucide-react";
-import { type CSSProperties, memo, type ReactNode, useMemo, useState } from "react";
+import { type CSSProperties, memo, type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,7 @@ import {
 import { AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
 import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog";
+import { AudioTrackMetadataDialog } from "./components/AudioTrackMetadataDialog";
 import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
 
 interface AudioTrackRowProps {
@@ -41,32 +42,26 @@ interface AudioTrackRowProps {
 const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: AudioTrackRowProps) {
   const controller = useAudioTrackController(streamIndex);
   const { track, trackColor } = controller;
-  const [metadataDialogOpen, setMetadataDialogOpen] = useState(false);
 
   if (!track || !controller.stream) return null;
 
   return (
     <AudioTrackEffectsDialog controller={controller}>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <div
-            className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
-            data-slot="audio-track-row"
-            style={{ "--audio-track-color": trackColor } as CSSProperties}
-          >
-            <AudioTrackDetails
-              controller={controller}
-              metadataDialogOpen={metadataDialogOpen}
-              onMetadataDialogOpenChange={setMetadataDialogOpen}
-            />
-            <AudioTrackRowWaveform controller={controller} />
-          </div>
-        </ContextMenuTrigger>
-        <AudioTrackContextMenuContent
-          controller={controller}
-          onOpenMetadata={() => setMetadataDialogOpen(true)}
-        />
-      </ContextMenu>
+      <AudioTrackMetadataDialog controller={controller}>
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div
+              className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
+              data-slot="audio-track-row"
+              style={{ "--audio-track-color": trackColor } as CSSProperties}
+            >
+              <AudioTrackDetails controller={controller} />
+              <AudioTrackRowWaveform controller={controller} />
+            </div>
+          </ContextMenuTrigger>
+          <AudioTrackContextMenuContent controller={controller} />
+        </ContextMenu>
+      </AudioTrackMetadataDialog>
     </AudioTrackEffectsDialog>
   );
 });

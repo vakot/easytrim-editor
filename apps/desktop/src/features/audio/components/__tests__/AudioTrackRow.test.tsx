@@ -568,6 +568,11 @@ describe("AudioTrackRow", () => {
     expect(screen.getByRole("menuitem", { name: /edit output metadata/i })).toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByLabelText(/title/i)).toBeInTheDocument();
   });
 
   it("uses the source title as the placeholder and inherits it when submitted empty", async () => {

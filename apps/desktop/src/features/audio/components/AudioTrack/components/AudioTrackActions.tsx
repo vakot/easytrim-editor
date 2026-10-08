@@ -20,10 +20,10 @@ import { Slot } from "@/components/ui/slot";
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 
 import { useAudioTrackEffectsDialog } from "./AudioTrackEffectsDialog/contexts/audio-track-effects-dialog-context";
+import { useAudioTrackMetadataDialog } from "./AudioTrackMetadataDialog/contexts/audio-track-metadata-dialog-context";
 
 interface AudioTrackActionsProps {
   controller: AudioTrackController;
-  onOpenMetadata?: () => void;
 }
 
 function activityActionLabel(
@@ -92,8 +92,9 @@ function AudioTrackEffectsMenuItem({
   return <Slot {...commandProps}>{children}</Slot>;
 }
 
-function AudioTrackDropdownMenuContent({ controller, onOpenMetadata }: AudioTrackActionsProps) {
+function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
   const { t } = useTranslation();
+  const { openMetadataDialog } = useAudioTrackMetadataDialog();
   const track = controller.track;
 
   return (
@@ -112,7 +113,7 @@ function AudioTrackDropdownMenuContent({ controller, onOpenMetadata }: AudioTrac
 
       <AudioTrackDefaultDropdownMenuCheckboxItem controller={controller} />
 
-      <DropdownMenuItem inset onSelect={onOpenMetadata}>
+      <DropdownMenuItem inset onSelect={openMetadataDialog}>
         {t("audio.tracks.editMetadata")}
       </DropdownMenuItem>
 
@@ -154,8 +155,9 @@ function AudioTrackDefaultDropdownMenuCheckboxItem({ controller }: AudioTrackAct
   );
 }
 
-function AudioTrackContextMenuContent({ controller, onOpenMetadata }: AudioTrackActionsProps) {
+function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
   const { t } = useTranslation();
+  const { openMetadataDialog } = useAudioTrackMetadataDialog();
   const track = controller.track;
   const defaultProps = audioTrackDefaultMenuProps(controller);
 
@@ -179,7 +181,7 @@ function AudioTrackContextMenuContent({ controller, onOpenMetadata }: AudioTrack
         </ContextMenuCheckboxItem>
       ) : null}
 
-      <ContextMenuItem inset onSelect={onOpenMetadata}>
+      <ContextMenuItem inset onSelect={openMetadataDialog}>
         {t("audio.tracks.editMetadata")}
       </ContextMenuItem>
 

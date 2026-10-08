@@ -1,36 +1,12 @@
-import { ChevronsUpDown, MoreVertical, RotateCcw } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-
-import {
-  LanguageSelector,
-  LanguageSelectorContent,
-  LanguageSelectorInput,
-  LanguageSelectorList,
-  LanguageSelectorTrigger,
-  LanguageSelectorValue,
-} from "@/components/language-selector";
-import {
-  AUDIO_METADATA_LANGUAGES,
-  type Language,
-  languageCodeFromMetadata,
-} from "@/domain/languages";
 
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 import { formatChannels, formatGain, MIN_SLIDER_DECIBELS } from "../../../lib/audio-level.utils";
@@ -38,22 +14,10 @@ import { formatChannels, formatGain, MIN_SLIDER_DECIBELS } from "../../../lib/au
 import { AudioTrackDropdownMenuContent } from "./AudioTrackActions";
 import { AudioTrackToggle } from "./AudioTrackToggle";
 
-function AudioTrackDetails({
-  controller,
-  metadataDialogOpen,
-  onMetadataDialogOpenChange,
-}: {
-  controller: AudioTrackController;
-  metadataDialogOpen: boolean;
-  onMetadataDialogOpenChange: (open: boolean) => void;
-}) {
+function AudioTrackDetails({ controller }: { controller: AudioTrackController }) {
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [metadataTitle, setMetadataTitle] = useState("");
-  const [metadataTitleChanged, setMetadataTitleChanged] = useState(false);
-  const [metadataLanguage, setMetadataLanguage] = useState<Language["code"] | undefined>();
-  const [metadataLanguageChanged, setMetadataLanguageChanged] = useState(false);
   const { stream, track, trackNumber } = controller;
   if (!stream || !track) return null;
 
@@ -62,14 +26,6 @@ function AudioTrackDetails({
     track.language ??
     stream.language ??
     t("audio.tracks.defaultName", { number: trackNumber });
-
-  const openMetadataDialog = () => {
-    setMetadataTitle("");
-    setMetadataTitleChanged(false);
-    setMetadataLanguage(languageCodeFromMetadata(track.language ?? stream.language));
-    setMetadataLanguageChanged(false);
-    onMetadataDialogOpenChange(true);
-  };
 
   return (
     <div
@@ -111,110 +67,8 @@ function AudioTrackDetails({
             <MoreVertical aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
-        <AudioTrackDropdownMenuContent
-          controller={controller}
-          onOpenMetadata={openMetadataDialog}
-        />
+        <AudioTrackDropdownMenuContent controller={controller} />
       </DropdownMenu>
-
-      <Dialog onOpenChange={onMetadataDialogOpenChange} open={metadataDialogOpen}>
-        <DialogContent>
-          <form
-            className="grid gap-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              controller.updateMetadata(
-                metadataTitle,
-                metadataTitleChanged,
-                metadataLanguage,
-                metadataLanguageChanged,
-              );
-              onMetadataDialogOpenChange(false);
-            }}
-          >
-            <DialogHeader>
-              <DialogTitle>{t("audio.tracks.metadataTitle")}</DialogTitle>
-              <DialogDescription>{t("audio.tracks.metadataDescription")}</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-2">
-              <Label htmlFor={`audio-track-title-${track.streamIndex}`}>
-                {t("audio.tracks.titleLabel")}
-              </Label>
-              <Input
-                autoComplete="off"
-                id={`audio-track-title-${track.streamIndex}`}
-                maxLength={256}
-                onChange={(event) => {
-                  setMetadataTitle(event.currentTarget.value);
-                  setMetadataTitleChanged(true);
-                }}
-                placeholder={stream.title ?? ""}
-                value={metadataTitle}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>{t("audio.tracks.languageLabel")}</Label>
-              <LanguageSelector
-                label={t("audio.tracks.languageSearchLabel")}
-                languages={AUDIO_METADATA_LANGUAGES}
-                onValueChange={(language) => {
-                  setMetadataLanguage(language);
-                  setMetadataLanguageChanged(true);
-                }}
-                value={metadataLanguage}
-              >
-                <div className="flex items-center gap-1">
-                  <LanguageSelectorTrigger asChild>
-                    <Button
-                      aria-label={t("audio.tracks.languageLabel")}
-                      className="flex-1 justify-start"
-                      type="button"
-                      variant="outline"
-                    >
-                      <LanguageSelectorValue
-                        placeholder={
-                          track.language ??
-                          stream.language ??
-                          t("audio.tracks.languageSelectPlaceholder")
-                        }
-                      />
-
-                      <ChevronsUpDown
-                        aria-hidden="true"
-                        className="ml-auto text-muted-foreground"
-                      />
-                    </Button>
-                  </LanguageSelectorTrigger>
-
-                  <Button
-                    aria-label={t("audio.tracks.useSourceLanguage")}
-                    onClick={() => {
-                      setMetadataLanguage(languageCodeFromMetadata(stream.language));
-                      setMetadataLanguageChanged(true);
-                    }}
-                    size="icon"
-                    type="button"
-                    variant="outline"
-                  >
-                    <RotateCcw aria-hidden="true" />
-                  </Button>
-                </div>
-
-                <LanguageSelectorContent>
-                  <LanguageSelectorInput
-                    aria-label={t("audio.tracks.languageSearchLabel")}
-                    placeholder={t("audio.tracks.languageSearchLabel")}
-                  />
-                  <LanguageSelectorList emptyState={t("audio.tracks.languageNoResults")} />
-                </LanguageSelectorContent>
-              </LanguageSelector>
-            </div>
-            <DialogFooter>
-              <Button type="submit">{t("common.actions.save")}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
