@@ -57,6 +57,8 @@ pub struct FastExportRequest {
     pub trim: TrimSelection,
     pub audio_tracks: Vec<AudioTrackSelection>,
     pub merge_audio: bool,
+    #[serde(default)]
+    pub strip_metadata: bool,
     pub rotation_degrees: u16,
 }
 
@@ -217,6 +219,8 @@ pub struct OptimizedExportRequest {
     pub trim: TrimSelection,
     pub audio_tracks: Vec<AudioTrackSelection>,
     pub merge_audio: bool,
+    #[serde(default)]
+    pub strip_metadata: bool,
     pub rotation_degrees: u16,
     pub resolution: ResolutionSelection,
     pub crop: Option<CropSelection>,
@@ -365,6 +369,7 @@ pub fn build_fast_arguments(
         arguments.extend([OsString::from("-c"), OsString::from("copy")]);
     }
 
+    append_metadata_stripping_arguments(&mut arguments, request.strip_metadata);
     arguments.extend([
         OsString::from("-sn"),
         OsString::from("-dn"),
@@ -467,6 +472,7 @@ pub fn build_optimized_arguments(
     let user_arguments = parse_arguments(&request.arguments)?;
     validate_user_arguments(&user_arguments)?;
     arguments.extend(user_arguments);
+    append_metadata_stripping_arguments(&mut arguments, request.strip_metadata);
     arguments.extend([
         OsString::from("-sn"),
         OsString::from("-dn"),
@@ -507,6 +513,17 @@ fn common_input_arguments(source_path: &Path, trim: &TrimSelection) -> Vec<OsStr
         OsString::from("-t"),
         OsString::from(format_seconds_f64(duration)),
     ]
+}
+
+fn append_metadata_stripping_arguments(arguments: &mut Vec<OsString>, strip_metadata: bool) {
+    if strip_metadata {
+        arguments.extend([
+            OsString::from("-map_metadata"),
+            OsString::from("-1"),
+            OsString::from("-map_chapters"),
+            OsString::from("-1"),
+        ]);
+    }
 }
 
 pub(crate) fn validate_common_request(
@@ -1126,6 +1143,7 @@ mod tests {
             }],
             merge_audio: false,
             rotation_degrees: 0,
+            strip_metadata: false,
             resolution: ResolutionSelection {
                 width: 1920,
                 height: 1080,
@@ -1159,6 +1177,7 @@ mod tests {
                 }],
                 merge_audio: false,
                 rotation_degrees: 0,
+                strip_metadata: false,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -1189,6 +1208,7 @@ mod tests {
                 audio_tracks: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 0,
+                strip_metadata: false,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -1200,6 +1220,59 @@ mod tests {
             .collect::<Vec<_>>();
         assert!(values.contains(&"-an".to_owned()));
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
+    }
+
+    #[test]
+    fn stripping_metadata_and_chapters_keeps_fast_and_optimized_video_copy_modes() {
+        let fast_arguments = build_fast_arguments(
+            &media(),
+            &FastExportRequest {
+                source_path: "source.mkv".to_owned(),
+                trim: TrimSelection {
+                    start_micros: 0,
+                    end_micros: 2_000_000,
+                },
+                audio_tracks: Vec::new(),
+                merge_audio: false,
+                strip_metadata: true,
+                rotation_degrees: 0,
+            },
+            Path::new("source.mkv"),
+            Path::new("out.mkv"),
+        )
+        .expect("fast request is valid");
+        let fast_values = fast_arguments
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        let mut optimized_request = optimized_request("-c:v libx264 -crf 20");
+        optimized_request.strip_metadata = true;
+        let optimized_arguments = build_optimized_arguments(
+            &media(),
+            &optimized_request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect("optimized request is valid");
+        let optimized_values = optimized_arguments
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        for values in [&fast_values, &optimized_values] {
+            assert!(
+                values
+                    .windows(2)
+                    .any(|pair| pair == ["-map_metadata", "-1"])
+            );
+            assert!(
+                values
+                    .windows(2)
+                    .any(|pair| pair == ["-map_chapters", "-1"])
+            );
+        }
+        assert!(fast_values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
     }
 
     #[test]
@@ -1215,6 +1288,7 @@ mod tests {
                 audio_tracks: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 90,
+                strip_metadata: false,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -1256,6 +1330,7 @@ mod tests {
                 ],
                 merge_audio: true,
                 rotation_degrees: 0,
+                strip_metadata: false,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -1294,6 +1369,7 @@ mod tests {
                 }],
                 merge_audio: false,
                 rotation_degrees: 0,
+                strip_metadata: false,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -1876,6 +1952,7 @@ mod tests {
                 }],
                 merge_audio: false,
                 rotation_degrees: 0,
+                strip_metadata: false,
                 resolution: ResolutionSelection {
                     width: 1920,
                     height: 1080,
@@ -2282,6 +2359,7 @@ mod tests {
                 audio_tracks: vec![track.clone()],
                 merge_audio: false,
                 rotation_degrees: 0,
+                strip_metadata: false,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
