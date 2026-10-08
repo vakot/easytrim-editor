@@ -13,7 +13,7 @@ export type ActivityKind =
   | "files-imported"
   | "folders-imported"
   | "workspace-restored"
-  | "render";
+  | "optimized-export";
 export type ActivityStatus = "cancelled" | "completed" | "failed" | "interrupted" | "pending";
 export type ActivityAction =
   { kind: "open"; path: string } | { kind: "restore"; path: string; targetId: string };
@@ -70,12 +70,12 @@ interface ActivityProjectionLabels {
   fileRestoring: string;
   importOpenedFiles: (count: number) => string;
   importOpenedFilesFromFolders: (fileCount: number, folderCount: number) => string;
-  renderCancelled: string;
-  renderCompleted: string;
-  renderFailed: string;
-  rendering: string;
-  renderInterrupted: string;
-  renderStarted: string;
+  optimizedExportCancelled: string;
+  optimizedExportCompleted: string;
+  optimizedExportFailed: string;
+  optimizedExporting: string;
+  optimizedExportInterrupted: string;
+  optimizedExportStarted: string;
   workspaceRestored: (restored: number, total: number) => string;
 }
 interface ActivitySessionLabels {
@@ -462,7 +462,7 @@ function projectExportStart(
   return createActivityEntry(
     event,
     metadata.kind,
-    metadata.kind === "fast-export" ? labels.fastExportStarted : labels.renderStarted,
+    metadata.kind === "fast-export" ? labels.fastExportStarted : labels.optimizedExportStarted,
     {
       path: metadata.path,
       ...(snapshotId ? { snapshotId } : {}),
@@ -588,11 +588,11 @@ function isExportTerminalEvent(event: DiagnosticEvent): boolean {
 }
 function exportMetadata(
   data: Record<string, DiagnosticValue> | undefined,
-): { kind: Extract<ActivityKind, "fast-export" | "render">; path?: string } | null {
+): { kind: Extract<ActivityKind, "fast-export" | "optimized-export">; path?: string } | null {
   const outputType = data?.outputType ?? data?.route;
   if (outputType !== "fast" && outputType !== "optimized") return null;
   return {
-    kind: outputType === "fast" ? "fast-export" : "render",
+    kind: outputType === "fast" ? "fast-export" : "optimized-export",
     path: diagnosticString(data?.outputPath),
   };
 }
@@ -604,7 +604,7 @@ function exportStatus(
   return "completed";
 }
 function exportTitle(
-  kind: Extract<ActivityKind, "fast-export" | "render">,
+  kind: Extract<ActivityKind, "fast-export" | "optimized-export">,
   status: ActivityStatus,
   labels: ActivityProjectionLabels,
 ): string {
@@ -616,15 +616,15 @@ function exportTitle(
       interrupted: labels.fastExportInterrupted,
       pending: labels.fastExporting,
     },
-    render: {
-      cancelled: labels.renderCancelled,
-      completed: labels.renderCompleted,
-      failed: labels.renderFailed,
-      interrupted: labels.renderInterrupted,
-      pending: labels.rendering,
+    "optimized-export": {
+      cancelled: labels.optimizedExportCancelled,
+      completed: labels.optimizedExportCompleted,
+      failed: labels.optimizedExportFailed,
+      interrupted: labels.optimizedExportInterrupted,
+      pending: labels.optimizedExporting,
     },
   } satisfies Record<
-    Extract<ActivityKind, "fast-export" | "render">,
+    Extract<ActivityKind, "fast-export" | "optimized-export">,
     Record<ActivityStatus, string>
   >;
 

@@ -90,14 +90,14 @@ function createDeferred<T>(): {
 function isPromiseActivity(entry: ActivityEntry): boolean {
   return (
     entry.kind === "fast-export" ||
-    entry.kind === "render" ||
+    entry.kind === "optimized-export" ||
     entry.kind === "file-deleted" ||
     entry.kind === "file-restored"
   );
 }
 
 function isExportActivity(entry: ActivityEntry): boolean {
-  return entry.kind === "fast-export" || entry.kind === "render";
+  return entry.kind === "fast-export" || entry.kind === "optimized-export";
 }
 
 function createActivityToast(

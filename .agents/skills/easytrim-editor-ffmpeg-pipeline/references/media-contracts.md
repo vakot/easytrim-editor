@@ -65,7 +65,7 @@ Fast merge defaults:
 
 Preserve the source container for separate stream-copy output. Preserve it for merged output only when it supports the chosen AAC stream; otherwise select Matroska and surface the extension before the save operation.
 
-## 4. Optimized render shape
+## 4. Optimized Export shape
 
 The application owns:
 

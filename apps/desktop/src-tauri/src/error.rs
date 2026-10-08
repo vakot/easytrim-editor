@@ -57,7 +57,7 @@ pub enum AppErrorMessageId {
     #[serde(rename = "export.exportWasCancelled")]
     ExportExportWasCancelled,
     #[serde(rename = "export.fastCutCannotApplyRotationUseOptimizedRender")]
-    ExportFastExportCannotApplyRotationUseOptimizedRender,
+    ExportFastExportCannotApplyRotationUseOptimizedExport,
     #[serde(rename = "export.ffmpegCouldNotRenderTheSelectedSegment")]
     ExportFfmpegCouldNotRenderTheSelectedSegment,
     #[serde(rename = "export.ffmpegIsRequiredToExportVideoFiles")]

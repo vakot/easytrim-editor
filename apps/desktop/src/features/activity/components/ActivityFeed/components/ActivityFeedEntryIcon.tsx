@@ -22,7 +22,7 @@ const activityIcons: Record<ActivityKind, LucideIcon> = {
   "file-restored": RotateCcw,
   "files-imported": FileVideo,
   "folders-imported": FolderOpen,
-  render: Film,
+  "optimized-export": Film,
   "workspace-restored": RotateCcw,
 };
 

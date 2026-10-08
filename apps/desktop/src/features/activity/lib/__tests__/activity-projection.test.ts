@@ -34,12 +34,12 @@ const labels: ActivityProjectionLabels = {
   importOpenedFiles: (count) => `Opened ${count} file${count === 1 ? "" : "s"}`,
   importOpenedFilesFromFolders: (fileCount, folderCount) =>
     `Opened ${fileCount} file${fileCount === 1 ? "" : "s"} from ${folderCount} folder${folderCount === 1 ? "" : "s"}`,
-  renderCancelled: "Optimized export cancelled",
-  renderCompleted: "Optimized export completed",
-  renderFailed: "Optimized export failed",
-  renderInterrupted: "Optimized export interrupted",
-  renderStarted: "Optimized export started",
-  rendering: "Optimized export…",
+  optimizedExportCancelled: "Optimized export cancelled",
+  optimizedExportCompleted: "Optimized export completed",
+  optimizedExportFailed: "Optimized export failed",
+  optimizedExportInterrupted: "Optimized export interrupted",
+  optimizedExportStarted: "Optimized export started",
+  optimizedExporting: "Optimized export…",
   workspaceRestored: (restored, total) =>
     restored === total ? `Restored ${restored}` : `Restored ${restored} of ${total}`,
 };
@@ -168,7 +168,7 @@ describe("activity projection", () => {
 
   it.each([
     ["fast", "fast-export", "Fast Export completed"],
-    ["optimized", "render", "Optimized export completed"],
+    ["optimized", "optimized-export", "Optimized export completed"],
   ] as const)("projects a completed %s export", (outputType, kind, title) => {
     const entry = projectActivityEvent(
       diagnosticEvent("ffmpeg.export.completed", { data: { outputPath, outputType } }),
@@ -328,13 +328,13 @@ describe("activity projection", () => {
       "current-session",
     );
 
-    const render = entries.find((entry) => entry.title === "Optimized export completed");
+    const optimizedExport = entries.find((entry) => entry.title === "Optimized export completed");
     const branch = groupActivityEntriesByBranch(entries).find(
       (item): item is Extract<typeof item, { kind: "branch" }> =>
         item.kind === "branch" && item.branch.snapshotId === "snapshot-1",
     );
 
-    expect(render).toMatchObject({
+    expect(optimizedExport).toMatchObject({
       action: { kind: "open", path: outputPath },
       path: outputPath,
       snapshotId: "snapshot-1",
@@ -349,7 +349,7 @@ describe("activity projection", () => {
     );
   });
 
-  it("keeps render branches separate when similarly named outputs belong to different snapshots", () => {
+  it("keeps optimized export branches separate when similarly named outputs belong to different snapshots", () => {
     const entries = projectActivityEvents(
       [
         diagnosticEvent("ffmpeg.export.completed", {
@@ -358,7 +358,7 @@ describe("activity projection", () => {
             outputType: "optimized",
             sourcePath: "C:/Media/first/clip.mp4",
           },
-          operationId: "render-1",
+          operationId: "optimized-export-1",
           snapshotId: "snapshot-1",
           timestamp: "2026-08-31T08:01:00.000Z",
         }),
@@ -368,7 +368,7 @@ describe("activity projection", () => {
             outputType: "optimized",
             sourcePath: "C:/Media/second/clip.mp4",
           },
-          operationId: "render-2",
+          operationId: "optimized-export-2",
           snapshotId: "snapshot-2",
           timestamp: "2026-08-31T08:02:00.000Z",
         }),
@@ -393,7 +393,7 @@ describe("activity projection", () => {
       startedAt: string,
     ): ActivityEntry => ({
       id,
-      kind: "render",
+      kind: "optimized-export",
       path,
       sessionId,
       ...(snapshotId ? { snapshotId } : {}),
@@ -703,7 +703,7 @@ describe("activity projection", () => {
       [
         diagnosticEvent("ffmpeg.export.started", {
           data: { outputPath, outputType: "optimized" },
-          operationId: "render-1",
+          operationId: "optimized-export-1",
           sessionId: "current-session",
         }),
       ],
@@ -713,8 +713,8 @@ describe("activity projection", () => {
 
     expect(entries).toEqual([
       expect.objectContaining({
-        id: "current-session:render-1:ffmpeg.export",
-        operationId: "render-1",
+        id: "current-session:optimized-export-1:ffmpeg.export",
+        operationId: "optimized-export-1",
         path: outputPath,
         startedAt: "2026-08-31T09:00:00.000Z",
         status: "pending",
@@ -733,13 +733,13 @@ describe("activity projection", () => {
       [
         diagnosticEvent("ffmpeg.export.started", {
           data: { outputPath, outputType: "optimized" },
-          operationId: "render-1",
+          operationId: "optimized-export-1",
           sessionId: "current-session",
           timestamp: "2026-08-31T08:30:00.000Z",
         }),
         diagnosticEvent(event, {
           data: event === "ffmpeg.export.completed" ? { outputPath, outputType: "optimized" } : {},
-          operationId: "render-1",
+          operationId: "optimized-export-1",
           sessionId: "current-session",
           timestamp: "2026-08-31T09:00:00.000Z",
         }),
@@ -750,7 +750,7 @@ describe("activity projection", () => {
 
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({
-      id: "current-session:render-1:ffmpeg.export",
+      id: "current-session:optimized-export-1:ffmpeg.export",
       startedAt: "2026-08-31T08:30:00.000Z",
       status,
       title,
@@ -769,7 +769,7 @@ describe("activity projection", () => {
         }),
         diagnosticEvent("ffmpeg.export.started", {
           data: { outputPath: "C:/Exports/render.mp4", outputType: "optimized" },
-          operationId: "render-1",
+          operationId: "optimized-export-1",
           sessionId: "history-session",
           timestamp: "2026-08-30T09:05:00.000Z",
         }),
@@ -785,7 +785,7 @@ describe("activity projection", () => {
           status: "interrupted",
         }),
         expect.objectContaining({
-          id: "history-session:render-1:ffmpeg.export",
+          id: "history-session:optimized-export-1:ffmpeg.export",
           status: "interrupted",
         }),
       ]),

@@ -307,7 +307,7 @@ pub fn build_fast_arguments(
     validate_rotation(request.rotation_degrees)?;
     if request.rotation_degrees != 0 {
         return Err(AppError::invalid_request(
-            AppErrorMessageId::ExportFastExportCannotApplyRotationUseOptimizedRender,
+            AppErrorMessageId::ExportFastExportCannotApplyRotationUseOptimizedExport,
         ));
     }
 

@@ -61,12 +61,12 @@ function useActivityFeed() {
       importOpenedFiles: (count) => t("source.import.openedFiles", { count }),
       importOpenedFilesFromFolders: (fileCount, folderCount) =>
         `${t("source.import.openedFiles", { count: fileCount })} ${t("source.import.fromFolders", { count: folderCount })}`,
-      renderCompleted: t("export.optimized.completed"),
-      renderCancelled: t("export.optimized.cancelled"),
-      renderFailed: t("export.optimized.failed"),
-      renderInterrupted: t("export.optimized.interrupted"),
-      renderStarted: t("export.optimized.started"),
-      rendering: t("export.optimized.running"),
+      optimizedExportCompleted: t("export.optimized.completed"),
+      optimizedExportCancelled: t("export.optimized.cancelled"),
+      optimizedExportFailed: t("export.optimized.failed"),
+      optimizedExportInterrupted: t("export.optimized.interrupted"),
+      optimizedExportStarted: t("export.optimized.started"),
+      optimizedExporting: t("export.optimized.running"),
       workspaceRestored: (restored, total) =>
         restored === total
           ? t("app.workspaceRecovery.restored", { count: restored })

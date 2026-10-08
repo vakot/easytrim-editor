@@ -421,7 +421,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
 
   it.each([
     ["Fast Export", "fast-export", "Fast Export completed"],
-    ["Optimized Export", "render", "Optimized export completed"],
+    ["Optimized Export", "optimized-export", "Optimized export completed"],
   ] as const)("offers the Open action for a completed %s", async (_label, kind, title) => {
     const onAction = vi.fn();
     const user = userEvent.setup();
@@ -450,8 +450,8 @@ describe("ActivityFeedView file lifecycle entries", () => {
   it("renders a branch header and muted rows without repeating the path", () => {
     const { container } = renderActivity(
       {
-        id: "current-session:render-1:ffmpeg.export",
-        kind: "render",
+        id: "current-session:optimized-export-1:ffmpeg.export",
+        kind: "optimized-export",
         path: "C:/Media/source.mp4",
         sessionId: "current-session",
         snapshotId: "snapshot-1",

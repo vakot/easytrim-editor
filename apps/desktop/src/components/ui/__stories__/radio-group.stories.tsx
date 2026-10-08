@@ -22,8 +22,8 @@ export const Default: Story = {
         <Label htmlFor="fast-export">Fast Export</Label>
       </div>
       <div className="flex items-center gap-2">
-        <RadioGroupItem id="optimized-render" value="optimized" />
-        <Label htmlFor="optimized-render">Optimized render</Label>
+        <RadioGroupItem id="optimized-export" value="optimized" />
+        <Label htmlFor="optimized-export">Optimized Export</Label>
       </div>
     </RadioGroup>
   ),

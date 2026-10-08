@@ -86,14 +86,14 @@ are excluded from export and merge inputs.
 
 ## 5. Export settings
 
-Fast cut:
+Fast Export:
 
 - no resolution or frame-rate controls;
 - source characteristics shown as preserved;
 - compact keyframe note;
 - merge toggle changes the route label to hybrid audio encoding.
 
-Optimized render:
+Optimized Export:
 
 - source/2160p/1440p/1080p options only when useful;
 - separate source/common frame-rate options preserving fractional values;
