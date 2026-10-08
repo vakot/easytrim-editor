@@ -253,10 +253,37 @@ function ComboboxInput({
   );
 }
 
-function ComboboxList({ className, ...props }: React.ComponentProps<typeof CommandList>) {
+function ComboboxList({ className, onWheel, ...props }: React.ComponentProps<typeof CommandList>) {
   return (
     <CommandList
       className={cn("mx-0! px-0! *:data-[slot=scroll-area-viewport]:max-h-72", className)}
+      onWheel={(event) => {
+        onWheel?.(event);
+        if (event.defaultPrevented) return;
+
+        const target = event.target;
+        if (target instanceof Element && target.closest('[data-slot="scroll-area-scrollbar"]')) {
+          return;
+        }
+
+        const viewport = event.currentTarget
+          .closest('[data-slot="scroll-area"]')
+          ?.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]');
+
+        if (!viewport || event.deltaY === 0) return;
+
+        const deltaY =
+          event.deltaY *
+          (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? viewport.clientHeight : 1);
+
+        const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+        const nextScrollTop = Math.max(0, Math.min(maxScrollTop, viewport.scrollTop + deltaY));
+
+        if (nextScrollTop === viewport.scrollTop) return;
+
+        event.preventDefault();
+        viewport.scrollTop = nextScrollTop;
+      }}
       {...props}
     />
   );
