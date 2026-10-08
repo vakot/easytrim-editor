@@ -750,7 +750,6 @@ export const en = {
       compatiblePreviewCouldNotBePlayed: "The compatible preview could not be played",
     },
     frame: {
-      pngFilter: "PNG image",
       next: "Next frame",
       copyFrame: "Copy frame",
       previous: "Previous frame",

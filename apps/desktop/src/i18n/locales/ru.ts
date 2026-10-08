@@ -762,7 +762,6 @@ export const ru = {
   },
   preview: {
     frame: {
-      pngFilter: "Изображение PNG",
       next: "Следующий кадр",
       copyFrame: "Скопировать кадр",
       previous: "Предыдущий кадр",

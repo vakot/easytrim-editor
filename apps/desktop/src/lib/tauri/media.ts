@@ -146,7 +146,6 @@ async function saveFramePng(pngData: Uint8Array, defaultName: string): Promise<b
     return await invoke<boolean>("save_frame_png", {
       defaultName,
       pngData: Array.from(pngData),
-      pngFilter: t("preview.frame.pngFilter"),
     });
   } catch (error: unknown) {
     throw normalizeAppError(error);
