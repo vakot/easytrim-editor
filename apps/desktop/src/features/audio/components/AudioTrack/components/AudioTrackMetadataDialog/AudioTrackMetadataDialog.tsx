@@ -73,7 +73,7 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
   const { t } = useTranslation();
   const { closeMetadataDialog } = useAudioTrackMetadataDialog();
   const { stream, track } = controller;
-  const [metadataTitle, setMetadataTitle] = useState("");
+  const [metadataTitle, setMetadataTitle] = useState(track?.metadata.title ?? "");
   const [metadataTitleChanged, setMetadataTitleChanged] = useState(false);
   const [metadataLanguage, setMetadataLanguage] = useState<Language["code"] | null>(
     languageCodeFromMetadata(track?.metadata.language ?? stream?.language) ?? null,
