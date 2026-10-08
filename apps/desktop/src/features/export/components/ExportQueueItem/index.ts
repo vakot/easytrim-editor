@@ -12,6 +12,7 @@ export {
 } from "./components/ExportQueueItemName";
 export { ExportQueueItemProgressBar } from "./components/ExportQueueItemProgress";
 export { ExportQueueItemRoute } from "./components/ExportQueueItemRoute";
+export { ExportQueueItemRouteIcon } from "./components/ExportQueueItemRouteIcon";
 export { ExportQueueItemStatus } from "./components/ExportQueueItemStatus";
 export { useExportQueueItem } from "./contexts/ExportQueueItemContext";
 export { ExportQueueItem, ExportQueueItemContent } from "./ExportQueueItem";

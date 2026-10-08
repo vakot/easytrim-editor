@@ -1,5 +1,3 @@
-import { Film } from "lucide-react";
-
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
@@ -17,6 +15,7 @@ import {
   ExportQueueItemRetry,
   ExportQueueItemReveal,
   ExportQueueItemRoute,
+  ExportQueueItemRouteIcon,
   ExportQueueItemSourceName,
   ExportQueueItemStatus,
   useExportQueueItem,
@@ -58,7 +57,7 @@ function ExportQueueListItem() {
   return (
     <ExportQueueItemContent className="text-xs">
       <Card className="size-10 shrink-0 items-center justify-center bg-primary/5 p-0 ring-primary/10">
-        <Film className="size-6 text-muted-foreground" />
+        <ExportQueueItemRouteIcon className="size-6 text-muted-foreground" route={attempt.route} />
       </Card>
 
       <div className="grid min-w-0 flex-1 gap-1">
