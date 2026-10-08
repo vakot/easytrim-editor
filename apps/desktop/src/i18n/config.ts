@@ -40,6 +40,4 @@ i18n.on("languageChanged", (language) => {
   writeStoredJson(STORAGE_KEYS.preferences, { ...stored, language: resolvedLanguage });
 });
 
-export const t = i18n.t.bind(i18n);
-
 export { i18n };
