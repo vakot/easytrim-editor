@@ -770,7 +770,7 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 2 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
-    const titleInput = screen.getByLabelText(/title/i);
+    const titleInput = screen.getByLabelText("Track title");
     expect(titleInput).toHaveValue("");
     expect(titleInput).toHaveAttribute("placeholder", "Surround");
     await user.click(screen.getByRole("button", { name: /save/i }));
@@ -822,13 +822,41 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
-    const titleInput = screen.getByLabelText(/title/i);
+    const titleInput = screen.getByLabelText("Track title");
     await user.type(titleInput, "Temporary title");
     await user.clear(titleInput);
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(store.getState().audio.tracks[0]?.metadata.title).toBeUndefined();
     expect(store.getState().audio.tracks[0]?.metadata.language).toBe("rus");
+  });
+
+  it("uses the latest committed track name in the Effects dialog and restores its source fallback", async () => {
+    const user = userEvent.setup();
+    renderRow();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.type(screen.getByLabelText("Track title"), "Custom track title");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(screen.getByRole("button", { name: /mute.*custom track title/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    expect(
+      screen.getByRole("dialog", { name: "Custom track title — Effects" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.clear(screen.getByLabelText("Track title"));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    expect(screen.getByRole("dialog", { name: "eng — Effects" })).toBeInTheDocument();
   });
 
   it("selects and resets a language override using source metadata codes", async () => {

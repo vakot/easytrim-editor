@@ -2,17 +2,18 @@ import { useTranslation } from "react-i18next";
 
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 import { formatChannels } from "../../../lib/audio-level.utils";
+import { audioTrackDisplayName } from "../../../lib/audio-track-name.utils";
 
 function AudioTrackDetails({ controller }: { controller: AudioTrackController }) {
   const { t } = useTranslation();
   const { stream, track, trackNumber } = controller;
   if (!stream || !track) return null;
 
-  const title =
-    (track.metadata.title || stream.title) ??
-    track.metadata.language ??
-    stream.language ??
-    t("audio.tracks.defaultName", { number: trackNumber });
+  const title = audioTrackDisplayName(
+    track.metadata,
+    stream,
+    t("audio.tracks.defaultName", { number: trackNumber }),
+  );
 
   return (
     <div className="min-w-0 flex-1">

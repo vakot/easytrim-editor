@@ -16,6 +16,7 @@ import {
 import { localizeAppError } from "@/i18n/app-errors";
 
 import type { AudioTrackController } from "../../../../hooks/useAudioTrackController";
+import { audioTrackDisplayName } from "../../../../lib/audio-track-name.utils";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
 import {
   AUDIO_TRACK_EFFECTS,
@@ -77,10 +78,11 @@ function AudioTrackEffectsDialogContent({
   const stream = controller.stream;
   if (!track || !stream) return null;
 
-  const title =
-    stream.title ??
-    stream.language ??
-    t("audio.tracks.defaultName", { number: controller.trackNumber });
+  const title = audioTrackDisplayName(
+    track.metadata,
+    stream,
+    t("audio.tracks.defaultName", { number: controller.trackNumber }),
+  );
 
   const draftProcessing = getAudioTrackEffectsDraftProcessing(draft);
   const isDirty = isAudioTrackEffectsDraftDirty(draft, AUDIO_TRACK_EFFECTS);

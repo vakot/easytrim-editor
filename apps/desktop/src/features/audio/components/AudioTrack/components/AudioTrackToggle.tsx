@@ -10,6 +10,7 @@ import { cn } from "@/lib/class-names.utils";
 import { diagnostics } from "@/lib/diagnostics";
 
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
+import { audioTrackDisplayName } from "../../../lib/audio-track-name.utils";
 
 type AudioTrackToggleProps = ComponentPropsWithoutRef<typeof Button> & {
   controller: AudioTrackController;
@@ -20,8 +21,11 @@ const AudioTrackToggle = forwardRef<HTMLButtonElement, AudioTrackToggleProps>(
     const { t } = useTranslation();
     const { isEnabled, setEnabled, stream, track, trackNumber } = controller;
     if (!stream || !track) return null;
-    const title =
-      stream.title ?? stream.language ?? t("audio.tracks.defaultName", { number: trackNumber });
+    const title = audioTrackDisplayName(
+      track.metadata,
+      stream,
+      t("audio.tracks.defaultName", { number: trackNumber }),
+    );
 
     const label = isEnabled
       ? t("audio.tracks.muteWithTitle", { title })
