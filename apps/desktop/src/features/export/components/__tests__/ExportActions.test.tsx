@@ -17,7 +17,8 @@ import { firstSource } from "@/test/source.fixtures";
 import { ExportActions } from "../ExportActions";
 
 describe("ExportActions", () => {
-  it("keeps both export routes visible while disabling them without a ready source", () => {
+  it("keeps export actions identifiable and disabled without a ready source", async () => {
+    const user = userEvent.setup();
     render(
       <Provider store={createAppStore()}>
         <TooltipProvider>
@@ -29,6 +30,9 @@ describe("ExportActions", () => {
     expect(screen.getByRole("toolbar", { name: "Export actions" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Fast Export" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Optimized Export" })).toBeDisabled();
+    const gifExportButton = screen.getByRole("button", { name: "GIF Export" });
+    expect(gifExportButton).toBeDisabled();
+    expect(gifExportButton).toHaveAccessibleName("GIF Export");
     expect(screen.getByRole("button", { name: "Fast Export" })).toHaveAttribute(
       "aria-keyshortcuts",
       "Control+S",
@@ -36,6 +40,11 @@ describe("ExportActions", () => {
     expect(screen.getByRole("button", { name: "Optimized Export" })).toHaveAttribute(
       "aria-keyshortcuts",
       "Control+E",
+    );
+
+    await user.hover(gifExportButton.parentElement!);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "Export the selected segment as a GIF",
     );
   });
 

@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
@@ -142,15 +142,17 @@ function ExportActions() {
         </ExportActionButton>
       </ExportActionTooltip>
 
-      <ExportActionButton
-        disabled={!sourceReady}
-        icon={<Film aria-hidden="true" />}
-        onClick={() =>
-          void dispatch(openGifExportDialog({ id: "toolbar.gif-export", type: "button" }))
-        }
-      >
-        {t("export.gif.action")}
-      </ExportActionButton>
+      <ExportActionTooltip disabled={!sourceReady} tooltip={t("export.gif.tooltip")}>
+        <ExportActionButton
+          disabled={!sourceReady}
+          icon={<Film aria-hidden="true" />}
+          onClick={() =>
+            void dispatch(openGifExportDialog({ id: "toolbar.gif-export", type: "button" }))
+          }
+        >
+          {t("export.gif.action")}
+        </ExportActionButton>
+      </ExportActionTooltip>
     </div>
   );
 }
@@ -286,7 +288,7 @@ function ExportActionTooltip({
 }: {
   children: React.ReactNode;
   disabled?: boolean;
-  shortcut: ApplicationShortcut;
+  shortcut?: ApplicationShortcut;
   tooltip: string;
 }) {
   return (
@@ -296,7 +298,11 @@ function ExportActionTooltip({
           {children}
         </span>
       </TooltipTrigger>
-      <ShortcutTooltipContent shortcut={shortcut} title={tooltip} />
+      {shortcut ? (
+        <ShortcutTooltipContent shortcut={shortcut} title={tooltip} />
+      ) : (
+        <TooltipContent>{tooltip}</TooltipContent>
+      )}
     </Tooltip>
   );
 }

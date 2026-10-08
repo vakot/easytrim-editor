@@ -614,6 +614,7 @@ export const en = {
     },
     gif: {
       action: "GIF Export",
+      tooltip: "Export the selected segment as a GIF",
       started: "GIF export started",
       running: "GIF export…",
       completed: "GIF export completed",
