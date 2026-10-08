@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added GIF export for selected segments with adjustable output width and frame rate.
+
 ## [1.13.1]
 
 ### Added
