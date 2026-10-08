@@ -155,8 +155,6 @@ const editExportAttemptRequested =
       const instance = selectEditingInstanceById(getState(), instanceId);
       const attempt = instance?.exportAttempts.find((candidate) => candidate.id === attemptId);
       if (!instance || !attempt || attempt.state.status !== "queued") return;
-      if (attempt.route === "gif") return;
-
       if (attempt.route === "fast") {
         dispatch(queueEditStarted({ attemptId, instanceId, route: "fast" }));
         await finishQueuedExportEdit(dispatch, getState);
@@ -165,13 +163,13 @@ const editExportAttemptRequested =
 
       if (instance.draftAvailable === false || instance.sourceAvailability !== "available") return;
       dispatch(commitActiveEditingInstanceDraft());
-      const optimizedRequest = attempt.request as OptimizedExportRequest;
+      const request = attempt.request as OptimizedExportRequest | GifExportRequest;
       dispatch(
         editingInstanceOptimizedSettingsChanged({
           id: instanceId,
           settings: {
-            frameRate: optimizedRequest.frameRate,
-            resolution: optimizedRequest.resolution,
+            frameRate: request.frameRate,
+            resolution: request.resolution,
           },
         }),
       );
@@ -180,14 +178,16 @@ const editExportAttemptRequested =
       const restored = await dispatch(
         activateEditingInstanceRequested({
           ...currentInstance,
-          optimizedArguments: optimizedRequest.arguments,
+          ...(attempt.route === "optimized"
+            ? { optimizedArguments: (request as OptimizedExportRequest).arguments }
+            : {}),
           snapshot: attempt.snapshot,
         }),
       );
 
       if (!restored) return;
-      dispatch(queueEditStarted({ attemptId, instanceId, route: "optimized" }));
-      dispatch(optimizedExportDialogOpened());
+      dispatch(queueEditStarted({ attemptId, instanceId, route: attempt.route }));
+      dispatch(attempt.route === "gif" ? gifExportDialogOpened() : optimizedExportDialogOpened());
       await dispatch(refreshExportPlan());
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
@@ -227,15 +227,20 @@ async function finishQueuedExportEdit(
   dispatch(optimizedExportDialogClosed());
   dispatch(nativeDialogStateChanged(true));
   try {
-    const output = await chooseOutputPath(attempt.output.displayName);
+    const output = await (route === "gif" ? chooseGifOutputPath : chooseOutputPath)(
+      attempt.output.displayName,
+    );
+
     if (!output) return;
 
     let request = attempt.request;
     let snapshot: EditorSnapshot = attempt.snapshot;
-    if (route === "optimized") {
+    if (route === "optimized" || route === "gif") {
       if (selectActiveInstanceId(getState()) !== instanceId || !selectSourceReady(getState()))
         return;
-      const updatedRequest = getOptimizedRequest(getState());
+      const updatedRequest =
+        route === "gif" ? getGifRequest(getState()) : getOptimizedRequest(getState());
+
       const updatedSnapshot = getCurrentExportSnapshot(getState());
       if (!updatedRequest || !updatedSnapshot) return;
       if (

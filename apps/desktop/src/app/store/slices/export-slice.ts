@@ -16,7 +16,7 @@ interface ExportUiState {
   exportQueueDialogOpen: boolean;
   launchError: AppError | null;
   optimizedDialogOpen: boolean;
-  queueEdit: { attemptId: string; instanceId: string; route: "fast" | "optimized" } | null;
+  queueEdit: { attemptId: string; instanceId: string; route: "fast" | "optimized" | "gif" } | null;
   queueFinishAction: QueueFinishAction;
   startedSourceIds: string[];
 }
@@ -101,7 +101,11 @@ const exportSlice = createSlice({
     },
     queueEditStarted: (
       state,
-      action: PayloadAction<{ attemptId: string; instanceId: string; route: "fast" | "optimized" }>,
+      action: PayloadAction<{
+        attemptId: string;
+        instanceId: string;
+        route: "fast" | "optimized" | "gif";
+      }>,
     ) => {
       state.queueEdit = action.payload;
     },

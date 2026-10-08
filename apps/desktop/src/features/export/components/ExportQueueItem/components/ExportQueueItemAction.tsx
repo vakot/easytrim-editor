@@ -49,7 +49,7 @@ function ExportQueueItemEdit({ className }: { className?: string }) {
   const { attempt, instance } = useExportQueueItem();
   const isNativeDialogOpen = useAppSelector((state) => state.importWorkflow.isNativeDialogOpen);
 
-  if (attempt.state.status !== "queued" || attempt.route === "gif") return null;
+  if (attempt.state.status !== "queued") return null;
 
   return (
     <Tooltip>

@@ -115,9 +115,11 @@ function ExportDialog() {
               <Button
                 onClick={() =>
                   void dispatch(
-                    dialogRoute === "gif"
-                      ? startGifExportRequested()
-                      : startOptimizedExportRequested(),
+                    queueEdit
+                      ? startOptimizedExportRequested()
+                      : dialogRoute === "gif"
+                        ? startGifExportRequested()
+                        : startOptimizedExportRequested(),
                   )
                 }
               >
