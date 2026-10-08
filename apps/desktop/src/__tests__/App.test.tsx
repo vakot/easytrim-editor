@@ -865,12 +865,14 @@ describe("App", () => {
     expect(audioPlayheadGrid).toHaveAttribute("aria-hidden", "true");
     expect(audioPlayheadGrid).toHaveClass("grid-cols-(--editor-timeline-track-grid-columns)");
     expect(audioPlayhead?.parentElement).toHaveAttribute("data-slot", "audio-playhead-track");
-    expect(
-      screen.getByRole("button", { name: "Set segment start to current position" }),
-    ).toHaveAttribute("aria-keyshortcuts", "I");
-    expect(
-      screen.getByRole("button", { name: "Set segment end to current position" }),
-    ).toHaveAttribute("aria-keyshortcuts", "O");
+    expect(screen.getByRole("button", { name: "Set segment start" })).toHaveAttribute(
+      "aria-keyshortcuts",
+      "I",
+    );
+    expect(screen.getByRole("button", { name: "Set segment end" })).toHaveAttribute(
+      "aria-keyshortcuts",
+      "O",
+    );
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
       "00:00:00:00f / 00:01:04:56f",
     );
@@ -1828,11 +1830,11 @@ describe("App", () => {
     const startHandle = screen.getByRole("slider", { name: "Trim start" });
     const endHandle = screen.getByRole("slider", { name: "Trim end" });
     const setStart = screen.getByRole("button", {
-      name: "Set segment start to current position",
+      name: "Set segment start",
     });
 
     const setEnd = screen.getByRole("button", {
-      name: "Set segment end to current position",
+      name: "Set segment end",
     });
 
     expect(setEnd).toBeDisabled();

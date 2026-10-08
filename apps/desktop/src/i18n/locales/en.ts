@@ -783,14 +783,10 @@ export const en = {
       playbackVolumeUnmuteTooltip: "Playback volume (Unmute)",
     },
     segment: {
-      setEnd: "Set segment end to current position",
-      setStart: "Set segment start to current position",
-      setEndUnavailable: "Move after the source start to set segment end",
-      setStartUnavailable: "Move before the source end to set segment start",
+      setEnd: "Set segment end",
+      setStart: "Set segment start",
       segmentDisabledTooltip: "Play the complete timeline",
       segmentEnabledTooltip: "Constrain playback to the selected segment",
-      setEndTooltip: "Set segment end to current position",
-      setStartTooltip: "Set segment start to current position",
     },
     transform: {
       crop: "Crop",
@@ -1037,7 +1033,7 @@ export const en = {
       },
       description: "Normalize this track to a consistent target loudness",
       summary: "Normalized - {{preset}}",
-      levelSummary: "Target {{target}} LUFS · peak cap {{peak}} dBTP",
+      levelSummary: "{{target}} LUFS · {{peak}} dBTP",
       manualGainUnavailable: "Manual gain is unavailable while automatic normalization is applied",
     },
     noiseReduction: {

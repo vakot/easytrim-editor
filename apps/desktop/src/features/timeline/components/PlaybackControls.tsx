@@ -16,9 +16,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
-import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
+import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
+import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import {
   useTimelineEditing,
@@ -65,11 +65,7 @@ function PlaybackControls({ className }: { className?: string }) {
             editing.onSetSegmentBoundary("start", { type: "button", id: "set-start" });
           }}
           shortcut={{ code: "KeyI", key: "I", modifier: "none" }}
-          title={
-            editing.canSetSegmentStart
-              ? t("preview.segment.setStartTooltip")
-              : t("preview.segment.setStartUnavailable")
-          }
+          title={t("preview.segment.setStart")}
         >
           <SquareArrowRight />
         </TransportButton>
@@ -212,11 +208,7 @@ function PlaybackControls({ className }: { className?: string }) {
             editing.onSetSegmentBoundary("end", { type: "button", id: "set-end" });
           }}
           shortcut={{ code: "KeyO", key: "O", modifier: "none" }}
-          title={
-            editing.canSetSegmentEnd
-              ? t("preview.segment.setEndTooltip")
-              : t("preview.segment.setEndUnavailable")
-          }
+          title={t("preview.segment.setEnd")}
         >
           <SquareArrowLeft />
         </TransportButton>

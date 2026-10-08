@@ -66,12 +66,8 @@ describe("PlaybackControls", () => {
   it("routes trim boundary changes through the timeline contract", async () => {
     render(<PlaybackControls />, { wrapper: TestProvider });
 
-    await userEvent.click(
-      screen.getByRole("button", { name: "Set segment start to current position" }),
-    );
-    await userEvent.click(
-      screen.getByRole("button", { name: "Set segment end to current position" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Set segment start" }));
+    await userEvent.click(screen.getByRole("button", { name: "Set segment end" }));
 
     expect(mocks.editing.onSetSegmentBoundary).toHaveBeenNthCalledWith(1, "start", {
       type: "button",
@@ -90,7 +86,9 @@ describe("PlaybackControls", () => {
     await user.hover(screen.getByRole("button", { name: "Next frame" }));
 
     expect(await screen.findByText("Next frame")).toBeInTheDocument();
-    expect(await screen.findByText("→")).toBeInTheDocument();
+    expect(
+      screen.getByRole("tooltip").querySelector('[data-slot="kbd"] svg[aria-hidden="true"]'),
+    ).toBeInTheDocument();
   });
 
   it("steps once on press and starts a held shuttle without a duplicate click", () => {

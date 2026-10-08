@@ -111,7 +111,7 @@ function VideoPreviewEmptyShortcut({
 }) {
   return (
     <div className={cn("flex min-w-0 items-center gap-3", className)} role="listitem">
-      <span className="shrink-0">{shortcut.label}</span>
+      <span className="inline-flex h-5 shrink-0 items-center leading-none">{shortcut.label}</span>
       <span
         aria-hidden="true"
         className="min-w-4 flex-1 border-b border-dotted border-muted-foreground/40"

@@ -19,13 +19,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
+import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import {
   FAST_EXPORT_SHORTCUT,
   OPTIMIZED_EXPORT_SHORTCUT,
 } from "@/app/commands/file/file-shortcuts.constants";
-import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
+import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/app/store/redux-hooks";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import {

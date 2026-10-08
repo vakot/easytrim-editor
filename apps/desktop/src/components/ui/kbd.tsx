@@ -1,15 +1,28 @@
+import { ArrowLeft, ArrowRight } from "lucide-react";
+
 import { cn } from "@/lib/class-names.utils";
 
-function Kbd({ className, ...props }: React.ComponentProps<"kbd">) {
+function Kbd({ children, className, ...props }: React.ComponentProps<"kbd">) {
+  const content =
+    children === "←" ? (
+      <ArrowLeft aria-hidden="true" className="size-3" />
+    ) : children === "→" ? (
+      <ArrowRight aria-hidden="true" className="size-3" />
+    ) : (
+      children
+    );
+
   return (
     <kbd
       className={cn(
-        "pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm bg-muted px-1 font-sans text-xs font-medium text-muted-foreground in-data-[slot=tooltip-content]:bg-background/20 in-data-[slot=tooltip-content]:text-background dark:in-data-[slot=tooltip-content]:bg-background/10 [&_svg:not([class*='size-'])]:size-3",
+        "pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm bg-muted px-1 font-sans text-xs leading-none font-medium text-muted-foreground in-data-[slot=tooltip-content]:bg-background/20 in-data-[slot=tooltip-content]:text-background dark:in-data-[slot=tooltip-content]:bg-background/10 [&_svg:not([class*='size-'])]:size-3",
         className,
       )}
       data-slot="kbd"
       {...props}
-    />
+    >
+      {content}
+    </kbd>
   );
 }
 

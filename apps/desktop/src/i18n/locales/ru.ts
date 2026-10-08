@@ -795,14 +795,10 @@ export const ru = {
       playbackVolumeUnmuteTooltip: "Громкость воспроизведения (Включить звук)",
     },
     segment: {
-      setEnd: "Установить конец сегмента в текущей позиции",
-      setStart: "Установить начало сегмента в текущей позиции",
-      setEndUnavailable: "Переместитесь после начала источника, чтобы установить конец сегмента",
-      setStartUnavailable: "Переместитесь до конца источника, чтобы установить начало сегмента",
+      setEnd: "Установить конец сегмента",
+      setStart: "Установить начало сегмента",
       segmentDisabledTooltip: "Воспроизводить всю временную шкалу",
       segmentEnabledTooltip: "Ограничить воспроизведение выбранным сегментом",
-      setEndTooltip: "Установить конец сегмента в текущей позиции",
-      setStartTooltip: "Установить начало сегмента в текущей позиции",
     },
     transform: {
       crop: "Обрезка",
@@ -1025,7 +1021,7 @@ export const ru = {
       },
       description: "Нормализовать дорожку до целевого уровня громкости",
       summary: "Нормализовано — {{preset}}",
-      levelSummary: "Цель {{target}} LUFS · предел пика {{peak}} dBTP",
+      levelSummary: "{{target}} LUFS · {{peak}} dBTP",
       manualGainUnavailable: "Ручное усиление недоступно при автоматической нормализации",
     },
     noiseReduction: {
