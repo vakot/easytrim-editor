@@ -142,27 +142,32 @@ function getLanguageDisplayName(language: LanguageOption): string {
     : `${language.nativeName} (${language.englishName})`;
 }
 
-function LanguageSelector({
-  children,
-  defaultValue,
-  disabled = false,
-  label,
-  languages,
-  onValueChange,
-  value,
-  ...props
-}: Omit<React.ComponentProps<typeof Combobox>, "label" | "shouldFilter"> & {
-  defaultValue?: string;
-  disabled?: boolean;
-  label: string;
-  languages: readonly LanguageOption[];
-  onValueChange?: (value: string) => void;
-  value?: string;
-}) {
+function LanguageSelector(
+  selectorProps: Omit<React.ComponentProps<typeof Combobox>, "label" | "shouldFilter"> & {
+    defaultValue?: string;
+    disabled?: boolean;
+    label: string;
+    languages: readonly LanguageOption[];
+    onValueChange?: (value: string) => void;
+    value?: string;
+  },
+) {
+  const {
+    children,
+    defaultValue,
+    disabled = false,
+    label,
+    languages,
+    onValueChange,
+    value,
+    ...props
+  } = selectorProps;
+
+  const isValueControlled = Object.prototype.hasOwnProperty.call(selectorProps, "value");
   const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue);
   const [query, setQuery] = React.useState<string | null>(null);
 
-  const selectedValue = value === undefined ? uncontrolledValue : value;
+  const selectedValue = isValueControlled ? value : uncontrolledValue;
   const language = React.useMemo(
     () => languages.find((language) => language.code === selectedValue),
     [languages, selectedValue],
@@ -186,11 +191,11 @@ function LanguageSelector({
 
   const selectLanguage = React.useCallback(
     (nextLanguage: LanguageOption) => {
-      if (value === undefined) setUncontrolledValue(nextLanguage.code);
+      if (!isValueControlled) setUncontrolledValue(nextLanguage.code);
       onValueChange?.(nextLanguage.code);
       setQuery(null);
     },
-    [onValueChange, value],
+    [isValueControlled, onValueChange],
   );
 
   const context = React.useMemo(

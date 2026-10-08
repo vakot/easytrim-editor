@@ -135,11 +135,7 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
                   variant="outline"
                 >
                   <LanguageSelectorValue
-                    placeholder={
-                      track.language ??
-                      stream.language ??
-                      t("audio.tracks.languageSelectPlaceholder")
-                    }
+                    placeholder={t("audio.tracks.languageSelectPlaceholder")}
                   />
 
                   <ChevronsUpDown aria-hidden="true" className="ml-auto text-muted-foreground" />

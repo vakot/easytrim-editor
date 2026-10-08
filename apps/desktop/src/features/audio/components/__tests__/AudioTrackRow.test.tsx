@@ -39,7 +39,7 @@ const audioPlayback = {
   setLiveAudioTrackGain: () => undefined,
 } satisfies AudioPlaybackContract;
 
-function renderRow(enabled = true, streamIndex = 2) {
+function renderRow(enabled = true, streamIndex = 2, sourceLanguage: string | undefined = "eng") {
   const store = createAppStore({
     getItem: async () => null,
     setItem: async () => undefined,
@@ -47,6 +47,7 @@ function renderRow(enabled = true, streamIndex = 2) {
   });
 
   const media = mediaWithAudio(firstSource.sourcePath);
+  media.audioStreams[0]!.language = sourceLanguage;
   store.dispatch(sourceSelected({ source: firstSource }));
   store.dispatch(sourceReady({ loadToken: 1, media }));
   const stream = media.audioStreams[0]!;
@@ -612,6 +613,7 @@ describe("AudioTrackRow", () => {
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
     await user.click(screen.getByRole("button", { name: /use source language/i }));
+    expect(screen.getByRole("button", { name: "Language" })).toHaveTextContent("English");
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(store.getState().audio.tracks[0]).toMatchObject({ title: "Custom title" });
@@ -668,6 +670,28 @@ describe("AudioTrackRow", () => {
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(store.getState().audio.tracks[0]?.language).toBe("fra");
+  });
+
+  it("clears a language override when the source language is unsupported", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow(true, 2, "qaa");
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    const selector = screen.getByRole("button", { name: "Language" });
+    expect(selector).toHaveTextContent("Select a language");
+    expect(selector).not.toHaveTextContent("qaa");
+
+    await user.click(selector);
+    await user.click(screen.getByRole("option", { name: "Čeština (Czech), cs" }));
+    expect(screen.getByRole("button", { name: "Language" })).toHaveTextContent("Čeština");
+
+    await user.click(screen.getByRole("button", { name: /use source language/i }));
+    expect(screen.getByRole("button", { name: "Language" })).toHaveTextContent("Select a language");
+    expect(screen.getByRole("button", { name: "Language" })).not.toHaveTextContent("ces");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]?.language).toBeUndefined();
   });
 
   it("uses an action label for the enabled audio track in its dropdown menu", async () => {
