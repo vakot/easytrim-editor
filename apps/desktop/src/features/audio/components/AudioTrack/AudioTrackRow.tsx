@@ -1,9 +1,13 @@
-import { WandSparkles } from "lucide-react";
-import { type CSSProperties, memo, type ReactNode, useMemo } from "react";
+import { t } from "i18next";
+import { MoreVertical, WandSparkles } from "lucide-react";
+import { type CSSProperties, memo, type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
@@ -29,21 +33,36 @@ import {
   normalizationPresetLabel,
 } from "../../lib/audio-level.utils";
 
-import { AudioTrackContextMenuContent } from "./components/AudioTrackActions";
+import {
+  AudioTrackContextMenuContent,
+  AudioTrackDropdownMenuContent,
+} from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
 import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog";
+import { AudioTrackGainControl } from "./components/AudioTrackGainControl";
 import { AudioTrackMetadataDialog } from "./components/AudioTrackMetadataDialog";
+import { AudioTrackToggle } from "./components/AudioTrackToggle";
 import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
 
 const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex: number }) {
   const controller = useAudioTrackController(streamIndex);
+  const [liveGainDraft, setLiveGainDraft] = useState<{
+    enabled: boolean;
+    gainDb: number;
+  } | null>(null);
   const { track, trackColor } = controller;
 
   if (!track || !controller.stream) return null;
 
+  const liveGainDb = liveGainDraft?.gainDb ?? track.processing.gainDb;
+  const rowController = {
+    ...controller,
+    isEnabled: liveGainDraft?.enabled ?? controller.isEnabled,
+  };
+
   return (
-    <AudioTrackEffectsDialog controller={controller}>
-      <AudioTrackMetadataDialog controller={controller}>
+    <AudioTrackEffectsDialog controller={rowController}>
+      <AudioTrackMetadataDialog controller={rowController}>
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <div
@@ -51,11 +70,28 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
               data-slot="audio-track-row"
               style={{ "--audio-track-color": trackColor } as CSSProperties}
             >
-              <AudioTrackDetails controller={controller} />
-              <AudioTrackRowWaveform controller={controller} />
+              <div className="flex items-center gap-1">
+                <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
+                  <HoverCardTrigger>
+                    <AudioTrackToggle controller={rowController} />
+                  </HoverCardTrigger>
+
+                  <HoverCardContent align="center" className="max-w-42 pt-4" side="right">
+                    <AudioTrackGainControl
+                      onLiveGainChange={setLiveGainDraft}
+                      streamIndex={streamIndex}
+                      trackNumber={controller.trackNumber}
+                    />
+                  </HoverCardContent>
+                </HoverCard>
+
+                <AudioTrackDetails controller={rowController} />
+                <AudioTrackActions controller={rowController} />
+              </div>
+              <AudioTrackRowWaveform controller={rowController} liveGainDb={liveGainDb} />
             </div>
           </ContextMenuTrigger>
-          <AudioTrackContextMenuContent controller={controller} />
+          <AudioTrackContextMenuContent controller={rowController} />
         </ContextMenu>
       </AudioTrackMetadataDialog>
     </AudioTrackEffectsDialog>
@@ -64,12 +100,14 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
 
 function AudioTrackRowWaveform({
   controller,
+  liveGainDb,
 }: {
   controller: ReturnType<typeof useAudioTrackController>;
+  liveGainDb: number;
 }) {
   const trim = useAppSelector(selectTrim);
   const source = useAppSelector(selectSourceSelection);
-  const { liveGainDb, stream, track, trackColor } = controller;
+  const { stream, track, trackColor } = controller;
   if (!stream || !track) return null;
 
   const activityRanges =
@@ -110,12 +148,18 @@ function AudioTrackRowWaveform({
         }}
       />
       <AudioTrackEffectsIndicator processing={track.processing} />
-      <AudioTrackGainIndicator controller={controller} />
+      <AudioTrackGainIndicator controller={controller} gainDb={liveGainDb} />
     </div>
   );
 }
 
-function AudioTrackGainIndicator({ controller }: { controller: AudioTrackController }) {
+function AudioTrackGainIndicator({
+  controller,
+  gainDb,
+}: {
+  controller: AudioTrackController;
+  gainDb: number;
+}) {
   const { i18n, t } = useTranslation();
   const normalization = controller.track?.processing.loudnessNormalization;
   const normalizedSummary = normalization
@@ -130,7 +174,7 @@ function AudioTrackGainIndicator({ controller }: { controller: AudioTrackControl
       className="absolute bottom-1 left-1 z-3"
       data-slot="audio-track-gain-indicator"
     >
-      {normalizedSummary ?? formatGain(controller.liveGainDb, i18n.language)}
+      {normalizedSummary ?? formatGain(gainDb, i18n.language)}
     </AudioTrackIndicator>
   );
 }
@@ -222,6 +266,30 @@ function AudioTrackIndicator({
     >
       {children}
     </Badge>
+  );
+}
+
+function AudioTrackActions({
+  controller,
+}: {
+  controller: ReturnType<typeof useAudioTrackController>;
+}) {
+  const { trackNumber } = controller;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          aria-label={t("audio.tracks.actionsLabel", { number: trackNumber })}
+          size="icon-sm"
+          type="button"
+          variant="ghost"
+        >
+          <MoreVertical aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <AudioTrackDropdownMenuContent controller={controller} />
+    </DropdownMenu>
   );
 }
 
