@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { audioTrackGainChanged, selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import { loudnessNormalizationTargets } from "@/domain/audio-processing";
 import { useAudioPlayback } from "@/features/audio";
 
-import { formatGain, MIN_SLIDER_DECIBELS } from "../../../lib/audio-level.utils";
+import { formatGain } from "../../../lib/audio-level.utils";
 
 function AudioTrackGainControl({
   onLiveGainChange,
@@ -28,8 +31,9 @@ function AudioTrackGainControl({
   );
 
   const [draftGainDb, setDraftGainDb] = useState<number | null>(null);
-  const gainSliderDb = draftGainDb ?? (track?.processing.gainDb ?? 0);
-  const manualGainUnavailable = track?.processing.loudnessNormalization !== undefined;
+  const gainDb = draftGainDb ?? track?.processing.gainDb ?? 0;
+
+  const [editing, setEditing] = useState(false);
 
   useEffect(
     () => () => {
@@ -59,45 +63,158 @@ function AudioTrackGainControl({
     setDraftGainDb(null);
   };
 
-  const gainSlider = (
-    <Slider
-      aria-label={t("audio.tracks.gainLabel", { number: trackNumber })}
-      className="min-w-0 flex-1 py-0 **:data-[slot=slider-thumb]:size-2.5"
-      disabled={manualGainUnavailable}
-      markers={[
-        { label: "−60 dB", value: MIN_SLIDER_DECIBELS },
-        { label: "0 dB", value: 0 },
-      ]}
-      max={12}
-      min={MIN_SLIDER_DECIBELS}
-      onDoubleClick={manualGainUnavailable ? undefined : () => commitGain(0)}
-      onValueChange={([gainDb]) => {
-        if (gainDb !== undefined) updateGain(gainDb);
-      }}
-      onValueCommit={([gainDb]) => {
-        if (gainDb !== undefined) commitGain(gainDb);
-      }}
-      step={0.5}
-      value={[gainSliderDb]}
-    />
-  );
+  if (!track) return null;
+
+  const normalization = track.processing.loudnessNormalization;
+
+  if (!normalization) {
+    return (
+      <div className="p-2">
+        {editing ? (
+          <AudioTrackGainInput
+            commitGain={commitGain}
+            gainDb={gainDb}
+            setEditing={setEditing}
+            trackNumber={trackNumber}
+            updateGain={updateGain}
+          />
+        ) : (
+          <AudioTrackGainSlider
+            commitGain={commitGain}
+            gainDb={gainDb}
+            setEditing={setEditing}
+            trackNumber={trackNumber}
+            updateGain={updateGain}
+          />
+        )}
+      </div>
+    );
+  }
+
+  const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(normalization);
+  const numberFormatter = new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 });
+  const levelSummary = t("audio.normalization.levelSummary", {
+    peak: numberFormatter.format(maxTruePeakDb).replace(/-/g, "−"),
+    target: numberFormatter.format(targetLufs).replace(/-/g, "−"),
+  });
 
   return (
-    <div className="flex h-4 min-w-0 items-center gap-1.5">
-      {manualGainUnavailable ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="min-w-0 flex-1">{gainSlider}</div>
-          </TooltipTrigger>
-          <TooltipContent>{t("audio.normalization.manualGainUnavailable")}</TooltipContent>
-        </Tooltip>
-      ) : (
-        gainSlider
-      )}
-      <output className="w-[7ch] shrink-0 text-right text-xs leading-none text-muted-foreground">
-        {formatGain(gainSliderDb, i18n.language)}
-      </output>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex size-full h-12 items-center justify-center p-4 text-xs text-muted-foreground">
+          {levelSummary}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{t("audio.normalization.manualGainUnavailable")}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function AudioTrackGainSlider({
+  commitGain,
+  gainDb,
+  setEditing,
+  trackNumber,
+  updateGain,
+}: {
+  commitGain: (gainDb: number) => void;
+  gainDb: number;
+  setEditing: (editing: boolean) => void;
+  trackNumber: number;
+  updateGain: (gainDb: number) => void;
+}) {
+  const { i18n, t } = useTranslation();
+
+  return (
+    <div className="flex h-8 min-w-0 items-center gap-1.5 pt-2">
+      <Slider
+        aria-label={t("audio.tracks.gainLabel", { number: trackNumber })}
+        className="min-w-0 flex-1 py-0 **:data-[slot=slider-thumb]:size-2.5"
+        markers={[
+          { label: "−24", value: -24 },
+          { label: "0", value: 0 },
+          { label: "12", value: 12 },
+        ]}
+        max={12}
+        min={-24}
+        onDoubleClick={() => commitGain(0)}
+        onValueChange={([gainDb]) => {
+          if (gainDb !== undefined) updateGain(gainDb);
+        }}
+        onValueCommit={([gainDb]) => {
+          if (gainDb !== undefined) commitGain(gainDb);
+        }}
+        step={0.5}
+        value={[gainDb]}
+      />
+      <Button
+        className="h-auto w-[7ch] shrink-0 justify-end p-0 text-xs leading-none font-normal text-muted-foreground tabular-nums"
+        onClick={() => setEditing(true)}
+        size="sm"
+        variant="link"
+      >
+        <output>{formatGain(gainDb, i18n.language)}</output>
+      </Button>
     </div>
+  );
+}
+
+function AudioTrackGainInput({
+  commitGain,
+  gainDb,
+  setEditing,
+  trackNumber,
+  updateGain,
+}: {
+  commitGain: (gainDb: number) => void;
+  gainDb: number;
+  setEditing: (editing: boolean) => void;
+  trackNumber: number;
+  updateGain: (gainDb: number) => void;
+}) {
+  const { t } = useTranslation();
+  const [value, setValue] = useState(String(gainDb));
+
+  const commit = () => {
+    const parsed = Number(value);
+
+    commitGain(
+      value.trim() && Number.isFinite(parsed) ? Math.max(-60, Math.min(24, parsed)) : gainDb,
+    );
+
+    setEditing(false);
+  };
+
+  return (
+    <Input
+      aria-label={t("audio.tracks.gainLabel", { number: trackNumber })}
+      autoFocus
+      max={24}
+      min={-60}
+      onBlur={commit}
+      onChange={(event) => {
+        const nextValue = event.target.value;
+        setValue(nextValue);
+        const num = Number(nextValue);
+        if (nextValue.trim() && Number.isFinite(num)) {
+          updateGain(num);
+        }
+      }}
+      onFocus={(event) => event.target.select()}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.currentTarget.blur();
+        }
+
+        if (event.key === "Escape") {
+          setValue(String(gainDb));
+          event.currentTarget.blur();
+        }
+      }}
+      step={0.1}
+      type="number"
+      value={value}
+    />
   );
 }
 

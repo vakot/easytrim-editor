@@ -77,6 +77,7 @@ function renderGainControl(enabled = true) {
     setItem: async () => undefined,
     removeItem: async () => undefined,
   });
+
   const media = mediaWithAudio(firstSource.sourcePath);
   store.dispatch(sourceSelected({ source: firstSource }));
   store.dispatch(sourceReady({ loadToken: 1, media }));
@@ -173,7 +174,9 @@ describe("AudioTrackRow", () => {
     const gainCommitCount = gainCommits.length;
     await user.hover(gainSlider);
     expect(
-      await screen.findByText("Manual Gain is unavailable while automatic normalization is applied"),
+      await screen.findByText(
+        "Manual Gain is unavailable while automatic normalization is applied",
+      ),
     ).toBeInTheDocument();
 
     fireEvent.doubleClick(gainSlider);

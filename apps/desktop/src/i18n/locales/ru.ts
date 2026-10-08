@@ -1017,6 +1017,7 @@ export const ru = {
       description: "Нормализовать дорожку до целевого уровня громкости",
       summary: "Нормализовано — {{preset}}",
       levelSummary: "{{target}} LUFS · {{peak}} dBTP",
+      manualGainUnavailable: "Ручное усиление недоступно при автоматической нормализации",
     },
     noiseReduction: {
       label: "Шумоподавление",

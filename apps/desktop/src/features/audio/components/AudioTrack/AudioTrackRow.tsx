@@ -69,7 +69,7 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
                     <AudioTrackToggle controller={controller} />
                   </HoverCardTrigger>
 
-                  <HoverCardContent align="center" className="max-w-42 pt-4" side="right">
+                  <HoverCardContent align="center" className="max-w-42 p-0" side="right">
                     <AudioTrackGainControl
                       onLiveGainChange={setLiveGainDb}
                       streamIndex={streamIndex}
