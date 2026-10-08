@@ -60,6 +60,7 @@ FFmpeg and FFprobe are required at runtime and are not bundled.
 - [Runtime and security](docs/runtime-security.md)
 - [Code conventions](docs/code-conventions.md)
 - [Development](docs/development.md)
+- [Audio track metadata editing investigation](docs/audio-track-metadata-investigation.md)
 - [Diagnostics](docs/diagnostics.md)
 - [Storybook](docs/storybook.md)
 
