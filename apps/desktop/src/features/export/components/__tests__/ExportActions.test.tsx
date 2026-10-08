@@ -41,11 +41,14 @@ describe("ExportActions", () => {
       "aria-keyshortcuts",
       "Control+E",
     );
+    expect(gifExportButton).toHaveAttribute("aria-keyshortcuts", "Control+G");
 
     await user.hover(gifExportButton.parentElement!);
     expect(await screen.findByRole("tooltip")).toHaveTextContent(
       "Export the selected segment as a GIF",
     );
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Ctrl");
+    expect(screen.getByRole("tooltip")).toHaveTextContent("G");
   });
 
   it("keeps the dialog footer stable and disables Start queue without queued work", async () => {

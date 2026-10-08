@@ -23,6 +23,7 @@ import type { ApplicationShortcut } from "@/app/commands/core/application-comman
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import {
   FAST_EXPORT_SHORTCUT,
+  GIF_EXPORT_SHORTCUT,
   OPTIMIZED_EXPORT_SHORTCUT,
 } from "@/app/commands/file/file-shortcuts.constants";
 import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
@@ -142,8 +143,13 @@ function ExportActions() {
         </ExportActionButton>
       </ExportActionTooltip>
 
-      <ExportActionTooltip disabled={!sourceReady} tooltip={t("export.gif.tooltip")}>
+      <ExportActionTooltip
+        disabled={!sourceReady}
+        shortcut={GIF_EXPORT_SHORTCUT}
+        tooltip={t("export.gif.tooltip")}
+      >
         <ExportActionButton
+          aria-keyshortcuts={getShortcutAriaValue(GIF_EXPORT_SHORTCUT)}
           disabled={!sourceReady}
           icon={<Film aria-hidden="true" />}
           onClick={() =>
