@@ -825,9 +825,18 @@ fn output_display_name(path: &std::path::Path) -> Result<String, AppError> {
 
 #[cfg(test)]
 mod tests {
-    use std::{ffi::OsString, path::Path};
+    use std::{
+        ffi::{OsStr, OsString},
+        path::Path,
+        sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+        },
+        thread,
+        time::{Duration, SystemTime, UNIX_EPOCH},
+    };
 
-    use super::{ExportPhase, ffmpeg_arguments_data, next_export_phase};
+    use super::{ExportPhase, ffmpeg_arguments_data, next_export_phase, run_progress_cancellable};
 
     #[test]
     fn gif_progress_stays_indeterminate_until_ffmpeg_emits_output_time() {
@@ -847,6 +856,91 @@ mod tests {
             next_export_phase(ExportPhase::Running, "progress", "end", 1_000_000),
             ExportPhase::Completed
         );
+    }
+
+    #[test]
+    fn gif_cancellation_stops_ffmpeg_during_palette_preparation() {
+        let unique_id = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock is valid")
+            .as_nanos();
+        let output_path = std::env::temp_dir().join(format!(
+            "easytrim-gif-cancel-{}-{unique_id}.gif",
+            std::process::id()
+        ));
+        let filter_graph = concat!(
+            "[0:0]fps=10/1,",
+            "scale=w='min(480,270*dar)':h='min(270,480/dar)':eval=init:flags=lanczos,setsar=1,",
+            "split[v1][v2];",
+            "[v1]palettegen=stats_mode=diff[palette];",
+            "[v2][palette]paletteuse=dither=sierra2_4a[out]"
+        );
+        let arguments = [
+            "-hide_banner",
+            "-nostdin",
+            "-progress",
+            "pipe:1",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=1920x1080:rate=30:duration=60",
+            "-t",
+            "60.000000",
+            "-filter_complex",
+            filter_graph,
+            "-map",
+            "[out]",
+            "-an",
+            "-sn",
+            "-dn",
+            "-loop",
+            "0",
+            "-f",
+            "gif",
+            "-y",
+        ]
+        .into_iter()
+        .map(OsString::from)
+        .chain(std::iter::once(output_path.as_os_str().to_owned()))
+        .collect::<Vec<_>>();
+        let cancellation = Arc::new(AtomicBool::new(false));
+        let cancellation_for_thread = Arc::clone(&cancellation);
+        let cancellation_thread = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(500));
+            cancellation_for_thread.store(true, Ordering::Release);
+        });
+        let mut phase = ExportPhase::Preparing;
+        let mut emitted_output_time = false;
+
+        let result = run_progress_cancellable(
+            OsStr::new("ffmpeg"),
+            &arguments,
+            Duration::from_secs(60),
+            1024 * 1024,
+            1024 * 1024,
+            || cancellation.load(Ordering::Acquire),
+            |line| {
+                if let Some((key, value)) = line.split_once('=') {
+                    if key == "out_time_us" {
+                        let elapsed_micros = value.parse::<i64>().unwrap_or_default();
+                        emitted_output_time |= elapsed_micros > 0;
+                        phase = next_export_phase(phase, key, value, elapsed_micros);
+                    } else if key == "progress" {
+                        phase = next_export_phase(phase, key, value, 0);
+                    }
+                }
+            },
+        );
+
+        cancellation_thread
+            .join()
+            .expect("cancellation thread joins");
+        let error = result.expect_err("the native runner should cancel FFmpeg while preparing");
+        let _ = std::fs::remove_file(output_path);
+
+        assert_eq!(error.kind(), std::io::ErrorKind::Interrupted);
+        assert!(!emitted_output_time);
+        assert_eq!(phase, ExportPhase::Preparing);
     }
 
     #[test]
