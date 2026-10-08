@@ -97,7 +97,7 @@ describe("audio slice", () => {
       crop: null,
       audioTracks: [
         { enabled: false, streamIndex: 2, processing: { gainDb: 0 } },
-        { enabled: true, streamIndex: 4, processing: { gainDb: 0 } },
+        { enabled: true, streamIndex: 4, language: "ru", processing: { gainDb: 0 } },
       ],
       mergeAudio: false,
     });
@@ -111,6 +111,7 @@ describe("audio slice", () => {
       { enabled: false, isDefault: false },
       { enabled: true, isDefault: true },
     ]);
+    expect(restored.tracks[1]?.language).toBe("rus");
   });
 
   it("keeps exactly one enabled default after default-track changes", () => {

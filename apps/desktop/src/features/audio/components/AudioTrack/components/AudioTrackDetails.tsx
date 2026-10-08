@@ -18,6 +18,16 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import {
+  LanguageSelector,
+  LanguageSelectorContent,
+  LanguageSelectorInput,
+  LanguageSelectorList,
+  LanguageSelectorTrigger,
+  LanguageSelectorValue,
+} from "@/components/language-selector";
+import { type Language, languageCodeFromMetadata } from "@/domain/languages";
+
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 import { formatChannels, formatGain, MIN_SLIDER_DECIBELS } from "../../../lib/audio-level.utils";
 
@@ -37,20 +47,21 @@ function AudioTrackDetails({
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [metadataTitle, setMetadataTitle] = useState("");
-  const [metadataLanguage, setMetadataLanguage] = useState("");
+  const [metadataLanguage, setMetadataLanguage] = useState<Language["code"] | undefined>();
+  const [metadataLanguageChanged, setMetadataLanguageChanged] = useState(false);
   const { stream, track, trackNumber } = controller;
   if (!stream || !track) return null;
 
   const title =
-    track.title ??
-    stream.title ??
+    (track.title || stream.title) ??
     track.language ??
     stream.language ??
     t("audio.tracks.defaultName", { number: trackNumber });
 
   const openMetadataDialog = () => {
-    setMetadataTitle(track.title ?? stream.title ?? "");
-    setMetadataLanguage(track.language ?? stream.language ?? "");
+    setMetadataTitle("");
+    setMetadataLanguage(languageCodeFromMetadata(track.language ?? stream.language));
+    setMetadataLanguageChanged(false);
     onMetadataDialogOpenChange(true);
   };
 
@@ -105,7 +116,7 @@ function AudioTrackDetails({
             className="grid gap-4"
             onSubmit={(event) => {
               event.preventDefault();
-              controller.updateMetadata(metadataTitle, metadataLanguage);
+              controller.updateMetadata(metadataTitle, metadataLanguage, metadataLanguageChanged);
               onMetadataDialogOpenChange(false);
             }}
           >
@@ -122,23 +133,53 @@ function AudioTrackDetails({
                 id={`audio-track-title-${track.streamIndex}`}
                 maxLength={256}
                 onChange={(event) => setMetadataTitle(event.currentTarget.value)}
+                placeholder={stream.title ?? ""}
                 value={metadataTitle}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor={`audio-track-language-${track.streamIndex}`}>
-                {t("audio.tracks.languageLabel")}
-              </Label>
-              <Input
-                autoComplete="off"
-                id={`audio-track-language-${track.streamIndex}`}
-                maxLength={16}
-                onChange={(event) => setMetadataLanguage(event.currentTarget.value)}
-                pattern="[A-Za-z0-9-]*"
-                placeholder={t("audio.tracks.languagePlaceholder")}
-                title={t("audio.tracks.languageHelp")}
+              <Label>{t("audio.tracks.languageLabel")}</Label>
+              <LanguageSelector
+                onValueChange={(language) => {
+                  setMetadataLanguage(language);
+                  setMetadataLanguageChanged(true);
+                }}
                 value={metadataLanguage}
-              />
+              >
+                <LanguageSelectorTrigger
+                  aria-label={t("audio.tracks.languageLabel")}
+                  className="w-full justify-start"
+                  id={`audio-track-language-${track.streamIndex}`}
+                >
+                  <Button className="w-full justify-start" type="button" variant="outline">
+                    <LanguageSelectorValue
+                      placeholder={
+                        track.language ??
+                        stream.language ??
+                        t("audio.tracks.languageSelectPlaceholder")
+                      }
+                    />
+                  </Button>
+                </LanguageSelectorTrigger>
+                <LanguageSelectorContent>
+                  <LanguageSelectorInput
+                    aria-label={t("audio.tracks.languageSearchLabel")}
+                    placeholder={t("audio.tracks.languageSearchLabel")}
+                  />
+                  <LanguageSelectorList />
+                </LanguageSelectorContent>
+              </LanguageSelector>
+              <Button
+                onClick={() => {
+                  setMetadataLanguage(languageCodeFromMetadata(stream.language));
+                  setMetadataLanguageChanged(true);
+                }}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                {t("audio.tracks.useSourceLanguage")}
+              </Button>
             </div>
             <DialogFooter>
               <Button type="submit">{t("common.actions.save")}</Button>

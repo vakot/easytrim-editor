@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { createLanguageSearcher, getLanguageDisplayName, SUPPORTED_LANGUAGES } from "../languages";
+import {
+  createLanguageSearcher,
+  getLanguageDisplayName,
+  languageCodeFromMetadata,
+  metadataCodeFromLanguage,
+  normalizeMetadataLanguageCode,
+  SUPPORTED_LANGUAGES,
+} from "../languages";
 
 const searchLanguages = createLanguageSearcher(SUPPORTED_LANGUAGES);
 
@@ -42,6 +49,17 @@ describe("language display names", () => {
   });
 
   it("includes the English name when a language has a distinct native name", () => {
-    expect(getLanguageDisplayName(SUPPORTED_LANGUAGES[1])).toBe("Русский");
+    expect(getLanguageDisplayName(SUPPORTED_LANGUAGES[1])).toBe("Русский (Russian)");
+  });
+
+  it("maps FFmpeg ISO language codes to selector values and back", () => {
+    expect(languageCodeFromMetadata("eng")).toBe("en");
+    expect(languageCodeFromMetadata("ru")).toBe("ru");
+    expect(languageCodeFromMetadata("unsupported")).toBeUndefined();
+    expect(metadataCodeFromLanguage("en")).toBe("eng");
+    expect(metadataCodeFromLanguage("ru")).toBe("rus");
+    expect(normalizeMetadataLanguageCode("ru")).toBe("rus");
+    expect(normalizeMetadataLanguageCode("eng")).toBe("eng");
+    expect(normalizeMetadataLanguageCode("")).toBeUndefined();
   });
 });

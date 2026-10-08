@@ -61,13 +61,15 @@ describe("LanguageSelector", () => {
     const search = screen.getByRole("combobox", { name: "Search languages" });
     await user.type(search, "Русский");
 
-    expect(screen.getByRole("option", { name: "Русский, ru" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Русский (Russian), ru" })).toBeVisible();
     expect(screen.queryByRole("option", { name: "English, en" })).not.toBeInTheDocument();
 
     await user.keyboard("{ArrowDown}{Enter}");
 
     expect(onValueChange).toHaveBeenCalledWith("ru");
-    expect(screen.getByRole("button", { name: "Choose language" })).toHaveTextContent("Русский");
+    expect(screen.getByRole("button", { name: "Choose language" })).toHaveTextContent(
+      "Русский (Russian)",
+    );
     expect(
       screen
         .getByRole("button", { name: "Choose language" })
@@ -90,10 +92,10 @@ describe("LanguageSelector", () => {
 
     const search = screen.getByRole("combobox", { name: "Search languages" });
     await user.type(search, "Russian");
-    expect(screen.getByRole("option", { name: "Русский, ru" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Русский (Russian), ru" })).toBeVisible();
     await user.clear(search);
     await user.type(search, "Русский");
-    expect(screen.getByRole("option", { name: "Русский, ru" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Русский (Russian), ru" })).toBeVisible();
   });
 
   it("uses the editable input as the trigger and restores the selected name after closing", async () => {
@@ -119,11 +121,11 @@ describe("LanguageSelector", () => {
     expect(screen.getByRole("listbox")).toBeVisible();
     await user.type(input, "russan");
     expect(input).toHaveValue("russan");
-    expect(screen.getByRole("option", { name: "Русский, ru" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Русский (Russian), ru" })).toBeVisible();
 
     await user.keyboard("{ArrowDown}{Enter}");
 
-    await waitFor(() => expect(input).toHaveValue("Русский"));
+    await waitFor(() => expect(input).toHaveValue("Русский (Russian)"));
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });
 
@@ -176,7 +178,7 @@ describe("LanguageSelector", () => {
     await user.click(screen.getByRole("button", { name: "Choose language" }));
 
     expect(screen.getByRole("option", { name: "English, en" })).toBeVisible();
-    expect(screen.getByRole("option", { name: "Русский, ru" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Русский (Russian), ru" })).toBeVisible();
     expect(screen.getAllByRole("option")).toHaveLength(2);
   });
 
@@ -184,7 +186,12 @@ describe("LanguageSelector", () => {
     { Flag: GB, language: SUPPORTED_LANGUAGES[0] },
     { Flag: RU, language: SUPPORTED_LANGUAGES[1] },
   ])("renders the package flag in its option", ({ Flag, language }) => {
-    const label = `${language.nativeName}, ${language.code}`;
+    const displayName =
+      language.nativeName === language.englishName
+        ? language.nativeName
+        : `${language.nativeName} (${language.englishName})`;
+
+    const label = `${displayName}, ${language.code}`;
 
     render(
       <LanguageSelector defaultOpen languages={[language]}>
@@ -208,7 +215,7 @@ describe("LanguageSelector", () => {
         name: `${language.nativeName} translation coverage: ${percentage}%`,
       }),
     ).toHaveAttribute("aria-valuenow", String(percentage));
-    if (language.code !== "en") expect(option).not.toHaveTextContent(language.englishName);
+    if (language.code !== "en") expect(option).toHaveTextContent(language.englishName);
     expect(option.querySelector(".col-start-3.row-start-1 svg.lucide-check")).toBeNull();
   });
 
@@ -228,7 +235,7 @@ describe("LanguageSelector", () => {
 
     for (const language of languages.filter(({ code }) => code !== "en")) {
       const option = screen.getByRole("option", {
-        name: `${language.nativeName}, ${language.code}`,
+        name: `${language.nativeName} (${language.englishName}), ${language.code}`,
       });
 
       expect(option.querySelector(".col-start-3.row-start-1 svg.lucide-check")).toBeNull();

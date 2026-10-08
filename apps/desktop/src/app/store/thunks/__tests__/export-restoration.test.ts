@@ -125,7 +125,7 @@ describe("export snapshot restoration", () => {
   it("preserves per-track metadata in queued export requests and snapshots", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
     store.dispatch(audioTrackDefaultChanged({ streamIndex: 4 }));
-    store.dispatch(audioTrackMetadataChanged({ streamIndex: 4, title: "", language: "de" }));
+    store.dispatch(audioTrackMetadataChanged({ streamIndex: 4, title: "", language: "rus" }));
 
     store.dispatch(startFastExportRequested());
 
@@ -134,11 +134,14 @@ describe("export snapshot restoration", () => {
       expect(attempt?.state.status).toBe("queued");
       expect(attempt?.snapshot.audio.tracks).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ streamIndex: 4, isDefault: true, title: "", language: "de" }),
+          expect.objectContaining({ streamIndex: 4, isDefault: true, language: "rus" }),
         ]),
       );
+      expect(attempt?.snapshot.audio.tracks.find((track) => track.streamIndex === 4)?.title).toBe(
+        undefined,
+      );
       expect(attempt?.request.audioMetadata).toEqual(
-        expect.arrayContaining([{ streamIndex: 4, isDefault: true, title: "", language: "de" }]),
+        expect.arrayContaining([{ streamIndex: 4, isDefault: true, language: "rus" }]),
       );
     });
   });
@@ -348,8 +351,8 @@ describe("export snapshot restoration", () => {
       {
         enabled: true,
         isDefault: true,
-        language: "de",
-        title: "",
+        language: "rus",
+        title: "Custom title",
         processing: { ...processing },
         streamIndex: 2,
       },
@@ -370,7 +373,9 @@ describe("export snapshot restoration", () => {
           processing: { ...value },
           streamIndex,
         })),
-        audioMetadata: [{ streamIndex: 2, isDefault: true, title: "", language: "de" }],
+        audioMetadata: [
+          { streamIndex: 2, isDefault: true, title: "Custom title", language: "rus" },
+        ],
         mergeAudio: false,
         resolution: { height: 720, width: 1280 },
         rotationDegrees: 0,
@@ -386,8 +391,8 @@ describe("export snapshot restoration", () => {
     expect(attempt.request.audioTracks[0]?.processing.gainDb).toBe(-4.5);
     expect(attempt.snapshot.audio.tracks[0]).toMatchObject({
       isDefault: true,
-      language: "de",
-      title: "",
+      language: "rus",
+      title: "Custom title",
       processing,
     });
 
@@ -413,8 +418,8 @@ describe("export snapshot restoration", () => {
         expect.objectContaining({
           enabled: true,
           isDefault: true,
-          language: "de",
-          title: "",
+          language: "rus",
+          title: "Custom title",
           processing,
           streamIndex: 2,
         }),

@@ -3,6 +3,7 @@ import {
   type AudioTrackSettings,
   cloneAudioTrackProcessing,
 } from "./audio-processing";
+import { normalizeMetadataLanguageCode } from "./languages";
 
 function selectedAudioTracks(tracks: readonly AudioTrackSettings[]): AudioTrackSelection[] {
   return tracks
@@ -16,12 +17,16 @@ function selectedAudioTracks(tracks: readonly AudioTrackSettings[]): AudioTrackS
 function selectedAudioMetadata(tracks: readonly AudioTrackSettings[]) {
   return tracks
     .filter((track) => track.enabled)
-    .map(({ isDefault, language, streamIndex, title }) => ({
-      isDefault: isDefault ?? false,
-      ...(language === undefined ? {} : { language }),
-      streamIndex,
-      ...(title === undefined ? {} : { title }),
-    }));
+    .map(({ isDefault, language, streamIndex, title }) => {
+      const normalizedLanguage = normalizeMetadataLanguageCode(language);
+
+      return {
+        isDefault: isDefault ?? false,
+        ...(normalizedLanguage === undefined ? {} : { language: normalizedLanguage }),
+        streamIndex,
+        ...(title === undefined || title === "" ? {} : { title }),
+      };
+    });
 }
 
 export { selectedAudioMetadata, selectedAudioTracks };

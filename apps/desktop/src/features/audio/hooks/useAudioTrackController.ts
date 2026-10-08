@@ -18,6 +18,11 @@ import {
   cloneAudioTrackProcessing,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
+import {
+  type Language,
+  languageCodeFromMetadata,
+  metadataCodeFromLanguage,
+} from "@/domain/languages";
 import { useAudioPlayback } from "@/features/audio";
 
 import { MIN_SLIDER_DECIBELS } from "../lib/audio-level.utils";
@@ -188,10 +193,17 @@ function useAudioTrackController(streamIndex: number) {
   }, [dispatch, streamIndex, track]);
 
   const updateMetadata = useCallback(
-    (title: string, language: string) => {
+    (title: string, language: Language["code"] | undefined, languageChanged: boolean) => {
       if (!track || !stream) return;
-      const nextTitle = title === (stream.title ?? "") ? undefined : title;
-      const nextLanguage = language === (stream.language ?? "") ? undefined : language;
+      const nextTitle = title === "" ? undefined : title;
+      const nextLanguage = languageChanged
+        ? language === languageCodeFromMetadata(stream.language)
+          ? undefined
+          : language === undefined
+            ? undefined
+            : metadataCodeFromLanguage(language)
+        : track.language;
+
       if (track.title === nextTitle && track.language === nextLanguage) return;
       dispatch(
         audioTrackMetadataChanged({ language: nextLanguage, streamIndex, title: nextTitle }),

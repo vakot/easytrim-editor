@@ -1,3 +1,5 @@
+import { normalizeMetadataLanguageCode } from "./languages";
+
 type LoudnessPreset = "webVideo" | "streaming" | "broadcast";
 const AUDIO_PROCESSING_STAGES = ["cleanup", "dynamics", "levelPolicy", "finalProtection"] as const;
 const AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS = [60, 80, 100, 120] as const;
@@ -385,11 +387,13 @@ function cloneAudioTrackProcessing(processing: AudioTrackProcessing): AudioTrack
 }
 
 function serializeAudioTrackSettings<T extends AudioTrackSettings>(track: T): AudioTrackSettings {
+  const language = normalizeMetadataLanguageCode(track.language);
+
   return {
     enabled: track.enabled,
     ...(track.isDefault === undefined ? {} : { isDefault: track.isDefault }),
-    ...(track.title === undefined ? {} : { title: track.title }),
-    ...(track.language === undefined ? {} : { language: track.language }),
+    ...(track.title === undefined || track.title === "" ? {} : { title: track.title }),
+    ...(language === undefined ? {} : { language }),
     streamIndex: track.streamIndex,
     processing: cloneAudioTrackProcessing(track.processing),
   };

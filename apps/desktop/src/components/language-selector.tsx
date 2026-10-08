@@ -211,10 +211,11 @@ function LanguageSelectorItem({ language }: { language: Language }) {
 
   const selected = selectedLanguage?.code === language.code;
   const percentage = translationCoverage[language.code].percentage;
+  const displayName = getLanguageDisplayName(language);
 
   return (
     <ComboboxItem
-      aria-label={`${getLanguageDisplayName(language)}, ${language.code}`}
+      aria-label={`${displayName}, ${language.code}`}
       className="grid h-auto min-w-0 grid-cols-[1rem_minmax(0,1fr)_1rem] grid-rows-[auto_auto] gap-x-2 gap-y-1 px-2.5 py-2 pr-2 data-[language-selected=true]:font-medium"
       data-language-selected={selected || undefined}
       disabled={disabled}
@@ -224,9 +225,7 @@ function LanguageSelectorItem({ language }: { language: Language }) {
     >
       <LanguageSelectorFlag className="col-start-1 row-start-1" language={language} />
 
-      <span className="col-start-2 row-start-1 min-w-0 truncate">
-        {getLanguageDisplayName(language)}
-      </span>
+      <span className="col-start-2 row-start-1 min-w-0 truncate">{displayName}</span>
 
       <div className="col-start-2 row-start-2 flex items-center gap-1">
         <Progress

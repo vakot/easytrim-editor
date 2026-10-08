@@ -16,6 +16,7 @@ import {
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
+import { normalizeMetadataLanguageCode } from "@/domain/languages";
 import type { AudioActivityRange, LoudnessAnalysis } from "@/domain/media";
 import type {
   AppError,
@@ -229,8 +230,8 @@ const audioSlice = createSlice({
       );
 
       if (!track) return;
-      track.language = action.payload.language;
-      track.title = action.payload.title;
+      track.language = normalizeMetadataLanguageCode(action.payload.language);
+      track.title = action.payload.title || undefined;
     },
     audioTrackGainChanged: (
       state,
@@ -556,11 +557,11 @@ function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTr
       streamIndex: stream.streamIndex,
       enabled: saved?.enabled ?? true,
       isDefault: stream.streamIndex === defaultStreamIndex,
-      language: saved?.language,
+      language: normalizeMetadataLanguageCode(saved?.language),
       processing: saved?.processing
         ? { ...saved.processing }
         : { ...DEFAULT_AUDIO_TRACK_PROCESSING },
-      title: saved?.title,
+      title: saved?.title || undefined,
       waveform: { status: "idle" },
       loudnessAnalysis: { status: "idle" },
       activityAnalysis: { status: "idle" },
