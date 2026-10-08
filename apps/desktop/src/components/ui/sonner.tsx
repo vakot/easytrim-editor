@@ -1,3 +1,5 @@
+"use client";
+
 import "sonner/dist/styles.css";
 
 import { CircleCheckIcon, InfoIcon, OctagonXIcon, TriangleAlertIcon } from "lucide-react";
