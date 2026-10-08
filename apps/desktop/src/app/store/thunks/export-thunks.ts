@@ -60,12 +60,17 @@ import { i18n } from "@/i18n/config";
 import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 import {
+  chooseGifOutputPath,
   chooseOutputPath,
   planOptimizedExport,
   releaseExportSource,
   reserveExportSource,
 } from "@/lib/tauri/media";
-import type { FastExportRequest, OptimizedExportRequest } from "@/lib/tauri/media.types";
+import type {
+  FastExportRequest,
+  GifExportRequest,
+  OptimizedExportRequest,
+} from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
@@ -146,6 +151,7 @@ const editExportAttemptRequested =
       const instance = selectEditingInstanceById(getState(), instanceId);
       const attempt = instance?.exportAttempts.find((candidate) => candidate.id === attemptId);
       if (!instance || !attempt || attempt.state.status !== "queued") return;
+      if (attempt.route === "gif") return;
 
       if (attempt.route === "fast") {
         dispatch(queueEditStarted({ attemptId, instanceId, route: "fast" }));
@@ -341,11 +347,24 @@ const startOptimizedExportRequested =
     void startEditingInstanceExport("optimized", dispatch, getState, origin);
   };
 
+const startGifExportRequested =
+  (settings: { frameRate: { denominator: number; numerator: number }; width: number }): AppThunk =>
+  (dispatch, getState) => {
+    void startEditingInstanceExport(
+      "gif",
+      dispatch,
+      getState,
+      { id: "toolbar.gif-export", type: "button" },
+      settings,
+    );
+  };
+
 async function startEditingInstanceExport(
   route: ExportRoute,
   dispatch: Parameters<AppThunk>[0],
   getState: Parameters<AppThunk>[1],
   origin: DiagnosticOrigin,
+  gifSettings?: { frameRate: { denominator: number; numerator: number }; width: number },
 ) {
   const initialState = getState();
   const initialInstance = selectActiveEditingInstance(initialState);
@@ -354,11 +373,14 @@ async function startEditingInstanceExport(
   if (initialInstance.draftAvailable === false || initialState.importWorkflow.isNativeDialogOpen)
     return;
 
-  const analysis = await ensureLoudnessAnalysis(dispatch, getState, {
-    instanceId: initialInstance.id,
-    loadToken: initialState.source.loadToken,
-    sourcePath: initialSource.sourcePath,
-  });
+  const analysis =
+    route === "gif"
+      ? { state: initialState, status: "ready" as const }
+      : await ensureLoudnessAnalysis(dispatch, getState, {
+          instanceId: initialInstance.id,
+          loadToken: initialState.source.loadToken,
+          sourcePath: initialSource.sourcePath,
+        });
 
   if (analysis.status === "failed") {
     dispatch(
@@ -390,7 +412,11 @@ async function startEditingInstanceExport(
     return;
 
   const request =
-    route === "fast" ? getFastRequest(currentState) : getOptimizedRequest(currentState);
+    route === "fast"
+      ? getFastRequest(currentState)
+      : route === "gif"
+        ? getGifRequest(currentState, gifSettings)
+        : getOptimizedRequest(currentState);
 
   if (!request) return;
 
@@ -404,7 +430,10 @@ async function startEditingInstanceExport(
   const attemptId = nextAttemptId();
   dispatch(nativeDialogStateChanged(true));
   try {
-    const output = await chooseOutputPath(outputDefaults(source.displayName)[route]);
+    const output = await (route === "gif" ? chooseGifOutputPath : chooseOutputPath)(
+      outputDefaults(source.displayName)[route],
+    );
+
     if (!output) return;
     if (
       selectActiveInstanceId(getState()) !== instance.id ||
@@ -525,6 +554,28 @@ function getOptimizedRequest(
       ? { numerator: settings.frameRate.numerator, denominator: settings.frameRate.denominator }
       : undefined,
     arguments: state.exportPresets.argumentsText,
+  };
+}
+
+function getGifRequest(
+  state: ReturnType<Parameters<AppThunk>[1]>,
+  settings: { frameRate: { denominator: number; numerator: number }; width: number } | undefined,
+): GifExportRequest | null {
+  const source = selectSourceSelection(state);
+  const trim = selectTrim(state);
+  if (!source || !trim || !settings) return null;
+  const transform = exportTransform(state);
+  return {
+    sourcePath: source.sourcePath,
+    trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
+    audioTracks: [],
+    mergeAudio: false,
+    rotationDegrees: transform.rotationDegrees,
+    crop: selectCropApplied(state) ? transform.crop : undefined,
+    flipHorizontal: transform.flipHorizontal,
+    flipVertical: transform.flipVertical,
+    frameRate: settings.frameRate,
+    width: settings.width,
   };
 }
 
@@ -693,7 +744,7 @@ function isLoudnessAnalysisContextCurrent(
 }
 
 function getTotalFrames(
-  request: FastExportRequest | OptimizedExportRequest,
+  request: FastExportRequest | GifExportRequest | OptimizedExportRequest,
   video: {
     averageFrameRate?: { denominator: number; numerator: number };
     realFrameRate?: { denominator: number; numerator: number };
@@ -725,6 +776,7 @@ export {
   retryExportAttemptRequested,
   startExportQueue,
   startFastExportRequested,
+  startGifExportRequested,
   startOptimizedExportRequested,
   startSourceExportQueue,
 };

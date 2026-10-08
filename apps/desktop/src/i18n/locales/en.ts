@@ -611,6 +611,19 @@ export const en = {
         saveNotice: "The native save dialog opens after confirmation",
       },
     },
+    gif: {
+      action: "GIF Export",
+      started: "GIF export started",
+      running: "GIF export…",
+      completed: "GIF export completed",
+      cancelled: "GIF export cancelled",
+      failed: "GIF export failed",
+      interrupted: "GIF export interrupted",
+      dialog: {
+        title: "Export selected segment as GIF",
+        description: "Choose an output width and frame rate before saving the GIF",
+      },
+    },
     actions: {
       saveChanges: "Save changes",
       start: "Export",
@@ -683,6 +696,7 @@ export const en = {
     },
     routes: {
       fastExport: "Fast Export",
+      gifExport: "GIF Export",
       optimizedExport: "Optimized Export",
     },
     title: "Export Queue",

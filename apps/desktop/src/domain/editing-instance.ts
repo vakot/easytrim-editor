@@ -3,6 +3,7 @@ import type {
   ExportResult,
   FastExportRequest,
   FrameRate,
+  GifExportRequest,
   MediaInfo,
   OptimizedExportRequest,
   OutputSelection,
@@ -10,8 +11,8 @@ import type {
 
 export type EditingInstanceId = string;
 export type InstanceOrigin = "source-import" | "duplicate";
-export type ExportRoute = "fast" | "optimized";
-export type ExportRequest = FastExportRequest | OptimizedExportRequest;
+export type ExportRoute = "fast" | "optimized" | "gif";
+export type ExportRequest = FastExportRequest | GifExportRequest | OptimizedExportRequest;
 
 interface ExportSettings {
   frameRate: FrameRate | undefined;

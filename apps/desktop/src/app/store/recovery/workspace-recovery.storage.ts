@@ -77,7 +77,7 @@ function isExportAttempt(value: unknown): boolean {
     !isRecord(value) ||
     typeof value.id !== "string" ||
     !isFiniteNumber(value.capturedAt) ||
-    (value.route !== "fast" && value.route !== "optimized") ||
+    (value.route !== "fast" && value.route !== "optimized" && value.route !== "gif") ||
     !isRecord(value.request) ||
     !isRecord(value.output) ||
     typeof value.output.displayName !== "string" ||

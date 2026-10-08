@@ -47,6 +47,7 @@ import { cn } from "@/lib/class-names.utils";
 
 import { ExportQueue, ExportQueueContent, ExportQueueSummary } from "../components/ExportQueue";
 import { useExportQueue } from "../components/ExportQueue/contexts/ExportQueueContext";
+import { GifExportDialog } from "../components/GifExportDialog";
 
 type ExportQueuePulseTone = "destructive" | "primary" | "success";
 
@@ -140,6 +141,8 @@ function ExportActions() {
           {t("export.optimized.action")}
         </ExportActionButton>
       </ExportActionTooltip>
+
+      <GifExportDialog disabled={!sourceReady} />
     </div>
   );
 }

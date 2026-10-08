@@ -233,6 +233,10 @@ pub struct OptimizedExportRequest {
 pub struct GifExportRequest {
     pub source_path: String,
     pub trim: TrimSelection,
+    #[serde(default)]
+    pub audio_tracks: Vec<AudioTrackSelection>,
+    #[serde(default)]
+    pub merge_audio: bool,
     pub rotation_degrees: u16,
     pub crop: Option<CropSelection>,
     #[serde(default)]
@@ -498,6 +502,11 @@ pub fn build_gif_arguments(
     output_path: &Path,
 ) -> Result<Vec<OsString>, AppError> {
     validate_trim_selection(source, &request.trim)?;
+    if !request.audio_tracks.is_empty() || request.merge_audio {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportAudioStreamSelectionOrProcessingSettingIsInvalid,
+        ));
+    }
     validate_rotation(request.rotation_degrees)?;
     validate_crop(request.crop.as_ref())?;
     if !(16..=1920).contains(&request.width) {

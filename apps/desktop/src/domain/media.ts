@@ -60,10 +60,12 @@ interface OptimizedExportRequest extends FastExportRequest {
 }
 
 interface GifExportRequest {
+  audioTracks: AudioTrackSelection[];
   crop?: { height: number; width: number; x: number; y: number };
   flipHorizontal: boolean;
   flipVertical: boolean;
   frameRate: { denominator: number; numerator: number };
+  mergeAudio: false;
   rotationDegrees: import("./rotation").RotationDegrees;
   sourcePath: string;
   trim: TrimSelection;

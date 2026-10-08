@@ -29,15 +29,21 @@ import { normalizeSourceKey } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import {
   cancelOperation,
+  chooseGifOutputPath,
   chooseOutputPath,
   exportFast,
   moveSourceToTrash,
   releaseExportSource,
+  renderGif,
   renderOptimized,
   reserveExportSource,
   resolveOutputSelection,
 } from "@/lib/tauri/media";
-import type { ExportProgress, OptimizedExportRequest } from "@/lib/tauri/media.types";
+import type {
+  ExportProgress,
+  GifExportRequest,
+  OptimizedExportRequest,
+} from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { performQueueFinishAction } from "@/lib/tauri/queue";
 
@@ -315,7 +321,9 @@ async function retryFailedExport(
 
     const output =
       (await resolveOutputSelection(attempt.output.outputId)) ??
-      (await chooseOutputPath(attempt.output.displayName));
+      (await (attempt.route === "gif" ? chooseGifOutputPath : chooseOutputPath)(
+        attempt.output.displayName,
+      ));
 
     if (!output) return false;
     dispatch(editingInstanceExportRetried({ id: instanceId, attemptId, output }));
@@ -494,13 +502,21 @@ async function renderJob(job: RuntimeExportJob) {
             job.diagnosticsOperation?.operationId,
             job.instanceId,
           )
-        : await renderOptimized(
-            job.attempt.request as OptimizedExportRequest,
-            job.attempt.output.outputId,
-            onProgress,
-            job.diagnosticsOperation?.operationId,
-            job.instanceId,
-          );
+        : job.attempt.route === "gif"
+          ? await renderGif(
+              job.attempt.request as GifExportRequest,
+              job.attempt.output.outputId,
+              onProgress,
+              job.diagnosticsOperation?.operationId,
+              job.instanceId,
+            )
+          : await renderOptimized(
+              job.attempt.request as OptimizedExportRequest,
+              job.attempt.output.outputId,
+              onProgress,
+              job.diagnosticsOperation?.operationId,
+              job.instanceId,
+            );
 
     if (!job.canceled) {
       job.dispatch(
