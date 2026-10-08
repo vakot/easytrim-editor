@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Slider } from "@/components/ui/slider";
@@ -34,19 +34,9 @@ function AudioTrackGainControl({
   const gainSliderDb =
     draftGainDb ?? (track?.enabled ? (track.processing.gainDb ?? 0) : MIN_SLIDER_DECIBELS);
 
-  const committedGainDb = track?.enabled
-    ? (track.processing.gainDb ?? 0)
-    : Number.NEGATIVE_INFINITY;
-
-  const committedGainRef = useRef(committedGainDb);
-
-  useEffect(() => {
-    committedGainRef.current = committedGainDb;
-  }, [committedGainDb]);
-
   useEffect(
     () => () => {
-      clearLiveAudioTrackGain(streamIndex, committedGainRef.current);
+      clearLiveAudioTrackGain(streamIndex);
       onLiveGainChange(null);
     },
     [clearLiveAudioTrackGain, onLiveGainChange, streamIndex],
@@ -77,7 +67,7 @@ function AudioTrackGainControl({
       dispatch(commitActiveEditingInstanceDraft());
     }
 
-    clearLiveAudioTrackGain(streamIndex, enabled ? gainDb : Number.NEGATIVE_INFINITY);
+    clearLiveAudioTrackGain(streamIndex);
     onLiveGainChange(null);
     setDraftGainDb(null);
   };

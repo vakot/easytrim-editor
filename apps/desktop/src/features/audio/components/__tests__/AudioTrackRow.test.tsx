@@ -138,7 +138,7 @@ describe("AudioTrackRow", () => {
       enabled: true,
       processing: { gainDb: 0 },
     });
-    expect(clearLiveAudioTrackGain).toHaveBeenLastCalledWith(2, 0);
+    expect(clearLiveAudioTrackGain).toHaveBeenLastCalledWith(2);
     expect(gainCommits).toEqual([0]);
   });
 
