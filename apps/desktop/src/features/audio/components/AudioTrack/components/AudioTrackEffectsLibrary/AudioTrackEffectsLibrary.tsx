@@ -20,15 +20,21 @@ import {
   useAudioTrackEffectsDraft,
 } from "../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
 
-import { AUDIO_TRACK_EFFECTS, type AudioTrackEffectDescriptor } from "./consts/audio-track-effects";
+import {
+  AUDIO_TRACK_EFFECTS,
+  type AudioTrackEffectDescriptor,
+  type AudioTrackEffectId,
+} from "./consts/audio-track-effects";
 
 interface AudioTrackEffectsLibraryProps {
   effects?: readonly AudioTrackEffectDescriptor[];
+  initialView?: AudioTrackEffectId;
   streamIndex: number;
 }
 
 function AudioTrackEffectsLibrary({
   effects = AUDIO_TRACK_EFFECTS,
+  initialView,
   streamIndex,
 }: AudioTrackEffectsLibraryProps) {
   const { t } = useTranslation();
@@ -38,7 +44,9 @@ function AudioTrackEffectsLibrary({
   })).filter(({ effects: stageEffects }) => stageEffects.length > 0);
 
   const [selectedEffect, setSelectedEffect] = useState<string | undefined>(
-    effects.find((effect) => effect.defaultSelected)?.id ?? stageGroups[0]?.effects[0]?.id,
+    initialView ??
+      effects.find((effect) => effect.defaultSelected)?.id ??
+      stageGroups[0]?.effects[0]?.id,
   );
 
   const { draft } = useAudioTrackEffectsDraft();

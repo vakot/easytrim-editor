@@ -29,7 +29,7 @@ function AppLayoutSidebar() {
       className="@container relative flex size-full flex-col pt-3"
     >
       <h3
-        className="mx-3 mb-1 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+        className="mx-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         id="source-panel-title"
       >
         {t("layout.explorer")}

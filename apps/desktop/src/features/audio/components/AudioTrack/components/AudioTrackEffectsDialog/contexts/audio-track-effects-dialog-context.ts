@@ -1,6 +1,10 @@
 import { createContext, useContext } from "react";
 
-const AudioTrackEffectsDialogContext = createContext<{ openEffects: () => void } | null>(null);
+import type { AudioTrackEffectId } from "../../AudioTrackEffectsLibrary/consts/audio-track-effects";
+
+const AudioTrackEffectsDialogContext = createContext<{
+  openEffects: (initialView?: AudioTrackEffectId) => void;
+} | null>(null);
 
 function useAudioTrackEffectsDialog() {
   const context = useContext(AudioTrackEffectsDialogContext);

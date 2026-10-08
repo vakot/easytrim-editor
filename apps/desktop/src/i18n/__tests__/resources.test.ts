@@ -57,6 +57,17 @@ describe("resolveInitialLanguage", () => {
     expect(i18n.getFixedT("ru")("source.search.results", { count: 5 })).toBe("5 результатов");
   });
 
+  it("preserves Russian search wording in the shared namespace", () => {
+    const t = i18n.getFixedT("ru");
+
+    expect(t("common.search.languages")).toBe("Поиск языков");
+    expect(t("common.search.languagesPlaceholder")).toBe("Поиск языков…");
+    expect(t("common.search.commands")).toBe("Поиск команд");
+    expect(t("common.search.commandsPlaceholder")).toBe("Поиск команд…");
+    expect(t("common.search.sources")).toBe("Поиск источников");
+    expect(t("common.search.sourcesPlaceholder")).toBe("Поиск источников…");
+  });
+
   it("localizes accessible stereo-meter labels", () => {
     expect(i18n.getFixedT("en")("timeline.audioMeter.accessibility.audioLevel")).toBe(
       "Stereo audio level",

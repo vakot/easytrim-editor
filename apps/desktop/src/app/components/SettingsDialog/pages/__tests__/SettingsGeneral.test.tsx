@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { i18n } from "@/i18n/config";
+import { translationCoverage } from "@/i18n/resources";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
 import { SettingsGeneral } from "../SettingsGeneral";
@@ -27,6 +28,23 @@ describe("SettingsGeneral", () => {
 
     await user.click(screen.getByRole("button", { name: "Language" }));
     const listbox = screen.getByRole("listbox");
+    expect(within(listbox).getByText(`${translationCoverage.ru.percentage}%`)).toBeVisible();
+    expect(within(listbox).getAllByRole("progressbar")).toHaveLength(2);
+    expect(
+      within(listbox)
+        .getByRole("option", { name: "English, en" })
+        .querySelector("span[aria-hidden='true'] svg"),
+    ).toBeInTheDocument();
+    expect(
+      within(listbox)
+        .getByRole("option", { name: "Русский (Russian), ru" })
+        .querySelector("span[aria-hidden='true'] svg"),
+    ).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole("button", { name: "Language" })
+        .querySelector("span[aria-hidden='true'] svg"),
+    ).toBeInTheDocument();
     expect(within(listbox).queryByRole("link", { name: "Help translate EasyTrim" })).toBeNull();
     expect(helpTranslate).toBeVisible();
 
@@ -39,10 +57,16 @@ describe("SettingsGeneral", () => {
     render(<SettingsGeneral />);
 
     await user.click(screen.getByRole("button", { name: "Language" }));
-    await user.type(screen.getByRole("combobox", { name: "Search languages" }), "Русский");
+    const languageSearch = screen.getByRole("combobox", { name: "Search languages" });
+    expect(languageSearch).toHaveAttribute("placeholder", "Search languages…");
+    await user.type(languageSearch, "Русский");
     await user.keyboard("{ArrowDown}{Enter}");
 
     await waitFor(() => expect(i18n.resolvedLanguage).toBe("ru"));
     expect(screen.getByRole("button", { name: "Язык" })).toHaveTextContent("Русский");
+
+    await user.click(screen.getByRole("button", { name: "Язык" }));
+    const russianSearch = screen.getByRole("combobox", { name: "Поиск языков" });
+    expect(russianSearch).toHaveAttribute("placeholder", "Поиск языков…");
   });
 });

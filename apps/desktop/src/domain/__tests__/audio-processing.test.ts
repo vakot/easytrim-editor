@@ -16,17 +16,69 @@ import {
   getAudioTrackSignalEffects,
   limitAudioPreviewSample,
   loudnessNormalizationTargets,
+  normalizeAudioTrackDefaults,
   parseAudioTrackSignalEffects,
   removeAudioTrackSignalEffect,
   sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
+  serializeAudioTrackSettings,
   setAudioTrackSignalEffect,
 } from "../audio-processing";
 
+describe("audio track metadata", () => {
+  it("serializes output metadata under metadata and normalizes its language code", () => {
+    expect(
+      serializeAudioTrackSettings({
+        enabled: true,
+        metadata: { isDefault: true, language: "ru", title: "Commentary" },
+        processing: { gainDb: -2 },
+        streamIndex: 4,
+      }),
+    ).toEqual({
+      enabled: true,
+      metadata: { isDefault: true, language: "rus", title: "Commentary" },
+      processing: { gainDb: -2 },
+      streamIndex: 4,
+    });
+  });
+
+  it("keeps the default flag under metadata while normalizing disabled tracks", () => {
+    expect(
+      normalizeAudioTrackDefaults([
+        {
+          enabled: false,
+          metadata: { isDefault: true, title: "Disabled" },
+          processing: { gainDb: 0 },
+          streamIndex: 2,
+        },
+        {
+          enabled: true,
+          metadata: { isDefault: false, language: "rus" },
+          processing: { gainDb: 0 },
+          streamIndex: 4,
+        },
+      ]),
+    ).toEqual([
+      {
+        enabled: false,
+        metadata: { isDefault: false, title: "Disabled" },
+        processing: { gainDb: 0 },
+        streamIndex: 2,
+      },
+      {
+        enabled: true,
+        metadata: { isDefault: true, language: "rus" },
+        processing: { gainDb: 0 },
+        streamIndex: 4,
+      },
+    ]);
+  });
+});
+
 describe("audio track level policy", () => {
   it("selects external preview tracks from the active playback route", () => {
-    const manualA = { enabled: true, processing: { gainDb: 0 }, streamIndex: 2 };
-    const manualB = { enabled: true, processing: { gainDb: 0 }, streamIndex: 4 };
+    const manualA = { enabled: true, metadata: {}, processing: { gainDb: 0 }, streamIndex: 2 };
+    const manualB = { enabled: true, metadata: {}, processing: { gainDb: 0 }, streamIndex: 4 };
     const normalizedA = {
       ...manualA,
       processing: { gainDb: 0, loudnessNormalization: "streaming" as const },

@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Added GIF export for selected segments with adjustable resolution, frame rate, an FFmpeg command preview, and phase-aware progress reporting.
+- Added per-audio-track output metadata editing.
 
 ## [1.13.1]
 

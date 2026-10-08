@@ -317,7 +317,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    const searchButton = await screen.findByRole("button", { name: "Search commands…" });
+    const searchButton = await screen.findByRole("button", { name: "Search commands" });
     await user.click(searchButton);
 
     expect(screen.getByRole("dialog", { name: "Command Palette" })).toBeInTheDocument();
@@ -327,13 +327,13 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    const searchButton = await screen.findByRole("button", { name: "Search commands…" });
+    const searchButton = await screen.findByRole("button", { name: "Search commands" });
     await user.click(screen.getByRole("button", { name: "Media tools ready" }));
     await user.click(screen.getByRole("button", { name: "Recheck" }));
 
     expect(searchButton).toBeInTheDocument();
     await waitFor(() => expect(mocks.checkMediaCapabilities).toHaveBeenCalledTimes(2));
-    expect(screen.getByRole("button", { name: "Search commands…" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Search commands" })).toBeInTheDocument();
   });
 
   it("opens, searches, and executes the shared file commands from the command palette", async () => {

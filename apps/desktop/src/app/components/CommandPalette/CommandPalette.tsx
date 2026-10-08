@@ -107,11 +107,11 @@ function CommandPalette() {
         open={isCommandPaletteOpen}
         title={t("commands.title")}
       >
-        <Command label={t("commands.searchLabel")} shouldFilter={false}>
+        <Command label={t("common.search.commands")} shouldFilter={false}>
           <CommandInput
-            aria-label={t("commands.searchLabel")}
+            aria-label={t("common.search.commands")}
             onValueChange={setQuery}
-            placeholder={t("commands.placeholder")}
+            placeholder={t("common.search.commandsPlaceholder")}
             value={query}
           />
           <CommandList>

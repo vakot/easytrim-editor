@@ -1,3 +1,5 @@
+"use client";
+
 import type { ComponentProps, ReactNode } from "react";
 
 import type { SearchMatchRange } from "@/domain/search.types";
