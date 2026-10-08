@@ -153,7 +153,7 @@ describe("AudioTrackRow", () => {
     expect(gainCommits).toEqual([0, -0.5]);
   });
 
-  it("disables manual Gain and blocks double-click reset during normalization", async () => {
+  it("shows normalization levels and blocks manual Gain changes while active", async () => {
     const user = userEvent.setup();
     const { gainCommits, store } = renderGainControl();
     act(() => {
@@ -166,20 +166,18 @@ describe("AudioTrackRow", () => {
       );
     });
 
-    const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
-    expect(document.querySelector('[data-slot="slider"]')).toHaveAttribute("data-disabled");
-    expect(gainSlider).toHaveAttribute("aria-valuenow", "-2.5");
-    expect(screen.getByText("−2.5 dB")).toBeInTheDocument();
+    expect(screen.queryByRole("slider", { name: /audio 1 gain/i })).not.toBeInTheDocument();
+    const normalizationSummary = screen.getByText("−16 LUFS · −1.5 dBTP");
 
     const gainCommitCount = gainCommits.length;
-    await user.hover(gainSlider);
+    await user.hover(normalizationSummary);
     expect(
       await screen.findByText(
         "Manual Gain is unavailable while automatic normalization is applied",
       ),
     ).toBeInTheDocument();
 
-    fireEvent.doubleClick(gainSlider);
+    fireEvent.doubleClick(normalizationSummary);
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: true,
       processing: { gainDb: -2.5, loudnessNormalization: "streaming" },
@@ -206,14 +204,14 @@ describe("AudioTrackRow", () => {
     expect(image).toHaveAttribute("src", "media://waveform");
     expect(image).toHaveStyle({ transform: "scaleY(1)" });
 
-    await userEvent.setup().hover(screen.getByText(/#1 ·/));
+    await userEvent.setup().hover(screen.getByRole("button", { name: /mute.*eng/i }));
     const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
     gainSlider.focus();
     fireEvent.keyDown(gainSlider, { key: "ArrowRight" });
 
     expect(image).toHaveAttribute("src", "media://waveform");
     expect(image?.style.transform).toBe("scaleY(1.0592537251772889)");
-    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0);
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0.5);
 
     fireEvent.keyUp(gainSlider, { key: "ArrowRight" });
     fireEvent.keyDown(gainSlider, { key: "End" });
@@ -221,14 +219,17 @@ describe("AudioTrackRow", () => {
     expect(image).toHaveAttribute("src", "media://waveform");
   });
 
-  it("marks the Gain range, resets to unity, and preserves mute state at −60 dB", async () => {
+  it("marks the Gain range, resets to unity, and preserves mute state at −24 dB", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();
-    await user.hover(screen.getByText(/#1 ·/));
+    await user.hover(screen.getByRole("button", { name: /mute.*eng/i }));
 
     const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
-    expect(screen.getByText("−60 dB", { exact: true })).toBeInTheDocument();
-    expect(screen.getByText("0 dB", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("-24", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("0", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("12", { exact: true })).toBeInTheDocument();
+    expect(gainSlider).toHaveAttribute("aria-valuemin", "-24");
+    expect(gainSlider).toHaveAttribute("aria-valuemax", "12");
 
     fireEvent.doubleClick(gainSlider);
     expect(store.getState().audio.tracks[0]).toMatchObject({
@@ -237,45 +238,44 @@ describe("AudioTrackRow", () => {
     });
 
     gainSlider.focus();
-    for (let step = 0; step < 120; step += 1) await user.keyboard("{ARROWLEFT}");
+    for (let step = 0; step < 48; step += 1) await user.keyboard("{ARROWLEFT}");
     await waitFor(() => {
       expect(store.getState().audio.tracks[0]).toMatchObject({
         enabled: true,
-        processing: { gainDb: -60 },
+        processing: { gainDb: -24 },
       });
     });
-    expect(gainSlider).toHaveAttribute("aria-valuenow", "-60");
-    expect(gainSlider).toHaveAttribute("aria-valuemin", "-60");
-    expect(screen.getByText("−60.0 dB")).toBeInTheDocument();
+    expect(gainSlider).toHaveAttribute("aria-valuenow", "-24");
+    expect(screen.getAllByText("−24.0 dB")).toHaveLength(2);
 
     gainSlider.focus();
     fireEvent.keyDown(gainSlider, { key: "ArrowRight" });
-    expect(gainSlider).toHaveAttribute("aria-valuenow", "-59.5");
+    expect(gainSlider).toHaveAttribute("aria-valuenow", "-23.5");
     expect(screen.getByRole("button", { name: /mute.*eng/i })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: true,
-      processing: { gainDb: -60 },
+      processing: { gainDb: -23.5 },
     });
 
     fireEvent.keyUp(gainSlider, { key: "ArrowRight" });
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: true,
-      processing: { gainDb: -59.5 },
+      processing: { gainDb: -23.5 },
     });
 
     await user.click(screen.getByRole("button", { name: /mute.*eng/i }));
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: false,
-      processing: { gainDb: -59.5 },
+      processing: { gainDb: -23.5 },
     });
 
     await user.click(screen.getByRole("button", { name: /unmute.*eng/i }));
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: true,
-      processing: { gainDb: -59.5 },
+      processing: { gainDb: -23.5 },
     });
   });
 
@@ -638,13 +638,15 @@ describe("AudioTrackRow", () => {
     expect(await screen.findByText("Normalized - Streaming")).toBeInTheDocument();
     expect(await screen.findByText("−16 LUFS · −1.5 dBTP")).toBeInTheDocument();
 
-    await user.hover(screen.getByText(/#1 ·/));
+    await user.hover(screen.getByRole("button", { name: /mute.*eng/i }));
     expect(screen.getByText("Normalized - Streaming")).toBeInTheDocument();
-    expect(screen.getByText("−16 LUFS · −1.5 dBTP")).toBeInTheDocument();
-    const normalizedTooltip = await screen.findByRole("tooltip");
-    expect(normalizedTooltip).toHaveTextContent(
-      /manual gain is unavailable while automatic normalization is applied/i,
-    );
+    const normalizedSummary = screen.getAllByText("−16 LUFS · −1.5 dBTP").at(-1);
+    await user.hover(normalizedSummary!);
+    expect(
+      await screen.findByText(
+        "Manual Gain is unavailable while automatic normalization is applied",
+      ),
+    ).toBeInTheDocument();
 
     act(() => {
       store.dispatch(audioTrackProcessingChanged({ streamIndex: 2, processing: { gainDb: -2.5 } }));

@@ -138,7 +138,7 @@ function AudioTrackGainSlider({
         markers={[
           { label: MIN_GAIN_DB_SLIDER, value: MIN_GAIN_DB_SLIDER },
           { label: "0", value: 0 },
-          { label: MIN_GAIN_DB_SLIDER, value: MAX_GAIN_DB_SLIDER },
+          { label: MAX_GAIN_DB_SLIDER, value: MAX_GAIN_DB_SLIDER },
         ]}
         max={MAX_GAIN_DB_SLIDER}
         min={MIN_GAIN_DB_SLIDER}
