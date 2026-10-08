@@ -1425,10 +1425,9 @@ mod tests {
 
     #[test]
     fn ffmpeg_preserves_unrelated_dispositions_for_copy_and_processed_audio() {
-        let (Ok(ffmpeg), Ok(ffprobe)) = (which::which("ffmpeg"), which::which("ffprobe")) else {
-            eprintln!("skipping FFmpeg integration check: ffmpeg or ffprobe is unavailable");
-            return;
-        };
+        let ffmpeg = which::which("ffmpeg").expect("FFmpeg is required for this integration test");
+        let ffprobe =
+            which::which("ffprobe").expect("FFprobe is required for this integration test");
         let directory =
             std::env::temp_dir().join(format!("easytrim-audio-metadata-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&directory).expect("temporary fixture directory should be created");
