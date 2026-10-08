@@ -307,7 +307,7 @@ pub fn build_fast_arguments(
     validate_rotation(request.rotation_degrees)?;
     if request.rotation_degrees != 0 {
         return Err(AppError::invalid_request(
-            AppErrorMessageId::ExportFastCutCannotApplyRotationUseOptimizedRender,
+            AppErrorMessageId::ExportFastExportCannotApplyRotationUseOptimizedRender,
         ));
     }
 
@@ -1203,7 +1203,7 @@ mod tests {
     }
 
     #[test]
-    fn fast_cut_rejects_rotation_instead_of_copying_untransformed_video() {
+    fn fast_export_rejects_rotation_instead_of_copying_untransformed_video() {
         let error = build_fast_arguments(
             &media(),
             &FastExportRequest {
@@ -1219,7 +1219,7 @@ mod tests {
             Path::new("source.mkv"),
             Path::new("out.mkv"),
         )
-        .expect_err("fast cut must not silently drop rotation");
+        .expect_err("fast export must not silently drop rotation");
 
         assert_eq!(error.code, "invalid_request");
     }
@@ -2254,7 +2254,7 @@ mod tests {
     }
 
     #[test]
-    fn fast_cut_reencodes_when_only_track_normalization_is_enabled() {
+    fn fast_export_reencodes_when_only_track_normalization_is_enabled() {
         let track = AudioTrackSelection {
             loudness_analysis: Some(AudioLoudnessAnalysis {
                 input_lra: Some(5.0),

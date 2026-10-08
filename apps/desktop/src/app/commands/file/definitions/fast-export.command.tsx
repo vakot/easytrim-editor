@@ -9,9 +9,9 @@ import { commandSearchTerms } from "@/app/commands/core/application-command.util
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
-import { startFastCutRequested } from "@/app/store/thunks/export-thunks";
+import { startFastExportRequested } from "@/app/store/thunks/export-thunks";
 
-function useSaveLosslessCutCommand() {
+function useFastExportCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const canExport = useAppSelector(selectSourceReady);
@@ -21,14 +21,14 @@ function useSaveLosslessCutCommand() {
     enabled: canExport && !cropApplied && !transformApplied,
     icon: <ScissorsIcon aria-hidden="true" />,
     async run({ surface }: ApplicationCommandExecutionContext) {
-      await dispatch(startFastCutRequested(commandOrigin("save-lossless-cut", surface)));
+      await dispatch(startFastExportRequested(commandOrigin("fast-export", surface)));
     },
-    id: "save-lossless-cut" as const,
-    label: t("export.losslessCut.action"),
-    searchTerms: commandSearchTerms(t("commands.searchTerms.saveLosslessCut")),
+    id: "fast-export" as const,
+    label: t("export.fastExport.action"),
+    searchTerms: commandSearchTerms(t("commands.searchTerms.fastExport")),
     shortcut: { code: "KeyS", key: "S", modifier: "control" } as const,
     variant: "default" as const,
   };
 }
 
-export { useSaveLosslessCutCommand };
+export { useFastExportCommand };

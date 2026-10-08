@@ -6,7 +6,7 @@ import type {
 } from "@/lib/tauri/diagnostics.types";
 
 export type ActivityKind =
-  | "fast-cut"
+  | "fast-export"
   | "file-deleted"
   | "file-restored"
   | "files-closed"
@@ -51,12 +51,12 @@ interface ActivitySessionDisplayGroup {
   startedAt: string;
 }
 interface ActivityProjectionLabels {
-  fastCutCancelled: string;
-  fastCutCompleted: string;
-  fastCutFailed: string;
-  fastCutInterrupted: string;
-  fastCutStarted: string;
-  fastCutting: string;
+  fastExportCancelled: string;
+  fastExportCompleted: string;
+  fastExportFailed: string;
+  fastExporting: string;
+  fastExportInterrupted: string;
+  fastExportStarted: string;
   fileCloseCompleted: (count: number) => string;
   fileDeleteCancelled: string;
   fileDeleted: string;
@@ -462,7 +462,7 @@ function projectExportStart(
   return createActivityEntry(
     event,
     metadata.kind,
-    metadata.kind === "fast-cut" ? labels.fastCutStarted : labels.renderStarted,
+    metadata.kind === "fast-export" ? labels.fastExportStarted : labels.renderStarted,
     {
       path: metadata.path,
       ...(snapshotId ? { snapshotId } : {}),
@@ -588,11 +588,11 @@ function isExportTerminalEvent(event: DiagnosticEvent): boolean {
 }
 function exportMetadata(
   data: Record<string, DiagnosticValue> | undefined,
-): { kind: Extract<ActivityKind, "fast-cut" | "render">; path?: string } | null {
+): { kind: Extract<ActivityKind, "fast-export" | "render">; path?: string } | null {
   const outputType = data?.outputType ?? data?.route;
   if (outputType !== "fast" && outputType !== "optimized") return null;
   return {
-    kind: outputType === "fast" ? "fast-cut" : "render",
+    kind: outputType === "fast" ? "fast-export" : "render",
     path: diagnosticString(data?.outputPath),
   };
 }
@@ -604,17 +604,17 @@ function exportStatus(
   return "completed";
 }
 function exportTitle(
-  kind: Extract<ActivityKind, "fast-cut" | "render">,
+  kind: Extract<ActivityKind, "fast-export" | "render">,
   status: ActivityStatus,
   labels: ActivityProjectionLabels,
 ): string {
   const titles = {
-    "fast-cut": {
-      cancelled: labels.fastCutCancelled,
-      completed: labels.fastCutCompleted,
-      failed: labels.fastCutFailed,
-      interrupted: labels.fastCutInterrupted,
-      pending: labels.fastCutting,
+    "fast-export": {
+      cancelled: labels.fastExportCancelled,
+      completed: labels.fastExportCompleted,
+      failed: labels.fastExportFailed,
+      interrupted: labels.fastExportInterrupted,
+      pending: labels.fastExporting,
     },
     render: {
       cancelled: labels.renderCancelled,
@@ -623,7 +623,10 @@ function exportTitle(
       interrupted: labels.renderInterrupted,
       pending: labels.rendering,
     },
-  } satisfies Record<Extract<ActivityKind, "fast-cut" | "render">, Record<ActivityStatus, string>>;
+  } satisfies Record<
+    Extract<ActivityKind, "fast-export" | "render">,
+    Record<ActivityStatus, string>
+  >;
 
   return titles[kind][status];
 }

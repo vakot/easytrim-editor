@@ -21,6 +21,7 @@ import {
   checkMediaCapabilities,
   chooseSource,
   detectAudioActivity,
+  exportFast,
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,
@@ -31,7 +32,6 @@ import {
   prepareSourcePreview,
   prepareWaveforms,
   releaseImportedSourceThumbnail,
-  renderFast,
   saveFramePng,
 } from "../media";
 import type { MediaInfo } from "../media.types";
@@ -469,14 +469,14 @@ describe("media IPC adapter", () => {
     };
 
     await expect(
-      renderFast(request, "output-1", vi.fn(), "diagnostic-op-1", "snapshot-1"),
+      exportFast(request, "output-1", vi.fn(), "diagnostic-op-1", "snapshot-1"),
     ).resolves.toEqual({
       operationId: "native-op-1",
       displayName: "clip.mkv",
       displayPath: "C:/Exports/clip.mkv",
     });
     expect(mocks.invoke).toHaveBeenCalledWith(
-      "render_fast",
+      "export_fast",
       expect.objectContaining({
         request,
         outputId: "output-1",

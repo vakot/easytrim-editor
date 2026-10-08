@@ -27,7 +27,7 @@ describe("ExportActions", () => {
     );
 
     expect(screen.getByRole("toolbar", { name: "Export actions" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Save Lossless Cut" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Fast Export" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Optimized Export" })).toBeDisabled();
   });
 

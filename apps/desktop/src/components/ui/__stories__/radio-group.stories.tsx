@@ -18,8 +18,8 @@ export const Default: Story = {
   render: () => (
     <RadioGroup aria-label="Export route" className="w-48" defaultValue="optimized">
       <div className="flex items-center gap-2">
-        <RadioGroupItem id="fast-cut" value="fast" />
-        <Label htmlFor="fast-cut">Fast cut</Label>
+        <RadioGroupItem id="fast-export" value="fast" />
+        <Label htmlFor="fast-export">Fast Export</Label>
       </div>
       <div className="flex items-center gap-2">
         <RadioGroupItem id="optimized-render" value="optimized" />

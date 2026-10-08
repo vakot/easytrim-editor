@@ -30,9 +30,9 @@ import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import {
   cancelOperation,
   chooseOutputPath,
+  exportFast,
   moveSourceToTrash,
   releaseExportSource,
-  renderFast,
   renderOptimized,
   reserveExportSource,
   resolveOutputSelection,
@@ -487,7 +487,7 @@ async function renderJob(job: RuntimeExportJob) {
   try {
     const result =
       job.attempt.route === "fast"
-        ? await renderFast(
+        ? await exportFast(
             job.attempt.request,
             job.attempt.output.outputId,
             onProgress,

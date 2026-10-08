@@ -41,12 +41,12 @@ function useActivityFeed() {
 
   const labels = useMemo<ActivityProjectionLabels>(
     () => ({
-      fastCutCompleted: t("export.losslessCut.completed"),
-      fastCutCancelled: t("export.losslessCut.cancelled"),
-      fastCutFailed: t("export.losslessCut.failed"),
-      fastCutInterrupted: t("export.losslessCut.interrupted"),
-      fastCutStarted: t("export.losslessCut.started"),
-      fastCutting: t("export.losslessCut.cutting"),
+      fastExportCompleted: t("export.fastExport.completed"),
+      fastExportCancelled: t("export.fastExport.cancelled"),
+      fastExportFailed: t("export.fastExport.failed"),
+      fastExportInterrupted: t("export.fastExport.interrupted"),
+      fastExportStarted: t("export.fastExport.started"),
+      fastExporting: t("export.fastExport.exporting"),
       fileCloseCompleted: (count) => t("source.close.closedFiles", { count }),
       fileDeleteCancelled: t("source.delete.cancelled"),
       fileDeleted: t("source.delete.completed"),

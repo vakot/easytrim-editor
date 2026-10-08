@@ -119,7 +119,7 @@ function localizeAppError(error: AppError, t: TFunction): string {
     case "export.exportWasCancelled":
       return t("export.errors.exportWasCancelled");
     case "export.fastCutCannotApplyRotationUseOptimizedRender":
-      return t("export.errors.losslessCutCannotApplyRotationUseOptimizedExport");
+      return t("export.errors.fastExportCannotApplyRotationUseOptimizedExport");
     case "export.ffmpegCouldNotRenderTheSelectedSegment":
       return t("export.errors.ffmpegCouldNotRenderTheSelectedSegment");
     case "export.ffmpegIsRequiredToExportVideoFiles":

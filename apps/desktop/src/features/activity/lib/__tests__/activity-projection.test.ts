@@ -14,12 +14,12 @@ import {
 } from "../activity-projection";
 
 const labels: ActivityProjectionLabels = {
-  fastCutCancelled: "Lossless Cut cancelled",
-  fastCutCompleted: "Lossless Cut completed",
-  fastCutFailed: "Lossless Cut failed",
-  fastCutInterrupted: "Lossless Cut interrupted",
-  fastCutStarted: "Lossless Cut started",
-  fastCutting: "Lossless Cut…",
+  fastExportCancelled: "Fast Export cancelled",
+  fastExportCompleted: "Fast Export completed",
+  fastExportFailed: "Fast Export failed",
+  fastExportInterrupted: "Fast Export interrupted",
+  fastExportStarted: "Fast Export started",
+  fastExporting: "Fast Export…",
   fileCloseCompleted: (count) => `Closed ${count} file${count === 1 ? "" : "s"}`,
   fileDeleteCancelled: "File deletion cancelled",
   fileDeleteFailed: "File deletion failed",
@@ -167,7 +167,7 @@ describe("activity projection", () => {
   });
 
   it.each([
-    ["fast", "fast-cut", "Lossless Cut completed"],
+    ["fast", "fast-export", "Fast Export completed"],
     ["optimized", "render", "Optimized export completed"],
   ] as const)("projects a completed %s export", (outputType, kind, title) => {
     const entry = projectActivityEvent(
@@ -186,7 +186,7 @@ describe("activity projection", () => {
   });
 
   it.each([
-    ["fast", "Lossless Cut started", "Lossless Cut completed"],
+    ["fast", "Fast Export started", "Fast Export completed"],
     ["optimized", "Optimized export started", "Optimized export completed"],
   ] as const)(
     "projects the %s export start separately from its lifecycle",
@@ -804,7 +804,7 @@ describe("activity projection", () => {
       "current-session",
     )[0];
 
-    expect(entry).toMatchObject({ status: "completed", title: "Lossless Cut completed" });
+    expect(entry).toMatchObject({ status: "completed", title: "Fast Export completed" });
     expect(entry?.action).toEqual({ kind: "open", path: outputPath });
   });
 

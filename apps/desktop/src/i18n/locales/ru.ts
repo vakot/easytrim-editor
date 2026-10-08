@@ -493,7 +493,7 @@ export const ru = {
       openFile: "импорт|видео|источник",
       openFolder: "каталог|импорт|источник",
       optimizedExport: "оптимизированный экспорт|оптимизировать|экспорт",
-      saveLosslessCut: "обрезка без потерь|сохранить обрезку без потерь",
+      fastExport: "быстрый экспорт|быстрый|экспорт",
       saveCurrentFrame: "сохранить|кадр|изображение|png",
     },
   },
@@ -520,16 +520,16 @@ export const ru = {
     outputDialog: {
       videoFilter: "Видеофайлы",
     },
-    losslessCut: {
-      cancelled: "Обрезка без потерь отменена",
-      completed: "Обрезка без потерь завершена",
-      failed: "Обрезка без потерь не удалась",
-      interrupted: "Обрезка без потерь прервана",
-      started: "Обрезка без потерь начата",
-      cutting: "Обрезка без потерь…",
-      action: "Сохранить обрезку без потерь",
-      unavailable: "Обрезка без потерь недоступна после преобразования видео",
-      tooltip: "Сохранить обрезку без потерь (Ctrl+S)",
+    fastExport: {
+      cancelled: "Быстрый экспорт отменён",
+      completed: "Быстрый экспорт завершён",
+      failed: "Быстрый экспорт не удался",
+      interrupted: "Быстрый экспорт прерван",
+      started: "Быстрый экспорт начат",
+      exporting: "Быстрый экспорт…",
+      action: "Быстрый экспорт",
+      unavailable: "Быстрый экспорт недоступен после преобразования видео",
+      tooltip: "Экспортировать выбранный сегмент без перекодирования (Ctrl+S)",
     },
     preset: {
       builtIn: {
@@ -593,7 +593,7 @@ export const ru = {
     },
     optimized: {
       action: "Оптимизированный экспорт",
-      tooltip: "Настроить оптимизированный экспорт (Ctrl+E)",
+      tooltip: "Экспортировать выбранный сегмент с оптимизированным перекодированием (Ctrl+E)",
       started: "Оптимизированный экспорт начат",
       running: "Оптимизированный экспорт…",
       completed: "Оптимизированный экспорт завершён",
@@ -650,7 +650,7 @@ export const ru = {
       renderedOutputIsEmpty: "Экспортированный файл пуст",
       selectedOutputLocationIsNotSupported: "Выбранное место сохранения не поддерживается",
       audioStreamSelectionOrProcessingSettingIsInvalid: "Выбор аудиопотока или параметр его обработки задан неверно",
-      losslessCutCannotApplyRotationUseOptimizedExport: "Обрезка без потерь не поддерживает поворот. Используйте оптимизированный экспорт",
+      fastExportCannotApplyRotationUseOptimizedExport: "Быстрый экспорт не поддерживает поворот. Используйте оптимизированный экспорт",
       optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths: "Параметры оптимизированного экспорта не могут переопределять входной файл, обрезку, сопоставление потоков, фильтры, формат или пути выходных файлов",
       cropSelectionIsInvalid: "Область обрезки задана неверно",
       finalOptimizedFfmpegOptionIsMissingItsValue: "Для последнего параметра FFmpeg не указано значение",
@@ -698,7 +698,7 @@ export const ru = {
       },
     },
     routes: {
-      losslessCut: "Обрезка без потерь",
+      fastExport: "Быстрый экспорт",
       optimizedExport: "Оптимизированный экспорт",
     },
     title: "Очередь экспорта",

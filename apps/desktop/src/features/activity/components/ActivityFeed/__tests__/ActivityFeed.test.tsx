@@ -420,7 +420,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
   });
 
   it.each([
-    ["Lossless Cut", "fast-cut", "Lossless Cut completed"],
+    ["Fast Export", "fast-export", "Fast Export completed"],
     ["Optimized Export", "render", "Optimized export completed"],
   ] as const)("offers the Open action for a completed %s", async (_label, kind, title) => {
     const onAction = vi.fn();

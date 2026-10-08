@@ -57,7 +57,7 @@ pub enum AppErrorMessageId {
     #[serde(rename = "export.exportWasCancelled")]
     ExportExportWasCancelled,
     #[serde(rename = "export.fastCutCannotApplyRotationUseOptimizedRender")]
-    ExportFastCutCannotApplyRotationUseOptimizedRender,
+    ExportFastExportCannotApplyRotationUseOptimizedRender,
     #[serde(rename = "export.ffmpegCouldNotRenderTheSelectedSegment")]
     ExportFfmpegCouldNotRenderTheSelectedSegment,
     #[serde(rename = "export.ffmpegIsRequiredToExportVideoFiles")]
@@ -68,9 +68,7 @@ pub enum AppErrorMessageId {
     ExportFinalOptimizedFfmpegOptionIsMissingItsValue,
     #[serde(rename = "export.inspectTheVideoBeforeExporting")]
     ExportInspectTheVideoBeforeExporting,
-    #[serde(
-        rename = "export.optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths"
-    )]
+    #[serde(rename = "export.optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths")]
     ExportOptimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths,
     #[serde(rename = "export.optimizedFfmpegArgumentsContainAnUnclosedQuote")]
     ExportOptimizedFfmpegArgumentsContainAnUnclosedQuote,

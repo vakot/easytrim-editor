@@ -36,24 +36,24 @@ quality or human review status.
 
 ## Terminology
 
-| Concept       | English         | Russian            |
-| ------------- | --------------- | ------------------ |
-| Source        | Source          | Источник           |
-| Source panel  | Source explorer | Источники          |
-| Layout        | Layout          | Компоновка         |
-| Export        | Export          | Экспорт            |
-| Render        | Render          | Рендер             |
-| Lossless Cut  | Lossless Cut    | Обрезка без потерь |
-| Export Queue  | Export Queue    | Очередь экспорта   |
-| Preset        | Preset          | Пресет             |
-| Track         | Track           | Дорожка            |
-| Timeline      | Timeline        | Временная шкала    |
-| Segment       | Segment         | Сегмент            |
-| Preview       | Preview         | Предпросмотр       |
-| Gain          | Gain            | Усиление           |
-| Loudness      | Loudness        | Громкость          |
-| Activity Feed | Activity Feed   | Лента активности   |
-| Workspace     | Workspace       | Рабочая область    |
+| Concept       | English         | Russian          |
+| ------------- | --------------- | ---------------- |
+| Source        | Source          | Источник         |
+| Source panel  | Source explorer | Источники        |
+| Layout        | Layout          | Компоновка       |
+| Export        | Export          | Экспорт          |
+| Render        | Render          | Рендер           |
+| Fast Export   | Fast Export     | Быстрый экспорт  |
+| Export Queue  | Export Queue    | Очередь экспорта |
+| Preset        | Preset          | Пресет           |
+| Track         | Track           | Дорожка          |
+| Timeline      | Timeline        | Временная шкала  |
+| Segment       | Segment         | Сегмент          |
+| Preview       | Preview         | Предпросмотр     |
+| Gain          | Gain            | Усиление         |
+| Loudness      | Loudness        | Громкость        |
+| Activity Feed | Activity Feed   | Лента активности |
+| Workspace     | Workspace       | Рабочая область  |
 
 Keep product and technical names unchanged where appropriate, including EasyTrim, FFmpeg,
 FFprobe, GitHub, Ko-fi, LUFS, dB, dBTP, FPS, codec names, and container names.

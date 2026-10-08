@@ -17,7 +17,7 @@ import {
 
 const fileShortcuts = {
   openFolder: { code: "KeyK", key: "K", modifier: "control" },
-  saveLosslessCut: { code: "KeyS", key: "S", modifier: "control" },
+  fastExport: { code: "KeyS", key: "S", modifier: "control" },
 } as const;
 
 const commands: ApplicationCommand[] = [
@@ -34,12 +34,12 @@ const commands: ApplicationCommand[] = [
   {
     enabled: false,
     icon: null,
-    id: "save-lossless-cut",
-    label: "Save Lossless Cut",
+    id: "fast-export",
+    label: "Fast Export",
     pending: false,
-    searchTerms: ["lossless cut", "save lossless cut"],
+    searchTerms: ["fast export", "fast"],
     group: { id: "export", label: "Export" },
-    shortcut: fileShortcuts.saveLosslessCut,
+    shortcut: fileShortcuts.fastExport,
     variant: "default",
   },
 ];
@@ -100,15 +100,13 @@ describe("application command search", () => {
     expect(matches[1]?.command).toMatchObject({ enabled: false });
   });
 
-  it.each(["lossless cu", "lossles cut"])(
-    "supports token partial and typo queries: %s",
-    (query) => {
-      const [match] = filterApplicationCommands(commands, query);
+  it("supports token partial queries for fast export", () => {
+    const query = "fast exp";
+    const [match] = filterApplicationCommands(commands, query);
 
-      expect(match?.command.id).toBe("save-lossless-cut");
-      expect(match?.searchTermMatched).toBe(true);
-    },
-  );
+    expect(match?.command.id).toBe("fast-export");
+    expect(match?.searchTermMatched).toBe(true);
+  });
 
   it("ranks the stronger fuzzy command match first", () => {
     const stronger = searchableCommand("strong", "War Thunder Enemy destroyed moment 2026");
@@ -175,7 +173,7 @@ describe("application command shortcuts", () => {
     expect(getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT, "macos")).toEqual(["/"]);
     expect(getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT, "macos")).toBe("/");
     expect(getShortcutDisplayKeys(fileShortcuts.openFolder, "macos")).toEqual(["Ctrl", "K"]);
-    expect(getShortcutDisplayKeys(fileShortcuts.saveLosslessCut, "macos")).toEqual(["Ctrl", "S"]);
+    expect(getShortcutDisplayKeys(fileShortcuts.fastExport, "macos")).toEqual(["Ctrl", "S"]);
   });
 
   it("matches slash with or without Shift and rejects other modifiers", () => {

@@ -478,7 +478,7 @@ export const en = {
       openFile: "import|video|source",
       openFolder: "directory|import|source",
       optimizedExport: "optimized export|optimize|export",
-      saveLosslessCut: "lossless cut|save lossless cut",
+      fastExport: "fast export|fast|export",
       saveCurrentFrame: "save|frame|screenshot|image|png",
     },
   },
@@ -511,7 +511,7 @@ export const en = {
       renderedOutputIsEmpty: "The rendered output is empty",
       selectedOutputLocationIsNotSupported: "The selected output location is not supported",
       audioStreamSelectionOrProcessingSettingIsInvalid: "An audio stream selection or processing setting is invalid",
-      losslessCutCannotApplyRotationUseOptimizedExport: "Lossless Cut cannot apply rotation; use Optimized Export",
+      fastExportCannotApplyRotationUseOptimizedExport: "Fast Export cannot apply rotation; use Optimized Export",
       optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths: "Optimized export arguments cannot override input, trim, mapping, filters, output format, or output paths",
       cropSelectionIsInvalid: "The crop selection is invalid",
       finalOptimizedFfmpegOptionIsMissingItsValue: "The final optimized FFmpeg option is missing its value",
@@ -528,16 +528,16 @@ export const en = {
     outputDialog: {
       videoFilter: "Video files",
     },
-    losslessCut: {
-      cancelled: "Lossless Cut cancelled",
-      completed: "Lossless Cut completed",
-      failed: "Lossless Cut failed",
-      interrupted: "Lossless Cut interrupted",
-      started: "Lossless Cut started",
-      cutting: "Lossless Cut…",
-      action: "Save Lossless Cut",
-      unavailable: "Lossless Cut is unavailable after transforming the video",
-      tooltip: "Save a lossless cut (Ctrl+S)",
+    fastExport: {
+      cancelled: "Fast Export cancelled",
+      completed: "Fast Export completed",
+      failed: "Fast Export failed",
+      interrupted: "Fast Export interrupted",
+      started: "Fast Export started",
+      exporting: "Fast Export…",
+      action: "Fast Export",
+      unavailable: "Fast Export is unavailable after transforming the video",
+      tooltip: "Export the selected segment without re-encoding (Ctrl+S)",
     },
     preset: {
       builtIn: {
@@ -601,7 +601,7 @@ export const en = {
     },
     optimized: {
       action: "Optimized Export",
-      tooltip: "Configure an optimized export (Ctrl+E)",
+      tooltip: "Export the selected segment with optimized re-encoding (Ctrl+E)",
       started: "Optimized export started",
       running: "Optimized export…",
       completed: "Optimized export completed",
@@ -687,7 +687,7 @@ export const en = {
       },
     },
     routes: {
-      losslessCut: "Lossless Cut",
+      fastExport: "Fast Export",
       optimizedExport: "Optimized Export",
     },
     title: "Export Queue",

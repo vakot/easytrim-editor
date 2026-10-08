@@ -89,7 +89,7 @@ function createDeferred<T>(): {
 
 function isPromiseActivity(entry: ActivityEntry): boolean {
   return (
-    entry.kind === "fast-cut" ||
+    entry.kind === "fast-export" ||
     entry.kind === "render" ||
     entry.kind === "file-deleted" ||
     entry.kind === "file-restored"
@@ -97,7 +97,7 @@ function isPromiseActivity(entry: ActivityEntry): boolean {
 }
 
 function isExportActivity(entry: ActivityEntry): boolean {
-  return entry.kind === "fast-cut" || entry.kind === "render";
+  return entry.kind === "fast-export" || entry.kind === "render";
 }
 
 function createActivityToast(

@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
   resetPanels: vi.fn(),
   panelCommandIds: [] as (string | string[])[],
   panelsAreReset: true,
-  startFastCutRequested: vi.fn((origin: unknown) => ({
+  startFastExportRequested: vi.fn((origin: unknown) => ({
     origin,
     type: "export/fast",
   })),
@@ -80,7 +80,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
 }));
 vi.mock("@/app/store/thunks/export-thunks", () => ({
   openOptimizedExportDialog: mocks.openOptimizedExportDialog,
-  startFastCutRequested: mocks.startFastCutRequested,
+  startFastExportRequested: mocks.startFastExportRequested,
 }));
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
   chooseSourceRequested: mocks.chooseSourceRequested,

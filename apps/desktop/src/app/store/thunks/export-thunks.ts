@@ -323,8 +323,8 @@ const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) =>
   }
 };
 
-const startFastCutRequested =
-  (origin: DiagnosticOrigin = { id: "fast-cut", type: "button" }): AppThunk<Promise<void>> =>
+const startFastExportRequested =
+  (origin: DiagnosticOrigin = { id: "fast-export", type: "button" }): AppThunk<Promise<void>> =>
   async (dispatch, getState) => {
     if (selectCropApplied(getState()) || selectTransformApplied(getState())) return;
     await startEditingInstanceExport("fast", dispatch, getState, origin);
@@ -724,7 +724,7 @@ export {
   refreshOptimizedExportPlan,
   retryExportAttemptRequested,
   startExportQueue,
-  startFastCutRequested,
+  startFastExportRequested,
   startOptimizedExportRequested,
   startSourceExportQueue,
 };

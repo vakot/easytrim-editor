@@ -34,7 +34,7 @@ import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   openOptimizedExportDialog,
   startExportQueue,
-  startFastCutRequested,
+  startFastExportRequested,
 } from "@/app/store/thunks/export-thunks";
 import { cn } from "@/lib/class-names.utils";
 
@@ -55,7 +55,7 @@ function ExportActions() {
   const finishedExports = queueSummary.completed + queueSummary.failed;
   const queueSize = finishedExports + queueSummary.queued + queueSummary.rendering;
 
-  const fastCutAvailable = sourceReady && !cropApplied && !transformApplied;
+  const fastExportAvailable = sourceReady && !cropApplied && !transformApplied;
 
   return (
     <div
@@ -95,22 +95,22 @@ function ExportActions() {
       </Dialog>
 
       <ExportActionTooltip
-        disabled={!fastCutAvailable}
+        disabled={!fastExportAvailable}
         tooltip={
-          sourceReady && !fastCutAvailable
-            ? t("export.losslessCut.unavailable")
-            : t("export.losslessCut.tooltip")
+          sourceReady && !fastExportAvailable
+            ? t("export.fastExport.unavailable")
+            : t("export.fastExport.tooltip")
         }
       >
         <ExportActionButton
           aria-keyshortcuts="Ctrl+S"
-          disabled={!fastCutAvailable}
+          disabled={!fastExportAvailable}
           icon={<Scissors aria-hidden="true" />}
           onClick={() =>
-            void dispatch(startFastCutRequested({ id: "toolbar.fast-export", type: "button" }))
+            void dispatch(startFastExportRequested({ id: "toolbar.fast-export", type: "button" }))
           }
         >
-          {t("export.losslessCut.action")}
+          {t("export.fastExport.action")}
         </ExportActionButton>
       </ExportActionTooltip>
 

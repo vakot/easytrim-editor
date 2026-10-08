@@ -171,7 +171,7 @@ pub fn resolve_output_selection(
 }
 
 #[tauri::command]
-pub async fn render_fast(
+pub async fn export_fast(
     request: FastExportRequest,
     output_id: String,
     on_progress: Channel<ExportProgress>,

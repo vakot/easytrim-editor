@@ -354,7 +354,7 @@ describe("App", () => {
 
     await user.clear(search);
     await user.type(search, "export");
-    expect(screen.getByRole("option", { name: /Save Lossless Cut/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Fast Export/ })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /Optimized Export/ })).toBeInTheDocument();
 
     await user.clear(search);
@@ -430,7 +430,7 @@ describe("App", () => {
       expect(within(shortcutList).getByText(label)).toBeInTheDocument();
     }
     expect(within(shortcutList).getByLabelText("/")).toBeInTheDocument();
-    expect(within(shortcutList).queryByText("Save Lossless Cut")).not.toBeInTheDocument();
+    expect(within(shortcutList).queryByText("Fast Export")).not.toBeInTheDocument();
     expect(within(shortcutList).queryByText("Optimize & Export")).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Support on Ko-fi.com" })).not.toHaveLength(0);
     expect(

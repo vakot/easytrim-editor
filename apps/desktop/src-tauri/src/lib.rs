@@ -90,7 +90,7 @@ pub fn run() {
             commands::export::resolve_output_selection,
             commands::export::plan_optimized_export,
             commands::export::open_file_location,
-            commands::export::render_fast,
+            commands::export::export_fast,
             commands::export::render_optimized,
             commands::frame::save_frame_png,
             commands::media::inspect_media,
