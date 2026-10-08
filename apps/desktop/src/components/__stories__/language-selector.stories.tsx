@@ -134,7 +134,7 @@ function DropdownMenuSubmenuExample() {
             <DropdownMenuSubTrigger>
               Language
               <span className="ml-auto max-w-32 truncate text-muted-foreground">
-                <LanguageSelectorValue type="code" />
+                <LanguageSelectorValue />
               </span>
             </DropdownMenuSubTrigger>
 

@@ -227,11 +227,9 @@ function LanguageSelectorTrigger(props: React.ComponentProps<typeof ComboboxTrig
 function LanguageSelectorValue({
   className,
   placeholder,
-  type = "displayName",
   ...props
 }: Omit<React.ComponentProps<"span">, "children"> & {
   placeholder?: React.ReactNode;
-  type?: keyof Pick<LanguageOption, "code" | "englishName" | "nativeName"> | "displayName";
 }) {
   const { language } = useLanguageSelector();
 
@@ -251,12 +249,10 @@ function LanguageSelectorValue({
     );
   }
 
-  const value = type === "displayName" ? getLanguageDisplayName(language) : language[type];
-
   return (
     <span className={cn("flex min-w-0 items-center truncate text-left", className)} {...props}>
       <LanguageSelectorFlag className="mr-2" language={language} />
-      <span className="truncate">{value}</span>
+      <span className="truncate">{getLanguageDisplayName(language)}</span>
     </span>
   );
 }
