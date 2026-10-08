@@ -1,3 +1,41 @@
+import {
+  BG,
+  CN,
+  CZ,
+  DE,
+  DK,
+  ES,
+  FI,
+  FR,
+  GB,
+  GR,
+  HR,
+  HU,
+  ID,
+  IL,
+  IN,
+  IT,
+  JP,
+  KR,
+  LT,
+  LV,
+  MY,
+  NL,
+  NO,
+  PL,
+  PT,
+  RO,
+  RS,
+  RU,
+  SA,
+  SE,
+  SI,
+  SK,
+  TH,
+  TR,
+  UA,
+  VN,
+} from "country-flag-icons/react/3x2";
 import getCountryFlag from "country-flag-icons/unicode";
 import Fuse from "fuse.js";
 import { CheckIcon } from "lucide-react";
@@ -49,6 +87,44 @@ type LanguageSelectorListProps = Omit<React.ComponentProps<typeof ComboboxList>,
 
 const LanguageSelectorContext = React.createContext<LanguageSelectorContextValue | null>(null);
 const LanguageSelectorContentContext = React.createContext(false);
+const REGION_FLAGS = {
+  BG,
+  CN,
+  CZ,
+  DE,
+  DK,
+  ES,
+  FI,
+  FR,
+  GB,
+  GR,
+  HR,
+  HU,
+  ID,
+  IL,
+  IN,
+  IT,
+  JP,
+  KR,
+  LV,
+  LT,
+  MY,
+  NL,
+  NO,
+  PL,
+  PT,
+  RO,
+  RU,
+  RS,
+  SA,
+  SE,
+  SI,
+  SK,
+  TH,
+  TR,
+  UA,
+  VN,
+} as const;
 
 function useLanguageSelector() {
   const context = React.useContext(LanguageSelectorContext);
@@ -274,6 +350,10 @@ function LanguageSelectorFlag({
   language,
   ...props
 }: Omit<React.ComponentProps<"span">, "children"> & { language: LanguageOption }) {
+  const CountryFlag = language.region
+    ? REGION_FLAGS[language.region as keyof typeof REGION_FLAGS]
+    : undefined;
+
   const unicodeFlag = language.region ? getCountryFlag(language.region) : undefined;
 
   return (
@@ -287,6 +367,8 @@ function LanguageSelectorFlag({
     >
       {language.flag !== undefined ? (
         language.flag
+      ) : CountryFlag ? (
+        <CountryFlag aria-hidden="true" className="block h-auto! w-full!" />
       ) : (
         <span className="text-xs leading-none">{unicodeFlag}</span>
       )}

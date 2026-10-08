@@ -11,7 +11,7 @@ import {
   LanguageSelectorTrigger,
   LanguageSelectorValue,
 } from "@/components/language-selector";
-import { SUPPORTED_LANGUAGES } from "@/domain/languages";
+import { AUDIO_METADATA_LANGUAGES, SUPPORTED_LANGUAGES } from "@/domain/languages";
 
 const languages = SUPPORTED_LANGUAGES;
 
@@ -54,8 +54,7 @@ describe("LanguageSelector", () => {
     const trigger = screen.getByRole("button", { name: "Choose language" });
     expect(trigger).toHaveTextContent("Русский");
     expect(trigger).not.toHaveTextContent("76%");
-    expect(trigger.querySelector("span[aria-hidden='true']")).toHaveTextContent("🇷🇺");
-    expect(trigger.querySelector("span[aria-hidden='true']")).toBeInTheDocument();
+    expect(trigger.querySelector("span[aria-hidden='true'] svg")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /choose language/i }));
     const search = screen.getByRole("combobox", { name: "Search languages" });
@@ -192,7 +191,7 @@ describe("LanguageSelector", () => {
     );
 
     const russian = screen.getByRole("option", { name: "Русский (Russian), ru" });
-    expect(russian).toHaveTextContent("🇷🇺");
+    expect(russian.querySelector("span[aria-hidden='true'] svg")).toBeInTheDocument();
     expect(russian.querySelector(".col-start-3.row-start-1 svg.lucide-check")).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
@@ -223,7 +222,48 @@ describe("LanguageSelector", () => {
 
     const option = screen.getByRole("option", { name: "Deutsch (German), de" });
     expect(option).toHaveTextContent("Deutsch (German) · metadata");
-    expect(option).toHaveTextContent("🇩🇪");
+    expect(option.querySelector("span[aria-hidden='true'] svg")).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+
+  it("renders SVG flags for audio language options and the selected value", () => {
+    const selectedLanguage = AUDIO_METADATA_LANGUAGES.find(({ code }) => code === "ja");
+    if (!selectedLanguage) throw new Error("Japanese audio metadata language is missing");
+
+    render(
+      <LanguageSelector
+        defaultOpen
+        defaultValue={selectedLanguage.code}
+        label="Search audio languages"
+        languages={AUDIO_METADATA_LANGUAGES}
+      >
+        <LanguageSelectorTrigger>
+          <button aria-label="Choose language" type="button">
+            <LanguageSelectorValue placeholder="Select language" />
+          </button>
+        </LanguageSelectorTrigger>
+        <LanguageSelectorContent>
+          <LanguageSelectorList emptyState="No audio languages found" />
+        </LanguageSelectorContent>
+      </LanguageSelector>,
+    );
+
+    const selectedValue = screen.getByRole("button", { name: "Choose language" });
+    expect(selectedValue.querySelector("span[aria-hidden='true'] svg")).toBeInTheDocument();
+    expect(selectedValue).not.toHaveTextContent("JP");
+
+    for (const language of AUDIO_METADATA_LANGUAGES) {
+      const displayName =
+        language.nativeName === language.englishName
+          ? language.nativeName
+          : `${language.nativeName} (${language.englishName})`;
+
+      const option = screen.getByRole("option", {
+        name: `${displayName}, ${language.code}`,
+      });
+
+      expect(option.querySelector("span[aria-hidden='true'] svg")).toBeInTheDocument();
+      expect(option).not.toHaveTextContent(language.region);
+    }
   });
 });
