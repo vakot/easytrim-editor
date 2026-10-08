@@ -3,7 +3,7 @@ import type { TFunction } from "i18next";
 import type { LoudnessPreset, NoiseReductionPreset } from "@/domain/audio-processing";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
-const MIN_SLIDER_DECIBELS = -24;
+const MIN_SLIDER_DECIBELS = -60;
 function normalizationPresetLabel(preset: LoudnessPreset, t: TFunction): string {
   switch (preset) {
     case "broadcast":
@@ -34,8 +34,6 @@ function formatChannels(stream: AudioStream, t: TFunction): string {
 }
 
 function formatGain(gainDb: number, language: string): string {
-  if (gainDb <= MIN_SLIDER_DECIBELS) return "−∞ dB";
-
   const value = new Intl.NumberFormat(language, {
     maximumFractionDigits: 1,
     minimumFractionDigits: 1,

@@ -4,7 +4,6 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   audioTrackActivityVisibilityToggled,
   audioTrackDefaultChanged,
-  audioTrackGainChanged,
   audioTrackMetadataChanged,
   audioTrackProcessingChanged,
   audioTrackToggled,
@@ -24,7 +23,6 @@ import {
   metadataCodeFromLanguage,
 } from "@/domain/languages";
 
-import { MIN_SLIDER_DECIBELS } from "../lib/audio-level.utils";
 import { audioTrackColor } from "../lib/audio-track-color";
 
 function useAudioTrackController(streamIndex: number) {
@@ -46,13 +44,6 @@ function useAudioTrackController(streamIndex: number) {
       if (!track) return;
       const nextEnabled = enabled ?? !track.enabled;
       if (nextEnabled === track.enabled) return;
-      if (
-        nextEnabled &&
-        track.processing.loudnessNormalization === undefined &&
-        track.processing.gainDb <= MIN_SLIDER_DECIBELS
-      ) {
-        dispatch(audioTrackGainChanged({ gainDb: 0, streamIndex }));
-      }
       dispatch(audioTrackToggled({ streamIndex }));
       dispatch(commitActiveEditingInstanceDraft());
     },

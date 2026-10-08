@@ -46,23 +46,16 @@ import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
 
 const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex: number }) {
   const controller = useAudioTrackController(streamIndex);
-  const [liveGainDraft, setLiveGainDraft] = useState<{
-    enabled: boolean;
-    gainDb: number;
-  } | null>(null);
+  const [liveGainDb, setLiveGainDb] = useState<number | null>(null);
   const { track, trackColor } = controller;
 
   if (!track || !controller.stream) return null;
 
-  const liveGainDb = liveGainDraft?.gainDb ?? track.processing.gainDb;
-  const rowController = {
-    ...controller,
-    isEnabled: liveGainDraft?.enabled ?? controller.isEnabled,
-  };
+  const displayedGainDb = liveGainDb ?? track.processing.gainDb;
 
   return (
-    <AudioTrackEffectsDialog controller={rowController}>
-      <AudioTrackMetadataDialog controller={rowController}>
+    <AudioTrackEffectsDialog controller={controller}>
+      <AudioTrackMetadataDialog controller={controller}>
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <div
@@ -73,25 +66,25 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
               <div className="flex items-center gap-1">
                 <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
                   <HoverCardTrigger>
-                    <AudioTrackToggle controller={rowController} />
+                    <AudioTrackToggle controller={controller} />
                   </HoverCardTrigger>
 
                   <HoverCardContent align="center" className="max-w-42 pt-4" side="right">
                     <AudioTrackGainControl
-                      onLiveGainChange={setLiveGainDraft}
+                      onLiveGainChange={setLiveGainDb}
                       streamIndex={streamIndex}
                       trackNumber={controller.trackNumber}
                     />
                   </HoverCardContent>
                 </HoverCard>
 
-                <AudioTrackDetails controller={rowController} />
-                <AudioTrackActions controller={rowController} />
+                <AudioTrackDetails controller={controller} />
+                <AudioTrackActions controller={controller} />
               </div>
-              <AudioTrackRowWaveform controller={rowController} liveGainDb={liveGainDb} />
+              <AudioTrackRowWaveform controller={controller} liveGainDb={displayedGainDb} />
             </div>
           </ContextMenuTrigger>
-          <AudioTrackContextMenuContent controller={rowController} />
+          <AudioTrackContextMenuContent controller={controller} />
         </ContextMenu>
       </AudioTrackMetadataDialog>
     </AudioTrackEffectsDialog>

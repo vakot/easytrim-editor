@@ -53,7 +53,6 @@ function applyAudioTrackGain(
   streamIndex: number,
   gainDb: number,
   runtime: LiveAudioTrackGainRuntime,
-  allowMutedTrackPreview = false,
   audioContext?: AudioContext | null,
   audioMix?: GainNode | null,
 ): void {
@@ -64,7 +63,8 @@ function applyAudioTrackGain(
     : gainDb;
 
   if (externalAudioNode) {
-    externalAudioNode.gain.gain.value = 10 ** (runtimeGainDb / 20);
+    externalAudioNode.gain.gain.value =
+      track?.enabled === false ? 0 : 10 ** (runtimeGainDb / 20);
     if (track && audioContext && audioMix) {
       updateAudioTrackLimiter(
         audioContext,
@@ -79,7 +79,7 @@ function applyAudioTrackGain(
     return;
 
   const linearGain = 10 ** (gainDb / 20);
-  const nativeGain = runtime.nativeAudioTrack.enabled || allowMutedTrackPreview ? linearGain : 0;
+  const nativeGain = runtime.nativeAudioTrack.enabled ? linearGain : 0;
   if (runtime.nativeAudioBinding) {
     runtime.nativeAudioBinding.binding.gain.gain.value = nativeGain;
   } else if (runtime.videoElement) {
@@ -213,7 +213,6 @@ function useAudioPlaybackRuntime({
           nativeAudioBinding: nativeAudioBindingRef.current,
           videoElement: videoRef.current,
         },
-        true,
         audioContextRef.current,
         audioMixRef.current,
       );
@@ -258,7 +257,6 @@ function useAudioPlaybackRuntime({
           requiresProcessedPreview,
           videoElement: videoRef.current,
         },
-        true,
         audioContextRef.current,
         audioMixRef.current,
       );

@@ -5,11 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  audioTrackGainChanged,
-  audioTrackToggled,
-  selectAudioTracks,
-} from "@/app/store/slices/audio-slice";
+import { audioTrackGainChanged, selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { useAudioPlayback } from "@/features/audio";
 
@@ -20,7 +16,7 @@ function AudioTrackGainControl({
   streamIndex,
   trackNumber,
 }: {
-  onLiveGainChange: (draft: { enabled: boolean; gainDb: number } | null) => void;
+  onLiveGainChange: (gainDb: number | null) => void;
   streamIndex: number;
   trackNumber: number;
 }) {
@@ -32,8 +28,7 @@ function AudioTrackGainControl({
   );
 
   const [draftGainDb, setDraftGainDb] = useState<number | null>(null);
-  const gainSliderDb =
-    draftGainDb ?? (track?.enabled ? (track.processing.gainDb ?? 0) : MIN_SLIDER_DECIBELS);
+  const gainSliderDb = draftGainDb ?? (track?.processing.gainDb ?? 0);
   const manualGainUnavailable = track?.processing.loudnessNormalization !== undefined;
 
   useEffect(
@@ -45,29 +40,19 @@ function AudioTrackGainControl({
   );
 
   const updateGain = (gainDb: number) => {
-    const enabled = gainDb > MIN_SLIDER_DECIBELS;
-
     setDraftGainDb(gainDb);
-    onLiveGainChange({ enabled, gainDb });
-    setLiveAudioTrackGain(streamIndex, enabled ? gainDb : Number.NEGATIVE_INFINITY);
+    onLiveGainChange(gainDb);
+    setLiveAudioTrackGain(streamIndex, gainDb);
   };
 
   const commitGain = (gainDb: number) => {
-    const enabled = gainDb > MIN_SLIDER_DECIBELS;
     const gainChanged = track?.processing.gainDb !== gainDb;
-    const enabledChanged = track?.enabled !== enabled;
 
     if (gainChanged) {
       dispatch(audioTrackGainChanged({ gainDb, streamIndex }));
     }
 
-    if (enabledChanged) {
-      dispatch(audioTrackToggled({ streamIndex }));
-    }
-
-    if (gainChanged || enabledChanged) {
-      dispatch(commitActiveEditingInstanceDraft());
-    }
+    if (gainChanged) dispatch(commitActiveEditingInstanceDraft());
 
     clearLiveAudioTrackGain(streamIndex);
     onLiveGainChange(null);
@@ -80,7 +65,7 @@ function AudioTrackGainControl({
       className="min-w-0 flex-1 py-0 **:data-[slot=slider-thumb]:size-2.5"
       disabled={manualGainUnavailable}
       markers={[
-        { label: "−∞", value: MIN_SLIDER_DECIBELS },
+        { label: "−60 dB", value: MIN_SLIDER_DECIBELS },
         { label: "0 dB", value: 0 },
       ]}
       max={12}
