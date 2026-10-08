@@ -46,7 +46,7 @@ function TimelinePanel() {
         <div className="grid w-full grid-cols-(--editor-timeline-track-grid-columns) gap-2">
           <div className="min-w-0 justify-self-start">
             <h2
-              className="mb-0.5 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+              className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
               id="timeline-title"
             >
               {t("timeline.segment.labels.selectedSegment")}

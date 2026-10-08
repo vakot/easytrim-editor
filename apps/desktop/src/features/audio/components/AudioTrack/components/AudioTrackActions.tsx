@@ -112,7 +112,7 @@ function AudioTrackDropdownMenuContent({ controller, onOpenMetadata }: AudioTrac
 
       <AudioTrackDefaultDropdownMenuCheckboxItem controller={controller} />
 
-      <DropdownMenuItem onSelect={onOpenMetadata}>
+      <DropdownMenuItem inset onSelect={onOpenMetadata}>
         {t("audio.tracks.editMetadata")}
       </DropdownMenuItem>
 
@@ -179,7 +179,9 @@ function AudioTrackContextMenuContent({ controller, onOpenMetadata }: AudioTrack
         </ContextMenuCheckboxItem>
       ) : null}
 
-      <ContextMenuItem onSelect={onOpenMetadata}>{t("audio.tracks.editMetadata")}</ContextMenuItem>
+      <ContextMenuItem inset onSelect={onOpenMetadata}>
+        {t("audio.tracks.editMetadata")}
+      </ContextMenuItem>
 
       <ContextMenuSeparator />
 
