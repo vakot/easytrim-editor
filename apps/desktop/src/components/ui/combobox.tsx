@@ -1,5 +1,4 @@
 import * as React from "react";
-import { useTranslation } from "react-i18next";
 
 import {
   Command,
@@ -36,7 +35,6 @@ function Combobox({
   shouldFilter = true,
   ...props
 }: ComboboxProps) {
-  const { t } = useTranslation();
   const allowTriggerCloseRef = React.useRef(false);
   const hasInputTriggerRef = React.useRef(false);
   const openRef = React.useRef(defaultOpen);
@@ -51,11 +49,7 @@ function Combobox({
         triggerRef,
       }}
     >
-      <Command
-        className="contents"
-        label={label ?? t("settings.general.language.suggestions")}
-        shouldFilter={shouldFilter}
-      >
+      <Command className="contents" label={label} shouldFilter={shouldFilter}>
         <Popover
           {...props}
           defaultOpen={defaultOpen}
