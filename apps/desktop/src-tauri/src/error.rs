@@ -52,6 +52,12 @@ pub enum AppErrorMessageId {
     DiagnosticsDiagnosticSessionIdentifierIsInvalid,
     #[serde(rename = "export.audioStreamSelectionOrProcessingSettingIsInvalid")]
     ExportAudioStreamSelectionOrProcessingSettingIsInvalid,
+    #[serde(rename = "export.audioTrackIsRequired")]
+    ExportAudioTrackIsRequired,
+    #[serde(rename = "export.audioOutputFormatIsInvalid")]
+    ExportAudioOutputFormatIsInvalid,
+    #[serde(rename = "export.wavRequiresMergedAudioTracks")]
+    ExportWavRequiresMergedAudioTracks,
     #[serde(rename = "export.cropSelectionIsInvalid")]
     ExportCropSelectionIsInvalid,
     #[serde(rename = "export.exportWasCancelled")]
@@ -68,7 +74,9 @@ pub enum AppErrorMessageId {
     ExportFinalOptimizedFfmpegOptionIsMissingItsValue,
     #[serde(rename = "export.inspectTheVideoBeforeExporting")]
     ExportInspectTheVideoBeforeExporting,
-    #[serde(rename = "export.optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths")]
+    #[serde(
+        rename = "export.optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths"
+    )]
     ExportOptimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths,
     #[serde(rename = "export.optimizedFfmpegArgumentsContainAnUnclosedQuote")]
     ExportOptimizedFfmpegArgumentsContainAnUnclosedQuote,

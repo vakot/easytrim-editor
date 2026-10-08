@@ -60,6 +60,23 @@ pub struct FastExportRequest {
     pub rotation_degrees: u16,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum AudioExportFormat {
+    M4a,
+    Wav,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioExportRequest {
+    pub source_path: String,
+    pub trim: TrimSelection,
+    pub audio_tracks: Vec<AudioTrackSelection>,
+    pub merge_audio: bool,
+    pub format: AudioExportFormat,
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioTrackSelection {
@@ -375,6 +392,81 @@ pub fn build_fast_arguments(
         OsString::from("-y"),
         output_path.as_os_str().to_owned(),
     ]);
+    Ok(arguments)
+}
+
+pub fn build_audio_arguments(
+    source: &MediaInfo,
+    request: &AudioExportRequest,
+    source_path: &Path,
+    output_path: &Path,
+) -> Result<Vec<OsString>, AppError> {
+    validate_common_request(source, &request.trim, &request.audio_tracks)?;
+    if request.audio_tracks.is_empty() {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportAudioTrackIsRequired,
+        ));
+    }
+    if request.format == AudioExportFormat::Wav
+        && request.audio_tracks.len() > 1
+        && !request.merge_audio
+    {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportWavRequiresMergedAudioTracks,
+        ));
+    }
+
+    let mut arguments = common_input_arguments(source_path, &request.trim);
+    let merge = request.merge_audio && request.audio_tracks.len() > 1;
+    if merge {
+        arguments.extend([
+            OsString::from("-filter_complex"),
+            OsString::from(audio_filter_graph(&request.audio_tracks, true)),
+            OsString::from("-map"),
+            OsString::from("[aout]"),
+            OsString::from("-ac"),
+            OsString::from("2"),
+        ]);
+    } else if audio_tracks_need_reencode(&request.audio_tracks) {
+        arguments.extend([
+            OsString::from("-filter_complex"),
+            OsString::from(audio_filter_graph(&request.audio_tracks, false)),
+        ]);
+        for index in 0..request.audio_tracks.len() {
+            arguments.extend([
+                OsString::from("-map"),
+                OsString::from(format!("[audio{index}]")),
+            ]);
+        }
+    } else {
+        for track in &request.audio_tracks {
+            arguments.extend([
+                OsString::from("-map"),
+                OsString::from(format!("0:{}", track.stream_index)),
+            ]);
+        }
+    }
+    arguments.extend([
+        OsString::from("-vn"),
+        OsString::from("-sn"),
+        OsString::from("-dn"),
+    ]);
+    match request.format {
+        AudioExportFormat::M4a => {
+            arguments.extend([
+                OsString::from("-c:a"),
+                OsString::from("aac"),
+                OsString::from("-b:a"),
+                OsString::from("192k"),
+                OsString::from("-f"),
+                OsString::from("ipod"),
+            ]);
+        }
+        AudioExportFormat::Wav => {
+            arguments.extend([OsString::from("-c:a"), OsString::from("pcm_s16le")]);
+        }
+    }
+    arguments.extend([OsString::from("-y"), output_path.as_os_str().to_owned()]);
     Ok(arguments)
 }
 
@@ -1048,12 +1140,13 @@ mod tests {
     use std::path::Path;
 
     use super::{
-        AudioLoudnessAnalysis, AudioProcessingStage, AudioTrackCacheKey, AudioTrackProcessing,
-        AudioTrackSelection, AudioTrackSignalEffect, CropSelection, FastExportRequest,
-        FrameRateSelection, LoudnessNormalization, LoudnessPreset, NoiseReductionPreset,
-        OptimizedExportRequest, ResolutionSelection, TrimSelection, audio_filter_graph,
-        build_fast_arguments, build_optimized_arguments, optimized_command_preview,
-        pre_level_filter_chain, validate_audio_track_selections, waveform_signal_filter_chain,
+        AudioExportFormat, AudioExportRequest, AudioLoudnessAnalysis, AudioProcessingStage,
+        AudioTrackCacheKey, AudioTrackProcessing, AudioTrackSelection, AudioTrackSignalEffect,
+        CropSelection, FastExportRequest, FrameRateSelection, LoudnessNormalization,
+        LoudnessPreset, NoiseReductionPreset, OptimizedExportRequest, ResolutionSelection,
+        TrimSelection, audio_filter_graph, build_audio_arguments, build_fast_arguments,
+        build_optimized_arguments, optimized_command_preview, pre_level_filter_chain,
+        validate_audio_track_selections, waveform_signal_filter_chain,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -1136,6 +1229,69 @@ mod tests {
             frame_rate: None,
             arguments: arguments.to_owned(),
         }
+    }
+
+    fn audio_request(format: AudioExportFormat, merge_audio: bool) -> AudioExportRequest {
+        let optimized = optimized_request("");
+        AudioExportRequest {
+            source_path: optimized.source_path,
+            trim: optimized.trim,
+            audio_tracks: optimized.audio_tracks,
+            merge_audio,
+            format,
+        }
+    }
+
+    #[test]
+    fn audio_export_omits_video_and_encodes_m4a_as_aac() {
+        let args = build_audio_arguments(
+            &media(),
+            &audio_request(AudioExportFormat::M4a, false),
+            Path::new("source.mkv"),
+            Path::new("out.m4a"),
+        )
+        .expect("audio request is valid");
+        let values = args
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        assert!(values.windows(2).any(|pair| pair == ["-map", "0:1"]));
+        assert!(values.contains(&"-vn".to_owned()));
+        assert!(!values.contains(&"0:0".to_owned()));
+        assert!(values.windows(2).any(|pair| pair == ["-c:a", "aac"]));
+        assert!(values.windows(2).any(|pair| pair == ["-f", "ipod"]));
+        assert!(!values.contains(&"-vf".to_owned()));
+    }
+
+    #[test]
+    fn audio_export_merges_selected_tracks_for_wav() {
+        let mut request = audio_request(AudioExportFormat::Wav, true);
+        request.audio_tracks.push(AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 2,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: None,
+                effects: Vec::new(),
+            },
+        });
+        let args = build_audio_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.wav"),
+        )
+        .expect("merged WAV request is valid");
+        let values = args
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        assert!(values.iter().any(|value| value.contains("amix=inputs=2")));
+        assert!(values.windows(2).any(|pair| pair == ["-map", "[aout]"]));
+        assert!(values.windows(2).any(|pair| pair == ["-c:a", "pcm_s16le"]));
+        assert!(!values.windows(2).any(|pair| pair == ["-map", "0:1"]));
     }
 
     #[test]

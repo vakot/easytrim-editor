@@ -17,8 +17,8 @@ use crate::{
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
     error::{AppError, AppErrorMessageId},
     media::export::{
-        FastExportRequest, OptimizedExportRequest, build_fast_arguments, build_optimized_arguments,
-        optimized_command_preview,
+        AudioExportRequest, FastExportRequest, OptimizedExportRequest, build_audio_arguments,
+        build_fast_arguments, build_optimized_arguments, optimized_command_preview,
     },
     media::loudness::{LoudnessAnalysis, LoudnessAnalysisRequest, analyze_loudness},
     media::probe::MediaInfo,
@@ -153,6 +153,55 @@ pub async fn choose_output_path(
 }
 
 #[tauri::command]
+pub async fn choose_audio_output_path(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    default_name: String,
+) -> Result<Option<OutputSelection>, AppError> {
+    if default_name.trim().is_empty() || default_name.len() > 255 {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportOutputNameIsRequired,
+        ));
+    }
+    let (sender, receiver) = std::sync::mpsc::channel();
+    app.dialog()
+        .file()
+        .set_file_name(default_name)
+        .add_filter("M4A audio", &["m4a"])
+        .add_filter("WAV audio", &["wav"])
+        .save_file(move |selected| {
+            let _ = sender.send(selected);
+        });
+    let selected = tauri::async_runtime::spawn_blocking(move || receiver.recv())
+        .await
+        .map_err(|_| AppError::internal("The output dialog task stopped unexpectedly."))?
+        .map_err(|_| AppError::internal("The output dialog closed unexpectedly."))?;
+    let Some(selected) = selected else {
+        return Ok(None);
+    };
+    let path = selected.into_path().map_err(|_| {
+        AppError::invalid_request(AppErrorMessageId::ExportSelectedOutputLocationIsNotSupported)
+    })?;
+    let extension = path
+        .extension()
+        .and_then(OsStr::to_str)
+        .map(str::to_ascii_lowercase);
+    if !matches!(extension.as_deref(), Some("m4a" | "wav")) {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportAudioOutputFormatIsInvalid,
+        ));
+    }
+    let display_name = output_display_name(&path)?;
+    let display_path = path.display().to_string();
+    let output_id = state.register_output(path)?;
+    Ok(Some(OutputSelection {
+        output_id,
+        display_name,
+        display_path,
+    }))
+}
+
+#[tauri::command]
 pub fn resolve_output_selection(
     output_id: String,
     state: State<'_, AppState>,
@@ -225,6 +274,55 @@ pub async fn render_optimized(
         let output_path = state.resolve_output(&output_id)?;
         let display_name = output_display_name(&output_path)?;
         let arguments = build_optimized_arguments(&media, &request, &source.path, &output_path)?;
+        run_export(
+            state.clone(),
+            Arc::clone(&diagnostics),
+            source.path,
+            output_path,
+            display_name,
+            arguments,
+            on_progress,
+            ExportDiagnosticContext {
+                parent_operation_id: diagnostic_parent_operation_id,
+                snapshot_id: diagnostic_snapshot_id,
+            },
+        )
+        .await
+    }
+    .await
+}
+
+#[tauri::command]
+pub async fn render_audio(
+    request: AudioExportRequest,
+    output_id: String,
+    on_progress: Channel<ExportProgress>,
+    diagnostic_parent_operation_id: Option<String>,
+    diagnostic_snapshot_id: Option<String>,
+    state: State<'_, AppState>,
+    diagnostics: State<'_, Arc<DiagnosticsState>>,
+) -> Result<ExportResult, AppError> {
+    async {
+        let source = state.resolve_export_source(&request.source_path)?;
+        let media = source.media.clone().ok_or_else(|| {
+            AppError::invalid_request(AppErrorMessageId::ExportInspectTheVideoBeforeExporting)
+        })?;
+        let output_path = state.resolve_output(&output_id)?;
+        let display_name = output_display_name(&output_path)?;
+        let extension = output_path
+            .extension()
+            .and_then(OsStr::to_str)
+            .map(str::to_ascii_lowercase);
+        let expected_extension = match request.format {
+            crate::media::export::AudioExportFormat::M4a => "m4a",
+            crate::media::export::AudioExportFormat::Wav => "wav",
+        };
+        if extension.as_deref() != Some(expected_extension) {
+            return Err(AppError::invalid_request(
+                AppErrorMessageId::ExportAudioOutputFormatIsInvalid,
+            ));
+        }
+        let arguments = build_audio_arguments(&media, &request, &source.path, &output_path)?;
         run_export(
             state.clone(),
             Arc::clone(&diagnostics),
