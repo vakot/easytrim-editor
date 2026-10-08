@@ -1,4 +1,4 @@
-import type { AudioTrackSettings } from "./audio-processing";
+import { type AudioTrackSettings, serializeAudioTrackSettings } from "./audio-processing";
 import type { CropRect } from "./crop";
 import type { RotationDegrees } from "./rotation";
 import type { SourceRef } from "./source";
@@ -42,10 +42,7 @@ function createEditorSnapshot(input: {
       ? {}
       : { sceneBoundariesMicros: [...input.sceneBoundariesMicros] }),
     audio: {
-      tracks: input.audioTracks.map((track) => ({
-        ...track,
-        processing: { ...track.processing },
-      })),
+      tracks: input.audioTracks.map(serializeAudioTrackSettings),
       mergeAudio: input.mergeAudio,
     },
   };

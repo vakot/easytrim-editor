@@ -9,7 +9,9 @@ import {
   withdrawPendingExport,
 } from "@/app/store/integration/export-queue-runtime";
 import {
+  audioTrackDefaultChanged,
   audioTrackGainChanged,
+  audioTrackMetadataChanged,
   audioTrackProcessingChanged,
   selectAudioTracks,
 } from "@/app/store/slices/audio-slice";
@@ -120,6 +122,27 @@ function createDeferred<T>() {
 }
 
 describe("export snapshot restoration", () => {
+  it("preserves per-track metadata in queued export requests and snapshots", async () => {
+    const { store } = setup(mediaWithAudio(firstSource.sourcePath));
+    store.dispatch(audioTrackDefaultChanged({ streamIndex: 4 }));
+    store.dispatch(audioTrackMetadataChanged({ streamIndex: 4, title: "", language: "de" }));
+
+    store.dispatch(startFastExportRequested());
+
+    await vi.waitFor(() => {
+      const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
+      expect(attempt?.state.status).toBe("queued");
+      expect(attempt?.snapshot.audio.tracks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ streamIndex: 4, isDefault: true, title: "", language: "de" }),
+        ]),
+      );
+      expect(attempt?.request.audioMetadata).toEqual(
+        expect.arrayContaining([{ streamIndex: 4, isDefault: true, title: "", language: "de" }]),
+      );
+    });
+  });
+
   it("builds the queued request and snapshot from the same state after loudness analysis", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
     store.dispatch(
@@ -321,7 +344,17 @@ describe("export snapshot restoration", () => {
   it("keeps queued per-track processing immutable and restores it with the export", async () => {
     const { snapshot, store } = setup(mediaWithAudio(firstSource.sourcePath));
     const processing = { gainDb: -4.5, loudnessNormalization: "streaming" as const };
-    const audioTracks = [{ enabled: true, processing: { ...processing }, streamIndex: 2 }];
+    const audioTracks = [
+      {
+        enabled: true,
+        isDefault: true,
+        language: "de",
+        title: "",
+        processing: { ...processing },
+        streamIndex: 2,
+      },
+    ];
+
     const queuedSnapshot = {
       ...snapshot,
       audio: { ...snapshot.audio, tracks: [{ ...audioTracks[0]!, processing: { ...processing } }] },
@@ -337,6 +370,7 @@ describe("export snapshot restoration", () => {
           processing: { ...value },
           streamIndex,
         })),
+        audioMetadata: [{ streamIndex: 2, isDefault: true, title: "", language: "de" }],
         mergeAudio: false,
         resolution: { height: 720, width: 1280 },
         rotationDegrees: 0,
@@ -350,7 +384,12 @@ describe("export snapshot restoration", () => {
     audioTracks[0]!.processing.gainDb = 8;
     queuedSnapshot.audio.tracks[0]!.processing.gainDb = 8;
     expect(attempt.request.audioTracks[0]?.processing.gainDb).toBe(-4.5);
-    expect(attempt.snapshot.audio.tracks[0]?.processing).toEqual(processing);
+    expect(attempt.snapshot.audio.tracks[0]).toMatchObject({
+      isDefault: true,
+      language: "de",
+      title: "",
+      processing,
+    });
 
     store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
     store.dispatch(
@@ -371,7 +410,14 @@ describe("export snapshot restoration", () => {
 
     expect(selectAudioTracks(store.getState())).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ enabled: true, processing, streamIndex: 2 }),
+        expect.objectContaining({
+          enabled: true,
+          isDefault: true,
+          language: "de",
+          title: "",
+          processing,
+          streamIndex: 2,
+        }),
       ]),
     );
   });

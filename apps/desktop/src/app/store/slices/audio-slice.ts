@@ -10,6 +10,7 @@ import {
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_PROCESSING,
   getAudioTrackPreLevelEffects,
+  normalizeAudioTrackDefaults,
   sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
@@ -202,15 +203,7 @@ const audioSlice = createSlice({
 
       if (!track) return;
       track.enabled = !track.enabled;
-      if (track.enabled) {
-        if (!state.tracks.some((candidate) => candidate.enabled && candidate.isDefault)) {
-          track.isDefault = true;
-        }
-      } else if (track.isDefault) {
-        track.isDefault = false;
-        const nextDefault = state.tracks.find((candidate) => candidate.enabled);
-        if (nextDefault) nextDefault.isDefault = true;
-      }
+      state.tracks = normalizeAudioTrackDefaults(state.tracks);
     },
     audioTrackDefaultChanged: (state, action: PayloadAction<{ streamIndex: number }>) => {
       const track = state.tracks.find(
@@ -221,6 +214,7 @@ const audioSlice = createSlice({
       for (const candidate of state.tracks) {
         candidate.isDefault = candidate.streamIndex === action.payload.streamIndex;
       }
+      state.tracks = normalizeAudioTrackDefaults(state.tracks);
     },
     audioTrackMetadataChanged: (
       state,
@@ -556,7 +550,7 @@ function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTr
     ? snapshot?.audio.tracks.find((track) => track.isDefault)?.streamIndex
     : sourceDefault?.streamIndex;
 
-  return media.audioStreams.map((stream) => {
+  const tracks: AudioTrackState[] = media.audioStreams.map((stream) => {
     const saved = savedTracks.get(stream.streamIndex);
     return {
       streamIndex: stream.streamIndex,
@@ -574,6 +568,8 @@ function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTr
       activityVisible: true,
     };
   });
+
+  return normalizeAudioTrackDefaults(tracks);
 }
 
 function staleAudioTrackPreview(preview: AudioTrackPreviewState): AudioTrackPreviewState {
@@ -589,13 +585,17 @@ function applyWaveformResult(state: AudioState, result: WaveformResult) {
   const track = state.tracks.find((candidate) => candidate.streamIndex === result.streamIndex);
   if (!track || track.waveform.status !== "loading" || track.waveform.jobId !== result.jobId)
     return;
-  if (result.status === "ready" && result.hasSignal === false && track.enabled) {
+  const disabledSilentTrack =
+    result.status === "ready" && result.hasSignal === false && track.enabled;
+
+  if (disabledSilentTrack) {
     track.enabled = false;
   }
   track.waveform =
     result.status === "ready"
       ? { status: "ready", jobId: result.jobId, width: result.width, url: result.url }
       : { status: "failed", jobId: result.jobId, width: result.width, error: result.error };
+  if (disabledSilentTrack) state.tracks = normalizeAudioTrackDefaults(state.tracks);
 }
 
 function updateWaveformTracks(

@@ -662,11 +662,7 @@ async function prepareSelectedSource(
       trim: { kind: "full-source" },
       crop: null,
       rotation: 0,
-      audioTracks: selectAudioTracks(getState()).map(({ enabled, processing, streamIndex }) => ({
-        enabled,
-        streamIndex,
-        processing: { ...processing },
-      })),
+      audioTracks: selectAudioTracks(getState()),
       mergeAudio: selectMergeAudio(getState()),
     });
 

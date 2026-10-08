@@ -48,7 +48,10 @@ import {
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { selectedAudioMetadata, selectedAudioTracks } from "@/domain/audio-export";
-import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
+import {
+  audioTrackLoudnessInputsKey,
+  serializeAudioTrackSettings,
+} from "@/domain/audio-processing";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
@@ -464,11 +467,7 @@ function getCurrentExportSnapshot(state: ReturnType<Parameters<AppThunk>[1]>) {
     flipHorizontal: selectFlipHorizontal(state),
     flipVertical: selectFlipVertical(state),
     rotation: selectRotationDegrees(state),
-    audioTracks: selectAudioTracks(state).map(({ enabled, processing, streamIndex }) => ({
-      enabled,
-      streamIndex,
-      processing: { ...processing },
-    })),
+    audioTracks: selectAudioTracks(state).map(serializeAudioTrackSettings),
     mergeAudio: selectMergeAudio(state),
   });
 }

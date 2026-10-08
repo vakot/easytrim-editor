@@ -384,6 +384,28 @@ function cloneAudioTrackProcessing(processing: AudioTrackProcessing): AudioTrack
   };
 }
 
+function serializeAudioTrackSettings<T extends AudioTrackSettings>(track: T): AudioTrackSettings {
+  return {
+    enabled: track.enabled,
+    ...(track.isDefault === undefined ? {} : { isDefault: track.isDefault }),
+    ...(track.title === undefined ? {} : { title: track.title }),
+    ...(track.language === undefined ? {} : { language: track.language }),
+    streamIndex: track.streamIndex,
+    processing: cloneAudioTrackProcessing(track.processing),
+  };
+}
+
+function normalizeAudioTrackDefaults<T extends AudioTrackSettings>(tracks: T[]): T[] {
+  const defaultStreamIndex =
+    tracks.find((track) => track.enabled && track.isDefault)?.streamIndex ??
+    tracks.find((track) => track.enabled)?.streamIndex;
+
+  return tracks.map((track) => ({
+    ...track,
+    isDefault: track.enabled && track.streamIndex === defaultStreamIndex,
+  }));
+}
+
 const DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION: CustomLoudnessNormalization = {
   mode: "custom",
   targetLufs: -16,
@@ -426,12 +448,14 @@ export {
   getAudioTrackSignalEffects,
   limitAudioPreviewSample,
   loudnessNormalizationTargets,
+  normalizeAudioTrackDefaults,
   parseAudioTrackSignalEffects,
   removeAudioTrackSignalEffect,
   sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
   sameLoudnessNormalization,
+  serializeAudioTrackSettings,
   setAudioTrackSignalEffect,
   SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS,
 };

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { trimChanged } from "@/app/store/slices/trim-slice";
+import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import {
@@ -10,6 +11,7 @@ import {
   audioReducer,
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
+  audioTrackDefaultChanged,
   audioTrackGainChanged,
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
@@ -83,6 +85,40 @@ describe("audio slice", () => {
 
     expect(stale).toEqual(loading);
     expect(current.tracks[0]).toMatchObject({ enabled: false, processing: { gainDb: 0 } });
+    expect(current.tracks[0]?.isDefault).toBe(false);
+    expect(current.tracks[0]?.waveform).toMatchObject({ status: "ready", url: "media://current" });
+    expect(current.tracks[1]?.isDefault).toBe(true);
+  });
+
+  it("restores one enabled default when an older snapshot disables the source default", () => {
+    const snapshot = createEditorSnapshot({
+      source: firstSource,
+      trim: { kind: "full-source" },
+      crop: null,
+      audioTracks: [
+        { enabled: false, streamIndex: 2, processing: { gainDb: 0 } },
+        { enabled: true, streamIndex: 4, processing: { gainDb: 0 } },
+      ],
+      mergeAudio: false,
+    });
+
+    const restored = audioReducer(
+      initialAudioState,
+      sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath), snapshot }),
+    );
+
+    expect(restored.tracks.map(({ enabled, isDefault }) => ({ enabled, isDefault }))).toEqual([
+      { enabled: false, isDefault: false },
+      { enabled: true, isDefault: true },
+    ]);
+  });
+
+  it("keeps exactly one enabled default after default-track changes", () => {
+    const state = audioReducer(readyAudio(), audioTrackDefaultChanged({ streamIndex: 4 }));
+    expect(state.tracks.map(({ enabled, isDefault }) => ({ enabled, isDefault }))).toEqual([
+      { enabled: true, isDefault: false },
+      { enabled: true, isDefault: true },
+    ]);
   });
 
   it("invalidates only the changed track's analyses when its limiter changes", () => {
