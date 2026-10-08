@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/combobox";
 
 describe("Combobox", () => {
-  it("constrains the ScrollArea root and leaves scrolling to its native viewport", () => {
+  it("constrains the native ScrollArea viewport for scrolling", () => {
     render(
       <Combobox defaultOpen label="Search items">
         <ComboboxContent>
@@ -35,7 +35,7 @@ describe("Combobox", () => {
     const scrollArea = list.closest<HTMLElement>('[data-slot="scroll-area"]');
     const viewport = list.closest<HTMLElement>('[data-slot="scroll-area-viewport"]');
 
-    expect(scrollArea).toHaveClass("max-h-72");
+    expect(scrollArea).toHaveClass("*:data-[slot=scroll-area-viewport]:max-h-72");
     expect(viewport).not.toHaveClass("max-h-72");
     expect(viewport).toHaveStyle({ overflowY: "scroll" });
     if (!viewport) throw new Error("Combobox scroll viewport is missing");

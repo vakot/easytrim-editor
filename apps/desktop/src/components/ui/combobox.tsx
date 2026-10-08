@@ -243,7 +243,12 @@ function ComboboxInput({
 }
 
 function ComboboxList({ className, ...props }: React.ComponentProps<typeof CommandList>) {
-  return <CommandList className={cn("mx-0! max-h-72 px-0!", className)} {...props} />;
+  return (
+    <CommandList
+      className={cn("mx-0! px-0! *:data-[slot=scroll-area-viewport]:max-h-72", className)}
+      {...props}
+    />
+  );
 }
 
 function ComboboxEmpty({ ...props }: React.ComponentProps<typeof CommandEmpty>) {
