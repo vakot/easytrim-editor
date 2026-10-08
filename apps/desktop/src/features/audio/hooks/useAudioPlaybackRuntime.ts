@@ -537,6 +537,7 @@ function useAudioPlaybackRuntime({
     if (nativeAudioBindingRef.current) {
       nativeAudioBindingRef.current.binding.gain.gain.value =
         nativeAudioTrack?.enabled && !requiresProcessedPreview ? 10 ** (gainDb / 20) : 0;
+      if (videoRef.current) videoRef.current.volume = 1;
     } else if (videoRef.current) {
       const trackGain =
         nativeAudioTrack?.enabled && !requiresProcessedPreview ? 10 ** (gainDb / 20) : 0;
