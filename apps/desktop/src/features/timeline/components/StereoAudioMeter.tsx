@@ -119,12 +119,13 @@ function StereoAudioMeter() {
   return (
     <div
       aria-label={t("timeline.audioMeter.accessibility.audioLevel")}
-      className="flex w-full flex-col"
+      className="flex w-full flex-1 flex-col"
       role="group"
     >
       <StereoAudioMeterScale />
       <div className="relative flex flex-1 flex-col gap-1">
         <StereoAudioMeterChannel
+          className="rounded-sm rounded-b-xs"
           label={t("timeline.audioMeter.accessibility.leftAudioChannelLevel")}
           peakRef={leftPeakRef}
           ref={leftFillRef}
@@ -132,6 +133,7 @@ function StereoAudioMeter() {
           L
         </StereoAudioMeterChannel>
         <StereoAudioMeterChannel
+          className="rounded-sm rounded-t-xs"
           label={t("timeline.audioMeter.accessibility.rightAudioChannelLevel")}
           peakRef={rightPeakRef}
           ref={rightFillRef}
@@ -145,7 +147,10 @@ function StereoAudioMeter() {
 
 function StereoAudioMeterScale() {
   return (
-    <div aria-hidden="true" className="relative h-3 text-[0.5rem] leading-3 text-muted-foreground">
+    <div
+      aria-hidden="true"
+      className="relative h-3.5 text-[0.5rem] leading-3 text-muted-foreground"
+    >
       {METER_MARKER_LABELS.map(({ label, level }) => (
         <span
           className={cn(
@@ -168,11 +173,13 @@ function StereoAudioMeterScale() {
 
 function StereoAudioMeterChannel({
   children,
+  className,
   label,
   peakRef,
   ref,
 }: {
   children?: React.ReactNode;
+  className?: string;
   label: string;
   peakRef: React.RefObject<HTMLDivElement | null>;
   ref: React.RefObject<HTMLDivElement | null>;
@@ -180,43 +187,41 @@ function StereoAudioMeterChannel({
   return (
     <div
       aria-label={label}
-      className="relative flex flex-1 overflow-hidden rounded-md bg-secondary p-0.75"
+      className={cn("relative flex flex-1 items-center overflow-hidden", className)}
       role="img"
     >
-      <div className="relative flex flex-1 items-center overflow-hidden rounded-sm">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#14532d_0%,#14532d_66.6667%,#713f12_66.6667%,#713f12_85%,#7f1d1d_85%,#7f1d1d_100%)]" />
-        <div className="absolute inset-0" ref={ref}>
-          <div className="absolute inset-y-0 left-0 w-(--meter-safe-level) bg-green-500" />
-          <div className="absolute inset-y-0 left-[66.6667%] w-(--meter-warning-level) bg-orange-500" />
-          <div className="absolute inset-y-0 left-[85%] w-(--meter-clipping-level) bg-red-500" />
-        </div>
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#14532d_0%,#14532d_66.6667%,#713f12_66.6667%,#713f12_85%,#7f1d1d_85%,#7f1d1d_100%)]" />
+      <div className="absolute inset-0" ref={ref}>
+        <div className="absolute inset-y-0 left-0 w-(--meter-safe-level) bg-green-500" />
+        <div className="absolute inset-y-0 left-[66.6667%] w-(--meter-warning-level) bg-orange-500" />
+        <div className="absolute inset-y-0 left-[85%] w-(--meter-clipping-level) bg-red-500" />
+      </div>
 
-        {METER_MARKERS.map(({ label: markerLabel, level }) => (
-          <span
-            aria-hidden="true"
-            className={cn(
-              "pointer-events-none absolute inset-y-0 z-10 w-px -translate-x-1/2",
-              level > 0 && level < 100 && "bg-muted-foreground/30",
-            )}
-            key={level}
-            style={{ left: `${level}%` }}
-            title={markerLabel}
-          />
-        ))}
-
-        <div
-          aria-hidden="true"
-          className="absolute top-0 z-20 h-1 w-2 -translate-x-1/2 rounded-b-sm bg-foreground shadow-sm"
-          hidden
-          ref={peakRef}
-        />
+      {METER_MARKERS.map(({ label: markerLabel, level }) => (
         <span
           aria-hidden="true"
-          className="relative z-10 px-1 text-[0.625rem] leading-none text-shadow-accent"
-        >
-          {children}
-        </span>
-      </div>
+          className={cn(
+            "pointer-events-none absolute inset-y-0 z-10 w-px -translate-x-1/2",
+            level > 0 && level < 100 && "bg-muted-foreground/30",
+          )}
+          key={level}
+          style={{ left: `${level}%` }}
+          title={markerLabel}
+        />
+      ))}
+
+      <div
+        aria-hidden="true"
+        className="absolute top-0 z-20 h-1 w-2 -translate-x-1/2 rounded-b-sm bg-foreground shadow-sm"
+        hidden
+        ref={peakRef}
+      />
+      <span
+        aria-hidden="true"
+        className="relative z-10 px-1 text-[0.625rem] leading-none font-medium text-shadow-accent"
+      >
+        {children}
+      </span>
     </div>
   );
 }
