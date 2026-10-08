@@ -78,6 +78,22 @@ function AudioTrackToggleActivityCheckboxMenuItem({
   return <Slot {...commandProps}>{children}</Slot>;
 }
 
+function AudioTrackDefaultMenuCheckboxItem({
+  children,
+  controller,
+}: { children?: React.ReactNode } & AudioTrackActionsProps) {
+  const track = controller.track;
+  if (!track) return null;
+
+  const commandProps = {
+    checked: track.metadata.isDefault ?? false,
+    disabled: !track.enabled,
+    onCheckedChange: controller.setDefault,
+  };
+
+  return <Slot {...commandProps}>{children}</Slot>;
+}
+
 function AudioTrackEffectsMenuItem({
   children,
 }: { children?: React.ReactNode } & AudioTrackActionsProps) {
@@ -111,7 +127,9 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
         </DropdownMenuCheckboxItem>
       </AudioTrackToggleActivityCheckboxMenuItem>
 
-      <AudioTrackDefaultDropdownMenuCheckboxItem controller={controller} />
+      <AudioTrackDefaultMenuCheckboxItem controller={controller}>
+        <DropdownMenuCheckboxItem keepOpen>{t("audio.tracks.default")}</DropdownMenuCheckboxItem>
+      </AudioTrackDefaultMenuCheckboxItem>
 
       <DropdownMenuItem inset onSelect={openMetadataDialog}>
         {t("audio.tracks.editMetadata")}
@@ -134,32 +152,10 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
   );
 }
 
-function audioTrackDefaultMenuProps(controller: AudioTrackController) {
-  const track = controller.track;
-  if (!track) return undefined;
-  return {
-    checked: track.metadata.isDefault ?? false,
-    disabled: !track.enabled,
-    onCheckedChange: controller.setDefault,
-  };
-}
-
-function AudioTrackDefaultDropdownMenuCheckboxItem({ controller }: AudioTrackActionsProps) {
-  const { t } = useTranslation();
-  const props = audioTrackDefaultMenuProps(controller);
-  if (!props) return null;
-  return (
-    <DropdownMenuCheckboxItem keepOpen {...props}>
-      {t("audio.tracks.default")}
-    </DropdownMenuCheckboxItem>
-  );
-}
-
 function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
   const { t } = useTranslation();
   const { openMetadataDialog } = useAudioTrackMetadataDialog();
   const track = controller.track;
-  const defaultProps = audioTrackDefaultMenuProps(controller);
 
   return (
     <ContextMenuContent>
@@ -175,11 +171,9 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
         </ContextMenuCheckboxItem>
       </AudioTrackToggleActivityCheckboxMenuItem>
 
-      {defaultProps ? (
-        <ContextMenuCheckboxItem keepOpen {...defaultProps}>
-          {t("audio.tracks.default")}
-        </ContextMenuCheckboxItem>
-      ) : null}
+      <AudioTrackDefaultMenuCheckboxItem controller={controller}>
+        <ContextMenuCheckboxItem keepOpen>{t("audio.tracks.default")}</ContextMenuCheckboxItem>
+      </AudioTrackDefaultMenuCheckboxItem>
 
       <ContextMenuItem inset onSelect={openMetadataDialog}>
         {t("audio.tracks.editMetadata")}
