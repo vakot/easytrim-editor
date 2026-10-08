@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 - Added per-audio-track output metadata editing.
 
+### Changed
+
+- Moved per-track gain adjustment into a hover card opened from the track's volume control.
+- Moved the playback volume slider into a hover card beside its toolbar button.
+- Restyled the stereo audio meter as a card in the timeline toolbar.
+
 ## [1.13.1]
 
 ### Added
