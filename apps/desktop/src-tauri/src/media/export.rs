@@ -1277,6 +1277,46 @@ mod tests {
         }
     }
 
+    fn gif_request() -> GifExportRequest {
+        GifExportRequest {
+            source_path: "source.mkv".to_owned(),
+            trim: TrimSelection {
+                start_micros: 1_250_000,
+                end_micros: 4_750_000,
+            },
+            audio_tracks: Vec::new(),
+            merge_audio: false,
+            rotation_degrees: 90,
+            crop: Some(CropSelection {
+                x: 0.1,
+                y: 0.2,
+                width: 0.7,
+                height: 0.6,
+            }),
+            flip_horizontal: true,
+            flip_vertical: true,
+            resolution: ResolutionSelection {
+                width: 640,
+                height: 480,
+            },
+            frame_rate: Some(FrameRateSelection {
+                numerator: 24,
+                denominator: 1,
+            }),
+        }
+    }
+
+    fn gif_error_id(request: &GifExportRequest) -> crate::error::AppErrorMessageId {
+        build_gif_arguments(
+            &media(),
+            request,
+            Path::new("source.mkv"),
+            Path::new("out.gif"),
+        )
+        .expect_err("GIF settings should be rejected")
+        .message_id
+    }
+
     #[test]
     fn fast_copy_maps_only_selected_streams() {
         let args = build_fast_arguments(
@@ -2521,6 +2561,148 @@ mod tests {
                 .message_id,
             crate::error::AppErrorMessageId::ExportOutputFrameRateIsInvalid,
         );
+    }
+
+    #[test]
+    fn gif_arguments_apply_trim_transforms_scaling_palette_and_video_only_output() {
+        let arguments = build_gif_arguments(
+            &media(),
+            &gif_request(),
+            Path::new("source.mkv"),
+            Path::new("out.gif"),
+        )
+        .expect("GIF request is valid")
+        .into_iter()
+        .map(|argument| argument.to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+        let filter = arguments
+            .windows(2)
+            .find(|pair| pair[0] == "-filter_complex")
+            .map(|pair| pair[1].as_str())
+            .expect("filter graph is present");
+
+        assert!(arguments.windows(2).any(|pair| pair == ["-ss", "1.250000"]));
+        assert!(arguments.windows(2).any(|pair| pair == ["-t", "3.500000"]));
+        assert!(filter.contains(
+            "transpose=1,crop=iw*0.7:ih*0.6:iw*0.1:ih*0.2,hflip,vflip,fps=24/1,scale=w='min(640,480*dar)':h='min(480,640/dar)':eval=init:flags=lanczos,setsar=1"
+        ));
+        assert!(filter.contains("[v1]palettegen=stats_mode=diff[palette]"));
+        assert!(filter.contains("[v2][palette]paletteuse=dither=sierra2_4a[out]"));
+        assert!(arguments.windows(2).any(|pair| pair == ["-map", "[out]"]));
+        assert!(arguments.contains(&"-an".to_owned()));
+        assert!(!arguments.iter().any(|argument| argument == "0:a"));
+        assert!(arguments.windows(2).any(|pair| pair == ["-loop", "0"]));
+        assert!(arguments.windows(2).any(|pair| pair == ["-f", "gif"]));
+    }
+
+    #[test]
+    fn gif_settings_reject_invalid_trim_crop_rotation_resolution_frame_rate_and_audio() {
+        let mut request = gif_request();
+        request.trim.end_micros = request.trim.start_micros;
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportSelectedExportRangeIsInvalid
+        );
+
+        let mut request = gif_request();
+        request.crop = Some(CropSelection {
+            x: 0.5,
+            y: 0.0,
+            width: 0.51,
+            height: 1.0,
+        });
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportCropSelectionIsInvalid
+        );
+
+        let mut request = gif_request();
+        request.rotation_degrees = 45;
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportRotationMustBe090180Or270Degrees
+        );
+
+        let mut request = gif_request();
+        request.resolution.width = 0;
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportOutputResolutionMustBeGreaterThanZero
+        );
+
+        let mut request = gif_request();
+        request.frame_rate = Some(FrameRateSelection {
+            numerator: 240,
+            denominator: 1,
+        });
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportOutputFrameRateIsInvalid
+        );
+
+        let mut request = gif_request();
+        request.merge_audio = true;
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportAudioStreamSelectionOrProcessingSettingIsInvalid
+        );
+
+        let mut request = gif_request();
+        request.audio_tracks.push(AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 1,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: None,
+                effects: Vec::new(),
+            },
+        });
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportAudioStreamSelectionOrProcessingSettingIsInvalid
+        );
+    }
+
+    #[test]
+    fn gif_crop_at_source_edge_preserves_transform_order_for_display_aspect_scaling() {
+        let mut source = media();
+        source.video.width = 720;
+        source.video.height = 576;
+        source.video.sample_aspect_ratio = Some("16:15".to_owned());
+        let mut request = gif_request();
+        request.rotation_degrees = 270;
+        request.crop = Some(CropSelection {
+            x: 0.5,
+            y: 0.0,
+            width: 0.5,
+            height: 1.0,
+        });
+        request.resolution = ResolutionSelection {
+            width: 480,
+            height: 480,
+        };
+
+        let arguments = build_gif_arguments(
+            &source,
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.gif"),
+        )
+        .expect("edge-aligned crop is valid")
+        .into_iter()
+        .map(|argument| argument.to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+        let filter = arguments
+            .windows(2)
+            .find(|pair| pair[0] == "-filter_complex")
+            .map(|pair| pair[1].as_str())
+            .expect("filter graph is present");
+
+        assert!(filter.contains("transpose=2,crop=iw*0.5:ih*1:iw*0.5:ih*0,hflip,vflip,"));
+        assert!(filter.contains("scale=w='min(480,480*dar)':h='min(480,480/dar)'"));
+        assert!(filter.contains(
+            "scale=w='min(480,480*dar)':h='min(480,480/dar)':eval=init:flags=lanczos,setsar=1,split"
+        ));
     }
 
     #[test]
