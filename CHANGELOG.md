@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.13.1]
+
 ### Added
 
 - Added a full Preferences dialog, accessible with Ctrl+H.
