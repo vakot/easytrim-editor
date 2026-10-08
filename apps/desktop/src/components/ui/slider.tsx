@@ -18,6 +18,7 @@ function Slider({
   "aria-valuetext": ariaValueText,
   className,
   defaultValue,
+  disabled,
   markers = [],
   max = 100,
   min = 0,
@@ -33,6 +34,10 @@ function Slider({
     [value, defaultValue, min, max],
   );
 
+  React.useEffect(() => {
+    if (disabled) setDragging(false);
+  }, [disabled]);
+
   return (
     <SliderPrimitive.Root
       className={cn(
@@ -42,6 +47,7 @@ function Slider({
       )}
       data-slot="slider"
       defaultValue={defaultValue}
+      disabled={disabled}
       max={max}
       min={min}
       onPointerCancelCapture={(event) => {
@@ -49,7 +55,7 @@ function Slider({
         onPointerCancelCapture?.(event);
       }}
       onPointerDownCapture={(event) => {
-        setDragging(true);
+        setDragging(!disabled);
         onPointerDownCapture?.(event);
       }}
       onPointerUpCapture={(event) => {
@@ -103,7 +109,7 @@ function Slider({
         );
       })}
       {Array.from({ length: _values.length }, (_, index) => (
-        <Tooltip key={index} open={dragging || undefined} preserveOnTrigger>
+        <Tooltip key={index} open={disabled ? false : dragging || undefined} preserveOnTrigger>
           <TooltipTrigger asChild>
             <SliderPrimitive.Thumb
               aria-label={ariaLabel}
