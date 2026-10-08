@@ -102,7 +102,7 @@ function AudioTrackGainControl({
         step={0.5}
         value={[gainSliderDb]}
       />
-      <output className="w-[6ch] shrink-0 text-right text-xs leading-none text-muted-foreground">
+      <output className="w-[7ch] shrink-0 text-right text-xs leading-none text-muted-foreground">
         {formatGain(gainSliderDb, i18n.language)}
       </output>
     </div>
