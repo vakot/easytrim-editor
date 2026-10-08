@@ -187,7 +187,7 @@ function useAudioTrackController(streamIndex: number) {
   );
 
   const setDefault = useCallback(() => {
-    if (!track?.enabled || track.isDefault) return;
+    if (!track?.enabled || track.metadata.isDefault) return;
     dispatch(audioTrackDefaultChanged({ streamIndex }));
     dispatch(commitActiveEditingInstanceDraft());
   }, [dispatch, streamIndex, track]);
@@ -200,16 +200,16 @@ function useAudioTrackController(streamIndex: number) {
       languageChanged: boolean,
     ) => {
       if (!track || !stream) return;
-      const nextTitle = titleChanged ? (title === "" ? undefined : title) : track.title;
+      const nextTitle = titleChanged ? (title === "" ? undefined : title) : track.metadata.title;
       const nextLanguage = languageChanged
         ? language === languageCodeFromMetadata(stream.language)
           ? undefined
           : language === undefined
             ? undefined
             : metadataCodeFromLanguage(language)
-        : track.language;
+        : track.metadata.language;
 
-      if (track.title === nextTitle && track.language === nextLanguage) return;
+      if (track.metadata.title === nextTitle && track.metadata.language === nextLanguage) return;
       dispatch(
         audioTrackMetadataChanged({ language: nextLanguage, streamIndex, title: nextTitle }),
       );

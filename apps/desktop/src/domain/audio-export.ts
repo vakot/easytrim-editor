@@ -17,14 +17,14 @@ function selectedAudioTracks(tracks: readonly AudioTrackSettings[]): AudioTrackS
 function selectedAudioMetadata(tracks: readonly AudioTrackSettings[]) {
   return tracks
     .filter((track) => track.enabled)
-    .map(({ isDefault, language, streamIndex, title }) => {
-      const normalizedLanguage = normalizeMetadataLanguageCode(language);
+    .map(({ metadata, streamIndex }) => {
+      const normalizedLanguage = normalizeMetadataLanguageCode(metadata.language);
 
       return {
-        isDefault: isDefault ?? false,
+        isDefault: metadata.isDefault ?? false,
         ...(normalizedLanguage === undefined ? {} : { language: normalizedLanguage }),
         streamIndex,
-        ...(title === undefined || title === "" ? {} : { title }),
+        ...(metadata.title === undefined || metadata.title === "" ? {} : { title: metadata.title }),
       };
     });
 }

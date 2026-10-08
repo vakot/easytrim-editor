@@ -47,13 +47,17 @@ interface AudioTrackProcessing {
   loudnessNormalization?: LoudnessNormalization;
 }
 
-interface AudioTrackSettings {
-  enabled: boolean;
+interface AudioTrackMetadata {
   isDefault?: boolean;
   language?: string;
+  title?: string;
+}
+
+interface AudioTrackSettings {
+  enabled: boolean;
+  metadata: AudioTrackMetadata;
   processing: AudioTrackProcessing;
   streamIndex: number;
-  title?: string;
 }
 
 interface AudioTrackSelection {
@@ -387,13 +391,17 @@ function cloneAudioTrackProcessing(processing: AudioTrackProcessing): AudioTrack
 }
 
 function serializeAudioTrackSettings<T extends AudioTrackSettings>(track: T): AudioTrackSettings {
-  const language = normalizeMetadataLanguageCode(track.language);
+  const language = normalizeMetadataLanguageCode(track.metadata.language);
 
   return {
     enabled: track.enabled,
-    ...(track.isDefault === undefined ? {} : { isDefault: track.isDefault }),
-    ...(track.title === undefined || track.title === "" ? {} : { title: track.title }),
-    ...(language === undefined ? {} : { language }),
+    metadata: {
+      ...(track.metadata.isDefault === undefined ? {} : { isDefault: track.metadata.isDefault }),
+      ...(track.metadata.title === undefined || track.metadata.title === ""
+        ? {}
+        : { title: track.metadata.title }),
+      ...(language === undefined ? {} : { language }),
+    },
     streamIndex: track.streamIndex,
     processing: cloneAudioTrackProcessing(track.processing),
   };
@@ -401,12 +409,15 @@ function serializeAudioTrackSettings<T extends AudioTrackSettings>(track: T): Au
 
 function normalizeAudioTrackDefaults<T extends AudioTrackSettings>(tracks: T[]): T[] {
   const defaultStreamIndex =
-    tracks.find((track) => track.enabled && track.isDefault)?.streamIndex ??
+    tracks.find((track) => track.enabled && track.metadata.isDefault)?.streamIndex ??
     tracks.find((track) => track.enabled)?.streamIndex;
 
   return tracks.map((track) => ({
     ...track,
-    isDefault: track.enabled && track.streamIndex === defaultStreamIndex,
+    metadata: {
+      ...track.metadata,
+      isDefault: track.enabled && track.streamIndex === defaultStreamIndex,
+    },
   }));
 }
 
@@ -420,6 +431,7 @@ export type {
   AudioLoudnessAnalysis,
   AudioProcessingStage,
   AudioTrackLimiter,
+  AudioTrackMetadata,
   AudioTrackProcessing,
   AudioTrackSelection,
   AudioTrackSettings,

@@ -85,9 +85,9 @@ describe("audio slice", () => {
 
     expect(stale).toEqual(loading);
     expect(current.tracks[0]).toMatchObject({ enabled: false, processing: { gainDb: 0 } });
-    expect(current.tracks[0]?.isDefault).toBe(false);
+    expect(current.tracks[0]?.metadata.isDefault).toBe(false);
     expect(current.tracks[0]?.waveform).toMatchObject({ status: "ready", url: "media://current" });
-    expect(current.tracks[1]?.isDefault).toBe(true);
+    expect(current.tracks[1]?.metadata.isDefault).toBe(true);
   });
 
   it("restores one enabled default when an older snapshot disables the source default", () => {
@@ -96,8 +96,13 @@ describe("audio slice", () => {
       trim: { kind: "full-source" },
       crop: null,
       audioTracks: [
-        { enabled: false, streamIndex: 2, processing: { gainDb: 0 } },
-        { enabled: true, streamIndex: 4, language: "ru", processing: { gainDb: 0 } },
+        { enabled: false, streamIndex: 2, metadata: {}, processing: { gainDb: 0 } },
+        {
+          enabled: true,
+          streamIndex: 4,
+          metadata: { language: "ru" },
+          processing: { gainDb: 0 },
+        },
       ],
       mergeAudio: false,
     });
@@ -107,16 +112,23 @@ describe("audio slice", () => {
       sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath), snapshot }),
     );
 
-    expect(restored.tracks.map(({ enabled, isDefault }) => ({ enabled, isDefault }))).toEqual([
+    expect(
+      restored.tracks.map(({ enabled, metadata }) => ({
+        enabled,
+        isDefault: metadata.isDefault,
+      })),
+    ).toEqual([
       { enabled: false, isDefault: false },
       { enabled: true, isDefault: true },
     ]);
-    expect(restored.tracks[1]?.language).toBe("rus");
+    expect(restored.tracks[1]?.metadata.language).toBe("rus");
   });
 
   it("keeps exactly one enabled default after default-track changes", () => {
     const state = audioReducer(readyAudio(), audioTrackDefaultChanged({ streamIndex: 4 }));
-    expect(state.tracks.map(({ enabled, isDefault }) => ({ enabled, isDefault }))).toEqual([
+    expect(
+      state.tracks.map(({ enabled, metadata }) => ({ enabled, isDefault: metadata.isDefault })),
+    ).toEqual([
       { enabled: true, isDefault: false },
       { enabled: true, isDefault: true },
     ]);

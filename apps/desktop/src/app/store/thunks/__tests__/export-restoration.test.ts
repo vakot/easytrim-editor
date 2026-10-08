@@ -134,12 +134,15 @@ describe("export snapshot restoration", () => {
       expect(attempt?.state.status).toBe("queued");
       expect(attempt?.snapshot.audio.tracks).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ streamIndex: 4, isDefault: true, language: "rus" }),
+          expect.objectContaining({
+            streamIndex: 4,
+            metadata: { isDefault: true, language: "rus" },
+          }),
         ]),
       );
-      expect(attempt?.snapshot.audio.tracks.find((track) => track.streamIndex === 4)?.title).toBe(
-        undefined,
-      );
+      expect(
+        attempt?.snapshot.audio.tracks.find((track) => track.streamIndex === 4)?.metadata.title,
+      ).toBeUndefined();
       expect(attempt?.request.audioMetadata).toEqual(
         expect.arrayContaining([{ streamIndex: 4, isDefault: true, language: "rus" }]),
       );
@@ -350,9 +353,7 @@ describe("export snapshot restoration", () => {
     const audioTracks = [
       {
         enabled: true,
-        isDefault: true,
-        language: "rus",
-        title: "Custom title",
+        metadata: { isDefault: true, language: "rus", title: "Custom title" },
         processing: { ...processing },
         streamIndex: 2,
       },
@@ -390,9 +391,7 @@ describe("export snapshot restoration", () => {
     queuedSnapshot.audio.tracks[0]!.processing.gainDb = 8;
     expect(attempt.request.audioTracks[0]?.processing.gainDb).toBe(-4.5);
     expect(attempt.snapshot.audio.tracks[0]).toMatchObject({
-      isDefault: true,
-      language: "rus",
-      title: "Custom title",
+      metadata: { isDefault: true, language: "rus", title: "Custom title" },
       processing,
     });
 
@@ -417,9 +416,7 @@ describe("export snapshot restoration", () => {
       expect.arrayContaining([
         expect.objectContaining({
           enabled: true,
-          isDefault: true,
-          language: "rus",
-          title: "Custom title",
+          metadata: { isDefault: true, language: "rus", title: "Custom title" },
           processing,
           streamIndex: 2,
         }),

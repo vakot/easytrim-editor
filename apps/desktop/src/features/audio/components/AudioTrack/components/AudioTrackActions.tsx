@@ -138,7 +138,7 @@ function audioTrackDefaultMenuProps(controller: AudioTrackController) {
   const track = controller.track;
   if (!track) return undefined;
   return {
-    checked: track.isDefault ?? false,
+    checked: track.metadata.isDefault ?? false,
     disabled: !track.enabled,
     onCheckedChange: controller.setDefault,
   };

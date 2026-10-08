@@ -213,7 +213,7 @@ const audioSlice = createSlice({
 
       if (!track?.enabled) return;
       for (const candidate of state.tracks) {
-        candidate.isDefault = candidate.streamIndex === action.payload.streamIndex;
+        candidate.metadata.isDefault = candidate.streamIndex === action.payload.streamIndex;
       }
       state.tracks = normalizeAudioTrackDefaults(state.tracks);
     },
@@ -230,8 +230,8 @@ const audioSlice = createSlice({
       );
 
       if (!track) return;
-      track.language = normalizeMetadataLanguageCode(action.payload.language);
-      track.title = action.payload.title || undefined;
+      track.metadata.language = normalizeMetadataLanguageCode(action.payload.language);
+      track.metadata.title = action.payload.title || undefined;
     },
     audioTrackGainChanged: (
       state,
@@ -544,11 +544,11 @@ function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTr
     media.audioStreams.find((stream) => stream.isDefault) ?? media.audioStreams[0];
 
   const snapshotHasDefaultState = snapshot?.audio.tracks.some(
-    (track) => track.isDefault !== undefined,
+    (track) => track.metadata.isDefault !== undefined,
   );
 
   const defaultStreamIndex = snapshotHasDefaultState
-    ? snapshot?.audio.tracks.find((track) => track.isDefault)?.streamIndex
+    ? snapshot?.audio.tracks.find((track) => track.metadata.isDefault)?.streamIndex
     : sourceDefault?.streamIndex;
 
   const tracks: AudioTrackState[] = media.audioStreams.map((stream) => {
@@ -556,12 +556,14 @@ function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTr
     return {
       streamIndex: stream.streamIndex,
       enabled: saved?.enabled ?? true,
-      isDefault: stream.streamIndex === defaultStreamIndex,
-      language: normalizeMetadataLanguageCode(saved?.language),
+      metadata: {
+        isDefault: stream.streamIndex === defaultStreamIndex,
+        language: normalizeMetadataLanguageCode(saved?.metadata.language),
+        title: saved?.metadata.title || undefined,
+      },
       processing: saved?.processing
         ? { ...saved.processing }
         : { ...DEFAULT_AUDIO_TRACK_PROCESSING },
-      title: saved?.title || undefined,
       waveform: { status: "idle" },
       loudnessAnalysis: { status: "idle" },
       activityAnalysis: { status: "idle" },
