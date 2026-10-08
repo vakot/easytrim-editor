@@ -5,6 +5,8 @@ import { Provider } from "react-redux";
 
 import { Card } from "@/components/ui/card";
 
+import type { ExportRoute } from "@/domain/editing-instance";
+
 import {
   createStoryStore,
   type ExportQueueStoryStatus,
@@ -42,7 +44,7 @@ function ExportQueueItemStory({
   route,
   status,
 }: {
-  route?: "fast" | "gif" | "optimized";
+  route?: ExportRoute;
   status: ExportQueueStoryStatus;
 }) {
   const store = createStoryStore([

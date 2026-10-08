@@ -7,7 +7,7 @@ describe("ExportQueueItemRouteIcon", () => {
   it.each([
     ["fast", "lucide-film"],
     ["optimized", "lucide-film"],
-    ["gif", "lucide-image"],
+    ["gif", "lucide-file-image"],
   ] as const)("uses the %s route icon", (route, iconClass) => {
     const { container } = render(<ExportQueueItemRouteIcon route={route} />);
 
