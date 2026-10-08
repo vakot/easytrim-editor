@@ -198,4 +198,73 @@ describe("ExportDialog", () => {
       ),
     );
   });
+
+  it("keeps GIF and optimized resolution and frame-rate selections independent", async () => {
+    planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg optimized preview" });
+    planGifExport.mockResolvedValue({ commandPreview: "ffmpeg gif preview" });
+    const store = createAppStore({
+      getItem: async () => null,
+      setItem: async () => undefined,
+      removeItem: async () => undefined,
+    });
+
+    const optimizedSettings = {
+      frameRate: { denominator: 1, numerator: 24 },
+      resolution: { height: 720, width: 1280 },
+    };
+
+    const gifSettings = {
+      frameRate: { denominator: 1, numerator: 15 },
+      resolution: { height: 360, width: 640 },
+    };
+
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          exportAttempts: [],
+          gifSettings,
+          id: "instance-1",
+          optimizedSettings,
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
+          sourceAvailability: "available",
+        },
+      ]),
+    );
+    store.dispatch(activeEditingInstanceChanged("instance-1"));
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ExportDialog />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    await store.dispatch(openGifExportDialog());
+    await waitFor(() =>
+      expect(planGifExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          frameRate: gifSettings.frameRate,
+          resolution: gifSettings.resolution,
+        }),
+      ),
+    );
+    expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(640);
+    expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(360);
+
+    await store.dispatch(openOptimizedExportDialog());
+    await waitFor(() =>
+      expect(planOptimizedExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          frameRate: optimizedSettings.frameRate,
+          resolution: optimizedSettings.resolution,
+        }),
+      ),
+    );
+    expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(1280);
+    expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(720);
+  });
 });

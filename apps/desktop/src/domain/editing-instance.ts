@@ -73,6 +73,7 @@ interface ExportAttempt {
 interface EditingInstance {
   draftAvailable?: boolean;
   exportAttempts: ExportAttempt[];
+  gifSettings?: ExportSettings;
   id: EditingInstanceId;
   importedAtMicros?: number;
   media?: MediaInfo;

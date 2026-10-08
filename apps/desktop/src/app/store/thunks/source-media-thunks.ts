@@ -28,6 +28,7 @@ import {
   activeEditingInstanceChanged,
   editingInstanceClosed,
   editingInstanceExportAttemptRemoved,
+  editingInstanceGifSettingsChanged,
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
@@ -897,14 +898,15 @@ const restoreExportAttemptRequested =
       }),
     );
     if ("resolution" in attempt.request) {
+      const settings = {
+        frameRate: attempt.request.frameRate,
+        resolution: attempt.request.resolution,
+      };
+
       dispatch(
-        editingInstanceOptimizedSettingsChanged({
-          id: instanceId,
-          settings: {
-            frameRate: attempt.request.frameRate,
-            resolution: attempt.request.resolution,
-          },
-        }),
+        attempt.route === "gif"
+          ? editingInstanceGifSettingsChanged({ id: instanceId, settings })
+          : editingInstanceOptimizedSettingsChanged({ id: instanceId, settings }),
       );
     }
     const restored = selectEditingInstanceById(getState(), instanceId);

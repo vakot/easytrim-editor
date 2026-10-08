@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
-import { optimizedExportSettingsChangedRequested } from "@/app/store/thunks/export-thunks";
+import { exportSettingsChangedRequested } from "@/app/store/thunks/export-thunks";
 import type { ExportSettings } from "@/domain/editing-instance";
 
 import { FRAME_RATE_OPTIONS, rateFromValue } from "../../../lib/export-options.utils";
@@ -32,7 +32,7 @@ function ExportFrameRate({ settings }: ExportFrameRateProps) {
       <Select
         onValueChange={(value) =>
           void dispatch(
-            optimizedExportSettingsChangedRequested({
+            exportSettingsChangedRequested({
               ...settings,
               frameRate: rateFromValue(value),
             }),

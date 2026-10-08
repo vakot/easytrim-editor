@@ -17,6 +17,7 @@ import {
   editingInstanceExportAttemptQueued,
   editingInstanceExportCompleted,
   editingInstanceExportStarted,
+  editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
   selectExportQueue,
   selectImportedEditingInstances,
@@ -30,6 +31,8 @@ import { firstSource, media, mediaWithAudio, secondSource } from "@/test/source.
 import {
   cancelOptimizedExportDialogRequested,
   editExportAttemptRequested,
+  exportSettingsChangedRequested,
+  openOptimizedExportDialog,
   startFastExportRequested,
   startOptimizedExportRequested,
 } from "../export-thunks";
@@ -518,10 +521,11 @@ describe("export snapshot restoration", () => {
     expect(store.getState().export.dialogRoute).toBe("gif");
     expect(store.getState().export.optimizedDialogOpen).toBe(true);
     expect(store.getState().trim.value).toMatchObject(capturedSnapshot.trim);
-    expect(store.getState().editingInstances.entities.original?.optimizedSettings).toMatchObject({
+    expect(store.getState().editingInstances.entities.original?.gifSettings).toMatchObject({
       frameRate: { numerator: 15, denominator: 1 },
       resolution: { height: 360, width: 640 },
     });
+    expect(store.getState().editingInstances.entities.original?.optimizedSettings).toBeUndefined();
 
     store.dispatch(
       trimChanged({
@@ -545,6 +549,14 @@ describe("export snapshot restoration", () => {
 
   it("leaves a queued GIF export unchanged when editing is canceled", async () => {
     const { snapshot, store } = setup();
+    const optimizedSettings = {
+      frameRate: { numerator: 24, denominator: 1 },
+      resolution: { height: 720, width: 1280 },
+    };
+
+    store.dispatch(
+      editingInstanceOptimizedSettingsChanged({ id: "original", settings: optimizedSettings }),
+    );
     const attempt = createExportAttempt({
       capturedAt: 1,
       id: "queued-gif-cancel",
@@ -567,11 +579,34 @@ describe("export snapshot restoration", () => {
     await store.dispatch(
       editExportAttemptRequested({ attemptId: attempt.id, instanceId: "original" }),
     );
+    await store.dispatch(
+      exportSettingsChangedRequested({
+        frameRate: { numerator: 10, denominator: 1 },
+        resolution: { height: 180, width: 320 },
+      }),
+    );
     store.dispatch(cancelOptimizedExportDialogRequested());
 
     expect(selectExportQueue(store.getState())[0]?.attempt).toEqual(attempt);
     expect(store.getState().export.queueEdit).toBeNull();
     expect(store.getState().export.optimizedDialogOpen).toBe(false);
+    expect(store.getState().editingInstances.entities.original?.optimizedSettings).toEqual(
+      optimizedSettings,
+    );
+    expect(store.getState().editingInstances.entities.original?.gifSettings).toEqual({
+      frameRate: { numerator: 10, denominator: 1 },
+      resolution: { height: 180, width: 320 },
+    });
+
+    await store.dispatch(openOptimizedExportDialog());
+    await vi.waitFor(() =>
+      expect(native.planOptimizedExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          frameRate: optimizedSettings.frameRate,
+          resolution: optimizedSettings.resolution,
+        }),
+      ),
+    );
   });
 
   it("edits a queued fast export output in place", async () => {

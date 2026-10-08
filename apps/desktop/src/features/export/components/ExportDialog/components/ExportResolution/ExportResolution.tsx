@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Label } from "@/components/ui/label";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
-import { optimizedExportSettingsChangedRequested } from "@/app/store/thunks/export-thunks";
+import { exportSettingsChangedRequested } from "@/app/store/thunks/export-thunks";
 import type { ExportSettings } from "@/domain/editing-instance";
 
 import { resolutionOptions } from "../../../../lib/export-options.utils";
@@ -31,7 +31,7 @@ function ExportResolution({ cropResolution, settings }: ExportResolutionProps) {
 
   const updateResolution = (resolution: ExportSettings["resolution"]) => {
     void dispatch(
-      optimizedExportSettingsChangedRequested({
+      exportSettingsChangedRequested({
         ...settings,
         resolution,
       }),

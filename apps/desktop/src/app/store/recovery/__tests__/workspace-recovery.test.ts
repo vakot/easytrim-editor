@@ -11,6 +11,7 @@ import { cropChanged, flipToggled, rotationChanged } from "@/app/store/slices/cr
 import {
   activeEditingInstanceChanged,
   editingInstanceExportAttemptQueued,
+  editingInstanceGifSettingsChanged,
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
 import { exportArgumentsChanged } from "@/app/store/slices/export-presets-slice";
@@ -38,6 +39,10 @@ function instance(id: string, source = firstSource) {
     optimizedSettings: {
       frameRate: undefined,
       resolution: { height: 720, width: 1280 },
+    },
+    gifSettings: {
+      frameRate: { denominator: 1, numerator: 15 },
+      resolution: { height: 360, width: 640 },
     },
     origin: "source-import" as const,
     snapshot: createDefaultEditorSnapshot(source, false),
@@ -85,6 +90,15 @@ describe("workspace recovery contract", () => {
     );
     store.dispatch(flipToggled("horizontal"));
     store.dispatch(rotationChanged(90));
+    store.dispatch(
+      editingInstanceGifSettingsChanged({
+        id: "second",
+        settings: {
+          frameRate: { denominator: 1, numerator: 15 },
+          resolution: { height: 360, width: 640 },
+        },
+      }),
+    );
     store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -4 }));
     store.dispatch(audioTrackLoudnessNormalizationChanged({ preset: "broadcast", streamIndex: 2 }));
     store.dispatch(audioMergeToggled());
@@ -194,6 +208,10 @@ describe("workspace recovery contract", () => {
     });
     expect(backup.instances[1]).toMatchObject({
       importedAtMicros: 1234,
+      gifSettings: {
+        frameRate: { denominator: 1, numerator: 15 },
+        resolution: { height: 360, width: 640 },
+      },
       optimizedArguments: "-crf 18",
       optimizedSettings: { resolution: { height: 1344, width: 864 } },
     });

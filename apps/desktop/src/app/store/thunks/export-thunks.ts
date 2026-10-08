@@ -23,6 +23,7 @@ import {
 } from "@/app/store/slices/crop-slice";
 import {
   editingInstanceExportAttemptQueued,
+  editingInstanceGifSettingsChanged,
   editingInstanceOptimizedSettingsChanged,
   selectActiveEditingInstance,
   selectActiveInstanceId,
@@ -164,14 +165,18 @@ const editExportAttemptRequested =
       if (instance.draftAvailable === false || instance.sourceAvailability !== "available") return;
       dispatch(commitActiveEditingInstanceDraft());
       const request = attempt.request as OptimizedExportRequest | GifExportRequest;
+      const settingsAction = {
+        id: instanceId,
+        settings: {
+          frameRate: request.frameRate,
+          resolution: request.resolution,
+        },
+      };
+
       dispatch(
-        editingInstanceOptimizedSettingsChanged({
-          id: instanceId,
-          settings: {
-            frameRate: request.frameRate,
-            resolution: request.resolution,
-          },
-        }),
+        attempt.route === "gif"
+          ? editingInstanceGifSettingsChanged(settingsAction)
+          : editingInstanceOptimizedSettingsChanged(settingsAction),
       );
       const currentInstance = selectEditingInstanceById(getState(), instanceId);
       if (!currentInstance) return;
@@ -291,12 +296,16 @@ const cancelOptimizedExportDialogRequested = (): AppThunk => (dispatch, getState
   }
 };
 
-const optimizedExportSettingsChangedRequested =
+const exportSettingsChangedRequested =
   (settings: ExportSettings): AppThunk =>
   async (dispatch, getState) => {
     const instanceId = selectActiveInstanceId(getState());
     if (!instanceId) return;
-    dispatch(editingInstanceOptimizedSettingsChanged({ id: instanceId, settings }));
+    dispatch(
+      selectExportDialogRoute(getState()) === "gif"
+        ? editingInstanceGifSettingsChanged({ id: instanceId, settings })
+        : editingInstanceOptimizedSettingsChanged({ id: instanceId, settings }),
+    );
     if (selectExportDialogOpen(getState())) await dispatch(refreshExportPlan());
   };
 
@@ -531,11 +540,14 @@ function currentSourceKey(state: ReturnType<Parameters<AppThunk>[1]>) {
   return normalizeSourceKey(selectSourceSelection(state)?.sourcePath ?? "");
 }
 
-function getInitialSettings(state: ReturnType<Parameters<AppThunk>[1]>): ExportSettings | null {
+function getInitialSettings(
+  state: ReturnType<Parameters<AppThunk>[1]>,
+  route: "gif" | "optimized" = "optimized",
+): ExportSettings | null {
   const instance = selectActiveEditingInstance(state);
   if (!instance) return null;
   return (
-    instance.optimizedSettings ?? {
+    (route === "gif" ? instance.gifSettings : instance.optimizedSettings) ?? {
       frameRate: undefined,
       resolution: selectCropResolution(state),
     }
@@ -585,7 +597,7 @@ function getOptimizedRequest(
 function getGifRequest(state: ReturnType<Parameters<AppThunk>[1]>): GifExportRequest | null {
   const source = selectSourceSelection(state);
   const trim = selectTrim(state);
-  const settings = getInitialSettings(state);
+  const settings = getInitialSettings(state, "gif");
   if (!source || !trim || !settings) return null;
   const transform = exportTransform(state);
   return {
@@ -794,10 +806,10 @@ export {
   cancelExportAttemptRequested,
   cancelOptimizedExportDialogRequested,
   editExportAttemptRequested,
+  exportSettingsChangedRequested,
   loadQueueFinishActions,
   openGifExportDialog,
   openOptimizedExportDialog,
-  optimizedExportSettingsChangedRequested,
   refreshExportPlan,
   retryExportAttemptRequested,
   startExportQueue,

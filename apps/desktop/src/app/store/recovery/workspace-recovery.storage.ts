@@ -138,6 +138,14 @@ function isBackup(value: unknown): value is WorkspaceRecoveryBackup {
           (instance.optimizedSettings.frameRate === undefined ||
             instance.optimizedSettings.frameRate === null ||
             isRecord(instance.optimizedSettings.frameRate)))) &&
+      (instance.gifSettings === undefined ||
+        (isRecord(instance.gifSettings) &&
+          isRecord(instance.gifSettings.resolution) &&
+          isFiniteNumber(instance.gifSettings.resolution.height) &&
+          isFiniteNumber(instance.gifSettings.resolution.width) &&
+          (instance.gifSettings.frameRate === undefined ||
+            instance.gifSettings.frameRate === null ||
+            isRecord(instance.gifSettings.frameRate)))) &&
       Array.isArray(instance.exportAttempts) &&
       instance.exportAttempts.every(isExportAttempt),
   );

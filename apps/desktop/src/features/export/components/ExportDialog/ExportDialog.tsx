@@ -48,8 +48,11 @@ function ExportDialog() {
   const activeInstance = useAppSelector(selectActiveEditingInstance);
   const source = useAppSelector(selectSourceMedia);
   const cropResolution = useAppSelector(selectCropResolution);
+  const routeSettings =
+    dialogRoute === "gif" ? activeInstance?.gifSettings : activeInstance?.optimizedSettings;
+
   const settings = activeInstance
-    ? (activeInstance.optimizedSettings ?? {
+    ? (routeSettings ?? {
         frameRate: undefined,
         resolution: cropResolution,
       })
