@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added per-track output title and language editing and default audio track selection.
+- Added per-audio-track output metadata editing.
 
 ## [1.13.1]
 
