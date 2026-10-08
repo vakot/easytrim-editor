@@ -621,7 +621,7 @@ export const en = {
       interrupted: "GIF export interrupted",
       dialog: {
         title: "Export selected segment as GIF",
-        description: "Choose an output width and frame rate before saving the GIF",
+        description: "Choose the GIF resolution and frame rate before saving",
       },
     },
     actions: {

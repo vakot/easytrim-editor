@@ -11,6 +11,7 @@ interface ExportUiState {
   availableQueueFinishActions: QueueFinishAction[];
   commandPreview: string;
   commandPreviewError: AppError | null;
+  dialogRoute: "optimized" | "gif";
   exportQueueDialogOpen: boolean;
   launchError: AppError | null;
   optimizedDialogOpen: boolean;
@@ -24,6 +25,7 @@ export const initialExportState: ExportUiState = {
   availableQueueFinishActions: ["exit", "nothing"],
   commandPreview: "",
   commandPreviewError: null,
+  dialogRoute: "optimized",
   launchError: null,
   exportQueueDialogOpen: false,
   optimizedDialogOpen: false,
@@ -45,10 +47,17 @@ const exportSlice = createSlice({
     },
     optimizedExportDialogOpened: (state) => {
       state.optimizedDialogOpen = true;
+      state.dialogRoute = "optimized";
+      state.launchError = null;
+    },
+    gifExportDialogOpened: (state) => {
+      state.optimizedDialogOpen = true;
+      state.dialogRoute = "gif";
       state.launchError = null;
     },
     optimizedExportDialogClosed: (state) => {
       state.optimizedDialogOpen = false;
+      state.dialogRoute = "optimized";
     },
     optimizedExportPlanRequested: (state, action: PayloadAction<{ requestId: number }>) => {
       state.optimizedPlanRequestId = action.payload.requestId;
@@ -110,6 +119,7 @@ const exportSlice = createSlice({
     });
     builder.addCase(sourceCleared, (state) => {
       state.optimizedDialogOpen = false;
+      state.dialogRoute = "optimized";
       state.optimizedPlanRequestId = null;
       state.commandPreview = "";
       state.commandPreviewError = null;
@@ -122,6 +132,7 @@ const {
   exportLaunchFailed,
   exportQueueDialogClosed,
   exportQueueDialogOpened,
+  gifExportDialogOpened,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
   optimizedExportPlanFailed,
@@ -149,6 +160,9 @@ const selectAvailableQueueFinishActions = (state: RootState): QueueFinishAction[
 const selectOptimizedExportDialogOpen = (state: RootState): boolean =>
   state.export.optimizedDialogOpen;
 
+const selectExportDialogRoute = (state: RootState): ExportUiState["dialogRoute"] =>
+  state.export.dialogRoute;
+
 const selectExportQueueDialogOpen = (state: RootState): boolean =>
   state.export.exportQueueDialogOpen;
 
@@ -164,6 +178,7 @@ export {
   exportQueueDialogClosed,
   exportQueueDialogOpened,
   exportReducer,
+  gifExportDialogOpened,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
   optimizedExportPlanFailed,
@@ -178,6 +193,7 @@ export {
   selectAvailableQueueFinishActions,
   selectExportCommandPreview,
   selectExportCommandPreviewError,
+  selectExportDialogRoute,
   selectExportLaunchError,
   selectExportQueueDialogOpen,
   selectOptimizedExportDialogOpen,

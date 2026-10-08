@@ -1,4 +1,4 @@
-import { List, Scissors, Settings2 } from "lucide-react";
+import { Film, List, Scissors, Settings2 } from "lucide-react";
 import { motion, useAnimationControls, useReducedMotion } from "motion/react";
 import type { ComponentProps } from "react";
 import { useEffect } from "react";
@@ -39,6 +39,7 @@ import {
 } from "@/app/store/slices/export-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
+  openGifExportDialog,
   openOptimizedExportDialog,
   startExportQueue,
   startFastExportRequested,
@@ -47,7 +48,6 @@ import { cn } from "@/lib/class-names.utils";
 
 import { ExportQueue, ExportQueueContent, ExportQueueSummary } from "../components/ExportQueue";
 import { useExportQueue } from "../components/ExportQueue/contexts/ExportQueueContext";
-import { GifExportDialog } from "../components/GifExportDialog";
 
 type ExportQueuePulseTone = "destructive" | "primary" | "success";
 
@@ -142,7 +142,15 @@ function ExportActions() {
         </ExportActionButton>
       </ExportActionTooltip>
 
-      <GifExportDialog disabled={!sourceReady} />
+      <ExportActionButton
+        disabled={!sourceReady}
+        icon={<Film aria-hidden="true" />}
+        onClick={() =>
+          void dispatch(openGifExportDialog({ id: "toolbar.gif-export", type: "button" }))
+        }
+      >
+        {t("export.gif.action")}
+      </ExportActionButton>
     </div>
   );
 }

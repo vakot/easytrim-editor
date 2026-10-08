@@ -64,12 +64,12 @@ interface GifExportRequest {
   crop?: { height: number; width: number; x: number; y: number };
   flipHorizontal: boolean;
   flipVertical: boolean;
-  frameRate: { denominator: number; numerator: number };
+  frameRate?: { denominator: number; numerator: number };
   mergeAudio: false;
+  resolution: { height: number; width: number };
   rotationDegrees: import("./rotation").RotationDegrees;
   sourcePath: string;
   trim: TrimSelection;
-  width: number;
 }
 
 interface LoudnessAnalysisRequest {

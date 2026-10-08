@@ -243,8 +243,9 @@ pub struct GifExportRequest {
     pub flip_horizontal: bool,
     #[serde(default)]
     pub flip_vertical: bool,
-    pub width: u32,
-    pub frame_rate: FrameRateSelection,
+    pub resolution: ResolutionSelection,
+    #[serde(default)]
+    pub frame_rate: Option<FrameRateSelection>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Hash, serde::Serialize)]
@@ -509,18 +510,16 @@ pub fn build_gif_arguments(
     }
     validate_rotation(request.rotation_degrees)?;
     validate_crop(request.crop.as_ref())?;
-    if !(16..=1920).contains(&request.width) {
-        return Err(AppError::invalid_request(
-            AppErrorMessageId::ExportOutputResolutionMustBeGreaterThanZero,
-        ));
-    }
-    if request.frame_rate.numerator == 0
-        || request.frame_rate.denominator == 0
-        || request.frame_rate.numerator as u128 > request.frame_rate.denominator as u128 * 60
-    {
-        return Err(AppError::invalid_request(
-            AppErrorMessageId::ExportOutputFrameRateIsInvalid,
-        ));
+    validate_resolution(&request.resolution)?;
+    if let Some(frame_rate) = &request.frame_rate {
+        if frame_rate.numerator == 0
+            || frame_rate.denominator == 0
+            || frame_rate.numerator as u128 > frame_rate.denominator as u128 * 120
+        {
+            return Err(AppError::invalid_request(
+                AppErrorMessageId::ExportOutputFrameRateIsInvalid,
+            ));
+        }
     }
 
     let (rotation_degrees, flip_horizontal, flip_vertical, crop) =
@@ -560,13 +559,16 @@ pub fn build_gif_arguments(
     if flip_vertical {
         video_filters.push("vflip".to_owned());
     }
-    video_filters.extend([
-        format!(
+    if let Some(frame_rate) = &request.frame_rate {
+        video_filters.push(format!(
             "fps={}/{}",
-            request.frame_rate.numerator, request.frame_rate.denominator
-        ),
-        format!("scale={}:{}:flags=lanczos", request.width, -1),
-    ]);
+            frame_rate.numerator, frame_rate.denominator
+        ));
+    }
+    video_filters.push(format!(
+        "scale={}:{}:flags=lanczos,setsar=1",
+        request.resolution.width, request.resolution.height,
+    ));
     let filter = format!(
         "[0:{}]{},split[v1][v2];[v1]palettegen=stats_mode=diff[palette];[v2][palette]paletteuse=dither=sierra2_4a[out]",
         source.video.stream_index,

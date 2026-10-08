@@ -890,7 +890,7 @@ const restoreExportAttemptRequested =
     dispatch(
       editingInstanceSnapshotUpdated({
         id: instanceId,
-        ...("resolution" in attempt.request
+        ...("arguments" in attempt.request
           ? { optimizedArguments: attempt.request.arguments }
           : {}),
         snapshot: attempt.snapshot,

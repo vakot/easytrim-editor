@@ -30,6 +30,7 @@ import {
 } from "@/app/store/slices/editing-instances-slice";
 import {
   exportLaunchFailed,
+  gifExportDialogOpened,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
   optimizedExportPlanFailed,
@@ -38,6 +39,7 @@ import {
   queueEditFinished,
   queueEditStarted,
   queueFinishActionsAvailable,
+  selectExportDialogRoute,
   selectQueueEdit,
 } from "@/app/store/slices/export-slice";
 import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
@@ -265,6 +267,14 @@ const openOptimizedExportDialog =
     diagnostics.action("export.dialog.opened", origin);
   };
 
+const openGifExportDialog =
+  (origin: DiagnosticOrigin = { id: "gif-export", type: "button" }): AppThunk =>
+  (dispatch, getState) => {
+    if (!getInitialSettings(getState())) return;
+    dispatch(gifExportDialogOpened());
+    diagnostics.action("export.dialog.opened", origin);
+  };
+
 const cancelOptimizedExportDialogRequested = (): AppThunk => (dispatch, getState) => {
   if (selectQueueEdit(getState())) {
     dispatch(cancelQueuedExportEditRequested());
@@ -279,7 +289,9 @@ const optimizedExportSettingsChangedRequested =
     const instanceId = selectActiveInstanceId(getState());
     if (!instanceId) return;
     dispatch(editingInstanceOptimizedSettingsChanged({ id: instanceId, settings }));
-    await dispatch(refreshOptimizedExportPlan());
+    if (selectExportDialogRoute(getState()) === "optimized") {
+      await dispatch(refreshOptimizedExportPlan());
+    }
   };
 
 const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) => {
@@ -347,24 +359,19 @@ const startOptimizedExportRequested =
     void startEditingInstanceExport("optimized", dispatch, getState, origin);
   };
 
-const startGifExportRequested =
-  (settings: { frameRate: { denominator: number; numerator: number }; width: number }): AppThunk =>
-  (dispatch, getState) => {
-    void startEditingInstanceExport(
-      "gif",
-      dispatch,
-      getState,
-      { id: "toolbar.gif-export", type: "button" },
-      settings,
-    );
-  };
+const startGifExportRequested = (): AppThunk => (dispatch, getState) => {
+  dispatch(optimizedExportDialogClosed());
+  void startEditingInstanceExport("gif", dispatch, getState, {
+    id: "toolbar.gif-export",
+    type: "button",
+  });
+};
 
 async function startEditingInstanceExport(
   route: ExportRoute,
   dispatch: Parameters<AppThunk>[0],
   getState: Parameters<AppThunk>[1],
   origin: DiagnosticOrigin,
-  gifSettings?: { frameRate: { denominator: number; numerator: number }; width: number },
 ) {
   const initialState = getState();
   const initialInstance = selectActiveEditingInstance(initialState);
@@ -415,7 +422,7 @@ async function startEditingInstanceExport(
     route === "fast"
       ? getFastRequest(currentState)
       : route === "gif"
-        ? getGifRequest(currentState, gifSettings)
+        ? getGifRequest(currentState)
         : getOptimizedRequest(currentState);
 
   if (!request) return;
@@ -557,12 +564,10 @@ function getOptimizedRequest(
   };
 }
 
-function getGifRequest(
-  state: ReturnType<Parameters<AppThunk>[1]>,
-  settings: { frameRate: { denominator: number; numerator: number }; width: number } | undefined,
-): GifExportRequest | null {
+function getGifRequest(state: ReturnType<Parameters<AppThunk>[1]>): GifExportRequest | null {
   const source = selectSourceSelection(state);
   const trim = selectTrim(state);
+  const settings = getInitialSettings(state);
   if (!source || !trim || !settings) return null;
   const transform = exportTransform(state);
   return {
@@ -574,8 +579,10 @@ function getGifRequest(
     crop: selectCropApplied(state) ? transform.crop : undefined,
     flipHorizontal: transform.flipHorizontal,
     flipVertical: transform.flipVertical,
-    frameRate: settings.frameRate,
-    width: settings.width,
+    frameRate: settings.frameRate
+      ? { numerator: settings.frameRate.numerator, denominator: settings.frameRate.denominator }
+      : undefined,
+    resolution: settings.resolution,
   };
 }
 
@@ -770,6 +777,7 @@ export {
   cancelOptimizedExportDialogRequested,
   editExportAttemptRequested,
   loadQueueFinishActions,
+  openGifExportDialog,
   openOptimizedExportDialog,
   optimizedExportSettingsChangedRequested,
   refreshOptimizedExportPlan,

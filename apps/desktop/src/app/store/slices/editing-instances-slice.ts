@@ -297,7 +297,9 @@ const editingInstancesSlice = createSlice({
       };
 
       if ("resolution" in attempt.request) {
-        restored.optimizedArguments = attempt.request.arguments;
+        if ("arguments" in attempt.request) {
+          restored.optimizedArguments = attempt.request.arguments;
+        }
         restored.optimizedSettings = {
           resolution: attempt.request.resolution,
           frameRate: attempt.request.frameRate,
