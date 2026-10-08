@@ -13,6 +13,14 @@ export const ru = {
       enable: "Включить",
     },
     or: "или",
+    search: {
+      commands: "Поиск команд",
+      commandsPlaceholder: "Поиск команд…",
+      languages: "Поиск языков",
+      languagesPlaceholder: "Поиск языков…",
+      sources: "Поиск",
+      sourcesPlaceholder: "Поиск…",
+    },
     status: {
       error: "Ошибка",
       loading: "Загрузка…",

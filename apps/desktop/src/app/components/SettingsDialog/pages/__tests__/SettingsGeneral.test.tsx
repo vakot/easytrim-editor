@@ -54,5 +54,9 @@ describe("SettingsGeneral", () => {
 
     await waitFor(() => expect(i18n.resolvedLanguage).toBe("ru"));
     expect(screen.getByRole("button", { name: "Язык" })).toHaveTextContent("Русский");
+
+    await user.click(screen.getByRole("button", { name: "Язык" }));
+    const russianSearch = screen.getByRole("combobox", { name: "Поиск языков" });
+    expect(russianSearch).toHaveAttribute("placeholder", "Поиск языков…");
   });
 });
