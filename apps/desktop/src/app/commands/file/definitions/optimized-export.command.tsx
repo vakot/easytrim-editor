@@ -10,6 +10,8 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
 
+import { OPTIMIZED_EXPORT_SHORTCUT } from "../file-shortcuts.constants";
+
 function useOptimizedExportCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -23,7 +25,7 @@ function useOptimizedExportCommand() {
     id: "optimized-export" as const,
     label: t("export.optimized.action"),
     searchTerms: commandSearchTerms(t("commands.searchTerms.optimizedExport")),
-    shortcut: { code: "KeyE", key: "E", modifier: "control" } as const,
+    shortcut: OPTIMIZED_EXPORT_SHORTCUT,
     variant: "default" as const,
   };
 }

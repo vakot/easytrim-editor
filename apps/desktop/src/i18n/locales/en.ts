@@ -537,7 +537,7 @@ export const en = {
       exporting: "Fast Export…",
       action: "Fast Export",
       unavailable: "Fast Export is unavailable after transforming the video",
-      tooltip: "Export the selected segment without re-encoding (Ctrl+S)",
+      tooltip: "Export the selected segment without re-encoding",
     },
     preset: {
       builtIn: {
@@ -601,7 +601,7 @@ export const en = {
     },
     optimized: {
       action: "Optimized Export",
-      tooltip: "Export the selected segment with optimized re-encoding (Ctrl+E)",
+      tooltip: "Export the selected segment with optimized re-encoding",
       started: "Optimized export started",
       running: "Optimized export…",
       completed: "Optimized export completed",
@@ -759,8 +759,8 @@ export const en = {
       copyFailed: "Could not copy the frame to the clipboard",
       saveFailed: "Could not save the frame",
       saved: "Frame saved",
-      nextFrameTooltip: "Next frame (Right Arrow)",
-      previousFrameTooltip: "Previous frame (Left Arrow)",
+      nextFrameTooltip: "Next frame",
+      previousFrameTooltip: "Previous frame",
     },
     markers: {
       next: "Next marker",
@@ -776,8 +776,8 @@ export const en = {
       failed: "Playback could not start",
       loopDisabledTooltip: "Stop when playback reaches its end",
       loopEnabledTooltip: "Restart when playback reaches its end",
-      pauseTooltip: "Pause (Space)",
-      playTooltip: "Play (Space)",
+      pauseTooltip: "Pause",
+      playTooltip: "Play",
       playbackSpeedTooltip: "Adjust preview playback speed",
       playbackVolumeMuteTooltip: "Playback volume (Mute)",
       playbackVolumeUnmuteTooltip: "Playback volume (Unmute)",
@@ -789,8 +789,8 @@ export const en = {
       setStartUnavailable: "Move before the source end to set segment start",
       segmentDisabledTooltip: "Play the complete timeline",
       segmentEnabledTooltip: "Constrain playback to the selected segment",
-      setEndTooltip: "Set segment end to current position (O)",
-      setStartTooltip: "Set segment start to current position (I)",
+      setEndTooltip: "Set segment end to current position",
+      setStartTooltip: "Set segment start to current position",
     },
     transform: {
       crop: "Crop",

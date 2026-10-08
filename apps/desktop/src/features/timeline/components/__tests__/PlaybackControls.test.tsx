@@ -83,6 +83,16 @@ describe("PlaybackControls", () => {
     });
   });
 
+  it("shows the canonical arrow shortcut separately from the tooltip description", async () => {
+    const user = userEvent.setup();
+    render(<PlaybackControls />, { wrapper: TestProvider });
+
+    await user.hover(screen.getByRole("button", { name: "Next frame" }));
+
+    expect(await screen.findByText("Next frame")).toBeInTheDocument();
+    expect(await screen.findByText("→")).toBeInTheDocument();
+  });
+
   it("steps once on press and starts a held shuttle without a duplicate click", () => {
     vi.useFakeTimers();
     render(<PlaybackControls />, { wrapper: TestProvider });

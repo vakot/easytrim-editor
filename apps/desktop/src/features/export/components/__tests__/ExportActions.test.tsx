@@ -29,6 +29,14 @@ describe("ExportActions", () => {
     expect(screen.getByRole("toolbar", { name: "Export actions" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Fast Export" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Optimized Export" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Fast Export" })).toHaveAttribute(
+      "aria-keyshortcuts",
+      "Control+S",
+    );
+    expect(screen.getByRole("button", { name: "Optimized Export" })).toHaveAttribute(
+      "aria-keyshortcuts",
+      "Control+E",
+    );
   });
 
   it("keeps the dialog footer stable and disables Start queue without queued work", async () => {

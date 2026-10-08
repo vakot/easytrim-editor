@@ -16,6 +16,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
+import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
+import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import {
   useTimelineEditing,
@@ -61,7 +64,7 @@ function PlaybackControls({ className }: { className?: string }) {
           onClick={() => {
             editing.onSetSegmentBoundary("start", { type: "button", id: "set-start" });
           }}
-          shortcut="I"
+          shortcut={{ code: "KeyI", key: "I", modifier: "none" }}
           title={
             editing.canSetSegmentStart
               ? t("preview.segment.setStartTooltip")
@@ -123,7 +126,7 @@ function PlaybackControls({ className }: { className?: string }) {
           onClick={() => {
             playback.stepFrame(-1, { type: "button", id: "previous-frame" });
           }}
-          shortcut="ArrowLeft"
+          shortcut={{ code: "ArrowLeft", key: "ArrowLeft", modifier: "none" }}
           title={t("preview.frame.previousFrameTooltip")}
         >
           <SkipBack />
@@ -135,7 +138,7 @@ function PlaybackControls({ className }: { className?: string }) {
             playback.toggle({ type: "button", id: "playback" });
           }}
           primary
-          shortcut="Space"
+          shortcut={{ code: "Space", key: "Space", modifier: "none" }}
           title={
             playback.isPlaying
               ? t("preview.playback.pauseTooltip")
@@ -155,7 +158,7 @@ function PlaybackControls({ className }: { className?: string }) {
           onClick={() => {
             playback.stepFrame(1, { type: "button", id: "next-frame" });
           }}
-          shortcut="ArrowRight"
+          shortcut={{ code: "ArrowRight", key: "ArrowRight", modifier: "none" }}
           title={t("preview.frame.nextFrameTooltip")}
         >
           <SkipForward />
@@ -208,7 +211,7 @@ function PlaybackControls({ className }: { className?: string }) {
           onClick={() => {
             editing.onSetSegmentBoundary("end", { type: "button", id: "set-end" });
           }}
-          shortcut="O"
+          shortcut={{ code: "KeyO", key: "O", modifier: "none" }}
           title={
             editing.canSetSegmentEnd
               ? t("preview.segment.setEndTooltip")
@@ -247,7 +250,7 @@ function TransportButton({
   label: string;
   onClick: () => void;
   primary?: boolean;
-  shortcut: string;
+  shortcut: ApplicationShortcut;
   title: string;
 }) {
   const holdRef = useRef(hold);
@@ -298,7 +301,7 @@ function TransportButton({
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          aria-keyshortcuts={shortcut}
+          aria-keyshortcuts={getShortcutAriaValue(shortcut)}
           aria-label={label}
           aria-pressed={hold ? hold.active : undefined}
           className={cn(
@@ -342,7 +345,7 @@ function TransportButton({
           {children}
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{title}</TooltipContent>
+      <ShortcutTooltipContent shortcut={shortcut} title={title} />
     </Tooltip>
   );
 }
