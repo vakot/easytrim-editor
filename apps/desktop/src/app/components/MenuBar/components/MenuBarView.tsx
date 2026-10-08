@@ -183,6 +183,7 @@ function MenuBarViewAppearance() {
             <ColorSample aria-selected color={primaryColor} />
           </MenubarIcon>
           {t("settings.appearance.color.label")}
+          <MenubarShortcut className="font-mono">{primaryColor.toUpperCase()}</MenubarShortcut>
         </MenubarSubTrigger>
 
         <MenubarSubContent>

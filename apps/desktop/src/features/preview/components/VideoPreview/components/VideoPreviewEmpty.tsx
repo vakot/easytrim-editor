@@ -26,6 +26,12 @@ function VideoPreviewEmpty() {
     keys: [...getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT)],
   };
 
+  const settings: Shortcut = {
+    id: "settings-dialog",
+    label: t("settings.title"),
+    keys: ["Ctrl", "H"],
+  };
+
   const shortcuts: Shortcut[] = [
     {
       id: "open-file",
@@ -85,10 +91,10 @@ function VideoPreviewEmpty() {
               <VideoPreviewEmptyShortcut key={shortcut.id} shortcut={shortcut} />
             ))}
 
-            <VideoPreviewEmptyShortcut
-              className="-mx-2 rounded-xl border border-dashed p-2"
-              shortcut={command}
-            />
+            <div className="-mx-2 grid gap-2 rounded-xl border border-dashed p-2">
+              <VideoPreviewEmptyShortcut shortcut={settings} />
+              <VideoPreviewEmptyShortcut shortcut={command} />
+            </div>
           </div>
 
           <SupportLink />
