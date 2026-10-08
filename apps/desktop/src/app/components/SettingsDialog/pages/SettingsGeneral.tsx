@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 import {
+  type LanguageOption,
   LanguageSelector,
   LanguageSelectorContent,
   LanguageSelectorEmpty,
@@ -78,10 +79,7 @@ function SettingsGeneral() {
                       <LanguageSelectorItem key={language.code} language={language}>
                         <LanguageSelectorItemFlag />
                         <LanguageSelectorItemText>
-                          <SettingsLanguageCoverage
-                            language={language.code as SupportedLanguage}
-                            nativeName={language.nativeName}
-                          />
+                          <SettingsLanguageCoverage language={language} />
                         </LanguageSelectorItemText>
                         <LanguageSelectorItemIndicator />
                       </LanguageSelectorItem>
@@ -109,21 +107,15 @@ function SettingsGeneral() {
   );
 }
 
-function SettingsLanguageCoverage({
-  language,
-  nativeName,
-}: {
-  language: SupportedLanguage;
-  nativeName: string;
-}) {
+function SettingsLanguageCoverage({ language }: { language: LanguageOption }) {
   const { t } = useTranslation();
-  const percentage = translationCoverage[language].percentage;
+  const percentage = translationCoverage[language.code as SupportedLanguage].percentage;
 
   return (
     <div className="flex items-center gap-1">
       <Progress
         aria-label={t("settings.general.language.coverageAccessibleLabel", {
-          language: nativeName,
+          language: language.nativeName,
           percentage,
         })}
         className="h-1"
