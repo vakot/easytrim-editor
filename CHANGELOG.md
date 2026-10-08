@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added compatible output-container choices to Fast Export when selected streams can be remuxed without re-encoding.
+
 ## [1.13.1]
 
 ### Added
