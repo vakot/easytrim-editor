@@ -202,6 +202,41 @@ const audioSlice = createSlice({
 
       if (!track) return;
       track.enabled = !track.enabled;
+      if (track.enabled) {
+        if (!state.tracks.some((candidate) => candidate.enabled && candidate.isDefault)) {
+          track.isDefault = true;
+        }
+      } else if (track.isDefault) {
+        track.isDefault = false;
+        const nextDefault = state.tracks.find((candidate) => candidate.enabled);
+        if (nextDefault) nextDefault.isDefault = true;
+      }
+    },
+    audioTrackDefaultChanged: (state, action: PayloadAction<{ streamIndex: number }>) => {
+      const track = state.tracks.find(
+        (candidate) => candidate.streamIndex === action.payload.streamIndex,
+      );
+
+      if (!track?.enabled) return;
+      for (const candidate of state.tracks) {
+        candidate.isDefault = candidate.streamIndex === action.payload.streamIndex;
+      }
+    },
+    audioTrackMetadataChanged: (
+      state,
+      action: PayloadAction<{
+        language: string | undefined;
+        streamIndex: number;
+        title: string | undefined;
+      }>,
+    ) => {
+      const track = state.tracks.find(
+        (candidate) => candidate.streamIndex === action.payload.streamIndex,
+      );
+
+      if (!track) return;
+      track.language = action.payload.language;
+      track.title = action.payload.title;
     },
     audioTrackGainChanged: (
       state,
@@ -510,14 +545,28 @@ const audioSlice = createSlice({
 
 function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTrackState[] {
   const savedTracks = new Map(snapshot?.audio.tracks.map((track) => [track.streamIndex, track]));
+  const sourceDefault =
+    media.audioStreams.find((stream) => stream.isDefault) ?? media.audioStreams[0];
+
+  const snapshotHasDefaultState = snapshot?.audio.tracks.some(
+    (track) => track.isDefault !== undefined,
+  );
+
+  const defaultStreamIndex = snapshotHasDefaultState
+    ? snapshot?.audio.tracks.find((track) => track.isDefault)?.streamIndex
+    : sourceDefault?.streamIndex;
+
   return media.audioStreams.map((stream) => {
     const saved = savedTracks.get(stream.streamIndex);
     return {
       streamIndex: stream.streamIndex,
       enabled: saved?.enabled ?? true,
+      isDefault: stream.streamIndex === defaultStreamIndex,
+      language: saved?.language,
       processing: saved?.processing
         ? { ...saved.processing }
         : { ...DEFAULT_AUDIO_TRACK_PROCESSING },
+      title: saved?.title,
       waveform: { status: "idle" },
       loudnessAnalysis: { status: "idle" },
       activityAnalysis: { status: "idle" },
@@ -569,11 +618,13 @@ const {
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
   audioTrackActivityVisibilityToggled,
+  audioTrackDefaultChanged,
   audioTrackGainChanged,
   audioTrackLoudnessAnalysisFailed,
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
   audioTrackLoudnessNormalizationChanged,
+  audioTrackMetadataChanged,
   audioTrackPreviewFailed,
   audioTrackPreviewReady,
   audioTrackPreviewStarted,
@@ -622,11 +673,13 @@ export {
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
   audioTrackActivityVisibilityToggled,
+  audioTrackDefaultChanged,
   audioTrackGainChanged,
   audioTrackLoudnessAnalysisFailed,
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
   audioTrackLoudnessNormalizationChanged,
+  audioTrackMetadataChanged,
   audioTrackPlaybackPreviewUrl,
   audioTrackPreviewFailed,
   audioTrackPreviewReady,

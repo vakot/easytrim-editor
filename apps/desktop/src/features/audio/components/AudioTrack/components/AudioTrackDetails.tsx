@@ -4,7 +4,17 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -18,11 +28,24 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [metadataDialogOpen, setMetadataDialogOpen] = useState(false);
+  const [metadataTitle, setMetadataTitle] = useState("");
+  const [metadataLanguage, setMetadataLanguage] = useState("");
   const { stream, track, trackNumber } = controller;
   if (!stream || !track) return null;
 
   const title =
-    stream.title ?? stream.language ?? t("audio.tracks.defaultName", { number: trackNumber });
+    track.title ||
+    stream.title ||
+    track.language ||
+    stream.language ||
+    t("audio.tracks.defaultName", { number: trackNumber });
+
+  const openMetadataDialog = () => {
+    setMetadataTitle(track.title ?? stream.title ?? "");
+    setMetadataLanguage(track.language ?? stream.language ?? "");
+    setMetadataDialogOpen(true);
+  };
 
   return (
     <div
@@ -47,6 +70,7 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
             </p>
             <p className="truncate text-xs text-muted-foreground">
               #{trackNumber} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
+              {track.isDefault ? ` · ${t("audio.tracks.default")}` : ""}
             </p>
           </div>
         </AudioTrackDetailsSection>
@@ -63,8 +87,58 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
             <MoreVertical aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
-        <AudioTrackDropdownMenuContent controller={controller} />
+        <AudioTrackDropdownMenuContent
+          controller={controller}
+          onOpenMetadata={openMetadataDialog}
+        />
       </DropdownMenu>
+      <Dialog onOpenChange={setMetadataDialogOpen} open={metadataDialogOpen}>
+        <DialogContent>
+          <form
+            className="grid gap-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              controller.updateMetadata(metadataTitle, metadataLanguage);
+              setMetadataDialogOpen(false);
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>{t("audio.tracks.metadataTitle")}</DialogTitle>
+              <DialogDescription>{t("audio.tracks.metadataDescription")}</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-2">
+              <Label htmlFor={`audio-track-title-${track.streamIndex}`}>
+                {t("audio.tracks.titleLabel")}
+              </Label>
+              <Input
+                autoComplete="off"
+                id={`audio-track-title-${track.streamIndex}`}
+                maxLength={256}
+                onChange={(event) => setMetadataTitle(event.currentTarget.value)}
+                value={metadataTitle}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor={`audio-track-language-${track.streamIndex}`}>
+                {t("audio.tracks.languageLabel")}
+              </Label>
+              <Input
+                autoComplete="off"
+                id={`audio-track-language-${track.streamIndex}`}
+                maxLength={16}
+                onChange={(event) => setMetadataLanguage(event.currentTarget.value)}
+                pattern="[A-Za-z0-9-]*"
+                placeholder={t("audio.tracks.languagePlaceholder")}
+                title={t("audio.tracks.languageHelp")}
+                value={metadataLanguage}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="submit">{t("common.actions.save")}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

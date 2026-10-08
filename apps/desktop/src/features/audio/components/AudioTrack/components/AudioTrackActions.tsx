@@ -23,6 +23,7 @@ import { useAudioTrackEffectsDialog } from "./AudioTrackEffectsDialog/contexts/a
 
 interface AudioTrackActionsProps {
   controller: AudioTrackController;
+  onOpenMetadata?: () => void;
 }
 
 function activityActionLabel(
@@ -91,7 +92,7 @@ function AudioTrackEffectsMenuItem({
   return <Slot {...commandProps}>{children}</Slot>;
 }
 
-function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
+function AudioTrackDropdownMenuContent({ controller, onOpenMetadata }: AudioTrackActionsProps) {
   const { t } = useTranslation();
   const track = controller.track;
 
@@ -109,6 +110,12 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
         </DropdownMenuCheckboxItem>
       </AudioTrackToggleActivityCheckboxMenuItem>
 
+      <AudioTrackDefaultMenuCheckboxItem controller={controller} />
+
+      <DropdownMenuItem onSelect={onOpenMetadata}>
+        {t("audio.tracks.editMetadata")}
+      </DropdownMenuItem>
+
       <DropdownMenuSeparator />
 
       <AudioTrackEffectsMenuItem controller={controller}>
@@ -123,6 +130,23 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
         </DropdownMenuItem>
       </AudioTrackEffectsMenuItem>
     </DropdownMenuContent>
+  );
+}
+
+function AudioTrackDefaultMenuCheckboxItem({ controller }: AudioTrackActionsProps) {
+  const { t } = useTranslation();
+  const track = controller.track;
+  if (!track) return null;
+
+  return (
+    <DropdownMenuCheckboxItem
+      checked={track.isDefault ?? false}
+      disabled={!track.enabled}
+      keepOpen
+      onCheckedChange={controller.setDefault}
+    >
+      {t("audio.tracks.default")}
+    </DropdownMenuCheckboxItem>
   );
 }
 

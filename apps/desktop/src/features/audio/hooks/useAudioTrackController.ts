@@ -3,7 +3,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   audioTrackActivityVisibilityToggled,
+  audioTrackDefaultChanged,
   audioTrackGainChanged,
+  audioTrackMetadataChanged,
   audioTrackProcessingChanged,
   audioTrackToggled,
   selectAudioTracks,
@@ -179,6 +181,26 @@ function useAudioTrackController(streamIndex: number) {
     [dispatch, streamIndex, track],
   );
 
+  const setDefault = useCallback(() => {
+    if (!track?.enabled || track.isDefault) return;
+    dispatch(audioTrackDefaultChanged({ streamIndex }));
+    dispatch(commitActiveEditingInstanceDraft());
+  }, [dispatch, streamIndex, track]);
+
+  const updateMetadata = useCallback(
+    (title: string, language: string) => {
+      if (!track || !stream) return;
+      const nextTitle = title === (stream.title ?? "") ? undefined : title;
+      const nextLanguage = language === (stream.language ?? "") ? undefined : language;
+      if (track.title === nextTitle && track.language === nextLanguage) return;
+      dispatch(
+        audioTrackMetadataChanged({ language: nextLanguage, streamIndex, title: nextTitle }),
+      );
+      dispatch(commitActiveEditingInstanceDraft());
+    },
+    [dispatch, stream, streamIndex, track],
+  );
+
   const applyProcessing = useCallback(
     (processing: AudioTrackProcessing) => {
       if (!track || sameAudioTrackProcessing(track.processing, processing)) return;
@@ -218,6 +240,7 @@ function useAudioTrackController(streamIndex: number) {
     handleGainKeyUp,
     liveGainDb,
     setEnabled,
+    setDefault,
     startPointerGainInteraction,
     toggleActivityVisibility,
     track,
@@ -225,6 +248,7 @@ function useAudioTrackController(streamIndex: number) {
     trackNumber,
     stream,
     updateLiveGain,
+    updateMetadata,
   };
 }
 

@@ -47,8 +47,11 @@ interface AudioTrackProcessing {
 
 interface AudioTrackSettings {
   enabled: boolean;
+  isDefault?: boolean;
+  language?: string;
   processing: AudioTrackProcessing;
   streamIndex: number;
+  title?: string;
 }
 
 interface AudioTrackSelection {
