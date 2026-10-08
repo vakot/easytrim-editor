@@ -93,7 +93,7 @@ interface LanguageSelectorProps extends Omit<
 > {
   defaultValue?: string | null;
   disabled?: boolean;
-  label: string;
+  label?: string;
   languages: readonly LanguageOption[];
   onValueChange?: (value: string | null) => void;
   value?: string | null;
