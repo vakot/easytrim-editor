@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added per-track output title and language editing and default audio track selection.
+
 ## [1.13.1]
 
 ### Added
