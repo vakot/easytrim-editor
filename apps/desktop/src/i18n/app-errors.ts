@@ -88,6 +88,12 @@ function localizeAppError(error: AppError, t: TFunction): string {
       return t("source.errors.dropVideoFileInsteadOfEmptySelection");
     case "export.analyzeTrackLoudnessToContinue":
       return t("export.errors.analyzeTrackLoudnessToContinue");
+    case "export.audioTrackIsRequired":
+      return t("export.errors.audioTrackIsRequired");
+    case "export.audioOutputFormatIsInvalid":
+      return t("export.errors.audioOutputFormatIsInvalid");
+    case "export.wavRequiresMergedAudioTracks":
+      return t("export.errors.wavRequiresMergedAudioTracks");
     case "media.audio.analyzeTrackLoudnessToPrepareAudioPlayback":
       return t("audio.errors.audio.analyzeTrackLoudnessToPrepareAudioPlayback");
     case "source.selectedSourceCouldNotBeRestored":

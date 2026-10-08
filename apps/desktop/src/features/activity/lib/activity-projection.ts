@@ -6,6 +6,7 @@ import type {
 } from "@/lib/tauri/diagnostics.types";
 
 export type ActivityKind =
+  | "audio-export"
   | "fast-export"
   | "file-deleted"
   | "file-restored"
@@ -51,6 +52,12 @@ interface ActivitySessionDisplayGroup {
   startedAt: string;
 }
 interface ActivityProjectionLabels {
+  audioExportCancelled: string;
+  audioExportCompleted: string;
+  audioExportFailed: string;
+  audioExporting: string;
+  audioExportInterrupted: string;
+  audioExportStarted: string;
   fastExportCancelled: string;
   fastExportCompleted: string;
   fastExportFailed: string;
@@ -462,7 +469,11 @@ function projectExportStart(
   return createActivityEntry(
     event,
     metadata.kind,
-    metadata.kind === "fast-export" ? labels.fastExportStarted : labels.optimizedExportStarted,
+    metadata.kind === "fast-export"
+      ? labels.fastExportStarted
+      : metadata.kind === "audio-export"
+        ? labels.audioExportStarted
+        : labels.optimizedExportStarted,
     {
       path: metadata.path,
       ...(snapshotId ? { snapshotId } : {}),
@@ -586,13 +597,19 @@ function isExportTerminalEvent(event: DiagnosticEvent): boolean {
     event.event === "ffmpeg.export.cancelled"
   );
 }
-function exportMetadata(
-  data: Record<string, DiagnosticValue> | undefined,
-): { kind: Extract<ActivityKind, "fast-export" | "optimized-export">; path?: string } | null {
+function exportMetadata(data: Record<string, DiagnosticValue> | undefined): {
+  kind: Extract<ActivityKind, "audio-export" | "fast-export" | "optimized-export">;
+  path?: string;
+} | null {
   const outputType = data?.outputType ?? data?.route;
-  if (outputType !== "fast" && outputType !== "optimized") return null;
+  if (outputType !== "audio" && outputType !== "fast" && outputType !== "optimized") return null;
   return {
-    kind: outputType === "fast" ? "fast-export" : "optimized-export",
+    kind:
+      outputType === "audio"
+        ? "audio-export"
+        : outputType === "fast"
+          ? "fast-export"
+          : "optimized-export",
     path: diagnosticString(data?.outputPath),
   };
 }
@@ -604,11 +621,18 @@ function exportStatus(
   return "completed";
 }
 function exportTitle(
-  kind: Extract<ActivityKind, "fast-export" | "optimized-export">,
+  kind: Extract<ActivityKind, "audio-export" | "fast-export" | "optimized-export">,
   status: ActivityStatus,
   labels: ActivityProjectionLabels,
 ): string {
   const titles = {
+    "audio-export": {
+      cancelled: labels.audioExportCancelled,
+      completed: labels.audioExportCompleted,
+      failed: labels.audioExportFailed,
+      interrupted: labels.audioExportInterrupted,
+      pending: labels.audioExporting,
+    },
     "fast-export": {
       cancelled: labels.fastExportCancelled,
       completed: labels.fastExportCompleted,
@@ -624,7 +648,7 @@ function exportTitle(
       pending: labels.optimizedExporting,
     },
   } satisfies Record<
-    Extract<ActivityKind, "fast-export" | "optimized-export">,
+    Extract<ActivityKind, "audio-export" | "fast-export" | "optimized-export">,
     Record<ActivityStatus, string>
   >;
 

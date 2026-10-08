@@ -1,5 +1,6 @@
 import type {
   AppError,
+  AudioExportRequest,
   ExportResult,
   FastExportRequest,
   FrameRate,
@@ -10,8 +11,8 @@ import type {
 
 export type EditingInstanceId = string;
 export type InstanceOrigin = "source-import" | "duplicate";
-export type ExportRoute = "fast" | "optimized";
-export type ExportRequest = FastExportRequest | OptimizedExportRequest;
+export type ExportRoute = "audio" | "fast" | "optimized";
+export type ExportRequest = AudioExportRequest | FastExportRequest | OptimizedExportRequest;
 
 interface ExportSettings {
   frameRate: FrameRate | undefined;

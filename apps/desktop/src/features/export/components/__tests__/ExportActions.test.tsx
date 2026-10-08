@@ -17,7 +17,7 @@ import { firstSource } from "@/test/source.fixtures";
 import { ExportActions } from "../ExportActions";
 
 describe("ExportActions", () => {
-  it("keeps both export routes visible while disabling them without a ready source", () => {
+  it("keeps all export routes visible while disabling them without a ready source", () => {
     render(
       <Provider store={createAppStore()}>
         <TooltipProvider>
@@ -29,6 +29,7 @@ describe("ExportActions", () => {
     expect(screen.getByRole("toolbar", { name: "Export actions" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Fast Export" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Optimized Export" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Audio Export" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Fast Export" })).toHaveAttribute(
       "aria-keyshortcuts",
       "Control+S",

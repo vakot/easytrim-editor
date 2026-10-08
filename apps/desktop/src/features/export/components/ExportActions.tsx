@@ -1,4 +1,4 @@
-import { List, Scissors, Settings2 } from "lucide-react";
+import { AudioLines, List, Scissors, Settings2 } from "lucide-react";
 import { motion, useAnimationControls, useReducedMotion } from "motion/react";
 import type { ComponentProps } from "react";
 import { useEffect } from "react";
@@ -27,6 +27,7 @@ import {
 } from "@/app/commands/file/file-shortcuts.constants";
 import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/app/store/redux-hooks";
+import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import {
   selectExportQueue,
@@ -40,6 +41,7 @@ import {
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   openOptimizedExportDialog,
+  startAudioExportRequested,
   startExportQueue,
   startFastExportRequested,
 } from "@/app/store/thunks/export-thunks";
@@ -56,6 +58,10 @@ function ExportActions() {
 
   const exportQueueDialogOpen = useAppSelector(selectExportQueueDialogOpen);
   const sourceReady = useAppSelector(selectSourceReady);
+  const hasSelectedAudio = useAppSelector((state) =>
+    selectAudioTracks(state).some((track) => track.enabled),
+  );
+
   const cropApplied = useAppSelector(selectCropApplied);
   const transformApplied = useAppSelector(selectTransformApplied);
   const queueSummary = useAppSelector(selectExportQueueSummary);
@@ -140,6 +146,17 @@ function ExportActions() {
           {t("export.optimized.action")}
         </ExportActionButton>
       </ExportActionTooltip>
+
+      <ExportActionButton
+        disabled={!sourceReady || !hasSelectedAudio}
+        icon={<AudioLines aria-hidden="true" />}
+        onClick={() => void dispatch(startAudioExportRequested())}
+        title={
+          hasSelectedAudio ? t("export.audioExport.tooltip") : t("export.audioExport.noTracks")
+        }
+      >
+        {t("export.audioExport.action")}
+      </ExportActionButton>
     </div>
   );
 }

@@ -1148,6 +1148,7 @@ mod tests {
         build_optimized_arguments, optimized_command_preview, pre_level_filter_chain,
         validate_audio_track_selections, waveform_signal_filter_chain,
     };
+    use crate::error::AppErrorMessageId;
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
     fn media() -> MediaInfo {
@@ -1292,6 +1293,52 @@ mod tests {
         assert!(values.windows(2).any(|pair| pair == ["-map", "[aout]"]));
         assert!(values.windows(2).any(|pair| pair == ["-c:a", "pcm_s16le"]));
         assert!(!values.windows(2).any(|pair| pair == ["-map", "0:1"]));
+    }
+
+    #[test]
+    fn audio_export_rejects_empty_track_selection() {
+        let mut request = audio_request(AudioExportFormat::M4a, false);
+        request.audio_tracks.clear();
+
+        let error = build_audio_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.m4a"),
+        )
+        .expect_err("audio export requires at least one selected track");
+
+        assert_eq!(
+            error.message_id,
+            AppErrorMessageId::ExportAudioTrackIsRequired
+        );
+    }
+
+    #[test]
+    fn wav_audio_export_requires_merging_multiple_tracks() {
+        let mut request = audio_request(AudioExportFormat::Wav, false);
+        request.audio_tracks.push(AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 2,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: None,
+                effects: Vec::new(),
+            },
+        });
+
+        let error = build_audio_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.wav"),
+        )
+        .expect_err("WAV supports only the merged output selected in the UI");
+
+        assert_eq!(
+            error.message_id,
+            AppErrorMessageId::ExportWavRequiresMergedAudioTracks
+        );
     }
 
     #[test]

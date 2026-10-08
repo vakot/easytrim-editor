@@ -1,6 +1,7 @@
 import type { AudioTrackProcessing } from "@/domain/audio-processing";
 import type {
   AppError,
+  AudioExportRequest,
   AudioStream,
   ChapterInfo,
   ExportProgress,
@@ -102,6 +103,7 @@ export type SourceDropEvent = { active: boolean; status: "drag" } | SourceImport
 
 export type {
   AppError,
+  AudioExportRequest,
   AudioPreviewDescriptor,
   AudioStream,
   BinaryCapability,

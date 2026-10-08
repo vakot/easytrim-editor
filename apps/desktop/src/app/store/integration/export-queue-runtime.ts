@@ -29,7 +29,9 @@ import { normalizeSourceKey } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import {
   cancelOperation,
+  chooseAudioOutputPath,
   chooseOutputPath,
+  exportAudio,
   exportFast,
   moveSourceToTrash,
   releaseExportSource,
@@ -37,7 +39,12 @@ import {
   reserveExportSource,
   resolveOutputSelection,
 } from "@/lib/tauri/media";
-import type { ExportProgress, OptimizedExportRequest } from "@/lib/tauri/media.types";
+import type {
+  AudioExportRequest,
+  ExportProgress,
+  FastExportRequest,
+  OptimizedExportRequest,
+} from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { performQueueFinishAction } from "@/lib/tauri/queue";
 
@@ -315,7 +322,9 @@ async function retryFailedExport(
 
     const output =
       (await resolveOutputSelection(attempt.output.outputId)) ??
-      (await chooseOutputPath(attempt.output.displayName));
+      (attempt.route === "audio"
+        ? await chooseAudioOutputPath(attempt.output.displayName)
+        : await chooseOutputPath(attempt.output.displayName));
 
     if (!output) return false;
     dispatch(editingInstanceExportRetried({ id: instanceId, attemptId, output }));
@@ -488,19 +497,27 @@ async function renderJob(job: RuntimeExportJob) {
     const result =
       job.attempt.route === "fast"
         ? await exportFast(
-            job.attempt.request,
+            job.attempt.request as FastExportRequest,
             job.attempt.output.outputId,
             onProgress,
             job.diagnosticsOperation?.operationId,
             job.instanceId,
           )
-        : await renderOptimized(
-            job.attempt.request as OptimizedExportRequest,
-            job.attempt.output.outputId,
-            onProgress,
-            job.diagnosticsOperation?.operationId,
-            job.instanceId,
-          );
+        : job.attempt.route === "audio"
+          ? await exportAudio(
+              job.attempt.request as AudioExportRequest,
+              job.attempt.output.outputId,
+              onProgress,
+              job.diagnosticsOperation?.operationId,
+              job.instanceId,
+            )
+          : await renderOptimized(
+              job.attempt.request as OptimizedExportRequest,
+              job.attempt.output.outputId,
+              onProgress,
+              job.diagnosticsOperation?.operationId,
+              job.instanceId,
+            );
 
     if (!job.canceled) {
       job.dispatch(

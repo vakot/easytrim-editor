@@ -45,6 +45,16 @@ interface FastExportRequest {
   trim: TrimSelection;
 }
 
+type AudioExportFormat = "m4a" | "wav";
+
+interface AudioExportRequest {
+  audioTracks: AudioTrackSelection[];
+  format: AudioExportFormat;
+  mergeAudio: boolean;
+  sourcePath: string;
+  trim: TrimSelection;
+}
+
 interface AudioActivityRange {
   endMicros: number;
   startMicros: number;
@@ -122,6 +132,8 @@ interface MediaInfo {
 export type {
   AppError,
   AudioActivityRange,
+  AudioExportFormat,
+  AudioExportRequest,
   AudioStream,
   ChapterInfo,
   ExportProgress,

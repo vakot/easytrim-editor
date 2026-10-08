@@ -509,6 +509,9 @@ export const en = {
       renderedOutputIsEmpty: "The rendered output is empty",
       selectedOutputLocationIsNotSupported: "The selected output location is not supported",
       audioStreamSelectionOrProcessingSettingIsInvalid: "An audio stream selection or processing setting is invalid",
+      audioTrackIsRequired: "Select at least one audio track to export audio",
+      audioOutputFormatIsInvalid: "Choose an M4A or WAV output file",
+      wavRequiresMergedAudioTracks: "Merge selected audio tracks to export them as WAV",
       fastExportCannotApplyRotationUseOptimizedExport: "Fast Export cannot apply rotation; use Optimized Export",
       optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths: "Optimized export arguments cannot override input, trim, mapping, filters, output format, or output paths",
       cropSelectionIsInvalid: "The crop selection is invalid",
@@ -533,6 +536,17 @@ export const en = {
       action: "Fast Export",
       unavailable: "Fast Export is unavailable after transforming the video",
       tooltip: "Export the selected segment without re-encoding",
+    },
+    audioExport: {
+      action: "Audio Export",
+      tooltip: "Export the selected audio segment as M4A or WAV",
+      noTracks: "Select an audio track to export",
+      started: "Audio Export started",
+      exporting: "Audio Export…",
+      completed: "Audio Export completed",
+      failed: "Audio Export failed",
+      cancelled: "Audio Export cancelled",
+      interrupted: "Audio Export interrupted",
     },
     preset: {
       builtIn: {
@@ -682,6 +696,7 @@ export const en = {
       },
     },
     routes: {
+      audioExport: "Audio Export",
       fastExport: "Fast Export",
       optimizedExport: "Optimized Export",
     },

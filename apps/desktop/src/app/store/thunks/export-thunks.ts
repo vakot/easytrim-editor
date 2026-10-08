@@ -53,6 +53,7 @@ import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
+import type { AudioExportRequest } from "@/domain/media";
 import { normalizeTransformForExport } from "@/domain/rotation";
 import { normalizeSourceKey } from "@/domain/source";
 import { localizeAppError } from "@/i18n/app-errors";
@@ -60,6 +61,7 @@ import { i18n } from "@/i18n/config";
 import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 import {
+  chooseAudioOutputPath,
   chooseOutputPath,
   planOptimizedExport,
   releaseExportSource,
@@ -152,6 +154,7 @@ const editExportAttemptRequested =
         await finishQueuedExportEdit(dispatch, getState);
         return;
       }
+      if (attempt.route === "audio") return;
 
       if (instance.draftAvailable === false || instance.sourceAvailability !== "available") return;
       dispatch(commitActiveEditingInstanceDraft());
@@ -330,6 +333,13 @@ const startFastExportRequested =
     await startEditingInstanceExport("fast", dispatch, getState, origin);
   };
 
+const startAudioExportRequested = (): AppThunk<Promise<void>> => async (dispatch, getState) => {
+  await startEditingInstanceExport("audio", dispatch, getState, {
+    id: "audio-export",
+    type: "button",
+  });
+};
+
 const startOptimizedExportRequested =
   (origin: DiagnosticOrigin = { id: "optimized", type: "button" }): AppThunk =>
   (dispatch, getState) => {
@@ -389,10 +399,15 @@ async function startEditingInstanceExport(
   )
     return;
 
-  const request =
-    route === "fast" ? getFastRequest(currentState) : getOptimizedRequest(currentState);
+  const initialRequest =
+    route === "fast"
+      ? getFastRequest(currentState)
+      : route === "audio"
+        ? getAudioRequest(currentState, "m4a")
+        : getOptimizedRequest(currentState);
 
-  if (!request) return;
+  if (!initialRequest) return;
+  let request: FastExportRequest | OptimizedExportRequest | AudioExportRequest = initialRequest;
 
   const snapshot = getCurrentExportSnapshot(currentState);
   if (!snapshot) return;
@@ -404,8 +419,16 @@ async function startEditingInstanceExport(
   const attemptId = nextAttemptId();
   dispatch(nativeDialogStateChanged(true));
   try {
-    const output = await chooseOutputPath(outputDefaults(source.displayName)[route]);
+    const output =
+      route === "audio"
+        ? await chooseAudioOutputPath(outputDefaults(source.displayName).audio)
+        : await chooseOutputPath(outputDefaults(source.displayName)[route]);
+
     if (!output) return;
+    if (route === "audio") {
+      const format = output.displayName.toLowerCase().endsWith(".wav") ? "wav" : "m4a";
+      request = { ...(request as AudioExportRequest), format };
+    }
     if (
       selectActiveInstanceId(getState()) !== instance.id ||
       currentSourceKey(getState()) !== normalizeSourceKey(source.sourcePath) ||
@@ -434,7 +457,10 @@ async function startEditingInstanceExport(
       request: structuredClone(request),
       route,
       snapshot,
-      totalFrames: getTotalFrames(request, media.video),
+      totalFrames:
+        route === "audio"
+          ? undefined
+          : getTotalFrames(request as FastExportRequest | OptimizedExportRequest, media.video),
     });
 
     dispatch(editingInstanceExportAttemptQueued({ id: instance.id, attempt }));
@@ -499,6 +525,22 @@ function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportR
     audioTracks: exportAudioTracks(state),
     mergeAudio: selectMergeAudio(state),
     rotationDegrees: transform.rotationDegrees,
+  };
+}
+
+function getAudioRequest(
+  state: ReturnType<Parameters<AppThunk>[1]>,
+  format: AudioExportRequest["format"],
+): AudioExportRequest | null {
+  const source = selectSourceSelection(state);
+  const trim = selectTrim(state);
+  if (!source || !trim) return null;
+  return {
+    sourcePath: source.sourcePath,
+    trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
+    audioTracks: exportAudioTracks(state),
+    mergeAudio: selectMergeAudio(state),
+    format,
   };
 }
 
@@ -723,6 +765,7 @@ export {
   optimizedExportSettingsChangedRequested,
   refreshOptimizedExportPlan,
   retryExportAttemptRequested,
+  startAudioExportRequested,
   startExportQueue,
   startFastExportRequested,
   startOptimizedExportRequested,
