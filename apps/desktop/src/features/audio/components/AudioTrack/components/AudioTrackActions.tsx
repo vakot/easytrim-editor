@@ -196,7 +196,7 @@ function AudioTrackEffectsMenuItem({
 
   const commandProps = {
     "aria-label": t("audio.effects.open"),
-    onSelect: openEffects,
+    onSelect: () => openEffects(),
   };
 
   return <Slot {...commandProps}>{children}</Slot>;

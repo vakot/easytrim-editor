@@ -14,6 +14,8 @@ import { useAudioPlayback } from "@/features/audio";
 
 import { formatGain } from "../../../lib/audio-level.utils";
 
+import { useAudioTrackEffectsDialog } from "./AudioTrackEffectsDialog/contexts/audio-track-effects-dialog-context";
+
 const MIN_GAIN_DB_SLIDER = -24;
 const MAX_GAIN_DB_SLIDER = 12;
 const MIN_GAIN_DB = -60;
@@ -29,6 +31,7 @@ function AudioTrackGainControl({
   trackNumber: number;
 }) {
   const { i18n, t } = useTranslation();
+  const { openEffects } = useAudioTrackEffectsDialog();
   const dispatch = useAppDispatch();
   const { clearLiveAudioTrackGain, setLiveAudioTrackGain } = useAudioPlayback();
   const track = useAppSelector((state) =>
@@ -104,14 +107,22 @@ function AudioTrackGainControl({
   });
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex size-full h-12 items-center justify-center p-4 text-xs text-muted-foreground">
-          {levelSummary}
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>{t("audio.normalization.manualGainUnavailable")}</TooltipContent>
-    </Tooltip>
+    <div className="flex size-full items-center justify-center p-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={t("audio.normalization.label")}
+            className="text-xs leading-none font-normal text-muted-foreground tabular-nums"
+            onClick={() => openEffects("loudnessNormalization")}
+            size="sm"
+            variant="link"
+          >
+            {levelSummary}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t("audio.normalization.manualGainUnavailable")}</TooltipContent>
+      </Tooltip>
+    </div>
   );
 }
 

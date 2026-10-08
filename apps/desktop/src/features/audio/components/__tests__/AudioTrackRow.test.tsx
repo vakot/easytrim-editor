@@ -31,6 +31,7 @@ import {
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
+import { AudioTrackEffectsDialogContext } from "../AudioTrack/components/AudioTrackEffectsDialog/contexts/audio-track-effects-dialog-context";
 import { AudioTrackGainControl } from "../AudioTrack/components/AudioTrackGainControl";
 
 const audioPlayback = {
@@ -87,6 +88,7 @@ function renderGainControl(enabled = true) {
   }
 
   const clearLiveAudioTrackGain = vi.fn();
+  const openEffects = vi.fn();
   const gainCommits: number[] = [];
   const dispatch = store.dispatch;
   store.dispatch = ((action: Parameters<typeof dispatch>[0]) => {
@@ -97,13 +99,15 @@ function renderGainControl(enabled = true) {
   render(
     <Provider store={store}>
       <AudioPlaybackContext.Provider value={{ ...audioPlayback, clearLiveAudioTrackGain }}>
-        <TooltipProvider>
-          <AudioTrackGainControl
-            onLiveGainChange={() => undefined}
-            streamIndex={2}
-            trackNumber={1}
-          />
-        </TooltipProvider>
+        <AudioTrackEffectsDialogContext.Provider value={{ openEffects }}>
+          <TooltipProvider>
+            <AudioTrackGainControl
+              onLiveGainChange={() => undefined}
+              streamIndex={2}
+              trackNumber={1}
+            />
+          </TooltipProvider>
+        </AudioTrackEffectsDialogContext.Provider>
       </AudioPlaybackContext.Provider>
     </Provider>,
   );
@@ -183,6 +187,42 @@ describe("AudioTrackRow", () => {
       processing: { gainDb: -2.5, loudnessNormalization: "streaming" },
     });
     expect(gainCommits).toHaveLength(gainCommitCount);
+  });
+
+  it("opens Audio Effects directly on Loudness Normalization from the disabled Gain control", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    act(() => {
+      store.dispatch(
+        audioTrackProcessingChanged({
+          streamIndex: 2,
+          processing: { gainDb: 0, loudnessNormalization: "streaming" },
+        }),
+      );
+    });
+
+    await user.hover(screen.getByRole("button", { name: /mute.*eng/i }));
+    const normalizationTrigger = screen.getByRole("button", { name: /loudness normalization/i });
+    await user.hover(normalizationTrigger);
+    expect(
+      await screen.findByText(
+        "Manual Gain is unavailable while automatic normalization is applied",
+      ),
+    ).toBeInTheDocument();
+    await user.click(normalizationTrigger);
+
+    const normalizationTab = screen.getByRole("tab", { name: /loudness normalization/i });
+    expect(normalizationTab).toHaveAttribute("aria-selected", "true");
+
+    await user.click(screen.getByRole("tab", { name: /high-pass filter/i }));
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+    await user.hover(screen.getByRole("button", { name: /mute.*eng/i }));
+    await user.click(screen.getByRole("button", { name: /loudness normalization/i }));
+
+    expect(screen.getByRole("tab", { name: /loudness normalization/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   it("scales the existing waveform during live gain adjustment", async () => {
@@ -290,6 +330,10 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
     expect(screen.getByRole("dialog", { name: /effects/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /high-pass filter/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     await user.click(screen.getByRole("tab", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
     expect(

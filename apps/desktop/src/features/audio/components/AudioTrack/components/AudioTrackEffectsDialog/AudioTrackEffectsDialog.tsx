@@ -17,7 +17,10 @@ import { localizeAppError } from "@/i18n/app-errors";
 
 import type { AudioTrackController } from "../../../../hooks/useAudioTrackController";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
-import { AUDIO_TRACK_EFFECTS } from "../AudioTrackEffectsLibrary/consts/audio-track-effects";
+import {
+  AUDIO_TRACK_EFFECTS,
+  type AudioTrackEffectId,
+} from "../AudioTrackEffectsLibrary/consts/audio-track-effects";
 
 import { AudioTrackEffectsDraftProvider } from "./components/AudioTrackEffectsDraftProvider";
 import { AudioTrackEffectsDialogContext } from "./contexts/audio-track-effects-dialog-context";
@@ -36,12 +39,14 @@ interface AudioTrackEffectsDialogProps {
 function AudioTrackEffectsDialog({ children, controller }: AudioTrackEffectsDialogProps) {
   const [open, setOpen] = useState(false);
   const [draftSession, setDraftSession] = useState(0);
+  const [initialView, setInitialView] = useState<AudioTrackEffectId | undefined>();
   const track = controller.track;
   const stream = controller.stream;
 
   if (!track || !stream) return children;
 
-  const openEffects = () => {
+  const openEffects = (view?: AudioTrackEffectId) => {
+    setInitialView(view);
     setDraftSession((session) => session + 1);
     setOpen(true);
   };
@@ -52,14 +57,20 @@ function AudioTrackEffectsDialog({ children, controller }: AudioTrackEffectsDial
 
       <LibraryDialog onOpenChange={setOpen} open={open}>
         <AudioTrackEffectsDraftProvider initialProcessing={track.processing} key={draftSession}>
-          <AudioTrackEffectsDialogContent controller={controller} />
+          <AudioTrackEffectsDialogContent controller={controller} initialView={initialView} />
         </AudioTrackEffectsDraftProvider>
       </LibraryDialog>
     </AudioTrackEffectsDialogContext.Provider>
   );
 }
 
-function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrackController }) {
+function AudioTrackEffectsDialogContent({
+  controller,
+  initialView,
+}: {
+  controller: AudioTrackController;
+  initialView?: AudioTrackEffectId;
+}) {
   const { t } = useTranslation();
   const { draft } = useAudioTrackEffectsDraft();
   const track = controller.track;
@@ -82,7 +93,7 @@ function AudioTrackEffectsDialogContent({ controller }: { controller: AudioTrack
         <LibraryDialogDescription>{t("audio.effects.dialog.description")}</LibraryDialogDescription>
       </LibraryDialogHeader>
 
-      <AudioTrackEffectsLibrary streamIndex={track.streamIndex} />
+      <AudioTrackEffectsLibrary initialView={initialView} streamIndex={track.streamIndex} />
 
       {track.preview.status === "loading" || track.preview.status === "failed" ? (
         <div className="-mx-4 border-t px-4 py-2">
