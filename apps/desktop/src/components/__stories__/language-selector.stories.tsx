@@ -120,7 +120,7 @@ function DropdownMenuSubmenuExample() {
           label="Search languages"
           languages={SUPPORTED_LANGUAGES}
           onValueChange={(code) => {
-            setLanguageCode(code);
+            setLanguageCode(code ?? "");
             setSubmenuOpen(false);
           }}
           value={languageCode}

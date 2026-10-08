@@ -74,8 +74,8 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
   const { stream, track } = controller;
   const [metadataTitle, setMetadataTitle] = useState("");
   const [metadataTitleChanged, setMetadataTitleChanged] = useState(false);
-  const [metadataLanguage, setMetadataLanguage] = useState<Language["code"] | undefined>(
-    languageCodeFromMetadata(track?.language ?? stream?.language),
+  const [metadataLanguage, setMetadataLanguage] = useState<Language["code"] | null>(
+    languageCodeFromMetadata(track?.language ?? stream?.language) ?? null,
   );
 
   const [metadataLanguageChanged, setMetadataLanguageChanged] = useState(false);
@@ -91,7 +91,7 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
           controller.updateMetadata(
             metadataTitle,
             metadataTitleChanged,
-            metadataLanguage,
+            metadataLanguage ?? undefined,
             metadataLanguageChanged,
           );
           closeMetadataDialog();
@@ -147,7 +147,7 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
               <Button
                 aria-label={t("audio.tracks.useSourceLanguage")}
                 onClick={() => {
-                  setMetadataLanguage(languageCodeFromMetadata(stream.language));
+                  setMetadataLanguage(languageCodeFromMetadata(stream.language) ?? null);
                   setMetadataLanguageChanged(true);
                 }}
                 size="icon"

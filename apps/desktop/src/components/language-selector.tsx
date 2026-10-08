@@ -77,6 +77,18 @@ interface LanguageSelectorItemContextValue {
   selected: boolean;
 }
 
+interface LanguageSelectorProps extends Omit<
+  React.ComponentProps<typeof Combobox>,
+  "defaultValue" | "label" | "onValueChange" | "shouldFilter" | "value"
+> {
+  defaultValue?: string | null;
+  disabled?: boolean;
+  label: string;
+  languages: readonly LanguageOption[];
+  onValueChange?: (value: string | null) => void;
+  value?: string | null;
+}
+
 const LanguageSelectorContext = React.createContext<LanguageSelectorContextValue | null>(null);
 const LanguageSelectorItemContext = React.createContext<LanguageSelectorItemContextValue | null>(
   null,
@@ -153,32 +165,25 @@ function getLanguageDisplayName(language: LanguageOption): string {
     : `${language.nativeName} (${language.englishName})`;
 }
 
-function LanguageSelector(
-  selectorProps: Omit<React.ComponentProps<typeof Combobox>, "label" | "shouldFilter"> & {
-    defaultValue?: string;
-    disabled?: boolean;
-    label: string;
-    languages: readonly LanguageOption[];
-    onValueChange?: (value: string) => void;
-    value?: string;
-  },
-) {
-  const {
-    children,
-    defaultValue,
-    disabled = false,
-    label,
-    languages,
-    onOpenChange,
-    onValueChange,
-    value,
-    ...props
-  } = selectorProps;
+function LanguageSelector({
+  children,
+  defaultOpen,
+  defaultValue,
+  disabled = false,
+  label,
+  languages,
+  onOpenChange,
+  onValueChange,
+  value,
+  ...props
+}: LanguageSelectorProps) {
+  const [uncontrolledValue, setUncontrolledValue] = React.useState<string | null>(
+    defaultValue ?? null,
+  );
 
-  const isValueControlled = Object.prototype.hasOwnProperty.call(selectorProps, "value");
-  const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue);
   const [query, setQuery] = React.useState<string | null>(null);
 
+  const isValueControlled = value !== undefined;
   const selectedValue = isValueControlled ? value : uncontrolledValue;
   const language = React.useMemo(
     () => languages.find((language) => language.code === selectedValue),
@@ -226,6 +231,7 @@ function LanguageSelector(
   return (
     <LanguageSelectorContext.Provider value={context}>
       <Combobox
+        defaultOpen={defaultOpen}
         label={label}
         onOpenChange={(open) => {
           if (!open) setQuery(null);

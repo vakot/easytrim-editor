@@ -87,7 +87,9 @@ function SettingsGeneral() {
             label={t("common.search.languages")}
             languages={SUPPORTED_LANGUAGES}
             onValueChange={(nextLanguage) => {
-              if (isSupportedLanguage(nextLanguage)) void i18n.changeLanguage(nextLanguage);
+              if (nextLanguage && isSupportedLanguage(nextLanguage)) {
+                void i18n.changeLanguage(nextLanguage);
+              }
             }}
             value={language}
           >

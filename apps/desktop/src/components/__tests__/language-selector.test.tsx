@@ -46,6 +46,64 @@ function CustomLanguageOptions() {
 }
 
 describe("LanguageSelector", () => {
+  it("uses defaultValue as the initial uncontrolled selection", () => {
+    render(
+      <LanguageSelector defaultValue="ru" label="Search languages" languages={languages}>
+        <LanguageSelectorTrigger>
+          <button aria-label="Choose language" type="button">
+            <LanguageSelectorValue placeholder="Select language" />
+          </button>
+        </LanguageSelectorTrigger>
+      </LanguageSelector>,
+    );
+
+    expect(screen.getByRole("button", { name: "Choose language" })).toHaveTextContent(
+      "Русский (Russian)",
+    );
+  });
+
+  it("distinguishes a controlled selection from an explicitly empty value", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    const renderSelector = (value: string | null) => (
+      <LanguageSelector
+        defaultValue="ru"
+        label="Search languages"
+        languages={languages}
+        onValueChange={onValueChange}
+        value={value}
+      >
+        <LanguageSelectorTrigger>
+          <button aria-label="Choose language" type="button">
+            <LanguageSelectorValue placeholder="Select language" />
+          </button>
+        </LanguageSelectorTrigger>
+        <LanguageSelectorContent>
+          <LanguageSelectorList>
+            <LanguageSelectorOptions />
+          </LanguageSelectorList>
+        </LanguageSelectorContent>
+      </LanguageSelector>
+    );
+
+    const { rerender } = render(renderSelector("en"));
+    const trigger = screen.getByRole("button", { name: "Choose language" });
+    expect(trigger).toHaveTextContent("English");
+
+    rerender(renderSelector(null));
+    expect(trigger).toHaveTextContent("Select language");
+    expect(trigger).not.toHaveTextContent("Русский");
+
+    await user.click(trigger);
+    await user.click(screen.getByRole("option", { name: "Русский (Russian), ru" }));
+
+    expect(onValueChange).toHaveBeenCalledWith("ru");
+    expect(trigger).toHaveTextContent("Select language");
+
+    rerender(renderSelector("ru"));
+    expect(trigger).toHaveTextContent("Русский (Russian)");
+  });
+
   it("passes custom classes when wrapping submenu content", () => {
     render(
       <LanguageSelector label="Search languages" languages={languages}>
