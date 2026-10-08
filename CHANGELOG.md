@@ -13,7 +13,6 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Updated the language selection UI with flags, translation coverage, search, and a contribution link.
-- Standardized export terminology around Fast Export, Optimized Export, and Export Queue.
 - Changed the Command Center shortcut from Ctrl+H / Cmd+H to `/`.
 
 ### Removed
