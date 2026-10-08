@@ -5,6 +5,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { en } from "@/i18n/locales/en";
+import { ru } from "@/i18n/locales/ru";
+
 import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../../lib/editor-shortcuts";
 import { PlaybackControls } from "../PlaybackControls";
 
@@ -65,6 +68,21 @@ afterEach(() => {
 });
 
 describe("PlaybackControls", () => {
+  it("keeps unavailable boundary reasons distinct in English and Russian", () => {
+    expect(en.preview.segment.setStartUnavailable).toBe(
+      "The segment cannot start at the end of the source",
+    );
+    expect(en.preview.segment.setEndUnavailable).toBe(
+      "The segment cannot end at the start of the source",
+    );
+    expect(ru.preview.segment.setStartUnavailable).toBe(
+      "Сегмент не может начинаться в конце источника",
+    );
+    expect(ru.preview.segment.setEndUnavailable).toBe(
+      "Сегмент не может заканчиваться в начале источника",
+    );
+  });
+
   it("routes trim boundary changes through the timeline contract", async () => {
     render(<PlaybackControls />, { wrapper: TestProvider });
 
@@ -121,7 +139,7 @@ describe("PlaybackControls", () => {
 
     await user.hover(startTrigger!);
     expect(await screen.findByRole("tooltip")).toHaveTextContent(
-      "Move before the source end to set segment start",
+      "The segment cannot start at the end of the source",
     );
 
     unmount();
@@ -134,7 +152,7 @@ describe("PlaybackControls", () => {
 
     await user.hover(unavailableEndTrigger!);
     expect(await screen.findByRole("tooltip")).toHaveTextContent(
-      "Move after the source start to set segment end",
+      "The segment cannot end at the start of the source",
     );
   });
 

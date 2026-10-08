@@ -1,6 +1,7 @@
 import { FileInputIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { OPEN_FILE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import {
   type ApplicationCommandExecutionContext,
   commandOrigin,
@@ -27,7 +28,7 @@ function useOpenFileCommand() {
     id: "open-file" as const,
     label: t("source.file.openFile"),
     searchTerms: commandSearchTerms(t("commands.searchTerms.openFile")),
-    shortcut: { code: "KeyO", key: "O", modifier: "control" } as const,
+    shortcut: OPEN_FILE_SHORTCUT,
     variant: "default" as const,
   };
 }

@@ -3,7 +3,12 @@ import { useTranslation } from "react-i18next";
 
 import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
 
-import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
+import {
+  COMMAND_PALETTE_SHORTCUT,
+  OPEN_FILE_SHORTCUT,
+  OPEN_FOLDER_SHORTCUT,
+  SETTINGS_SHORTCUT,
+} from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { SupportLink } from "@/app/components/SupportLink";
 import { cn } from "@/lib/class-names.utils";
@@ -29,19 +34,19 @@ function VideoPreviewEmpty() {
   const settings: Shortcut = {
     id: "settings-dialog",
     label: t("settings.title"),
-    keys: ["Ctrl", "H"],
+    keys: [...getShortcutDisplayKeys(SETTINGS_SHORTCUT)],
   };
 
   const shortcuts: Shortcut[] = [
     {
       id: "open-file",
       label: t("source.file.openFile"),
-      keys: ["Ctrl", "O"],
+      keys: [...getShortcutDisplayKeys(OPEN_FILE_SHORTCUT)],
     },
     {
       id: "open-folder",
       label: t("source.file.openFolder"),
-      keys: ["Ctrl", "K"],
+      keys: [...getShortcutDisplayKeys(OPEN_FOLDER_SHORTCUT)],
     },
     {
       id: "play-pause",

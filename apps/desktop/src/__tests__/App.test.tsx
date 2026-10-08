@@ -418,7 +418,7 @@ describe("App", () => {
     expect(screen.queryByText("Start a new clip")).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Source explorer" })).toBeInTheDocument();
     const shortcutList = screen.getByRole("list", { name: "Keyboard shortcuts" });
-    expect(within(shortcutList).getAllByRole("listitem")).toHaveLength(6);
+    expect(within(shortcutList).getAllByRole("listitem")).toHaveLength(7);
     for (const label of [
       "Open File",
       "Open Folder",
@@ -1858,16 +1858,16 @@ describe("App", () => {
 
     video.currentTime = 15;
     fireEvent.timeUpdate(video);
-    await user.click(setEnd);
+    await user.click(screen.getByRole("button", { name: "Set segment end" }));
     expect(startHandle).toHaveAttribute("aria-valuenow", "0");
     expect(endHandle).toHaveAttribute("aria-valuenow", "15000000");
 
     video.currentTime = 65;
     fireEvent.timeUpdate(video);
-    expect(setStart).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Set segment start" })).toBeDisabled();
     video.currentTime = 0;
     fireEvent.timeUpdate(video);
-    expect(setEnd).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Set segment end" })).toBeDisabled();
   });
 
   it("falls back to a compatible proxy when direct playback fails", async () => {

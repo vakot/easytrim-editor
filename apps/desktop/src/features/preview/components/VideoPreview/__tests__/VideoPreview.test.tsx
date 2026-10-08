@@ -13,7 +13,12 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
+import {
+  COMMAND_PALETTE_SHORTCUT,
+  OPEN_FILE_SHORTCUT,
+  OPEN_FOLDER_SHORTCUT,
+  SETTINGS_SHORTCUT,
+} from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
@@ -197,11 +202,19 @@ describe("VideoPreview", () => {
     renderPreview(<VideoPreviewEmpty />);
 
     expect(screen.getByRole("region", { name: "Empty preview" })).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(6);
+    expect(screen.getAllByRole("listitem")).toHaveLength(7);
     expect(screen.getByText("Open File")).toBeInTheDocument();
     expect(screen.getByText("Open Folder")).toBeInTheDocument();
-    expect(screen.getByLabelText("Ctrl O")).toBeInTheDocument();
-    expect(screen.getByLabelText("Ctrl K")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(getShortcutDisplayKeys(OPEN_FILE_SHORTCUT).join(" ")),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(getShortcutDisplayKeys(OPEN_FOLDER_SHORTCUT).join(" ")),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Settings")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(getShortcutDisplayKeys(SETTINGS_SHORTCUT).join(" ")),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("← / →")).toBeInTheDocument();
     expect(
       screen.getByLabelText(getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT).join(" ")),

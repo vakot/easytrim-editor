@@ -1,6 +1,7 @@
 import { FolderOpenIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { OPEN_FOLDER_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import {
   type ApplicationCommandExecutionContext,
   commandOrigin,
@@ -27,7 +28,7 @@ function useOpenFolderCommand() {
     id: "open-folder" as const,
     label: t("source.file.openFolder"),
     searchTerms: commandSearchTerms(t("commands.searchTerms.openFolder")),
-    shortcut: { code: "KeyK", key: "K", modifier: "control" } as const,
+    shortcut: OPEN_FOLDER_SHORTCUT,
     variant: "default" as const,
   };
 }
