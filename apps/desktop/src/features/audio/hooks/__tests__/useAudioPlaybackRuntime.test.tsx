@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import { type PropsWithChildren } from "react";
+import type { PropsWithChildren } from "react";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -27,6 +27,7 @@ function createStore() {
     setItem: async () => undefined,
     removeItem: async () => undefined,
   });
+
   store.dispatch(sourceSelected({ source: firstSource }));
   store.dispatch(sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath) }));
   store.dispatch(audioTrackToggled({ streamIndex: 4 }));

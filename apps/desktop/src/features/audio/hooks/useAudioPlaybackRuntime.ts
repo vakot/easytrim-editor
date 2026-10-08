@@ -42,8 +42,8 @@ interface LiveAudioTrackGainRuntime {
   >;
   audioTracks: AudioTrackState[];
   nativeAudioBinding: { binding: NativeAudioBinding; element: HTMLVideoElement } | null;
-  nativeAudioTrack: { enabled: boolean; streamIndex: number } | undefined;
   nativeAudioStreamIndex: number | undefined;
+  nativeAudioTrack: { enabled: boolean; streamIndex: number } | undefined;
   playbackVolumePercent: number;
   requiresProcessedPreview: boolean;
   videoElement: HTMLVideoElement | null;
@@ -63,8 +63,7 @@ function applyAudioTrackGain(
     : gainDb;
 
   if (externalAudioNode) {
-    externalAudioNode.gain.gain.value =
-      track?.enabled === false ? 0 : 10 ** (runtimeGainDb / 20);
+    externalAudioNode.gain.gain.value = track?.enabled === false ? 0 : 10 ** (runtimeGainDb / 20);
     if (track && audioContext && audioMix) {
       updateAudioTrackLimiter(
         audioContext,
@@ -197,7 +196,14 @@ function useAudioPlaybackRuntime({
       requiresProcessedPreview,
       videoElement: videoRef.current,
     };
-  }, [audioTracks, nativeAudioTrack, playbackVolumePercent, requiresProcessedPreview, videoRef]);
+  }, [
+    audioTracks,
+    nativeAudioStreamIndex,
+    nativeAudioTrack,
+    playbackVolumePercent,
+    requiresProcessedPreview,
+    videoRef,
+  ]);
 
   const setLiveAudioTrackGain = useCallback(
     (streamIndex: number, gainDb: number) => {
@@ -231,14 +237,18 @@ function useAudioPlaybackRuntime({
       const committedGainDb = track?.enabled
         ? (track.processing.gainDb ?? 0)
         : Number.NEGATIVE_INFINITY;
+
       const enabledAudioTracks = audioTracks.filter((candidate) => candidate.enabled);
       const selectedAudioTrack =
         enabledAudioTracks.length === 1 ? enabledAudioTracks[0] : undefined;
+
       const nativeAudioTrack = audioTracks.find(
         (candidate) => candidate.streamIndex === runtime.nativeAudioStreamIndex,
       );
+
       const usesNativeAudioTrack =
         selectedAudioTrack?.streamIndex === runtime.nativeAudioStreamIndex;
+
       const requiresProcessedPreview =
         enabledAudioTracks.length > 1 ||
         (enabledAudioTracks.length === 1 &&
