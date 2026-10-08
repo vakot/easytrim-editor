@@ -2,8 +2,8 @@ import { BetweenVerticalStart, Clapperboard, Repeat } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -38,9 +38,11 @@ function TimelineToolbar() {
         <SceneDetectionTool />
       </div>
 
-      <Separator orientation="vertical" />
-
-      <StereoAudioMeter />
+      <Card className="w-full gap-0 rounded-md p-0 ring-inset">
+        <CardContent className="flex h-full flex-col p-1">
+          <StereoAudioMeter />
+        </CardContent>
+      </Card>
     </div>
   );
 }

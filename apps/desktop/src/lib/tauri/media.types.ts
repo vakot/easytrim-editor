@@ -2,7 +2,6 @@ import type { AudioTrackProcessing } from "@/domain/audio-processing";
 import type {
   AppError,
   AudioStream,
-  AudioTrackMetadataSelection,
   ChapterInfo,
   ExportProgress,
   ExportResult,
@@ -105,7 +104,6 @@ export type {
   AppError,
   AudioPreviewDescriptor,
   AudioStream,
-  AudioTrackMetadataSelection,
   BinaryCapability,
   BinaryCapabilityErrorId,
   ChapterInfo,

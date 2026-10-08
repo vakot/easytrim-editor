@@ -309,7 +309,6 @@ export const ru = {
   settings: {
     general: {
       language: {
-        suggestions: "Предложения",
         noResults: "Языки не найдены",
         description: "Выберите язык интерфейса EasyTrim Editor",
         label: "Язык",

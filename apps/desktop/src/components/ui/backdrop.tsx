@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/class-names.utils";
 
 function Backdrop({ className, ...props }: React.ComponentProps<"div">) {

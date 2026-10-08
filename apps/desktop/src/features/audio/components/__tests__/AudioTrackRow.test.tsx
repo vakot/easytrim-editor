@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -31,6 +31,8 @@ import {
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
+import { AudioTrackEffectsDialogContext } from "../AudioTrack/components/AudioTrackEffectsDialog/contexts/audio-track-effects-dialog-context";
+import { AudioTrackGainControl } from "../AudioTrack/components/AudioTrackGainControl";
 
 const audioPlayback = {
   audioMeterRef: { current: null },
@@ -70,7 +72,220 @@ function renderTrack(store: ReturnType<typeof createAppStore>, streamIndex: numb
   );
 }
 
+function renderGainControl(enabled = true) {
+  const store = createAppStore({
+    getItem: async () => null,
+    setItem: async () => undefined,
+    removeItem: async () => undefined,
+  });
+
+  const media = mediaWithAudio(firstSource.sourcePath);
+  store.dispatch(sourceSelected({ source: firstSource }));
+  store.dispatch(sourceReady({ loadToken: 1, media }));
+  if (!enabled) {
+    store.dispatch(audioTrackToggled({ streamIndex: 2 }));
+    store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -6 }));
+  }
+
+  const clearLiveAudioTrackGain = vi.fn();
+  const setLiveAudioTrackGain = vi.fn();
+  const openEffects = vi.fn();
+  const gainCommits: number[] = [];
+  const dispatch = store.dispatch;
+  store.dispatch = ((action: Parameters<typeof dispatch>[0]) => {
+    if (audioTrackGainChanged.match(action)) gainCommits.push(action.payload.gainDb);
+    return dispatch(action);
+  }) as typeof store.dispatch;
+
+  render(
+    <Provider store={store}>
+      <AudioPlaybackContext.Provider
+        value={{ ...audioPlayback, clearLiveAudioTrackGain, setLiveAudioTrackGain }}
+      >
+        <AudioTrackEffectsDialogContext.Provider value={{ openEffects }}>
+          <TooltipProvider>
+            <AudioTrackGainControl
+              onLiveGainChange={() => undefined}
+              streamIndex={2}
+              trackNumber={1}
+            />
+          </TooltipProvider>
+        </AudioTrackEffectsDialogContext.Provider>
+      </AudioPlaybackContext.Provider>
+    </Provider>,
+  );
+
+  return { clearLiveAudioTrackGain, gainCommits, setLiveAudioTrackGain, store };
+}
+
 describe("AudioTrackRow", () => {
+  it("double-click resets an adjusted gain with one final commit", () => {
+    const { gainCommits, store } = renderGainControl();
+    const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
+
+    fireEvent.keyDown(gainSlider, { key: "ArrowLeft" });
+    fireEvent.keyUp(gainSlider, { key: "ArrowLeft" });
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(-0.5);
+
+    fireEvent.doubleClick(gainSlider);
+
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: true,
+      processing: { gainDb: 0 },
+    });
+    expect(gainCommits).toEqual([-0.5, 0]);
+  });
+
+  it("double-click resets Gain on a muted track without unmuting it", () => {
+    const { clearLiveAudioTrackGain, gainCommits, store } = renderGainControl(false);
+    const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
+
+    fireEvent.doubleClick(gainSlider);
+
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: false,
+      processing: { gainDb: 0 },
+    });
+    expect(clearLiveAudioTrackGain).toHaveBeenLastCalledWith(2);
+    expect(gainCommits).toEqual([0]);
+
+    gainSlider.focus();
+    fireEvent.keyDown(gainSlider, { key: "ArrowLeft" });
+    fireEvent.keyUp(gainSlider, { key: "ArrowLeft" });
+
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: false,
+      processing: { gainDb: -0.5 },
+    });
+    expect(gainCommits).toEqual([0, -0.5]);
+  });
+
+  it("cancels manual Gain edits on Escape without committing", async () => {
+    const user = userEvent.setup();
+    const { clearLiveAudioTrackGain, gainCommits, setLiveAudioTrackGain, store } =
+      renderGainControl();
+
+    await user.click(screen.getByRole("button", { name: /0 dB/i }));
+    const gainInput = screen.getByRole("spinbutton", { name: /audio 1 gain/i });
+    await user.clear(gainInput);
+    await user.type(gainInput, "-10");
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("spinbutton", { name: /audio 1 gain/i })).not.toBeInTheDocument();
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0);
+    expect(gainCommits).toEqual([]);
+    expect(setLiveAudioTrackGain).toHaveBeenLastCalledWith(2, -10);
+    expect(clearLiveAudioTrackGain).toHaveBeenCalledWith(2);
+  });
+
+  it("clamps live Gain previews and commits while keeping the typed value visible", async () => {
+    const user = userEvent.setup();
+    const { gainCommits, setLiveAudioTrackGain, store } = renderGainControl();
+
+    await user.click(screen.getByRole("button", { name: /0 dB/i }));
+    const gainInput = screen.getByRole("spinbutton", { name: /audio 1 gain/i });
+    await user.clear(gainInput);
+    await user.type(gainInput, "100");
+
+    expect(gainInput).toHaveValue("100");
+    expect(setLiveAudioTrackGain).toHaveBeenLastCalledWith(2, 24);
+    expect(gainInput).toHaveAttribute("aria-valuemin", "-60");
+    expect(gainInput).toHaveAttribute("aria-valuemax", "24");
+    expect(gainInput).toHaveAttribute("aria-valuenow", "24");
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0);
+
+    fireEvent.blur(gainInput);
+
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(24);
+    expect(gainCommits).toEqual([24]);
+
+    await user.click(screen.getByRole("button", { name: /24\.0 dB/i }));
+    const lowerGainInput = screen.getByRole("spinbutton", { name: /audio 1 gain/i });
+    await user.clear(lowerGainInput);
+    expect((lowerGainInput as HTMLInputElement).value).toBe("");
+    expect(setLiveAudioTrackGain).toHaveBeenLastCalledWith(2, 24);
+
+    await user.type(lowerGainInput, "-");
+    expect(lowerGainInput).toHaveValue("-");
+    expect(setLiveAudioTrackGain).toHaveBeenLastCalledWith(2, 24);
+    await user.clear(lowerGainInput);
+    await user.paste("-100");
+    expect(lowerGainInput).toHaveValue("-100");
+    expect(setLiveAudioTrackGain).toHaveBeenLastCalledWith(2, -60);
+    fireEvent.blur(lowerGainInput);
+
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(-60);
+    expect(gainCommits).toEqual([24, -60]);
+  });
+
+  it("shows normalization levels and blocks manual Gain changes while active", async () => {
+    const user = userEvent.setup();
+    const { gainCommits, store } = renderGainControl();
+    act(() => {
+      store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -2.5 }));
+      store.dispatch(
+        audioTrackProcessingChanged({
+          streamIndex: 2,
+          processing: { gainDb: -2.5, loudnessNormalization: "streaming" },
+        }),
+      );
+    });
+
+    expect(screen.queryByRole("slider", { name: /audio 1 gain/i })).not.toBeInTheDocument();
+    const normalizationSummary = screen.getByText("−16 LUFS · −1.5 dBTP");
+
+    const gainCommitCount = gainCommits.length;
+    await user.hover(normalizationSummary);
+    expect(
+      await screen.findByText(
+        "Manual Gain is unavailable while automatic normalization is applied",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.doubleClick(normalizationSummary);
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: true,
+      processing: { gainDb: -2.5, loudnessNormalization: "streaming" },
+    });
+    expect(gainCommits).toHaveLength(gainCommitCount);
+  });
+
+  it("opens Audio Effects directly on Loudness Normalization from the disabled Gain control", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    act(() => {
+      store.dispatch(
+        audioTrackProcessingChanged({
+          streamIndex: 2,
+          processing: { gainDb: 0, loudnessNormalization: "streaming" },
+        }),
+      );
+    });
+
+    await user.hover(screen.getByRole("button", { name: /mute.*eng/i }));
+    const normalizationTrigger = screen.getByRole("button", { name: /loudness normalization/i });
+    await user.hover(normalizationTrigger);
+    expect(
+      await screen.findByText(
+        "Manual Gain is unavailable while automatic normalization is applied",
+      ),
+    ).toBeInTheDocument();
+    await user.click(normalizationTrigger);
+
+    const normalizationTab = screen.getByRole("tab", { name: /loudness normalization/i });
+    expect(normalizationTab).toHaveAttribute("aria-selected", "true");
+
+    await user.click(screen.getByRole("tab", { name: /high-pass filter/i }));
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+    await user.hover(screen.getByRole("button", { name: /mute.*eng/i }));
+    await user.click(screen.getByRole("button", { name: /loudness normalization/i }));
+
+    expect(screen.getByRole("tab", { name: /loudness normalization/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
   it("scales the existing waveform during live gain adjustment", async () => {
     const { store } = renderRow();
     act(() => {
@@ -90,14 +305,14 @@ describe("AudioTrackRow", () => {
     expect(image).toHaveAttribute("src", "media://waveform");
     expect(image).toHaveStyle({ transform: "scaleY(1)" });
 
-    await userEvent.setup().hover(screen.getByText(/#1 ·/));
+    await userEvent.setup().hover(screen.getByRole("button", { name: /mute.*eng/i }));
     const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
     gainSlider.focus();
     fireEvent.keyDown(gainSlider, { key: "ArrowRight" });
 
     expect(image).toHaveAttribute("src", "media://waveform");
     expect(image?.style.transform).toBe("scaleY(1.0592537251772889)");
-    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0);
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0.5);
 
     fireEvent.keyUp(gainSlider, { key: "ArrowRight" });
     fireEvent.keyDown(gainSlider, { key: "End" });
@@ -105,14 +320,17 @@ describe("AudioTrackRow", () => {
     expect(image).toHaveAttribute("src", "media://waveform");
   });
 
-  it("marks gain levels, resets to unity on double-click, and mutes at negative infinity", async () => {
+  it("marks the Gain range, resets to unity, and preserves mute state at −24 dB", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();
-    await user.hover(screen.getByText(/#1 ·/));
+    await user.hover(screen.getByRole("button", { name: /mute.*eng/i }));
 
     const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
-    expect(screen.getByText("−∞", { exact: true })).toBeInTheDocument();
-    expect(screen.getByText("0 dB", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("-24", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("0", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("12", { exact: true })).toBeInTheDocument();
+    expect(gainSlider).toHaveAttribute("aria-valuemin", "-24");
+    expect(gainSlider).toHaveAttribute("aria-valuemax", "12");
 
     fireEvent.doubleClick(gainSlider);
     expect(store.getState().audio.tracks[0]).toMatchObject({
@@ -124,10 +342,12 @@ describe("AudioTrackRow", () => {
     for (let step = 0; step < 48; step += 1) await user.keyboard("{ARROWLEFT}");
     await waitFor(() => {
       expect(store.getState().audio.tracks[0]).toMatchObject({
-        enabled: false,
+        enabled: true,
         processing: { gainDb: -24 },
       });
     });
+    expect(gainSlider).toHaveAttribute("aria-valuenow", "-24");
+    expect(screen.getAllByText("−24.0 dB")).toHaveLength(2);
 
     gainSlider.focus();
     fireEvent.keyDown(gainSlider, { key: "ArrowRight" });
@@ -137,8 +357,8 @@ describe("AudioTrackRow", () => {
       "true",
     );
     expect(store.getState().audio.tracks[0]).toMatchObject({
-      enabled: false,
-      processing: { gainDb: -24 },
+      enabled: true,
+      processing: { gainDb: -23.5 },
     });
 
     fireEvent.keyUp(gainSlider, { key: "ArrowRight" });
@@ -171,6 +391,10 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
     expect(screen.getByRole("dialog", { name: /effects/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /high-pass filter/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     await user.click(screen.getByRole("tab", { name: /loudness normalization/i }));
     await user.click(screen.getByRole("combobox", { name: /loudness normalization/i }));
     expect(
@@ -519,14 +743,15 @@ describe("AudioTrackRow", () => {
     expect(await screen.findByText("Normalized - Streaming")).toBeInTheDocument();
     expect(await screen.findByText("−16 LUFS · −1.5 dBTP")).toBeInTheDocument();
 
-    await user.hover(screen.getByText(/#1 ·/));
-    expect(screen.queryByRole("slider", { name: /audio 1 gain/i })).not.toBeInTheDocument();
+    await user.hover(screen.getByRole("button", { name: /mute.*eng/i }));
     expect(screen.getByText("Normalized - Streaming")).toBeInTheDocument();
-    expect(screen.getByText("−16 LUFS · −1.5 dBTP")).toBeInTheDocument();
-    const normalizedTooltip = await screen.findByRole("tooltip");
-    expect(normalizedTooltip).toHaveTextContent(
-      /manual gain is unavailable while automatic normalization is applied/i,
-    );
+    const normalizedSummary = screen.getAllByText("−16 LUFS · −1.5 dBTP").at(-1);
+    await user.hover(normalizedSummary!);
+    expect(
+      await screen.findByText(
+        "Manual Gain is unavailable while automatic normalization is applied",
+      ),
+    ).toBeInTheDocument();
 
     act(() => {
       store.dispatch(audioTrackProcessingChanged({ streamIndex: 2, processing: { gainDb: -2.5 } }));
@@ -606,7 +831,7 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 2 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
-    const titleInput = screen.getByLabelText(/title/i);
+    const titleInput = screen.getByLabelText("Track title");
     expect(titleInput).toHaveValue("");
     expect(titleInput).toHaveAttribute("placeholder", "Surround");
     await user.click(screen.getByRole("button", { name: /save/i }));
@@ -658,13 +883,41 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
-    const titleInput = screen.getByLabelText(/title/i);
+    const titleInput = screen.getByLabelText("Track title");
     await user.type(titleInput, "Temporary title");
     await user.clear(titleInput);
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(store.getState().audio.tracks[0]?.metadata.title).toBeUndefined();
     expect(store.getState().audio.tracks[0]?.metadata.language).toBe("rus");
+  });
+
+  it("uses the latest committed track name in the Effects dialog and restores its source fallback", async () => {
+    const user = userEvent.setup();
+    renderRow();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.type(screen.getByLabelText("Track title"), "Custom track title");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(screen.getByRole("button", { name: /mute.*custom track title/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    expect(
+      screen.getByRole("dialog", { name: "Custom track title — Effects" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.clear(screen.getByLabelText("Track title"));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /effects/i }));
+    expect(screen.getByRole("dialog", { name: "eng — Effects" })).toBeInTheDocument();
   });
 
   it("selects and resets a language override using source metadata codes", async () => {

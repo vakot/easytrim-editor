@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { cn } from "@/lib/class-names.utils";

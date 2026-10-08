@@ -46,6 +46,8 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
         </DropdownMenuCheckboxItem>
       </AudioTrackToggleActivityCheckboxMenuItem>
 
+      <DropdownMenuSeparator />
+
       <AudioTrackDefaultMenuCheckboxItem controller={controller}>
         <DropdownMenuCheckboxItem keepOpen>
           {t("audio.tracks.metadata.fields.default.label")}
@@ -91,6 +93,8 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
           {activityActionLabel(track?.activityAnalysis.status || "idle", t)}
         </ContextMenuCheckboxItem>
       </AudioTrackToggleActivityCheckboxMenuItem>
+
+      <ContextMenuSeparator />
 
       <AudioTrackDefaultMenuCheckboxItem controller={controller}>
         <ContextMenuCheckboxItem keepOpen>
@@ -192,7 +196,7 @@ function AudioTrackEffectsMenuItem({
 
   const commandProps = {
     "aria-label": t("audio.effects.open"),
-    onSelect: openEffects,
+    onSelect: () => openEffects(),
   };
 
   return <Slot {...commandProps}>{children}</Slot>;

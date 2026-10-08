@@ -296,7 +296,6 @@ export const en = {
       language: {
         coverageAccessibleLabel: "{{language}} translation coverage: {{percentage}}%",
         helpTranslate: "Help translate EasyTrim",
-        suggestions: "Suggestions",
         noResults: "No languages found",
         description: "Choose the language used throughout EasyTrim Editor",
         label: "Language",
@@ -1052,9 +1051,9 @@ export const en = {
         broadcast: "Broadcast",
       },
       description: "Normalize this track to a consistent target loudness",
+      manualGainUnavailable: "Manual Gain is unavailable while automatic normalization is applied",
       summary: "Normalized - {{preset}}",
       levelSummary: "{{target}} LUFS · {{peak}} dBTP",
-      manualGainUnavailable: "Manual gain is unavailable while automatic normalization is applied",
     },
     noiseReduction: {
       label: "Noise reduction",
