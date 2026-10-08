@@ -3,7 +3,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   audioTrackActivityVisibilityToggled,
+  audioTrackDefaultChanged,
   audioTrackGainChanged,
+  audioTrackMetadataChanged,
   audioTrackProcessingChanged,
   audioTrackToggled,
   selectAudioTracks,
@@ -16,6 +18,11 @@ import {
   cloneAudioTrackProcessing,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
+import {
+  type Language,
+  languageCodeFromMetadata,
+  metadataCodeFromLanguage,
+} from "@/domain/languages";
 import { useAudioPlayback } from "@/features/audio";
 
 import { MIN_SLIDER_DECIBELS } from "../lib/audio-level.utils";
@@ -179,6 +186,38 @@ function useAudioTrackController(streamIndex: number) {
     [dispatch, streamIndex, track],
   );
 
+  const setDefault = useCallback(() => {
+    if (!track?.enabled || track.metadata.isDefault) return;
+    dispatch(audioTrackDefaultChanged({ streamIndex }));
+    dispatch(commitActiveEditingInstanceDraft());
+  }, [dispatch, streamIndex, track]);
+
+  const updateMetadata = useCallback(
+    (
+      title: string,
+      titleChanged: boolean,
+      language: Language["code"] | undefined,
+      languageChanged: boolean,
+    ) => {
+      if (!track || !stream) return;
+      const nextTitle = titleChanged ? (title === "" ? undefined : title) : track.metadata.title;
+      const nextLanguage = languageChanged
+        ? language === languageCodeFromMetadata(stream.language)
+          ? undefined
+          : language === undefined
+            ? undefined
+            : metadataCodeFromLanguage(language)
+        : track.metadata.language;
+
+      if (track.metadata.title === nextTitle && track.metadata.language === nextLanguage) return;
+      dispatch(
+        audioTrackMetadataChanged({ language: nextLanguage, streamIndex, title: nextTitle }),
+      );
+      dispatch(commitActiveEditingInstanceDraft());
+    },
+    [dispatch, stream, streamIndex, track],
+  );
+
   const applyProcessing = useCallback(
     (processing: AudioTrackProcessing) => {
       if (!track || sameAudioTrackProcessing(track.processing, processing)) return;
@@ -218,6 +257,7 @@ function useAudioTrackController(streamIndex: number) {
     handleGainKeyUp,
     liveGainDb,
     setEnabled,
+    setDefault,
     startPointerGainInteraction,
     toggleActivityVisibility,
     track,
@@ -225,6 +265,7 @@ function useAudioTrackController(streamIndex: number) {
     trackNumber,
     stream,
     updateLiveGain,
+    updateMetadata,
   };
 }
 

@@ -32,13 +32,10 @@ import {
 import { AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
 import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog";
+import { AudioTrackMetadataDialog } from "./components/AudioTrackMetadataDialog";
 import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
 
-interface AudioTrackRowProps {
-  streamIndex: number;
-}
-
-const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: AudioTrackRowProps) {
+const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex: number }) {
   const controller = useAudioTrackController(streamIndex);
   const { track, trackColor } = controller;
 
@@ -46,19 +43,21 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: AudioTrackRow
 
   return (
     <AudioTrackEffectsDialog controller={controller}>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <div
-            className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
-            data-slot="audio-track-row"
-            style={{ "--audio-track-color": trackColor } as CSSProperties}
-          >
-            <AudioTrackDetails controller={controller} />
-            <AudioTrackRowWaveform controller={controller} />
-          </div>
-        </ContextMenuTrigger>
-        <AudioTrackContextMenuContent controller={controller} />
-      </ContextMenu>
+      <AudioTrackMetadataDialog controller={controller}>
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div
+              className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
+              data-slot="audio-track-row"
+              style={{ "--audio-track-color": trackColor } as CSSProperties}
+            >
+              <AudioTrackDetails controller={controller} />
+              <AudioTrackRowWaveform controller={controller} />
+            </div>
+          </ContextMenuTrigger>
+          <AudioTrackContextMenuContent controller={controller} />
+        </ContextMenu>
+      </AudioTrackMetadataDialog>
     </AudioTrackEffectsDialog>
   );
 });
@@ -114,30 +113,6 @@ function AudioTrackRowWaveform({
       <AudioTrackGainIndicator controller={controller} />
     </div>
   );
-}
-
-function waveformGainDb(
-  controller: AudioTrackController,
-  trim: ReturnType<typeof selectTrim>,
-  liveGainDb: number,
-  sourcePath: string | undefined,
-): number {
-  const track = controller.track;
-  if (!track || !sourcePath) return liveGainDb;
-  const normalization = track.processing.loudnessNormalization;
-  const analysis = track.loudnessAnalysis;
-  if (!normalization) return liveGainDb;
-  if (!trim || analysis?.status !== "ready") return 0;
-  const cacheKey = audioTrackLoudnessInputsKey(
-    sourcePath,
-    track.streamIndex,
-    trim,
-    track.processing,
-  );
-
-  return analysis.cacheKey === cacheKey
-    ? audioTrackNormalizationGainDb(normalization, analysis.value)
-    : 0;
 }
 
 function AudioTrackGainIndicator({ controller }: { controller: AudioTrackController }) {
@@ -248,6 +223,30 @@ function AudioTrackIndicator({
       {children}
     </Badge>
   );
+}
+
+function waveformGainDb(
+  controller: AudioTrackController,
+  trim: ReturnType<typeof selectTrim>,
+  liveGainDb: number,
+  sourcePath: string | undefined,
+): number {
+  const track = controller.track;
+  if (!track || !sourcePath) return liveGainDb;
+  const normalization = track.processing.loudnessNormalization;
+  const analysis = track.loudnessAnalysis;
+  if (!normalization) return liveGainDb;
+  if (!trim || analysis?.status !== "ready") return 0;
+  const cacheKey = audioTrackLoudnessInputsKey(
+    sourcePath,
+    track.streamIndex,
+    trim,
+    track.processing,
+  );
+
+  return analysis.cacheKey === cacheKey
+    ? audioTrackNormalizationGainDb(normalization, analysis.value)
+    : 0;
 }
 
 function formatProcessingValue(value: number, language: string): string {

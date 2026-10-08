@@ -19,8 +19,15 @@ import {
 import {
   LanguageSelector,
   LanguageSelectorContent,
+  LanguageSelectorEmpty,
+  LanguageSelectorGroup,
   LanguageSelectorInput,
+  LanguageSelectorItem,
+  LanguageSelectorItemFlag,
+  LanguageSelectorItemIndicator,
+  LanguageSelectorItemText,
   LanguageSelectorList,
+  LanguageSelectorOptions,
   LanguageSelectorTrigger,
   LanguageSelectorValue,
 } from "@/components/language-selector";
@@ -29,6 +36,7 @@ import { SUPPORTED_LANGUAGES } from "@/domain/languages";
 const meta = {
   title: "Design System/LanguageSelector",
   component: LanguageSelector,
+  args: { label: "Search languages", languages: SUPPORTED_LANGUAGES },
   parameters: {
     layout: "centered",
   },
@@ -44,7 +52,12 @@ export const ButtonTrigger: Story = {
 
 function ButtonTriggerExample({ defaultOpen = false }: { defaultOpen?: boolean }) {
   return (
-    <LanguageSelector defaultOpen={defaultOpen} defaultValue="ru" languages={SUPPORTED_LANGUAGES}>
+    <LanguageSelector
+      defaultOpen={defaultOpen}
+      defaultValue="ru"
+      label="Search languages"
+      languages={SUPPORTED_LANGUAGES}
+    >
       <LanguageSelectorTrigger>
         <Button
           aria-label="Choose language"
@@ -60,8 +73,11 @@ function ButtonTriggerExample({ defaultOpen = false }: { defaultOpen?: boolean }
       </LanguageSelectorTrigger>
 
       <LanguageSelectorContent>
-        <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages..." />
-        <LanguageSelectorList />
+        <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages…" />
+        <LanguageSelectorList>
+          <LanguageSelectorEmpty>No languages found</LanguageSelectorEmpty>
+          <LanguageSelectorOptions />
+        </LanguageSelectorList>
       </LanguageSelectorContent>
     </LanguageSelector>
   );
@@ -69,14 +85,17 @@ function ButtonTriggerExample({ defaultOpen = false }: { defaultOpen?: boolean }
 
 export const InputTrigger: Story = {
   render: () => (
-    <LanguageSelector defaultValue="ru" languages={SUPPORTED_LANGUAGES}>
+    <LanguageSelector defaultValue="ru" label="Search languages" languages={SUPPORTED_LANGUAGES}>
       <LanguageSelectorInput
         aria-label="Choose language"
         className="w-72"
-        placeholder="Search languages..."
+        placeholder="Search languages…"
       />
       <LanguageSelectorContent>
-        <LanguageSelectorList />
+        <LanguageSelectorList>
+          <LanguageSelectorEmpty>No languages found</LanguageSelectorEmpty>
+          <LanguageSelectorOptions />
+        </LanguageSelectorList>
       </LanguageSelectorContent>
     </LanguageSelector>
   ),
@@ -87,8 +106,7 @@ export const DropdownMenuSubmenu: Story = {
 };
 
 function DropdownMenuSubmenuExample() {
-  const [languageCode, setLanguageCode] =
-    useState<(typeof SUPPORTED_LANGUAGES)[number]["code"]>("en");
+  const [languageCode, setLanguageCode] = useState<string>("en");
 
   const [submenuOpen, setSubmenuOpen] = useState(false);
 
@@ -104,9 +122,10 @@ function DropdownMenuSubmenuExample() {
         <DropdownMenuSeparator />
 
         <LanguageSelector
+          label="Search languages"
           languages={SUPPORTED_LANGUAGES}
           onValueChange={(code) => {
-            setLanguageCode(code);
+            setLanguageCode(code ?? "");
             setSubmenuOpen(false);
           }}
           value={languageCode}
@@ -115,7 +134,7 @@ function DropdownMenuSubmenuExample() {
             <DropdownMenuSubTrigger>
               Language
               <span className="ml-auto max-w-32 truncate text-muted-foreground">
-                <LanguageSelectorValue type="code" />
+                <LanguageSelectorValue />
               </span>
             </DropdownMenuSubTrigger>
 
@@ -124,9 +143,24 @@ function DropdownMenuSubmenuExample() {
                 <LanguageSelectorInput
                   aria-label="Search languages"
                   className="h-7"
-                  placeholder="Search languages..."
+                  placeholder="Search languages…"
                 />
-                <LanguageSelectorList />
+                <LanguageSelectorList>
+                  <LanguageSelectorEmpty>No languages found</LanguageSelectorEmpty>
+                  {({ languages }) => (
+                    <LanguageSelectorGroup>
+                      {languages.map((language) => (
+                        <LanguageSelectorItem key={language.code} language={language}>
+                          <LanguageSelectorItemFlag />
+                          <LanguageSelectorItemText>
+                            <span className="text-xs text-muted-foreground">{language.code}</span>
+                          </LanguageSelectorItemText>
+                          <LanguageSelectorItemIndicator />
+                        </LanguageSelectorItem>
+                      ))}
+                    </LanguageSelectorGroup>
+                  )}
+                </LanguageSelectorList>
               </DropdownMenuSubContent>
             </LanguageSelectorContent>
           </DropdownMenuSub>
@@ -138,7 +172,7 @@ function DropdownMenuSubmenuExample() {
 
 function NoResultsExample() {
   return (
-    <LanguageSelector defaultOpen languages={SUPPORTED_LANGUAGES}>
+    <LanguageSelector defaultOpen label="Search languages" languages={SUPPORTED_LANGUAGES}>
       <LanguageSelectorTrigger>
         <Button
           aria-label="Choose language"
@@ -152,8 +186,11 @@ function NoResultsExample() {
       </LanguageSelectorTrigger>
 
       <LanguageSelectorContent>
-        <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages..." />
-        <LanguageSelectorList />
+        <LanguageSelectorInput aria-label="Search languages" placeholder="Search languages…" />
+        <LanguageSelectorList>
+          <LanguageSelectorEmpty>No languages found</LanguageSelectorEmpty>
+          <LanguageSelectorOptions />
+        </LanguageSelectorList>
       </LanguageSelectorContent>
     </LanguageSelector>
   );

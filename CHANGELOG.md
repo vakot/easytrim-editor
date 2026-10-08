@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added per-audio-track output metadata editing.
+
 ## [1.13.1]
 
 ### Added

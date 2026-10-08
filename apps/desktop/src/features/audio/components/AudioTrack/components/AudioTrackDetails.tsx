@@ -22,7 +22,10 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
   if (!stream || !track) return null;
 
   const title =
-    stream.title ?? stream.language ?? t("audio.tracks.defaultName", { number: trackNumber });
+    (track.metadata.title || stream.title) ??
+    track.metadata.language ??
+    stream.language ??
+    t("audio.tracks.defaultName", { number: trackNumber });
 
   return (
     <div
@@ -47,6 +50,9 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
             </p>
             <p className="truncate text-xs text-muted-foreground">
               #{trackNumber} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
+              {track.metadata.isDefault
+                ? ` · ${t("audio.tracks.metadata.fields.default.label")}`
+                : ""}
             </p>
           </div>
         </AudioTrackDetailsSection>

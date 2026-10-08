@@ -47,8 +47,11 @@ import {
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
-import { selectedAudioTracks } from "@/domain/audio-export";
-import { audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
+import { selectedAudioMetadata, selectedAudioTracks } from "@/domain/audio-export";
+import {
+  audioTrackLoudnessInputsKey,
+  serializeAudioTrackSettings,
+} from "@/domain/audio-processing";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
@@ -464,11 +467,7 @@ function getCurrentExportSnapshot(state: ReturnType<Parameters<AppThunk>[1]>) {
     flipHorizontal: selectFlipHorizontal(state),
     flipVertical: selectFlipVertical(state),
     rotation: selectRotationDegrees(state),
-    audioTracks: selectAudioTracks(state).map(({ enabled, processing, streamIndex }) => ({
-      enabled,
-      streamIndex,
-      processing: { ...processing },
-    })),
+    audioTracks: selectAudioTracks(state).map(serializeAudioTrackSettings),
     mergeAudio: selectMergeAudio(state),
   });
 }
@@ -497,6 +496,7 @@ function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportR
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: exportAudioTracks(state),
+    audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
     mergeAudio: selectMergeAudio(state),
     rotationDegrees: transform.rotationDegrees,
   };
@@ -515,6 +515,7 @@ function getOptimizedRequest(
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: exportAudioTracks(state),
+    audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
     mergeAudio: selectMergeAudio(state),
     rotationDegrees: transform.rotationDegrees,
     resolution: settings.resolution,

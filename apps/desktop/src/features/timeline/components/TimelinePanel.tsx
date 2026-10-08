@@ -33,6 +33,16 @@ import { TimelineToolbar } from "./TimelineToolbar";
 import { TimelineTrack } from "./TimelineTrack";
 import { TimelineValues } from "./TimelineValues";
 
+const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
+  value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),
+  label: `${speed}×`,
+}));
+
+const PLAYBACK_SPEED_PRESETS = [0.5, 1, 2, 3].map((speed) => ({
+  value: speed as PlaybackSpeed,
+  label: `${speed}×`,
+}));
+
 function TimelinePanel() {
   const { t } = useTranslation();
 
@@ -46,7 +56,7 @@ function TimelinePanel() {
         <div className="grid w-full grid-cols-(--editor-timeline-track-grid-columns) gap-2">
           <div className="min-w-0 justify-self-start">
             <h2
-              className="mb-0.5 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+              className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
               id="timeline-title"
             >
               {t("timeline.segment.labels.selectedSegment")}
@@ -78,16 +88,6 @@ function TimelinePanel() {
     </section>
   );
 }
-
-const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
-  value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),
-  label: `${speed}×`,
-}));
-
-const PLAYBACK_SPEED_PRESETS = [0.5, 1, 2, 3].map((speed) => ({
-  value: speed as PlaybackSpeed,
-  label: `${speed}×`,
-}));
 
 function PlaybackSpeedControl() {
   const { t } = useTranslation();
