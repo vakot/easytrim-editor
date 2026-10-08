@@ -17,7 +17,7 @@ import type {
 } from "@/domain/media";
 import type { SourceRef } from "@/domain/source";
 
-interface OptimizedExportPlan {
+interface ExportPlan {
   commandPreview: string;
 }
 
@@ -108,6 +108,7 @@ export type {
   BinaryCapability,
   BinaryCapabilityErrorId,
   ChapterInfo,
+  ExportPlan,
   ExportProgress,
   ExportResult,
   FastExportRequest,
@@ -117,7 +118,6 @@ export type {
   LoudnessAnalysisRequest,
   MediaCapabilities,
   MediaInfo,
-  OptimizedExportPlan,
   OptimizedExportRequest,
   OutputSelection,
   PreviewDescriptor,

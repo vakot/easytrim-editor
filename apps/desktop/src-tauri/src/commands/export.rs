@@ -18,7 +18,8 @@ use crate::{
     error::{AppError, AppErrorMessageId},
     media::export::{
         FastExportRequest, GifExportRequest, OptimizedExportRequest, build_fast_arguments,
-        build_gif_arguments, build_optimized_arguments, optimized_command_preview,
+        build_gif_arguments, build_optimized_arguments, gif_command_preview,
+        optimized_command_preview,
     },
     media::loudness::{LoudnessAnalysis, LoudnessAnalysisRequest, analyze_loudness},
     media::probe::MediaInfo,
@@ -73,7 +74,7 @@ struct ExportDiagnosticContext {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct OptimizedExportPlan {
+pub struct ExportPlan {
     pub command_preview: String,
 }
 
@@ -309,13 +310,27 @@ pub async fn render_gif(
 pub fn plan_optimized_export(
     request: OptimizedExportRequest,
     state: State<'_, AppState>,
-) -> Result<OptimizedExportPlan, AppError> {
+) -> Result<ExportPlan, AppError> {
     let source = state.resolve_source_by_path(&request.source_path)?;
     let media = source.media.as_ref().ok_or_else(|| {
         AppError::invalid_request(AppErrorMessageId::ExportInspectTheVideoBeforeExporting)
     })?;
-    Ok(OptimizedExportPlan {
+    Ok(ExportPlan {
         command_preview: optimized_command_preview(media, &request)?,
+    })
+}
+
+#[tauri::command]
+pub fn plan_gif_export(
+    request: GifExportRequest,
+    state: State<'_, AppState>,
+) -> Result<ExportPlan, AppError> {
+    let source = state.resolve_source_by_path(&request.source_path)?;
+    let media = source.media.as_ref().ok_or_else(|| {
+        AppError::invalid_request(AppErrorMessageId::ExportInspectTheVideoBeforeExporting)
+    })?;
+    Ok(ExportPlan {
+        command_preview: gif_command_preview(media, &request)?,
     })
 }
 

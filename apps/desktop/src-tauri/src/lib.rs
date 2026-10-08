@@ -90,6 +90,7 @@ pub fn run() {
             commands::export::choose_gif_output_path,
             commands::export::resolve_output_selection,
             commands::export::plan_optimized_export,
+            commands::export::plan_gif_export,
             commands::export::open_file_location,
             commands::export::export_fast,
             commands::export::render_optimized,

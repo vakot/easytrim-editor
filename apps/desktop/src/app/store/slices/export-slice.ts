@@ -12,10 +12,10 @@ interface ExportUiState {
   commandPreview: string;
   commandPreviewError: AppError | null;
   dialogRoute: "optimized" | "gif";
+  exportPlanRequestId: number | null;
   exportQueueDialogOpen: boolean;
   launchError: AppError | null;
   optimizedDialogOpen: boolean;
-  optimizedPlanRequestId: number | null;
   queueEdit: { attemptId: string; instanceId: string; route: "fast" | "optimized" } | null;
   queueFinishAction: QueueFinishAction;
   startedSourceIds: string[];
@@ -29,7 +29,7 @@ export const initialExportState: ExportUiState = {
   launchError: null,
   exportQueueDialogOpen: false,
   optimizedDialogOpen: false,
-  optimizedPlanRequestId: null,
+  exportPlanRequestId: null,
   queueFinishAction: "nothing",
   queueEdit: null,
   startedSourceIds: [],
@@ -59,23 +59,21 @@ const exportSlice = createSlice({
       state.optimizedDialogOpen = false;
       state.dialogRoute = "optimized";
     },
-    optimizedExportPlanRequested: (state, action: PayloadAction<{ requestId: number }>) => {
-      state.optimizedPlanRequestId = action.payload.requestId;
+    exportPlanRequested: (state, action: PayloadAction<{ requestId: number }>) => {
+      state.exportPlanRequestId = action.payload.requestId;
+      state.commandPreview = "";
       state.commandPreviewError = null;
     },
-    optimizedExportPlanReceived: (
+    exportPlanReceived: (
       state,
       action: PayloadAction<{ commandPreview: string; requestId: number }>,
     ) => {
-      if (action.payload.requestId !== state.optimizedPlanRequestId) return;
+      if (action.payload.requestId !== state.exportPlanRequestId) return;
       state.commandPreview = action.payload.commandPreview;
       state.commandPreviewError = null;
     },
-    optimizedExportPlanFailed: (
-      state,
-      action: PayloadAction<{ error: AppError; requestId: number }>,
-    ) => {
-      if (action.payload.requestId !== state.optimizedPlanRequestId) return;
+    exportPlanFailed: (state, action: PayloadAction<{ error: AppError; requestId: number }>) => {
+      if (action.payload.requestId !== state.exportPlanRequestId) return;
       state.commandPreviewError = action.payload.error;
     },
     exportLaunchFailed: (state, action: PayloadAction<AppError>) => {
@@ -120,7 +118,7 @@ const exportSlice = createSlice({
     builder.addCase(sourceCleared, (state) => {
       state.optimizedDialogOpen = false;
       state.dialogRoute = "optimized";
-      state.optimizedPlanRequestId = null;
+      state.exportPlanRequestId = null;
       state.commandPreview = "";
       state.commandPreviewError = null;
       state.launchError = null;
@@ -130,14 +128,14 @@ const exportSlice = createSlice({
 
 const {
   exportLaunchFailed,
+  exportPlanFailed,
+  exportPlanReceived,
+  exportPlanRequested,
   exportQueueDialogClosed,
   exportQueueDialogOpened,
   gifExportDialogOpened,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
-  optimizedExportPlanFailed,
-  optimizedExportPlanReceived,
-  optimizedExportPlanRequested,
   queueEditFinished,
   queueEditStarted,
   queueFinishActionChanged,
@@ -157,8 +155,7 @@ const selectQueueFinishAction = (state: RootState): QueueFinishAction =>
 const selectAvailableQueueFinishActions = (state: RootState): QueueFinishAction[] =>
   state.export.availableQueueFinishActions;
 
-const selectOptimizedExportDialogOpen = (state: RootState): boolean =>
-  state.export.optimizedDialogOpen;
+const selectExportDialogOpen = (state: RootState): boolean => state.export.optimizedDialogOpen;
 
 const selectExportDialogRoute = (state: RootState): ExportUiState["dialogRoute"] =>
   state.export.dialogRoute;
@@ -175,15 +172,15 @@ const selectQueueEdit = (state: RootState): ExportUiState["queueEdit"] => state.
 
 export {
   exportLaunchFailed,
+  exportPlanFailed,
+  exportPlanReceived,
+  exportPlanRequested,
   exportQueueDialogClosed,
   exportQueueDialogOpened,
   exportReducer,
   gifExportDialogOpened,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
-  optimizedExportPlanFailed,
-  optimizedExportPlanReceived,
-  optimizedExportPlanRequested,
   queueEditFinished,
   queueEditStarted,
   queueFinishActionChanged,
@@ -193,10 +190,10 @@ export {
   selectAvailableQueueFinishActions,
   selectExportCommandPreview,
   selectExportCommandPreviewError,
+  selectExportDialogOpen,
   selectExportDialogRoute,
   selectExportLaunchError,
   selectExportQueueDialogOpen,
-  selectOptimizedExportDialogOpen,
   selectQueueEdit,
   selectQueueFinishAction,
   selectSourceQueueStarted,

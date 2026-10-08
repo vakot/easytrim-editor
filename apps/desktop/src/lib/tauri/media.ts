@@ -8,6 +8,7 @@ import type { SourceRef } from "@/domain/source";
 
 import type {
   AudioPreviewDescriptor,
+  ExportPlan,
   ExportProgress,
   ExportResult,
   FastExportRequest,
@@ -16,7 +17,6 @@ import type {
   LoudnessAnalysisRequest,
   MediaCapabilities,
   MediaInfo,
-  OptimizedExportPlan,
   OptimizedExportRequest,
   OutputSelection,
   PreviewDescriptor,
@@ -29,12 +29,12 @@ import type {
 import {
   normalizeAppError,
   parseAudioPreviewDescriptors,
+  parseExportPlan,
   parseExportProgress,
   parseExportResult,
   parseLoudnessAnalysis,
   parseMediaCapabilities,
   parseMediaInfo,
-  parseOptimizedExportPlan,
   parseOutputSelection,
   parsePreviewDescriptor,
   parseSceneBoundaries,
@@ -214,9 +214,17 @@ async function renderGif(
   );
 }
 
-async function planOptimizedExport(request: OptimizedExportRequest): Promise<OptimizedExportPlan> {
+async function planOptimizedExport(request: OptimizedExportRequest): Promise<ExportPlan> {
   try {
-    return parseOptimizedExportPlan(await invoke<unknown>("plan_optimized_export", { request }));
+    return parseExportPlan(await invoke<unknown>("plan_optimized_export", { request }));
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+async function planGifExport(request: GifExportRequest): Promise<ExportPlan> {
+  try {
+    return parseExportPlan(await invoke<unknown>("plan_gif_export", { request }));
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -464,6 +472,7 @@ export {
   listenForSourceDrops,
   moveSourceToTrash,
   openFileLocation,
+  planGifExport,
   planOptimizedExport,
   prepareAudioPreviews,
   prepareImportedSourceThumbnail,

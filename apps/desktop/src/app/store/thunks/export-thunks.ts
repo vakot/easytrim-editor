@@ -30,15 +30,16 @@ import {
 } from "@/app/store/slices/editing-instances-slice";
 import {
   exportLaunchFailed,
+  exportPlanFailed,
+  exportPlanReceived,
+  exportPlanRequested,
   gifExportDialogOpened,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
-  optimizedExportPlanFailed,
-  optimizedExportPlanReceived,
-  optimizedExportPlanRequested,
   queueEditFinished,
   queueEditStarted,
   queueFinishActionsAvailable,
+  selectExportDialogOpen,
   selectExportDialogRoute,
   selectQueueEdit,
 } from "@/app/store/slices/export-slice";
@@ -64,6 +65,7 @@ import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 import {
   chooseGifOutputPath,
   chooseOutputPath,
+  planGifExport,
   planOptimizedExport,
   releaseExportSource,
   reserveExportSource,
@@ -83,7 +85,7 @@ import {
   commitActiveEditingInstanceDraft,
 } from "./source-media-thunks";
 
-let optimizedPlanRequestSequence = 0;
+let exportPlanRequestSequence = 0;
 let exportAttemptSequence = 0;
 let latestExportAddedAt = 0;
 
@@ -186,7 +188,7 @@ const editExportAttemptRequested =
       if (!restored) return;
       dispatch(queueEditStarted({ attemptId, instanceId, route: "optimized" }));
       dispatch(optimizedExportDialogOpened());
-      await dispatch(refreshOptimizedExportPlan());
+      await dispatch(refreshExportPlan());
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
       diagnostics.error("export.queue.edit.failed", normalized, { snapshotId: instanceId });
@@ -263,15 +265,16 @@ const openOptimizedExportDialog =
     const settings = getInitialSettings(getState());
     if (!settings) return;
     dispatch(optimizedExportDialogOpened());
-    await dispatch(refreshOptimizedExportPlan());
+    await dispatch(refreshExportPlan());
     diagnostics.action("export.dialog.opened", origin);
   };
 
 const openGifExportDialog =
   (origin: DiagnosticOrigin = { id: "gif-export", type: "button" }): AppThunk =>
-  (dispatch, getState) => {
+  async (dispatch, getState) => {
     if (!getInitialSettings(getState())) return;
     dispatch(gifExportDialogOpened());
+    await dispatch(refreshExportPlan());
     diagnostics.action("export.dialog.opened", origin);
   };
 
@@ -289,27 +292,29 @@ const optimizedExportSettingsChangedRequested =
     const instanceId = selectActiveInstanceId(getState());
     if (!instanceId) return;
     dispatch(editingInstanceOptimizedSettingsChanged({ id: instanceId, settings }));
-    if (selectExportDialogRoute(getState()) === "optimized") {
-      await dispatch(refreshOptimizedExportPlan());
-    }
+    if (selectExportDialogOpen(getState())) await dispatch(refreshExportPlan());
   };
 
-const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) => {
+const refreshExportPlan = (): AppThunk => async (dispatch, getState) => {
   const initialState = getState();
+  const route = selectExportDialogRoute(initialState);
   const initialInstance = selectActiveEditingInstance(initialState);
   const initialSource = selectSourceSelection(initialState);
   if (!initialInstance || !initialSource || !selectSourceReady(initialState)) return;
-  const requestId = ++optimizedPlanRequestSequence;
-  dispatch(optimizedExportPlanRequested({ requestId }));
-  const analysis = await ensureLoudnessAnalysis(dispatch, getState, {
-    instanceId: initialInstance.id,
-    loadToken: initialState.source.loadToken,
-    sourcePath: initialSource.sourcePath,
-  });
+  const requestId = ++exportPlanRequestSequence;
+  dispatch(exportPlanRequested({ requestId }));
+  const analysis =
+    route === "gif"
+      ? { state: initialState, status: "ready" as const }
+      : await ensureLoudnessAnalysis(dispatch, getState, {
+          instanceId: initialInstance.id,
+          loadToken: initialState.source.loadToken,
+          sourcePath: initialSource.sourcePath,
+        });
 
   if (analysis.status === "failed") {
     dispatch(
-      optimizedExportPlanFailed({
+      exportPlanFailed({
         requestId,
         error: {
           code: "loudness_analysis_required",
@@ -320,23 +325,31 @@ const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) =>
     return;
   }
   if (analysis.status !== "ready") return;
-  const request = getOptimizedRequest(analysis.state);
+  const request =
+    route === "gif" ? getGifRequest(analysis.state) : getOptimizedRequest(analysis.state);
+
   if (!request) return;
   const sourcePath = normalizeSourceKey(request.sourcePath);
   try {
-    const plan = await planOptimizedExport(request);
+    const plan =
+      route === "gif"
+        ? await planGifExport(request as GifExportRequest)
+        : await planOptimizedExport(request as OptimizedExportRequest);
+
     if (
       selectActiveInstanceId(getState()) === initialInstance.id &&
-      currentSourceKey(getState()) === sourcePath
+      currentSourceKey(getState()) === sourcePath &&
+      selectExportDialogRoute(getState()) === route
     ) {
-      dispatch(optimizedExportPlanReceived({ requestId, commandPreview: plan.commandPreview }));
+      dispatch(exportPlanReceived({ requestId, commandPreview: plan.commandPreview }));
     }
   } catch (error: unknown) {
     if (
       selectActiveInstanceId(getState()) === initialInstance.id &&
-      currentSourceKey(getState()) === sourcePath
+      currentSourceKey(getState()) === sourcePath &&
+      selectExportDialogRoute(getState()) === route
     ) {
-      dispatch(optimizedExportPlanFailed({ requestId, error: normalizeAppError(error) }));
+      dispatch(exportPlanFailed({ requestId, error: normalizeAppError(error) }));
     }
   }
 };
@@ -780,7 +793,7 @@ export {
   openGifExportDialog,
   openOptimizedExportDialog,
   optimizedExportSettingsChangedRequested,
-  refreshOptimizedExportPlan,
+  refreshExportPlan,
   retryExportAttemptRequested,
   startExportQueue,
   startFastExportRequested,

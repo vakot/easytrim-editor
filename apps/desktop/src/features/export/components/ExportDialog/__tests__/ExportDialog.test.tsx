@@ -2,11 +2,15 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
-const { planOptimizedExport } = vi.hoisted(() => ({ planOptimizedExport: vi.fn() }));
+const { planGifExport, planOptimizedExport } = vi.hoisted(() => ({
+  planGifExport: vi.fn(),
+  planOptimizedExport: vi.fn(),
+}));
 
 vi.mock("@/lib/tauri/media", () => ({
   chooseOutputPath: vi.fn(),
   normalizeAppError: (error: unknown) => ({ code: "internal", message: String(error) }),
+  planGifExport,
   planOptimizedExport,
   reserveExportSource: vi.fn(),
 }));
@@ -124,6 +128,8 @@ describe("ExportDialog", () => {
 
   it("uses crop-aware shared resolution controls for GIF without planning optimized export", async () => {
     planOptimizedExport.mockClear();
+    planGifExport.mockClear();
+    planGifExport.mockResolvedValue({ commandPreview: "ffmpeg gif preview" });
     const store = createAppStore({
       getItem: async () => null,
       setItem: async () => undefined,
@@ -169,13 +175,27 @@ describe("ExportDialog", () => {
     expect(screen.getByRole("heading", { name: "Export selected segment as GIF" })).toBeVisible();
     expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(2_560);
     expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(1_440);
+    expect(screen.getByRole("textbox", { name: "FFmpeg arguments" })).toHaveValue(
+      "ffmpeg gif preview",
+    );
     expect(planOptimizedExport).not.toHaveBeenCalled();
+    expect(planGifExport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        crop: { height: 1, width: 0.5, x: 0, y: 0 },
+        resolution: { height: 1_440, width: 2_560 },
+      }),
+    );
 
     fireEvent.change(screen.getByRole("spinbutton", { name: "Width" }), {
       target: { value: "1920" },
     });
     await waitFor(() =>
       expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(1080),
+    );
+    await waitFor(() =>
+      expect(planGifExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ resolution: { height: 1080, width: 1920 } }),
+      ),
     );
   });
 });

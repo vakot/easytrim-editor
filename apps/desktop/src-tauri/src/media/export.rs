@@ -604,11 +604,28 @@ pub fn optimized_command_preview(
         Path::new("<source>"),
         Path::new("<output>"),
     )?;
-    Ok(std::iter::once(OsString::from("ffmpeg"))
+    Ok(command_preview(arguments))
+}
+
+pub fn gif_command_preview(
+    source: &MediaInfo,
+    request: &GifExportRequest,
+) -> Result<String, AppError> {
+    let arguments = build_gif_arguments(
+        source,
+        request,
+        Path::new("<source>"),
+        Path::new("<output>"),
+    )?;
+    Ok(command_preview(arguments))
+}
+
+fn command_preview(arguments: Vec<OsString>) -> String {
+    std::iter::once(OsString::from("ffmpeg"))
         .chain(arguments)
         .map(|argument| quote_preview_argument(&argument))
         .collect::<Vec<_>>()
-        .join(" "))
+        .join(" ")
 }
 
 fn common_input_arguments(source_path: &Path, trim: &TrimSelection) -> Vec<OsString> {
@@ -1168,10 +1185,11 @@ mod tests {
     use super::{
         AudioLoudnessAnalysis, AudioProcessingStage, AudioTrackCacheKey, AudioTrackProcessing,
         AudioTrackSelection, AudioTrackSignalEffect, CropSelection, FastExportRequest,
-        FrameRateSelection, LoudnessNormalization, LoudnessPreset, NoiseReductionPreset,
-        OptimizedExportRequest, ResolutionSelection, TrimSelection, audio_filter_graph,
-        build_fast_arguments, build_optimized_arguments, optimized_command_preview,
-        pre_level_filter_chain, validate_audio_track_selections, waveform_signal_filter_chain,
+        FrameRateSelection, GifExportRequest, LoudnessNormalization, LoudnessPreset,
+        NoiseReductionPreset, OptimizedExportRequest, ResolutionSelection, TrimSelection,
+        audio_filter_graph, build_fast_arguments, build_gif_arguments, build_optimized_arguments,
+        gif_command_preview, optimized_command_preview, pre_level_filter_chain,
+        validate_audio_track_selections, waveform_signal_filter_chain,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -2430,6 +2448,76 @@ mod tests {
         assert!(preview.contains("-i <source>"));
         assert!(preview.ends_with("-y <output>"));
         assert!(preview.contains("\"title=My clip\""));
+    }
+
+    #[test]
+    fn gif_preview_uses_the_execution_builder_for_the_complete_command() {
+        let request = GifExportRequest {
+            source_path: "private-source.mkv".to_owned(),
+            trim: TrimSelection {
+                start_micros: 1_250_000,
+                end_micros: 4_750_000,
+            },
+            audio_tracks: Vec::new(),
+            merge_audio: false,
+            rotation_degrees: 90,
+            crop: Some(CropSelection {
+                x: 0.1,
+                y: 0.2,
+                width: 0.7,
+                height: 0.6,
+            }),
+            flip_horizontal: true,
+            flip_vertical: true,
+            resolution: ResolutionSelection {
+                width: 640,
+                height: 480,
+            },
+            frame_rate: Some(FrameRateSelection {
+                numerator: 24,
+                denominator: 1,
+            }),
+        };
+
+        let preview = gif_command_preview(&media(), &request).expect("preview request is valid");
+        let execution_arguments = build_gif_arguments(
+            &media(),
+            &request,
+            Path::new("<source>"),
+            Path::new("<output>"),
+        )
+        .expect("execution request is valid");
+        let expected = std::iter::once(std::ffi::OsString::from("ffmpeg"))
+            .chain(execution_arguments)
+            .map(|argument| super::quote_preview_argument(&argument))
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        assert_eq!(preview, expected);
+        assert!(preview.contains("-ss 1.250000 -i <source> -t 3.500000"));
+        assert!(preview.contains("transpose=1,crop=iw*0.7:ih*0.6:iw*0.1:ih*0.2,hflip,vflip,fps=24/1,scale=640:480:flags=lanczos,setsar=1"));
+        assert!(preview.contains("palettegen=stats_mode=diff"));
+        assert!(preview.contains("paletteuse=dither=sierra2_4a"));
+        assert!(preview.contains("-loop 0 -f gif -y <output>"));
+        assert!(!preview.contains("private-source.mkv"));
+
+        let mut source_frame_rate_request = request.clone();
+        source_frame_rate_request.frame_rate = None;
+        let source_frame_rate_preview = gif_command_preview(&media(), &source_frame_rate_request)
+            .expect("source frame rate request is valid");
+        assert!(!source_frame_rate_preview.contains("fps="));
+
+        let mut invalid_frame_rate_request = request;
+        invalid_frame_rate_request.frame_rate = Some(FrameRateSelection {
+            numerator: 0,
+            denominator: 1,
+        });
+        assert_eq!(
+            gif_command_preview(&media(), &invalid_frame_rate_request)
+                .expect_err("invalid frame rate should fail planning")
+                .message_id,
+            crate::error::AppErrorMessageId::ExportOutputFrameRateIsInvalid,
+        );
     }
 
     #[test]

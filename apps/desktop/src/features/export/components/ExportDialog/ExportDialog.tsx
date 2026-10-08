@@ -19,16 +19,16 @@ import { selectExportArguments } from "@/app/store/slices/export-presets-slice";
 import {
   selectExportCommandPreview,
   selectExportCommandPreviewError,
+  selectExportDialogOpen,
   selectExportDialogRoute,
   selectExportLaunchError,
-  selectOptimizedExportDialogOpen,
   selectQueueEdit,
 } from "@/app/store/slices/export-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import {
   cancelOptimizedExportDialogRequested,
   openOptimizedExportDialog,
-  refreshOptimizedExportPlan,
+  refreshExportPlan,
   startGifExportRequested,
   startOptimizedExportRequested,
 } from "@/app/store/thunks/export-thunks";
@@ -42,7 +42,7 @@ import { PresetManager } from "./components/PresetManager";
 function ExportDialog() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const open = useAppSelector(selectOptimizedExportDialogOpen);
+  const open = useAppSelector(selectExportDialogOpen);
   const queueEdit = useAppSelector(selectQueueEdit);
   const dialogRoute = useAppSelector(selectExportDialogRoute);
   const activeInstance = useAppSelector(selectActiveEditingInstance);
@@ -64,7 +64,7 @@ function ExportDialog() {
   useEffect(() => {
     if (previousArgumentsText.current === argumentsText) return;
     previousArgumentsText.current = argumentsText;
-    if (open && dialogRoute === "optimized") void dispatch(refreshOptimizedExportPlan());
+    if (open && dialogRoute === "optimized") void dispatch(refreshExportPlan());
   }, [argumentsText, dispatch, dialogRoute, open]);
 
   if (!source || !settings) return null;
@@ -99,12 +99,10 @@ function ExportDialog() {
           {dialogRoute === "optimized" ? <PresetManager /> : null}
           <ExportResolution cropResolution={cropResolution} settings={settings} />
           <ExportFrameRate settings={settings} />
-          {dialogRoute === "optimized" ? (
-            <CommandPreview
-              command={commandPreview}
-              error={commandPreviewError ? localizeAppError(commandPreviewError, t) : undefined}
-            />
-          ) : null}
+          <CommandPreview
+            command={commandPreview}
+            error={commandPreviewError ? localizeAppError(commandPreviewError, t) : undefined}
+          />
 
           <DialogFooter className="min-w-0 items-center sm:justify-between">
             <p className="min-w-0 flex-1 text-xs text-muted-foreground">
