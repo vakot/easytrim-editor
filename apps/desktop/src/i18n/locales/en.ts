@@ -997,8 +997,6 @@ export const en = {
       advanced: "Advanced",
       defaultName: "Audio {{number}}",
       title: "Audio tracks",
-      default: "Default",
-      defaultDisabledTooltip: "Enable this track first",
       metadata: {
         title: "Output audio metadata",
         description: "Set the title and language written to exported audio tracks.",
@@ -1006,6 +1004,10 @@ export const en = {
           edit: "Edit output metadata",
         },
         fields: {
+          default: {
+            label: "Default",
+            disabledTooltip: "Enable this track first",
+          },
           title: {
             label: "Track title",
           },

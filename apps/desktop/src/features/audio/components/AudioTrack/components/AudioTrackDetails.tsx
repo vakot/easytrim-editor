@@ -50,7 +50,9 @@ function AudioTrackDetails({ controller }: { controller: AudioTrackController })
             </p>
             <p className="truncate text-xs text-muted-foreground">
               #{trackNumber} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
-              {track.metadata.isDefault ? ` · ${t("audio.tracks.default")}` : ""}
+              {track.metadata.isDefault
+                ? ` · ${t("audio.tracks.metadata.fields.default.label")}`
+                : ""}
             </p>
           </div>
         </AudioTrackDetailsSection>

@@ -47,7 +47,9 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
       </AudioTrackToggleActivityCheckboxMenuItem>
 
       <AudioTrackDefaultMenuCheckboxItem controller={controller}>
-        <DropdownMenuCheckboxItem keepOpen>{t("audio.tracks.default")}</DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem keepOpen>
+          {t("audio.tracks.metadata.fields.default.label")}
+        </DropdownMenuCheckboxItem>
       </AudioTrackDefaultMenuCheckboxItem>
 
       <DropdownMenuItem inset onSelect={openMetadataDialog}>
@@ -91,7 +93,9 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
       </AudioTrackToggleActivityCheckboxMenuItem>
 
       <AudioTrackDefaultMenuCheckboxItem controller={controller}>
-        <ContextMenuCheckboxItem keepOpen>{t("audio.tracks.default")}</ContextMenuCheckboxItem>
+        <ContextMenuCheckboxItem keepOpen>
+          {t("audio.tracks.metadata.fields.default.label")}
+        </ContextMenuCheckboxItem>
       </AudioTrackDefaultMenuCheckboxItem>
 
       <ContextMenuItem inset onSelect={openMetadataDialog}>
@@ -173,7 +177,9 @@ function AudioTrackDefaultMenuCheckboxItem({
       <TooltipTrigger asChild>
         <span className="block">{menuItem}</span>
       </TooltipTrigger>
-      <TooltipContent side="right">{t("audio.tracks.defaultDisabledTooltip")}</TooltipContent>
+      <TooltipContent side="right">
+        {t("audio.tracks.metadata.fields.default.disabledTooltip")}
+      </TooltipContent>
     </Tooltip>
   );
 }
