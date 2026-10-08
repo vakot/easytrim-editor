@@ -200,8 +200,11 @@ describe("VideoPreview", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(6);
     expect(screen.getByText("Open File")).toBeInTheDocument();
     expect(screen.getByText("Open Folder")).toBeInTheDocument();
+    expect(screen.getByLabelText("Ctrl O")).toBeInTheDocument();
+    expect(screen.getByLabelText("Ctrl K")).toBeInTheDocument();
+    expect(screen.getByLabelText("← / →")).toBeInTheDocument();
     expect(
-      screen.getByLabelText(getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT).join(" + ")),
+      screen.getByLabelText(getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT).join(" ")),
     ).toBeInTheDocument();
     expect(screen.getByText("Support on Ko-fi.com")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /resize crop/i })).not.toBeInTheDocument();

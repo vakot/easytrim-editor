@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from "react";
+import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
@@ -14,7 +14,7 @@ type Shortcut = {
   id: string;
   keys: string[];
   label: string;
-  separator: ReactNode;
+  separator?: string;
 };
 
 function VideoPreviewEmpty() {
@@ -24,7 +24,6 @@ function VideoPreviewEmpty() {
     id: "command-palette",
     label: t("commands.title"),
     keys: [...getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT)],
-    separator: undefined,
   };
 
   const shortcuts: Shortcut[] = [
@@ -32,19 +31,16 @@ function VideoPreviewEmpty() {
       id: "open-file",
       label: t("source.file.openFile"),
       keys: ["Ctrl", "O"],
-      separator: undefined,
     },
     {
       id: "open-folder",
       label: t("source.file.openFolder"),
       keys: ["Ctrl", "K"],
-      separator: undefined,
     },
     {
       id: "play-pause",
       label: t("preview.shortcuts.playPause"),
       keys: ["Space"],
-      separator: undefined,
     },
     {
       id: "previous-next-frame",
@@ -116,10 +112,14 @@ function VideoPreviewEmptyShortcut({
         aria-hidden="true"
         className="min-w-4 flex-1 border-b border-dotted border-muted-foreground/40"
       />
-      <KbdGroup aria-label={shortcut.keys.join(` ${shortcut.separator ?? "+"} `)}>
-        {shortcut.keys.map((key) => (
-          <Fragment key={key}>
-            {key !== shortcut.keys[0] && <KbdSeparator>{shortcut.separator ?? "+"}</KbdSeparator>}
+      <KbdGroup
+        aria-label={shortcut.keys.join(shortcut.separator ? ` ${shortcut.separator} ` : " ")}
+      >
+        {shortcut.keys.map((key, index) => (
+          <Fragment key={`${key}-${index}`}>
+            {index > 0 && shortcut.separator ? (
+              <KbdSeparator>{shortcut.separator}</KbdSeparator>
+            ) : null}
             <Kbd>{key}</Kbd>
           </Fragment>
         ))}
