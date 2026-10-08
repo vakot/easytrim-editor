@@ -1891,6 +1891,7 @@ mod tests {
         }
 
         std::fs::remove_dir_all(directory).expect("temporary fixtures should be removed");
+    }
 
     #[test]
     fn fast_copy_maps_only_selected_streams() {
