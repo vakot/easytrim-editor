@@ -128,18 +128,28 @@ describe("AudioTrackRow", () => {
     expect(gainCommits).toEqual([-0.5, 0]);
   });
 
-  it("double-click enables a muted track and updates playback at unity gain", () => {
+  it("double-click resets Gain on a muted track without unmuting it", () => {
     const { clearLiveAudioTrackGain, gainCommits, store } = renderGainControl(false);
     const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
 
     fireEvent.doubleClick(gainSlider);
 
     expect(store.getState().audio.tracks[0]).toMatchObject({
-      enabled: true,
+      enabled: false,
       processing: { gainDb: 0 },
     });
     expect(clearLiveAudioTrackGain).toHaveBeenLastCalledWith(2);
     expect(gainCommits).toEqual([0]);
+
+    gainSlider.focus();
+    fireEvent.keyDown(gainSlider, { key: "ArrowLeft" });
+    fireEvent.keyUp(gainSlider, { key: "ArrowLeft" });
+
+    expect(store.getState().audio.tracks[0]).toMatchObject({
+      enabled: false,
+      processing: { gainDb: -0.5 },
+    });
+    expect(gainCommits).toEqual([0, -0.5]);
   });
 
   it("disables manual Gain and blocks double-click reset during normalization", async () => {
@@ -208,13 +218,13 @@ describe("AudioTrackRow", () => {
     expect(image).toHaveAttribute("src", "media://waveform");
   });
 
-  it("marks gain levels, resets to unity on double-click, and mutes at negative infinity", async () => {
+  it("marks the Gain range, resets to unity, and preserves mute state at −60 dB", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();
     await user.hover(screen.getByText(/#1 ·/));
 
     const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
-    expect(screen.getByText("−∞", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("−60 dB", { exact: true })).toBeInTheDocument();
     expect(screen.getByText("0 dB", { exact: true })).toBeInTheDocument();
 
     fireEvent.doubleClick(gainSlider);
@@ -224,42 +234,45 @@ describe("AudioTrackRow", () => {
     });
 
     gainSlider.focus();
-    for (let step = 0; step < 48; step += 1) await user.keyboard("{ARROWLEFT}");
+    for (let step = 0; step < 120; step += 1) await user.keyboard("{ARROWLEFT}");
     await waitFor(() => {
       expect(store.getState().audio.tracks[0]).toMatchObject({
-        enabled: false,
-        processing: { gainDb: -24 },
+        enabled: true,
+        processing: { gainDb: -60 },
       });
     });
+    expect(gainSlider).toHaveAttribute("aria-valuenow", "-60");
+    expect(gainSlider).toHaveAttribute("aria-valuemin", "-60");
+    expect(screen.getByText("−60.0 dB")).toBeInTheDocument();
 
     gainSlider.focus();
     fireEvent.keyDown(gainSlider, { key: "ArrowRight" });
-    expect(gainSlider).toHaveAttribute("aria-valuenow", "-23.5");
+    expect(gainSlider).toHaveAttribute("aria-valuenow", "-59.5");
     expect(screen.getByRole("button", { name: /mute.*eng/i })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
     expect(store.getState().audio.tracks[0]).toMatchObject({
-      enabled: false,
-      processing: { gainDb: -24 },
+      enabled: true,
+      processing: { gainDb: -60 },
     });
 
     fireEvent.keyUp(gainSlider, { key: "ArrowRight" });
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: true,
-      processing: { gainDb: -23.5 },
+      processing: { gainDb: -59.5 },
     });
 
     await user.click(screen.getByRole("button", { name: /mute.*eng/i }));
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: false,
-      processing: { gainDb: -23.5 },
+      processing: { gainDb: -59.5 },
     });
 
     await user.click(screen.getByRole("button", { name: /unmute.*eng/i }));
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: true,
-      processing: { gainDb: -23.5 },
+      processing: { gainDb: -59.5 },
     });
   });
 
