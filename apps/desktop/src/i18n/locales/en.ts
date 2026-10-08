@@ -168,8 +168,6 @@ export const en = {
     open: {
       fileDescription: "Choose a single video file to start editing",
       folderDescription: "Import all supported videos from a folder",
-      videoFilter: "Video files",
-      foldersDialogTitle: "Add folders",
     },
     shortcutTooltip: "{{label}} ({{shortcut}})",
     thumbnail: {
@@ -524,9 +522,6 @@ export const en = {
       ffmpegCouldNotBeStarted: "FFmpeg could not be started",
       analyzeTrackLoudnessToContinue: "Analyze track loudness to continue",
       interruptedWhenEasyTrimClosedUnexpectedly: "The export was interrupted when EasyTrim closed unexpectedly",
-    },
-    outputDialog: {
-      videoFilter: "Video files",
     },
     fastExport: {
       cancelled: "Fast Export cancelled",

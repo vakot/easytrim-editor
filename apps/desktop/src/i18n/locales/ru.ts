@@ -125,8 +125,6 @@ export const ru = {
     open: {
       fileDescription: "Выберите один видеофайл, чтобы начать монтаж",
       folderDescription: "Импортируйте все поддерживаемые видео из папки",
-      videoFilter: "Видеофайлы",
-      foldersDialogTitle: "Добавить папки",
     },
     shortcutTooltip: "{{label}} ({{shortcut}})",
     thumbnail: {
@@ -517,9 +515,6 @@ export const ru = {
     },
   },
   export: {
-    outputDialog: {
-      videoFilter: "Видеофайлы",
-    },
     fastExport: {
       cancelled: "Быстрый экспорт отменён",
       completed: "Быстрый экспорт завершён",
