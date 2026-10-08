@@ -26,88 +26,6 @@ interface AudioTrackActionsProps {
   controller: AudioTrackController;
 }
 
-function activityActionLabel(
-  status: "idle" | "loading" | "ready" | "failed",
-  t: (
-    key:
-      | "audio.activityDetection.showRanges"
-      | "audio.activityDetection.analyzing"
-      | "audio.activityDetection.retry"
-      | "audio.activityDetection.analyze",
-  ) => string,
-) {
-  if (status === "ready") return t("audio.activityDetection.showRanges");
-  if (status === "loading") return t("audio.activityDetection.analyzing");
-  if (status === "failed") return t("audio.activityDetection.retry");
-  return t("audio.activityDetection.analyze");
-}
-
-function AudioTrackToggleMenuCheckboxItem({
-  children,
-  controller,
-}: { children?: React.ReactNode } & AudioTrackActionsProps) {
-  const { track } = controller;
-  if (!track) return null;
-
-  const commandProps = {
-    onCheckedChange: controller.setEnabled,
-    checked: controller.isEnabled,
-  };
-
-  return <Slot {...commandProps}>{children}</Slot>;
-}
-
-function AudioTrackToggleActivityCheckboxMenuItem({
-  children,
-  controller,
-}: { children?: React.ReactNode } & AudioTrackActionsProps) {
-  const { t } = useTranslation();
-  const track = controller.track;
-  if (!track) return null;
-
-  const hasActivity = track.activityAnalysis.status === "ready";
-  const label = activityActionLabel(track.activityAnalysis.status, t);
-
-  const commandProps = {
-    "aria-label": label,
-    checked: hasActivity && track.activityVisible,
-    onCheckedChange: hasActivity ? controller.toggleActivityVisibility : controller.detectActivity,
-    disabled: track.activityAnalysis.status === "loading",
-  };
-
-  return <Slot {...commandProps}>{children}</Slot>;
-}
-
-function AudioTrackDefaultMenuCheckboxItem({
-  children,
-  controller,
-}: { children?: React.ReactNode } & AudioTrackActionsProps) {
-  const track = controller.track;
-  if (!track) return null;
-
-  const commandProps = {
-    checked: track.metadata.isDefault ?? false,
-    disabled: !track.enabled,
-    onCheckedChange: controller.setDefault,
-  };
-
-  return <Slot {...commandProps}>{children}</Slot>;
-}
-
-function AudioTrackEffectsMenuItem({
-  children,
-}: { children?: React.ReactNode } & AudioTrackActionsProps) {
-  const { t } = useTranslation();
-  const { openEffects } = useAudioTrackEffectsDialog();
-
-  const commandProps = {
-    "aria-label": t("audio.effects.open"),
-    onSelect: openEffects,
-  };
-
-  return <Slot {...commandProps}>{children}</Slot>;
-}
-
 function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
   const { t } = useTranslation();
   const { openMetadataDialog } = useAudioTrackMetadataDialog();
@@ -194,6 +112,88 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
       </AudioTrackEffectsMenuItem>
     </ContextMenuContent>
   );
+}
+
+function AudioTrackToggleMenuCheckboxItem({
+  children,
+  controller,
+}: { children?: React.ReactNode } & AudioTrackActionsProps) {
+  const { track } = controller;
+  if (!track) return null;
+
+  const commandProps = {
+    onCheckedChange: controller.setEnabled,
+    checked: controller.isEnabled,
+  };
+
+  return <Slot {...commandProps}>{children}</Slot>;
+}
+
+function AudioTrackToggleActivityCheckboxMenuItem({
+  children,
+  controller,
+}: { children?: React.ReactNode } & AudioTrackActionsProps) {
+  const { t } = useTranslation();
+  const track = controller.track;
+  if (!track) return null;
+
+  const hasActivity = track.activityAnalysis.status === "ready";
+  const label = activityActionLabel(track.activityAnalysis.status, t);
+
+  const commandProps = {
+    "aria-label": label,
+    checked: hasActivity && track.activityVisible,
+    onCheckedChange: hasActivity ? controller.toggleActivityVisibility : controller.detectActivity,
+    disabled: track.activityAnalysis.status === "loading",
+  };
+
+  return <Slot {...commandProps}>{children}</Slot>;
+}
+
+function AudioTrackDefaultMenuCheckboxItem({
+  children,
+  controller,
+}: { children?: React.ReactNode } & AudioTrackActionsProps) {
+  const track = controller.track;
+  if (!track) return null;
+
+  const commandProps = {
+    checked: track.metadata.isDefault ?? false,
+    disabled: !track.enabled,
+    onCheckedChange: controller.setDefault,
+  };
+
+  return <Slot {...commandProps}>{children}</Slot>;
+}
+
+function AudioTrackEffectsMenuItem({
+  children,
+}: { children?: React.ReactNode } & AudioTrackActionsProps) {
+  const { t } = useTranslation();
+  const { openEffects } = useAudioTrackEffectsDialog();
+
+  const commandProps = {
+    "aria-label": t("audio.effects.open"),
+    onSelect: openEffects,
+  };
+
+  return <Slot {...commandProps}>{children}</Slot>;
+}
+
+function activityActionLabel(
+  status: "idle" | "loading" | "ready" | "failed",
+  t: (
+    key:
+      | "audio.activityDetection.showRanges"
+      | "audio.activityDetection.analyzing"
+      | "audio.activityDetection.retry"
+      | "audio.activityDetection.analyze",
+  ) => string,
+) {
+  if (status === "ready") return t("audio.activityDetection.showRanges");
+  if (status === "loading") return t("audio.activityDetection.analyzing");
+  if (status === "failed") return t("audio.activityDetection.retry");
+  return t("audio.activityDetection.analyze");
 }
 
 export { AudioTrackContextMenuContent, AudioTrackDropdownMenuContent };

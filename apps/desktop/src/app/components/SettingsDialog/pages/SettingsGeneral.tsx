@@ -28,50 +28,6 @@ import { SettingRow, SettingsSection } from "../components/SettingRow";
 const TRANSLATION_GUIDE_URL =
   "https://github.com/vakot/easytrim-editor/blob/master/apps/desktop/src/i18n/README.md";
 
-function SettingsLanguageOptions() {
-  const languages = useLanguageSelectorOptions();
-
-  return languages.map((language) => (
-    <LanguageSelectorItem key={language.code} language={language}>
-      <LanguageSelectorItemFlag />
-      <LanguageSelectorItemText>
-        <SettingsLanguageCoverage
-          language={language.code as SupportedLanguage}
-          nativeName={language.nativeName}
-        />
-      </LanguageSelectorItemText>
-      <LanguageSelectorItemIndicator />
-    </LanguageSelectorItem>
-  ));
-}
-
-function SettingsLanguageCoverage({
-  language,
-  nativeName,
-}: {
-  language: SupportedLanguage;
-  nativeName: string;
-}) {
-  const { t } = useTranslation();
-  const percentage = translationCoverage[language].percentage;
-
-  return (
-    <div className="flex items-center gap-1">
-      <Progress
-        aria-label={t("settings.general.language.coverageAccessibleLabel", {
-          language: nativeName,
-          percentage,
-        })}
-        className="h-1"
-        value={percentage}
-      />
-      <span aria-hidden="true" className="w-[4ch] shrink-0 text-right text-xs tabular-nums">
-        {percentage}%
-      </span>
-    </div>
-  );
-}
-
 function SettingsGeneral() {
   const { i18n, t } = useTranslation();
   const language = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
@@ -138,6 +94,50 @@ function SettingsGeneral() {
         </div>
       </SettingRow>
     </SettingsSection>
+  );
+}
+
+function SettingsLanguageOptions() {
+  const languages = useLanguageSelectorOptions();
+
+  return languages.map((language) => (
+    <LanguageSelectorItem key={language.code} language={language}>
+      <LanguageSelectorItemFlag />
+      <LanguageSelectorItemText>
+        <SettingsLanguageCoverage
+          language={language.code as SupportedLanguage}
+          nativeName={language.nativeName}
+        />
+      </LanguageSelectorItemText>
+      <LanguageSelectorItemIndicator />
+    </LanguageSelectorItem>
+  ));
+}
+
+function SettingsLanguageCoverage({
+  language,
+  nativeName,
+}: {
+  language: SupportedLanguage;
+  nativeName: string;
+}) {
+  const { t } = useTranslation();
+  const percentage = translationCoverage[language].percentage;
+
+  return (
+    <div className="flex items-center gap-1">
+      <Progress
+        aria-label={t("settings.general.language.coverageAccessibleLabel", {
+          language: nativeName,
+          percentage,
+        })}
+        className="h-1"
+        value={percentage}
+      />
+      <span aria-hidden="true" className="w-[4ch] shrink-0 text-right text-xs tabular-nums">
+        {percentage}%
+      </span>
+    </div>
   );
 }
 

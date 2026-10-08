@@ -37,12 +37,13 @@ import {
   useAudioTrackMetadataDialog,
 } from "./contexts/audio-track-metadata-dialog-context";
 
-interface AudioTrackMetadataDialogProps {
+function AudioTrackMetadataDialog({
+  children,
+  controller,
+}: {
   children: ReactNode;
   controller: AudioTrackController;
-}
-
-function AudioTrackMetadataDialog({ children, controller }: AudioTrackMetadataDialogProps) {
+}) {
   const [open, setOpen] = useState(false);
   const [dialogSession, setDialogSession] = useState(0);
   const track = controller.track;

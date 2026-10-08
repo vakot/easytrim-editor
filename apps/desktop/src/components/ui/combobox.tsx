@@ -22,20 +22,6 @@ type ComboboxContextValue = {
   triggerRef: React.MutableRefObject<HTMLElement | null>;
 };
 
-const ComboboxContext = React.createContext<ComboboxContextValue | null>(null);
-const ComboboxContentContext = React.createContext(false);
-const ComboboxAsChildContentContext = React.createContext(false);
-
-function useCombobox() {
-  const context = React.useContext(ComboboxContext);
-
-  if (!context) {
-    throw new Error("Combobox components must be used within Combobox");
-  }
-
-  return context;
-}
-
 type ComboboxProps = Omit<React.ComponentProps<typeof Popover>, "open" | "onOpenChange"> & {
   label?: string;
   onOpenChange?: (open: boolean) => void;
@@ -291,6 +277,20 @@ function ComboboxItem({ onSelect, ...props }: React.ComponentProps<typeof Comman
 
 function ComboboxSeparator({ ...props }: React.ComponentProps<typeof CommandSeparator>) {
   return <CommandSeparator {...props} />;
+}
+
+const ComboboxContext = React.createContext<ComboboxContextValue | null>(null);
+const ComboboxContentContext = React.createContext(false);
+const ComboboxAsChildContentContext = React.createContext(false);
+
+function useCombobox() {
+  const context = React.useContext(ComboboxContext);
+
+  if (!context) {
+    throw new Error("Combobox components must be used within Combobox");
+  }
+
+  return context;
 }
 
 export {

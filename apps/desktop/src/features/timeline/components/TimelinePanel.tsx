@@ -33,6 +33,16 @@ import { TimelineToolbar } from "./TimelineToolbar";
 import { TimelineTrack } from "./TimelineTrack";
 import { TimelineValues } from "./TimelineValues";
 
+const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
+  value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),
+  label: `${speed}×`,
+}));
+
+const PLAYBACK_SPEED_PRESETS = [0.5, 1, 2, 3].map((speed) => ({
+  value: speed as PlaybackSpeed,
+  label: `${speed}×`,
+}));
+
 function TimelinePanel() {
   const { t } = useTranslation();
 
@@ -78,16 +88,6 @@ function TimelinePanel() {
     </section>
   );
 }
-
-const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
-  value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),
-  label: `${speed}×`,
-}));
-
-const PLAYBACK_SPEED_PRESETS = [0.5, 1, 2, 3].map((speed) => ({
-  value: speed as PlaybackSpeed,
-  label: `${speed}×`,
-}));
 
 function PlaybackSpeedControl() {
   const { t } = useTranslation();

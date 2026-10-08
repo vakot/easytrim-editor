@@ -88,12 +88,6 @@ interface LanguageSelectorProps extends Omit<
   value?: string | null;
 }
 
-const LanguageSelectorContext = React.createContext<LanguageSelectorContextValue | null>(null);
-const LanguageSelectorItemContext = React.createContext<LanguageSelectorItemContextValue | null>(
-  null,
-);
-
-const LanguageSelectorContentContext = React.createContext(false);
 const REGION_FLAGS = {
   BG,
   CN,
@@ -132,37 +126,6 @@ const REGION_FLAGS = {
   UA,
   VN,
 } as const;
-
-function useLanguageSelector() {
-  const context = React.useContext(LanguageSelectorContext);
-
-  if (!context) {
-    throw new Error("LanguageSelector components must be used within LanguageSelector");
-  }
-
-  return context;
-}
-
-function useLanguageSelectorItem() {
-  const context = React.useContext(LanguageSelectorItemContext);
-
-  if (!context) {
-    throw new Error("LanguageSelector item components must be used within LanguageSelectorItem");
-  }
-
-  return context;
-}
-
-/** Returns the selector's current options after applying its active search query. */
-function useLanguageSelectorOptions(): readonly LanguageOption[] {
-  return useLanguageSelector().options;
-}
-
-function getLanguageDisplayName(language: LanguageOption): string {
-  return language.nativeName === language.englishName
-    ? language.nativeName
-    : `${language.nativeName} (${language.englishName})`;
-}
 
 function LanguageSelector({
   children,
@@ -453,6 +416,44 @@ function LanguageSelectorFlag({
       ) : null}
     </span>
   );
+}
+
+const LanguageSelectorContext = React.createContext<LanguageSelectorContextValue | null>(null);
+const LanguageSelectorItemContext = React.createContext<LanguageSelectorItemContextValue | null>(
+  null,
+);
+
+const LanguageSelectorContentContext = React.createContext(false);
+
+function useLanguageSelector() {
+  const context = React.useContext(LanguageSelectorContext);
+
+  if (!context) {
+    throw new Error("LanguageSelector components must be used within LanguageSelector");
+  }
+
+  return context;
+}
+
+function useLanguageSelectorItem() {
+  const context = React.useContext(LanguageSelectorItemContext);
+
+  if (!context) {
+    throw new Error("LanguageSelector item components must be used within LanguageSelectorItem");
+  }
+
+  return context;
+}
+
+/** Returns the selector's current options after applying its active search query. */
+function useLanguageSelectorOptions(): readonly LanguageOption[] {
+  return useLanguageSelector().options;
+}
+
+function getLanguageDisplayName(language: LanguageOption): string {
+  return language.nativeName === language.englishName
+    ? language.nativeName
+    : `${language.nativeName} (${language.englishName})`;
 }
 
 export {

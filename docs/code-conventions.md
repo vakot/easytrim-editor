@@ -21,6 +21,26 @@ Keep single-consumer helpers, types, and constants with their owning module. Com
 in the same file as their component, immediately above the component declaration. Use a subsystem
 `types.ts` only for a deliberate shared contract, never for a component's props-only type.
 
+## React component file organization
+
+Organize React component files for top-down readability. After imports, place constants and static
+configuration first, then the main component or entry point, followed by smaller supporting
+components in descending order of responsibility and complexity, and then the smallest reusable UI
+primitives. Place context definitions and providers after the components that use them, followed by
+hooks, helper functions, utilities, and finally exports. Keep a declaration earlier only when a
+concrete language or module constraint requires it.
+
+Use inline prop types for simple component props that are local to one component:
+
+```tsx
+function SettingsLanguageCoverage({ language }: { language: SupportedLanguage }) {
+  // ...
+}
+```
+
+Keep a named props type when it is shared, part of a public API, or complex enough that naming it
+improves readability.
+
 ## Component state and props
 
 Treat Redux as the main bus for shared application and feature workflow state. An app- or
