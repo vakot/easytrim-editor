@@ -477,6 +477,7 @@ export const en = {
       openFolder: "directory|import|source",
       optimizedExport: "optimized export|optimize|export",
       fastExport: "fast export|fast|export",
+      gifExport: "gif export|gif|animated image",
       saveCurrentFrame: "save|frame|screenshot|image|png",
     },
   },
