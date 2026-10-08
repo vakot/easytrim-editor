@@ -119,7 +119,7 @@ function localizeAppError(error: AppError, t: TFunction): string {
     case "export.exportWasCancelled":
       return t("export.errors.exportWasCancelled");
     case "export.fastCutCannotApplyRotationUseOptimizedRender":
-      return t("export.errors.fastCutCannotApplyRotationUseOptimizedRender");
+      return t("export.errors.losslessCutCannotApplyRotationUseOptimizedExport");
     case "export.ffmpegCouldNotRenderTheSelectedSegment":
       return t("export.errors.ffmpegCouldNotRenderTheSelectedSegment");
     case "export.ffmpegIsRequiredToExportVideoFiles":
@@ -177,25 +177,25 @@ function localizeAppError(error: AppError, t: TFunction): string {
     case "media.audio.uniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated":
       return t("audio.errors.audio.uniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated");
     case "media.audioActivity.audioActivityAnalysisContainsTooManyRanges":
-      return t("timeline.errors.audioActivity.audioActivityAnalysisContainsTooManyRanges");
+      return t("audio.activityDetection.errors.audioActivityAnalysisContainsTooManyRanges");
     case "media.audioActivity.audioActivityAnalysisOutputExceededItsSafetyLimit":
-      return t("timeline.errors.audioActivity.audioActivityAnalysisOutputExceededItsSafetyLimit");
+      return t("audio.activityDetection.errors.audioActivityAnalysisOutputExceededItsSafetyLimit");
     case "media.audioActivity.audioActivityDetectionTookTooLong":
-      return t("timeline.errors.audioActivity.audioActivityDetectionTookTooLong");
+      return t("audio.activityDetection.errors.audioActivityDetectionTookTooLong");
     case "media.audioActivity.audioActivityDetectionWasInterrupted":
-      return t("timeline.errors.audioActivity.audioActivityDetectionWasInterrupted");
+      return t("audio.activityDetection.errors.audioActivityDetectionWasInterrupted");
     case "media.audioActivity.ffmpegCouldNotAnalyzeAudioActivity":
-      return t("timeline.errors.audioActivity.ffmpegCouldNotAnalyzeAudioActivity");
+      return t("audio.activityDetection.errors.ffmpegCouldNotAnalyzeAudioActivity");
     case "media.audioActivity.ffmpegIsRequiredToAnalyzeAudioActivity":
-      return t("timeline.errors.audioActivity.ffmpegIsRequiredToAnalyzeAudioActivity");
+      return t("audio.activityDetection.errors.ffmpegIsRequiredToAnalyzeAudioActivity");
     case "media.audioActivity.inspectTheVideoBeforeDetectingAudioActivity":
-      return t("timeline.errors.audioActivity.inspectTheVideoBeforeDetectingAudioActivity");
+      return t("audio.activityDetection.errors.inspectVideoBeforeDetectingAudioActivity");
     case "media.audioPreviewStreamIndexesMustBeUnique":
       return t("audio.errors.audioPreviewStreamIndexesMustBeUnique");
     case "media.audioStreamMetadataIsUnavailableForWaveformGeneration":
       return t("audio.errors.audioStreamMetadataIsUnavailableForWaveformGeneration");
     case "media.inspectTheVideoBeforeDetectingAudioActivity":
-      return t("timeline.errors.inspectTheVideoBeforeDetectingAudioActivity");
+      return t("audio.activityDetection.errors.inspectVideoBeforeDetectingAudioActivity");
     case "media.loudness.ffmpegCouldNotAnalyzeAudioLoudness":
       return t("audio.errors.loudness.ffmpegCouldNotAnalyzeAudioLoudness");
     case "media.loudness.ffmpegDidNotReturnLoudnessMeasurements":

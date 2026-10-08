@@ -83,7 +83,7 @@ function MenuBarViewContent() {
 
         <ApplicationCommandMenuItem asChild commandId="open-export-queue">
           <MenubarItem>
-            {t("queue.exportQueueTitle")}
+            {t("queue.title")}
             <MenubarShortcut className="text-xs">
               {finishedExports}/{queueSize}
             </MenubarShortcut>

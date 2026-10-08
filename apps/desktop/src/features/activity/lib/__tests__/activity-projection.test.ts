@@ -14,12 +14,12 @@ import {
 } from "../activity-projection";
 
 const labels: ActivityProjectionLabels = {
-  fastCutCancelled: "Fast cut cancelled",
-  fastCutCompleted: "Fast cut completed",
-  fastCutFailed: "Fast cut failed",
-  fastCutInterrupted: "Fast cut interrupted",
-  fastCutStarted: "Started fast cut",
-  fastCutting: "Fast cutting…",
+  fastCutCancelled: "Lossless Cut cancelled",
+  fastCutCompleted: "Lossless Cut completed",
+  fastCutFailed: "Lossless Cut failed",
+  fastCutInterrupted: "Lossless Cut interrupted",
+  fastCutStarted: "Lossless Cut started",
+  fastCutting: "Lossless Cut…",
   fileCloseCompleted: (count) => `Closed ${count} file${count === 1 ? "" : "s"}`,
   fileDeleteCancelled: "File deletion cancelled",
   fileDeleteFailed: "File deletion failed",
@@ -34,12 +34,12 @@ const labels: ActivityProjectionLabels = {
   importOpenedFiles: (count) => `Opened ${count} file${count === 1 ? "" : "s"}`,
   importOpenedFilesFromFolders: (fileCount, folderCount) =>
     `Opened ${fileCount} file${fileCount === 1 ? "" : "s"} from ${folderCount} folder${folderCount === 1 ? "" : "s"}`,
-  renderCancelled: "Render cancelled",
-  renderCompleted: "Optimized render completed",
-  renderFailed: "Render failed",
-  renderInterrupted: "Render interrupted",
-  renderStarted: "Started rendering",
-  rendering: "Rendering…",
+  renderCancelled: "Optimized export cancelled",
+  renderCompleted: "Optimized export completed",
+  renderFailed: "Optimized export failed",
+  renderInterrupted: "Optimized export interrupted",
+  renderStarted: "Optimized export started",
+  rendering: "Optimized export…",
   workspaceRestored: (restored, total) =>
     restored === total ? `Restored ${restored}` : `Restored ${restored} of ${total}`,
 };
@@ -167,8 +167,8 @@ describe("activity projection", () => {
   });
 
   it.each([
-    ["fast", "fast-cut", "Fast cut completed"],
-    ["optimized", "render", "Optimized render completed"],
+    ["fast", "fast-cut", "Lossless Cut completed"],
+    ["optimized", "render", "Optimized export completed"],
   ] as const)("projects a completed %s export", (outputType, kind, title) => {
     const entry = projectActivityEvent(
       diagnosticEvent("ffmpeg.export.completed", { data: { outputPath, outputType } }),
@@ -186,8 +186,8 @@ describe("activity projection", () => {
   });
 
   it.each([
-    ["fast", "Started fast cut", "Fast cut completed"],
-    ["optimized", "Started rendering", "Optimized render completed"],
+    ["fast", "Lossless Cut started", "Lossless Cut completed"],
+    ["optimized", "Optimized export started", "Optimized export completed"],
   ] as const)(
     "projects the %s export start separately from its lifecycle",
     (outputType, startTitle, completedTitle) => {
@@ -267,7 +267,7 @@ describe("activity projection", () => {
 
     expect(pending?.id).toBe(completed?.id);
     expect(completed?.startedAt).toBe("2026-08-31T08:01:00.000Z");
-    expect(completed?.title).toBe("Optimized render completed");
+    expect(completed?.title).toBe("Optimized export completed");
   });
 
   it("correlates native export terminals with their frontend parent operation", () => {
@@ -295,11 +295,11 @@ describe("activity projection", () => {
       id: pending?.id,
       operationId: "frontend-export-1",
       status: "completed",
-      title: "Optimized render completed",
+      title: "Optimized export completed",
     });
   });
 
-  it("keeps historical optimized render output actions separate from source branch identity", () => {
+  it("keeps historical optimized export output actions separate from source branch identity", () => {
     const entries = projectActivityEvents(
       [
         diagnosticEvent("export.prepare.started", {
@@ -328,7 +328,7 @@ describe("activity projection", () => {
       "current-session",
     );
 
-    const render = entries.find((entry) => entry.title === "Optimized render completed");
+    const render = entries.find((entry) => entry.title === "Optimized export completed");
     const branch = groupActivityEntriesByBranch(entries).find(
       (item): item is Extract<typeof item, { kind: "branch" }> =>
         item.kind === "branch" && item.branch.snapshotId === "snapshot-1",
@@ -343,8 +343,8 @@ describe("activity projection", () => {
     expect(branch?.branch.path).toBe(sourcePath);
     expect(branch?.branch.entries).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ title: "Started rendering", snapshotId: "snapshot-1" }),
-        expect.objectContaining({ title: "Optimized render completed", snapshotId: "snapshot-1" }),
+        expect.objectContaining({ title: "Optimized export started", snapshotId: "snapshot-1" }),
+        expect.objectContaining({ title: "Optimized export completed", snapshotId: "snapshot-1" }),
       ]),
     );
   });
@@ -718,16 +718,16 @@ describe("activity projection", () => {
         path: outputPath,
         startedAt: "2026-08-31T09:00:00.000Z",
         status: "pending",
-        title: "Rendering…",
+        title: "Optimized export…",
       }),
     ]);
     expect(entries[0]?.action).toBeUndefined();
   });
 
   it.each([
-    ["ffmpeg.export.completed", "completed", "Optimized render completed", true],
-    ["ffmpeg.export.failed", "failed", "Render failed", false],
-    ["ffmpeg.export.cancelled", "cancelled", "Render cancelled", false],
+    ["ffmpeg.export.completed", "completed", "Optimized export completed", true],
+    ["ffmpeg.export.failed", "failed", "Optimized export failed", false],
+    ["ffmpeg.export.cancelled", "cancelled", "Optimized export cancelled", false],
   ] as const)("replaces a started export with %s", (event, status, title, hasOpenAction) => {
     const entries = projectActivityEvents(
       [
@@ -804,7 +804,7 @@ describe("activity projection", () => {
       "current-session",
     )[0];
 
-    expect(entry).toMatchObject({ status: "completed", title: "Fast cut completed" });
+    expect(entry).toMatchObject({ status: "completed", title: "Lossless Cut completed" });
     expect(entry?.action).toEqual({ kind: "open", path: outputPath });
   });
 

@@ -37,7 +37,7 @@ const commands: ApplicationCommand[] = [
     id: "save-lossless-cut",
     label: "Save Lossless Cut",
     pending: false,
-    searchTerms: ["fast cut", "render"],
+    searchTerms: ["lossless cut", "save lossless cut"],
     group: { id: "export", label: "Export" },
     shortcut: fileShortcuts.saveLosslessCut,
     variant: "default",
@@ -100,12 +100,15 @@ describe("application command search", () => {
     expect(matches[1]?.command).toMatchObject({ enabled: false });
   });
 
-  it.each(["fast ren", "fast rendr"])("supports token partial and typo queries: %s", (query) => {
-    const [match] = filterApplicationCommands(commands, query);
+  it.each(["lossless cu", "lossles cut"])(
+    "supports token partial and typo queries: %s",
+    (query) => {
+      const [match] = filterApplicationCommands(commands, query);
 
-    expect(match?.command.id).toBe("save-lossless-cut");
-    expect(match?.searchTermMatched).toBe(true);
-  });
+      expect(match?.command.id).toBe("save-lossless-cut");
+      expect(match?.searchTermMatched).toBe(true);
+    },
+  );
 
   it("ranks the stronger fuzzy command match first", () => {
     const stronger = searchableCommand("strong", "War Thunder Enemy destroyed moment 2026");

@@ -558,7 +558,7 @@ describe("AudioTrackRow", () => {
     await user.pointer({ keys: "[MouseRight]", target: screen.getByText(/#1 ·/) });
 
     expect(screen.getByText("Enable")).toBeInTheDocument();
-    expect(screen.getByRole("menuitemcheckbox", { name: /mute.*eng/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitemcheckbox", { name: "Enable" })).toBeInTheDocument();
     expect(
       screen.getByRole("menuitemcheckbox", { name: /analyze audio activity/i }),
     ).toBeInTheDocument();

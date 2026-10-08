@@ -95,7 +95,7 @@ describe("ExportQueue", () => {
       </Provider>,
     );
 
-    expect(screen.getByRole("heading", { name: "Queue" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Export Queue" })).toBeInTheDocument();
     expect(screen.getByText("Export attempts will appear here")).toBeInTheDocument();
   });
 
@@ -149,7 +149,7 @@ describe("ExportQueue", () => {
       </Provider>,
     );
 
-    expect(screen.getByText("Rendering…")).toBeInTheDocument();
+    expect(screen.getByText("Processing…")).toBeInTheDocument();
     expect(screen.getByText("42%")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel export" })).toBeInTheDocument();
   });
@@ -205,9 +205,9 @@ describe("ExportQueue", () => {
     );
 
     expect(
-      screen.getByText("5 jobs · 1 rendering · 1 queued · 1 failed · 1 canceled · 1 completed"),
+      screen.getByText("5 jobs · 1 processing · 1 queued · 1 failed · 1 canceled · 1 completed"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Rendering…")).toHaveAttribute("data-variant", "default");
+    expect(screen.getByText("Processing…")).toHaveAttribute("data-variant", "default");
     expect(screen.getByText("Completed")).toHaveAttribute("data-variant", "success");
     expect(screen.getByText("100%")).toBeInTheDocument();
     expect(screen.getByText("Failed")).toHaveAttribute("data-variant", "destructive");

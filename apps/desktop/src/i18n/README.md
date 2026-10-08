@@ -42,7 +42,7 @@ quality or human review status.
 | Source panel  | Source explorer | Источники          |
 | Layout        | Layout          | Компоновка         |
 | Export        | Export          | Экспорт            |
-| Render        | Render          | Рендеринг          |
+| Render        | Render          | Рендер             |
 | Lossless Cut  | Lossless Cut    | Обрезка без потерь |
 | Export Queue  | Export Queue    | Очередь экспорта   |
 | Preset        | Preset          | Пресет             |

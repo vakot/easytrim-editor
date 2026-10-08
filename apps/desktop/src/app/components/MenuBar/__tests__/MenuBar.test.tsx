@@ -437,7 +437,7 @@ describe("MenuBarTest", () => {
 
     await user.click(deleteSourceItem);
     expect(
-      screen.getByRole("heading", { name: "Delete source after rendering?" }),
+      screen.getByRole("heading", { name: "Delete source after export?" }),
     ).toBeInTheDocument();
     expect(menuState.dispatch).not.toHaveBeenCalledWith(
       expect.objectContaining({
@@ -472,7 +472,7 @@ describe("MenuBarTest", () => {
     });
     expect(screen.getByRole("switch", { name: "Delete source" })).not.toBeChecked();
     expect(
-      screen.queryByRole("heading", { name: "Delete source after rendering?" }),
+      screen.queryByRole("heading", { name: "Delete source after export?" }),
     ).not.toBeInTheDocument();
   });
 

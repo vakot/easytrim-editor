@@ -8,7 +8,7 @@ function ExportQueueSummary() {
 
   const parts = [
     t("queue.summary.jobs", { count: summary.total }),
-    summary.rendering > 0 ? t("queue.summary.rendering", { count: summary.rendering }) : null,
+    summary.rendering > 0 ? t("queue.summary.processing", { count: summary.rendering }) : null,
     summary.queued > 0 ? t("queue.summary.queued", { count: summary.queued }) : null,
     summary.failed > 0 ? t("queue.summary.failed", { count: summary.failed }) : null,
     summary.canceled > 0 ? t("queue.summary.canceled", { count: summary.canceled }) : null,

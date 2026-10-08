@@ -54,11 +54,9 @@ function useSceneCommands() {
         sceneDetection.canDetect && !sceneDetection.hasDetected && !sceneDetection.isDetecting,
       icon: <Clapperboard aria-hidden="true" />,
       id: "detect-scenes" as const,
-      label: t("timeline.sceneMarkers.actions.detectScenes"),
+      label: t("timeline.sceneMarkers.actions.findSceneChanges"),
       run: sceneDetection.detect,
-      searchTerms: commandSearchTerms(
-        `${t("timeline.sceneMarkers.actions.detectScenes")}|scene detection|analyze scenes`,
-      ),
+      searchTerms: commandSearchTerms(t("timeline.sceneMarkers.actions.findSceneChanges")),
       surfaces: ["button", "palette"] as const,
       variant: "default" as const,
     },

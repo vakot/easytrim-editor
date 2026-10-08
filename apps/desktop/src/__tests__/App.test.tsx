@@ -355,7 +355,7 @@ describe("App", () => {
     await user.clear(search);
     await user.type(search, "export");
     expect(screen.getByRole("option", { name: /Save Lossless Cut/ })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /Optimize & Export/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Optimized Export/ })).toBeInTheDocument();
 
     await user.clear(search);
     await user.type(search, "folder");
@@ -1043,7 +1043,7 @@ describe("App", () => {
     await user.keyboard("{Enter}");
     fireEvent.keyDown(window, { key: "i", code: "KeyI" });
     expect(startHandle).toHaveAttribute("aria-valuenow", "0");
-    await user.click(screen.getByRole("menuitem", { name: /Optimize & Export/ }));
+    await user.click(screen.getByRole("menuitem", { name: /Optimized Export/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: " ", code: "Space" });

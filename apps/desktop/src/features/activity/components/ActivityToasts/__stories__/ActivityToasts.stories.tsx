@@ -131,7 +131,7 @@ const scenarios: Record<ScenarioName, ActivityToastScenario> = {
         <span>File size: 248 MB · Render time: 00:01:42</span>
       </ToastDetails>
     ),
-    title: "Optimized render completed",
+    title: "Optimized export completed",
     variant: "success",
   },
   exportFailed: {
@@ -146,7 +146,7 @@ const scenarios: Record<ScenarioName, ActivityToastScenario> = {
         <span>FFmpeg exited with code 1</span>
       </ToastDetails>
     ),
-    title: "Optimized render failed",
+    title: "Optimized export failed",
     variant: "destructive",
   },
   exportCancelled: {
@@ -161,7 +161,7 @@ const scenarios: Record<ScenarioName, ActivityToastScenario> = {
         <span>Render time: 00:00:18</span>
       </ToastDetails>
     ),
-    title: "Optimized render cancelled",
+    title: "Optimized export cancelled",
     variant: "default",
   },
 };

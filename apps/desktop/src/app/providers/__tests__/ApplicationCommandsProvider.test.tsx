@@ -271,7 +271,7 @@ describe("ApplicationCommandsProvider", () => {
     }
     expect(screen.getByRole("button", { name: "reset-queue-settings" })).toHaveAttribute(
       "data-group",
-      "Queue",
+      "Export Queue",
     );
     for (const commandId of ["language-en", "language-ru"]) {
       expect(screen.queryByRole("button", { name: commandId })).not.toBeInTheDocument();
@@ -302,7 +302,7 @@ describe("ApplicationCommandsProvider", () => {
     );
     expect(screen.getByRole("button", { name: "preference-auto-start-queue" })).toHaveAttribute(
       "data-group",
-      "Queue",
+      "Export Queue",
     );
     expect(screen.getByRole("button", { name: "preference-merge-audio" })).toHaveAttribute(
       "data-group",

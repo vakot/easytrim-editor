@@ -26,7 +26,7 @@ function ExportQueueItemStatus() {
     completed: t("queue.jobStatus.completed"),
     failed: t("queue.jobStatus.failed"),
     queued: t("queue.jobStatus.queued"),
-    rendering: t("queue.jobStatus.rendering"),
+    rendering: t("queue.jobStatus.processing"),
   } satisfies Record<typeof status, string>;
 
   const error = status === "failed" ? attempt.state.error : undefined;

@@ -15,7 +15,7 @@ const entries: ActivityEntry[] = [
     snapshotId: "summer-campaign-source",
     startedAt: new Date(2026, 7, 31, 17, 55).toISOString(),
     status: "pending",
-    title: "Rendering…",
+    title: "Optimized export…",
   },
   {
     id: "current-session:cut-failed:ffmpeg.export",
@@ -26,7 +26,7 @@ const entries: ActivityEntry[] = [
     snapshotId: "summer-campaign-source",
     startedAt: new Date(2026, 7, 31, 17, 20).toISOString(),
     status: "failed",
-    title: "Fast cut failed",
+    title: "Lossless Cut failed",
   },
   {
     action: {
@@ -41,7 +41,7 @@ const entries: ActivityEntry[] = [
     snapshotId: "summer-campaign-source",
     startedAt: new Date(2026, 7, 31, 17, 45).toISOString(),
     status: "completed",
-    title: "Optimized render completed",
+    title: "Optimized export completed",
   },
   {
     action: {
@@ -56,7 +56,7 @@ const entries: ActivityEntry[] = [
     snapshotId: "summer-campaign-source",
     startedAt: new Date(2026, 7, 31, 16, 50).toISOString(),
     status: "completed",
-    title: "Fast cut completed",
+    title: "Lossless Cut completed",
   },
   {
     id: "today-session:restore-1:source.file-restore.completed",
@@ -81,7 +81,7 @@ const entries: ActivityEntry[] = [
     snapshotId: "archive-source",
     startedAt: new Date(2026, 7, 30, 20, 42).toISOString(),
     status: "completed",
-    title: "Optimized render completed",
+    title: "Optimized export completed",
   },
   {
     action: {
@@ -96,7 +96,7 @@ const entries: ActivityEntry[] = [
     snapshotId: "archive-source",
     startedAt: new Date(2026, 7, 28, 11, 10).toISOString(),
     status: "completed",
-    title: "Fast cut completed",
+    title: "Lossless Cut completed",
   },
   {
     id: "retained-session:cut-interrupted:ffmpeg.export",
@@ -107,7 +107,7 @@ const entries: ActivityEntry[] = [
     snapshotId: "archive-source",
     startedAt: new Date(2026, 7, 28, 11, 45).toISOString(),
     status: "interrupted",
-    title: "Fast cut interrupted",
+    title: "Lossless Cut interrupted",
   },
 ];
 

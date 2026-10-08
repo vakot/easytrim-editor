@@ -32,12 +32,12 @@ function SettingsLayout() {
 
   return (
     <SettingsSection title={t("settings.layout.panels.label")}>
-      <SettingRow label={t("layout.toggleLeftPanel")}>
-        <CommandSwitch aria-label={t("layout.toggleLeftPanel")} commandId="toggle-left-panel" />
+      <SettingRow label={t("layout.showLeftPanel")}>
+        <CommandSwitch aria-label={t("layout.showLeftPanel")} commandId="toggle-left-panel" />
       </SettingRow>
 
-      <SettingRow label={t("layout.toggleBottomPanel")}>
-        <CommandSwitch aria-label={t("layout.toggleBottomPanel")} commandId="toggle-bottom-panel" />
+      <SettingRow label={t("layout.showBottomPanel")}>
+        <CommandSwitch aria-label={t("layout.showBottomPanel")} commandId="toggle-bottom-panel" />
       </SettingRow>
 
       <SettingRow label={t("layout.layoutDensity")}>

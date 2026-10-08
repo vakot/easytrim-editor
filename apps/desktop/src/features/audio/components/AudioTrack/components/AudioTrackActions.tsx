@@ -45,17 +45,10 @@ function AudioTrackToggleMenuCheckboxItem({
   children,
   controller,
 }: { children?: React.ReactNode } & AudioTrackActionsProps) {
-  const { t } = useTranslation();
-  const { stream, track, trackNumber } = controller;
-  if (!track || !stream) return null;
-
-  const streamTitle =
-    stream.title ?? stream.language ?? t("audio.tracks.defaultName", { number: trackNumber });
+  const { track } = controller;
+  if (!track) return null;
 
   const commandProps = {
-    "aria-label": controller.isEnabled
-      ? t("audio.tracks.muteWithTitle", { title: streamTitle })
-      : t("audio.tracks.unmuteWithTitle", { title: streamTitle }),
     onCheckedChange: controller.setEnabled,
     checked: controller.isEnabled,
   };

@@ -57,11 +57,14 @@ function SceneDetectionTool() {
   const loading = detectScenesCommand.pending || isDetecting;
   const canRunAction = hasDetected ? showSceneMarkersCommand.enabled : detectScenesCommand.enabled;
 
-  const label = hasDetected
+  const actionLabel = hasDetected
     ? sceneMarkersEnabled
       ? t("timeline.sceneMarkers.actions.disableSceneMarkers")
       : t("timeline.sceneMarkers.actions.enableSceneMarkers")
-    : t("timeline.sceneMarkers.actions.detectScenes");
+    : t("timeline.sceneMarkers.actions.findSceneChanges");
+
+  const label =
+    loading && !hasDetected ? t("timeline.sceneMarkers.actions.findingSceneChanges") : actionLabel;
 
   const button = (
     <Button
@@ -108,7 +111,11 @@ function SceneDetectionTool() {
     <Tooltip preserveOnTrigger>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
       <TooltipContent>
-        {hasDetected ? label : t("timeline.sceneMarkers.tooltips.detectScenes")}
+        {hasDetected
+          ? label
+          : loading
+            ? label
+            : t("timeline.sceneMarkers.tooltips.findSceneChanges")}
       </TooltipContent>
     </Tooltip>
   );

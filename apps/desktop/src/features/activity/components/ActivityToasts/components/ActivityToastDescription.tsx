@@ -22,13 +22,13 @@ function ActivityToastDescription({ attempt, entry }: ActivityToastDescriptionPr
   const visiblePaths = paths.slice(0, 2);
   const remainingPathCount = paths.length - visiblePaths.length;
   const fileSize = numberValue(entry.data?.fileSizeBytes) ?? attempt?.metrics.fileSizeBytes;
-  const renderTime = numberValue(entry.data?.durationMs) ?? attempt?.metrics.durationMs;
+  const exportTime = numberValue(entry.data?.durationMs) ?? attempt?.metrics.durationMs;
   const metrics = [
     fileSize !== undefined
       ? t("activity.notification.fileSize", { size: formatBytes(fileSize, "") })
       : null,
-    renderTime !== null && renderTime !== undefined
-      ? t("activity.notification.renderTime", { duration: formatExportDuration(renderTime) })
+    exportTime !== null && exportTime !== undefined
+      ? t("activity.notification.exportTime", { duration: formatExportDuration(exportTime) })
       : null,
   ].filter((metric): metric is string => metric !== null);
 

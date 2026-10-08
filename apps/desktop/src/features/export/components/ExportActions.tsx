@@ -74,7 +74,7 @@ function ExportActions() {
 
           <DialogContent className="max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
             <DialogHeader className="-mx-4 border-b px-4 pb-4">
-              <DialogTitle>{t("queue.exportQueueTitle")}</DialogTitle>
+              <DialogTitle>{t("queue.title")}</DialogTitle>
               <DialogDescription>
                 <ExportQueueSummary />
               </DialogDescription>
@@ -98,8 +98,8 @@ function ExportActions() {
         disabled={!fastCutAvailable}
         tooltip={
           sourceReady && !fastCutAvailable
-            ? t("export.fastCut.unavailable")
-            : t("export.fastCut.tooltip")
+            ? t("export.losslessCut.unavailable")
+            : t("export.losslessCut.tooltip")
         }
       >
         <ExportActionButton
@@ -110,7 +110,7 @@ function ExportActions() {
             void dispatch(startFastCutRequested({ id: "toolbar.fast-export", type: "button" }))
           }
         >
-          {t("export.fastCut.action")}
+          {t("export.losslessCut.action")}
         </ExportActionButton>
       </ExportActionTooltip>
 
@@ -202,7 +202,7 @@ function ExportQueueTrigger({
         initial={false}
         variant="default"
       >
-        {t("queue.exportQueueTitle")}
+        {t("queue.title")}
       </MotionExportActionButton>
     </DialogTrigger>
   );
