@@ -754,9 +754,9 @@ fn append_audio_metadata_arguments(
             .or(source_stream.and_then(|stream| stream.language.as_deref()))
             .unwrap_or_default();
         let disposition = if track.stream_index == selected_default {
-            "default"
+            "+default"
         } else {
-            "0"
+            "-default"
         };
 
         arguments.extend([
@@ -1199,12 +1199,14 @@ fn format_seconds_f64(seconds: f64) -> String {
 #[cfg(test)]
 mod tests {
     use std::path::Path;
+    use std::process::Command;
 
     use super::{
-        AudioLoudnessAnalysis, AudioProcessingStage, AudioTrackCacheKey, AudioTrackProcessing,
-        AudioTrackSelection, AudioTrackSignalEffect, CropSelection, FastExportRequest,
-        FrameRateSelection, LoudnessNormalization, LoudnessPreset, NoiseReductionPreset,
-        OptimizedExportRequest, ResolutionSelection, TrimSelection, audio_filter_graph,
+        AudioLoudnessAnalysis, AudioProcessingStage, AudioTrackCacheKey,
+        AudioTrackMetadataSelection, AudioTrackProcessing, AudioTrackSelection,
+        AudioTrackSignalEffect, CropSelection, FastExportRequest, FrameRateSelection,
+        LoudnessNormalization, LoudnessPreset, NoiseReductionPreset, OptimizedExportRequest,
+        ResolutionSelection, TrimSelection, append_audio_metadata_arguments, audio_filter_graph,
         build_fast_arguments, build_optimized_arguments, optimized_command_preview,
         pre_level_filter_chain, validate_audio_track_selections, waveform_signal_filter_chain,
     };
@@ -1290,6 +1292,255 @@ mod tests {
             frame_rate: None,
             arguments: arguments.to_owned(),
         }
+    }
+
+    fn audio_track(stream_index: u32) -> AudioTrackSelection {
+        AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: None,
+                effects: Vec::new(),
+            },
+        }
+    }
+
+    #[test]
+    fn audio_metadata_follows_selected_output_order_and_preserves_empty_overrides() {
+        let selected_tracks = vec![audio_track(2), audio_track(1)];
+        let metadata = vec![
+            AudioTrackMetadataSelection {
+                stream_index: 1,
+                title: Some("Commentary".to_owned()),
+                language: Some("en".to_owned()),
+                is_default: false,
+            },
+            AudioTrackMetadataSelection {
+                stream_index: 2,
+                title: Some(String::new()),
+                language: Some("fr".to_owned()),
+                is_default: true,
+            },
+        ];
+        let mut arguments = Vec::new();
+        append_audio_metadata_arguments(
+            &mut arguments,
+            &media(),
+            &selected_tracks,
+            &metadata,
+            false,
+        );
+        let values = arguments
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-metadata:s:a:0", "title="])
+        );
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-metadata:s:a:0", "language=fr"])
+        );
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-disposition:a:0", "+default"])
+        );
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-metadata:s:a:1", "title=Commentary"])
+        );
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-disposition:a:1", "-default"])
+        );
+    }
+
+    #[test]
+    fn merged_audio_receives_explicit_merged_metadata() {
+        let mut arguments = Vec::new();
+        append_audio_metadata_arguments(
+            &mut arguments,
+            &media(),
+            &[audio_track(1), audio_track(2)],
+            &[],
+            true,
+        );
+        let values = arguments
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-metadata:s:a:0", "title=Merged audio"])
+        );
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-metadata:s:a:0", "language=und"])
+        );
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-disposition:a:0", "default"])
+        );
+    }
+
+    #[test]
+    fn metadata_arguments_only_include_enabled_selected_audio_tracks() {
+        let mut arguments = Vec::new();
+        append_audio_metadata_arguments(
+            &mut arguments,
+            &media(),
+            &[audio_track(2)],
+            &[AudioTrackMetadataSelection {
+                stream_index: 2,
+                title: None,
+                language: None,
+                is_default: true,
+            }],
+            false,
+        );
+        let values = arguments
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        assert!(values.iter().all(|value| !value.contains(":a:1")));
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-disposition:a:0", "+default"])
+        );
+    }
+
+    #[test]
+    fn ffmpeg_preserves_unrelated_dispositions_for_copy_and_processed_audio() {
+        let (Ok(ffmpeg), Ok(ffprobe)) = (which::which("ffmpeg"), which::which("ffprobe")) else {
+            eprintln!("skipping FFmpeg integration check: ffmpeg or ffprobe is unavailable");
+            return;
+        };
+        let directory =
+            std::env::temp_dir().join(format!("easytrim-audio-metadata-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&directory).expect("temporary fixture directory should be created");
+        let source_path = directory.join("source.mkv");
+        let source = Command::new(&ffmpeg)
+            .args([
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "sine=frequency=440:duration=1",
+                "-f",
+                "lavfi",
+                "-i",
+                "sine=frequency=880:duration=1",
+                "-map",
+                "0:a:0",
+                "-map",
+                "1:a:0",
+                "-c:a",
+                "aac",
+                "-disposition:a:0",
+                "forced+comment+original+hearing_impaired",
+                "-disposition:a:1",
+                "default",
+                "-y",
+            ])
+            .arg(&source_path)
+            .output()
+            .expect("ffmpeg should launch");
+        assert!(
+            source.status.success(),
+            "fixture generation failed: {}",
+            String::from_utf8_lossy(&source.stderr)
+        );
+
+        for container in ["mp4", "mkv"] {
+            for processed in [false, true] {
+                let output_path = directory.join(format!(
+                    "{}.{container}",
+                    if processed { "processed" } else { "copy" }
+                ));
+                let mut command = Command::new(&ffmpeg);
+                command
+                    .args(["-hide_banner", "-loglevel", "error", "-i"])
+                    .arg(&source_path)
+                    .args(["-map", "0:a:0", "-map", "0:a:1"]);
+                if processed {
+                    command.args([
+                        "-filter:a:0",
+                        "volume=0.8",
+                        "-filter:a:1",
+                        "volume=0.8",
+                        "-c:a",
+                        "aac",
+                    ]);
+                } else {
+                    command.args(["-c:a", "copy"]);
+                }
+                let exported = command
+                    .args([
+                        "-disposition:a:0",
+                        "+default",
+                        "-disposition:a:1",
+                        "-default",
+                        "-y",
+                    ])
+                    .arg(&output_path)
+                    .output()
+                    .expect("ffmpeg should launch");
+                assert!(
+                    exported.status.success(),
+                    "{container} export failed: {}",
+                    String::from_utf8_lossy(&exported.stderr)
+                );
+
+                let probe = Command::new(&ffprobe)
+                    .args([
+                        "-v",
+                        "error",
+                        "-show_entries",
+                        "stream=index:stream_disposition=default,forced,comment,original,hearing_impaired",
+                        "-of",
+                        "json",
+                    ])
+                    .arg(&output_path)
+                    .output()
+                    .expect("ffprobe should launch");
+                assert!(probe.status.success(), "ffprobe failed for {container}");
+                let json: serde_json::Value =
+                    serde_json::from_slice(&probe.stdout).expect("ffprobe output should be JSON");
+                let streams = json["streams"]
+                    .as_array()
+                    .expect("streams should be present");
+                assert_eq!(streams.len(), 2);
+                assert_eq!(streams[0]["disposition"]["default"], 1);
+                assert_eq!(streams[1]["disposition"]["default"], 0);
+                for flag in ["forced", "comment", "hearing_impaired"] {
+                    assert_eq!(
+                        streams[0]["disposition"][flag], 1,
+                        "{flag} was lost in {container}"
+                    );
+                }
+                if container == "mkv" {
+                    assert_eq!(streams[0]["disposition"]["original"], 1);
+                }
+            }
+        }
+
+        std::fs::remove_dir_all(directory).expect("temporary fixtures should be removed");
     }
 
     #[test]
