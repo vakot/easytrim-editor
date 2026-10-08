@@ -32,7 +32,7 @@ function SettingsLanguageOptions() {
   const languages = useLanguageSelectorOptions();
 
   return languages.map((language) => (
-    <LanguageSelectorItem key={language.code} value={language.code}>
+    <LanguageSelectorItem key={language.code} language={language}>
       <LanguageSelectorItemFlag />
       <LanguageSelectorItemText>
         <SettingsLanguageCoverage

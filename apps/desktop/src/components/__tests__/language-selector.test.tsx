@@ -35,7 +35,7 @@ function CustomLanguageOptions() {
   const options = useLanguageSelectorOptions();
 
   return options.map((language) => (
-    <LanguageSelectorItem key={language.code} value={language.code}>
+    <LanguageSelectorItem key={language.code} language={language}>
       <LanguageSelectorItemFlag />
       <LanguageSelectorItemText>
         <span> · metadata</span>
@@ -344,6 +344,35 @@ describe("LanguageSelector", () => {
     expect(screen.queryByRole("option", { name: "日本語 (Japanese), ja" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("option", { name: "Deutsch (German), de" }));
     expect(onValueChange).toHaveBeenCalledWith("de");
+  });
+
+  it("renders an item from its supplied language object", () => {
+    const language = {
+      code: "de",
+      englishName: "German",
+      nativeName: "Deutsch",
+      region: "DE",
+    };
+
+    render(
+      <LanguageSelector defaultOpen label="Search languages" languages={[]}>
+        <LanguageSelectorContent>
+          <LanguageSelectorList>
+            <LanguageSelectorGroup>
+              <LanguageSelectorItem language={language}>
+                <LanguageSelectorItemFlag />
+                <LanguageSelectorItemText />
+                <LanguageSelectorItemIndicator />
+              </LanguageSelectorItem>
+            </LanguageSelectorGroup>
+          </LanguageSelectorList>
+        </LanguageSelectorContent>
+      </LanguageSelector>,
+    );
+
+    expect(screen.getByRole("option", { name: "Deutsch (German), de" })).toHaveTextContent(
+      "Deutsch (German)",
+    );
   });
 
   it("renders SVG flags for audio language options and the selected value", () => {

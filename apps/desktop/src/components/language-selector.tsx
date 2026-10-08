@@ -63,7 +63,6 @@ interface LanguageOption {
 }
 
 interface LanguageSelectorContextValue {
-  allLanguages: readonly LanguageOption[];
   disabled: boolean;
   language: LanguageOption | undefined;
   options: readonly LanguageOption[];
@@ -218,14 +217,13 @@ function LanguageSelector({
   const context = React.useMemo(
     () => ({
       disabled,
-      allLanguages: languages,
       language,
       options: filteredLanguages,
       query,
       selectLanguage,
       setQuery,
     }),
-    [disabled, filteredLanguages, language, languages, query, selectLanguage],
+    [disabled, filteredLanguages, language, query, selectLanguage],
   );
 
   return (
@@ -329,25 +327,14 @@ function LanguageSelectorItem({
   children,
   className,
   disabled: itemDisabled,
+  language,
   onSelect,
-  value,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxItem>, "children" | "value"> & {
   children: React.ReactNode;
-  value: string;
+  language: LanguageOption;
 }) {
-  const {
-    allLanguages,
-    disabled,
-    language: selectedLanguage,
-    selectLanguage,
-  } = useLanguageSelector();
-
-  const language = allLanguages.find((option) => option.code === value);
-
-  if (!language) {
-    throw new Error(`LanguageSelectorItem value "${value}" is not in the selector language list`);
-  }
+  const { disabled, language: selectedLanguage, selectLanguage } = useLanguageSelector();
 
   const selected = selectedLanguage?.code === language.code;
   const displayName = getLanguageDisplayName(language);
@@ -426,7 +413,7 @@ function LanguageSelectorOptions() {
   return (
     <LanguageSelectorGroup>
       {options.map((language) => (
-        <LanguageSelectorItem key={language.code} value={language.code}>
+        <LanguageSelectorItem key={language.code} language={language}>
           <LanguageSelectorItemFlag />
           <LanguageSelectorItemText />
           <LanguageSelectorItemIndicator />
