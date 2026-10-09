@@ -234,7 +234,11 @@ function MoreExportActionsDropdown({
             </ExportActionButton>
           </TooltipTrigger>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="max-w-[calc(100vw-1rem)]">
+        <DropdownMenuContent
+          align="end"
+          className="max-w-[calc(100vw-1rem)]"
+          data-export-actions-dropdown=""
+        >
           <ExportFormatMenuItem
             command={audioExport}
             disabledReason={
@@ -253,7 +257,7 @@ function MoreExportActionsDropdown({
           />
         </DropdownMenuContent>
       </DropdownMenu>
-      <TooltipContent>{t("export.actions.moreFormats")}</TooltipContent>
+      <TooltipContent side="left">{t("export.actions.moreFormats")}</TooltipContent>
     </Tooltip>
   );
 }
@@ -362,9 +366,9 @@ function ExportActionTooltip({
         </span>
       </TooltipTrigger>
       {shortcut ? (
-        <ShortcutTooltipContent shortcut={shortcut} title={tooltip} />
+        <ShortcutTooltipContent shortcut={shortcut} side="left" title={tooltip} />
       ) : (
-        <TooltipContent>{tooltip}</TooltipContent>
+        <TooltipContent side="left">{tooltip}</TooltipContent>
       )}
     </Tooltip>
   );
