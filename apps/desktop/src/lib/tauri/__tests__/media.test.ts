@@ -26,6 +26,7 @@ import {
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,
+  planGifExport,
   planOptimizedExport,
   prepareAudioPreviews,
   prepareImportedSourceThumbnail,
@@ -35,7 +36,7 @@ import {
   releaseImportedSourceThumbnail,
   saveFramePng,
 } from "../media";
-import type { MediaInfo } from "../media.types";
+import type { FastExportRequest, MediaInfo } from "../media.types";
 import { parseMediaCapabilities, parseSourceRef } from "../media.utils";
 
 type NativeDropEvent =
@@ -373,6 +374,25 @@ describe("media IPC adapter", () => {
 
     expect(mocks.invoke).toHaveBeenCalledWith("choose_output_path", {
       defaultName: "clip_fast.mkv",
+      fastExportRequest: null,
+    });
+  });
+
+  it("passes the selected fast export streams to the output picker", async () => {
+    mocks.invoke.mockResolvedValue(null);
+    const request = {
+      sourcePath: "C:/Media/clip.mkv",
+      trim: { startMicros: 0, endMicros: 2_000_000 },
+      audioTracks: [],
+      mergeAudio: false,
+      rotationDegrees: 0,
+    } satisfies FastExportRequest;
+
+    await expect(chooseOutputPath("clip_fast.mkv", request)).resolves.toBeNull();
+
+    expect(mocks.invoke).toHaveBeenCalledWith("choose_output_path", {
+      defaultName: "clip_fast.mkv",
+      fastExportRequest: request,
     });
   });
 
@@ -458,6 +478,28 @@ describe("media IPC adapter", () => {
       commandPreview: "ffmpeg -i <source> -c:v hevc_nvenc <output>",
     });
     expect(mocks.invoke).toHaveBeenCalledWith("plan_optimized_export", { request });
+  });
+
+  it("parses a path-redacted GIF export plan", async () => {
+    mocks.invoke.mockResolvedValue({
+      commandPreview: "ffmpeg -i <source> -filter_complex palettegen -f gif <output>",
+    });
+    const request = {
+      sourcePath: "C:/Media/clip.mp4",
+      trim: { startMicros: 0, endMicros: 1_000_000 },
+      audioTracks: [],
+      mergeAudio: false as const,
+      rotationDegrees: 0 as const,
+      flipHorizontal: false,
+      flipVertical: false,
+      resolution: { width: 640, height: 480 },
+      frameRate: undefined,
+    };
+
+    await expect(planGifExport(request)).resolves.toEqual({
+      commandPreview: "ffmpeg -i <source> -filter_complex palettegen -f gif <output>",
+    });
+    expect(mocks.invoke).toHaveBeenCalledWith("plan_gif_export", { request });
   });
 
   it("passes the frontend diagnostic operation as the native export parent", async () => {

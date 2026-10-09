@@ -33,7 +33,7 @@ function AudioPanel() {
       className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
     >
       <h3
-        className="mx-3 mb-2 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+        className="mx-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         id="timeline-audio-title"
       >
         {t("audio.tracks.title")} ({audioTracks.length})
@@ -66,9 +66,7 @@ function AudioPanel() {
         </Tooltip>
       </div>
 
-      <div className="relative mx-3 mt-2 h-0">
-        <Separator className="absolute bg-foreground/10" />
-      </div>
+      <Separator className="mx-3 mt-2 bg-foreground/10" />
 
       <ScrollArea className="min-h-0 flex-1 pr-3" data-testid="audio-tracks-scroll">
         <div className="my-2 pl-3">

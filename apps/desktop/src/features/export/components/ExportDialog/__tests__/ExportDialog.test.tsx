@@ -2,11 +2,15 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
-const { planOptimizedExport } = vi.hoisted(() => ({ planOptimizedExport: vi.fn() }));
+const { planGifExport, planOptimizedExport } = vi.hoisted(() => ({
+  planGifExport: vi.fn(),
+  planOptimizedExport: vi.fn(),
+}));
 
 vi.mock("@/lib/tauri/media", () => ({
   chooseOutputPath: vi.fn(),
   normalizeAppError: (error: unknown) => ({ code: "internal", message: String(error) }),
+  planGifExport,
   planOptimizedExport,
   reserveExportSource: vi.fn(),
 }));
@@ -21,7 +25,7 @@ import {
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
-import { openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
+import { openGifExportDialog, openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
 import { firstSource, media } from "@/test/source.fixtures";
 
 import { ExportDialog } from "../ExportDialog";
@@ -120,5 +124,147 @@ describe("ExportDialog", () => {
     fireEvent.click(screen.getByRole("combobox", { name: "Resolution" }));
     expect(screen.getByRole("option", { name: /2560.*1440.*source/ })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /1080p.*1920.*1080/ })).toBeInTheDocument();
+  });
+
+  it("uses crop-aware shared resolution controls for GIF without planning optimized export", async () => {
+    planOptimizedExport.mockClear();
+    planGifExport.mockClear();
+    planGifExport.mockResolvedValue({ commandPreview: "ffmpeg gif preview" });
+    const store = createAppStore({
+      getItem: async () => null,
+      setItem: async () => undefined,
+      removeItem: async () => undefined,
+    });
+
+    const croppedMedia = {
+      ...media(firstSource.sourcePath),
+      video: { ...media(firstSource.sourcePath).video, width: 5_120, height: 1_440 },
+    };
+
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: croppedMedia }));
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          exportAttempts: [],
+          id: "instance-1",
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
+          sourceAvailability: "available",
+        },
+      ]),
+    );
+    store.dispatch(activeEditingInstanceChanged("instance-1"));
+    store.dispatch(
+      cropChanged({
+        crop: { x: 0, y: 0, width: 0.5, height: 1 },
+        resolution: { width: 2_560, height: 1_440 },
+      }),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ExportDialog />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    await store.dispatch(openGifExportDialog());
+
+    expect(screen.getByRole("heading", { name: "Export selected segment as GIF" })).toBeVisible();
+    expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(2_560);
+    expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(1_440);
+    expect(screen.getByRole("textbox", { name: "FFmpeg arguments" })).toHaveValue(
+      "ffmpeg gif preview",
+    );
+    expect(planOptimizedExport).not.toHaveBeenCalled();
+    expect(planGifExport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        crop: { height: 1, width: 0.5, x: 0, y: 0 },
+        resolution: { height: 1_440, width: 2_560 },
+      }),
+    );
+
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Width" }), {
+      target: { value: "1920" },
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(1080),
+    );
+    await waitFor(() =>
+      expect(planGifExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ resolution: { height: 1080, width: 1920 } }),
+      ),
+    );
+  });
+
+  it("keeps GIF and optimized resolution and frame-rate selections independent", async () => {
+    planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg optimized preview" });
+    planGifExport.mockResolvedValue({ commandPreview: "ffmpeg gif preview" });
+    const store = createAppStore({
+      getItem: async () => null,
+      setItem: async () => undefined,
+      removeItem: async () => undefined,
+    });
+
+    const optimizedSettings = {
+      frameRate: { denominator: 1, numerator: 24 },
+      resolution: { height: 720, width: 1280 },
+    };
+
+    const gifSettings = {
+      frameRate: { denominator: 1, numerator: 15 },
+      resolution: { height: 360, width: 640 },
+    };
+
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          exportAttempts: [],
+          gifSettings,
+          id: "instance-1",
+          optimizedSettings,
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
+          sourceAvailability: "available",
+        },
+      ]),
+    );
+    store.dispatch(activeEditingInstanceChanged("instance-1"));
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ExportDialog />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    await store.dispatch(openGifExportDialog());
+    await waitFor(() =>
+      expect(planGifExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          frameRate: gifSettings.frameRate,
+          resolution: gifSettings.resolution,
+        }),
+      ),
+    );
+    expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(640);
+    expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(360);
+
+    await store.dispatch(openOptimizedExportDialog());
+    await waitFor(() =>
+      expect(planOptimizedExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          frameRate: optimizedSettings.frameRate,
+          resolution: optimizedSettings.resolution,
+        }),
+      ),
+    );
+    expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(1280);
+    expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(720);
   });
 });

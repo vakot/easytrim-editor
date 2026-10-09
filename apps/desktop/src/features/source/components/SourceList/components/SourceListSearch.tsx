@@ -41,9 +41,9 @@ function SourceListSearch() {
       </InputGroupAddon>
 
       <InputGroupInput
-        aria-label={t("common.search.label")}
+        aria-label={t("common.search.sources")}
         onChange={(event) => setSearchInternal(event.currentTarget.value)}
-        placeholder={t("common.search.placeholder")}
+        placeholder={t("common.search.sourcesPlaceholder")}
         ref={searchInputRef}
         type="search"
         value={searchInternal}

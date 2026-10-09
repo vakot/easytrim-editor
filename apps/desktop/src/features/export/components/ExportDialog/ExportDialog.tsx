@@ -19,15 +19,17 @@ import { selectExportArguments } from "@/app/store/slices/export-presets-slice";
 import {
   selectExportCommandPreview,
   selectExportCommandPreviewError,
+  selectExportDialogOpen,
+  selectExportDialogRoute,
   selectExportLaunchError,
-  selectOptimizedExportDialogOpen,
   selectQueueEdit,
 } from "@/app/store/slices/export-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import {
   cancelOptimizedExportDialogRequested,
   openOptimizedExportDialog,
-  refreshOptimizedExportPlan,
+  refreshExportPlan,
+  startGifExportRequested,
   startOptimizedExportRequested,
 } from "@/app/store/thunks/export-thunks";
 import { localizeAppError } from "@/i18n/app-errors";
@@ -40,13 +42,17 @@ import { PresetManager } from "./components/PresetManager";
 function ExportDialog() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const open = useAppSelector(selectOptimizedExportDialogOpen);
+  const open = useAppSelector(selectExportDialogOpen);
   const queueEdit = useAppSelector(selectQueueEdit);
+  const dialogRoute = useAppSelector(selectExportDialogRoute);
   const activeInstance = useAppSelector(selectActiveEditingInstance);
   const source = useAppSelector(selectSourceMedia);
   const cropResolution = useAppSelector(selectCropResolution);
+  const routeSettings =
+    dialogRoute === "gif" ? activeInstance?.gifSettings : activeInstance?.optimizedSettings;
+
   const settings = activeInstance
-    ? (activeInstance.optimizedSettings ?? {
+    ? (routeSettings ?? {
         frameRate: undefined,
         resolution: cropResolution,
       })
@@ -61,8 +67,8 @@ function ExportDialog() {
   useEffect(() => {
     if (previousArgumentsText.current === argumentsText) return;
     previousArgumentsText.current = argumentsText;
-    if (open) void dispatch(refreshOptimizedExportPlan());
-  }, [argumentsText, dispatch, open]);
+    if (open && dialogRoute === "optimized") void dispatch(refreshExportPlan());
+  }, [argumentsText, dispatch, dialogRoute, open]);
 
   if (!source || !settings) return null;
 
@@ -80,12 +86,20 @@ function ExportDialog() {
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>
-              {queueEdit ? t("export.optimized.dialog.editTitle") : t("export.actions.start")}
+              {queueEdit
+                ? t("export.optimized.dialog.editTitle")
+                : dialogRoute === "gif"
+                  ? t("export.gif.dialog.title")
+                  : t("export.actions.start")}
             </DialogTitle>
-            <DialogDescription>{t("export.optimized.dialog.description")}</DialogDescription>
+            <DialogDescription>
+              {dialogRoute === "gif"
+                ? t("export.gif.dialog.description")
+                : t("export.optimized.dialog.description")}
+            </DialogDescription>
           </DialogHeader>
 
-          <PresetManager />
+          {dialogRoute === "optimized" ? <PresetManager /> : null}
           <ExportResolution cropResolution={cropResolution} settings={settings} />
           <ExportFrameRate settings={settings} />
           <CommandPreview
@@ -101,8 +115,22 @@ function ExportDialog() {
               <Button onClick={() => onOpenChange(false)} variant="outline">
                 {t("common.actions.cancel")}
               </Button>
-              <Button onClick={() => void dispatch(startOptimizedExportRequested())}>
-                {queueEdit ? t("export.actions.saveChanges") : t("export.actions.start")}
+              <Button
+                onClick={() =>
+                  void dispatch(
+                    queueEdit
+                      ? startOptimizedExportRequested()
+                      : dialogRoute === "gif"
+                        ? startGifExportRequested()
+                        : startOptimizedExportRequested(),
+                  )
+                }
+              >
+                {queueEdit
+                  ? t("export.actions.saveChanges")
+                  : dialogRoute === "gif"
+                    ? t("export.gif.action")
+                    : t("export.actions.start")}
               </Button>
             </div>
           </DialogFooter>

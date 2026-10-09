@@ -63,6 +63,7 @@ const menuState = vi.hoisted(() => ({
     deleteSourceOnRenderFinish: false,
     lastSeenChangelogVersion: "1.10.4",
     mergeAudioEnabledDefault: false,
+    stripMetadataOnExport: false,
     theme: "system",
     primaryColor: "#efbf04",
     lastAudiblePlaybackVolumePercent: 100,
@@ -771,7 +772,7 @@ describe("MenuBarTest", () => {
     const options = screen.getAllByRole("option");
     expect(options).toHaveLength(2);
     expect(options.map((option) => option.getAttribute("aria-label"))).toEqual(
-      expect.arrayContaining(["English, en", "Русский, ru"]),
+      expect.arrayContaining(["English, en", "Русский (Russian), ru"]),
     );
     expect(screen.queryByRole("option", { name: /Japanese/ })).not.toBeInTheDocument();
 
@@ -835,6 +836,8 @@ describe("MenuBarTest", () => {
     expect(openFolderItem).toHaveTextContent("CtrlK");
     const closeFileItem = screen.getByRole("menuitem", { name: /Close File/ });
     expect(closeFileItem).toHaveTextContent("CtrlQ");
+    const gifExportItem = screen.getByRole("menuitem", { name: /GIF Export/ });
+    expect(gifExportItem).toHaveTextContent("CtrlG");
     const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete File/ });
     expect(deleteSourceItem).toHaveTextContent("CtrlD");
     await user.click(closeFileItem);

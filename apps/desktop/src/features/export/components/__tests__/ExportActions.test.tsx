@@ -17,7 +17,8 @@ import { firstSource } from "@/test/source.fixtures";
 import { ExportActions } from "../ExportActions";
 
 describe("ExportActions", () => {
-  it("keeps all export routes visible while disabling them without a ready source", () => {
+  it("keeps export actions identifiable and disabled without a ready source", async () => {
+    const user = userEvent.setup();
     render(
       <Provider store={createAppStore()}>
         <TooltipProvider>
@@ -30,6 +31,9 @@ describe("ExportActions", () => {
     expect(screen.getByRole("button", { name: "Fast Export" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Optimized Export" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Audio Export" })).toBeDisabled();
+    const gifExportButton = screen.getByRole("button", { name: "GIF Export" });
+    expect(gifExportButton).toBeDisabled();
+    expect(gifExportButton).toHaveAccessibleName("GIF Export");
     expect(screen.getByRole("button", { name: "Fast Export" })).toHaveAttribute(
       "aria-keyshortcuts",
       "Control+S",
@@ -38,12 +42,21 @@ describe("ExportActions", () => {
       "aria-keyshortcuts",
       "Control+E",
     );
+    expect(gifExportButton).toHaveAttribute("aria-keyshortcuts", "Control+G");
+
+    await user.hover(gifExportButton.parentElement!);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "Export the selected segment as a GIF",
+    );
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Ctrl");
+    expect(screen.getByRole("tooltip")).toHaveTextContent("G");
   });
 
   it("keeps the dialog footer stable and disables Start queue without queued work", async () => {
     const user = userEvent.setup();
+    const store = createAppStore();
     render(
-      <Provider store={createAppStore()}>
+      <Provider store={store}>
         <TooltipProvider>
           <ExportActions />
         </TooltipProvider>
@@ -53,6 +66,13 @@ describe("ExportActions", () => {
     await user.click(screen.getByRole("button", { name: /Export Queue$/ }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+    const stripMetadata = screen.getByRole("checkbox", {
+      name: "Strip metadata and chapters from exports",
+    });
+
+    expect(stripMetadata).not.toBeChecked();
+    await user.click(stripMetadata);
+    expect(store.getState().preferences.stripMetadataOnExport).toBe(true);
     expect(screen.getByRole("button", { name: "Start queue" })).toBeDisabled();
     expect(
       within(screen.getByRole("dialog")).getAllByRole("button", { name: "Close" }),

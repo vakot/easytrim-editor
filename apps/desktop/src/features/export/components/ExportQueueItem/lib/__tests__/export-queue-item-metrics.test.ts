@@ -8,7 +8,7 @@ import {
 } from "@/domain/editing-instance";
 import { firstSource } from "@/test/source.fixtures";
 
-import { getFileSizeChange, getFps } from "../export-queue-item-metrics";
+import { getDuration, getFileSizeChange, getFps } from "../export-queue-item-metrics";
 
 function createAttempt(route: ExportRoute): ExportAttempt {
   const source = { ...firstSource, fileSizeBytes: 1_000 };
@@ -49,7 +49,7 @@ function createAttempt(route: ExportRoute): ExportAttempt {
   return attempt;
 }
 
-describe("export queue video metrics", () => {
+describe("export queue item metrics", () => {
   it("omits FPS and source size comparison for audio exports", () => {
     const attempt = createAttempt("audio");
 
@@ -73,5 +73,29 @@ describe("export queue video metrics", () => {
         formatValue: (value) => value,
       }),
     ).toMatchObject({ id: "file-size-change", value: "+100% (1000 B)" });
+  });
+
+  it("hides elapsed time while a GIF palette is being prepared", () => {
+    const attempt = createAttempt("gif");
+    attempt.metrics = { ...attempt.metrics, durationMs: 2_500, phase: "preparing" };
+
+    expect(
+      getDuration(attempt, {
+        formatValue: (value) => value,
+        status: "rendering",
+      }),
+    ).toBeNull();
+  });
+
+  it("shows elapsed time after GIF output progress begins", () => {
+    const attempt = createAttempt("gif");
+    attempt.metrics = { ...attempt.metrics, durationMs: 2_500, phase: "running" };
+
+    expect(
+      getDuration(attempt, {
+        formatValue: (value) => value,
+        status: "rendering",
+      }),
+    ).toEqual({ id: "duration", value: "0:02" });
   });
 });

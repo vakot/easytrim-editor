@@ -17,6 +17,13 @@ const mixedQueue: ExportQueueStoryItem[] = [
     status: "rendering",
   },
   {
+    id: "rendering-gif",
+    label: "travel-highlights-gif",
+    progressPercent: 32,
+    route: "gif",
+    status: "rendering",
+  },
+  {
     id: "completed-cut",
     label: "travel-highlights-cut",
     route: "fast",

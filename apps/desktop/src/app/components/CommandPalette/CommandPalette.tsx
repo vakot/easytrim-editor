@@ -33,6 +33,7 @@ import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import type { SearchMatchRange } from "@/domain/search.types";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
+import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
 type CommandPaletteGroupMatches = {
   groupLabel: string;
@@ -59,6 +60,7 @@ function CommandPalette() {
   useKeyboardShortcut(
     (event) =>
       !isCommandPaletteOpen &&
+      !isApplicationInteractionBlocked() &&
       commands.some(
         (command) =>
           isApplicationCommandAvailableOnSurface(command, "hotkey") &&
@@ -107,11 +109,11 @@ function CommandPalette() {
         open={isCommandPaletteOpen}
         title={t("commands.title")}
       >
-        <Command label={t("commands.searchLabel")} shouldFilter={false}>
+        <Command label={t("common.search.commands")} shouldFilter={false}>
           <CommandInput
-            aria-label={t("commands.searchLabel")}
+            aria-label={t("common.search.commands")}
             onValueChange={setQuery}
-            placeholder={t("commands.placeholder")}
+            placeholder={t("common.search.commandsPlaceholder")}
             value={query}
           />
           <CommandList>

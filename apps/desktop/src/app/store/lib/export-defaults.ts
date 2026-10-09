@@ -3,6 +3,7 @@ function outputDefaults(sourceName: string) {
   return {
     audio: `${stem}-audio.m4a`,
     fast: `${stem}-cut.mkv`,
+    gif: `${stem}-gif.gif`,
     optimized: `${stem}-optimized.mp4`,
   };
 }

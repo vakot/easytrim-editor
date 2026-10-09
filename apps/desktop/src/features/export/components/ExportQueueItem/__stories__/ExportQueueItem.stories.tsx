@@ -1,10 +1,11 @@
 import "@/i18n/config";
 
 import type { Meta, StoryObj } from "@storybook/react";
-import { Film } from "lucide-react";
 import { Provider } from "react-redux";
 
 import { Card } from "@/components/ui/card";
+
+import type { ExportRoute } from "@/domain/editing-instance";
 
 import {
   createStoryStore,
@@ -21,6 +22,7 @@ import {
   ExportQueueItemRetry,
   ExportQueueItemReveal,
   ExportQueueItemRoute,
+  ExportQueueItemRouteIcon,
   ExportQueueItemSourceName,
   ExportQueueItemStatus,
   useExportQueueItem,
@@ -38,13 +40,19 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function ExportQueueItemStory({ status }: { status: ExportQueueStoryStatus }) {
+function ExportQueueItemStory({
+  route,
+  status,
+}: {
+  route?: ExportRoute;
+  status: ExportQueueStoryStatus;
+}) {
   const store = createStoryStore([
     {
       id: `story-${status}`,
       label: `travel-highlights-${status}`,
       progressPercent: status === "rendering" ? 64 : undefined,
-      route: status === "rendering" ? "optimized" : "fast",
+      route: route ?? (status === "rendering" ? "optimized" : "fast"),
       status,
     },
   ]);
@@ -65,7 +73,7 @@ function ExportQueueItemView() {
   return (
     <ExportQueueItemContent className="w-100 max-w-[calc(100vw-2rem)] rounded-lg border bg-card text-xs">
       <Card className="size-10 shrink-0 items-center justify-center bg-primary/5 p-0 ring-primary/10">
-        <Film className="size-6 text-muted-foreground" />
+        <ExportQueueItemRouteIcon className="size-6 text-muted-foreground" route={attempt.route} />
       </Card>
 
       <div className="grid min-w-0 flex-1 gap-1">
@@ -117,6 +125,10 @@ export const Completed: Story = {
 
 export const Failed: Story = {
   render: () => <ExportQueueItemStory status="failed" />,
+};
+
+export const GifExport: Story = {
+  render: () => <ExportQueueItemStory route="gif" status="rendering" />,
 };
 
 export const Canceled: Story = {

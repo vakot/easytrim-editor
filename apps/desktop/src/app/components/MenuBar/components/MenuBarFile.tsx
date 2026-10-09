@@ -70,6 +70,12 @@ function MenuBarFileContent() {
             <ApplicationCommandShortcut />
           </MenubarItem>
         </ApplicationCommandMenuItem>
+        <ApplicationCommandMenuItem asChild commandId="gif-export">
+          <MenubarItem>
+            <ApplicationCommandLabel />
+            <ApplicationCommandShortcut />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
       </MenubarGroup>
       <MenubarSeparator />
       <MenubarGroup>

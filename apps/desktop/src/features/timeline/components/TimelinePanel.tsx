@@ -1,9 +1,8 @@
 import { Gauge, Volume1, Volume2, VolumeOff } from "lucide-react";
-import { motion } from "motion/react";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -33,6 +32,16 @@ import { TimelineToolbar } from "./TimelineToolbar";
 import { TimelineTrack } from "./TimelineTrack";
 import { TimelineValues } from "./TimelineValues";
 
+const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
+  value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),
+  label: `${speed}×`,
+}));
+
+const PLAYBACK_SPEED_PRESETS = [0.5, 1, 2, 3].map((speed) => ({
+  value: speed as PlaybackSpeed,
+  label: `${speed}×`,
+}));
+
 function TimelinePanel() {
   const { t } = useTranslation();
 
@@ -46,7 +55,7 @@ function TimelinePanel() {
         <div className="grid w-full grid-cols-(--editor-timeline-track-grid-columns) gap-2">
           <div className="min-w-0 justify-self-start">
             <h2
-              className="mb-0.5 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+              className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
               id="timeline-title"
             >
               {t("timeline.segment.labels.selectedSegment")}
@@ -78,16 +87,6 @@ function TimelinePanel() {
     </section>
   );
 }
-
-const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
-  value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),
-  label: `${speed}×`,
-}));
-
-const PLAYBACK_SPEED_PRESETS = [0.5, 1, 2, 3].map((speed) => ({
-  value: speed as PlaybackSpeed,
-  label: `${speed}×`,
-}));
 
 function PlaybackSpeedControl() {
   const { t } = useTranslation();
@@ -156,29 +155,16 @@ function PlaybackSpeedControl() {
 }
 
 function PlaybackVolumeControl() {
-  const dispatch = useAppDispatch();
-  const volumePercent = useAppSelector(selectPlaybackVolumePercent);
-  const [focusWithin, setFocusWithin] = useState(false);
-
   return (
-    <motion.div
-      animate={focusWithin ? "expanded" : "collapsed"}
-      className="flex"
-      initial="collapsed"
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setFocusWithin(false);
-      }}
-      onFocusCapture={() => setFocusWithin(true)}
-      onWheel={(event) => {
-        if (event.deltaY === 0) return;
-        event.preventDefault();
-        dispatch(playbackVolumeChanged(volumePercent + (event.deltaY < 0 ? 1 : -1)));
-      }}
-      whileHover="expanded"
-    >
-      <PlaybackVolumeControlToggle />
-      <PlaybackVolumeControlSlider />
-    </motion.div>
+    <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
+      <HoverCardTrigger>
+        <PlaybackVolumeControlToggle />
+      </HoverCardTrigger>
+
+      <HoverCardContent align="center" className="max-w-42" side="right">
+        <PlaybackVolumeControlSlider />
+      </HoverCardContent>
+    </HoverCard>
   );
 }
 
@@ -218,33 +204,21 @@ function PlaybackVolumeControlSlider() {
   const volumePercent = useAppSelector(selectPlaybackVolumePercent);
 
   return (
-    <motion.div
-      className="flex h-full items-center overflow-hidden"
-      transition={{ duration: 0.12 }}
-      variants={{
-        collapsed: { maxWidth: 0, opacity: 0 },
-        expanded: { maxWidth: "11rem", opacity: 1 },
-      }}
-    >
-      <div className="px-2">
-        <div className="flex items-center">
-          <Slider
-            aria-label={t("preview.playback.volume")}
-            className="w-30"
-            max={100}
-            min={0}
-            onValueChange={([value]) => {
-              if (value !== undefined) dispatch(playbackVolumeChanged(value));
-            }}
-            step={1}
-            value={[volumePercent]}
-          />
-          <output className="w-9 shrink-0 text-right font-mono text-xs text-muted-foreground">
-            {volumePercent}%
-          </output>
-        </div>
-      </div>
-    </motion.div>
+    <div className="flex items-center gap-1">
+      <Slider
+        aria-label={t("preview.playback.volume")}
+        max={100}
+        min={0}
+        onValueChange={([value]) => {
+          if (value !== undefined) dispatch(playbackVolumeChanged(value));
+        }}
+        step={1}
+        value={[volumePercent]}
+      />
+      <output className="w-[5ch] shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+        {volumePercent}%
+      </output>
+    </div>
   );
 }
 

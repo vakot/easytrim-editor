@@ -9,7 +9,9 @@ import {
   withdrawPendingExport,
 } from "@/app/store/integration/export-queue-runtime";
 import {
+  audioTrackDefaultChanged,
   audioTrackGainChanged,
+  audioTrackMetadataChanged,
   audioTrackProcessingChanged,
   selectAudioTracks,
 } from "@/app/store/slices/audio-slice";
@@ -17,6 +19,7 @@ import {
   editingInstanceExportAttemptQueued,
   editingInstanceExportCompleted,
   editingInstanceExportStarted,
+  editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
   selectExportQueue,
   selectImportedEditingInstances,
@@ -32,6 +35,8 @@ import {
   editExportAttemptRequested,
   startAudioExportRequested,
   startExportQueue,
+  exportSettingsChangedRequested,
+  openOptimizedExportDialog,
   startFastExportRequested,
   startOptimizedExportRequested,
 } from "../export-thunks";
@@ -47,7 +52,9 @@ const native = vi.hoisted(() => ({
   prepareSourcePreview: vi.fn(),
   chooseOutputPath: vi.fn(),
   chooseAudioOutputPath: vi.fn(),
+  chooseGifOutputPath: vi.fn(),
   planOptimizedExport: vi.fn(),
+  planGifExport: vi.fn(),
   reserveExportSource: vi.fn(),
   releaseExportSource: vi.fn(),
   exportFast: vi.fn(),
@@ -80,7 +87,13 @@ beforeEach(() => {
     displayPath: "C:/out.m4a",
     outputId: "audio-out",
   });
+  native.chooseGifOutputPath.mockResolvedValue({
+    displayName: "out.gif",
+    displayPath: "C:/out.gif",
+    outputId: "gif-out",
+  });
   native.planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg ..." });
+  native.planGifExport.mockResolvedValue({ commandPreview: "ffmpeg ..." });
   native.reserveExportSource.mockResolvedValue(undefined);
   native.releaseExportSource.mockResolvedValue(undefined);
   native.exportFast.mockResolvedValue({
@@ -165,8 +178,40 @@ describe("audio-only export", () => {
 });
 
 describe("export snapshot restoration", () => {
+  it("preserves per-track metadata in queued export requests and snapshots", async () => {
+    const { store } = setup(mediaWithAudio(firstSource.sourcePath));
+    store.dispatch(audioTrackDefaultChanged({ streamIndex: 4 }));
+    store.dispatch(audioTrackMetadataChanged({ streamIndex: 4, title: "", language: "rus" }));
+
+    store.dispatch(startFastExportRequested());
+
+    await vi.waitFor(() => {
+      const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
+      expect(attempt?.state.status).toBe("queued");
+      expect(attempt?.route).toBe("fast");
+      expect("audioMetadata" in (attempt?.request ?? {})).toBe(true);
+      if (attempt?.route !== "fast") return;
+      if (!("audioMetadata" in attempt.request)) return;
+      expect(attempt?.snapshot.audio.tracks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            streamIndex: 4,
+            metadata: { isDefault: true, language: "rus" },
+          }),
+        ]),
+      );
+      expect(
+        attempt?.snapshot.audio.tracks.find((track) => track.streamIndex === 4)?.metadata.title,
+      ).toBeUndefined();
+      expect(attempt?.request.audioMetadata).toEqual(
+        expect.arrayContaining([{ streamIndex: 4, isDefault: true, language: "rus" }]),
+      );
+    });
+  });
+
   it("builds the queued request and snapshot from the same state after loudness analysis", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
+    store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(
       audioTrackProcessingChanged({
         streamIndex: 2,
@@ -189,7 +234,12 @@ describe("export snapshot restoration", () => {
     await vi.waitFor(() => {
       const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
       expect(attempt?.state.status).toBe("queued");
+      expect(attempt?.route).toBe("optimized");
+      expect("stripMetadata" in (attempt?.request ?? {})).toBe(true);
+      if (attempt?.route !== "optimized") return;
+      if (!("stripMetadata" in attempt.request)) return;
       expect(attempt?.request.audioTracks[0]?.processing.gainDb).toBe(-2);
+      expect(attempt?.request.stripMetadata).toBe(true);
       expect(attempt?.snapshot.audio.tracks[0]?.processing.gainDb).toBe(-2);
       expect(attempt?.request.audioTracks[0]?.loudnessAnalysis).toMatchObject({
         integratedLufs: -18,
@@ -366,7 +416,15 @@ describe("export snapshot restoration", () => {
   it("keeps queued per-track processing immutable and restores it with the export", async () => {
     const { snapshot, store } = setup(mediaWithAudio(firstSource.sourcePath));
     const processing = { gainDb: -4.5, loudnessNormalization: "streaming" as const };
-    const audioTracks = [{ enabled: true, processing: { ...processing }, streamIndex: 2 }];
+    const audioTracks = [
+      {
+        enabled: true,
+        metadata: { isDefault: true, language: "rus", title: "Custom title" },
+        processing: { ...processing },
+        streamIndex: 2,
+      },
+    ];
+
     const queuedSnapshot = {
       ...snapshot,
       audio: { ...snapshot.audio, tracks: [{ ...audioTracks[0]!, processing: { ...processing } }] },
@@ -382,6 +440,9 @@ describe("export snapshot restoration", () => {
           processing: { ...value },
           streamIndex,
         })),
+        audioMetadata: [
+          { streamIndex: 2, isDefault: true, title: "Custom title", language: "rus" },
+        ],
         mergeAudio: false,
         resolution: { height: 720, width: 1280 },
         rotationDegrees: 0,
@@ -395,7 +456,10 @@ describe("export snapshot restoration", () => {
     audioTracks[0]!.processing.gainDb = 8;
     queuedSnapshot.audio.tracks[0]!.processing.gainDb = 8;
     expect(attempt.request.audioTracks[0]?.processing.gainDb).toBe(-4.5);
-    expect(attempt.snapshot.audio.tracks[0]?.processing).toEqual(processing);
+    expect(attempt.snapshot.audio.tracks[0]).toMatchObject({
+      metadata: { isDefault: true, language: "rus", title: "Custom title" },
+      processing,
+    });
 
     store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
     store.dispatch(
@@ -416,7 +480,12 @@ describe("export snapshot restoration", () => {
 
     expect(selectAudioTracks(store.getState())).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ enabled: true, processing, streamIndex: 2 }),
+        expect.objectContaining({
+          enabled: true,
+          metadata: { isDefault: true, language: "rus", title: "Custom title" },
+          processing,
+          streamIndex: 2,
+        }),
       ]),
     );
   });
@@ -518,6 +587,131 @@ describe("export snapshot restoration", () => {
     expect(store.getState().export.optimizedDialogOpen).toBe(false);
   });
 
+  it("reopens GIF settings and commits the same queued attempt after confirmation", async () => {
+    const { snapshot, store } = setup();
+    const capturedSnapshot = {
+      ...snapshot,
+      trim: { startMicros: 250_000, endMicros: 1_500_000 },
+    };
+
+    const attempt = createExportAttempt({
+      capturedAt: 1,
+      id: "queued-gif-edit",
+      output: { displayName: "render.gif", displayPath: "C:/render.gif", outputId: "old-gif" },
+      request: {
+        audioTracks: [],
+        mergeAudio: false,
+        resolution: { height: 360, width: 640 },
+        rotationDegrees: 0,
+        sourcePath: firstSource.sourcePath,
+        trim: { endMicros: 1_500_000, startMicros: 250_000 },
+        frameRate: { numerator: 15, denominator: 1 },
+      },
+      route: "gif",
+      snapshot: capturedSnapshot,
+    });
+
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
+    await store.dispatch(
+      editExportAttemptRequested({ attemptId: attempt.id, instanceId: "original" }),
+    );
+
+    expect(store.getState().export.queueEdit).toEqual({
+      attemptId: attempt.id,
+      instanceId: "original",
+      route: "gif",
+    });
+    expect(store.getState().export.dialogRoute).toBe("gif");
+    expect(store.getState().export.optimizedDialogOpen).toBe(true);
+    expect(store.getState().trim.value).toMatchObject(capturedSnapshot.trim);
+    expect(store.getState().editingInstances.entities.original?.gifSettings).toMatchObject({
+      frameRate: { numerator: 15, denominator: 1 },
+      resolution: { height: 360, width: 640 },
+    });
+    expect(store.getState().editingInstances.entities.original?.optimizedSettings).toBeUndefined();
+
+    store.dispatch(
+      trimChanged({
+        trim: { startMicros: 500_000, endMicros: 1_700_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    store.dispatch(startOptimizedExportRequested());
+
+    await vi.waitFor(() => {
+      const updated = store.getState().editingInstances.entities.original?.exportAttempts[0];
+      expect(updated?.output.outputId).toBe("gif-out");
+      expect(updated?.request.trim).toEqual({ startMicros: 500_000, endMicros: 1_700_000 });
+      expect(updated?.snapshot.trim).toEqual({ startMicros: 500_000, endMicros: 1_700_000 });
+      expect(updated?.state.status).toBe("queued");
+    });
+    expect(native.chooseGifOutputPath).toHaveBeenCalledWith("render.gif");
+    expect(native.chooseOutputPath).not.toHaveBeenCalled();
+    expect(store.getState().editingInstances.entities.original?.exportAttempts).toHaveLength(1);
+    expect(store.getState().export.optimizedDialogOpen).toBe(false);
+  });
+
+  it("leaves a queued GIF export unchanged when editing is canceled", async () => {
+    const { snapshot, store } = setup();
+    const optimizedSettings = {
+      frameRate: { numerator: 24, denominator: 1 },
+      resolution: { height: 720, width: 1280 },
+    };
+
+    store.dispatch(
+      editingInstanceOptimizedSettingsChanged({ id: "original", settings: optimizedSettings }),
+    );
+    const attempt = createExportAttempt({
+      capturedAt: 1,
+      id: "queued-gif-cancel",
+      output: { displayName: "render.gif", displayPath: "C:/render.gif", outputId: "old-gif" },
+      request: {
+        audioTracks: [],
+        mergeAudio: false,
+        resolution: { height: 360, width: 640 },
+        rotationDegrees: 0,
+        sourcePath: firstSource.sourcePath,
+        trim: { endMicros: 1_500_000, startMicros: 250_000 },
+        frameRate: { numerator: 15, denominator: 1 },
+      },
+      route: "gif",
+      snapshot: { ...snapshot, trim: { startMicros: 250_000, endMicros: 1_500_000 } },
+    });
+
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
+
+    await store.dispatch(
+      editExportAttemptRequested({ attemptId: attempt.id, instanceId: "original" }),
+    );
+    await store.dispatch(
+      exportSettingsChangedRequested({
+        frameRate: { numerator: 10, denominator: 1 },
+        resolution: { height: 180, width: 320 },
+      }),
+    );
+    store.dispatch(cancelOptimizedExportDialogRequested());
+
+    expect(selectExportQueue(store.getState())[0]?.attempt).toEqual(attempt);
+    expect(store.getState().export.queueEdit).toBeNull();
+    expect(store.getState().export.optimizedDialogOpen).toBe(false);
+    expect(store.getState().editingInstances.entities.original?.optimizedSettings).toEqual(
+      optimizedSettings,
+    );
+    expect(store.getState().editingInstances.entities.original?.gifSettings).toEqual({
+      frameRate: { numerator: 10, denominator: 1 },
+      resolution: { height: 180, width: 320 },
+    });
+
+    await store.dispatch(openOptimizedExportDialog());
+    await vi.waitFor(() =>
+      expect(native.planOptimizedExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          frameRate: optimizedSettings.frameRate,
+          resolution: optimizedSettings.resolution,
+        }),
+      ),
+    );
+  });
+
   it("edits a queued fast export output in place", async () => {
     const { snapshot, store } = setup();
     const attempt = createExportAttempt({
@@ -584,6 +778,7 @@ describe("export snapshot restoration", () => {
 
   it("queues successive edits of the retained draft without changing earlier snapshots", async () => {
     const { snapshot, store } = setup();
+    store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(startFastExportRequested());
     await vi.waitFor(() =>
       expect(
@@ -595,6 +790,12 @@ describe("export snapshot restoration", () => {
     const first = selectExportQueue(store.getState()).find(
       ({ attempt }) => attempt.state.status === "queued",
     )!;
+
+    expect(first.attempt.route).toBe("fast");
+    expect("stripMetadata" in first.attempt.request).toBe(true);
+    if (first.attempt.route !== "fast") return;
+    if (!("stripMetadata" in first.attempt.request)) return;
+    expect(first.attempt.request.stripMetadata).toBe(true);
 
     expect(store.getState().editingInstances.activeInstanceId).toBe("original");
     expect(store.getState().source.status).toBe("ready");

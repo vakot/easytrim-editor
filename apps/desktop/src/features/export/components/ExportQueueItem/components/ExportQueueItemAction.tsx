@@ -1,7 +1,8 @@
-import { ArrowLeftFromLine, ExternalLink, RotateCcw, SquarePen, X } from "lucide-react";
+import { ExternalLink, RotateCcw, SquarePen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -33,23 +34,43 @@ function ExportQueueItemCancel({ className }: { className?: string }) {
           cancelExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
         )
       }
-      size="icon-xs"
-      title={t("queue.actions.cancelExport")}
+      size="xs"
       type="button"
       variant="outline"
     >
-      <X aria-hidden="true" />
+      {t("queue.actions.cancelExport")}
     </Button>
   );
 }
 
-function ExportQueueItemEdit({ className }: { className?: string }) {
+function ExportQueueItemEdit({
+  asMenuItem = false,
+  className,
+}: {
+  asMenuItem?: boolean;
+  className?: string;
+}) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { attempt, instance } = useExportQueueItem();
   const isNativeDialogOpen = useAppSelector((state) => state.importWorkflow.isNativeDialogOpen);
+  const isQueued = attempt.state.status === "queued";
 
-  if (attempt.state.status !== "queued" || attempt.route === "audio") return null;
+  const handleEdit = () =>
+    void dispatch(editExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }));
+
+  if (asMenuItem) {
+    return (
+      <DropdownMenuItem
+        disabled={isNativeDialogOpen || !isQueued || attempt.route === "audio"}
+        onSelect={handleEdit}
+      >
+        {t("queue.actions.editExport")}
+      </DropdownMenuItem>
+    );
+  }
+
+  if (!isQueued || attempt.route === "audio") return null;
 
   return (
     <Tooltip>
@@ -59,11 +80,7 @@ function ExportQueueItemEdit({ className }: { className?: string }) {
             aria-label={t("queue.actions.editExport")}
             className={className}
             disabled={isNativeDialogOpen}
-            onClick={() =>
-              void dispatch(
-                editExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
-              )
-            }
+            onClick={handleEdit}
             size="icon-xs"
             type="button"
             variant="ghost"
@@ -77,7 +94,13 @@ function ExportQueueItemEdit({ className }: { className?: string }) {
   );
 }
 
-function ExportQueueItemRestore({ className }: { className?: string }) {
+function ExportQueueItemRestore({
+  asMenuItem = false,
+  className,
+}: {
+  asMenuItem?: boolean;
+  className?: string;
+}) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { attempt, instance } = useExportQueueItem();
@@ -87,23 +110,31 @@ function ExportQueueItemRestore({ className }: { className?: string }) {
     instance.sourceAvailability === "available" &&
     (status === "completed" || status === "failed" || status === "canceled");
 
+  const handleRestore = () =>
+    void dispatch(
+      restoreExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
+    );
+
+  if (asMenuItem) {
+    return (
+      <DropdownMenuItem disabled={!canRestore} onSelect={handleRestore}>
+        {t("queue.actions.restoreEdit")}
+      </DropdownMenuItem>
+    );
+  }
+
   if (!canRestore) return null;
 
   return (
     <Button
       aria-label={t("queue.actions.restoreEdit")}
       className={className}
-      onClick={() =>
-        void dispatch(
-          restoreExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
-        )
-      }
+      onClick={handleRestore}
       size="icon-xs"
-      title={t("queue.actions.restoreEdit")}
       type="button"
       variant="outline"
     >
-      <ArrowLeftFromLine aria-hidden="true" />
+      {t("queue.actions.restoreEdit")}
     </Button>
   );
 }

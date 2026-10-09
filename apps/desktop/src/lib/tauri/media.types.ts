@@ -8,6 +8,7 @@ import type {
   ExportResult,
   FastExportRequest,
   FrameRate,
+  GifExportRequest,
   LoudnessAnalysis,
   LoudnessAnalysisRequest,
   MediaInfo,
@@ -17,7 +18,7 @@ import type {
 } from "@/domain/media";
 import type { SourceRef } from "@/domain/source";
 
-interface OptimizedExportPlan {
+interface ExportPlan {
   commandPreview: string;
 }
 
@@ -109,15 +110,16 @@ export type {
   BinaryCapability,
   BinaryCapabilityErrorId,
   ChapterInfo,
+  ExportPlan,
   ExportProgress,
   ExportResult,
   FastExportRequest,
   FrameRate,
+  GifExportRequest,
   LoudnessAnalysis,
   LoudnessAnalysisRequest,
   MediaCapabilities,
   MediaInfo,
-  OptimizedExportPlan,
   OptimizedExportRequest,
   OutputSelection,
   PreviewDescriptor,

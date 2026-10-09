@@ -265,12 +265,14 @@ describe("Redux Persist store integration", () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
+    store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     await persistor.flush();
 
     const persistedRoot = await readPersistedRoot(storage);
     expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
       ...DEFAULT_PREFERENCES,
       loopPlaybackEnabledDefault: false,
+      stripMetadataOnExport: true,
     });
   });
 
@@ -280,6 +282,7 @@ describe("Redux Persist store integration", () => {
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     store.dispatch(preferenceChanged({ key: "segmentPlaybackEnabledDefault", enabled: false }));
     store.dispatch(preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }));
+    store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
     store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
     store.dispatch(queueFinishActionChanged("exit"));
@@ -328,6 +331,7 @@ describe("Redux Persist store integration", () => {
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     store.dispatch(preferenceChanged({ key: "segmentPlaybackEnabledDefault", enabled: false }));
     store.dispatch(preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }));
+    store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(layoutDensityChanged("compact"));
     store.dispatch(uiScaleIncreased());
     store.dispatch(queueSettingsReset());
@@ -343,6 +347,7 @@ describe("Redux Persist store integration", () => {
       loopPlaybackEnabledDefault: false,
       segmentPlaybackEnabledDefault: false,
       mergeAudioEnabledDefault: true,
+      stripMetadataOnExport: true,
       uiScalePercent: 125,
     });
     const persistedRoot = await readPersistedRoot(storage);
@@ -355,6 +360,7 @@ describe("Redux Persist store integration", () => {
       loopPlaybackEnabledDefault: false,
       segmentPlaybackEnabledDefault: false,
       mergeAudioEnabledDefault: true,
+      stripMetadataOnExport: true,
       uiScalePercent: 125,
     });
   });

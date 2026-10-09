@@ -130,6 +130,8 @@ function localizeAppError(error: AppError, t: TFunction): string {
       return t("export.errors.ffmpegCouldNotRenderTheSelectedSegment");
     case "export.ffmpegIsRequiredToExportVideoFiles":
       return t("export.errors.ffmpegIsRequiredToExportVideoFiles");
+    case "export.globalMetadataCannotBeSetWhenStrippingMetadata":
+      return t("export.errors.globalMetadataCannotBeSetWhenStrippingMetadata");
     case "export.fileOrFolderIsNoLongerAvailable":
       return t("export.errors.fileOrFolderIsNoLongerAvailable");
     case "export.finalOptimizedFfmpegOptionIsMissingItsValue":
@@ -146,6 +148,8 @@ function localizeAppError(error: AppError, t: TFunction): string {
       return t("export.errors.outputFrameRateIsInvalid");
     case "export.outputNameIsRequired":
       return t("export.errors.outputNameIsRequired");
+    case "export.outputContainerIsNotCompatibleWithSelectedStreams":
+      return t("export.errors.outputContainerIsNotCompatibleWithSelectedStreams");
     case "export.outputResolutionMustBeGreaterThanZero":
       return t("export.errors.outputResolutionMustBeGreaterThanZero");
     case "export.renderedOutputCouldNotBeVerified":

@@ -46,12 +46,73 @@ function isSnapshot(value: unknown): boolean {
         isRecord(track) &&
         typeof track.enabled === "boolean" &&
         Number.isSafeInteger(track.streamIndex) &&
+        isRecord(track.metadata) &&
+        (track.metadata.isDefault === undefined || typeof track.metadata.isDefault === "boolean") &&
+        (track.metadata.language === undefined || typeof track.metadata.language === "string") &&
+        (track.metadata.title === undefined || typeof track.metadata.title === "string") &&
         isRecord(track.processing) &&
         isFiniteNumber(track.processing.gainDb) &&
         isValidAudioTrackEffects(track.processing.effects) &&
         isValidLoudnessNormalization(track.processing.loudnessNormalization),
     )
   );
+}
+
+function migrateSnapshotAudioMetadata(snapshot: unknown): unknown {
+  if (!isRecord(snapshot) || !isRecord(snapshot.audio) || !Array.isArray(snapshot.audio.tracks)) {
+    return snapshot;
+  }
+
+  return {
+    ...snapshot,
+    audio: {
+      ...snapshot.audio,
+      tracks: snapshot.audio.tracks.map((track) => {
+        if (!isRecord(track) || (track.metadata !== undefined && !isRecord(track.metadata))) {
+          return track;
+        }
+
+        const { isDefault, language, metadata, title, ...settings } = track;
+
+        return {
+          ...settings,
+          metadata: {
+            ...(isDefault === undefined ? {} : { isDefault }),
+            ...(language === undefined ? {} : { language }),
+            ...(title === undefined ? {} : { title }),
+            ...metadata,
+          },
+        };
+      }),
+    },
+  };
+}
+
+function migrateBackupAudioMetadata(value: unknown): unknown {
+  if (!isRecord(value) || !Array.isArray(value.instances)) return value;
+
+  return {
+    ...value,
+    instances: value.instances.map((instance) => {
+      if (!isRecord(instance)) return instance;
+
+      return {
+        ...instance,
+        snapshot: migrateSnapshotAudioMetadata(instance.snapshot),
+        ...(Array.isArray(instance.exportAttempts)
+          ? {
+              exportAttempts: instance.exportAttempts.map((attempt) => {
+                if (!isRecord(attempt)) return attempt;
+                return {
+                  ...attempt,
+                  snapshot: migrateSnapshotAudioMetadata(attempt.snapshot),
+                };
+              }),
+            }
+          : {}),
+      };
+    }),
+  };
 }
 
 function isValidAudioTrackEffects(value: unknown): boolean {
@@ -77,7 +138,10 @@ function isExportAttempt(value: unknown): boolean {
     !isRecord(value) ||
     typeof value.id !== "string" ||
     !isFiniteNumber(value.capturedAt) ||
-    (value.route !== "audio" && value.route !== "fast" && value.route !== "optimized") ||
+    (value.route !== "audio" &&
+      value.route !== "fast" &&
+      value.route !== "gif" &&
+      value.route !== "optimized") ||
     !isRecord(value.request) ||
     !isRecord(value.output) ||
     typeof value.output.displayName !== "string" ||
@@ -138,6 +202,14 @@ function isBackup(value: unknown): value is WorkspaceRecoveryBackup {
           (instance.optimizedSettings.frameRate === undefined ||
             instance.optimizedSettings.frameRate === null ||
             isRecord(instance.optimizedSettings.frameRate)))) &&
+      (instance.gifSettings === undefined ||
+        (isRecord(instance.gifSettings) &&
+          isRecord(instance.gifSettings.resolution) &&
+          isFiniteNumber(instance.gifSettings.resolution.height) &&
+          isFiniteNumber(instance.gifSettings.resolution.width) &&
+          (instance.gifSettings.frameRate === undefined ||
+            instance.gifSettings.frameRate === null ||
+            isRecord(instance.gifSettings.frameRate)))) &&
       Array.isArray(instance.exportAttempts) &&
       instance.exportAttempts.every(isExportAttempt),
   );
@@ -147,7 +219,7 @@ function readBackup(key: string): WorkspaceRecoveryBackup | null {
   try {
     const serialized = localStorage.getItem(key);
     if (!serialized) return null;
-    const value: unknown = JSON.parse(serialized);
+    const value: unknown = migrateBackupAudioMetadata(JSON.parse(serialized));
     return isBackup(value) ? value : null;
   } catch {
     return null;

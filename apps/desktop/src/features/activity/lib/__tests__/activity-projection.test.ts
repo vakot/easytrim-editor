@@ -26,6 +26,12 @@ const labels: ActivityProjectionLabels = {
   fastExportInterrupted: "Fast Export interrupted",
   fastExportStarted: "Fast Export started",
   fastExporting: "Fast Export…",
+  gifExportCancelled: "GIF export cancelled",
+  gifExportCompleted: "GIF export completed",
+  gifExportFailed: "GIF export failed",
+  gifExportInterrupted: "GIF export interrupted",
+  gifExportStarted: "GIF export started",
+  gifExporting: "GIF export…",
   fileCloseCompleted: (count) => `Closed ${count} file${count === 1 ? "" : "s"}`,
   fileDeleteCancelled: "File deletion cancelled",
   fileDeleteFailed: "File deletion failed",
@@ -176,6 +182,7 @@ describe("activity projection", () => {
     ["audio", "audio-export", "Audio Export completed"],
     ["fast", "fast-export", "Fast Export completed"],
     ["optimized", "optimized-export", "Optimized export completed"],
+    ["gif", "gif-export", "GIF export completed"],
   ] as const)("projects a completed %s export", (outputType, kind, title) => {
     const entry = projectActivityEvent(
       diagnosticEvent("ffmpeg.export.completed", { data: { outputPath, outputType } }),
@@ -195,6 +202,7 @@ describe("activity projection", () => {
   it.each([
     ["fast", "Fast Export started", "Fast Export completed"],
     ["optimized", "Optimized export started", "Optimized export completed"],
+    ["gif", "GIF export started", "GIF export completed"],
   ] as const)(
     "projects the %s export start separately from its lifecycle",
     (outputType, startTitle, completedTitle) => {

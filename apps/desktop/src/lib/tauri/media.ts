@@ -9,14 +9,15 @@ import type { SourceRef } from "@/domain/source";
 import type {
   AudioExportRequest,
   AudioPreviewDescriptor,
+  ExportPlan,
   ExportProgress,
   ExportResult,
   FastExportRequest,
+  GifExportRequest,
   LoudnessAnalysis,
   LoudnessAnalysisRequest,
   MediaCapabilities,
   MediaInfo,
-  OptimizedExportPlan,
   OptimizedExportRequest,
   OutputSelection,
   PreviewDescriptor,
@@ -29,12 +30,12 @@ import type {
 import {
   normalizeAppError,
   parseAudioPreviewDescriptors,
+  parseExportPlan,
   parseExportProgress,
   parseExportResult,
   parseLoudnessAnalysis,
   parseMediaCapabilities,
   parseMediaInfo,
-  parseOptimizedExportPlan,
   parseOutputSelection,
   parsePreviewDescriptor,
   parseSceneBoundaries,
@@ -124,9 +125,15 @@ async function restoreSourceFromTrash(sourcePath: string): Promise<void> {
   }
 }
 
-async function chooseOutputPath(defaultName: string): Promise<OutputSelection | null> {
+async function chooseOutputPath(
+  defaultName: string,
+  fastExportRequest?: FastExportRequest,
+): Promise<OutputSelection | null> {
   try {
-    const value = await invoke<unknown>("choose_output_path", { defaultName });
+    const value = await invoke<unknown>("choose_output_path", {
+      defaultName,
+      fastExportRequest: fastExportRequest ?? null,
+    });
 
     return value === null ? null : parseOutputSelection(value);
   } catch (error: unknown) {
@@ -137,7 +144,15 @@ async function chooseOutputPath(defaultName: string): Promise<OutputSelection | 
 async function chooseAudioOutputPath(defaultName: string): Promise<OutputSelection | null> {
   try {
     const value = await invoke<unknown>("choose_audio_output_path", { defaultName });
+    return value === null ? null : parseOutputSelection(value);
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
 
+async function chooseGifOutputPath(defaultName: string): Promise<OutputSelection | null> {
+  try {
+    const value = await invoke<unknown>("choose_gif_output_path", { defaultName });
     return value === null ? null : parseOutputSelection(value);
   } catch (error: unknown) {
     throw normalizeAppError(error);
@@ -215,9 +230,34 @@ async function renderOptimized(
   );
 }
 
-async function planOptimizedExport(request: OptimizedExportRequest): Promise<OptimizedExportPlan> {
+async function renderGif(
+  request: GifExportRequest,
+  outputId: string,
+  onProgress: (progress: ExportProgress) => void,
+  diagnosticParentOperationId?: string,
+  diagnosticSnapshotId?: string,
+): Promise<ExportResult> {
+  return render(
+    "render_gif",
+    request,
+    outputId,
+    onProgress,
+    diagnosticParentOperationId,
+    diagnosticSnapshotId,
+  );
+}
+
+async function planOptimizedExport(request: OptimizedExportRequest): Promise<ExportPlan> {
   try {
-    return parseOptimizedExportPlan(await invoke<unknown>("plan_optimized_export", { request }));
+    return parseExportPlan(await invoke<unknown>("plan_optimized_export", { request }));
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+async function planGifExport(request: GifExportRequest): Promise<ExportPlan> {
+  try {
+    return parseExportPlan(await invoke<unknown>("plan_gif_export", { request }));
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -287,8 +327,8 @@ async function openFileLocation(path: string): Promise<void> {
 }
 
 async function render(
-  command: "export_fast" | "render_audio" | "render_optimized",
-  request: AudioExportRequest | FastExportRequest | OptimizedExportRequest,
+  command: "export_fast" | "render_audio" | "render_optimized" | "render_gif",
+  request: AudioExportRequest | FastExportRequest | OptimizedExportRequest | GifExportRequest,
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
   diagnosticParentOperationId?: string,
@@ -456,6 +496,7 @@ export {
   cancelOperation,
   checkMediaCapabilities,
   chooseAudioOutputPath,
+  chooseGifOutputPath,
   chooseOutputPath,
   chooseSource,
   detectAudioActivity,
@@ -466,6 +507,7 @@ export {
   listenForSourceDrops,
   moveSourceToTrash,
   openFileLocation,
+  planGifExport,
   planOptimizedExport,
   prepareAudioPreviews,
   prepareImportedSourceThumbnail,
@@ -474,6 +516,7 @@ export {
   prepareWaveforms,
   releaseExportSource,
   releaseImportedSourceThumbnail,
+  renderGif,
   renderOptimized,
   reserveExportSource,
   resolveOutputSelection,

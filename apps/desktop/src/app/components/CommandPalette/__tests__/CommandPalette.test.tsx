@@ -3,6 +3,7 @@ import { CheckCircle2, RotateCcw } from "lucide-react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
+import { GIF_EXPORT_SHORTCUT } from "@/app/commands/file/file-shortcuts.constants";
 import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
 
@@ -38,7 +39,12 @@ function createCommand(
   label: string,
   variant: ApplicationCommand["variant"],
   icon: ApplicationCommand["icon"],
-  options: Pick<ApplicationCommand, "checked" | "keepOpen" | "shortcut" | "surfaces"> = {},
+  options: Partial<
+    Pick<
+      ApplicationCommand,
+      "checked" | "enabled" | "keepOpen" | "pending" | "shortcut" | "surfaces"
+    >
+  > = {},
 ): ApplicationCommand {
   return {
     enabled: true,
@@ -75,6 +81,7 @@ describe("CommandPalette semantic icons", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open palette" }));
     const search = await screen.findByRole("combobox", { name: "Search commands" });
+    expect(search).toHaveAttribute("placeholder", "Search commands…");
     fireEvent.change(search, { target: { value: "does not match" } });
     expect(screen.getByText("No commands found")).toBeInTheDocument();
 
@@ -154,6 +161,90 @@ describe("CommandPalette semantic icons", () => {
     expect(mocks.executeCommand).toHaveBeenNthCalledWith(1, "available-hotkey", "hotkey");
     expect(mocks.executeCommand).toHaveBeenNthCalledWith(2, "open-file", "hotkey");
     expect(mocks.executeCommand).not.toHaveBeenCalledWith("menu-only-shortcut", "hotkey");
+  });
+
+  it("executes GIF Export with Ctrl+G only when enabled and unblocked", () => {
+    mocks.commands = [
+      createCommand("gif-export", "GIF Export", "default", <CheckCircle2 />, {
+        shortcut: GIF_EXPORT_SHORTCUT,
+      }),
+    ];
+    const view = render(<CommandPalette />);
+
+    const shortcutEvent = () =>
+      new KeyboardEvent("keydown", {
+        bubbles: true,
+        cancelable: true,
+        code: "KeyG",
+        ctrlKey: true,
+      });
+
+    const enabledEvent = shortcutEvent();
+    window.dispatchEvent(enabledEvent);
+
+    expect(enabledEvent.defaultPrevented).toBe(true);
+    expect(mocks.executeCommand).toHaveBeenCalledWith("gif-export", "hotkey");
+
+    mocks.executeCommand.mockClear();
+    mocks.commands = [
+      createCommand("gif-export", "GIF Export", "default", <CheckCircle2 />, {
+        enabled: false,
+        shortcut: GIF_EXPORT_SHORTCUT,
+      }),
+    ];
+    view.rerender(<CommandPalette />);
+    const disabledEvent = shortcutEvent();
+    window.dispatchEvent(disabledEvent);
+
+    expect(disabledEvent.defaultPrevented).toBe(false);
+    expect(mocks.executeCommand).not.toHaveBeenCalled();
+
+    mocks.commands = [
+      createCommand("gif-export", "GIF Export", "default", <CheckCircle2 />, {
+        shortcut: GIF_EXPORT_SHORTCUT,
+      }),
+    ];
+    view.rerender(<CommandPalette />);
+    const editable = document.createElement("input");
+    document.body.append(editable);
+    const editableEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      code: "KeyG",
+      ctrlKey: true,
+    });
+
+    editable.dispatchEvent(editableEvent);
+
+    expect(editableEvent.defaultPrevented).toBe(false);
+    expect(mocks.executeCommand).not.toHaveBeenCalled();
+    editable.remove();
+
+    const blocker = document.createElement("div");
+    blocker.setAttribute("role", "dialog");
+    blocker.setAttribute("data-state", "open");
+    document.body.append(blocker);
+    const blockedEvent = shortcutEvent();
+    window.dispatchEvent(blockedEvent);
+
+    expect(blockedEvent.defaultPrevented).toBe(false);
+    expect(mocks.executeCommand).not.toHaveBeenCalled();
+    blocker.remove();
+  });
+
+  it("shows Ctrl+G beside GIF Export in the Command Palette", async () => {
+    mocks.commands = [
+      createCommand("gif-export", "GIF Export", "default", <CheckCircle2 />, {
+        shortcut: GIF_EXPORT_SHORTCUT,
+      }),
+    ];
+    render(<CommandPalette />);
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
+
+    const gifExportOption = await screen.findByRole("option", { name: /GIF Export/ });
+
+    expect(gifExportOption).toHaveTextContent("CtrlG");
+    expect(gifExportOption.querySelector('[aria-label="Control+G"]')).not.toBeNull();
   });
 
   it("keeps the palette open for Promise actions so their state and label can update", async () => {
