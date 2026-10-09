@@ -47,6 +47,7 @@ function renderingAttempt() {
       id: "attempt-1",
       output: { displayName: "clip.mp4", displayPath: "C:/Exports/clip.mp4", outputId: "output-1" },
       route: "optimized",
+      request: { trim: { endMicros: 1_000_000, startMicros: 0 } },
       metrics: {
         bitrate: "1200 kbits/s",
         currentFrame: 42,
@@ -56,6 +57,7 @@ function renderingAttempt() {
         fileSizeBytes: 1_000_000,
         fps: 60,
         progressPercent: 42,
+        phase: "running",
         totalFrames: 100,
         durationMs: 100,
       },
@@ -101,14 +103,58 @@ describe("StatusBar", () => {
     expect(screen.getByText("42f / 100f")).toBeInTheDocument();
   });
 
-  it("shows indeterminate GIF progress without regular output metrics", () => {
+  it("calculates GIF progress and missing metrics from available measurements", () => {
     const attempt = renderingAttempt();
     mocks.activeAttempt = {
       ...attempt,
       attempt: {
         ...attempt.attempt,
         route: "gif",
-        metrics: { ...attempt.attempt.metrics, phase: "preparing" },
+        metrics: {
+          ...attempt.attempt.metrics,
+          bitrate: undefined,
+          durationMs: 1_000,
+          estimatedElapsedTimeMs: undefined,
+          estimatedFileSizeBytes: undefined,
+          estimatedTotalTimeMs: undefined,
+          fps: undefined,
+          phase: "preparing",
+          progressPercent: 0,
+        },
+      },
+    };
+
+    renderStatusBar();
+
+    const progress = screen.getByRole("progressbar", { name: "queue.progress.accessibleLabel" });
+    expect(progress).toHaveAttribute("data-state", "loading");
+    expect(progress).toHaveAttribute("aria-valuenow", "42");
+    expect(screen.getByText("42%")).toBeInTheDocument();
+    expect(screen.getByText("42f / 100f")).toBeInTheDocument();
+    expect(screen.getByText("42 FPS")).toBeInTheDocument();
+    expect(screen.getByText("19.0 Mbits/s")).toBeInTheDocument();
+    expect(screen.getByText("977 KB / 2.3 MB")).toBeInTheDocument();
+    expect(screen.getByText("0:01 / 0:02")).toBeInTheDocument();
+  });
+
+  it("uses indeterminate progress only when no progress value can be calculated", () => {
+    const attempt = renderingAttempt();
+    mocks.activeAttempt = {
+      ...attempt,
+      attempt: {
+        ...attempt.attempt,
+        route: "gif",
+        metrics: {
+          ...attempt.attempt.metrics,
+          currentFrame: undefined,
+          estimatedElapsedTimeMs: undefined,
+          estimatedFileSizeBytes: undefined,
+          estimatedTotalTimeMs: undefined,
+          fps: undefined,
+          phase: "preparing",
+          progressPercent: 0,
+          totalFrames: 100,
+        },
       },
     };
 
@@ -119,7 +165,7 @@ describe("StatusBar", () => {
     expect(progress).not.toHaveAttribute("aria-valuenow");
     expect(screen.queryByText("42%")).not.toBeInTheDocument();
     expect(screen.queryByText("42f / 100f")).not.toBeInTheDocument();
-    expect(screen.queryByText("60 FPS")).not.toBeInTheDocument();
-    expect(screen.queryByText("1200 kbits/s")).not.toBeInTheDocument();
+    expect(screen.getByText("1200 kbits/s")).toBeInTheDocument();
+    expect(screen.getByText("977 KB / 146 KB")).toBeInTheDocument();
   });
 });

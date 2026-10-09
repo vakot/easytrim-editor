@@ -10,17 +10,18 @@ const attempt = {
     phase: "preparing",
     progressPercent: 0,
   },
+  request: { trim: { endMicros: 1_000_000, startMicros: 0 } },
   route: "gif",
 } as ExportAttempt;
 
 describe("export queue item metrics", () => {
-  it("hides elapsed time while GIF rendering is indeterminate", () => {
+  it("shows elapsed time even when GIF progress is indeterminate", () => {
     expect(
       getDuration(attempt, {
         formatValue: (value) => value,
         status: "rendering",
       }),
-    ).toBeNull();
+    ).toEqual({ id: "duration", value: "0:02" });
   });
 
   it("shows elapsed time after GIF output completes", () => {
@@ -42,7 +43,7 @@ describe("export queue item metrics", () => {
     expect(getProgress(attempt, { status: "rendering" })).toBeNull();
   });
 
-  it("does not show a numeric progress metric from FFmpeg's final event before GIF completion", () => {
+  it("shows FFmpeg's final progress value before queue completion", () => {
     expect(
       getProgress(
         {
@@ -51,18 +52,22 @@ describe("export queue item metrics", () => {
         },
         { status: "rendering" },
       ),
-    ).toBeNull();
+    ).toEqual({ id: "progress", value: "100%" });
   });
 
-  it("hides partial GIF size and frame-rate values while rendering", () => {
+  it("keeps FFmpeg-provided size and frame-rate values while progress is indeterminate", () => {
     const partialAttempt = {
       ...attempt,
       metrics: { ...attempt.metrics, fileSizeBytes: 1_024, fps: 15 },
     };
 
-    expect(getFileSize(partialAttempt, { status: "rendering" })).toBeNull();
-    expect(
-      getFps(partialAttempt, { formatValue: (value) => value, status: "rendering" }),
-    ).toBeNull();
+    expect(getFileSize(partialAttempt, { status: "rendering" })).toEqual({
+      id: "file-size",
+      value: "1.0 KB",
+    });
+    expect(getFps(partialAttempt, { formatValue: (value) => value, status: "rendering" })).toEqual({
+      id: "fps",
+      value: "15.0",
+    });
   });
 });

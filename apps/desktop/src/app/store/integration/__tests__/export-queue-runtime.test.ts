@@ -164,7 +164,7 @@ beforeEach(() => {
 });
 
 describe("export queue runtime", () => {
-  it("keeps GIF attempts indeterminate until FFmpeg completes palette output", async () => {
+  it("does not estimate GIF output time or size during palette preparation", async () => {
     const store = createAppStore();
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
     const attempt = createGifAttempt("gif-progress");
