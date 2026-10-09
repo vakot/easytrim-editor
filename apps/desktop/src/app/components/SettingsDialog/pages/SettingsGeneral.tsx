@@ -78,17 +78,17 @@ function SettingsGeneral() {
                   <LanguageSelectorGroup>
                     {languages.map((language) => (
                       <LanguageSelectorItem
-                        className="grid grid-cols-[1rem_minmax(0,1fr)_1rem] grid-rows-2"
+                        className="grid-rows-2"
                         key={language.code}
                         language={language}
                       >
-                        <LanguageSelectorItemFlag className="col-start-1 row-start-1" />
-                        <LanguageSelectorItemText className="col-start-2 row-start-1" />
+                        <LanguageSelectorItemFlag />
+                        <LanguageSelectorItemText />
                         <SettingsLanguageCoverage
                           className="col-start-2 row-start-2"
                           language={language}
                         />
-                        <LanguageSelectorItemIndicator className="col-start-3 row-start-1" />
+                        <LanguageSelectorItemIndicator />
                       </LanguageSelectorItem>
                     ))}
                   </LanguageSelectorGroup>

@@ -312,11 +312,14 @@ describe("LanguageSelector", () => {
             {({ languages }) => (
               <LanguageSelectorGroup>
                 {languages.map((language) => (
-                  <LanguageSelectorItem key={language.code} language={language}>
+                  <LanguageSelectorItem
+                    className="grid-rows-2"
+                    key={language.code}
+                    language={language}
+                  >
                     <LanguageSelectorItemFlag />
-                    <LanguageSelectorItemText>
-                      <span> · metadata</span>
-                    </LanguageSelectorItemText>
+                    <LanguageSelectorItemText />
+                    <span className="col-start-2 row-start-2"> · metadata</span>
                     <LanguageSelectorItemIndicator />
                   </LanguageSelectorItem>
                 ))}

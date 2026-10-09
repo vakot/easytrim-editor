@@ -161,11 +161,16 @@ function DropdownMenuSubmenuExample() {
                   {({ languages }) => (
                     <LanguageSelectorGroup>
                       {languages.map((language) => (
-                        <LanguageSelectorItem key={language.code} language={language}>
+                        <LanguageSelectorItem
+                          className="grid-rows-2"
+                          key={language.code}
+                          language={language}
+                        >
                           <LanguageSelectorItemFlag />
-                          <LanguageSelectorItemText>
-                            <span className="text-xs text-muted-foreground">{language.code}</span>
-                          </LanguageSelectorItemText>
+                          <LanguageSelectorItemText />
+                          <span className="col-start-2 row-start-2 text-xs text-muted-foreground">
+                            {language.code}
+                          </span>
                           <LanguageSelectorItemIndicator />
                         </LanguageSelectorItem>
                       ))}
