@@ -43,7 +43,6 @@ import Fuse from "fuse.js";
 import { CheckIcon } from "lucide-react";
 import * as React from "react";
 
-import { useCommandContent } from "@/components/ui/command";
 import {
   Combobox,
   ComboboxContent,
@@ -266,9 +265,11 @@ function LanguageSelectorContent({
   ...props
 }: React.ComponentProps<typeof ComboboxContent>) {
   return (
-    <ComboboxContent align="start" asChild={asChild} sideOffset={4} {...props}>
-      {children}
-    </ComboboxContent>
+    <LanguageSelectorContentContext.Provider value>
+      <ComboboxContent align="start" asChild={asChild} sideOffset={4} {...props}>
+        {children}
+      </ComboboxContent>
+    </LanguageSelectorContentContext.Provider>
   );
 }
 
@@ -277,7 +278,7 @@ function LanguageSelectorInput({
   onValueChange,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxInput>, "value">) {
-  const { inContent: insideContent } = useCommandContent();
+  const insideContent = React.useContext(LanguageSelectorContentContext);
   const { disabled: selectorDisabled, language, query, setQuery } = useLanguageSelector();
   const value = insideContent
     ? (query ?? "")
@@ -457,6 +458,7 @@ const LanguageSelectorItemContext = React.createContext<LanguageSelectorItemCont
   null,
 );
 
+const LanguageSelectorContentContext = React.createContext(false);
 
 function useLanguageSelector() {
   const context = React.useContext(LanguageSelectorContext);

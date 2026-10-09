@@ -15,7 +15,6 @@ import {
 import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
 import { MenuIcon, menuItemVariants } from "@/components/ui/menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Slot } from "@/components/ui/slot";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -31,38 +30,6 @@ const commandItemVariants = cva(
     },
   },
 );
-
-type CommandContentContextValue = {
-  inContent: boolean;
-  isAsChild: boolean;
-};
-
-type CommandContentProps = {
-  asChild?: boolean;
-  children: React.ReactNode;
-  className?: string;
-};
-
-const commandContentContextDefaultValue: CommandContentContextValue = {
-  inContent: false,
-  isAsChild: false,
-};
-
-const CommandContentContext = React.createContext(commandContentContextDefaultValue);
-
-function CommandContent({ asChild = false, children, className }: CommandContentProps) {
-  const value = React.useMemo(
-    () => ({ inContent: true, isAsChild: asChild }),
-    [asChild],
-  );
-  const content = asChild ? <Slot className={className}>{children}</Slot> : children;
-
-  return <CommandContentContext.Provider value={value}>{content}</CommandContentContext.Provider>;
-}
-
-function useCommandContent() {
-  return React.useContext(CommandContentContext);
-}
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
   return (
@@ -221,7 +188,6 @@ function CommandShortcut({ className, ...props }: React.ComponentProps<"span">) 
 export {
   Command,
   CommandDialog,
-  CommandContent,
   CommandEmpty,
   CommandGroup,
   CommandInput,
@@ -229,5 +195,4 @@ export {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-  useCommandContent,
 };
