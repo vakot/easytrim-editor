@@ -8,6 +8,7 @@ import type { EditorSnapshot } from "@/domain/editor-snapshot";
 
 export interface WorkspaceRecoveryInstance {
   exportAttempts: ExportAttempt[];
+  gifSettings?: ExportSettings;
   id: EditingInstanceId;
   importedAtMicros?: number;
   optimizedArguments?: string;

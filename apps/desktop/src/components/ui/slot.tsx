@@ -1,3 +1,5 @@
+"use client";
+
 import { Slot as SlotPrimitive } from "radix-ui";
 import type { ComponentProps } from "react";
 

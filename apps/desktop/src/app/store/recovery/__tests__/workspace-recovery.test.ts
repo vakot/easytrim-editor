@@ -11,6 +11,7 @@ import { cropChanged, flipToggled, rotationChanged } from "@/app/store/slices/cr
 import {
   activeEditingInstanceChanged,
   editingInstanceExportAttemptQueued,
+  editingInstanceGifSettingsChanged,
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
 import { exportArgumentsChanged } from "@/app/store/slices/export-presets-slice";
@@ -39,6 +40,10 @@ function instance(id: string, source = firstSource) {
       frameRate: undefined,
       resolution: { height: 720, width: 1280 },
     },
+    gifSettings: {
+      frameRate: { denominator: 1, numerator: 15 },
+      resolution: { height: 360, width: 640 },
+    },
     origin: "source-import" as const,
     snapshot: createDefaultEditorSnapshot(source, false),
     sourceAvailability: "available" as const,
@@ -60,7 +65,7 @@ describe("workspace recovery contract", () => {
       ...second.snapshot,
       audio: {
         mergeAudio: false,
-        tracks: [{ enabled: true, streamIndex: 2, processing: { gainDb: -2.5 } }],
+        tracks: [{ enabled: true, metadata: {}, streamIndex: 2, processing: { gainDb: -2.5 } }],
       },
     };
 
@@ -85,6 +90,15 @@ describe("workspace recovery contract", () => {
     );
     store.dispatch(flipToggled("horizontal"));
     store.dispatch(rotationChanged(90));
+    store.dispatch(
+      editingInstanceGifSettingsChanged({
+        id: "second",
+        settings: {
+          frameRate: { denominator: 1, numerator: 15 },
+          resolution: { height: 360, width: 640 },
+        },
+      }),
+    );
     store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -4 }));
     store.dispatch(audioTrackLoudnessNormalizationChanged({ preset: "broadcast", streamIndex: 2 }));
     store.dispatch(audioMergeToggled());
@@ -144,8 +158,32 @@ describe("workspace recovery contract", () => {
       state: { operationId: "native-running", startedAt: 501, status: "rendering" as const },
     };
 
+    const queuedGifAttempt = createExportAttempt({
+      capturedAt: 600,
+      id: "export-gif",
+      output: {
+        displayName: "pending.gif",
+        displayPath: "C:/Exports/pending.gif",
+        outputId: "out-gif",
+      },
+      request: {
+        audioTracks: [],
+        flipHorizontal: true,
+        flipVertical: false,
+        frameRate: { denominator: 1, numerator: 15 },
+        mergeAudio: false,
+        resolution: { height: 360, width: 480 },
+        rotationDegrees: 90,
+        sourcePath: secondSource.sourcePath,
+        trim: { endMicros: 4_000_000, startMicros: 1_000_000 },
+      },
+      route: "gif",
+      snapshot: second.snapshot,
+    });
+
     store.dispatch(editingInstanceExportAttemptQueued({ attempt: completedAttempt, id: "second" }));
     store.dispatch(editingInstanceExportAttemptQueued({ attempt: renderingAttempt, id: "second" }));
+    store.dispatch(editingInstanceExportAttemptQueued({ attempt: queuedGifAttempt, id: "second" }));
 
     const backup = createWorkspaceRecoveryBackup(store.getState(), { sessionId: "session-1" });
 
@@ -157,6 +195,7 @@ describe("workspace recovery contract", () => {
         tracks: [
           {
             enabled: true,
+            metadata: {},
             streamIndex: 2,
             processing: { gainDb: -4, loudnessNormalization: "broadcast" },
           },
@@ -170,6 +209,10 @@ describe("workspace recovery contract", () => {
     });
     expect(backup.instances[1]).toMatchObject({
       importedAtMicros: 1234,
+      gifSettings: {
+        frameRate: { denominator: 1, numerator: 15 },
+        resolution: { height: 360, width: 640 },
+      },
       optimizedArguments: "-crf 18",
       optimizedSettings: { resolution: { height: 1344, width: 864 } },
     });
@@ -182,6 +225,17 @@ describe("workspace recovery contract", () => {
       state: { status: "canceled" },
     });
     expect(backup.instances[1]?.exportAttempts[1]?.state).not.toHaveProperty("operationId");
+    expect(backup.instances[1]?.exportAttempts[2]).toMatchObject({
+      request: {
+        flipHorizontal: true,
+        frameRate: { denominator: 1, numerator: 15 },
+        resolution: { height: 360, width: 480 },
+        rotationDegrees: 90,
+        trim: { endMicros: 4_000_000, startMicros: 1_000_000 },
+      },
+      route: "gif",
+      state: { status: "canceled" },
+    });
     expect(backup.instances[1]).not.toHaveProperty("media");
     expect(backup.instances[1]?.snapshot.source).toEqual(secondSource);
   });
@@ -224,6 +278,7 @@ describe("workspace recovery contract", () => {
         tracks: [
           {
             enabled: true,
+            metadata: {},
             streamIndex: 2,
             processing: {
               gainDb: 0,
@@ -250,6 +305,82 @@ describe("workspace recovery contract", () => {
         { preset: "medium", stage: "cleanup", type: "noiseReduction" },
         { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
       ],
+    });
+  });
+
+  it("migrates root-level metadata from recovered snapshots and queued export snapshots", () => {
+    const store = createAppStore();
+    const baseInstance = instance("legacy-metadata");
+    const snapshot = {
+      ...baseInstance.snapshot,
+      audio: {
+        ...baseInstance.snapshot.audio,
+        tracks: [
+          {
+            enabled: true,
+            metadata: { isDefault: true, language: "rus", title: "Commentary" },
+            processing: { gainDb: 0 },
+            streamIndex: 2,
+          },
+        ],
+      },
+    };
+
+    const queuedAttempt = createExportAttempt({
+      capturedAt: 10,
+      id: "legacy-queued-export",
+      output: { displayName: "output.mp4", displayPath: "C:/output.mp4", outputId: "output" },
+      request: {
+        audioTracks: [],
+        audioMetadata: [{ isDefault: true, language: "rus", streamIndex: 2, title: "Commentary" }],
+        mergeAudio: false,
+        rotationDegrees: 0,
+        sourcePath: firstSource.sourcePath,
+        trim: { endMicros: 1_000_000, startMicros: 0 },
+      },
+      route: "fast",
+      snapshot,
+    });
+
+    store.dispatch(editingInstancesAdded([{ ...baseInstance, snapshot }]));
+    store.dispatch(
+      editingInstanceExportAttemptQueued({ attempt: queuedAttempt, id: "legacy-metadata" }),
+    );
+    const backup = createWorkspaceRecoveryBackup(store.getState(), { sessionId: "old-session" });
+
+    type LegacySnapshot = { audio: { tracks: Array<Record<string, unknown>> } };
+    type LegacyInstance = {
+      exportAttempts: Array<{ snapshot: LegacySnapshot }>;
+      snapshot: LegacySnapshot;
+    };
+    const legacyInstances = structuredClone(backup.instances) as unknown as LegacyInstance[];
+
+    for (const savedInstance of legacyInstances) {
+      const snapshots = [
+        savedInstance.snapshot,
+        ...savedInstance.exportAttempts.map(({ snapshot: attemptSnapshot }) => attemptSnapshot),
+      ];
+
+      for (const savedSnapshot of snapshots) {
+        for (const track of savedSnapshot.audio.tracks) {
+          const metadata = track.metadata;
+          if (typeof metadata === "object" && metadata !== null && !Array.isArray(metadata)) {
+            Object.assign(track, metadata);
+          }
+          delete track.metadata;
+        }
+      }
+    }
+
+    localStorage.setItem(CURRENT_KEY, JSON.stringify({ ...backup, instances: legacyInstances }));
+    initializeWorkspaceRecovery(store, "new-session", true);
+
+    const recoveredInstance = getWorkspaceRecoveryCandidate()?.instances[0];
+    expect(recoveredInstance?.snapshot.audio.tracks[0]).toMatchObject({
+      metadata: { isDefault: true, language: "rus", title: "Commentary" },
+    });
+    expect(recoveredInstance?.exportAttempts[0]?.snapshot.audio.tracks[0]).toMatchObject({
+      metadata: { isDefault: true, language: "rus", title: "Commentary" },
     });
   });
 

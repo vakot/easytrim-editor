@@ -1,3 +1,5 @@
+"use client";
+
 import { CheckIcon, ChevronRight } from "lucide-react";
 import { Menubar as MenubarPrimitive } from "radix-ui";
 import * as React from "react";

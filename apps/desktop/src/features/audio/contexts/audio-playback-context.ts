@@ -5,7 +5,7 @@ import type { StereoAudioMeterNodes } from "../lib/stereo-audio-meter";
 interface AudioPlaybackContract {
   audioMeterRef: RefObject<StereoAudioMeterNodes | null>;
   audioPlayheadRef: RefObject<HTMLDivElement | null>;
-  clearLiveAudioTrackGain: (streamIndex: number, committedGainDb: number) => void;
+  clearLiveAudioTrackGain: (streamIndex: number) => void;
   setLiveAudioTrackGain: (streamIndex: number, gainDb: number) => void;
 }
 

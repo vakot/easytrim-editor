@@ -1,4 +1,4 @@
-import { List, Scissors, Settings2 } from "lucide-react";
+import { Film, List, Scissors, Settings2 } from "lucide-react";
 import { motion, useAnimationControls, useReducedMotion } from "motion/react";
 import type { ComponentProps } from "react";
 import { useEffect } from "react";
@@ -19,12 +19,13 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import {
   FAST_EXPORT_SHORTCUT,
+  GIF_EXPORT_SHORTCUT,
   OPTIMIZED_EXPORT_SHORTCUT,
 } from "@/app/commands/file/file-shortcuts.constants";
 import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
@@ -45,6 +46,7 @@ import {
 } from "@/app/store/slices/preferences-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
+  openGifExportDialog,
   openOptimizedExportDialog,
   startExportQueue,
   startFastExportRequested,
@@ -160,6 +162,23 @@ function ExportActions() {
           }
         >
           {t("export.optimized.action")}
+        </ExportActionButton>
+      </ExportActionTooltip>
+
+      <ExportActionTooltip
+        disabled={!sourceReady}
+        shortcut={GIF_EXPORT_SHORTCUT}
+        tooltip={t("export.gif.tooltip")}
+      >
+        <ExportActionButton
+          aria-keyshortcuts={getShortcutAriaValue(GIF_EXPORT_SHORTCUT)}
+          disabled={!sourceReady}
+          icon={<Film aria-hidden="true" />}
+          onClick={() =>
+            void dispatch(openGifExportDialog({ id: "toolbar.gif-export", type: "button" }))
+          }
+        >
+          {t("export.gif.action")}
         </ExportActionButton>
       </ExportActionTooltip>
     </div>
@@ -297,7 +316,7 @@ function ExportActionTooltip({
 }: {
   children: React.ReactNode;
   disabled?: boolean;
-  shortcut: ApplicationShortcut;
+  shortcut?: ApplicationShortcut;
   tooltip: string;
 }) {
   return (
@@ -307,7 +326,11 @@ function ExportActionTooltip({
           {children}
         </span>
       </TooltipTrigger>
-      <ShortcutTooltipContent shortcut={shortcut} title={tooltip} />
+      {shortcut ? (
+        <ShortcutTooltipContent shortcut={shortcut} title={tooltip} />
+      ) : (
+        <TooltipContent>{tooltip}</TooltipContent>
+      )}
     </Tooltip>
   );
 }

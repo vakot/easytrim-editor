@@ -28,6 +28,7 @@ import {
   activeEditingInstanceChanged,
   editingInstanceClosed,
   editingInstanceExportAttemptRemoved,
+  editingInstanceGifSettingsChanged,
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
@@ -662,11 +663,7 @@ async function prepareSelectedSource(
       trim: { kind: "full-source" },
       crop: null,
       rotation: 0,
-      audioTracks: selectAudioTracks(getState()).map(({ enabled, processing, streamIndex }) => ({
-        enabled,
-        streamIndex,
-        processing: { ...processing },
-      })),
+      audioTracks: selectAudioTracks(getState()),
       mergeAudio: selectMergeAudio(getState()),
     });
 
@@ -890,21 +887,22 @@ const restoreExportAttemptRequested =
     dispatch(
       editingInstanceSnapshotUpdated({
         id: instanceId,
-        ...("resolution" in attempt.request
+        ...("arguments" in attempt.request
           ? { optimizedArguments: attempt.request.arguments }
           : {}),
         snapshot: attempt.snapshot,
       }),
     );
     if ("resolution" in attempt.request) {
+      const settings = {
+        frameRate: attempt.request.frameRate,
+        resolution: attempt.request.resolution,
+      };
+
       dispatch(
-        editingInstanceOptimizedSettingsChanged({
-          id: instanceId,
-          settings: {
-            frameRate: attempt.request.frameRate,
-            resolution: attempt.request.resolution,
-          },
-        }),
+        attempt.route === "gif"
+          ? editingInstanceGifSettingsChanged({ id: instanceId, settings })
+          : editingInstanceOptimizedSettingsChanged({ id: instanceId, settings }),
       );
     }
     const restored = selectEditingInstanceById(getState(), instanceId);

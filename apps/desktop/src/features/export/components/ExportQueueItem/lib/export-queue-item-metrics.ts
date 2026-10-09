@@ -28,6 +28,8 @@ function getDuration(
     status?: ExportAttemptState["status"];
   },
 ): ExportQueueItemMetricConfig | null {
+  if (status === "rendering" && attempt.metrics.phase === "preparing") return null;
+
   const durationMs = attempt.metrics.durationMs;
   if (durationMs === null) return null;
 

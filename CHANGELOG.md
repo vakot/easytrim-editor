@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Added a global option to strip container metadata and chapters from queued exports.
+- Added GIF export for selected segments.
+- Added per-audio-track output metadata editing.
 
 ## [1.13.1]
 

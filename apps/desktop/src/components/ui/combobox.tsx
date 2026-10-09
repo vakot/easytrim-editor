@@ -1,5 +1,6 @@
+"use client";
+
 import * as React from "react";
-import { useTranslation } from "react-i18next";
 
 import {
   Command,
@@ -22,22 +23,9 @@ type ComboboxContextValue = {
   triggerRef: React.MutableRefObject<HTMLElement | null>;
 };
 
-const ComboboxContext = React.createContext<ComboboxContextValue | null>(null);
-const ComboboxContentContext = React.createContext(false);
-const ComboboxAsChildContentContext = React.createContext(false);
-
-function useCombobox() {
-  const context = React.useContext(ComboboxContext);
-
-  if (!context) {
-    throw new Error("Combobox components must be used within Combobox");
-  }
-
-  return context;
-}
-
 type ComboboxProps = Omit<React.ComponentProps<typeof Popover>, "open" | "onOpenChange"> & {
   label?: string;
+  onOpenChange?: (open: boolean) => void;
   shouldFilter?: boolean;
 };
 
@@ -45,10 +33,10 @@ function Combobox({
   children,
   defaultOpen = false,
   label,
+  onOpenChange,
   shouldFilter = true,
   ...props
 }: ComboboxProps) {
-  const { t } = useTranslation();
   const allowTriggerCloseRef = React.useRef(false);
   const hasInputTriggerRef = React.useRef(false);
   const openRef = React.useRef(defaultOpen);
@@ -63,16 +51,13 @@ function Combobox({
         triggerRef,
       }}
     >
-      <Command
-        className="contents"
-        label={label ?? t("settings.general.language.suggestions")}
-        shouldFilter={shouldFilter}
-      >
+      <Command className="contents" label={label} shouldFilter={shouldFilter}>
         <Popover
           {...props}
           defaultOpen={defaultOpen}
           onOpenChange={(open) => {
             openRef.current = open;
+            onOpenChange?.(open);
           }}
         >
           {children}
@@ -293,6 +278,20 @@ function ComboboxItem({ onSelect, ...props }: React.ComponentProps<typeof Comman
 
 function ComboboxSeparator({ ...props }: React.ComponentProps<typeof CommandSeparator>) {
   return <CommandSeparator {...props} />;
+}
+
+const ComboboxContext = React.createContext<ComboboxContextValue | null>(null);
+const ComboboxContentContext = React.createContext(false);
+const ComboboxAsChildContentContext = React.createContext(false);
+
+function useCombobox() {
+  const context = React.useContext(ComboboxContext);
+
+  if (!context) {
+    throw new Error("Combobox components must be used within Combobox");
+  }
+
+  return context;
 }
 
 export {

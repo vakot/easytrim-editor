@@ -836,6 +836,8 @@ describe("MenuBarTest", () => {
     expect(openFolderItem).toHaveTextContent("CtrlK");
     const closeFileItem = screen.getByRole("menuitem", { name: /Close File/ });
     expect(closeFileItem).toHaveTextContent("CtrlQ");
+    const gifExportItem = screen.getByRole("menuitem", { name: /GIF Export/ });
+    expect(gifExportItem).toHaveTextContent("CtrlG");
     const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete File/ });
     expect(deleteSourceItem).toHaveTextContent("CtrlD");
     await user.click(closeFileItem);

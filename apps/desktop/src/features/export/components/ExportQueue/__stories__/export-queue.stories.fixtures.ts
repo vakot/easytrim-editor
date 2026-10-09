@@ -9,6 +9,7 @@ import {
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
+import type { ExportRoute } from "@/domain/editing-instance";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
 import type { ExportProgress } from "@/domain/media";
 import { firstSource } from "@/test/source.fixtures";
@@ -20,7 +21,7 @@ type ExportQueueStoryItem = {
   id: string;
   label?: string;
   progressPercent?: number;
-  route?: "fast" | "optimized";
+  route?: ExportRoute;
   status: ExportQueueStoryStatus;
 };
 
@@ -63,14 +64,22 @@ function createStoryStore(items: ExportQueueStoryItem[]) {
             arguments: "-c:v libx264 -crf 18",
             resolution: { height: 1080, width: 1920 },
           }
-        : baseRequest;
+        : route === "gif"
+          ? {
+              ...baseRequest,
+              flipHorizontal: false,
+              flipVertical: false,
+              frameRate: { denominator: 1, numerator: 24 },
+              resolution: { height: 1080, width: 1920 },
+            }
+          : baseRequest;
 
     const attempt = createExportAttempt({
       capturedAt: item.capturedAt ?? index + 1,
       id: item.id,
       output: {
-        displayName: `${item.label ?? item.id}.mp4`,
-        displayPath: `C:/Exports/${item.label ?? item.id}.mp4`,
+        displayName: `${item.label ?? item.id}.${route === "gif" ? "gif" : "mp4"}`,
+        displayPath: `C:/Exports/${item.label ?? item.id}.${route === "gif" ? "gif" : "mp4"}`,
         outputId: `output-${item.id}`,
       },
       request,
