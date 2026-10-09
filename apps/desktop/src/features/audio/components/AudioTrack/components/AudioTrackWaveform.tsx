@@ -40,7 +40,6 @@ function AudioTrackWaveform({ gainDb, stream, track }: AudioTrackWaveformProps) 
         <AudioTrackWaveformCanvas
           gainDb={gainDb}
           key={track.waveform.url}
-          muted={!track.enabled}
           selectionEndPercent={selectionEndPercent}
           selectionStartPercent={selectionStartPercent}
           stream={stream}
@@ -80,19 +79,16 @@ const ANIMATION_SETTLE_THRESHOLD = 0.01;
 interface WaveformVisualState {
   color: [number, number, number];
   gainDb: number;
-  opacity: number;
 }
 
 function AudioTrackWaveformCanvas({
   gainDb,
-  muted,
   selectionEndPercent,
   selectionStartPercent,
   stream,
   waveform,
 }: {
   gainDb: number;
-  muted: boolean;
   selectionEndPercent: number;
   selectionStartPercent: number;
   stream: AudioStream;
@@ -128,11 +124,10 @@ function AudioTrackWaveformCanvas({
 
     context.clearRect(0, 0, pixelWidth, pixelHeight);
     const visual = visualRef.current;
-    if (!visual || visual.opacity <= 0) return;
+    if (!visual) return;
 
     const gain = 10 ** (visual.gainDb / 20);
     const centerY = pixelHeight / 2;
-    context.globalAlpha = visual.opacity;
     context.strokeStyle = `rgb(${visual.color.map(Math.round).join(" ")})`;
     context.lineWidth = 1;
     context.beginPath();
@@ -153,7 +148,6 @@ function AudioTrackWaveformCanvas({
       }
     }
     context.stroke();
-    context.globalAlpha = 1;
   }, []);
 
   const tickRef = useRef<(time: number) => void>(() => undefined);
@@ -168,7 +162,6 @@ function AudioTrackWaveformCanvas({
     lastFrameTimeRef.current = time;
     const progress = 1 - Math.exp(-elapsed / ANIMATION_TIME_CONSTANT_MS);
     current.gainDb += (next.gainDb - current.gainDb) * progress;
-    current.opacity += (next.opacity - current.opacity) * progress;
     current.color = current.color.map((channel, index) => {
       const targetChannel = next.color[index] ?? channel;
       return channel + (targetChannel - channel) * progress;
@@ -176,7 +169,6 @@ function AudioTrackWaveformCanvas({
 
     const settled =
       Math.abs(next.gainDb - current.gainDb) < ANIMATION_SETTLE_THRESHOLD &&
-      Math.abs(next.opacity - current.opacity) < ANIMATION_SETTLE_THRESHOLD &&
       current.color.every(
         (channel, index) => Math.abs(channel - (next.color[index] ?? channel)) < 1,
       );
@@ -237,11 +229,10 @@ function AudioTrackWaveformCanvas({
     targetRef.current = {
       color: parseHexColor(primaryColor),
       gainDb,
-      opacity: muted ? 0 : 1,
     };
     tickRef.current = tick;
     updateAnimation();
-  }, [draw, envelopeReady, gainDb, muted, primaryColor, tick, updateAnimation]);
+  }, [draw, envelopeReady, gainDb, primaryColor, tick, updateAnimation]);
 
   useEffect(
     () => () => {

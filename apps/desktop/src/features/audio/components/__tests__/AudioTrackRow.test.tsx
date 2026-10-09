@@ -401,6 +401,12 @@ describe("AudioTrackRow", () => {
     expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(12);
     await waitFor(() => expect(getMaxHeight()).toBeGreaterThan(24));
 
+    const drawnLineCount = lineTo.mock.calls.length;
+    act(() => store.dispatch(audioTrackToggled({ streamIndex: 2 })));
+    expect(canvas?.parentElement).toHaveAttribute("data-enabled", "false");
+    expect(canvas?.parentElement).toHaveClass("data-[enabled=false]:opacity-50");
+    expect(lineTo).toHaveBeenCalledTimes(drawnLineCount);
+
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
