@@ -86,7 +86,7 @@ function ExportQueueListItem() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-1">
+          <div className="flex items-center gap-1">
             <ExportQueueItemStatus />
 
             <DropdownMenu>
