@@ -55,9 +55,9 @@ function ExportQueueItemStatus() {
           <HoverCardTrigger asChild>{badge}</HoverCardTrigger>
           <HoverCardContent
             align="end"
-            className="max-h-64 w-80 max-w-[calc(100vw-2rem)] overflow-auto"
+            className="max-h-64 w-80 max-w-[calc(100vw-2rem)] overflow-auto p-0"
           >
-            <Alert variant="destructive">
+            <Alert className="border-none" variant="destructive">
               <CircleAlert aria-hidden="true" />
               <AlertTitle>{localizedError}</AlertTitle>
               {error.diagnostics ? (
