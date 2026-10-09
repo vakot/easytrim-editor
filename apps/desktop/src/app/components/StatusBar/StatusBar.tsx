@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { SupportLink } from "@/app/components/SupportLink";
 import type { UpdateStatus } from "@/app/contexts/app-updates-context";
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectRenderingAttempt } from "@/app/store/slices/editing-instances-slice";
+import { MetricTooltip } from "@/components/metric-tooltip";
 import {
   formatExportDuration,
   formatExportFileSize,
@@ -138,23 +138,12 @@ function StatusBar({ className }: StatusBarProps) {
           {statusMetrics.map((metric) => (
             <Fragment key={metric.id}>
               <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-              <StatusMetricTooltip label={metric.label}>{metric.value}</StatusMetricTooltip>
+              <MetricTooltip label={metric.label}>{metric.value}</MetricTooltip>
             </Fragment>
           ))}
         </div>
       ) : null}
     </footer>
-  );
-}
-
-function StatusMetricTooltip({ children, label }: { children: ReactNode; label: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="shrink-0 py-1 tabular-nums">{children}</span>
-      </TooltipTrigger>
-      <TooltipContent side="top">{label}</TooltipContent>
-    </Tooltip>
   );
 }
 
