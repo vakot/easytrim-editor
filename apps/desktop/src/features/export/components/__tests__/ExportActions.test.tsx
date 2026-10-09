@@ -30,7 +30,13 @@ describe("ExportActions", () => {
     expect(screen.getByRole("toolbar", { name: "Export actions" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Fast Export" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Optimized Export" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Audio Export" })).toBeDisabled();
+    const audioExportButton = screen.getByRole("button", { name: "Audio Export" });
+    expect(audioExportButton).toBeDisabled();
+    const audioExportTooltipTrigger = audioExportButton.parentElement!;
+    expect(audioExportTooltipTrigger).toHaveAttribute("tabindex", "0");
+    audioExportTooltipTrigger.focus();
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Select an audio track to export");
+
     const gifExportButton = screen.getByRole("button", { name: "GIF Export" });
     expect(gifExportButton).toBeDisabled();
     expect(gifExportButton).toHaveAccessibleName("GIF Export");

@@ -171,16 +171,20 @@ function ExportActions() {
         </ExportActionButton>
       </ExportActionTooltip>
 
-      <ExportActionButton
+      <ExportActionTooltip
         disabled={!sourceReady || !hasSelectedAudio}
-        icon={<AudioLines aria-hidden="true" />}
-        onClick={() => void dispatch(startAudioExportRequested())}
-        title={
+        tooltip={
           hasSelectedAudio ? t("export.audioExport.tooltip") : t("export.audioExport.noTracks")
         }
       >
-        {t("export.audioExport.action")}
-      </ExportActionButton>
+        <ExportActionButton
+          disabled={!sourceReady || !hasSelectedAudio}
+          icon={<AudioLines aria-hidden="true" />}
+          onClick={() => void dispatch(startAudioExportRequested())}
+        >
+          {t("export.audioExport.action")}
+        </ExportActionButton>
+      </ExportActionTooltip>
       <ExportActionTooltip
         disabled={!sourceReady}
         shortcut={GIF_EXPORT_SHORTCUT}
