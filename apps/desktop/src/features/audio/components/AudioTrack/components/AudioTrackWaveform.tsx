@@ -268,7 +268,10 @@ function AudioTrackWaveformCanvas({
         style={{
           backgroundColor: "var(--muted)",
           backgroundImage:
-            "repeating-linear-gradient(90deg, color-mix(in srgb, var(--foreground) 6%, transparent) 0 0.0625rem, transparent 0.0625rem 6.25%)",
+            "linear-gradient(var(--muted), var(--muted)), repeating-linear-gradient(90deg, color-mix(in srgb, var(--foreground) 6%, transparent) 0 0.0625rem, transparent 0.0625rem 6.25%)",
+          backgroundPosition: "left top, 0 0",
+          backgroundRepeat: "no-repeat, repeat",
+          backgroundSize: "0.0625rem 100%, auto",
         }}
       />
       {selectionStartPercent > 0 && (
