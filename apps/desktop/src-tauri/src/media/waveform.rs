@@ -17,7 +17,9 @@ use crate::{
 
 pub const MIN_WAVEFORM_WIDTH: u32 = 64;
 pub const MAX_WAVEFORM_WIDTH: u32 = 4_096;
-const WAVEFORM_HEIGHT: u32 = 56;
+const WAVEFORM_FORMAT_VERSION: u16 = 1;
+const WAVEFORM_HEADER_SIZE: usize = 12;
+const WAVEFORM_FLAG_RLE: u16 = 1;
 const WAVEFORM_TIMEOUT: Duration = Duration::from_secs(60 * 60);
 const WAVEFORM_STDOUT_LIMIT: usize = 16 * 1024;
 const WAVEFORM_STDERR_LIMIT: usize = 512 * 1024;
@@ -40,8 +42,8 @@ pub fn generate_waveforms(
             create_artifact(*stream_index).map(|artifact| Some((*stream_index, artifact)))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    // Count samples and analyze activity before the streaming render pass so each pixel
-    // receives the same sample range as showwavespic's full-rate implementation.
+    // Count samples and analyze activity first so every envelope column retains the same
+    // sample boundaries as the former showwavespic pipeline.
     let activity_args =
         activity_arguments(&source.source.path, stream_indexes, processing_by_stream);
     let activity_output = run_bounded_cancellable(
@@ -82,8 +84,6 @@ pub fn generate_waveforms(
     let mut results: Vec<Option<WaveformGenerationResult>> = std::iter::repeat_with(|| None)
         .take(stream_indexes.len())
         .collect();
-    let mut envelopes = Vec::new();
-
     for (position, stream_index) in stream_indexes.iter().enumerate() {
         let Some(sample_count) = sample_counts.get(stream_index).copied().flatten() else {
             let (_, artifact) = artifacts[position]
@@ -111,12 +111,17 @@ pub fn generate_waveforms(
             continue;
         }
 
-        let envelope = create_envelope_artifact(*stream_index)?;
         let processing = processing_by_stream
             .get(stream_index)
             .expect("every waveform stream has processing settings");
         let arguments = pcm_stream_arguments(&source.source.path, *stream_index, processing);
-        let envelope_path = envelope.path().to_owned();
+        let output_path = artifacts[position]
+            .as_ref()
+            .expect("waveform artifact is present")
+            .1
+            .path()
+            .to_owned();
+        let diagnostics_path = output_path.clone();
         let sample_total = sample_count;
         let output_width = width;
         let ((), pcm_output) = run_stream_cancellable(
@@ -126,15 +131,18 @@ pub fn generate_waveforms(
             WAVEFORM_STDERR_LIMIT,
             || waveform_cancelled(source),
             move |reader| {
-                let mut output = fs::File::create(envelope_path)?;
+                let mut output = fs::File::create(output_path)?;
                 write_binned_pcm(reader, &mut output, sample_total, output_width)
             },
         )
         .map_err(process_error)?;
 
         if !pcm_output.status.success() {
-            let failure_diagnostics =
-                diagnostics(&pcm_output, &source.source.path, [envelope.path()]);
+            let failure_diagnostics = diagnostics(
+                &pcm_output,
+                &source.source.path,
+                [diagnostics_path.as_path()],
+            );
             let (_, artifact) = artifacts[position]
                 .take()
                 .expect("waveform artifact is present");
@@ -147,79 +155,14 @@ pub fn generate_waveforms(
             continue;
         }
 
-        envelopes.push((position, *stream_index, envelope));
-    }
-
-    if !envelopes.is_empty() {
-        let image_args = render_waveform_arguments(
-            width,
-            &envelopes
-                .iter()
-                .map(|(_, _, envelope)| envelope.path())
-                .collect::<Vec<_>>(),
-            &envelopes
-                .iter()
-                .map(|(position, _, _)| {
-                    artifacts[*position]
-                        .as_ref()
-                        .expect("waveform artifact is present")
-                        .1
-                        .path()
-                })
-                .collect::<Vec<_>>(),
-        );
-        let image_output = run_bounded_cancellable(
-            OsStr::new("ffmpeg"),
-            &image_args,
-            WAVEFORM_TIMEOUT,
-            WAVEFORM_STDOUT_LIMIT,
-            WAVEFORM_STDERR_LIMIT,
-            || waveform_cancelled(source),
-        )
-        .map_err(process_error)?;
-
-        if image_output.status.success() {
-            for (position, _, _) in envelopes {
-                let (stream_index, artifact) = artifacts[position]
-                    .take()
-                    .expect("waveform artifact is present");
-                if artifact.path().is_file() {
-                    results[position] = Some((
-                        stream_index,
-                        activities.get(&stream_index).copied().flatten(),
-                        Ok(artifact),
-                    ));
-                } else {
-                    results[position] = Some(waveform_error_result(
-                        stream_index,
-                        artifact,
-                        AppErrorMessageId::MediaWaveformImageMissing,
-                        None,
-                    ));
-                }
-            }
-        } else {
-            let failure_diagnostics = diagnostics(
-                &image_output,
-                &source.source.path,
-                artifacts
-                    .iter()
-                    .filter_map(Option::as_ref)
-                    .map(|(_, artifact)| artifact.path())
-                    .chain(envelopes.iter().map(|(_, _, envelope)| envelope.path())),
-            );
-            for (position, stream_index, _) in envelopes {
-                let (_, artifact) = artifacts[position]
-                    .take()
-                    .expect("waveform artifact is present");
-                results[position] = Some(waveform_error_result(
-                    stream_index,
-                    artifact,
-                    AppErrorMessageId::MediaWaveformImageRenderingFailed,
-                    failure_diagnostics.clone(),
-                ));
-            }
-        }
+        let (stream_index, artifact) = artifacts[position]
+            .take()
+            .expect("waveform artifact is present");
+        results[position] = Some((
+            stream_index,
+            activities.get(&stream_index).copied().flatten(),
+            Ok(artifact),
+        ));
     }
 
     Ok(results
@@ -332,59 +275,13 @@ fn pcm_stream_arguments(
     ]
 }
 
-fn render_waveform_arguments(
-    width: u32,
-    envelope_paths: &[&Path],
-    output_paths: &[&Path],
-) -> Vec<OsString> {
-    let mut arguments = vec![
-        OsString::from("-hide_banner"),
-        OsString::from("-nostdin"),
-        OsString::from("-nostats"),
-        OsString::from("-filter_complex_threads"),
-        OsString::from("1"),
-        OsString::from("-threads"),
-        OsString::from("1"),
-        OsString::from("-n"),
-    ];
-    for envelope_path in envelope_paths {
-        arguments.extend([
-            OsString::from("-f"),
-            OsString::from("s16le"),
-            OsString::from("-ar"),
-            OsString::from(width.to_string()),
-            OsString::from("-ac"),
-            OsString::from("1"),
-            OsString::from("-i"),
-            envelope_path.as_os_str().to_owned(),
-        ]);
-    }
-
-    let filters = (0..envelope_paths.len())
-        .map(|index| {
-            format!(
-                "[{index}:a:0]showwavespic=s={width}x{WAVEFORM_HEIGHT}:colors=0x8b5cf6:scale=sqrt[waveform{index}]"
-            )
-        })
-        .collect::<Vec<_>>()
-        .join(";");
-    arguments.extend([OsString::from("-filter_complex"), OsString::from(filters)]);
-    for (index, output_path) in output_paths.iter().enumerate() {
-        arguments.extend([
-            OsString::from("-map"),
-            OsString::from(format!("[waveform{index}]")),
-            OsString::from("-frames:v"),
-            OsString::from("1"),
-            OsString::from("-c:v"),
-            OsString::from("png"),
-            OsString::from("-update"),
-            OsString::from("1"),
-            OsString::from("-f"),
-            OsString::from("image2"),
-            output_path.as_os_str().to_owned(),
-        ]);
-    }
-    arguments
+fn write_envelope_header(writer: &mut dyn Write, width: u32, flags: u16) -> io::Result<()> {
+    let mut header = [0; WAVEFORM_HEADER_SIZE];
+    header[..4].copy_from_slice(b"ETWF");
+    header[4..6].copy_from_slice(&WAVEFORM_FORMAT_VERSION.to_le_bytes());
+    header[6..8].copy_from_slice(&flags.to_le_bytes());
+    header[8..].copy_from_slice(&width.to_le_bytes());
+    writer.write_all(&header)
 }
 
 fn write_binned_pcm(
@@ -404,9 +301,10 @@ fn write_binned_pcm(
     let samples_per_column = sample_count / width;
     let remainder = sample_count % width;
     let mut buffer = [0_u8; 16 * 1024];
+    let mut amplitudes = Vec::with_capacity(width as usize);
 
-    // showwavespic gives every column the integer quotient, then assigns the remainder
-    // to the last column. Match that boundary rule to reproduce its image exactly.
+    // Keep showwavespic's existing column boundaries: each column gets the integer
+    // quotient, then the remainder is assigned to the final column.
     for column in 0..width {
         let mut remaining = samples_per_column + u64::from(column == width - 1) * remainder;
         let total_samples = remaining;
@@ -422,8 +320,9 @@ fn write_binned_pcm(
             remaining -= samples as u64;
         }
 
-        let average = (magnitude_sum / total_samples) as i16;
-        writer.write_all(&average.to_le_bytes())?;
+        let average = magnitude_sum as f64 / total_samples as f64;
+        let amplitude = ((average / 32_768.0).sqrt() * f64::from(u8::MAX)).round() as u8;
+        amplitudes.push(amplitude);
     }
 
     let mut trailing = [0_u8; 1];
@@ -433,7 +332,56 @@ fn write_binned_pcm(
             "decoded audio sample count did not match the analyzed count",
         ));
     }
+    let encoded = encode_rle(&amplitudes);
+    let flags = if encoded.len() < amplitudes.len() {
+        WAVEFORM_FLAG_RLE
+    } else {
+        0
+    };
+    write_envelope_header(writer, width as u32, flags)?;
+    writer.write_all(if flags == WAVEFORM_FLAG_RLE {
+        &encoded
+    } else {
+        &amplitudes
+    })?;
     writer.flush()
+}
+
+fn encode_rle(samples: &[u8]) -> Vec<u8> {
+    let mut encoded = Vec::with_capacity(samples.len());
+    let mut position = 0;
+    while position < samples.len() {
+        let run_length = repeated_sample_count(samples, position);
+        if run_length >= 3 {
+            encoded.push(0x80 | (run_length - 1) as u8);
+            encoded.push(samples[position]);
+            position += run_length;
+            continue;
+        }
+
+        let literal_start = position;
+        position += run_length;
+        while position < samples.len() && position - literal_start < 128 {
+            let next_run_length = repeated_sample_count(samples, position);
+            if next_run_length >= 3 {
+                break;
+            }
+            position += next_run_length.min(128 - (position - literal_start));
+        }
+        let literal_length = position - literal_start;
+        encoded.push((literal_length - 1) as u8);
+        encoded.extend_from_slice(&samples[literal_start..position]);
+    }
+    encoded
+}
+
+fn repeated_sample_count(samples: &[u8], start: usize) -> usize {
+    let value = samples[start];
+    samples[start..]
+        .iter()
+        .take_while(|sample| **sample == value)
+        .take(128)
+        .count()
 }
 
 fn parse_audio_activity(
@@ -507,11 +455,7 @@ fn is_mean_volume_audible(mean_volume: f64) -> bool {
 }
 
 fn create_artifact(stream_index: u32) -> Result<WaveformArtifact, AppError> {
-    create_temporary_artifact(stream_index, "png")
-}
-
-fn create_envelope_artifact(stream_index: u32) -> Result<WaveformArtifact, AppError> {
-    create_temporary_artifact(stream_index, "s16le")
+    create_temporary_artifact(stream_index, "etwf")
 }
 
 fn create_temporary_artifact(
@@ -605,8 +549,8 @@ mod tests {
 
     use super::{
         AudioTrackProcessing, MAX_WAVEFORM_WIDTH, MIN_WAVEFORM_WIDTH, activity_arguments,
-        parse_audio_sample_counts, pcm_stream_arguments, render_waveform_arguments,
-        validate_waveform_request, write_binned_pcm,
+        encode_rle, parse_audio_sample_counts, pcm_stream_arguments, validate_waveform_request,
+        write_binned_pcm, write_envelope_header,
     };
 
     fn empty_processing() -> AudioTrackProcessing {
@@ -626,7 +570,7 @@ mod tests {
     }
 
     #[test]
-    fn builds_counting_streaming_and_render_commands() {
+    fn builds_counting_and_streaming_commands() {
         let source_path = Path::new("C:\\Videos\\source clip.mkv");
         let processing_by_stream = [(2, empty_processing()), (4, empty_processing())]
             .into_iter()
@@ -656,20 +600,6 @@ mod tests {
             argument == "[0:4]aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
         }));
         assert_eq!(pcm_args.last().unwrap(), "pipe:1");
-
-        let render_args = render_waveform_arguments(
-            1_280,
-            &[Path::new("C:\\Temp\\audio-2.s16le")],
-            &[Path::new("C:\\Temp\\audio-2.png")],
-        );
-        assert!(render_args.iter().any(|argument| {
-            argument == "[0:a:0]showwavespic=s=1280x56:colors=0x8b5cf6:scale=sqrt[waveform0]"
-        }));
-        assert!(
-            render_args
-                .windows(2)
-                .any(|pair| { pair == [OsString::from("-ar"), OsString::from("1280")] })
-        );
     }
 
     #[test]
@@ -741,18 +671,56 @@ mod tests {
         write_binned_pcm(&mut source, &mut output, samples.len() as u64, 4)
             .expect("samples are reduced into four buckets");
 
-        let buckets = output
-            .chunks_exact(2)
-            .map(|sample| i16::from_le_bytes([sample[0], sample[1]]))
-            .collect::<Vec<_>>();
-        assert_eq!(buckets, [1, 3, 5, 9]);
+        assert_eq!(&output[..4], b"ETWF");
+        assert_eq!(&output[12..], [2, 3, 3, 4]);
     }
 
     #[test]
-    #[ignore = "requires FFmpeg; generates and verifies a two-minute six-stream fixture"]
-    fn bucketed_images_match_full_rate_for_active_and_silent_streams() {
+    fn writes_versioned_width_header_before_unsigned_amplitudes() {
+        let mut output = Vec::new();
+        write_envelope_header(&mut output, 1_280, 0).expect("header is written");
+        assert_eq!(&output[..4], b"ETWF");
+        assert_eq!(u16::from_le_bytes([output[4], output[5]]), 1);
+        assert_eq!(u16::from_le_bytes(output[6..8].try_into().unwrap()), 0);
+        assert_eq!(u32::from_le_bytes(output[8..12].try_into().unwrap()), 1_280);
+        assert_eq!(output.len(), super::WAVEFORM_HEADER_SIZE);
+    }
+
+    #[test]
+    fn compresses_repeated_envelope_samples_without_expanding_literals() {
+        assert_eq!(encode_rle(&[0, 0, 0, 0, 0]), [0x84, 0]);
+        assert_eq!(encode_rle(&[1, 2, 3]), [2, 1, 2, 3]);
+    }
+
+    fn decode_rle(samples: &[u8], expected_len: usize) -> Vec<u8> {
+        let mut decoded = Vec::with_capacity(expected_len);
+        let mut position = 0;
+        while position < samples.len() {
+            let token = samples[position];
+            position += 1;
+            let length = usize::from(token & 0x7f) + 1;
+            if token & 0x80 != 0 {
+                let value = samples[position];
+                position += 1;
+                decoded.extend(std::iter::repeat_n(value, length));
+            } else {
+                decoded.extend_from_slice(&samples[position..position + length]);
+                position += length;
+            }
+        }
+        assert_eq!(decoded.len(), expected_len);
+        decoded
+    }
+
+    #[test]
+    #[ignore = "requires FFmpeg; compares a two-minute six-stream envelope with PNG references"]
+    fn envelopes_match_legacy_waveform_shape_for_active_and_silent_streams() {
         use crate::process::run_bounded;
-        use std::{ffi::OsStr, fs, time::Duration};
+        use std::{
+            ffi::OsStr,
+            fs,
+            time::{Duration, Instant},
+        };
 
         let source = super::create_artifact(99).unwrap();
         let mut fixture_args: Vec<OsString> = [
@@ -850,6 +818,7 @@ mod tests {
                 reference.path().as_os_str().to_owned(),
             ]);
         }
+        let legacy_render_started = Instant::now();
         let output = run_bounded(
             OsStr::new("ffmpeg"),
             &args,
@@ -863,6 +832,7 @@ mod tests {
             "{}",
             String::from_utf8_lossy(&output.stderr)
         );
+        let legacy_render_elapsed = legacy_render_started.elapsed();
         let cancellation = Arc::new(AtomicBool::new(false));
         let waveform_source = WaveformSource {
             source: ActiveSource {
@@ -879,21 +849,177 @@ mod tests {
             .iter()
             .map(|stream_index| (*stream_index, empty_processing()))
             .collect();
+        let generation_started = Instant::now();
         let generated =
             super::generate_waveforms(&waveform_source, &indexes, 1280, &processing_by_stream)
                 .unwrap();
+        let generation_elapsed = generation_started.elapsed();
+        let mut total_envelope_bytes = 0;
+        let mut total_reference_bytes = 0;
         for (position, ((stream_index, has_signal, result), reference)) in
             generated.iter().zip(&references).enumerate()
         {
             assert_eq!(*stream_index, position as u32);
             assert_eq!(*has_signal, Some(position % 2 == 0));
             let artifact = result.as_ref().expect("waveform generation succeeds");
-            let image = fs::read(artifact.path()).unwrap();
+            let envelope = fs::read(artifact.path()).unwrap();
             let reference_image = fs::read(reference.path()).unwrap();
-            assert_eq!(image, reference_image);
-            assert_eq!(&image[..8], b"\x89PNG\r\n\x1a\n");
-            assert_eq!(u32::from_be_bytes(image[16..20].try_into().unwrap()), 1280);
-            assert_eq!(u32::from_be_bytes(image[20..24].try_into().unwrap()), 56);
+            assert_eq!(&envelope[..4], b"ETWF");
+            assert_eq!(u16::from_le_bytes(envelope[4..6].try_into().unwrap()), 1);
+            let flags = u16::from_le_bytes(envelope[6..8].try_into().unwrap());
+            assert_eq!(
+                u32::from_le_bytes(envelope[8..12].try_into().unwrap()),
+                1280
+            );
+            assert!(envelope.len() <= 12 + 1280);
+            assert_eq!(&reference_image[..8], b"\x89PNG\r\n\x1a\n");
+            assert_eq!(
+                u32::from_be_bytes(reference_image[16..20].try_into().unwrap()),
+                1280
+            );
+            assert_eq!(
+                u32::from_be_bytes(reference_image[20..24].try_into().unwrap()),
+                56
+            );
+
+            let amplitudes = if flags == super::WAVEFORM_FLAG_RLE {
+                decode_rle(&envelope[12..], 1280)
+            } else {
+                envelope[12..].to_vec()
+            };
+            if position % 2 == 0 {
+                assert!(amplitudes.iter().all(|amplitude| *amplitude > 0));
+            } else {
+                assert!(amplitudes.iter().all(|amplitude| *amplitude == 0));
+            }
+
+            let decoded_reference = run_bounded(
+                OsStr::new("ffmpeg"),
+                &[
+                    OsString::from("-hide_banner"),
+                    OsString::from("-v"),
+                    OsString::from("error"),
+                    OsString::from("-i"),
+                    reference.path().as_os_str().to_owned(),
+                    OsString::from("-f"),
+                    OsString::from("rawvideo"),
+                    OsString::from("-pix_fmt"),
+                    OsString::from("rgb24"),
+                    OsString::from("pipe:1"),
+                ],
+                Duration::from_secs(60),
+                1280 * 56 * 3,
+                16384,
+            )
+            .unwrap();
+            assert!(decoded_reference.status.success());
+            assert_eq!(decoded_reference.stdout.len(), 1280 * 56 * 3);
+            for (column, amplitude) in amplitudes.iter().enumerate() {
+                let actual_half_height = decoded_reference
+                    .stdout
+                    .chunks_exact(1280 * 3)
+                    .enumerate()
+                    .filter_map(|(row, pixels)| {
+                        let pixel = &pixels[column * 3..column * 3 + 3];
+                        (pixel[2] > pixel[0] && pixel[2] > pixel[1]).then_some(row.abs_diff(28))
+                    })
+                    .max()
+                    .unwrap_or(0);
+                let expected_half_height =
+                    (f64::from(*amplitude) / f64::from(u8::MAX) * 28.0).round() as usize;
+                assert!(
+                    actual_half_height.abs_diff(expected_half_height) <= 2,
+                    "stream {stream_index}, column {column}: PNG half-height {actual_half_height}, envelope half-height {expected_half_height}"
+                );
+            }
+            total_envelope_bytes += envelope.len();
+            total_reference_bytes += reference_image.len();
         }
+
+        let short_source = super::create_artifact(98).unwrap();
+        let short_fixture = run_bounded(
+            OsStr::new("ffmpeg"),
+            &[
+                OsString::from("-hide_banner"),
+                OsString::from("-nostdin"),
+                OsString::from("-f"),
+                OsString::from("lavfi"),
+                OsString::from("-i"),
+                OsString::from("sine=frequency=1000:sample_rate=48000:duration=3"),
+                OsString::from("-c:a"),
+                OsString::from("flac"),
+                OsString::from("-f"),
+                OsString::from("matroska"),
+                short_source.path().as_os_str().to_owned(),
+            ],
+            Duration::from_secs(60),
+            0,
+            16384,
+        )
+        .unwrap();
+        assert!(short_fixture.status.success());
+        let short_reference = super::create_artifact(98).unwrap();
+        let short_legacy_started = Instant::now();
+        let short_legacy = run_bounded(
+            OsStr::new("ffmpeg"),
+            &[
+                OsString::from("-hide_banner"),
+                OsString::from("-nostdin"),
+                OsString::from("-filter_complex_threads"),
+                OsString::from("1"),
+                OsString::from("-i"),
+                short_source.path().as_os_str().to_owned(),
+                OsString::from("-filter_complex"),
+                OsString::from("[0:0]aformat=channel_layouts=mono,showwavespic=s=1280x56:colors=0x8b5cf6:scale=sqrt[waveform]"),
+                OsString::from("-map"),
+                OsString::from("[waveform]"),
+                OsString::from("-frames:v"),
+                OsString::from("1"),
+                OsString::from("-c:v"),
+                OsString::from("png"),
+                OsString::from("-f"),
+                OsString::from("image2"),
+                short_reference.path().as_os_str().to_owned(),
+            ],
+            Duration::from_secs(60),
+            0,
+            16384,
+        )
+        .unwrap();
+        assert!(short_legacy.status.success());
+        let short_legacy_elapsed = short_legacy_started.elapsed();
+        let short_cancellation = Arc::new(AtomicBool::new(false));
+        let short_waveform_source = WaveformSource {
+            source: ActiveSource {
+                load_token: 2,
+                path: short_source.path().to_owned(),
+                cancellation: short_cancellation.clone(),
+                media: None,
+                preview_streams: None,
+                audio_stream_indexes: vec![0],
+            },
+            cancellation: short_cancellation,
+        };
+        let short_processing = [(0, empty_processing())].into_iter().collect();
+        let short_generation_started = Instant::now();
+        let short_generated =
+            super::generate_waveforms(&short_waveform_source, &[0], 1280, &short_processing)
+                .unwrap();
+        let short_generation_elapsed = short_generation_started.elapsed();
+        let short_artifact = short_generated[0]
+            .2
+            .as_ref()
+            .expect("short waveform generation succeeds");
+        eprintln!(
+            "waveform benchmark fixture: one stream, 3 seconds; legacy PNG render {:?} ({} bytes); envelope generation {:?} ({} bytes)",
+            short_legacy_elapsed,
+            fs::metadata(short_reference.path()).unwrap().len(),
+            short_generation_elapsed,
+            fs::metadata(short_artifact.path()).unwrap().len()
+        );
+        eprintln!(
+            "waveform benchmark fixture: six streams, 120 seconds; legacy PNG render {:?}; envelope generation {:?}; compact artifacts {} bytes; PNG reference artifacts {} bytes",
+            legacy_render_elapsed, generation_elapsed, total_envelope_bytes, total_reference_bytes
+        );
     }
 }

@@ -19,8 +19,10 @@ import {
   waveformReady,
   waveformsLoading,
 } from "@/app/store/slices/audio-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
+import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
+import { ThemeProvider } from "@/app/theme/ThemeProvider";
+import { useTheme } from "@/app/theme/useTheme";
 import { audioTrackLoudnessInputsKey, type AudioTrackProcessing } from "@/domain/audio-processing";
 import { audioTrackColor } from "@/features/audio";
 // eslint-disable-next-line no-restricted-imports -- Test owns a focused audio runtime fixture.
@@ -41,7 +43,12 @@ const audioPlayback = {
   setLiveAudioTrackGain: () => undefined,
 } satisfies AudioPlaybackContract;
 
-function renderRow(enabled = true, streamIndex = 2, sourceLanguage: string | undefined = "eng") {
+function renderRow(
+  enabled = true,
+  streamIndex = 2,
+  sourceLanguage: string | undefined = "eng",
+  showColorPreview = false,
+) {
   const store = createAppStore({
     getItem: async () => null,
     setItem: async () => undefined,
@@ -55,20 +62,37 @@ function renderRow(enabled = true, streamIndex = 2, sourceLanguage: string | und
   const stream = media.audioStreams[0]!;
   if (!enabled) store.dispatch(audioTrackToggled({ streamIndex: stream.streamIndex }));
 
-  renderTrack(store, streamIndex);
+  renderTrack(store, streamIndex, showColorPreview);
 
   return { store };
 }
 
-function renderTrack(store: ReturnType<typeof createAppStore>, streamIndex: number) {
+function renderTrack(
+  store: ReturnType<typeof createAppStore>,
+  streamIndex: number,
+  showColorPreview = false,
+) {
   render(
     <Provider store={store}>
-      <AudioPlaybackContext.Provider value={audioPlayback}>
-        <TooltipProvider>
-          <AudioTrackRow streamIndex={streamIndex} />
-        </TooltipProvider>
-      </AudioPlaybackContext.Provider>
+      <ThemeProvider>
+        <AudioPlaybackContext.Provider value={audioPlayback}>
+          <TooltipProvider>
+            {showColorPreview && <PrimaryColorPreviewButton />}
+            <AudioTrackRow streamIndex={streamIndex} />
+          </TooltipProvider>
+        </AudioPlaybackContext.Provider>
+      </ThemeProvider>
     </Provider>,
+  );
+}
+
+function PrimaryColorPreviewButton() {
+  const { previewPrimaryColor } = useTheme();
+
+  return (
+    <button onClick={() => previewPrimaryColor("#123456")} type="button">
+      Preview primary color
+    </button>
   );
 }
 
@@ -286,7 +310,53 @@ describe("AudioTrackRow", () => {
     );
   });
 
-  it("scales the existing waveform during live gain adjustment", async () => {
+  it("smoothly retargets waveform amplitudes during rapid gain adjustments", async () => {
+    const moveTo = vi.fn();
+    const lineTo = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      beginPath: vi.fn(),
+      clearRect: vi.fn(),
+      lineTo,
+      moveTo,
+      set lineWidth(_value: number) {},
+      set strokeStyle(_value: string) {},
+      stroke: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 128,
+      height: 50,
+    } as DOMRect);
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => {
+          const buffer = new ArrayBuffer(12 + 10 * 2);
+          const view = new DataView(buffer);
+          view.setUint8(0, 0x45);
+          view.setUint8(1, 0x54);
+          view.setUint8(2, 0x57);
+          view.setUint8(3, 0x46);
+          view.setUint16(4, 1, true);
+          view.setUint16(6, 1, true);
+          view.setUint32(8, 1_280, true);
+          for (let run = 0; run < 10; run += 1) {
+            view.setUint8(12 + run * 2, 0xff);
+            view.setUint8(13 + run * 2, 128);
+          }
+          return buffer;
+        },
+      }),
+    );
+
     const { store } = renderRow();
     act(() => {
       store.dispatch(waveformsLoading({ jobId: "waveform-1", streamIndexes: [2], width: 1280 }));
@@ -301,23 +371,134 @@ describe("AudioTrackRow", () => {
       );
     });
 
-    const image = document.querySelector<HTMLImageElement>(".waveform-image");
-    expect(image).toHaveAttribute("src", "media://waveform");
-    expect(image).toHaveStyle({ transform: "scaleY(1)" });
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas");
+    expect(canvas).toHaveAttribute("aria-hidden", "true");
+    await waitFor(() => expect(lineTo).toHaveBeenCalled());
+    const getMaxHeight = () =>
+      Math.max(
+        ...lineTo.mock.calls.map((call, index) => {
+          const top = moveTo.mock.calls[index]?.[1] as number;
+          return (call[1] as number) - top;
+        }),
+      );
+
+    const initialHeight = getMaxHeight();
 
     await userEvent.setup().hover(screen.getByRole("button", { name: /mute.*eng/i }));
     const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
     gainSlider.focus();
     fireEvent.keyDown(gainSlider, { key: "ArrowRight" });
-
-    expect(image).toHaveAttribute("src", "media://waveform");
-    expect(image?.style.transform).toBe("scaleY(1.0592537251772889)");
+    expect(getMaxHeight()).toBe(initialHeight);
     expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0.5);
+
+    await waitFor(() => {
+      expect(getMaxHeight()).toBeGreaterThan(initialHeight);
+    });
 
     fireEvent.keyUp(gainSlider, { key: "ArrowRight" });
     fireEvent.keyDown(gainSlider, { key: "End" });
-    expect(image?.style.transform).toBe("scaleY(3.9810717055349722)");
-    expect(image).toHaveAttribute("src", "media://waveform");
+    expect(getMaxHeight()).toBeGreaterThan(initialHeight);
+    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(12);
+    await waitFor(() => expect(getMaxHeight()).toBeGreaterThan(24));
+
+    const drawnLineCount = lineTo.mock.calls.length;
+    act(() => store.dispatch(audioTrackToggled({ streamIndex: 2 })));
+    expect(canvas?.parentElement).toHaveAttribute("data-enabled", "false");
+    expect(canvas?.parentElement?.className).toContain("data-[enabled=false]:opacity-");
+    expect(lineTo).toHaveBeenCalledTimes(drawnLineCount);
+
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("uses the live PrimaryColor preview for the waveform", async () => {
+    const strokeStyle = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      beginPath: vi.fn(),
+      clearRect: vi.fn(),
+      lineTo: vi.fn(),
+      moveTo: vi.fn(),
+      set globalAlpha(_value: number) {},
+      set lineWidth(_value: number) {},
+      set strokeStyle(value: string) {
+        strokeStyle(value);
+      },
+      stroke: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 32,
+      height: 24,
+    } as DOMRect);
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => {
+          const buffer = new ArrayBuffer(14);
+          const view = new DataView(buffer);
+          view.setUint8(0, 0x45);
+          view.setUint8(1, 0x54);
+          view.setUint8(2, 0x57);
+          view.setUint8(3, 0x46);
+          view.setUint16(4, 1, true);
+          view.setUint16(6, 0, true);
+          view.setUint32(8, 2, true);
+          view.setUint8(12, 128);
+          view.setUint8(13, 128);
+          return buffer;
+        },
+      }),
+    );
+
+    const { store } = renderRow(true, 2, "eng", true);
+    const currentTrim = selectTrim(store.getState())!;
+    const selectedTrim = {
+      ...currentTrim,
+      endMicros: currentTrim.sourceDurationMicros * 0.75,
+      startMicros: currentTrim.sourceDurationMicros * 0.25,
+    };
+
+    act(() => {
+      store.dispatch(trimChanged({ trim: selectedTrim }));
+      store.dispatch(waveformsLoading({ jobId: "waveform-color", streamIndexes: [2], width: 2 }));
+      store.dispatch(
+        waveformReady({
+          jobId: "waveform-color",
+          status: "ready",
+          streamIndex: 2,
+          url: "media://waveform-color",
+          width: 2,
+        }),
+      );
+    });
+    await waitFor(() => expect(strokeStyle).toHaveBeenCalledWith("rgb(239 191 4)"));
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas");
+    expect(canvas?.style.backgroundColor).toBe("var(--muted)");
+    expect(canvas?.style.backgroundImage).toContain("var(--foreground)");
+
+    const outsideStart = document.querySelector<HTMLElement>(
+      '[data-slot="audio-waveform-outside-selection"][data-edge="start"]',
+    );
+
+    const outsideEnd = document.querySelector<HTMLElement>(
+      '[data-slot="audio-waveform-outside-selection"][data-edge="end"]',
+    );
+
+    expect(outsideStart).toHaveStyle({ left: "0%", width: "25%" });
+    expect(outsideEnd).toHaveStyle({ left: "75%", right: "0%" });
+
+    fireEvent.click(screen.getByRole("button", { name: /preview primary color/i }));
+
+    await waitFor(() => expect(strokeStyle).toHaveBeenCalledWith("rgb(18 52 86)"));
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("marks the Gain range, resets to unity, and preserves mute state at −24 dB", async () => {

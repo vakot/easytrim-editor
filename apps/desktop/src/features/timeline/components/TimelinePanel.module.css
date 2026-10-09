@@ -14,6 +14,7 @@
   border: 0.0625rem solid var(--border);
   border-radius: 0.5rem;
   background:
+    linear-gradient(var(--muted), var(--muted)) left / 0.0625rem 100% no-repeat,
     repeating-linear-gradient(
       90deg,
       color-mix(in srgb, var(--foreground) 6%, transparent) 0 0.0625rem,
@@ -24,20 +25,24 @@
 }
 
 .trackDisabled {
+  --track-disabled-background: color-mix(in oklch, var(--muted) 86%, var(--background));
+
   filter: grayscale(1);
   background:
+    linear-gradient(var(--track-disabled-background), var(--track-disabled-background)) left /
+      0.0625rem 100% no-repeat,
     repeating-linear-gradient(
       90deg,
       color-mix(in srgb, var(--muted-foreground) 10%, var(--muted)) 0 0.0625rem,
       var(--muted) 0.0625rem 6.25%
     ),
-    color-mix(in oklch, var(--muted) 86%, var(--background));
+    var(--track-disabled-background);
   border-color: color-mix(in oklch, var(--border) 72%, var(--muted-foreground));
 }
 
 .selection {
   position: absolute;
-  inset-block: 0;
+  inset-block: -0.0625rem;
   border-block: 0.125rem solid var(--primary);
   background: color-mix(in oklch, var(--primary) 12%, transparent);
   pointer-events: none;

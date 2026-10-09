@@ -38,7 +38,7 @@ function TimelineToolbar() {
         <SceneDetectionTool />
       </div>
 
-      <Card className="w-full gap-0 rounded-md p-0 ring-inset">
+      <Card className="flex-1 gap-0 rounded-md border border-border bg-muted p-0 ring-0">
         <CardContent className="flex h-full flex-col p-1">
           <StereoAudioMeter />
         </CardContent>

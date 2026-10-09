@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Improved audio waveforms to stay sharp as tracks resize, use the current accent color and transition smoothly.
+
 ## [1.13.2]
 
 ### Added
