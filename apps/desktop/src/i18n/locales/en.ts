@@ -600,6 +600,7 @@ export const en = {
     commandPreview: {
       copy: "Copy command",
       copied: "Copied to clipboard",
+      label: "Command preview",
       preparing: "Preparing command preview…",
     },
     optimized: {
@@ -631,6 +632,7 @@ export const en = {
       dialog: {
         title: "Export selected segment as GIF",
         description: "Choose the GIF resolution and frame rate before saving",
+        optionsLabel: "GIF export options",
       },
     },
     actions: {

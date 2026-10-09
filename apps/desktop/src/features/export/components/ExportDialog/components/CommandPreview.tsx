@@ -32,7 +32,7 @@ function CommandPreview({ command, error }: CommandPreviewProps) {
 
   return (
     <section className="grid gap-1.5">
-      <Label htmlFor="ffmpeg-arguments">{t("export.optimized.dialog.arguments")}</Label>
+      <Label htmlFor="ffmpeg-arguments">{t("export.commandPreview.label")}</Label>
 
       <InputGroup className="grid">
         <InputGroupTextarea

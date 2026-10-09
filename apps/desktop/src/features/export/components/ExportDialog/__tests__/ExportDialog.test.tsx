@@ -2,13 +2,18 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
-const { planGifExport, planOptimizedExport } = vi.hoisted(() => ({
-  planGifExport: vi.fn(),
-  planOptimizedExport: vi.fn(),
-}));
+const { chooseGifOutputPath, chooseOutputPath, planGifExport, planOptimizedExport } = vi.hoisted(
+  () => ({
+    chooseGifOutputPath: vi.fn(),
+    chooseOutputPath: vi.fn(),
+    planGifExport: vi.fn(),
+    planOptimizedExport: vi.fn(),
+  }),
+);
 
 vi.mock("@/lib/tauri/media", () => ({
-  chooseOutputPath: vi.fn(),
+  chooseGifOutputPath,
+  chooseOutputPath,
   normalizeAppError: (error: unknown) => ({ code: "internal", message: String(error) }),
   planGifExport,
   planOptimizedExport,
@@ -24,6 +29,7 @@ import {
   activeEditingInstanceChanged,
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
+import { exportLaunchFailed } from "@/app/store/slices/export-slice";
 import { createAppStore } from "@/app/store/store";
 import { openGifExportDialog, openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
 import { firstSource, media } from "@/test/source.fixtures";
@@ -64,6 +70,9 @@ describe("ExportDialog", () => {
 
     await store.dispatch(openOptimizedExportDialog());
 
+    expect(screen.getByTestId("video-export-options")).toBeInTheDocument();
+    expect(screen.queryByTestId("gif-export-options")).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Frame rate" })).toBeInTheDocument();
     expect(planOptimizedExport).toHaveBeenCalledTimes(1);
   });
 
@@ -172,12 +181,15 @@ describe("ExportDialog", () => {
 
     await store.dispatch(openGifExportDialog());
 
+    expect(screen.getByTestId("gif-export-options")).toBeInTheDocument();
+    expect(screen.queryByTestId("video-export-options")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Export selected segment as GIF" })).toBeVisible();
     expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(2_560);
     expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(1_440);
-    expect(screen.getByRole("textbox", { name: "FFmpeg arguments" })).toHaveValue(
+    expect(screen.getByRole("textbox", { name: "Command preview" })).toHaveValue(
       "ffmpeg gif preview",
     );
+    expect(screen.getByRole("combobox", { name: "Frame rate" })).toBeInTheDocument();
     expect(planOptimizedExport).not.toHaveBeenCalled();
     expect(planGifExport).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -254,6 +266,26 @@ describe("ExportDialog", () => {
     );
     expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(640);
     expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(360);
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Width" }), {
+      target: { value: "800" },
+    });
+    await waitFor(() =>
+      expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings).toEqual({
+        frameRate: gifSettings.frameRate,
+        resolution: { height: 450, width: 800 },
+      }),
+    );
+    fireEvent.click(screen.getByRole("combobox", { name: "Frame rate" }));
+    fireEvent.click(screen.getByRole("option", { name: "30 FPS" }));
+    await waitFor(() =>
+      expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings).toEqual({
+        frameRate: { denominator: 1, numerator: 30 },
+        resolution: { height: 450, width: 800 },
+      }),
+    );
+    expect(store.getState().editingInstances.entities["instance-1"]?.optimizedSettings).toEqual(
+      optimizedSettings,
+    );
 
     await store.dispatch(openOptimizedExportDialog());
     await waitFor(() =>
@@ -266,5 +298,106 @@ describe("ExportDialog", () => {
     );
     expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(1280);
     expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(720);
+    expect(screen.getByRole("combobox", { name: "Frame rate" })).toHaveTextContent("24 FPS");
+  });
+
+  it("starts the export action for the active route", async () => {
+    planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg optimized preview" });
+    planGifExport.mockResolvedValue({ commandPreview: "ffmpeg gif preview" });
+    const store = createAppStore({
+      getItem: async () => null,
+      setItem: async () => undefined,
+      removeItem: async () => undefined,
+    });
+
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          exportAttempts: [],
+          id: "instance-1",
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
+          sourceAvailability: "available",
+        },
+      ]),
+    );
+    store.dispatch(activeEditingInstanceChanged("instance-1"));
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ExportDialog />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    await store.dispatch(openGifExportDialog());
+    fireEvent.click(screen.getByRole("button", { name: "GIF Export" }));
+    await waitFor(() => expect(chooseGifOutputPath).toHaveBeenCalledTimes(1));
+    expect(chooseOutputPath).not.toHaveBeenCalled();
+
+    chooseGifOutputPath.mockClear();
+    chooseOutputPath.mockClear();
+    await store.dispatch(openOptimizedExportDialog());
+    fireEvent.click(screen.getByRole("button", { name: "Export" }));
+    await waitFor(() => expect(chooseOutputPath).toHaveBeenCalledTimes(1));
+    expect(chooseGifOutputPath).not.toHaveBeenCalled();
+  });
+
+  it("preserves dialog cancel and launch-error handling", async () => {
+    planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg preview" });
+    planGifExport.mockResolvedValue({ commandPreview: "ffmpeg gif preview" });
+    const store = createAppStore({
+      getItem: async () => null,
+      setItem: async () => undefined,
+      removeItem: async () => undefined,
+    });
+
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          exportAttempts: [],
+          id: "instance-1",
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
+          sourceAvailability: "available",
+        },
+      ]),
+    );
+    store.dispatch(activeEditingInstanceChanged("instance-1"));
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ExportDialog />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    await store.dispatch(openOptimizedExportDialog());
+    store.dispatch(
+      exportLaunchFailed({
+        code: "internal",
+        messageId: "export.fileLocationCouldNotBeOpened",
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getByText("Could not open the file location")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: "Export" })).not.toBeInTheDocument(),
+    );
+    expect(store.getState().export.optimizedDialogOpen).toBe(false);
+
+    await store.dispatch(openGifExportDialog());
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(store.getState().export.optimizedDialogOpen).toBe(false));
+    expect(store.getState().export.dialogRoute).toBe("gif");
   });
 });

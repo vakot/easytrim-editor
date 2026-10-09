@@ -37,7 +37,8 @@ import { localizeAppError } from "@/i18n/app-errors";
 import { CommandPreview } from "./components/CommandPreview";
 import { ExportFrameRate } from "./components/ExportFrameRate";
 import { ExportResolution } from "./components/ExportResolution";
-import { PresetManager } from "./components/PresetManager";
+import { GifExportOptions } from "./components/GifExportOptions";
+import { VideoExportOptions } from "./components/VideoExportOptions";
 
 function ExportDialog() {
   const { t } = useTranslation();
@@ -72,6 +73,23 @@ function ExportDialog() {
 
   if (!source || !settings) return null;
 
+  const isGifRoute = dialogRoute === "gif";
+  const routeComposition = isGifRoute
+    ? {
+        description: t("export.gif.dialog.description"),
+        options: <GifExportOptions />,
+        primaryAction: startGifExportRequested,
+        primaryLabel: t("export.gif.action"),
+        title: t("export.gif.dialog.title"),
+      }
+    : {
+        description: t("export.optimized.dialog.description"),
+        options: <VideoExportOptions />,
+        primaryAction: startOptimizedExportRequested,
+        primaryLabel: t("export.actions.start"),
+        title: t("export.actions.start"),
+      };
+
   const onOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
       void dispatch(openOptimizedExportDialog());
@@ -86,20 +104,12 @@ function ExportDialog() {
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>
-              {queueEdit
-                ? t("export.optimized.dialog.editTitle")
-                : dialogRoute === "gif"
-                  ? t("export.gif.dialog.title")
-                  : t("export.actions.start")}
+              {queueEdit ? t("export.optimized.dialog.editTitle") : routeComposition.title}
             </DialogTitle>
-            <DialogDescription>
-              {dialogRoute === "gif"
-                ? t("export.gif.dialog.description")
-                : t("export.optimized.dialog.description")}
-            </DialogDescription>
+            <DialogDescription>{routeComposition.description}</DialogDescription>
           </DialogHeader>
 
-          {dialogRoute === "optimized" ? <PresetManager /> : null}
+          {routeComposition.options}
           <ExportResolution cropResolution={cropResolution} settings={settings} />
           <ExportFrameRate settings={settings} />
           <CommandPreview
@@ -120,17 +130,11 @@ function ExportDialog() {
                   void dispatch(
                     queueEdit
                       ? startOptimizedExportRequested()
-                      : dialogRoute === "gif"
-                        ? startGifExportRequested()
-                        : startOptimizedExportRequested(),
+                      : routeComposition.primaryAction(),
                   )
                 }
               >
-                {queueEdit
-                  ? t("export.actions.saveChanges")
-                  : dialogRoute === "gif"
-                    ? t("export.gif.action")
-                    : t("export.actions.start")}
+                {queueEdit ? t("export.actions.saveChanges") : routeComposition.primaryLabel}
               </Button>
             </div>
           </DialogFooter>

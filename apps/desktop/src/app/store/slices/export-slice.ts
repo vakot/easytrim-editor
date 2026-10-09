@@ -57,7 +57,6 @@ const exportSlice = createSlice({
     },
     optimizedExportDialogClosed: (state) => {
       state.optimizedDialogOpen = false;
-      state.dialogRoute = "optimized";
     },
     exportPlanRequested: (state, action: PayloadAction<{ requestId: number }>) => {
       state.exportPlanRequestId = action.payload.requestId;
