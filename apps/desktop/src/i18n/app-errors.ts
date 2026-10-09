@@ -92,8 +92,8 @@ function localizeAppError(error: AppError, t: TFunction): string {
       return t("export.errors.audioTrackIsRequired");
     case "export.audioOutputFormatIsInvalid":
       return t("export.errors.audioOutputFormatIsInvalid");
-    case "export.wavRequiresMergedAudioTracks":
-      return t("export.errors.wavRequiresMergedAudioTracks");
+    case "export.audioRequiresMergedTracks":
+      return t("export.errors.audioRequiresMergedTracks");
     case "media.audio.analyzeTrackLoudnessToPrepareAudioPlayback":
       return t("audio.errors.audio.analyzeTrackLoudnessToPrepareAudioPlayback");
     case "source.selectedSourceCouldNotBeRestored":

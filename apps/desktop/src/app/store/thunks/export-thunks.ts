@@ -496,7 +496,13 @@ async function startEditingInstanceExport(
 
     if (!output) return;
     if (route === "audio") {
-      const format = output.displayName.toLowerCase().endsWith(".wav") ? "wav" : "m4a";
+      const outputName = output.displayName.toLowerCase();
+      const format = outputName.endsWith(".wav")
+        ? "wav"
+        : outputName.endsWith(".mp3")
+          ? "mp3"
+          : "m4a";
+
       request = { ...(request as AudioExportRequest), format };
     }
     if (

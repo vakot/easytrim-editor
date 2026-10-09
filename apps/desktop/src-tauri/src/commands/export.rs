@@ -235,6 +235,7 @@ pub async fn choose_audio_output_path(
         .file()
         .set_file_name(default_name)
         .add_filter("M4A audio", &["m4a"])
+        .add_filter("MP3 audio", &["mp3"])
         .add_filter("WAV audio", &["wav"])
         .save_file(move |selected| {
             let _ = sender.send(selected);
@@ -253,7 +254,7 @@ pub async fn choose_audio_output_path(
         .extension()
         .and_then(OsStr::to_str)
         .map(str::to_ascii_lowercase);
-    if !matches!(extension.as_deref(), Some("m4a" | "wav")) {
+    if !matches!(extension.as_deref(), Some("m4a" | "mp3" | "wav")) {
         return Err(AppError::invalid_request(
             AppErrorMessageId::ExportAudioOutputFormatIsInvalid,
         ));
@@ -421,6 +422,7 @@ pub async fn render_audio(
             .map(str::to_ascii_lowercase);
         let expected_extension = match request.format {
             crate::media::export::AudioExportFormat::M4a => "m4a",
+            crate::media::export::AudioExportFormat::Mp3 => "mp3",
             crate::media::export::AudioExportFormat::Wav => "wav",
         };
         if extension.as_deref() != Some(expected_extension) {

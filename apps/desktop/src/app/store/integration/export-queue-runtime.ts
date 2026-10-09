@@ -339,8 +339,11 @@ async function retryFailedExport(
       attempt.route === "audio"
         ? output.displayName.toLowerCase().endsWith(".wav")
           ? "wav"
-          : "m4a"
+          : output.displayName.toLowerCase().endsWith(".mp3")
+            ? "mp3"
+            : "m4a"
         : undefined;
+
     dispatch(
       editingInstanceExportRetried({
         id: instanceId,

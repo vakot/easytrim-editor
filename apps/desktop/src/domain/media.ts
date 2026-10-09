@@ -48,7 +48,7 @@ interface FastExportRequest {
   trim: TrimSelection;
 }
 
-type AudioExportFormat = "m4a" | "wav";
+type AudioExportFormat = "m4a" | "mp3" | "wav";
 
 interface AudioExportRequest {
   audioMetadata?: AudioTrackMetadataSelection[];

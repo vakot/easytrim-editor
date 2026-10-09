@@ -68,6 +68,7 @@ pub struct FastExportRequest {
 #[serde(rename_all = "camelCase")]
 pub enum AudioExportFormat {
     M4a,
+    Mp3,
     Wav,
 }
 
@@ -574,12 +575,14 @@ pub fn build_audio_arguments(
             AppErrorMessageId::ExportAudioTrackIsRequired,
         ));
     }
-    if request.format == AudioExportFormat::Wav
-        && request.audio_tracks.len() > 1
+    if matches!(
+        request.format,
+        AudioExportFormat::Mp3 | AudioExportFormat::Wav
+    ) && request.audio_tracks.len() > 1
         && !request.merge_audio
     {
         return Err(AppError::invalid_request(
-            AppErrorMessageId::ExportWavRequiresMergedAudioTracks,
+            AppErrorMessageId::ExportAudioRequiresMergedTracks,
         ));
     }
 
@@ -626,6 +629,14 @@ pub fn build_audio_arguments(
             OsString::from("192k"),
             OsString::from("-f"),
             OsString::from("ipod"),
+        ]),
+        AudioExportFormat::Mp3 => arguments.extend([
+            OsString::from("-c:a"),
+            OsString::from("libmp3lame"),
+            OsString::from("-b:a"),
+            OsString::from("192k"),
+            OsString::from("-f"),
+            OsString::from("mp3"),
         ]),
         AudioExportFormat::Wav => {
             arguments.extend([OsString::from("-c:a"), OsString::from("pcm_s16le")]);
@@ -1927,7 +1938,7 @@ mod tests {
 
         assert_eq!(
             error.message_id,
-            AppErrorMessageId::ExportWavRequiresMergedAudioTracks
+            AppErrorMessageId::ExportAudioRequiresMergedTracks
         );
     }
 

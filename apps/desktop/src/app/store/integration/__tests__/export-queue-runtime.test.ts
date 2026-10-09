@@ -114,11 +114,12 @@ function createGifAttempt(id: string, sourcePath: string = firstSource.sourcePat
   });
 }
 
-function createAudioAttempt(id: string, format: "m4a" | "wav") {
+function createAudioAttempt(id: string, format: "m4a" | "mp3" | "wav") {
   const snapshot = createDefaultEditorSnapshot(
     { displayName: `${id}.${format}`, sourcePath: firstSource.sourcePath },
     false,
   );
+
   return createExportAttempt({
     capturedAt: 1,
     id,
@@ -928,8 +929,10 @@ describe("export queue runtime", () => {
     await expect(retryFailedExport(instanceId, attempt.id, store.dispatch, getState)).resolves.toBe(
       true,
     );
+
     const retriedAttempt =
       store.getState().editingInstances.entities[instanceId]?.exportAttempts[0];
+
     expect(mocks.resolveOutputSelection).toHaveBeenCalledWith(attempt.output.outputId);
     expect(mocks.chooseAudioOutputPath).toHaveBeenCalledWith(attempt.output.displayName);
     expect(retriedAttempt?.output.displayName).toBe(output.displayName);
