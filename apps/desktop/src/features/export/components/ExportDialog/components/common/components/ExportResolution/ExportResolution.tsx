@@ -7,17 +7,18 @@ import { useAppDispatch } from "@/app/store/redux-hooks";
 import { exportSettingsChangedRequested } from "@/app/store/thunks/export-thunks";
 import type { ExportSettings } from "@/domain/editing-instance";
 
-import { resolutionOptions } from "../../../../lib/export-options.utils";
+import { resolutionOptions } from "../../../../../../lib/export-options.utils";
 
 import { ResolutionDimensions } from "./components/ResolutionDimensions";
 import { ResolutionPresetSelect } from "./components/ResolutionPresetSelect";
 
-interface ExportResolutionProps {
+function ExportResolution({
+  cropResolution,
+  settings,
+}: {
   cropResolution: ExportSettings["resolution"];
   settings: ExportSettings;
-}
-
-function ExportResolution({ cropResolution, settings }: ExportResolutionProps) {
+}) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [isAspectRatioLocked, setIsAspectRatioLocked] = useState(true);

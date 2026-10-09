@@ -615,6 +615,7 @@ export const en = {
     commandPreview: {
       copy: "Copy command",
       copied: "Copied to clipboard",
+      label: "Command preview",
       preparing: "Preparing command preview…",
     },
     optimized: {
@@ -646,6 +647,7 @@ export const en = {
       dialog: {
         title: "Export selected segment as GIF",
         description: "Choose the GIF resolution and frame rate before saving",
+        optionsLabel: "GIF export options",
       },
     },
     actions: {
@@ -758,16 +760,13 @@ export const en = {
       error: "Export error: {{message}}",
       fileSizeChange: "File size change: {{value}}",
       fps: "{{value}} FPS",
-      remaining: "{{value}} remaining",
       durationTooltip: "Export duration",
       fileSizeTooltip: "Output file size",
       fileSizeChangeTooltip: "Output file size change from source",
       fpsTooltip: "Frames rendered per second",
-      remainingTooltip: "Estimated time remaining",
     },
     progress: {
       accessibleLabel: "Export progress",
-      preparingGifPalette: "Preparing GIF palette",
     },
   },
   preview: {

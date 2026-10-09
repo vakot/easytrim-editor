@@ -990,21 +990,21 @@ mod tests {
     use super::{ExportPhase, ffmpeg_arguments_data, next_export_phase, run_progress_cancellable};
 
     #[test]
-    fn gif_progress_stays_indeterminate_until_ffmpeg_emits_output_time() {
+    fn export_phase_tracks_output_time_and_finishes_with_ffmpeg() {
         assert_eq!(
             next_export_phase(ExportPhase::Preparing, "progress", "continue", 0),
             ExportPhase::Preparing
         );
         assert_eq!(
-            next_export_phase(ExportPhase::Preparing, "out_time_us", "1000000", 0),
+            next_export_phase(ExportPhase::Preparing, "out_time_us", "0", 0),
             ExportPhase::Preparing
         );
         assert_eq!(
-            next_export_phase(ExportPhase::Preparing, "out_time_us", "1000000", 1_000_000),
+            next_export_phase(ExportPhase::Preparing, "out_time_us", "8000000", 8_000_000),
             ExportPhase::Running
         );
         assert_eq!(
-            next_export_phase(ExportPhase::Running, "progress", "end", 1_000_000),
+            next_export_phase(ExportPhase::Running, "progress", "end", 8_000_000),
             ExportPhase::Completed
         );
     }

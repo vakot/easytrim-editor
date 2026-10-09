@@ -1,3 +1,5 @@
+import type { ExportAttempt, ExportAttemptState } from "./editing-instance";
+
 const BITRATE_UNITS: Record<string, number> = {
   bits: 1,
   kbits: 1_000,
@@ -118,12 +120,144 @@ function formatExportFileSize(bytes: number): string {
   return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
+interface ExportMetricValues {
+  bitrate?: string;
+  currentFrame?: number;
+  durationMs: number | null;
+  estimatedElapsedTimeMs?: number;
+  estimatedFileSizeBytes?: number;
+  estimatedTotalTimeMs?: number;
+  fileSizeBytes?: number;
+  fps?: number;
+  indeterminate: boolean;
+  progressPercent: number | null;
+  totalFrames?: number;
+}
+
+function getExportMetricValues(
+  attempt: Pick<ExportAttempt, "metrics" | "request" | "state">,
+  status: ExportAttemptState["status"] = attempt.state.status,
+): ExportMetricValues {
+  const { metrics } = attempt;
+  const totalFrames = positiveNumber(metrics.totalFrames);
+  const frame = nonNegativeNumber(metrics.currentFrame);
+  const progressMetricIsUseful =
+    metrics.phase === "running" ||
+    metrics.phase === "completed" ||
+    (metrics.phase !== "preparing" && metrics.progressPercent > 0);
+
+  const progressFromFfmpeg = progressMetricIsUseful && metrics.progressAvailable !== false
+    ? boundedPercent(metrics.progressPercent)
+    : null;
+
+  const progressFromFrames =
+    frame !== undefined &&
+    totalFrames !== undefined &&
+    (metrics.phase !== "preparing" || frame > 0)
+      ? boundedPercent((frame / totalFrames) * 100)
+      : null;
+
+  const progressPercent = status === "completed" ? 100 : (progressFromFfmpeg ?? progressFromFrames);
+  const progressRatio = progressPercent === null ? null : progressPercent / 100;
+  const durationMs = nonNegativeNumber(metrics.durationMs) ?? null;
+  const segmentDurationMs = Math.max(
+    0,
+    (attempt.request.trim.endMicros - attempt.request.trim.startMicros) / 1_000,
+  );
+
+  const mediaElapsedMs =
+    progressRatio === null ? null : segmentDurationMs * Math.min(progressRatio, 1);
+
+  const bitrateBitsPerSecond = parseFfmpegBitrate(metrics.bitrate);
+  const fileSizeBytes =
+    nonNegativeNumber(metrics.fileSizeBytes) ??
+    (bitrateBitsPerSecond !== null && mediaElapsedMs !== null
+      ? (bitrateBitsPerSecond * mediaElapsedMs) / 8_000
+      : undefined);
+
+  const estimatedTotalTimeMs =
+    positiveNumber(metrics.estimatedTotalTimeMs) ??
+    (durationMs !== null && durationMs > 0 && progressRatio !== null && progressRatio > 0
+      ? durationMs / progressRatio
+      : undefined);
+
+  const estimatedFileSizeBytes =
+    nonNegativeNumber(metrics.estimatedFileSizeBytes) ??
+    (fileSizeBytes !== undefined && progressRatio !== null && progressRatio > 0 && fileSizeBytes > 0
+      ? fileSizeBytes / progressRatio
+      : bitrateBitsPerSecond !== null
+        ? (bitrateBitsPerSecond * segmentDurationMs) / 8_000
+        : undefined);
+
+  const fps =
+    positiveNumber(metrics.fps) ??
+    (frame !== undefined && durationMs !== null && durationMs > 0
+      ? (frame * 1_000) / durationMs
+      : undefined);
+
+  const bitrate =
+    (bitrateBitsPerSecond === null ? undefined : metrics.bitrate) ??
+    (fileSizeBytes !== undefined && mediaElapsedMs !== null && mediaElapsedMs > 0
+      ? formatExportBitrate((fileSizeBytes * 8_000) / mediaElapsedMs)
+      : undefined);
+
+  const currentFrame =
+    frame ??
+    (totalFrames !== undefined && progressRatio !== null
+      ? Math.round(totalFrames * progressRatio)
+      : undefined);
+
+  const estimatedElapsedTimeMs = nonNegativeNumber(metrics.estimatedElapsedTimeMs) ?? durationMs;
+  const indeterminate = status === "rendering" && progressPercent === null;
+
+  return {
+    bitrate,
+    currentFrame,
+    durationMs,
+    estimatedElapsedTimeMs: estimatedElapsedTimeMs ?? undefined,
+    estimatedFileSizeBytes,
+    estimatedTotalTimeMs,
+    fileSizeBytes,
+    fps,
+    indeterminate,
+    progressPercent: status === "queued" ? null : progressPercent,
+    totalFrames,
+  };
+}
+
+function boundedPercent(value: number): number | null {
+  const percent = nonNegativeNumber(value);
+  return percent === undefined ? null : Math.min(percent, 100);
+}
+
+function nonNegativeNumber(value: number | null | undefined): number | undefined {
+  return value !== undefined && value !== null && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined;
+}
+
+function positiveNumber(value: number | null | undefined): number | undefined {
+  const number = nonNegativeNumber(value);
+  return number !== undefined && number > 0 ? number : undefined;
+}
+
+function formatExportBitrate(bitsPerSecond: number) {
+  if (!Number.isFinite(bitsPerSecond) || bitsPerSecond <= 0) return undefined;
+  if (bitsPerSecond < 1_000) return `${Math.round(bitsPerSecond)} bits/s`;
+  if (bitsPerSecond < 1_000_000) return `${(bitsPerSecond / 1_000).toFixed(1)} kbits/s`;
+  if (bitsPerSecond < 1_000_000_000) return `${(bitsPerSecond / 1_000_000).toFixed(1)} Mbits/s`;
+  return `${(bitsPerSecond / 1_000_000_000).toFixed(1)} Gbits/s`;
+}
+
 export {
   estimateExportSize,
   estimateExportTime,
   formatExportDuration,
   formatExportFileSize,
+  getExportMetricValues,
   parseFfmpegBitrate,
   parseFfmpegNumber,
   parseFfmpegSpeed,
 };
+
+export type { ExportMetricValues };

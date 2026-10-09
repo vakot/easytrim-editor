@@ -2,6 +2,15 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { queueSettingsReset } from "@/app/store/actions/queue-actions";
 import { sourceCleared } from "@/app/store/actions/source-actions";
+import {
+  editingInstanceExportCanceled,
+  editingInstanceExportCompleted,
+  editingInstanceExportFailed,
+  editingInstanceExportProgressReceived,
+  editingInstanceExportRequeued,
+  editingInstanceExportStarted,
+} from "@/app/store/slices/editing-instances-slice";
+import type { ExportAttemptMetrics } from "@/domain/editing-instance";
 import type { AppError } from "@/lib/tauri/media.types";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
 
@@ -18,6 +27,12 @@ interface ExportUiState {
   optimizedDialogOpen: boolean;
   queueEdit: { attemptId: string; instanceId: string; route: "fast" | "optimized" | "gif" } | null;
   queueFinishAction: QueueFinishAction;
+  runningExportMetrics: {
+    attemptId: string;
+    id: string;
+    metrics: Partial<ExportAttemptMetrics>;
+    operationId?: string;
+  } | null;
   startedSourceIds: string[];
 }
 
@@ -32,6 +47,7 @@ export const initialExportState: ExportUiState = {
   exportPlanRequestId: null,
   queueFinishAction: "nothing",
   queueEdit: null,
+  runningExportMetrics: null,
   startedSourceIds: [],
 };
 
@@ -57,7 +73,6 @@ const exportSlice = createSlice({
     },
     optimizedExportDialogClosed: (state) => {
       state.optimizedDialogOpen = false;
-      state.dialogRoute = "optimized";
     },
     exportPlanRequested: (state, action: PayloadAction<{ requestId: number }>) => {
       state.exportPlanRequestId = action.payload.requestId;
@@ -114,6 +129,58 @@ const exportSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    builder.addCase(editingInstanceExportStarted, (state, action) => {
+      state.runningExportMetrics = {
+        attemptId: action.payload.attemptId,
+        id: action.payload.id,
+        metrics: {},
+      };
+    });
+    builder.addCase(editingInstanceExportProgressReceived, (state, action) => {
+      const running = state.runningExportMetrics;
+      if (
+        !running ||
+        running.id !== action.payload.id ||
+        running.attemptId !== action.payload.attemptId
+      )
+        return;
+      if (
+        running.operationId !== undefined &&
+        running.operationId !== action.payload.progress.operationId
+      )
+        return;
+      running.operationId = action.payload.progress.operationId;
+      Object.assign(running.metrics, action.payload.metrics);
+    });
+    builder.addCase(editingInstanceExportCompleted, (state, action) => {
+      const running = state.runningExportMetrics;
+      if (
+        running?.id === action.payload.id &&
+        running.attemptId === action.payload.attemptId &&
+        (running.operationId === undefined ||
+          running.operationId === action.payload.result.operationId)
+      ) {
+        state.runningExportMetrics = null;
+      }
+    });
+    builder.addCase(editingInstanceExportFailed, (state, action) => {
+      const running = state.runningExportMetrics;
+      if (running?.id === action.payload.id && running.attemptId === action.payload.attemptId) {
+        state.runningExportMetrics = null;
+      }
+    });
+    builder.addCase(editingInstanceExportCanceled, (state, action) => {
+      const running = state.runningExportMetrics;
+      if (running?.id === action.payload.id && running.attemptId === action.payload.attemptId) {
+        state.runningExportMetrics = null;
+      }
+    });
+    builder.addCase(editingInstanceExportRequeued, (state, action) => {
+      const running = state.runningExportMetrics;
+      if (running?.id === action.payload.id && running.attemptId === action.payload.attemptId) {
+        state.runningExportMetrics = null;
+      }
+    });
     builder.addCase(queueSettingsReset, (state) => {
       state.queueFinishAction = state.availableQueueFinishActions.includes("nothing")
         ? "nothing"
@@ -173,6 +240,14 @@ const selectExportCommandPreviewError = (state: RootState): AppError | null =>
 
 const selectExportLaunchError = (state: RootState): AppError | null => state.export.launchError;
 const selectQueueEdit = (state: RootState): ExportUiState["queueEdit"] => state.export.queueEdit;
+const selectRunningExportMetrics = (
+  state: RootState,
+  id: string,
+  attemptId: string,
+): Partial<ExportAttemptMetrics> | undefined => {
+  const running = state.export.runningExportMetrics;
+  return running?.id === id && running.attemptId === attemptId ? running.metrics : undefined;
+};
 
 export {
   exportLaunchFailed,
@@ -200,5 +275,6 @@ export {
   selectExportQueueDialogOpen,
   selectQueueEdit,
   selectQueueFinishAction,
+  selectRunningExportMetrics,
   selectSourceQueueStarted,
 };

@@ -1,7 +1,11 @@
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 
 import type { ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
-import { formatExportDuration, formatExportFileSize } from "@/domain/export-metrics";
+import {
+  formatExportDuration,
+  formatExportFileSize,
+  getExportMetricValues,
+} from "@/domain/export-metrics";
 
 import type { ExportQueueItemMetricConfig } from "../types";
 
@@ -9,8 +13,8 @@ function getProgress(
   attempt: ExportAttempt,
   { status = attempt.state.status }: { status?: ExportAttemptState["status"] } = {},
 ): ExportQueueItemMetricConfig | null {
-  const progressPercent = attempt.metrics.progressPercent;
-  if (status === "queued" || (status !== "completed" && progressPercent <= 0)) return null;
+  const progressPercent = getExportMetricValues(attempt, status).progressPercent;
+  if (progressPercent === null) return null;
 
   return {
     id: "progress",
@@ -28,47 +32,36 @@ function getDuration(
     status?: ExportAttemptState["status"];
   },
 ): ExportQueueItemMetricConfig | null {
-  if (status === "rendering" && attempt.metrics.phase === "preparing") return null;
+  const { durationMs, estimatedElapsedTimeMs, estimatedTotalTimeMs } = getExportMetricValues(
+    attempt,
+    status,
+  );
 
-  const durationMs = attempt.metrics.durationMs;
   if (durationMs === null) return null;
 
-  const duration = formatExportDuration(durationMs);
+  const elapsedMs = estimatedElapsedTimeMs ?? durationMs;
+  const duration =
+    status === "rendering" && estimatedTotalTimeMs !== undefined
+      ? `${formatExportDuration(elapsedMs)} / ${formatExportDuration(estimatedTotalTimeMs)}`
+      : formatExportDuration(durationMs);
+
   return {
     id: "duration",
-    value: status === "rendering" ? formatValue(duration) : duration,
-  };
-}
-
-function getRemaining(
-  attempt: ExportAttempt,
-  {
-    formatValue,
-    status = attempt.state.status,
-  }: {
-    formatValue: (value: string) => string;
-    status?: ExportAttemptState["status"];
-  },
-): ExportQueueItemMetricConfig | null {
-  const { durationMs, estimatedTotalTimeMs } = attempt.metrics;
-  if (status !== "rendering" || durationMs === null || estimatedTotalTimeMs === undefined) {
-    return null;
-  }
-
-  const remainingMs = estimatedTotalTimeMs - durationMs;
-  if (remainingMs <= 0) return null;
-
-  return {
-    id: "remaining",
-    value: formatValue(formatExportDuration(remainingMs)),
+    value:
+      status === "rendering" && estimatedTotalTimeMs === undefined
+        ? formatValue(duration)
+        : duration,
   };
 }
 
 function getFileSize(
   attempt: ExportAttempt,
-  { formatValue = formatExportFileSize }: { formatValue?: (bytes: number) => string } = {},
+  {
+    formatValue = formatExportFileSize,
+    status = attempt.state.status,
+  }: { formatValue?: (bytes: number) => string; status?: ExportAttemptState["status"] } = {},
 ): ExportQueueItemMetricConfig | null {
-  const fileSizeBytes = attempt.metrics.fileSizeBytes;
+  const fileSizeBytes = getExportMetricValues(attempt, status).fileSizeBytes;
   if (fileSizeBytes === undefined) return null;
 
   return {
@@ -79,9 +72,12 @@ function getFileSize(
 
 function getFps(
   attempt: ExportAttempt,
-  { formatValue }: { formatValue: (value: string) => string },
+  {
+    formatValue,
+    status = attempt.state.status,
+  }: { formatValue: (value: string) => string; status?: ExportAttemptState["status"] },
 ): ExportQueueItemMetricConfig | null {
-  const fps = attempt.metrics.fps;
+  const fps = getExportMetricValues(attempt, status).fps;
   if (attempt.route === "audio" || fps === undefined) return null;
 
   return {
@@ -101,7 +97,7 @@ function getFileSizeChange(
   },
 ): ExportQueueItemMetricConfig | null {
   const sourceSizeBytes = attempt.snapshot.source.fileSizeBytes;
-  const outputSizeBytes = attempt.metrics.fileSizeBytes;
+  const outputSizeBytes = getExportMetricValues(attempt, status).fileSizeBytes;
   if (
     attempt.route === "audio" ||
     status !== "completed" ||
@@ -131,4 +127,4 @@ function getFileSizeChange(
   };
 }
 
-export { getDuration, getFileSize, getFileSizeChange, getFps, getProgress, getRemaining };
+export { getDuration, getFileSize, getFileSizeChange, getFps, getProgress };

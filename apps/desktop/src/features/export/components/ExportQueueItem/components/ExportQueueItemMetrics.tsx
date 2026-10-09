@@ -1,9 +1,7 @@
 import { Fragment, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-
-import { cn } from "@/lib/class-names.utils";
+import { MetricTooltip } from "@/components/metric-tooltip";
 
 import { useExportQueueItem } from "../contexts/ExportQueueItemContext";
 import {
@@ -12,7 +10,6 @@ import {
   getFileSizeChange,
   getFps,
   getProgress,
-  getRemaining,
 } from "../lib/export-queue-item-metrics";
 import type { ExportQueueItemMetricConfig } from "../types";
 
@@ -30,14 +27,9 @@ function ExportQueueItemMetrics() {
             status,
             formatValue: (value) => t("queue.metrics.elapsed", { value }),
           }),
-          t("queue.metrics.durationTooltip"),
-        ),
-        withTooltip(
-          getRemaining(attempt, {
-            status,
-            formatValue: (value) => t("queue.metrics.remaining", { value }),
-          }),
-          t("queue.metrics.remainingTooltip"),
+          status === "completed"
+            ? t("queue.metrics.durationTooltip")
+            : t("export.estimate.timeLabel"),
         ),
         withTooltip(getFileSize(attempt, {}), t("queue.metrics.fileSizeTooltip")),
         withTooltip(
@@ -73,26 +65,15 @@ function ExportQueueItemMetrics() {
 
 function ExportQueueItemMetric({ metric }: { metric: ExportQueueItemMetricConfig }) {
   const Icon = metric.icon;
-  const content = (
-    <span
-      aria-label={metric.ariaLabel}
-      className={cn(
-        "inline-flex shrink-0 items-center gap-0.5 py-1 tabular-nums",
-        metric.className,
-      )}
+  return (
+    <MetricTooltip
+      ariaLabel={metric.ariaLabel}
+      className={metric.className}
+      label={metric.tooltip ?? ""}
     >
       {metric.value}
       {Icon ? <Icon aria-hidden="true" className="size-3" /> : null}
-    </span>
-  );
-
-  if (!metric.tooltip) return content;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{content}</TooltipTrigger>
-      <TooltipContent side="top">{metric.tooltip}</TooltipContent>
-    </Tooltip>
+    </MetricTooltip>
   );
 }
 

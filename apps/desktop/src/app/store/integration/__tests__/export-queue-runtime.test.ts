@@ -204,7 +204,7 @@ beforeEach(() => {
 });
 
 describe("export queue runtime", () => {
-  it("runs GIF attempts through the GIF command and records palette and render progress", async () => {
+  it("does not estimate GIF output time or size during palette preparation", async () => {
     const store = createAppStore();
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
     const attempt = createGifAttempt("gif-progress");
@@ -244,22 +244,38 @@ describe("export queue runtime", () => {
     expect(mocks.renderOptimized).not.toHaveBeenCalled();
 
     onProgress?.({ elapsedMicros: 0, operationId: "gif-operation", phase: "preparing" });
-    const preparing = store.getState().editingInstances.entities["gif-progress"]?.exportAttempts[0];
+    const preparing = store.getState().export.runningExportMetrics;
     expect(preparing?.metrics).toMatchObject({ phase: "preparing", progressPercent: 0 });
     expect(preparing?.metrics.estimatedTotalTimeMs).toBeUndefined();
     expect(preparing?.metrics.estimatedFileSizeBytes).toBeUndefined();
+    expect(
+      store.getState().editingInstances.entities["gif-progress"]?.exportAttempts[0]?.metrics,
+    ).toMatchObject({ progressPercent: 0, totalFrames: 100 });
 
     onProgress?.({
       elapsedMicros: 1_000_000,
       operationId: "gif-operation",
-      phase: "running",
-      speed: "2x",
+      phase: "preparing",
       totalSize: 1_024,
     });
-    const rendering = store.getState().editingInstances.entities["gif-progress"]?.exportAttempts[0];
-    expect(rendering?.metrics).toMatchObject({ phase: "running", progressPercent: 100 });
-    expect(rendering?.metrics.estimatedTotalTimeMs).toBeDefined();
-    expect(rendering?.metrics.estimatedFileSizeBytes).toBeDefined();
+
+    const stillPreparing = store.getState().export.runningExportMetrics;
+
+    expect(stillPreparing?.metrics).toMatchObject({ phase: "preparing", progressPercent: 0 });
+    expect(stillPreparing?.metrics.estimatedTotalTimeMs).toBeUndefined();
+    expect(stillPreparing?.metrics.estimatedFileSizeBytes).toBeUndefined();
+
+    onProgress?.({
+      elapsedMicros: 1_000_000,
+      operationId: "gif-operation",
+      phase: "completed",
+      totalSize: 1_024,
+    });
+
+    const completedOutput = store.getState().export.runningExportMetrics;
+
+    expect(completedOutput?.metrics).toMatchObject({ phase: "completed", progressPercent: 100 });
+    expect(completedOutput?.metrics.fileSizeBytes).toBe(1_024);
 
     resolveRender({
       displayName: "gif-progress.gif",
@@ -271,6 +287,10 @@ describe("export queue runtime", () => {
         store.getState().editingInstances.entities["gif-progress"]?.exportAttempts[0]?.state.status,
       ).toBe("completed"),
     );
+    expect(store.getState().export.runningExportMetrics).toBeNull();
+    expect(
+      store.getState().editingInstances.entities["gif-progress"]?.exportAttempts[0]?.metrics,
+    ).toMatchObject({ phase: "completed", progressPercent: 100, fileSizeBytes: 1_024 });
   });
 
   it("keeps GIF attempts reserved until a queued edit is committed or released", async () => {
@@ -1047,10 +1067,7 @@ describe("export queue runtime", () => {
     await vi.waitFor(() => expect(onProgress).toBeDefined());
     onProgress!(progress("operation-current", 4));
     onProgress!(progress("operation-stale", 99));
-    expect(
-      store.getState().editingInstances.entities["instance-stale"]?.exportAttempts[0]?.metrics
-        .currentFrame,
-    ).toBe(4);
+    expect(store.getState().export.runningExportMetrics?.metrics.currentFrame).toBe(4);
 
     resolveRender({
       displayName: "output.mp4",

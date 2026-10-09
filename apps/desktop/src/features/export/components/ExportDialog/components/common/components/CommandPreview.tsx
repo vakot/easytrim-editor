@@ -11,12 +11,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-interface CommandPreviewProps {
-  command: string;
-  error?: string | null;
-}
-
-function CommandPreview({ command, error }: CommandPreviewProps) {
+function CommandPreview({ command, error }: { command: string; error?: string | null }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
@@ -32,7 +27,7 @@ function CommandPreview({ command, error }: CommandPreviewProps) {
 
   return (
     <section className="grid gap-1.5">
-      <Label htmlFor="ffmpeg-arguments">{t("export.optimized.dialog.arguments")}</Label>
+      <Label htmlFor="ffmpeg-arguments">{t("export.commandPreview.label")}</Label>
 
       <InputGroup className="grid">
         <InputGroupTextarea

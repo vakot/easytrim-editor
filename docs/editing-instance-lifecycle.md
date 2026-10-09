@@ -12,10 +12,13 @@ Sources; an omitted value means the draft is available. Queuing an export keeps 
 and active, with all current transformations intact. Later edits affect only the draft, while queued
 work and historical results retain their captured snapshots and stable identities.
 
-Each export attempt captures a cloned request, snapshot, output selection, route, metrics, and
-lifecycle state. An instance may own multiple attempts, and queue selectors inspect all attempts.
-The runtime indexes jobs by `attemptId`, carries `instanceId` for Redux updates, and executes one
-native export at a time. Each queued job holds its own source reservation.
+Each export attempt captures a cloned request, snapshot, output selection, route, expected frame
+count, and lifecycle state. Its metrics summary remains empty until a successful export. The active
+export's live metrics are held centrally in
+`export.runningExportMetrics` and combined with the queued attempt for progress views. An instance
+may own multiple attempts, and queue selectors inspect all attempts. The runtime indexes jobs by
+`attemptId`, carries `instanceId` for Redux updates, and executes one native export at a time. Each
+queued job holds its own source reservation.
 
 The export slice owns session-only `startedSourceIds`, keyed by editing-instance ID.
 Source-list actions and auto-start enable only that instance. The runtime reads this state

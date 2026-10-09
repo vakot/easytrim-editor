@@ -8,19 +8,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface ResolutionPresetSelectProps {
-  hasMatchingResolutionPreset: boolean;
-  onValueChange: (value: string) => void;
-  options: readonly { label: string; value: string }[];
-  resolutionValue: string;
-}
-
 function ResolutionPresetSelect({
   hasMatchingResolutionPreset,
   onValueChange,
   options,
   resolutionValue,
-}: ResolutionPresetSelectProps) {
+}: {
+  hasMatchingResolutionPreset: boolean;
+  onValueChange: (value: string) => void;
+  options: readonly { label: string; value: string }[];
+  resolutionValue: string;
+}) {
   const { t } = useTranslation();
 
   return (

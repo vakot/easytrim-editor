@@ -393,7 +393,7 @@ describe("editing instances slice", () => {
         },
       }),
     );
-    expect(state.entities["instance-1"]?.exportAttempts[0]?.metrics.currentFrame).toBe(4);
+    expect(state.entities["instance-1"]?.exportAttempts[0]?.metrics.currentFrame).toBeUndefined();
 
     const editedSnapshot = createEditorSnapshot({
       audioTracks: baseSnapshot.audio.tracks,

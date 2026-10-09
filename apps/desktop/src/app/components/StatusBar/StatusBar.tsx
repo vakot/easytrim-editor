@@ -1,19 +1,24 @@
 import { CircleAlert, Download } from "lucide-react";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { SupportLink } from "@/app/components/SupportLink";
 import type { UpdateStatus } from "@/app/contexts/app-updates-context";
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectRenderingAttempt } from "@/app/store/slices/editing-instances-slice";
-import { formatExportDuration, formatExportFileSize } from "@/domain/export-metrics";
+import { selectRunningExportMetrics } from "@/app/store/slices/export-slice";
+import { MetricTooltip } from "@/components/metric-tooltip";
+import {
+  formatExportDuration,
+  formatExportFileSize,
+  getExportMetricValues,
+} from "@/domain/export-metrics";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { cn } from "@/lib/class-names.utils";
 import { requestWindowShutdown } from "@/lib/tauri/window";
@@ -36,14 +41,74 @@ function StatusBar({ className }: StatusBarProps) {
   const { t } = useTranslation();
 
   const activeExport = useAppSelector(selectRenderingAttempt);
+  const runningMetrics = useAppSelector((state) =>
+    activeExport
+      ? selectRunningExportMetrics(state, activeExport.instance.id, activeExport.attempt.id)
+      : undefined,
+  );
+
+  const activeAttempt = activeExport
+    ? {
+        ...activeExport.attempt,
+        metrics: { ...activeExport.attempt.metrics, ...runningMetrics },
+      }
+    : null;
 
   const activeExportPath = activeExport
     ? splitFilePath(activeExport.attempt.output.displayPath)
     : null;
 
-  const progressPercent = activeExport
-    ? Math.round(activeExport.attempt.metrics.progressPercent)
-    : 0;
+  const exportMetrics = activeAttempt ? getExportMetricValues(activeAttempt) : null;
+  const statusMetrics: { id: string; label: string; value: string }[] = [];
+
+  if (exportMetrics) {
+    if (exportMetrics.currentFrame !== undefined && exportMetrics.totalFrames !== undefined) {
+      statusMetrics.push({
+        id: "frames",
+        label: t("export.frameRate.framesLabel"),
+        value: `${exportMetrics.currentFrame}f / ${exportMetrics.totalFrames}f`,
+      });
+    }
+    if (exportMetrics.fps !== undefined) {
+      statusMetrics.push({
+        id: "fps",
+        label: t("export.frameRate.fpsLabel"),
+        value: `${Math.round(exportMetrics.fps)} FPS`,
+      });
+    }
+    if (exportMetrics.bitrate !== undefined) {
+      statusMetrics.push({
+        id: "bitrate",
+        label: t("export.bitrate.label"),
+        value: exportMetrics.bitrate,
+      });
+    }
+    if (
+      exportMetrics.fileSizeBytes !== undefined ||
+      exportMetrics.estimatedFileSizeBytes !== undefined
+    ) {
+      const fileSizeValues = [
+        exportMetrics.fileSizeBytes,
+        exportMetrics.estimatedFileSizeBytes,
+      ].filter((value): value is number => value !== undefined);
+
+      statusMetrics.push({
+        id: "file-size",
+        label: t("export.estimate.sizeLabel"),
+        value: fileSizeValues.map(formatExportFileSize).join(" / "),
+      });
+    }
+    if (
+      exportMetrics.estimatedElapsedTimeMs !== undefined &&
+      exportMetrics.estimatedTotalTimeMs !== undefined
+    ) {
+      statusMetrics.push({
+        id: "time",
+        label: t("export.estimate.timeLabel"),
+        value: `${formatExportDuration(exportMetrics.estimatedElapsedTimeMs)} / ${formatExportDuration(exportMetrics.estimatedTotalTimeMs)}`,
+      });
+    }
+  }
 
   return (
     <footer
@@ -72,54 +137,27 @@ function StatusBar({ className }: StatusBarProps) {
               aria-label={t("queue.progress.accessibleLabel")}
               aria-valuemax={100}
               aria-valuemin={0}
-              aria-valuenow={progressPercent}
               className="h-1.5 w-28"
-              value={progressPercent}
+              indeterminate={exportMetrics?.indeterminate}
+              value={exportMetrics?.progressPercent ?? 0}
             />
-            <span className="w-10 text-right tabular-nums">{progressPercent}%</span>
+            {exportMetrics?.progressPercent !== null &&
+            exportMetrics?.progressPercent !== undefined ? (
+              <span className="w-10 text-right tabular-nums">
+                {Math.round(exportMetrics.progressPercent)}%
+              </span>
+            ) : null}
           </div>
-          <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.frameRate.framesLabel")}>
-            {activeExport.attempt.metrics.currentFrame ?? 0}f /{" "}
-            {activeExport.attempt.metrics.totalFrames ?? 0}f
-          </StatusMetricTooltip>
-          <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.frameRate.fpsLabel")}>
-            {Math.round(activeExport.attempt.metrics.fps ?? 0)} FPS
-          </StatusMetricTooltip>
-          <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.bitrate.label")}>
-            {activeExport.attempt.metrics.bitrate ?? "0 kbits/s"}
-          </StatusMetricTooltip>
-          <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.estimate.sizeLabel")}>
-            {formatStatusFileSize(activeExport.attempt.metrics.fileSizeBytes)} /{" "}
-            {formatStatusFileSize(activeExport.attempt.metrics.estimatedFileSizeBytes)}
-          </StatusMetricTooltip>
-          <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-          <StatusMetricTooltip label={t("export.estimate.timeLabel")}>
-            {formatExportDuration(activeExport.attempt.metrics.estimatedElapsedTimeMs ?? 0)} /{" "}
-            {formatExportDuration(activeExport.attempt.metrics.estimatedTotalTimeMs ?? 0)}
-          </StatusMetricTooltip>
+          {statusMetrics.map((metric) => (
+            <Fragment key={metric.id}>
+              <Separator className="mt-1 h-4 self-center" orientation="vertical" />
+              <MetricTooltip label={metric.label}>{metric.value}</MetricTooltip>
+            </Fragment>
+          ))}
         </div>
       ) : null}
     </footer>
   );
-}
-
-function StatusMetricTooltip({ children, label }: { children: ReactNode; label: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="shrink-0 py-1 tabular-nums">{children}</span>
-      </TooltipTrigger>
-      <TooltipContent side="top">{label}</TooltipContent>
-    </Tooltip>
-  );
-}
-
-function formatStatusFileSize(bytes: number | undefined) {
-  return bytes === undefined || bytes === 0 ? "0 MB" : formatExportFileSize(bytes);
 }
 
 function StatusBarUpdateButton() {
