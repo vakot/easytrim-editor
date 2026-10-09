@@ -58,6 +58,7 @@ import {
 } from "@/domain/audio-processing";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
+import { DEFAULT_GIF_ENCODING_SETTINGS, gifSettingsWithDefaults } from "@/domain/gif-export";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import type { AudioExportRequest } from "@/domain/media";
@@ -176,6 +177,14 @@ const editExportAttemptRequested =
         settings: {
           frameRate: request.frameRate,
           resolution: request.resolution,
+          ...(attempt.route === "gif"
+            ? {
+                gifPreset: (request as GifExportRequest).gifPreset ?? "balanced",
+                paletteColors: (request as GifExportRequest).paletteColors,
+                paletteStatsMode: (request as GifExportRequest).paletteStatsMode,
+                dithering: (request as GifExportRequest).dithering,
+              }
+            : {}),
         },
       };
 
@@ -582,7 +591,14 @@ function getInitialSettings(
   const instance = selectActiveEditingInstance(state);
   if (!instance) return null;
   return (
-    (route === "gif" ? instance.gifSettings : instance.optimizedSettings) ?? {
+    (route === "gif"
+      ? gifSettingsWithDefaults(
+          instance.gifSettings ?? {
+            frameRate: undefined,
+            resolution: selectCropResolution(state),
+          },
+        )
+      : instance.optimizedSettings) ?? {
       frameRate: undefined,
       resolution: selectCropResolution(state),
     }
@@ -670,6 +686,10 @@ function getGifRequest(state: ReturnType<Parameters<AppThunk>[1]>): GifExportReq
       ? { numerator: settings.frameRate.numerator, denominator: settings.frameRate.denominator }
       : undefined,
     resolution: settings.resolution,
+    gifPreset: settings.gifPreset ?? "balanced",
+    paletteColors: settings.paletteColors ?? DEFAULT_GIF_ENCODING_SETTINGS.paletteColors,
+    paletteStatsMode: settings.paletteStatsMode ?? DEFAULT_GIF_ENCODING_SETTINGS.paletteStatsMode,
+    dithering: settings.dithering ?? DEFAULT_GIF_ENCODING_SETTINGS.dithering,
   };
 }
 

@@ -25,6 +25,7 @@ import {
   selectQueueEdit,
 } from "@/app/store/slices/export-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { gifSettingsWithDefaults } from "@/domain/gif-export";
 import {
   cancelOptimizedExportDialogRequested,
   openOptimizedExportDialog,
@@ -50,11 +51,14 @@ function ExportDialog() {
   const routeSettings =
     dialogRoute === "gif" ? activeInstance?.gifSettings : activeInstance?.optimizedSettings;
 
+  const routeSettingsWithDefaults = routeSettings ?? {
+    frameRate: undefined,
+    resolution: cropResolution,
+  };
   const settings = activeInstance
-    ? (routeSettings ?? {
-        frameRate: undefined,
-        resolution: cropResolution,
-      })
+    ? dialogRoute === "gif"
+      ? gifSettingsWithDefaults(routeSettingsWithDefaults)
+      : routeSettingsWithDefaults
     : null;
 
   const argumentsText = useAppSelector(selectExportArguments);

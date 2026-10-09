@@ -87,6 +87,10 @@ interface GifExportRequest {
   flipHorizontal: boolean;
   flipVertical: boolean;
   frameRate?: { denominator: number; numerator: number };
+  gifPreset?: "compact" | "balanced" | "highQuality" | "custom";
+  paletteColors?: 16 | 32 | 64 | 128 | 256;
+  paletteStatsMode?: "diff" | "full";
+  dithering?: "none" | "bayer" | "sierra2_4a";
   mergeAudio: false;
   resolution: { height: number; width: number };
   rotationDegrees: import("./rotation").RotationDegrees;

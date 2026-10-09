@@ -62,6 +62,8 @@ pub enum AppErrorMessageId {
     ExportCropSelectionIsInvalid,
     #[serde(rename = "export.exportWasCancelled")]
     ExportExportWasCancelled,
+    #[serde(rename = "export.gifEncodingSettingsAreInvalid")]
+    ExportGifEncodingSettingsAreInvalid,
     #[serde(rename = "export.fastCutCannotApplyRotationUseOptimizedRender")]
     ExportFastExportCannotApplyRotationUseOptimizedExport,
     #[serde(rename = "export.ffmpegCouldNotRenderTheSelectedSegment")]

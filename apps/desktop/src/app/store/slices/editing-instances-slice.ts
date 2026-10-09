@@ -313,7 +313,14 @@ const editingInstancesSlice = createSlice({
         };
 
         if (attempt.route === "gif") {
-          restored.gifSettings = settings;
+          const request = attempt.request as import("@/domain/media").GifExportRequest;
+          restored.gifSettings = {
+            ...settings,
+            gifPreset: request.gifPreset,
+            paletteColors: request.paletteColors,
+            paletteStatsMode: request.paletteStatsMode,
+            dithering: request.dithering,
+          };
         } else {
           restored.optimizedSettings = settings;
         }

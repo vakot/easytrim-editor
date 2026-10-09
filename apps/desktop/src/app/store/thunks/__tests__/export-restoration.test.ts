@@ -617,6 +617,10 @@ describe("export snapshot restoration", () => {
       request: {
         audioTracks: [],
         mergeAudio: false,
+        gifPreset: "custom",
+        paletteColors: 32,
+        paletteStatsMode: "full",
+        dithering: "bayer",
         resolution: { height: 360, width: 640 },
         rotationDegrees: 0,
         sourcePath: firstSource.sourcePath,
@@ -642,6 +646,10 @@ describe("export snapshot restoration", () => {
     expect(store.getState().trim.value).toMatchObject(capturedSnapshot.trim);
     expect(store.getState().editingInstances.entities.original?.gifSettings).toMatchObject({
       frameRate: { numerator: 15, denominator: 1 },
+      gifPreset: "custom",
+      paletteColors: 32,
+      paletteStatsMode: "full",
+      dithering: "bayer",
       resolution: { height: 360, width: 640 },
     });
     expect(store.getState().editingInstances.entities.original?.optimizedSettings).toBeUndefined();
@@ -657,6 +665,12 @@ describe("export snapshot restoration", () => {
       const updated = store.getState().editingInstances.entities.original?.exportAttempts[0];
       expect(updated?.output.outputId).toBe("gif-out");
       expect(updated?.request.trim).toEqual({ startMicros: 500_000, endMicros: 1_700_000 });
+      expect(updated?.request).toMatchObject({
+        gifPreset: "custom",
+        paletteColors: 32,
+        paletteStatsMode: "full",
+        dithering: "bayer",
+      });
       expect(updated?.snapshot.trim).toEqual({ startMicros: 500_000, endMicros: 1_700_000 });
       expect(updated?.state.status).toBe("queued");
     });

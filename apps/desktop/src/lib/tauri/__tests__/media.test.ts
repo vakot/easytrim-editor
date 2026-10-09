@@ -513,6 +513,10 @@ describe("media IPC adapter", () => {
       flipVertical: false,
       resolution: { width: 640, height: 480 },
       frameRate: undefined,
+      gifPreset: "balanced" as const,
+      paletteColors: 256 as const,
+      paletteStatsMode: "diff" as const,
+      dithering: "sierra2_4a" as const,
     };
 
     await expect(planGifExport(request)).resolves.toEqual({

@@ -33,6 +33,14 @@ const CANDIDATE_KEY = "easytrim:workspace-recovery:candidate";
 function instance(id: string, source: typeof firstSource) {
   return {
     exportAttempts: [],
+    gifSettings: {
+      frameRate: { numerator: 15, denominator: 1 },
+      gifPreset: "custom" as const,
+      paletteColors: 32 as const,
+      paletteStatsMode: "full" as const,
+      dithering: "bayer" as const,
+      resolution: { height: 360, width: 640 },
+    },
     id,
     origin: "source-import" as const,
     snapshot: createDefaultEditorSnapshot(source, false),
@@ -96,6 +104,14 @@ describe("restorePreviousWorkspaceRequested", () => {
     expect(store.getState().editingInstances.activeInstanceId).toBe("second");
     expect(store.getState().source.status).toBe("ready");
     expect(store.getState().source.media).toEqual(media(secondSource.sourcePath));
+    expect(store.getState().editingInstances.entities.second?.gifSettings).toEqual({
+      frameRate: { numerator: 15, denominator: 1 },
+      gifPreset: "custom",
+      paletteColors: 32,
+      paletteStatsMode: "full",
+      dithering: "bayer",
+      resolution: { height: 360, width: 640 },
+    });
     expect(getWorkspaceRecoveryCandidate()?.sessionId).toBe("crashed-session");
     expect(localStorage.getItem(CANDIDATE_KEY)).not.toBeNull();
   });

@@ -266,12 +266,46 @@ describe("ExportDialog", () => {
     );
     expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(640);
     expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(360);
+    expect(screen.getByRole("combobox", { name: "Quality preset" })).toHaveTextContent("Balanced");
+    fireEvent.click(screen.getByRole("combobox", { name: "Quality preset" }));
+    fireEvent.click(screen.getByRole("option", { name: "Compact" }));
+    await waitFor(() =>
+      expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings).toMatchObject({
+        gifPreset: "compact",
+        paletteColors: 64,
+        paletteStatsMode: "diff",
+        dithering: "bayer",
+      }),
+    );
+    fireEvent.click(screen.getByRole("combobox", { name: "Maximum palette colors" }));
+    fireEvent.click(screen.getByRole("option", { name: "32" }));
+    await waitFor(() =>
+      expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings).toMatchObject({
+        gifPreset: "custom",
+        paletteColors: 32,
+      }),
+    );
+    await waitFor(() =>
+      expect(planGifExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          gifPreset: "custom",
+          paletteColors: 32,
+          paletteStatsMode: "diff",
+          dithering: "bayer",
+        }),
+      ),
+    );
+    expect(screen.getByRole("combobox", { name: "Quality preset" })).toHaveTextContent("Custom");
     fireEvent.change(screen.getByRole("spinbutton", { name: "Width" }), {
       target: { value: "800" },
     });
     await waitFor(() =>
       expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings).toEqual({
         frameRate: gifSettings.frameRate,
+        gifPreset: "custom",
+        paletteColors: 32,
+        paletteStatsMode: "diff",
+        dithering: "bayer",
         resolution: { height: 450, width: 800 },
       }),
     );
@@ -280,6 +314,10 @@ describe("ExportDialog", () => {
     await waitFor(() =>
       expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings).toEqual({
         frameRate: { denominator: 1, numerator: 30 },
+        gifPreset: "custom",
+        paletteColors: 32,
+        paletteStatsMode: "diff",
+        dithering: "bayer",
         resolution: { height: 450, width: 800 },
       }),
     );
