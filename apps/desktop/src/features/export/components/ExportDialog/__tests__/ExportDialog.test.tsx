@@ -309,7 +309,9 @@ describe("ExportDialog", () => {
         resolution: { height: 450, width: 800 },
       }),
     );
-    fireEvent.click(screen.getByRole("combobox", { name: "Frame rate" }));
+    const frameRateInput = screen.getByRole("combobox", { name: "Frame rate" });
+    fireEvent.click(frameRateInput);
+    fireEvent.change(frameRateInput, { target: { value: "30" } });
     fireEvent.click(screen.getByRole("option", { name: "30 FPS" }));
     await waitFor(() =>
       expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings).toEqual({
@@ -321,9 +323,33 @@ describe("ExportDialog", () => {
         resolution: { height: 450, width: 800 },
       }),
     );
+    await waitFor(() =>
+      expect(planGifExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ frameRate: { denominator: 1, numerator: 30 } }),
+      ),
+    );
     expect(store.getState().editingInstances.entities["instance-1"]?.optimizedSettings).toEqual(
       optimizedSettings,
     );
+    fireEvent.change(frameRateInput, { target: { value: "12.5" } });
+    await waitFor(() =>
+      expect(
+        store.getState().editingInstances.entities["instance-1"]?.gifSettings?.frameRate,
+      ).toEqual({
+        denominator: 2,
+        numerator: 25,
+      }),
+    );
+    await waitFor(() =>
+      expect(planGifExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ frameRate: { denominator: 2, numerator: 25 } }),
+      ),
+    );
+    fireEvent.change(frameRateInput, { target: { value: "121" } });
+    expect(
+      screen.getByText("Enter a frame rate greater than 0 and no more than 120 FPS."),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "GIF Export" })).toBeDisabled();
 
     await store.dispatch(openOptimizedExportDialog());
     await waitFor(() =>
@@ -336,7 +362,16 @@ describe("ExportDialog", () => {
     );
     expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(1280);
     expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(720);
-    expect(screen.getByRole("combobox", { name: "Frame rate" })).toHaveTextContent("24 FPS");
+    expect(screen.getByRole("combobox", { name: "Frame rate" })).toHaveValue("24 FPS");
+    expect(screen.getByRole("button", { name: "Export" })).toBeEnabled();
+    fireEvent.change(screen.getByRole("combobox", { name: "Frame rate" }), {
+      target: { value: "20.5" },
+    });
+    await waitFor(() =>
+      expect(planOptimizedExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ frameRate: { denominator: 2, numerator: 41 } }),
+      ),
+    );
   });
 
   it("starts the export action for the active route", async () => {

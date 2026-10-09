@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -25,7 +25,6 @@ import {
   selectQueueEdit,
 } from "@/app/store/slices/export-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
-import { gifSettingsWithDefaults } from "@/domain/gif-export";
 import {
   cancelOptimizedExportDialogRequested,
   openOptimizedExportDialog,
@@ -33,6 +32,7 @@ import {
   startGifExportRequested,
   startOptimizedExportRequested,
 } from "@/app/store/thunks/export-thunks";
+import { gifSettingsWithDefaults } from "@/domain/gif-export";
 import { localizeAppError } from "@/i18n/app-errors";
 
 import { CommandPreview, ExportResolution, FrameRate } from "./components/common";
@@ -55,6 +55,7 @@ function ExportDialog() {
     frameRate: undefined,
     resolution: cropResolution,
   };
+
   const settings = activeInstance
     ? dialogRoute === "gif"
       ? gifSettingsWithDefaults(routeSettingsWithDefaults)
@@ -66,6 +67,7 @@ function ExportDialog() {
   const commandPreviewError = useAppSelector(selectExportCommandPreviewError);
   const launchError = useAppSelector(selectExportLaunchError);
   const previousArgumentsText = useRef(argumentsText);
+  const [frameRateValid, setFrameRateValid] = useState(true);
 
   useEffect(() => {
     if (previousArgumentsText.current === argumentsText) return;
@@ -113,7 +115,11 @@ function ExportDialog() {
 
           {routeComposition.options}
           <ExportResolution cropResolution={cropResolution} settings={settings} />
-          <FrameRate settings={settings} />
+          <FrameRate
+            key={`${dialogRoute}-${activeInstance?.id ?? ""}`}
+            onValidityChange={setFrameRateValid}
+            settings={settings}
+          />
           <CommandPreview
             command={commandPreview}
             error={commandPreviewError ? localizeAppError(commandPreviewError, t) : undefined}
@@ -128,6 +134,7 @@ function ExportDialog() {
                 {t("common.actions.cancel")}
               </Button>
               <Button
+                disabled={!frameRateValid}
                 onClick={() =>
                   void dispatch(
                     queueEdit ? startOptimizedExportRequested() : routeComposition.primaryAction(),

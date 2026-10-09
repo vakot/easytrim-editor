@@ -30,14 +30,14 @@ function Combobox({
   onOpenChange,
   shouldFilter = true,
   ...props
-}: Omit<React.ComponentProps<typeof Popover>, "open" | "onOpenChange"> & {
+}: Omit<React.ComponentProps<typeof Popover>, "onOpenChange"> & {
   label?: string;
   onOpenChange?: (open: boolean) => void;
   shouldFilter?: boolean;
 }) {
   const allowTriggerCloseRef = React.useRef(false);
   const hasInputTriggerRef = React.useRef(false);
-  const openRef = React.useRef(defaultOpen);
+  const openRef = React.useRef(props.open ?? defaultOpen);
   const triggerRef = React.useRef<HTMLElement | null>(null);
 
   return (

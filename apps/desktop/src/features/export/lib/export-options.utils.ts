@@ -2,7 +2,7 @@ import type { TFunction } from "i18next";
 
 import type { FrameRate } from "@/lib/tauri/media.types";
 
-export const FRAME_RATE_OPTIONS = [24, 25, 30, 50, 60, 120] as const;
+export const FRAME_RATE_OPTIONS = [6, 10, 15, 24, 25, 30, 50, 60, 120] as const;
 
 interface ResolutionDimensions {
   height: number;
@@ -32,10 +32,48 @@ function resolutionOptions(dimensions: ResolutionDimensions, t: TFunction) {
   return options;
 }
 
-function rateFromValue(value: string): FrameRate | undefined {
-  if (value === "source") return undefined;
-  const [numerator, denominator] = value.split("/").map(Number);
-  return numerator && denominator ? { numerator, denominator } : undefined;
+function frameRateFromInput(value: string): FrameRate | undefined {
+  const normalizedValue = value.trim().replace(/\s*fps$/i, "");
+  const rationalMatch = /^(\d+)\/(\d+)$/.exec(normalizedValue);
+  if (rationalMatch) {
+    const [, numerator, denominator] = rationalMatch;
+    if (!numerator || !denominator) return undefined;
+    return frameRateFromRatio(BigInt(numerator), BigInt(denominator));
+  }
+
+  const match = /^(?:(\d+)(?:\.(\d*))?|\.(\d+))$/.exec(normalizedValue);
+  if (!match) return undefined;
+
+  const integerPart = match[1] ?? "0";
+  const decimalPart = (match[1] === undefined ? match[3] : match[2]) ?? "";
+  const decimalPlaces = decimalPart.length;
+  const denominator = 10n ** BigInt(decimalPlaces);
+  const numerator = BigInt(`${integerPart}${decimalPart}`);
+  return frameRateFromRatio(numerator, denominator);
 }
 
-export { rateFromValue, resolutionOptions };
+function frameRateFromRatio(numerator: bigint, denominator: bigint): FrameRate | undefined {
+  if (numerator <= 0n || denominator <= 0n || numerator > denominator * 120n) return undefined;
+
+  const greatestCommonDivisor = (left: bigint, right: bigint): bigint =>
+    right === 0n ? left : greatestCommonDivisor(right, left % right);
+
+  const divisor = greatestCommonDivisor(numerator, denominator);
+  const reducedNumerator = numerator / divisor;
+  const reducedDenominator = denominator / divisor;
+  const max = BigInt(0xffff_ffff);
+  if (reducedNumerator > max || reducedDenominator > max) return undefined;
+
+  return { denominator: Number(reducedDenominator), numerator: Number(reducedNumerator) };
+}
+
+function frameRateToInput(frameRate: FrameRate | undefined, sourceLabel: string): string {
+  if (!frameRate) return sourceLabel;
+  const value = frameRate.numerator / frameRate.denominator;
+  if (Number(value.toFixed(6)) === 0) {
+    return `${frameRate.numerator}/${frameRate.denominator} FPS`;
+  }
+  return `${Number(value.toFixed(6))} FPS`;
+}
+
+export { frameRateFromInput, frameRateToInput, resolutionOptions };

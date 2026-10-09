@@ -693,6 +693,7 @@ export const en = {
       fpsLabel: "FPS",
       framesLabel: "Frames",
       label: "Frame rate",
+      invalidValue: "Enter a frame rate greater than 0 and no more than 120 FPS.",
       value: "{{value}} FPS",
     },
     aspectRatio: {
