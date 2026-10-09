@@ -77,7 +77,11 @@ pub struct AudioExportRequest {
     pub source_path: String,
     pub trim: TrimSelection,
     pub audio_tracks: Vec<AudioTrackSelection>,
+    #[serde(default)]
+    pub audio_metadata: Vec<AudioTrackMetadataSelection>,
     pub merge_audio: bool,
+    #[serde(default)]
+    pub strip_metadata: bool,
     pub format: AudioExportFormat,
 }
 
@@ -564,6 +568,7 @@ pub fn build_audio_arguments(
     output_path: &Path,
 ) -> Result<Vec<OsString>, AppError> {
     validate_common_request(source, &request.trim, &request.audio_tracks)?;
+    validate_audio_metadata_selection(source, &request.audio_tracks, &request.audio_metadata)?;
     if request.audio_tracks.is_empty() {
         return Err(AppError::invalid_request(
             AppErrorMessageId::ExportAudioTrackIsRequired,
@@ -626,6 +631,14 @@ pub fn build_audio_arguments(
             arguments.extend([OsString::from("-c:a"), OsString::from("pcm_s16le")]);
         }
     }
+    append_audio_metadata_arguments(
+        &mut arguments,
+        source,
+        &request.audio_tracks,
+        &request.audio_metadata,
+        merge,
+    );
+    append_metadata_stripping_arguments(&mut arguments, request.strip_metadata);
     arguments.extend([OsString::from("-y"), output_path.as_os_str().to_owned()]);
     Ok(arguments)
 }
@@ -1734,7 +1747,9 @@ mod tests {
             source_path: optimized.source_path,
             trim: optimized.trim,
             audio_tracks: optimized.audio_tracks,
+            audio_metadata: Vec::new(),
             merge_audio,
+            strip_metadata: false,
             format,
         }
     }
@@ -1759,6 +1774,104 @@ mod tests {
         assert!(values.windows(2).any(|pair| pair == ["-c:a", "aac"]));
         assert!(values.windows(2).any(|pair| pair == ["-f", "ipod"]));
         assert!(!values.contains(&"-vf".to_owned()));
+    }
+
+    #[test]
+    fn audio_export_applies_selected_metadata_and_strip_preference() {
+        let mut request = audio_request(AudioExportFormat::M4a, false);
+        request.audio_metadata = vec![AudioTrackMetadataSelection {
+            stream_index: 1,
+            title: Some("Edited title".to_owned()),
+            language: Some("rus".to_owned()),
+            is_default: true,
+        }];
+        request.strip_metadata = true;
+        let args = build_audio_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.m4a"),
+        )
+        .expect("audio metadata request is valid");
+        let values = args
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-metadata:s:a:0", "title=Edited title"])
+        );
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-metadata:s:a:0", "language=rus"])
+        );
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-disposition:a:0", "+default"])
+        );
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-map_metadata", "-1"])
+        );
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-map_chapters", "-1"])
+        );
+    }
+
+    #[test]
+    fn merged_audio_export_uses_merged_track_metadata_convention() {
+        let mut request = audio_request(AudioExportFormat::Wav, true);
+        request.audio_tracks.push(audio_track(2));
+        request.audio_metadata = vec![
+            AudioTrackMetadataSelection {
+                stream_index: 1,
+                title: Some("Edited first".to_owned()),
+                language: Some("eng".to_owned()),
+                is_default: true,
+            },
+            AudioTrackMetadataSelection {
+                stream_index: 2,
+                title: Some("Edited second".to_owned()),
+                language: Some("rus".to_owned()),
+                is_default: false,
+            },
+        ];
+        let args = build_audio_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.wav"),
+        )
+        .expect("merged audio request is valid");
+        let values = args
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-metadata:s:a:0", "title=Merged audio"])
+        );
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-metadata:s:a:0", "language=und"])
+        );
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-disposition:a:0", "default"])
+        );
+        assert!(!values.iter().any(|value| value == "title=Edited first"));
+        assert!(!values.iter().any(|value| value == "title=Edited second"));
     }
 
     #[test]

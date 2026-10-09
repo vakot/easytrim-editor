@@ -611,7 +611,9 @@ function getAudioRequest(
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: exportAudioTracks(state),
+    audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
     mergeAudio: selectMergeAudio(state),
+    stripMetadata: state.preferences.stripMetadataOnExport,
     format,
   };
 }

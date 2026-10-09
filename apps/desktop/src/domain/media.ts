@@ -50,10 +50,12 @@ interface FastExportRequest {
 type AudioExportFormat = "m4a" | "wav";
 
 interface AudioExportRequest {
+  audioMetadata?: AudioTrackMetadataSelection[];
   audioTracks: AudioTrackSelection[];
   format: AudioExportFormat;
   mergeAudio: boolean;
   sourcePath: string;
+  stripMetadata?: boolean;
   trim: TrimSelection;
 }
 

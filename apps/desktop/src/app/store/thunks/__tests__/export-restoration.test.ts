@@ -149,6 +149,9 @@ function createDeferred<T>() {
 describe("audio-only export", () => {
   it("captures the selected segment and M4A format in the queued request", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
+    store.dispatch(audioTrackDefaultChanged({ streamIndex: 4 }));
+    store.dispatch(audioTrackMetadataChanged({ streamIndex: 4, title: "", language: "rus" }));
+    store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
 
     await store.dispatch(startAudioExportRequested());
 
@@ -158,17 +161,30 @@ describe("audio-only export", () => {
       request: {
         format: "m4a",
         mergeAudio: false,
+        stripMetadata: true,
         sourcePath: firstSource.sourcePath,
         trim: { endMicros: 2_000_000, startMicros: 100_000 },
       },
       route: "audio",
     });
     expect(attempt?.request.audioTracks).toHaveLength(2);
+    if (attempt?.route !== "audio") return;
+    if (!("audioMetadata" in attempt.request)) return;
+    expect(attempt.request.audioMetadata).toEqual([
+      { streamIndex: 2, isDefault: false },
+      { streamIndex: 4, isDefault: true, language: "rus" },
+    ]);
 
     store.dispatch(startExportQueue());
     await vi.waitFor(() => expect(native.exportAudio).toHaveBeenCalledOnce());
     expect(native.exportAudio).toHaveBeenCalledWith(
-      expect.objectContaining({ format: "m4a" }),
+      expect.objectContaining({
+        audioMetadata: expect.arrayContaining([
+          { streamIndex: 4, isDefault: true, language: "rus" },
+        ]),
+        format: "m4a",
+        stripMetadata: true,
+      }),
       "audio-out",
       expect.any(Function),
       expect.any(String),

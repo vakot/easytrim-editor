@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added audio-only export for the selected segment as M4A/AAC or WAV.
+- Added audio-only export for selected segments as M4A/AAC or WAV, honoring track metadata edits and metadata-stripping preferences.
 - Added compatible output-container choices to Fast Export when selected streams can be remuxed without re-encoding.
 - Added a global option to strip container metadata and chapters from queued exports.
 - Added GIF export for selected segments.
