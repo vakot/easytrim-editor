@@ -1,3 +1,4 @@
+import { SearchIcon } from "lucide-react";
 import { createContext, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -7,12 +8,14 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandInput,
+  CommandInputGroup,
   CommandItem,
   CommandList,
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
 import { Highlight } from "@/components/ui/highlight";
+import { InputGroupAddon } from "@/components/ui/input-group";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { MenuIcon } from "@/components/ui/menu";
 
@@ -110,12 +113,17 @@ function CommandPalette() {
         title={t("commands.title")}
       >
         <Command label={t("common.search.commands")} shouldFilter={false}>
-          <CommandInput
-            aria-label={t("common.search.commands")}
-            onValueChange={setQuery}
-            placeholder={t("common.search.commandsPlaceholder")}
-            value={query}
-          />
+          <CommandInputGroup>
+            <CommandInput
+              aria-label={t("common.search.commands")}
+              onValueChange={setQuery}
+              placeholder={t("common.search.commandsPlaceholder")}
+              value={query}
+            />
+            <InputGroupAddon>
+              <SearchIcon className="text-muted-foreground" />
+            </InputGroupAddon>
+          </CommandInputGroup>
           <CommandList>
             <CommandPaletteEmpty />
             <CommandPaletteContent groups={groups} />

@@ -84,14 +84,14 @@ interface OptimizedExportRequest extends FastExportRequest {
 interface GifExportRequest {
   audioTracks: AudioTrackSelection[];
   crop?: { height: number; width: number; x: number; y: number };
+  dithering?: "none" | "bayer" | "sierra2_4a";
   flipHorizontal: boolean;
   flipVertical: boolean;
   frameRate?: { denominator: number; numerator: number };
   gifPreset?: "compact" | "balanced" | "highQuality" | "custom";
+  mergeAudio: false;
   paletteColors?: 16 | 32 | 64 | 128 | 256;
   paletteStatsMode?: "diff" | "full";
-  dithering?: "none" | "bayer" | "sierra2_4a";
-  mergeAudio: false;
   resolution: { height: number; width: number };
   rotationDegrees: import("./rotation").RotationDegrees;
   sourcePath: string;

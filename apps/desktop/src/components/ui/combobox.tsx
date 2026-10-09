@@ -7,21 +7,15 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandInput,
+  CommandInputGroup,
   CommandItem,
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slot } from "@/components/ui/slot";
 
 import { cn } from "@/lib/class-names.utils";
-
-type ComboboxContextValue = {
-  allowTriggerCloseRef: React.MutableRefObject<boolean>;
-  hasInputTriggerRef: React.MutableRefObject<boolean>;
-  openRef: React.MutableRefObject<boolean>;
-  triggerRef: React.MutableRefObject<HTMLElement | null>;
-};
 
 function Combobox({
   children,
@@ -130,6 +124,14 @@ function ComboboxContent({
   );
 }
 
+function ComboboxInputGroup({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandInputGroup>) {
+  const insideContent = React.useContext(ComboboxContentContext);
+  return <CommandInputGroup className={cn(!insideContent && "p-0", className)} {...props} />;
+}
+
 function ComboboxInput({
   onClick,
   onFocus,
@@ -236,6 +238,10 @@ function ComboboxInput({
   );
 }
 
+function ComboboxAnchor({ ...props }: React.ComponentProps<typeof PopoverAnchor>) {
+  return <PopoverAnchor {...props} />;
+}
+
 function ComboboxList({ className, ...props }: React.ComponentProps<typeof CommandList>) {
   return (
     <CommandList
@@ -278,7 +284,13 @@ function ComboboxSeparator({ ...props }: React.ComponentProps<typeof CommandSepa
   return <CommandSeparator {...props} />;
 }
 
-const ComboboxContext = React.createContext<ComboboxContextValue | null>(null);
+const ComboboxContext = React.createContext<{
+  allowTriggerCloseRef: React.MutableRefObject<boolean>;
+  hasInputTriggerRef: React.MutableRefObject<boolean>;
+  openRef: React.MutableRefObject<boolean>;
+  triggerRef: React.MutableRefObject<HTMLElement | null>;
+} | null>(null);
+
 const ComboboxContentContext = React.createContext(false);
 const ComboboxAsChildContentContext = React.createContext(false);
 
@@ -294,10 +306,12 @@ function useCombobox() {
 
 export {
   Combobox,
+  ComboboxAnchor,
   ComboboxContent,
   ComboboxEmpty,
   ComboboxGroup,
   ComboboxInput,
+  ComboboxInputGroup,
   ComboboxItem,
   ComboboxList,
   ComboboxSeparator,

@@ -326,6 +326,7 @@ function formatNormalizationLevel(
     key: "audio.normalization.levelSummary",
     options: { peak: string; target: string },
   ) => string;
+
   return translate("audio.normalization.levelSummary", {
     peak: formatProcessingValue(maxTruePeakDb, language),
     target: formatProcessingValue(targetLufs, language),

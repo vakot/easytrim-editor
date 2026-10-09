@@ -58,9 +58,9 @@ import {
 } from "@/domain/audio-processing";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
-import { DEFAULT_GIF_ENCODING_SETTINGS, gifSettingsWithDefaults } from "@/domain/gif-export";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
+import { DEFAULT_GIF_ENCODING_SETTINGS, gifSettingsWithDefaults } from "@/domain/gif-export";
 import type { AudioExportRequest } from "@/domain/media";
 import { normalizeTransformForExport } from "@/domain/rotation";
 import { normalizeSourceKey } from "@/domain/source";

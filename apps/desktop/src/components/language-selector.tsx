@@ -260,13 +260,12 @@ function LanguageSelectorValue({
 }
 
 function LanguageSelectorContent({
-  asChild = false,
   children,
   ...props
 }: React.ComponentProps<typeof ComboboxContent>) {
   return (
     <LanguageSelectorContentContext.Provider value>
-      <ComboboxContent align="start" asChild={asChild} sideOffset={4} {...props}>
+      <ComboboxContent align="start" sideOffset={4} {...props}>
         {children}
       </ComboboxContent>
     </LanguageSelectorContentContext.Provider>

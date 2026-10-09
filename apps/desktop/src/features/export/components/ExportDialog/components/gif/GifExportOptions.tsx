@@ -13,13 +13,13 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropResolution } from "@/app/store/slices/crop-slice";
 import { selectActiveEditingInstance } from "@/app/store/slices/editing-instances-slice";
 import { exportSettingsChangedRequested } from "@/app/store/thunks/export-thunks";
-import { GIF_PRESET_SETTINGS, gifSettingsWithDefaults } from "@/domain/gif-export";
 import type {
   ExportSettings,
   GifDithering,
   GifPaletteColors,
   GifPreset,
 } from "@/domain/editing-instance";
+import { GIF_PRESET_SETTINGS, gifSettingsWithDefaults } from "@/domain/gif-export";
 
 function GifExportOptions() {
   const { t } = useTranslation();
@@ -32,11 +32,13 @@ function GifExportOptions() {
     { value: "highQuality", label: t("export.gif.preset.highQuality") },
     { value: "custom", label: t("export.gif.preset.custom") },
   ] as const;
+
   const ditheringOptions = [
     { value: "none", label: t("export.gif.dithering.none") },
     { value: "bayer", label: t("export.gif.dithering.bayer") },
     { value: "sierra2_4a", label: t("export.gif.dithering.sierra2_4a") },
   ] as const;
+
   if (!activeInstance) return null;
   const settings = gifSettingsWithDefaults(
     activeInstance.gifSettings ?? {

@@ -18,11 +18,11 @@ export type ExportRequest =
   AudioExportRequest | FastExportRequest | GifExportRequest | OptimizedExportRequest;
 
 interface ExportSettings {
+  dithering?: GifDithering;
   frameRate: FrameRate | undefined;
   gifPreset?: GifPreset;
   paletteColors?: GifPaletteColors;
   paletteStatsMode?: GifPaletteStatsMode;
-  dithering?: GifDithering;
   resolution: { height: number; width: number };
 }
 
