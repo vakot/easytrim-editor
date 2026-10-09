@@ -1,15 +1,33 @@
 .indeterminate {
-  width: 33.333%;
-  animation: slide 1.35s ease-in-out infinite alternate;
+  position: absolute;
+  inset-block: 0;
+  animation: indeterminate-cycle 3s ease-in-out infinite;
 }
 
-@keyframes slide {
-  from {
-    transform: translateX(0);
+@keyframes indeterminate-cycle {
+  0% {
+    left: 0;
+    right: 100%;
   }
 
-  to {
-    transform: translateX(200%);
+  25% {
+    left: 0;
+    right: 0;
+  }
+
+  50% {
+    left: 100%;
+    right: 0;
+  }
+
+  75% {
+    left: 0;
+    right: 0;
+  }
+
+  100% {
+    left: 0;
+    right: 100%;
   }
 }
 
