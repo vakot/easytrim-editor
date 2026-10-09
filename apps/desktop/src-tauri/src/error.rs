@@ -28,10 +28,6 @@ pub enum AppErrorMessageId {
     MediaWaveformTooFewSamples,
     #[serde(rename = "media.waveform.sampleReductionFailed")]
     MediaWaveformSampleReductionFailed,
-    #[serde(rename = "media.waveform.imageMissing")]
-    MediaWaveformImageMissing,
-    #[serde(rename = "media.waveform.imageRenderingFailed")]
-    MediaWaveformImageRenderingFailed,
     #[serde(rename = "media.thumbnail.ffmpegRequired")]
     MediaThumbnailFfmpegRequired,
     #[serde(rename = "media.thumbnail.preparationTimedOut")]

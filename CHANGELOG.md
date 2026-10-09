@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Improved audio waveform rendering to stay sharp as tracks resize and reflect live gain and mute changes.
+
 ## [1.13.2]
 
 ### Added

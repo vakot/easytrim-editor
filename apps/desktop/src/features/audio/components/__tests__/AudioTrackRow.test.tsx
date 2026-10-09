@@ -286,7 +286,53 @@ describe("AudioTrackRow", () => {
     );
   });
 
-  it("scales the existing waveform during live gain adjustment", async () => {
+  it("redraws waveform amplitudes during live gain adjustment", async () => {
+    const moveTo = vi.fn();
+    const lineTo = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      beginPath: vi.fn(),
+      clearRect: vi.fn(),
+      lineTo,
+      moveTo,
+      set lineWidth(_value: number) {},
+      set strokeStyle(_value: string) {},
+      stroke: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 128,
+      height: 50,
+    } as DOMRect);
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => {
+          const buffer = new ArrayBuffer(12 + 10 * 2);
+          const view = new DataView(buffer);
+          view.setUint8(0, 0x45);
+          view.setUint8(1, 0x54);
+          view.setUint8(2, 0x57);
+          view.setUint8(3, 0x46);
+          view.setUint16(4, 1, true);
+          view.setUint16(6, 1, true);
+          view.setUint32(8, 1_280, true);
+          for (let run = 0; run < 10; run += 1) {
+            view.setUint8(12 + run * 2, 0xff);
+            view.setUint8(13 + run * 2, 128);
+          }
+          return buffer;
+        },
+      }),
+    );
+
     const { store } = renderRow();
     act(() => {
       store.dispatch(waveformsLoading({ jobId: "waveform-1", streamIndexes: [2], width: 1280 }));
@@ -301,23 +347,35 @@ describe("AudioTrackRow", () => {
       );
     });
 
-    const image = document.querySelector<HTMLImageElement>(".waveform-image");
-    expect(image).toHaveAttribute("src", "media://waveform");
-    expect(image).toHaveStyle({ transform: "scaleY(1)" });
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas");
+    expect(canvas).toHaveAttribute("aria-hidden", "true");
+    await waitFor(() => expect(lineTo).toHaveBeenCalled());
+    const getMaxHeight = () =>
+      Math.max(
+        ...lineTo.mock.calls.map((call, index) => {
+          const top = moveTo.mock.calls[index]?.[1] as number;
+          return (call[1] as number) - top;
+        }),
+      );
+
+    const initialHeight = getMaxHeight();
 
     await userEvent.setup().hover(screen.getByRole("button", { name: /mute.*eng/i }));
     const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
     gainSlider.focus();
     fireEvent.keyDown(gainSlider, { key: "ArrowRight" });
 
-    expect(image).toHaveAttribute("src", "media://waveform");
-    expect(image?.style.transform).toBe("scaleY(1.0592537251772889)");
+    await waitFor(() => {
+      expect(getMaxHeight()).toBeGreaterThan(initialHeight);
+    });
     expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0.5);
 
     fireEvent.keyUp(gainSlider, { key: "ArrowRight" });
     fireEvent.keyDown(gainSlider, { key: "End" });
-    expect(image?.style.transform).toBe("scaleY(3.9810717055349722)");
-    expect(image).toHaveAttribute("src", "media://waveform");
+    expect(getMaxHeight()).toBeGreaterThan(initialHeight);
+
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("marks the Gain range, resets to unity, and preserves mute state at −24 dB", async () => {

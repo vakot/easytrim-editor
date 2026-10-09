@@ -219,6 +219,7 @@ fn content_type(path: &Path) -> &'static str {
         Some("jpg" | "jpeg") => "image/jpeg",
         Some("bmp") => "image/bmp",
         Some("png") => "image/png",
+        Some("etwf") => "application/octet-stream",
         Some("m4a") => "audio/mp4",
         Some("ts" | "mts" | "m2ts") => "video/mp2t",
         Some("webm") => "video/webm",
@@ -324,6 +325,14 @@ mod tests {
     #[test]
     fn serves_shell_cache_thumbnails_with_a_bitmap_content_type() {
         assert_eq!(content_type(Path::new("thumbnail.bmp")), "image/bmp");
+    }
+
+    #[test]
+    fn serves_waveform_envelopes_as_binary_data() {
+        assert_eq!(
+            content_type(Path::new("audio-2.etwf")),
+            "application/octet-stream"
+        );
     }
 
     #[test]
