@@ -506,6 +506,7 @@ async function renderJob(job: RuntimeExportJob) {
         metrics: {
           durationMs: elapsedTime(job),
           progressPercent,
+          progressAvailable: progress.progressAvailable ?? progress.elapsedMicros > 0,
           currentFrame: progress.frame,
           fileSizeBytes: progress.totalSize,
           fps: parseFfmpegNumber(progress.fps) ?? undefined,

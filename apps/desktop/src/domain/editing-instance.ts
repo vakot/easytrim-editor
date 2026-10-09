@@ -57,6 +57,7 @@ interface ExportAttemptMetrics {
   fileSizeBytes?: number;
   fps?: number;
   phase?: ExportProgress["phase"];
+  progressAvailable?: boolean;
   progressPercent: number;
   totalFrames?: number;
 }

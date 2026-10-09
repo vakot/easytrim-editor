@@ -45,6 +45,7 @@ pub struct OutputSelection {
 pub struct ExportProgress {
     pub operation_id: String,
     pub elapsed_micros: i64,
+    pub progress_available: bool,
     pub frame: Option<u64>,
     pub fps: Option<String>,
     pub speed: Option<String>,
@@ -571,6 +572,7 @@ async fn run_export(
     let _ = on_progress.send(ExportProgress {
         operation_id: operation_id.clone(),
         elapsed_micros: 0,
+        progress_available: false,
         frame: None,
         fps: None,
         speed: None,
@@ -593,15 +595,22 @@ async fn run_export(
             |line| {
                 if let Some((key, value)) = line.split_once('=') {
                     progress_values.insert(key.to_owned(), value.to_owned());
-                    if key == "out_time_us" || key == "progress" {
-                        let elapsed_micros = progress_values
+                    if matches!(key, "out_time_us" | "out_time_ms" | "progress") {
+                        let output_time = progress_values
                             .get("out_time_us")
                             .and_then(|value| value.parse::<i64>().ok())
-                            .unwrap_or_default();
+                            .or_else(|| {
+                                progress_values
+                                    .get("out_time_ms")
+                                    .and_then(|value| value.parse::<i64>().ok())
+                            })
+                            .filter(|elapsed_micros| *elapsed_micros >= 0);
+                        let elapsed_micros = output_time.unwrap_or_default();
                         phase = next_export_phase(phase, key, value, elapsed_micros);
                         let _ = on_progress.send(ExportProgress {
                             operation_id: operation_for_task.clone(),
                             elapsed_micros,
+                            progress_available: output_time.is_some_and(|time| time > 0),
                             frame: progress_values
                                 .get("frame")
                                 .and_then(|value| value.parse::<u64>().ok()),
@@ -777,7 +786,10 @@ fn next_export_phase(
 ) -> ExportPhase {
     if key == "progress" && value == "end" {
         ExportPhase::Completed
-    } else if phase == ExportPhase::Preparing && key == "out_time_us" && elapsed_micros > 0 {
+    } else if phase == ExportPhase::Preparing
+        && matches!(key, "out_time_us" | "out_time_ms")
+        && elapsed_micros > 0
+    {
         ExportPhase::Running
     } else {
         phase

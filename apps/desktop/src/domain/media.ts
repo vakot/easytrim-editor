@@ -21,6 +21,7 @@ interface ExportProgress {
   frame?: number;
   operationId: string;
   phase: "preparing" | "running" | "completed";
+  progressAvailable?: boolean;
   speed?: string;
   totalSize?: number;
 }
