@@ -30,15 +30,19 @@ import {
   AudioPlaybackContext,
   type AudioPlaybackContract,
 } from "@/features/audio/contexts/audio-playback-context";
+// eslint-disable-next-line no-restricted-imports -- Test controls timeline context updates directly.
+import { TimelinePlayheadContext } from "@/features/timeline/contexts/timeline-runtime-contexts";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
 import { AudioTrackEffectsDialogContext } from "../AudioTrack/components/AudioTrackEffectsDialog/contexts/audio-track-effects-dialog-context";
 import { AudioTrackGainControl } from "../AudioTrack/components/AudioTrackGainControl";
 
+const audioPlayheadRef: AudioPlaybackContract["audioPlayheadRef"] = { current: null };
+
 const audioPlayback = {
   audioMeterRef: { current: null },
-  audioPlayheadRef: { current: null },
+  audioPlayheadRef,
   clearLiveAudioTrackGain: () => undefined,
   setLiveAudioTrackGain: () => undefined,
 } satisfies AudioPlaybackContract;
@@ -62,9 +66,9 @@ function renderRow(
   const stream = media.audioStreams[0]!;
   if (!enabled) store.dispatch(audioTrackToggled({ streamIndex: stream.streamIndex }));
 
-  renderTrack(store, streamIndex, showColorPreview);
+  const rendered = renderTrack(store, streamIndex, showColorPreview);
 
-  return { store };
+  return { setPlayhead: rendered.setPlayhead, store };
 }
 
 function renderTrack(
@@ -72,18 +76,29 @@ function renderTrack(
   streamIndex: number,
   showColorPreview = false,
 ) {
-  render(
+  const renderAtPlayhead = (displayedPlayheadMicros: number) => (
     <Provider store={store}>
       <ThemeProvider>
         <AudioPlaybackContext.Provider value={audioPlayback}>
-          <TooltipProvider>
-            {showColorPreview && <PrimaryColorPreviewButton />}
-            <AudioTrackRow streamIndex={streamIndex} />
-          </TooltipProvider>
+          <TimelinePlayheadContext.Provider
+            value={{ displayedPlayheadMicros, playheadRef: { current: null } }}
+          >
+            <TooltipProvider>
+              {showColorPreview && <PrimaryColorPreviewButton />}
+              <AudioTrackRow streamIndex={streamIndex} />
+            </TooltipProvider>
+          </TimelinePlayheadContext.Provider>
         </AudioPlaybackContext.Provider>
       </ThemeProvider>
-    </Provider>,
+    </Provider>
   );
+
+  const rendered = render(renderAtPlayhead(0));
+
+  return {
+    setPlayhead: (displayedPlayheadMicros: number) =>
+      rendered.rerender(renderAtPlayhead(displayedPlayheadMicros)),
+  };
 }
 
 function PrimaryColorPreviewButton() {
@@ -497,6 +512,154 @@ describe("AudioTrackRow", () => {
     fireEvent.click(screen.getByRole("button", { name: /preview primary color/i }));
 
     await waitFor(() => expect(strokeStyle).toHaveBeenCalledWith("rgb(18 52 86)"));
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("follows playback and loop updates, stays on-track, and emphasizes the playhead", async () => {
+    const stroke = vi.fn();
+    const moveTo = vi.fn();
+    const lineTo = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      beginPath: vi.fn(),
+      clearRect: vi.fn(),
+      fillRect: vi.fn(),
+      lineTo,
+      moveTo,
+      set fillStyle(_value: string) {},
+      set lineWidth(_value: number) {},
+      set strokeStyle(_value: string) {},
+      stroke,
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 32,
+      height: 24,
+    } as DOMRect);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 320,
+      height: 48,
+    } as DOMRect);
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => {
+          const buffer = new ArrayBuffer(12 + 4096);
+          const view = new DataView(buffer);
+          view.setUint8(0, 0x45);
+          view.setUint8(1, 0x54);
+          view.setUint8(2, 0x57);
+          view.setUint8(3, 0x46);
+          view.setUint16(4, 1, true);
+          view.setUint16(6, 0, true);
+          view.setUint32(8, 4096, true);
+          new Uint8Array(buffer, 12).fill(80);
+          return buffer;
+        },
+      }),
+    );
+
+    const { setPlayhead, store } = renderRow();
+    act(() => {
+      store.dispatch(
+        waveformsLoading({ jobId: "waveform-magnifier", streamIndexes: [2], width: 4096 }),
+      );
+      store.dispatch(
+        waveformReady({
+          jobId: "waveform-magnifier",
+          status: "ready",
+          streamIndex: 2,
+          url: "media://waveform-magnifier",
+          width: 4096,
+        }),
+      );
+    });
+
+    const toggle = screen.getByRole("button", { name: "Toggle waveform magnifier" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="audio-waveform-magnifier"]')).not.toBeNull(),
+    );
+    const magnifier = document.querySelector<HTMLCanvasElement>(
+      '[data-slot="audio-waveform-magnifier"]',
+    )!;
+
+    await waitFor(() => expect(stroke).toHaveBeenCalled());
+    expect(magnifier).toHaveStyle({ left: "0px" });
+    const previousDraws = stroke.mock.calls.length;
+
+    const sourceDurationMicros = selectTrim(store.getState())!.sourceDurationMicros;
+    act(() => {
+      setPlayhead(sourceDurationMicros * 0.75);
+    });
+    await waitFor(() => expect(magnifier).toHaveStyle({ left: "140px" }));
+    expect(stroke.mock.calls.length).toBeGreaterThan(previousDraws);
+    expect(audioPlayback.audioPlayheadRef.current).toBeNull();
+
+    const markerPosition = () => (moveTo.mock.calls.at(-1)?.[0] as number) - 0.5;
+    act(() => setPlayhead(sourceDurationMicros * 0.95));
+    await waitFor(() => expect(magnifier).toHaveStyle({ left: "140px" }));
+    expect(markerPosition()).toBe(164);
+    expect(Number.parseFloat(magnifier.style.left) + markerPosition()).toBe(304);
+
+    // Loop playback wraps the displayed playhead back to the start and the lens follows it.
+    act(() => setPlayhead(sourceDurationMicros * 0.05));
+    await waitFor(() => expect(magnifier).toHaveStyle({ left: "0px" }));
+    expect(markerPosition()).toBe(16);
+    expect(Number.parseFloat(magnifier.style.left) + markerPosition()).toBe(16);
+
+    const moveStart = moveTo.mock.calls.length;
+    const lineStart = lineTo.mock.calls.length;
+    act(() => {
+      setPlayhead(sourceDurationMicros * 0.5);
+    });
+    await waitFor(() => expect(magnifier).toHaveStyle({ left: "70px" }));
+
+    const moveCalls = moveTo.mock.calls.slice(moveStart);
+    const lineCalls = lineTo.mock.calls.slice(lineStart);
+    const verticalHeightAt = (x: number) => {
+      const index = moveCalls.findIndex(
+        ([moveX], position) =>
+          moveX === x &&
+          lineCalls[position]?.[0] === x &&
+          lineCalls[position]?.[1] !== 0 &&
+          lineCalls[position]?.[1] !== 24,
+      );
+
+      const startY = moveCalls[index]?.[1] ?? 0;
+      const endY = lineCalls[index]?.[1] ?? 0;
+      return Math.abs(endY - startY);
+    };
+
+    const edgeHeight = verticalHeightAt(0.5);
+    const nextToEdgeHeight = verticalHeightAt(1.5);
+    const centerHeight = verticalHeightAt(90.5);
+    const nearCenterHeight = verticalHeightAt(45.5);
+    const oppositeEdgeHeight = verticalHeightAt(179.5);
+    const renderedBarHeights = moveCalls.flatMap(([x], index) => {
+      const line = lineCalls[index];
+      if (!line || line[0] !== x || line[1] === 0 || line[1] === 24) return [];
+      return [Math.abs(line[1] - (moveCalls[index]?.[1] ?? 0))];
+    });
+
+    expect(centerHeight).toBeGreaterThan(edgeHeight);
+    expect(Math.abs(nextToEdgeHeight - edgeHeight)).toBeLessThan(0.1);
+    expect(nearCenterHeight).toBeGreaterThan(edgeHeight);
+    expect(nearCenterHeight).toBeLessThan(centerHeight);
+    expect(oppositeEdgeHeight).toBe(edgeHeight);
+    expect(centerHeight).toBe(Math.max(...renderedBarHeights));
+
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });

@@ -9,6 +9,7 @@ import { type AudioTrackState, waveformDisplayFailed } from "@/app/store/slices/
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { usePrimaryColor } from "@/app/theme/useTheme";
 import { timelinePercent } from "@/domain/trim";
+import { useTimelinePlayhead } from "@/features/timeline";
 import { localizeAppError } from "@/i18n/app-errors";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
@@ -16,6 +17,7 @@ import { useWaveformPrepare } from "../../../hooks/useWaveformPreparation";
 
 interface AudioTrackWaveformProps {
   gainDb: number;
+  magnifierEnabled: boolean;
   stream: AudioStream;
   track: AudioTrackState;
 }
@@ -25,7 +27,7 @@ type WaveformWithStatus<Status extends AudioTrackState["waveform"]["status"]> = 
   { status: Status }
 >;
 
-function AudioTrackWaveform({ gainDb, stream, track }: AudioTrackWaveformProps) {
+function AudioTrackWaveform({ gainDb, magnifierEnabled, stream, track }: AudioTrackWaveformProps) {
   const trim = useAppSelector(selectTrim);
   const sourceDurationMicros = trim?.sourceDurationMicros ?? 1;
   const selectionStartPercent = trim ? timelinePercent(trim.startMicros, sourceDurationMicros) : 0;
@@ -40,6 +42,7 @@ function AudioTrackWaveform({ gainDb, stream, track }: AudioTrackWaveformProps) 
         <AudioTrackWaveformCanvas
           gainDb={gainDb}
           key={track.waveform.url}
+          magnifierEnabled={magnifierEnabled}
           selectionEndPercent={selectionEndPercent}
           selectionStartPercent={selectionStartPercent}
           stream={stream}
@@ -73,6 +76,8 @@ const WAVEFORM_HEADER_SIZE = 12;
 const WAVEFORM_FORMAT_VERSION = 1;
 const WAVEFORM_FLAG_RLE = 1;
 const WAVEFORM_MAX_AMPLITUDE = 255;
+const WAVEFORM_MAGNIFICATION = 12;
+const WAVEFORM_MAX_VERTICAL_GAIN = 2;
 const ANIMATION_TIME_CONSTANT_MS = 90;
 const ANIMATION_SETTLE_THRESHOLD = 0.01;
 
@@ -83,12 +88,14 @@ interface WaveformVisualState {
 
 function AudioTrackWaveformCanvas({
   gainDb,
+  magnifierEnabled,
   selectionEndPercent,
   selectionStartPercent,
   stream,
   waveform,
 }: {
   gainDb: number;
+  magnifierEnabled: boolean;
   selectionEndPercent: number;
   selectionStartPercent: number;
   stream: AudioStream;
@@ -103,7 +110,7 @@ function AudioTrackWaveformCanvas({
   const lastFrameTimeRef = useRef<number | null>(null);
   const targetRef = useRef<WaveformVisualState | null>(null);
   const visualRef = useRef<WaveformVisualState | null>(null);
-  const [envelopeReady, setEnvelopeReady] = useState(false);
+  const [envelope, setEnvelope] = useState<WaveformEnvelope | null>(null);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -185,7 +192,7 @@ function AudioTrackWaveformCanvas({
   }, []);
 
   const updateAnimation = useCallback(() => {
-    if (!envelopeReady) return;
+    if (!envelope) return;
     if (!visualRef.current) {
       visualRef.current = { ...targetRef.current!, color: [...targetRef.current!.color] };
       drawRef.current();
@@ -195,7 +202,7 @@ function AudioTrackWaveformCanvas({
       lastFrameTimeRef.current = null;
       frameRef.current = window.requestAnimationFrame((time) => tickRef.current(time));
     }
-  }, [envelopeReady]);
+  }, [envelope]);
 
   useEffect(() => {
     envelopeRef.current = null;
@@ -211,7 +218,7 @@ function AudioTrackWaveformCanvas({
         const envelope = parseWaveformEnvelope(buffer, waveform.width);
         if (!active) return;
         envelopeRef.current = envelope;
-        setEnvelopeReady(true);
+        setEnvelope(envelope);
       })
       .catch(() => {
         if (active) void dispatch(waveformDisplayFailed(stream));
@@ -232,7 +239,7 @@ function AudioTrackWaveformCanvas({
     };
     tickRef.current = tick;
     updateAnimation();
-  }, [draw, envelopeReady, gainDb, primaryColor, tick, updateAnimation]);
+  }, [draw, envelope, gainDb, primaryColor, tick, updateAnimation]);
 
   useEffect(
     () => () => {
@@ -246,7 +253,10 @@ function AudioTrackWaveformCanvas({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const handleResize = () => drawRef.current();
+    const handleResize = () => {
+      drawRef.current();
+    };
+
     window.addEventListener("resize", handleResize);
     if (typeof ResizeObserver === "undefined") {
       return () => window.removeEventListener("resize", handleResize);
@@ -292,7 +302,139 @@ function AudioTrackWaveformCanvas({
           style={{ left: `${selectionEndPercent}%`, right: "0%" }}
         />
       )}
+      {magnifierEnabled && envelope && (
+        <AudioTrackWaveformMagnifier
+          envelope={envelope}
+          gainDb={gainDb}
+          primaryColor={primaryColor}
+        />
+      )}
     </>
+  );
+}
+
+function AudioTrackWaveformMagnifier({
+  envelope,
+  gainDb,
+  primaryColor,
+}: {
+  envelope: WaveformEnvelope;
+  gainDb: number;
+  primaryColor: string;
+}) {
+  const { displayedPlayheadMicros } = useTimelinePlayhead();
+  const trim = useAppSelector(selectTrim);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawRef = useRef<() => void>(() => undefined);
+  const playheadPercent = trim
+    ? timelinePercent(displayedPlayheadMicros, trim.sourceDurationMicros) / 100
+    : 0;
+
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    const container = canvas?.parentElement;
+    if (!canvas || !container) return;
+
+    const containerWidth = container.getBoundingClientRect().width;
+    if (containerWidth <= 0) return;
+
+    const pixelRatio = Math.max(window.devicePixelRatio || 1, 1);
+    const cssWidth = Math.min(180, containerWidth);
+    const pixelWidth = Math.max(1, Math.round(cssWidth * pixelRatio));
+    const pixelHeight = Math.max(1, Math.round(canvas.getBoundingClientRect().height * pixelRatio));
+    if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
+    if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    const containerPlayheadX = playheadPercent * containerWidth;
+    const canvasLeft = Math.min(
+      Math.max(0, containerPlayheadX - cssWidth / 2),
+      Math.max(0, containerWidth - cssWidth),
+    );
+
+    canvas.style.left = `${String(canvasLeft)}px`;
+
+    const markerX = Math.min(
+      Math.max((containerPlayheadX - canvasLeft) * pixelRatio, 0),
+      pixelWidth - 1,
+    );
+
+    const binsInView = Math.max(1, envelope.width / WAVEFORM_MAGNIFICATION);
+    const centerBin = playheadPercent * envelope.width;
+    const viewStart = Math.min(
+      Math.max(0, centerBin - (markerX / pixelWidth) * binsInView),
+      Math.max(0, envelope.width - binsInView),
+    );
+
+    context.clearRect(0, 0, pixelWidth, pixelHeight);
+
+    const gain = 10 ** (gainDb / 20);
+    const centerY = pixelHeight / 2;
+    context.strokeStyle = `rgb(${parseHexColor(primaryColor).map(Math.round).join(" ")})`;
+    context.lineWidth = 1.5;
+    context.beginPath();
+    for (let x = 0; x < pixelWidth; x += 1) {
+      const start = Math.floor(viewStart + (x * binsInView) / pixelWidth);
+      const end = Math.max(start + 1, Math.ceil(viewStart + ((x + 1) * binsInView) / pixelWidth));
+      let amplitude = 0;
+      for (let bin = start; bin < Math.min(end, envelope.width); bin += 1) {
+        amplitude = Math.max(amplitude, envelope.amplitudes[bin] ?? 0);
+      }
+
+      const distanceFromPlayhead = Math.abs(x - markerX);
+      const distanceToEdge = x < markerX ? markerX : pixelWidth - 1 - markerX;
+      const normalizedDistance = Math.min(1, distanceFromPlayhead / Math.max(distanceToEdge, 1));
+      const centerEmphasis = (1 + Math.cos(Math.PI * normalizedDistance)) / 2;
+      const verticalGain = 1 + (WAVEFORM_MAX_VERTICAL_GAIN - 1) * centerEmphasis;
+      const halfHeight =
+        Math.min(1, (amplitude / WAVEFORM_MAX_AMPLITUDE) * gain * verticalGain) * centerY;
+
+      if (halfHeight > 0) {
+        context.moveTo(x + 0.5, centerY - halfHeight);
+        context.lineTo(x + 0.5, centerY + halfHeight);
+      }
+    }
+    context.stroke();
+    context.strokeStyle = "rgba(255, 255, 255, 0.9)";
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(markerX + 0.5, 0);
+    context.lineTo(markerX + 0.5, pixelHeight);
+    context.stroke();
+  }, [envelope, gainDb, playheadPercent, primaryColor]);
+
+  useLayoutEffect(() => {
+    drawRef.current = draw;
+    draw();
+  }, [draw]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleResize = () => drawRef.current();
+    window.addEventListener("resize", handleResize);
+    if (typeof ResizeObserver === "undefined") {
+      return () => window.removeEventListener("resize", handleResize);
+    }
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(canvas);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      aria-hidden="true"
+      className="pointer-events-none absolute top-0 z-2 h-full w-45 max-w-full"
+      data-slot="audio-waveform-magnifier"
+      ref={canvasRef}
+    />
   );
 }
 

@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { MoreVertical, WandSparkles } from "lucide-react";
+import { MoreVertical, WandSparkles, ZoomIn } from "lucide-react";
 import { type CSSProperties, memo, type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -47,6 +47,7 @@ import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
 const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex: number }) {
   const controller = useAudioTrackController(streamIndex);
   const [liveGainDb, setLiveGainDb] = useState<number | null>(null);
+  const [waveformMagnifierEnabled, setWaveformMagnifierEnabled] = useState(false);
   const { track, trackColor } = controller;
 
   if (!track || !controller.stream) return null;
@@ -63,7 +64,7 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
               data-slot="audio-track-row"
               style={{ "--audio-track-color": trackColor } as CSSProperties}
             >
-              <div className="flex items-center gap-1">
+              <div className="flex min-w-0 items-center gap-1">
                 <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
                   <HoverCardTrigger>
                     <AudioTrackToggle controller={controller} />
@@ -80,8 +81,23 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
 
                 <AudioTrackDetails controller={controller} />
                 <AudioTrackActions controller={controller} />
+                <Button
+                  aria-label={t("audio.waveform.magnifier")}
+                  aria-pressed={waveformMagnifierEnabled}
+                  className={cn(waveformMagnifierEnabled && "text-primary")}
+                  onClick={() => setWaveformMagnifierEnabled((enabled) => !enabled)}
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <ZoomIn aria-hidden="true" />
+                </Button>
               </div>
-              <AudioTrackRowWaveform controller={controller} liveGainDb={displayedGainDb} />
+              <AudioTrackRowWaveform
+                controller={controller}
+                liveGainDb={displayedGainDb}
+                waveformMagnifierEnabled={waveformMagnifierEnabled}
+              />
             </div>
           </ContextMenuTrigger>
           <AudioTrackContextMenuContent controller={controller} />
@@ -94,9 +110,11 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
 function AudioTrackRowWaveform({
   controller,
   liveGainDb,
+  waveformMagnifierEnabled,
 }: {
   controller: ReturnType<typeof useAudioTrackController>;
   liveGainDb: number;
+  waveformMagnifierEnabled: boolean;
 }) {
   const trim = useAppSelector(selectTrim);
   const source = useAppSelector(selectSourceSelection);
@@ -115,6 +133,7 @@ function AudioTrackRowWaveform({
     >
       <AudioTrackWaveform
         gainDb={waveformGainDb(controller, trim, liveGainDb, source?.sourcePath)}
+        magnifierEnabled={waveformMagnifierEnabled}
         stream={stream}
         track={track}
       />
