@@ -4,9 +4,11 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { type AudioTrackState, waveformDisplayFailed } from "@/app/store/slices/audio-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
 import { usePrimaryColor } from "@/app/theme/useTheme";
+import { timelinePercent } from "@/domain/trim";
 import { localizeAppError } from "@/i18n/app-errors";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
@@ -24,6 +26,11 @@ type WaveformWithStatus<Status extends AudioTrackState["waveform"]["status"]> = 
 >;
 
 function AudioTrackWaveform({ gainDb, stream, track }: AudioTrackWaveformProps) {
+  const trim = useAppSelector(selectTrim);
+  const sourceDurationMicros = trim?.sourceDurationMicros ?? 1;
+  const selectionStartPercent = trim ? timelinePercent(trim.startMicros, sourceDurationMicros) : 0;
+  const selectionEndPercent = trim ? timelinePercent(trim.endMicros, sourceDurationMicros) : 100;
+
   switch (track.waveform.status) {
     case "idle":
     case "loading":
@@ -34,6 +41,8 @@ function AudioTrackWaveform({ gainDb, stream, track }: AudioTrackWaveformProps) 
           gainDb={gainDb}
           key={track.waveform.url}
           muted={!track.enabled}
+          selectionEndPercent={selectionEndPercent}
+          selectionStartPercent={selectionStartPercent}
           stream={stream}
           waveform={track.waveform}
         />
@@ -77,11 +86,15 @@ interface WaveformVisualState {
 function AudioTrackWaveformCanvas({
   gainDb,
   muted,
+  selectionEndPercent,
+  selectionStartPercent,
   stream,
   waveform,
 }: {
   gainDb: number;
   muted: boolean;
+  selectionEndPercent: number;
+  selectionStartPercent: number;
   stream: AudioStream;
   waveform: WaveformWithStatus<"ready">;
 }) {
@@ -255,7 +268,29 @@ function AudioTrackWaveformCanvas({
     };
   }, [waveform.url]);
 
-  return <canvas aria-hidden="true" className="absolute inset-0 size-full" ref={canvasRef} />;
+  return (
+    <>
+      <canvas aria-hidden="true" className="absolute inset-0 size-full" ref={canvasRef} />
+      {selectionStartPercent > 0 && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 bg-background/60"
+          data-edge="start"
+          data-slot="audio-waveform-outside-selection"
+          style={{ left: "0%", width: `${selectionStartPercent}%` }}
+        />
+      )}
+      {selectionEndPercent < 100 && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 bg-background/60"
+          data-edge="end"
+          data-slot="audio-waveform-outside-selection"
+          style={{ left: `${selectionEndPercent}%`, right: "0%" }}
+        />
+      )}
+    </>
+  );
 }
 
 function parseHexColor(color: string): [number, number, number] {

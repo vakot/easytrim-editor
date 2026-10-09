@@ -19,7 +19,7 @@ import {
   waveformReady,
   waveformsLoading,
 } from "@/app/store/slices/audio-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
+import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { useTheme } from "@/app/theme/useTheme";
@@ -452,7 +452,15 @@ describe("AudioTrackRow", () => {
     );
 
     const { store } = renderRow(true, 2, "eng", true);
+    const currentTrim = selectTrim(store.getState())!;
+    const selectedTrim = {
+      ...currentTrim,
+      endMicros: currentTrim.sourceDurationMicros * 0.75,
+      startMicros: currentTrim.sourceDurationMicros * 0.25,
+    };
+
     act(() => {
+      store.dispatch(trimChanged({ trim: selectedTrim }));
       store.dispatch(waveformsLoading({ jobId: "waveform-color", streamIndexes: [2], width: 2 }));
       store.dispatch(
         waveformReady({
@@ -465,6 +473,16 @@ describe("AudioTrackRow", () => {
       );
     });
     await waitFor(() => expect(strokeStyle).toHaveBeenCalledWith("rgb(239 191 4)"));
+    const outsideStart = document.querySelector<HTMLElement>(
+      '[data-slot="audio-waveform-outside-selection"][data-edge="start"]',
+    );
+
+    const outsideEnd = document.querySelector<HTMLElement>(
+      '[data-slot="audio-waveform-outside-selection"][data-edge="end"]',
+    );
+
+    expect(outsideStart).toHaveStyle({ left: "0%", width: "25%" });
+    expect(outsideEnd).toHaveStyle({ left: "75%", right: "0%" });
 
     fireEvent.click(screen.getByRole("button", { name: /preview primary color/i }));
 
