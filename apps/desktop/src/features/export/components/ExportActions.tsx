@@ -1,11 +1,10 @@
 import { Film, List, Scissors, Settings2 } from "lucide-react";
-import { motion, useAnimationControls, useReducedMotion } from "motion/react";
 import type { ComponentProps } from "react";
-import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -16,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -27,17 +27,18 @@ import {
   OPTIMIZED_EXPORT_SHORTCUT,
 } from "@/app/commands/file/file-shortcuts.constants";
 import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
-import {
-  selectExportQueue,
-  selectExportQueueSummary,
-} from "@/app/store/slices/editing-instances-slice";
+import { selectExportQueueSummary } from "@/app/store/slices/editing-instances-slice";
 import {
   exportQueueDialogClosed,
   exportQueueDialogOpened,
   selectExportQueueDialogOpen,
 } from "@/app/store/slices/export-slice";
+import {
+  preferenceChanged,
+  selectStripMetadataOnExport,
+} from "@/app/store/slices/preferences-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   openGifExportDialog,
@@ -50,8 +51,6 @@ import { cn } from "@/lib/class-names.utils";
 import { ExportQueue, ExportQueueContent, ExportQueueSummary } from "../components/ExportQueue";
 import { useExportQueue } from "../components/ExportQueue/contexts/ExportQueueContext";
 
-type ExportQueuePulseTone = "destructive" | "primary" | "success";
-
 function ExportActions() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -61,6 +60,7 @@ function ExportActions() {
   const cropApplied = useAppSelector(selectCropApplied);
   const transformApplied = useAppSelector(selectTransformApplied);
   const queueSummary = useAppSelector(selectExportQueueSummary);
+  const stripMetadataOnExport = useAppSelector(selectStripMetadataOnExport);
   const finishedExports = queueSummary.completed + queueSummary.failed;
   const queueSize = finishedExports + queueSummary.queued + queueSummary.rendering;
 
@@ -93,11 +93,33 @@ function ExportActions() {
               <ExportQueueContent className="py-2" />
             </ScrollArea>
 
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">{t("common.actions.close")}</Button>
-              </DialogClose>
-              <ExportQueueStartButton />
+            <DialogFooter className="sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={stripMetadataOnExport}
+                  id="queue-strip-metadata"
+                  onCheckedChange={(checked) =>
+                    dispatch(
+                      preferenceChanged({
+                        key: "stripMetadataOnExport",
+                        enabled: checked === true,
+                      }),
+                    )
+                  }
+                />
+                <Label
+                  className="text-sm font-normal text-muted-foreground"
+                  htmlFor="queue-strip-metadata"
+                >
+                  {t("settings.preferences.stripMetadata.commandLabel")}
+                </Label>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <DialogClose asChild>
+                  <Button variant="outline">{t("common.actions.close")}</Button>
+                </DialogClose>
+                <ExportQueueStartButton />
+              </div>
             </DialogFooter>
           </DialogContent>
         </ExportQueue>
@@ -171,58 +193,10 @@ function ExportQueueTrigger({
   queueSize: number;
 }) {
   const { t } = useTranslation();
-  const store = useAppStore();
-  const shouldReduceMotion = useReducedMotion();
-  const pulseControls = useAnimationControls();
-
-  useEffect(() => {
-    let previousStatuses = new Map(
-      selectExportQueue(store.getState()).map(({ attempt, instance }) => [
-        `${instance.id}:${attempt.id}`,
-        attempt.state.status,
-      ]),
-    );
-
-    return store.subscribe(() => {
-      let nextTone: ExportQueuePulseTone | null = null;
-      const currentStatuses = new Map(previousStatuses);
-      currentStatuses.clear();
-
-      for (const { attempt, instance } of selectExportQueue(store.getState())) {
-        const key = `${instance.id}:${attempt.id}`;
-        const status = attempt.state.status;
-        const previousStatus = previousStatuses.get(key);
-
-        if (previousStatus === undefined && (status === "queued" || status === "rendering")) {
-          nextTone ??= "primary";
-        } else if (previousStatus !== status) {
-          if (status === "failed") nextTone = "destructive";
-          else if (status === "completed" && nextTone !== "destructive") nextTone = "success";
-          else if (status === "queued") nextTone ??= "primary";
-        }
-
-        currentStatuses.set(key, status);
-      }
-
-      previousStatuses = currentStatuses;
-      if (nextTone && !shouldReduceMotion) {
-        const pulseColor = `var(--${nextTone})`;
-        void pulseControls.start({
-          boxShadow: [
-            "0 0 0 0 transparent",
-            `0 0 0 0.25rem color-mix(in srgb, ${pulseColor} 35%, transparent)`,
-            "0 0 0 0.5rem transparent",
-          ],
-          transition: { duration: 0.6, ease: "easeOut" },
-        });
-      }
-    });
-  }, [pulseControls, shouldReduceMotion, store]);
 
   return (
     <DialogTrigger asChild>
-      <MotionExportActionButton
-        animate={pulseControls}
+      <ExportActionButton
         className="max-2xl:size-auto max-2xl:h-7 max-2xl:gap-1 max-2xl:px-2"
         icon={<List aria-hidden="true" />}
         indicator={
@@ -230,11 +204,10 @@ function ExportQueueTrigger({
             {finishedExports}/{queueSize}
           </Badge>
         }
-        initial={false}
         variant="default"
       >
         {t("queue.title")}
-      </MotionExportActionButton>
+      </ExportActionButton>
     </DialogTrigger>
   );
 }
@@ -283,8 +256,6 @@ function ExportActionButton({
     </Button>
   );
 }
-
-const MotionExportActionButton = motion.create(ExportActionButton);
 
 function ExportActionTooltip({
   children,

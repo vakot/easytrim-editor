@@ -498,10 +498,15 @@ async function renderJob(job: RuntimeExportJob) {
   };
 
   try {
+    const request = {
+      ...job.attempt.request,
+      stripMetadata: job.getState().preferences.stripMetadataOnExport,
+    };
+
     const result =
       job.attempt.route === "fast"
         ? await exportFast(
-            job.attempt.request,
+            request,
             job.attempt.output.outputId,
             onProgress,
             job.diagnosticsOperation?.operationId,

@@ -143,6 +143,10 @@ describe("export snapshot restoration", () => {
     await vi.waitFor(() => {
       const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
       expect(attempt?.state.status).toBe("queued");
+      expect(attempt?.route).toBe("fast");
+      expect("audioMetadata" in (attempt?.request ?? {})).toBe(true);
+      if (attempt?.route !== "fast") return;
+      if (!("audioMetadata" in attempt.request)) return;
       expect(attempt?.snapshot.audio.tracks).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -162,6 +166,7 @@ describe("export snapshot restoration", () => {
 
   it("builds the queued request and snapshot from the same state after loudness analysis", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
+    store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(
       audioTrackProcessingChanged({
         streamIndex: 2,
@@ -184,7 +189,12 @@ describe("export snapshot restoration", () => {
     await vi.waitFor(() => {
       const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
       expect(attempt?.state.status).toBe("queued");
+      expect(attempt?.route).toBe("optimized");
+      expect("stripMetadata" in (attempt?.request ?? {})).toBe(true);
+      if (attempt?.route !== "optimized") return;
+      if (!("stripMetadata" in attempt.request)) return;
       expect(attempt?.request.audioTracks[0]?.processing.gainDb).toBe(-2);
+      expect(attempt?.request.stripMetadata).toBe(true);
       expect(attempt?.snapshot.audio.tracks[0]?.processing.gainDb).toBe(-2);
       expect(attempt?.request.audioTracks[0]?.loudnessAnalysis).toMatchObject({
         integratedLufs: -18,
@@ -723,6 +733,7 @@ describe("export snapshot restoration", () => {
 
   it("queues successive edits of the retained draft without changing earlier snapshots", async () => {
     const { snapshot, store } = setup();
+    store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(startFastExportRequested());
     await vi.waitFor(() =>
       expect(
@@ -734,6 +745,12 @@ describe("export snapshot restoration", () => {
     const first = selectExportQueue(store.getState()).find(
       ({ attempt }) => attempt.state.status === "queued",
     )!;
+
+    expect(first.attempt.route).toBe("fast");
+    expect("stripMetadata" in first.attempt.request).toBe(true);
+    if (first.attempt.route !== "fast") return;
+    if (!("stripMetadata" in first.attempt.request)) return;
+    expect(first.attempt.request.stripMetadata).toBe(true);
 
     expect(store.getState().editingInstances.activeInstanceId).toBe("original");
     expect(store.getState().source.status).toBe("ready");

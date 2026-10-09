@@ -16,6 +16,7 @@ import {
   selectMergeAudioEnabledDefault,
   selectPreferences,
   selectPrimaryColor,
+  selectStripMetadataOnExport,
   selectThemePreference,
   themePreferenceChanged,
   uiScalingReset,
@@ -93,6 +94,7 @@ describe("preferences Redux domain", () => {
         segmentPlaybackEnabledDefault: false,
         autoStartQueueEnabled: false,
         mergeAudioEnabledDefault: true,
+        stripMetadataOnExport: true,
         deleteSourceOnRenderFinish: true,
         lastSeenChangelogVersion: null,
         activityFeedView: "branch",
@@ -126,6 +128,7 @@ describe("preferences Redux domain", () => {
       loopPlaybackEnabledDefault: false,
       segmentPlaybackEnabledDefault: false,
       mergeAudioEnabledDefault: true,
+      stripMetadataOnExport: true,
       autoStartQueueEnabled: false,
       deleteSourceOnRenderFinish: true,
       theme: "dark",
@@ -164,6 +167,7 @@ describe("preferences Redux domain", () => {
       segmentPlaybackEnabledDefault: false,
       autoStartQueueEnabled: true,
       mergeAudioEnabledDefault: true,
+      stripMetadataOnExport: true,
       deleteSourceOnRenderFinish: false,
       lastSeenChangelogVersion: null,
       activityFeedView: "default",
@@ -181,6 +185,7 @@ describe("preferences Redux domain", () => {
     expect(selectPreferences(state).loopPlaybackEnabledDefault).toBe(true);
     expect(selectPreferences(state).segmentPlaybackEnabledDefault).toBe(false);
     expect(selectMergeAudioEnabledDefault(state)).toBe(true);
+    expect(selectStripMetadataOnExport(state)).toBe(true);
     expect(selectDeleteSourceOnRenderFinish(state)).toBe(false);
     expect(selectActivityFeedView(state)).toBe("default");
     expect(selectThemePreference(state)).toBe("system");

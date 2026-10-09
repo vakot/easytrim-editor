@@ -359,6 +359,11 @@ export const en = {
         label: "Merge audio",
         commandLabel: "Merge audio by default",
       },
+      stripMetadata: {
+        description: "Remove source container metadata and chapters from new exports by default",
+        label: "Strip metadata",
+        commandLabel: "Strip metadata and chapters from exports",
+      },
       reset: "Reset editing settings",
     },
     layout: {
@@ -457,6 +462,7 @@ export const en = {
       layoutPanelsVisibility: "Layout / Panels visibility",
       preferences: "Preferences",
       preferencesAudio: "Preferences / Audio",
+      preferencesExport: "Preferences / Export",
       preferencesPlayback: "Preferences / Playback",
       previewFrame: "Preview / Frame",
       previewTransform: "Preview / Transform",
@@ -520,6 +526,7 @@ export const en = {
       selectedExportRangeIsInvalid: "The selected export range is invalid",
       fileLocationCouldNotBeOpened: "Could not open the file location",
       ffmpegCouldNotBeStarted: "FFmpeg could not be started",
+      globalMetadataCannotBeSetWhenStrippingMetadata: "Custom optimized export arguments cannot set global metadata while metadata stripping is enabled",
       analyzeTrackLoudnessToContinue: "Analyze track loudness to continue",
       interruptedWhenEasyTrimClosedUnexpectedly: "The export was interrupted when EasyTrim closed unexpectedly",
     },

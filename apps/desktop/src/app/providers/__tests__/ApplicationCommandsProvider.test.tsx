@@ -66,6 +66,7 @@ const state = {
     mergeAudioEnabledDefault: false,
     primaryColor: "#efbf04",
     segmentPlaybackEnabledDefault: true,
+    stripMetadataOnExport: false,
     theme: "system",
     uiScalePercent: 100,
   },
@@ -243,7 +244,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(60);
+    ).toHaveLength(61);
     expect(
       screen
         .getAllByRole("button")
@@ -313,6 +314,10 @@ describe("ApplicationCommandsProvider", () => {
     expect(screen.getByRole("button", { name: "preference-merge-audio" })).toHaveAttribute(
       "data-group",
       "Preferences / Audio",
+    );
+    expect(screen.getByRole("button", { name: "preference-strip-metadata" })).toHaveAttribute(
+      "data-group",
+      "Preferences / Export",
     );
     expect(screen.getByRole("button", { name: "reset-editing-settings" })).toHaveAttribute(
       "data-group",

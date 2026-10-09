@@ -564,6 +564,7 @@ function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportR
     audioTracks: exportAudioTracks(state),
     audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
     mergeAudio: selectMergeAudio(state),
+    stripMetadata: state.preferences.stripMetadataOnExport,
     rotationDegrees: transform.rotationDegrees,
   };
 }
@@ -583,6 +584,7 @@ function getOptimizedRequest(
     audioTracks: exportAudioTracks(state),
     audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
     mergeAudio: selectMergeAudio(state),
+    stripMetadata: state.preferences.stripMetadataOnExport,
     rotationDegrees: transform.rotationDegrees,
     resolution: settings.resolution,
     crop: selectCropApplied(state) ? transform.crop : undefined,

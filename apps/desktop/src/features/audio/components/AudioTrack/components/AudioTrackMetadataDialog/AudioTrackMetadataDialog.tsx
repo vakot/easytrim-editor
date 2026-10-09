@@ -123,6 +123,7 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
           <LanguageSelector
             label={t("common.search.languages")}
             languages={AUDIO_METADATA_LANGUAGES}
+            modal
             onValueChange={(language) => {
               setMetadataLanguage(language);
               setMetadataLanguageChanged(true);

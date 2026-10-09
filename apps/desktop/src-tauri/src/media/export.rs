@@ -59,6 +59,8 @@ pub struct FastExportRequest {
     #[serde(default)]
     pub audio_metadata: Vec<AudioTrackMetadataSelection>,
     pub merge_audio: bool,
+    #[serde(default)]
+    pub strip_metadata: bool,
     pub rotation_degrees: u16,
 }
 
@@ -232,6 +234,8 @@ pub struct OptimizedExportRequest {
     #[serde(default)]
     pub audio_metadata: Vec<AudioTrackMetadataSelection>,
     pub merge_audio: bool,
+    #[serde(default)]
+    pub strip_metadata: bool,
     pub rotation_degrees: u16,
     pub resolution: ResolutionSelection,
     pub crop: Option<CropSelection>,
@@ -408,7 +412,7 @@ pub fn build_fast_arguments(
         &request.audio_metadata,
         request.merge_audio && request.audio_tracks.len() > 1,
     );
-
+    append_metadata_stripping_arguments(&mut arguments, request.strip_metadata);
     arguments.extend([
         OsString::from("-sn"),
         OsString::from("-dn"),
@@ -510,7 +514,7 @@ pub fn build_optimized_arguments(
         ]);
     }
     let user_arguments = parse_arguments(&request.arguments)?;
-    validate_user_arguments(&user_arguments)?;
+    validate_user_arguments(&user_arguments, request.strip_metadata)?;
     arguments.extend(user_arguments);
     append_audio_metadata_arguments(
         &mut arguments,
@@ -519,6 +523,7 @@ pub fn build_optimized_arguments(
         &request.audio_metadata,
         request.merge_audio && request.audio_tracks.len() > 1,
     );
+    append_metadata_stripping_arguments(&mut arguments, request.strip_metadata);
     arguments.extend([
         OsString::from("-sn"),
         OsString::from("-dn"),
@@ -677,6 +682,17 @@ fn common_input_arguments(source_path: &Path, trim: &TrimSelection) -> Vec<OsStr
         OsString::from("-t"),
         OsString::from(format_seconds_f64(duration)),
     ]
+}
+
+fn append_metadata_stripping_arguments(arguments: &mut Vec<OsString>, strip_metadata: bool) {
+    if strip_metadata {
+        arguments.extend([
+            OsString::from("-map_metadata"),
+            OsString::from("-1"),
+            OsString::from("-map_chapters"),
+            OsString::from("-1"),
+        ]);
+    }
 }
 
 pub(crate) fn validate_common_request(
@@ -1234,7 +1250,7 @@ fn parse_arguments(value: &str) -> Result<Vec<OsString>, AppError> {
     Ok(arguments)
 }
 
-fn validate_user_arguments(arguments: &[OsString]) -> Result<(), AppError> {
+fn validate_user_arguments(arguments: &[OsString], strip_metadata: bool) -> Result<(), AppError> {
     const RESERVED: &[&str] = &[
         "-i",
         "-ss",
@@ -1287,6 +1303,11 @@ fn validate_user_arguments(arguments: &[OsString]) -> Result<(), AppError> {
         let (option, has_inline_value) = value
             .split_once('=')
             .map_or((value.as_ref(), false), |(option, _)| (option, true));
+        if strip_metadata && matches!(option, "-metadata" | "-metadata:g") {
+            return Err(AppError::invalid_request(
+                AppErrorMessageId::ExportGlobalMetadataCannotBeSetWhenStrippingMetadata,
+            ));
+        }
         let is_reserved = RESERVED.iter().any(|reserved| {
             option == *reserved
                 || option
@@ -1350,6 +1371,7 @@ mod tests {
         optimized_command_preview, pre_level_filter_chain, validate_audio_track_selections,
         waveform_signal_filter_chain,
     };
+    use crate::error::AppErrorMessageId;
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
     fn media() -> MediaInfo {
@@ -1422,6 +1444,7 @@ mod tests {
             audio_metadata: Vec::new(),
             merge_audio: false,
             rotation_degrees: 0,
+            strip_metadata: false,
             resolution: ResolutionSelection {
                 width: 1920,
                 height: 1080,
@@ -1818,6 +1841,7 @@ mod tests {
                             audio_tracks: vec![audio_track(1), audio_track(2)],
                             audio_metadata: audio_metadata.clone(),
                             merge_audio: false,
+                            strip_metadata: false,
                             rotation_degrees: 0,
                         },
                         &source_path,
@@ -1915,6 +1939,7 @@ mod tests {
                 audio_metadata: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 0,
+                strip_metadata: false,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -1946,6 +1971,7 @@ mod tests {
                 audio_metadata: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 0,
+                strip_metadata: false,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -1957,6 +1983,60 @@ mod tests {
             .collect::<Vec<_>>();
         assert!(values.contains(&"-an".to_owned()));
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
+    }
+
+    #[test]
+    fn stripping_metadata_and_chapters_keeps_fast_and_optimized_video_copy_modes() {
+        let fast_arguments = build_fast_arguments(
+            &media(),
+            &FastExportRequest {
+                source_path: "source.mkv".to_owned(),
+                trim: TrimSelection {
+                    start_micros: 0,
+                    end_micros: 2_000_000,
+                },
+                audio_tracks: Vec::new(),
+                audio_metadata: Vec::new(),
+                merge_audio: false,
+                strip_metadata: true,
+                rotation_degrees: 0,
+            },
+            Path::new("source.mkv"),
+            Path::new("out.mkv"),
+        )
+        .expect("fast request is valid");
+        let fast_values = fast_arguments
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        let mut optimized_request = optimized_request("-c:v libx264 -crf 20");
+        optimized_request.strip_metadata = true;
+        let optimized_arguments = build_optimized_arguments(
+            &media(),
+            &optimized_request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect("optimized request is valid");
+        let optimized_values = optimized_arguments
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        for values in [&fast_values, &optimized_values] {
+            assert!(
+                values
+                    .windows(2)
+                    .any(|pair| pair == ["-map_metadata", "-1"])
+            );
+            assert!(
+                values
+                    .windows(2)
+                    .any(|pair| pair == ["-map_chapters", "-1"])
+            );
+        }
+        assert!(fast_values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
     }
 
     #[test]
@@ -1973,6 +2053,7 @@ mod tests {
                 audio_metadata: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 90,
+                strip_metadata: false,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -2015,6 +2096,7 @@ mod tests {
                 audio_metadata: Vec::new(),
                 merge_audio: true,
                 rotation_degrees: 0,
+                strip_metadata: false,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -2054,6 +2136,7 @@ mod tests {
                 audio_metadata: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 0,
+                strip_metadata: false,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -2637,6 +2720,7 @@ mod tests {
                 audio_metadata: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 0,
+                strip_metadata: false,
                 resolution: ResolutionSelection {
                     width: 1920,
                     height: 1080,
@@ -2793,6 +2877,48 @@ mod tests {
             .expect_err("application-owned arguments and malformed options must fail");
             assert_eq!(error.code, "invalid_request", "arguments: {arguments}");
         }
+    }
+
+    #[test]
+    fn stripping_metadata_rejects_custom_global_metadata_assignments() {
+        for arguments in [
+            "-c:v libx264 -metadata title=private",
+            "-c:v libx264 -metadata=title=private",
+            "-c:v libx264 -metadata:g title=private",
+        ] {
+            let mut request = optimized_request(arguments);
+            request.strip_metadata = true;
+
+            let error = build_optimized_arguments(
+                &media(),
+                &request,
+                Path::new("source.mkv"),
+                Path::new("out.mp4"),
+            )
+            .expect_err("global metadata assignments must not bypass metadata stripping");
+
+            assert_eq!(
+                error.message_id,
+                AppErrorMessageId::ExportGlobalMetadataCannotBeSetWhenStrippingMetadata,
+                "arguments: {arguments}"
+            );
+        }
+
+        let mut stream_metadata_request =
+            optimized_request("-c:v libx264 -metadata:s:a:0 title=custom-audio-title");
+        stream_metadata_request.strip_metadata = true;
+        let stream_metadata_arguments = build_optimized_arguments(
+            &media(),
+            &stream_metadata_request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect("stream-scoped metadata remains available when stripping global metadata");
+        assert!(
+            stream_metadata_arguments.windows(2).any(|pair| {
+                pair[0] == "-metadata:s:a:0" && pair[1] == "title=custom-audio-title"
+            })
+        );
     }
 
     #[test]
@@ -3044,6 +3170,7 @@ mod tests {
                 audio_metadata: Vec::new(),
                 merge_audio: false,
                 rotation_degrees: 0,
+                strip_metadata: false,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),

@@ -62,6 +62,8 @@ pub enum AppErrorMessageId {
     ExportFfmpegCouldNotRenderTheSelectedSegment,
     #[serde(rename = "export.ffmpegIsRequiredToExportVideoFiles")]
     ExportFfmpegIsRequiredToExportVideoFiles,
+    #[serde(rename = "export.globalMetadataCannotBeSetWhenStrippingMetadata")]
+    ExportGlobalMetadataCannotBeSetWhenStrippingMetadata,
     #[serde(rename = "export.fileOrFolderIsNoLongerAvailable")]
     ExportFileOrFolderIsNoLongerAvailable,
     #[serde(rename = "export.finalOptimizedFfmpegOptionIsMissingItsValue")]

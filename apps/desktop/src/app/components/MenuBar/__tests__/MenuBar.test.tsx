@@ -63,6 +63,7 @@ const menuState = vi.hoisted(() => ({
     deleteSourceOnRenderFinish: false,
     lastSeenChangelogVersion: "1.10.4",
     mergeAudioEnabledDefault: false,
+    stripMetadataOnExport: false,
     theme: "system",
     primaryColor: "#efbf04",
     lastAudiblePlaybackVolumePercent: 100,
@@ -771,7 +772,7 @@ describe("MenuBarTest", () => {
     const options = screen.getAllByRole("option");
     expect(options).toHaveLength(2);
     expect(options.map((option) => option.getAttribute("aria-label"))).toEqual(
-      expect.arrayContaining(["English, en", "Русский, ru"]),
+      expect.arrayContaining(["English, en", "Русский (Russian), ru"]),
     );
     expect(screen.queryByRole("option", { name: /Japanese/ })).not.toBeInTheDocument();
 

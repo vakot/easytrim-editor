@@ -373,14 +373,16 @@ function LanguageSelectorItemFlag({
   );
 }
 
-function LanguageSelectorItemText({ children, className, ...props }: React.ComponentProps<"div">) {
+function LanguageSelectorItemText({
+  className,
+  ...props
+}: Omit<React.ComponentProps<"span">, "children">) {
   const { language } = useLanguageSelectorItem();
 
   return (
-    <div className={cn("col-start-2 row-start-1 grid min-w-0 gap-y-1", className)} {...props}>
-      <span className="min-w-0 truncate">{getLanguageDisplayName(language)}</span>
-      {children}
-    </div>
+    <span className={cn("col-start-2 row-start-1 min-w-0 truncate", className)} {...props}>
+      {getLanguageDisplayName(language)}
+    </span>
   );
 }
 
