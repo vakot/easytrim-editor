@@ -514,7 +514,7 @@ pub fn build_optimized_arguments(
         ]);
     }
     let user_arguments = parse_arguments(&request.arguments)?;
-    validate_user_arguments(&user_arguments)?;
+    validate_user_arguments(&user_arguments, request.strip_metadata)?;
     arguments.extend(user_arguments);
     append_audio_metadata_arguments(
         &mut arguments,
@@ -1250,7 +1250,7 @@ fn parse_arguments(value: &str) -> Result<Vec<OsString>, AppError> {
     Ok(arguments)
 }
 
-fn validate_user_arguments(arguments: &[OsString]) -> Result<(), AppError> {
+fn validate_user_arguments(arguments: &[OsString], strip_metadata: bool) -> Result<(), AppError> {
     const RESERVED: &[&str] = &[
         "-i",
         "-ss",
@@ -1303,6 +1303,11 @@ fn validate_user_arguments(arguments: &[OsString]) -> Result<(), AppError> {
         let (option, has_inline_value) = value
             .split_once('=')
             .map_or((value.as_ref(), false), |(option, _)| (option, true));
+        if strip_metadata && matches!(option, "-metadata" | "-metadata:g") {
+            return Err(AppError::invalid_request(
+                AppErrorMessageId::ExportGlobalMetadataCannotBeSetWhenStrippingMetadata,
+            ));
+        }
         let is_reserved = RESERVED.iter().any(|reserved| {
             option == *reserved
                 || option
@@ -1366,6 +1371,7 @@ mod tests {
         optimized_command_preview, pre_level_filter_chain, validate_audio_track_selections,
         waveform_signal_filter_chain,
     };
+    use crate::error::AppErrorMessageId;
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
     fn media() -> MediaInfo {
@@ -2871,6 +2877,48 @@ mod tests {
             .expect_err("application-owned arguments and malformed options must fail");
             assert_eq!(error.code, "invalid_request", "arguments: {arguments}");
         }
+    }
+
+    #[test]
+    fn stripping_metadata_rejects_custom_global_metadata_assignments() {
+        for arguments in [
+            "-c:v libx264 -metadata title=private",
+            "-c:v libx264 -metadata=title=private",
+            "-c:v libx264 -metadata:g title=private",
+        ] {
+            let mut request = optimized_request(arguments);
+            request.strip_metadata = true;
+
+            let error = build_optimized_arguments(
+                &media(),
+                &request,
+                Path::new("source.mkv"),
+                Path::new("out.mp4"),
+            )
+            .expect_err("global metadata assignments must not bypass metadata stripping");
+
+            assert_eq!(
+                error.message_id,
+                AppErrorMessageId::ExportGlobalMetadataCannotBeSetWhenStrippingMetadata,
+                "arguments: {arguments}"
+            );
+        }
+
+        let mut stream_metadata_request =
+            optimized_request("-c:v libx264 -metadata:s:a:0 title=custom-audio-title");
+        stream_metadata_request.strip_metadata = true;
+        let stream_metadata_arguments = build_optimized_arguments(
+            &media(),
+            &stream_metadata_request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect("stream-scoped metadata remains available when stripping global metadata");
+        assert!(
+            stream_metadata_arguments.windows(2).any(|pair| {
+                pair[0] == "-metadata:s:a:0" && pair[1] == "title=custom-audio-title"
+            })
+        );
     }
 
     #[test]

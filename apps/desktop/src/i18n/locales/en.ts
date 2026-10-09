@@ -526,6 +526,7 @@ export const en = {
       selectedExportRangeIsInvalid: "The selected export range is invalid",
       fileLocationCouldNotBeOpened: "Could not open the file location",
       ffmpegCouldNotBeStarted: "FFmpeg could not be started",
+      globalMetadataCannotBeSetWhenStrippingMetadata: "Custom optimized export arguments cannot set global metadata while metadata stripping is enabled",
       analyzeTrackLoudnessToContinue: "Analyze track loudness to continue",
       interruptedWhenEasyTrimClosedUnexpectedly: "The export was interrupted when EasyTrim closed unexpectedly",
     },
