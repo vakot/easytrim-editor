@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.13.2]
+
 ### Added
 
 - Added audio-only export for selected segments as M4A/AAC, MP3 or WAV.
