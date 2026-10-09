@@ -261,7 +261,16 @@ function AudioTrackWaveformCanvas({
 
   return (
     <>
-      <canvas aria-hidden="true" className="absolute inset-0 size-full" ref={canvasRef} />
+      <canvas
+        aria-hidden="true"
+        className="absolute inset-0 size-full"
+        ref={canvasRef}
+        style={{
+          backgroundColor: "var(--muted)",
+          backgroundImage:
+            "repeating-linear-gradient(90deg, color-mix(in srgb, var(--foreground) 6%, transparent) 0 0.0625rem, transparent 0.0625rem 6.25%)",
+        }}
+      />
       {selectionStartPercent > 0 && (
         <div
           aria-hidden="true"

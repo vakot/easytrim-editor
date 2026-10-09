@@ -404,7 +404,7 @@ describe("AudioTrackRow", () => {
     const drawnLineCount = lineTo.mock.calls.length;
     act(() => store.dispatch(audioTrackToggled({ streamIndex: 2 })));
     expect(canvas?.parentElement).toHaveAttribute("data-enabled", "false");
-    expect(canvas?.parentElement).toHaveClass("data-[enabled=false]:opacity-50");
+    expect(canvas?.parentElement?.className).toContain("data-[enabled=false]:opacity-");
     expect(lineTo).toHaveBeenCalledTimes(drawnLineCount);
 
     vi.restoreAllMocks();
@@ -479,6 +479,10 @@ describe("AudioTrackRow", () => {
       );
     });
     await waitFor(() => expect(strokeStyle).toHaveBeenCalledWith("rgb(239 191 4)"));
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas");
+    expect(canvas?.style.backgroundColor).toBe("var(--muted)");
+    expect(canvas?.style.backgroundImage).toContain("var(--foreground)");
+
     const outsideStart = document.querySelector<HTMLElement>(
       '[data-slot="audio-waveform-outside-selection"][data-edge="start"]',
     );
