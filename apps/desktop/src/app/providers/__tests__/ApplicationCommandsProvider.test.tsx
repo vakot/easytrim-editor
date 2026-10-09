@@ -244,7 +244,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(60);
+    ).toHaveLength(61);
     expect(
       screen
         .getAllByRole("button")
