@@ -26,10 +26,24 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   const resolvedTheme = resolveTheme(preference, systemDark);
   const previewedColor = useRef<PrimaryColor | null>(null);
   const previousPrimaryColor = useRef(primaryColor);
+  const primaryColorListeners = useRef(new Set<() => void>());
+
+  const notifyPrimaryColorChange = useCallback(() => {
+    primaryColorListeners.current.forEach((listener) => listener());
+  }, []);
+
+  const subscribeToPrimaryColor = useCallback((listener: () => void) => {
+    primaryColorListeners.current.add(listener);
+
+    return () => primaryColorListeners.current.delete(listener);
+  }, []);
+
+  const getPrimaryColor = useCallback(() => previewedColor.current ?? primaryColor, [primaryColor]);
 
   const previewPrimaryColor = useCallback(
     (nextPrimaryColor: PrimaryColor) => {
       const root = document.documentElement;
+      const previousColor = getPrimaryColor();
       const isPersistedColor = nextPrimaryColor === primaryColor;
       previewedColor.current = isPersistedColor ? null : nextPrimaryColor;
       root.toggleAttribute("data-primary-color-scrubbing", !isPersistedColor);
@@ -39,8 +53,9 @@ function ThemeProvider({ children }: { children: ReactNode }) {
         root.style.removeProperty("--primary-color-preview");
       }
       applyPrimaryColor(root, nextPrimaryColor);
+      if (previousColor !== nextPrimaryColor) notifyPrimaryColorChange();
     },
-    [primaryColor],
+    [getPrimaryColor, notifyPrimaryColorChange, primaryColor],
   );
 
   useLayoutEffect(() => {
@@ -49,10 +64,12 @@ function ThemeProvider({ children }: { children: ReactNode }) {
     root.classList.toggle("dark", resolvedTheme === "dark");
     root.dataset.theme = resolvedTheme;
     if (previousPrimaryColor.current !== primaryColor) {
+      const previousColor = previewedColor.current ?? previousPrimaryColor.current;
       previousPrimaryColor.current = primaryColor;
       previewedColor.current = null;
       root.removeAttribute("data-primary-color-scrubbing");
       root.style.removeProperty("--primary-color-preview");
+      if (previousColor !== primaryColor) notifyPrimaryColorChange();
     }
     applyPrimaryColor(root, previewedColor.current ?? primaryColor);
     root.style.colorScheme = resolvedTheme;
@@ -69,11 +86,11 @@ function ThemeProvider({ children }: { children: ReactNode }) {
       root.style.removeProperty("--primary-foreground-dark");
       root.style.removeProperty("color-scheme");
     };
-  }, [preference, primaryColor, resolvedTheme]);
+  }, [getPrimaryColor, notifyPrimaryColorChange, preference, primaryColor, resolvedTheme]);
 
   const value = useMemo(
-    () => ({ resolvedTheme, previewPrimaryColor }),
-    [resolvedTheme, previewPrimaryColor],
+    () => ({ resolvedTheme, previewPrimaryColor, subscribeToPrimaryColor, getPrimaryColor }),
+    [resolvedTheme, previewPrimaryColor, subscribeToPrimaryColor, getPrimaryColor],
   );
 
   return <ThemeContext value={value}>{children}</ThemeContext>;

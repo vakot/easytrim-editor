@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Improved audio waveform rendering to stay sharp as tracks resize and reflect live gain and mute changes.
+- Improved audio waveforms to stay sharp as tracks resize, use the current accent color, and transition smoothly during Gain and mute changes.
 
 ## [1.13.2]
 

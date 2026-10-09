@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
 import { type AudioTrackState, waveformDisplayFailed } from "@/app/store/slices/audio-slice";
+import { usePrimaryColor } from "@/app/theme/useTheme";
 import { localizeAppError } from "@/i18n/app-errors";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
@@ -64,6 +65,14 @@ const WAVEFORM_HEADER_SIZE = 12;
 const WAVEFORM_FORMAT_VERSION = 1;
 const WAVEFORM_FLAG_RLE = 1;
 const WAVEFORM_MAX_AMPLITUDE = 255;
+const ANIMATION_TIME_CONSTANT_MS = 90;
+const ANIMATION_SETTLE_THRESHOLD = 0.01;
+
+interface WaveformVisualState {
+  color: [number, number, number];
+  gainDb: number;
+  opacity: number;
+}
 
 function AudioTrackWaveformCanvas({
   gainDb,
@@ -77,9 +86,14 @@ function AudioTrackWaveformCanvas({
   waveform: WaveformWithStatus<"ready">;
 }) {
   const dispatch = useAppDispatch();
+  const primaryColor = usePrimaryColor();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const envelopeRef = useRef<WaveformEnvelope | null>(null);
   const drawRef = useRef<() => void>(() => undefined);
+  const frameRef = useRef<number | null>(null);
+  const lastFrameTimeRef = useRef<number | null>(null);
+  const targetRef = useRef<WaveformVisualState | null>(null);
+  const visualRef = useRef<WaveformVisualState | null>(null);
   const [envelopeReady, setEnvelopeReady] = useState(false);
 
   const draw = useCallback(() => {
@@ -100,11 +114,13 @@ function AudioTrackWaveformCanvas({
     if (!context) return;
 
     context.clearRect(0, 0, pixelWidth, pixelHeight);
-    if (muted) return;
+    const visual = visualRef.current;
+    if (!visual || visual.opacity <= 0) return;
 
-    const gain = 10 ** (gainDb / 20);
+    const gain = 10 ** (visual.gainDb / 20);
     const centerY = pixelHeight / 2;
-    context.strokeStyle = "#8b5cf6";
+    context.globalAlpha = visual.opacity;
+    context.strokeStyle = `rgb(${visual.color.map(Math.round).join(" ")})`;
     context.lineWidth = 1;
     context.beginPath();
 
@@ -124,7 +140,57 @@ function AudioTrackWaveformCanvas({
       }
     }
     context.stroke();
-  }, [gainDb, muted]);
+    context.globalAlpha = 1;
+  }, []);
+
+  const tickRef = useRef<(time: number) => void>(() => undefined);
+  const tick = useCallback((time: number) => {
+    frameRef.current = null;
+    const current = visualRef.current;
+    const next = targetRef.current;
+    if (!current || !next) return;
+
+    const previousTime = lastFrameTimeRef.current ?? time;
+    const elapsed = Math.max(0, time - previousTime);
+    lastFrameTimeRef.current = time;
+    const progress = 1 - Math.exp(-elapsed / ANIMATION_TIME_CONSTANT_MS);
+    current.gainDb += (next.gainDb - current.gainDb) * progress;
+    current.opacity += (next.opacity - current.opacity) * progress;
+    current.color = current.color.map((channel, index) => {
+      const targetChannel = next.color[index] ?? channel;
+      return channel + (targetChannel - channel) * progress;
+    }) as WaveformVisualState["color"];
+
+    const settled =
+      Math.abs(next.gainDb - current.gainDb) < ANIMATION_SETTLE_THRESHOLD &&
+      Math.abs(next.opacity - current.opacity) < ANIMATION_SETTLE_THRESHOLD &&
+      current.color.every(
+        (channel, index) => Math.abs(channel - (next.color[index] ?? channel)) < 1,
+      );
+
+    if (settled) {
+      visualRef.current = { ...next, color: [...next.color] };
+      lastFrameTimeRef.current = null;
+    }
+    drawRef.current();
+
+    if (!settled) {
+      frameRef.current = window.requestAnimationFrame((nextTime) => tickRef.current(nextTime));
+    }
+  }, []);
+
+  const updateAnimation = useCallback(() => {
+    if (!envelopeReady) return;
+    if (!visualRef.current) {
+      visualRef.current = { ...targetRef.current!, color: [...targetRef.current!.color] };
+      drawRef.current();
+      return;
+    }
+    if (frameRef.current === null) {
+      lastFrameTimeRef.current = null;
+      frameRef.current = window.requestAnimationFrame((time) => tickRef.current(time));
+    }
+  }, [envelopeReady]);
 
   useEffect(() => {
     envelopeRef.current = null;
@@ -155,8 +221,23 @@ function AudioTrackWaveformCanvas({
 
   useLayoutEffect(() => {
     drawRef.current = draw;
-    if (envelopeReady) draw();
-  }, [draw, envelopeReady]);
+    targetRef.current = {
+      color: parseHexColor(primaryColor),
+      gainDb,
+      opacity: muted ? 0 : 1,
+    };
+    tickRef.current = tick;
+    updateAnimation();
+  }, [draw, envelopeReady, gainDb, muted, primaryColor, tick, updateAnimation]);
+
+  useEffect(
+    () => () => {
+      if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+      lastFrameTimeRef.current = null;
+    },
+    [],
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -175,6 +256,14 @@ function AudioTrackWaveformCanvas({
   }, [waveform.url]);
 
   return <canvas aria-hidden="true" className="absolute inset-0 size-full" ref={canvasRef} />;
+}
+
+function parseHexColor(color: string): [number, number, number] {
+  return [
+    Number.parseInt(color.slice(1, 3), 16),
+    Number.parseInt(color.slice(3, 5), 16),
+    Number.parseInt(color.slice(5, 7), 16),
+  ];
 }
 
 function parseWaveformEnvelope(buffer: ArrayBuffer, expectedWidth: number): WaveformEnvelope {

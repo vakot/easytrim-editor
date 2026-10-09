@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useSyncExternalStore } from "react";
 
 import { ThemeContext, type ThemeContextValue } from "./theme-context";
 
@@ -8,4 +8,9 @@ function useTheme(): ThemeContextValue {
   return context;
 }
 
-export { useTheme };
+function usePrimaryColor() {
+  const { getPrimaryColor, subscribeToPrimaryColor } = useTheme();
+  return useSyncExternalStore(subscribeToPrimaryColor, getPrimaryColor, getPrimaryColor);
+}
+
+export { usePrimaryColor, useTheme };
