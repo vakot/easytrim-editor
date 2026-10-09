@@ -23,12 +23,6 @@ type ComboboxContextValue = {
   triggerRef: React.MutableRefObject<HTMLElement | null>;
 };
 
-type ComboboxProps = Omit<React.ComponentProps<typeof Popover>, "open" | "onOpenChange"> & {
-  label?: string;
-  onOpenChange?: (open: boolean) => void;
-  shouldFilter?: boolean;
-};
-
 function Combobox({
   children,
   defaultOpen = false,
@@ -36,7 +30,11 @@ function Combobox({
   onOpenChange,
   shouldFilter = true,
   ...props
-}: ComboboxProps) {
+}: Omit<React.ComponentProps<typeof Popover>, "open" | "onOpenChange"> & {
+  label?: string;
+  onOpenChange?: (open: boolean) => void;
+  shouldFilter?: boolean;
+}) {
   const allowTriggerCloseRef = React.useRef(false);
   const hasInputTriggerRef = React.useRef(false);
   const openRef = React.useRef(defaultOpen);
