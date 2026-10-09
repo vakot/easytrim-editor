@@ -33,10 +33,14 @@ const mocks = vi.hoisted(() => ({
     origin,
     type: "export/fast",
   })),
+  startAudioExportRequested: vi.fn((origin: unknown) => ({
+    origin,
+    type: "export/audio",
+  })),
 }));
 
 const state = {
-  audio: { tracks: [] },
+  audio: { tracks: [] as { enabled: boolean }[] },
   crop: {
     flipHorizontal: false,
     flipVertical: false,
@@ -86,6 +90,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
 vi.mock("@/app/store/thunks/export-thunks", () => ({
   openOptimizedExportDialog: mocks.openOptimizedExportDialog,
   openGifExportDialog: mocks.openGifExportDialog,
+  startAudioExportRequested: mocks.startAudioExportRequested,
   startFastExportRequested: mocks.startFastExportRequested,
 }));
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
@@ -218,10 +223,12 @@ describe("ApplicationCommandsProvider", () => {
     mocks.panelsAreReset = true;
     mocks.diagnosticsError.mockClear();
     mocks.requestSourceDelete.mockClear();
+    mocks.startAudioExportRequested.mockClear();
     mocks.availableVersion = null;
     mocks.updateStatus = "idle";
     mocks.isPlaying = false;
     mocks.previewAvailable = false;
+    state.audio.tracks = [];
     state.importWorkflow.isNativeDialogOpen = false;
     state.source.status = "ready";
     state.preferences.activityFeedView = "default";
@@ -244,7 +251,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(61);
+    ).toHaveLength(62);
     expect(
       screen
         .getAllByRole("button")
@@ -393,6 +400,29 @@ describe("ApplicationCommandsProvider", () => {
     state.source.status = "loading";
     view.rerender(runtimeUi());
     expect(screen.getByRole("button", { name: "gif-export" })).toBeDisabled();
+  });
+
+  it("runs Audio Export through the shared command and requires a selected audio track", async () => {
+    state.audio.tracks = [{ enabled: true }];
+    const view = renderRuntime();
+    const command = screen.getByRole("button", { name: "audio-export" });
+
+    expect(command).toHaveAttribute("data-group", "Export");
+    expect(command).toBeEnabled();
+    fireEvent.click(command);
+
+    expect(mocks.startAudioExportRequested).toHaveBeenCalledWith({
+      id: "palette.audio-export",
+      type: "menu",
+    });
+    expect(mocks.dispatch).toHaveBeenCalledWith({
+      origin: { id: "palette.audio-export", type: "menu" },
+      type: "export/audio",
+    });
+
+    state.audio.tracks[0]!.enabled = false;
+    view.rerender(runtimeUi());
+    expect(screen.getByRole("button", { name: "audio-export" })).toBeDisabled();
   });
 
   it("allows saving a frame only while playback is paused", () => {

@@ -80,7 +80,7 @@ function getShortcutDisplayKeys(
         ? "→"
         : shortcut.key;
 
-  if (shortcut.modifier === "none") return [key];
+  if (shortcut.modifier === "none") return shortcut.shift ? ["Shift", key] : [key];
 
   const modifier =
     shortcut.modifier === "alt"
@@ -89,14 +89,14 @@ function getShortcutDisplayKeys(
         ? "Cmd"
         : "Ctrl";
 
-  return [modifier, key];
+  return shortcut.shift ? [modifier, "Shift", key] : [modifier, key];
 }
 
 function getShortcutAriaValue(
   shortcut: ApplicationShortcut,
   platform = getShortcutPlatform(),
 ): string {
-  if (shortcut.modifier === "none") return shortcut.key;
+  if (shortcut.modifier === "none") return shortcut.shift ? `Shift+${shortcut.key}` : shortcut.key;
 
   const modifier =
     shortcut.modifier === "alt"
@@ -105,7 +105,7 @@ function getShortcutAriaValue(
         ? "Meta"
         : "Control";
 
-  return `${modifier}+${shortcut.key}`;
+  return `${modifier}${shortcut.shift ? "+Shift" : ""}+${shortcut.key}`;
 }
 
 function isShortcutEvent(
@@ -114,7 +114,13 @@ function isShortcutEvent(
   platform = getShortcutPlatform(),
 ): boolean {
   if (shortcut.modifier === "none") {
-    return event.key === shortcut.key && !event.altKey && !event.ctrlKey && !event.metaKey;
+    return (
+      event.key === shortcut.key &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      (shortcut.shift === undefined || event.shiftKey === shortcut.shift)
+    );
   }
 
   const usesMeta = shortcut.modifier === "primary" && platform === "macos";
@@ -135,7 +141,7 @@ function isShortcutEvent(
     requiredModifierPressed &&
     !otherModifierPressed &&
     !unexpectedAltPressed &&
-    !event.shiftKey
+    event.shiftKey === (shortcut.shift ?? false)
   );
 }
 

@@ -32,10 +32,12 @@ describe("ExportActions", () => {
     expect(screen.getByRole("button", { name: "Optimized Export" })).toBeDisabled();
     const audioExportButton = screen.getByRole("button", { name: "Audio Export" });
     expect(audioExportButton).toBeDisabled();
+    expect(audioExportButton).toHaveAttribute("aria-keyshortcuts", "Control+Shift+A");
     const audioExportTooltipTrigger = audioExportButton.parentElement!;
     expect(audioExportTooltipTrigger).toHaveAttribute("tabindex", "0");
     audioExportTooltipTrigger.focus();
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Select an audio track to export");
+    expect(screen.getByRole("tooltip")).toHaveTextContent("CtrlShiftA");
 
     const gifExportButton = screen.getByRole("button", { name: "GIF Export" });
     expect(gifExportButton).toBeDisabled();
@@ -48,7 +50,7 @@ describe("ExportActions", () => {
       "aria-keyshortcuts",
       "Control+E",
     );
-    expect(gifExportButton).toHaveAttribute("aria-keyshortcuts", "Control+G");
+    expect(gifExportButton).toHaveAttribute("aria-keyshortcuts", "Control+Shift+G");
 
     await user.hover(gifExportButton.parentElement!);
     expect(await screen.findByRole("tooltip")).toHaveTextContent(

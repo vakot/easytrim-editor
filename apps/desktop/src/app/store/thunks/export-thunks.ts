@@ -385,12 +385,11 @@ const startFastExportRequested =
     await startEditingInstanceExport("fast", dispatch, getState, origin);
   };
 
-const startAudioExportRequested = (): AppThunk<Promise<void>> => async (dispatch, getState) => {
-  await startEditingInstanceExport("audio", dispatch, getState, {
-    id: "audio-export",
-    type: "button",
-  });
-};
+const startAudioExportRequested =
+  (origin: DiagnosticOrigin = { id: "audio-export", type: "button" }): AppThunk<Promise<void>> =>
+  async (dispatch, getState) => {
+    await startEditingInstanceExport("audio", dispatch, getState, origin);
+  };
 
 const startOptimizedExportRequested =
   (origin: DiagnosticOrigin = { id: "optimized", type: "button" }): AppThunk =>

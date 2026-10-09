@@ -22,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import {
+  AUDIO_EXPORT_SHORTCUT,
   FAST_EXPORT_SHORTCUT,
   GIF_EXPORT_SHORTCUT,
   OPTIMIZED_EXPORT_SHORTCUT,
@@ -173,11 +174,13 @@ function ExportActions() {
 
       <ExportActionTooltip
         disabled={!sourceReady || !hasSelectedAudio}
+        shortcut={AUDIO_EXPORT_SHORTCUT}
         tooltip={
           hasSelectedAudio ? t("export.audioExport.tooltip") : t("export.audioExport.noTracks")
         }
       >
         <ExportActionButton
+          aria-keyshortcuts={getShortcutAriaValue(AUDIO_EXPORT_SHORTCUT)}
           disabled={!sourceReady || !hasSelectedAudio}
           icon={<AudioLines aria-hidden="true" />}
           onClick={() => void dispatch(startAudioExportRequested())}

@@ -483,6 +483,7 @@ export const en = {
       optimizedExport: "optimized export|optimize|export",
       fastExport: "fast export|fast|export",
       gifExport: "gif export|gif|animated image",
+      audioExport: "audio export|audio|m4a|wav",
       saveCurrentFrame: "save|frame|screenshot|image|png",
     },
   },
