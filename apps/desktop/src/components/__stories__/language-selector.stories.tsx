@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import {
+  type LanguageOption,
   LanguageSelector,
   LanguageSelectorContent,
   LanguageSelectorEmpty,
@@ -31,7 +32,7 @@ import {
   LanguageSelectorTrigger,
   LanguageSelectorValue,
 } from "@/components/language-selector";
-import { SUPPORTED_LANGUAGES } from "@/domain/languages";
+import { AUDIO_METADATA_LANGUAGES, SUPPORTED_LANGUAGES } from "@/domain/languages";
 
 const meta = {
   title: "Design System/LanguageSelector",
@@ -50,13 +51,23 @@ export const ButtonTrigger: Story = {
   render: () => <ButtonTriggerExample />,
 };
 
-function ButtonTriggerExample({ defaultOpen = false }: { defaultOpen?: boolean }) {
+export const LongList: Story = {
+  render: () => <ButtonTriggerExample defaultOpen languages={AUDIO_METADATA_LANGUAGES} />,
+};
+
+function ButtonTriggerExample({
+  defaultOpen = false,
+  languages = SUPPORTED_LANGUAGES,
+}: {
+  defaultOpen?: boolean;
+  languages?: readonly LanguageOption[];
+}) {
   return (
     <LanguageSelector
       defaultOpen={defaultOpen}
       defaultValue="ru"
       label="Search languages"
-      languages={SUPPORTED_LANGUAGES}
+      languages={languages}
     >
       <LanguageSelectorTrigger>
         <Button
