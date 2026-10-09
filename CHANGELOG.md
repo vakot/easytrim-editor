@@ -9,8 +9,12 @@ All notable changes to this project will be documented in this file.
 - Added audio-only export for selected segments as M4A/AAC, MP3 or WAV.
 - Added compatible output-container choices to Fast Export when selected streams can be remuxed without re-encoding.
 - Added a global option to strip container metadata and chapters from queued exports.
-- Added GIF export for selected segments with adjustable palette quality, dithering, and frame rate, plus progress and export metrics calculated from available FFmpeg data.
+- Added GIF export for selected segments.
 - Added per-audio-track output metadata editing.
+
+### Fixed
+
+- Updated the fallback metric calculation to ensure consistent metric values across the status bar and export queue entries.
 
 ## [1.13.1]
 
