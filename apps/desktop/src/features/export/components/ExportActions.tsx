@@ -1,4 +1,4 @@
-import { AudioLines, Film, List, Scissors, Settings2 } from "lucide-react";
+import { List, MoreHorizontal, Scissors, Settings2 } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -15,6 +15,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -22,12 +28,15 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import {
-  AUDIO_EXPORT_SHORTCUT,
   FAST_EXPORT_SHORTCUT,
-  GIF_EXPORT_SHORTCUT,
   OPTIMIZED_EXPORT_SHORTCUT,
 } from "@/app/commands/file/file-shortcuts.constants";
+import {
+  ApplicationCommandIcon,
+  ApplicationCommandShortcut,
+} from "@/app/components/ApplicationCommandMenuItem";
 import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
+import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
@@ -43,9 +52,7 @@ import {
 } from "@/app/store/slices/preferences-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
-  openGifExportDialog,
   openOptimizedExportDialog,
-  startAudioExportRequested,
   startExportQueue,
   startFastExportRequested,
 } from "@/app/store/thunks/export-thunks";
@@ -86,7 +93,9 @@ function ExportActions() {
         open={exportQueueDialogOpen}
       >
         <ExportQueue>
-          <ExportQueueTrigger finishedExports={finishedExports} queueSize={queueSize} />
+          <ExportActionTooltip tooltip={t("queue.actions.openExportQueue")}>
+            <ExportQueueTrigger finishedExports={finishedExports} queueSize={queueSize} />
+          </ExportActionTooltip>
 
           <DialogContent className="max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
             <DialogHeader className="-mx-4 border-b px-4 pb-4">
@@ -172,38 +181,7 @@ function ExportActions() {
         </ExportActionButton>
       </ExportActionTooltip>
 
-      <ExportActionTooltip
-        disabled={!sourceReady || !hasSelectedAudio}
-        shortcut={AUDIO_EXPORT_SHORTCUT}
-        tooltip={
-          hasSelectedAudio ? t("export.audioExport.tooltip") : t("export.audioExport.noTracks")
-        }
-      >
-        <ExportActionButton
-          aria-keyshortcuts={getShortcutAriaValue(AUDIO_EXPORT_SHORTCUT)}
-          disabled={!sourceReady || !hasSelectedAudio}
-          icon={<AudioLines aria-hidden="true" />}
-          onClick={() => void dispatch(startAudioExportRequested())}
-        >
-          {t("export.audioExport.action")}
-        </ExportActionButton>
-      </ExportActionTooltip>
-      <ExportActionTooltip
-        disabled={!sourceReady}
-        shortcut={GIF_EXPORT_SHORTCUT}
-        tooltip={t("export.gif.tooltip")}
-      >
-        <ExportActionButton
-          aria-keyshortcuts={getShortcutAriaValue(GIF_EXPORT_SHORTCUT)}
-          disabled={!sourceReady}
-          icon={<Film aria-hidden="true" />}
-          onClick={() =>
-            void dispatch(openGifExportDialog({ id: "toolbar.gif-export", type: "button" }))
-          }
-        >
-          {t("export.gif.action")}
-        </ExportActionButton>
-      </ExportActionTooltip>
+      <MoreExportActionsDropdown hasSelectedAudio={hasSelectedAudio} sourceReady={sourceReady} />
     </div>
   );
 }
@@ -232,6 +210,91 @@ function ExportQueueTrigger({
         {t("queue.title")}
       </ExportActionButton>
     </DialogTrigger>
+  );
+}
+
+function MoreExportActionsDropdown({
+  hasSelectedAudio,
+  sourceReady,
+}: {
+  hasSelectedAudio: boolean;
+  sourceReady: boolean;
+}) {
+  const { t } = useTranslation();
+  const audioExport = useApplicationCommand("audio-export");
+  const gifExport = useApplicationCommand("gif-export");
+
+  return (
+    <Tooltip>
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <TooltipTrigger asChild>
+            <ExportActionButton icon={<MoreHorizontal aria-hidden="true" />}>
+              {t("export.actions.more")}
+            </ExportActionButton>
+          </TooltipTrigger>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="max-w-[calc(100vw-1rem)]">
+          <ExportFormatMenuItem
+            command={audioExport}
+            disabledReason={
+              !hasSelectedAudio
+                ? t("export.audioExport.noTracks")
+                : !sourceReady
+                  ? t("export.actions.sourceRequired")
+                  : undefined
+            }
+            tooltip={t("export.audioExport.tooltip")}
+          />
+          <ExportFormatMenuItem
+            command={gifExport}
+            disabledReason={!sourceReady ? t("export.actions.sourceRequired") : undefined}
+            tooltip={t("export.gif.tooltip")}
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <TooltipContent side="left">{t("export.actions.moreFormats")}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ExportFormatMenuItem({
+  command,
+  disabledReason,
+  tooltip,
+}: {
+  command: ReturnType<typeof useApplicationCommand>;
+  disabledReason?: string;
+  tooltip: string;
+}) {
+  const { executeCommand } = useApplicationCommands();
+  const disabled = !command.enabled || command.pending || Boolean(disabledReason);
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <DropdownMenuItem
+          aria-disabled={disabled}
+          className={
+            disabled ? "aria-disabled:cursor-not-allowed aria-disabled:opacity-50" : undefined
+          }
+          onSelect={(event) => {
+            if (disabled) {
+              event.preventDefault();
+              return;
+            }
+            void executeCommand(command.id, "menu");
+          }}
+        >
+          <ApplicationCommandIcon className="mr-2" command={command} />
+          <span>{command.label}</span>
+          <ApplicationCommandShortcut command={command} />
+        </DropdownMenuItem>
+      </TooltipTrigger>
+      <TooltipContent side="left">
+        {disabled && disabledReason ? disabledReason : tooltip}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -299,9 +362,9 @@ function ExportActionTooltip({
         </span>
       </TooltipTrigger>
       {shortcut ? (
-        <ShortcutTooltipContent shortcut={shortcut} title={tooltip} />
+        <ShortcutTooltipContent shortcut={shortcut} side="left" title={tooltip} />
       ) : (
-        <TooltipContent>{tooltip}</TooltipContent>
+        <TooltipContent side="left">{tooltip}</TooltipContent>
       )}
     </Tooltip>
   );

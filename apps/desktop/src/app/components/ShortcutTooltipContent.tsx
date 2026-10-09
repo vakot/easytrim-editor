@@ -6,15 +6,17 @@ import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.
 
 function ShortcutTooltipContent({
   shortcut,
+  side,
   title,
 }: {
   shortcut: ApplicationShortcut;
+  side?: "bottom" | "left" | "right" | "top";
   title: string;
 }) {
   const keys = getShortcutDisplayKeys(shortcut);
 
   return (
-    <TooltipContent>
+    <TooltipContent side={side}>
       {title}
       <KbdGroup>
         {keys.map((key) => (

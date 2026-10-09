@@ -652,6 +652,9 @@ export const en = {
       saveChanges: "Save changes",
       start: "Export",
       accessibleLabel: "Export actions",
+      more: "More",
+      moreFormats: "More export formats",
+      sourceRequired: "Open a video before exporting",
     },
     bitrate: {
       label: "Bitrate",
