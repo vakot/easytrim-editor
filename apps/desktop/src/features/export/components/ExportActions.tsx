@@ -253,7 +253,7 @@ function MoreExportActionsDropdown({
           />
         </DropdownMenuContent>
       </DropdownMenu>
-      <TooltipContent side="left">{t("export.actions.moreFormats")}</TooltipContent>
+      <TooltipContent>{t("export.actions.moreFormats")}</TooltipContent>
     </Tooltip>
   );
 }
@@ -362,9 +362,9 @@ function ExportActionTooltip({
         </span>
       </TooltipTrigger>
       {shortcut ? (
-        <ShortcutTooltipContent shortcut={shortcut} side="left" title={tooltip} />
+        <ShortcutTooltipContent shortcut={shortcut} title={tooltip} />
       ) : (
-        <TooltipContent side="left">{tooltip}</TooltipContent>
+        <TooltipContent>{tooltip}</TooltipContent>
       )}
     </Tooltip>
   );
