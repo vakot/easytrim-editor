@@ -9,10 +9,10 @@ import { type AudioTrackState, waveformDisplayFailed } from "@/app/store/slices/
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { usePrimaryColor } from "@/app/theme/useTheme";
 import { timelinePercent } from "@/domain/trim";
+import { useTimelinePlayhead } from "@/features/timeline";
 import { localizeAppError } from "@/i18n/app-errors";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
-import { useAudioPlayback } from "../../../contexts/audio-playback-context";
 import { useWaveformPrepare } from "../../../hooks/useWaveformPreparation";
 
 interface AudioTrackWaveformProps {
@@ -101,18 +101,15 @@ function AudioTrackWaveformCanvas({
   waveform: WaveformWithStatus<"ready">;
 }) {
   const dispatch = useAppDispatch();
-  const { audioPlayheadRef } = useAudioPlayback();
   const primaryColor = usePrimaryColor();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const magnifierCanvasRef = useRef<HTMLCanvasElement>(null);
   const envelopeRef = useRef<WaveformEnvelope | null>(null);
   const drawRef = useRef<() => void>(() => undefined);
-  const drawMagnifierRef = useRef<() => void>(() => undefined);
   const frameRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number | null>(null);
   const targetRef = useRef<WaveformVisualState | null>(null);
   const visualRef = useRef<WaveformVisualState | null>(null);
-  const [envelopeReady, setEnvelopeReady] = useState(false);
+  const [envelope, setEnvelope] = useState<WaveformEnvelope | null>(null);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -159,76 +156,6 @@ function AudioTrackWaveformCanvas({
     context.stroke();
   }, []);
 
-  const drawMagnifier = useCallback(() => {
-    const canvas = magnifierCanvasRef.current;
-    const envelope = envelopeRef.current;
-    const container = canvas?.parentElement;
-    if (!canvas || !envelope || !container || !magnifierEnabled) return;
-
-    const containerWidth = container.getBoundingClientRect().width;
-    if (containerWidth <= 0) return;
-
-    const pixelRatio = Math.max(window.devicePixelRatio || 1, 1);
-    const cssWidth = Math.min(180, containerWidth);
-    const pixelWidth = Math.max(1, Math.round(cssWidth * pixelRatio));
-    const pixelHeight = Math.max(1, Math.round(canvas.getBoundingClientRect().height * pixelRatio));
-    if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
-    if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
-
-    const context = canvas.getContext("2d");
-    if (!context) return;
-
-    const playheadPercent = Math.min(
-      1,
-      Math.max(0, Number.parseFloat(audioPlayheadRef.current?.style.left ?? "0%") / 100),
-    );
-
-    const binsInView = Math.max(1, envelope.width / WAVEFORM_MAGNIFICATION);
-    const centerBin = playheadPercent * envelope.width;
-    const viewStart = Math.min(
-      Math.max(0, centerBin - binsInView / 2),
-      Math.max(0, envelope.width - binsInView),
-    );
-
-    const markerX = ((centerBin - viewStart) / binsInView) * pixelWidth;
-    const containerPlayheadX = playheadPercent * containerWidth;
-    canvas.style.left = `${Math.min(
-      Math.max(0, containerPlayheadX - markerX / pixelRatio),
-      Math.max(0, containerWidth - cssWidth),
-    )}px`;
-
-    context.clearRect(0, 0, pixelWidth, pixelHeight);
-    context.fillStyle = "rgba(15, 15, 18, 0.94)";
-    context.fillRect(0, 0, pixelWidth, pixelHeight);
-
-    const visual = visualRef.current;
-    const gain = 10 ** ((visual?.gainDb ?? gainDb) / 20);
-    const centerY = pixelHeight / 2;
-    context.strokeStyle = `rgb(${(visual?.color ?? parseHexColor(primaryColor)).map(Math.round).join(" ")})`;
-    context.lineWidth = 1;
-    context.beginPath();
-    for (let x = 0; x < pixelWidth; x += 1) {
-      const start = Math.floor(viewStart + (x * binsInView) / pixelWidth);
-      const end = Math.max(start + 1, Math.ceil(viewStart + ((x + 1) * binsInView) / pixelWidth));
-      let amplitude = 0;
-      for (let bin = start; bin < Math.min(end, envelope.width); bin += 1) {
-        amplitude = Math.max(amplitude, envelope.amplitudes[bin] ?? 0);
-      }
-
-      const halfHeight = Math.min(1, (amplitude / WAVEFORM_MAX_AMPLITUDE) * gain) * centerY;
-      if (halfHeight > 0) {
-        context.moveTo(x + 0.5, centerY - halfHeight);
-        context.lineTo(x + 0.5, centerY + halfHeight);
-      }
-    }
-    context.stroke();
-    context.strokeStyle = "rgba(255, 255, 255, 0.9)";
-    context.beginPath();
-    context.moveTo(markerX + 0.5, 0);
-    context.lineTo(markerX + 0.5, pixelHeight);
-    context.stroke();
-  }, [audioPlayheadRef, gainDb, magnifierEnabled, primaryColor]);
-
   const tickRef = useRef<(time: number) => void>(() => undefined);
   const tick = useCallback((time: number) => {
     frameRef.current = null;
@@ -257,7 +184,6 @@ function AudioTrackWaveformCanvas({
       lastFrameTimeRef.current = null;
     }
     drawRef.current();
-    drawMagnifierRef.current();
 
     if (!settled) {
       frameRef.current = window.requestAnimationFrame((nextTime) => tickRef.current(nextTime));
@@ -265,7 +191,7 @@ function AudioTrackWaveformCanvas({
   }, []);
 
   const updateAnimation = useCallback(() => {
-    if (!envelopeReady) return;
+    if (!envelope) return;
     if (!visualRef.current) {
       visualRef.current = { ...targetRef.current!, color: [...targetRef.current!.color] };
       drawRef.current();
@@ -275,7 +201,7 @@ function AudioTrackWaveformCanvas({
       lastFrameTimeRef.current = null;
       frameRef.current = window.requestAnimationFrame((time) => tickRef.current(time));
     }
-  }, [envelopeReady]);
+  }, [envelope]);
 
   useEffect(() => {
     envelopeRef.current = null;
@@ -291,7 +217,7 @@ function AudioTrackWaveformCanvas({
         const envelope = parseWaveformEnvelope(buffer, waveform.width);
         if (!active) return;
         envelopeRef.current = envelope;
-        setEnvelopeReady(true);
+        setEnvelope(envelope);
       })
       .catch(() => {
         if (active) void dispatch(waveformDisplayFailed(stream));
@@ -306,15 +232,13 @@ function AudioTrackWaveformCanvas({
 
   useLayoutEffect(() => {
     drawRef.current = draw;
-    drawMagnifierRef.current = drawMagnifier;
     targetRef.current = {
       color: parseHexColor(primaryColor),
       gainDb,
     };
     tickRef.current = tick;
     updateAnimation();
-    drawMagnifier();
-  }, [draw, drawMagnifier, envelopeReady, gainDb, primaryColor, tick, updateAnimation]);
+  }, [draw, envelope, gainDb, primaryColor, tick, updateAnimation]);
 
   useEffect(
     () => () => {
@@ -330,7 +254,6 @@ function AudioTrackWaveformCanvas({
     if (!canvas) return;
     const handleResize = () => {
       drawRef.current();
-      drawMagnifierRef.current();
     };
 
     window.addEventListener("resize", handleResize);
@@ -344,28 +267,6 @@ function AudioTrackWaveformCanvas({
       window.removeEventListener("resize", handleResize);
     };
   }, [waveform.url]);
-
-  useEffect(() => {
-    const playhead = audioPlayheadRef.current;
-    if (!magnifierEnabled || !playhead || typeof MutationObserver === "undefined") return;
-
-    let frame: number | null = null;
-    const observer = new MutationObserver(() => {
-      if (frame !== null) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = null;
-        drawMagnifierRef.current();
-      });
-    });
-
-    observer.observe(playhead, { attributeFilter: ["style"], attributes: true });
-    drawMagnifierRef.current();
-
-    return () => {
-      observer.disconnect();
-      if (frame !== null) window.cancelAnimationFrame(frame);
-    };
-  }, [audioPlayheadRef, magnifierEnabled]);
 
   return (
     <>
@@ -382,14 +283,6 @@ function AudioTrackWaveformCanvas({
           backgroundSize: "0.0625rem 100%, auto",
         }}
       />
-      {magnifierEnabled && (
-        <canvas
-          aria-hidden="true"
-          className="pointer-events-none absolute top-0 z-2 h-full w-45 max-w-full rounded-md border border-primary/80 shadow-lg"
-          data-slot="audio-waveform-magnifier"
-          ref={magnifierCanvasRef}
-        />
-      )}
       {selectionStartPercent > 0 && (
         <div
           aria-hidden="true"
@@ -408,7 +301,129 @@ function AudioTrackWaveformCanvas({
           style={{ left: `${selectionEndPercent}%`, right: "0%" }}
         />
       )}
+      {magnifierEnabled && envelope && (
+        <AudioTrackWaveformMagnifier
+          envelope={envelope}
+          gainDb={gainDb}
+          primaryColor={primaryColor}
+        />
+      )}
     </>
+  );
+}
+
+function AudioTrackWaveformMagnifier({
+  envelope,
+  gainDb,
+  primaryColor,
+}: {
+  envelope: WaveformEnvelope;
+  gainDb: number;
+  primaryColor: string;
+}) {
+  const { displayedPlayheadMicros } = useTimelinePlayhead();
+  const trim = useAppSelector(selectTrim);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawRef = useRef<() => void>(() => undefined);
+  const playheadPercent = trim
+    ? timelinePercent(displayedPlayheadMicros, trim.sourceDurationMicros) / 100
+    : 0;
+
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    const container = canvas?.parentElement;
+    if (!canvas || !container) return;
+
+    const containerWidth = container.getBoundingClientRect().width;
+    if (containerWidth <= 0) return;
+
+    const pixelRatio = Math.max(window.devicePixelRatio || 1, 1);
+    const cssWidth = Math.min(180, containerWidth);
+    const pixelWidth = Math.max(1, Math.round(cssWidth * pixelRatio));
+    const pixelHeight = Math.max(1, Math.round(canvas.getBoundingClientRect().height * pixelRatio));
+    if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
+    if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    const binsInView = Math.max(1, envelope.width / WAVEFORM_MAGNIFICATION);
+    const centerBin = playheadPercent * envelope.width;
+    const viewStart = Math.min(
+      Math.max(0, centerBin - binsInView / 2),
+      Math.max(0, envelope.width - binsInView),
+    );
+
+    const markerX = ((centerBin - viewStart) / binsInView) * pixelWidth;
+    const containerPlayheadX = playheadPercent * containerWidth;
+    canvas.style.left = `${String(
+      Math.min(
+        Math.max(0, containerPlayheadX - markerX / pixelRatio),
+        Math.max(0, containerWidth - cssWidth),
+      ),
+    )}px`;
+
+    context.clearRect(0, 0, pixelWidth, pixelHeight);
+    context.fillStyle = "rgba(15, 15, 18, 0.94)";
+    context.fillRect(0, 0, pixelWidth, pixelHeight);
+
+    const gain = 10 ** (gainDb / 20);
+    const centerY = pixelHeight / 2;
+    context.strokeStyle = `rgb(${parseHexColor(primaryColor).map(Math.round).join(" ")})`;
+    context.lineWidth = 1;
+    context.beginPath();
+    for (let x = 0; x < pixelWidth; x += 1) {
+      const start = Math.floor(viewStart + (x * binsInView) / pixelWidth);
+      const end = Math.max(start + 1, Math.ceil(viewStart + ((x + 1) * binsInView) / pixelWidth));
+      let amplitude = 0;
+      for (let bin = start; bin < Math.min(end, envelope.width); bin += 1) {
+        amplitude = Math.max(amplitude, envelope.amplitudes[bin] ?? 0);
+      }
+
+      const halfHeight = Math.min(1, (amplitude / WAVEFORM_MAX_AMPLITUDE) * gain) * centerY;
+      if (halfHeight > 0) {
+        context.moveTo(x + 0.5, centerY - halfHeight);
+        context.lineTo(x + 0.5, centerY + halfHeight);
+      }
+    }
+    context.stroke();
+    context.strokeStyle = "rgba(255, 255, 255, 0.9)";
+    context.beginPath();
+    context.moveTo(markerX + 0.5, 0);
+    context.lineTo(markerX + 0.5, pixelHeight);
+    context.stroke();
+  }, [envelope, gainDb, playheadPercent, primaryColor]);
+
+  useLayoutEffect(() => {
+    drawRef.current = draw;
+    draw();
+  }, [draw]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleResize = () => drawRef.current();
+    window.addEventListener("resize", handleResize);
+    if (typeof ResizeObserver === "undefined") {
+      return () => window.removeEventListener("resize", handleResize);
+    }
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(canvas);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      aria-hidden="true"
+      className="pointer-events-none absolute top-0 z-2 h-full w-45 max-w-full rounded-md border border-primary/80 shadow-lg"
+      data-slot="audio-waveform-magnifier"
+      ref={canvasRef}
+    />
   );
 }
 

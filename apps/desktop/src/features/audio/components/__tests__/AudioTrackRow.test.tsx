@@ -30,6 +30,8 @@ import {
   AudioPlaybackContext,
   type AudioPlaybackContract,
 } from "@/features/audio/contexts/audio-playback-context";
+// eslint-disable-next-line no-restricted-imports -- Test controls timeline context updates directly.
+import { TimelinePlayheadContext } from "@/features/timeline/contexts/timeline-runtime-contexts";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
@@ -64,9 +66,9 @@ function renderRow(
   const stream = media.audioStreams[0]!;
   if (!enabled) store.dispatch(audioTrackToggled({ streamIndex: stream.streamIndex }));
 
-  renderTrack(store, streamIndex, showColorPreview);
+  const rendered = renderTrack(store, streamIndex, showColorPreview);
 
-  return { store };
+  return { setPlayhead: rendered.setPlayhead, store };
 }
 
 function renderTrack(
@@ -74,18 +76,29 @@ function renderTrack(
   streamIndex: number,
   showColorPreview = false,
 ) {
-  render(
+  const renderAtPlayhead = (displayedPlayheadMicros: number) => (
     <Provider store={store}>
       <ThemeProvider>
         <AudioPlaybackContext.Provider value={audioPlayback}>
-          <TooltipProvider>
-            {showColorPreview && <PrimaryColorPreviewButton />}
-            <AudioTrackRow streamIndex={streamIndex} />
-          </TooltipProvider>
+          <TimelinePlayheadContext.Provider
+            value={{ displayedPlayheadMicros, playheadRef: { current: null } }}
+          >
+            <TooltipProvider>
+              {showColorPreview && <PrimaryColorPreviewButton />}
+              <AudioTrackRow streamIndex={streamIndex} />
+            </TooltipProvider>
+          </TimelinePlayheadContext.Provider>
         </AudioPlaybackContext.Provider>
       </ThemeProvider>
-    </Provider>,
+    </Provider>
   );
+
+  const rendered = render(renderAtPlayhead(0));
+
+  return {
+    setPlayhead: (displayedPlayheadMicros: number) =>
+      rendered.rerender(renderAtPlayhead(displayedPlayheadMicros)),
+  };
 }
 
 function PrimaryColorPreviewButton() {
@@ -528,6 +541,7 @@ describe("AudioTrackRow", () => {
       "ResizeObserver",
       class {
         observe() {}
+        unobserve() {}
         disconnect() {}
       },
     );
@@ -551,10 +565,7 @@ describe("AudioTrackRow", () => {
       }),
     );
 
-    const playhead = document.createElement("div");
-    playhead.style.left = "25%";
-    audioPlayback.audioPlayheadRef.current = playhead;
-    const { store } = renderRow();
+    const { setPlayhead, store } = renderRow();
     act(() => {
       store.dispatch(
         waveformsLoading({ jobId: "waveform-magnifier", streamIndexes: [2], width: 4096 }),
@@ -575,23 +586,27 @@ describe("AudioTrackRow", () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-pressed", "true");
 
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="audio-waveform-magnifier"]')).not.toBeNull(),
+    );
     const magnifier = document.querySelector<HTMLCanvasElement>(
       '[data-slot="audio-waveform-magnifier"]',
-    );
+    )!;
 
-    expect(magnifier).not.toBeNull();
     await waitFor(() => expect(stroke).toHaveBeenCalled());
+    expect(magnifier).toHaveStyle({ left: "0px" });
     const previousDraws = stroke.mock.calls.length;
 
+    const sourceDurationMicros = selectTrim(store.getState())!.sourceDurationMicros;
     act(() => {
-      playhead.style.left = "75%";
+      setPlayhead(sourceDurationMicros * 0.75);
     });
     await waitFor(() => expect(magnifier).toHaveStyle({ left: "140px" }));
     expect(stroke.mock.calls.length).toBeGreaterThan(previousDraws);
+    expect(audioPlayback.audioPlayheadRef.current).toBeNull();
 
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-    audioPlayback.audioPlayheadRef.current = null;
   });
 
   it("marks the Gain range, resets to unity, and preserves mute state at −24 dB", async () => {
