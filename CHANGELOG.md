@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added a playhead-anchored waveform magnifier for precise trim placement.
+
 ### Changed
 
 - Improved audio waveforms to stay sharp as tracks resize, use the current accent color and transition smoothly.
