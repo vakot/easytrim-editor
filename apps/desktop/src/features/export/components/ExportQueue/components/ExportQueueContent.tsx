@@ -1,4 +1,14 @@
+import { MoreVertical } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 
 import { cn } from "@/lib/class-names.utils";
@@ -74,11 +84,7 @@ function ExportQueueListItem() {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1">
-            <ExportQueueItemStatus />
-            <ExportQueueItemCancel />
-            <ExportQueueItemRestore />
-          </div>
+          <ExportQueueItemStatus />
         </div>
 
         {status === "rendering" && <ExportQueueItemProgressBar />}
@@ -87,12 +93,33 @@ function ExportQueueListItem() {
           <ExportQueueItemMetrics />
         </div>
 
-        {status === "completed" || status === "failed" ? (
-          <div className="flex gap-1">
+        <div className="flex items-center justify-between gap-1">
+          <div className="flex items-center gap-1">
             <ExportQueueItemReveal />
             <ExportQueueItemRetry />
+            <ExportQueueItemCancel />
           </div>
-        ) : null}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost">
+                <MoreVertical aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent>
+              <DropdownMenuGroup>
+                <ExportQueueItemRestore asMenuItem />
+              </DropdownMenuGroup>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuGroup>
+                <ExportQueueItemEdit asMenuItem />
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </ExportQueueItemContent>
   );
