@@ -1,0 +1,20 @@
+.indeterminate {
+  width: 33.333%;
+  animation: slide 1.35s ease-in-out infinite alternate;
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(200%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indeterminate {
+    animation: none;
+  }
+}
