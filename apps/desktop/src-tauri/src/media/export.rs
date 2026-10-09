@@ -463,7 +463,8 @@ fn validate_output_container(
         .map(str::to_ascii_lowercase)
         .ok_or_else(incompatible_output_container)?;
 
-    if container_supports_streams(source, request, &extension) {
+    let allowed_extensions = fast_export_output_extensions(source, request)?;
+    if allowed_extensions.contains(&extension.as_str()) {
         Ok(())
     } else {
         Err(incompatible_output_container())
@@ -1659,6 +1660,31 @@ mod tests {
             fast_export_output_extensions(&media(), &request).expect("valid selection"),
             ["mkv"]
         );
+    }
+
+    #[test]
+    fn fast_export_accepts_only_picker_extensions_when_audio_must_be_encoded() {
+        let source = media();
+        let mut request = fast_request(vec![audio_track(1)]);
+        request.audio_tracks[0].processing.gain_db = 3.0;
+        let allowed_extensions =
+            fast_export_output_extensions(&source, &request).expect("valid selection");
+
+        for extension in ["mkv", "mp4", "mov", "webm"] {
+            let accepted = build_fast_arguments(
+                &source,
+                &request,
+                Path::new("source.mkv"),
+                Path::new(&format!("output.{extension}")),
+            )
+            .is_ok();
+
+            assert_eq!(
+                accepted,
+                allowed_extensions.contains(&extension),
+                "native validation and picker disagree for .{extension}"
+            );
+        }
     }
 
     #[test]
