@@ -76,6 +76,12 @@ function MenuBarFileContent() {
             <ApplicationCommandShortcut />
           </MenubarItem>
         </ApplicationCommandMenuItem>
+        <ApplicationCommandMenuItem asChild commandId="audio-export">
+          <MenubarItem>
+            <ApplicationCommandLabel />
+            <ApplicationCommandShortcut />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
       </MenubarGroup>
       <MenubarSeparator />
       <MenubarGroup>

@@ -60,6 +60,7 @@ import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
+import type { AudioExportRequest } from "@/domain/media";
 import { normalizeTransformForExport } from "@/domain/rotation";
 import { normalizeSourceKey } from "@/domain/source";
 import { localizeAppError } from "@/i18n/app-errors";
@@ -67,6 +68,7 @@ import { i18n } from "@/i18n/config";
 import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 import {
+  chooseAudioOutputPath,
   chooseGifOutputPath,
   chooseOutputPath,
   planGifExport,
@@ -164,6 +166,7 @@ const editExportAttemptRequested =
         await finishQueuedExportEdit(dispatch, getState);
         return;
       }
+      if (attempt.route === "audio") return;
 
       if (instance.draftAvailable === false || instance.sourceAvailability !== "available") return;
       dispatch(commitActiveEditingInstanceDraft());
@@ -382,6 +385,12 @@ const startFastExportRequested =
     await startEditingInstanceExport("fast", dispatch, getState, origin);
   };
 
+const startAudioExportRequested =
+  (origin: DiagnosticOrigin = { id: "audio-export", type: "button" }): AppThunk<Promise<void>> =>
+  async (dispatch, getState) => {
+    await startEditingInstanceExport("audio", dispatch, getState, origin);
+  };
+
 const startOptimizedExportRequested =
   (origin: DiagnosticOrigin = { id: "optimized", type: "button" }): AppThunk =>
   (dispatch, getState) => {
@@ -452,14 +461,18 @@ async function startEditingInstanceExport(
   )
     return;
 
-  const request =
+  const initialRequest =
     route === "fast"
       ? getFastRequest(currentState)
-      : route === "gif"
-        ? getGifRequest(currentState)
-        : getOptimizedRequest(currentState);
+      : route === "audio"
+        ? getAudioRequest(currentState, "m4a")
+        : route === "gif"
+          ? getGifRequest(currentState)
+          : getOptimizedRequest(currentState);
 
-  if (!request) return;
+  if (!initialRequest) return;
+  let request: AudioExportRequest | FastExportRequest | GifExportRequest | OptimizedExportRequest =
+    initialRequest;
 
   const snapshot = getCurrentExportSnapshot(currentState);
   if (!snapshot) return;
@@ -472,14 +485,26 @@ async function startEditingInstanceExport(
   dispatch(nativeDialogStateChanged(true));
   try {
     const output =
-      route === "gif"
-        ? await chooseGifOutputPath(outputDefaults(source.displayName)[route])
-        : await chooseOutputPath(
-            outputDefaults(source.displayName)[route],
-            route === "fast" ? (request as FastExportRequest) : undefined,
-          );
+      route === "audio"
+        ? await chooseAudioOutputPath(outputDefaults(source.displayName).audio)
+        : route === "gif"
+          ? await chooseGifOutputPath(outputDefaults(source.displayName).gif)
+          : await chooseOutputPath(
+              outputDefaults(source.displayName)[route],
+              route === "fast" ? (request as FastExportRequest) : undefined,
+            );
 
     if (!output) return;
+    if (route === "audio") {
+      const outputName = output.displayName.toLowerCase();
+      const format = outputName.endsWith(".wav")
+        ? "wav"
+        : outputName.endsWith(".mp3")
+          ? "mp3"
+          : "m4a";
+
+      request = { ...(request as AudioExportRequest), format };
+    }
     if (
       selectActiveInstanceId(getState()) !== instance.id ||
       currentSourceKey(getState()) !== normalizeSourceKey(source.sourcePath) ||
@@ -508,7 +533,10 @@ async function startEditingInstanceExport(
       request: structuredClone(request),
       route,
       snapshot,
-      totalFrames: getTotalFrames(request, media.video),
+      totalFrames:
+        route === "audio"
+          ? undefined
+          : getTotalFrames(request as FastExportRequest | OptimizedExportRequest, media.video),
     });
 
     dispatch(editingInstanceExportAttemptQueued({ id: instance.id, attempt }));
@@ -574,6 +602,24 @@ function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportR
     mergeAudio: selectMergeAudio(state),
     stripMetadata: state.preferences.stripMetadataOnExport,
     rotationDegrees: transform.rotationDegrees,
+  };
+}
+
+function getAudioRequest(
+  state: ReturnType<Parameters<AppThunk>[1]>,
+  format: AudioExportRequest["format"],
+): AudioExportRequest | null {
+  const source = selectSourceSelection(state);
+  const trim = selectTrim(state);
+  if (!source || !trim) return null;
+  return {
+    sourcePath: source.sourcePath,
+    trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
+    audioTracks: exportAudioTracks(state),
+    audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
+    mergeAudio: selectMergeAudio(state),
+    stripMetadata: state.preferences.stripMetadataOnExport,
+    format,
   };
 }
 
@@ -823,6 +869,7 @@ export {
   openOptimizedExportDialog,
   refreshExportPlan,
   retryExportAttemptRequested,
+  startAudioExportRequested,
   startExportQueue,
   startFastExportRequested,
   startGifExportRequested,

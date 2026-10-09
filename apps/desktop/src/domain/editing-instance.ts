@@ -1,5 +1,6 @@
 import type {
   AppError,
+  AudioExportRequest,
   ExportProgress,
   ExportResult,
   FastExportRequest,
@@ -12,8 +13,9 @@ import type {
 
 export type EditingInstanceId = string;
 export type InstanceOrigin = "source-import" | "duplicate";
-export type ExportRoute = "fast" | "optimized" | "gif";
-export type ExportRequest = FastExportRequest | GifExportRequest | OptimizedExportRequest;
+export type ExportRoute = "audio" | "fast" | "gif" | "optimized";
+export type ExportRequest =
+  AudioExportRequest | FastExportRequest | GifExportRequest | OptimizedExportRequest;
 
 interface ExportSettings {
   frameRate: FrameRate | undefined;
@@ -55,6 +57,7 @@ interface ExportAttemptMetrics {
   fileSizeBytes?: number;
   fps?: number;
   phase?: ExportProgress["phase"];
+  progressAvailable?: boolean;
   progressPercent: number;
   totalFrames?: number;
 }

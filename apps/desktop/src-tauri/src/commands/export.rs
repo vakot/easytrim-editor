@@ -17,9 +17,10 @@ use crate::{
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
     error::{AppError, AppErrorMessageId},
     media::export::{
-        FastExportRequest, GifExportRequest, OptimizedExportRequest, build_fast_arguments,
-        build_gif_arguments, build_optimized_arguments, fast_export_output_extensions,
-        gif_command_preview, optimized_command_preview,
+        AudioExportRequest, FastExportRequest, GifExportRequest, OptimizedExportRequest,
+        build_audio_arguments, build_fast_arguments, build_gif_arguments,
+        build_optimized_arguments, fast_export_output_extensions, gif_command_preview,
+        optimized_command_preview,
     },
     media::loudness::{LoudnessAnalysis, LoudnessAnalysisRequest, analyze_loudness},
     media::probe::MediaInfo,
@@ -44,6 +45,7 @@ pub struct OutputSelection {
 pub struct ExportProgress {
     pub operation_id: String,
     pub elapsed_micros: i64,
+    pub progress_available: bool,
     pub frame: Option<u64>,
     pub fps: Option<String>,
     pub speed: Option<String>,
@@ -218,6 +220,56 @@ fn container_filter_label(extension: &str) -> &'static str {
 }
 
 #[tauri::command]
+pub async fn choose_audio_output_path(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    default_name: String,
+) -> Result<Option<OutputSelection>, AppError> {
+    if default_name.trim().is_empty() || default_name.len() > 255 {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportOutputNameIsRequired,
+        ));
+    }
+    let (sender, receiver) = std::sync::mpsc::channel();
+    app.dialog()
+        .file()
+        .set_file_name(default_name)
+        .add_filter("M4A audio", &["m4a"])
+        .add_filter("MP3 audio", &["mp3"])
+        .add_filter("WAV audio", &["wav"])
+        .save_file(move |selected| {
+            let _ = sender.send(selected);
+        });
+    let selected = tauri::async_runtime::spawn_blocking(move || receiver.recv())
+        .await
+        .map_err(|_| AppError::internal("The output dialog task stopped unexpectedly."))?
+        .map_err(|_| AppError::internal("The output dialog closed unexpectedly."))?;
+    let Some(selected) = selected else {
+        return Ok(None);
+    };
+    let path = selected.into_path().map_err(|_| {
+        AppError::invalid_request(AppErrorMessageId::ExportSelectedOutputLocationIsNotSupported)
+    })?;
+    let extension = path
+        .extension()
+        .and_then(OsStr::to_str)
+        .map(str::to_ascii_lowercase);
+    if !matches!(extension.as_deref(), Some("m4a" | "mp3" | "wav")) {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportAudioOutputFormatIsInvalid,
+        ));
+    }
+    let display_name = output_display_name(&path)?;
+    let display_path = path.display().to_string();
+    let output_id = state.register_output(path)?;
+    Ok(Some(OutputSelection {
+        output_id,
+        display_name,
+        display_path,
+    }))
+}
+
+#[tauri::command]
 pub fn resolve_output_selection(
     output_id: String,
     state: State<'_, AppState>,
@@ -336,6 +388,57 @@ pub async fn render_gif(
             display_name,
             arguments,
             ExportPhase::Preparing,
+            on_progress,
+            ExportDiagnosticContext {
+                parent_operation_id: diagnostic_parent_operation_id,
+                snapshot_id: diagnostic_snapshot_id,
+            },
+        )
+        .await
+    }
+    .await
+}
+
+#[tauri::command]
+pub async fn render_audio(
+    request: AudioExportRequest,
+    output_id: String,
+    on_progress: Channel<ExportProgress>,
+    diagnostic_parent_operation_id: Option<String>,
+    diagnostic_snapshot_id: Option<String>,
+    state: State<'_, AppState>,
+    diagnostics: State<'_, Arc<DiagnosticsState>>,
+) -> Result<ExportResult, AppError> {
+    async {
+        let source = state.resolve_export_source(&request.source_path)?;
+        let media = source.media.clone().ok_or_else(|| {
+            AppError::invalid_request(AppErrorMessageId::ExportInspectTheVideoBeforeExporting)
+        })?;
+        let output_path = state.resolve_output(&output_id)?;
+        let display_name = output_display_name(&output_path)?;
+        let extension = output_path
+            .extension()
+            .and_then(OsStr::to_str)
+            .map(str::to_ascii_lowercase);
+        let expected_extension = match request.format {
+            crate::media::export::AudioExportFormat::M4a => "m4a",
+            crate::media::export::AudioExportFormat::Mp3 => "mp3",
+            crate::media::export::AudioExportFormat::Wav => "wav",
+        };
+        if extension.as_deref() != Some(expected_extension) {
+            return Err(AppError::invalid_request(
+                AppErrorMessageId::ExportAudioOutputFormatIsInvalid,
+            ));
+        }
+        let arguments = build_audio_arguments(&media, &request, &source.path, &output_path)?;
+        run_export(
+            state.clone(),
+            Arc::clone(&diagnostics),
+            source.path,
+            output_path,
+            display_name,
+            arguments,
+            ExportPhase::Running,
             on_progress,
             ExportDiagnosticContext {
                 parent_operation_id: diagnostic_parent_operation_id,
@@ -471,6 +574,7 @@ async fn run_export(
     let _ = on_progress.send(ExportProgress {
         operation_id: operation_id.clone(),
         elapsed_micros: 0,
+        progress_available: false,
         frame: None,
         fps: None,
         speed: None,
@@ -493,15 +597,22 @@ async fn run_export(
             |line| {
                 if let Some((key, value)) = line.split_once('=') {
                     progress_values.insert(key.to_owned(), value.to_owned());
-                    if key == "out_time_us" || key == "progress" {
-                        let elapsed_micros = progress_values
+                    if matches!(key, "out_time_us" | "out_time_ms" | "progress") {
+                        let output_time = progress_values
                             .get("out_time_us")
                             .and_then(|value| value.parse::<i64>().ok())
-                            .unwrap_or_default();
+                            .or_else(|| {
+                                progress_values
+                                    .get("out_time_ms")
+                                    .and_then(|value| value.parse::<i64>().ok())
+                            })
+                            .filter(|elapsed_micros| *elapsed_micros >= 0);
+                        let elapsed_micros = output_time.unwrap_or_default();
                         phase = next_export_phase(phase, key, value, elapsed_micros);
                         let _ = on_progress.send(ExportProgress {
                             operation_id: operation_for_task.clone(),
                             elapsed_micros,
+                            progress_available: output_time.is_some_and(|time| time > 0),
                             frame: progress_values
                                 .get("frame")
                                 .and_then(|value| value.parse::<u64>().ok()),
@@ -677,7 +788,10 @@ fn next_export_phase(
 ) -> ExportPhase {
     if key == "progress" && value == "end" {
         ExportPhase::Completed
-    } else if phase == ExportPhase::Preparing && key == "out_time_us" && elapsed_micros > 0 {
+    } else if phase == ExportPhase::Preparing
+        && matches!(key, "out_time_us" | "out_time_ms")
+        && elapsed_micros > 0
+    {
         ExportPhase::Running
     } else {
         phase

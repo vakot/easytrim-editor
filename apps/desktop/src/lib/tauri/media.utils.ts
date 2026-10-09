@@ -175,7 +175,7 @@ function parseOutputSelection(value: unknown): OutputSelection {
 function parseExportProgress(value: unknown): ExportProgress {
   const progress = requireRecord(value, "export progress");
   const phase = progress.phase;
-  if (phase !== "running" && phase !== "completed") {
+  if (phase !== "preparing" && phase !== "running" && phase !== "completed") {
     throw invalidResponse("export progress phase");
   }
 
@@ -183,6 +183,7 @@ function parseExportProgress(value: unknown): ExportProgress {
     operationId: requireString(progress.operationId, "operation ID"),
     elapsedMicros: requireInteger(progress.elapsedMicros, "export elapsed time"),
     frame: optionalInteger(progress.frame, "export frame"),
+    progressAvailable: optionalBoolean(progress.progressAvailable),
     fps: optionalString(progress.fps),
     speed: optionalString(progress.speed),
     bitrate: optionalString(progress.bitrate),

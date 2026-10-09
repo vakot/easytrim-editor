@@ -483,6 +483,7 @@ export const en = {
       optimizedExport: "optimized export|optimize|export",
       fastExport: "fast export|fast|export",
       gifExport: "gif export|gif|animated image",
+      audioExport: "audio export|audio|m4a|mp3|wav",
       saveCurrentFrame: "save|frame|screenshot|image|png",
     },
   },
@@ -516,6 +517,9 @@ export const en = {
       renderedOutputIsEmpty: "The rendered output is empty",
       selectedOutputLocationIsNotSupported: "The selected output location is not supported",
       audioStreamSelectionOrProcessingSettingIsInvalid: "An audio stream selection or processing setting is invalid",
+      audioTrackIsRequired: "Select at least one audio track to export audio",
+      audioOutputFormatIsInvalid: "Choose an M4A, MP3, or WAV output file",
+      audioRequiresMergedTracks: "Merge selected audio tracks to export them as MP3 or WAV",
       fastExportCannotApplyRotationUseOptimizedExport: "Fast Export cannot apply rotation; use Optimized Export",
       optimizedArgumentsCannotOverrideInputTrimMappingFiltersOutputFormatOrOutputPaths: "Optimized export arguments cannot override input, trim, mapping, filters, output format, or output paths",
       cropSelectionIsInvalid: "The crop selection is invalid",
@@ -541,6 +545,17 @@ export const en = {
       action: "Fast Export",
       unavailable: "Fast Export is unavailable after transforming the video",
       tooltip: "Export the selected segment without re-encoding",
+    },
+    audioExport: {
+      action: "Audio Export",
+      tooltip: "Export the selected audio segment as M4A, MP3, or WAV",
+      noTracks: "Select an audio track to export",
+      started: "Audio Export started",
+      exporting: "Audio Export…",
+      completed: "Audio Export completed",
+      failed: "Audio Export failed",
+      cancelled: "Audio Export cancelled",
+      interrupted: "Audio Export interrupted",
     },
     preset: {
       builtIn: {
@@ -637,6 +652,9 @@ export const en = {
       saveChanges: "Save changes",
       start: "Export",
       accessibleLabel: "Export actions",
+      more: "More",
+      moreFormats: "More export formats",
+      sourceRequired: "Open a video before exporting",
     },
     bitrate: {
       label: "Bitrate",
@@ -705,6 +723,7 @@ export const en = {
       },
     },
     routes: {
+      audioExport: "Audio Export",
       fastExport: "Fast Export",
       gifExport: "GIF Export",
       optimizedExport: "Optimized Export",

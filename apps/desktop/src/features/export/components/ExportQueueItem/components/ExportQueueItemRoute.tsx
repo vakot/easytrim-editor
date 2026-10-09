@@ -9,9 +9,11 @@ function ExportQueueItemRoute({ className }: { className?: string }) {
   const label =
     attempt.route === "fast"
       ? t("queue.routes.fastExport")
-      : attempt.route === "gif"
-        ? t("queue.routes.gifExport")
-        : t("queue.routes.optimizedExport");
+      : attempt.route === "audio"
+        ? t("queue.routes.audioExport")
+        : attempt.route === "gif"
+          ? t("queue.routes.gifExport")
+          : t("queue.routes.optimizedExport");
 
   return <span className={className}>{label}</span>;
 }

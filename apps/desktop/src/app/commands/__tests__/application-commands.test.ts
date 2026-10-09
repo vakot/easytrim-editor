@@ -15,12 +15,14 @@ import {
   materializeApplicationCommands,
 } from "../core/application-command.utils";
 import {
+  AUDIO_EXPORT_SHORTCUT,
   FAST_EXPORT_SHORTCUT,
   GIF_EXPORT_SHORTCUT,
   OPTIMIZED_EXPORT_SHORTCUT,
 } from "../file/file-shortcuts.constants";
 
 const fileShortcuts = {
+  audioExport: AUDIO_EXPORT_SHORTCUT,
   openFolder: { code: "KeyK", key: "K", modifier: "control" },
   fastExport: FAST_EXPORT_SHORTCUT,
   gifExport: GIF_EXPORT_SHORTCUT,
@@ -181,15 +183,27 @@ describe("application command shortcuts", () => {
     expect(getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT, "macos")).toBe("/");
     expect(getShortcutDisplayKeys(fileShortcuts.openFolder, "macos")).toEqual(["Ctrl", "K"]);
     expect(getShortcutDisplayKeys(fileShortcuts.fastExport, "macos")).toEqual(["Ctrl", "S"]);
-    expect(getShortcutDisplayKeys(fileShortcuts.gifExport, "macos")).toEqual(["Ctrl", "G"]);
+    expect(getShortcutDisplayKeys(fileShortcuts.gifExport, "macos")).toEqual([
+      "Ctrl",
+      "Shift",
+      "G",
+    ]);
+    expect(getShortcutDisplayKeys(fileShortcuts.audioExport, "macos")).toEqual([
+      "Ctrl",
+      "Shift",
+      "A",
+    ]);
     expect(getShortcutDisplayKeys(fileShortcuts.optimizedExport, "macos")).toEqual(["Ctrl", "E"]);
+    expect(getShortcutAriaValue(fileShortcuts.gifExport)).toBe("Control+Shift+G");
+    expect(getShortcutAriaValue(fileShortcuts.audioExport)).toBe("Control+Shift+A");
     expect(
       new Set([
         fileShortcuts.fastExport.code,
         fileShortcuts.gifExport.code,
+        fileShortcuts.audioExport.code,
         fileShortcuts.optimizedExport.code,
       ]).size,
-    ).toBe(3);
+    ).toBe(4);
   });
 
   it("matches slash with or without Shift and rejects other modifiers", () => {
@@ -222,6 +236,30 @@ describe("application command shortcuts", () => {
         sourceNavigationShortcut,
       ),
     ).toBe(false);
+  });
+
+  it("requires Shift for specialized export shortcut chords", () => {
+    const gifEvent = new KeyboardEvent("keydown", {
+      code: "KeyG",
+      ctrlKey: true,
+      shiftKey: true,
+    });
+
+    const audioEvent = new KeyboardEvent("keydown", {
+      code: "KeyA",
+      ctrlKey: true,
+      shiftKey: true,
+    });
+
+    expect(isShortcutEvent(gifEvent, fileShortcuts.gifExport, "other")).toBe(true);
+    expect(
+      isShortcutEvent(
+        new KeyboardEvent("keydown", { code: "KeyG", ctrlKey: true }),
+        fileShortcuts.gifExport,
+        "other",
+      ),
+    ).toBe(false);
+    expect(isShortcutEvent(audioEvent, fileShortcuts.audioExport, "other")).toBe(true);
   });
 
   it("uses arrow glyphs for timeline arrow shortcuts", () => {

@@ -82,7 +82,7 @@ function getFps(
   { formatValue }: { formatValue: (value: string) => string },
 ): ExportQueueItemMetricConfig | null {
   const fps = attempt.metrics.fps;
-  if (fps === undefined) return null;
+  if (attempt.route === "audio" || fps === undefined) return null;
 
   return {
     id: "fps",
@@ -103,6 +103,7 @@ function getFileSizeChange(
   const sourceSizeBytes = attempt.snapshot.source.fileSizeBytes;
   const outputSizeBytes = attempt.metrics.fileSizeBytes;
   if (
+    attempt.route === "audio" ||
     status !== "completed" ||
     sourceSizeBytes === undefined ||
     sourceSizeBytes <= 0 ||

@@ -16,6 +16,19 @@ const GIF_EXPORT_SHORTCUT = {
   code: "KeyG",
   key: "G",
   modifier: "control",
+  shift: true,
 } as const satisfies ApplicationShortcut;
 
-export { FAST_EXPORT_SHORTCUT, GIF_EXPORT_SHORTCUT, OPTIMIZED_EXPORT_SHORTCUT };
+const AUDIO_EXPORT_SHORTCUT = {
+  code: "KeyA",
+  key: "A",
+  modifier: "control",
+  shift: true,
+} as const satisfies ApplicationShortcut;
+
+export {
+  AUDIO_EXPORT_SHORTCUT,
+  FAST_EXPORT_SHORTCUT,
+  GIF_EXPORT_SHORTCUT,
+  OPTIMIZED_EXPORT_SHORTCUT,
+};

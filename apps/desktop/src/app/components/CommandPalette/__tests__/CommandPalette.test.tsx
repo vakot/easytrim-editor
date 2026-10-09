@@ -3,7 +3,10 @@ import { CheckCircle2, RotateCcw } from "lucide-react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
-import { GIF_EXPORT_SHORTCUT } from "@/app/commands/file/file-shortcuts.constants";
+import {
+  AUDIO_EXPORT_SHORTCUT,
+  GIF_EXPORT_SHORTCUT,
+} from "@/app/commands/file/file-shortcuts.constants";
 import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
 
@@ -163,7 +166,7 @@ describe("CommandPalette semantic icons", () => {
     expect(mocks.executeCommand).not.toHaveBeenCalledWith("menu-only-shortcut", "hotkey");
   });
 
-  it("executes GIF Export with Ctrl+G only when enabled and unblocked", () => {
+  it("executes GIF Export with Ctrl+Shift+G only when enabled and unblocked", () => {
     mocks.commands = [
       createCommand("gif-export", "GIF Export", "default", <CheckCircle2 />, {
         shortcut: GIF_EXPORT_SHORTCUT,
@@ -177,6 +180,7 @@ describe("CommandPalette semantic icons", () => {
         cancelable: true,
         code: "KeyG",
         ctrlKey: true,
+        shiftKey: true,
       });
 
     const enabledEvent = shortcutEvent();
@@ -232,7 +236,7 @@ describe("CommandPalette semantic icons", () => {
     blocker.remove();
   });
 
-  it("shows Ctrl+G beside GIF Export in the Command Palette", async () => {
+  it("shows Ctrl+Shift+G beside GIF Export in the Command Palette", async () => {
     mocks.commands = [
       createCommand("gif-export", "GIF Export", "default", <CheckCircle2 />, {
         shortcut: GIF_EXPORT_SHORTCUT,
@@ -243,8 +247,36 @@ describe("CommandPalette semantic icons", () => {
 
     const gifExportOption = await screen.findByRole("option", { name: /GIF Export/ });
 
-    expect(gifExportOption).toHaveTextContent("CtrlG");
-    expect(gifExportOption.querySelector('[aria-label="Control+G"]')).not.toBeNull();
+    expect(gifExportOption).toHaveTextContent("CtrlShiftG");
+    expect(gifExportOption.querySelector('[aria-label="Control+Shift+G"]')).not.toBeNull();
+  });
+
+  it("executes and displays Audio Export with Ctrl+Shift+A", async () => {
+    mocks.commands = [
+      createCommand("audio-export", "Audio Export", "default", <CheckCircle2 />, {
+        shortcut: AUDIO_EXPORT_SHORTCUT,
+      }),
+    ];
+    render(<CommandPalette />);
+
+    const shortcutEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      code: "KeyA",
+      ctrlKey: true,
+      shiftKey: true,
+    });
+
+    window.dispatchEvent(shortcutEvent);
+
+    expect(shortcutEvent.defaultPrevented).toBe(true);
+    expect(mocks.executeCommand).toHaveBeenCalledWith("audio-export", "hotkey");
+
+    fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
+    const audioExportOption = await screen.findByRole("option", { name: /Audio Export/ });
+
+    expect(audioExportOption).toHaveTextContent("CtrlShiftA");
+    expect(audioExportOption.querySelector('[aria-label="Control+Shift+A"]')).not.toBeNull();
   });
 
   it("keeps the palette open for Promise actions so their state and label can update", async () => {
