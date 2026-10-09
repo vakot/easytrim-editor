@@ -1,7 +1,19 @@
+import { ChevronsUpDown, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Autocomplete } from "@/components/ui/autocomplete";
+import {
+  Autocomplete,
+  AutocompleteAnchor,
+  AutocompleteContent,
+  AutocompleteEmpty,
+  AutocompleteInput,
+  AutocompleteInputGroup,
+  AutocompleteItem,
+  AutocompleteList,
+} from "@/components/ui/autocomplete";
+import { Button } from "@/components/ui/button";
+import { InputGroupAddon } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
@@ -23,7 +35,7 @@ function FrameRate({
 }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const sourceLabel = t("export.optimized.dialog.matchSource");
+
   const [value, setValue] = useState(() => frameRateToInput(settings.frameRate));
   const isValid = value === "" || frameRateFromInput(value) !== undefined;
   const errorId = "export-frame-rate-error";
@@ -43,15 +55,40 @@ function FrameRate({
   return (
     <section className="grid gap-1.5">
       <Label htmlFor="export-frame-rate">{t("export.frameRate.label")}</Label>
-      <Autocomplete
-        {...(isValid ? {} : { "aria-describedby": errorId, "aria-invalid": true })}
-        id="export-frame-rate"
-        label={t("export.frameRate.label")}
-        onValueChange={onValueChange}
-        placeholder={sourceLabel}
-        suggestions={FRAME_RATE_OPTIONS.map((rate) => t("export.frameRate.value", { value: rate }))}
-        value={value}
-      />
+      <Autocomplete>
+        <AutocompleteAnchor>
+          <div className="flex items-center gap-2">
+            <AutocompleteInputGroup className="flex-1">
+              <AutocompleteInput
+                {...(isValid ? {} : { "aria-describedby": errorId, "aria-invalid": true })}
+                id="export-frame-rate"
+                onValueChange={onValueChange}
+                placeholder={t("export.optimized.dialog.matchSource")}
+                value={value}
+              />
+
+              <InputGroupAddon align="inline-end">
+                <ChevronsUpDown />
+              </InputGroupAddon>
+            </AutocompleteInputGroup>
+
+            <Button onClick={() => setValue("")} size="icon" variant="secondary">
+              <X aria-hidden="true" />
+            </Button>
+          </div>
+        </AutocompleteAnchor>
+
+        <AutocompleteContent>
+          <AutocompleteEmpty>Custom framerate will be applied</AutocompleteEmpty>
+          <AutocompleteList>
+            {FRAME_RATE_OPTIONS.map((rate) => (
+              <AutocompleteItem key={rate} onSelect={onValueChange} value={String(rate)}>
+                {t("export.frameRate.value", { value: rate })}
+              </AutocompleteItem>
+            ))}
+          </AutocompleteList>
+        </AutocompleteContent>
+      </Autocomplete>
       {!isValid ? (
         <p className="text-sm text-destructive" id={errorId} role="alert">
           {t("export.frameRate.invalidValue")}

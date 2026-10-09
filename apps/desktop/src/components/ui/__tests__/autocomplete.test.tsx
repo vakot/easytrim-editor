@@ -9,8 +9,8 @@ function ControlledAutocomplete({ initialValue = "" }: { initialValue?: string }
 
   return (
     <Autocomplete
+      aria-label="Frame rate"
       id="test-autocomplete"
-      label="Frame rate"
       onValueChange={setValue}
       placeholder="Match source"
       suggestions={["Match source", "15 FPS", "24 FPS", "30 FPS"]}
