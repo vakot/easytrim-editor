@@ -516,7 +516,7 @@ describe("AudioTrackRow", () => {
     vi.unstubAllGlobals();
   });
 
-  it("follows the playhead and emphasizes equal-amplitude bins at the center", async () => {
+  it("follows playback and loop updates, stays on-track, and emphasizes the playhead", async () => {
     const stroke = vi.fn();
     const moveTo = vi.fn();
     const lineTo = vi.fn();
@@ -607,6 +607,18 @@ describe("AudioTrackRow", () => {
     expect(stroke.mock.calls.length).toBeGreaterThan(previousDraws);
     expect(audioPlayback.audioPlayheadRef.current).toBeNull();
 
+    const markerPosition = () => (moveTo.mock.calls.at(-1)?.[0] as number) - 0.5;
+    act(() => setPlayhead(sourceDurationMicros * 0.95));
+    await waitFor(() => expect(magnifier).toHaveStyle({ left: "140px" }));
+    expect(markerPosition()).toBe(164);
+    expect(Number.parseFloat(magnifier.style.left) + markerPosition()).toBe(304);
+
+    // Loop playback wraps the displayed playhead back to the start and the lens follows it.
+    act(() => setPlayhead(sourceDurationMicros * 0.05));
+    await waitFor(() => expect(magnifier).toHaveStyle({ left: "0px" }));
+    expect(markerPosition()).toBe(16);
+    expect(Number.parseFloat(magnifier.style.left) + markerPosition()).toBe(16);
+
     const moveStart = moveTo.mock.calls.length;
     const lineStart = lineTo.mock.calls.length;
     act(() => {
@@ -631,7 +643,10 @@ describe("AudioTrackRow", () => {
     };
 
     const edgeHeight = verticalHeightAt(0.5);
+    const nextToEdgeHeight = verticalHeightAt(1.5);
     const centerHeight = verticalHeightAt(90.5);
+    const nearCenterHeight = verticalHeightAt(45.5);
+    const oppositeEdgeHeight = verticalHeightAt(179.5);
     const renderedBarHeights = moveCalls.flatMap(([x], index) => {
       const line = lineCalls[index];
       if (!line || line[0] !== x || line[1] === 0 || line[1] === 24) return [];
@@ -639,6 +654,10 @@ describe("AudioTrackRow", () => {
     });
 
     expect(centerHeight).toBeGreaterThan(edgeHeight);
+    expect(Math.abs(nextToEdgeHeight - edgeHeight)).toBeLessThan(0.1);
+    expect(nearCenterHeight).toBeGreaterThan(edgeHeight);
+    expect(nearCenterHeight).toBeLessThan(centerHeight);
+    expect(oppositeEdgeHeight).toBe(edgeHeight);
     expect(centerHeight).toBe(Math.max(...renderedBarHeights));
 
     vi.restoreAllMocks();

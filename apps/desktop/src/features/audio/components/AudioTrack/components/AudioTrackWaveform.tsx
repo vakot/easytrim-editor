@@ -348,21 +348,25 @@ function AudioTrackWaveformMagnifier({
     const context = canvas.getContext("2d");
     if (!context) return;
 
+    const containerPlayheadX = playheadPercent * containerWidth;
+    const canvasLeft = Math.min(
+      Math.max(0, containerPlayheadX - cssWidth / 2),
+      Math.max(0, containerWidth - cssWidth),
+    );
+
+    canvas.style.left = `${String(canvasLeft)}px`;
+
+    const markerX = Math.min(
+      Math.max((containerPlayheadX - canvasLeft) * pixelRatio, 0),
+      pixelWidth - 1,
+    );
+
     const binsInView = Math.max(1, envelope.width / WAVEFORM_MAGNIFICATION);
     const centerBin = playheadPercent * envelope.width;
     const viewStart = Math.min(
-      Math.max(0, centerBin - binsInView / 2),
+      Math.max(0, centerBin - (markerX / pixelWidth) * binsInView),
       Math.max(0, envelope.width - binsInView),
     );
-
-    const markerX = ((centerBin - viewStart) / binsInView) * pixelWidth;
-    const containerPlayheadX = playheadPercent * containerWidth;
-    canvas.style.left = `${String(
-      Math.min(
-        Math.max(0, containerPlayheadX - markerX / pixelRatio),
-        Math.max(0, containerWidth - cssWidth),
-      ),
-    )}px`;
 
     context.clearRect(0, 0, pixelWidth, pixelHeight);
     context.fillStyle = "rgba(15, 15, 18, 0.94)";
