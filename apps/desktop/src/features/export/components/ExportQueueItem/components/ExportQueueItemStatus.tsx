@@ -2,6 +2,7 @@ import { CircleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 import { localizeAppError } from "@/i18n/app-errors";
 import { cn } from "@/lib/class-names.utils";
@@ -30,20 +31,45 @@ function ExportQueueItemStatus() {
   } satisfies Record<typeof status, string>;
 
   const error = status === "failed" ? attempt.state.error : undefined;
+  const localizedError = error ? localizeAppError(error, t) : undefined;
+
+  const badge = (
+    <Badge
+      aria-label={
+        localizedError ? t("queue.metrics.error", { message: localizedError }) : undefined
+      }
+      className={cn(status === "rendering" && "bg-primary/20 text-primary")}
+      tabIndex={error ? 0 : undefined}
+      variant={statusVariants[status]}
+    >
+      {error ? <CircleAlert aria-hidden="true" /> : null}
+      {statusLabels[status]}
+    </Badge>
+  );
 
   return (
     <div className="flex shrink-0 items-center gap-1">
-      <Badge
-        aria-label={
-          error ? t("queue.metrics.error", { message: localizeAppError(error, t) }) : undefined
-        }
-        className={cn(status === "rendering" && "bg-primary/20 text-primary")}
-        title={error ? localizeAppError(error, t) : undefined}
-        variant={statusVariants[status]}
-      >
-        {error ? <CircleAlert aria-hidden="true" /> : null}
-        {statusLabels[status]}
-      </Badge>
+      {error && localizedError ? (
+        <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
+          <HoverCardTrigger asChild>{badge}</HoverCardTrigger>
+          <HoverCardContent
+            align="end"
+            className="max-h-64 w-80 max-w-[calc(100vw-2rem)] overflow-auto"
+          >
+            <p>{localizedError}</p>
+            {error.diagnostics ? (
+              <div className="mt-2">
+                <p className="font-medium">{t("source.technicalDetails")}</p>
+                <pre className="mt-1 text-xs break-words whitespace-pre-wrap">
+                  {error.diagnostics}
+                </pre>
+              </div>
+            ) : null}
+          </HoverCardContent>
+        </HoverCard>
+      ) : (
+        badge
+      )}
     </div>
   );
 }
