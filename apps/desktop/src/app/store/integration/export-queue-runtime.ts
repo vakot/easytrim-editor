@@ -335,7 +335,20 @@ async function retryFailedExport(
             ));
 
     if (!output) return false;
-    dispatch(editingInstanceExportRetried({ id: instanceId, attemptId, output }));
+    const audioFormat =
+      attempt.route === "audio"
+        ? output.displayName.toLowerCase().endsWith(".wav")
+          ? "wav"
+          : "m4a"
+        : undefined;
+    dispatch(
+      editingInstanceExportRetried({
+        id: instanceId,
+        attemptId,
+        output,
+        ...(audioFormat ? { audioFormat } : {}),
+      }),
+    );
     const queued = selectEditingInstanceAttempts(getState()).find(
       ({ attempt: candidate, instance }) =>
         instance.id === instanceId && candidate.id === attemptId,
