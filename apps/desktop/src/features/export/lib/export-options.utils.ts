@@ -2,7 +2,7 @@ import type { TFunction } from "i18next";
 
 import type { FrameRate } from "@/lib/tauri/media.types";
 
-export const FRAME_RATE_OPTIONS = [6, 10, 15, 24, 25, 30, 50, 60, 120] as const;
+export const FRAME_RATE_OPTIONS = [24, 30, 50, 60, 120] as const;
 
 interface ResolutionDimensions {
   height: number;

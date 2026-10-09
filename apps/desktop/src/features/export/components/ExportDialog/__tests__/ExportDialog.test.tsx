@@ -80,9 +80,10 @@ describe("ExportDialog", () => {
     );
     fireEvent.click(screen.getByRole("combobox", { name: "Frame rate" }));
     expect(screen.queryByRole("option", { name: "Match source" })).not.toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "6 FPS" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "10 FPS" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "15 FPS" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "24 FPS" })).toBeInTheDocument();
+    for (const rate of [6, 10, 15, 25]) {
+      expect(screen.queryByRole("option", { name: `${rate} FPS` })).not.toBeInTheDocument();
+    }
     expect(planOptimizedExport).toHaveBeenCalledTimes(1);
   });
 

@@ -39,7 +39,7 @@ describe("export resolution options", () => {
 
 describe("export frame-rate options", () => {
   it("includes lower GIF-friendly suggestions alongside the existing rates", () => {
-    expect(FRAME_RATE_OPTIONS).toEqual([6, 10, 15, 24, 25, 30, 50, 60, 120]);
+    expect(FRAME_RATE_OPTIONS).toEqual([24, 30, 50, 60, 120]);
   });
 
   it.each([
