@@ -1,6 +1,7 @@
 import { CircleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
@@ -56,15 +57,18 @@ function ExportQueueItemStatus() {
             align="end"
             className="max-h-64 w-80 max-w-[calc(100vw-2rem)] overflow-auto"
           >
-            <p>{localizedError}</p>
-            {error.diagnostics ? (
-              <div className="mt-2">
-                <p className="font-medium">{t("source.technicalDetails")}</p>
-                <pre className="mt-1 text-xs break-words whitespace-pre-wrap">
-                  {error.diagnostics}
-                </pre>
-              </div>
-            ) : null}
+            <Alert variant="destructive">
+              <CircleAlert aria-hidden="true" />
+              <AlertTitle>{localizedError}</AlertTitle>
+              {error.diagnostics ? (
+                <AlertDescription>
+                  <p className="font-medium">{t("source.technicalDetails")}</p>
+                  <pre className="mt-1 text-xs wrap-break-word whitespace-pre-wrap">
+                    {error.diagnostics}
+                  </pre>
+                </AlertDescription>
+              ) : null}
+            </Alert>
           </HoverCardContent>
         </HoverCard>
       ) : (
