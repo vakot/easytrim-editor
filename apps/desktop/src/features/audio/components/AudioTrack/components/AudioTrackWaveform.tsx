@@ -77,6 +77,7 @@ const WAVEFORM_FORMAT_VERSION = 1;
 const WAVEFORM_FLAG_RLE = 1;
 const WAVEFORM_MAX_AMPLITUDE = 255;
 const WAVEFORM_MAGNIFICATION = 12;
+const WAVEFORM_MAX_VERTICAL_GAIN = 2;
 const ANIMATION_TIME_CONSTANT_MS = 90;
 const ANIMATION_SETTLE_THRESHOLD = 0.01;
 
@@ -380,7 +381,14 @@ function AudioTrackWaveformMagnifier({
         amplitude = Math.max(amplitude, envelope.amplitudes[bin] ?? 0);
       }
 
-      const halfHeight = Math.min(1, (amplitude / WAVEFORM_MAX_AMPLITUDE) * gain) * centerY;
+      const distanceFromPlayhead = Math.abs(x - markerX);
+      const distanceToEdge = x < markerX ? markerX : pixelWidth - 1 - markerX;
+      const normalizedDistance = Math.min(1, distanceFromPlayhead / Math.max(distanceToEdge, 1));
+      const centerEmphasis = (1 + Math.cos(Math.PI * normalizedDistance)) / 2;
+      const verticalGain = 1 + (WAVEFORM_MAX_VERTICAL_GAIN - 1) * centerEmphasis;
+      const halfHeight =
+        Math.min(1, (amplitude / WAVEFORM_MAX_AMPLITUDE) * gain * verticalGain) * centerY;
+
       if (halfHeight > 0) {
         context.moveTo(x + 0.5, centerY - halfHeight);
         context.lineTo(x + 0.5, centerY + halfHeight);

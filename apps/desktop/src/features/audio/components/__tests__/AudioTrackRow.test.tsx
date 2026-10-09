@@ -516,14 +516,16 @@ describe("AudioTrackRow", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps the optional waveform magnifier anchored to the moving playhead", async () => {
+  it("follows the playhead and emphasizes equal-amplitude bins at the center", async () => {
     const stroke = vi.fn();
+    const moveTo = vi.fn();
+    const lineTo = vi.fn();
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
       beginPath: vi.fn(),
       clearRect: vi.fn(),
       fillRect: vi.fn(),
-      lineTo: vi.fn(),
-      moveTo: vi.fn(),
+      lineTo,
+      moveTo,
       set fillStyle(_value: string) {},
       set lineWidth(_value: number) {},
       set strokeStyle(_value: string) {},
@@ -559,7 +561,7 @@ describe("AudioTrackRow", () => {
           view.setUint16(4, 1, true);
           view.setUint16(6, 0, true);
           view.setUint32(8, 4096, true);
-          new Uint8Array(buffer, 12).fill(128);
+          new Uint8Array(buffer, 12).fill(80);
           return buffer;
         },
       }),
@@ -604,6 +606,40 @@ describe("AudioTrackRow", () => {
     await waitFor(() => expect(magnifier).toHaveStyle({ left: "140px" }));
     expect(stroke.mock.calls.length).toBeGreaterThan(previousDraws);
     expect(audioPlayback.audioPlayheadRef.current).toBeNull();
+
+    const moveStart = moveTo.mock.calls.length;
+    const lineStart = lineTo.mock.calls.length;
+    act(() => {
+      setPlayhead(sourceDurationMicros * 0.5);
+    });
+    await waitFor(() => expect(magnifier).toHaveStyle({ left: "70px" }));
+
+    const moveCalls = moveTo.mock.calls.slice(moveStart);
+    const lineCalls = lineTo.mock.calls.slice(lineStart);
+    const verticalHeightAt = (x: number) => {
+      const index = moveCalls.findIndex(
+        ([moveX], position) =>
+          moveX === x &&
+          lineCalls[position]?.[0] === x &&
+          lineCalls[position]?.[1] !== 0 &&
+          lineCalls[position]?.[1] !== 24,
+      );
+
+      const startY = moveCalls[index]?.[1] ?? 0;
+      const endY = lineCalls[index]?.[1] ?? 0;
+      return Math.abs(endY - startY);
+    };
+
+    const edgeHeight = verticalHeightAt(0.5);
+    const centerHeight = verticalHeightAt(90.5);
+    const renderedBarHeights = moveCalls.flatMap(([x], index) => {
+      const line = lineCalls[index];
+      if (!line || line[0] !== x || line[1] === 0 || line[1] === 24) return [];
+      return [Math.abs(line[1] - (moveCalls[index]?.[1] ?? 0))];
+    });
+
+    expect(centerHeight).toBeGreaterThan(edgeHeight);
+    expect(centerHeight).toBe(Math.max(...renderedBarHeights));
 
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
