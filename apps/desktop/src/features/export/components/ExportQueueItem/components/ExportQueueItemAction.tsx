@@ -61,13 +61,16 @@ function ExportQueueItemEdit({
 
   if (asMenuItem) {
     return (
-      <DropdownMenuItem disabled={isNativeDialogOpen || !isQueued} onSelect={handleEdit}>
+      <DropdownMenuItem
+        disabled={isNativeDialogOpen || !isQueued || attempt.route === "audio"}
+        onSelect={handleEdit}
+      >
         {t("queue.actions.editExport")}
       </DropdownMenuItem>
     );
   }
 
-  if (!isQueued) return null;
+  if (!isQueued || attempt.route === "audio") return null;
 
   return (
     <Tooltip>

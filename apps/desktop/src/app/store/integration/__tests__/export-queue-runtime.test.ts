@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   cancelOperation: vi.fn().mockResolvedValue(undefined),
+  chooseAudioOutputPath: vi.fn(),
   chooseGifOutputPath: vi.fn(),
   chooseOutputPath: vi.fn(),
   moveSourceToTrash: vi.fn().mockResolvedValue(undefined),
@@ -9,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   reserveExportSource: vi.fn().mockResolvedValue(undefined),
   releaseExportSource: vi.fn().mockResolvedValue(undefined),
   exportFast: vi.fn(),
+  exportAudio: vi.fn(),
   renderGif: vi.fn(),
   renderOptimized: vi.fn(),
   resolveOutputSelection: vi.fn(),
@@ -17,12 +19,14 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/tauri/media", () => ({
   cancelOperation: mocks.cancelOperation,
+  chooseAudioOutputPath: mocks.chooseAudioOutputPath,
   chooseGifOutputPath: mocks.chooseGifOutputPath,
   chooseOutputPath: mocks.chooseOutputPath,
   moveSourceToTrash: mocks.moveSourceToTrash,
   reserveExportSource: mocks.reserveExportSource,
   releaseExportSource: mocks.releaseExportSource,
   exportFast: mocks.exportFast,
+  exportAudio: mocks.exportAudio,
   renderGif: mocks.renderGif,
   renderOptimized: mocks.renderOptimized,
   resolveOutputSelection: mocks.resolveOutputSelection,
@@ -110,6 +114,32 @@ function createGifAttempt(id: string, sourcePath: string = firstSource.sourcePat
   });
 }
 
+function createAudioAttempt(id: string, format: "m4a" | "mp3" | "wav") {
+  const snapshot = createDefaultEditorSnapshot(
+    { displayName: `${id}.${format}`, sourcePath: firstSource.sourcePath },
+    false,
+  );
+
+  return createExportAttempt({
+    capturedAt: 1,
+    id,
+    output: {
+      displayName: `${id}.${format}`,
+      displayPath: `C:/Exports/${id}.${format}`,
+      outputId: id,
+    },
+    request: {
+      audioTracks: [{ processing: { gainDb: 0 }, streamIndex: 1 }],
+      format,
+      mergeAudio: false,
+      sourcePath: firstSource.sourcePath,
+      trim: { endMicros: 1_000_000, startMicros: 0 },
+    },
+    route: "audio",
+    snapshot,
+  });
+}
+
 function createInstance(id: string, sourcePath: string = firstSource.sourcePath): EditingInstance {
   return {
     exportAttempts: [],
@@ -148,6 +178,11 @@ beforeEach(() => {
     displayPath: `C:/Exports/${defaultName}`,
     outputId: "retry-gif-output",
   }));
+  mocks.chooseAudioOutputPath.mockImplementation(async (defaultName: string) => ({
+    displayName: defaultName,
+    displayPath: `C:/Exports/${defaultName}`,
+    outputId: "retry-audio-output",
+  }));
   mocks.chooseOutputPath.mockImplementation(async (defaultName: string) => ({
     displayName: defaultName,
     displayPath: `C:/Exports/${defaultName}`,
@@ -160,6 +195,11 @@ beforeEach(() => {
     displayName: "out.gif",
     displayPath: "C:/Exports/out.gif",
     operationId: "gif-operation",
+  });
+  mocks.exportAudio.mockReset().mockResolvedValue({
+    displayName: "out.m4a",
+    displayPath: "C:/Exports/out.m4a",
+    operationId: "audio-operation",
   });
 });
 
@@ -868,6 +908,65 @@ describe("export queue runtime", () => {
       store.getState().editingInstances.entities["instance-failed-retry"]?.exportAttempts[0]?.state
         .status,
     ).toBe("completed");
+  });
+
+  it.each([
+    ["wav", "m4a"],
+    ["m4a", "wav"],
+  ] as const)("syncs a recovered audio retry from %s to %s", async (originalFormat, nextFormat) => {
+    const store = createAppStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    const getState = store.getState;
+    const attempt = createAudioAttempt(`attempt-audio-${originalFormat}`, originalFormat);
+    const instanceId = `instance-audio-${originalFormat}`;
+    const output = {
+      displayName: `retry.${nextFormat}`,
+      displayPath: `C:/Exports/retry.${nextFormat}`,
+      outputId: `retry-audio-${nextFormat}`,
+    };
+
+    mocks.exportAudio
+      .mockRejectedValueOnce(new Error("initial render failed"))
+      .mockResolvedValueOnce({
+        displayName: output.displayName,
+        displayPath: output.displayPath,
+        operationId: "audio-retry-operation",
+      });
+    mocks.chooseAudioOutputPath.mockResolvedValueOnce(output);
+    store.dispatch(editingInstancesAdded([createInstance(instanceId)]));
+    store.dispatch(editingInstanceExportAttemptQueued({ id: instanceId, attempt }));
+    setExportQueueExecutionEnabled(true, store.dispatch, getState);
+    enqueueExport(instanceId, attempt, store.dispatch, getState);
+
+    await vi.waitFor(() =>
+      expect(
+        store.getState().editingInstances.entities[instanceId]?.exportAttempts[0]?.state.status,
+      ).toBe("failed"),
+    );
+    await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledOnce());
+    setExportQueueExecutionEnabled(false, store.dispatch, getState, instanceId);
+
+    await expect(retryFailedExport(instanceId, attempt.id, store.dispatch, getState)).resolves.toBe(
+      true,
+    );
+
+    const retriedAttempt =
+      store.getState().editingInstances.entities[instanceId]?.exportAttempts[0];
+
+    expect(mocks.resolveOutputSelection).toHaveBeenCalledWith(attempt.output.outputId);
+    expect(mocks.chooseAudioOutputPath).toHaveBeenCalledWith(attempt.output.displayName);
+    expect(retriedAttempt?.output.displayName).toBe(output.displayName);
+    expect(retriedAttempt?.request).toMatchObject({ format: nextFormat });
+
+    setExportQueueExecutionEnabled(true, store.dispatch, getState, instanceId);
+    await vi.waitFor(() => expect(mocks.exportAudio).toHaveBeenCalledTimes(2));
+    expect(mocks.exportAudio).toHaveBeenLastCalledWith(
+      expect.objectContaining({ format: nextFormat }),
+      output.outputId,
+      expect.any(Function),
+      expect.any(String),
+      instanceId,
+    );
   });
 
   it("surfaces retry preparation failures while keeping the attempt failed", async () => {

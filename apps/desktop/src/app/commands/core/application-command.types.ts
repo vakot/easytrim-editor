@@ -12,6 +12,7 @@ interface ApplicationShortcut {
   code: string;
   key: string;
   modifier: "alt" | "control" | "none" | "primary";
+  shift?: boolean;
 }
 
 interface ApplicationCommandGroupMetadata {

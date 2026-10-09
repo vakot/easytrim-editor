@@ -41,6 +41,12 @@ function useActivityFeed() {
 
   const labels = useMemo<ActivityProjectionLabels>(
     () => ({
+      audioExportCompleted: t("export.audioExport.completed"),
+      audioExportCancelled: t("export.audioExport.cancelled"),
+      audioExportFailed: t("export.audioExport.failed"),
+      audioExportInterrupted: t("export.audioExport.interrupted"),
+      audioExportStarted: t("export.audioExport.started"),
+      audioExporting: t("export.audioExport.exporting"),
       fastExportCompleted: t("export.fastExport.completed"),
       fastExportCancelled: t("export.fastExport.cancelled"),
       fastExportFailed: t("export.fastExport.failed"),

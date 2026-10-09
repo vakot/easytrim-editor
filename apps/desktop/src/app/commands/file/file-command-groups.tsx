@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { defineApplicationCommandGroup } from "@/app/commands/core/application-command.utils";
 
+import { useAudioExportCommand } from "./definitions/audio-export.command";
 import { useCloseFileCommand } from "./definitions/close-file.command";
 import { useDeleteFileCommand } from "./definitions/delete-file.command";
 import { useFastExportCommand } from "./definitions/fast-export.command";
@@ -16,6 +17,7 @@ function useFileCommandGroups() {
   const openFolder = useOpenFolderCommand();
   const closeFile = useCloseFileCommand();
   const deleteFile = useDeleteFileCommand();
+  const audioExport = useAudioExportCommand();
   const fastExport = useFastExportCommand();
   const gifExport = useGifExportCommand();
   const optimizedExport = useOptimizedExportCommand();
@@ -30,6 +32,7 @@ function useFileCommandGroups() {
       fastExport,
       optimizedExport,
       gifExport,
+      audioExport,
     ] as const),
   ] as const;
 }

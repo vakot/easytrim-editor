@@ -357,6 +357,8 @@ describe("App", () => {
     expect(screen.getByRole("option", { name: /Fast Export/ })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /Optimized Export/ })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /GIF Export/ })).toBeInTheDocument();
+    const audioExportOption = screen.getByRole("option", { name: /Audio Export/ });
+    expect(audioExportOption.querySelector('[aria-label="Control+Shift+A"]')).not.toBeNull();
 
     await user.clear(search);
     await user.type(search, "folder");
@@ -371,6 +373,7 @@ describe("App", () => {
     getMenuTrigger("File").focus();
     await user.keyboard("{Enter}");
     expect(screen.getByRole("menuitem", { name: /GIF Export/ })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /Audio Export/ })).toHaveTextContent("CtrlShiftA");
     await user.click(screen.getByRole("menuitem", { name: /Open Folder/ }));
     await waitFor(() => expect(mocks.chooseSource).toHaveBeenCalledTimes(2));
     expect(mocks.chooseSource).toHaveBeenLastCalledWith("folders");

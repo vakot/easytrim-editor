@@ -1,4 +1,5 @@
 import {
+  AudioLines,
   CircleAlert,
   CircleX,
   FileVideo,
@@ -16,6 +17,7 @@ import { Spinner } from "@/components/ui/spinner";
 import type { ActivityEntry, ActivityKind, ActivityStatus } from "../../../lib/activity-projection";
 
 const activityIcons: Record<ActivityKind, LucideIcon> = {
+  "audio-export": AudioLines,
   "fast-export": Scissors,
   "gif-export": Film,
   "file-deleted": Trash2,

@@ -15,7 +15,7 @@ import {
   type SourceAvailability,
 } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
-import type { OutputSelection } from "@/domain/media";
+import type { AudioExportRequest, OutputSelection } from "@/domain/media";
 import { normalizeSourceKey } from "@/domain/source";
 import type { AppError, ExportProgress, ExportResult, MediaInfo } from "@/lib/tauri/media.types";
 
@@ -357,6 +357,7 @@ const editingInstancesSlice = createSlice({
       state,
       action: PayloadAction<{
         attemptId: string;
+        audioFormat?: AudioExportRequest["format"];
         id: EditingInstanceId;
         output: OutputSelection;
       }>,
@@ -365,6 +366,12 @@ const editingInstancesSlice = createSlice({
       const attempt = instance && getAttempt(instance, action.payload.attemptId);
       if (!attempt || attempt.state.status !== "failed") return;
       attempt.output = action.payload.output;
+      if (attempt.route === "audio" && action.payload.audioFormat) {
+        attempt.request = {
+          ...(attempt.request as AudioExportRequest),
+          format: action.payload.audioFormat,
+        };
+      }
       attempt.metrics = {
         ...EMPTY_EXPORT_METRICS,
         ...(attempt.metrics.totalFrames === undefined

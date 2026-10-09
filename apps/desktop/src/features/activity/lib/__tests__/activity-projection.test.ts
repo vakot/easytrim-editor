@@ -14,6 +14,12 @@ import {
 } from "../activity-projection";
 
 const labels: ActivityProjectionLabels = {
+  audioExportCancelled: "Audio Export cancelled",
+  audioExportCompleted: "Audio Export completed",
+  audioExportFailed: "Audio Export failed",
+  audioExportInterrupted: "Audio Export interrupted",
+  audioExportStarted: "Audio Export started",
+  audioExporting: "Audio Export…",
   fastExportCancelled: "Fast Export cancelled",
   fastExportCompleted: "Fast Export completed",
   fastExportFailed: "Fast Export failed",
@@ -173,6 +179,7 @@ describe("activity projection", () => {
   });
 
   it.each([
+    ["audio", "audio-export", "Audio Export completed"],
     ["fast", "fast-export", "Fast Export completed"],
     ["optimized", "optimized-export", "Optimized export completed"],
     ["gif", "gif-export", "GIF export completed"],

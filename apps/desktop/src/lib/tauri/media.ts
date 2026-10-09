@@ -7,6 +7,7 @@ import type { AudioTrackProcessing, AudioTrackSelection } from "@/domain/audio-p
 import type { SourceRef } from "@/domain/source";
 
 import type {
+  AudioExportRequest,
   AudioPreviewDescriptor,
   ExportPlan,
   ExportProgress,
@@ -140,6 +141,15 @@ async function chooseOutputPath(
   }
 }
 
+async function chooseAudioOutputPath(defaultName: string): Promise<OutputSelection | null> {
+  try {
+    const value = await invoke<unknown>("choose_audio_output_path", { defaultName });
+    return value === null ? null : parseOutputSelection(value);
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 async function chooseGifOutputPath(defaultName: string): Promise<OutputSelection | null> {
   try {
     const value = await invoke<unknown>("choose_gif_output_path", { defaultName });
@@ -178,6 +188,23 @@ async function exportFast(
 ): Promise<ExportResult> {
   return render(
     "export_fast",
+    request,
+    outputId,
+    onProgress,
+    diagnosticParentOperationId,
+    diagnosticSnapshotId,
+  );
+}
+
+async function exportAudio(
+  request: AudioExportRequest,
+  outputId: string,
+  onProgress: (progress: ExportProgress) => void,
+  diagnosticParentOperationId?: string,
+  diagnosticSnapshotId?: string,
+): Promise<ExportResult> {
+  return render(
+    "render_audio",
     request,
     outputId,
     onProgress,
@@ -300,8 +327,8 @@ async function openFileLocation(path: string): Promise<void> {
 }
 
 async function render(
-  command: "export_fast" | "render_optimized" | "render_gif",
-  request: FastExportRequest | OptimizedExportRequest | GifExportRequest,
+  command: "export_fast" | "render_audio" | "render_optimized" | "render_gif",
+  request: AudioExportRequest | FastExportRequest | OptimizedExportRequest | GifExportRequest,
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
   diagnosticParentOperationId?: string,
@@ -468,11 +495,13 @@ export {
   analyzeAudioLoudness,
   cancelOperation,
   checkMediaCapabilities,
+  chooseAudioOutputPath,
   chooseGifOutputPath,
   chooseOutputPath,
   chooseSource,
   detectAudioActivity,
   detectScenes,
+  exportAudio,
   exportFast,
   inspectMedia,
   listenForSourceDrops,

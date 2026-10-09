@@ -35,8 +35,10 @@ import { normalizeSourceKey } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import {
   cancelOperation,
+  chooseAudioOutputPath,
   chooseGifOutputPath,
   chooseOutputPath,
+  exportAudio,
   exportFast,
   moveSourceToTrash,
   releaseExportSource,
@@ -46,6 +48,7 @@ import {
   resolveOutputSelection,
 } from "@/lib/tauri/media";
 import type {
+  AudioExportRequest,
   ExportProgress,
   FastExportRequest,
   GifExportRequest,
@@ -330,15 +333,33 @@ async function retryFailedExport(
 
     const output =
       (await resolveOutputSelection(attempt.output.outputId)) ??
-      (await (attempt.route === "gif"
-        ? chooseGifOutputPath(attempt.output.displayName)
-        : chooseOutputPath(
-            attempt.output.displayName,
-            attempt.route === "fast" ? (attempt.request as FastExportRequest) : undefined,
-          )));
+      (attempt.route === "audio"
+        ? await chooseAudioOutputPath(attempt.output.displayName)
+        : attempt.route === "gif"
+          ? await chooseGifOutputPath(attempt.output.displayName)
+          : await chooseOutputPath(
+              attempt.output.displayName,
+              attempt.route === "fast" ? (attempt.request as FastExportRequest) : undefined,
+            ));
 
     if (!output) return false;
-    dispatch(editingInstanceExportRetried({ id: instanceId, attemptId, output }));
+    const audioFormat =
+      attempt.route === "audio"
+        ? output.displayName.toLowerCase().endsWith(".wav")
+          ? "wav"
+          : output.displayName.toLowerCase().endsWith(".mp3")
+            ? "mp3"
+            : "m4a"
+        : undefined;
+
+    dispatch(
+      editingInstanceExportRetried({
+        id: instanceId,
+        attemptId,
+        output,
+        ...(audioFormat ? { audioFormat } : {}),
+      }),
+    );
     const queued = selectEditingInstanceAttempts(getState()).find(
       ({ attempt: candidate, instance }) =>
         instance.id === instanceId && candidate.id === attemptId,
@@ -470,6 +491,7 @@ async function renderJob(job: RuntimeExportJob) {
     const metrics = {
       durationMs: elapsedTime(job),
       progressPercent,
+      progressAvailable: progress.progressAvailable ?? progress.elapsedMicros > 0,
       currentFrame: progress.frame,
       fileSizeBytes: progress.totalSize,
       fps: parseFfmpegNumber(progress.fps) ?? undefined,
@@ -522,27 +544,35 @@ async function renderJob(job: RuntimeExportJob) {
     const result =
       job.attempt.route === "fast"
         ? await exportFast(
-            request,
+            request as FastExportRequest,
             job.attempt.output.outputId,
             onProgress,
             job.diagnosticsOperation?.operationId,
             job.instanceId,
           )
-        : job.attempt.route === "gif"
-          ? await renderGif(
-              job.attempt.request as GifExportRequest,
+        : job.attempt.route === "audio"
+          ? await exportAudio(
+              job.attempt.request as AudioExportRequest,
               job.attempt.output.outputId,
               onProgress,
               job.diagnosticsOperation?.operationId,
               job.instanceId,
             )
-          : await renderOptimized(
-              job.attempt.request as OptimizedExportRequest,
-              job.attempt.output.outputId,
-              onProgress,
-              job.diagnosticsOperation?.operationId,
-              job.instanceId,
-            );
+          : job.attempt.route === "gif"
+            ? await renderGif(
+                job.attempt.request as GifExportRequest,
+                job.attempt.output.outputId,
+                onProgress,
+                job.diagnosticsOperation?.operationId,
+                job.instanceId,
+              )
+            : await renderOptimized(
+                job.attempt.request as OptimizedExportRequest,
+                job.attempt.output.outputId,
+                onProgress,
+                job.diagnosticsOperation?.operationId,
+                job.instanceId,
+              );
 
     if (!job.canceled) {
       const durationMs = elapsedTime(job);

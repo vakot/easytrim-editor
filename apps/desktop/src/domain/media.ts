@@ -21,6 +21,7 @@ interface ExportProgress {
   frame?: number;
   operationId: string;
   phase: "preparing" | "running" | "completed";
+  progressAvailable?: boolean;
   speed?: string;
   totalSize?: number;
 }
@@ -42,6 +43,18 @@ interface FastExportRequest {
   audioTracks: AudioTrackSelection[];
   mergeAudio: boolean;
   rotationDegrees: import("./rotation").RotationDegrees;
+  sourcePath: string;
+  stripMetadata?: boolean;
+  trim: TrimSelection;
+}
+
+type AudioExportFormat = "m4a" | "mp3" | "wav";
+
+interface AudioExportRequest {
+  audioMetadata?: AudioTrackMetadataSelection[];
+  audioTracks: AudioTrackSelection[];
+  format: AudioExportFormat;
+  mergeAudio: boolean;
   sourcePath: string;
   stripMetadata?: boolean;
   trim: TrimSelection;
@@ -144,6 +157,8 @@ interface MediaInfo {
 export type {
   AppError,
   AudioActivityRange,
+  AudioExportFormat,
+  AudioExportRequest,
   AudioStream,
   AudioTrackMetadataSelection,
   ChapterInfo,

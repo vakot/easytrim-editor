@@ -93,6 +93,12 @@ function estimateExportSize(
 }
 
 function formatExportDuration(durationMs: number): string {
+  if (durationMs > 0 && durationMs < 1_000) {
+    const centiseconds = Math.round(durationMs / 10);
+    if (centiseconds >= 100) return "0:01";
+    return `0:00.${String(centiseconds).padStart(2, "0")}`;
+  }
+
   const totalSeconds = Math.max(0, Math.floor(durationMs / 1_000));
   const hours = Math.floor(totalSeconds / 3_600);
   const minutes = Math.floor((totalSeconds % 3_600) / 60);
@@ -140,7 +146,7 @@ function getExportMetricValues(
     metrics.phase === "completed" ||
     (metrics.phase !== "preparing" && metrics.progressPercent > 0);
 
-  const progressFromFfmpeg = progressMetricIsUseful
+  const progressFromFfmpeg = progressMetricIsUseful && metrics.progressAvailable !== false
     ? boundedPercent(metrics.progressPercent)
     : null;
 

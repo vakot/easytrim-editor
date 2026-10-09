@@ -105,14 +105,23 @@ function ApplicationCommandIcon({
   );
 }
 
-function ApplicationCommandShortcut() {
-  const { command } = useApplicationCommandMenuContext();
-  if (!command.shortcut) return null;
+function ApplicationCommandShortcut({ command }: { command?: ApplicationCommand } = {}) {
+  const context = useContext(ApplicationCommandMenuContext);
+  const resolvedCommand = command ?? context?.command;
+  if (!resolvedCommand) {
+    throw new Error(
+      "ApplicationCommandShortcut must be used with a command or within ApplicationCommandMenuItem",
+    );
+  }
+  if (!resolvedCommand.shortcut) return null;
 
   return (
-    <span aria-label={getShortcutAriaValue(command.shortcut)} className={menuClassNames.shortcut}>
+    <span
+      aria-label={getShortcutAriaValue(resolvedCommand.shortcut)}
+      className={menuClassNames.shortcut}
+    >
       <KbdGroup>
-        {getShortcutDisplayKeys(command.shortcut).map((key) => (
+        {getShortcutDisplayKeys(resolvedCommand.shortcut).map((key) => (
           <Kbd key={key}>{key}</Kbd>
         ))}
       </KbdGroup>

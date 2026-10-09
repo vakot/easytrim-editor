@@ -183,6 +183,7 @@ function parseExportProgress(value: unknown): ExportProgress {
     operationId: requireString(progress.operationId, "operation ID"),
     elapsedMicros: requireInteger(progress.elapsedMicros, "export elapsed time"),
     frame: optionalInteger(progress.frame, "export frame"),
+    progressAvailable: optionalBoolean(progress.progressAvailable),
     fps: optionalString(progress.fps),
     speed: optionalString(progress.speed),
     bitrate: optionalString(progress.bitrate),
