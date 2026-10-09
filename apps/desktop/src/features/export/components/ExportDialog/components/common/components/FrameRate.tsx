@@ -55,12 +55,13 @@ function FrameRate({
   return (
     <section className="grid gap-1.5">
       <Label htmlFor="export-frame-rate">{t("export.frameRate.label")}</Label>
-      <Autocomplete>
+      <Autocomplete label={t("export.frameRate.label")}>
         <AutocompleteAnchor>
           <div className="flex items-center gap-2">
             <AutocompleteInputGroup className="flex-1">
               <AutocompleteInput
                 {...(isValid ? {} : { "aria-describedby": errorId, "aria-invalid": true })}
+                aria-label={t("export.frameRate.label")}
                 id="export-frame-rate"
                 onValueChange={onValueChange}
                 placeholder={t("export.optimized.dialog.matchSource")}
@@ -72,7 +73,13 @@ function FrameRate({
               </InputGroupAddon>
             </AutocompleteInputGroup>
 
-            <Button onClick={() => setValue("")} size="icon" variant="secondary">
+            <Button
+              aria-label={t("common.actions.clear")}
+              onClick={() => onValueChange("")}
+              size="icon"
+              type="button"
+              variant="secondary"
+            >
               <X aria-hidden="true" />
             </Button>
           </div>

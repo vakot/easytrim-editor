@@ -28,7 +28,7 @@ function AutocompleteAnchor({ ...props }: React.ComponentProps<typeof ComboboxAn
   return <ComboboxAnchor {...props} />;
 }
 
-function AutocompleteInputGroup({ ...props }: React.ComponentProps<typeof ComboboxInput>) {
+function AutocompleteInputGroup({ ...props }: React.ComponentProps<typeof ComboboxInputGroup>) {
   return <ComboboxInputGroup {...props} />;
 }
 
@@ -50,6 +50,7 @@ function AutocompleteInput({
         setValue(nextValue);
         onValueChange?.(nextValue);
       }}
+      showSearchIcon={false}
       value={uncontrolledValue}
     />
   );

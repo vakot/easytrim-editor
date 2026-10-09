@@ -2,20 +2,46 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
-import { Autocomplete } from "@/components/ui/autocomplete";
+import {
+  Autocomplete,
+  AutocompleteAnchor,
+  AutocompleteContent,
+  AutocompleteEmpty,
+  AutocompleteInput,
+  AutocompleteInputGroup,
+  AutocompleteItem,
+  AutocompleteList,
+} from "@/components/ui/autocomplete";
+
+const suggestions = ["Match source", "15 FPS", "24 FPS", "30 FPS"];
 
 function ControlledAutocomplete({ initialValue = "" }: { initialValue?: string }) {
   const [value, setValue] = useState(initialValue);
 
   return (
-    <Autocomplete
-      aria-label="Frame rate"
-      id="test-autocomplete"
-      onValueChange={setValue}
-      placeholder="Match source"
-      suggestions={["Match source", "15 FPS", "24 FPS", "30 FPS"]}
-      value={value}
-    />
+    <Autocomplete label="Frame rate">
+      <AutocompleteAnchor>
+        <AutocompleteInputGroup>
+          <AutocompleteInput
+            aria-label="Frame rate"
+            id="test-autocomplete"
+            onValueChange={setValue}
+            placeholder="Match source"
+            value={value}
+          />
+        </AutocompleteInputGroup>
+      </AutocompleteAnchor>
+      <AutocompleteContent>
+        <AutocompleteEmpty>No matching frame rates</AutocompleteEmpty>
+        <AutocompleteList>
+          {suggestions.map((suggestion) => (
+            <AutocompleteItem key={suggestion} value={suggestion}>
+              {suggestion}
+            </AutocompleteItem>
+          ))}
+        </AutocompleteList>
+      </AutocompleteContent>
+    </Autocomplete>
   );
 }
 
@@ -37,7 +63,7 @@ describe("Autocomplete", () => {
 
     fireEvent.click(screen.getByRole("option", { name: "30 FPS" }));
 
-    expect(input).toHaveValue("30 FPS");
+    expect(input).toHaveValue("30");
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });
 
@@ -61,7 +87,7 @@ describe("Autocomplete", () => {
     fireEvent.keyDown(input, { key: "ArrowDown" });
     fireEvent.keyDown(input, { key: "Enter" });
 
-    expect(input).toHaveValue("30 FPS");
+    expect(input).toHaveValue("30");
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });
 });

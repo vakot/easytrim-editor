@@ -1,5 +1,6 @@
 "use client";
 
+import { SearchIcon } from "lucide-react";
 import * as React from "react";
 
 import {
@@ -12,6 +13,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
+import { InputGroupAddon } from "@/components/ui/input-group";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slot } from "@/components/ui/slot";
 
@@ -140,12 +142,24 @@ function ComboboxInput({
   onPointerDown,
   onPointerUp,
   onValueChange,
+  showSearchIcon = true,
   ...props
-}: React.ComponentProps<typeof CommandInput>) {
+}: React.ComponentProps<typeof CommandInput> & { showSearchIcon?: boolean }) {
   const insideContent = React.useContext(ComboboxContentContext);
   const { allowTriggerCloseRef, hasInputTriggerRef, openRef, triggerRef } = useCombobox();
   // Pointer focus arrives before the Radix trigger click; let that click toggle the popover once.
   const pointerDownRef = React.useRef(false);
+  const withSearchIcon = (input: React.ReactElement) =>
+    showSearchIcon ? (
+      <CommandInputGroup className="rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
+        {input}
+        <InputGroupAddon>
+          <SearchIcon className="size-4 shrink-0 opacity-50" />
+        </InputGroupAddon>
+      </CommandInputGroup>
+    ) : (
+      input
+    );
 
   React.useEffect(() => {
     if (insideContent) {
@@ -160,7 +174,7 @@ function ComboboxInput({
   }, [insideContent, hasInputTriggerRef]);
 
   if (insideContent) {
-    return (
+    return withSearchIcon(
       <CommandInput
         onClick={onClick}
         onFocus={onFocus}
@@ -170,7 +184,7 @@ function ComboboxInput({
         onPointerUp={onPointerUp}
         onValueChange={onValueChange}
         {...props}
-      />
+      />,
     );
   }
 
@@ -181,59 +195,61 @@ function ComboboxInput({
         triggerRef.current = node;
       }}
     >
-      <CommandInput
-        onClick={(event) => {
-          onClick?.(event);
+      {withSearchIcon(
+        <CommandInput
+          onClick={(event) => {
+            onClick?.(event);
 
-          if (!event.defaultPrevented && !allowTriggerCloseRef.current && openRef.current) {
-            event.preventDefault();
-          }
-        }}
-        onFocus={(event) => {
-          onFocus?.(event);
+            if (!event.defaultPrevented && !allowTriggerCloseRef.current && openRef.current) {
+              event.preventDefault();
+            }
+          }}
+          onFocus={(event) => {
+            onFocus?.(event);
 
-          if (!event.defaultPrevented) {
-            event.currentTarget.select();
+            if (!event.defaultPrevented) {
+              event.currentTarget.select();
 
-            if (!pointerDownRef.current && !openRef.current) {
+              if (!pointerDownRef.current && !openRef.current) {
+                event.currentTarget.click();
+              }
+            }
+          }}
+          onKeyDown={(event) => {
+            onKeyDown?.(event);
+
+            if (
+              !event.defaultPrevented &&
+              (event.key === "ArrowDown" || event.key === "ArrowUp") &&
+              !openRef.current
+            ) {
               event.currentTarget.click();
             }
-          }
-        }}
-        onKeyDown={(event) => {
-          onKeyDown?.(event);
+          }}
+          onPointerCancel={(event) => {
+            onPointerCancel?.(event);
+            pointerDownRef.current = false;
+          }}
+          onPointerDown={(event) => {
+            onPointerDown?.(event);
 
-          if (
-            !event.defaultPrevented &&
-            (event.key === "ArrowDown" || event.key === "ArrowUp") &&
-            !openRef.current
-          ) {
-            event.currentTarget.click();
-          }
-        }}
-        onPointerCancel={(event) => {
-          onPointerCancel?.(event);
-          pointerDownRef.current = false;
-        }}
-        onPointerDown={(event) => {
-          onPointerDown?.(event);
-
-          if (!event.defaultPrevented) {
-            pointerDownRef.current = true;
-          }
-        }}
-        onPointerUp={(event) => {
-          onPointerUp?.(event);
-          pointerDownRef.current = false;
-        }}
-        onValueChange={(value) => {
-          onValueChange?.(value);
-          if (!openRef.current) {
-            triggerRef.current?.click();
-          }
-        }}
-        {...props}
-      />
+            if (!event.defaultPrevented) {
+              pointerDownRef.current = true;
+            }
+          }}
+          onPointerUp={(event) => {
+            onPointerUp?.(event);
+            pointerDownRef.current = false;
+          }}
+          onValueChange={(value) => {
+            onValueChange?.(value);
+            if (!openRef.current) {
+              triggerRef.current?.click();
+            }
+          }}
+          {...props}
+        />,
+      )}
     </PopoverTrigger>
   );
 }
