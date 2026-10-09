@@ -5,6 +5,7 @@ import { defineApplicationCommandGroup } from "@/app/commands/core/application-c
 import { useCloseFileCommand } from "./definitions/close-file.command";
 import { useDeleteFileCommand } from "./definitions/delete-file.command";
 import { useFastExportCommand } from "./definitions/fast-export.command";
+import { useGifExportCommand } from "./definitions/gif-export.command";
 import { useOpenFileCommand } from "./definitions/open-file.command";
 import { useOpenFolderCommand } from "./definitions/open-folder.command";
 import { useOptimizedExportCommand } from "./definitions/optimized-export.command";
@@ -16,6 +17,7 @@ function useFileCommandGroups() {
   const closeFile = useCloseFileCommand();
   const deleteFile = useDeleteFileCommand();
   const fastExport = useFastExportCommand();
+  const gifExport = useGifExportCommand();
   const optimizedExport = useOptimizedExportCommand();
   return [
     defineApplicationCommandGroup("file", t("commands.sections.file"), [
@@ -27,6 +29,7 @@ function useFileCommandGroups() {
     defineApplicationCommandGroup("export", t("commands.sections.export"), [
       fastExport,
       optimizedExport,
+      gifExport,
     ] as const),
   ] as const;
 }

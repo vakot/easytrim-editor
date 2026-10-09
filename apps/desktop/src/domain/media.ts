@@ -20,7 +20,7 @@ interface ExportProgress {
   fps?: string;
   frame?: number;
   operationId: string;
-  phase: "running" | "completed";
+  phase: "preparing" | "running" | "completed";
   speed?: string;
   totalSize?: number;
 }
@@ -38,11 +38,20 @@ interface ExportResult {
 }
 
 interface FastExportRequest {
+  audioMetadata?: AudioTrackMetadataSelection[];
   audioTracks: AudioTrackSelection[];
   mergeAudio: boolean;
   rotationDegrees: import("./rotation").RotationDegrees;
   sourcePath: string;
+  stripMetadata?: boolean;
   trim: TrimSelection;
+}
+
+interface AudioTrackMetadataSelection {
+  isDefault: boolean;
+  language?: string;
+  streamIndex: number;
+  title?: string;
 }
 
 interface AudioActivityRange {
@@ -57,6 +66,19 @@ interface OptimizedExportRequest extends FastExportRequest {
   flipVertical?: boolean;
   frameRate?: { denominator: number; numerator: number };
   resolution: { height: number; width: number };
+}
+
+interface GifExportRequest {
+  audioTracks: AudioTrackSelection[];
+  crop?: { height: number; width: number; x: number; y: number };
+  flipHorizontal: boolean;
+  flipVertical: boolean;
+  frameRate?: { denominator: number; numerator: number };
+  mergeAudio: false;
+  resolution: { height: number; width: number };
+  rotationDegrees: import("./rotation").RotationDegrees;
+  sourcePath: string;
+  trim: TrimSelection;
 }
 
 interface LoudnessAnalysisRequest {
@@ -123,11 +145,13 @@ export type {
   AppError,
   AudioActivityRange,
   AudioStream,
+  AudioTrackMetadataSelection,
   ChapterInfo,
   ExportProgress,
   ExportResult,
   FastExportRequest,
   FrameRate,
+  GifExportRequest,
   LoudnessAnalysis,
   LoudnessAnalysisRequest,
   MediaInfo,

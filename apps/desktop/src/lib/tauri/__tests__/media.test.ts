@@ -26,6 +26,7 @@ import {
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,
+  planGifExport,
   planOptimizedExport,
   prepareAudioPreviews,
   prepareImportedSourceThumbnail,
@@ -477,6 +478,28 @@ describe("media IPC adapter", () => {
       commandPreview: "ffmpeg -i <source> -c:v hevc_nvenc <output>",
     });
     expect(mocks.invoke).toHaveBeenCalledWith("plan_optimized_export", { request });
+  });
+
+  it("parses a path-redacted GIF export plan", async () => {
+    mocks.invoke.mockResolvedValue({
+      commandPreview: "ffmpeg -i <source> -filter_complex palettegen -f gif <output>",
+    });
+    const request = {
+      sourcePath: "C:/Media/clip.mp4",
+      trim: { startMicros: 0, endMicros: 1_000_000 },
+      audioTracks: [],
+      mergeAudio: false as const,
+      rotationDegrees: 0 as const,
+      flipHorizontal: false,
+      flipVertical: false,
+      resolution: { width: 640, height: 480 },
+      frameRate: undefined,
+    };
+
+    await expect(planGifExport(request)).resolves.toEqual({
+      commandPreview: "ffmpeg -i <source> -filter_complex palettegen -f gif <output>",
+    });
+    expect(mocks.invoke).toHaveBeenCalledWith("plan_gif_export", { request });
   });
 
   it("passes the frontend diagnostic operation as the native export parent", async () => {

@@ -1,3 +1,5 @@
+"use client";
+
 import { Loader2Icon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";

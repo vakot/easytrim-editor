@@ -20,6 +20,7 @@ interface Preferences {
   playbackVolumePercent: number;
   primaryColor: PrimaryColor;
   segmentPlaybackEnabledDefault: boolean;
+  stripMetadataOnExport: boolean;
   theme: ThemePreference;
   uiScalePercent: number;
 }
@@ -35,6 +36,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   autoStartQueueEnabled: true,
   deleteSourceOnRenderFinish: false,
   mergeAudioEnabledDefault: false,
+  stripMetadataOnExport: false,
   layoutDensity: DEFAULT_LAYOUT_DENSITY,
   theme: "system",
   uiScalePercent: DEFAULT_UI_SCALE_PERCENT,

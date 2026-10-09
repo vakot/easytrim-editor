@@ -29,10 +29,12 @@ import { normalizeSourceKey } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import {
   cancelOperation,
+  chooseGifOutputPath,
   chooseOutputPath,
   exportFast,
   moveSourceToTrash,
   releaseExportSource,
+  renderGif,
   renderOptimized,
   reserveExportSource,
   resolveOutputSelection,
@@ -40,6 +42,7 @@ import {
 import type {
   ExportProgress,
   FastExportRequest,
+  GifExportRequest,
   OptimizedExportRequest,
 } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
@@ -319,10 +322,12 @@ async function retryFailedExport(
 
     const output =
       (await resolveOutputSelection(attempt.output.outputId)) ??
-      (await chooseOutputPath(
-        attempt.output.displayName,
-        attempt.route === "fast" ? (attempt.request as FastExportRequest) : undefined,
-      ));
+      (await (attempt.route === "gif"
+        ? chooseGifOutputPath(attempt.output.displayName)
+        : chooseOutputPath(
+            attempt.output.displayName,
+            attempt.route === "fast" ? (attempt.request as FastExportRequest) : undefined,
+          )));
 
     if (!output) return false;
     dispatch(editingInstanceExportRetried({ id: instanceId, attemptId, output }));
@@ -433,27 +438,31 @@ async function renderJob(job: RuntimeExportJob) {
       job.attempt.request.trim.endMicros - job.attempt.request.trim.startMicros;
 
     const progressPercent =
-      durationMicros > 0
-        ? Math.min(100, Math.max(0, (progress.elapsedMicros / durationMicros) * 100))
-        : 0;
+      progress.phase === "preparing"
+        ? 0
+        : durationMicros > 0
+          ? Math.min(100, Math.max(0, (progress.elapsedMicros / durationMicros) * 100))
+          : 0;
 
-    const estimatedTime = estimateExportTime(
-      progress.elapsedMicros,
-      durationMicros,
-      progress.speed,
-    );
+    const estimatedTime =
+      progress.phase === "running"
+        ? estimateExportTime(progress.elapsedMicros, durationMicros, progress.speed)
+        : null;
 
-    const estimatedSize = estimateExportSize(
-      progress.totalSize,
-      progress.bitrate,
-      progress.elapsedMicros,
-      durationMicros,
-    );
+    const estimatedSize =
+      progress.phase === "running"
+        ? estimateExportSize(
+            progress.totalSize,
+            progress.bitrate,
+            progress.elapsedMicros,
+            durationMicros,
+          )
+        : null;
 
     if (
-      progressPercent === 100 ||
+      (progress.phase !== "preparing" && progressPercent === 100) ||
       progressPercent - job.lastDiagnosticProgress >= 10 ||
-      job.lastDiagnosticProgress < 0
+      (job.lastDiagnosticProgress < 0 && progress.phase !== "preparing")
     ) {
       job.lastDiagnosticProgress = progressPercent;
       diagnostics.event("ffmpeg.progress.reported", {
@@ -482,6 +491,7 @@ async function renderJob(job: RuntimeExportJob) {
           currentFrame: progress.frame,
           fileSizeBytes: progress.totalSize,
           fps: parseFfmpegNumber(progress.fps) ?? undefined,
+          phase: progress.phase,
           bitrate: parseFfmpegBitrate(progress.bitrate) === null ? undefined : progress.bitrate,
           estimatedFileSizeBytes: estimatedSize?.totalBytes,
           estimatedElapsedTimeMs: estimatedTime?.elapsedMs,
@@ -492,22 +502,35 @@ async function renderJob(job: RuntimeExportJob) {
   };
 
   try {
+    const request = {
+      ...job.attempt.request,
+      stripMetadata: job.getState().preferences.stripMetadataOnExport,
+    };
+
     const result =
       job.attempt.route === "fast"
         ? await exportFast(
-            job.attempt.request,
+            request,
             job.attempt.output.outputId,
             onProgress,
             job.diagnosticsOperation?.operationId,
             job.instanceId,
           )
-        : await renderOptimized(
-            job.attempt.request as OptimizedExportRequest,
-            job.attempt.output.outputId,
-            onProgress,
-            job.diagnosticsOperation?.operationId,
-            job.instanceId,
-          );
+        : job.attempt.route === "gif"
+          ? await renderGif(
+              job.attempt.request as GifExportRequest,
+              job.attempt.output.outputId,
+              onProgress,
+              job.diagnosticsOperation?.operationId,
+              job.instanceId,
+            )
+          : await renderOptimized(
+              job.attempt.request as OptimizedExportRequest,
+              job.attempt.output.outputId,
+              onProgress,
+              job.diagnosticsOperation?.operationId,
+              job.instanceId,
+            );
 
     if (!job.canceled) {
       job.dispatch(

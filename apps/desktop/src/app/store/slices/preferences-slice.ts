@@ -74,6 +74,7 @@ const preferencesSlice = createSlice({
     editingSettingsReset: (state) => {
       state.loopPlaybackEnabledDefault = DEFAULT_PREFERENCES.loopPlaybackEnabledDefault;
       state.mergeAudioEnabledDefault = DEFAULT_PREFERENCES.mergeAudioEnabledDefault;
+      state.stripMetadataOnExport = DEFAULT_PREFERENCES.stripMetadataOnExport;
       state.segmentPlaybackEnabledDefault = DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault;
     },
     themePreferenceChanged: (state, action: PayloadAction<ThemePreference>) => {
@@ -118,6 +119,9 @@ const selectPlaybackVolumePercent = (state: RootState): number =>
 
 const selectMergeAudioEnabledDefault = (state: RootState): boolean =>
   selectPreferences(state).mergeAudioEnabledDefault;
+
+const selectStripMetadataOnExport = (state: RootState): boolean =>
+  selectPreferences(state).stripMetadataOnExport;
 
 const selectLoopPlaybackEnabledDefault = (state: RootState): boolean =>
   selectPreferences(state).loopPlaybackEnabledDefault;
@@ -182,6 +186,7 @@ export {
   selectPreferences,
   selectPrimaryColor,
   selectSegmentPlaybackEnabledDefault,
+  selectStripMetadataOnExport,
   selectThemePreference,
   selectUiScalePercent,
   themePreferenceChanged,

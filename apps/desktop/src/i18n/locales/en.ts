@@ -14,8 +14,12 @@ export const en = {
     },
     or: "or",
     search: {
-      label: "Search",
-      placeholder: "Search…",
+      commands: "Search commands",
+      commandsPlaceholder: "Search commands…",
+      languages: "Search languages",
+      languagesPlaceholder: "Search languages…",
+      sources: "Search sources",
+      sourcesPlaceholder: "Search sources…",
     },
     status: {
       error: "Error",
@@ -292,9 +296,6 @@ export const en = {
       language: {
         coverageAccessibleLabel: "{{language}} translation coverage: {{percentage}}%",
         helpTranslate: "Help translate EasyTrim",
-        search: "Search languages",
-        searchPlaceholder: "Search languages…",
-        suggestions: "Suggestions",
         noResults: "No languages found",
         description: "Choose the language used throughout EasyTrim Editor",
         label: "Language",
@@ -357,6 +358,11 @@ export const en = {
         description: "Merge enabled audio tracks for new exports by default",
         label: "Merge audio",
         commandLabel: "Merge audio by default",
+      },
+      stripMetadata: {
+        description: "Remove source container metadata and chapters from new exports by default",
+        label: "Strip metadata",
+        commandLabel: "Strip metadata and chapters from exports",
       },
       reset: "Reset editing settings",
     },
@@ -456,6 +462,7 @@ export const en = {
       layoutPanelsVisibility: "Layout / Panels visibility",
       preferences: "Preferences",
       preferencesAudio: "Preferences / Audio",
+      preferencesExport: "Preferences / Export",
       preferencesPlayback: "Preferences / Playback",
       previewFrame: "Preview / Frame",
       previewTransform: "Preview / Transform",
@@ -465,10 +472,8 @@ export const en = {
       queueOnFinishedSource: "Queue / On finished / Source",
       go: "Go",
     },
-    searchLabel: "Search commands",
     description: "Search for an EasyTrim action to run",
     empty: "No commands found",
-    placeholder: "Search commands…",
     searchTerms: {
       closeFile: "remove|source",
       copyCurrentFrame: "copy|frame|screenshot|image|clipboard",
@@ -477,6 +482,7 @@ export const en = {
       openFolder: "directory|import|source",
       optimizedExport: "optimized export|optimize|export",
       fastExport: "fast export|fast|export",
+      gifExport: "gif export|gif|animated image",
       saveCurrentFrame: "save|frame|screenshot|image|png",
     },
   },
@@ -521,6 +527,7 @@ export const en = {
       selectedExportRangeIsInvalid: "The selected export range is invalid",
       fileLocationCouldNotBeOpened: "Could not open the file location",
       ffmpegCouldNotBeStarted: "FFmpeg could not be started",
+      globalMetadataCannotBeSetWhenStrippingMetadata: "Custom optimized export arguments cannot set global metadata while metadata stripping is enabled",
       analyzeTrackLoudnessToContinue: "Analyze track loudness to continue",
       interruptedWhenEasyTrimClosedUnexpectedly: "The export was interrupted when EasyTrim closed unexpectedly",
     },
@@ -612,6 +619,20 @@ export const en = {
         saveNotice: "The native save dialog opens after confirmation",
       },
     },
+    gif: {
+      action: "GIF Export",
+      tooltip: "Export the selected segment as a GIF",
+      started: "GIF export started",
+      running: "GIF export…",
+      completed: "GIF export completed",
+      cancelled: "GIF export cancelled",
+      failed: "GIF export failed",
+      interrupted: "GIF export interrupted",
+      dialog: {
+        title: "Export selected segment as GIF",
+        description: "Choose the GIF resolution and frame rate before saving",
+      },
+    },
     actions: {
       saveChanges: "Save changes",
       start: "Export",
@@ -684,6 +705,7 @@ export const en = {
     },
     routes: {
       fastExport: "Fast Export",
+      gifExport: "GIF Export",
       optimizedExport: "Optimized Export",
     },
     title: "Export Queue",
@@ -725,6 +747,7 @@ export const en = {
     },
     progress: {
       accessibleLabel: "Export progress",
+      preparingGifPalette: "Preparing GIF palette",
     },
   },
   preview: {
@@ -998,6 +1021,30 @@ export const en = {
       advanced: "Advanced",
       defaultName: "Audio {{number}}",
       title: "Audio tracks",
+      metadata: {
+        title: "Output audio metadata",
+        description: "Set the title and language written to exported audio tracks.",
+        actions: {
+          edit: "Edit output metadata",
+        },
+        fields: {
+          default: {
+            label: "Default",
+            disabledTooltip: "Enable this track first",
+          },
+          title: {
+            label: "Track title",
+          },
+          language: {
+            label: "Language",
+            noResults: "No languages found",
+            actions: {
+              select: "Select a language",
+              reset: "Use source language",
+            },
+          },
+        },
+      },
       preparingPreview: "Preparing preview with these track settings…",
       actionsLabel: "Audio {{number}} actions",
       gainLabel: "Audio {{number}} gain in decibels",
@@ -1029,9 +1076,9 @@ export const en = {
         broadcast: "Broadcast",
       },
       description: "Normalize this track to a consistent target loudness",
+      manualGainUnavailable: "Manual Gain is unavailable while automatic normalization is applied",
       summary: "Normalized - {{preset}}",
       levelSummary: "{{target}} LUFS · {{peak}} dBTP",
-      manualGainUnavailable: "Manual gain is unavailable while automatic normalization is applied",
     },
     noiseReduction: {
       label: "Noise reduction",

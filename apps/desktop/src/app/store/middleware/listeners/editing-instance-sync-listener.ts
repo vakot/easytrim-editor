@@ -4,6 +4,7 @@ import { createEditorSnapshotFromState } from "@/app/store/integration/editor-sn
 import { releaseQueuedExportEdit } from "@/app/store/integration/export-queue-runtime";
 import { cropChanged, rotationChanged, selectCropResolution } from "@/app/store/slices/crop-slice";
 import {
+  editingInstanceGifSettingsChanged,
   editingInstanceOptimizedSettingsChanged,
   editingInstanceSnapshotUpdated,
   selectActiveEditingInstance,
@@ -75,6 +76,17 @@ listenerMiddleware.startListening({
         },
       }),
     );
+    if (instance.gifSettings) {
+      listenerApi.dispatch(
+        editingInstanceGifSettingsChanged({
+          id: instance.id,
+          settings: {
+            frameRate: instance.gifSettings.frameRate,
+            resolution: action.payload.resolution,
+          },
+        }),
+      );
+    }
   },
 });
 
@@ -92,5 +104,16 @@ listenerMiddleware.startListening({
         },
       }),
     );
+    if (instance.gifSettings) {
+      listenerApi.dispatch(
+        editingInstanceGifSettingsChanged({
+          id: instance.id,
+          settings: {
+            frameRate: instance.gifSettings.frameRate,
+            resolution: selectCropResolution(listenerApi.getState()),
+          },
+        }),
+      );
+    }
   },
 });

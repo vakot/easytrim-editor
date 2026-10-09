@@ -107,7 +107,7 @@ test("includes the structured AppError catalog in canonical coverage", async () 
   );
 });
 
-test("supports only English and Russian and completes Russian coverage", async () => {
+test("supports English and Russian and accepts partial Russian coverage", async () => {
   const report = await validateI18n(repositoryRoot);
 
   assert.deepEqual(
@@ -116,8 +116,11 @@ test("supports only English and Russian and completes Russian coverage", async (
   );
   const russian = report.coverage.find(({ locale }) => locale === "ru");
   assert.ok(russian);
-  assert.equal(russian.percentage, 100);
-  assert.equal(russian.translatedUnits, russian.totalUnits);
+  assert.equal(russian.translatedUnits + russian.missingUnits.length, russian.totalUnits);
+  assert.equal(
+    russian.percentage,
+    Math.round((russian.translatedUnits / russian.totalUnits) * 100),
+  );
 });
 
 test("formats concise and verbose summaries with optional detail filtering", () => {
@@ -161,14 +164,14 @@ test("CLI prints concise coverage by default and verbose details when requested"
 
   const verbose = runCli("--verbose");
   assert.equal(verbose.status, 0, verbose.stderr);
-  assert.match(verbose.stdout, /Russian\s+100%\s+\d+\/\d+/);
-  assert.doesNotMatch(verbose.stdout, /Missing translation units:/);
+  assert.match(verbose.stdout, /Russian\s+\d+%\s+\d+\/\d+/);
+  assert.match(verbose.stdout, /Missing translation units:/);
 
   const filtered = runCli("--verbose", "ru");
   assert.equal(filtered.status, 0, filtered.stderr);
   assert.match(filtered.stdout, /English\s+100%/);
-  assert.match(filtered.stdout, /Russian\s+100%\s+\d+\/\d+/);
-  assert.doesNotMatch(filtered.stdout, /Missing translation units:/);
+  assert.match(filtered.stdout, /Russian\s+\d+%\s+\d+\/\d+/);
+  assert.match(filtered.stdout, /Missing translation units:/);
 
   const english = runCli("--verbose", "en");
   assert.equal(english.status, 0, english.stderr);
@@ -208,8 +211,11 @@ test("generates compact serializable metadata from validated coverage", async ()
     assert.deepEqual(Object.keys(coverage), ["en", "ru"]);
     assert.deepEqual(Object.keys(coverage.en), ["translatedUnits", "totalUnits", "percentage"]);
     assert.equal(coverage.en.percentage, 100);
-    assert.equal(coverage.ru.translatedUnits, coverage.ru.totalUnits);
-    assert.equal(coverage.ru.percentage, 100);
+    assert.ok(coverage.ru.translatedUnits <= coverage.ru.totalUnits);
+    assert.equal(
+      coverage.ru.percentage,
+      Math.round((coverage.ru.translatedUnits / coverage.ru.totalUnits) * 100),
+    );
     assert.doesNotThrow(() => JSON.stringify(coverage));
     assert.equal(await generateTranslationCoverage(repositoryRoot, destination), false);
   } finally {

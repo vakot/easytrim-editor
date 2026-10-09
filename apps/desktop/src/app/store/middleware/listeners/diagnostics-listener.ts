@@ -28,11 +28,11 @@ import {
 } from "@/app/store/slices/editing-instances-slice";
 import {
   exportLaunchFailed,
+  exportPlanFailed,
+  exportPlanReceived,
+  exportPlanRequested,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
-  optimizedExportPlanFailed,
-  optimizedExportPlanReceived,
-  optimizedExportPlanRequested,
   queuePaused,
   queueStarted,
 } from "@/app/store/slices/export-slice";
@@ -342,7 +342,7 @@ listenerMiddleware.startListening({
   effect: () => diagnostics.event("export.dialog.closed", { origin: internalOrigin }),
 });
 listenerMiddleware.startListening({
-  actionCreator: optimizedExportPlanRequested,
+  actionCreator: exportPlanRequested,
   effect: (action) =>
     diagnostics.event("export.plan.requested", {
       data: { requestId: action.payload.requestId },
@@ -350,7 +350,7 @@ listenerMiddleware.startListening({
     }),
 });
 listenerMiddleware.startListening({
-  actionCreator: optimizedExportPlanReceived,
+  actionCreator: exportPlanReceived,
   effect: (action) =>
     diagnostics.event("export.plan.ready", {
       data: { requestId: action.payload.requestId },
@@ -358,7 +358,7 @@ listenerMiddleware.startListening({
     }),
 });
 listenerMiddleware.startListening({
-  actionCreator: optimizedExportPlanFailed,
+  actionCreator: exportPlanFailed,
   effect: (action) =>
     diagnostics.error("export.plan.failed", action.payload.error, {
       data: { requestId: action.payload.requestId },

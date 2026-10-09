@@ -1,3 +1,5 @@
+"use client";
+
 import { Slider as SliderPrimitive } from "radix-ui";
 import * as React from "react";
 
@@ -16,6 +18,7 @@ function Slider({
   "aria-valuetext": ariaValueText,
   className,
   defaultValue,
+  disabled,
   markers = [],
   max = 100,
   min = 0,
@@ -40,6 +43,7 @@ function Slider({
       )}
       data-slot="slider"
       defaultValue={defaultValue}
+      disabled={disabled}
       max={max}
       min={min}
       onPointerCancelCapture={(event) => {
@@ -47,7 +51,7 @@ function Slider({
         onPointerCancelCapture?.(event);
       }}
       onPointerDownCapture={(event) => {
-        setDragging(true);
+        setDragging(!disabled);
         onPointerDownCapture?.(event);
       }}
       onPointerUpCapture={(event) => {
@@ -100,8 +104,9 @@ function Slider({
           </span>
         );
       })}
+
       {Array.from({ length: _values.length }, (_, index) => (
-        <Tooltip key={index} open={dragging || undefined} preserveOnTrigger>
+        <Tooltip key={index} open={!disabled && dragging} preserveOnTrigger>
           <TooltipTrigger asChild>
             <SliderPrimitive.Thumb
               aria-label={ariaLabel}

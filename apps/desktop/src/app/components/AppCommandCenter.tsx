@@ -70,7 +70,7 @@ function AppCommandCenterTrigger() {
         opacity: 1,
         borderWidth: 1,
       }}
-      aria-label={t("commands.placeholder")}
+      aria-label={t("common.search.commands")}
       className="min-w-0 basis-0 overflow-hidden rounded-l-lg! px-0 whitespace-nowrap text-muted-foreground transition-colors"
       data-no-drag="true"
       initial={
@@ -93,7 +93,7 @@ function AppCommandCenterTrigger() {
       <span className="flex min-w-max flex-1 items-center justify-between gap-3 px-2">
         <span className="flex items-center gap-1.5">
           <Search aria-hidden="true" className="size-3.5" />
-          <span>{t("commands.placeholder")}</span>
+          <span>{t("common.search.commandsPlaceholder")}</span>
         </span>
 
         <span aria-label={getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT)}>

@@ -58,6 +58,16 @@ function SettingsPreferences() {
           />
         </SettingRow>
 
+        <SettingRow
+          description={t("settings.preferences.stripMetadata.description")}
+          label={t("settings.preferences.stripMetadata.label")}
+        >
+          <CommandSwitch
+            aria-label={t("settings.preferences.stripMetadata.label")}
+            commandId="preference-strip-metadata"
+          />
+        </SettingRow>
+
         <SettingRow label={t("settings.preferences.reset")}>
           <CommandReset
             aria-label={t("settings.preferences.reset")}

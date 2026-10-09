@@ -1,6 +1,6 @@
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useAppSelector } from "@/app/store/redux-hooks";
+import { useAppSelector, useAppStore } from "@/app/store/redux-hooks";
 import {
   audioTrackPlaybackPreviewUrl,
   type AudioTrackState,
@@ -42,6 +42,7 @@ interface LiveAudioTrackGainRuntime {
   >;
   audioTracks: AudioTrackState[];
   nativeAudioBinding: { binding: NativeAudioBinding; element: HTMLVideoElement } | null;
+  nativeAudioStreamIndex: number | undefined;
   nativeAudioTrack: { enabled: boolean; streamIndex: number } | undefined;
   playbackVolumePercent: number;
   requiresProcessedPreview: boolean;
@@ -52,7 +53,6 @@ function applyAudioTrackGain(
   streamIndex: number,
   gainDb: number,
   runtime: LiveAudioTrackGainRuntime,
-  allowMutedTrackPreview = false,
   audioContext?: AudioContext | null,
   audioMix?: GainNode | null,
 ): void {
@@ -63,7 +63,7 @@ function applyAudioTrackGain(
     : gainDb;
 
   if (externalAudioNode) {
-    externalAudioNode.gain.gain.value = 10 ** (runtimeGainDb / 20);
+    externalAudioNode.gain.gain.value = track?.enabled === false ? 0 : 10 ** (runtimeGainDb / 20);
     if (track && audioContext && audioMix) {
       updateAudioTrackLimiter(
         audioContext,
@@ -78,7 +78,7 @@ function applyAudioTrackGain(
     return;
 
   const linearGain = 10 ** (gainDb / 20);
-  const nativeGain = runtime.nativeAudioTrack.enabled || allowMutedTrackPreview ? linearGain : 0;
+  const nativeGain = runtime.nativeAudioTrack.enabled ? linearGain : 0;
   if (runtime.nativeAudioBinding) {
     runtime.nativeAudioBinding.binding.gain.gain.value = nativeGain;
   } else if (runtime.videoElement) {
@@ -109,6 +109,7 @@ function useAudioPlaybackRuntime({
   previewKey: string | null;
   videoRef: RefObject<HTMLVideoElement | null>;
 }) {
+  const store = useAppStore();
   const sourcePath = useAppSelector(selectSourceSelection)?.sourcePath ?? null;
   const media = useAppSelector(selectSourceMedia);
   const audioTracks = useAppSelector(selectAudioTracks);
@@ -190,11 +191,19 @@ function useAudioPlaybackRuntime({
       audioNodes: audioNodesRef.current,
       nativeAudioBinding: nativeAudioBindingRef.current,
       nativeAudioTrack,
+      nativeAudioStreamIndex,
       playbackVolumePercent,
       requiresProcessedPreview,
       videoElement: videoRef.current,
     };
-  }, [audioTracks, nativeAudioTrack, playbackVolumePercent, requiresProcessedPreview, videoRef]);
+  }, [
+    audioTracks,
+    nativeAudioStreamIndex,
+    nativeAudioTrack,
+    playbackVolumePercent,
+    requiresProcessedPreview,
+    videoRef,
+  ]);
 
   const setLiveAudioTrackGain = useCallback(
     (streamIndex: number, gainDb: number) => {
@@ -210,7 +219,6 @@ function useAudioPlaybackRuntime({
           nativeAudioBinding: nativeAudioBindingRef.current,
           videoElement: videoRef.current,
         },
-        true,
         audioContextRef.current,
         audioMixRef.current,
       );
@@ -219,25 +227,51 @@ function useAudioPlaybackRuntime({
   );
 
   const clearLiveAudioTrackGain = useCallback(
-    (streamIndex: number, committedGainDb: number) => {
+    (streamIndex: number) => {
+      liveAudioTrackGainsRef.current.delete(streamIndex);
       const runtime = liveAudioTrackGainRuntimeRef.current;
       if (!runtime) return;
-      liveAudioTrackGainsRef.current.delete(streamIndex);
+
+      const audioTracks = selectAudioTracks(store.getState());
+      const track = audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
+      const committedGainDb = track?.enabled
+        ? (track.processing.gainDb ?? 0)
+        : Number.NEGATIVE_INFINITY;
+
+      const enabledAudioTracks = audioTracks.filter((candidate) => candidate.enabled);
+      const selectedAudioTrack =
+        enabledAudioTracks.length === 1 ? enabledAudioTracks[0] : undefined;
+
+      const nativeAudioTrack = audioTracks.find(
+        (candidate) => candidate.streamIndex === runtime.nativeAudioStreamIndex,
+      );
+
+      const usesNativeAudioTrack =
+        selectedAudioTrack?.streamIndex === runtime.nativeAudioStreamIndex;
+
+      const requiresProcessedPreview =
+        enabledAudioTracks.length > 1 ||
+        (enabledAudioTracks.length === 1 &&
+          (!usesNativeAudioTrack ||
+            audioTrackRequiresProcessedPreview(enabledAudioTracks[0]!.processing)));
+
       applyAudioTrackGain(
         streamIndex,
         committedGainDb,
         {
           ...runtime,
+          audioTracks,
           audioNodes: audioNodesRef.current,
           nativeAudioBinding: nativeAudioBindingRef.current,
+          nativeAudioTrack,
+          requiresProcessedPreview,
           videoElement: videoRef.current,
         },
-        true,
         audioContextRef.current,
         audioMixRef.current,
       );
     },
-    [videoRef],
+    [store, videoRef],
   );
 
   const removeAudioRuntime = useCallback((streamIndex: number) => {
@@ -511,6 +545,7 @@ function useAudioPlaybackRuntime({
     if (nativeAudioBindingRef.current) {
       nativeAudioBindingRef.current.binding.gain.gain.value =
         nativeAudioTrack?.enabled && !requiresProcessedPreview ? 10 ** (gainDb / 20) : 0;
+      if (videoRef.current) videoRef.current.volume = 1;
     } else if (videoRef.current) {
       const trackGain =
         nativeAudioTrack?.enabled && !requiresProcessedPreview ? 10 ** (gainDb / 20) : 0;

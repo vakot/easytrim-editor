@@ -124,6 +124,8 @@ function localizeAppError(error: AppError, t: TFunction): string {
       return t("export.errors.ffmpegCouldNotRenderTheSelectedSegment");
     case "export.ffmpegIsRequiredToExportVideoFiles":
       return t("export.errors.ffmpegIsRequiredToExportVideoFiles");
+    case "export.globalMetadataCannotBeSetWhenStrippingMetadata":
+      return t("export.errors.globalMetadataCannotBeSetWhenStrippingMetadata");
     case "export.fileOrFolderIsNoLongerAvailable":
       return t("export.errors.fileOrFolderIsNoLongerAvailable");
     case "export.finalOptimizedFfmpegOptionIsMissingItsValue":

@@ -10,11 +10,13 @@ import {
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_PROCESSING,
   getAudioTrackPreLevelEffects,
+  normalizeAudioTrackDefaults,
   sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
+import { normalizeMetadataLanguageCode } from "@/domain/languages";
 import type { AudioActivityRange, LoudnessAnalysis } from "@/domain/media";
 import type {
   AppError,
@@ -202,6 +204,34 @@ const audioSlice = createSlice({
 
       if (!track) return;
       track.enabled = !track.enabled;
+      state.tracks = normalizeAudioTrackDefaults(state.tracks);
+    },
+    audioTrackDefaultChanged: (state, action: PayloadAction<{ streamIndex: number }>) => {
+      const track = state.tracks.find(
+        (candidate) => candidate.streamIndex === action.payload.streamIndex,
+      );
+
+      if (!track?.enabled) return;
+      for (const candidate of state.tracks) {
+        candidate.metadata.isDefault = candidate.streamIndex === action.payload.streamIndex;
+      }
+      state.tracks = normalizeAudioTrackDefaults(state.tracks);
+    },
+    audioTrackMetadataChanged: (
+      state,
+      action: PayloadAction<{
+        language: string | undefined;
+        streamIndex: number;
+        title: string | undefined;
+      }>,
+    ) => {
+      const track = state.tracks.find(
+        (candidate) => candidate.streamIndex === action.payload.streamIndex,
+      );
+
+      if (!track) return;
+      track.metadata.language = normalizeMetadataLanguageCode(action.payload.language);
+      track.metadata.title = action.payload.title || undefined;
     },
     audioTrackGainChanged: (
       state,
@@ -510,11 +540,27 @@ const audioSlice = createSlice({
 
 function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTrackState[] {
   const savedTracks = new Map(snapshot?.audio.tracks.map((track) => [track.streamIndex, track]));
-  return media.audioStreams.map((stream) => {
+  const sourceDefault =
+    media.audioStreams.find((stream) => stream.isDefault) ?? media.audioStreams[0];
+
+  const snapshotHasDefaultState = snapshot?.audio.tracks.some(
+    (track) => track.metadata.isDefault !== undefined,
+  );
+
+  const defaultStreamIndex = snapshotHasDefaultState
+    ? snapshot?.audio.tracks.find((track) => track.metadata.isDefault)?.streamIndex
+    : sourceDefault?.streamIndex;
+
+  const tracks: AudioTrackState[] = media.audioStreams.map((stream) => {
     const saved = savedTracks.get(stream.streamIndex);
     return {
       streamIndex: stream.streamIndex,
       enabled: saved?.enabled ?? true,
+      metadata: {
+        isDefault: stream.streamIndex === defaultStreamIndex,
+        language: normalizeMetadataLanguageCode(saved?.metadata.language),
+        title: saved?.metadata.title || undefined,
+      },
       processing: saved?.processing
         ? { ...saved.processing }
         : { ...DEFAULT_AUDIO_TRACK_PROCESSING },
@@ -525,6 +571,8 @@ function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTr
       activityVisible: true,
     };
   });
+
+  return normalizeAudioTrackDefaults(tracks);
 }
 
 function staleAudioTrackPreview(preview: AudioTrackPreviewState): AudioTrackPreviewState {
@@ -540,13 +588,17 @@ function applyWaveformResult(state: AudioState, result: WaveformResult) {
   const track = state.tracks.find((candidate) => candidate.streamIndex === result.streamIndex);
   if (!track || track.waveform.status !== "loading" || track.waveform.jobId !== result.jobId)
     return;
-  if (result.status === "ready" && result.hasSignal === false && track.enabled) {
+  const disabledSilentTrack =
+    result.status === "ready" && result.hasSignal === false && track.enabled;
+
+  if (disabledSilentTrack) {
     track.enabled = false;
   }
   track.waveform =
     result.status === "ready"
       ? { status: "ready", jobId: result.jobId, width: result.width, url: result.url }
       : { status: "failed", jobId: result.jobId, width: result.width, error: result.error };
+  if (disabledSilentTrack) state.tracks = normalizeAudioTrackDefaults(state.tracks);
 }
 
 function updateWaveformTracks(
@@ -569,11 +621,13 @@ const {
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
   audioTrackActivityVisibilityToggled,
+  audioTrackDefaultChanged,
   audioTrackGainChanged,
   audioTrackLoudnessAnalysisFailed,
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
   audioTrackLoudnessNormalizationChanged,
+  audioTrackMetadataChanged,
   audioTrackPreviewFailed,
   audioTrackPreviewReady,
   audioTrackPreviewStarted,
@@ -622,11 +676,13 @@ export {
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
   audioTrackActivityVisibilityToggled,
+  audioTrackDefaultChanged,
   audioTrackGainChanged,
   audioTrackLoudnessAnalysisFailed,
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
   audioTrackLoudnessNormalizationChanged,
+  audioTrackMetadataChanged,
   audioTrackPlaybackPreviewUrl,
   audioTrackPreviewFailed,
   audioTrackPreviewReady,

@@ -1,3 +1,5 @@
+"use client";
+
 import type { SVGProps } from "react";
 import githubSvg from "simple-icons/icons/github.svg?raw";
 import kofiSvg from "simple-icons/icons/kofi.svg?raw";

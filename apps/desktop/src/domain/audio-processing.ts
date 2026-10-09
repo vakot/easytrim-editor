@@ -1,3 +1,5 @@
+import { normalizeMetadataLanguageCode } from "./languages";
+
 type LoudnessPreset = "webVideo" | "streaming" | "broadcast";
 const AUDIO_PROCESSING_STAGES = ["cleanup", "dynamics", "levelPolicy", "finalProtection"] as const;
 const AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS = [60, 80, 100, 120] as const;
@@ -45,8 +47,15 @@ interface AudioTrackProcessing {
   loudnessNormalization?: LoudnessNormalization;
 }
 
+interface AudioTrackMetadata {
+  isDefault?: boolean;
+  language?: string;
+  title?: string;
+}
+
 interface AudioTrackSettings {
   enabled: boolean;
+  metadata: AudioTrackMetadata;
   processing: AudioTrackProcessing;
   streamIndex: number;
 }
@@ -381,6 +390,37 @@ function cloneAudioTrackProcessing(processing: AudioTrackProcessing): AudioTrack
   };
 }
 
+function serializeAudioTrackSettings<T extends AudioTrackSettings>(track: T): AudioTrackSettings {
+  const language = normalizeMetadataLanguageCode(track.metadata.language);
+
+  return {
+    enabled: track.enabled,
+    metadata: {
+      ...(track.metadata.isDefault === undefined ? {} : { isDefault: track.metadata.isDefault }),
+      ...(track.metadata.title === undefined || track.metadata.title === ""
+        ? {}
+        : { title: track.metadata.title }),
+      ...(language === undefined ? {} : { language }),
+    },
+    streamIndex: track.streamIndex,
+    processing: cloneAudioTrackProcessing(track.processing),
+  };
+}
+
+function normalizeAudioTrackDefaults<T extends AudioTrackSettings>(tracks: T[]): T[] {
+  const defaultStreamIndex =
+    tracks.find((track) => track.enabled && track.metadata.isDefault)?.streamIndex ??
+    tracks.find((track) => track.enabled)?.streamIndex;
+
+  return tracks.map((track) => ({
+    ...track,
+    metadata: {
+      ...track.metadata,
+      isDefault: track.enabled && track.streamIndex === defaultStreamIndex,
+    },
+  }));
+}
+
 const DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION: CustomLoudnessNormalization = {
   mode: "custom",
   targetLufs: -16,
@@ -391,6 +431,7 @@ export type {
   AudioLoudnessAnalysis,
   AudioProcessingStage,
   AudioTrackLimiter,
+  AudioTrackMetadata,
   AudioTrackProcessing,
   AudioTrackSelection,
   AudioTrackSettings,
@@ -423,12 +464,14 @@ export {
   getAudioTrackSignalEffects,
   limitAudioPreviewSample,
   loudnessNormalizationTargets,
+  normalizeAudioTrackDefaults,
   parseAudioTrackSignalEffects,
   removeAudioTrackSignalEffect,
   sameAudioTrackLoudnessInputs,
   sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
   sameLoudnessNormalization,
+  serializeAudioTrackSettings,
   setAudioTrackSignalEffect,
   SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS,
 };

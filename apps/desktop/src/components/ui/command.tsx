@@ -1,3 +1,5 @@
+"use client";
+
 import { cva } from "class-variance-authority";
 import { Command as CommandPrimitive } from "cmdk";
 import { CheckIcon, SearchIcon } from "lucide-react";

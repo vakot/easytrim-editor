@@ -27,7 +27,7 @@ interface AudioTrackEffectDescriptor {
   stage: AudioProcessingStage;
 }
 
-const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
+const AUDIO_TRACK_EFFECTS = [
   {
     defaultSelected: true,
     id: "highPass",
@@ -75,7 +75,8 @@ const AUDIO_TRACK_EFFECTS: readonly AudioTrackEffectDescriptor[] = [
       );
     },
   },
-];
+] as const satisfies readonly AudioTrackEffectDescriptor[];
 
 export { AUDIO_TRACK_EFFECTS };
 export type { AudioTrackEffectDescriptor };
+export type AudioTrackEffectId = (typeof AUDIO_TRACK_EFFECTS)[number]["id"];
