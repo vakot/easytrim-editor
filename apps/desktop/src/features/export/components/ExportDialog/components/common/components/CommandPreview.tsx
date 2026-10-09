@@ -11,12 +11,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-interface CommandPreviewProps {
-  command: string;
-  error?: string | null;
-}
-
-function CommandPreview({ command, error }: CommandPreviewProps) {
+function CommandPreview({ command, error }: { command: string; error?: string | null }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 

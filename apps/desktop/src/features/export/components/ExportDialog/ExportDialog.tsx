@@ -34,11 +34,9 @@ import {
 } from "@/app/store/thunks/export-thunks";
 import { localizeAppError } from "@/i18n/app-errors";
 
-import { CommandPreview } from "./components/CommandPreview";
-import { ExportFrameRate } from "./components/ExportFrameRate";
-import { ExportResolution } from "./components/ExportResolution";
-import { GifExportOptions } from "./components/GifExportOptions";
-import { VideoExportOptions } from "./components/VideoExportOptions";
+import { CommandPreview, ExportResolution, FrameRate } from "./components/common";
+import { GifExportOptions } from "./components/gif";
+import { VideoExportOptions } from "./components/video";
 
 function ExportDialog() {
   const { t } = useTranslation();
@@ -111,7 +109,7 @@ function ExportDialog() {
 
           {routeComposition.options}
           <ExportResolution cropResolution={cropResolution} settings={settings} />
-          <ExportFrameRate settings={settings} />
+          <FrameRate settings={settings} />
           <CommandPreview
             command={commandPreview}
             error={commandPreviewError ? localizeAppError(commandPreviewError, t) : undefined}
@@ -128,9 +126,7 @@ function ExportDialog() {
               <Button
                 onClick={() =>
                   void dispatch(
-                    queueEdit
-                      ? startOptimizedExportRequested()
-                      : routeComposition.primaryAction(),
+                    queueEdit ? startOptimizedExportRequested() : routeComposition.primaryAction(),
                   )
                 }
               >

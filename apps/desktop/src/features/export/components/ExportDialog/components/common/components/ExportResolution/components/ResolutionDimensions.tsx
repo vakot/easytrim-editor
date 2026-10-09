@@ -9,21 +9,19 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { ExportSettings } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 
-interface ResolutionDimensionsProps {
-  cropAspectRatio: number;
-  isAspectRatioLocked: boolean;
-  onAspectRatioLockChange: (locked: boolean) => void;
-  onResolutionChange: (resolution: ExportSettings["resolution"]) => void;
-  settings: ExportSettings;
-}
-
 function ResolutionDimensions({
   cropAspectRatio,
   isAspectRatioLocked,
   onAspectRatioLockChange,
   onResolutionChange,
   settings,
-}: ResolutionDimensionsProps) {
+}: {
+  cropAspectRatio: number;
+  isAspectRatioLocked: boolean;
+  onAspectRatioLockChange: (locked: boolean) => void;
+  onResolutionChange: (resolution: ExportSettings["resolution"]) => void;
+  settings: ExportSettings;
+}) {
   const { t } = useTranslation();
 
   return (

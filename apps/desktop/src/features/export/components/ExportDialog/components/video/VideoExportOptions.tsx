@@ -1,4 +1,4 @@
-import { PresetManager } from "./PresetManager";
+import { PresetManager } from "./components/PresetManager";
 
 function VideoExportOptions() {
   return (

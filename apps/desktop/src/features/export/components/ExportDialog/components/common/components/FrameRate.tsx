@@ -13,13 +13,9 @@ import { useAppDispatch } from "@/app/store/redux-hooks";
 import { exportSettingsChangedRequested } from "@/app/store/thunks/export-thunks";
 import type { ExportSettings } from "@/domain/editing-instance";
 
-import { FRAME_RATE_OPTIONS, rateFromValue } from "../../../lib/export-options.utils";
+import { FRAME_RATE_OPTIONS, rateFromValue } from "../../../../../lib/export-options.utils";
 
-interface ExportFrameRateProps {
-  settings: ExportSettings;
-}
-
-function ExportFrameRate({ settings }: ExportFrameRateProps) {
+function FrameRate({ settings }: { settings: ExportSettings }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const frameRateValue = settings.frameRate
@@ -56,4 +52,4 @@ function ExportFrameRate({ settings }: ExportFrameRateProps) {
   );
 }
 
-export { ExportFrameRate };
+export { FrameRate };
