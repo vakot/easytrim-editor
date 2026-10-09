@@ -707,9 +707,6 @@ export const en = {
       optimizedExport: "Optimized Export",
     },
     title: "Export Queue",
-    stripMetadata: {
-      label: "Strip metadata and chapters from exports",
-    },
     jobStatus: {
       canceled: "Canceled",
       completed: "Completed",

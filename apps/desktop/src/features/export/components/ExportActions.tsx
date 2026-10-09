@@ -111,7 +111,7 @@ function ExportActions() {
                   className="text-sm font-normal text-muted-foreground"
                   htmlFor="queue-strip-metadata"
                 >
-                  {t("queue.stripMetadata.label")}
+                  {t("settings.preferences.stripMetadata.commandLabel")}
                 </Label>
               </div>
               <div className="flex items-center justify-end gap-2">
