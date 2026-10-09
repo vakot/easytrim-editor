@@ -33,10 +33,10 @@ import { firstSource, media, mediaWithAudio, secondSource } from "@/test/source.
 import {
   cancelOptimizedExportDialogRequested,
   editExportAttemptRequested,
-  startAudioExportRequested,
-  startExportQueue,
   exportSettingsChangedRequested,
   openOptimizedExportDialog,
+  startAudioExportRequested,
+  startExportQueue,
   startFastExportRequested,
   startOptimizedExportRequested,
 } from "../export-thunks";

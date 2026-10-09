@@ -18,10 +18,12 @@ function createAttempt(route: ExportRoute): ExportAttempt {
     sourcePath: source.sourcePath,
     trim: { endMicros: 12_000_000, startMicros: 2_000_000 },
   };
+
   const request =
     route === "audio"
       ? { ...baseRequest, format: "m4a" as const }
       : { ...baseRequest, rotationDegrees: 0 as const };
+
   const attempt = createExportAttempt({
     capturedAt: 1,
     id: `attempt-${route}`,
