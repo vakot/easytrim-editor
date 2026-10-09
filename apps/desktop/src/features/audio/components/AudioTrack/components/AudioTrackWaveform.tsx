@@ -369,13 +369,11 @@ function AudioTrackWaveformMagnifier({
     );
 
     context.clearRect(0, 0, pixelWidth, pixelHeight);
-    context.fillStyle = "rgba(15, 15, 18, 0.94)";
-    context.fillRect(0, 0, pixelWidth, pixelHeight);
 
     const gain = 10 ** (gainDb / 20);
     const centerY = pixelHeight / 2;
     context.strokeStyle = `rgb(${parseHexColor(primaryColor).map(Math.round).join(" ")})`;
-    context.lineWidth = 1;
+    context.lineWidth = 1.5;
     context.beginPath();
     for (let x = 0; x < pixelWidth; x += 1) {
       const start = Math.floor(viewStart + (x * binsInView) / pixelWidth);
@@ -400,6 +398,7 @@ function AudioTrackWaveformMagnifier({
     }
     context.stroke();
     context.strokeStyle = "rgba(255, 255, 255, 0.9)";
+    context.lineWidth = 1;
     context.beginPath();
     context.moveTo(markerX + 0.5, 0);
     context.lineTo(markerX + 0.5, pixelHeight);
@@ -432,7 +431,7 @@ function AudioTrackWaveformMagnifier({
   return (
     <canvas
       aria-hidden="true"
-      className="pointer-events-none absolute top-0 z-2 h-full w-45 max-w-full rounded-md border border-primary/80 shadow-lg"
+      className="pointer-events-none absolute top-0 z-2 h-full w-45 max-w-full"
       data-slot="audio-waveform-magnifier"
       ref={canvasRef}
     />
