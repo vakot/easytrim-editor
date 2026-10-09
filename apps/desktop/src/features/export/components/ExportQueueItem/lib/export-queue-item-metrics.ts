@@ -32,37 +32,25 @@ function getDuration(
     status?: ExportAttemptState["status"];
   },
 ): ExportQueueItemMetricConfig | null {
-  const durationMs = getExportMetricValues(attempt, status).durationMs;
+  const { durationMs, estimatedElapsedTimeMs, estimatedTotalTimeMs } = getExportMetricValues(
+    attempt,
+    status,
+  );
+
   if (durationMs === null) return null;
 
-  const duration = formatExportDuration(durationMs);
+  const elapsedMs = estimatedElapsedTimeMs ?? durationMs;
+  const duration =
+    status === "rendering" && estimatedTotalTimeMs !== undefined
+      ? `${formatExportDuration(elapsedMs)} / ${formatExportDuration(estimatedTotalTimeMs)}`
+      : formatExportDuration(durationMs);
+
   return {
     id: "duration",
-    value: status === "rendering" ? formatValue(duration) : duration,
-  };
-}
-
-function getRemaining(
-  attempt: ExportAttempt,
-  {
-    formatValue,
-    status = attempt.state.status,
-  }: {
-    formatValue: (value: string) => string;
-    status?: ExportAttemptState["status"];
-  },
-): ExportQueueItemMetricConfig | null {
-  const { durationMs, estimatedTotalTimeMs } = getExportMetricValues(attempt, status);
-  if (status !== "rendering" || durationMs === null || estimatedTotalTimeMs === undefined) {
-    return null;
-  }
-
-  const remainingMs = estimatedTotalTimeMs - durationMs;
-  if (remainingMs <= 0) return null;
-
-  return {
-    id: "remaining",
-    value: formatValue(formatExportDuration(remainingMs)),
+    value:
+      status === "rendering" && estimatedTotalTimeMs === undefined
+        ? formatValue(duration)
+        : duration,
   };
 }
 
@@ -138,4 +126,4 @@ function getFileSizeChange(
   };
 }
 
-export { getDuration, getFileSize, getFileSizeChange, getFps, getProgress, getRemaining };
+export { getDuration, getFileSize, getFileSizeChange, getFps, getProgress };

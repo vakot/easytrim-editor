@@ -741,12 +741,10 @@ export const en = {
       error: "Export error: {{message}}",
       fileSizeChange: "File size change: {{value}}",
       fps: "{{value}} FPS",
-      remaining: "{{value}} remaining",
       durationTooltip: "Export duration",
       fileSizeTooltip: "Output file size",
       fileSizeChangeTooltip: "Output file size change from source",
       fpsTooltip: "Frames rendered per second",
-      remainingTooltip: "Estimated time remaining",
     },
     progress: {
       accessibleLabel: "Export progress",

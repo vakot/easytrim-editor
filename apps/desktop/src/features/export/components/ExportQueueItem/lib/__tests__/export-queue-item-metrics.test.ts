@@ -24,6 +24,25 @@ describe("export queue item metrics", () => {
     ).toEqual({ id: "duration", value: "0:02" });
   });
 
+  it("shows spent and estimated total time together while rendering", () => {
+    expect(
+      getDuration(
+        {
+          ...attempt,
+          metrics: {
+            ...attempt.metrics,
+            estimatedElapsedTimeMs: 25_000,
+            estimatedTotalTimeMs: 36_000,
+          },
+        },
+        {
+          formatValue: (value) => value,
+          status: "rendering",
+        },
+      ),
+    ).toEqual({ id: "duration", value: "0:25 / 0:36" });
+  });
+
   it("shows elapsed time after GIF output completes", () => {
     expect(
       getDuration(

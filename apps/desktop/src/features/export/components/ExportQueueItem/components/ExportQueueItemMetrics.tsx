@@ -12,7 +12,6 @@ import {
   getFileSizeChange,
   getFps,
   getProgress,
-  getRemaining,
 } from "../lib/export-queue-item-metrics";
 import type { ExportQueueItemMetricConfig } from "../types";
 
@@ -31,13 +30,6 @@ function ExportQueueItemMetrics() {
             formatValue: (value) => t("queue.metrics.elapsed", { value }),
           }),
           t("queue.metrics.durationTooltip"),
-        ),
-        withTooltip(
-          getRemaining(attempt, {
-            status,
-            formatValue: (value) => t("queue.metrics.remaining", { value }),
-          }),
-          t("queue.metrics.remainingTooltip"),
         ),
         withTooltip(getFileSize(attempt, {}), t("queue.metrics.fileSizeTooltip")),
         withTooltip(

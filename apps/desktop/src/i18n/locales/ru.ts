@@ -711,12 +711,10 @@ export const ru = {
       error: "Ошибка экспорта: {{message}}",
       fileSizeChange: "Изменение размера файла: {{value}}",
       fps: "{{value}} FPS",
-      remaining: "осталось {{value}}",
       durationTooltip: "Длительность экспорта",
       fileSizeTooltip: "Размер выходного файла",
       fileSizeChangeTooltip: "Изменение размера файла относительно источника",
       fpsTooltip: "Количество обработанных кадров в секунду",
-      remainingTooltip: "Оставшееся время (оценка)",
     },
     progress: {
       accessibleLabel: "Прогресс экспорта",
