@@ -36,9 +36,11 @@ import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
 import { AudioTrackEffectsDialogContext } from "../AudioTrack/components/AudioTrackEffectsDialog/contexts/audio-track-effects-dialog-context";
 import { AudioTrackGainControl } from "../AudioTrack/components/AudioTrackGainControl";
 
+const audioPlayheadRef: AudioPlaybackContract["audioPlayheadRef"] = { current: null };
+
 const audioPlayback = {
   audioMeterRef: { current: null },
-  audioPlayheadRef: { current: null },
+  audioPlayheadRef,
   clearLiveAudioTrackGain: () => undefined,
   setLiveAudioTrackGain: () => undefined,
 } satisfies AudioPlaybackContract;
@@ -499,6 +501,97 @@ describe("AudioTrackRow", () => {
     await waitFor(() => expect(strokeStyle).toHaveBeenCalledWith("rgb(18 52 86)"));
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  it("keeps the optional waveform magnifier anchored to the moving playhead", async () => {
+    const stroke = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      beginPath: vi.fn(),
+      clearRect: vi.fn(),
+      fillRect: vi.fn(),
+      lineTo: vi.fn(),
+      moveTo: vi.fn(),
+      set fillStyle(_value: string) {},
+      set lineWidth(_value: number) {},
+      set strokeStyle(_value: string) {},
+      stroke,
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 32,
+      height: 24,
+    } as DOMRect);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 320,
+      height: 48,
+    } as DOMRect);
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => {
+          const buffer = new ArrayBuffer(12 + 4096);
+          const view = new DataView(buffer);
+          view.setUint8(0, 0x45);
+          view.setUint8(1, 0x54);
+          view.setUint8(2, 0x57);
+          view.setUint8(3, 0x46);
+          view.setUint16(4, 1, true);
+          view.setUint16(6, 0, true);
+          view.setUint32(8, 4096, true);
+          new Uint8Array(buffer, 12).fill(128);
+          return buffer;
+        },
+      }),
+    );
+
+    const playhead = document.createElement("div");
+    playhead.style.left = "25%";
+    audioPlayback.audioPlayheadRef.current = playhead;
+    const { store } = renderRow();
+    act(() => {
+      store.dispatch(
+        waveformsLoading({ jobId: "waveform-magnifier", streamIndexes: [2], width: 4096 }),
+      );
+      store.dispatch(
+        waveformReady({
+          jobId: "waveform-magnifier",
+          status: "ready",
+          streamIndex: 2,
+          url: "media://waveform-magnifier",
+          width: 4096,
+        }),
+      );
+    });
+
+    const toggle = screen.getByRole("button", { name: "Toggle waveform magnifier" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+    const magnifier = document.querySelector<HTMLCanvasElement>(
+      '[data-slot="audio-waveform-magnifier"]',
+    );
+
+    expect(magnifier).not.toBeNull();
+    await waitFor(() => expect(stroke).toHaveBeenCalled());
+    const previousDraws = stroke.mock.calls.length;
+
+    act(() => {
+      playhead.style.left = "75%";
+    });
+    await waitFor(() => expect(magnifier).toHaveStyle({ left: "140px" }));
+    expect(stroke.mock.calls.length).toBeGreaterThan(previousDraws);
+
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    audioPlayback.audioPlayheadRef.current = null;
   });
 
   it("marks the Gain range, resets to unity, and preserves mute state at −24 dB", async () => {

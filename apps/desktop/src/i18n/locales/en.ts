@@ -1132,6 +1132,7 @@ export const en = {
       summary: "Noise reduction - {{preset}}",
     },
     waveform: {
+      magnifier: "Toggle waveform magnifier",
       preparing: "Preparing waveform…",
       unavailable: "Waveform unavailable",
     },
