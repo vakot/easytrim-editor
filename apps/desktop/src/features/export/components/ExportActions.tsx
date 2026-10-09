@@ -1,7 +1,5 @@
 import { Film, List, Scissors, Settings2 } from "lucide-react";
-import { motion, useAnimationControls, useReducedMotion } from "motion/react";
 import type { ComponentProps } from "react";
-import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,12 +27,9 @@ import {
   OPTIMIZED_EXPORT_SHORTCUT,
 } from "@/app/commands/file/file-shortcuts.constants";
 import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
-import {
-  selectExportQueue,
-  selectExportQueueSummary,
-} from "@/app/store/slices/editing-instances-slice";
+import { selectExportQueueSummary } from "@/app/store/slices/editing-instances-slice";
 import {
   exportQueueDialogClosed,
   exportQueueDialogOpened,
@@ -55,8 +50,6 @@ import { cn } from "@/lib/class-names.utils";
 
 import { ExportQueue, ExportQueueContent, ExportQueueSummary } from "../components/ExportQueue";
 import { useExportQueue } from "../components/ExportQueue/contexts/ExportQueueContext";
-
-type ExportQueuePulseTone = "destructive" | "primary" | "success";
 
 function ExportActions() {
   const { t } = useTranslation();
@@ -200,58 +193,10 @@ function ExportQueueTrigger({
   queueSize: number;
 }) {
   const { t } = useTranslation();
-  const store = useAppStore();
-  const shouldReduceMotion = useReducedMotion();
-  const pulseControls = useAnimationControls();
-
-  useEffect(() => {
-    let previousStatuses = new Map(
-      selectExportQueue(store.getState()).map(({ attempt, instance }) => [
-        `${instance.id}:${attempt.id}`,
-        attempt.state.status,
-      ]),
-    );
-
-    return store.subscribe(() => {
-      let nextTone: ExportQueuePulseTone | null = null;
-      const currentStatuses = new Map(previousStatuses);
-      currentStatuses.clear();
-
-      for (const { attempt, instance } of selectExportQueue(store.getState())) {
-        const key = `${instance.id}:${attempt.id}`;
-        const status = attempt.state.status;
-        const previousStatus = previousStatuses.get(key);
-
-        if (previousStatus === undefined && (status === "queued" || status === "rendering")) {
-          nextTone ??= "primary";
-        } else if (previousStatus !== status) {
-          if (status === "failed") nextTone = "destructive";
-          else if (status === "completed" && nextTone !== "destructive") nextTone = "success";
-          else if (status === "queued") nextTone ??= "primary";
-        }
-
-        currentStatuses.set(key, status);
-      }
-
-      previousStatuses = currentStatuses;
-      if (nextTone && !shouldReduceMotion) {
-        const pulseColor = `var(--${nextTone})`;
-        void pulseControls.start({
-          boxShadow: [
-            "0 0 0 0 transparent",
-            `0 0 0 0.25rem color-mix(in srgb, ${pulseColor} 35%, transparent)`,
-            "0 0 0 0.5rem transparent",
-          ],
-          transition: { duration: 0.6, ease: "easeOut" },
-        });
-      }
-    });
-  }, [pulseControls, shouldReduceMotion, store]);
 
   return (
     <DialogTrigger asChild>
-      <MotionExportActionButton
-        animate={pulseControls}
+      <ExportActionButton
         className="max-2xl:size-auto max-2xl:h-7 max-2xl:gap-1 max-2xl:px-2"
         icon={<List aria-hidden="true" />}
         indicator={
@@ -259,11 +204,10 @@ function ExportQueueTrigger({
             {finishedExports}/{queueSize}
           </Badge>
         }
-        initial={false}
         variant="default"
       >
         {t("queue.title")}
-      </MotionExportActionButton>
+      </ExportActionButton>
     </DialogTrigger>
   );
 }
@@ -312,8 +256,6 @@ function ExportActionButton({
     </Button>
   );
 }
-
-const MotionExportActionButton = motion.create(ExportActionButton);
 
 function ExportActionTooltip({
   children,
