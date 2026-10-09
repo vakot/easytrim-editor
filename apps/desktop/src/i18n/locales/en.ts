@@ -360,6 +360,8 @@ export const en = {
         commandLabel: "Merge audio by default",
       },
       stripMetadata: {
+        description: "Remove source container metadata and chapters from new exports by default",
+        label: "Strip metadata",
         commandLabel: "Strip metadata and chapters from exports",
       },
       reset: "Reset editing settings",
