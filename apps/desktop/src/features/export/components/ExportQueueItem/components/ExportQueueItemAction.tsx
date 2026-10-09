@@ -55,19 +55,20 @@ function ExportQueueItemEdit({
   const dispatch = useAppDispatch();
   const { attempt, instance } = useExportQueueItem();
   const isNativeDialogOpen = useAppSelector((state) => state.importWorkflow.isNativeDialogOpen);
-
-  if (attempt.state.status !== "queued") return null;
+  const isQueued = attempt.state.status === "queued";
 
   const handleEdit = () =>
     void dispatch(editExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }));
 
   if (asMenuItem) {
     return (
-      <DropdownMenuItem disabled={isNativeDialogOpen} onSelect={handleEdit}>
+      <DropdownMenuItem disabled={isNativeDialogOpen || !isQueued} onSelect={handleEdit}>
         {t("queue.actions.editExport")}
       </DropdownMenuItem>
     );
   }
+
+  if (!isQueued) return null;
 
   return (
     <Tooltip>
