@@ -84,7 +84,29 @@ function ExportQueueListItem() {
             </div>
           </div>
 
-          <ExportQueueItemStatus />
+          <div className="flex items-center justify-between gap-1">
+            <ExportQueueItemStatus />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost">
+                  <MoreVertical aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent>
+                <DropdownMenuGroup>
+                  <ExportQueueItemRestore asMenuItem />
+                </DropdownMenuGroup>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuGroup>
+                  <ExportQueueItemEdit asMenuItem />
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {status === "rendering" && <ExportQueueItemProgressBar />}
@@ -94,31 +116,9 @@ function ExportQueueListItem() {
         </div>
 
         <div className="flex items-center justify-between gap-1">
-          <div className="flex items-center gap-1">
-            <ExportQueueItemReveal />
-            <ExportQueueItemRetry />
-            <ExportQueueItemCancel />
-          </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="ghost">
-                <MoreVertical aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent>
-              <DropdownMenuGroup>
-                <ExportQueueItemRestore asMenuItem />
-              </DropdownMenuGroup>
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuGroup>
-                <ExportQueueItemEdit asMenuItem />
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ExportQueueItemReveal />
+          <ExportQueueItemRetry />
+          <ExportQueueItemCancel />
         </div>
       </div>
     </ExportQueueItemContent>

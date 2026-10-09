@@ -1,4 +1,4 @@
-import { ArrowLeftFromLine, ExternalLink, RotateCcw, SquarePen, X } from "lucide-react";
+import { ExternalLink, RotateCcw, SquarePen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -34,12 +34,11 @@ function ExportQueueItemCancel({ className }: { className?: string }) {
           cancelExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
         )
       }
-      size="icon-xs"
-      title={t("queue.actions.cancelExport")}
+      size="xs"
       type="button"
       variant="outline"
     >
-      <X aria-hidden="true" />
+      {t("queue.actions.cancelExport")}
     </Button>
   );
 }
@@ -108,8 +107,6 @@ function ExportQueueItemRestore({
     instance.sourceAvailability === "available" &&
     (status === "completed" || status === "failed" || status === "canceled");
 
-  if (!canRestore) return null;
-
   const handleRestore = () =>
     void dispatch(
       restoreExportAttemptRequested({ attemptId: attempt.id, instanceId: instance.id }),
@@ -117,9 +114,13 @@ function ExportQueueItemRestore({
 
   if (asMenuItem) {
     return (
-      <DropdownMenuItem onSelect={handleRestore}>{t("queue.actions.restoreEdit")}</DropdownMenuItem>
+      <DropdownMenuItem disabled={!canRestore} onSelect={handleRestore}>
+        {t("queue.actions.restoreEdit")}
+      </DropdownMenuItem>
     );
   }
+
+  if (!canRestore) return null;
 
   return (
     <Button
@@ -127,11 +128,10 @@ function ExportQueueItemRestore({
       className={className}
       onClick={handleRestore}
       size="icon-xs"
-      title={t("queue.actions.restoreEdit")}
       type="button"
       variant="outline"
     >
-      <ArrowLeftFromLine aria-hidden="true" />
+      {t("queue.actions.restoreEdit")}
     </Button>
   );
 }
