@@ -42,6 +42,10 @@ function instance(id: string, source = firstSource) {
     },
     gifSettings: {
       frameRate: { denominator: 1, numerator: 15 },
+      gifPreset: "custom" as const,
+      paletteColors: 32 as const,
+      paletteStatsMode: "full" as const,
+      dithering: "bayer" as const,
       resolution: { height: 360, width: 640 },
     },
     origin: "source-import" as const,
@@ -95,6 +99,10 @@ describe("workspace recovery contract", () => {
         id: "second",
         settings: {
           frameRate: { denominator: 1, numerator: 15 },
+          gifPreset: "custom",
+          paletteColors: 32,
+          paletteStatsMode: "full",
+          dithering: "bayer",
           resolution: { height: 360, width: 640 },
         },
       }),
@@ -172,6 +180,10 @@ describe("workspace recovery contract", () => {
         flipVertical: false,
         frameRate: { denominator: 1, numerator: 15 },
         mergeAudio: false,
+        gifPreset: "custom",
+        paletteColors: 32,
+        paletteStatsMode: "full",
+        dithering: "bayer",
         resolution: { height: 360, width: 480 },
         rotationDegrees: 90,
         sourcePath: secondSource.sourcePath,
@@ -211,6 +223,10 @@ describe("workspace recovery contract", () => {
       importedAtMicros: 1234,
       gifSettings: {
         frameRate: { denominator: 1, numerator: 15 },
+        gifPreset: "custom",
+        paletteColors: 32,
+        paletteStatsMode: "full",
+        dithering: "bayer",
         resolution: { height: 360, width: 640 },
       },
       optimizedArguments: "-crf 18",
@@ -229,6 +245,10 @@ describe("workspace recovery contract", () => {
       request: {
         flipHorizontal: true,
         frameRate: { denominator: 1, numerator: 15 },
+        gifPreset: "custom",
+        paletteColors: 32,
+        paletteStatsMode: "full",
+        dithering: "bayer",
         resolution: { height: 360, width: 480 },
         rotationDegrees: 90,
         trim: { endMicros: 4_000_000, startMicros: 1_000_000 },
@@ -392,5 +412,35 @@ describe("workspace recovery contract", () => {
 
     expect(getWorkspaceRecoveryCandidate()).toBeNull();
     expect(localStorage.getItem(CANDIDATE_KEY)).toBeNull();
+  });
+
+  it("rejects GIF recovery settings with the wrong JSON primitive type", () => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded([instance("malformed-gif-settings")]));
+    const backup = createWorkspaceRecoveryBackup(store.getState(), {
+      sessionId: "crashed-session",
+    });
+
+    const malformedValues = [
+      { gifPreset: ["balanced"] },
+      { paletteColors: "32" },
+      { paletteStatsMode: ["full"] },
+      { dithering: ["bayer"] },
+    ];
+
+    for (const malformed of malformedValues) {
+      localStorage.clear();
+      const malformedBackup = structuredClone(backup) as unknown as {
+        instances: Array<{ gifSettings: Record<string, unknown> }>;
+      };
+
+      Object.assign(malformedBackup.instances[0]!.gifSettings, malformed);
+      localStorage.setItem(CURRENT_KEY, JSON.stringify(malformedBackup));
+
+      initializeWorkspaceRecovery(createAppStore(), "new-session", true);
+
+      expect(getWorkspaceRecoveryCandidate()).toBeNull();
+      expect(localStorage.getItem(CANDIDATE_KEY)).toBeNull();
+    }
   });
 });

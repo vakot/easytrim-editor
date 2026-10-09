@@ -2,7 +2,7 @@
 
 import { cva } from "class-variance-authority";
 import { Command as CommandPrimitive } from "cmdk";
-import { CheckIcon, SearchIcon } from "lucide-react";
+import { CheckIcon } from "lucide-react";
 import * as React from "react";
 
 import {
@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
+import { InputGroup } from "@/components/ui/input-group";
 import { MenuIcon, menuItemVariants } from "@/components/ui/menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -73,26 +73,27 @@ function CommandDialog({
   );
 }
 
+function CommandInputGroup({ className, ...props }: React.ComponentProps<typeof InputGroup>) {
+  return (
+    <div className={cn("p-1 pb-0", className)} data-slot="command-input-wrapper">
+      <InputGroup className="rounded-lg! shadow-none!" {...props} />
+    </div>
+  );
+}
+
 function CommandInput({
   className,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
-    <div className="p-1 pb-0" data-slot="command-input-wrapper">
-      <InputGroup className="rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
-        <CommandPrimitive.Input
-          className={cn(
-            "h-8 min-w-0 flex-1 bg-transparent px-2.5 text-sm outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
-            className,
-          )}
-          data-slot="command-input"
-          {...props}
-        />
-        <InputGroupAddon>
-          <SearchIcon className="size-4 shrink-0 opacity-50" />
-        </InputGroupAddon>
-      </InputGroup>
-    </div>
+    <CommandPrimitive.Input
+      className={cn(
+        "h-8 min-w-0 flex-1 bg-transparent px-2.5 text-sm outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+        className,
+      )}
+      data-slot="command-input"
+      {...props}
+    />
   );
 }
 
@@ -188,6 +189,7 @@ export {
   CommandEmpty,
   CommandGroup,
   CommandInput,
+  CommandInputGroup,
   CommandItem,
   CommandList,
   CommandSeparator,

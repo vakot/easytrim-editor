@@ -209,7 +209,21 @@ function isBackup(value: unknown): value is WorkspaceRecoveryBackup {
           isFiniteNumber(instance.gifSettings.resolution.width) &&
           (instance.gifSettings.frameRate === undefined ||
             instance.gifSettings.frameRate === null ||
-            isRecord(instance.gifSettings.frameRate)))) &&
+            isRecord(instance.gifSettings.frameRate)) &&
+          (instance.gifSettings.gifPreset === undefined ||
+            (typeof instance.gifSettings.gifPreset === "string" &&
+              ["compact", "balanced", "highQuality", "custom"].includes(
+                instance.gifSettings.gifPreset,
+              ))) &&
+          (instance.gifSettings.paletteColors === undefined ||
+            (typeof instance.gifSettings.paletteColors === "number" &&
+              [16, 32, 64, 128, 256].includes(instance.gifSettings.paletteColors))) &&
+          (instance.gifSettings.paletteStatsMode === undefined ||
+            (typeof instance.gifSettings.paletteStatsMode === "string" &&
+              ["diff", "full"].includes(instance.gifSettings.paletteStatsMode))) &&
+          (instance.gifSettings.dithering === undefined ||
+            (typeof instance.gifSettings.dithering === "string" &&
+              ["none", "bayer", "sierra2_4a"].includes(instance.gifSettings.dithering))))) &&
       Array.isArray(instance.exportAttempts) &&
       instance.exportAttempts.every(isExportAttempt),
   );

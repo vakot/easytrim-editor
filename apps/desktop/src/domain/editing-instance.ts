@@ -18,9 +18,18 @@ export type ExportRequest =
   AudioExportRequest | FastExportRequest | GifExportRequest | OptimizedExportRequest;
 
 interface ExportSettings {
+  dithering?: GifDithering;
   frameRate: FrameRate | undefined;
+  gifPreset?: GifPreset;
+  paletteColors?: GifPaletteColors;
+  paletteStatsMode?: GifPaletteStatsMode;
   resolution: { height: number; width: number };
 }
+
+type GifPreset = "compact" | "balanced" | "highQuality" | "custom";
+type GifPaletteColors = 16 | 32 | 64 | 128 | 256;
+type GifPaletteStatsMode = "diff" | "full";
+type GifDithering = "none" | "bayer" | "sierra2_4a";
 
 export type SourceAvailability = "available" | "deleted" | "missing";
 
@@ -134,4 +143,8 @@ export type {
   ExportAttempt,
   ExportAttemptMetrics,
   ExportSettings,
+  GifDithering,
+  GifPaletteColors,
+  GifPaletteStatsMode,
+  GifPreset,
 };

@@ -194,6 +194,57 @@ describe("audio-only export", () => {
 });
 
 describe("export snapshot restoration", () => {
+  it("restores GIF encoding options from a completed export attempt", async () => {
+    const { snapshot, store } = setup();
+    const attempt = createExportAttempt({
+      capturedAt: 1,
+      id: "completed-gif",
+      output: { displayName: "render.gif", displayPath: "C:/render.gif", outputId: "gif-out" },
+      request: {
+        audioTracks: [],
+        dithering: "bayer",
+        flipHorizontal: false,
+        flipVertical: false,
+        frameRate: { numerator: 15, denominator: 1 },
+        gifPreset: "custom",
+        mergeAudio: false,
+        paletteColors: 32,
+        paletteStatsMode: "full",
+        resolution: { height: 360, width: 640 },
+        rotationDegrees: 0,
+        sourcePath: firstSource.sourcePath,
+        trim: { endMicros: 1_500_000, startMicros: 250_000 },
+      },
+      route: "gif",
+      snapshot,
+    });
+
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
+    store.dispatch(
+      editingInstanceExportCompleted({
+        id: "original",
+        attemptId: attempt.id,
+        durationMs: 1,
+        result: { displayName: "render.gif", displayPath: "C:/render.gif", operationId: "op" },
+      }),
+    );
+
+    expect(
+      await store.dispatch(
+        restoreExportAttemptRequested({ instanceId: "original", attemptId: attempt.id }),
+      ),
+    ).toBe(true);
+
+    expect(store.getState().editingInstances.entities.original?.gifSettings).toMatchObject({
+      dithering: "bayer",
+      frameRate: { numerator: 15, denominator: 1 },
+      gifPreset: "custom",
+      paletteColors: 32,
+      paletteStatsMode: "full",
+      resolution: { height: 360, width: 640 },
+    });
+  });
+
   it("preserves per-track metadata in queued export requests and snapshots", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
     store.dispatch(audioTrackDefaultChanged({ streamIndex: 4 }));
@@ -617,6 +668,10 @@ describe("export snapshot restoration", () => {
       request: {
         audioTracks: [],
         mergeAudio: false,
+        gifPreset: "custom",
+        paletteColors: 32,
+        paletteStatsMode: "full",
+        dithering: "bayer",
         resolution: { height: 360, width: 640 },
         rotationDegrees: 0,
         sourcePath: firstSource.sourcePath,
@@ -642,6 +697,10 @@ describe("export snapshot restoration", () => {
     expect(store.getState().trim.value).toMatchObject(capturedSnapshot.trim);
     expect(store.getState().editingInstances.entities.original?.gifSettings).toMatchObject({
       frameRate: { numerator: 15, denominator: 1 },
+      gifPreset: "custom",
+      paletteColors: 32,
+      paletteStatsMode: "full",
+      dithering: "bayer",
       resolution: { height: 360, width: 640 },
     });
     expect(store.getState().editingInstances.entities.original?.optimizedSettings).toBeUndefined();
@@ -657,6 +716,12 @@ describe("export snapshot restoration", () => {
       const updated = store.getState().editingInstances.entities.original?.exportAttempts[0];
       expect(updated?.output.outputId).toBe("gif-out");
       expect(updated?.request.trim).toEqual({ startMicros: 500_000, endMicros: 1_700_000 });
+      expect(updated?.request).toMatchObject({
+        gifPreset: "custom",
+        paletteColors: 32,
+        paletteStatsMode: "full",
+        dithering: "bayer",
+      });
       expect(updated?.snapshot.trim).toEqual({ startMicros: 500_000, endMicros: 1_700_000 });
       expect(updated?.state.status).toBe("queued");
     });

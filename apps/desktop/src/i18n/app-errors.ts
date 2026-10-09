@@ -146,6 +146,8 @@ function localizeAppError(error: AppError, t: TFunction): string {
       return t("export.errors.optimizedFfmpegArgumentsContainAnUnclosedQuote");
     case "export.outputFrameRateIsInvalid":
       return t("export.errors.outputFrameRateIsInvalid");
+    case "export.gifEncodingSettingsAreInvalid":
+      return t("export.errors.gifEncodingSettingsAreInvalid");
     case "export.outputNameIsRequired":
       return t("export.errors.outputNameIsRequired");
     case "export.outputContainerIsNotCompatibleWithSelectedStreams":

@@ -287,6 +287,45 @@ pub struct GifExportRequest {
     pub resolution: ResolutionSelection,
     #[serde(default)]
     pub frame_rate: Option<FrameRateSelection>,
+    #[serde(default)]
+    pub gif_preset: GifPreset,
+    #[serde(default = "default_gif_palette_colors")]
+    pub palette_colors: u16,
+    #[serde(default)]
+    pub palette_stats_mode: GifPaletteStatsMode,
+    #[serde(default)]
+    pub dithering: GifDithering,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum GifPreset {
+    Compact,
+    #[default]
+    Balanced,
+    HighQuality,
+    Custom,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum GifPaletteStatsMode {
+    #[default]
+    Diff,
+    Full,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum GifDithering {
+    None,
+    Bayer,
+    #[default]
+    Sierra2_4a,
+}
+
+fn default_gif_palette_colors() -> u16 {
+    256
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Hash, serde::Serialize)]
@@ -776,6 +815,11 @@ pub fn build_gif_arguments(
     validate_rotation(request.rotation_degrees)?;
     validate_crop(request.crop.as_ref())?;
     validate_resolution(&request.resolution)?;
+    if !matches!(request.palette_colors, 16 | 32 | 64 | 128 | 256) {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportGifEncodingSettingsAreInvalid,
+        ));
+    }
     if let Some(frame_rate) = &request.frame_rate {
         if frame_rate.numerator == 0
             || frame_rate.denominator == 0
@@ -838,9 +882,19 @@ pub fn build_gif_arguments(
         request.resolution.width,
     ));
     let filter = format!(
-        "[0:{}]{},split[v1][v2];[v1]palettegen=stats_mode=diff[palette];[v2][palette]paletteuse=dither=sierra2_4a[out]",
+        "[0:{}]{},split[v1][v2];[v1]palettegen=max_colors={}:stats_mode={}[palette];[v2][palette]paletteuse=dither={}[out]",
         source.video.stream_index,
-        video_filters.join(",")
+        video_filters.join(","),
+        request.palette_colors,
+        match request.palette_stats_mode {
+            GifPaletteStatsMode::Diff => "diff",
+            GifPaletteStatsMode::Full => "full",
+        },
+        match request.dithering {
+            GifDithering::None => "none",
+            GifDithering::Bayer => "bayer",
+            GifDithering::Sierra2_4a => "sierra2_4a",
+        }
     );
 
     let mut arguments = common_input_arguments(source_path, &request.trim);
@@ -1591,9 +1645,9 @@ mod tests {
     use super::{
         AudioExportFormat, AudioExportRequest, AudioLoudnessAnalysis, AudioProcessingStage,
         AudioTrackCacheKey, AudioTrackMetadataSelection, AudioTrackProcessing, AudioTrackSelection,
-        AudioTrackSignalEffect, CropSelection, FastExportRequest, FrameRateSelection,
-        GifExportRequest, LoudnessNormalization, LoudnessPreset, NoiseReductionPreset,
-        OptimizedExportRequest, ResolutionSelection, TrimSelection,
+        AudioTrackSignalEffect, CropSelection, FastExportRequest, FrameRateSelection, GifDithering,
+        GifExportRequest, GifPaletteStatsMode, GifPreset, LoudnessNormalization, LoudnessPreset,
+        NoiseReductionPreset, OptimizedExportRequest, ResolutionSelection, TrimSelection,
         append_audio_metadata_arguments, audio_filter_graph, build_audio_arguments,
         build_fast_arguments, build_gif_arguments, build_optimized_arguments,
         fast_export_output_extensions, gif_command_preview, optimized_command_preview,
@@ -1711,6 +1765,10 @@ mod tests {
                 numerator: 24,
                 denominator: 1,
             }),
+            gif_preset: GifPreset::Balanced,
+            palette_colors: 256,
+            palette_stats_mode: GifPaletteStatsMode::Diff,
+            dithering: GifDithering::Sierra2_4a,
         }
     }
 
@@ -3731,6 +3789,10 @@ mod tests {
                 numerator: 24,
                 denominator: 1,
             }),
+            gif_preset: GifPreset::Balanced,
+            palette_colors: 256,
+            palette_stats_mode: GifPaletteStatsMode::Diff,
+            dithering: GifDithering::Sierra2_4a,
         };
 
         let preview = gif_command_preview(&media(), &request).expect("preview request is valid");
@@ -3750,7 +3812,7 @@ mod tests {
         assert_eq!(preview, expected);
         assert!(preview.contains("-ss 1.250000 -i <source> -t 3.500000"));
         assert!(preview.contains("transpose=1,crop=iw*0.7:ih*0.6:iw*0.1:ih*0.2,hflip,vflip,fps=24/1,scale=w='min(640,480*dar)':h='min(480,640/dar)':eval=init:flags=lanczos,setsar=1"));
-        assert!(preview.contains("palettegen=stats_mode=diff"));
+        assert!(preview.contains("palettegen=max_colors=256:stats_mode=diff"));
         assert!(preview.contains("paletteuse=dither=sierra2_4a"));
         assert!(preview.contains("-loop 0 -f gif -y <output>"));
         assert!(!preview.contains("private-source.mkv"));
@@ -3797,13 +3859,79 @@ mod tests {
         assert!(filter.contains(
             "transpose=1,crop=iw*0.7:ih*0.6:iw*0.1:ih*0.2,hflip,vflip,fps=24/1,scale=w='min(640,480*dar)':h='min(480,640/dar)':eval=init:flags=lanczos,setsar=1"
         ));
-        assert!(filter.contains("[v1]palettegen=stats_mode=diff[palette]"));
+        assert!(filter.contains("[v1]palettegen=max_colors=256:stats_mode=diff[palette]"));
         assert!(filter.contains("[v2][palette]paletteuse=dither=sierra2_4a[out]"));
         assert!(arguments.windows(2).any(|pair| pair == ["-map", "[out]"]));
         assert!(arguments.contains(&"-an".to_owned()));
         assert!(!arguments.iter().any(|argument| argument == "0:a"));
         assert!(arguments.windows(2).any(|pair| pair == ["-loop", "0"]));
         assert!(arguments.windows(2).any(|pair| pair == ["-f", "gif"]));
+    }
+
+    #[test]
+    fn gif_arguments_apply_each_palette_and_dithering_option() {
+        for palette_colors in [16, 32, 64, 128, 256] {
+            for (dithering, ffmpeg_dithering) in [
+                (GifDithering::None, "none"),
+                (GifDithering::Bayer, "bayer"),
+                (GifDithering::Sierra2_4a, "sierra2_4a"),
+            ] {
+                let mut request = gif_request();
+                request.palette_colors = palette_colors;
+                request.dithering = dithering;
+                request.palette_stats_mode = GifPaletteStatsMode::Full;
+                let arguments = build_gif_arguments(
+                    &media(),
+                    &request,
+                    Path::new("source.mkv"),
+                    Path::new("out.gif"),
+                )
+                .expect("GIF settings are valid");
+                let filter = arguments
+                    .windows(2)
+                    .find(|pair| pair[0] == "-filter_complex")
+                    .map(|pair| pair[1].to_string_lossy())
+                    .expect("filter graph is present");
+                assert!(filter.contains(&format!(
+                    "palettegen=max_colors={palette_colors}:stats_mode=full[palette]"
+                )));
+                assert!(filter.contains(&format!("paletteuse=dither={ffmpeg_dithering}[out]")));
+            }
+        }
+    }
+
+    #[test]
+    fn gif_arguments_reject_unsupported_palette_sizes() {
+        let mut request = gif_request();
+        request.palette_colors = 96;
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportGifEncodingSettingsAreInvalid
+        );
+    }
+
+    #[test]
+    fn gif_request_defaults_new_encoding_fields_for_legacy_requests() {
+        let request = serde_json::from_str::<GifExportRequest>(
+            r#"{
+                "sourcePath":"source.mkv",
+                "trim":{"startMicros":0,"endMicros":1000000},
+                "audioTracks":[],
+                "mergeAudio":false,
+                "rotationDegrees":0,
+                "crop":null,
+                "flipHorizontal":false,
+                "flipVertical":false,
+                "resolution":{"width":640,"height":360},
+                "frameRate":null
+            }"#,
+        )
+        .expect("legacy GIF request remains valid");
+
+        assert_eq!(request.gif_preset, GifPreset::Balanced);
+        assert_eq!(request.palette_colors, 256);
+        assert_eq!(request.palette_stats_mode, GifPaletteStatsMode::Diff);
+        assert_eq!(request.dithering, GifDithering::Sierra2_4a);
     }
 
     #[test]
@@ -3939,6 +4067,10 @@ mod tests {
                 height: 384,
             },
             frame_rate: None,
+            gif_preset: GifPreset::Balanced,
+            palette_colors: 256,
+            palette_stats_mode: GifPaletteStatsMode::Diff,
+            dithering: GifDithering::Sierra2_4a,
         };
 
         let arguments = build_gif_arguments(

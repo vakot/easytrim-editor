@@ -78,6 +78,8 @@ import {
 } from "@/domain/audio-processing";
 import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
+import { gifSettingsWithDefaults } from "@/domain/gif-export";
+import type { GifExportRequest } from "@/domain/media";
 import type { SourceRef } from "@/domain/source";
 import { normalizeSourceKey } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
@@ -894,10 +896,17 @@ const restoreExportAttemptRequested =
       }),
     );
     if ("resolution" in attempt.request) {
-      const settings = {
-        frameRate: attempt.request.frameRate,
-        resolution: attempt.request.resolution,
-      };
+      const settings =
+        attempt.route === "gif"
+          ? gifSettingsWithDefaults({
+              ...(attempt.request as GifExportRequest),
+              frameRate: attempt.request.frameRate,
+              resolution: attempt.request.resolution,
+            })
+          : {
+              frameRate: attempt.request.frameRate,
+              resolution: attempt.request.resolution,
+            };
 
       dispatch(
         attempt.route === "gif"

@@ -1,5 +1,6 @@
 "use client";
 
+import { SearchIcon } from "lucide-react";
 import * as React from "react";
 
 import {
@@ -7,27 +8,16 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandInput,
+  CommandInputGroup,
   CommandItem,
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { InputGroupAddon } from "@/components/ui/input-group";
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slot } from "@/components/ui/slot";
 
 import { cn } from "@/lib/class-names.utils";
-
-type ComboboxContextValue = {
-  allowTriggerCloseRef: React.MutableRefObject<boolean>;
-  hasInputTriggerRef: React.MutableRefObject<boolean>;
-  openRef: React.MutableRefObject<boolean>;
-  triggerRef: React.MutableRefObject<HTMLElement | null>;
-};
-
-type ComboboxProps = Omit<React.ComponentProps<typeof Popover>, "open" | "onOpenChange"> & {
-  label?: string;
-  onOpenChange?: (open: boolean) => void;
-  shouldFilter?: boolean;
-};
 
 function Combobox({
   children,
@@ -36,10 +26,14 @@ function Combobox({
   onOpenChange,
   shouldFilter = true,
   ...props
-}: ComboboxProps) {
+}: Omit<React.ComponentProps<typeof Popover>, "onOpenChange"> & {
+  label?: string;
+  onOpenChange?: (open: boolean) => void;
+  shouldFilter?: boolean;
+}) {
   const allowTriggerCloseRef = React.useRef(false);
   const hasInputTriggerRef = React.useRef(false);
-  const openRef = React.useRef(defaultOpen);
+  const openRef = React.useRef(props.open ?? defaultOpen);
   const triggerRef = React.useRef<HTMLElement | null>(null);
 
   return (
@@ -132,6 +126,14 @@ function ComboboxContent({
   );
 }
 
+function ComboboxInputGroup({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandInputGroup>) {
+  const insideContent = React.useContext(ComboboxContentContext);
+  return <CommandInputGroup className={cn(!insideContent && "p-0", className)} {...props} />;
+}
+
 function ComboboxInput({
   onClick,
   onFocus,
@@ -140,12 +142,24 @@ function ComboboxInput({
   onPointerDown,
   onPointerUp,
   onValueChange,
+  showSearchIcon = true,
   ...props
-}: React.ComponentProps<typeof CommandInput>) {
+}: React.ComponentProps<typeof CommandInput> & { showSearchIcon?: boolean }) {
   const insideContent = React.useContext(ComboboxContentContext);
   const { allowTriggerCloseRef, hasInputTriggerRef, openRef, triggerRef } = useCombobox();
   // Pointer focus arrives before the Radix trigger click; let that click toggle the popover once.
   const pointerDownRef = React.useRef(false);
+  const withSearchIcon = (input: React.ReactElement) =>
+    showSearchIcon ? (
+      <CommandInputGroup className="rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
+        {input}
+        <InputGroupAddon>
+          <SearchIcon className="size-4 shrink-0 opacity-50" />
+        </InputGroupAddon>
+      </CommandInputGroup>
+    ) : (
+      input
+    );
 
   React.useEffect(() => {
     if (insideContent) {
@@ -160,7 +174,7 @@ function ComboboxInput({
   }, [insideContent, hasInputTriggerRef]);
 
   if (insideContent) {
-    return (
+    return withSearchIcon(
       <CommandInput
         onClick={onClick}
         onFocus={onFocus}
@@ -170,7 +184,7 @@ function ComboboxInput({
         onPointerUp={onPointerUp}
         onValueChange={onValueChange}
         {...props}
-      />
+      />,
     );
   }
 
@@ -181,61 +195,67 @@ function ComboboxInput({
         triggerRef.current = node;
       }}
     >
-      <CommandInput
-        onClick={(event) => {
-          onClick?.(event);
+      {withSearchIcon(
+        <CommandInput
+          onClick={(event) => {
+            onClick?.(event);
 
-          if (!event.defaultPrevented && !allowTriggerCloseRef.current && openRef.current) {
-            event.preventDefault();
-          }
-        }}
-        onFocus={(event) => {
-          onFocus?.(event);
+            if (!event.defaultPrevented && !allowTriggerCloseRef.current && openRef.current) {
+              event.preventDefault();
+            }
+          }}
+          onFocus={(event) => {
+            onFocus?.(event);
 
-          if (!event.defaultPrevented) {
-            event.currentTarget.select();
+            if (!event.defaultPrevented) {
+              event.currentTarget.select();
 
-            if (!pointerDownRef.current && !openRef.current) {
+              if (!pointerDownRef.current && !openRef.current) {
+                event.currentTarget.click();
+              }
+            }
+          }}
+          onKeyDown={(event) => {
+            onKeyDown?.(event);
+
+            if (
+              !event.defaultPrevented &&
+              (event.key === "ArrowDown" || event.key === "ArrowUp") &&
+              !openRef.current
+            ) {
               event.currentTarget.click();
             }
-          }
-        }}
-        onKeyDown={(event) => {
-          onKeyDown?.(event);
+          }}
+          onPointerCancel={(event) => {
+            onPointerCancel?.(event);
+            pointerDownRef.current = false;
+          }}
+          onPointerDown={(event) => {
+            onPointerDown?.(event);
 
-          if (
-            !event.defaultPrevented &&
-            (event.key === "ArrowDown" || event.key === "ArrowUp") &&
-            !openRef.current
-          ) {
-            event.currentTarget.click();
-          }
-        }}
-        onPointerCancel={(event) => {
-          onPointerCancel?.(event);
-          pointerDownRef.current = false;
-        }}
-        onPointerDown={(event) => {
-          onPointerDown?.(event);
-
-          if (!event.defaultPrevented) {
-            pointerDownRef.current = true;
-          }
-        }}
-        onPointerUp={(event) => {
-          onPointerUp?.(event);
-          pointerDownRef.current = false;
-        }}
-        onValueChange={(value) => {
-          onValueChange?.(value);
-          if (!openRef.current) {
-            triggerRef.current?.click();
-          }
-        }}
-        {...props}
-      />
+            if (!event.defaultPrevented) {
+              pointerDownRef.current = true;
+            }
+          }}
+          onPointerUp={(event) => {
+            onPointerUp?.(event);
+            pointerDownRef.current = false;
+          }}
+          onValueChange={(value) => {
+            onValueChange?.(value);
+            if (!openRef.current) {
+              triggerRef.current?.click();
+            }
+          }}
+          {...props}
+        />,
+      )}
     </PopoverTrigger>
   );
+}
+
+function ComboboxAnchor({ ...props }: React.ComponentProps<typeof PopoverAnchor>) {
+  return <PopoverAnchor {...props} />;
 }
 
 function ComboboxList({ className, ...props }: React.ComponentProps<typeof CommandList>) {
@@ -280,7 +300,13 @@ function ComboboxSeparator({ ...props }: React.ComponentProps<typeof CommandSepa
   return <CommandSeparator {...props} />;
 }
 
-const ComboboxContext = React.createContext<ComboboxContextValue | null>(null);
+const ComboboxContext = React.createContext<{
+  allowTriggerCloseRef: React.MutableRefObject<boolean>;
+  hasInputTriggerRef: React.MutableRefObject<boolean>;
+  openRef: React.MutableRefObject<boolean>;
+  triggerRef: React.MutableRefObject<HTMLElement | null>;
+} | null>(null);
+
 const ComboboxContentContext = React.createContext(false);
 const ComboboxAsChildContentContext = React.createContext(false);
 
@@ -296,10 +322,12 @@ function useCombobox() {
 
 export {
   Combobox,
+  ComboboxAnchor,
   ComboboxContent,
   ComboboxEmpty,
   ComboboxGroup,
   ComboboxInput,
+  ComboboxInputGroup,
   ComboboxItem,
   ComboboxList,
   ComboboxSeparator,

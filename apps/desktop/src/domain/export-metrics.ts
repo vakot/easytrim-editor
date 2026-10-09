@@ -146,14 +146,13 @@ function getExportMetricValues(
     metrics.phase === "completed" ||
     (metrics.phase !== "preparing" && metrics.progressPercent > 0);
 
-  const progressFromFfmpeg = progressMetricIsUseful && metrics.progressAvailable !== false
-    ? boundedPercent(metrics.progressPercent)
-    : null;
+  const progressFromFfmpeg =
+    progressMetricIsUseful && metrics.progressAvailable !== false
+      ? boundedPercent(metrics.progressPercent)
+      : null;
 
   const progressFromFrames =
-    frame !== undefined &&
-    totalFrames !== undefined &&
-    (metrics.phase !== "preparing" || frame > 0)
+    frame !== undefined && totalFrames !== undefined && (metrics.phase !== "preparing" || frame > 0)
       ? boundedPercent((frame / totalFrames) * 100)
       : null;
 

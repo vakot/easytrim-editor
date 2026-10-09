@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -12,6 +13,48 @@ import {
 } from "@/components/ui/combobox";
 
 describe("Combobox", () => {
+  it("keeps filtering and selection behavior for existing consumers", () => {
+    function ExistingComboboxConsumer() {
+      const [value, setValue] = useState("");
+      const [selected, setSelected] = useState("");
+
+      return (
+        <Combobox>
+          <ComboboxInput aria-label="Search items" onValueChange={setValue} value={value} />
+          <ComboboxContent>
+            <ComboboxList>
+              <ComboboxGroup>
+                <ComboboxItem onSelect={setSelected} value="alpha">
+                  Alpha
+                </ComboboxItem>
+                <ComboboxItem onSelect={setSelected} value="beta">
+                  Beta
+                </ComboboxItem>
+              </ComboboxGroup>
+            </ComboboxList>
+          </ComboboxContent>
+          <output data-testid="selected-value">{selected}</output>
+        </Combobox>
+      );
+    }
+
+    render(<ExistingComboboxConsumer />);
+    const input = screen.getByRole("combobox");
+
+    expect(
+      input.parentElement?.querySelector('[data-slot="input-group-addon"]'),
+    ).toBeInTheDocument();
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "bet" } });
+    expect(screen.getByRole("option", { name: "Beta" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Alpha" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("option", { name: "Beta" }));
+    expect(screen.getByTestId("selected-value")).toHaveTextContent("beta");
+    expect(input).toHaveValue("bet");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
   it("constrains the native ScrollArea viewport for scrolling", () => {
     render(
       <Combobox defaultOpen label="Search items">

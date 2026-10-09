@@ -73,6 +73,17 @@ describe("ExportDialog", () => {
     expect(screen.getByTestId("video-export-options")).toBeInTheDocument();
     expect(screen.queryByTestId("gif-export-options")).not.toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Frame rate" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Frame rate" })).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: "Frame rate" })).toHaveAttribute(
+      "placeholder",
+      "Match source",
+    );
+    fireEvent.click(screen.getByRole("combobox", { name: "Frame rate" }));
+    expect(screen.queryByRole("option", { name: "Match source" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "24 FPS" })).toBeInTheDocument();
+    for (const rate of [6, 10, 15, 25]) {
+      expect(screen.queryByRole("option", { name: `${rate} FPS` })).not.toBeInTheDocument();
+    }
     expect(planOptimizedExport).toHaveBeenCalledTimes(1);
   });
 
@@ -266,26 +277,98 @@ describe("ExportDialog", () => {
     );
     expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(640);
     expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(360);
+    expect(screen.getByRole("combobox", { name: "Quality preset" })).toHaveTextContent("Balanced");
+    fireEvent.click(screen.getByRole("combobox", { name: "Quality preset" }));
+    fireEvent.click(screen.getByRole("option", { name: "Compact" }));
+    await waitFor(() =>
+      expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings).toMatchObject({
+        gifPreset: "compact",
+        paletteColors: 64,
+        paletteStatsMode: "diff",
+        dithering: "bayer",
+      }),
+    );
+    fireEvent.click(screen.getByRole("combobox", { name: "Maximum palette colors" }));
+    fireEvent.click(screen.getByRole("option", { name: "32" }));
+    await waitFor(() =>
+      expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings).toMatchObject({
+        gifPreset: "custom",
+        paletteColors: 32,
+      }),
+    );
+    await waitFor(() =>
+      expect(planGifExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          gifPreset: "custom",
+          paletteColors: 32,
+          paletteStatsMode: "diff",
+          dithering: "bayer",
+        }),
+      ),
+    );
+    expect(screen.getByRole("combobox", { name: "Quality preset" })).toHaveTextContent("Custom");
     fireEvent.change(screen.getByRole("spinbutton", { name: "Width" }), {
       target: { value: "800" },
     });
     await waitFor(() =>
       expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings).toEqual({
         frameRate: gifSettings.frameRate,
+        gifPreset: "custom",
+        paletteColors: 32,
+        paletteStatsMode: "diff",
+        dithering: "bayer",
         resolution: { height: 450, width: 800 },
       }),
     );
-    fireEvent.click(screen.getByRole("combobox", { name: "Frame rate" }));
+    const frameRateInput = screen.getByRole("combobox", { name: "Frame rate" });
+    fireEvent.click(frameRateInput);
+    fireEvent.change(frameRateInput, { target: { value: "30" } });
     fireEvent.click(screen.getByRole("option", { name: "30 FPS" }));
     await waitFor(() =>
       expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings).toEqual({
         frameRate: { denominator: 1, numerator: 30 },
+        gifPreset: "custom",
+        paletteColors: 32,
+        paletteStatsMode: "diff",
+        dithering: "bayer",
         resolution: { height: 450, width: 800 },
       }),
+    );
+    await waitFor(() =>
+      expect(planGifExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ frameRate: { denominator: 1, numerator: 30 } }),
+      ),
     );
     expect(store.getState().editingInstances.entities["instance-1"]?.optimizedSettings).toEqual(
       optimizedSettings,
     );
+    fireEvent.change(frameRateInput, { target: { value: "12.5" } });
+    await waitFor(() =>
+      expect(
+        store.getState().editingInstances.entities["instance-1"]?.gifSettings?.frameRate,
+      ).toEqual({
+        denominator: 2,
+        numerator: 25,
+      }),
+    );
+    await waitFor(() =>
+      expect(planGifExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ frameRate: { denominator: 2, numerator: 25 } }),
+      ),
+    );
+    fireEvent.change(frameRateInput, { target: { value: "121" } });
+    expect(
+      screen.getByText("Enter a frame rate greater than 0 and no more than 120 FPS."),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "GIF Export" })).toBeDisabled();
+    fireEvent.change(frameRateInput, { target: { value: "" } });
+    await waitFor(() =>
+      expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings?.frameRate).toBe(
+        undefined,
+      ),
+    );
+    expect(frameRateInput).toHaveValue("");
+    expect(screen.getByRole("button", { name: "GIF Export" })).toBeEnabled();
 
     await store.dispatch(openOptimizedExportDialog());
     await waitFor(() =>
@@ -298,7 +381,16 @@ describe("ExportDialog", () => {
     );
     expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(1280);
     expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(720);
-    expect(screen.getByRole("combobox", { name: "Frame rate" })).toHaveTextContent("24 FPS");
+    expect(screen.getByRole("combobox", { name: "Frame rate" })).toHaveValue("24 FPS");
+    expect(screen.getByRole("button", { name: "Export" })).toBeEnabled();
+    fireEvent.change(screen.getByRole("combobox", { name: "Frame rate" }), {
+      target: { value: "20.5" },
+    });
+    await waitFor(() =>
+      expect(planOptimizedExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ frameRate: { denominator: 2, numerator: 41 } }),
+      ),
+    );
   });
 
   it("starts the export action for the active route", async () => {

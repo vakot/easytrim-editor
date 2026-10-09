@@ -526,6 +526,7 @@ export const en = {
       finalOptimizedFfmpegOptionIsMissingItsValue: "The final optimized FFmpeg option is missing its value",
       optimizedFfmpegArgumentsContainAnUnclosedQuote: "The optimized FFmpeg arguments contain an unclosed quote",
       outputFrameRateIsInvalid: "The output frame rate is invalid",
+      gifEncodingSettingsAreInvalid: "The GIF encoding settings are invalid",
       outputResolutionMustBeGreaterThanZero: "The output resolution must be greater than zero",
       rotationMustBe090180Or270Degrees: "The rotation must be 0, 90, 180, or 270 degrees",
       selectedExportRangeIsInvalid: "The selected export range is invalid",
@@ -649,6 +650,22 @@ export const en = {
         description: "Choose the GIF resolution and frame rate before saving",
         optionsLabel: "GIF export options",
       },
+      preset: {
+        label: "Quality preset",
+        compact: "Compact",
+        balanced: "Balanced",
+        highQuality: "High Quality",
+        custom: "Custom",
+      },
+      paletteColors: {
+        label: "Maximum palette colors",
+      },
+      dithering: {
+        label: "Dithering",
+        none: "None",
+        bayer: "Bayer",
+        sierra2_4a: "Sierra 2-4a",
+      },
     },
     actions: {
       saveChanges: "Save changes",
@@ -673,9 +690,13 @@ export const en = {
       sourceOption: "{{height}}p · {{width}} × {{height}} (source)",
     },
     frameRate: {
+      customValueWillBeApplied: "Custom frame rate will be applied",
       fpsLabel: "FPS",
       framesLabel: "Frames",
       label: "Frame rate",
+      invalidValue: "Enter a frame rate greater than 0 and no more than 120 FPS.",
+      noMatchingSuggestions: "No suggested frame rates match this value",
+      suggestionsLabel: "Show frame rate suggestions",
       value: "{{value}} FPS",
     },
     aspectRatio: {

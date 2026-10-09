@@ -83,6 +83,10 @@ listenerMiddleware.startListening({
           settings: {
             frameRate: instance.gifSettings.frameRate,
             resolution: action.payload.resolution,
+            gifPreset: instance.gifSettings.gifPreset,
+            paletteColors: instance.gifSettings.paletteColors,
+            paletteStatsMode: instance.gifSettings.paletteStatsMode,
+            dithering: instance.gifSettings.dithering,
           },
         }),
       );
@@ -111,6 +115,10 @@ listenerMiddleware.startListening({
           settings: {
             frameRate: instance.gifSettings.frameRate,
             resolution: selectCropResolution(listenerApi.getState()),
+            gifPreset: instance.gifSettings.gifPreset,
+            paletteColors: instance.gifSettings.paletteColors,
+            paletteStatsMode: instance.gifSettings.paletteStatsMode,
+            dithering: instance.gifSettings.dithering,
           },
         }),
       );

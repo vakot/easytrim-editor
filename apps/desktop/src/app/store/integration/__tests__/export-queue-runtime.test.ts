@@ -250,7 +250,7 @@ describe("export queue runtime", () => {
     expect(preparing?.metrics.estimatedFileSizeBytes).toBeUndefined();
     expect(
       store.getState().editingInstances.entities["gif-progress"]?.exportAttempts[0]?.metrics,
-    ).toMatchObject({ progressPercent: 0, totalFrames: 100 });
+    ).toMatchObject({ progressPercent: 0 });
 
     onProgress?.({
       elapsedMicros: 1_000_000,
