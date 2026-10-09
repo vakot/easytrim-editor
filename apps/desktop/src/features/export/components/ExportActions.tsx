@@ -94,7 +94,14 @@ function ExportActions() {
               <DialogDescription>
                 <ExportQueueSummary />
               </DialogDescription>
-              <div className="flex items-center gap-2 pt-2">
+            </DialogHeader>
+
+            <ScrollArea className="-mx-4 min-h-0 px-4" data-testid="export-queue-scroll-area">
+              <ExportQueueContent className="py-2" />
+            </ScrollArea>
+
+            <DialogFooter className="sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
                 <Checkbox
                   checked={stripMetadataOnExport}
                   id="queue-strip-metadata"
@@ -107,19 +114,19 @@ function ExportActions() {
                     )
                   }
                 />
-                <Label htmlFor="queue-strip-metadata">{t("queue.stripMetadata.label")}</Label>
+                <Label
+                  className="text-sm font-normal text-muted-foreground"
+                  htmlFor="queue-strip-metadata"
+                >
+                  {t("queue.stripMetadata.label")}
+                </Label>
               </div>
-            </DialogHeader>
-
-            <ScrollArea className="-mx-4 min-h-0 px-4" data-testid="export-queue-scroll-area">
-              <ExportQueueContent className="py-2" />
-            </ScrollArea>
-
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">{t("common.actions.close")}</Button>
-              </DialogClose>
-              <ExportQueueStartButton />
+              <div className="flex items-center justify-end gap-2">
+                <DialogClose asChild>
+                  <Button variant="outline">{t("common.actions.close")}</Button>
+                </DialogClose>
+                <ExportQueueStartButton />
+              </div>
             </DialogFooter>
           </DialogContent>
         </ExportQueue>
