@@ -15,17 +15,20 @@ import type { AudioStream } from "@/lib/tauri/media.types";
 import { useWaveformPrepare } from "../../../hooks/useWaveformPreparation";
 
 interface AudioTrackWaveformProps {
+  displayMode: WaveformDisplayMode;
   gainDb: number;
   stream: AudioStream;
   track: AudioTrackState;
 }
+
+export type WaveformDisplayMode = "peak" | "rms" | "stereo";
 
 type WaveformWithStatus<Status extends AudioTrackState["waveform"]["status"]> = Extract<
   AudioTrackState["waveform"],
   { status: Status }
 >;
 
-function AudioTrackWaveform({ gainDb, stream, track }: AudioTrackWaveformProps) {
+function AudioTrackWaveform({ displayMode, gainDb, stream, track }: AudioTrackWaveformProps) {
   const trim = useAppSelector(selectTrim);
   const sourceDurationMicros = trim?.sourceDurationMicros ?? 1;
   const selectionStartPercent = trim ? timelinePercent(trim.startMicros, sourceDurationMicros) : 0;
@@ -38,6 +41,7 @@ function AudioTrackWaveform({ gainDb, stream, track }: AudioTrackWaveformProps) 
     case "ready":
       return (
         <AudioTrackWaveformCanvas
+          displayMode={displayMode}
           gainDb={gainDb}
           key={track.waveform.url}
           selectionEndPercent={selectionEndPercent}
@@ -65,12 +69,12 @@ function AudioTrackWaveformLoading() {
 }
 
 interface WaveformEnvelope {
-  amplitudes: Uint8Array;
+  values: Uint8Array;
   width: number;
 }
 
 const WAVEFORM_HEADER_SIZE = 12;
-const WAVEFORM_FORMAT_VERSION = 1;
+const WAVEFORM_FORMAT_VERSION = 2;
 const WAVEFORM_FLAG_RLE = 1;
 const WAVEFORM_MAX_AMPLITUDE = 255;
 const ANIMATION_TIME_CONSTANT_MS = 90;
@@ -82,12 +86,14 @@ interface WaveformVisualState {
 }
 
 function AudioTrackWaveformCanvas({
+  displayMode,
   gainDb,
   selectionEndPercent,
   selectionStartPercent,
   stream,
   waveform,
 }: {
+  displayMode: WaveformDisplayMode;
   gainDb: number;
   selectionEndPercent: number;
   selectionStartPercent: number;
@@ -135,20 +141,36 @@ function AudioTrackWaveformCanvas({
     for (let x = 0; x < pixelWidth; x += 1) {
       const start = Math.floor((x * envelope.width) / pixelWidth);
       const end = Math.max(start + 1, Math.ceil(((x + 1) * envelope.width) / pixelWidth));
-      let amplitude = 0;
+      let peak = 0;
+      let peakLeft = 0;
+      let peakRight = 0;
+      let rmsLeft = 0;
+      let rmsRight = 0;
       for (let bin = start; bin < Math.min(end, envelope.width); bin += 1) {
-        amplitude = Math.max(amplitude, envelope.amplitudes[bin] ?? 0);
+        const offset = bin * 4;
+        peakLeft = Math.max(peakLeft, envelope.values[offset] ?? 0);
+        peakRight = Math.max(peakRight, envelope.values[offset + 2] ?? 0);
+        peak = Math.max(peak, peakLeft, peakRight);
+        rmsLeft = Math.max(rmsLeft, envelope.values[offset + 1] ?? 0);
+        rmsRight = Math.max(rmsRight, envelope.values[offset + 3] ?? 0);
       }
 
-      const normalized = Math.min(1, (amplitude / WAVEFORM_MAX_AMPLITUDE) * gain);
-      const halfHeight = normalized * centerY;
-      if (halfHeight > 0) {
-        context.moveTo(x + 0.5, centerY - halfHeight);
-        context.lineTo(x + 0.5, centerY + halfHeight);
+      if (displayMode === "stereo") {
+        drawChannel(x, pixelHeight * 0.25, pixelHeight * 0.25, peakLeft, gain, context);
+        drawChannel(x, pixelHeight * 0.75, pixelHeight * 0.25, peakRight, gain, context);
+      } else {
+        const amplitude =
+          displayMode === "peak" ? peak : Math.sqrt((rmsLeft ** 2 + rmsRight ** 2) / 2);
+
+        const halfHeight = Math.min(1, (amplitude / WAVEFORM_MAX_AMPLITUDE) * gain) * centerY;
+        if (halfHeight > 0) {
+          context.moveTo(x + 0.5, centerY - halfHeight);
+          context.lineTo(x + 0.5, centerY + halfHeight);
+        }
       }
     }
     context.stroke();
-  }, []);
+  }, [displayMode]);
 
   const tickRef = useRef<(time: number) => void>(() => undefined);
   const tick = useCallback((time: number) => {
@@ -274,6 +296,15 @@ function AudioTrackWaveformCanvas({
           backgroundSize: "0.0625rem 100%, auto",
         }}
       />
+      {displayMode === "stereo" && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-1 z-1 flex flex-col justify-around text-[0.5rem] text-muted-foreground"
+        >
+          <span>L</span>
+          <span>R</span>
+        </div>
+      )}
       {selectionStartPercent > 0 && (
         <div
           aria-hidden="true"
@@ -294,6 +325,21 @@ function AudioTrackWaveformCanvas({
       )}
     </>
   );
+}
+
+function drawChannel(
+  x: number,
+  centerY: number,
+  maxHalfHeight: number,
+  amplitude: number,
+  gain: number,
+  context: CanvasRenderingContext2D,
+) {
+  const halfHeight = Math.min(1, (amplitude / WAVEFORM_MAX_AMPLITUDE) * gain) * maxHalfHeight;
+  if (halfHeight > 0) {
+    context.moveTo(x + 0.5, centerY - halfHeight);
+    context.lineTo(x + 0.5, centerY + halfHeight);
+  }
 }
 
 function parseHexColor(color: string): [number, number, number] {
@@ -324,9 +370,9 @@ function parseWaveformEnvelope(buffer: ArrayBuffer, expectedWidth: number): Wave
   }
 
   const payload = new Uint8Array(buffer, WAVEFORM_HEADER_SIZE);
-  const amplitudes = flags & WAVEFORM_FLAG_RLE ? decodeRle(payload, width) : payload;
-  if (amplitudes.length !== width) throw new Error("Waveform envelope size is invalid.");
-  return { amplitudes, width };
+  const values = flags & WAVEFORM_FLAG_RLE ? decodeRle(payload, width * 4) : payload;
+  if (values.length !== width * 4) throw new Error("Waveform envelope size is invalid.");
+  return { values, width };
 }
 
 function decodeRle(payload: Uint8Array, width: number): Uint8Array {

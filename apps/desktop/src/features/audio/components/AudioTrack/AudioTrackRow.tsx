@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
@@ -42,7 +49,7 @@ import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog";
 import { AudioTrackGainControl } from "./components/AudioTrackGainControl";
 import { AudioTrackMetadataDialog } from "./components/AudioTrackMetadataDialog";
 import { AudioTrackToggle } from "./components/AudioTrackToggle";
-import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
+import { AudioTrackWaveform, type WaveformDisplayMode } from "./components/AudioTrackWaveform";
 
 const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex: number }) {
   const controller = useAudioTrackController(streamIndex);
@@ -98,6 +105,22 @@ function AudioTrackRowWaveform({
   controller: ReturnType<typeof useAudioTrackController>;
   liveGainDb: number;
 }) {
+  const { t } = useTranslation();
+  const [displayMode, setDisplayMode] = useState<WaveformDisplayMode>("peak");
+  const displayModeShortLabel =
+    displayMode === "peak"
+      ? t("audio.waveform.displayMode.peakShort")
+      : displayMode === "rms"
+        ? t("audio.waveform.displayMode.rmsShort")
+        : t("audio.waveform.displayMode.stereoShort");
+
+  const displayModeDescription =
+    displayMode === "peak"
+      ? t("audio.waveform.displayMode.peakDescription")
+      : displayMode === "rms"
+        ? t("audio.waveform.displayMode.rmsDescription")
+        : t("audio.waveform.displayMode.stereoDescription");
+
   const trim = useAppSelector(selectTrim);
   const source = useAppSelector(selectSourceSelection);
   const { stream, track, trackColor } = controller;
@@ -114,10 +137,34 @@ function AudioTrackRowWaveform({
       data-enabled={track.enabled}
     >
       <AudioTrackWaveform
+        displayMode={displayMode}
         gainDb={waveformGainDb(controller, trim, liveGainDb, source?.sourcePath)}
         stream={stream}
         track={track}
       />
+      <div className="absolute top-1 right-1 z-4">
+        <Select
+          onValueChange={(value) => setDisplayMode(value as typeof displayMode)}
+          value={displayMode}
+        >
+          <SelectTrigger
+            aria-describedby={`audio-waveform-mode-description-${stream.streamIndex}`}
+            aria-label={t("audio.waveform.displayMode.label")}
+            className="h-6 min-w-18 border-0 bg-background/80 px-2 py-0 text-[0.625rem] shadow-sm"
+            size="sm"
+          >
+            <SelectValue>{displayModeShortLabel}</SelectValue>
+          </SelectTrigger>
+          <SelectContent align="end">
+            <SelectItem value="peak">{t("audio.waveform.displayMode.peak")}</SelectItem>
+            <SelectItem value="rms">{t("audio.waveform.displayMode.rms")}</SelectItem>
+            <SelectItem value="stereo">{t("audio.waveform.displayMode.stereo")}</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="sr-only" id={`audio-waveform-mode-description-${stream.streamIndex}`}>
+          {displayModeDescription}
+        </span>
+      </div>
       {activityRanges.map((range) => (
         <div
           aria-hidden="true"

@@ -1132,6 +1132,18 @@ export const en = {
       summary: "Noise reduction - {{preset}}",
     },
     waveform: {
+      displayMode: {
+        label: "Waveform display",
+        peak: "Peak — transient amplitude",
+        peakDescription: "Peak mode shows transient amplitude.",
+        peakShort: "Peak",
+        rms: "RMS — average signal energy",
+        rmsDescription: "RMS mode shows average signal energy.",
+        rmsShort: "RMS",
+        stereo: "Stereo — left and right activity",
+        stereoDescription: "Stereo mode shows left and right channel activity separately.",
+        stereoShort: "Stereo",
+      },
       preparing: "Preparing waveform…",
       unavailable: "Waveform unavailable",
     },
