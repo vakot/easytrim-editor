@@ -1,7 +1,11 @@
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 
 import type { ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
-import { formatExportDuration, formatExportFileSize } from "@/domain/export-metrics";
+import {
+  formatExportDuration,
+  formatExportFileSize,
+  getExportMetricValues,
+} from "@/domain/export-metrics";
 
 import type { ExportQueueItemMetricConfig } from "../types";
 
@@ -9,10 +13,8 @@ function getProgress(
   attempt: ExportAttempt,
   { status = attempt.state.status }: { status?: ExportAttemptState["status"] } = {},
 ): ExportQueueItemMetricConfig | null {
-  if (status === "rendering" && attempt.route === "gif") return null;
-
-  const progressPercent = attempt.metrics.progressPercent;
-  if (status === "queued" || (status !== "completed" && progressPercent <= 0)) return null;
+  const progressPercent = getExportMetricValues(attempt, status).progressPercent;
+  if (progressPercent === null) return null;
 
   return {
     id: "progress",
@@ -30,9 +32,7 @@ function getDuration(
     status?: ExportAttemptState["status"];
   },
 ): ExportQueueItemMetricConfig | null {
-  if (status === "rendering" && attempt.metrics.phase === "preparing") return null;
-
-  const durationMs = attempt.metrics.durationMs;
+  const durationMs = getExportMetricValues(attempt, status).durationMs;
   if (durationMs === null) return null;
 
   const duration = formatExportDuration(durationMs);
@@ -52,7 +52,7 @@ function getRemaining(
     status?: ExportAttemptState["status"];
   },
 ): ExportQueueItemMetricConfig | null {
-  const { durationMs, estimatedTotalTimeMs } = attempt.metrics;
+  const { durationMs, estimatedTotalTimeMs } = getExportMetricValues(attempt, status);
   if (status !== "rendering" || durationMs === null || estimatedTotalTimeMs === undefined) {
     return null;
   }
@@ -73,9 +73,7 @@ function getFileSize(
     status = attempt.state.status,
   }: { formatValue?: (bytes: number) => string; status?: ExportAttemptState["status"] } = {},
 ): ExportQueueItemMetricConfig | null {
-  if (status === "rendering" && attempt.metrics.phase === "preparing") return null;
-
-  const fileSizeBytes = attempt.metrics.fileSizeBytes;
+  const fileSizeBytes = getExportMetricValues(attempt, status).fileSizeBytes;
   if (fileSizeBytes === undefined) return null;
 
   return {
@@ -91,9 +89,7 @@ function getFps(
     status = attempt.state.status,
   }: { formatValue: (value: string) => string; status?: ExportAttemptState["status"] },
 ): ExportQueueItemMetricConfig | null {
-  if (status === "rendering" && attempt.metrics.phase === "preparing") return null;
-
-  const fps = attempt.metrics.fps;
+  const fps = getExportMetricValues(attempt, status).fps;
   if (fps === undefined) return null;
 
   return {
@@ -113,7 +109,7 @@ function getFileSizeChange(
   },
 ): ExportQueueItemMetricConfig | null {
   const sourceSizeBytes = attempt.snapshot.source.fileSizeBytes;
-  const outputSizeBytes = attempt.metrics.fileSizeBytes;
+  const outputSizeBytes = getExportMetricValues(attempt, status).fileSizeBytes;
   if (
     status !== "completed" ||
     sourceSizeBytes === undefined ||

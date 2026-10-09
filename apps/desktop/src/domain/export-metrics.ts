@@ -1,3 +1,5 @@
+import type { ExportAttempt, ExportAttemptState } from "./editing-instance";
+
 const BITRATE_UNITS: Record<string, number> = {
   bits: 1,
   kbits: 1_000,
@@ -112,12 +114,57 @@ function formatExportFileSize(bytes: number): string {
   return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
+interface ExportMetricValues {
+  bitrate?: string;
+  currentFrame?: number;
+  durationMs: number | null;
+  estimatedElapsedTimeMs?: number;
+  estimatedFileSizeBytes?: number;
+  estimatedTotalTimeMs?: number;
+  fileSizeBytes?: number;
+  fps?: number;
+  indeterminate: boolean;
+  progressPercent: number | null;
+  totalFrames?: number;
+}
+
+function getExportMetricValues(
+  attempt: Pick<ExportAttempt, "metrics" | "route" | "state">,
+  status: ExportAttemptState["status"] = attempt.state.status,
+): ExportMetricValues {
+  const { metrics } = attempt;
+  const indeterminate = status === "rendering" && attempt.route === "gif";
+  const metricsAvailable = !indeterminate;
+
+  return {
+    bitrate: metricsAvailable ? metrics.bitrate : undefined,
+    currentFrame: metricsAvailable ? metrics.currentFrame : undefined,
+    durationMs: metricsAvailable ? metrics.durationMs : null,
+    estimatedElapsedTimeMs: metricsAvailable ? metrics.estimatedElapsedTimeMs : undefined,
+    estimatedFileSizeBytes: metricsAvailable ? metrics.estimatedFileSizeBytes : undefined,
+    estimatedTotalTimeMs: metricsAvailable ? metrics.estimatedTotalTimeMs : undefined,
+    fileSizeBytes: metricsAvailable ? metrics.fileSizeBytes : undefined,
+    fps: metricsAvailable ? metrics.fps : undefined,
+    indeterminate,
+    progressPercent:
+      indeterminate ||
+      status === "queued" ||
+      (status !== "completed" && metrics.progressPercent <= 0)
+        ? null
+        : metrics.progressPercent,
+    totalFrames: metricsAvailable ? metrics.totalFrames : undefined,
+  };
+}
+
 export {
   estimateExportSize,
   estimateExportTime,
   formatExportDuration,
   formatExportFileSize,
+  getExportMetricValues,
   parseFfmpegBitrate,
   parseFfmpegNumber,
   parseFfmpegSpeed,
 };
+
+export type { ExportMetricValues };

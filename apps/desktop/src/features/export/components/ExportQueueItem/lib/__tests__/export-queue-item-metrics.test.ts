@@ -14,7 +14,7 @@ const attempt = {
 } as ExportAttempt;
 
 describe("export queue item metrics", () => {
-  it("hides elapsed time while the GIF palette is being prepared", () => {
+  it("hides elapsed time while GIF rendering is indeterminate", () => {
     expect(
       getDuration(attempt, {
         formatValue: (value) => value,
@@ -54,7 +54,7 @@ describe("export queue item metrics", () => {
     ).toBeNull();
   });
 
-  it("hides partial GIF size and frame-rate values during palette processing", () => {
+  it("hides partial GIF size and frame-rate values while rendering", () => {
     const partialAttempt = {
       ...attempt,
       metrics: { ...attempt.metrics, fileSizeBytes: 1_024, fps: 15 },
