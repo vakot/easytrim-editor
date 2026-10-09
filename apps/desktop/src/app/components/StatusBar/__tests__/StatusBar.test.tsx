@@ -27,6 +27,9 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/app/store/redux-hooks", () => ({
   useAppSelector: () => mocks.activeAttempt,
 }));
+vi.mock("@/app/store/slices/export-slice", () => ({
+  selectRunningExportMetrics: vi.fn(() => undefined),
+}));
 vi.mock("@/lib/tauri/window", () => ({
   requestWindowShutdown: mocks.requestWindowShutdown,
 }));

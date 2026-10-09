@@ -404,7 +404,6 @@ const editingInstancesSlice = createSlice({
       )
         return;
       attempt.state.operationId = action.payload.progress.operationId;
-      Object.assign(attempt.metrics, action.payload.metrics);
     },
     editingInstanceExportCompleted: (
       state,
@@ -412,6 +411,7 @@ const editingInstancesSlice = createSlice({
         attemptId: string;
         durationMs: number | null;
         id: EditingInstanceId;
+        metrics?: ExportAttemptMetrics;
         result: ExportResult;
       }>,
     ) => {
@@ -428,8 +428,11 @@ const editingInstancesSlice = createSlice({
         result: action.payload.result,
         status: "completed",
       };
-      attempt.metrics.durationMs = action.payload.durationMs;
-      attempt.metrics.progressPercent = 100;
+      attempt.metrics = action.payload.metrics ?? {
+        ...attempt.metrics,
+        durationMs: action.payload.durationMs,
+        progressPercent: 100,
+      };
     },
     editingInstanceExportFailed: (
       state,
@@ -444,7 +447,6 @@ const editingInstancesSlice = createSlice({
       const attempt = instance && getAttempt(instance, action.payload.attemptId);
       if (!attempt || attempt.state.status !== "rendering") return;
       attempt.state = { error: action.payload.error, failedAt: Date.now(), status: "failed" };
-      attempt.metrics.durationMs = action.payload.durationMs;
     },
     editingInstanceExportCanceled: (
       state,
@@ -469,7 +471,6 @@ const editingInstancesSlice = createSlice({
         ...(action.payload.error ? { error: action.payload.error } : {}),
         status: "canceled",
       };
-      attempt.metrics.durationMs = action.payload.durationMs;
     },
     editingInstancesSourceAvailabilityChanged: (
       state,

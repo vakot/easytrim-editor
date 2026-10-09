@@ -1,5 +1,8 @@
+import { useMemo } from "react";
+
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueueItem } from "@/app/store/slices/editing-instances-slice";
+import { selectRunningExportMetrics } from "@/app/store/slices/export-slice";
 import { cn } from "@/lib/class-names.utils";
 
 import { ExportQueueItemContext } from "./contexts/ExportQueueItemContext";
@@ -14,10 +17,31 @@ function ExportQueueItem({
   instanceId: string;
 }) {
   const item = useAppSelector((state) => selectExportQueueItem(state, instanceId, attemptId));
+  const runningMetrics = useAppSelector((state) =>
+    selectRunningExportMetrics(state, instanceId, attemptId),
+  );
 
-  if (!item) return null;
+  const itemWithRunningMetrics = useMemo(
+    () =>
+      item && runningMetrics
+        ? {
+            ...item,
+            attempt: {
+              ...item.attempt,
+              metrics: { ...item.attempt.metrics, ...runningMetrics },
+            },
+          }
+        : item,
+    [item, runningMetrics],
+  );
 
-  return <ExportQueueItemContext.Provider value={item}>{children}</ExportQueueItemContext.Provider>;
+  if (!itemWithRunningMetrics) return null;
+
+  return (
+    <ExportQueueItemContext.Provider value={itemWithRunningMetrics}>
+      {children}
+    </ExportQueueItemContext.Provider>
+  );
 }
 
 function ExportQueueItemContent({

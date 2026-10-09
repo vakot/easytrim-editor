@@ -12,6 +12,7 @@ import type { UpdateStatus } from "@/app/contexts/app-updates-context";
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectRenderingAttempt } from "@/app/store/slices/editing-instances-slice";
+import { selectRunningExportMetrics } from "@/app/store/slices/export-slice";
 import { MetricTooltip } from "@/components/metric-tooltip";
 import {
   formatExportDuration,
@@ -40,12 +41,24 @@ function StatusBar({ className }: StatusBarProps) {
   const { t } = useTranslation();
 
   const activeExport = useAppSelector(selectRenderingAttempt);
+  const runningMetrics = useAppSelector((state) =>
+    activeExport
+      ? selectRunningExportMetrics(state, activeExport.instance.id, activeExport.attempt.id)
+      : undefined,
+  );
+
+  const activeAttempt = activeExport
+    ? {
+        ...activeExport.attempt,
+        metrics: { ...activeExport.attempt.metrics, ...runningMetrics },
+      }
+    : null;
 
   const activeExportPath = activeExport
     ? splitFilePath(activeExport.attempt.output.displayPath)
     : null;
 
-  const exportMetrics = activeExport ? getExportMetricValues(activeExport.attempt) : null;
+  const exportMetrics = activeAttempt ? getExportMetricValues(activeAttempt) : null;
   const statusMetrics: { id: string; label: string; value: string }[] = [];
 
   if (exportMetrics) {

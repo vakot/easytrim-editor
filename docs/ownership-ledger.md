@@ -26,6 +26,8 @@ resource is introduced.
   must not be placed in Redux or persisted state.
 - Async callbacks must carry the IDs that identify their owner. Reducers accept progress and
   terminal results only for the current attempt and operation.
+- Running export metrics live in `export.runningExportMetrics`; only a successful export writes the
+  final summary to `ExportAttempt.metrics`.
 - Draft identity uses generated instance IDs. Normalized source paths identify shared files only
   for availability, reservations, and deletion; several drafts can reference one file.
 

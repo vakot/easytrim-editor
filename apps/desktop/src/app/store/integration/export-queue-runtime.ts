@@ -18,10 +18,16 @@ import {
   selectSourceQueueStarted,
 } from "@/app/store/slices/export-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
-import type { EditingInstanceId, ExportAttempt } from "@/domain/editing-instance";
+import {
+  type EditingInstanceId,
+  EMPTY_EXPORT_METRICS,
+  type ExportAttempt,
+  type ExportAttemptMetrics,
+} from "@/domain/editing-instance";
 import {
   estimateExportSize,
   estimateExportTime,
+  getExportMetricValues,
   parseFfmpegBitrate,
   parseFfmpegNumber,
 } from "@/domain/export-metrics";
@@ -58,6 +64,7 @@ interface RuntimeExportJob {
   instanceId: EditingInstanceId;
   lastDiagnosticProgress: number;
   lastReduxProgressAt: number;
+  latestMetrics: Partial<ExportAttemptMetrics>;
   operationId: string | null;
   requeueRequested: boolean;
   resolveCompletion: () => void;
@@ -138,6 +145,7 @@ function enqueueExport(
     instanceId,
     lastDiagnosticProgress: -1,
     lastReduxProgressAt: 0,
+    latestMetrics: {},
     operationId: null,
     requeueRequested: false,
     startedAt: null,
@@ -459,6 +467,21 @@ async function renderJob(job: RuntimeExportJob) {
           )
         : null;
 
+    const metrics = {
+      durationMs: elapsedTime(job),
+      progressPercent,
+      currentFrame: progress.frame,
+      fileSizeBytes: progress.totalSize,
+      fps: parseFfmpegNumber(progress.fps) ?? undefined,
+      phase: progress.phase,
+      bitrate: parseFfmpegBitrate(progress.bitrate) === null ? undefined : progress.bitrate,
+      estimatedFileSizeBytes: estimatedSize?.totalBytes,
+      estimatedElapsedTimeMs: estimatedTime?.elapsedMs,
+      estimatedTotalTimeMs: estimatedTime?.totalMs,
+    } satisfies Partial<ExportAttemptMetrics>;
+
+    job.latestMetrics = { ...job.latestMetrics, ...metrics };
+
     if (
       (progress.phase !== "preparing" && progressPercent === 100) ||
       progressPercent - job.lastDiagnosticProgress >= 10 ||
@@ -485,18 +508,7 @@ async function renderJob(job: RuntimeExportJob) {
         id: job.instanceId,
         attemptId: job.attempt.id,
         progress,
-        metrics: {
-          durationMs: elapsedTime(job),
-          progressPercent,
-          currentFrame: progress.frame,
-          fileSizeBytes: progress.totalSize,
-          fps: parseFfmpegNumber(progress.fps) ?? undefined,
-          phase: progress.phase,
-          bitrate: parseFfmpegBitrate(progress.bitrate) === null ? undefined : progress.bitrate,
-          estimatedFileSizeBytes: estimatedSize?.totalBytes,
-          estimatedElapsedTimeMs: estimatedTime?.elapsedMs,
-          estimatedTotalTimeMs: estimatedTime?.totalMs,
-        },
+        metrics,
       }),
     );
   };
@@ -533,12 +545,14 @@ async function renderJob(job: RuntimeExportJob) {
             );
 
     if (!job.canceled) {
+      const durationMs = elapsedTime(job);
       job.dispatch(
         editingInstanceExportCompleted({
           id: job.instanceId,
           attemptId: job.attempt.id,
           result,
-          durationMs: elapsedTime(job),
+          durationMs,
+          metrics: finalExportMetrics(job.attempt, job.latestMetrics, durationMs),
         }),
       );
       job.diagnosticsOperation?.complete({
@@ -575,6 +589,7 @@ async function renderJob(job: RuntimeExportJob) {
       job.diagnosticsOperation = null;
       job.lastDiagnosticProgress = -1;
       job.lastReduxProgressAt = 0;
+      job.latestMetrics = {};
       job.completion = new Promise<void>((resolve) => {
         job.resolveCompletion = resolve;
       });
@@ -594,6 +609,38 @@ function elapsedTime(job: RuntimeExportJob) {
   return job.startedAt ? Date.now() - job.startedAt : null;
 }
 
+function finalExportMetrics(
+  attempt: ExportAttempt,
+  latestMetrics: Partial<ExportAttemptMetrics>,
+  durationMs: number | null,
+): ExportAttemptMetrics {
+  const metrics = getExportMetricValues(
+    {
+      ...attempt,
+      metrics: {
+        ...attempt.metrics,
+        ...latestMetrics,
+        durationMs,
+        progressPercent: 100,
+        phase: "completed",
+      },
+    },
+    "completed",
+  );
+
+  return {
+    ...EMPTY_EXPORT_METRICS,
+    durationMs,
+    progressPercent: 100,
+    phase: "completed",
+    ...(metrics.totalFrames === undefined ? {} : { totalFrames: metrics.totalFrames }),
+    ...(metrics.currentFrame === undefined ? {} : { currentFrame: metrics.currentFrame }),
+    ...(metrics.fileSizeBytes === undefined ? {} : { fileSizeBytes: metrics.fileSizeBytes }),
+    ...(metrics.fps === undefined ? {} : { fps: metrics.fps }),
+    ...(metrics.bitrate === undefined ? {} : { bitrate: metrics.bitrate }),
+  };
+}
+
 function exportDiagnosticData(job: RuntimeExportJob): Record<string, string | number> {
   const durationMs = elapsedTime(job);
 
@@ -604,9 +651,9 @@ function exportDiagnosticData(job: RuntimeExportJob): Record<string, string | nu
     outputType: job.attempt.route,
     sourcePath: job.attempt.request.sourcePath,
     ...(durationMs === null ? {} : { durationMs }),
-    ...(job.attempt.metrics.fileSizeBytes === undefined
+    ...(job.latestMetrics.fileSizeBytes === undefined
       ? {}
-      : { fileSizeBytes: job.attempt.metrics.fileSizeBytes }),
+      : { fileSizeBytes: job.latestMetrics.fileSizeBytes }),
   };
 }
 
