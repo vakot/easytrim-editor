@@ -4,16 +4,16 @@ import * as React from "react";
 
 import {
   Command,
+  CommandContent,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
   CommandSeparator,
+  useCommandContent,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Slot } from "@/components/ui/slot";
-
 import { cn } from "@/lib/class-names.utils";
 
 type ComboboxContextValue = {
@@ -28,6 +28,7 @@ function Combobox({
   defaultOpen = false,
   label,
   onOpenChange,
+  open,
   shouldFilter = true,
   ...props
 }: Omit<React.ComponentProps<typeof Popover>, "onOpenChange"> & {
@@ -37,7 +38,13 @@ function Combobox({
 }) {
   const allowTriggerCloseRef = React.useRef(false);
   const hasInputTriggerRef = React.useRef(false);
-  const openRef = React.useRef(props.open ?? defaultOpen);
+  const openRef = React.useRef(open ?? defaultOpen);
+
+  React.useLayoutEffect(() => {
+    if (open !== undefined) {
+      openRef.current = open;
+    }
+  }, [open]);
   const triggerRef = React.useRef<HTMLElement | null>(null);
 
   return (
@@ -53,6 +60,7 @@ function Combobox({
         <Popover
           {...props}
           defaultOpen={defaultOpen}
+          open={open}
           onOpenChange={(open) => {
             openRef.current = open;
             onOpenChange?.(open);
@@ -96,11 +104,9 @@ function ComboboxContent({
 
   if (asChild) {
     return (
-      <ComboboxAsChildContentContext.Provider value>
-        <ComboboxContentContext.Provider value>
-          <Slot className={className}>{children}</Slot>
-        </ComboboxContentContext.Provider>
-      </ComboboxAsChildContentContext.Provider>
+      <CommandContent asChild className={className}>
+        {children}
+      </CommandContent>
     );
   }
 
@@ -125,7 +131,7 @@ function ComboboxContent({
       sideOffset={sideOffset}
       {...props}
     >
-      <ComboboxContentContext.Provider value>{children}</ComboboxContentContext.Provider>
+      <CommandContent>{children}</CommandContent>
     </PopoverContent>
   );
 }
@@ -140,7 +146,7 @@ function ComboboxInput({
   onValueChange,
   ...props
 }: React.ComponentProps<typeof CommandInput>) {
-  const insideContent = React.useContext(ComboboxContentContext);
+  const { inContent: insideContent } = useCommandContent();
   const { allowTriggerCloseRef, hasInputTriggerRef, openRef, triggerRef } = useCombobox();
   // Pointer focus arrives before the Radix trigger click; let that click toggle the popover once.
   const pointerDownRef = React.useRef(false);
@@ -254,7 +260,7 @@ function ComboboxGroup({ ...props }: React.ComponentProps<typeof CommandGroup>) 
 }
 
 function ComboboxItem({ onSelect, ...props }: React.ComponentProps<typeof CommandItem>) {
-  const insideAsChildContent = React.useContext(ComboboxAsChildContentContext);
+  const { isAsChild: insideAsChildContent } = useCommandContent();
   const { allowTriggerCloseRef, openRef, triggerRef } = useCombobox();
 
   return (
@@ -279,8 +285,6 @@ function ComboboxSeparator({ ...props }: React.ComponentProps<typeof CommandSepa
 }
 
 const ComboboxContext = React.createContext<ComboboxContextValue | null>(null);
-const ComboboxContentContext = React.createContext(false);
-const ComboboxAsChildContentContext = React.createContext(false);
 
 function useCombobox() {
   const context = React.useContext(ComboboxContext);

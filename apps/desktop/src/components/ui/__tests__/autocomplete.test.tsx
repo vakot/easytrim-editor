@@ -39,6 +39,9 @@ describe("Autocomplete", () => {
 
     expect(input).toHaveValue("30 FPS");
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+
+    fireEvent.click(input);
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
   });
 
   it("keeps a custom value on blur when no suggestion is active", () => {
@@ -63,5 +66,8 @@ describe("Autocomplete", () => {
 
     expect(input).toHaveValue("30 FPS");
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+
+    fireEvent.click(input);
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
   });
 });
