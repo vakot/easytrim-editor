@@ -277,7 +277,7 @@ function AudioTrackWaveformCanvas({
       {selectionStartPercent > 0 && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 bg-background/60"
+          className="pointer-events-none absolute inset-y-0 bg-background/40"
           data-edge="start"
           data-slot="audio-waveform-outside-selection"
           style={{ left: "0%", width: `${selectionStartPercent}%` }}
@@ -286,7 +286,7 @@ function AudioTrackWaveformCanvas({
       {selectionEndPercent < 100 && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 bg-background/60"
+          className="pointer-events-none absolute inset-y-0 bg-background/40"
           data-edge="end"
           data-slot="audio-waveform-outside-selection"
           style={{ left: `${selectionEndPercent}%`, right: "0%" }}

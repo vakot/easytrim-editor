@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Improved audio waveforms to stay sharp as tracks resize, use the current accent color, transition smoothly during Gain and mute changes, and dim content outside the selected segment.
+- Improved audio waveforms to stay sharp as tracks resize, use the current accent color and transition smoothly.
 
 ## [1.13.2]
 
