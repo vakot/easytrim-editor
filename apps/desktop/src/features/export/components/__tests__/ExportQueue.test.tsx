@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
 
@@ -154,7 +155,7 @@ describe("ExportQueue", () => {
     expect(screen.getByRole("button", { name: "Cancel export" })).toBeInTheDocument();
   });
 
-  it("summarizes all live statuses and renders semantic badge variants", () => {
+  it("summarizes live statuses and exposes applicable actions in each overflow menu", async () => {
     const store = createAppStore();
     addAttempt(store, { capturedAt: 1, id: "queued" });
     const rendering = addAttempt(store, { capturedAt: 2, id: "rendering" });
@@ -213,10 +214,33 @@ describe("ExportQueue", () => {
     expect(screen.getByText("Failed")).toHaveAttribute("data-variant", "destructive");
     expect(screen.getByText("Canceled")).toHaveAttribute("data-variant", "secondary");
     expect(screen.getByText("Queued")).toHaveAttribute("data-variant", "outline");
-    expect(screen.getAllByRole("button", { name: "Restore edit" })).toHaveLength(3);
     expect(screen.getByRole("button", { name: "Reveal output" })).toBeInTheDocument();
     expect(
       screen.getByLabelText("Export error: FFmpeg could not render the selected segment"),
     ).toHaveTextContent("Failed");
+
+    const user = userEvent.setup();
+    for (const [status, canRestore, canEdit] of [
+      ["Processing…", false, false],
+      ["Completed", true, false],
+      ["Failed", true, false],
+      ["Canceled", true, false],
+      ["Queued", false, true],
+    ] as const) {
+      const row = screen.getByText(status).closest("li");
+      expect(row).not.toBeNull();
+      await user.click(
+        within(row as HTMLElement).getByRole("button", { name: "More export actions" }),
+      );
+
+      const restoreItem = screen.getByRole("menuitem", { name: "Restore edit" });
+      const editItem = screen.getByRole("menuitem", { name: "Edit export" });
+      if (canRestore) expect(restoreItem).not.toHaveAttribute("aria-disabled", "true");
+      else expect(restoreItem).toHaveAttribute("aria-disabled", "true");
+      if (canEdit) expect(editItem).not.toHaveAttribute("aria-disabled", "true");
+      else expect(editItem).toHaveAttribute("aria-disabled", "true");
+
+      await user.keyboard("{Escape}");
+    }
   });
 });

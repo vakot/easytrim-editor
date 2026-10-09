@@ -235,9 +235,13 @@ async function finishQueuedExportEdit(
   dispatch(optimizedExportDialogClosed());
   dispatch(nativeDialogStateChanged(true));
   try {
-    const output = await (route === "gif" ? chooseGifOutputPath : chooseOutputPath)(
-      attempt.output.displayName,
-    );
+    const output =
+      route === "gif"
+        ? await chooseGifOutputPath(attempt.output.displayName)
+        : await chooseOutputPath(
+            attempt.output.displayName,
+            route === "fast" ? (attempt.request as FastExportRequest) : undefined,
+          );
 
     if (!output) return;
 
@@ -467,9 +471,13 @@ async function startEditingInstanceExport(
   const attemptId = nextAttemptId();
   dispatch(nativeDialogStateChanged(true));
   try {
-    const output = await (route === "gif" ? chooseGifOutputPath : chooseOutputPath)(
-      outputDefaults(source.displayName)[route],
-    );
+    const output =
+      route === "gif"
+        ? await chooseGifOutputPath(outputDefaults(source.displayName)[route])
+        : await chooseOutputPath(
+            outputDefaults(source.displayName)[route],
+            route === "fast" ? (request as FastExportRequest) : undefined,
+          );
 
     if (!output) return;
     if (

@@ -511,6 +511,7 @@ export const en = {
       exportWasCancelled: "The export was cancelled",
       fileOrFolderIsNoLongerAvailable: "The file or folder is no longer available",
       outputNameIsRequired: "The output name is required",
+      outputContainerIsNotCompatibleWithSelectedStreams: "The selected container is not compatible with the selected video and audio streams",
       renderedOutputCouldNotBeVerified: "The rendered output could not be verified",
       renderedOutputIsEmpty: "The rendered output is empty",
       selectedOutputLocationIsNotSupported: "The selected output location is not supported",
@@ -674,6 +675,7 @@ export const en = {
     actions: {
       cancelExport: "Cancel export",
       editExport: "Edit export",
+      moreExportActions: "More export actions",
       openExportQueue: "Open export queue",
       restoreEdit: "Restore edit",
       revealOutput: "Reveal output",

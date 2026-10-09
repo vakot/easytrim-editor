@@ -350,6 +350,7 @@ pub fn build_fast_arguments(
             AppErrorMessageId::ExportFastExportCannotApplyRotationUseOptimizedExport,
         ));
     }
+    validate_output_container(source, request, output_path)?;
 
     let mut arguments = common_input_arguments(source_path, &request.trim);
     arguments.extend([
@@ -424,6 +425,119 @@ pub fn build_fast_arguments(
         output_path.as_os_str().to_owned(),
     ]);
     Ok(arguments)
+}
+
+pub fn fast_export_output_extensions(
+    source: &MediaInfo,
+    request: &FastExportRequest,
+) -> Result<Vec<&'static str>, AppError> {
+    validate_common_request(source, &request.trim, &request.audio_tracks)?;
+    validate_audio_metadata_selection(source, &request.audio_tracks, &request.audio_metadata)?;
+    validate_rotation(request.rotation_degrees)?;
+
+    if request.rotation_degrees != 0
+        || audio_tracks_need_reencode(&request.audio_tracks)
+        || (request.merge_audio && request.audio_tracks.len() > 1)
+    {
+        return Ok(if container_supports_streams(source, request, "mkv") {
+            vec!["mkv"]
+        } else {
+            Vec::new()
+        });
+    }
+
+    Ok(["mkv", "mp4", "mov", "webm"]
+        .into_iter()
+        .filter(|extension| container_supports_streams(source, request, extension))
+        .collect())
+}
+
+fn validate_output_container(
+    source: &MediaInfo,
+    request: &FastExportRequest,
+    output_path: &Path,
+) -> Result<(), AppError> {
+    let extension = output_path
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(str::to_ascii_lowercase)
+        .ok_or_else(incompatible_output_container)?;
+
+    let allowed_extensions = fast_export_output_extensions(source, request)?;
+    if allowed_extensions.contains(&extension.as_str()) {
+        Ok(())
+    } else {
+        Err(incompatible_output_container())
+    }
+}
+
+fn container_supports_streams(
+    source: &MediaInfo,
+    request: &FastExportRequest,
+    extension: &str,
+) -> bool {
+    let video_codec = source.video.codec_name.to_ascii_lowercase();
+    let generated_audio = audio_tracks_need_reencode(&request.audio_tracks)
+        || (request.merge_audio && request.audio_tracks.len() > 1);
+    let audio_codecs = if generated_audio {
+        if request.audio_tracks.is_empty() {
+            Vec::new()
+        } else {
+            vec!["aac".to_owned()]
+        }
+    } else {
+        request
+            .audio_tracks
+            .iter()
+            .filter_map(|selection| {
+                source
+                    .audio_streams
+                    .iter()
+                    .find(|stream| stream.stream_index == selection.stream_index)
+                    .map(|stream| stream.codec_name.to_ascii_lowercase())
+            })
+            .collect()
+    };
+
+    let video_supported = match extension {
+        "mp4" => matches!(video_codec.as_str(), "h264" | "hevc" | "av1" | "mpeg4"),
+        "mov" => matches!(
+            video_codec.as_str(),
+            "h264" | "hevc" | "prores" | "mjpeg" | "mpeg4"
+        ),
+        "mkv" => matches!(
+            video_codec.as_str(),
+            "h264" | "hevc" | "av1" | "vp8" | "vp9" | "mpeg4" | "mpeg2video" | "mpeg1video"
+        ),
+        "webm" => matches!(video_codec.as_str(), "vp8" | "vp9" | "av1"),
+        _ => false,
+    };
+    video_supported
+        && audio_codecs.iter().all(|codec| match extension {
+            "mp4" => matches!(codec.as_str(), "aac" | "mp3" | "ac3"),
+            "mov" => matches!(codec.as_str(), "aac" | "mp3" | "ac3" | "alac" | "pcm_s16le"),
+            "mkv" => matches!(
+                codec.as_str(),
+                "aac"
+                    | "mp3"
+                    | "ac3"
+                    | "eac3"
+                    | "opus"
+                    | "vorbis"
+                    | "flac"
+                    | "alac"
+                    | "pcm_s16le"
+                    | "pcm_s24le"
+            ),
+            "webm" => matches!(codec.as_str(), "opus" | "vorbis"),
+            _ => false,
+        })
+}
+
+fn incompatible_output_container() -> AppError {
+    AppError::invalid_request(
+        AppErrorMessageId::ExportOutputContainerIsNotCompatibleWithSelectedStreams,
+    )
 }
 
 pub fn build_optimized_arguments(
@@ -1367,9 +1481,9 @@ mod tests {
         GifExportRequest, LoudnessNormalization, LoudnessPreset, NoiseReductionPreset,
         OptimizedExportRequest, ResolutionSelection, TrimSelection,
         append_audio_metadata_arguments, audio_filter_graph, build_fast_arguments,
-        build_gif_arguments, build_optimized_arguments, gif_command_preview,
-        optimized_command_preview, pre_level_filter_chain, validate_audio_track_selections,
-        waveform_signal_filter_chain,
+        build_gif_arguments, build_optimized_arguments, fast_export_output_extensions,
+        gif_command_preview, optimized_command_preview, pre_level_filter_chain,
+        validate_audio_track_selections, waveform_signal_filter_chain,
     };
     use crate::error::AppErrorMessageId;
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
@@ -1507,6 +1621,89 @@ mod tests {
                 effects: Vec::new(),
             },
         }
+    }
+
+    fn fast_request(audio_tracks: Vec<AudioTrackSelection>) -> FastExportRequest {
+        FastExportRequest {
+            source_path: "source.mkv".to_owned(),
+            trim: TrimSelection {
+                start_micros: 0,
+                end_micros: 2_000_000,
+            },
+            audio_tracks,
+            audio_metadata: Vec::new(),
+            merge_audio: false,
+            strip_metadata: false,
+            rotation_degrees: 0,
+        }
+    }
+
+    #[test]
+    fn remux_choices_include_only_containers_compatible_with_all_selected_codecs() {
+        let mut source = media();
+        source.video.codec_name = "vp9".to_owned();
+        source.audio_streams[0].codec_name = "opus".to_owned();
+
+        let extensions =
+            fast_export_output_extensions(&source, &fast_request(vec![audio_track(1)]))
+                .expect("valid selection");
+
+        assert_eq!(extensions, ["mkv", "webm"]);
+    }
+
+    #[test]
+    fn remux_choices_fall_back_to_matroska_when_audio_must_be_encoded() {
+        let mut request = fast_request(vec![audio_track(1)]);
+        request.audio_tracks[0].processing.gain_db = 3.0;
+
+        assert_eq!(
+            fast_export_output_extensions(&media(), &request).expect("valid selection"),
+            ["mkv"]
+        );
+    }
+
+    #[test]
+    fn fast_export_accepts_only_picker_extensions_when_audio_must_be_encoded() {
+        let source = media();
+        let mut request = fast_request(vec![audio_track(1)]);
+        request.audio_tracks[0].processing.gain_db = 3.0;
+        let allowed_extensions =
+            fast_export_output_extensions(&source, &request).expect("valid selection");
+
+        for extension in ["mkv", "mp4", "mov", "webm"] {
+            let accepted = build_fast_arguments(
+                &source,
+                &request,
+                Path::new("source.mkv"),
+                Path::new(&format!("output.{extension}")),
+            )
+            .is_ok();
+
+            assert_eq!(
+                accepted,
+                allowed_extensions.contains(&extension),
+                "native validation and picker disagree for .{extension}"
+            );
+        }
+    }
+
+    #[test]
+    fn fast_export_rejects_an_incompatible_output_container() {
+        let mut source = media();
+        source.video.codec_name = "vp9".to_owned();
+        source.audio_streams[0].codec_name = "opus".to_owned();
+        let error = build_fast_arguments(
+            &source,
+            &fast_request(vec![audio_track(1)]),
+            Path::new("source.webm"),
+            Path::new("output.mp4"),
+        )
+        .expect_err("VP9 and Opus cannot be remuxed to MP4");
+
+        assert_eq!(
+            error.message_id,
+            AppErrorMessageId::ExportOutputContainerIsNotCompatibleWithSelectedStreams
+        );
     }
 
     #[test]

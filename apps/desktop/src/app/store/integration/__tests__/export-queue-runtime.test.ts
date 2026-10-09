@@ -828,7 +828,10 @@ describe("export queue runtime", () => {
       undefined,
     );
     expect(mocks.resolveOutputSelection).toHaveBeenCalledExactlyOnceWith(attempt.output.outputId);
-    expect(mocks.chooseOutputPath).toHaveBeenCalledExactlyOnceWith(attempt.output.displayName);
+    expect(mocks.chooseOutputPath).toHaveBeenCalledExactlyOnceWith(
+      attempt.output.displayName,
+      attempt.request,
+    );
     expect(
       store.getState().editingInstances.entities["instance-failed-retry"]?.exportAttempts[0]?.state
         .status,

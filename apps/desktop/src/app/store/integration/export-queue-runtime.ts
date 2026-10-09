@@ -41,6 +41,7 @@ import {
 } from "@/lib/tauri/media";
 import type {
   ExportProgress,
+  FastExportRequest,
   GifExportRequest,
   OptimizedExportRequest,
 } from "@/lib/tauri/media.types";
@@ -321,9 +322,12 @@ async function retryFailedExport(
 
     const output =
       (await resolveOutputSelection(attempt.output.outputId)) ??
-      (await (attempt.route === "gif" ? chooseGifOutputPath : chooseOutputPath)(
-        attempt.output.displayName,
-      ));
+      (await (attempt.route === "gif"
+        ? chooseGifOutputPath(attempt.output.displayName)
+        : chooseOutputPath(
+            attempt.output.displayName,
+            attempt.route === "fast" ? (attempt.request as FastExportRequest) : undefined,
+          )));
 
     if (!output) return false;
     dispatch(editingInstanceExportRetried({ id: instanceId, attemptId, output }));

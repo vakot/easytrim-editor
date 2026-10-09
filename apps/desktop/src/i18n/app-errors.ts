@@ -142,6 +142,8 @@ function localizeAppError(error: AppError, t: TFunction): string {
       return t("export.errors.outputFrameRateIsInvalid");
     case "export.outputNameIsRequired":
       return t("export.errors.outputNameIsRequired");
+    case "export.outputContainerIsNotCompatibleWithSelectedStreams":
+      return t("export.errors.outputContainerIsNotCompatibleWithSelectedStreams");
     case "export.outputResolutionMustBeGreaterThanZero":
       return t("export.errors.outputResolutionMustBeGreaterThanZero");
     case "export.renderedOutputCouldNotBeVerified":

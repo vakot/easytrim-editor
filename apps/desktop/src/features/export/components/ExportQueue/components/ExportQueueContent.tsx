@@ -1,4 +1,15 @@
+import { MoreVertical } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 
 import { cn } from "@/lib/class-names.utils";
@@ -50,6 +61,7 @@ function ExportQueueContent({ className }: { className?: string }) {
 }
 
 function ExportQueueListItem() {
+  const { t } = useTranslation();
   const { attempt } = useExportQueueItem();
 
   const status = attempt.state.status;
@@ -74,10 +86,32 @@ function ExportQueueListItem() {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex items-center gap-1">
             <ExportQueueItemStatus />
-            <ExportQueueItemCancel />
-            <ExportQueueItemRestore />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-label={t("queue.actions.moreExportActions")}
+                  size="icon"
+                  variant="ghost"
+                >
+                  <MoreVertical aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent>
+                <DropdownMenuGroup>
+                  <ExportQueueItemRestore asMenuItem />
+                </DropdownMenuGroup>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuGroup>
+                  <ExportQueueItemEdit asMenuItem />
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -87,12 +121,11 @@ function ExportQueueListItem() {
           <ExportQueueItemMetrics />
         </div>
 
-        {status === "completed" || status === "failed" ? (
-          <div className="flex gap-1">
-            <ExportQueueItemReveal />
-            <ExportQueueItemRetry />
-          </div>
-        ) : null}
+        <div className="flex items-center justify-between gap-1">
+          <ExportQueueItemReveal />
+          <ExportQueueItemRetry />
+          <ExportQueueItemCancel />
+        </div>
       </div>
     </ExportQueueItemContent>
   );

@@ -24,6 +24,7 @@ import {
   selectEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
+import { createExportAttempt } from "@/domain/editing-instance";
 import { firstSource, media, secondSource } from "@/test/source.fixtures";
 
 const CURRENT_KEY = "easytrim:workspace-recovery:current";
@@ -39,10 +40,16 @@ function instance(id: string, source: typeof firstSource) {
   };
 }
 
-function prepareCandidate(activeId = "second") {
+function prepareCandidate(
+  activeId = "second",
+  exportAttempts: ReturnType<typeof createExportAttempt>[] = [],
+) {
   const previousStore = createAppStore();
   previousStore.dispatch(
-    editingInstancesAdded([instance("first", firstSource), instance("second", secondSource)]),
+    editingInstancesAdded([
+      instance("first", firstSource),
+      { ...instance("second", secondSource), exportAttempts },
+    ]),
   );
   previousStore.dispatch(activeEditingInstanceChanged(activeId));
   localStorage.setItem(
@@ -91,6 +98,49 @@ describe("restorePreviousWorkspaceRequested", () => {
     expect(store.getState().source.media).toEqual(media(secondSource.sourcePath));
     expect(getWorkspaceRecoveryCandidate()?.sessionId).toBe("crashed-session");
     expect(localStorage.getItem(CANDIDATE_KEY)).not.toBeNull();
+  });
+
+  it("preserves failed export errors and diagnostics through workspace recovery", async () => {
+    const snapshot = createDefaultEditorSnapshot(secondSource, false);
+    const attempt = createExportAttempt({
+      capturedAt: 1,
+      id: "failed-export",
+      output: {
+        displayName: "output.mp4",
+        displayPath: "C:/Exports/output.mp4",
+        outputId: "output-1",
+      },
+      request: {
+        audioTracks: [],
+        mergeAudio: false,
+        rotationDegrees: 0,
+        sourcePath: secondSource.sourcePath,
+        trim: { endMicros: 1_000_000, startMicros: 0 },
+      },
+      route: "fast",
+      snapshot,
+    });
+
+    const failedAttempt = {
+      ...attempt,
+      state: {
+        error: {
+          code: "render_failed",
+          diagnostics: "Invalid data found when processing input",
+          messageId: "export.ffmpegCouldNotRenderTheSelectedSegment",
+        },
+        failedAt: 2,
+        status: "failed" as const,
+      },
+    };
+
+    const store = prepareCandidate("second", [failedAttempt]);
+
+    await store.dispatch(restorePreviousWorkspaceRequested());
+
+    expect(store.getState().editingInstances.entities.second?.exportAttempts[0]?.state).toEqual(
+      failedAttempt.state,
+    );
   });
 
   it("restores remaining sources and falls back when the saved active source is unavailable", async () => {

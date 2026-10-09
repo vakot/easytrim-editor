@@ -78,6 +78,8 @@ pub enum AppErrorMessageId {
     ExportOutputFrameRateIsInvalid,
     #[serde(rename = "export.outputNameIsRequired")]
     ExportOutputNameIsRequired,
+    #[serde(rename = "export.outputContainerIsNotCompatibleWithSelectedStreams")]
+    ExportOutputContainerIsNotCompatibleWithSelectedStreams,
     #[serde(rename = "export.outputResolutionMustBeGreaterThanZero")]
     ExportOutputResolutionMustBeGreaterThanZero,
     #[serde(rename = "export.renderedOutputIsEmpty")]
