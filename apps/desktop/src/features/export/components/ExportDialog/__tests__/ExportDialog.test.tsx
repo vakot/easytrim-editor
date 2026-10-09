@@ -73,6 +73,16 @@ describe("ExportDialog", () => {
     expect(screen.getByTestId("video-export-options")).toBeInTheDocument();
     expect(screen.queryByTestId("gif-export-options")).not.toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Frame rate" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Frame rate" })).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: "Frame rate" })).toHaveAttribute(
+      "placeholder",
+      "Match source",
+    );
+    fireEvent.click(screen.getByRole("combobox", { name: "Frame rate" }));
+    expect(screen.queryByRole("option", { name: "Match source" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "6 FPS" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "10 FPS" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "15 FPS" })).toBeInTheDocument();
     expect(planOptimizedExport).toHaveBeenCalledTimes(1);
   });
 
@@ -350,6 +360,14 @@ describe("ExportDialog", () => {
       screen.getByText("Enter a frame rate greater than 0 and no more than 120 FPS."),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "GIF Export" })).toBeDisabled();
+    fireEvent.change(frameRateInput, { target: { value: "" } });
+    await waitFor(() =>
+      expect(store.getState().editingInstances.entities["instance-1"]?.gifSettings?.frameRate).toBe(
+        undefined,
+      ),
+    );
+    expect(frameRateInput).toHaveValue("");
+    expect(screen.getByRole("button", { name: "GIF Export" })).toBeEnabled();
 
     await store.dispatch(openOptimizedExportDialog());
     await waitFor(() =>

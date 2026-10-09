@@ -24,8 +24,8 @@ function FrameRate({
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const sourceLabel = t("export.optimized.dialog.matchSource");
-  const [value, setValue] = useState(() => frameRateToInput(settings.frameRate, sourceLabel));
-  const isValid = value === sourceLabel || frameRateFromInput(value) !== undefined;
+  const [value, setValue] = useState(() => frameRateToInput(settings.frameRate));
+  const isValid = value === "" || frameRateFromInput(value) !== undefined;
   const errorId = "export-frame-rate-error";
 
   useEffect(() => {
@@ -34,8 +34,8 @@ function FrameRate({
 
   const onValueChange = (nextValue: string) => {
     setValue(nextValue);
-    const frameRate = nextValue === sourceLabel ? undefined : frameRateFromInput(nextValue);
-    if (nextValue === sourceLabel || frameRate) {
+    const frameRate = nextValue === "" ? undefined : frameRateFromInput(nextValue);
+    if (nextValue === "" || frameRate) {
       void dispatch(exportSettingsChangedRequested({ ...settings, frameRate }));
     }
   };
@@ -48,10 +48,8 @@ function FrameRate({
         id="export-frame-rate"
         label={t("export.frameRate.label")}
         onValueChange={onValueChange}
-        suggestions={[
-          sourceLabel,
-          ...FRAME_RATE_OPTIONS.map((rate) => t("export.frameRate.value", { value: rate })),
-        ]}
+        placeholder={sourceLabel}
+        suggestions={FRAME_RATE_OPTIONS.map((rate) => t("export.frameRate.value", { value: rate }))}
         value={value}
       />
       {!isValid ? (

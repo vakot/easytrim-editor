@@ -12,6 +12,7 @@ function ControlledAutocomplete({ initialValue = "" }: { initialValue?: string }
       id="test-autocomplete"
       label="Frame rate"
       onValueChange={setValue}
+      placeholder="Match source"
       suggestions={["Match source", "15 FPS", "24 FPS", "30 FPS"]}
       value={value}
     />
@@ -23,11 +24,15 @@ describe("Autocomplete", () => {
     render(<ControlledAutocomplete />);
     const input = screen.getByRole("combobox", { name: "Frame rate" });
 
+    expect(input).toHaveValue("");
+    expect(input).toHaveAttribute("placeholder", "Match source");
+    expect(input.parentElement?.querySelector('[data-slot="input-group-addon"]')).toBeNull();
+
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: "30" } });
 
     expect(screen.getByRole("listbox")).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "30 FPS" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "30 FPS" })).toHaveClass("px-2.5");
     expect(screen.queryByRole("option", { name: "24 FPS" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("option", { name: "30 FPS" }));

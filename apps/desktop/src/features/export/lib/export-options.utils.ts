@@ -67,8 +67,8 @@ function frameRateFromRatio(numerator: bigint, denominator: bigint): FrameRate |
   return { denominator: Number(reducedDenominator), numerator: Number(reducedNumerator) };
 }
 
-function frameRateToInput(frameRate: FrameRate | undefined, sourceLabel: string): string {
-  if (!frameRate) return sourceLabel;
+function frameRateToInput(frameRate: FrameRate | undefined): string {
+  if (!frameRate) return "";
   const value = frameRate.numerator / frameRate.denominator;
   if (Number(value.toFixed(6)) === 0) {
     return `${frameRate.numerator}/${frameRate.denominator} FPS`;

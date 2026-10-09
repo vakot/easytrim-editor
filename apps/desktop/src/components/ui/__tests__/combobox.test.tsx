@@ -41,6 +41,9 @@ describe("Combobox", () => {
     render(<ExistingComboboxConsumer />);
     const input = screen.getByRole("combobox");
 
+    expect(
+      input.parentElement?.querySelector('[data-slot="input-group-addon"]'),
+    ).toBeInTheDocument();
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: "bet" } });
     expect(screen.getByRole("option", { name: "Beta" })).toBeInTheDocument();

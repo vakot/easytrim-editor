@@ -60,8 +60,10 @@ describe("export frame-rate options", () => {
   );
 
   it("keeps very low valid stored rates editable", () => {
-    expect(frameRateToInput({ denominator: 4_294_967_295, numerator: 1 }, "Match source")).toBe(
-      "1/4294967295 FPS",
-    );
+    expect(frameRateToInput({ denominator: 4_294_967_295, numerator: 1 })).toBe("1/4294967295 FPS");
+  });
+
+  it("leaves the field empty when matching the source", () => {
+    expect(frameRateToInput(undefined)).toBe("");
   });
 });

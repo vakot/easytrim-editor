@@ -17,6 +17,7 @@ type AutocompleteProps = {
   id: string;
   label: string;
   onValueChange: (value: string) => void;
+  placeholder?: string;
   suggestions: string[];
   value: string;
 };
@@ -27,6 +28,7 @@ function Autocomplete({
   id,
   label,
   onValueChange,
+  placeholder,
   suggestions,
   value,
 }: AutocompleteProps) {
@@ -76,6 +78,8 @@ function Autocomplete({
           setActiveIndex(-1);
           onValueChange(nextValue);
         }}
+        placeholder={placeholder}
+        showSearchIcon={false}
         value={value}
       />
       <ComboboxContent>
@@ -84,6 +88,7 @@ function Autocomplete({
             {filteredSuggestions.map((suggestion, index) => (
               <ComboboxItem
                 aria-selected={activeIndex === index}
+                className="px-2.5"
                 id={`${id}-option-${index}`}
                 key={suggestion}
                 onSelect={selectSuggestion}
