@@ -14,12 +14,7 @@
   border: 0.0625rem solid var(--border);
   border-radius: 0.5rem;
   background:
-    linear-gradient(
-      90deg,
-      var(--muted) 0 calc(6.25% + 0.0625rem),
-      transparent calc(6.25% + 0.0625rem) calc(93.75% - 0.0625rem),
-      var(--muted) calc(93.75% - 0.0625rem) 100%
-    ),
+    linear-gradient(var(--muted), var(--muted)) left / 0.0625rem 100% no-repeat,
     repeating-linear-gradient(
       90deg,
       color-mix(in srgb, var(--foreground) 6%, transparent) 0 0.0625rem,
