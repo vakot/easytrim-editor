@@ -38,7 +38,7 @@
 
 .selection {
   position: absolute;
-  inset-block: 0;
+  inset-block: -0.0625rem;
   border-block: 0.125rem solid var(--primary);
   background: color-mix(in oklch, var(--primary) 12%, transparent);
   pointer-events: none;
