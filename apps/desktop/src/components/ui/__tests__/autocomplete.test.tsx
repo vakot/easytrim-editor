@@ -11,6 +11,7 @@ import {
   AutocompleteInputGroup,
   AutocompleteItem,
   AutocompleteList,
+  AutocompleteTrigger,
 } from "@/components/ui/autocomplete";
 
 const suggestions = ["Match source", "15 FPS", "24 FPS", "30 FPS"];
@@ -31,6 +32,9 @@ function ControlledAutocomplete({ initialValue = "" }: { initialValue?: string }
           />
         </AutocompleteInputGroup>
       </AutocompleteAnchor>
+      <AutocompleteTrigger asChild>
+        <button type="button">Toggle suggestions</button>
+      </AutocompleteTrigger>
       <AutocompleteContent>
         <AutocompleteEmpty>No matching frame rates</AutocompleteEmpty>
         <AutocompleteList>
@@ -89,5 +93,22 @@ describe("Autocomplete", () => {
 
     expect(input).toHaveValue("30");
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("opens suggestions from an adjacent trigger affordance", () => {
+    render(<ControlledAutocomplete />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle suggestions" }));
+
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+  });
+
+  it("keeps a restored formatted value searchable", () => {
+    render(<ControlledAutocomplete initialValue="24 FPS" />);
+    const input = screen.getByRole("combobox", { name: "Frame rate" });
+
+    fireEvent.focus(input);
+
+    expect(screen.getByRole("option", { name: "24 FPS" })).toBeInTheDocument();
   });
 });

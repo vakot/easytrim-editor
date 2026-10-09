@@ -194,6 +194,57 @@ describe("audio-only export", () => {
 });
 
 describe("export snapshot restoration", () => {
+  it("restores GIF encoding options from a completed export attempt", async () => {
+    const { snapshot, store } = setup();
+    const attempt = createExportAttempt({
+      capturedAt: 1,
+      id: "completed-gif",
+      output: { displayName: "render.gif", displayPath: "C:/render.gif", outputId: "gif-out" },
+      request: {
+        audioTracks: [],
+        dithering: "bayer",
+        flipHorizontal: false,
+        flipVertical: false,
+        frameRate: { numerator: 15, denominator: 1 },
+        gifPreset: "custom",
+        mergeAudio: false,
+        paletteColors: 32,
+        paletteStatsMode: "full",
+        resolution: { height: 360, width: 640 },
+        rotationDegrees: 0,
+        sourcePath: firstSource.sourcePath,
+        trim: { endMicros: 1_500_000, startMicros: 250_000 },
+      },
+      route: "gif",
+      snapshot,
+    });
+
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
+    store.dispatch(
+      editingInstanceExportCompleted({
+        id: "original",
+        attemptId: attempt.id,
+        durationMs: 1,
+        result: { displayName: "render.gif", displayPath: "C:/render.gif", operationId: "op" },
+      }),
+    );
+
+    expect(
+      await store.dispatch(
+        restoreExportAttemptRequested({ instanceId: "original", attemptId: attempt.id }),
+      ),
+    ).toBe(true);
+
+    expect(store.getState().editingInstances.entities.original?.gifSettings).toMatchObject({
+      dithering: "bayer",
+      frameRate: { numerator: 15, denominator: 1 },
+      gifPreset: "custom",
+      paletteColors: 32,
+      paletteStatsMode: "full",
+      resolution: { height: 360, width: 640 },
+    });
+  });
+
   it("preserves per-track metadata in queued export requests and snapshots", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
     store.dispatch(audioTrackDefaultChanged({ streamIndex: 4 }));

@@ -12,6 +12,7 @@ import {
   ComboboxInputGroup,
   ComboboxItem,
   ComboboxList,
+  ComboboxTrigger,
 } from "@/components/ui/combobox";
 
 function Autocomplete({ ...props }: React.ComponentProps<typeof Combobox>) {
@@ -30,6 +31,10 @@ function AutocompleteAnchor({ ...props }: React.ComponentProps<typeof ComboboxAn
 
 function AutocompleteInputGroup({ ...props }: React.ComponentProps<typeof ComboboxInputGroup>) {
   return <ComboboxInputGroup {...props} />;
+}
+
+function AutocompleteTrigger({ ...props }: React.ComponentProps<typeof ComboboxTrigger>) {
+  return <ComboboxTrigger {...props} />;
 }
 
 function AutocompleteInput({
@@ -116,4 +121,5 @@ export {
   AutocompleteInputGroup,
   AutocompleteItem,
   AutocompleteList,
+  AutocompleteTrigger,
 };

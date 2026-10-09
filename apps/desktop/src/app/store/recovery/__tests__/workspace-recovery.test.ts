@@ -413,4 +413,34 @@ describe("workspace recovery contract", () => {
     expect(getWorkspaceRecoveryCandidate()).toBeNull();
     expect(localStorage.getItem(CANDIDATE_KEY)).toBeNull();
   });
+
+  it("rejects GIF recovery settings with the wrong JSON primitive type", () => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded([instance("malformed-gif-settings")]));
+    const backup = createWorkspaceRecoveryBackup(store.getState(), {
+      sessionId: "crashed-session",
+    });
+
+    const malformedValues = [
+      { gifPreset: ["balanced"] },
+      { paletteColors: "32" },
+      { paletteStatsMode: ["full"] },
+      { dithering: ["bayer"] },
+    ];
+
+    for (const malformed of malformedValues) {
+      localStorage.clear();
+      const malformedBackup = structuredClone(backup) as unknown as {
+        instances: Array<{ gifSettings: Record<string, unknown> }>;
+      };
+
+      Object.assign(malformedBackup.instances[0]!.gifSettings, malformed);
+      localStorage.setItem(CURRENT_KEY, JSON.stringify(malformedBackup));
+
+      initializeWorkspaceRecovery(createAppStore(), "new-session", true);
+
+      expect(getWorkspaceRecoveryCandidate()).toBeNull();
+      expect(localStorage.getItem(CANDIDATE_KEY)).toBeNull();
+    }
+  });
 });

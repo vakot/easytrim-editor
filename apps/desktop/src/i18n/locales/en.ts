@@ -690,10 +690,13 @@ export const en = {
       sourceOption: "{{height}}p · {{width}} × {{height}} (source)",
     },
     frameRate: {
+      customValueWillBeApplied: "Custom frame rate will be applied",
       fpsLabel: "FPS",
       framesLabel: "Frames",
       label: "Frame rate",
       invalidValue: "Enter a frame rate greater than 0 and no more than 120 FPS.",
+      noMatchingSuggestions: "No suggested frame rates match this value",
+      suggestionsLabel: "Show frame rate suggestions",
       value: "{{value}} FPS",
     },
     aspectRatio: {

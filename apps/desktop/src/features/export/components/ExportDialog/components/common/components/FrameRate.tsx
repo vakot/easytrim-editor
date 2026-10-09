@@ -11,9 +11,10 @@ import {
   AutocompleteInputGroup,
   AutocompleteItem,
   AutocompleteList,
+  AutocompleteTrigger,
 } from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
-import { InputGroupAddon } from "@/components/ui/input-group";
+import { InputGroupButton } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
@@ -68,9 +69,11 @@ function FrameRate({
                 value={value}
               />
 
-              <InputGroupAddon align="inline-end">
-                <ChevronsUpDown />
-              </InputGroupAddon>
+              <AutocompleteTrigger asChild>
+                <InputGroupButton aria-label={t("export.frameRate.suggestionsLabel")} type="button">
+                  <ChevronsUpDown aria-hidden="true" />
+                </InputGroupButton>
+              </AutocompleteTrigger>
             </AutocompleteInputGroup>
 
             <Button
@@ -86,10 +89,18 @@ function FrameRate({
         </AutocompleteAnchor>
 
         <AutocompleteContent>
-          <AutocompleteEmpty>Custom framerate will be applied</AutocompleteEmpty>
+          <AutocompleteEmpty>
+            {isValid && value !== ""
+              ? t("export.frameRate.customValueWillBeApplied")
+              : t("export.frameRate.noMatchingSuggestions")}
+          </AutocompleteEmpty>
           <AutocompleteList>
             {FRAME_RATE_OPTIONS.map((rate) => (
-              <AutocompleteItem key={rate} onSelect={onValueChange} value={String(rate)}>
+              <AutocompleteItem
+                key={rate}
+                onSelect={() => onValueChange(String(rate))}
+                value={t("export.frameRate.value", { value: rate })}
+              >
                 {t("export.frameRate.value", { value: rate })}
               </AutocompleteItem>
             ))}
