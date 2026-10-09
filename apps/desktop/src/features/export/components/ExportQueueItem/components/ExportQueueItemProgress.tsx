@@ -7,14 +7,13 @@ import { useExportQueueItem } from "../contexts/ExportQueueItemContext";
 function ExportQueueItemProgressBar() {
   const { t } = useTranslation();
   const { attempt } = useExportQueueItem();
-  const preparingPalette = attempt.metrics.phase === "preparing";
+  const indeterminate = attempt.route === "gif" && attempt.state.status === "rendering";
 
   return (
     <Progress
       aria-label={t("queue.progress.accessibleLabel")}
-      aria-valuetext={preparingPalette ? t("queue.progress.preparingGifPalette") : undefined}
       className="h-1.5 flex-1"
-      indeterminate={preparingPalette}
+      indeterminate={indeterminate}
       value={attempt.metrics.progressPercent}
     />
   );

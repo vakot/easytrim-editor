@@ -37,7 +37,7 @@ import {
   saveFramePng,
 } from "../media";
 import type { FastExportRequest, MediaInfo } from "../media.types";
-import { parseMediaCapabilities, parseSourceRef } from "../media.utils";
+import { parseExportProgress, parseMediaCapabilities, parseSourceRef } from "../media.utils";
 
 type NativeDropEvent =
   | { payload: { paths: string[]; type: "enter" } }
@@ -58,6 +58,25 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
+  it("accepts GIF preparation progress events", () => {
+    expect(
+      parseExportProgress({
+        operationId: "gif-export-1",
+        elapsedMicros: 250_000,
+        phase: "preparing",
+      }),
+    ).toEqual({
+      operationId: "gif-export-1",
+      elapsedMicros: 250_000,
+      phase: "preparing",
+      frame: undefined,
+      fps: undefined,
+      speed: undefined,
+      bitrate: undefined,
+      totalSize: undefined,
+    });
+  });
+
   it("parses semantic capability failures and preserves diagnostics separately", () => {
     expect(
       parseMediaCapabilities({

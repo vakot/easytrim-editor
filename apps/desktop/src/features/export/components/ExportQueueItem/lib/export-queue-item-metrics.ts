@@ -9,6 +9,8 @@ function getProgress(
   attempt: ExportAttempt,
   { status = attempt.state.status }: { status?: ExportAttemptState["status"] } = {},
 ): ExportQueueItemMetricConfig | null {
+  if (status === "rendering" && attempt.route === "gif") return null;
+
   const progressPercent = attempt.metrics.progressPercent;
   if (status === "queued" || (status !== "completed" && progressPercent <= 0)) return null;
 
@@ -66,8 +68,13 @@ function getRemaining(
 
 function getFileSize(
   attempt: ExportAttempt,
-  { formatValue = formatExportFileSize }: { formatValue?: (bytes: number) => string } = {},
+  {
+    formatValue = formatExportFileSize,
+    status = attempt.state.status,
+  }: { formatValue?: (bytes: number) => string; status?: ExportAttemptState["status"] } = {},
 ): ExportQueueItemMetricConfig | null {
+  if (status === "rendering" && attempt.metrics.phase === "preparing") return null;
+
   const fileSizeBytes = attempt.metrics.fileSizeBytes;
   if (fileSizeBytes === undefined) return null;
 
@@ -79,8 +86,13 @@ function getFileSize(
 
 function getFps(
   attempt: ExportAttempt,
-  { formatValue }: { formatValue: (value: string) => string },
+  {
+    formatValue,
+    status = attempt.state.status,
+  }: { formatValue: (value: string) => string; status?: ExportAttemptState["status"] },
 ): ExportQueueItemMetricConfig | null {
+  if (status === "rendering" && attempt.metrics.phase === "preparing") return null;
+
   const fps = attempt.metrics.fps;
   if (fps === undefined) return null;
 

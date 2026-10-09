@@ -498,7 +498,7 @@ async fn run_export(
                             .get("out_time_us")
                             .and_then(|value| value.parse::<i64>().ok())
                             .unwrap_or_default();
-                        phase = next_export_phase(phase, key, value, elapsed_micros);
+                        phase = next_export_phase(phase, key, value);
                         let _ = on_progress.send(ExportProgress {
                             operation_id: operation_for_task.clone(),
                             elapsed_micros,
@@ -669,16 +669,9 @@ async fn run_export(
     })
 }
 
-fn next_export_phase(
-    phase: ExportPhase,
-    key: &str,
-    value: &str,
-    elapsed_micros: i64,
-) -> ExportPhase {
+fn next_export_phase(phase: ExportPhase, key: &str, value: &str) -> ExportPhase {
     if key == "progress" && value == "end" {
         ExportPhase::Completed
-    } else if phase == ExportPhase::Preparing && key == "out_time_us" && elapsed_micros > 0 {
-        ExportPhase::Running
     } else {
         phase
     }
@@ -876,21 +869,17 @@ mod tests {
     use super::{ExportPhase, ffmpeg_arguments_data, next_export_phase, run_progress_cancellable};
 
     #[test]
-    fn gif_progress_stays_indeterminate_until_ffmpeg_emits_output_time() {
+    fn gif_progress_stays_indeterminate_until_ffmpeg_finishes() {
         assert_eq!(
-            next_export_phase(ExportPhase::Preparing, "progress", "continue", 0),
+            next_export_phase(ExportPhase::Preparing, "progress", "continue"),
             ExportPhase::Preparing
         );
         assert_eq!(
-            next_export_phase(ExportPhase::Preparing, "out_time_us", "1000000", 0),
+            next_export_phase(ExportPhase::Preparing, "out_time_us", "8000000"),
             ExportPhase::Preparing
         );
         assert_eq!(
-            next_export_phase(ExportPhase::Preparing, "out_time_us", "1000000", 1_000_000),
-            ExportPhase::Running
-        );
-        assert_eq!(
-            next_export_phase(ExportPhase::Running, "progress", "end", 1_000_000),
+            next_export_phase(ExportPhase::Preparing, "progress", "end"),
             ExportPhase::Completed
         );
     }
@@ -961,9 +950,9 @@ mod tests {
                     if key == "out_time_us" {
                         let elapsed_micros = value.parse::<i64>().unwrap_or_default();
                         emitted_output_time |= elapsed_micros > 0;
-                        phase = next_export_phase(phase, key, value, elapsed_micros);
+                        phase = next_export_phase(phase, key, value);
                     } else if key == "progress" {
-                        phase = next_export_phase(phase, key, value, 0);
+                        phase = next_export_phase(phase, key, value);
                     }
                 }
             },

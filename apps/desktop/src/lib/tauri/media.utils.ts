@@ -175,7 +175,7 @@ function parseOutputSelection(value: unknown): OutputSelection {
 function parseExportProgress(value: unknown): ExportProgress {
   const progress = requireRecord(value, "export progress");
   const phase = progress.phase;
-  if (phase !== "running" && phase !== "completed") {
+  if (phase !== "preparing" && phase !== "running" && phase !== "completed") {
     throw invalidResponse("export progress phase");
   }
 

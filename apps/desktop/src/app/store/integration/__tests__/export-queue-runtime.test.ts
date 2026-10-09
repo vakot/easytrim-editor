@@ -164,7 +164,7 @@ beforeEach(() => {
 });
 
 describe("export queue runtime", () => {
-  it("runs GIF attempts through the GIF command and records palette and render progress", async () => {
+  it("keeps GIF attempts indeterminate until FFmpeg completes palette output", async () => {
     const store = createAppStore();
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
     const attempt = createGifAttempt("gif-progress");
@@ -212,14 +212,31 @@ describe("export queue runtime", () => {
     onProgress?.({
       elapsedMicros: 1_000_000,
       operationId: "gif-operation",
-      phase: "running",
-      speed: "2x",
+      phase: "preparing",
       totalSize: 1_024,
     });
-    const rendering = store.getState().editingInstances.entities["gif-progress"]?.exportAttempts[0];
-    expect(rendering?.metrics).toMatchObject({ phase: "running", progressPercent: 100 });
-    expect(rendering?.metrics.estimatedTotalTimeMs).toBeDefined();
-    expect(rendering?.metrics.estimatedFileSizeBytes).toBeDefined();
+
+    const stillPreparing =
+      store.getState().editingInstances.entities["gif-progress"]?.exportAttempts[0];
+
+    expect(stillPreparing?.metrics).toMatchObject({ phase: "preparing", progressPercent: 0 });
+    expect(stillPreparing?.metrics.estimatedTotalTimeMs).toBeUndefined();
+    expect(stillPreparing?.metrics.estimatedFileSizeBytes).toBeUndefined();
+
+    onProgress?.({
+      elapsedMicros: 1_000_000,
+      operationId: "gif-operation",
+      phase: "completed",
+      totalSize: 1_024,
+    });
+
+    const completedOutput =
+      store.getState().editingInstances.entities["gif-progress"]?.exportAttempts[0];
+
+    expect(completedOutput?.metrics).toMatchObject({ phase: "completed", progressPercent: 100 });
+    expect(completedOutput?.metrics.fileSizeBytes).toBe(1_024);
+    expect(completedOutput?.metrics.estimatedTotalTimeMs).toBeUndefined();
+    expect(completedOutput?.metrics.estimatedFileSizeBytes).toBeUndefined();
 
     resolveRender({
       displayName: "gif-progress.gif",
