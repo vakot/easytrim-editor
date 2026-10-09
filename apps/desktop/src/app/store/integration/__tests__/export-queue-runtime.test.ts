@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   cancelOperation: vi.fn().mockResolvedValue(undefined),
+  chooseGifOutputPath: vi.fn(),
   chooseOutputPath: vi.fn(),
   moveSourceToTrash: vi.fn().mockResolvedValue(undefined),
   performQueueFinishAction: vi.fn().mockResolvedValue(undefined),
   reserveExportSource: vi.fn().mockResolvedValue(undefined),
   releaseExportSource: vi.fn().mockResolvedValue(undefined),
   exportFast: vi.fn(),
+  renderGif: vi.fn(),
   renderOptimized: vi.fn(),
   resolveOutputSelection: vi.fn(),
   startOperation: vi.fn(),
@@ -15,11 +17,13 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/tauri/media", () => ({
   cancelOperation: mocks.cancelOperation,
+  chooseGifOutputPath: mocks.chooseGifOutputPath,
   chooseOutputPath: mocks.chooseOutputPath,
   moveSourceToTrash: mocks.moveSourceToTrash,
   reserveExportSource: mocks.reserveExportSource,
   releaseExportSource: mocks.releaseExportSource,
   exportFast: mocks.exportFast,
+  renderGif: mocks.renderGif,
   renderOptimized: mocks.renderOptimized,
   resolveOutputSelection: mocks.resolveOutputSelection,
 }));
@@ -84,6 +88,28 @@ function createAttempt(id: string, sourcePath: string = firstSource.sourcePath) 
   });
 }
 
+function createGifAttempt(id: string, sourcePath: string = firstSource.sourcePath) {
+  const snapshot = createDefaultEditorSnapshot({ displayName: `${id}.gif`, sourcePath }, false);
+  return createExportAttempt({
+    capturedAt: 1,
+    id,
+    output: { displayName: `${id}.gif`, displayPath: `C:/Exports/${id}.gif`, outputId: id },
+    request: {
+      audioTracks: [],
+      flipHorizontal: false,
+      flipVertical: false,
+      frameRate: { denominator: 1, numerator: 24 },
+      mergeAudio: false,
+      resolution: { height: 480, width: 640 },
+      rotationDegrees: 0,
+      sourcePath,
+      trim: { endMicros: 1_000_000, startMicros: 0 },
+    },
+    route: "gif",
+    snapshot,
+  });
+}
+
 function createInstance(id: string, sourcePath: string = firstSource.sourcePath): EditingInstance {
   return {
     exportAttempts: [],
@@ -117,6 +143,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.releaseExportSource.mockResolvedValue(undefined);
   mocks.reserveExportSource.mockResolvedValue(undefined);
+  mocks.chooseGifOutputPath.mockImplementation(async (defaultName: string) => ({
+    displayName: defaultName,
+    displayPath: `C:/Exports/${defaultName}`,
+    outputId: "retry-gif-output",
+  }));
   mocks.chooseOutputPath.mockImplementation(async (defaultName: string) => ({
     displayName: defaultName,
     displayPath: `C:/Exports/${defaultName}`,
@@ -125,9 +156,223 @@ beforeEach(() => {
   mocks.resolveOutputSelection.mockResolvedValue(null);
   mocks.moveSourceToTrash.mockResolvedValue(undefined);
   mocks.startOperation.mockClear();
+  mocks.renderGif.mockReset().mockResolvedValue({
+    displayName: "out.gif",
+    displayPath: "C:/Exports/out.gif",
+    operationId: "gif-operation",
+  });
 });
 
 describe("export queue runtime", () => {
+  it("runs GIF attempts through the GIF command and records palette and render progress", async () => {
+    const store = createAppStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    const attempt = createGifAttempt("gif-progress");
+    let onProgress: ((value: ExportProgress) => void) | undefined;
+    let resolveRender: (result: {
+      displayName: string;
+      displayPath: string;
+      operationId: string;
+    }) => void = () => undefined;
+
+    mocks.renderGif.mockImplementationOnce(
+      async (
+        _request: unknown,
+        _outputId: string,
+        progressCallback: (value: ExportProgress) => void,
+      ) => {
+        onProgress = progressCallback;
+        return new Promise((resolve) => {
+          resolveRender = resolve;
+        });
+      },
+    );
+    store.dispatch(editingInstancesAdded([createInstance("gif-progress")]));
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "gif-progress", attempt }));
+    enqueueExport("gif-progress", attempt, store.dispatch, store.getState);
+    setExportQueueExecutionEnabled(true, store.dispatch, store.getState);
+
+    await vi.waitFor(() => expect(mocks.renderGif).toHaveBeenCalledTimes(1));
+    expect(mocks.renderGif).toHaveBeenCalledWith(
+      attempt.request,
+      attempt.output.outputId,
+      expect.any(Function),
+      expect.any(String),
+      "gif-progress",
+    );
+    expect(mocks.exportFast).not.toHaveBeenCalled();
+    expect(mocks.renderOptimized).not.toHaveBeenCalled();
+
+    onProgress?.({ elapsedMicros: 0, operationId: "gif-operation", phase: "preparing" });
+    const preparing = store.getState().editingInstances.entities["gif-progress"]?.exportAttempts[0];
+    expect(preparing?.metrics).toMatchObject({ phase: "preparing", progressPercent: 0 });
+    expect(preparing?.metrics.estimatedTotalTimeMs).toBeUndefined();
+    expect(preparing?.metrics.estimatedFileSizeBytes).toBeUndefined();
+
+    onProgress?.({
+      elapsedMicros: 1_000_000,
+      operationId: "gif-operation",
+      phase: "running",
+      speed: "2x",
+      totalSize: 1_024,
+    });
+    const rendering = store.getState().editingInstances.entities["gif-progress"]?.exportAttempts[0];
+    expect(rendering?.metrics).toMatchObject({ phase: "running", progressPercent: 100 });
+    expect(rendering?.metrics.estimatedTotalTimeMs).toBeDefined();
+    expect(rendering?.metrics.estimatedFileSizeBytes).toBeDefined();
+
+    resolveRender({
+      displayName: "gif-progress.gif",
+      displayPath: "C:/Exports/gif-progress.gif",
+      operationId: "gif-operation",
+    });
+    await vi.waitFor(() =>
+      expect(
+        store.getState().editingInstances.entities["gif-progress"]?.exportAttempts[0]?.state.status,
+      ).toBe("completed"),
+    );
+  });
+
+  it("keeps GIF attempts reserved until a queued edit is committed or released", async () => {
+    const store = createAppStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    const getState = store.getState;
+    const attempt = createGifAttempt("gif-edit-reserved");
+    store.dispatch(editingInstancesAdded([createInstance("gif-edit-reserved")]));
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "gif-edit-reserved", attempt }));
+
+    expect(reserveQueuedExportEdit("gif-edit-reserved", attempt.id, store.dispatch, getState)).toBe(
+      true,
+    );
+    enqueueExport("gif-edit-reserved", attempt, store.dispatch, getState);
+    setExportQueueExecutionEnabled(true, store.dispatch, getState);
+    await Promise.resolve();
+    expect(mocks.renderGif).not.toHaveBeenCalled();
+    expect(
+      store.getState().editingInstances.entities["gif-edit-reserved"]?.exportAttempts[0]?.state
+        .status,
+    ).toBe("queued");
+
+    const request = { ...attempt.request, resolution: { height: 240, width: 320 } };
+    const output = {
+      displayName: "edited.gif",
+      displayPath: "C:/Exports/edited.gif",
+      outputId: "edited-gif-output",
+    };
+
+    expect(
+      commitQueuedExportEdit(
+        "gif-edit-reserved",
+        attempt.id,
+        output,
+        request,
+        attempt.snapshot,
+        store.dispatch,
+        getState,
+      ),
+    ).toBe(true);
+    releaseQueuedExportEdit(attempt.id, store.dispatch, getState);
+
+    await vi.waitFor(() => expect(mocks.renderGif).toHaveBeenCalledTimes(1));
+    expect(mocks.renderGif).toHaveBeenCalledWith(
+      request,
+      output.outputId,
+      expect.any(Function),
+      expect.any(String),
+      "gif-edit-reserved",
+    );
+  });
+
+  it("cancels GIF palette preparation and requeues the same attempt", async () => {
+    const store = createAppStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    const attempt = createGifAttempt("gif-cancel-preparing");
+    let onProgress: ((value: ExportProgress) => void) | undefined;
+    let resolveRender: (result: {
+      displayName: string;
+      displayPath: string;
+      operationId: string;
+    }) => void = () => undefined;
+
+    mocks.renderGif.mockImplementationOnce(
+      async (
+        _request: unknown,
+        _outputId: string,
+        progressCallback: (value: ExportProgress) => void,
+      ) => {
+        onProgress = progressCallback;
+        return new Promise((resolve) => {
+          resolveRender = resolve;
+        });
+      },
+    );
+    store.dispatch(editingInstancesAdded([createInstance("gif-cancel-preparing")]));
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "gif-cancel-preparing", attempt }));
+    enqueueExport("gif-cancel-preparing", attempt, store.dispatch, store.getState);
+    setExportQueueExecutionEnabled(true, store.dispatch, store.getState);
+
+    await vi.waitFor(() => expect(onProgress).toBeDefined());
+    onProgress?.({ elapsedMicros: 0, operationId: "gif-cancel-operation", phase: "preparing" });
+    setExportQueueExecutionEnabled(false, store.dispatch, store.getState);
+    const cancel = cancelAndRequeueExport("gif-cancel-preparing", attempt.id, store.getState);
+    expect(mocks.cancelOperation).toHaveBeenCalledWith("gif-cancel-operation");
+    resolveRender({
+      displayName: attempt.output.displayName,
+      displayPath: attempt.output.displayPath,
+      operationId: "gif-cancel-operation",
+    });
+    await cancel;
+
+    const requeued =
+      store.getState().editingInstances.entities["gif-cancel-preparing"]?.exportAttempts[0];
+
+    expect(requeued?.state.status).toBe("queued");
+    expect(requeued?.route).toBe("gif");
+    expect(mocks.releaseExportSource).not.toHaveBeenCalled();
+  });
+
+  it("retries a failed GIF attempt through the GIF route with a GIF output selection", async () => {
+    const store = createAppStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    const getState = store.getState;
+    const attempt = createGifAttempt("gif-retry");
+    store.dispatch(editingInstancesAdded([createInstance("gif-retry")]));
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "gif-retry", attempt }));
+    mocks.renderGif
+      .mockRejectedValueOnce(new Error("first GIF render failed"))
+      .mockResolvedValueOnce({
+        displayName: "gif-retry.gif",
+        displayPath: "C:/Exports/gif-retry.gif",
+        operationId: "gif-retry-operation",
+      });
+
+    enqueueExport("gif-retry", attempt, store.dispatch, getState);
+    setExportQueueExecutionEnabled(true, store.dispatch, getState);
+    await vi.waitFor(() =>
+      expect(
+        store.getState().editingInstances.entities["gif-retry"]?.exportAttempts[0]?.state.status,
+      ).toBe("failed"),
+    );
+
+    setExportQueueExecutionEnabled(false, store.dispatch, getState);
+    await expect(
+      retryFailedExport("gif-retry", attempt.id, store.dispatch, getState),
+    ).resolves.toBe(true);
+    expect(mocks.chooseGifOutputPath).toHaveBeenCalledWith(attempt.output.displayName);
+    expect(mocks.chooseOutputPath).not.toHaveBeenCalled();
+
+    setExportQueueExecutionEnabled(true, store.dispatch, getState);
+    await vi.waitFor(() =>
+      expect(
+        store.getState().editingInstances.entities["gif-retry"]?.exportAttempts[0]?.state.status,
+      ).toBe("completed"),
+    );
+    expect(mocks.renderGif).toHaveBeenCalledTimes(2);
+    expect(store.getState().editingInstances.entities["gif-retry"]?.exportAttempts[0]?.route).toBe(
+      "gif",
+    );
+  });
+
   it("holds a queued attempt during edit and renders the atomically updated request", async () => {
     const store = createAppStore();
     const getState = store.getState;

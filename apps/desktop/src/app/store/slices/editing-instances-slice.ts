@@ -231,6 +231,13 @@ const editingInstancesSlice = createSlice({
       const instance = getInstance(state, action.payload.id);
       if (instance) instance.optimizedSettings = action.payload.settings;
     },
+    editingInstanceGifSettingsChanged: (
+      state,
+      action: PayloadAction<{ id: EditingInstanceId; settings: ExportSettings }>,
+    ) => {
+      const instance = getInstance(state, action.payload.id);
+      if (instance) instance.gifSettings = action.payload.settings;
+    },
     editingInstanceExportAttemptQueued: (
       state,
       action: PayloadAction<{ attempt: ExportAttempt; id: EditingInstanceId }>,
@@ -297,11 +304,19 @@ const editingInstancesSlice = createSlice({
       };
 
       if ("resolution" in attempt.request) {
-        restored.optimizedArguments = attempt.request.arguments;
-        restored.optimizedSettings = {
+        if ("arguments" in attempt.request) {
+          restored.optimizedArguments = attempt.request.arguments;
+        }
+        const settings = {
           resolution: attempt.request.resolution,
           frameRate: attempt.request.frameRate,
         };
+
+        if (attempt.route === "gif") {
+          restored.gifSettings = settings;
+        } else {
+          restored.optimizedSettings = settings;
+        }
       }
       state.ids.push(restored.id);
       state.entities[restored.id] = restored;
@@ -579,6 +594,7 @@ const {
   editingInstanceExportRetried,
   editingInstanceExportRetryFailed,
   editingInstanceExportStarted,
+  editingInstanceGifSettingsChanged,
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
@@ -760,6 +776,7 @@ export {
   editingInstanceExportRetried,
   editingInstanceExportRetryFailed,
   editingInstanceExportStarted,
+  editingInstanceGifSettingsChanged,
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,

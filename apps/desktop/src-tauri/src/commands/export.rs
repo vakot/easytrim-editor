@@ -17,7 +17,8 @@ use crate::{
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
     error::{AppError, AppErrorMessageId},
     media::export::{
-        FastExportRequest, OptimizedExportRequest, build_fast_arguments, build_optimized_arguments,
+        FastExportRequest, GifExportRequest, OptimizedExportRequest, build_fast_arguments,
+        build_gif_arguments, build_optimized_arguments, gif_command_preview,
         optimized_command_preview,
     },
     media::loudness::{LoudnessAnalysis, LoudnessAnalysisRequest, analyze_loudness},
@@ -51,9 +52,10 @@ pub struct ExportProgress {
     pub phase: ExportPhase,
 }
 
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ExportPhase {
+    Preparing,
     Running,
     Completed,
 }
@@ -73,7 +75,7 @@ struct ExportDiagnosticContext {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct OptimizedExportPlan {
+pub struct ExportPlan {
     pub command_preview: String,
 }
 
@@ -114,6 +116,32 @@ pub async fn choose_output_path(
     state: State<'_, AppState>,
     default_name: String,
 ) -> Result<Option<OutputSelection>, AppError> {
+    choose_output_path_with_filter(
+        app,
+        state,
+        default_name,
+        "Video",
+        &["mkv", "mp4", "mov", "webm"],
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn choose_gif_output_path(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    default_name: String,
+) -> Result<Option<OutputSelection>, AppError> {
+    choose_output_path_with_filter(app, state, default_name, "GIF", &["gif"]).await
+}
+
+async fn choose_output_path_with_filter(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    default_name: String,
+    filter_name: &'static str,
+    extensions: &'static [&'static str],
+) -> Result<Option<OutputSelection>, AppError> {
     if default_name.trim().is_empty() || default_name.len() > 255 {
         return Err(AppError::invalid_request(
             AppErrorMessageId::ExportOutputNameIsRequired,
@@ -123,7 +151,7 @@ pub async fn choose_output_path(
     app.dialog()
         .file()
         .set_file_name(default_name)
-        .add_filter("Video", &["mkv", "mp4", "mov", "webm"])
+        .add_filter(filter_name, extensions)
         .save_file(move |selected| {
             let _ = sender.send(selected);
         });
@@ -195,6 +223,7 @@ pub async fn export_fast(
             output_path,
             display_name,
             arguments,
+            ExportPhase::Running,
             on_progress,
             ExportDiagnosticContext {
                 parent_operation_id: diagnostic_parent_operation_id,
@@ -232,6 +261,44 @@ pub async fn render_optimized(
             output_path,
             display_name,
             arguments,
+            ExportPhase::Running,
+            on_progress,
+            ExportDiagnosticContext {
+                parent_operation_id: diagnostic_parent_operation_id,
+                snapshot_id: diagnostic_snapshot_id,
+            },
+        )
+        .await
+    }
+    .await
+}
+
+#[tauri::command]
+pub async fn render_gif(
+    request: GifExportRequest,
+    output_id: String,
+    on_progress: Channel<ExportProgress>,
+    diagnostic_parent_operation_id: Option<String>,
+    diagnostic_snapshot_id: Option<String>,
+    state: State<'_, AppState>,
+    diagnostics: State<'_, Arc<DiagnosticsState>>,
+) -> Result<ExportResult, AppError> {
+    async {
+        let source = state.resolve_export_source(&request.source_path)?;
+        let media = source.media.clone().ok_or_else(|| {
+            AppError::invalid_request(AppErrorMessageId::ExportInspectTheVideoBeforeExporting)
+        })?;
+        let output_path = state.resolve_output(&output_id)?;
+        let display_name = output_display_name(&output_path)?;
+        let arguments = build_gif_arguments(&media, &request, &source.path, &output_path)?;
+        run_export(
+            state.clone(),
+            Arc::clone(&diagnostics),
+            source.path,
+            output_path,
+            display_name,
+            arguments,
+            ExportPhase::Preparing,
             on_progress,
             ExportDiagnosticContext {
                 parent_operation_id: diagnostic_parent_operation_id,
@@ -247,13 +314,27 @@ pub async fn render_optimized(
 pub fn plan_optimized_export(
     request: OptimizedExportRequest,
     state: State<'_, AppState>,
-) -> Result<OptimizedExportPlan, AppError> {
+) -> Result<ExportPlan, AppError> {
     let source = state.resolve_source_by_path(&request.source_path)?;
     let media = source.media.as_ref().ok_or_else(|| {
         AppError::invalid_request(AppErrorMessageId::ExportInspectTheVideoBeforeExporting)
     })?;
-    Ok(OptimizedExportPlan {
+    Ok(ExportPlan {
         command_preview: optimized_command_preview(media, &request)?,
+    })
+}
+
+#[tauri::command]
+pub fn plan_gif_export(
+    request: GifExportRequest,
+    state: State<'_, AppState>,
+) -> Result<ExportPlan, AppError> {
+    let source = state.resolve_source_by_path(&request.source_path)?;
+    let media = source.media.as_ref().ok_or_else(|| {
+        AppError::invalid_request(AppErrorMessageId::ExportInspectTheVideoBeforeExporting)
+    })?;
+    Ok(ExportPlan {
+        command_preview: gif_command_preview(media, &request)?,
     })
 }
 
@@ -327,6 +408,7 @@ async fn run_export(
     output_path: PathBuf,
     display_name: String,
     arguments: Vec<std::ffi::OsString>,
+    initial_phase: ExportPhase,
     on_progress: Channel<ExportProgress>,
     diagnostic: ExportDiagnosticContext,
 ) -> Result<ExportResult, AppError> {
@@ -357,12 +439,13 @@ async fn run_export(
         speed: None,
         bitrate: None,
         total_size: None,
-        phase: ExportPhase::Running,
+        phase: initial_phase,
     });
     let cancellation_for_check = cancellation.clone();
     let operation_for_task = operation_id.clone();
     let task_result = tauri::async_runtime::spawn_blocking(move || {
         let mut progress_values = HashMap::new();
+        let mut phase = initial_phase;
         let process = run_progress_cancellable(
             OsStr::new("ffmpeg"),
             &arguments,
@@ -378,6 +461,7 @@ async fn run_export(
                             .get("out_time_us")
                             .and_then(|value| value.parse::<i64>().ok())
                             .unwrap_or_default();
+                        phase = next_export_phase(phase, key, value, elapsed_micros);
                         let _ = on_progress.send(ExportProgress {
                             operation_id: operation_for_task.clone(),
                             elapsed_micros,
@@ -390,11 +474,7 @@ async fn run_export(
                             total_size: progress_values
                                 .get("total_size")
                                 .and_then(|value| value.parse::<u64>().ok()),
-                            phase: if value == "end" {
-                                ExportPhase::Completed
-                            } else {
-                                ExportPhase::Running
-                            },
+                            phase,
                         });
                     }
                 }
@@ -550,6 +630,21 @@ async fn run_export(
         display_name,
         display_path: output_path.display().to_string(),
     })
+}
+
+fn next_export_phase(
+    phase: ExportPhase,
+    key: &str,
+    value: &str,
+    elapsed_micros: i64,
+) -> ExportPhase {
+    if key == "progress" && value == "end" {
+        ExportPhase::Completed
+    } else if phase == ExportPhase::Preparing && key == "out_time_us" && elapsed_micros > 0 {
+        ExportPhase::Running
+    } else {
+        phase
+    }
 }
 
 fn record_ffmpeg_event(
@@ -730,9 +825,123 @@ fn output_display_name(path: &std::path::Path) -> Result<String, AppError> {
 
 #[cfg(test)]
 mod tests {
-    use std::{ffi::OsString, path::Path};
+    use std::{
+        ffi::{OsStr, OsString},
+        path::Path,
+        sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+        },
+        thread,
+        time::{Duration, SystemTime, UNIX_EPOCH},
+    };
 
-    use super::ffmpeg_arguments_data;
+    use super::{ExportPhase, ffmpeg_arguments_data, next_export_phase, run_progress_cancellable};
+
+    #[test]
+    fn gif_progress_stays_indeterminate_until_ffmpeg_emits_output_time() {
+        assert_eq!(
+            next_export_phase(ExportPhase::Preparing, "progress", "continue", 0),
+            ExportPhase::Preparing
+        );
+        assert_eq!(
+            next_export_phase(ExportPhase::Preparing, "out_time_us", "1000000", 0),
+            ExportPhase::Preparing
+        );
+        assert_eq!(
+            next_export_phase(ExportPhase::Preparing, "out_time_us", "1000000", 1_000_000),
+            ExportPhase::Running
+        );
+        assert_eq!(
+            next_export_phase(ExportPhase::Running, "progress", "end", 1_000_000),
+            ExportPhase::Completed
+        );
+    }
+
+    #[test]
+    fn gif_cancellation_stops_ffmpeg_during_palette_preparation() {
+        let unique_id = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock is valid")
+            .as_nanos();
+        let output_path = std::env::temp_dir().join(format!(
+            "easytrim-gif-cancel-{}-{unique_id}.gif",
+            std::process::id()
+        ));
+        let filter_graph = concat!(
+            "[0:0]fps=10/1,",
+            "scale=w='min(480,270*dar)':h='min(270,480/dar)':eval=init:flags=lanczos,setsar=1,",
+            "split[v1][v2];",
+            "[v1]palettegen=stats_mode=diff[palette];",
+            "[v2][palette]paletteuse=dither=sierra2_4a[out]"
+        );
+        let arguments = [
+            "-hide_banner",
+            "-nostdin",
+            "-progress",
+            "pipe:1",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=1920x1080:rate=30:duration=60",
+            "-t",
+            "60.000000",
+            "-filter_complex",
+            filter_graph,
+            "-map",
+            "[out]",
+            "-an",
+            "-sn",
+            "-dn",
+            "-loop",
+            "0",
+            "-f",
+            "gif",
+            "-y",
+        ]
+        .into_iter()
+        .map(OsString::from)
+        .chain(std::iter::once(output_path.as_os_str().to_owned()))
+        .collect::<Vec<_>>();
+        let cancellation = Arc::new(AtomicBool::new(false));
+        let cancellation_for_thread = Arc::clone(&cancellation);
+        let cancellation_thread = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(500));
+            cancellation_for_thread.store(true, Ordering::Release);
+        });
+        let mut phase = ExportPhase::Preparing;
+        let mut emitted_output_time = false;
+
+        let result = run_progress_cancellable(
+            OsStr::new("ffmpeg"),
+            &arguments,
+            Duration::from_secs(60),
+            1024 * 1024,
+            1024 * 1024,
+            || cancellation.load(Ordering::Acquire),
+            |line| {
+                if let Some((key, value)) = line.split_once('=') {
+                    if key == "out_time_us" {
+                        let elapsed_micros = value.parse::<i64>().unwrap_or_default();
+                        emitted_output_time |= elapsed_micros > 0;
+                        phase = next_export_phase(phase, key, value, elapsed_micros);
+                    } else if key == "progress" {
+                        phase = next_export_phase(phase, key, value, 0);
+                    }
+                }
+            },
+        );
+
+        cancellation_thread
+            .join()
+            .expect("cancellation thread joins");
+        let error = result.expect_err("the native runner should cancel FFmpeg while preparing");
+        let _ = std::fs::remove_file(output_path);
+
+        assert_eq!(error.kind(), std::io::ErrorKind::Interrupted);
+        assert!(!emitted_output_time);
+        assert_eq!(phase, ExportPhase::Preparing);
+    }
 
     #[test]
     fn ffmpeg_diagnostic_arguments_redact_source_and_output_paths() {

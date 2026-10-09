@@ -33,6 +33,7 @@ import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import type { SearchMatchRange } from "@/domain/search.types";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
+import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
 type CommandPaletteGroupMatches = {
   groupLabel: string;
@@ -59,6 +60,7 @@ function CommandPalette() {
   useKeyboardShortcut(
     (event) =>
       !isCommandPaletteOpen &&
+      !isApplicationInteractionBlocked() &&
       commands.some(
         (command) =>
           isApplicationCommandAvailableOnSurface(command, "hotkey") &&

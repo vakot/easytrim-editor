@@ -14,10 +14,17 @@ import {
   isShortcutEvent,
   materializeApplicationCommands,
 } from "../core/application-command.utils";
+import {
+  FAST_EXPORT_SHORTCUT,
+  GIF_EXPORT_SHORTCUT,
+  OPTIMIZED_EXPORT_SHORTCUT,
+} from "../file/file-shortcuts.constants";
 
 const fileShortcuts = {
   openFolder: { code: "KeyK", key: "K", modifier: "control" },
-  fastExport: { code: "KeyS", key: "S", modifier: "control" },
+  fastExport: FAST_EXPORT_SHORTCUT,
+  gifExport: GIF_EXPORT_SHORTCUT,
+  optimizedExport: OPTIMIZED_EXPORT_SHORTCUT,
 } as const;
 
 const commands: ApplicationCommand[] = [
@@ -174,6 +181,15 @@ describe("application command shortcuts", () => {
     expect(getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT, "macos")).toBe("/");
     expect(getShortcutDisplayKeys(fileShortcuts.openFolder, "macos")).toEqual(["Ctrl", "K"]);
     expect(getShortcutDisplayKeys(fileShortcuts.fastExport, "macos")).toEqual(["Ctrl", "S"]);
+    expect(getShortcutDisplayKeys(fileShortcuts.gifExport, "macos")).toEqual(["Ctrl", "G"]);
+    expect(getShortcutDisplayKeys(fileShortcuts.optimizedExport, "macos")).toEqual(["Ctrl", "E"]);
+    expect(
+      new Set([
+        fileShortcuts.fastExport.code,
+        fileShortcuts.gifExport.code,
+        fileShortcuts.optimizedExport.code,
+      ]).size,
+    ).toBe(3);
   });
 
   it("matches slash with or without Shift and rejects other modifiers", () => {

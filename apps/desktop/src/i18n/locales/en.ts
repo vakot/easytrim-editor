@@ -476,6 +476,7 @@ export const en = {
       openFolder: "directory|import|source",
       optimizedExport: "optimized export|optimize|export",
       fastExport: "fast export|fast|export",
+      gifExport: "gif export|gif|animated image",
       saveCurrentFrame: "save|frame|screenshot|image|png",
     },
   },
@@ -610,6 +611,20 @@ export const en = {
         saveNotice: "The native save dialog opens after confirmation",
       },
     },
+    gif: {
+      action: "GIF Export",
+      tooltip: "Export the selected segment as a GIF",
+      started: "GIF export started",
+      running: "GIF export…",
+      completed: "GIF export completed",
+      cancelled: "GIF export cancelled",
+      failed: "GIF export failed",
+      interrupted: "GIF export interrupted",
+      dialog: {
+        title: "Export selected segment as GIF",
+        description: "Choose the GIF resolution and frame rate before saving",
+      },
+    },
     actions: {
       saveChanges: "Save changes",
       start: "Export",
@@ -682,6 +697,7 @@ export const en = {
     },
     routes: {
       fastExport: "Fast Export",
+      gifExport: "GIF Export",
       optimizedExport: "Optimized Export",
     },
     title: "Export Queue",
@@ -723,6 +739,7 @@ export const en = {
     },
     progress: {
       accessibleLabel: "Export progress",
+      preparingGifPalette: "Preparing GIF palette",
     },
   },
   preview: {

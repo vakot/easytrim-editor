@@ -11,6 +11,7 @@ import { cropChanged, flipToggled, rotationChanged } from "@/app/store/slices/cr
 import {
   activeEditingInstanceChanged,
   editingInstanceExportAttemptQueued,
+  editingInstanceGifSettingsChanged,
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
 import { exportArgumentsChanged } from "@/app/store/slices/export-presets-slice";
@@ -38,6 +39,10 @@ function instance(id: string, source = firstSource) {
     optimizedSettings: {
       frameRate: undefined,
       resolution: { height: 720, width: 1280 },
+    },
+    gifSettings: {
+      frameRate: { denominator: 1, numerator: 15 },
+      resolution: { height: 360, width: 640 },
     },
     origin: "source-import" as const,
     snapshot: createDefaultEditorSnapshot(source, false),
@@ -85,6 +90,15 @@ describe("workspace recovery contract", () => {
     );
     store.dispatch(flipToggled("horizontal"));
     store.dispatch(rotationChanged(90));
+    store.dispatch(
+      editingInstanceGifSettingsChanged({
+        id: "second",
+        settings: {
+          frameRate: { denominator: 1, numerator: 15 },
+          resolution: { height: 360, width: 640 },
+        },
+      }),
+    );
     store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -4 }));
     store.dispatch(audioTrackLoudnessNormalizationChanged({ preset: "broadcast", streamIndex: 2 }));
     store.dispatch(audioMergeToggled());
@@ -144,8 +158,32 @@ describe("workspace recovery contract", () => {
       state: { operationId: "native-running", startedAt: 501, status: "rendering" as const },
     };
 
+    const queuedGifAttempt = createExportAttempt({
+      capturedAt: 600,
+      id: "export-gif",
+      output: {
+        displayName: "pending.gif",
+        displayPath: "C:/Exports/pending.gif",
+        outputId: "out-gif",
+      },
+      request: {
+        audioTracks: [],
+        flipHorizontal: true,
+        flipVertical: false,
+        frameRate: { denominator: 1, numerator: 15 },
+        mergeAudio: false,
+        resolution: { height: 360, width: 480 },
+        rotationDegrees: 90,
+        sourcePath: secondSource.sourcePath,
+        trim: { endMicros: 4_000_000, startMicros: 1_000_000 },
+      },
+      route: "gif",
+      snapshot: second.snapshot,
+    });
+
     store.dispatch(editingInstanceExportAttemptQueued({ attempt: completedAttempt, id: "second" }));
     store.dispatch(editingInstanceExportAttemptQueued({ attempt: renderingAttempt, id: "second" }));
+    store.dispatch(editingInstanceExportAttemptQueued({ attempt: queuedGifAttempt, id: "second" }));
 
     const backup = createWorkspaceRecoveryBackup(store.getState(), { sessionId: "session-1" });
 
@@ -171,6 +209,10 @@ describe("workspace recovery contract", () => {
     });
     expect(backup.instances[1]).toMatchObject({
       importedAtMicros: 1234,
+      gifSettings: {
+        frameRate: { denominator: 1, numerator: 15 },
+        resolution: { height: 360, width: 640 },
+      },
       optimizedArguments: "-crf 18",
       optimizedSettings: { resolution: { height: 1344, width: 864 } },
     });
@@ -183,6 +225,17 @@ describe("workspace recovery contract", () => {
       state: { status: "canceled" },
     });
     expect(backup.instances[1]?.exportAttempts[1]?.state).not.toHaveProperty("operationId");
+    expect(backup.instances[1]?.exportAttempts[2]).toMatchObject({
+      request: {
+        flipHorizontal: true,
+        frameRate: { denominator: 1, numerator: 15 },
+        resolution: { height: 360, width: 480 },
+        rotationDegrees: 90,
+        trim: { endMicros: 4_000_000, startMicros: 1_000_000 },
+      },
+      route: "gif",
+      state: { status: "canceled" },
+    });
     expect(backup.instances[1]).not.toHaveProperty("media");
     expect(backup.instances[1]?.snapshot.source).toEqual(secondSource);
   });

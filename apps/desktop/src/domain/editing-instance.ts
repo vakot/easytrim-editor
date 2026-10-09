@@ -1,8 +1,10 @@
 import type {
   AppError,
+  ExportProgress,
   ExportResult,
   FastExportRequest,
   FrameRate,
+  GifExportRequest,
   MediaInfo,
   OptimizedExportRequest,
   OutputSelection,
@@ -10,8 +12,8 @@ import type {
 
 export type EditingInstanceId = string;
 export type InstanceOrigin = "source-import" | "duplicate";
-export type ExportRoute = "fast" | "optimized";
-export type ExportRequest = FastExportRequest | OptimizedExportRequest;
+export type ExportRoute = "fast" | "optimized" | "gif";
+export type ExportRequest = FastExportRequest | GifExportRequest | OptimizedExportRequest;
 
 interface ExportSettings {
   frameRate: FrameRate | undefined;
@@ -52,6 +54,7 @@ interface ExportAttemptMetrics {
   estimatedTotalTimeMs?: number;
   fileSizeBytes?: number;
   fps?: number;
+  phase?: ExportProgress["phase"];
   progressPercent: number;
   totalFrames?: number;
 }
@@ -70,6 +73,7 @@ interface ExportAttempt {
 interface EditingInstance {
   draftAvailable?: boolean;
   exportAttempts: ExportAttempt[];
+  gifSettings?: ExportSettings;
   id: EditingInstanceId;
   importedAtMicros?: number;
   media?: MediaInfo;

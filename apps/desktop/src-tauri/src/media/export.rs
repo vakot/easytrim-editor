@@ -243,6 +243,26 @@ pub struct OptimizedExportRequest {
     pub arguments: String,
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct GifExportRequest {
+    pub source_path: String,
+    pub trim: TrimSelection,
+    #[serde(default)]
+    pub audio_tracks: Vec<AudioTrackSelection>,
+    #[serde(default)]
+    pub merge_audio: bool,
+    pub rotation_degrees: u16,
+    pub crop: Option<CropSelection>,
+    #[serde(default)]
+    pub flip_horizontal: bool,
+    #[serde(default)]
+    pub flip_vertical: bool,
+    pub resolution: ResolutionSelection,
+    #[serde(default)]
+    pub frame_rate: Option<FrameRateSelection>,
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Hash, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum LoudnessPreset {
@@ -508,6 +528,107 @@ pub fn build_optimized_arguments(
     Ok(arguments)
 }
 
+pub fn build_gif_arguments(
+    source: &MediaInfo,
+    request: &GifExportRequest,
+    source_path: &Path,
+    output_path: &Path,
+) -> Result<Vec<OsString>, AppError> {
+    validate_trim_selection(source, &request.trim)?;
+    if !request.audio_tracks.is_empty() || request.merge_audio {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportAudioStreamSelectionOrProcessingSettingIsInvalid,
+        ));
+    }
+    validate_rotation(request.rotation_degrees)?;
+    validate_crop(request.crop.as_ref())?;
+    validate_resolution(&request.resolution)?;
+    if let Some(frame_rate) = &request.frame_rate {
+        if frame_rate.numerator == 0
+            || frame_rate.denominator == 0
+            || frame_rate.numerator as u128 > frame_rate.denominator as u128 * 120
+        {
+            return Err(AppError::invalid_request(
+                AppErrorMessageId::ExportOutputFrameRateIsInvalid,
+            ));
+        }
+    }
+
+    let (rotation_degrees, flip_horizontal, flip_vertical, crop) =
+        if request.rotation_degrees == 180 && request.flip_horizontal && request.flip_vertical {
+            (
+                0,
+                false,
+                false,
+                request.crop.as_ref().map(|crop| CropSelection {
+                    x: 1.0 - crop.x - crop.width,
+                    y: 1.0 - crop.y - crop.height,
+                    width: crop.width,
+                    height: crop.height,
+                }),
+            )
+        } else {
+            (
+                request.rotation_degrees,
+                request.flip_horizontal,
+                request.flip_vertical,
+                request.crop.clone(),
+            )
+        };
+    let mut video_filters = Vec::new();
+    if rotation_degrees != 0 {
+        video_filters.push(rotation_filter(rotation_degrees));
+    }
+    if let Some(crop) = crop {
+        video_filters.push(format!(
+            "crop=iw*{}:ih*{}:iw*{}:ih*{}",
+            crop.width, crop.height, crop.x, crop.y
+        ));
+    }
+    if flip_horizontal {
+        video_filters.push("hflip".to_owned());
+    }
+    if flip_vertical {
+        video_filters.push("vflip".to_owned());
+    }
+    if let Some(frame_rate) = &request.frame_rate {
+        video_filters.push(format!(
+            "fps={}/{}",
+            frame_rate.numerator, frame_rate.denominator
+        ));
+    }
+    video_filters.push(format!(
+        "scale=w='min({},{}*dar)':h='min({},{}/dar)':eval=init:flags=lanczos,setsar=1",
+        request.resolution.width,
+        request.resolution.height,
+        request.resolution.height,
+        request.resolution.width,
+    ));
+    let filter = format!(
+        "[0:{}]{},split[v1][v2];[v1]palettegen=stats_mode=diff[palette];[v2][palette]paletteuse=dither=sierra2_4a[out]",
+        source.video.stream_index,
+        video_filters.join(",")
+    );
+
+    let mut arguments = common_input_arguments(source_path, &request.trim);
+    arguments.extend([
+        OsString::from("-filter_complex"),
+        OsString::from(filter),
+        OsString::from("-map"),
+        OsString::from("[out]"),
+        OsString::from("-an"),
+        OsString::from("-sn"),
+        OsString::from("-dn"),
+        OsString::from("-loop"),
+        OsString::from("0"),
+        OsString::from("-f"),
+        OsString::from("gif"),
+        OsString::from("-y"),
+        output_path.as_os_str().to_owned(),
+    ]);
+    Ok(arguments)
+}
+
 pub fn optimized_command_preview(
     source: &MediaInfo,
     request: &OptimizedExportRequest,
@@ -518,11 +639,28 @@ pub fn optimized_command_preview(
         Path::new("<source>"),
         Path::new("<output>"),
     )?;
-    Ok(std::iter::once(OsString::from("ffmpeg"))
+    Ok(command_preview(arguments))
+}
+
+pub fn gif_command_preview(
+    source: &MediaInfo,
+    request: &GifExportRequest,
+) -> Result<String, AppError> {
+    let arguments = build_gif_arguments(
+        source,
+        request,
+        Path::new("<source>"),
+        Path::new("<output>"),
+    )?;
+    Ok(command_preview(arguments))
+}
+
+fn command_preview(arguments: Vec<OsString>) -> String {
+    std::iter::once(OsString::from("ffmpeg"))
         .chain(arguments)
         .map(|argument| quote_preview_argument(&argument))
         .collect::<Vec<_>>()
-        .join(" "))
+        .join(" ")
 }
 
 fn common_input_arguments(source_path: &Path, trim: &TrimSelection) -> Vec<OsString> {
@@ -1205,10 +1343,12 @@ mod tests {
         AudioLoudnessAnalysis, AudioProcessingStage, AudioTrackCacheKey,
         AudioTrackMetadataSelection, AudioTrackProcessing, AudioTrackSelection,
         AudioTrackSignalEffect, CropSelection, FastExportRequest, FrameRateSelection,
-        LoudnessNormalization, LoudnessPreset, NoiseReductionPreset, OptimizedExportRequest,
-        ResolutionSelection, TrimSelection, append_audio_metadata_arguments, audio_filter_graph,
-        build_fast_arguments, build_optimized_arguments, optimized_command_preview,
-        pre_level_filter_chain, validate_audio_track_selections, waveform_signal_filter_chain,
+        GifExportRequest, LoudnessNormalization, LoudnessPreset, NoiseReductionPreset,
+        OptimizedExportRequest, ResolutionSelection, TrimSelection,
+        append_audio_metadata_arguments, audio_filter_graph, build_fast_arguments,
+        build_gif_arguments, build_optimized_arguments, gif_command_preview,
+        optimized_command_preview, pre_level_filter_chain, validate_audio_track_selections,
+        waveform_signal_filter_chain,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -1292,6 +1432,46 @@ mod tests {
             frame_rate: None,
             arguments: arguments.to_owned(),
         }
+    }
+
+    fn gif_request() -> GifExportRequest {
+        GifExportRequest {
+            source_path: "source.mkv".to_owned(),
+            trim: TrimSelection {
+                start_micros: 1_250_000,
+                end_micros: 4_750_000,
+            },
+            audio_tracks: Vec::new(),
+            merge_audio: false,
+            rotation_degrees: 90,
+            crop: Some(CropSelection {
+                x: 0.1,
+                y: 0.2,
+                width: 0.7,
+                height: 0.6,
+            }),
+            flip_horizontal: true,
+            flip_vertical: true,
+            resolution: ResolutionSelection {
+                width: 640,
+                height: 480,
+            },
+            frame_rate: Some(FrameRateSelection {
+                numerator: 24,
+                denominator: 1,
+            }),
+        }
+    }
+
+    fn gif_error_id(request: &GifExportRequest) -> crate::error::AppErrorMessageId {
+        build_gif_arguments(
+            &media(),
+            request,
+            Path::new("source.mkv"),
+            Path::new("out.gif"),
+        )
+        .expect_err("GIF settings should be rejected")
+        .message_id
     }
 
     fn audio_track(stream_index: u32) -> AudioTrackSelection {
@@ -2894,6 +3074,283 @@ mod tests {
         assert!(preview.contains("-i <source>"));
         assert!(preview.ends_with("-y <output>"));
         assert!(preview.contains("\"title=My clip\""));
+    }
+
+    #[test]
+    fn gif_preview_uses_the_execution_builder_for_the_complete_command() {
+        let request = GifExportRequest {
+            source_path: "private-source.mkv".to_owned(),
+            trim: TrimSelection {
+                start_micros: 1_250_000,
+                end_micros: 4_750_000,
+            },
+            audio_tracks: Vec::new(),
+            merge_audio: false,
+            rotation_degrees: 90,
+            crop: Some(CropSelection {
+                x: 0.1,
+                y: 0.2,
+                width: 0.7,
+                height: 0.6,
+            }),
+            flip_horizontal: true,
+            flip_vertical: true,
+            resolution: ResolutionSelection {
+                width: 640,
+                height: 480,
+            },
+            frame_rate: Some(FrameRateSelection {
+                numerator: 24,
+                denominator: 1,
+            }),
+        };
+
+        let preview = gif_command_preview(&media(), &request).expect("preview request is valid");
+        let execution_arguments = build_gif_arguments(
+            &media(),
+            &request,
+            Path::new("<source>"),
+            Path::new("<output>"),
+        )
+        .expect("execution request is valid");
+        let expected = std::iter::once(std::ffi::OsString::from("ffmpeg"))
+            .chain(execution_arguments)
+            .map(|argument| super::quote_preview_argument(&argument))
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        assert_eq!(preview, expected);
+        assert!(preview.contains("-ss 1.250000 -i <source> -t 3.500000"));
+        assert!(preview.contains("transpose=1,crop=iw*0.7:ih*0.6:iw*0.1:ih*0.2,hflip,vflip,fps=24/1,scale=w='min(640,480*dar)':h='min(480,640/dar)':eval=init:flags=lanczos,setsar=1"));
+        assert!(preview.contains("palettegen=stats_mode=diff"));
+        assert!(preview.contains("paletteuse=dither=sierra2_4a"));
+        assert!(preview.contains("-loop 0 -f gif -y <output>"));
+        assert!(!preview.contains("private-source.mkv"));
+
+        let mut source_frame_rate_request = request.clone();
+        source_frame_rate_request.frame_rate = None;
+        let source_frame_rate_preview = gif_command_preview(&media(), &source_frame_rate_request)
+            .expect("source frame rate request is valid");
+        assert!(!source_frame_rate_preview.contains("fps="));
+
+        let mut invalid_frame_rate_request = request;
+        invalid_frame_rate_request.frame_rate = Some(FrameRateSelection {
+            numerator: 0,
+            denominator: 1,
+        });
+        assert_eq!(
+            gif_command_preview(&media(), &invalid_frame_rate_request)
+                .expect_err("invalid frame rate should fail planning")
+                .message_id,
+            crate::error::AppErrorMessageId::ExportOutputFrameRateIsInvalid,
+        );
+    }
+
+    #[test]
+    fn gif_arguments_apply_trim_transforms_scaling_palette_and_video_only_output() {
+        let arguments = build_gif_arguments(
+            &media(),
+            &gif_request(),
+            Path::new("source.mkv"),
+            Path::new("out.gif"),
+        )
+        .expect("GIF request is valid")
+        .into_iter()
+        .map(|argument| argument.to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+        let filter = arguments
+            .windows(2)
+            .find(|pair| pair[0] == "-filter_complex")
+            .map(|pair| pair[1].as_str())
+            .expect("filter graph is present");
+
+        assert!(arguments.windows(2).any(|pair| pair == ["-ss", "1.250000"]));
+        assert!(arguments.windows(2).any(|pair| pair == ["-t", "3.500000"]));
+        assert!(filter.contains(
+            "transpose=1,crop=iw*0.7:ih*0.6:iw*0.1:ih*0.2,hflip,vflip,fps=24/1,scale=w='min(640,480*dar)':h='min(480,640/dar)':eval=init:flags=lanczos,setsar=1"
+        ));
+        assert!(filter.contains("[v1]palettegen=stats_mode=diff[palette]"));
+        assert!(filter.contains("[v2][palette]paletteuse=dither=sierra2_4a[out]"));
+        assert!(arguments.windows(2).any(|pair| pair == ["-map", "[out]"]));
+        assert!(arguments.contains(&"-an".to_owned()));
+        assert!(!arguments.iter().any(|argument| argument == "0:a"));
+        assert!(arguments.windows(2).any(|pair| pair == ["-loop", "0"]));
+        assert!(arguments.windows(2).any(|pair| pair == ["-f", "gif"]));
+    }
+
+    #[test]
+    fn gif_settings_reject_invalid_trim_crop_rotation_resolution_frame_rate_and_audio() {
+        let mut request = gif_request();
+        request.trim.end_micros = request.trim.start_micros;
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportSelectedExportRangeIsInvalid
+        );
+
+        let mut request = gif_request();
+        request.crop = Some(CropSelection {
+            x: 0.5,
+            y: 0.0,
+            width: 0.51,
+            height: 1.0,
+        });
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportCropSelectionIsInvalid
+        );
+
+        let mut request = gif_request();
+        request.rotation_degrees = 45;
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportRotationMustBe090180Or270Degrees
+        );
+
+        let mut request = gif_request();
+        request.resolution.width = 0;
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportOutputResolutionMustBeGreaterThanZero
+        );
+
+        let mut request = gif_request();
+        request.frame_rate = Some(FrameRateSelection {
+            numerator: 240,
+            denominator: 1,
+        });
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportOutputFrameRateIsInvalid
+        );
+
+        let mut request = gif_request();
+        request.merge_audio = true;
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportAudioStreamSelectionOrProcessingSettingIsInvalid
+        );
+
+        let mut request = gif_request();
+        request.audio_tracks.push(AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 1,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: None,
+                effects: Vec::new(),
+            },
+        });
+        assert_eq!(
+            gif_error_id(&request),
+            crate::error::AppErrorMessageId::ExportAudioStreamSelectionOrProcessingSettingIsInvalid
+        );
+    }
+
+    #[test]
+    fn gif_crop_at_source_edge_preserves_transform_order_for_display_aspect_scaling() {
+        let mut source = media();
+        source.video.width = 720;
+        source.video.height = 576;
+        source.video.sample_aspect_ratio = Some("16:15".to_owned());
+        let mut request = gif_request();
+        request.rotation_degrees = 270;
+        request.crop = Some(CropSelection {
+            x: 0.5,
+            y: 0.0,
+            width: 0.5,
+            height: 1.0,
+        });
+        request.resolution = ResolutionSelection {
+            width: 480,
+            height: 480,
+        };
+
+        let arguments = build_gif_arguments(
+            &source,
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.gif"),
+        )
+        .expect("edge-aligned crop is valid")
+        .into_iter()
+        .map(|argument| argument.to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+        let filter = arguments
+            .windows(2)
+            .find(|pair| pair[0] == "-filter_complex")
+            .map(|pair| pair[1].as_str())
+            .expect("filter graph is present");
+
+        assert!(filter.contains("transpose=2,crop=iw*0.5:ih*1:iw*0.5:ih*0,hflip,vflip,"));
+        assert!(filter.contains("scale=w='min(480,480*dar)':h='min(480,480/dar)'"));
+        assert!(filter.contains(
+            "scale=w='min(480,480*dar)':h='min(480,480/dar)':eval=init:flags=lanczos,setsar=1,split"
+        ));
+    }
+
+    #[test]
+    fn gif_scaling_preserves_display_aspect_for_anamorphic_sources() {
+        let mut source = media();
+        source.video.width = 720;
+        source.video.height = 576;
+        source.video.sample_aspect_ratio = Some("16:15".to_owned());
+        let request = GifExportRequest {
+            source_path: "source.mkv".to_owned(),
+            trim: TrimSelection {
+                start_micros: 0,
+                end_micros: 1_000_000,
+            },
+            audio_tracks: Vec::new(),
+            merge_audio: false,
+            rotation_degrees: 0,
+            crop: None,
+            flip_horizontal: false,
+            flip_vertical: false,
+            resolution: ResolutionSelection {
+                width: 480,
+                height: 384,
+            },
+            frame_rate: None,
+        };
+
+        let arguments = build_gif_arguments(
+            &source,
+            &request,
+            Path::new("<source>"),
+            Path::new("<output>"),
+        )
+        .expect("anamorphic GIF request is valid");
+        let preview = gif_command_preview(&source, &request).expect("preview is valid");
+        let expected_scale =
+            "scale=w='min(480,384*dar)':h='min(384,480/dar)':eval=init:flags=lanczos,setsar=1";
+
+        assert!(
+            arguments
+                .iter()
+                .any(|argument| argument.to_string_lossy().contains(expected_scale))
+        );
+        assert!(preview.contains(expected_scale));
+
+        let mut transformed_request = request;
+        transformed_request.rotation_degrees = 90;
+        transformed_request.crop = Some(CropSelection {
+            x: 0.1,
+            y: 0.2,
+            width: 0.7,
+            height: 0.6,
+        });
+        let transformed_arguments = build_gif_arguments(
+            &source,
+            &transformed_request,
+            Path::new("<source>"),
+            Path::new("<output>"),
+        )
+        .expect("transformed anamorphic GIF request is valid");
+        assert!(transformed_arguments.iter().any(|argument| {
+            argument.to_string_lossy().contains(
+                "transpose=1,crop=iw*0.7:ih*0.6:iw*0.1:ih*0.2,scale=w='min(480,384*dar)':h='min(384,480/dar)'",
+            )
+        }));
     }
 
     #[test]

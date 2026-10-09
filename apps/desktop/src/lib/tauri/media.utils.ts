@@ -12,13 +12,13 @@ import type {
   BinaryCapability,
   BinaryCapabilityErrorId,
   ChapterInfo,
+  ExportPlan,
   ExportProgress,
   ExportResult,
   FrameRate,
   LoudnessAnalysis,
   MediaCapabilities,
   MediaInfo,
-  OptimizedExportPlan,
   OutputSelection,
   PreviewDescriptor,
   SilenceRange,
@@ -200,10 +200,10 @@ function parseExportResult(value: unknown): ExportResult {
   };
 }
 
-function parseOptimizedExportPlan(value: unknown): OptimizedExportPlan {
-  const plan = requireRecord(value, "optimized export plan");
+function parseExportPlan(value: unknown): ExportPlan {
+  const plan = requireRecord(value, "export plan");
   return {
-    commandPreview: requireString(plan.commandPreview, "optimized command preview"),
+    commandPreview: requireString(plan.commandPreview, "export command preview"),
   };
 }
 
@@ -508,12 +508,12 @@ function invalidResponse(label: string): AppError {
 export {
   normalizeAppError,
   parseAudioPreviewDescriptors,
+  parseExportPlan,
   parseExportProgress,
   parseExportResult,
   parseLoudnessAnalysis,
   parseMediaCapabilities,
   parseMediaInfo,
-  parseOptimizedExportPlan,
   parseOutputSelection,
   parsePreviewDescriptor,
   parseSceneBoundaries,

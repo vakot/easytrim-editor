@@ -17,6 +17,7 @@ import type { ActivityEntry, ActivityKind, ActivityStatus } from "../../../lib/a
 
 const activityIcons: Record<ActivityKind, LucideIcon> = {
   "fast-export": Scissors,
+  "gif-export": Film,
   "file-deleted": Trash2,
   "files-closed": CircleX,
   "file-restored": RotateCcw,

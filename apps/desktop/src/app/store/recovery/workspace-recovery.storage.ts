@@ -138,7 +138,7 @@ function isExportAttempt(value: unknown): boolean {
     !isRecord(value) ||
     typeof value.id !== "string" ||
     !isFiniteNumber(value.capturedAt) ||
-    (value.route !== "fast" && value.route !== "optimized") ||
+    (value.route !== "fast" && value.route !== "optimized" && value.route !== "gif") ||
     !isRecord(value.request) ||
     !isRecord(value.output) ||
     typeof value.output.displayName !== "string" ||
@@ -199,6 +199,14 @@ function isBackup(value: unknown): value is WorkspaceRecoveryBackup {
           (instance.optimizedSettings.frameRate === undefined ||
             instance.optimizedSettings.frameRate === null ||
             isRecord(instance.optimizedSettings.frameRate)))) &&
+      (instance.gifSettings === undefined ||
+        (isRecord(instance.gifSettings) &&
+          isRecord(instance.gifSettings.resolution) &&
+          isFiniteNumber(instance.gifSettings.resolution.height) &&
+          isFiniteNumber(instance.gifSettings.resolution.width) &&
+          (instance.gifSettings.frameRate === undefined ||
+            instance.gifSettings.frameRate === null ||
+            isRecord(instance.gifSettings.frameRate)))) &&
       Array.isArray(instance.exportAttempts) &&
       instance.exportAttempts.every(isExportAttempt),
   );

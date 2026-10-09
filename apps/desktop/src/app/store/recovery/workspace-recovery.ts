@@ -99,6 +99,9 @@ function toRecoveryInstance(
     ...(instance.optimizedSettings === undefined
       ? {}
       : { optimizedSettings: structuredClone(instance.optimizedSettings) }),
+    ...(instance.gifSettings === undefined
+      ? {}
+      : { gifSettings: structuredClone(instance.gifSettings) }),
     origin: instance.origin,
     sourceAvailability: instance.sourceAvailability,
     snapshot: structuredClone(activeSnapshot ?? instance.snapshot),

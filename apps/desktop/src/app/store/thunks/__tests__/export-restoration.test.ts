@@ -19,6 +19,7 @@ import {
   editingInstanceExportAttemptQueued,
   editingInstanceExportCompleted,
   editingInstanceExportStarted,
+  editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
   selectExportQueue,
   selectImportedEditingInstances,
@@ -32,6 +33,8 @@ import { firstSource, media, mediaWithAudio, secondSource } from "@/test/source.
 import {
   cancelOptimizedExportDialogRequested,
   editExportAttemptRequested,
+  exportSettingsChangedRequested,
+  openOptimizedExportDialog,
   startFastExportRequested,
   startOptimizedExportRequested,
 } from "../export-thunks";
@@ -46,7 +49,9 @@ const native = vi.hoisted(() => ({
   activateSourcePath: vi.fn(),
   prepareSourcePreview: vi.fn(),
   chooseOutputPath: vi.fn(),
+  chooseGifOutputPath: vi.fn(),
   planOptimizedExport: vi.fn(),
+  planGifExport: vi.fn(),
   reserveExportSource: vi.fn(),
   releaseExportSource: vi.fn(),
   exportFast: vi.fn(),
@@ -73,7 +78,13 @@ beforeEach(() => {
     displayPath: "C:/out.mp4",
     outputId: "out",
   });
+  native.chooseGifOutputPath.mockResolvedValue({
+    displayName: "out.gif",
+    displayPath: "C:/out.gif",
+    outputId: "gif-out",
+  });
   native.planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg ..." });
+  native.planGifExport.mockResolvedValue({ commandPreview: "ffmpeg ..." });
   native.reserveExportSource.mockResolvedValue(undefined);
   native.releaseExportSource.mockResolvedValue(undefined);
   native.exportFast.mockResolvedValue({
@@ -519,6 +530,131 @@ describe("export snapshot restoration", () => {
     });
     expect(store.getState().editingInstances.entities.original?.exportAttempts).toHaveLength(1);
     expect(store.getState().export.optimizedDialogOpen).toBe(false);
+  });
+
+  it("reopens GIF settings and commits the same queued attempt after confirmation", async () => {
+    const { snapshot, store } = setup();
+    const capturedSnapshot = {
+      ...snapshot,
+      trim: { startMicros: 250_000, endMicros: 1_500_000 },
+    };
+
+    const attempt = createExportAttempt({
+      capturedAt: 1,
+      id: "queued-gif-edit",
+      output: { displayName: "render.gif", displayPath: "C:/render.gif", outputId: "old-gif" },
+      request: {
+        audioTracks: [],
+        mergeAudio: false,
+        resolution: { height: 360, width: 640 },
+        rotationDegrees: 0,
+        sourcePath: firstSource.sourcePath,
+        trim: { endMicros: 1_500_000, startMicros: 250_000 },
+        frameRate: { numerator: 15, denominator: 1 },
+      },
+      route: "gif",
+      snapshot: capturedSnapshot,
+    });
+
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
+    await store.dispatch(
+      editExportAttemptRequested({ attemptId: attempt.id, instanceId: "original" }),
+    );
+
+    expect(store.getState().export.queueEdit).toEqual({
+      attemptId: attempt.id,
+      instanceId: "original",
+      route: "gif",
+    });
+    expect(store.getState().export.dialogRoute).toBe("gif");
+    expect(store.getState().export.optimizedDialogOpen).toBe(true);
+    expect(store.getState().trim.value).toMatchObject(capturedSnapshot.trim);
+    expect(store.getState().editingInstances.entities.original?.gifSettings).toMatchObject({
+      frameRate: { numerator: 15, denominator: 1 },
+      resolution: { height: 360, width: 640 },
+    });
+    expect(store.getState().editingInstances.entities.original?.optimizedSettings).toBeUndefined();
+
+    store.dispatch(
+      trimChanged({
+        trim: { startMicros: 500_000, endMicros: 1_700_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    store.dispatch(startOptimizedExportRequested());
+
+    await vi.waitFor(() => {
+      const updated = store.getState().editingInstances.entities.original?.exportAttempts[0];
+      expect(updated?.output.outputId).toBe("gif-out");
+      expect(updated?.request.trim).toEqual({ startMicros: 500_000, endMicros: 1_700_000 });
+      expect(updated?.snapshot.trim).toEqual({ startMicros: 500_000, endMicros: 1_700_000 });
+      expect(updated?.state.status).toBe("queued");
+    });
+    expect(native.chooseGifOutputPath).toHaveBeenCalledWith("render.gif");
+    expect(native.chooseOutputPath).not.toHaveBeenCalled();
+    expect(store.getState().editingInstances.entities.original?.exportAttempts).toHaveLength(1);
+    expect(store.getState().export.optimizedDialogOpen).toBe(false);
+  });
+
+  it("leaves a queued GIF export unchanged when editing is canceled", async () => {
+    const { snapshot, store } = setup();
+    const optimizedSettings = {
+      frameRate: { numerator: 24, denominator: 1 },
+      resolution: { height: 720, width: 1280 },
+    };
+
+    store.dispatch(
+      editingInstanceOptimizedSettingsChanged({ id: "original", settings: optimizedSettings }),
+    );
+    const attempt = createExportAttempt({
+      capturedAt: 1,
+      id: "queued-gif-cancel",
+      output: { displayName: "render.gif", displayPath: "C:/render.gif", outputId: "old-gif" },
+      request: {
+        audioTracks: [],
+        mergeAudio: false,
+        resolution: { height: 360, width: 640 },
+        rotationDegrees: 0,
+        sourcePath: firstSource.sourcePath,
+        trim: { endMicros: 1_500_000, startMicros: 250_000 },
+        frameRate: { numerator: 15, denominator: 1 },
+      },
+      route: "gif",
+      snapshot: { ...snapshot, trim: { startMicros: 250_000, endMicros: 1_500_000 } },
+    });
+
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "original", attempt }));
+
+    await store.dispatch(
+      editExportAttemptRequested({ attemptId: attempt.id, instanceId: "original" }),
+    );
+    await store.dispatch(
+      exportSettingsChangedRequested({
+        frameRate: { numerator: 10, denominator: 1 },
+        resolution: { height: 180, width: 320 },
+      }),
+    );
+    store.dispatch(cancelOptimizedExportDialogRequested());
+
+    expect(selectExportQueue(store.getState())[0]?.attempt).toEqual(attempt);
+    expect(store.getState().export.queueEdit).toBeNull();
+    expect(store.getState().export.optimizedDialogOpen).toBe(false);
+    expect(store.getState().editingInstances.entities.original?.optimizedSettings).toEqual(
+      optimizedSettings,
+    );
+    expect(store.getState().editingInstances.entities.original?.gifSettings).toEqual({
+      frameRate: { numerator: 10, denominator: 1 },
+      resolution: { height: 180, width: 320 },
+    });
+
+    await store.dispatch(openOptimizedExportDialog());
+    await vi.waitFor(() =>
+      expect(native.planOptimizedExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          frameRate: optimizedSettings.frameRate,
+          resolution: optimizedSettings.resolution,
+        }),
+      ),
+    );
   });
 
   it("edits a queued fast export output in place", async () => {

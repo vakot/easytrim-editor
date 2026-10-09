@@ -8,14 +8,15 @@ import type { SourceRef } from "@/domain/source";
 
 import type {
   AudioPreviewDescriptor,
+  ExportPlan,
   ExportProgress,
   ExportResult,
   FastExportRequest,
+  GifExportRequest,
   LoudnessAnalysis,
   LoudnessAnalysisRequest,
   MediaCapabilities,
   MediaInfo,
-  OptimizedExportPlan,
   OptimizedExportRequest,
   OutputSelection,
   PreviewDescriptor,
@@ -28,12 +29,12 @@ import type {
 import {
   normalizeAppError,
   parseAudioPreviewDescriptors,
+  parseExportPlan,
   parseExportProgress,
   parseExportResult,
   parseLoudnessAnalysis,
   parseMediaCapabilities,
   parseMediaInfo,
-  parseOptimizedExportPlan,
   parseOutputSelection,
   parsePreviewDescriptor,
   parseSceneBoundaries,
@@ -133,6 +134,15 @@ async function chooseOutputPath(defaultName: string): Promise<OutputSelection | 
   }
 }
 
+async function chooseGifOutputPath(defaultName: string): Promise<OutputSelection | null> {
+  try {
+    const value = await invoke<unknown>("choose_gif_output_path", { defaultName });
+    return value === null ? null : parseOutputSelection(value);
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 async function saveFramePng(pngData: Uint8Array, defaultName: string): Promise<boolean> {
   try {
     return await invoke<boolean>("save_frame_png", {
@@ -187,9 +197,34 @@ async function renderOptimized(
   );
 }
 
-async function planOptimizedExport(request: OptimizedExportRequest): Promise<OptimizedExportPlan> {
+async function renderGif(
+  request: GifExportRequest,
+  outputId: string,
+  onProgress: (progress: ExportProgress) => void,
+  diagnosticParentOperationId?: string,
+  diagnosticSnapshotId?: string,
+): Promise<ExportResult> {
+  return render(
+    "render_gif",
+    request,
+    outputId,
+    onProgress,
+    diagnosticParentOperationId,
+    diagnosticSnapshotId,
+  );
+}
+
+async function planOptimizedExport(request: OptimizedExportRequest): Promise<ExportPlan> {
   try {
-    return parseOptimizedExportPlan(await invoke<unknown>("plan_optimized_export", { request }));
+    return parseExportPlan(await invoke<unknown>("plan_optimized_export", { request }));
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+async function planGifExport(request: GifExportRequest): Promise<ExportPlan> {
+  try {
+    return parseExportPlan(await invoke<unknown>("plan_gif_export", { request }));
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -259,8 +294,8 @@ async function openFileLocation(path: string): Promise<void> {
 }
 
 async function render(
-  command: "export_fast" | "render_optimized",
-  request: FastExportRequest | OptimizedExportRequest,
+  command: "export_fast" | "render_optimized" | "render_gif",
+  request: FastExportRequest | OptimizedExportRequest | GifExportRequest,
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
   diagnosticParentOperationId?: string,
@@ -427,6 +462,7 @@ export {
   analyzeAudioLoudness,
   cancelOperation,
   checkMediaCapabilities,
+  chooseGifOutputPath,
   chooseOutputPath,
   chooseSource,
   detectAudioActivity,
@@ -436,6 +472,7 @@ export {
   listenForSourceDrops,
   moveSourceToTrash,
   openFileLocation,
+  planGifExport,
   planOptimizedExport,
   prepareAudioPreviews,
   prepareImportedSourceThumbnail,
@@ -444,6 +481,7 @@ export {
   prepareWaveforms,
   releaseExportSource,
   releaseImportedSourceThumbnail,
+  renderGif,
   renderOptimized,
   reserveExportSource,
   resolveOutputSelection,

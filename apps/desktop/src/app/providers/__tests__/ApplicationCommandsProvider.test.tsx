@@ -21,6 +21,10 @@ const mocks = vi.hoisted(() => ({
     origin,
     type: "export/optimized",
   })),
+  openGifExportDialog: vi.fn((origin: unknown) => ({
+    origin,
+    type: "export/gif",
+  })),
   requestSourceDelete: vi.fn(),
   resetPanels: vi.fn(),
   panelCommandIds: [] as (string | string[])[],
@@ -80,6 +84,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
 }));
 vi.mock("@/app/store/thunks/export-thunks", () => ({
   openOptimizedExportDialog: mocks.openOptimizedExportDialog,
+  openGifExportDialog: mocks.openGifExportDialog,
   startFastExportRequested: mocks.startFastExportRequested,
 }));
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
@@ -217,6 +222,7 @@ describe("ApplicationCommandsProvider", () => {
     mocks.isPlaying = false;
     mocks.previewAvailable = false;
     state.importWorkflow.isNativeDialogOpen = false;
+    state.source.status = "ready";
     state.preferences.activityFeedView = "default";
     state.preferences.layoutDensity = "default";
     state.preferences.autoStartQueueEnabled = true;
@@ -237,7 +243,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(59);
+    ).toHaveLength(60);
     expect(
       screen
         .getAllByRole("button")
@@ -362,6 +368,26 @@ describe("ApplicationCommandsProvider", () => {
     await user.click(screen.getByRole("button", { name: "open-settings-palette" }));
 
     expect(screen.getByTestId("settings-open-from-command")).toBeInTheDocument();
+  });
+
+  it("runs GIF Export through the shared command and matches source availability", async () => {
+    const view = renderRuntime();
+    const command = screen.getByRole("button", { name: "gif-export" });
+
+    expect(command).toHaveAttribute("data-group", "Export");
+    expect(command).toBeEnabled();
+    fireEvent.click(command);
+
+    await waitFor(() =>
+      expect(mocks.dispatch).toHaveBeenCalledWith({
+        origin: { id: "palette.gif-export", type: "menu" },
+        type: "export/gif",
+      }),
+    );
+
+    state.source.status = "loading";
+    view.rerender(runtimeUi());
+    expect(screen.getByRole("button", { name: "gif-export" })).toBeDisabled();
   });
 
   it("allows saving a frame only while playback is paused", () => {
