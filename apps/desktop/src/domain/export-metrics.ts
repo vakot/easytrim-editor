@@ -151,7 +151,9 @@ function getExportMetricValues(
     : null;
 
   const progressFromFrames =
-    frame !== undefined && totalFrames !== undefined
+    frame !== undefined &&
+    totalFrames !== undefined &&
+    (metrics.phase !== "preparing" || frame > 0)
       ? boundedPercent((frame / totalFrames) * 100)
       : null;
 

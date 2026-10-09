@@ -81,6 +81,23 @@ describe("export metrics", () => {
     });
   });
 
+  it("keeps GIF progress indeterminate when palette preparation reports zero frames", () => {
+    const values = getExportMetricValues(
+      createAttempt({
+        currentFrame: 0,
+        phase: "preparing",
+        progressPercent: 0,
+        totalFrames: 600,
+      }),
+    );
+
+    expect(values).toMatchObject({
+      indeterminate: true,
+      progressPercent: null,
+      totalFrames: 600,
+    });
+  });
+
   it("estimates current and final file size from FFmpeg bitrate and frame progress", () => {
     const values = getExportMetricValues(
       createAttempt({
