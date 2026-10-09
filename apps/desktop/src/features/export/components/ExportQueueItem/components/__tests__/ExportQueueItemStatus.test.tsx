@@ -33,11 +33,13 @@ describe("ExportQueueItemStatus", () => {
       route: "fast",
       snapshot,
     });
+
     const error = {
       code: "render_failed",
       diagnostics: "Invalid data found when processing input",
       messageId: "export.ffmpegCouldNotRenderTheSelectedSegment",
     };
+
     const store = createAppStore();
     store.dispatch(
       editingInstancesAdded([

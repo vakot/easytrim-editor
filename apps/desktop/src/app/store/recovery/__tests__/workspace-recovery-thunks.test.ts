@@ -120,6 +120,7 @@ describe("restorePreviousWorkspaceRequested", () => {
       route: "fast",
       snapshot,
     });
+
     const failedAttempt = {
       ...attempt,
       state: {
@@ -132,6 +133,7 @@ describe("restorePreviousWorkspaceRequested", () => {
         status: "failed" as const,
       },
     };
+
     const store = prepareCandidate("second", [failedAttempt]);
 
     await store.dispatch(restorePreviousWorkspaceRequested());
