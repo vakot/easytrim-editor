@@ -675,6 +675,7 @@ export const en = {
     actions: {
       cancelExport: "Cancel export",
       editExport: "Edit export",
+      moreExportActions: "More export actions",
       openExportQueue: "Open export queue",
       restoreEdit: "Restore edit",
       revealOutput: "Reveal output",

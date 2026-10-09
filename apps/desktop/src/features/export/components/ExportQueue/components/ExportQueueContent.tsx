@@ -1,4 +1,5 @@
 import { MoreVertical } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -60,6 +61,7 @@ function ExportQueueContent({ className }: { className?: string }) {
 }
 
 function ExportQueueListItem() {
+  const { t } = useTranslation();
   const { attempt } = useExportQueueItem();
 
   const status = attempt.state.status;
@@ -89,7 +91,11 @@ function ExportQueueListItem() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="ghost">
+                <Button
+                  aria-label={t("queue.actions.moreExportActions")}
+                  size="icon"
+                  variant="ghost"
+                >
                   <MoreVertical aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
