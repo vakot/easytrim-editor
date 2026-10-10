@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Added crop aspect-ratio presets, freeform resizing, and an option to reset the crop to its full-frame default.
-- Added customizable left and right sidebars for moving and reordering the Imported Sources and Activity Feed views.
+- Added customizable left and right sidebars for moving and reordering the Imported Sources and Activity Feed views, with clear drop previews.
 
 ### Changed
 
