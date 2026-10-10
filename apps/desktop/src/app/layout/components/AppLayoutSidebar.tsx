@@ -13,12 +13,17 @@ import {
 } from "@/components/ui/resizable";
 
 import { SidebarViewTarget } from "@/app/layout/components/SidebarViewPortal";
-import type { SidebarId, SidebarViewId } from "@/app/layout/lib/sidebar-layout";
+import type {
+  SidebarDropPlacement,
+  SidebarId,
+  SidebarViewId,
+} from "@/app/layout/lib/sidebar-layout";
 import type { SidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
 import { cn } from "@/lib/class-names.utils";
 
 interface AppLayoutSidebarProps {
   hosts: SidebarViewHosts;
+  placement: SidebarDropPlacement | null;
   side: SidebarId;
   views: SidebarViewId[];
 }
@@ -33,7 +38,7 @@ const VIEW_PANEL_SIZES: Record<SidebarViewId, { defaultSize: string; minSize: st
   sources: { minSize: "18.75rem", defaultSize: "45" },
 };
 
-function AppLayoutSidebar({ hosts, side, views }: AppLayoutSidebarProps) {
+function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarProps) {
   const { t } = useTranslation();
   const { ref } = useDroppable({ accept: "sidebar-view", id: side, type: "sidebar-region" });
 
@@ -46,6 +51,15 @@ function AppLayoutSidebar({ hosts, side, views }: AppLayoutSidebarProps) {
       data-sidebar-region={side}
       ref={ref}
     >
+      {placement?.destination === side ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-5 z-30 h-12 -translate-y-1/2 rounded-lg border-2 border-dashed border-primary/60 bg-card/80 shadow-md"
+          data-sidebar-drop-placeholder={side}
+          data-sidebar-drop-placeholder-index={placement.insertionIndex}
+          style={{ top: placement.previewTop }}
+        />
+      ) : null}
       {views.length === 1 ? (
         <SidebarViewFrame
           collapsible={false}

@@ -37,10 +37,12 @@ vi.mock("@dnd-kit/react", () => ({
   DragDropProvider: ({
     children,
     onDragEnd,
+    onDragMove,
     onDragStart,
   }: {
     children: React.ReactNode;
     onDragEnd: (event: unknown) => void;
+    onDragMove: (event: unknown) => void;
     onDragStart: () => void;
   }) => (
     <>
@@ -49,10 +51,13 @@ vi.mock("@dnd-kit/react", () => ({
         aria-label="Simulate moving Sources to the bottom of the left sidebar"
         onClick={() => {
           onDragStart();
-          onDragEnd({
+          const event = {
             canceled: false,
             operation: { position: { current: { x: 120, y: 590 } }, source: { id: "sources" } },
-          });
+          };
+
+          onDragMove(event);
+          onDragEnd(event);
         }}
         type="button"
       />
@@ -60,21 +65,48 @@ vi.mock("@dnd-kit/react", () => ({
         aria-label="Simulate moving Activity Feed to the right sidebar"
         onClick={() => {
           onDragStart();
-          onDragEnd({
+          const event = {
             canceled: false,
             operation: { position: { current: { x: 1100, y: 350 } }, source: { id: "activity" } },
+          };
+
+          onDragMove(event);
+          onDragEnd(event);
+        }}
+        type="button"
+      />
+      <button
+        aria-label="Preview moving Sources to the right sidebar"
+        onClick={() => {
+          onDragStart();
+          onDragMove({
+            canceled: false,
+            operation: { position: { current: { x: 1100, y: 350 } }, source: { id: "sources" } },
           });
         }}
+        type="button"
+      />
+      <button
+        aria-label="Drop Sources into the right sidebar"
+        onClick={() =>
+          onDragEnd({
+            canceled: false,
+            operation: { position: { current: { x: 1100, y: 350 } }, source: { id: "sources" } },
+          })
+        }
         type="button"
       />
       <button
         aria-label="Simulate moving Sources to the right sidebar"
         onClick={() => {
           onDragStart();
-          onDragEnd({
+          const event = {
             canceled: false,
             operation: { position: { current: { x: 1100, y: 350 } }, source: { id: "sources" } },
-          });
+          };
+
+          onDragMove(event);
+          onDragEnd(event);
         }}
         type="button"
       />
@@ -289,5 +321,62 @@ describe("AppLayout sidebar drag and drop", () => {
       expect(screen.queryByRole("complementary", { name: "Left sidebar" })).not.toBeInTheDocument();
       expect(document.querySelectorAll(".workspace-separator")).toHaveLength(1);
     });
+  });
+
+  it("uses the visible populated-sidebar preview index when applying the drop", async () => {
+    const store = renderAppLayout();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Simulate moving Activity Feed to the right sidebar" }),
+    );
+
+    const left = document.querySelector<HTMLElement>('[data-sidebar-region="left"]')!;
+    const right = document.querySelector<HTMLElement>('[data-sidebar-region="right"]')!;
+    const rightActivity = right.querySelector<HTMLElement>('[data-sidebar-view="activity"]')!;
+    setBounds(left, {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 320,
+      bottom: 700,
+      width: 320,
+      height: 700,
+    } as DOMRect);
+    setBounds(right, {
+      x: 960,
+      y: 0,
+      top: 0,
+      left: 960,
+      right: 1280,
+      bottom: 700,
+      width: 320,
+      height: 700,
+    } as DOMRect);
+    setBounds(rightActivity, {
+      x: 960,
+      y: 0,
+      top: 0,
+      left: 960,
+      right: 1280,
+      bottom: 700,
+      width: 320,
+      height: 700,
+    } as DOMRect);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Preview moving Sources to the right sidebar" }),
+    );
+
+    expect(document.querySelector('[data-sidebar-drop-placeholder="right"]')).toHaveAttribute(
+      "data-sidebar-drop-placeholder-index",
+      "1",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Drop Sources into the right sidebar" }));
+
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout.right).toEqual(["activity", "sources"]);
+    });
+    expect(document.querySelector('[data-sidebar-drop-placeholder="right"]')).toBeNull();
   });
 });

@@ -26,7 +26,7 @@ describe("AppLayoutSidebar", () => {
 
     render(
       <DragDropProvider>
-        <AppLayoutSidebar hosts={hosts} side="left" views={["sources"]} />
+        <AppLayoutSidebar hosts={hosts} placement={null} side="left" views={["sources"]} />
       </DragDropProvider>,
     );
 

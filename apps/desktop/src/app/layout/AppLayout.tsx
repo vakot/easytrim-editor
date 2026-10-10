@@ -1,4 +1,9 @@
-import { DragDropProvider, type DragEndEvent, useDroppable } from "@dnd-kit/react";
+import {
+  DragDropProvider,
+  type DragEndEvent,
+  type DragMoveEvent,
+  useDroppable,
+} from "@dnd-kit/react";
 import { useCallback, useLayoutEffect, useState } from "react";
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -9,7 +14,13 @@ import { AppLayoutMain } from "@/app/layout/components/AppLayoutMain";
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";
 import { AppLayoutSidebar, SidebarEmptyDropTarget } from "@/app/layout/components/AppLayoutSidebar";
 import { SidebarViewPortals } from "@/app/layout/components/SidebarViewPortal";
-import { isSidebarId, isSidebarViewId } from "@/app/layout/lib/sidebar-layout";
+import {
+  isSidebarId,
+  isSidebarViewId,
+  resolveSidebarDropPlacement,
+  type SidebarDropPlacement,
+  type SidebarViewBounds,
+} from "@/app/layout/lib/sidebar-layout";
 import { createSidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -32,27 +43,19 @@ function AppLayout() {
 
   const [viewHosts] = useState(createSidebarViewHosts);
   const [isDraggingView, setIsDraggingView] = useState(false);
+  const [dropPlacement, setDropPlacement] = useState<SidebarDropPlacement | null>(null);
 
   const isCompact = layoutDensity === "compact";
 
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      if (event.canceled) {
-        setIsDraggingView(false);
-        return;
-      }
-
+  const getDropPlacement = useCallback(
+    (event: DragMoveEvent | DragEndEvent) => {
       const viewId = event.operation.source?.id;
       if (!isSidebarViewId(viewId)) {
-        setIsDraggingView(false);
-        return;
+        return null;
       }
 
       const position = event.operation.position.current;
-      if (!position) {
-        setIsDraggingView(false);
-        return;
-      }
+      if (!position) return null;
 
       const containsPointer = (element: HTMLElement) => {
         const bounds = element.getBoundingClientRect();
@@ -76,29 +79,56 @@ function AppLayout() {
         ? emptyTarget.dataset.sidebarEmptyDropTarget
         : populatedRegion?.dataset.sidebarRegion;
 
-      if (!isSidebarId(destination)) {
-        setIsDraggingView(false);
-        return;
-      }
+      if (!isSidebarId(destination)) return null;
 
-      const destinationViews = sidebarLayout[destination].filter((item) => item !== viewId);
-      const insertionIndex = destinationViews.findIndex((item) => {
-        const element = document.querySelector<HTMLElement>(`[data-sidebar-view="${item}"]`);
-        if (!element) return false;
-        const bounds = element.getBoundingClientRect();
-        return position.y < bounds.top + bounds.height / 2;
-      });
+      const regionElement = isSidebarId(emptyTarget?.dataset.sidebarEmptyDropTarget)
+        ? emptyTarget
+        : populatedRegion;
 
-      dispatch(
-        sidebarLayoutChanged({
-          destination,
-          insertionIndex: insertionIndex < 0 ? destinationViews.length : insertionIndex,
-          viewId,
-        }),
+      if (!regionElement) return null;
+
+      const destinationBounds: SidebarViewBounds[] = sidebarLayout[destination]
+        .filter((item) => item !== viewId)
+        .flatMap((item) => {
+          const element = document.querySelector<HTMLElement>(`[data-sidebar-view="${item}"]`);
+          if (!element) return [];
+          const bounds = element.getBoundingClientRect();
+          return [{ bottom: bounds.bottom, top: bounds.top, viewId: item }];
+        });
+
+      return resolveSidebarDropPlacement(
+        sidebarLayout,
+        viewId,
+        destination,
+        position.y,
+        regionElement.getBoundingClientRect().top,
+        destinationBounds,
       );
-      setIsDraggingView(false);
     },
-    [dispatch, sidebarLayout],
+    [sidebarLayout],
+  );
+
+  const handleDragMove = useCallback(
+    (event: DragMoveEvent) => setDropPlacement(getDropPlacement(event)),
+    [getDropPlacement],
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const placement = event.canceled ? null : getDropPlacement(event);
+      setDropPlacement(null);
+      setIsDraggingView(false);
+      if (placement) {
+        dispatch(
+          sidebarLayoutChanged({
+            destination: placement.destination,
+            insertionIndex: placement.insertionIndex,
+            viewId: placement.viewId,
+          }),
+        );
+      }
+    },
+    [dispatch, getDropPlacement],
   );
 
   useLayoutEffect(() => {
@@ -111,7 +141,11 @@ function AppLayout() {
   }, [uiScalePercent]);
 
   return (
-    <DragDropProvider onDragEnd={handleDragEnd} onDragStart={() => setIsDraggingView(true)}>
+    <DragDropProvider
+      onDragEnd={handleDragEnd}
+      onDragMove={handleDragMove}
+      onDragStart={() => setIsDraggingView(true)}
+    >
       <main className="fixed inset-0 grid h-dvh w-screen grid-rows-[2.25rem_minmax(0,1fr)_auto] overflow-hidden bg-background">
         <AppLayoutHeader />
 
@@ -134,7 +168,12 @@ function AppLayout() {
                 minSize="20.5rem"
               >
                 <AppLayoutPanel className="min-w-xs layout-compact:rounded-l-xl layout-compact:border-y layout-compact:border-l">
-                  <AppLayoutSidebar hosts={viewHosts} side="left" views={sidebarLayout.left} />
+                  <AppLayoutSidebar
+                    hosts={viewHosts}
+                    placement={dropPlacement}
+                    side="left"
+                    views={sidebarLayout.left}
+                  />
                 </AppLayoutPanel>
               </ResizablePanel>
             ) : null}
@@ -181,7 +220,12 @@ function AppLayout() {
                 minSize="20.5rem"
               >
                 <AppLayoutPanel className="min-w-xs layout-compact:rounded-r-xl layout-compact:border-y layout-compact:border-r">
-                  <AppLayoutSidebar hosts={viewHosts} side="right" views={sidebarLayout.right} />
+                  <AppLayoutSidebar
+                    hosts={viewHosts}
+                    placement={dropPlacement}
+                    side="right"
+                    views={sidebarLayout.right}
+                  />
                 </AppLayoutPanel>
               </ResizablePanel>
             ) : null}

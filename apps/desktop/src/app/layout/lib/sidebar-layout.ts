@@ -9,6 +9,19 @@ interface SidebarLayout {
   right: SidebarViewId[];
 }
 
+interface SidebarDropPlacement {
+  destination: SidebarId;
+  insertionIndex: number;
+  previewTop: number;
+  viewId: SidebarViewId;
+}
+
+interface SidebarViewBounds {
+  bottom: number;
+  top: number;
+  viewId: SidebarViewId;
+}
+
 const DEFAULT_SIDEBAR_LAYOUT: SidebarLayout = {
   left: ["sources", "activity"],
   right: [],
@@ -81,13 +94,62 @@ function moveSidebarView(
   return next;
 }
 
+function resolveSidebarDropPlacement(
+  layout: SidebarLayout,
+  viewId: SidebarViewId,
+  destination: SidebarId,
+  pointerY: number,
+  regionTop: number,
+  destinationBounds: SidebarViewBounds[],
+): SidebarDropPlacement | null {
+  const destinationViews = layout[destination].filter((item) => item !== viewId);
+  const boundsByView = new Map(destinationBounds.map((bounds) => [bounds.viewId, bounds]));
+  const resolvedIndex = resolveSidebarInsertionIndex(
+    pointerY,
+    destinationViews.flatMap((item) => {
+      const bounds = boundsByView.get(item);
+      return bounds ? [bounds] : [];
+    }),
+  );
+
+  if (
+    layout[destination].includes(viewId) &&
+    layout[destination].indexOf(viewId) === resolvedIndex
+  ) {
+    return null;
+  }
+
+  const nextView = destinationViews[resolvedIndex];
+  const previousView = destinationViews[resolvedIndex - 1];
+  const previewTop = nextView
+    ? (boundsByView.get(nextView)?.top ?? regionTop) - regionTop
+    : previousView
+      ? (boundsByView.get(previousView)?.bottom ?? regionTop) - regionTop
+      : 0;
+
+  return { destination, insertionIndex: resolvedIndex, previewTop, viewId };
+}
+
+function resolveSidebarInsertionIndex(
+  pointerY: number,
+  destinationBounds: Array<Pick<SidebarViewBounds, "bottom" | "top">>,
+): number {
+  const index = destinationBounds.findIndex(
+    (bounds) => pointerY < bounds.top + (bounds.bottom - bounds.top) / 2,
+  );
+
+  return index < 0 ? destinationBounds.length : index;
+}
+
 export {
   DEFAULT_SIDEBAR_LAYOUT,
   isSidebarId,
   isSidebarViewId,
   moveSidebarView,
   normalizeSidebarLayout,
+  resolveSidebarDropPlacement,
+  resolveSidebarInsertionIndex,
   SIDEBAR_IDS,
   SIDEBAR_VIEW_IDS,
 };
-export type { SidebarId, SidebarLayout, SidebarViewId };
+export type { SidebarDropPlacement, SidebarId, SidebarLayout, SidebarViewBounds, SidebarViewId };
