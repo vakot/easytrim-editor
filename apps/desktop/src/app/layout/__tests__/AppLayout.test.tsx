@@ -140,6 +140,32 @@ vi.mock("@dnd-kit/react", () => ({
         type="button"
       />
       <button
+        aria-label="Preview Sources below the single right sidebar view"
+        onClick={() => {
+          onDragStart({
+            operation: {
+              position: { current: { x: 1100, y: 550 } },
+              source: { id: "sources" },
+            },
+          });
+          onDragMove({
+            canceled: false,
+            operation: { position: { current: { x: 1100, y: 550 } }, source: { id: "sources" } },
+          });
+        }}
+        type="button"
+      />
+      <button
+        aria-label="Drop Sources below the single right sidebar view"
+        onClick={() =>
+          onDragEnd({
+            canceled: false,
+            operation: { position: { current: { x: 1100, y: 550 } }, source: { id: "sources" } },
+          })
+        }
+        type="button"
+      />
+      <button
         aria-label="Simulate moving Sources to the right sidebar"
         onClick={() => {
           onDragStart({
@@ -286,6 +312,51 @@ function renderAppLayout() {
       </ResizablePanelContextProvider>
     </Provider>,
   );
+
+  return store;
+}
+
+function renderOneViewPerSidebar(activityBounds: DOMRect) {
+  const store = renderAppLayout();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Simulate moving Activity Feed to the right sidebar" }),
+  );
+
+  const left = document.querySelector<HTMLElement>('[data-sidebar-region="left"]')!;
+  const right = document.querySelector<HTMLElement>('[data-sidebar-region="right"]')!;
+  const activity = right.querySelector<HTMLElement>('[data-sidebar-view="activity"]')!;
+  const activityPanel = activity.closest<HTMLElement>("[data-panel]")!;
+  setBounds(left, {
+    x: 0,
+    y: 0,
+    top: 0,
+    left: 0,
+    right: 320,
+    bottom: 700,
+    width: 320,
+    height: 700,
+  } as DOMRect);
+  setBounds(right, {
+    x: 960,
+    y: 0,
+    top: 0,
+    left: 960,
+    right: 1280,
+    bottom: 700,
+    width: 320,
+    height: 700,
+  } as DOMRect);
+  setBounds(activityPanel, {
+    x: 960,
+    y: 0,
+    top: 0,
+    left: 960,
+    right: 1280,
+    bottom: 700,
+    width: 320,
+    height: 700,
+  } as DOMRect);
+  setBounds(activity, activityBounds);
 
   return store;
 }
@@ -878,45 +949,16 @@ describe("AppLayout sidebar drag and drop", () => {
     });
   });
 
-  it("uses the visible populated-sidebar preview index when applying the drop", async () => {
-    const store = renderAppLayout();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Simulate moving Activity Feed to the right sidebar" }),
-    );
-
-    const left = document.querySelector<HTMLElement>('[data-sidebar-region="left"]')!;
-    const right = document.querySelector<HTMLElement>('[data-sidebar-region="right"]')!;
-    const rightActivity = right.querySelector<HTMLElement>('[data-sidebar-view="activity"]')!;
-    const rightActivityPanel = rightActivity.closest<HTMLElement>("[data-panel]")!;
-    setBounds(left, {
-      x: 0,
-      y: 0,
-      top: 0,
-      left: 0,
-      right: 320,
-      bottom: 700,
-      width: 320,
-      height: 700,
-    } as DOMRect);
-    setBounds(right, {
+  it("inserts above a single destination view using its standalone bounds", async () => {
+    const store = renderOneViewPerSidebar({
       x: 960,
-      y: 0,
-      top: 0,
+      y: 300,
+      top: 300,
       left: 960,
       right: 1280,
-      bottom: 700,
+      bottom: 500,
       width: 320,
-      height: 700,
-    } as DOMRect);
-    setBounds(rightActivityPanel, {
-      x: 960,
-      y: 0,
-      top: 0,
-      left: 960,
-      right: 1280,
-      bottom: 700,
-      width: 320,
-      height: 700,
+      height: 200,
     } as DOMRect);
 
     fireEvent.click(
@@ -924,9 +966,9 @@ describe("AppLayout sidebar drag and drop", () => {
     );
 
     const indicator = document.querySelector('[data-sidebar-drop-indicator="right"]');
-    expect(indicator).toHaveAttribute("data-sidebar-drop-indicator-index", "1");
+    expect(indicator).toHaveAttribute("data-sidebar-drop-indicator-index", "0");
     expect(indicator).toHaveClass("absolute", "h-1", "bg-primary", "pointer-events-none");
-    expect(indicator).toHaveStyle({ top: "700px" });
+    expect(indicator).toHaveStyle({ top: "300px" });
     expect(indicator?.closest('[data-slot="resizable-panel-group"]')?.id).toBe("workspace");
     const dragPreview = document.querySelector('[data-sidebar-drag-preview="sources"]');
     expect(dragPreview).toBeInTheDocument();
@@ -935,7 +977,36 @@ describe("AppLayout sidebar drag and drop", () => {
     expect(dragPreview).toHaveStyle({ left: "1100px", top: "350px" });
 
     fireEvent.click(screen.getByRole("button", { name: "Drop Sources into the right sidebar" }));
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout.right).toEqual(["sources", "activity"]);
+    });
+    expect(document.querySelector('[data-sidebar-drop-indicator="right"]')).toBeNull();
+    expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+  });
 
+  it("inserts below a single destination view using its standalone bounds", async () => {
+    const store = renderOneViewPerSidebar({
+      x: 960,
+      y: 200,
+      top: 200,
+      left: 960,
+      right: 1280,
+      bottom: 400,
+      width: 320,
+      height: 200,
+    } as DOMRect);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Preview Sources below the single right sidebar view" }),
+    );
+
+    const belowIndicator = document.querySelector('[data-sidebar-drop-indicator="right"]');
+    expect(belowIndicator).toHaveAttribute("data-sidebar-drop-indicator-index", "1");
+    expect(belowIndicator).toHaveStyle({ top: "400px" });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Drop Sources below the single right sidebar view" }),
+    );
     await waitFor(() => {
       expect(store.getState().preferences.sidebarLayout.right).toEqual(["activity", "sources"]);
     });

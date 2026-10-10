@@ -44,10 +44,9 @@ function captureSidebarDragGeometry(): SidebarDragGeometry {
     Array.from(document.querySelectorAll<HTMLElement>("[data-sidebar-view]")).flatMap(
       (viewElement) => {
         const viewId = viewElement.dataset.sidebarView;
-        const panel = viewElement.closest<HTMLElement>('[data-slot="resizable-panel"]');
-        if (!isSidebarViewId(viewId) || !panel) return [];
+        if (!isSidebarViewId(viewId)) return [];
 
-        const bounds = panel.getBoundingClientRect();
+        const bounds = viewElement.getBoundingClientRect();
         return [[viewId, { bottom: bounds.bottom, top: bounds.top, viewId }]] as const;
       },
     ),
