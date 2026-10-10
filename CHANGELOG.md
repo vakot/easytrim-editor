@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added saved trim range indicators to source cards.
 - Added selectable peak, RMS, and stereo display modes for audio waveforms.
 
 ### Changed
