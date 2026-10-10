@@ -22,7 +22,7 @@ function SidebarViewPortals({ hosts }: { hosts: SidebarViewHosts }) {
               <SourceListSearch />
               <SourceListCloseAll />
             </div>
-            <SourceListContent className="min-h-0 flex-1" />
+            <SourceListContent />
           </div>
         </SourceList>,
         hosts.sources,
@@ -30,7 +30,7 @@ function SidebarViewPortals({ hosts }: { hosts: SidebarViewHosts }) {
       )}
       {createPortal(
         <ScrollArea className="flex-1 before:top-2">
-          <ActivityFeed className="pb-2" />
+          <ActivityFeed className="pb-3" />
         </ScrollArea>,
         hosts.activity,
         "activity",

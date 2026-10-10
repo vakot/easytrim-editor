@@ -10,15 +10,21 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { cropChanged, cropResolutionFor, selectCrop } from "@/app/store/slices/crop-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import { FULL_CROP } from "@/domain/crop";
 import type { RotationDegrees } from "@/domain/rotation";
 
+import {
+  type CropAspectRatioPreset,
+  fitCropToAspectRatio,
+  resizeCropToAspectRatio,
+} from "../../../lib/crop-aspect-ratio.utils";
 import {
   type CropHandle,
   type CropRect,
   moveCrop,
   resizeCrop,
 } from "../../../lib/crop-geometry.utils";
-import { snapCropToGuides } from "../../../lib/crop-snapping.utils";
+import { snapCropToGuides, snapResizeCropToGuides } from "../../../lib/crop-snapping.utils";
 
 const SNAP_REACH_PX = 12;
 
@@ -50,6 +56,44 @@ function useCropSelection(
   const crop = useAppSelector(selectCrop);
   const [isOpen, setIsOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [aspectRatioPreset, setAspectRatioPreset] = useState<CropAspectRatioPreset>("freeform");
+
+  const selectAspectRatioPreset = useCallback(
+    (preset: CropAspectRatioPreset) => {
+      setAspectRatioPreset(preset);
+      if (preset === "freeform" || !sourceMedia) return;
+
+      const ratio = aspectRatioForPreset(preset);
+      if (ratio === null) return;
+      const rotatedSourceAspect =
+        rotationDegrees === 90 || rotationDegrees === 270
+          ? sourceMedia.video.height / sourceMedia.video.width
+          : sourceMedia.video.width / sourceMedia.video.height;
+
+      const nextCrop = fitCropToAspectRatio(crop, ratio / rotatedSourceAspect);
+      dispatch(
+        cropChanged({
+          crop: nextCrop,
+          resolution: cropResolutionFor(sourceMedia.video ?? null, nextCrop, rotationDegrees),
+        }),
+      );
+      dispatch(commitActiveEditingInstanceDraft());
+    },
+    [crop, dispatch, rotationDegrees, sourceMedia],
+  );
+
+  const resetCropToDefault = useCallback(() => {
+    setAspectRatioPreset("freeform");
+    if (!sourceMedia) return;
+
+    dispatch(
+      cropChanged({
+        crop: FULL_CROP,
+        resolution: cropResolutionFor(sourceMedia.video ?? null, FULL_CROP, rotationDegrees),
+      }),
+    );
+    dispatch(commitActiveEditingInstanceDraft());
+  }, [dispatch, rotationDegrees, sourceMedia]);
 
   const open = useCallback(() => {
     setIsOpen(true);
@@ -113,23 +157,38 @@ function useCropSelection(
     const deltaY =
       ((event.clientY - drag.startY) / drag.sourceHeight) * (drag.flipVertical ? -1 : 1);
 
+    const presetRatio = aspectRatioForPreset(aspectRatioPreset);
+    const ratio =
+      presetRatio === null || !sourceMedia
+        ? null
+        : presetRatio /
+          (rotationDegrees === 90 || rotationDegrees === 270
+            ? sourceMedia.video.height / sourceMedia.video.width
+            : sourceMedia.video.width / sourceMedia.video.height);
+
     const movedCrop =
       drag.handle === "move"
         ? moveCrop(drag.crop, deltaX, deltaY)
-        : resizeCrop(drag.crop, drag.handle, deltaX, deltaY);
+        : ratio === null
+          ? resizeCrop(drag.crop, drag.handle, deltaX, deltaY)
+          : resizeCropToAspectRatio(drag.crop, drag.handle, deltaX, deltaY, ratio);
 
-    const nextCrop = event.shiftKey
-      ? snapCropToGuides(movedCrop, drag.handle, {
-          x: SNAP_REACH_PX / drag.sourceWidth,
-          y: SNAP_REACH_PX / drag.sourceHeight,
-        })
+    const snapThresholds = {
+      x: SNAP_REACH_PX / drag.sourceWidth,
+      y: SNAP_REACH_PX / drag.sourceHeight,
+    };
+
+    const snappedCrop = event.shiftKey
+      ? ratio === null || drag.handle === "move"
+        ? snapCropToGuides(movedCrop, drag.handle, snapThresholds)
+        : snapResizeCropToGuides(movedCrop, drag.crop, drag.handle, snapThresholds, ratio)
       : movedCrop;
 
     if (sourceMedia) {
       dispatch(
         cropChanged({
-          crop: nextCrop,
-          resolution: cropResolutionFor(sourceMedia.video ?? null, nextCrop, rotationDegrees),
+          crop: snappedCrop,
+          resolution: cropResolutionFor(sourceMedia.video ?? null, snappedCrop, rotationDegrees),
         }),
       );
     }
@@ -155,8 +214,28 @@ function useCropSelection(
     isOpen,
     moveDrag,
     open,
+    aspectRatioPreset,
+    resetCropToDefault,
+    selectAspectRatioPreset,
     startDrag,
   };
+}
+
+function aspectRatioForPreset(preset: CropAspectRatioPreset): number | null {
+  switch (preset) {
+    case "16:9":
+      return 16 / 9;
+    case "9:16":
+      return 9 / 16;
+    case "1:1":
+      return 1;
+    case "4:3":
+      return 4 / 3;
+    case "4:5":
+      return 4 / 5;
+    case "freeform":
+      return null;
+  }
 }
 
 export { useCropSelection };

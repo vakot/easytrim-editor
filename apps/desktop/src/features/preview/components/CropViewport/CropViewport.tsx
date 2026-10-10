@@ -1,12 +1,17 @@
+import { RotateCcw } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type PointerEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   cropReset,
   selectCrop,
+  selectCropApplied,
   selectFlipHorizontal,
   selectFlipVertical,
   selectRotationDegrees,
@@ -24,6 +29,7 @@ import { usePreviewRuntime, usePreviewTransform } from "@/features/preview";
 import { useTimelineTransport } from "@/features/timeline";
 import { saveFramePng } from "@/lib/tauri/media";
 
+import { CROP_ASPECT_RATIO_PRESETS } from "../../lib/crop-aspect-ratio.utils";
 import type { CropHandle } from "../../lib/crop-geometry.utils";
 import { capturePreviewFrame, frameFileNameFor, frameNumberAt } from "../../lib/frame-capture";
 import { previewGeometryFor, sourceCropForRotation } from "../../lib/preview-geometry";
@@ -51,6 +57,7 @@ function CropViewport() {
   const { videoRef } = usePreviewRuntime();
   const { registerHandlers } = usePreviewTransform();
   const crop = useAppSelector(selectCrop);
+  const cropApplied = useAppSelector(selectCropApplied);
   const flipHorizontal = useAppSelector(selectFlipHorizontal);
   const flipVertical = useAppSelector(selectFlipVertical);
   const rotationDegrees = useAppSelector(selectRotationDegrees);
@@ -60,6 +67,7 @@ function CropViewport() {
   const preview = useAppSelector(selectPreview);
   const reduceMotion = useReducedMotion() === true;
   const previewRef = useRef<HTMLDivElement>(null);
+  const previewViewportRef = useRef<HTMLDivElement>(null);
   const sourceFrameRef = useRef<HTMLDivElement>(null);
   const cropSelection = useCropSelection(
     previewRef,
@@ -102,7 +110,17 @@ function CropViewport() {
     resumeAfterCropRef.current = false;
   }, [cropSelection.isOpen, resumeAfterInteraction, suspendForInteraction]);
 
-  const { clearDrag, isDragging, isEditing, open, startDrag } = cropSelection;
+  const {
+    aspectRatioPreset,
+    clearDrag,
+    isDragging,
+    isEditing,
+    open,
+    resetCropToDefault,
+    selectAspectRatioPreset,
+    startDrag,
+  } = cropSelection;
+
   const resolved = presentation;
   const geometry = previewGeometryFor(sourceWidth, sourceHeight, resolved.crop, resolved.rotation);
   const cropIsOpen = resolved.cropIsOpen;
@@ -114,7 +132,7 @@ function CropViewport() {
   const cropRulerWidthTarget = previewOutputWidthTargetFor(previewAspect, cropIsOpen, false);
   const startCropDrag = useCallback(
     (event: PointerEvent<HTMLElement>, handle: CropHandle) => {
-      const viewportBounds = previewRef.current?.getBoundingClientRect();
+      const viewportBounds = previewViewportRef.current?.getBoundingClientRect();
 
       const rootFontSizePx = Number.parseFloat(
         window.getComputedStyle(document.documentElement).fontSize,
@@ -137,9 +155,10 @@ function CropViewport() {
 
   const resetTransform = useCallback(() => {
     clearDrag();
+    selectAspectRatioPreset("freeform");
     dispatch(cropReset());
     dispatch(commitActiveEditingInstanceDraft());
-  }, [clearDrag, dispatch]);
+  }, [clearDrag, dispatch, selectAspectRatioPreset]);
 
   const captureCurrentFrame = useCallback(() => {
     const video = videoRef.current;
@@ -216,90 +235,163 @@ function CropViewport() {
   return (
     <CropViewportContextMenu>
       <CropViewportTooltip containerRef={previewRef} cropSelection={cropSelection}>
-        <div className="@container-size absolute inset-0 overflow-hidden" data-preview-viewport>
-          <motion.div
-            animate={{ aspectRatio: outputCoordinateAspect, width: outputWidthTarget }}
-            className="absolute top-1/2 left-1/2 overflow-visible"
-            data-crop-editing={cropIsOpen}
-            data-output-aspect-ratio={previewAspect}
-            data-output-coordinate-aspect-ratio={outputCoordinateAspect}
-            data-output-width-target={outputWidthTarget}
-            data-preview-output
-            initial={false}
-            style={{ x: "-50%", y: "-50%" }}
-            transition={transformTransition}
-          >
-            <motion.div
-              animate={{
-                scaleX: resolved.flipHorizontal ? -1 : 1,
-                scaleY: resolved.flipVertical ? -1 : 1,
-              }}
-              className="absolute inset-0"
-              data-flip-horizontal={resolved.flipHorizontal}
-              data-flip-layer
-              data-flip-vertical={resolved.flipVertical}
-              initial={false}
-              style={{ transformOrigin: "50% 50%" }}
-              transition={transformTransition}
+        <div className="flex size-full flex-col">
+          <div className="relative flex-1">
+            <div
+              className="@container-size absolute inset-0 overflow-hidden"
+              data-preview-viewport
+              ref={previewViewportRef}
             >
               <motion.div
-                animate={{ rotate: resolved.rotationAngle }}
-                className="absolute inset-0"
-                data-output-rotation={resolved.rotationAngle}
-                data-rotating-output
+                animate={{ aspectRatio: outputCoordinateAspect, width: outputWidthTarget }}
+                className="absolute top-1/2 left-1/2 overflow-visible"
+                data-crop-editing={cropIsOpen}
+                data-output-aspect-ratio={previewAspect}
+                data-output-coordinate-aspect-ratio={outputCoordinateAspect}
+                data-output-width-target={outputWidthTarget}
+                data-preview-output
                 initial={false}
-                style={{ transformOrigin: "50% 50%" }}
+                style={{ x: "-50%", y: "-50%" }}
                 transition={transformTransition}
               >
-                <div
-                  className="absolute inset-0 overflow-hidden"
-                  data-crop-clip
-                  data-crop-mask
-                  data-full-rotated-source
-                  data-source-geometry={cropIsOpen ? "full-rotated-source" : "crop-relative-source"}
-                >
-                  <CropViewportVideo
-                    cropIsOpen={cropIsOpen}
-                    presentationRotation={resolved.rotationAngle}
-                    style={sourceGeometry}
-                    transition={transformTransition}
-                  />
-                </div>
-                <div
+                <motion.div
+                  animate={{
+                    scaleX: resolved.flipHorizontal ? -1 : 1,
+                    scaleY: resolved.flipVertical ? -1 : 1,
+                  }}
                   className="absolute inset-0"
-                  data-crop-selection-coordinate-space
-                  ref={sourceFrameRef}
+                  data-flip-horizontal={resolved.flipHorizontal}
+                  data-flip-layer
+                  data-flip-vertical={resolved.flipVertical}
+                  initial={false}
+                  style={{ transformOrigin: "50% 50%" }}
+                  transition={transformTransition}
                 >
-                  <AnimatePresence initial={false}>
-                    {cropIsOpen ? (
-                      <CropSelection
-                        crop={resolved.crop}
-                        flipHorizontal={resolved.flipHorizontal}
-                        flipVertical={resolved.flipVertical}
-                        isDragging={isDragging}
-                        key="crop-selection"
-                        onPointerDown={startCropDrag}
-                        rotation={resolved.rotation}
+                  <motion.div
+                    animate={{ rotate: resolved.rotationAngle }}
+                    className="absolute inset-0"
+                    data-output-rotation={resolved.rotationAngle}
+                    data-rotating-output
+                    initial={false}
+                    style={{ transformOrigin: "50% 50%" }}
+                    transition={transformTransition}
+                  >
+                    <div
+                      className="absolute inset-0 overflow-hidden"
+                      data-crop-clip
+                      data-crop-mask
+                      data-full-rotated-source
+                      data-source-geometry={
+                        cropIsOpen ? "full-rotated-source" : "crop-relative-source"
+                      }
+                    >
+                      <CropViewportVideo
+                        cropIsOpen={cropIsOpen}
+                        presentationRotation={resolved.rotationAngle}
+                        style={sourceGeometry}
                         transition={transformTransition}
                       />
-                    ) : null}
-                  </AnimatePresence>
-                </div>
+                    </div>
+
+                    <div
+                      className="absolute inset-0"
+                      data-crop-selection-coordinate-space
+                      ref={sourceFrameRef}
+                    >
+                      <AnimatePresence initial={false}>
+                        {cropIsOpen ? (
+                          <CropSelection
+                            crop={resolved.crop}
+                            flipHorizontal={resolved.flipHorizontal}
+                            flipVertical={resolved.flipVertical}
+                            isDragging={isDragging}
+                            key="crop-selection"
+                            onPointerDown={startCropDrag}
+                            rotation={resolved.rotation}
+                            transition={transformTransition}
+                          />
+                        ) : null}
+                      </AnimatePresence>
+                    </div>
+                  </motion.div>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          </motion.div>
-          <CropSnapMarkers
-            aspectRatio={previewAspect}
-            transition={transformTransition}
-            visible={cropIsOpen && isEditing}
-            widthTarget={cropRulerWidthTarget}
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-10 border border-primary/70 bg-primary/5 opacity-0 ring-1 ring-primary/20 transition-opacity duration-(--preview-transition-duration) ease-in-out group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
-            data-crop-preview-affordance
-            style={{ opacity: cropIsOpen ? 0 : undefined }}
-          />
+
+              <CropSnapMarkers
+                aspectRatio={previewAspect}
+                transition={transformTransition}
+                visible={cropIsOpen && isEditing}
+                widthTarget={cropRulerWidthTarget}
+              />
+
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 z-10 bg-primary/5 opacity-0 transition-opacity duration-(--preview-transition-duration) ease-in-out group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
+                data-crop-preview-affordance
+                style={{ opacity: cropIsOpen ? 0 : undefined }}
+              />
+            </div>
+          </div>
+
+          <AnimatePresence initial={false}>
+            {cropIsOpen ? (
+              <motion.footer
+                animate={{ height: "auto", opacity: 1 }}
+                className="border-t border-foreground/10 bg-preview-surface"
+                data-crop-aspect-ratio-presets
+                exit={{ height: 0, opacity: 0 }}
+                initial={{ height: 0, opacity: 0 }}
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+                transition={{ duration: reduceMotion ? 0 : 0.18, ease: "easeInOut" }}
+              >
+                <div
+                  aria-label={t("preview.crop.aspectRatioPresets")}
+                  className="flex w-max min-w-full items-center justify-center gap-1 p-1"
+                  role="group"
+                >
+                  <ButtonGroup>
+                    <Button
+                      aria-pressed={aspectRatioPreset === "freeform"}
+                      className="border-border"
+                      onClick={() => selectAspectRatioPreset("freeform")}
+                      size="sm"
+                      variant={aspectRatioPreset === "freeform" ? "secondary" : "outline"}
+                    >
+                      {t("preview.crop.freeform")}
+                    </Button>
+
+                    {CROP_ASPECT_RATIO_PRESETS.map(({ label }) => (
+                      <Button
+                        aria-pressed={aspectRatioPreset === label}
+                        className="border-border"
+                        key={label}
+                        onClick={() => selectAspectRatioPreset(label)}
+                        size="sm"
+                        variant={aspectRatioPreset === label ? "secondary" : "outline"}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </ButtonGroup>
+
+                  <Button
+                    aria-label={t("preview.crop.resetToDefault")}
+                    disabled={!cropApplied}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      resetCropToDefault();
+                    }}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    size="icon-sm"
+                    variant="destructive"
+                  >
+                    <RotateCcw aria-hidden="true" />
+                  </Button>
+                </div>
+              </motion.footer>
+            ) : null}
+          </AnimatePresence>
         </div>
       </CropViewportTooltip>
     </CropViewportContextMenu>
