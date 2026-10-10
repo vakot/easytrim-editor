@@ -108,7 +108,8 @@ function AppLayoutSidebar({
     (event: React.DragEvent<HTMLElement>) => {
       event.preventDefault();
       const sidebar = sidebarRef.current;
-      const viewId = event.dataTransfer.getData("application/x-easytrim-sidebar-view");
+      const transferredViewId = event.dataTransfer.getData("text/plain");
+      const viewId = draggedViewId ?? transferredViewId;
       if (!sidebar || !isSidebarViewId(viewId)) return;
 
       const insertionIndex =
@@ -118,7 +119,7 @@ function AppLayoutSidebar({
 
       onDrop(viewId, side, insertionIndex);
     },
-    [dropPreview, onDrop, side],
+    [draggedViewId, dropPreview, onDrop, side],
   );
 
   if (views.length === 0) return null;
@@ -298,11 +299,13 @@ function SidebarViewHeader({
 }
 
 function SidebarEmptyDropTarget({
+  draggedViewId,
   onDrop,
   onPreview,
   preview,
   side,
 }: {
+  draggedViewId: SidebarViewId | null;
   onDrop: (viewId: SidebarViewId, destination: SidebarId, index: number) => void;
   onPreview: (preview: SidebarDropPreview | null) => void;
   preview: SidebarDropPreview | null;
@@ -333,7 +336,8 @@ function SidebarEmptyDropTarget({
       }}
       onDrop={(event) => {
         event.preventDefault();
-        const viewId = event.dataTransfer.getData("application/x-easytrim-sidebar-view");
+        const transferredViewId = event.dataTransfer.getData("text/plain");
+        const viewId = draggedViewId ?? transferredViewId;
         if (isSidebarViewId(viewId)) onDrop(viewId, side, 0);
       }}
       role="region"

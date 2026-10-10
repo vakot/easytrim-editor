@@ -33,14 +33,15 @@ vi.mock("@/app/layout/components/SidebarViewPortal", () => ({
   SidebarViewTarget: () => <div />,
 }));
 
-function createDataTransfer(): DataTransfer {
+function createDataTransfer(exposeData = true): DataTransfer {
   const data: Record<string, string> = {};
 
   return {
     dropEffect: "none",
     effectAllowed: "all",
-    getData: (type: string) => data[type] ?? "",
+    getData: (type: string) => (exposeData ? (data[type] ?? "") : ""),
     setData: (type: string, value: string) => {
+      if (type !== "text/plain") throw new Error(`Unsupported drag format: ${type}`);
       data[type] = value;
     },
   } as unknown as DataTransfer;
@@ -78,7 +79,7 @@ describe("AppLayout sidebar drag and drop", () => {
     const sidebar = screen.getByRole("complementary", { name: "Left sidebar" });
     const sources = sidebar.querySelector<HTMLElement>('[data-sidebar-view="sources"]')!;
     const activity = sidebar.querySelector<HTMLElement>('[data-sidebar-view="activity"]')!;
-    const transfer = createDataTransfer();
+    const transfer = createDataTransfer(false);
 
     vi.spyOn(sidebar, "getBoundingClientRect").mockReturnValue({ top: 0 } as DOMRect);
     vi.spyOn(sources, "getBoundingClientRect").mockReturnValue({
@@ -103,7 +104,6 @@ describe("AppLayout sidebar drag and drop", () => {
     expect(sidebar).toBe(screen.getByRole("complementary", { name: "Left sidebar" }));
     act(() => dispatchDragEvent(sidebar, "drop", transfer, 180));
 
-    expect(transfer.getData("application/x-easytrim-sidebar-view")).toBe("activity");
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
 
     await waitFor(() => {
@@ -117,7 +117,7 @@ describe("AppLayout sidebar drag and drop", () => {
 
   it("creates the destination sidebar after dropping a view into an empty region", async () => {
     renderAppLayout();
-    const transfer = createDataTransfer();
+    const transfer = createDataTransfer(false);
 
     fireEvent.dragStart(
       screen.getByRole("button", { name: "Drag Activity Feed to move it between sidebars" }),

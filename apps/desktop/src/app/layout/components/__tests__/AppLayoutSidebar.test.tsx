@@ -10,13 +10,11 @@ import { createSidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
 import { AppLayoutSidebar, SidebarEmptyDropTarget } from "../AppLayoutSidebar";
 import { SidebarViewTarget } from "../SidebarViewPortal";
 
-const DRAG_TYPE = "application/x-easytrim-sidebar-view";
-
-function createDataTransfer(viewId: string): DataTransfer {
+function createDataTransfer(viewId = "", exposeData = true): DataTransfer {
   return {
     dropEffect: "none",
     effectAllowed: "all",
-    getData: (format: string) => (format === DRAG_TYPE ? viewId : ""),
+    getData: () => (exposeData ? viewId : ""),
     setData: vi.fn(),
   } as unknown as DataTransfer;
 }
@@ -26,7 +24,7 @@ describe("AppLayoutSidebar", () => {
     const hosts = createSidebarViewHosts();
     const onDrop = vi.fn();
     const onPreview = vi.fn();
-    const dataTransfer = createDataTransfer("activity");
+    const dataTransfer = createDataTransfer("", false);
 
     render(
       <AppLayoutSidebar
@@ -62,7 +60,7 @@ describe("AppLayoutSidebar", () => {
 
   it("previews and accepts a view in an empty sidebar", () => {
     const onDrop = vi.fn();
-    const dataTransfer = createDataTransfer("activity");
+    const dataTransfer = createDataTransfer("", false);
 
     function EmptySidebarHarness() {
       const [preview, setPreview] = useState<{
@@ -74,6 +72,7 @@ describe("AppLayoutSidebar", () => {
       return (
         <>
           <SidebarEmptyDropTarget
+            draggedViewId="activity"
             onDrop={onDrop}
             onPreview={setPreview}
             preview={preview}

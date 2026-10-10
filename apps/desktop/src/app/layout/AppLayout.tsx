@@ -33,10 +33,10 @@ function AppLayout() {
   const [dropPreview, setDropPreview] = useState<SidebarDropPreview | null>(null);
 
   const handleDragStart = useCallback((viewId: SidebarViewId, dataTransfer: DataTransfer) => {
-    dataTransfer.effectAllowed = "move";
-    dataTransfer.setData("application/x-easytrim-sidebar-view", viewId);
     setDraggedViewId(viewId);
     setDropPreview(null);
+    dataTransfer.effectAllowed = "move";
+    dataTransfer.setData("text/plain", viewId);
   }, []);
 
   const handleDragEnd = useCallback(() => {
@@ -112,6 +112,7 @@ function AppLayout() {
               <AppLayoutMain />
               {draggedViewId && sidebarLayout.left.length === 0 ? (
                 <SidebarEmptyDropTarget
+                  draggedViewId={draggedViewId}
                   onDrop={handleDrop}
                   onPreview={setDropPreview}
                   preview={dropPreview}
@@ -120,6 +121,7 @@ function AppLayout() {
               ) : null}
               {draggedViewId && sidebarLayout.right.length === 0 ? (
                 <SidebarEmptyDropTarget
+                  draggedViewId={draggedViewId}
                   onDrop={handleDrop}
                   onPreview={setDropPreview}
                   preview={dropPreview}
