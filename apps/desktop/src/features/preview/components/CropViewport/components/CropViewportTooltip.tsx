@@ -53,7 +53,7 @@ const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>
 
     const handleBlur = useCallback(
       (event: FocusEvent<HTMLDivElement>) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) close();
+        if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) close();
       },
       [close],
     );
