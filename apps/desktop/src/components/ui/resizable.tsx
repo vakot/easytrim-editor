@@ -39,6 +39,7 @@ interface PersistedResizablePanelGroupProps extends Omit<
   "defaultLayout" | "id"
 > {
   id: string;
+  onlySaveAfterUserInteractions?: boolean;
   storage?: ResizableLayoutStorage;
 }
 
@@ -46,6 +47,7 @@ function ResizablePanelGroupPersisted({
   children,
   id,
   onLayoutChanged,
+  onlySaveAfterUserInteractions,
   storage = localStorage,
   ...props
 }: PersistedResizablePanelGroupProps) {
@@ -53,6 +55,7 @@ function ResizablePanelGroupPersisted({
 
   const persistedLayout = ResizablePrimitive.useDefaultLayout({
     id,
+    onlySaveAfterUserInteractions,
     panelIds: panelIds ?? [],
     storage,
   });

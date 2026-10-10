@@ -46,6 +46,8 @@ interface ActiveSidebarDragExpansion {
   temporarilyExpanded: Set<SidebarId>;
 }
 
+const WORKSPACE_SIDEBAR_WIDTHS_STORAGE_KEY = "react-resizable-panels:workspace-sidebar-widths";
+
 function AppLayout() {
   const dispatch = useAppDispatch();
   const layoutDensity = useAppSelector(selectLayoutDensity);
@@ -68,11 +70,67 @@ function AppLayout() {
     viewId: SidebarViewId;
   } | null>(null);
 
+  const [workspaceSidebarWidths, setWorkspaceSidebarWidths] = useState<
+    Partial<Record<SidebarId, string>>
+  >(getSavedWorkspaceSidebarWidths);
+
   const dragStartPanelBounds = useRef<Map<SidebarViewId, SidebarViewBounds>>(new Map());
   const dragStartRegionTops = useRef<Map<SidebarId, number>>(new Map());
   const dragSidebarExpansion = useRef<ActiveSidebarDragExpansion | null>(null);
+  const workspaceSidebarWidthsRef = useRef(workspaceSidebarWidths);
 
   const isCompact = layoutDensity === "compact";
+
+  const handleWorkspaceLayoutChanged = useCallback(
+    (layout: Record<string, number>, meta: { isUserInteraction: boolean }) => {
+      const workspace = document.getElementById("workspace");
+      if (!workspace) return;
+
+      const separatorWidth = Array.from(
+        workspace.querySelectorAll<HTMLElement>(":scope > [data-separator]"),
+      ).reduce((total, separator) => total + separator.getBoundingClientRect().width, 0);
+
+      const availableWidth = workspace.getBoundingClientRect().width - separatorWidth;
+      if (availableWidth <= 0) return;
+
+      const nextWidths = { ...workspaceSidebarWidthsRef.current };
+      let hasChanged = false;
+      for (const side of ["left", "right"] as const) {
+        const panelId = side === "left" ? "workspace-left-sidebar" : "workspace-right-sidebar";
+        const panelSize = layout[panelId];
+        if (panelSize === undefined || panelSize <= 0) continue;
+
+        if (!meta.isUserInteraction && nextWidths[side]) continue;
+        const measuredWidth = document.getElementById(panelId)?.getBoundingClientRect().width;
+        const sidebarWidth = measuredWidth || (availableWidth * panelSize) / 100;
+        const width = `${sidebarWidth}px`;
+        const currentWidth = Number.parseFloat(nextWidths[side] ?? "");
+        if (
+          meta.isUserInteraction &&
+          (!Number.isFinite(currentWidth) || Math.abs(currentWidth - sidebarWidth) > 0.5)
+        ) {
+          const savedWidths = readSavedWorkspaceSidebarWidths();
+          savedWidths[side] = sidebarWidth;
+          try {
+            localStorage.setItem(WORKSPACE_SIDEBAR_WIDTHS_STORAGE_KEY, JSON.stringify(savedWidths));
+          } catch {
+            // Resizing remains available when browser storage cannot be written.
+          }
+        }
+
+        if (nextWidths[side] !== width) {
+          nextWidths[side] = width;
+          hasChanged = true;
+        }
+      }
+
+      if (hasChanged) {
+        workspaceSidebarWidthsRef.current = nextWidths;
+        setWorkspaceSidebarWidths(nextWidths);
+      }
+    },
+    [],
+  );
 
   const updateDragSidebarExpansion = useCallback(
     (position: { x: number; y: number } | undefined) => {
@@ -263,10 +321,13 @@ function AppLayout() {
         <AppLayoutHeader />
 
         <div className="relative min-h-0 min-w-0">
+          {/* Keep panel registrations aligned when outer workspace topology changes. */}
           <ResizablePanelGroup
             className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
             id="workspace"
             key={`${hasLeftSidebar}:${hasRightSidebar}`}
+            onLayoutChanged={handleWorkspaceLayoutChanged}
+            onlySaveAfterUserInteractions
             persisted
           >
             {hasLeftSidebar ? (
@@ -274,7 +335,7 @@ function AppLayout() {
                 className="ml-1.5 overflow-hidden!"
                 collapsedSize={0}
                 collapsible
-                defaultSize="20.5rem"
+                defaultSize={workspaceSidebarWidths.left ?? "20.5rem"}
                 groupResizeBehavior="preserve-pixel-size"
                 id="workspace-left-sidebar"
                 maxSize="30rem"
@@ -320,7 +381,7 @@ function AppLayout() {
                 className="mr-1.5 overflow-hidden!"
                 collapsedSize={0}
                 collapsible
-                defaultSize="20.5rem"
+                defaultSize={workspaceSidebarWidths.right ?? "20.5rem"}
                 groupResizeBehavior="preserve-pixel-size"
                 id="workspace-right-sidebar"
                 maxSize="30rem"
@@ -368,6 +429,33 @@ function AppLayout() {
 
 function getDragPosition(event: DragStartEvent | DragMoveEvent | DragEndEvent) {
   return ("to" in event ? event.to : undefined) ?? event.operation.position.current;
+}
+
+function getSavedWorkspaceSidebarWidths(): Partial<Record<SidebarId, string>> {
+  return Object.fromEntries(
+    Object.entries(readSavedWorkspaceSidebarWidths()).map(([side, width]) => [side, `${width}px`]),
+  ) as Partial<Record<SidebarId, string>>;
+}
+
+function readSavedWorkspaceSidebarWidths(): Partial<Record<SidebarId, number>> {
+  try {
+    const savedWidths = localStorage.getItem(WORKSPACE_SIDEBAR_WIDTHS_STORAGE_KEY);
+    if (!savedWidths) return {};
+
+    const parsed: unknown = JSON.parse(savedWidths);
+    if (typeof parsed !== "object" || parsed === null) return {};
+
+    const widths: Partial<Record<SidebarId, number>> = {};
+    for (const side of ["left", "right"] as const) {
+      const width = (parsed as Record<string, unknown>)[side];
+      if (typeof width === "number" && Number.isFinite(width) && width > 0) {
+        widths[side] = width;
+      }
+    }
+    return widths;
+  } catch {
+    return {};
+  }
 }
 
 function getSidebarDragPreview(event: DragStartEvent | DragMoveEvent) {

@@ -1,12 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
 import { ResizablePanelContextProvider, usePanelCommand } from "@/components/ui/resizable";
 
 import { AppLayout } from "@/app/layout/AppLayout";
-import { preferencesReducer } from "@/app/store/slices/preferences-slice";
+import { preferencesReducer, sidebarLayoutChanged } from "@/app/store/slices/preferences-slice";
 
 vi.mock("@/app/layout/components/AppLayoutHeader", async () => {
   const { useDragDropManager } = await import("@dnd-kit/react");
@@ -39,6 +39,17 @@ vi.mock("@/app/layout/components/AppLayoutHeader", async () => {
         </button>
         <button onClick={() => manager?.actions.stop()} type="button">
           Finish drag
+        </button>
+        <button
+          onClick={() =>
+            manager?.actions.start({ source: "sources", coordinates: { x: 1100, y: 350 } })
+          }
+          type="button"
+        >
+          Begin Sources drag to right
+        </button>
+        <button onClick={() => manager?.actions.move({ to: { x: 1100, y: 350 } })} type="button">
+          Move drag to right sidebar
         </button>
         <button onClick={() => manager?.actions.stop({ canceled: true })} type="button">
           Cancel drag
@@ -194,6 +205,53 @@ describe("AppLayout drag and resize integration", () => {
       removeListener: () => undefined,
     }));
     const store = configureStore({ reducer: { preferences: preferencesReducer } });
+    localStorage.setItem(
+      "react-resizable-panels:workspace:workspace-left-sidebar:workspace-content",
+      JSON.stringify({ "workspace-left-sidebar": 30, "workspace-content": 70 }),
+    );
+    localStorage.setItem(
+      "react-resizable-panels:workspace-sidebar-widths",
+      JSON.stringify({ left: 480, right: 360 }),
+    );
+    const getBoundingClientRect = Element.prototype.getBoundingClientRect;
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
+      this: Element,
+    ) {
+      if (this.id === "workspace") {
+        return {
+          bottom: 800,
+          height: 800,
+          left: 0,
+          right: 2000,
+          top: 0,
+          width: 2000,
+          x: 0,
+          y: 0,
+        } as DOMRect;
+      }
+
+      return getBoundingClientRect.call(this);
+    });
+    Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+      configurable: true,
+      get(this: HTMLElement) {
+        if (!this.hasAttribute("data-panel") || this.parentElement?.id !== "workspace") return 0;
+
+        const panels = Array.from(document.getElementById("workspace")?.children ?? []).filter(
+          (element): element is HTMLElement =>
+            element instanceof HTMLElement && element.hasAttribute("data-panel"),
+        );
+
+        const totalFlexGrow = panels.reduce(
+          (total, panel) => total + Number.parseFloat(panel.style.flexGrow || "0"),
+          0,
+        );
+
+        if (!totalFlexGrow) return 0;
+
+        return (2000 * Number.parseFloat(this.style.flexGrow || "0")) / totalFlexGrow;
+      },
+    });
 
     render(
       <Provider store={store}>
@@ -226,6 +284,9 @@ describe("AppLayout drag and resize integration", () => {
     await waitFor(() => {
       expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
     });
+    const workspaceLeftPanel = document.getElementById("workspace-left-sidebar")!;
+    const initialWorkspaceSidebarSize = workspaceLeftPanel.style.flexGrow;
+    const initialWorkspaceSidebarWidth = workspaceLeftPanel.offsetWidth;
     expectValidPanelLayout(sidebar, ["sources", "activity"]);
 
     const panelSizes = new Map(
@@ -326,6 +387,7 @@ describe("AppLayout drag and resize integration", () => {
     expectValidPanelLayout(sidebar, ["sources", "activity"]);
     expect(sourcesPanel.style.flexGrow).toBe(panelSizes.get(sourcesPanel.id));
     expect(activityPanel.style.flexGrow).toBe(panelSizes.get(activityPanel.id));
+    expect(workspaceLeftPanel.style.flexGrow).toBe(initialWorkspaceSidebarSize);
 
     const separators = sidebar.querySelectorAll('[data-slot="resizable-handle"]');
     expect(separators).toHaveLength(1);
@@ -409,5 +471,125 @@ describe("AppLayout drag and resize integration", () => {
       expect(sidebar.querySelector('[data-sidebar-view="activity"]')).not.toHaveClass("opacity-50");
     });
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
+
+    const workspace = document.getElementById("workspace")!;
+    const leftSidebarPanel = workspaceLeftPanel;
+    const emptyRightTarget = document.querySelector<HTMLElement>(
+      '[data-sidebar-empty-drop-target="right"]',
+    )!;
+
+    setBounds(workspace, 0, 800);
+    Object.defineProperty(workspace, "offsetWidth", { configurable: true, value: 2000 });
+    Object.defineProperty(workspace, "offsetHeight", { configurable: true, value: 800 });
+    Object.defineProperty(workspace, "getBoundingClientRect", {
+      configurable: true,
+      value: () =>
+        ({
+          bottom: 800,
+          height: 800,
+          left: 0,
+          right: 2000,
+          top: 0,
+          width: 2000,
+          x: 0,
+          y: 0,
+        }) as DOMRect,
+    });
+    Object.defineProperty(emptyRightTarget, "getBoundingClientRect", {
+      configurable: true,
+      value: () =>
+        ({
+          bottom: 800,
+          height: 800,
+          left: 1000,
+          right: 2000,
+          top: 0,
+          width: 1000,
+          x: 1000,
+          y: 0,
+        }) as DOMRect,
+    });
+
+    const customLeftSidebarSize = leftSidebarPanel.style.flexGrow;
+    const previousWorkspaceSidebarWidth = leftSidebarPanel.offsetWidth;
+    expect(Number.parseFloat(customLeftSidebarSize)).toBeGreaterThan(0);
+    expect(previousWorkspaceSidebarWidth).toBe(initialWorkspaceSidebarWidth);
+    expect(previousWorkspaceSidebarWidth).toBeCloseTo(480);
+
+    fireEvent.click(screen.getByRole("button", { name: "Begin Sources drag to right" }));
+    fireEvent.click(screen.getByRole("button", { name: "Move drag to right sidebar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Finish drag" }));
+
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout).toEqual({
+        left: ["activity"],
+        right: ["sources"],
+      });
+    });
+    expect(
+      Array.from(document.getElementById("workspace")!.children).map((child) =>
+        child.hasAttribute("data-panel") ? child.id : "separator",
+      ),
+    ).toEqual([
+      "workspace-left-sidebar",
+      "separator",
+      "workspace-content",
+      "separator",
+      "workspace-right-sidebar",
+    ]);
+    expect(
+      document.querySelector('[data-sidebar-view="activity"]')?.closest<HTMLElement>("[data-panel]")
+        ?.id,
+    ).toBe("workspace-left-sidebar");
+    expect(
+      document.querySelector('[data-sidebar-view="sources"]')?.closest<HTMLElement>("[data-panel]")
+        ?.id,
+    ).toBe("workspace-right-sidebar");
+    const remainingLeftPanel = document.getElementById("workspace-left-sidebar")!;
+    expect(remainingLeftPanel.offsetWidth).toBeCloseTo(previousWorkspaceSidebarWidth);
+    const firstRightPanel = document.getElementById("workspace-right-sidebar")!;
+    const configuredRightSidebarWidth = firstRightPanel.offsetWidth;
+    expect(configuredRightSidebarWidth).toBeCloseTo(360);
+
+    expect(
+      localStorage.getItem(
+        "react-resizable-panels:workspace:workspace-left-sidebar:workspace-content:workspace-right-sidebar",
+      ),
+    ).toBeNull();
+    expect(localStorage.getItem("react-resizable-panels:workspace-sidebar-widths")).toBe(
+      JSON.stringify({ left: 480, right: 360 }),
+    );
+
+    act(() => {
+      store.dispatch(
+        sidebarLayoutChanged({ destination: "left", insertionIndex: 1, viewId: "sources" }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout).toEqual({
+        left: ["activity", "sources"],
+        right: [],
+      });
+      expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
+    });
+    expect(document.getElementById("workspace-right-sidebar")).toBeNull();
+
+    act(() => {
+      store.dispatch(
+        sidebarLayoutChanged({ destination: "right", insertionIndex: 0, viewId: "sources" }),
+      );
+    });
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout).toEqual({
+        left: ["activity"],
+        right: ["sources"],
+      });
+    });
+    expect(document.getElementById("workspace-right-sidebar")?.offsetWidth).toBeCloseTo(
+      configuredRightSidebarWidth,
+    );
+    const restoredLeftPanel = document.getElementById("workspace-left-sidebar")!;
+    expect(restoredLeftPanel.offsetWidth).toBeCloseTo(previousWorkspaceSidebarWidth);
   });
 });
