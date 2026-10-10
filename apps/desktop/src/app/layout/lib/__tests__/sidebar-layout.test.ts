@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_SIDEBAR_LAYOUT, moveSidebarView, normalizeSidebarLayout } from "../sidebar-layout";
+import {
+  DEFAULT_SIDEBAR_LAYOUT,
+  moveSidebarView,
+  normalizeSidebarLayout,
+  type SidebarLayout,
+} from "../sidebar-layout";
 
 describe("sidebar layout", () => {
   it("uses the default layout when persisted data has the wrong shape", () => {
@@ -26,6 +31,12 @@ describe("sidebar layout", () => {
     });
   });
 
+  it("supports leaving one sidebar empty", () => {
+    expect(
+      moveSidebarView({ left: ["sources"], right: ["activity"] }, "sources", "right", 0),
+    ).toEqual({ left: [], right: ["sources", "activity"] });
+  });
+
   it("reorders a view and clamps the insertion index", () => {
     expect(moveSidebarView(DEFAULT_SIDEBAR_LAYOUT, "sources", "left", 2)).toEqual({
       left: ["activity", "sources"],
@@ -35,5 +46,11 @@ describe("sidebar layout", () => {
       left: ["sources"],
       right: ["activity"],
     });
+  });
+
+  it("keeps the layout reference when a drop does not change placement", () => {
+    const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
+
+    expect(moveSidebarView(layout, "sources", "left", 0)).toBe(layout);
   });
 });

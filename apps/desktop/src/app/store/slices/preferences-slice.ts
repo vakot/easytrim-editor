@@ -188,8 +188,7 @@ const selectUiScalePercent = (state: RootState): number => {
 const selectPrimaryColor = (state: RootState): PrimaryColor =>
   selectPreferences(state).primaryColor;
 
-const selectSidebarLayout = (state: RootState): SidebarLayout =>
-  state.preferences.sidebarLayout;
+const selectSidebarLayout = (state: RootState): SidebarLayout => state.preferences.sidebarLayout;
 
 const selectLastSeenChangelogVersion = (state: RootState): string | null =>
   selectPreferences(state).lastSeenChangelogVersion;
@@ -215,13 +214,13 @@ export {
   selectPlaybackVolumePercent,
   selectPreferences,
   selectPrimaryColor,
-  selectSidebarLayout,
   selectSegmentPlaybackEnabledDefault,
+  selectSidebarLayout,
   selectStripMetadataOnExport,
   selectThemePreference,
   selectUiScalePercent,
-  themePreferenceChanged,
   sidebarLayoutChanged,
+  themePreferenceChanged,
   uiScaleDecreased,
   uiScaleIncreased,
   uiScalingReset,

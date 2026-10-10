@@ -20,8 +20,8 @@ interface Preferences {
   mergeAudioEnabledDefault: boolean;
   playbackVolumePercent: number;
   primaryColor: PrimaryColor;
-  sidebarLayout: SidebarLayout;
   segmentPlaybackEnabledDefault: boolean;
+  sidebarLayout: SidebarLayout;
   stripMetadataOnExport: boolean;
   theme: ThemePreference;
   uiScalePercent: number;

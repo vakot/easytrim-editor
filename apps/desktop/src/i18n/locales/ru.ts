@@ -295,7 +295,6 @@ export const ru = {
     showBottomPanel: "Показать нижнюю панель",
     toggleLeftPanel: "Переключить левую панель",
     toggleBottomPanel: "Переключить нижнюю панель",
-    explorer: "Источники",
     activityFeed: "Лента активности",
     layoutDensity: "Плотность интерфейса",
     view: "Вид",

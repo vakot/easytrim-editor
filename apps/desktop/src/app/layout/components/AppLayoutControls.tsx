@@ -4,6 +4,8 @@ import {
   PanelBottomDashed,
   PanelLeft,
   PanelLeftDashed,
+  PanelRight,
+  PanelRightDashed,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -34,6 +36,7 @@ function AppLayoutControls() {
   const { t } = useTranslation();
   const { executeCommand } = useApplicationCommands();
   const leftPanel = useApplicationCommand("toggle-left-panel");
+  const rightPanel = useApplicationCommand("toggle-right-panel");
   const bottomPanel = useApplicationCommand("toggle-bottom-panel");
   const activityFeedDefault = useApplicationCommand("activity-feed-view-default");
   const activityFeedCompact = useApplicationCommand("activity-feed-view-compact");
@@ -77,6 +80,15 @@ function AppLayoutControls() {
               <DropdownMenuLabel>{t("layout.panelsVisibility")}</DropdownMenuLabel>
 
               <ApplicationCommandMenuItem asChild commandId="toggle-left-panel">
+                <DropdownMenuCheckboxItem inset keepOpen>
+                  <ApplicationCommandLabel />
+                  <DropdownMenuIcon side="right">
+                    <ApplicationCommandIcon />
+                  </DropdownMenuIcon>
+                </DropdownMenuCheckboxItem>
+              </ApplicationCommandMenuItem>
+
+              <ApplicationCommandMenuItem asChild commandId="toggle-right-panel">
                 <DropdownMenuCheckboxItem inset keepOpen>
                   <ApplicationCommandLabel />
                   <DropdownMenuIcon side="right">
@@ -176,8 +188,29 @@ function AppLayoutControls() {
       <Tooltip preserveOnTrigger>
         <TooltipTrigger asChild>
           <Button
+            aria-label={t("layout.toggleRightPanel")}
+            className="size-7 p-0 text-secondary-foreground"
+            disabled={!rightPanel.enabled || rightPanel.pending}
+            onClick={() => void executeCommand("toggle-right-panel", "button")}
+            size="icon-sm"
+            variant="ghost"
+          >
+            {!rightPanel.checked ? (
+              <PanelRightDashed aria-hidden="true" />
+            ) : (
+              <PanelRight aria-hidden="true" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t("layout.toggleRightPanel")}</TooltipContent>
+      </Tooltip>
+
+      <Tooltip preserveOnTrigger>
+        <TooltipTrigger asChild>
+          <Button
             aria-label={t("layout.toggleLeftPanel")}
             className="size-7 p-0 text-secondary-foreground"
+            disabled={!leftPanel.enabled || leftPanel.pending}
             onClick={() => void executeCommand("toggle-left-panel", "button")}
             size="icon-sm"
             variant="ghost"

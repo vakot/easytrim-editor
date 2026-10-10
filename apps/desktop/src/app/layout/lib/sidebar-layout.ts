@@ -64,22 +64,30 @@ function moveSidebarView(
     left: normalized.left.filter((item) => item !== viewId),
     right: normalized.right.filter((item) => item !== viewId),
   };
+
   const destinationViews = next[destination];
   const index = Number.isFinite(insertionIndex)
     ? Math.max(0, Math.min(destinationViews.length, Math.trunc(insertionIndex)))
     : destinationViews.length;
 
   destinationViews.splice(index, 0, viewId);
+
+  const unchanged = (side: SidebarId) =>
+    layout[side].length === next[side].length &&
+    layout[side].every((item, position) => item === next[side][position]);
+
+  if (unchanged("left") && unchanged("right")) return layout;
+
   return next;
 }
 
 export {
   DEFAULT_SIDEBAR_LAYOUT,
-  SIDEBAR_IDS,
-  SIDEBAR_VIEW_IDS,
   isSidebarId,
   isSidebarViewId,
   moveSidebarView,
   normalizeSidebarLayout,
+  SIDEBAR_IDS,
+  SIDEBAR_VIEW_IDS,
 };
 export type { SidebarId, SidebarLayout, SidebarViewId };

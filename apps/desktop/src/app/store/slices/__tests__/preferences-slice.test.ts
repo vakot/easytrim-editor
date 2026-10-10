@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import { DEFAULT_SIDEBAR_LAYOUT } from "@/app/layout/lib/sidebar-layout";
+import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   activityFeedViewChanged,
   changelogVersionSeen,
@@ -11,16 +11,16 @@ import {
   preferenceChanged,
   preferencesReducer,
   primaryColorChanged,
-  selectSidebarLayout,
   selectActivityFeedView,
   selectDeleteSourceOnRenderFinish,
   selectLayoutDensity,
   selectMergeAudioEnabledDefault,
   selectPreferences,
   selectPrimaryColor,
-  sidebarLayoutChanged,
+  selectSidebarLayout,
   selectStripMetadataOnExport,
   selectThemePreference,
+  sidebarLayoutChanged,
   themePreferenceChanged,
   uiScalingReset,
 } from "@/app/store/slices/preferences-slice";
