@@ -15,8 +15,9 @@ type CropAspectRatioPreset = (typeof CROP_ASPECT_RATIO_PRESETS)[number]["label"]
 function fitCropToAspectRatio(crop: CropRect, ratio: number): CropRect {
   const cropRatio = crop.width / crop.height;
   const fittedWidth = cropRatio > ratio ? crop.height * ratio : crop.width;
-  const minimumWidth = MIN_CROP_SIZE * Math.max(1, ratio);
-  const width = Math.max(fittedWidth, minimumWidth);
+  const maximumWidth = Math.min(1, ratio);
+  const minimumWidth = Math.min(maximumWidth, MIN_CROP_SIZE * Math.max(1, ratio));
+  const width = Math.min(maximumWidth, Math.max(fittedWidth, minimumWidth));
   const height = width / ratio;
   const x = clamp(crop.x + (crop.width - width) / 2, 0, 1 - width);
   const y = clamp(crop.y + (crop.height - height) / 2, 0, 1 - height);

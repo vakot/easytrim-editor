@@ -24,7 +24,7 @@ import {
   moveCrop,
   resizeCrop,
 } from "../../../lib/crop-geometry.utils";
-import { snapCropToGuides } from "../../../lib/crop-snapping.utils";
+import { snapCropToGuides, snapResizeCropToGuides } from "../../../lib/crop-snapping.utils";
 
 const SNAP_REACH_PX = 12;
 
@@ -173,20 +173,22 @@ function useCropSelection(
           ? resizeCrop(drag.crop, drag.handle, deltaX, deltaY)
           : resizeCropToAspectRatio(drag.crop, drag.handle, deltaX, deltaY, ratio);
 
-    const snappedCrop = event.shiftKey
-      ? snapCropToGuides(movedCrop, drag.handle, {
-          x: SNAP_REACH_PX / drag.sourceWidth,
-          y: SNAP_REACH_PX / drag.sourceHeight,
-        })
-      : movedCrop;
+    const snapThresholds = {
+      x: SNAP_REACH_PX / drag.sourceWidth,
+      y: SNAP_REACH_PX / drag.sourceHeight,
+    };
 
-    const nextCrop = ratio === null ? snappedCrop : fitCropToAspectRatio(snappedCrop, ratio);
+    const snappedCrop = event.shiftKey
+      ? ratio === null || drag.handle === "move"
+        ? snapCropToGuides(movedCrop, drag.handle, snapThresholds)
+        : snapResizeCropToGuides(movedCrop, drag.crop, drag.handle, snapThresholds, ratio)
+      : movedCrop;
 
     if (sourceMedia) {
       dispatch(
         cropChanged({
-          crop: nextCrop,
-          resolution: cropResolutionFor(sourceMedia.video ?? null, nextCrop, rotationDegrees),
+          crop: snappedCrop,
+          resolution: cropResolutionFor(sourceMedia.video ?? null, snappedCrop, rotationDegrees),
         }),
       );
     }

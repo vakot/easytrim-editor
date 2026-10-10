@@ -67,6 +67,7 @@ function CropViewport() {
   const preview = useAppSelector(selectPreview);
   const reduceMotion = useReducedMotion() === true;
   const previewRef = useRef<HTMLDivElement>(null);
+  const previewViewportRef = useRef<HTMLDivElement>(null);
   const sourceFrameRef = useRef<HTMLDivElement>(null);
   const cropSelection = useCropSelection(
     previewRef,
@@ -131,7 +132,7 @@ function CropViewport() {
   const cropRulerWidthTarget = previewOutputWidthTargetFor(previewAspect, cropIsOpen, false);
   const startCropDrag = useCallback(
     (event: PointerEvent<HTMLElement>, handle: CropHandle) => {
-      const viewportBounds = previewRef.current?.getBoundingClientRect();
+      const viewportBounds = previewViewportRef.current?.getBoundingClientRect();
 
       const rootFontSizePx = Number.parseFloat(
         window.getComputedStyle(document.documentElement).fontSize,
@@ -236,7 +237,11 @@ function CropViewport() {
       <CropViewportTooltip containerRef={previewRef} cropSelection={cropSelection}>
         <div className="flex size-full flex-col">
           <div className="relative flex-1">
-            <div className="@container-size absolute inset-0 overflow-hidden" data-preview-viewport>
+            <div
+              className="@container-size absolute inset-0 overflow-hidden"
+              data-preview-viewport
+              ref={previewViewportRef}
+            >
               <motion.div
                 animate={{ aspectRatio: outputCoordinateAspect, width: outputWidthTarget }}
                 className="absolute top-1/2 left-1/2 overflow-visible"
