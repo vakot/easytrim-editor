@@ -91,6 +91,7 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
               <AudioTrackRowWaveform controller={controller} liveGainDb={displayedGainDb} />
             </div>
           </ContextMenuTrigger>
+
           <AudioTrackContextMenuContent controller={controller} />
         </ContextMenu>
       </AudioTrackMetadataDialog>
@@ -105,21 +106,7 @@ function AudioTrackRowWaveform({
   controller: ReturnType<typeof useAudioTrackController>;
   liveGainDb: number;
 }) {
-  const { t } = useTranslation();
   const [displayMode, setDisplayMode] = useState<WaveformDisplayMode>("peak");
-  const displayModeShortLabel =
-    displayMode === "peak"
-      ? t("audio.waveform.displayMode.peakShort")
-      : displayMode === "rms"
-        ? t("audio.waveform.displayMode.rmsShort")
-        : t("audio.waveform.displayMode.stereoShort");
-
-  const displayModeDescription =
-    displayMode === "peak"
-      ? t("audio.waveform.displayMode.peakDescription")
-      : displayMode === "rms"
-        ? t("audio.waveform.displayMode.rmsDescription")
-        : t("audio.waveform.displayMode.stereoDescription");
 
   const trim = useAppSelector(selectTrim);
   const source = useAppSelector(selectSourceSelection);
@@ -133,7 +120,7 @@ function AudioTrackRowWaveform({
 
   return (
     <div
-      className="relative h-12.5 min-w-0 overflow-hidden rounded-lg border border-border bg-muted/30 transition-opacity data-[enabled=false]:opacity-40"
+      className="segment-markers relative size-full h-12.5 min-w-0 overflow-hidden rounded-lg border border-border bg-muted/30 text-muted transition-opacity data-[enabled=false]:opacity-50"
       data-enabled={track.enabled}
     >
       <AudioTrackWaveform
@@ -142,29 +129,15 @@ function AudioTrackRowWaveform({
         stream={stream}
         track={track}
       />
+
       <div className="absolute top-1 right-1 z-4">
-        <Select
+        <AudioTrackDisplaySelect
           onValueChange={(value) => setDisplayMode(value as typeof displayMode)}
+          streamIndex={stream.streamIndex}
           value={displayMode}
-        >
-          <SelectTrigger
-            aria-describedby={`audio-waveform-mode-description-${stream.streamIndex}`}
-            aria-label={t("audio.waveform.displayMode.label")}
-            className="h-6 min-w-18 border-0 bg-background/80 px-2 py-0 text-[0.625rem] shadow-sm"
-            size="sm"
-          >
-            <SelectValue>{displayModeShortLabel}</SelectValue>
-          </SelectTrigger>
-          <SelectContent align="end">
-            <SelectItem value="peak">{t("audio.waveform.displayMode.peak")}</SelectItem>
-            <SelectItem value="rms">{t("audio.waveform.displayMode.rms")}</SelectItem>
-            <SelectItem value="stereo">{t("audio.waveform.displayMode.stereo")}</SelectItem>
-          </SelectContent>
-        </Select>
-        <span className="sr-only" id={`audio-waveform-mode-description-${stream.streamIndex}`}>
-          {displayModeDescription}
-        </span>
+        />
       </div>
+
       {activityRanges.map((range) => (
         <div
           aria-hidden="true"
@@ -190,6 +163,64 @@ function AudioTrackRowWaveform({
       <AudioTrackEffectsIndicator processing={track.processing} />
       <AudioTrackGainIndicator controller={controller} gainDb={liveGainDb} />
     </div>
+  );
+}
+
+function AudioTrackDisplaySelect({
+  onValueChange,
+  streamIndex,
+  value,
+}: Pick<React.ComponentProps<typeof Select>, "value" | "onValueChange"> & { streamIndex: number }) {
+  const displayModeShortLabel =
+    value === "peak"
+      ? t("audio.waveform.displayMode.peakShort")
+      : value === "rms"
+        ? t("audio.waveform.displayMode.rmsShort")
+        : t("audio.waveform.displayMode.stereoShort");
+
+  const displayModeDescription =
+    value === "peak"
+      ? t("audio.waveform.displayMode.peakDescription")
+      : value === "rms"
+        ? t("audio.waveform.displayMode.rmsDescription")
+        : t("audio.waveform.displayMode.stereoDescription");
+
+  return (
+    <>
+      <Select onValueChange={onValueChange} value={value}>
+        <SelectTrigger
+          aria-describedby={`audio-waveform-mode-description-${streamIndex}`}
+          aria-label={t("audio.waveform.displayMode.label")}
+          className="bg-background/25! text-foreground backdrop-blur-xs"
+          size="sm"
+        >
+          <SelectValue>{displayModeShortLabel}</SelectValue>
+        </SelectTrigger>
+        <SelectContent align="end">
+          <SelectItem value="peak">
+            {t("audio.waveform.displayMode.peakShort")}
+            <span className="text-muted-foreground!">
+              {t("audio.waveform.displayMode.peakDescription")}
+            </span>
+          </SelectItem>
+          <SelectItem value="rms">
+            {t("audio.waveform.displayMode.rmsShort")}
+            <span className="text-muted-foreground!">
+              {t("audio.waveform.displayMode.rmsDescription")}
+            </span>
+          </SelectItem>
+          <SelectItem value="stereo">
+            {t("audio.waveform.displayMode.stereoShort")}
+            <span className="text-muted-foreground!">
+              {t("audio.waveform.displayMode.stereoDescription")}
+            </span>
+          </SelectItem>
+        </SelectContent>
+      </Select>
+      <span className="sr-only" id={`audio-waveform-mode-description-${streamIndex}`}>
+        {displayModeDescription}
+      </span>
+    </>
   );
 }
 

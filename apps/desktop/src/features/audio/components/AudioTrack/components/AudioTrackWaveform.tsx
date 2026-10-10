@@ -4,11 +4,9 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { useAppDispatch } from "@/app/store/redux-hooks";
 import { type AudioTrackState, waveformDisplayFailed } from "@/app/store/slices/audio-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
 import { usePrimaryColor } from "@/app/theme/useTheme";
-import { timelinePercent } from "@/domain/trim";
 import { localizeAppError } from "@/i18n/app-errors";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
@@ -29,11 +27,6 @@ type WaveformWithStatus<Status extends AudioTrackState["waveform"]["status"]> = 
 >;
 
 function AudioTrackWaveform({ displayMode, gainDb, stream, track }: AudioTrackWaveformProps) {
-  const trim = useAppSelector(selectTrim);
-  const sourceDurationMicros = trim?.sourceDurationMicros ?? 1;
-  const selectionStartPercent = trim ? timelinePercent(trim.startMicros, sourceDurationMicros) : 0;
-  const selectionEndPercent = trim ? timelinePercent(trim.endMicros, sourceDurationMicros) : 100;
-
   switch (track.waveform.status) {
     case "idle":
     case "loading":
@@ -44,8 +37,6 @@ function AudioTrackWaveform({ displayMode, gainDb, stream, track }: AudioTrackWa
           displayMode={displayMode}
           gainDb={gainDb}
           key={track.waveform.url}
-          selectionEndPercent={selectionEndPercent}
-          selectionStartPercent={selectionStartPercent}
           stream={stream}
           waveform={track.waveform}
         />
@@ -88,15 +79,11 @@ interface WaveformVisualState {
 function AudioTrackWaveformCanvas({
   displayMode,
   gainDb,
-  selectionEndPercent,
-  selectionStartPercent,
   stream,
   waveform,
 }: {
   displayMode: WaveformDisplayMode;
   gainDb: number;
-  selectionEndPercent: number;
-  selectionStartPercent: number;
   stream: AudioStream;
   waveform: WaveformWithStatus<"ready">;
 }) {
@@ -281,50 +268,7 @@ function AudioTrackWaveformCanvas({
     };
   }, [waveform.url]);
 
-  return (
-    <>
-      <canvas
-        aria-hidden="true"
-        className="absolute inset-0 size-full"
-        ref={canvasRef}
-        style={{
-          backgroundColor: "var(--muted)",
-          backgroundImage:
-            "linear-gradient(var(--muted), var(--muted)), repeating-linear-gradient(90deg, color-mix(in srgb, var(--foreground) 6%, transparent) 0 0.0625rem, transparent 0.0625rem 6.25%)",
-          backgroundPosition: "left top, 0 0",
-          backgroundRepeat: "no-repeat, repeat",
-          backgroundSize: "0.0625rem 100%, auto",
-        }}
-      />
-      {displayMode === "stereo" && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-1 z-1 flex flex-col justify-around text-[0.5rem] text-muted-foreground"
-        >
-          <span>L</span>
-          <span>R</span>
-        </div>
-      )}
-      {selectionStartPercent > 0 && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 bg-background/40"
-          data-edge="start"
-          data-slot="audio-waveform-outside-selection"
-          style={{ left: "0%", width: `${selectionStartPercent}%` }}
-        />
-      )}
-      {selectionEndPercent < 100 && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 bg-background/40"
-          data-edge="end"
-          data-slot="audio-waveform-outside-selection"
-          style={{ left: `${selectionEndPercent}%`, right: "0%" }}
-        />
-      )}
-    </>
-  );
+  return <canvas aria-hidden="true" className="size-full opacity-80" ref={canvasRef} />;
 }
 
 function drawChannel(
