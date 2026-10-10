@@ -85,6 +85,8 @@ function toRecoveryInstance(
       ? createEditorSnapshotFromState(state, state.source.source)
       : null;
 
+  const sourceDurationMicros = instance.media?.durationMicros ?? instance.sourceDurationMicros;
+
   return {
     exportAttempts: instance.exportAttempts.map(toRecoveryAttempt),
     id: instance.id,
@@ -103,6 +105,7 @@ function toRecoveryInstance(
       ? {}
       : { gifSettings: structuredClone(instance.gifSettings) }),
     origin: instance.origin,
+    ...(sourceDurationMicros === undefined ? {} : { sourceDurationMicros }),
     sourceAvailability: instance.sourceAvailability,
     snapshot: structuredClone(activeSnapshot ?? instance.snapshot),
   };

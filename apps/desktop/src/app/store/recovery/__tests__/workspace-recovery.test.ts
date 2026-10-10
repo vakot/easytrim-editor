@@ -231,6 +231,7 @@ describe("workspace recovery contract", () => {
       },
       optimizedArguments: "-crf 18",
       optimizedSettings: { resolution: { height: 1344, width: 864 } },
+      sourceDurationMicros: 5_000_000,
     });
     expect(backup.instances[1]?.exportAttempts[0]).toMatchObject({
       output: { displayPath: "C:/Exports/result.mp4" },

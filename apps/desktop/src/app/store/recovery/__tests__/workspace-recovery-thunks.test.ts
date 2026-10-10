@@ -20,8 +20,10 @@ import {
 import { restorePreviousWorkspaceRequested } from "@/app/store/recovery/workspace-recovery-thunks";
 import {
   activeEditingInstanceChanged,
+  editingInstanceMediaUpdated,
   editingInstancesAdded,
   selectEditingInstances,
+  selectSourceListEntries,
 } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt } from "@/domain/editing-instance";
@@ -31,6 +33,7 @@ const CURRENT_KEY = "easytrim:workspace-recovery:current";
 const CANDIDATE_KEY = "easytrim:workspace-recovery:candidate";
 
 function instance(id: string, source: typeof firstSource) {
+  const snapshot = createDefaultEditorSnapshot(source, false);
   return {
     exportAttempts: [],
     gifSettings: {
@@ -43,7 +46,10 @@ function instance(id: string, source: typeof firstSource) {
     },
     id,
     origin: "source-import" as const,
-    snapshot: createDefaultEditorSnapshot(source, false),
+    snapshot: {
+      ...snapshot,
+      trim: { endMicros: 3_000_000, startMicros: 1_000_000 },
+    },
     sourceAvailability: "available" as const,
   };
 }
@@ -58,6 +64,12 @@ function prepareCandidate(
       instance("first", firstSource),
       { ...instance("second", secondSource), exportAttempts },
     ]),
+  );
+  previousStore.dispatch(
+    editingInstanceMediaUpdated({ id: "first", media: media(firstSource.sourcePath) }),
+  );
+  previousStore.dispatch(
+    editingInstanceMediaUpdated({ id: "second", media: media(secondSource.sourcePath) }),
   );
   previousStore.dispatch(activeEditingInstanceChanged(activeId));
   localStorage.setItem(
@@ -114,6 +126,23 @@ describe("restorePreviousWorkspaceRequested", () => {
     });
     expect(getWorkspaceRecoveryCandidate()?.sessionId).toBe("crashed-session");
     expect(localStorage.getItem(CANDIDATE_KEY)).not.toBeNull();
+  });
+
+  it("keeps durations for inactive cards so restored trim indicators can render", async () => {
+    native.activateSourcePath.mockImplementation(async (sourcePath: string) => ({
+      displayName: sourcePath.split("/").at(-1) ?? sourcePath,
+      sourcePath,
+    }));
+    const store = prepareCandidate();
+
+    expect(await store.dispatch(restorePreviousWorkspaceRequested())).toBe(true);
+
+    expect(
+      selectSourceListEntries(store.getState()).find(({ id }) => id === "first"),
+    ).toMatchObject({
+      durationMicros: 5_000_000,
+      trim: { endMicros: 3_000_000, startMicros: 1_000_000 },
+    });
   });
 
   it("preserves failed export errors and diagnostics through workspace recovery", async () => {

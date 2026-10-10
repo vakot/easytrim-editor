@@ -56,7 +56,10 @@ function makeListEntry(
   previous?: EditingInstanceListEntry,
 ): EditingInstanceListEntry {
   const source = instance.snapshot.source;
-  const durationMicros = instance.media?.durationMicros ?? previous?.durationMicros;
+  const trim = instance.snapshot.trim;
+  const durationMicros =
+    instance.media?.durationMicros ?? instance.sourceDurationMicros ?? previous?.durationMicros;
+
   return {
     displayName: source.displayName,
     ...(durationMicros === undefined ? {} : { durationMicros }),
@@ -67,8 +70,20 @@ function makeListEntry(
       : { importedAtMicros: instance.importedAtMicros }),
     sourceAvailability: instance.sourceAvailability,
     sourcePath: source.sourcePath,
+    ...(trim === undefined ? {} : { trim: { ...trim } }),
     ...(source.updatedAtMicros === undefined ? {} : { updatedAtMicros: source.updatedAtMicros }),
   };
+}
+
+function sameSnapshotTrim(
+  left: EditorSnapshot["trim"] | undefined,
+  right: EditorSnapshot["trim"] | undefined,
+): boolean {
+  if (left === undefined || right === undefined) return left === right;
+  if ("kind" in left || "kind" in right) {
+    return "kind" in left && "kind" in right && left.kind === right.kind;
+  }
+  return left.startMicros === right.startMicros && left.endMicros === right.endMicros;
 }
 
 function makeSearchEntry(instance: EditingInstance): EditingInstanceSearchEntry {
@@ -166,6 +181,7 @@ const editingInstancesSlice = createSlice({
       const instance = getInstance(state, action.payload.id);
       if (instance) {
         instance.media = action.payload.media;
+        instance.sourceDurationMicros = action.payload.media.durationMicros;
         updateSourceListDuration(state, action.payload.id, action.payload.media.durationMicros);
       }
     },
@@ -185,6 +201,11 @@ const editingInstancesSlice = createSlice({
         action.payload.snapshot.source,
       );
 
+      const snapshotTrimChanged = !sameSnapshotTrim(
+        instance.snapshot.trim,
+        action.payload.snapshot.trim,
+      );
+
       const searchMetadataChanged =
         instance.snapshot.source.displayName !== action.payload.snapshot.source.displayName ||
         instance.snapshot.source.sourcePath !== action.payload.snapshot.source.sourcePath;
@@ -194,9 +215,11 @@ const editingInstancesSlice = createSlice({
         instance.optimizedArguments = action.payload.optimizedArguments;
       if (action.payload.media) {
         instance.media = action.payload.media;
+        instance.sourceDurationMicros = action.payload.media.durationMicros;
         updateSourceListDuration(state, action.payload.id, action.payload.media.durationMicros);
       }
-      if (listMetadataChanged) updateSourceListEntry(state, instance, searchMetadataChanged);
+      if (listMetadataChanged || snapshotTrimChanged)
+        updateSourceListEntry(state, instance, searchMetadataChanged);
     },
     editingInstanceSceneDetectionChanged: (
       state,
@@ -575,6 +598,11 @@ const editingInstancesSlice = createSlice({
           action.payload.snapshot.source,
         );
 
+        const snapshotTrimChanged = !sameSnapshotTrim(
+          instance.snapshot.trim,
+          action.payload.snapshot.trim,
+        );
+
         const searchMetadataChanged =
           instance.snapshot.source.displayName !== action.payload.snapshot.source.displayName ||
           instance.snapshot.source.sourcePath !== action.payload.snapshot.source.sourcePath;
@@ -582,9 +610,11 @@ const editingInstancesSlice = createSlice({
         instance.snapshot = action.payload.snapshot;
         if (action.payload.media) {
           instance.media = action.payload.media;
+          instance.sourceDurationMicros = action.payload.media.durationMicros;
           updateSourceListDuration(state, action.payload.id, action.payload.media.durationMicros);
         }
-        if (listMetadataChanged) updateSourceListEntry(state, instance, searchMetadataChanged);
+        if (listMetadataChanged || snapshotTrimChanged)
+          updateSourceListEntry(state, instance, searchMetadataChanged);
       })
       .addCase(sourceCleared, (state) => {
         state.activeInstanceId = null;
