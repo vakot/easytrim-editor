@@ -4,6 +4,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
+import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectLayoutDensity } from "@/app/store/slices/preferences-slice";
@@ -65,6 +66,7 @@ function AppLayoutMain() {
   const media = useAppSelector(selectSourceMedia);
   const audioStreamsCount = useAppSelector(selectAudioPanelStreamCount);
   const availableAudioStreamsCount = media ? audioStreamsCount : 0;
+  const bottomPanelCommand = useApplicationCommand("toggle-bottom-panel");
   const layoutDensity = useAppSelector(selectLayoutDensity);
   const { leftSidebarVisible, rightSidebarVisible } = useSidebarVisibility();
 
@@ -122,7 +124,7 @@ function AppLayoutMain() {
         />
 
         <ResizablePanel
-          collapsible={availableAudioStreamsCount > 0}
+          collapsible={bottomPanelCommand.enabled}
           groupResizeBehavior="preserve-pixel-size"
           id="editor-stage-timeline"
           {...getTimelinePanelSize(availableAudioStreamsCount, isCompact)}
