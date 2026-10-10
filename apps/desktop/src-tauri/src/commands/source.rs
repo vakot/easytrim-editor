@@ -26,10 +26,7 @@ pub async fn choose_source(
             .file()
             .add_filter("Video", SUPPORTED_VIDEO_EXTENSIONS)
             .blocking_pick_files(),
-        SourcePickerMode::Folders => app
-            .dialog()
-            .file()
-            .blocking_pick_folders(),
+        SourcePickerMode::Folders => app.dialog().file().blocking_pick_folders(),
     };
 
     let Some(selected_paths) = selected_paths else {

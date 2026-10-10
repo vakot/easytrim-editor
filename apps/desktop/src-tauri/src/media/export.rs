@@ -820,15 +820,14 @@ pub fn build_gif_arguments(
             AppErrorMessageId::ExportGifEncodingSettingsAreInvalid,
         ));
     }
-    if let Some(frame_rate) = &request.frame_rate {
-        if frame_rate.numerator == 0
+    if let Some(frame_rate) = &request.frame_rate
+        && (frame_rate.numerator == 0
             || frame_rate.denominator == 0
-            || frame_rate.numerator as u128 > frame_rate.denominator as u128 * 120
-        {
-            return Err(AppError::invalid_request(
-                AppErrorMessageId::ExportOutputFrameRateIsInvalid,
-            ));
-        }
+            || frame_rate.numerator as u128 > frame_rate.denominator as u128 * 120)
+    {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportOutputFrameRateIsInvalid,
+        ));
     }
 
     let (rotation_degrees, flip_horizontal, flip_vertical, crop) =
@@ -1299,23 +1298,15 @@ pub(crate) fn pre_level_filter_chain(processing: &AudioTrackProcessing) -> Strin
     ordered_signal_effects(processing)
         .into_iter()
         .filter_map(|effect| match effect {
-            AudioTrackSignalEffect::HighPass { cutoff_hz, stage }
-                if matches!(
-                    stage,
-                    AudioProcessingStage::Cleanup | AudioProcessingStage::Dynamics
-                ) =>
-            {
-                Some(format!("highpass=f={cutoff_hz:.3}"))
-            }
+            AudioTrackSignalEffect::HighPass {
+                cutoff_hz,
+                stage: AudioProcessingStage::Cleanup | AudioProcessingStage::Dynamics,
+            } => Some(format!("highpass=f={cutoff_hz:.3}")),
             AudioTrackSignalEffect::HighPass { .. } => None,
-            AudioTrackSignalEffect::NoiseReduction { preset, stage }
-                if matches!(
-                    stage,
-                    AudioProcessingStage::Cleanup | AudioProcessingStage::Dynamics
-                ) =>
-            {
-                Some(preset.filter().to_owned())
-            }
+            AudioTrackSignalEffect::NoiseReduction {
+                preset,
+                stage: AudioProcessingStage::Cleanup | AudioProcessingStage::Dynamics,
+            } => Some(preset.filter().to_owned()),
             AudioTrackSignalEffect::NoiseReduction { .. } => None,
             AudioTrackSignalEffect::Limiter { .. } => None,
         })
