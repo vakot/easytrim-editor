@@ -1,7 +1,5 @@
 import { Card } from "@/components/ui/card";
 
-import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectLayoutDensity } from "@/app/store/slices/preferences-slice";
 import { cn } from "@/lib/class-names.utils";
 
 interface AppLayoutPanelProps {
@@ -11,14 +9,10 @@ interface AppLayoutPanelProps {
 }
 
 function AppLayoutPanel({ children, className, layoutRegion }: AppLayoutPanelProps) {
-  const layoutDensity = useAppSelector(selectLayoutDensity);
-  const isCompact = layoutDensity === "compact";
-
   return (
     <Card
       className={cn(
-        "size-full min-h-0 min-w-0 gap-0 border border-border p-0 ring-0",
-        isCompact && "rounded-none bg-card",
+        "size-full min-h-0 min-w-0 gap-0 border border-border p-0 ring-0 layout-compact:rounded-none layout-compact:border-0",
         className,
       )}
       data-layout-region={layoutRegion}

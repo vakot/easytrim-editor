@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
@@ -33,33 +33,68 @@ vi.mock("@/app/layout/components/SidebarViewPortal", () => ({
   SidebarViewTarget: () => <div />,
 }));
 
-function createDataTransfer(exposeData = true): DataTransfer {
-  const data: Record<string, string> = {};
+vi.mock("@dnd-kit/react", () => ({
+  DragDropProvider: ({
+    children,
+    onDragEnd,
+    onDragStart,
+  }: {
+    children: React.ReactNode;
+    onDragEnd: (event: unknown) => void;
+    onDragStart: () => void;
+  }) => (
+    <>
+      {children}
+      <button
+        aria-label="Simulate moving Sources to the bottom of the left sidebar"
+        onClick={() => {
+          onDragStart();
+          onDragEnd({
+            canceled: false,
+            operation: { position: { current: { x: 120, y: 590 } }, source: { id: "sources" } },
+          });
+        }}
+        type="button"
+      />
+      <button
+        aria-label="Simulate moving Activity Feed to the right sidebar"
+        onClick={() => {
+          onDragStart();
+          onDragEnd({
+            canceled: false,
+            operation: { position: { current: { x: 1100, y: 350 } }, source: { id: "activity" } },
+          });
+        }}
+        type="button"
+      />
+    </>
+  ),
+  useDroppable: () => ({ isDropTarget: false, ref: () => undefined }),
+}));
 
-  return {
-    dropEffect: "none",
-    effectAllowed: "all",
-    getData: (type: string) => (exposeData ? (data[type] ?? "") : ""),
-    setData: (type: string, value: string) => {
-      if (type !== "text/plain") throw new Error(`Unsupported drag format: ${type}`);
-      data[type] = value;
-    },
-  } as unknown as DataTransfer;
-}
+vi.mock("@dnd-kit/react/sortable", () => ({
+  useSortable: () => ({ handleRef: () => undefined, isDragging: false, ref: () => undefined }),
+}));
 
-function dispatchDragEvent(
-  target: HTMLElement,
-  type: "dragover" | "drop",
-  dataTransfer: DataTransfer,
-  clientY: number,
-) {
-  const event = new MouseEvent(type, { bubbles: true, cancelable: true, clientY });
-  Object.defineProperty(event, "dataTransfer", { value: dataTransfer });
-  target.dispatchEvent(event);
+function setBounds(element: HTMLElement, bounds: DOMRect) {
+  Object.defineProperty(element, "getBoundingClientRect", {
+    configurable: true,
+    value: () => bounds,
+  });
 }
 
 function renderAppLayout() {
   const store = configureStore({ reducer: { preferences: preferencesReducer } });
+  vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
+    x: 0,
+    y: 0,
+    top: 0,
+    left: 0,
+    right: 1280,
+    bottom: 800,
+    width: 1280,
+    height: 800,
+  } as DOMRect);
 
   render(
     <Provider store={store}>
@@ -77,34 +112,62 @@ describe("AppLayout sidebar drag and drop", () => {
     const store = renderAppLayout();
 
     const sidebar = screen.getByRole("complementary", { name: "Left sidebar" });
+    const rightDropTarget = document.querySelector<HTMLElement>(
+      '[data-sidebar-empty-drop-target="right"]',
+    )!;
+
     const sources = sidebar.querySelector<HTMLElement>('[data-sidebar-view="sources"]')!;
     const activity = sidebar.querySelector<HTMLElement>('[data-sidebar-view="activity"]')!;
-    const transfer = createDataTransfer(false);
+    setBounds(sidebar, {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 320,
+      bottom: 700,
+      width: 320,
+      height: 700,
+    } as DOMRect);
+    setBounds(sources, {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 320,
+      bottom: 300,
+      width: 320,
+      height: 300,
+    } as DOMRect);
+    setBounds(activity, {
+      x: 0,
+      y: 300,
+      top: 300,
+      left: 0,
+      right: 320,
+      bottom: 600,
+      width: 320,
+      height: 300,
+    } as DOMRect);
+    setBounds(rightDropTarget, {
+      x: 1000,
+      y: 0,
+      top: 0,
+      left: 1000,
+      right: 1200,
+      bottom: 700,
+      width: 200,
+      height: 700,
+    } as DOMRect);
 
-    vi.spyOn(sidebar, "getBoundingClientRect").mockReturnValue({ top: 0 } as DOMRect);
-    vi.spyOn(sources, "getBoundingClientRect").mockReturnValue({
-      top: 10,
-      bottom: 110,
-      height: 100,
-    } as DOMRect);
-    vi.spyOn(activity, "getBoundingClientRect").mockReturnValue({
-      top: 120,
-      bottom: 220,
-      height: 100,
-    } as DOMRect);
-    fireEvent.dragStart(
-      screen.getByRole("button", { name: "Drag Activity Feed to move it between sidebars" }),
-      { dataTransfer: transfer },
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Simulate moving Sources to the bottom of the left sidebar",
+      }),
     );
-    expect(
-      screen.getByRole("button", { name: "Drag Activity Feed to move it between sidebars" }),
-    ).toHaveAttribute("data-dragging", "true");
-    act(() => dispatchDragEvent(sidebar, "dragover", transfer, 20));
-    expect(sidebar.isConnected).toBe(true);
-    expect(sidebar).toBe(screen.getByRole("complementary", { name: "Left sidebar" }));
-    act(() => dispatchDragEvent(sidebar, "drop", transfer, 180));
 
-    expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
+    });
 
     await waitFor(() => {
       expect(
@@ -116,22 +179,45 @@ describe("AppLayout sidebar drag and drop", () => {
   });
 
   it("creates the destination sidebar after dropping a view into an empty region", async () => {
-    renderAppLayout();
-    const transfer = createDataTransfer(false);
+    const store = renderAppLayout();
+    const activity = screen
+      .getByRole("complementary", { name: "Left sidebar" })
+      .querySelector<HTMLElement>('[data-sidebar-view="activity"]')!;
 
-    fireEvent.dragStart(
-      screen.getByRole("button", { name: "Drag Activity Feed to move it between sidebars" }),
-      { dataTransfer: transfer },
+    const rightDropTarget = document.querySelector<HTMLElement>(
+      '[data-sidebar-empty-drop-target="right"]',
+    )!;
+
+    setBounds(activity, {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 320,
+      bottom: 300,
+      width: 320,
+      height: 300,
+    } as DOMRect);
+    setBounds(rightDropTarget, {
+      x: 1000,
+      y: 0,
+      top: 0,
+      left: 1000,
+      right: 1200,
+      bottom: 700,
+      width: 200,
+      height: 700,
+    } as DOMRect);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Simulate moving Activity Feed to the right sidebar" }),
     );
-
-    const emptyRightSidebar = screen.getByRole("region", { name: "Right sidebar" });
-    fireEvent.dragOver(emptyRightSidebar, { dataTransfer: transfer });
-    fireEvent.drop(emptyRightSidebar, { dataTransfer: transfer });
 
     await waitFor(() => {
       const destination = screen.getByRole("complementary", { name: "Right sidebar" });
       expect(destination.querySelector('[data-sidebar-view="activity"]')).toBeInTheDocument();
     });
+    expect(store.getState().preferences.sidebarLayout.right).toEqual(["activity"]);
     expect(
       screen.getByRole("button", { name: "Drag Activity Feed to move it between sidebars" }),
     ).toBeInTheDocument();

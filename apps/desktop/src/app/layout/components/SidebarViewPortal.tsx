@@ -18,18 +18,18 @@ function SidebarViewPortals({ hosts }: { hosts: SidebarViewHosts }) {
       {createPortal(
         <SourceList>
           <div className="mt-1 flex min-h-0 flex-1 flex-col">
-            <div className="flex gap-2 px-3">
+            <div className="flex gap-2">
               <SourceListSearch />
               <SourceListCloseAll />
             </div>
-            <SourceListContent className="min-h-0 flex-1 px-3" />
+            <SourceListContent className="min-h-0 flex-1" />
           </div>
         </SourceList>,
         hosts.sources,
         "sources",
       )}
       {createPortal(
-        <ScrollArea className="flex-1 px-3 before:top-2">
+        <ScrollArea className="flex-1 before:top-2">
           <ActivityFeed className="pb-2" />
         </ScrollArea>,
         hosts.activity,

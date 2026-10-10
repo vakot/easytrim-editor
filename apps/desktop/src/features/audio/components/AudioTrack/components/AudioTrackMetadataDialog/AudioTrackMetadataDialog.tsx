@@ -114,7 +114,7 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
               setMetadataTitle(event.currentTarget.value);
               setMetadataTitleChanged(true);
             }}
-            placeholder={stream.title ?? ""}
+            placeholder={stream.title ?? "und"}
             value={metadataTitle}
           />
         </div>

@@ -50,13 +50,13 @@ function AutocompleteInput({
 
   return (
     <ComboboxInput
-      {...props}
       onValueChange={(nextValue) => {
         setValue(nextValue);
         onValueChange?.(nextValue);
       }}
       showSearchIcon={false}
       value={uncontrolledValue}
+      {...props}
     />
   );
 }

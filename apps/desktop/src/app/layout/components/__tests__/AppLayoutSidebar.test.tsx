@@ -1,3 +1,4 @@
+import { DragDropProvider } from "@dnd-kit/react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -10,87 +11,41 @@ import { createSidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
 import { AppLayoutSidebar, SidebarEmptyDropTarget } from "../AppLayoutSidebar";
 import { SidebarViewTarget } from "../SidebarViewPortal";
 
-function createDataTransfer(viewId = "", exposeData = true): DataTransfer {
-  return {
-    dropEffect: "none",
-    effectAllowed: "all",
-    getData: () => (exposeData ? viewId : ""),
-    setData: vi.fn(),
-  } as unknown as DataTransfer;
-}
+vi.mock("@dnd-kit/react", () => ({
+  DragDropProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useDroppable: () => ({ isDropTarget: false, ref: () => undefined }),
+}));
+
+vi.mock("@dnd-kit/react/sortable", () => ({
+  useSortable: () => ({ handleRef: () => undefined, isDragging: false, ref: () => undefined }),
+}));
 
 describe("AppLayoutSidebar", () => {
-  it("previews and commits the same insertion point for a single-view sidebar", () => {
+  it("renders a sortable single-view sidebar", () => {
     const hosts = createSidebarViewHosts();
-    const onDrop = vi.fn();
-    const onPreview = vi.fn();
-    const dataTransfer = createDataTransfer("", false);
 
     render(
-      <AppLayoutSidebar
-        draggedViewId="activity"
-        dropPreview={null}
-        hosts={hosts}
-        onDragEnd={vi.fn()}
-        onDragStart={vi.fn()}
-        onDrop={onDrop}
-        onPreview={onPreview}
-        side="left"
-        views={["sources"]}
-      />,
+      <DragDropProvider>
+        <AppLayoutSidebar hosts={hosts} side="left" views={["sources"]} />
+      </DragDropProvider>,
     );
 
     const sidebar = screen.getByRole("complementary", { name: "Left sidebar" });
-    const item = sidebar.querySelector<HTMLElement>('[data-sidebar-view="sources"]');
-    expect(item).not.toBeNull();
-    vi.spyOn(sidebar, "getBoundingClientRect").mockReturnValue({ top: 10 } as DOMRect);
-    vi.spyOn(item!, "getBoundingClientRect").mockReturnValue({
-      top: 40,
-      bottom: 140,
-      height: 100,
-    } as DOMRect);
-
-    fireEvent.dragOver(sidebar, { clientY: 20, dataTransfer });
-    fireEvent.drop(sidebar, { clientY: 20, dataTransfer });
-
-    expect(onPreview).toHaveBeenCalledWith({ index: 1, offset: 130, side: "left" });
-    expect(onDrop).toHaveBeenCalledWith("activity", "left", 1);
+    expect(sidebar.querySelector('[data-sidebar-view="sources"]')).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Drag Imported Sources to move it between sidebars" }),
+    ).toBeInTheDocument();
     expect(sidebar.querySelector('[data-slot="resizable-panel-group"]')).toBeNull();
   });
 
-  it("previews and accepts a view in an empty sidebar", () => {
-    const onDrop = vi.fn();
-    const dataTransfer = createDataTransfer("", false);
+  it("registers an empty sidebar drop target while a view is dragged", () => {
+    render(
+      <DragDropProvider>
+        <SidebarEmptyDropTarget isDragging side="right" />
+      </DragDropProvider>,
+    );
 
-    function EmptySidebarHarness() {
-      const [preview, setPreview] = useState<{
-        index: number;
-        offset: number;
-        side: "left" | "right";
-      } | null>(null);
-
-      return (
-        <>
-          <SidebarEmptyDropTarget
-            draggedViewId="activity"
-            onDrop={onDrop}
-            onPreview={setPreview}
-            preview={preview}
-            side="right"
-          />
-          <output>{preview ? `${preview.side}:${preview.index}` : "none"}</output>
-        </>
-      );
-    }
-
-    render(<EmptySidebarHarness />);
-    const target = screen.getByRole("region", { name: "Right sidebar" });
-
-    fireEvent.dragOver(target, { dataTransfer });
-    expect(screen.getByText("right:0")).toBeInTheDocument();
-
-    fireEvent.drop(target, { dataTransfer });
-    expect(onDrop).toHaveBeenCalledWith("activity", "right", 0);
+    expect(screen.getByRole("region", { name: "Right sidebar" })).toBeVisible();
   });
 });
 
