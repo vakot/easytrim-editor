@@ -88,7 +88,7 @@ function AppLayoutControls() {
                 </DropdownMenuCheckboxItem>
               </ApplicationCommandMenuItem>
 
-              <ApplicationCommandMenuItem asChild commandId="toggle-right-panel">
+              <ApplicationCommandMenuItem asChild commandId="toggle-bottom-panel">
                 <DropdownMenuCheckboxItem inset keepOpen>
                   <ApplicationCommandLabel />
                   <DropdownMenuIcon side="right">
@@ -97,7 +97,7 @@ function AppLayoutControls() {
                 </DropdownMenuCheckboxItem>
               </ApplicationCommandMenuItem>
 
-              <ApplicationCommandMenuItem asChild commandId="toggle-bottom-panel">
+              <ApplicationCommandMenuItem asChild commandId="toggle-right-panel">
                 <DropdownMenuCheckboxItem inset keepOpen>
                   <ApplicationCommandLabel />
                   <DropdownMenuIcon side="right">
@@ -188,26 +188,6 @@ function AppLayoutControls() {
       <Tooltip preserveOnTrigger>
         <TooltipTrigger asChild>
           <Button
-            aria-label={t("layout.toggleRightPanel")}
-            className="size-7 p-0 text-secondary-foreground"
-            disabled={!rightPanel.enabled || rightPanel.pending}
-            onClick={() => void executeCommand("toggle-right-panel", "button")}
-            size="icon-sm"
-            variant="ghost"
-          >
-            {!rightPanel.checked ? (
-              <PanelRightDashed aria-hidden="true" />
-            ) : (
-              <PanelRight aria-hidden="true" />
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{t("layout.toggleRightPanel")}</TooltipContent>
-      </Tooltip>
-
-      <Tooltip preserveOnTrigger>
-        <TooltipTrigger asChild>
-          <Button
             aria-label={t("layout.toggleLeftPanel")}
             className="size-7 p-0 text-secondary-foreground"
             disabled={!leftPanel.enabled || leftPanel.pending}
@@ -243,6 +223,26 @@ function AppLayoutControls() {
           </Button>
         </TooltipTrigger>
         <TooltipContent>{t("layout.toggleBottomPanel")}</TooltipContent>
+      </Tooltip>
+
+      <Tooltip preserveOnTrigger>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={t("layout.toggleRightPanel")}
+            className="size-7 p-0 text-secondary-foreground"
+            disabled={!rightPanel.enabled || rightPanel.pending}
+            onClick={() => void executeCommand("toggle-right-panel", "button")}
+            size="icon-sm"
+            variant="ghost"
+          >
+            {!rightPanel.checked ? (
+              <PanelRightDashed aria-hidden="true" />
+            ) : (
+              <PanelRight aria-hidden="true" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t("layout.toggleRightPanel")}</TooltipContent>
       </Tooltip>
     </div>
   );
