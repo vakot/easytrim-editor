@@ -8,7 +8,6 @@ import { cn } from "@/lib/class-names.utils";
 
 type PanelId = string;
 type PanelRef = React.RefObject<ResizablePrimitive.PanelImperativeHandle | null>;
-type PanelLayout = ResizablePrimitive.Layout;
 type PanelState = {
   isCollapsed: boolean;
   isDefaultCollapsed: boolean;
@@ -19,25 +18,17 @@ type PanelRefsCollection = Record<PanelId, PanelState>;
 
 const ResizablePanelContext = React.createContext<{
   panels: PanelRefsCollection;
-  registerPanel: (panelId: PanelId, panelRef: PanelRef, isCollapsed: boolean) => void;
+  registerPanel: (panelId: PanelId, panelRef: PanelRef) => void;
   unregisterPanel: (panelId: PanelId) => void;
   updatePanelState: (panelId: PanelId, update: (panel: PanelState) => PanelState) => void;
 } | null>(null);
-
-const ResizablePanelInitialLayoutContext = React.createContext<PanelLayout | undefined>(undefined);
 
 type ResizablePanelGroupProps =
   | ({ persisted: true } & PersistedResizablePanelGroupProps)
   | ({ persisted?: false } & ResizablePrimitive.GroupProps);
 
 function ResizablePanelGroup({ persisted, ...props }: ResizablePanelGroupProps) {
-  if (!persisted) {
-    return (
-      <ResizablePanelInitialLayoutContext.Provider value={undefined}>
-        <ResizablePrimitive.Group {...props} />
-      </ResizablePanelInitialLayoutContext.Provider>
-    );
-  }
+  if (!persisted) return <ResizablePrimitive.Group {...props} />;
   return <ResizablePanelGroupPersisted {...(props as PersistedResizablePanelGroupProps)} />;
 }
 
@@ -74,7 +65,6 @@ function ResizablePanelGroupPersisted({
       {...props}
       defaultLayout={persistedLayout.defaultLayout}
       id={id}
-      initialLayout={persistedLayout.defaultLayout}
       onLayoutChanged={(layout, meta) => {
         persistedLayout.onLayoutChanged(layout, meta);
         onLayoutChanged?.(layout, meta);
@@ -85,19 +75,13 @@ function ResizablePanelGroupPersisted({
   );
 }
 
-function ResizablePanelGroupBase({
-  className,
-  initialLayout,
-  ...props
-}: ResizablePrimitive.GroupProps & { initialLayout?: PanelLayout }) {
+function ResizablePanelGroupBase({ className, ...props }: ResizablePrimitive.GroupProps) {
   return (
-    <ResizablePanelInitialLayoutContext.Provider value={initialLayout}>
-      <ResizablePrimitive.Group
-        className={cn("flex size-full aria-[orientation=vertical]:flex-col", className)}
-        data-slot="resizable-panel-group"
-        {...props}
-      />
-    </ResizablePanelInitialLayoutContext.Provider>
+    <ResizablePrimitive.Group
+      className={cn("flex size-full aria-[orientation=vertical]:flex-col", className)}
+      data-slot="resizable-panel-group"
+      {...props}
+    />
   );
 }
 
@@ -116,22 +100,16 @@ function ResizablePanel({
   ...props
 }: ResizablePanelProps) {
   const { registerPanel, unregisterPanel, updatePanelState } = useResizablePanelContext();
-  const initialLayout = React.useContext(ResizablePanelInitialLayoutContext);
 
   const internalPanelRef = ResizablePrimitive.usePanelRef();
   const panelRef = propsPanelRef ?? internalPanelRef;
   const previousCollapsedState = React.useRef<boolean | undefined>(undefined);
-  const initialSize = (id && initialLayout?.[id]) ?? props.defaultSize;
-  const isInitiallyCollapsed =
-    props.collapsible === true &&
-    props.collapsedSize !== undefined &&
-    initialSize === props.collapsedSize;
 
   React.useLayoutEffect(() => {
     if (!id) return;
-    registerPanel(id, panelRef, isInitiallyCollapsed);
+    registerPanel(id, panelRef);
     return () => unregisterPanel(id);
-  }, [id, isInitiallyCollapsed, panelRef, registerPanel, unregisterPanel]);
+  }, [id, panelRef, registerPanel, unregisterPanel]);
 
   return (
     <ResizablePrimitive.Panel
@@ -281,19 +259,18 @@ function ResizablePanelControl({ children, mode = "toggle", panelId }: Resizable
 function ResizablePanelContextProvider({ children }: React.PropsWithChildren) {
   const [panels, setPanels] = React.useState<PanelRefsCollection>({});
 
-  const registerPanel = React.useCallback(
-    (panelId: PanelId, panelRef: PanelRef, isCollapsed: boolean) => {
-      setPanels((panels) => ({
-        ...panels,
-        [panelId]: {
-          ref: panelRef,
-          isCollapsed,
-          isDefaultCollapsed: isCollapsed,
-        },
-      }));
-    },
-    [],
-  );
+  const registerPanel = React.useCallback((panelId: PanelId, panelRef: PanelRef) => {
+    const isCollapsed = panelRef.current?.isCollapsed() ?? false;
+
+    setPanels((panels) => ({
+      ...panels,
+      [panelId]: {
+        ref: panelRef,
+        isCollapsed,
+        isDefaultCollapsed: isCollapsed,
+      },
+    }));
+  }, []);
 
   const unregisterPanel = React.useCallback((panelId: PanelId) => {
     setPanels((panels) => {
