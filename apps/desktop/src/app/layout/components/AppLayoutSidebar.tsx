@@ -53,19 +53,20 @@ function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarPro
       data-sidebar-region={side}
       ref={ref}
     >
-      {placement?.destination === side ? (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-5 z-30 -translate-y-1/2 border-t-2 border-dashed border-primary/60 shadow-sm"
-          data-sidebar-drop-placeholder={side}
-          data-sidebar-drop-placeholder-index={placement.insertionIndex}
-          style={{ top: placement.previewTop }}
+      {previewViews.length === 1 &&
+      placement?.destination === side &&
+      !views.includes(placement.viewId) ? (
+        <SidebarStandaloneDropPreview
+          hosts={hosts}
+          placement={placement}
+          side={side}
+          viewId={previewViews[0]!}
         />
-      ) : null}
-      {previewViews.length === 1 ? (
+      ) : previewViews.length === 1 ? (
         <SidebarViewStandalone
           collapsible={false}
           host={hosts[previewViews[0]!]}
+          side={side}
           viewId={previewViews[0]!}
         />
       ) : (
@@ -82,7 +83,15 @@ function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarPro
                   <div className="h-px w-full bg-border" />
                 </ResizableHandle>
               )}
-              <SidebarViewPanel collapsible host={hosts[viewId]} viewId={viewId} />
+              <SidebarViewPanel
+                collapsible
+                host={hosts[viewId]}
+                placeholder={
+                  placement?.destination === side && placement.viewId === viewId ? placement : null
+                }
+                side={side}
+                viewId={viewId}
+              />
             </Fragment>
           ))}
         </ResizablePanelGroup>
@@ -91,13 +100,57 @@ function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarPro
   );
 }
 
+function SidebarStandaloneDropPreview({
+  hosts,
+  placement,
+  side,
+  viewId,
+}: {
+  hosts: SidebarViewHosts;
+  placement: SidebarDropPlacement;
+  side: SidebarId;
+  viewId: SidebarViewId;
+}) {
+  const incomingWeight = Number(VIEW_PANEL_SIZES[placement.viewId].defaultSize);
+  const currentWeight = Number(VIEW_PANEL_SIZES[viewId].defaultSize);
+  const placeholder = (
+    <div
+      className="flex min-h-0 min-w-0 transition-[flex-grow,flex-basis] duration-200 ease-out motion-reduce:transition-none"
+      style={{ flex: `${incomingWeight} 1 0%` }}
+    >
+      <SidebarDropPlaceholder className="size-full" placement={placement} side={side} />
+    </div>
+  );
+
+  const existingView = (
+    <div
+      className="flex min-h-0 min-w-0 transition-[flex-grow,flex-basis] duration-200 ease-out motion-reduce:transition-none"
+      style={{ flex: `${currentWeight} 1 0%` }}
+    >
+      <SidebarViewStandalone collapsible={false} host={hosts[viewId]} side={side} viewId={viewId} />
+    </div>
+  );
+
+  return (
+    <>
+      {placement.insertionIndex === 0 ? placeholder : existingView}
+      <div aria-hidden="true" className="h-px shrink-0 bg-border" />
+      {placement.insertionIndex === 0 ? existingView : placeholder}
+    </>
+  );
+}
+
 function SidebarViewPanel({
   collapsible,
   host,
+  placeholder,
+  side,
   viewId,
 }: {
   collapsible: boolean;
   host: HTMLDivElement;
+  placeholder: SidebarDropPlacement | null;
+  side: SidebarId;
   viewId: SidebarViewId;
 }) {
   const draggable = useSidebarDraggable(viewId);
@@ -115,6 +168,8 @@ function SidebarViewPanel({
         collapsible={collapsible}
         draggable={draggable}
         host={host}
+        placeholder={placeholder}
+        side={side}
         viewId={viewId}
       />
     </ResizablePanel>
@@ -124,16 +179,25 @@ function SidebarViewPanel({
 function SidebarViewStandalone({
   collapsible,
   host,
+  side,
   viewId,
 }: {
   collapsible: boolean;
   host: HTMLDivElement;
+  side: SidebarId;
   viewId: SidebarViewId;
 }) {
   const draggable = useSidebarDraggable(viewId);
 
   return (
-    <SidebarViewFrame collapsible={collapsible} draggable={draggable} host={host} viewId={viewId} />
+    <SidebarViewFrame
+      collapsible={collapsible}
+      draggable={draggable}
+      host={host}
+      placeholder={null}
+      side={side}
+      viewId={viewId}
+    />
   );
 }
 
@@ -141,27 +205,78 @@ function SidebarViewFrame({
   collapsible,
   draggable,
   host,
+  placeholder,
+  side,
   viewId,
 }: {
   collapsible: boolean;
   draggable: ReturnType<typeof useSidebarDraggable>;
   host: HTMLDivElement;
+  placeholder?: SidebarDropPlacement | null;
+  side: SidebarId;
   viewId: SidebarViewId;
 }) {
+  const isDropPlaceholder = placeholder !== null && placeholder !== undefined;
+
   return (
     <div
       className={cn(
-        "flex size-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-        draggable.isDragging && "bg-card opacity-60",
+        "relative flex size-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+        draggable.isDragging && !isDropPlaceholder && "bg-card opacity-60",
       )}
       data-sidebar-view={viewId}
     >
-      <SidebarViewHeader
-        collapsible={collapsible}
-        handleRef={draggable.handleRef}
-        viewId={viewId}
-      />
-      <SidebarViewTarget host={host} />
+      {isDropPlaceholder ? (
+        <SidebarDropPlaceholder
+          className="absolute inset-0 z-20"
+          placement={placeholder}
+          side={side}
+        />
+      ) : null}
+      <div
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+          isDropPlaceholder && "invisible",
+        )}
+      >
+        <SidebarViewHeader
+          collapsible={collapsible}
+          handleRef={draggable.handleRef}
+          viewId={viewId}
+        />
+        <SidebarViewTarget host={host} />
+      </div>
+    </div>
+  );
+}
+
+function SidebarDropPlaceholder({
+  className,
+  placement,
+  side,
+}: {
+  className?: string;
+  placement: SidebarDropPlacement;
+  side: SidebarId;
+}) {
+  const { t } = useTranslation();
+  const title =
+    placement.viewId === "sources" ? t("source.importedSources") : t("layout.activityFeed");
+
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none flex min-h-0 min-w-0 flex-col rounded-lg border-2 border-dashed border-primary/60 bg-primary/5 p-1.5 text-secondary-foreground shadow-sm transition-[background-color,border-color] duration-150",
+        className,
+      )}
+      data-sidebar-drop-placeholder={side}
+      data-sidebar-drop-placeholder-index={placement.insertionIndex}
+    >
+      <div className="flex min-h-0 items-center gap-1">
+        <GripVertical aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+        <span className="truncate text-sm font-medium">{title}</span>
+      </div>
     </div>
   );
 }

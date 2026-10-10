@@ -58,7 +58,7 @@ describe("sidebar layout", () => {
 
   it("moves the first panel below the second using the resolved slot", () => {
     const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
-    const placement = resolveSidebarDropPlacement(layout, "sources", "left", 80, 0, [
+    const placement = resolveSidebarDropPlacement(layout, "sources", "left", 80, [
       { bottom: 100, top: 0, viewId: "activity" },
     ]);
 
@@ -73,7 +73,7 @@ describe("sidebar layout", () => {
 
   it("moves the second panel above the first using the resolved slot", () => {
     const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
-    const placement = resolveSidebarDropPlacement(layout, "activity", "left", 20, 0, [
+    const placement = resolveSidebarDropPlacement(layout, "activity", "left", 20, [
       { bottom: 100, top: 0, viewId: "sources" },
     ]);
 
@@ -90,7 +90,7 @@ describe("sidebar layout", () => {
     const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
 
     expect(
-      resolveSidebarDropPlacement(layout, "activity", "left", 120, 0, [
+      resolveSidebarDropPlacement(layout, "activity", "left", 120, [
         { bottom: 100, top: 0, viewId: "sources" },
       ]),
     ).toBeNull();
@@ -101,7 +101,7 @@ describe("sidebar layout", () => {
     const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
 
     expect(
-      resolveSidebarDropPlacement(layout, "sources", "left", -10, 0, [
+      resolveSidebarDropPlacement(layout, "sources", "left", -10, [
         { bottom: 100, top: 0, viewId: "activity" },
       ]),
     ).toBeNull();
@@ -122,7 +122,7 @@ describe("sidebar layout", () => {
 
   it("places a moved view at the expected index in the other populated sidebar", () => {
     const layout: SidebarLayout = { left: ["sources"], right: ["activity"] };
-    const placement = resolveSidebarDropPlacement(layout, "sources", "right", 20, 0, [
+    const placement = resolveSidebarDropPlacement(layout, "sources", "right", 20, [
       { bottom: 100, top: 0, viewId: "activity" },
     ]);
 

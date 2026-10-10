@@ -240,7 +240,6 @@ describe("AppLayout drag and resize integration", () => {
       y: number,
       expectedViews: Array<"activity" | "sources">,
       expectedIndex: number,
-      expectedPreviewTop: number,
       beforeSecondMove?: () => void,
     ) => {
       fireEvent.click(
@@ -271,9 +270,18 @@ describe("AppLayout drag and resize integration", () => {
           "data-sidebar-drop-placeholder-index",
           String(expectedIndex),
         );
-        expect(placeholder).toHaveStyle({ top: `${expectedPreviewTop}px` });
-        expect(placeholder).toHaveClass("border-t-2", "-translate-y-1/2");
-        expect(placeholder).not.toHaveClass("h-12");
+        expect(placeholder).toHaveClass(
+          "absolute",
+          "inset-0",
+          "rounded-lg",
+          "border-2",
+          "border-dashed",
+          "bg-primary/5",
+        );
+        expect(placeholder?.closest(`[data-sidebar-view="${viewId}"]`)).toBeInTheDocument();
+        expect(placeholder?.closest("[data-panel]")?.id).toBe(
+          viewId === "sources" ? "editor-source-imported-sources" : "editor-source-activity-feed",
+        );
         const dragPreview = document.querySelector(`[data-sidebar-drag-preview="${viewId}"]`);
         expect(dragPreview).toBeInTheDocument();
         expect(dragPreview?.parentElement).toBe(document.body);
@@ -300,7 +308,7 @@ describe("AppLayout drag and resize integration", () => {
 
     setBounds(activityPanel, 300, 336);
     setBounds(activityFrame, 300, 336);
-    await dragView("sources", 650, ["activity", "sources"], 1, 336, () => {
+    await dragView("sources", 650, ["activity", "sources"], 1, () => {
       // Simulate sortable displacement and a collapsed panel while the pointer remains at the
       // same coordinate. Placement should use the panel geometry captured at drag start.
       setBounds(activityPanel, 800, 836);
@@ -316,7 +324,7 @@ describe("AppLayout drag and resize integration", () => {
     setBounds(activityFrame, 0, 36);
     setBounds(sourcesPanel, 36, 700);
     setBounds(sourcesFrame, 36, 700);
-    await dragView("activity", 650, ["sources", "activity"], 1, 700);
+    await dragView("activity", 650, ["sources", "activity"], 1);
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["sources", "activity"]);
     expectValidPanelLayout(sidebar, ["sources", "activity"]);
     expect(sourcesPanel.style.flexGrow).toBe(panelSizes.get(sourcesPanel.id));
@@ -331,7 +339,7 @@ describe("AppLayout drag and resize integration", () => {
     setBounds(sourcesFrame, 0, 300);
     setBounds(activityPanel, 300, 700);
     setBounds(activityFrame, 300, 700);
-    await dragView("activity", 50, ["activity", "sources"], 0, 0);
+    await dragView("activity", 50, ["activity", "sources"], 0);
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
 
     fireEvent.click(screen.getByRole("button", { name: "Begin Activity drag" }));

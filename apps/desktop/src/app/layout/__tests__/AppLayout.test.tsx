@@ -553,10 +553,11 @@ describe("AppLayout sidebar drag and drop", () => {
       screen.getByRole("button", { name: "Preview moving Sources to the right sidebar" }),
     );
 
-    expect(document.querySelector('[data-sidebar-drop-placeholder="right"]')).toHaveAttribute(
-      "data-sidebar-drop-placeholder-index",
-      "1",
-    );
+    const placeholder = document.querySelector('[data-sidebar-drop-placeholder="right"]');
+    expect(placeholder).toHaveAttribute("data-sidebar-drop-placeholder-index", "1");
+    expect(placeholder).toHaveClass("rounded-lg", "border-2", "border-dashed", "bg-primary/5");
+    expect(placeholder?.closest("[data-panel]")?.id).toBe("workspace-right-sidebar");
+    expect(placeholder?.closest('[data-slot="resizable-panel-group"]')?.id).toBe("workspace");
     const dragPreview = document.querySelector('[data-sidebar-drag-preview="sources"]');
     expect(dragPreview).toBeInTheDocument();
     expect(dragPreview?.parentElement).toBe(document.body);

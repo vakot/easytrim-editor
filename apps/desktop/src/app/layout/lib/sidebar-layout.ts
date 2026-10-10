@@ -12,7 +12,6 @@ interface SidebarLayout {
 interface SidebarDropPlacement {
   destination: SidebarId;
   insertionIndex: number;
-  previewTop: number;
   viewId: SidebarViewId;
 }
 
@@ -99,7 +98,6 @@ function resolveSidebarDropPlacement(
   viewId: SidebarViewId,
   destination: SidebarId,
   pointerY: number,
-  regionTop: number,
   destinationBounds: SidebarViewBounds[],
 ): SidebarDropPlacement | null {
   const destinationViews = layout[destination].filter((item) => item !== viewId);
@@ -119,15 +117,7 @@ function resolveSidebarDropPlacement(
     return null;
   }
 
-  const nextView = destinationViews[resolvedIndex];
-  const previousView = destinationViews[resolvedIndex - 1];
-  const previewTop = nextView
-    ? (boundsByView.get(nextView)?.top ?? regionTop) - regionTop
-    : previousView
-      ? (boundsByView.get(previousView)?.bottom ?? regionTop) - regionTop
-      : 0;
-
-  return { destination, insertionIndex: resolvedIndex, previewTop, viewId };
+  return { destination, insertionIndex: resolvedIndex, viewId };
 }
 
 function resolveSidebarInsertionIndex(

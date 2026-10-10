@@ -111,7 +111,6 @@ function AppLayout() {
         viewId,
         destination,
         position.y,
-        regionElement.getBoundingClientRect().top,
         destinationBounds,
       );
     },
