@@ -5,7 +5,7 @@ import {
   type DragStartEvent,
   useDroppable,
 } from "@dnd-kit/react";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
@@ -38,7 +38,7 @@ import {
 } from "@/app/store/slices/preferences-slice";
 import { cn } from "@/lib/class-names.utils";
 
-import { useSidebarVisibility } from "./hooks/useSidebarVisibility";
+import { useSidebarPresence, useSidebarVisibility } from "./hooks/useSidebarVisibility";
 
 interface ActiveSidebarDragExpansion {
   collapsedAtStart: Set<SidebarId>;
@@ -58,6 +58,7 @@ function AppLayout() {
     hasRightSidebar,
     isSidebarCollapsed,
     leftSidebarVisible,
+    resizeSidebar,
     rightSidebarVisible,
     setSidebarExpanded,
   } = useSidebarVisibility();
@@ -74,10 +75,41 @@ function AppLayout() {
     Partial<Record<SidebarId, string>>
   >(getSavedWorkspaceSidebarWidths);
 
+  const leftSidebarPresence = useSidebarPresence("left", hasLeftSidebar);
+  const rightSidebarPresence = useSidebarPresence("right", hasRightSidebar);
+
   const dragStartPanelBounds = useRef<Map<SidebarViewId, SidebarViewBounds>>(new Map());
   const dragStartRegionTops = useRef<Map<SidebarId, number>>(new Map());
   const dragSidebarExpansion = useRef<ActiveSidebarDragExpansion | null>(null);
   const workspaceSidebarWidthsRef = useRef(workspaceSidebarWidths);
+  const resizeSidebarRef = useRef(resizeSidebar);
+  const previousSidebarPresence = useRef({ left: hasLeftSidebar, right: hasRightSidebar });
+
+  useEffect(() => {
+    resizeSidebarRef.current = resizeSidebar;
+  }, [resizeSidebar]);
+
+  useEffect(() => {
+    const wasPresent = previousSidebarPresence.current;
+    previousSidebarPresence.current = { left: hasLeftSidebar, right: hasRightSidebar };
+
+    const sidebarWasAdded =
+      (!wasPresent.left && hasLeftSidebar) || (!wasPresent.right && hasRightSidebar);
+
+    if (!sidebarWasAdded) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      for (const side of ["left", "right"] as const) {
+        const isPresent = side === "left" ? hasLeftSidebar : hasRightSidebar;
+        const width = Number.parseFloat(workspaceSidebarWidthsRef.current[side] ?? "");
+        if (isPresent && Number.isFinite(width) && width > 0) {
+          resizeSidebarRef.current(side, width);
+        }
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [hasLeftSidebar, hasRightSidebar]);
 
   const isCompact = layoutDensity === "compact";
 
@@ -328,7 +360,7 @@ function AppLayout() {
             onlySaveAfterUserInteractions
             persisted
           >
-            {hasLeftSidebar ? (
+            {leftSidebarPresence.isMounted ? (
               <ResizablePanel
                 className="ml-1.5 overflow-hidden!"
                 collapsedSize={0}
@@ -351,13 +383,17 @@ function AppLayout() {
               </ResizablePanel>
             ) : null}
 
-            {hasLeftSidebar ? (
-              <AppLayoutSeparator isCollapsed={!leftSidebarVisible} isCompact={isCompact} />
+            {leftSidebarPresence.isMounted ? (
+              <AppLayoutSeparator
+                isClosing={leftSidebarPresence.isClosing}
+                isCollapsed={!leftSidebarVisible}
+                isCompact={isCompact}
+              />
             ) : null}
 
             <ResizablePanel
               className={cn(
-                "overflow-hidden!",
+                "overflow-hidden! transition-[margin] duration-200 ease-out motion-reduce:transition-none",
                 !hasLeftSidebar && "ml-1.5",
                 !hasRightSidebar && "mr-1.5",
               )}
@@ -370,11 +406,15 @@ function AppLayout() {
               </div>
             </ResizablePanel>
 
-            {hasRightSidebar ? (
-              <AppLayoutSeparator isCollapsed={!rightSidebarVisible} isCompact={isCompact} />
+            {rightSidebarPresence.isMounted ? (
+              <AppLayoutSeparator
+                isClosing={rightSidebarPresence.isClosing}
+                isCollapsed={!rightSidebarVisible}
+                isCompact={isCompact}
+              />
             ) : null}
 
-            {hasRightSidebar ? (
+            {rightSidebarPresence.isMounted ? (
               <ResizablePanel
                 className="mr-1.5 overflow-hidden!"
                 collapsedSize={0}
@@ -513,20 +553,25 @@ function SidebarDropSurface() {
 }
 
 function AppLayoutSeparator({
+  isClosing,
   isCollapsed,
   isCompact,
 }: {
+  isClosing?: boolean;
   isCollapsed?: boolean;
   isCompact: boolean;
 }) {
   return (
     <ResizableHandle
       className={cn(
-        "workspace-separator self-start",
+        "workspace-separator self-start transition-[width] duration-200 motion-reduce:transition-none",
         isCompact && !isCollapsed ? undefined : "bg-transparent",
       )}
-      style={isCompact && !isCollapsed ? undefined : { width: "0.375rem" }}
-      withHandle={!isCompact || isCollapsed}
+      disabled={isClosing}
+      style={
+        isClosing ? { width: 0 } : isCompact && !isCollapsed ? undefined : { width: "0.375rem" }
+      }
+      withHandle={!isClosing && (!isCompact || isCollapsed)}
     />
   );
 }

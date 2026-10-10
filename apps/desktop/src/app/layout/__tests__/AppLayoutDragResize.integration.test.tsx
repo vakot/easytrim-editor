@@ -576,7 +576,40 @@ describe("AppLayout drag and resize integration", () => {
       expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
     });
     expect(document.getElementById("workspace")).toBe(workspaceGroup);
-    expect(document.getElementById("workspace-right-sidebar")).toBeNull();
+    const closingRightSidebar = document.getElementById("workspace-right-sidebar")!;
+    await waitFor(() => expect(closingRightSidebar.style.flexGrow).toBe("0"));
+    expect(closingRightSidebar.isConnected).toBe(true);
+    expect(
+      Array.from(workspaceGroup.children).map((child) =>
+        child.hasAttribute("data-panel") ? child.id : "separator",
+      ),
+    ).toEqual([
+      "workspace-left-sidebar",
+      "separator",
+      "workspace-content",
+      "separator",
+      "workspace-right-sidebar",
+    ]);
+    expect(workspaceGroup.children[3]).toHaveStyle({ width: "0px" });
+
+    // Returning a panel during the close transition reuses and expands the registered panel.
+    act(() => {
+      store.dispatch(
+        sidebarLayoutChanged({ destination: "right", insertionIndex: 0, viewId: "sources" }),
+      );
+    });
+    await waitFor(() => {
+      expect(document.getElementById("workspace-right-sidebar")).toBe(closingRightSidebar);
+      expect(Number.parseFloat(closingRightSidebar.style.flexGrow)).toBeGreaterThan(0);
+    });
+
+    act(() => {
+      store.dispatch(
+        sidebarLayoutChanged({ destination: "left", insertionIndex: 1, viewId: "sources" }),
+      );
+    });
+    await waitFor(() => expect(document.getElementById("workspace-right-sidebar")).toBeNull());
+    expect(document.getElementById("workspace")).toBe(workspaceGroup);
 
     act(() => {
       store.dispatch(
@@ -590,10 +623,15 @@ describe("AppLayout drag and resize integration", () => {
       });
     });
     expect(document.getElementById("workspace")).toBe(workspaceGroup);
-    expect(document.getElementById("workspace-right-sidebar")?.offsetWidth).toBeCloseTo(
-      configuredRightSidebarWidth,
+    expect(localStorage.getItem("react-resizable-panels:workspace-sidebar-widths")).toBe(
+      JSON.stringify({ left: 480, right: configuredRightSidebarWidth }),
     );
     const restoredLeftPanel = document.getElementById("workspace-left-sidebar")!;
-    expect(restoredLeftPanel.offsetWidth).toBeCloseTo(previousWorkspaceSidebarWidth);
+    await waitFor(() => {
+      expect(restoredLeftPanel.offsetWidth).toBeCloseTo(previousWorkspaceSidebarWidth);
+      expect(document.getElementById("workspace-right-sidebar")?.offsetWidth).toBeCloseTo(
+        configuredRightSidebarWidth,
+      );
+    });
   });
 });
