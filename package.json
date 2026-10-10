@@ -33,7 +33,7 @@
     "version:bump": "node scripts/bump-version.mjs",
     "changelog:generate": "node scripts/generate-changelog.mjs",
     "changelog:prepare": "node scripts/generate-changelog.mjs",
-    "release:local": "pnpm changelog:prepare && i18n:coverage:generate && node scripts/release-local.mjs",
+    "release:local": "pnpm changelog:prepare && pnpm i18n:coverage:generate && node scripts/release-local.mjs",
     "release:linux": "node scripts/release-linux-docker.mjs",
     "check": "pnpm changelog:prepare && pnpm format:check && pnpm lint && pnpm knip && pnpm --filter @easytrim-editor/desktop typecheck && pnpm --filter @easytrim-editor/desktop typecheck:storybook && pnpm --filter @easytrim-editor/desktop test && pnpm test:release && pnpm --filter @easytrim-editor/desktop build:storybook && pnpm --filter @easytrim-editor/desktop build",
     "tauri": "pnpm --filter @easytrim-editor/desktop tauri"

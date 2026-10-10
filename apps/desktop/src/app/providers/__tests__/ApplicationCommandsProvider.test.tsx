@@ -70,6 +70,7 @@ const state = {
     mergeAudioEnabledDefault: false,
     primaryColor: "#efbf04",
     segmentPlaybackEnabledDefault: true,
+    sidebarLayout: { left: ["sources", "activity"], right: [] },
     stripMetadataOnExport: false,
     theme: "system",
     uiScalePercent: 100,
@@ -129,8 +130,9 @@ vi.mock("@/app/hooks/useAppUpdates", () => ({
 vi.mock("@/components/ui/resizable", () => ({
   usePanelCommand: (panelIds: string | string[]) => {
     mocks.panelCommandIds.push(panelIds);
+    const isAvailable = panelIds !== "workspace-right-sidebar";
     return {
-      isAvailable: true,
+      isAvailable,
       isCollapsed: false,
       isDisabled: false,
       isReset: mocks.panelsAreReset,
@@ -251,7 +253,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(62);
+    ).toHaveLength(63);
     expect(
       screen
         .getAllByRole("button")
@@ -522,10 +524,11 @@ describe("ApplicationCommandsProvider", () => {
     expect(mocks.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "preferences/layoutReset" }),
     );
-    expect(mocks.resetPanels).toHaveBeenCalledOnce();
+    expect(mocks.resetPanels).toHaveBeenCalledTimes(3);
+    expect(mocks.panelCommandIds).toContain("workspace-left-sidebar");
+    expect(mocks.panelCommandIds).toContain("workspace-right-sidebar");
+    expect(mocks.panelCommandIds).toContain("editor-stage-timeline");
     expect(mocks.panelCommandIds).toContainEqual([
-      "workspace-sidebar",
-      "editor-stage-timeline",
       "editor-source-imported-sources",
       "editor-source-activity-feed",
     ]);

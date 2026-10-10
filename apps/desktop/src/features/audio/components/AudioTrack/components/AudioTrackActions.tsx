@@ -1,4 +1,4 @@
-import { ChevronRight, WandSparkles } from "lucide-react";
+import { ChevronRight, Pencil, WandSparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -55,7 +55,13 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
       </AudioTrackDefaultMenuCheckboxItem>
 
       <DropdownMenuItem inset onSelect={openMetadataDialog}>
+        <DropdownMenuIcon side="left">
+          <Pencil />
+        </DropdownMenuIcon>
         {t("audio.tracks.metadata.actions.edit")}
+        <DropdownMenuIcon side="right">
+          <ChevronRight />
+        </DropdownMenuIcon>
       </DropdownMenuItem>
 
       <DropdownMenuSeparator />
@@ -103,7 +109,13 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
       </AudioTrackDefaultMenuCheckboxItem>
 
       <ContextMenuItem inset onSelect={openMetadataDialog}>
+        <ContextMenuIcon side="left">
+          <Pencil />
+        </ContextMenuIcon>
         {t("audio.tracks.metadata.actions.edit")}
+        <ContextMenuIcon side="right">
+          <ChevronRight />
+        </ContextMenuIcon>
       </ContextMenuItem>
 
       <ContextMenuSeparator />

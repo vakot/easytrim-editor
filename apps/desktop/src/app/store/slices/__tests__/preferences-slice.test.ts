@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_SIDEBAR_LAYOUT } from "@/app/layout/lib/sidebar-layout";
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   activityFeedViewChanged,
@@ -16,8 +17,10 @@ import {
   selectMergeAudioEnabledDefault,
   selectPreferences,
   selectPrimaryColor,
+  selectSidebarLayout,
   selectStripMetadataOnExport,
   selectThemePreference,
+  sidebarLayoutChanged,
   themePreferenceChanged,
   uiScalingReset,
 } from "@/app/store/slices/preferences-slice";
@@ -52,6 +55,18 @@ describe("preferences Redux domain", () => {
     expect(nextState.loopPlaybackEnabledDefault).toBe(
       DEFAULT_PREFERENCES.loopPlaybackEnabledDefault,
     );
+  });
+
+  it("moves sidebar views through the persisted layout preference", () => {
+    const nextState = preferencesReducer(
+      undefined,
+      sidebarLayoutChanged({ destination: "right", insertionIndex: 0, viewId: "activity" }),
+    );
+
+    expect(selectSidebarLayout({ preferences: nextState } as RootState)).toEqual({
+      left: ["sources"],
+      right: ["activity"],
+    });
   });
 
   it("persists the changelog seen marker without resetting it with preferences", () => {
@@ -98,6 +113,7 @@ describe("preferences Redux domain", () => {
         deleteSourceOnRenderFinish: true,
         lastSeenChangelogVersion: null,
         activityFeedView: "branch",
+        sidebarLayout: { left: ["activity"], right: ["sources"] },
         layoutDensity: "compact",
         theme: "dark",
         primaryColor: "#123456",
@@ -111,6 +127,7 @@ describe("preferences Redux domain", () => {
     expect(state).toEqual({
       ...DEFAULT_PREFERENCES,
       activityFeedView: "branch",
+      sidebarLayout: { left: ["activity"], right: ["sources"] },
       layoutDensity: "compact",
       theme: "dark",
       primaryColor: "#123456",
@@ -125,6 +142,7 @@ describe("preferences Redux domain", () => {
       ...DEFAULT_PREFERENCES,
       activityFeedView: "branch",
       layoutDensity: "compact",
+      sidebarLayout: { left: ["activity"], right: ["sources"] },
       loopPlaybackEnabledDefault: false,
       segmentPlaybackEnabledDefault: false,
       mergeAudioEnabledDefault: true,
@@ -142,6 +160,7 @@ describe("preferences Redux domain", () => {
       ...initialState,
       activityFeedView: DEFAULT_PREFERENCES.activityFeedView,
       layoutDensity: DEFAULT_PREFERENCES.layoutDensity,
+      sidebarLayout: DEFAULT_PREFERENCES.sidebarLayout,
     });
   });
 
@@ -171,6 +190,7 @@ describe("preferences Redux domain", () => {
       deleteSourceOnRenderFinish: false,
       lastSeenChangelogVersion: null,
       activityFeedView: "default",
+      sidebarLayout: DEFAULT_SIDEBAR_LAYOUT,
       layoutDensity: "default",
       theme: "system",
       primaryColor: "#efbf04",

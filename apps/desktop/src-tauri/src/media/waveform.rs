@@ -939,7 +939,7 @@ mod tests {
                     .max()
                     .unwrap_or(0);
                 let expected_half_height =
-                    (f64::from(*amplitude) / f64::from(u8::MAX) * 28.0).round() as usize;
+                    (f64::from(amplitude) / f64::from(u8::MAX) * 28.0).round() as usize;
                 assert!(
                     actual_half_height.abs_diff(expected_half_height) <= 2,
                     "stream {stream_index}, column {column}: PNG half-height {actual_half_height}, envelope half-height {expected_half_height}"

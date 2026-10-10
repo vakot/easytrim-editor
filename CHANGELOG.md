@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added customizable left and right sidebars for moving and reordering the Imported Sources and Activity Feed views.
+
 ## [1.13.3]
 
 ### Added

@@ -541,6 +541,7 @@ pub fn open_file_location(path: String) -> Result<(), AppError> {
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn run_export(
     state: State<'_, AppState>,
     diagnostics: Arc<DiagnosticsState>,
@@ -822,6 +823,7 @@ fn record_ffmpeg_event(
     );
 }
 
+#[allow(clippy::too_many_arguments)]
 fn record_ffmpeg_event_with_data(
     diagnostics: &DiagnosticsState,
     event: &str,
@@ -866,10 +868,8 @@ fn record_ffmpeg_process_exit(
             Value::from(process.stderr_truncated),
         ),
     ]);
-    if failed {
-        if let Some(stderr) = export_diagnostics(process, source_path, output_path) {
-            data.insert("stderr".to_owned(), Value::String(stderr));
-        }
+    if failed && let Some(stderr) = export_diagnostics(process, source_path, output_path) {
+        data.insert("stderr".to_owned(), Value::String(stderr));
     }
     record_ffmpeg_event_with_data(
         diagnostics,

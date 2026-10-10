@@ -470,6 +470,7 @@ impl AppState {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn install_waveform(
         &self,
         load_token: u64,

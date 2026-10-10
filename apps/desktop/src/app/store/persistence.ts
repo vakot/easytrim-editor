@@ -11,6 +11,7 @@ import {
 import reduxStorageModule from "redux-persist/lib/storage";
 
 import { isLayoutDensity } from "@/app/layout/lib/layout-density";
+import { normalizeSidebarLayout } from "@/app/layout/lib/sidebar-layout";
 import {
   DEFAULT_PLAYBACK_VOLUME_PERCENT,
   DEFAULT_PREFERENCES,
@@ -144,6 +145,7 @@ const preferencesTransform = createTransform(
         (state as Record<string, unknown>).primaryColor,
         (state as Record<string, unknown>).customPrimaryColor,
       ),
+      sidebarLayout: normalizeSidebarLayout(persistedPreferences.sidebarLayout),
       theme: isThemePreference(persistedPreferences.theme)
         ? persistedPreferences.theme
         : DEFAULT_PREFERENCES.theme,

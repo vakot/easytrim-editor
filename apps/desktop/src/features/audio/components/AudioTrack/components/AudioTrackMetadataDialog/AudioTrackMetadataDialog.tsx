@@ -31,6 +31,7 @@ import {
 } from "@/domain/languages";
 
 import type { AudioTrackController } from "../../../../hooks/useAudioTrackController";
+import { audioTrackDisplayName } from "../../../../lib/audio-track-name.utils";
 
 import {
   AudioTrackMetadataDialogContext,
@@ -72,7 +73,7 @@ function AudioTrackMetadataDialog({
 function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrackController }) {
   const { t } = useTranslation();
   const { closeMetadataDialog } = useAudioTrackMetadataDialog();
-  const { stream, track } = controller;
+  const { stream, track, trackNumber } = controller;
   const [metadataTitle, setMetadataTitle] = useState(track?.metadata.title ?? "");
   const [metadataTitleChanged, setMetadataTitleChanged] = useState(false);
   const [metadataLanguage, setMetadataLanguage] = useState<Language["code"] | null>(
@@ -82,6 +83,12 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
   const [metadataLanguageChanged, setMetadataLanguageChanged] = useState(false);
 
   if (!stream || !track) return null;
+
+  const titlePlaceholder = audioTrackDisplayName(
+    track.metadata,
+    stream,
+    t("audio.tracks.defaultName", { number: trackNumber }),
+  );
 
   return (
     <DialogContent>
@@ -114,7 +121,7 @@ function AudioTrackMetadataDialogContent({ controller }: { controller: AudioTrac
               setMetadataTitle(event.currentTarget.value);
               setMetadataTitleChanged(true);
             }}
-            placeholder={stream.title ?? ""}
+            placeholder={titlePlaceholder}
             value={metadataTitle}
           />
         </div>

@@ -14,7 +14,10 @@ import { ExportActions } from "@/features/export";
 import { Preview } from "@/features/preview";
 import { SourceBreadcrumb } from "@/features/source";
 import { TimelinePanel } from "@/features/timeline";
+import { cn } from "@/lib/class-names.utils";
 import { syncTimelineGeometry } from "@/lib/interaction/timeline-geometry.utils";
+
+import { useSidebarVisibility } from "../hooks/useSidebarVisibility";
 
 type PanelSizes = {
   collapsedSize: string;
@@ -61,9 +64,10 @@ const EMPTY_TIMELINE_RANGE = {
 function AppLayoutMain() {
   const media = useAppSelector(selectSourceMedia);
   const audioStreamsCount = useAppSelector(selectAudioPanelStreamCount);
+  const layoutDensity = useAppSelector(selectLayoutDensity);
+  const { leftSidebarVisible, rightSidebarVisible } = useSidebarVisibility();
 
   const timelinePaneRef = useRef<HTMLDivElement>(null);
-  const layoutDensity = useAppSelector(selectLayoutDensity);
 
   const isCompact = layoutDensity === "compact";
 
@@ -84,7 +88,11 @@ function AppLayoutMain() {
       >
         <ResizablePanel id="editor-stage-preview" minSize="14rem">
           <AppLayoutPanel
-            className="flex flex-col bg-preview-surface layout-compact:rounded-tr-xl layout-compact:border-b-0 layout-compact:border-l-0"
+            className={cn(
+              "flex flex-col bg-preview-surface layout-compact:border-t",
+              !leftSidebarVisible && "layout-compact:rounded-tl-xl layout-compact:border-l",
+              !rightSidebarVisible && "layout-compact:rounded-tr-xl layout-compact:border-r",
+            )}
             layoutRegion="workspace-preview"
           >
             <div className="flex min-w-0 items-center justify-between p-1">
@@ -119,7 +127,11 @@ function AppLayoutMain() {
           {...getTimelinePanelSize(audioStreamsCount, isCompact)}
         >
           <AppLayoutPanel
-            className="layout-compact:rounded-br-xl layout-compact:border-t-0 layout-compact:border-l-0"
+            className={cn(
+              "layout-compact:border-b",
+              !leftSidebarVisible && "layout-compact:rounded-bl-xl layout-compact:border-l",
+              !rightSidebarVisible && "layout-compact:rounded-br-xl layout-compact:border-r",
+            )}
             layoutRegion="workspace-timeline"
           >
             <TimelinePanel />

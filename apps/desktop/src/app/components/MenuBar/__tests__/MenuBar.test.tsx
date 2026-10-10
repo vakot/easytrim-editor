@@ -66,6 +66,7 @@ const menuState = vi.hoisted(() => ({
     stripMetadataOnExport: false,
     theme: "system",
     primaryColor: "#efbf04",
+    sidebarLayout: { left: ["sources", "activity"], right: [] },
     lastAudiblePlaybackVolumePercent: 100,
     playbackVolumePercent: 100,
     uiScalePercent: 100,

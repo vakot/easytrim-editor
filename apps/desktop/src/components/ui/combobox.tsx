@@ -151,7 +151,7 @@ function ComboboxInput({
   const pointerDownRef = React.useRef(false);
   const withSearchIcon = (input: React.ReactElement) =>
     showSearchIcon ? (
-      <CommandInputGroup className="rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
+      <CommandInputGroup>
         {input}
         <InputGroupAddon>
           <SearchIcon className="size-4 shrink-0 opacity-50" />

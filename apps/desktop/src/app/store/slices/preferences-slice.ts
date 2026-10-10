@@ -6,6 +6,13 @@ import {
   type LayoutDensity,
 } from "@/app/layout/lib/layout-density";
 import {
+  DEFAULT_SIDEBAR_LAYOUT,
+  moveSidebarView,
+  type SidebarId,
+  type SidebarLayout,
+  type SidebarViewId,
+} from "@/app/layout/lib/sidebar-layout";
+import {
   type ActivityFeedView,
   DEFAULT_PLAYBACK_VOLUME_PERCENT,
   DEFAULT_PREFERENCES,
@@ -49,6 +56,21 @@ const preferencesSlice = createSlice({
     activityFeedViewChanged: (state, action: PayloadAction<ActivityFeedView>) => {
       state.activityFeedView = action.payload;
     },
+    sidebarLayoutChanged: (
+      state,
+      action: PayloadAction<{
+        destination: SidebarId;
+        insertionIndex: number;
+        viewId: SidebarViewId;
+      }>,
+    ) => {
+      state.sidebarLayout = moveSidebarView(
+        state.sidebarLayout,
+        action.payload.viewId,
+        action.payload.destination,
+        action.payload.insertionIndex,
+      );
+    },
     layoutDensityChanged: (state, action: PayloadAction<LayoutDensity>) => {
       state.layoutDensity = action.payload;
     },
@@ -70,6 +92,10 @@ const preferencesSlice = createSlice({
     layoutReset: (state) => {
       state.activityFeedView = DEFAULT_PREFERENCES.activityFeedView;
       state.layoutDensity = DEFAULT_PREFERENCES.layoutDensity;
+      state.sidebarLayout = {
+        left: [...DEFAULT_SIDEBAR_LAYOUT.left],
+        right: [...DEFAULT_SIDEBAR_LAYOUT.right],
+      };
     },
     editingSettingsReset: (state) => {
       state.loopPlaybackEnabledDefault = DEFAULT_PREFERENCES.loopPlaybackEnabledDefault;
@@ -105,6 +131,7 @@ const {
   playbackVolumeToggled,
   preferenceChanged,
   primaryColorChanged,
+  sidebarLayoutChanged,
   themePreferenceChanged,
   uiScaleDecreased,
   uiScaleIncreased,
@@ -161,6 +188,8 @@ const selectUiScalePercent = (state: RootState): number => {
 const selectPrimaryColor = (state: RootState): PrimaryColor =>
   selectPreferences(state).primaryColor;
 
+const selectSidebarLayout = (state: RootState): SidebarLayout => state.preferences.sidebarLayout;
+
 const selectLastSeenChangelogVersion = (state: RootState): string | null =>
   selectPreferences(state).lastSeenChangelogVersion;
 
@@ -186,9 +215,11 @@ export {
   selectPreferences,
   selectPrimaryColor,
   selectSegmentPlaybackEnabledDefault,
+  selectSidebarLayout,
   selectStripMetadataOnExport,
   selectThemePreference,
   selectUiScalePercent,
+  sidebarLayoutChanged,
   themePreferenceChanged,
   uiScaleDecreased,
   uiScaleIncreased,

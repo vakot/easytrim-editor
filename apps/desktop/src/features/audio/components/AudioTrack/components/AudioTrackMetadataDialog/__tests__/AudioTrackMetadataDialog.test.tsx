@@ -50,6 +50,30 @@ describe("AudioTrackMetadataDialog", () => {
     expect(screen.getByRole("textbox", { name: "Track title" })).toHaveValue("Saved custom title");
   });
 
+  it("uses the track row fallback as the title placeholder when the source has no title", async () => {
+    const user = userEvent.setup();
+    const controller = {
+      stream: { language: "und", streamIndex: 0 },
+      trackNumber: 1,
+      track: { metadata: {}, streamIndex: 0 },
+      updateMetadata: vi.fn(),
+    } as unknown as AudioTrackController;
+
+    render(
+      <AudioTrackMetadataDialog controller={controller}>
+        <OpenMetadataDialogButton />
+      </AudioTrackMetadataDialog>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Open metadata" }));
+
+    expect(screen.getByRole("textbox", { name: "Track title" })).toHaveValue("");
+    expect(screen.getByRole("textbox", { name: "Track title" })).toHaveAttribute(
+      "placeholder",
+      "und",
+    );
+  });
+
   it("preserves an existing custom title when saving without changes", async () => {
     const user = userEvent.setup();
     const track: { metadata: { language?: string; title?: string }; streamIndex: number } = {
