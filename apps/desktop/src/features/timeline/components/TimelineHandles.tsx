@@ -40,7 +40,7 @@ function SegmentDragHandle({
         }),
       })}
       className={cn(
-        "absolute top-1/2 z-4 -translate-1/2! cursor-grab rounded-full transition-colors data-[dragging=true]:cursor-grabbing",
+        "absolute top-1/2 z-4 -translate-1/2! cursor-grab touch-none rounded-full transition-colors data-[dragging=true]:cursor-grabbing",
         className,
       )}
       data-dragging={dragging ? "true" : undefined}
@@ -89,7 +89,7 @@ function TrimHandle({
         value: formatAccessibleTime(value),
       })}
       className={cn(
-        "absolute -inset-y-1 z-3 h-auto w-4 min-w-auto -translate-x-1/2 translate-y-0! cursor-ew-resize rounded-xs border-primary p-0 transition-colors hover:border-primary/80",
+        "absolute -inset-y-1 z-3 h-auto w-4 min-w-auto -translate-x-1/2 translate-y-0! cursor-ew-resize touch-none rounded-xs border-primary p-0 transition-colors hover:border-primary/80",
         boundary === "start" ? "rounded-l-md" : "rounded-r-md",
       )}
       data-dragging={dragging ? "true" : undefined}
@@ -131,7 +131,7 @@ function Playhead({
         value: formatAccessibleTime(value),
       })}
       className={cn(
-        "absolute -inset-y-1 z-2 w-4 -translate-x-1/2 cursor-ew-resize bg-transparent! transition-colors outline-none before:absolute before:inset-y-0 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:bg-foreground before:content-[''] after:absolute after:top-0 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] focus-visible:before:border-ring focus-visible:before:ring-3 focus-visible:before:ring-ring/50 focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 disabled:pointer-events-none disabled:before:bg-muted-foreground disabled:after:bg-muted-foreground",
+        "absolute -inset-y-1 z-2 w-4 -translate-x-1/2 cursor-ew-resize touch-none bg-transparent! transition-colors outline-none before:absolute before:inset-y-0 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:bg-foreground before:content-[''] after:absolute after:top-0 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] focus-visible:before:border-ring focus-visible:before:ring-3 focus-visible:before:ring-ring/50 focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 disabled:pointer-events-none disabled:before:bg-muted-foreground disabled:after:bg-muted-foreground",
       )}
       data-dragging={dragging ? "true" : undefined}
       data-editor-keyboard="timeline-slider"

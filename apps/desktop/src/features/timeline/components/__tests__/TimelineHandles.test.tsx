@@ -79,6 +79,7 @@ describe("TimelineHandles", () => {
     render(<TimelineHandle dragging={false} kind={kind} />);
     const handle = screen.getByRole("slider", { name: accessibleName });
 
+    expect(handle).toHaveClass("touch-none");
     await user.hover(handle);
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
