@@ -222,7 +222,8 @@ function useSidebarDragAndDrop() {
       if (!event.canceled) updateDragSidebarExpansion(getDragPosition(event));
       const placement = event.canceled ? null : getDropPlacement(event);
       for (const side of dragSidebarExpansion.current?.expandedByDrag ?? []) {
-        sidebarVisibility.setSidebarExpanded(side, placement?.destination === side);
+        const keepExpanded = placement?.destination === side;
+        sidebarVisibility.setSidebarExpanded(side, keepExpanded, { persist: keepExpanded });
       }
 
       clearDragState();
@@ -246,7 +247,8 @@ function useSidebarDragAndDrop() {
 
       const placement = canceled ? null : currentDrag.placement;
       for (const side of dragSidebarExpansion.current?.expandedByDrag ?? []) {
-        sidebarVisibility.setSidebarExpanded(side, placement?.destination === side);
+        const keepExpanded = placement?.destination === side;
+        sidebarVisibility.setSidebarExpanded(side, keepExpanded, { persist: keepExpanded });
       }
 
       clearDragState();

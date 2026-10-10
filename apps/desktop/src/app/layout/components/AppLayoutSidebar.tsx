@@ -89,6 +89,7 @@ function AppLayoutSidebar({
           className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
           id={side === "left" ? "editor-source" : "editor-right-sidebar"}
           orientation="vertical"
+          panelIds={views.map((viewId) => VIEW_PANEL_IDS[viewId])}
           persisted
         >
           {views.map((viewId, index) => (

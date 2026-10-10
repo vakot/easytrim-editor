@@ -12,23 +12,38 @@ type PanelState = {
   isCollapsed: boolean;
   isDefaultCollapsed: boolean;
   ref: PanelRef;
+  runUserInteraction: (action: () => void) => void;
 };
 
 type PanelRefsCollection = Record<PanelId, PanelState>;
 
 const ResizablePanelContext = React.createContext<{
   panels: PanelRefsCollection;
-  registerPanel: (panelId: PanelId, panelRef: PanelRef) => void;
+  registerPanel: (
+    panelId: PanelId,
+    panelRef: PanelRef,
+    runUserInteraction: (action: () => void) => void,
+  ) => () => void;
   unregisterPanel: (panelId: PanelId) => void;
   updatePanelState: (panelId: PanelId, update: (panel: PanelState) => PanelState) => void;
 } | null>(null);
+
+const runPanelAction = (action: () => void) => action();
+const ResizablePanelInteractionContext =
+  React.createContext<(action: () => void) => void>(runPanelAction);
 
 type ResizablePanelGroupProps =
   | ({ persisted: true } & PersistedResizablePanelGroupProps)
   | ({ persisted?: false } & ResizablePrimitive.GroupProps);
 
 function ResizablePanelGroup({ persisted, ...props }: ResizablePanelGroupProps) {
-  if (!persisted) return <ResizablePrimitive.Group {...props} />;
+  if (!persisted) {
+    return (
+      <ResizablePanelInteractionContext.Provider value={runPanelAction}>
+        <ResizablePrimitive.Group {...props} />
+      </ResizablePanelInteractionContext.Provider>
+    );
+  }
   return <ResizablePanelGroupPersisted {...(props as PersistedResizablePanelGroupProps)} />;
 }
 
@@ -40,6 +55,7 @@ interface PersistedResizablePanelGroupProps extends Omit<
 > {
   id: string;
   onlySaveAfterUserInteractions?: boolean;
+  panelIds?: string[];
   storage?: ResizableLayoutStorage;
 }
 
@@ -48,10 +64,12 @@ function ResizablePanelGroupPersisted({
   id,
   onLayoutChanged,
   onlySaveAfterUserInteractions,
+  panelIds: providedPanelIds,
   storage = localStorage,
   ...props
 }: PersistedResizablePanelGroupProps) {
-  const panelIds = getPanelIds(children);
+  const panelIds = providedPanelIds ?? getPanelIds(children);
+  const currentLayout = React.useRef<ResizablePrimitive.Layout | null>(null);
 
   const persistedLayout = ResizablePrimitive.useDefaultLayout({
     id,
@@ -60,25 +78,54 @@ function ResizablePanelGroupPersisted({
     storage,
   });
 
+  const saveLayout = persistedLayout.onLayoutChanged;
+  const runUserInteraction = React.useCallback(
+    (action: () => void) => {
+      action();
+      if (currentLayout.current) {
+        saveLayout(currentLayout.current, { isUserInteraction: true });
+      }
+    },
+    [saveLayout],
+  );
+
   return (
     <ResizablePanelGroupBase
       {...props}
       defaultLayout={persistedLayout.defaultLayout}
       id={id}
       onLayoutChanged={(layout, meta) => {
-        persistedLayout.onLayoutChanged(layout, meta);
+        currentLayout.current = layout;
+        saveLayout(layout, meta);
         onLayoutChanged?.(layout, meta);
       }}
     >
-      {children}
+      <ResizablePanelInteractionContext.Provider value={runUserInteraction}>
+        {children}
+      </ResizablePanelInteractionContext.Provider>
     </ResizablePanelGroupBase>
   );
 }
 
 function ResizablePanelGroupBase({ className, ...props }: ResizablePrimitive.GroupProps) {
+  const [isInitializing, setIsInitializing] = React.useState(true);
+
+  React.useLayoutEffect(() => {
+    // Apply and paint the restored layout before enabling normal panel transitions.
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => setIsInitializing(false));
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <ResizablePrimitive.Group
-      className={cn("flex size-full aria-[orientation=vertical]:flex-col", className)}
+      className={cn(
+        "flex size-full aria-[orientation=vertical]:flex-col [&[data-initializing]>[data-panel]]:transition-none [&[data-initializing]>[data-separator]]:transition-none",
+        className,
+      )}
+      data-initializing={isInitializing || undefined}
       data-slot="resizable-panel-group"
       {...props}
     />
@@ -100,6 +147,7 @@ function ResizablePanel({
   ...props
 }: ResizablePanelProps) {
   const { registerPanel, unregisterPanel, updatePanelState } = useResizablePanelContext();
+  const runUserInteraction = React.useContext(ResizablePanelInteractionContext);
 
   const internalPanelRef = ResizablePrimitive.usePanelRef();
   const panelRef = propsPanelRef ?? internalPanelRef;
@@ -107,9 +155,12 @@ function ResizablePanel({
 
   React.useEffect(() => {
     if (!id) return;
-    registerPanel(id, panelRef);
-    return () => unregisterPanel(id);
-  }, [id, panelRef, registerPanel, unregisterPanel]);
+    const cancelRegistration = registerPanel(id, panelRef, runUserInteraction);
+    return () => {
+      cancelRegistration();
+      unregisterPanel(id);
+    };
+  }, [id, panelRef, registerPanel, runUserInteraction, unregisterPanel]);
 
   return (
     <ResizablePrimitive.Panel
@@ -189,13 +240,17 @@ function ResizablePanelControl({ children, mode = "toggle", panelId }: Resizable
 
   const handleExpand = () => {
     panelStates.forEach((panelState) => {
-      if (panelState.isCollapsed) panelState.ref.current?.expand();
+      if (panelState.isCollapsed) {
+        panelState.runUserInteraction(() => panelState.ref.current?.expand());
+      }
     });
   };
 
   const handleCollapse = () => {
     panelStates.forEach((panelState) => {
-      if (!panelState.isCollapsed) panelState.ref.current?.collapse();
+      if (!panelState.isCollapsed) {
+        panelState.runUserInteraction(() => panelState.ref.current?.collapse());
+      }
     });
   };
 
@@ -204,9 +259,9 @@ function ResizablePanelControl({ children, mode = "toggle", panelId }: Resizable
       if (panelState.isCollapsed === panelState.isDefaultCollapsed) return;
 
       if (panelState.isDefaultCollapsed) {
-        panelState.ref.current?.collapse();
+        panelState.runUserInteraction(() => panelState.ref.current?.collapse());
       } else {
-        panelState.ref.current?.expand();
+        panelState.runUserInteraction(() => panelState.ref.current?.expand());
       }
     });
   };
@@ -214,9 +269,9 @@ function ResizablePanelControl({ children, mode = "toggle", panelId }: Resizable
   const handleToggle = () => {
     panelStates.forEach((panelState) => {
       if (panelState.isCollapsed) {
-        panelState.ref.current?.expand();
+        panelState.runUserInteraction(() => panelState.ref.current?.expand());
       } else {
-        panelState.ref.current?.collapse();
+        panelState.runUserInteraction(() => panelState.ref.current?.collapse());
       }
     });
   };
@@ -259,35 +314,40 @@ function ResizablePanelControl({ children, mode = "toggle", panelId }: Resizable
 function ResizablePanelContextProvider({ children }: React.PropsWithChildren) {
   const [panels, setPanels] = React.useState<PanelRefsCollection>({});
 
-  const registerPanel = React.useCallback((panelId: PanelId, panelRef: PanelRef) => {
-    setPanels((panels) => ({
-      ...panels,
-      [panelId]: {
-        ref: panelRef,
-        isCollapsed: false,
-        isDefaultCollapsed: false,
-      },
-    }));
+  const registerPanel = React.useCallback(
+    (panelId: PanelId, panelRef: PanelRef, runUserInteraction: (action: () => void) => void) => {
+      setPanels((panels) => ({
+        ...panels,
+        [panelId]: {
+          ref: panelRef,
+          isCollapsed: false,
+          isDefaultCollapsed: false,
+          runUserInteraction,
+        },
+      }));
 
-    queueMicrotask(() => {
-      const isDefaultCollapsed = panelRef.current?.isCollapsed();
-      if (isDefaultCollapsed === undefined) return;
+      // Newly added panels finish registration after the Group's next layout effect.
+      let isActive = true;
+      queueMicrotask(() => {
+        if (!isActive) return;
+        const isCollapsed = panelRef.current?.isCollapsed();
+        if (isCollapsed === undefined) return;
 
-      setPanels((panels) => {
-        const panel = panels[panelId];
-        if (!panel || panel.ref !== panelRef) return panels;
-
-        return {
-          ...panels,
-          [panelId]: {
-            ...panel,
-            isCollapsed: isDefaultCollapsed,
-            isDefaultCollapsed,
-          },
-        };
+        setPanels((panels) => {
+          const panel = panels[panelId];
+          if (!panel || panel.ref !== panelRef) return panels;
+          return {
+            ...panels,
+            [panelId]: { ...panel, isCollapsed, isDefaultCollapsed: isCollapsed },
+          };
+        });
       });
-    });
-  }, []);
+      return () => {
+        isActive = false;
+      };
+    },
+    [],
+  );
 
   const unregisterPanel = React.useCallback((panelId: PanelId) => {
     setPanels((panels) => {
@@ -393,16 +453,20 @@ function usePanelCommand(panelId: PanelId | PanelId[]) {
 
   const toggle = () => {
     panelStates.forEach(({ panel }) => {
-      if (panel.isCollapsed) panel.ref.current?.expand();
-      else panel.ref.current?.collapse();
+      panel.runUserInteraction(() => {
+        if (panel.isCollapsed) panel.ref.current?.expand();
+        else panel.ref.current?.collapse();
+      });
     });
   };
 
   const reset = () => {
     panelStates.forEach(({ panel }) => {
       if (panel.isCollapsed === panel.isDefaultCollapsed) return;
-      if (panel.isDefaultCollapsed) panel.ref.current?.collapse();
-      else panel.ref.current?.expand();
+      panel.runUserInteraction(() => {
+        if (panel.isDefaultCollapsed) panel.ref.current?.collapse();
+        else panel.ref.current?.expand();
+      });
     });
   };
 

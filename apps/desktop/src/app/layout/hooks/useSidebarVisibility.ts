@@ -26,13 +26,19 @@ function useSidebarVisibility() {
   );
 
   const setSidebarExpanded = useCallback(
-    (side: SidebarId, isExpanded: boolean) => {
+    (side: SidebarId, isExpanded: boolean, { persist = false }: { persist?: boolean } = {}) => {
       const panel = side === "left" ? leftSidebar : rightSidebar;
       const panelHandle = panel?.ref.current;
-      if (!panelHandle || panelHandle.isCollapsed() === !isExpanded) return;
+      if (!panel || !panelHandle) return;
 
-      if (isExpanded) panelHandle.expand();
-      else panelHandle.collapse();
+      const update = () => {
+        if (panelHandle.isCollapsed() === !isExpanded) return;
+        if (isExpanded) panelHandle.expand();
+        else panelHandle.collapse();
+      };
+
+      if (persist) panel.runUserInteraction(update);
+      else update();
     },
     [leftSidebar, rightSidebar],
   );
