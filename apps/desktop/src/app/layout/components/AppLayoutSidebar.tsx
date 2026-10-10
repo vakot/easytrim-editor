@@ -105,7 +105,7 @@ function SidebarViewFrame({
   side: SidebarId;
   viewId: SidebarViewId;
 }) {
-  const { handleRef, isDragging, isDropTarget, ref } = useSortable({
+  const { handleRef, isDragging, ref } = useSortable({
     accept: "sidebar-view",
     group: side,
     id: viewId,
@@ -118,7 +118,6 @@ function SidebarViewFrame({
       className={cn(
         "flex size-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
         isDragging && "bg-card opacity-60",
-        isDropTarget && "bg-primary/10 ring-1 ring-primary/50 ring-inset",
       )}
       data-sidebar-view={viewId}
       ref={ref}
