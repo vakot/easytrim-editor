@@ -85,6 +85,7 @@ describe("AppLayoutSidebar", () => {
       "absolute",
       "inset-y-0",
       "w-1",
+      "rounded",
       "bg-primary",
       "right-0",
     );
@@ -107,7 +108,7 @@ describe("AppLayoutSidebar", () => {
     const leftIndicator = document.querySelector('[data-sidebar-empty-drop-indicator="left"]');
 
     expect(leftTarget).toHaveClass("pointer-events-none", "w-[50vw]", "left-0");
-    expect(leftIndicator).toHaveClass("w-1", "bg-primary", "left-0");
+    expect(leftIndicator).toHaveClass("w-1", "rounded", "bg-primary", "left-0");
     expect(leftIndicator?.parentElement).toBe(screen.getByTestId("workspace"));
   });
 });

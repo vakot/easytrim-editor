@@ -268,7 +268,13 @@ describe("AppLayout drag and resize integration", () => {
           "data-sidebar-drop-indicator-index",
           String(expectedIndex),
         );
-        expect(indicator).toHaveClass("absolute", "h-1", "bg-primary", "pointer-events-none");
+        expect(indicator).toHaveClass(
+          "absolute",
+          "h-1",
+          "rounded",
+          "bg-primary",
+          "pointer-events-none",
+        );
         expect(indicator).toHaveStyle({ top: `${expectedIndicatorTop}px` });
         expect(indicator?.parentElement).toBe(sidebar);
         const dragPreview = document.querySelector(`[data-sidebar-drag-preview="${viewId}"]`);

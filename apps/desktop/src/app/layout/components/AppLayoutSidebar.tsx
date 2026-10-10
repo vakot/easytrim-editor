@@ -119,7 +119,7 @@ function SidebarInsertionIndicator({
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-3 z-40 h-1 -translate-y-1/2 bg-primary transition-[top] duration-150 motion-reduce:transition-none"
+      className="pointer-events-none absolute inset-x-3 z-40 h-1 -translate-y-1/2 rounded bg-primary transition-[top] duration-150 motion-reduce:transition-none"
       data-sidebar-drop-indicator={side}
       data-sidebar-drop-indicator-index={placement.insertionIndex}
       style={{ top: placement.indicatorOffset }}
@@ -313,7 +313,7 @@ function SidebarEmptyDropTarget({
         <div
           aria-hidden="true"
           className={cn(
-            "pointer-events-none absolute inset-y-0 z-40 w-1 bg-primary",
+            "pointer-events-none absolute inset-y-0 z-40 w-1 rounded bg-primary",
             side === "left" ? "left-0" : "right-0",
           )}
           data-sidebar-empty-drop-indicator={side}
