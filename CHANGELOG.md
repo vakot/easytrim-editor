@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.13.3]
+
 ### Added
 
 - Added saved trim range indicators to source cards.
