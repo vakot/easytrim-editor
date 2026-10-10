@@ -285,6 +285,7 @@ describe("AppLayout drag and resize integration", () => {
       expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
     });
     const workspaceLeftPanel = document.getElementById("workspace-left-sidebar")!;
+    const workspaceGroup = document.getElementById("workspace")!;
     const initialWorkspaceSidebarSize = workspaceLeftPanel.style.flexGrow;
     const initialWorkspaceSidebarWidth = workspaceLeftPanel.offsetWidth;
     expectValidPanelLayout(sidebar, ["sources", "activity"]);
@@ -526,6 +527,7 @@ describe("AppLayout drag and resize integration", () => {
         right: ["sources"],
       });
     });
+    expect(document.getElementById("workspace")).toBe(workspaceGroup);
     expect(
       Array.from(document.getElementById("workspace")!.children).map((child) =>
         child.hasAttribute("data-panel") ? child.id : "separator",
@@ -573,6 +575,7 @@ describe("AppLayout drag and resize integration", () => {
       });
       expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
     });
+    expect(document.getElementById("workspace")).toBe(workspaceGroup);
     expect(document.getElementById("workspace-right-sidebar")).toBeNull();
 
     act(() => {
@@ -586,6 +589,7 @@ describe("AppLayout drag and resize integration", () => {
         right: ["sources"],
       });
     });
+    expect(document.getElementById("workspace")).toBe(workspaceGroup);
     expect(document.getElementById("workspace-right-sidebar")?.offsetWidth).toBeCloseTo(
       configuredRightSidebarWidth,
     );

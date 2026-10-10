@@ -321,11 +321,9 @@ function AppLayout() {
         <AppLayoutHeader />
 
         <div className="relative min-h-0 min-w-0">
-          {/* Keep panel registrations aligned when outer workspace topology changes. */}
           <ResizablePanelGroup
             className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
             id="workspace"
-            key={`${hasLeftSidebar}:${hasRightSidebar}`}
             onLayoutChanged={handleWorkspaceLayoutChanged}
             onlySaveAfterUserInteractions
             persisted
