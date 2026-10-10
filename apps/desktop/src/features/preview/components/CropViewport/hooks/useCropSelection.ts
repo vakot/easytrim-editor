@@ -10,6 +10,7 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { cropChanged, cropResolutionFor, selectCrop } from "@/app/store/slices/crop-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import { FULL_CROP } from "@/domain/crop";
 import type { RotationDegrees } from "@/domain/rotation";
 
 import {
@@ -80,6 +81,19 @@ function useCropSelection(
     },
     [crop, dispatch, rotationDegrees, sourceMedia],
   );
+
+  const resetCropToDefault = useCallback(() => {
+    setAspectRatioPreset("freeform");
+    if (!sourceMedia) return;
+
+    dispatch(
+      cropChanged({
+        crop: FULL_CROP,
+        resolution: cropResolutionFor(sourceMedia.video ?? null, FULL_CROP, rotationDegrees),
+      }),
+    );
+    dispatch(commitActiveEditingInstanceDraft());
+  }, [dispatch, rotationDegrees, sourceMedia]);
 
   const open = useCallback(() => {
     setIsOpen(true);
@@ -199,6 +213,7 @@ function useCropSelection(
     moveDrag,
     open,
     aspectRatioPreset,
+    resetCropToDefault,
     selectAspectRatioPreset,
     startDrag,
   };

@@ -900,6 +900,7 @@ export const en = {
       freeform: "Free",
       left: "Resize crop from left",
       preview: "Video crop preview",
+      resetToDefault: "Reset crop to default",
       right: "Resize crop from right",
       top: "Resize crop from top",
       topLeft: "Resize crop from top left",

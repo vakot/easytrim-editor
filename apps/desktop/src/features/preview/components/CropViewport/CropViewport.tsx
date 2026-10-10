@@ -111,6 +111,7 @@ function CropViewport() {
     isDragging,
     isEditing,
     open,
+    resetCropToDefault,
     selectAspectRatioPreset,
     startDrag,
   } = cropSelection;
@@ -336,6 +337,15 @@ function CropViewport() {
                   {label}
                 </Button>
               ))}
+              <Button
+                aria-label={t("preview.crop.resetToDefault")}
+                className="h-10 min-w-10 px-2 text-xs"
+                onClick={resetCropToDefault}
+                size="sm"
+                variant="ghost"
+              >
+                {t("common.actions.resetToDefault")}
+              </Button>
             </div>
           ) : null}
           <div
