@@ -235,8 +235,10 @@ describe("AppLayout drag and resize integration", () => {
     const dragView = async (
       viewId: "activity" | "sources",
       y: number,
+      expectedViews: Array<"activity" | "sources">,
+      expectedIndex: number,
+      expectedPreviewTop: number,
       beforeSecondMove?: () => void,
-      expectedPreviewTop = 300,
     ) => {
       fireEvent.click(
         screen.getByRole("button", {
@@ -260,13 +262,15 @@ describe("AppLayout drag and resize integration", () => {
         expect(
           document.querySelector('[data-sidebar-drop-placeholder="left"]'),
         ).toBeInTheDocument();
-        expectValidPanelLayout(
-          sidebar,
-          viewId === "sources" ? ["activity", "sources"] : ["sources", "activity"],
-        );
+        expectValidPanelLayout(sidebar, expectedViews);
         const placeholder = document.querySelector('[data-sidebar-drop-placeholder="left"]');
-        expect(placeholder).toHaveAttribute("data-sidebar-drop-placeholder-index", "1");
+        expect(placeholder).toHaveAttribute(
+          "data-sidebar-drop-placeholder-index",
+          String(expectedIndex),
+        );
         expect(placeholder).toHaveStyle({ top: `${expectedPreviewTop}px` });
+        expect(placeholder).toHaveClass("border-t-2", "-translate-y-1/2");
+        expect(placeholder).not.toHaveClass("h-12");
         expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
       });
 
@@ -277,24 +281,25 @@ describe("AppLayout drag and resize integration", () => {
       });
     };
 
-    await dragView(
-      "sources",
-      650,
-      () => {
-        // Simulate sortable displacement and a collapsed panel while the pointer remains at the
-        // same coordinate. Placement should use the panel geometry captured at drag start.
-        setBounds(activityPanel, 800, 836);
-        setBounds(activityFrame, 800, 900);
-      },
-      600,
-    );
+    setBounds(activityPanel, 300, 336);
+    setBounds(activityFrame, 300, 336);
+    await dragView("sources", 650, ["activity", "sources"], 1, 336, () => {
+      // Simulate sortable displacement and a collapsed panel while the pointer remains at the
+      // same coordinate. Placement should use the panel geometry captured at drag start.
+      setBounds(activityPanel, 800, 836);
+      setBounds(activityFrame, 800, 900);
+    });
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
     expectValidPanelLayout(sidebar, ["activity", "sources"]);
     expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
     expect(sidebar.querySelector("#editor-source-imported-sources")).toBe(originalSourcePanel);
     expect(sidebar.querySelector("#editor-source-activity-feed")).toBe(originalActivityPanel);
 
-    await dragView("activity", 650);
+    setBounds(activityPanel, 0, 36);
+    setBounds(activityFrame, 0, 36);
+    setBounds(sourcesPanel, 36, 700);
+    setBounds(sourcesFrame, 36, 700);
+    await dragView("activity", 650, ["sources", "activity"], 1, 700);
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["sources", "activity"]);
     expectValidPanelLayout(sidebar, ["sources", "activity"]);
     expect(sourcesPanel.style.flexGrow).toBe(panelSizes.get(sourcesPanel.id));
@@ -304,5 +309,12 @@ describe("AppLayout drag and resize integration", () => {
     expect(separators).toHaveLength(1);
     expect(separators[0]?.previousElementSibling).toBe(originalSourcePanel);
     expect(separators[0]?.nextElementSibling).toBe(originalActivityPanel);
+
+    setBounds(sourcesPanel, 0, 300);
+    setBounds(sourcesFrame, 0, 300);
+    setBounds(activityPanel, 300, 700);
+    setBounds(activityFrame, 300, 700);
+    await dragView("activity", 50, ["activity", "sources"], 0, 0);
+    expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
   });
 });

@@ -55,7 +55,7 @@ function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarPro
       {placement?.destination === side ? (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-5 z-30 h-12 -translate-y-1/2 rounded-lg border-2 border-dashed border-primary/60 bg-card/80 shadow-md"
+          className="pointer-events-none absolute inset-x-5 z-30 -translate-y-1/2 border-t-2 border-dashed border-primary/60 shadow-sm"
           data-sidebar-drop-placeholder={side}
           data-sidebar-drop-placeholder-index={placement.insertionIndex}
           style={{ top: placement.previewTop }}
