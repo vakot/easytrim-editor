@@ -35,12 +35,19 @@ function snapMovedAxis(crop: CropRect, axis: "x" | "y", threshold: number): Crop
   const length = axis === "x" ? crop.width : crop.height;
   const leading = crop[axis];
   const trailing = leading + length;
-  const leadingGuide = snapToNearestPoint(leading, QUARTER_SNAP_POINTS, threshold);
-  const trailingGuide = snapToNearestPoint(trailing, QUARTER_SNAP_POINTS, threshold);
-  const guide = nearestGuide(leading, trailing, leadingGuide, trailingGuide);
+  const candidates = [leading, leading + length / 2, trailing].flatMap((point) => {
+    const guide = snapToNearestPoint(point, QUARTER_SNAP_POINTS, threshold);
+    return guide === null ? [] : [{ guide, offset: point - leading, point }];
+  });
 
-  if (guide === null) return crop;
-  const nextLeading = clamp(guide === leadingGuide ? guide : guide - length, 0, 1 - length);
+  if (candidates.length === 0) return crop;
+  const closest = candidates.reduce((best, candidate) =>
+    Math.abs(candidate.point - candidate.guide) < Math.abs(best.point - best.guide)
+      ? candidate
+      : best,
+  );
+
+  const nextLeading = clamp(closest.guide - closest.offset, 0, 1 - length);
   return axis === "x" ? { ...crop, x: nextLeading } : { ...crop, y: nextLeading };
 }
 
@@ -67,19 +74,6 @@ function snapTrailingEdge(crop: CropRect, axis: "x" | "y", threshold: number): C
   }
   const bottom = clamp(guide, crop.y + MIN_CROP_SIZE, 1);
   return { ...crop, height: bottom - crop.y };
-}
-
-function nearestGuide(
-  leading: number,
-  trailing: number,
-  leadingGuide: number | null,
-  trailingGuide: number | null,
-): number | null {
-  if (leadingGuide === null) return trailingGuide;
-  if (trailingGuide === null) return leadingGuide;
-  return Math.abs(leading - leadingGuide) <= Math.abs(trailing - trailingGuide)
-    ? leadingGuide
-    : trailingGuide;
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {

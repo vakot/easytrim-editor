@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Added crop aspect-ratio presets, freeform resizing, and an option to reset the crop to its full-frame default.
 - Added customizable left and right sidebars for moving and reordering the Imported Sources and Activity Feed views.
 
+### Changed
+
+- Crop selection movement now snaps its center to the existing 25%, 50%, and 75% guides.
+
 ## [1.13.3]
 
 ### Added
