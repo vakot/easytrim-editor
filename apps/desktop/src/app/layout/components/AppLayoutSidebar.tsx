@@ -221,8 +221,8 @@ function SidebarViewFrame({
   return (
     <div
       className={cn(
-        "relative flex size-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-        draggable.isDragging && !isDropPlaceholder && "bg-card opacity-60",
+        "relative flex size-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden transition-[background-color,opacity] duration-150 motion-reduce:transition-none",
+        draggable.isDragging && !isDropPlaceholder && "bg-card opacity-50",
       )}
       data-sidebar-view={viewId}
     >
