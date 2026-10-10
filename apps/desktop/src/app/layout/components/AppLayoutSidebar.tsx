@@ -299,25 +299,27 @@ function SidebarEmptyDropTarget({
   });
 
   return (
-    <div
-      aria-hidden="true"
-      className={cn(
-        "pointer-events-none absolute inset-y-0 z-40 w-[50vw]",
-        side === "left" ? "left-0" : "right-0",
-      )}
-      data-sidebar-empty-drop-target={side}
-      ref={ref}
-    >
+    <>
+      <div
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute inset-y-0 z-40 w-[50vw]",
+          side === "left" ? "left-0" : "right-0",
+        )}
+        data-sidebar-empty-drop-target={side}
+        ref={ref}
+      />
       {isDragging && isActive ? (
         <div
+          aria-hidden="true"
           className={cn(
-            "absolute inset-y-0 w-1 bg-primary",
-            side === "left" ? "left-82" : "right-82",
+            "pointer-events-none absolute inset-y-0 z-40 w-1 bg-primary",
+            side === "left" ? "left-0" : "right-0",
           )}
           data-sidebar-empty-drop-indicator={side}
         />
       ) : null}
-    </div>
+    </>
   );
 }
 

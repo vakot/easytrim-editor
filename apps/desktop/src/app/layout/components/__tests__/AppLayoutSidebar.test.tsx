@@ -58,7 +58,9 @@ describe("AppLayoutSidebar", () => {
   it("keeps the empty sidebar detection area invisible and shows a boundary line only when active", () => {
     const { unmount } = render(
       <DragDropProvider>
-        <SidebarEmptyDropTarget isActive={false} isDragging side="right" />
+        <div className="relative" data-testid="workspace">
+          <SidebarEmptyDropTarget isActive={false} isDragging side="right" />
+        </div>
       </DragDropProvider>,
     );
 
@@ -68,15 +70,45 @@ describe("AppLayoutSidebar", () => {
     expect(target?.querySelector("[data-sidebar-empty-drop-indicator]")).toBeNull();
 
     unmount();
-    render(
+    const { unmount: unmountRight } = render(
       <DragDropProvider>
-        <SidebarEmptyDropTarget isActive isDragging side="right" />
+        <div className="relative" data-testid="workspace">
+          <SidebarEmptyDropTarget isActive isDragging side="right" />
+        </div>
       </DragDropProvider>,
     );
 
+    const workspace = screen.getByTestId("workspace");
     const indicator = document.querySelector('[data-sidebar-empty-drop-indicator="right"]');
-    expect(indicator).toHaveClass("absolute", "inset-y-0", "w-1", "bg-primary");
-    expect(indicator?.parentElement).toHaveClass("pointer-events-none");
+    expect(indicator).toHaveClass(
+      "pointer-events-none",
+      "absolute",
+      "inset-y-0",
+      "w-1",
+      "bg-primary",
+      "right-0",
+    );
+    expect(indicator?.parentElement).toBe(workspace);
+    expect(indicator).not.toHaveClass("left-82", "right-82");
+
+    unmountRight();
+    render(
+      <DragDropProvider>
+        <div className="relative" data-testid="workspace">
+          <SidebarEmptyDropTarget isActive isDragging side="left" />
+        </div>
+      </DragDropProvider>,
+    );
+
+    const leftTarget = document.querySelector<HTMLElement>(
+      '[data-sidebar-empty-drop-target="left"]',
+    );
+
+    const leftIndicator = document.querySelector('[data-sidebar-empty-drop-indicator="left"]');
+
+    expect(leftTarget).toHaveClass("pointer-events-none", "w-[50vw]", "left-0");
+    expect(leftIndicator).toHaveClass("w-1", "bg-primary", "left-0");
+    expect(leftIndicator?.parentElement).toBe(screen.getByTestId("workspace"));
   });
 });
 
