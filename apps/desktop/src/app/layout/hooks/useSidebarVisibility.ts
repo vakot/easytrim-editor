@@ -57,3 +57,4 @@ function useSidebarVisibility() {
 }
 
 export { useSidebarVisibility };
+export type SidebarVisibility = ReturnType<typeof useSidebarVisibility>;
