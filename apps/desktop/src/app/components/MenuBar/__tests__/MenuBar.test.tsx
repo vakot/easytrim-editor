@@ -42,7 +42,7 @@ const menuState = vi.hoisted(() => ({
   source: {
     isReady: true,
     selection: null as SourceRef | null,
-    media: null as Record<string, never> | null,
+    media: null as { audioStreams: never[] } | null,
   },
   crop: {
     value: { x: 0, y: 0, width: 1, height: 1 },
@@ -205,7 +205,8 @@ describe("MenuBarTest", () => {
       ? { displayName: "source.mp4", sourcePath: "C:/Media/source.mp4" }
       : null;
     menuState.source.isReady = overrides.canExport ?? true;
-    menuState.source.media = menuState.source.selection && menuState.source.isReady ? {} : null;
+    menuState.source.media =
+      menuState.source.selection && menuState.source.isReady ? { audioStreams: [] } : null;
     menuState.crop.value =
       overrides.canSave === false
         ? { x: 0.1, y: 0, width: 0.9, height: 1 }

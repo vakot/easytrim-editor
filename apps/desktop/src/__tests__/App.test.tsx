@@ -333,7 +333,7 @@ describe("App", () => {
     expect(screen.getByRole("banner", { name: "Window title bar" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Export Queue" })).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Drag Imported Sources to move it between sidebars" }),
+      screen.getByRole("button", { name: /Imported Sources.*arrow keys to move it/ }),
     ).toBeInTheDocument();
   });
 
@@ -876,11 +876,11 @@ describe("App", () => {
 
     await waitForSourcePresence(true);
     expect(
-      screen.getByRole("button", { name: "Drag Imported Sources to move it between sidebars" }),
+      screen.getByRole("button", { name: /Imported Sources.*arrow keys to move it/ }),
     ).toBeInTheDocument();
     expect(screen.getAllByText(selection.displayName)[0]).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Drag Activity Feed to move it between sidebars" }),
+      screen.getByRole("button", { name: /Activity Feed.*arrow keys to move it/ }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",

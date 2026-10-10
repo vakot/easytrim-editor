@@ -364,7 +364,7 @@ function SidebarEmptyDropTarget({
       <div
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute inset-y-0 z-40 w-lg",
+          "pointer-events-none absolute inset-y-0 z-40 w-[50vw]",
           side === "left" ? "left-0" : "right-0",
         )}
         data-sidebar-empty-drop-target={side}

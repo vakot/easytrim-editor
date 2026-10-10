@@ -77,7 +77,7 @@ const state = {
   },
   export: { availableQueueFinishActions: ["exit", "nothing"], queueFinishAction: "nothing" },
   source: {
-    media: {},
+    media: { audioStreams: [] },
     source: { displayName: "source.mp4", sourcePath: "C:/source.mp4" },
     status: "ready",
   },
