@@ -311,52 +311,64 @@ function CropViewport() {
             visible={cropIsOpen && isEditing}
             widthTarget={cropRulerWidthTarget}
           />
-          {cropIsOpen ? (
-            <div
-              aria-label={t("preview.crop.aspectRatioPresets")}
-              className="absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 gap-1 rounded-xl border border-border/70 bg-background/90 p-1 shadow-lg backdrop-blur-sm"
-              data-crop-aspect-ratio-presets
-              onClick={(event) => event.stopPropagation()}
-              onPointerDown={(event) => event.stopPropagation()}
-              role="group"
-            >
-              <Button
-                aria-pressed={aspectRatioPreset === "freeform"}
-                className="h-10 min-w-10 px-2 text-xs"
-                onClick={() => selectAspectRatioPreset("freeform")}
-                size="sm"
-                variant={aspectRatioPreset === "freeform" ? "secondary" : "ghost"}
-              >
-                {t("preview.crop.freeform")}
-              </Button>
-              {CROP_ASPECT_RATIO_PRESETS.map(({ label }) => (
-                <Button
-                  aria-pressed={aspectRatioPreset === label}
-                  className="h-10 min-w-10 px-2 text-xs"
-                  key={label}
-                  onClick={() => selectAspectRatioPreset(label)}
-                  size="sm"
-                  variant={aspectRatioPreset === label ? "secondary" : "ghost"}
-                >
-                  {label}
-                </Button>
-              ))}
-              <Button
-                aria-label={t("preview.crop.resetToDefault")}
-                className="size-10"
-                disabled={!cropApplied}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  resetCropToDefault();
-                }}
+          <AnimatePresence initial={false}>
+            {cropIsOpen ? (
+              <motion.footer
+                animate={{ height: "auto", opacity: 1 }}
+                className="absolute inset-x-0 bottom-0 z-20 overflow-hidden border-t border-foreground/10 bg-preview-surface"
+                data-crop-aspect-ratio-presets
+                exit={{ height: 0, opacity: 0 }}
+                initial={{ height: 0, opacity: 0 }}
+                onClick={(event) => event.stopPropagation()}
                 onPointerDown={(event) => event.stopPropagation()}
-                size="icon"
-                variant="destructive"
+                transition={{ duration: reduceMotion ? 0 : 0.18, ease: "easeInOut" }}
               >
-                <RotateCcw aria-hidden="true" />
-              </Button>
-            </div>
-          ) : null}
+                <div className="overflow-x-auto">
+                  <div
+                    aria-label={t("preview.crop.aspectRatioPresets")}
+                    className="flex w-max min-w-full items-center justify-center gap-1 p-1"
+                    role="group"
+                  >
+                    <Button
+                      aria-pressed={aspectRatioPreset === "freeform"}
+                      className="h-10 min-w-10 px-2 text-xs"
+                      onClick={() => selectAspectRatioPreset("freeform")}
+                      size="sm"
+                      variant={aspectRatioPreset === "freeform" ? "secondary" : "ghost"}
+                    >
+                      {t("preview.crop.freeform")}
+                    </Button>
+                    {CROP_ASPECT_RATIO_PRESETS.map(({ label }) => (
+                      <Button
+                        aria-pressed={aspectRatioPreset === label}
+                        className="h-10 min-w-10 px-2 text-xs"
+                        key={label}
+                        onClick={() => selectAspectRatioPreset(label)}
+                        size="sm"
+                        variant={aspectRatioPreset === label ? "secondary" : "ghost"}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                    <Button
+                      aria-label={t("preview.crop.resetToDefault")}
+                      className="size-10"
+                      disabled={!cropApplied}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        resetCropToDefault();
+                      }}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      size="icon"
+                      variant="destructive"
+                    >
+                      <RotateCcw aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+              </motion.footer>
+            ) : null}
+          </AnimatePresence>
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-10 border border-primary/70 bg-primary/5 opacity-0 ring-1 ring-primary/20 transition-opacity duration-(--preview-transition-duration) ease-in-out group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
