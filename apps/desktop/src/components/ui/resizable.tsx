@@ -105,7 +105,7 @@ function ResizablePanel({
   const panelRef = propsPanelRef ?? internalPanelRef;
   const previousCollapsedState = React.useRef<boolean | undefined>(undefined);
 
-  React.useLayoutEffect(() => {
+  React.useEffect(() => {
     if (!id) return;
     registerPanel(id, panelRef);
     return () => unregisterPanel(id);
@@ -260,16 +260,33 @@ function ResizablePanelContextProvider({ children }: React.PropsWithChildren) {
   const [panels, setPanels] = React.useState<PanelRefsCollection>({});
 
   const registerPanel = React.useCallback((panelId: PanelId, panelRef: PanelRef) => {
-    const isCollapsed = panelRef.current?.isCollapsed() ?? false;
-
     setPanels((panels) => ({
       ...panels,
       [panelId]: {
         ref: panelRef,
-        isCollapsed,
-        isDefaultCollapsed: isCollapsed,
+        isCollapsed: false,
+        isDefaultCollapsed: false,
       },
     }));
+
+    queueMicrotask(() => {
+      const isDefaultCollapsed = panelRef.current?.isCollapsed();
+      if (isDefaultCollapsed === undefined) return;
+
+      setPanels((panels) => {
+        const panel = panels[panelId];
+        if (!panel || panel.ref !== panelRef) return panels;
+
+        return {
+          ...panels,
+          [panelId]: {
+            ...panel,
+            isCollapsed: isDefaultCollapsed,
+            isDefaultCollapsed,
+          },
+        };
+      });
+    });
   }, []);
 
   const unregisterPanel = React.useCallback((panelId: PanelId) => {
