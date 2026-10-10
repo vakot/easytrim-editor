@@ -40,13 +40,25 @@ import { cn } from "@/lib/class-names.utils";
 
 import { useSidebarVisibility } from "./hooks/useSidebarVisibility";
 
+interface ActiveSidebarDragExpansion {
+  collapsedAtStart: Set<SidebarId>;
+  expandedByDrag: Set<SidebarId>;
+  temporarilyExpanded: Set<SidebarId>;
+}
+
 function AppLayout() {
   const dispatch = useAppDispatch();
   const layoutDensity = useAppSelector(selectLayoutDensity);
   const sidebarLayout = useAppSelector(selectSidebarLayout);
   const uiScalePercent = useAppSelector(selectUiScalePercent);
-  const { hasLeftSidebar, hasRightSidebar, leftSidebarVisible, rightSidebarVisible } =
-    useSidebarVisibility();
+  const {
+    hasLeftSidebar,
+    hasRightSidebar,
+    isSidebarCollapsed,
+    leftSidebarVisible,
+    rightSidebarVisible,
+    setSidebarExpanded,
+  } = useSidebarVisibility();
 
   const [viewHosts] = useState(createSidebarViewHosts);
   const [isDraggingView, setIsDraggingView] = useState(false);
@@ -58,8 +70,43 @@ function AppLayout() {
 
   const dragStartPanelBounds = useRef<Map<SidebarViewId, SidebarViewBounds>>(new Map());
   const dragStartRegionTops = useRef<Map<SidebarId, number>>(new Map());
+  const dragSidebarExpansion = useRef<ActiveSidebarDragExpansion | null>(null);
 
   const isCompact = layoutDensity === "compact";
+
+  const updateDragSidebarExpansion = useCallback(
+    (position: { x: number; y: number } | undefined) => {
+      const expansion = dragSidebarExpansion.current;
+      if (!expansion) return;
+
+      const proximitySide = getSidebarProximitySide(position);
+      for (const side of expansion.temporarilyExpanded) {
+        if (side === proximitySide) continue;
+
+        setSidebarExpanded(side, false);
+        expansion.temporarilyExpanded.delete(side);
+      }
+
+      const sideHasPanels =
+        proximitySide === "left"
+          ? hasLeftSidebar
+          : proximitySide === "right"
+            ? hasRightSidebar
+            : false;
+
+      if (
+        proximitySide &&
+        sideHasPanels &&
+        expansion.collapsedAtStart.has(proximitySide) &&
+        !expansion.temporarilyExpanded.has(proximitySide)
+      ) {
+        setSidebarExpanded(proximitySide, true);
+        expansion.temporarilyExpanded.add(proximitySide);
+        expansion.expandedByDrag.add(proximitySide);
+      }
+    },
+    [hasLeftSidebar, hasRightSidebar, setSidebarExpanded],
+  );
 
   const getDropPlacement = useCallback(
     (event: DragMoveEvent | DragEndEvent) => {
@@ -125,43 +172,60 @@ function AppLayout() {
     [sidebarLayout],
   );
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    dragStartPanelBounds.current = new Map(
-      Array.from(document.querySelectorAll<HTMLElement>("[data-sidebar-view]")).flatMap(
-        (viewElement) => {
-          const viewId = viewElement.dataset.sidebarView;
-          const panel = viewElement.closest<HTMLElement>('[data-slot="resizable-panel"]');
-          if (!isSidebarViewId(viewId) || !panel) return [];
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      dragSidebarExpansion.current = {
+        collapsedAtStart: new Set([
+          ...(hasLeftSidebar && isSidebarCollapsed("left") ? ["left" as const] : []),
+          ...(hasRightSidebar && isSidebarCollapsed("right") ? ["right" as const] : []),
+        ]),
+        expandedByDrag: new Set(),
+        temporarilyExpanded: new Set(),
+      };
+      dragStartPanelBounds.current = new Map(
+        Array.from(document.querySelectorAll<HTMLElement>("[data-sidebar-view]")).flatMap(
+          (viewElement) => {
+            const viewId = viewElement.dataset.sidebarView;
+            const panel = viewElement.closest<HTMLElement>('[data-slot="resizable-panel"]');
+            if (!isSidebarViewId(viewId) || !panel) return [];
 
-          const bounds = panel.getBoundingClientRect();
-          return [[viewId, { bottom: bounds.bottom, top: bounds.top, viewId }]] as const;
-        },
-      ),
-    );
-    dragStartRegionTops.current = new Map(
-      Array.from(document.querySelectorAll<HTMLElement>("[data-sidebar-region]")).flatMap(
-        (region) => {
-          const side = region.dataset.sidebarRegion;
-          if (!isSidebarId(side)) return [];
-          return [[side, region.getBoundingClientRect().top]] as const;
-        },
-      ),
-    );
-    setDragPreview(getSidebarDragPreview(event));
-    setIsDraggingView(true);
-  }, []);
+            const bounds = panel.getBoundingClientRect();
+            return [[viewId, { bottom: bounds.bottom, top: bounds.top, viewId }]] as const;
+          },
+        ),
+      );
+      dragStartRegionTops.current = new Map(
+        Array.from(document.querySelectorAll<HTMLElement>("[data-sidebar-region]")).flatMap(
+          (region) => {
+            const side = region.dataset.sidebarRegion;
+            if (!isSidebarId(side)) return [];
+            return [[side, region.getBoundingClientRect().top]] as const;
+          },
+        ),
+      );
+      setDragPreview(getSidebarDragPreview(event));
+      setIsDraggingView(true);
+    },
+    [hasLeftSidebar, hasRightSidebar, isSidebarCollapsed],
+  );
 
   const handleDragMove = useCallback(
     (event: DragMoveEvent) => {
+      updateDragSidebarExpansion(getDragPosition(event));
       setDropPlacement(getDropPlacement(event));
       setDragPreview(getSidebarDragPreview(event));
     },
-    [getDropPlacement],
+    [getDropPlacement, updateDragSidebarExpansion],
   );
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
+      if (!event.canceled) updateDragSidebarExpansion(getDragPosition(event));
       const placement = event.canceled ? null : getDropPlacement(event);
+      for (const side of dragSidebarExpansion.current?.expandedByDrag ?? []) {
+        setSidebarExpanded(side, placement?.destination === side);
+      }
+      dragSidebarExpansion.current = null;
       setDropPlacement(null);
       setDragPreview(null);
       setIsDraggingView(false);
@@ -177,7 +241,7 @@ function AppLayout() {
         );
       }
     },
-    [dispatch, getDropPlacement],
+    [dispatch, getDropPlacement, setSidebarExpanded, updateDragSidebarExpansion],
   );
 
   useLayoutEffect(() => {
@@ -312,6 +376,38 @@ function getSidebarDragPreview(event: DragStartEvent | DragMoveEvent) {
   if (!isSidebarViewId(viewId) || !position) return null;
 
   return { position: { x: position.x, y: position.y }, viewId };
+}
+
+function getSidebarProximitySide(position: { x: number; y: number } | undefined) {
+  const workspace = document.getElementById("workspace");
+  if (!position || !workspace) return null;
+
+  const bounds = workspace.getBoundingClientRect();
+  if (
+    position.x < bounds.left ||
+    position.x > bounds.right ||
+    position.y < bounds.top ||
+    position.y > bounds.bottom
+  ) {
+    return null;
+  }
+
+  const rootFontSizeValue = getComputedStyle(document.documentElement).fontSize;
+  const parsedRootFontSize = Number.parseFloat(rootFontSizeValue);
+  const rootFontSize = rootFontSizeValue.endsWith("%")
+    ? (parsedRootFontSize / 100) * 16
+    : parsedRootFontSize;
+
+  const proximity = 30 * (Number.isFinite(rootFontSize) ? rootFontSize : 16);
+  const leftDistance = position.x - bounds.left;
+  const rightDistance = bounds.right - position.x;
+  const isNearLeft = leftDistance <= proximity;
+  const isNearRight = rightDistance <= proximity;
+
+  if (isNearLeft && isNearRight) return leftDistance <= rightDistance ? "left" : "right";
+  if (isNearLeft) return "left";
+  if (isNearRight) return "right";
+  return null;
 }
 
 function SidebarDropSurface() {

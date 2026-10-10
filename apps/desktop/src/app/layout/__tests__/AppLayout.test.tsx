@@ -158,6 +158,78 @@ vi.mock("@dnd-kit/react", () => ({
         }}
         type="button"
       />
+      <button
+        aria-label="Begin sources drag for sidebar visibility test"
+        onClick={() =>
+          onDragStart({
+            operation: {
+              position: { current: { x: 200, y: 350 } },
+              source: { id: "sources" },
+            },
+          })
+        }
+        type="button"
+      />
+      <button
+        aria-label="Move drag to right sidebar proximity"
+        onClick={() =>
+          onDragMove({
+            canceled: false,
+            operation: { position: { current: { x: 800, y: 350 } }, source: { id: "sources" } },
+          })
+        }
+        type="button"
+      />
+      <button
+        aria-label="Move drag outside sidebar proximity"
+        onClick={() =>
+          onDragMove({
+            canceled: false,
+            operation: { position: { current: { x: 700, y: 350 } }, source: { id: "sources" } },
+          })
+        }
+        type="button"
+      />
+      <button
+        aria-label="Move drag into left sidebar proximity"
+        onClick={() =>
+          onDragMove({
+            canceled: false,
+            operation: { position: { current: { x: 400, y: 350 } }, source: { id: "sources" } },
+          })
+        }
+        type="button"
+      />
+      <button
+        aria-label="Move drag into right sidebar"
+        onClick={() =>
+          onDragMove({
+            canceled: false,
+            operation: { position: { current: { x: 1000, y: 350 } }, source: { id: "sources" } },
+          })
+        }
+        type="button"
+      />
+      <button
+        aria-label="Drop sources in right sidebar"
+        onClick={() =>
+          onDragEnd({
+            canceled: false,
+            operation: { position: { current: { x: 1000, y: 350 } }, source: { id: "sources" } },
+          })
+        }
+        type="button"
+      />
+      <button
+        aria-label="Cancel sources visibility drag"
+        onClick={() =>
+          onDragEnd({
+            canceled: true,
+            operation: { position: { current: { x: 800, y: 350 } }, source: { id: "sources" } },
+          })
+        }
+        type="button"
+      />
     </>
   ),
   useDroppable: () => ({ isDropTarget: false, ref: () => undefined }),
@@ -205,13 +277,20 @@ function renderAppLayout() {
 function SidebarPanelRegistrationProbe() {
   const sources = usePanelCommand("editor-source-imported-sources");
   const activity = usePanelCommand("editor-source-activity-feed");
+  const rightSidebar = usePanelCommand("workspace-right-sidebar");
 
   return (
-    <output
-      data-activity-panel-registered={String(activity.isAvailable)}
-      data-sources-panel-registered={String(sources.isAvailable)}
-      data-testid="sidebar-panel-registration"
-    />
+    <>
+      <output
+        data-activity-panel-registered={String(activity.isAvailable)}
+        data-right-sidebar-registered={String(rightSidebar.isAvailable)}
+        data-sources-panel-registered={String(sources.isAvailable)}
+        data-testid="sidebar-panel-registration"
+      />
+      <button onClick={rightSidebar.toggle} type="button">
+        Toggle right sidebar visibility
+      </button>
+    </>
   );
 }
 
@@ -506,6 +585,106 @@ describe("AppLayout sidebar drag and drop", () => {
         "true",
       );
     });
+  });
+
+  it("temporarily expands collapsed sidebars near the edge and restores or keeps them by drop result", async () => {
+    const store = renderAppLayout();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Simulate moving Activity Feed to the right sidebar" }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("sidebar-panel-registration")).toHaveAttribute(
+        "data-right-sidebar-registered",
+        "true",
+      );
+    });
+
+    const leftSidebar = screen.getByRole("complementary", { name: "Left sidebar" });
+    const rightSidebar = screen.getByRole("complementary", { name: "Right sidebar" });
+    const leftSidebarPanel = leftSidebar.closest<HTMLElement>("[data-panel]")!;
+    const rightSidebarPanel = rightSidebar.closest<HTMLElement>("[data-panel]")!;
+    const activityPanel = rightSidebar
+      .querySelector<HTMLElement>('[data-sidebar-view="activity"]')
+      ?.closest<HTMLElement>("[data-panel]");
+
+    setBounds(leftSidebar, {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 320,
+      bottom: 800,
+      width: 320,
+      height: 800,
+    } as DOMRect);
+    setBounds(rightSidebar, {
+      x: 960,
+      y: 0,
+      top: 0,
+      left: 960,
+      right: 1280,
+      bottom: 800,
+      width: 320,
+      height: 800,
+    } as DOMRect);
+    setBounds(activityPanel!, {
+      x: 960,
+      y: 300,
+      top: 300,
+      left: 960,
+      right: 1280,
+      bottom: 700,
+      width: 320,
+      height: 400,
+    } as DOMRect);
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle right sidebar visibility" }));
+    await waitFor(() => {
+      expect(Number.parseFloat(rightSidebarPanel.style.flexGrow)).toBe(0);
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Begin sources drag for sidebar visibility test" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Move drag to right sidebar proximity" }));
+    await waitFor(() => {
+      expect(Number.parseFloat(rightSidebarPanel.style.flexGrow)).toBeGreaterThan(0);
+    });
+    expect(Number.parseFloat(leftSidebarPanel.style.flexGrow)).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Move drag outside sidebar proximity" }));
+    await waitFor(() => {
+      expect(Number.parseFloat(rightSidebarPanel.style.flexGrow)).toBe(0);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Move drag into left sidebar proximity" }));
+    expect(Number.parseFloat(rightSidebarPanel.style.flexGrow)).toBe(0);
+    expect(Number.parseFloat(leftSidebarPanel.style.flexGrow)).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Move drag to right sidebar proximity" }));
+    await waitFor(() => {
+      expect(Number.parseFloat(rightSidebarPanel.style.flexGrow)).toBeGreaterThan(0);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel sources visibility drag" }));
+    await waitFor(() => {
+      expect(Number.parseFloat(rightSidebarPanel.style.flexGrow)).toBe(0);
+      expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+    });
+    expect(store.getState().preferences.sidebarLayout.right).toEqual(["activity"]);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Begin sources drag for sidebar visibility test" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Move drag to right sidebar proximity" }));
+    fireEvent.click(screen.getByRole("button", { name: "Move drag into right sidebar" }));
+    expect(document.querySelector('[data-sidebar-drop-indicator="right"]')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Drop sources in right sidebar" }));
+
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout.right).toEqual(["sources", "activity"]);
+      expect(Number.parseFloat(rightSidebarPanel.style.flexGrow)).toBeGreaterThan(0);
+    });
+    expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
   });
 
   it("uses the visible populated-sidebar preview index when applying the drop", async () => {
