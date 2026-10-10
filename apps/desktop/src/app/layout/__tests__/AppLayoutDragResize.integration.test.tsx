@@ -1,0 +1,637 @@
+import { configureStore } from "@reduxjs/toolkit";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { Provider } from "react-redux";
+import { describe, expect, it, vi } from "vitest";
+
+import { ResizablePanelContextProvider, usePanelCommand } from "@/components/ui/resizable";
+
+import { AppLayout } from "@/app/layout/AppLayout";
+import { preferencesReducer, sidebarLayoutChanged } from "@/app/store/slices/preferences-slice";
+
+vi.mock("@/app/layout/components/AppLayoutHeader", async () => {
+  const { useDragDropManager } = await import("@dnd-kit/react");
+
+  function DragControls() {
+    const manager = useDragDropManager();
+    return (
+      <header>
+        <button
+          onClick={() =>
+            manager?.actions.start({ source: "sources", coordinates: { x: 100, y: 150 } })
+          }
+          type="button"
+        >
+          Begin Sources drag
+        </button>
+        <button
+          onClick={() =>
+            manager?.actions.start({ source: "activity", coordinates: { x: 100, y: 450 } })
+          }
+          type="button"
+        >
+          Begin Activity drag
+        </button>
+        <button onClick={() => manager?.actions.move({ to: { x: 100, y: 650 } })} type="button">
+          Move drag below panels
+        </button>
+        <button onClick={() => manager?.actions.move({ to: { x: 100, y: 50 } })} type="button">
+          Move drag above panels
+        </button>
+        <button onClick={() => manager?.actions.stop()} type="button">
+          Finish drag
+        </button>
+        <button
+          onClick={() =>
+            manager?.actions.start({ source: "sources", coordinates: { x: 1100, y: 350 } })
+          }
+          type="button"
+        >
+          Begin Sources drag to right
+        </button>
+        <button onClick={() => manager?.actions.move({ to: { x: 1100, y: 350 } })} type="button">
+          Move drag to right sidebar
+        </button>
+        <button onClick={() => manager?.actions.stop({ canceled: true })} type="button">
+          Cancel drag
+        </button>
+      </header>
+    );
+  }
+
+  return { AppLayoutHeader: DragControls };
+});
+
+vi.mock("@/app/layout/components/AppLayoutFooter", () => ({
+  AppLayoutFooter: () => <footer />,
+}));
+
+vi.mock("@/app/layout/components/AppLayoutMain", () => ({
+  AppLayoutMain: () => <div>Editor content</div>,
+}));
+
+vi.mock("@/app/layout/components/AppLayoutPanel", () => ({
+  AppLayoutPanel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/app/layout/components/SidebarViewPortal", () => ({
+  createSidebarViewHosts: () => ({
+    activity: document.createElement("div"),
+    sources: document.createElement("div"),
+  }),
+  SidebarViewPortals: () => null,
+  SidebarViewTarget: () => <div />,
+}));
+
+function setBounds(element: HTMLElement, top: number, bottom: number) {
+  Object.defineProperty(element, "getBoundingClientRect", {
+    configurable: true,
+    value: () =>
+      ({
+        bottom,
+        height: bottom - top,
+        left: 0,
+        right: 400,
+        top,
+        width: 400,
+        x: 0,
+        y: top,
+      }) as DOMRect,
+  });
+}
+
+function PanelRegistrationProbe() {
+  const panels = usePanelCommand(["editor-source-imported-sources", "editor-source-activity-feed"]);
+
+  return <output data-registered={String(panels.isAvailable)} data-testid="panel-registration" />;
+}
+
+function getSidebarPanelOrder(sidebar: HTMLElement) {
+  const group = sidebar.querySelector<HTMLElement>('[data-slot="resizable-panel-group"]');
+  expect(group).not.toBeNull();
+
+  return Array.from(group!.children).map((child) => {
+    if (child.hasAttribute("data-panel")) return child.id;
+    if (child.hasAttribute("data-separator")) return "separator";
+    return "other";
+  });
+}
+
+function expectValidPanelLayout(sidebar: HTMLElement, viewIds: Array<"activity" | "sources">) {
+  const panelIds = {
+    activity: "editor-source-activity-feed",
+    sources: "editor-source-imported-sources",
+  };
+
+  expect(getSidebarPanelOrder(sidebar)).toEqual(
+    viewIds.flatMap((viewId, index) => [...(index > 0 ? ["separator"] : []), panelIds[viewId]]),
+  );
+
+  for (const viewId of viewIds) {
+    const frame = sidebar.querySelector<HTMLElement>(`[data-sidebar-view="${viewId}"]`);
+    const panel = frame?.closest<HTMLElement>("[data-panel]");
+    expect(panel?.id).toBe(panelIds[viewId]);
+    expect(Number.parseFloat(panel?.style.flexGrow ?? "0")).toBeGreaterThan(0);
+  }
+}
+
+describe("AppLayout drag and resize integration", () => {
+  it("reorders real draggable panels without corrupting the resizable group across repeated drags", async () => {
+    class IntersectionObserverMock implements IntersectionObserver {
+      readonly root = null;
+      readonly rootMargin: string;
+      readonly scrollMargin = "0px";
+      readonly thresholds: number[];
+
+      constructor(
+        private readonly callback: IntersectionObserverCallback,
+        options: IntersectionObserverInit = {},
+      ) {
+        this.rootMargin = options.rootMargin ?? "0px";
+        this.thresholds = Array.isArray(options.threshold)
+          ? options.threshold
+          : [options.threshold ?? 0];
+      }
+
+      disconnect() {}
+
+      observe(target: Element) {
+        if (this.rootMargin !== "0px") return;
+
+        const rect = target.getBoundingClientRect();
+        this.callback(
+          [
+            {
+              boundingClientRect: rect,
+              intersectionRatio: 1,
+              intersectionRect: rect,
+              isIntersecting: true,
+              rootBounds: rect,
+              target,
+              time: 0,
+            } as IntersectionObserverEntry,
+          ],
+          this,
+        );
+      }
+
+      takeRecords() {
+        return [];
+      }
+
+      unobserve() {}
+    }
+
+    vi.stubGlobal("IntersectionObserver", IntersectionObserverMock);
+    Object.defineProperty(window.PointerEvent.prototype, "pointerType", {
+      configurable: true,
+      get: () => "mouse",
+    });
+    Object.defineProperty(document, "getAnimations", {
+      configurable: true,
+      value: () => [],
+    });
+    Object.defineProperty(Element.prototype, "getAnimations", {
+      configurable: true,
+      value: () => [],
+    });
+    vi.stubGlobal("matchMedia", () => ({
+      addEventListener: () => undefined,
+      addListener: () => undefined,
+      dispatchEvent: () => false,
+      matches: false,
+      media: "",
+      onchange: null,
+      removeEventListener: () => undefined,
+      removeListener: () => undefined,
+    }));
+    const store = configureStore({ reducer: { preferences: preferencesReducer } });
+    localStorage.setItem(
+      "react-resizable-panels:workspace:workspace-left-sidebar:workspace-content",
+      JSON.stringify({ "workspace-left-sidebar": 30, "workspace-content": 70 }),
+    );
+    localStorage.setItem(
+      "react-resizable-panels:workspace-sidebar-widths",
+      JSON.stringify({ left: 480, right: 360 }),
+    );
+    const getBoundingClientRect = Element.prototype.getBoundingClientRect;
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
+      this: Element,
+    ) {
+      if (this.id === "workspace") {
+        return {
+          bottom: 800,
+          height: 800,
+          left: 0,
+          right: 2000,
+          top: 0,
+          width: 2000,
+          x: 0,
+          y: 0,
+        } as DOMRect;
+      }
+
+      return getBoundingClientRect.call(this);
+    });
+    Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+      configurable: true,
+      get(this: HTMLElement) {
+        if (!this.hasAttribute("data-panel") || this.parentElement?.id !== "workspace") return 0;
+
+        const panels = Array.from(document.getElementById("workspace")?.children ?? []).filter(
+          (element): element is HTMLElement =>
+            element instanceof HTMLElement && element.hasAttribute("data-panel"),
+        );
+
+        const totalFlexGrow = panels.reduce(
+          (total, panel) => total + Number.parseFloat(panel.style.flexGrow || "0"),
+          0,
+        );
+
+        if (!totalFlexGrow) return 0;
+
+        return (2000 * Number.parseFloat(this.style.flexGrow || "0")) / totalFlexGrow;
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ResizablePanelContextProvider>
+          <PanelRegistrationProbe />
+          <AppLayout />
+        </ResizablePanelContextProvider>
+      </Provider>,
+    );
+
+    const sidebar = screen.getByRole("complementary", { name: "Left sidebar" });
+    const sourcesPanel = sidebar.querySelector<HTMLElement>("#editor-source-imported-sources")!;
+    const activityPanel = sidebar.querySelector<HTMLElement>("#editor-source-activity-feed")!;
+    const sourcesFrame = sidebar.querySelector<HTMLElement>('[data-sidebar-view="sources"]')!;
+    const activityFrame = sidebar.querySelector<HTMLElement>('[data-sidebar-view="activity"]')!;
+    const panelGroup = sidebar.querySelector<HTMLElement>('[data-slot="resizable-panel-group"]')!;
+    const sidebarRegion = sidebar;
+
+    setBounds(sidebarRegion, 0, 700);
+    setBounds(panelGroup, 0, 700);
+    setBounds(sourcesPanel, 0, 300);
+    setBounds(sourcesFrame, 0, 300);
+    setBounds(activityPanel, 300, 600);
+    setBounds(activityFrame, 300, 600);
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: () => sidebar,
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
+    });
+    const workspaceLeftPanel = document.getElementById("workspace-left-sidebar")!;
+    const workspaceGroup = document.getElementById("workspace")!;
+    const initialWorkspaceSidebarSize = workspaceLeftPanel.style.flexGrow;
+    const initialWorkspaceSidebarWidth = workspaceLeftPanel.offsetWidth;
+    expectValidPanelLayout(sidebar, ["sources", "activity"]);
+
+    const panelSizes = new Map(
+      [sourcesPanel, activityPanel].map((panel) => [panel.id, panel.style.flexGrow]),
+    );
+
+    const originalSourcePanel = sourcesPanel;
+    const originalActivityPanel = activityPanel;
+
+    const dragView = async (
+      viewId: "activity" | "sources",
+      y: number,
+      expectedIndex: number,
+      expectedIndicatorTop: number,
+      beforeSecondMove?: () => void,
+    ) => {
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: viewId === "sources" ? "Begin Sources drag" : "Begin Activity drag",
+        }),
+      );
+      await Promise.resolve();
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: y > 350 ? "Move drag below panels" : "Move drag above panels",
+        }),
+      );
+      beforeSecondMove?.();
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: y > 350 ? "Move drag below panels" : "Move drag above panels",
+        }),
+      );
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-sidebar-drop-indicator="left"]')).toBeInTheDocument();
+        expectValidPanelLayout(sidebar, store.getState().preferences.sidebarLayout.left);
+        const indicator = document.querySelector('[data-sidebar-drop-indicator="left"]');
+        expect(indicator).toHaveAttribute(
+          "data-sidebar-drop-indicator-index",
+          String(expectedIndex),
+        );
+        expect(indicator).toHaveClass(
+          "absolute",
+          "h-1",
+          "rounded",
+          "bg-primary",
+          "pointer-events-none",
+        );
+        expect(indicator).toHaveStyle({ top: `${expectedIndicatorTop}px` });
+        expect(indicator).toHaveClass(expectedIndex === 0 ? "translate-y-0" : "-translate-y-full");
+        expect(indicator?.parentElement).toBe(sidebar);
+        const dragPreview = document.querySelector(`[data-sidebar-drag-preview="${viewId}"]`);
+        expect(dragPreview).toBeInTheDocument();
+        expect(dragPreview?.parentElement).toBe(document.body);
+        expect(dragPreview?.closest('[data-slot="resizable-panel-group"]')).toBeNull();
+        expect(dragPreview).toHaveClass("opacity-75");
+        expect(dragPreview).toHaveTextContent(
+          viewId === "sources" ? "Imported Sources" : "Activity Feed",
+        );
+        expect(dragPreview?.querySelector("svg")).toBeInTheDocument();
+        expect(dragPreview).toHaveStyle({
+          left: "100px",
+          top: `${y > 350 ? 650 : 50}px`,
+          transform: "translate(12px, 12px)",
+        });
+        expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Finish drag" }));
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-sidebar-drop-indicator="left"]')).toBeNull();
+        expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+      });
+    };
+
+    setBounds(activityPanel, 300, 336);
+    setBounds(activityFrame, 300, 336);
+    await dragView("sources", 650, 1, 336, () => {
+      // Simulate a collapsed panel while the pointer remains at the same coordinate. Placement
+      // should use the panel geometry captured at drag start.
+      setBounds(activityPanel, 800, 836);
+      setBounds(activityFrame, 800, 900);
+    });
+    expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
+    expectValidPanelLayout(sidebar, ["activity", "sources"]);
+    expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
+    expect(sidebar.querySelector("#editor-source-imported-sources")).toBe(originalSourcePanel);
+    expect(sidebar.querySelector("#editor-source-activity-feed")).toBe(originalActivityPanel);
+
+    setBounds(activityPanel, 0, 36);
+    setBounds(activityFrame, 0, 36);
+    setBounds(sourcesPanel, 36, 700);
+    setBounds(sourcesFrame, 36, 700);
+    await dragView("activity", 650, 1, 700);
+    expect(store.getState().preferences.sidebarLayout.left).toEqual(["sources", "activity"]);
+    expectValidPanelLayout(sidebar, ["sources", "activity"]);
+    expect(sourcesPanel.style.flexGrow).toBe(panelSizes.get(sourcesPanel.id));
+    expect(activityPanel.style.flexGrow).toBe(panelSizes.get(activityPanel.id));
+    expect(workspaceLeftPanel.style.flexGrow).toBe(initialWorkspaceSidebarSize);
+
+    const separators = sidebar.querySelectorAll('[data-slot="resizable-handle"]');
+    expect(separators).toHaveLength(1);
+    expect(separators[0]?.previousElementSibling).toBe(originalSourcePanel);
+    expect(separators[0]?.nextElementSibling).toBe(originalActivityPanel);
+
+    setBounds(sourcesPanel, 0, 300);
+    setBounds(sourcesFrame, 0, 300);
+    setBounds(activityPanel, 300, 700);
+    setBounds(activityFrame, 300, 700);
+    await dragView("activity", 50, 0, 0);
+    expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Begin Activity drag" }));
+    await waitFor(() => {
+      expect(document.querySelector('[data-sidebar-drag-preview="activity"]')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Move drag below panels" }));
+    fireEvent.click(screen.getByRole("button", { name: "Move drag below panels" }));
+    expect(document.querySelector('[data-sidebar-drop-indicator="left"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-sidebar-drag-preview="activity"]')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel drag" }));
+    await waitFor(() => {
+      expect(document.querySelector('[data-sidebar-drop-indicator="left"]')).toBeNull();
+      expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+    });
+    expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
+
+    const activityHandle = screen.getByRole("button", {
+      name: "Collapse Activity Feed; drag or press D then use the arrow keys to move it; D to drop or Escape to cancel",
+    });
+
+    fireEvent.pointerDown(activityHandle, {
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+      isPrimary: true,
+      pointerId: 1,
+      pointerType: "mouse",
+    });
+    expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+    expect(activityFrame).not.toHaveClass("opacity-50");
+
+    fireEvent.pointerMove(document, {
+      clientX: 103,
+      clientY: 104,
+      pointerId: 1,
+      pointerType: "mouse",
+    });
+    expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+    expect(document.querySelector("[data-sidebar-drop-indicator]")).toBeNull();
+    expect(activityFrame).not.toHaveClass("opacity-50");
+    fireEvent.pointerUp(document, { clientX: 103, clientY: 104, pointerId: 1 });
+    fireEvent.click(activityHandle);
+    expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
+    expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+    expect(activityFrame).not.toHaveClass("opacity-50");
+
+    fireEvent.pointerDown(activityHandle, {
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+      isPrimary: true,
+      pointerId: 2,
+      pointerType: "mouse",
+    });
+    fireEvent.pointerMove(document, {
+      clientX: 104,
+      clientY: 105,
+      pointerId: 2,
+      pointerType: "mouse",
+    });
+    await waitFor(() => {
+      expect(document.querySelector('[data-sidebar-drag-preview="activity"]')).toBeInTheDocument();
+      expect(sidebar.querySelector('[data-sidebar-view="activity"]')).toHaveClass("opacity-50");
+    });
+    fireEvent.pointerCancel(document, { pointerId: 2 });
+    await waitFor(() => {
+      expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+      expect(document.querySelector("[data-sidebar-drop-indicator]")).toBeNull();
+      expect(sidebar.querySelector('[data-sidebar-view="activity"]')).not.toHaveClass("opacity-50");
+    });
+    expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
+
+    const workspace = document.getElementById("workspace")!;
+    const leftSidebarPanel = workspaceLeftPanel;
+    const emptyRightTarget = document.querySelector<HTMLElement>(
+      '[data-sidebar-empty-drop-target="right"]',
+    )!;
+
+    setBounds(workspace, 0, 800);
+    Object.defineProperty(workspace, "offsetWidth", { configurable: true, value: 2000 });
+    Object.defineProperty(workspace, "offsetHeight", { configurable: true, value: 800 });
+    Object.defineProperty(workspace, "getBoundingClientRect", {
+      configurable: true,
+      value: () =>
+        ({
+          bottom: 800,
+          height: 800,
+          left: 0,
+          right: 2000,
+          top: 0,
+          width: 2000,
+          x: 0,
+          y: 0,
+        }) as DOMRect,
+    });
+    Object.defineProperty(emptyRightTarget, "getBoundingClientRect", {
+      configurable: true,
+      value: () =>
+        ({
+          bottom: 800,
+          height: 800,
+          left: 1000,
+          right: 2000,
+          top: 0,
+          width: 1000,
+          x: 1000,
+          y: 0,
+        }) as DOMRect,
+    });
+
+    const customLeftSidebarSize = leftSidebarPanel.style.flexGrow;
+    const previousWorkspaceSidebarWidth = leftSidebarPanel.offsetWidth;
+    expect(Number.parseFloat(customLeftSidebarSize)).toBeGreaterThan(0);
+    expect(previousWorkspaceSidebarWidth).toBe(initialWorkspaceSidebarWidth);
+    expect(previousWorkspaceSidebarWidth).toBeCloseTo(480);
+
+    fireEvent.click(screen.getByRole("button", { name: "Begin Sources drag to right" }));
+    fireEvent.click(screen.getByRole("button", { name: "Move drag to right sidebar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Finish drag" }));
+
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout).toEqual({
+        left: ["activity"],
+        right: ["sources"],
+      });
+    });
+    expect(document.getElementById("workspace")).toBe(workspaceGroup);
+    expect(
+      Array.from(document.getElementById("workspace")!.children).map((child) =>
+        child.hasAttribute("data-panel") ? child.id : "separator",
+      ),
+    ).toEqual([
+      "workspace-left-sidebar",
+      "separator",
+      "workspace-content",
+      "separator",
+      "workspace-right-sidebar",
+    ]);
+    expect(
+      document.querySelector('[data-sidebar-view="activity"]')?.closest<HTMLElement>("[data-panel]")
+        ?.id,
+    ).toBe("workspace-left-sidebar");
+    expect(
+      document.querySelector('[data-sidebar-view="sources"]')?.closest<HTMLElement>("[data-panel]")
+        ?.id,
+    ).toBe("workspace-right-sidebar");
+    const remainingLeftPanel = document.getElementById("workspace-left-sidebar")!;
+    expect(remainingLeftPanel.offsetWidth).toBeCloseTo(previousWorkspaceSidebarWidth);
+    const firstRightPanel = document.getElementById("workspace-right-sidebar")!;
+    const configuredRightSidebarWidth = firstRightPanel.offsetWidth;
+    expect(configuredRightSidebarWidth).toBeCloseTo(360);
+
+    expect(
+      localStorage.getItem(
+        "react-resizable-panels:workspace:workspace-left-sidebar:workspace-content:workspace-right-sidebar",
+      ),
+    ).toBeNull();
+    expect(localStorage.getItem("react-resizable-panels:workspace-sidebar-widths")).toBe(
+      JSON.stringify({ left: 480, right: 360 }),
+    );
+
+    act(() => {
+      store.dispatch(
+        sidebarLayoutChanged({ destination: "left", insertionIndex: 1, viewId: "sources" }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout).toEqual({
+        left: ["activity", "sources"],
+        right: [],
+      });
+      expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
+    });
+    expect(document.getElementById("workspace")).toBe(workspaceGroup);
+    const closingRightSidebar = document.getElementById("workspace-right-sidebar")!;
+    await waitFor(() => expect(closingRightSidebar.style.flexGrow).toBe("0"));
+    expect(closingRightSidebar.isConnected).toBe(true);
+    expect(
+      Array.from(workspaceGroup.children).map((child) =>
+        child.hasAttribute("data-panel") ? child.id : "separator",
+      ),
+    ).toEqual([
+      "workspace-left-sidebar",
+      "separator",
+      "workspace-content",
+      "separator",
+      "workspace-right-sidebar",
+    ]);
+    expect(workspaceGroup.children[3]).toHaveStyle({ width: "0px" });
+
+    // Returning a panel during the close transition reuses and expands the registered panel.
+    act(() => {
+      store.dispatch(
+        sidebarLayoutChanged({ destination: "right", insertionIndex: 0, viewId: "sources" }),
+      );
+    });
+    await waitFor(() => {
+      expect(document.getElementById("workspace-right-sidebar")).toBe(closingRightSidebar);
+      expect(Number.parseFloat(closingRightSidebar.style.flexGrow)).toBeGreaterThan(0);
+    });
+
+    act(() => {
+      store.dispatch(
+        sidebarLayoutChanged({ destination: "left", insertionIndex: 1, viewId: "sources" }),
+      );
+    });
+    await waitFor(() => expect(document.getElementById("workspace-right-sidebar")).toBeNull());
+    expect(document.getElementById("workspace")).toBe(workspaceGroup);
+
+    act(() => {
+      store.dispatch(
+        sidebarLayoutChanged({ destination: "right", insertionIndex: 0, viewId: "sources" }),
+      );
+    });
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout).toEqual({
+        left: ["activity"],
+        right: ["sources"],
+      });
+    });
+    expect(document.getElementById("workspace")).toBe(workspaceGroup);
+    expect(localStorage.getItem("react-resizable-panels:workspace-sidebar-widths")).toBe(
+      JSON.stringify({ left: 480, right: configuredRightSidebarWidth }),
+    );
+    const restoredLeftPanel = document.getElementById("workspace-left-sidebar")!;
+    await waitFor(() => {
+      expect(restoredLeftPanel.offsetWidth).toBeCloseTo(previousWorkspaceSidebarWidth);
+      expect(document.getElementById("workspace-right-sidebar")?.offsetWidth).toBeCloseTo(
+        configuredRightSidebarWidth,
+      );
+    });
+  });
+});

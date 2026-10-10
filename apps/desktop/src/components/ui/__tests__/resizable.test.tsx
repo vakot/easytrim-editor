@@ -37,6 +37,7 @@ const primitive = vi.hoisted(() => ({
   controllers: new Map<string, PanelController>(),
   props: new Map<string, CapturedPanelProps>(),
   collapsed: new Map<string, boolean>(),
+  onlySaveAfterUserInteractions: new Map<string, boolean | undefined>(),
 }));
 
 type MockSeparatorProps = HTMLAttributes<HTMLDivElement> & {
@@ -87,13 +88,16 @@ vi.mock("react-resizable-panels", async () => {
     ),
     useDefaultLayout: ({
       id,
+      onlySaveAfterUserInteractions,
       panelIds,
       storage = localStorage,
     }: {
       id: string;
+      onlySaveAfterUserInteractions?: boolean;
       panelIds: string[];
       storage?: LayoutStorage;
     }) => {
+      primitive.onlySaveAfterUserInteractions.set(id, onlySaveAfterUserInteractions);
       const storageKey = `react-resizable-panels:${[id, ...panelIds].join(":")}`;
       const savedLayout = storage.getItem(storageKey);
 
@@ -112,6 +116,7 @@ beforeEach(() => {
   primitive.controllers.clear();
   primitive.props.clear();
   primitive.collapsed.clear();
+  primitive.onlySaveAfterUserInteractions.clear();
   localStorage.clear();
 });
 
@@ -187,6 +192,18 @@ describe("ResizablePanelGroup", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show second panel" }));
 
     expect(screen.getByText("Second panel")).toBeInTheDocument();
+  });
+
+  it("configures persisted groups to save only user-driven layouts when requested", () => {
+    render(
+      <ResizablePanelContextProvider>
+        <ResizablePanelGroup id="user-resized-layout" onlySaveAfterUserInteractions persisted>
+          <ResizablePanel id="user-resized-panel">Panel</ResizablePanel>
+        </ResizablePanelGroup>
+      </ResizablePanelContextProvider>,
+    );
+
+    expect(primitive.onlySaveAfterUserInteractions.get("user-resized-layout")).toBe(true);
   });
 });
 
