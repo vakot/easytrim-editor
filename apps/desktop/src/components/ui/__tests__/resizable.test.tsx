@@ -8,6 +8,7 @@ import {
   ResizablePanelContextProvider,
   ResizablePanelControl,
   ResizablePanelGroup,
+  usePanelCommand,
 } from "../resizable";
 
 type PanelController = {
@@ -145,6 +146,18 @@ function DynamicPanelGroup() {
   );
 }
 
+function PanelStateProbe({ panelId }: { panelId: string }) {
+  const panel = usePanelCommand(panelId);
+
+  return (
+    <output
+      data-available={String(panel.isAvailable)}
+      data-collapsed={String(panel.isCollapsed)}
+      data-testid="panel-state"
+    />
+  );
+}
+
 describe("ResizablePanelGroup", () => {
   it("uses a regular cursor for disabled handles", () => {
     render(<ResizableHandle disabled />);
@@ -192,6 +205,20 @@ describe("ResizablePanelGroup", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show second panel" }));
 
     expect(screen.getByText("Second panel")).toBeInTheDocument();
+  });
+
+  it("registers a restored collapsed state before the first paint", () => {
+    render(
+      <ResizablePanelContextProvider>
+        <ResizablePanelGroup>
+          <ResizablePanel collapsedSize={0} collapsible defaultSize={0} id="restored-panel" />
+        </ResizablePanelGroup>
+        <PanelStateProbe panelId="restored-panel" />
+      </ResizablePanelContextProvider>,
+    );
+
+    expect(screen.getByTestId("panel-state")).toHaveAttribute("data-available", "true");
+    expect(screen.getByTestId("panel-state")).toHaveAttribute("data-collapsed", "true");
   });
 
   it("configures persisted groups to save only user-driven layouts when requested", () => {
