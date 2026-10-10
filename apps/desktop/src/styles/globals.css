@@ -38,12 +38,6 @@
   transition-property: transform, opacity, box-shadow;
 }
 
-/* Timeline handles use CSS-module transitions rather than Tailwind utility names.
-   Keep their position/drag motion, but apply their primary-derived colors immediately. */
-:root[data-primary-color-scrubbing] .segment-drag-handle {
-  transition-property: transform;
-}
-
 :root[data-primary-color-scrubbing] .trim-handle::before {
   transition-property: none;
 }
