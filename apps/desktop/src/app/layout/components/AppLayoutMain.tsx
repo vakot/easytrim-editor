@@ -64,6 +64,7 @@ const EMPTY_TIMELINE_RANGE = {
 function AppLayoutMain() {
   const media = useAppSelector(selectSourceMedia);
   const audioStreamsCount = useAppSelector(selectAudioPanelStreamCount);
+  const availableAudioStreamsCount = media ? audioStreamsCount : 0;
   const layoutDensity = useAppSelector(selectLayoutDensity);
   const { leftSidebarVisible, rightSidebarVisible } = useSidebarVisibility();
 
@@ -121,10 +122,10 @@ function AppLayoutMain() {
         />
 
         <ResizablePanel
-          collapsible={audioStreamsCount > 0}
+          collapsible={availableAudioStreamsCount > 0}
           groupResizeBehavior="preserve-pixel-size"
           id="editor-stage-timeline"
-          {...getTimelinePanelSize(audioStreamsCount, isCompact)}
+          {...getTimelinePanelSize(availableAudioStreamsCount, isCompact)}
         >
           <AppLayoutPanel
             className={cn(
@@ -135,7 +136,7 @@ function AppLayoutMain() {
             layoutRegion="workspace-timeline"
           >
             <TimelinePanel />
-            {audioStreamsCount > 0 && <AudioPanel />}
+            {availableAudioStreamsCount > 0 && <AudioPanel />}
           </AppLayoutPanel>
         </ResizablePanel>
       </ResizablePanelGroup>

@@ -4,6 +4,9 @@ import {
   DEFAULT_SIDEBAR_LAYOUT,
   moveSidebarView,
   normalizeSidebarLayout,
+  resolveSidebarDropPlacement,
+  resolveSidebarDropPlacementAtIndex,
+  resolveSidebarInsertionIndex,
   type SidebarLayout,
 } from "../sidebar-layout";
 
@@ -52,5 +55,144 @@ describe("sidebar layout", () => {
     const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
 
     expect(moveSidebarView(layout, "sources", "left", 0)).toBe(layout);
+  });
+
+  it("moves the first panel below the second using the resolved slot", () => {
+    const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
+    const placement = resolveSidebarDropPlacement(
+      layout,
+      "sources",
+      "left",
+      80,
+      [{ bottom: 100, top: 0, viewId: "activity" }],
+      0,
+    );
+
+    expect(placement).toMatchObject({
+      destination: "left",
+      indicatorOffset: 100,
+      insertionIndex: 1,
+      viewId: "sources",
+    });
+    expect(
+      moveSidebarView(layout, "sources", placement!.destination, placement!.insertionIndex),
+    ).toEqual({
+      left: ["activity", "sources"],
+      right: [],
+    });
+  });
+
+  it("moves the second panel above the first using the resolved slot", () => {
+    const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
+    const placement = resolveSidebarDropPlacement(
+      layout,
+      "activity",
+      "left",
+      20,
+      [{ bottom: 100, top: 0, viewId: "sources" }],
+      0,
+    );
+
+    expect(placement).toMatchObject({
+      destination: "left",
+      indicatorOffset: 0,
+      insertionIndex: 0,
+      viewId: "activity",
+    });
+    expect(
+      moveSidebarView(layout, "activity", placement!.destination, placement!.insertionIndex),
+    ).toEqual({
+      left: ["activity", "sources"],
+      right: [],
+    });
+  });
+
+  it("treats dragging the last panel below itself as a no-op", () => {
+    const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
+
+    expect(
+      resolveSidebarDropPlacement(
+        layout,
+        "activity",
+        "left",
+        120,
+        [{ bottom: 100, top: 0, viewId: "sources" }],
+        0,
+      ),
+    ).toBeNull();
+    expect(moveSidebarView(layout, "activity", "left", 1)).toBe(layout);
+  });
+
+  it("treats dragging the first panel immediately above itself as a no-op", () => {
+    const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
+
+    expect(
+      resolveSidebarDropPlacement(
+        layout,
+        "sources",
+        "left",
+        -10,
+        [{ bottom: 100, top: 0, viewId: "activity" }],
+        0,
+      ),
+    ).toBeNull();
+    expect(moveSidebarView(layout, "sources", "left", 0)).toBe(layout);
+  });
+
+  it("resolves beginning, middle, and end insertion slots from one ordered geometry", () => {
+    const bounds = [0, 1, 2].map((index) => ({
+      bottom: (index + 1) * 100,
+      top: index * 100,
+      viewId: index === 0 ? "sources" : "activity",
+    }));
+
+    expect(resolveSidebarInsertionIndex(-1, bounds)).toBe(0);
+    expect(resolveSidebarInsertionIndex(149, bounds)).toBe(1);
+    expect(resolveSidebarInsertionIndex(400, bounds)).toBe(3);
+  });
+
+  it("places a moved view at the expected index in the other populated sidebar", () => {
+    const layout: SidebarLayout = { left: ["sources"], right: ["activity"] };
+    const placement = resolveSidebarDropPlacement(
+      layout,
+      "sources",
+      "right",
+      20,
+      [{ bottom: 100, top: 0, viewId: "activity" }],
+      0,
+    );
+
+    expect(placement).toMatchObject({ destination: "right", insertionIndex: 0, viewId: "sources" });
+    expect(
+      moveSidebarView(layout, "sources", placement!.destination, placement!.insertionIndex),
+    ).toEqual({
+      left: [],
+      right: ["sources", "activity"],
+    });
+  });
+
+  it("resolves explicit keyboard slots and omits the current effective slot", () => {
+    const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
+    const remainingBounds = [{ bottom: 100, top: 0, viewId: "activity" as const }];
+
+    expect(
+      resolveSidebarDropPlacementAtIndex(layout, "sources", "left", 0, remainingBounds, 0),
+    ).toBeNull();
+    expect(
+      resolveSidebarDropPlacementAtIndex(layout, "sources", "left", 1, remainingBounds, 0),
+    ).toMatchObject({ destination: "left", indicatorOffset: 100, insertionIndex: 1 });
+  });
+
+  it("does not create duplicate view IDs after drag placements", () => {
+    const layouts = [
+      moveSidebarView(DEFAULT_SIDEBAR_LAYOUT, "sources", "left", 1),
+      moveSidebarView(DEFAULT_SIDEBAR_LAYOUT, "activity", "right", 0),
+      moveSidebarView({ left: ["sources"], right: ["activity"] }, "sources", "right", 1),
+    ];
+
+    for (const layout of layouts) {
+      const viewIds = [...layout.left, ...layout.right];
+      expect(new Set(viewIds).size).toBe(viewIds.length);
+    }
   });
 });

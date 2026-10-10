@@ -4,9 +4,12 @@ import { useTranslation } from "react-i18next";
 import { usePanelCommand } from "@/components/ui/resizable";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectHasAudio } from "@/app/store/slices/source-slice";
 
 function usePanelCommands() {
   const { t } = useTranslation();
+  const hasAudio = useAppSelector(selectHasAudio);
   const left = usePanelCommand("workspace-left-sidebar");
   const right = usePanelCommand("workspace-right-sidebar");
   const bottom = usePanelCommand("editor-stage-timeline");
@@ -32,8 +35,8 @@ function usePanelCommands() {
       variant: "default" as const,
     },
     {
-      checked: !bottom.isCollapsed,
-      enabled: bottom.isAvailable,
+      checked: hasAudio && !bottom.isCollapsed,
+      enabled: bottom.isAvailable && hasAudio,
       icon: <PanelBottom aria-hidden="true" />,
       run: bottom.toggle,
       id: "toggle-bottom-panel" as const,

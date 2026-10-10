@@ -8,6 +8,7 @@ import {
   ResizablePanelContextProvider,
   ResizablePanelControl,
   ResizablePanelGroup,
+  usePanelCommand,
 } from "../resizable";
 
 type PanelController = {
@@ -37,6 +38,8 @@ const primitive = vi.hoisted(() => ({
   controllers: new Map<string, PanelController>(),
   props: new Map<string, CapturedPanelProps>(),
   collapsed: new Map<string, boolean>(),
+  registeredGroups: new Set<string>(),
+  onlySaveAfterUserInteractions: new Map<string, boolean | undefined>(),
 }));
 
 type MockSeparatorProps = HTMLAttributes<HTMLDivElement> & {
@@ -45,6 +48,7 @@ type MockSeparatorProps = HTMLAttributes<HTMLDivElement> & {
 
 vi.mock("react-resizable-panels", async () => {
   const React = await import("react");
+  const GroupContext = React.createContext<string | null>(null);
 
   const reportResize = (id: string, collapsed: boolean) => {
     primitive.collapsed.set(id, collapsed);
@@ -55,8 +59,24 @@ vi.mock("react-resizable-panels", async () => {
   };
 
   return {
-    Group: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+    Group: ({ children, id }: { children?: ReactNode; id?: string }) => {
+      const groupId = id ?? "test-group";
+
+      React.useLayoutEffect(() => {
+        primitive.registeredGroups.add(groupId);
+        return () => {
+          primitive.registeredGroups.delete(groupId);
+        };
+      }, [groupId]);
+
+      return (
+        <GroupContext.Provider value={groupId}>
+          <div>{children}</div>
+        </GroupContext.Provider>
+      );
+    },
     Panel: (props: CapturedPanelProps) => {
+      const groupId = React.useContext(GroupContext);
       const id = props.id;
       let controller = primitive.controllers.get(id);
 
@@ -69,7 +89,13 @@ vi.mock("react-resizable-panels", async () => {
           collapse: vi.fn(() => reportResize(id, true)),
           expand: vi.fn(() => reportResize(id, false)),
           getSize: vi.fn(() => ({ asPercentage: 50, inPixels: 500 })),
-          isCollapsed: vi.fn(() => primitive.collapsed.get(id) ?? false),
+          isCollapsed: vi.fn(() => {
+            if (!groupId || !primitive.registeredGroups.has(groupId)) {
+              throw new Error(`Group ${groupId ?? "unknown"} not found`);
+            }
+
+            return primitive.collapsed.get(id) ?? false;
+          }),
           resize: vi.fn(),
         };
         primitive.controllers.set(id, controller);
@@ -87,13 +113,16 @@ vi.mock("react-resizable-panels", async () => {
     ),
     useDefaultLayout: ({
       id,
+      onlySaveAfterUserInteractions,
       panelIds,
       storage = localStorage,
     }: {
       id: string;
+      onlySaveAfterUserInteractions?: boolean;
       panelIds: string[];
       storage?: LayoutStorage;
     }) => {
+      primitive.onlySaveAfterUserInteractions.set(id, onlySaveAfterUserInteractions);
       const storageKey = `react-resizable-panels:${[id, ...panelIds].join(":")}`;
       const savedLayout = storage.getItem(storageKey);
 
@@ -112,6 +141,8 @@ beforeEach(() => {
   primitive.controllers.clear();
   primitive.props.clear();
   primitive.collapsed.clear();
+  primitive.registeredGroups.clear();
+  primitive.onlySaveAfterUserInteractions.clear();
   localStorage.clear();
 });
 
@@ -137,6 +168,18 @@ function DynamicPanelGroup() {
         </ResizablePanelGroup>
       </div>
     </ResizablePanelContextProvider>
+  );
+}
+
+function PanelStateProbe({ panelId }: { panelId: string }) {
+  const panel = usePanelCommand(panelId);
+
+  return (
+    <output
+      data-available={String(panel.isAvailable)}
+      data-collapsed={String(panel.isCollapsed)}
+      data-testid="panel-state"
+    />
   );
 }
 
@@ -187,6 +230,38 @@ describe("ResizablePanelGroup", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show second panel" }));
 
     expect(screen.getByText("Second panel")).toBeInTheDocument();
+  });
+
+  it("registers the persisted collapsed state before paint without querying an unmounted handle", () => {
+    localStorage.setItem(
+      "react-resizable-panels:restored-layout:restored-panel",
+      JSON.stringify({ "restored-panel": 0 }),
+    );
+
+    render(
+      <ResizablePanelContextProvider>
+        <ResizablePanelGroup id="restored-layout" persisted>
+          <ResizablePanel collapsedSize={0} collapsible defaultSize={50} id="restored-panel" />
+        </ResizablePanelGroup>
+        <PanelStateProbe panelId="restored-panel" />
+      </ResizablePanelContextProvider>,
+    );
+
+    expect(screen.getByTestId("panel-state")).toHaveAttribute("data-available", "true");
+    expect(screen.getByTestId("panel-state")).toHaveAttribute("data-collapsed", "true");
+    expect(primitive.controllers.get("restored-panel")?.isCollapsed).not.toHaveBeenCalled();
+  });
+
+  it("configures persisted groups to save only user-driven layouts when requested", () => {
+    render(
+      <ResizablePanelContextProvider>
+        <ResizablePanelGroup id="user-resized-layout" onlySaveAfterUserInteractions persisted>
+          <ResizablePanel id="user-resized-panel">Panel</ResizablePanel>
+        </ResizablePanelGroup>
+      </ResizablePanelContextProvider>,
+    );
+
+    expect(primitive.onlySaveAfterUserInteractions.get("user-resized-layout")).toBe(true);
   });
 });
 

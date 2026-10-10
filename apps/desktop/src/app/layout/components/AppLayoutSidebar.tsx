@@ -1,10 +1,12 @@
-import { useDroppable } from "@dnd-kit/react";
-import { useSortable } from "@dnd-kit/react/sortable";
+import { Feedback, PointerActivationConstraints, PointerSensor } from "@dnd-kit/dom";
+import { useDraggable, useDroppable } from "@dnd-kit/react";
 import { ChevronRight, GripVertical } from "lucide-react";
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -13,12 +15,18 @@ import {
 } from "@/components/ui/resizable";
 
 import { SidebarViewTarget } from "@/app/layout/components/SidebarViewPortal";
-import type { SidebarId, SidebarViewId } from "@/app/layout/lib/sidebar-layout";
+import type {
+  SidebarDropPlacement,
+  SidebarId,
+  SidebarViewId,
+} from "@/app/layout/lib/sidebar-layout";
 import type { SidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
 import { cn } from "@/lib/class-names.utils";
 
 interface AppLayoutSidebarProps {
+  draggingViewId: SidebarViewId | null;
   hosts: SidebarViewHosts;
+  placement: SidebarDropPlacement | null;
   side: SidebarId;
   views: SidebarViewId[];
 }
@@ -33,7 +41,23 @@ const VIEW_PANEL_SIZES: Record<SidebarViewId, { defaultSize: string; minSize: st
   sources: { minSize: "18.75rem", defaultSize: "45" },
 };
 
-function AppLayoutSidebar({ hosts, side, views }: AppLayoutSidebarProps) {
+const SIDEBAR_DRAG_THRESHOLD = 6;
+
+const SIDEBAR_DRAG_SENSORS = [
+  PointerSensor.configure({
+    activationConstraints: [
+      new PointerActivationConstraints.Distance({ value: SIDEBAR_DRAG_THRESHOLD }),
+    ],
+  }),
+];
+
+function AppLayoutSidebar({
+  draggingViewId,
+  hosts,
+  placement,
+  side,
+  views,
+}: AppLayoutSidebarProps) {
   const { t } = useTranslation();
   const { ref } = useDroppable({ accept: "sidebar-view", id: side, type: "sidebar-region" });
 
@@ -46,19 +70,24 @@ function AppLayoutSidebar({ hosts, side, views }: AppLayoutSidebarProps) {
       data-sidebar-region={side}
       ref={ref}
     >
+      {placement?.destination === side ? (
+        <SidebarInsertionIndicator
+          placement={placement}
+          side={side}
+          viewCount={views.filter((viewId) => viewId !== placement.viewId).length}
+        />
+      ) : null}
       {views.length === 1 ? (
-        <SidebarViewFrame
+        <SidebarViewStandalone
           collapsible={false}
           host={hosts[views[0]!]}
-          index={0}
-          side={side}
+          isDragging={draggingViewId === views[0]}
           viewId={views[0]!}
         />
       ) : (
         <ResizablePanelGroup
           className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
           id={side === "left" ? "editor-source" : "editor-right-sidebar"}
-          key={`${side}:${views.join(":")}`}
           orientation="vertical"
           persisted
         >
@@ -69,21 +98,12 @@ function AppLayoutSidebar({ hosts, side, views }: AppLayoutSidebarProps) {
                   <div className="h-px w-full bg-border" />
                 </ResizableHandle>
               )}
-              <ResizablePanel
-                className="flex min-h-0 flex-col overflow-hidden!"
-                collapsedSize="2.25rem"
+              <SidebarViewPanel
                 collapsible
-                id={VIEW_PANEL_IDS[viewId]}
-                {...VIEW_PANEL_SIZES[viewId]}
-              >
-                <SidebarViewFrame
-                  collapsible
-                  host={hosts[viewId]}
-                  index={index}
-                  side={side}
-                  viewId={viewId}
-                />
-              </ResizablePanel>
+                host={hosts[viewId]}
+                isDragging={draggingViewId === viewId}
+                viewId={viewId}
+              />
             </Fragment>
           ))}
         </ResizablePanelGroup>
@@ -92,127 +112,298 @@ function AppLayoutSidebar({ hosts, side, views }: AppLayoutSidebarProps) {
   );
 }
 
-function SidebarViewFrame({
+function SidebarInsertionIndicator({
+  placement,
+  side,
+  viewCount,
+}: {
+  placement: SidebarDropPlacement;
+  side: SidebarId;
+  viewCount: number;
+}) {
+  const verticalAlignment =
+    placement.insertionIndex === 0
+      ? "translate-y-0"
+      : placement.insertionIndex === viewCount
+        ? "-translate-y-full"
+        : "-translate-y-1/2";
+
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none absolute inset-x-3 z-40 h-1 rounded bg-primary transition-[top] duration-150 motion-reduce:transition-none",
+        verticalAlignment,
+      )}
+      data-sidebar-drop-indicator={side}
+      data-sidebar-drop-indicator-index={placement.insertionIndex}
+      style={{ top: placement.indicatorOffset }}
+    />
+  );
+}
+
+function SidebarViewPanel({
   collapsible,
   host,
-  index,
-  side,
+  isDragging,
   viewId,
 }: {
   collapsible: boolean;
   host: HTMLDivElement;
-  index: number;
-  side: SidebarId;
+  isDragging: boolean;
   viewId: SidebarViewId;
 }) {
-  const { handleRef, isDragging, ref } = useSortable({
-    accept: "sidebar-view",
-    group: side,
-    id: viewId,
-    index,
-    type: "sidebar-view",
-  });
+  const draggable = useSidebarDraggable(viewId);
 
+  return (
+    <ResizablePanel
+      className="flex min-h-0 flex-col overflow-hidden!"
+      collapsedSize="2.5rem"
+      collapsible
+      elementRef={draggable.ref}
+      id={VIEW_PANEL_IDS[viewId]}
+      {...VIEW_PANEL_SIZES[viewId]}
+    >
+      <SidebarViewFrame
+        collapsible={collapsible}
+        draggable={draggable}
+        host={host}
+        isDragging={isDragging}
+        viewId={viewId}
+      />
+    </ResizablePanel>
+  );
+}
+
+function SidebarViewStandalone({
+  collapsible,
+  host,
+  isDragging,
+  viewId,
+}: {
+  collapsible: boolean;
+  host: HTMLDivElement;
+  isDragging: boolean;
+  viewId: SidebarViewId;
+}) {
+  const draggable = useSidebarDraggable(viewId);
+
+  return (
+    <SidebarViewFrame
+      collapsible={collapsible}
+      draggable={draggable}
+      host={host}
+      isDragging={isDragging}
+      viewId={viewId}
+    />
+  );
+}
+
+function SidebarViewFrame({
+  collapsible,
+  draggable,
+  host,
+  isDragging,
+  viewId,
+}: {
+  collapsible: boolean;
+  draggable: ReturnType<typeof useSidebarDraggable>;
+  host: HTMLDivElement;
+  isDragging: boolean;
+  viewId: SidebarViewId;
+}) {
   return (
     <div
       className={cn(
-        "flex size-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-        isDragging && "bg-card opacity-60",
+        "relative flex size-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden transition-[background-color,opacity] duration-150 motion-reduce:transition-none",
+        isDragging && "bg-card opacity-50",
       )}
       data-sidebar-view={viewId}
-      ref={ref}
     >
-      <SidebarViewHeader collapsible={collapsible} handleRef={handleRef} viewId={viewId} />
+      <SidebarViewHeader
+        collapsible={collapsible}
+        handleRef={draggable.handleRef}
+        isDragging={isDragging || draggable.isDragging}
+        viewId={viewId}
+      />
       <SidebarViewTarget host={host} />
     </div>
   );
 }
 
+function useSidebarDraggable(viewId: SidebarViewId) {
+  return useDraggable({
+    id: viewId,
+    // The default feedback inserts a copied panel sibling into ResizablePanelGroup.
+    // AppLayout owns the visual preview, so suppress DnD's structural clone and transform.
+    plugins: [Feedback.configure({ feedback: "none" })],
+    sensors: SIDEBAR_DRAG_SENSORS,
+    type: "sidebar-view",
+  });
+}
+
 function SidebarViewHeader({
   collapsible,
   handleRef,
+  isDragging,
   viewId,
 }: {
   collapsible: boolean;
   handleRef: (element: Element | null) => void;
+  isDragging: boolean;
   viewId: SidebarViewId;
 }) {
   const { t } = useTranslation();
   const title = viewId === "sources" ? t("source.importedSources") : t("layout.activityFeed");
-  const collapseLabel =
-    viewId === "sources"
-      ? t("layout.collapseView", { view: t("source.importedSources") })
-      : t("layout.collapseView", { view: t("layout.activityFeed") });
-
-  const expandLabel =
-    viewId === "sources"
-      ? t("layout.expandView", { view: t("source.importedSources") })
-      : t("layout.expandView", { view: t("layout.activityFeed") });
-
   const panelId = VIEW_PANEL_IDS[viewId];
+  const pointerStart = useRef<{ pointerId: number; x: number; y: number } | null>(null);
+  const suppressToggleClick = useRef(false);
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      const start = pointerStart.current;
+      if (!start || event.pointerId !== start.pointerId) return;
+
+      if (Math.hypot(event.clientX - start.x, event.clientY - start.y) >= SIDEBAR_DRAG_THRESHOLD) {
+        suppressToggleClick.current = true;
+      }
+    };
+
+    document.addEventListener("pointermove", handlePointerMove, true);
+    return () => document.removeEventListener("pointermove", handlePointerMove, true);
+  }, []);
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0 || event.isPrimary === false) return;
+
+    pointerStart.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    suppressToggleClick.current = false;
+  };
+
+  const handleClickCapture = (event: React.MouseEvent<HTMLButtonElement>) => {
+    // Keyboard activation has detail 0 and remains a normal toggle even if a
+    // completed pointer drag did not produce a browser click event.
+    if (event.detail === 0 && !isDragging) return;
+    if (!suppressToggleClick.current && !isDragging) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    suppressToggleClick.current = false;
+    pointerStart.current = null;
+  };
+
+  const renderHeaderButton = (isExpanded?: boolean) => (
+    <Button
+      aria-controls={collapsible ? panelId : undefined}
+      aria-expanded={collapsible ? isExpanded : undefined}
+      aria-label={
+        collapsible
+          ? isExpanded
+            ? t("layout.collapseAndDragView", { view: title })
+            : t("layout.expandAndDragView", { view: title })
+          : t("layout.dragView", { view: title })
+      }
+      className={cn(
+        "w-full min-w-0 cursor-grab justify-start gap-2 rounded-md p-1 text-left text-secondary-foreground hover:bg-muted/70 active:cursor-grabbing",
+        isDragging && "cursor-grabbing",
+      )}
+      data-sidebar-view-handle={viewId}
+      onClickCapture={handleClickCapture}
+      onPointerCancel={() => {
+        pointerStart.current = null;
+        suppressToggleClick.current = false;
+      }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={() => {
+        pointerStart.current = null;
+      }}
+      ref={handleRef}
+      type="button"
+      variant="ghost"
+    >
+      <GripVertical aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">{title}</span>
+      {collapsible ? (
+        <ChevronRight
+          aria-hidden="true"
+          className={cn("size-4 shrink-0 transition-transform", isExpanded && "rotate-90")}
+        />
+      ) : null}
+    </Button>
+  );
+
+  if (!collapsible) return <div className="flex shrink-0 py-1">{renderHeaderButton()}</div>;
 
   return (
-    <div className="flex shrink-0 items-center gap-1 py-1">
-      <button
-        aria-label={t("layout.dragView", { view: title })}
-        className="flex min-w-0 flex-1 cursor-grab items-center gap-2 rounded-md p-1 text-left text-secondary-foreground active:cursor-grabbing"
-        ref={handleRef}
-        type="button"
-      >
-        <GripVertical aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-        <span className="truncate text-sm font-medium">{title}</span>
-      </button>
-
-      {collapsible ? (
-        <ResizablePanelControl panelId={panelId}>
-          {({ isExpanded }) => (
-            <Button
-              aria-label={isExpanded ? collapseLabel : expandLabel}
-              className="size-7 shrink-0 p-0 text-secondary-foreground"
-              size="icon-sm"
-              type="button"
-              variant="ghost"
-            >
-              <ChevronRight
-                aria-hidden="true"
-                className={cn("size-4 shrink-0 transition-transform", isExpanded && "rotate-90")}
-              />
-            </Button>
-          )}
-        </ResizablePanelControl>
-      ) : null}
-    </div>
+    <ResizablePanelControl panelId={panelId}>
+      {({ isExpanded }) => (
+        <div className="flex shrink-0 py-1">{renderHeaderButton(isExpanded)}</div>
+      )}
+    </ResizablePanelControl>
   );
 }
 
-function SidebarEmptyDropTarget({ isDragging, side }: { isDragging: boolean; side: SidebarId }) {
-  const { t } = useTranslation();
-  const title = side === "left" ? t("layout.leftSidebar") : t("layout.rightSidebar");
-  const { isDropTarget, ref } = useDroppable({
+function SidebarEmptyDropTarget({
+  isActive,
+  isDragging,
+  side,
+}: {
+  isActive: boolean;
+  isDragging: boolean;
+  side: SidebarId;
+}) {
+  const { ref } = useDroppable({
     accept: "sidebar-view",
     id: side,
     type: "sidebar-region",
   });
 
   return (
-    <div
-      aria-hidden={!isDragging}
-      aria-label={title}
-      className={cn(
-        "absolute inset-y-0 z-40 flex w-2xs flex-col items-center justify-center rounded-xl border-2 border-dashed bg-background/10 p-4 text-center text-sm text-muted-foreground shadow-xl backdrop-blur-sm",
-        isDragging
-          ? "pointer-events-auto border-primary/50 opacity-100"
-          : "pointer-events-none opacity-0",
-        isDropTarget && "border-primary bg-primary/10 text-foreground",
-        side === "left" ? "left-0 rounded-r-none" : "right-0 rounded-l-none",
-      )}
-      data-sidebar-empty-drop-target={side}
-      ref={ref}
-      role="region"
-    >
-      <span>{t("layout.dropViewHere", { sidebar: title })}</span>
-    </div>
+    <>
+      <div
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute inset-y-0 z-40 w-lg",
+          side === "left" ? "left-0" : "right-0",
+        )}
+        data-sidebar-empty-drop-target={side}
+        ref={ref}
+      />
+      {isDragging && isActive ? (
+        <div
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute inset-y-0 z-40 w-1 rounded bg-primary",
+            side === "left" ? "left-px" : "right-px",
+          )}
+          data-sidebar-empty-drop-indicator={side}
+        />
+      ) : null}
+    </>
   );
 }
 
-export { AppLayoutSidebar, SidebarEmptyDropTarget };
+function SidebarDragPreview({
+  position,
+  viewId,
+}: {
+  position: { x: number; y: number };
+  viewId: SidebarViewId;
+}) {
+  const { t } = useTranslation();
+  const title = viewId === "sources" ? t("source.importedSources") : t("layout.activityFeed");
+
+  return createPortal(
+    <Card
+      className="pointer-events-none fixed z-100 flex-row items-center gap-2 rounded-md px-2 py-1.5 opacity-75"
+      data-sidebar-drag-preview={viewId}
+      style={{ left: position.x, top: position.y }}
+    >
+      <GripVertical aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+      <span className="truncate text-sm">{title}</span>
+    </Card>,
+    document.body,
+  );
+}
+
+export { AppLayoutSidebar, SidebarDragPreview, SidebarEmptyDropTarget };
