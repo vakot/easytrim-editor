@@ -173,7 +173,7 @@ function SidebarViewPanel({
   return (
     <ResizablePanel
       className="flex min-h-0 flex-col overflow-hidden!"
-      collapsedSize="2.25rem"
+      collapsedSize="2.5rem"
       collapsible
       elementRef={draggable.ref}
       id={VIEW_PANEL_IDS[viewId]}
