@@ -1,4 +1,5 @@
 import { DragDropProvider } from "@dnd-kit/react";
+import { useSortable } from "@dnd-kit/react/sortable";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -17,7 +18,11 @@ vi.mock("@dnd-kit/react", () => ({
 }));
 
 vi.mock("@dnd-kit/react/sortable", () => ({
-  useSortable: () => ({ handleRef: () => undefined, isDragging: false, ref: () => undefined }),
+  useSortable: vi.fn(() => ({
+    handleRef: () => undefined,
+    isDragging: false,
+    ref: () => undefined,
+  })),
 }));
 
 describe("AppLayoutSidebar", () => {
@@ -36,6 +41,21 @@ describe("AppLayoutSidebar", () => {
       screen.getByRole("button", { name: "Drag Imported Sources to move it between sidebars" }),
     ).toBeInTheDocument();
     expect(sidebar.querySelector('[data-slot="resizable-panel-group"]')).toBeNull();
+
+    const plugins = vi.mocked(useSortable).mock.calls.at(-1)?.[0].plugins;
+    expect(plugins).toBeTypeOf("function");
+
+    const configurePlugins = plugins as unknown as (plugins: unknown[]) => unknown[];
+    class SortableKeyboardPlugin {}
+    class OptimisticSortingPlugin {}
+
+    expect(
+      configurePlugins([
+        SortableKeyboardPlugin,
+        OptimisticSortingPlugin,
+        { plugin: OptimisticSortingPlugin },
+      ]),
+    ).toEqual([SortableKeyboardPlugin]);
   });
 
   it("registers an empty sidebar drop target while a view is dragged", () => {

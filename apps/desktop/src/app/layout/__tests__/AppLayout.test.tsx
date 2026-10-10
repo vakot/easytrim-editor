@@ -3,10 +3,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
-import { ResizablePanelContextProvider } from "@/components/ui/resizable";
+import { ResizablePanelContextProvider, usePanelCommand } from "@/components/ui/resizable";
 
 import { AppLayout } from "@/app/layout/AppLayout";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
+
+const sortableElements = vi.hoisted(() => new Map<string, HTMLElement>());
 
 vi.mock("@/app/layout/components/AppLayoutHeader", () => ({
   AppLayoutHeader: () => <header />,
@@ -47,6 +49,27 @@ vi.mock("@dnd-kit/react", () => ({
   }) => (
     <>
       {children}
+      <button
+        aria-label="Preview Sources below Activity"
+        onClick={() => {
+          onDragStart();
+          onDragMove({
+            canceled: false,
+            operation: { position: { current: { x: 120, y: 590 } }, source: { id: "sources" } },
+          });
+        }}
+        type="button"
+      />
+      <button
+        aria-label="Drop Sources below Activity"
+        onClick={() =>
+          onDragEnd({
+            canceled: false,
+            operation: { position: { current: { x: 120, y: 590 } }, source: { id: "sources" } },
+          })
+        }
+        type="button"
+      />
       <button
         aria-label="Simulate moving Sources to the bottom of the left sidebar"
         onClick={() => {
@@ -116,7 +139,13 @@ vi.mock("@dnd-kit/react", () => ({
 }));
 
 vi.mock("@dnd-kit/react/sortable", () => ({
-  useSortable: () => ({ handleRef: () => undefined, isDragging: false, ref: () => undefined }),
+  useSortable: ({ id }: { id: string }) => ({
+    handleRef: () => undefined,
+    isDragging: false,
+    ref: (element: Element | null) => {
+      if (element) sortableElements.set(id, element as HTMLElement);
+    },
+  }),
 }));
 
 function setBounds(element: HTMLElement, bounds: DOMRect) {
@@ -142,12 +171,55 @@ function renderAppLayout() {
   render(
     <Provider store={store}>
       <ResizablePanelContextProvider>
+        <SidebarPanelRegistrationProbe />
         <AppLayout />
       </ResizablePanelContextProvider>
     </Provider>,
   );
 
   return store;
+}
+
+function SidebarPanelRegistrationProbe() {
+  const sources = usePanelCommand("editor-source-imported-sources");
+  const activity = usePanelCommand("editor-source-activity-feed");
+
+  return (
+    <output
+      data-activity-panel-registered={String(activity.isAvailable)}
+      data-sources-panel-registered={String(sources.isAvailable)}
+      data-testid="sidebar-panel-registration"
+    />
+  );
+}
+
+function expectPanelStructure(sidebar: HTMLElement, viewIds: Array<"activity" | "sources">) {
+  const group = sidebar.querySelector<HTMLElement>('[data-slot="resizable-panel-group"]');
+  expect(group).not.toBeNull();
+
+  const panelIds: Record<"activity" | "sources", string> = {
+    activity: "editor-source-activity-feed",
+    sources: "editor-source-imported-sources",
+  };
+
+  const expectedChildren = viewIds.flatMap((viewId, index) => [
+    ...(index > 0 ? ["separator"] : []),
+    `panel:${panelIds[viewId]}`,
+  ]);
+
+  const actualChildren = Array.from(group!.children).map((child) => {
+    if (child.hasAttribute("data-panel")) return `panel:${child.id}`;
+    if (child.hasAttribute("data-separator")) return "separator";
+    return "other";
+  });
+
+  expect(actualChildren).toEqual(expectedChildren);
+  for (const viewId of viewIds) {
+    const frame = sidebar.querySelector<HTMLElement>(`[data-sidebar-view="${viewId}"]`);
+    const panel = frame?.closest("[data-panel]");
+    expect(panel?.id).toBe(panelIds[viewId]);
+    expect(sortableElements.get(viewId)).toBe(panel);
+  }
 }
 
 describe("AppLayout sidebar drag and drop", () => {
@@ -232,6 +304,85 @@ describe("AppLayout sidebar drag and drop", () => {
           (item) => item.dataset.sidebarView,
         ),
       ).toEqual(["activity", "sources"]);
+    });
+  });
+
+  it("keeps each sortable view inside its registered panel and separators between panels", async () => {
+    renderAppLayout();
+
+    const sidebar = screen.getByRole("complementary", { name: "Left sidebar" });
+    const registration = screen.getByTestId("sidebar-panel-registration");
+    const sources = sidebar.querySelector<HTMLElement>('[data-sidebar-view="sources"]')!;
+    const activity = sidebar.querySelector<HTMLElement>('[data-sidebar-view="activity"]')!;
+    const rightDropTarget = document.querySelector<HTMLElement>(
+      '[data-sidebar-empty-drop-target="right"]',
+    )!;
+
+    setBounds(sidebar, {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 320,
+      bottom: 700,
+      width: 320,
+      height: 700,
+    } as DOMRect);
+    setBounds(sources, {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 320,
+      bottom: 300,
+      width: 320,
+      height: 300,
+    } as DOMRect);
+    setBounds(activity, {
+      x: 0,
+      y: 300,
+      top: 300,
+      left: 0,
+      right: 320,
+      bottom: 600,
+      width: 320,
+      height: 300,
+    } as DOMRect);
+    setBounds(rightDropTarget, {
+      x: 1000,
+      y: 0,
+      top: 0,
+      left: 1000,
+      right: 1200,
+      bottom: 700,
+      width: 200,
+      height: 700,
+    } as DOMRect);
+
+    await waitFor(() => {
+      expect(registration).toHaveAttribute("data-sources-panel-registered", "true");
+      expect(registration).toHaveAttribute("data-activity-panel-registered", "true");
+    });
+    expectPanelStructure(sidebar, ["sources", "activity"]);
+    const panelElementsBeforeDrop = new Map([
+      ["sources", sortableElements.get("sources")],
+      ["activity", sortableElements.get("activity")],
+    ]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview Sources below Activity" }));
+
+    expectPanelStructure(sidebar, ["activity", "sources"]);
+    expect(registration).toHaveAttribute("data-sources-panel-registered", "true");
+    expect(registration).toHaveAttribute("data-activity-panel-registered", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Drop Sources below Activity" }));
+
+    await waitFor(() => {
+      expectPanelStructure(sidebar, ["activity", "sources"]);
+      expect(registration).toHaveAttribute("data-sources-panel-registered", "true");
+      expect(registration).toHaveAttribute("data-activity-panel-registered", "true");
+      expect(sortableElements.get("sources")).toBe(panelElementsBeforeDrop.get("sources"));
+      expect(sortableElements.get("activity")).toBe(panelElementsBeforeDrop.get("activity"));
     });
   });
 
@@ -320,6 +471,18 @@ describe("AppLayout sidebar drag and drop", () => {
     await waitFor(() => {
       expect(screen.queryByRole("complementary", { name: "Left sidebar" })).not.toBeInTheDocument();
       expect(document.querySelectorAll(".workspace-separator")).toHaveLength(1);
+      expectPanelStructure(
+        screen.getByRole("complementary", { name: "Right sidebar" }),
+        store.getState().preferences.sidebarLayout.right,
+      );
+      expect(screen.getByTestId("sidebar-panel-registration")).toHaveAttribute(
+        "data-sources-panel-registered",
+        "true",
+      );
+      expect(screen.getByTestId("sidebar-panel-registration")).toHaveAttribute(
+        "data-activity-panel-registered",
+        "true",
+      );
     });
   });
 

@@ -41,8 +41,9 @@ const VIEW_PANEL_SIZES: Record<SidebarViewId, { defaultSize: string; minSize: st
 function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarProps) {
   const { t } = useTranslation();
   const { ref } = useDroppable({ accept: "sidebar-view", id: side, type: "sidebar-region" });
+  const previewViews = getPreviewViews(views, side, placement);
 
-  if (views.length === 0) return null;
+  if (previewViews.length === 0) return null;
 
   return (
     <aside
@@ -60,44 +61,35 @@ function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarPro
           style={{ top: placement.previewTop }}
         />
       ) : null}
-      {views.length === 1 ? (
-        <SidebarViewFrame
+      {previewViews.length === 1 ? (
+        <SidebarViewStandalone
           collapsible={false}
-          host={hosts[views[0]!]}
+          host={hosts[previewViews[0]!]}
           index={0}
           side={side}
-          viewId={views[0]!}
+          viewId={previewViews[0]!}
         />
       ) : (
         <ResizablePanelGroup
           className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
           id={side === "left" ? "editor-source" : "editor-right-sidebar"}
-          key={`${side}:${views.join(":")}`}
           orientation="vertical"
           persisted
         >
-          {views.map((viewId, index) => (
+          {previewViews.map((viewId, index) => (
             <Fragment key={viewId}>
               {index > 0 && (
                 <ResizableHandle className="bg-transparent">
                   <div className="h-px w-full bg-border" />
                 </ResizableHandle>
               )}
-              <ResizablePanel
-                className="flex min-h-0 flex-col overflow-hidden!"
-                collapsedSize="2.25rem"
+              <SidebarViewPanel
                 collapsible
-                id={VIEW_PANEL_IDS[viewId]}
-                {...VIEW_PANEL_SIZES[viewId]}
-              >
-                <SidebarViewFrame
-                  collapsible
-                  host={hosts[viewId]}
-                  index={index}
-                  side={side}
-                  viewId={viewId}
-                />
-              </ResizablePanel>
+                host={hosts[viewId]}
+                index={index}
+                side={side}
+                viewId={viewId}
+              />
             </Fragment>
           ))}
         </ResizablePanelGroup>
@@ -106,7 +98,7 @@ function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarPro
   );
 }
 
-function SidebarViewFrame({
+function SidebarViewPanel({
   collapsible,
   host,
   index,
@@ -119,27 +111,97 @@ function SidebarViewFrame({
   side: SidebarId;
   viewId: SidebarViewId;
 }) {
-  const { handleRef, isDragging, ref } = useSortable({
-    accept: "sidebar-view",
-    group: side,
-    id: viewId,
-    index,
-    type: "sidebar-view",
-  });
+  const sortable = useSidebarSortable(side, viewId, index);
 
+  return (
+    <ResizablePanel
+      className="flex min-h-0 flex-col overflow-hidden!"
+      collapsedSize="2.25rem"
+      collapsible
+      elementRef={sortable.ref}
+      id={VIEW_PANEL_IDS[viewId]}
+      {...VIEW_PANEL_SIZES[viewId]}
+    >
+      <SidebarViewFrame collapsible={collapsible} host={host} sortable={sortable} viewId={viewId} />
+    </ResizablePanel>
+  );
+}
+
+function SidebarViewStandalone({
+  collapsible,
+  host,
+  index,
+  side,
+  viewId,
+}: {
+  collapsible: boolean;
+  host: HTMLDivElement;
+  index: number;
+  side: SidebarId;
+  viewId: SidebarViewId;
+}) {
+  const sortable = useSidebarSortable(side, viewId, index);
+
+  return (
+    <SidebarViewFrame collapsible={collapsible} host={host} sortable={sortable} viewId={viewId} />
+  );
+}
+
+function SidebarViewFrame({
+  collapsible,
+  host,
+  sortable,
+  viewId,
+}: {
+  collapsible: boolean;
+  host: HTMLDivElement;
+  sortable: ReturnType<typeof useSidebarSortable>;
+  viewId: SidebarViewId;
+}) {
   return (
     <div
       className={cn(
         "flex size-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-        isDragging && "bg-card opacity-60",
+        sortable.isDragging && "bg-card opacity-60",
       )}
       data-sidebar-view={viewId}
-      ref={ref}
     >
-      <SidebarViewHeader collapsible={collapsible} handleRef={handleRef} viewId={viewId} />
+      <SidebarViewHeader collapsible={collapsible} handleRef={sortable.handleRef} viewId={viewId} />
       <SidebarViewTarget host={host} />
     </div>
   );
+}
+
+function useSidebarSortable(side: SidebarId, viewId: SidebarViewId, index: number) {
+  return useSortable({
+    accept: "sidebar-view",
+    group: side,
+    id: viewId,
+    index,
+    // The optimistic plugin reparents this element across sibling panels, so React owns panel order.
+    plugins: (plugins) =>
+      plugins.filter((plugin) => {
+        const pluginType = "plugin" in plugin ? plugin.plugin : plugin;
+        return Reflect.get(pluginType, "name") !== "OptimisticSortingPlugin";
+      }),
+    type: "sidebar-view",
+  });
+}
+
+function getPreviewViews(
+  views: SidebarViewId[],
+  side: SidebarId,
+  placement: SidebarDropPlacement | null,
+): SidebarViewId[] {
+  if (placement?.destination !== side) return views;
+
+  const sourceIndex = views.indexOf(placement.viewId);
+  if (sourceIndex < 0) return views;
+
+  const previewViews = [...views];
+  previewViews.splice(sourceIndex, 1);
+  previewViews.splice(placement.insertionIndex, 0, placement.viewId);
+  return previewViews;
 }
 
 function SidebarViewHeader({
