@@ -47,6 +47,7 @@ function AppLayoutWorkspace({
 
   return (
     <div className="relative min-h-0 min-w-0">
+      {/* Direct panel children are required for persisted layout to discover every panel ID. */}
       <ResizablePanelGroup
         className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
         id="workspace"
@@ -55,14 +56,24 @@ function AppLayoutWorkspace({
         persisted
       >
         {leftSidebarPresence.isMounted ? (
-          <WorkspaceSidebar
-            draggingViewId={dragPreviewViewId}
-            dropPlacement={dropPlacement}
-            side="left"
-            viewHosts={viewHosts}
-            views={sidebarLayout.left}
-            width={workspaceSidebarWidths.left ?? "20.5rem"}
-          />
+          <ResizablePanel
+            className="ml-1.5 overflow-hidden!"
+            collapsedSize={0}
+            collapsible
+            defaultSize={workspaceSidebarWidths.left ?? "20.5rem"}
+            groupResizeBehavior="preserve-pixel-size"
+            id="workspace-left-sidebar"
+            maxSize="32rem"
+            minSize="20.5rem"
+          >
+            <WorkspaceSidebarContent
+              draggingViewId={dragPreviewViewId}
+              dropPlacement={dropPlacement}
+              side="left"
+              viewHosts={viewHosts}
+              views={sidebarLayout.left}
+            />
+          </ResizablePanel>
         ) : null}
 
         {leftSidebarPresence.isMounted ? (
@@ -97,14 +108,24 @@ function AppLayoutWorkspace({
         ) : null}
 
         {rightSidebarPresence.isMounted ? (
-          <WorkspaceSidebar
-            draggingViewId={dragPreviewViewId}
-            dropPlacement={dropPlacement}
-            side="right"
-            viewHosts={viewHosts}
-            views={sidebarLayout.right}
-            width={workspaceSidebarWidths.right ?? "20.5rem"}
-          />
+          <ResizablePanel
+            className="mr-1.5 overflow-hidden!"
+            collapsedSize={0}
+            collapsible
+            defaultSize={workspaceSidebarWidths.right ?? "20.5rem"}
+            groupResizeBehavior="preserve-pixel-size"
+            id="workspace-right-sidebar"
+            maxSize="32rem"
+            minSize="20.5rem"
+          >
+            <WorkspaceSidebarContent
+              draggingViewId={dragPreviewViewId}
+              dropPlacement={dropPlacement}
+              side="right"
+              viewHosts={viewHosts}
+              views={sidebarLayout.right}
+            />
+          </ResizablePanel>
         ) : null}
       </ResizablePanelGroup>
 
@@ -127,51 +148,38 @@ function AppLayoutWorkspace({
   );
 }
 
-function WorkspaceSidebar({
+function WorkspaceSidebarContent({
   draggingViewId,
   dropPlacement,
   side,
   viewHosts,
   views,
-  width,
 }: {
   draggingViewId: SidebarViewId | null;
   dropPlacement: SidebarDropPlacement | null;
   side: "left" | "right";
   viewHosts: SidebarViewHosts;
   views: SidebarViewId[];
-  width: string;
 }) {
   const isLeft = side === "left";
 
   return (
-    <ResizablePanel
-      className={cn("overflow-hidden!", isLeft ? "ml-1.5" : "mr-1.5")}
-      collapsedSize={0}
-      collapsible
-      defaultSize={width}
-      groupResizeBehavior="preserve-pixel-size"
-      id={`workspace-${side}-sidebar`}
-      maxSize="32rem"
-      minSize="20.5rem"
+    <AppLayoutPanel
+      className={cn(
+        "min-w-xs layout-compact:border-y",
+        isLeft
+          ? "layout-compact:rounded-l-xl layout-compact:border-l"
+          : "layout-compact:rounded-r-xl layout-compact:border-r",
+      )}
     >
-      <AppLayoutPanel
-        className={cn(
-          "min-w-xs layout-compact:border-y",
-          isLeft
-            ? "layout-compact:rounded-l-xl layout-compact:border-l"
-            : "layout-compact:rounded-r-xl layout-compact:border-r",
-        )}
-      >
-        <AppLayoutSidebar
-          draggingViewId={draggingViewId}
-          hosts={viewHosts}
-          placement={dropPlacement}
-          side={side}
-          views={views}
-        />
-      </AppLayoutPanel>
-    </ResizablePanel>
+      <AppLayoutSidebar
+        draggingViewId={draggingViewId}
+        hosts={viewHosts}
+        placement={dropPlacement}
+        side={side}
+        views={views}
+      />
+    </AppLayoutPanel>
   );
 }
 
