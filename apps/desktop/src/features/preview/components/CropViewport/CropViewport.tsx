@@ -355,6 +355,7 @@ function CropViewport() {
                     >
                       {t("preview.crop.freeform")}
                     </Button>
+
                     {CROP_ASPECT_RATIO_PRESETS.map(({ label }) => (
                       <Button
                         aria-pressed={aspectRatioPreset === label}
@@ -367,21 +368,21 @@ function CropViewport() {
                         {label}
                       </Button>
                     ))}
-                    <Button
-                      aria-label={t("preview.crop.resetToDefault")}
-                      className="border-destructive/40"
-                      disabled={!cropApplied}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        resetCropToDefault();
-                      }}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      size="icon-sm"
-                      variant="destructive"
-                    >
-                      <RotateCcw aria-hidden="true" />
-                    </Button>
                   </ButtonGroup>
+
+                  <Button
+                    aria-label={t("preview.crop.resetToDefault")}
+                    disabled={!cropApplied}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      resetCropToDefault();
+                    }}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    size="icon-sm"
+                    variant="destructive"
+                  >
+                    <RotateCcw aria-hidden="true" />
+                  </Button>
                 </div>
               </motion.footer>
             ) : null}

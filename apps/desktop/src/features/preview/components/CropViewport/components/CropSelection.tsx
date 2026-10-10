@@ -25,7 +25,7 @@ const HANDLES: Array<{ className: string; handle: Exclude<CropHandle, "move"> }>
   { handle: "top-right", className: "-right-0.25 -top-0.25 translate-x-1/2 -translate-y-1/2" },
   { handle: "right", className: "-right-0.25 top-1/2 translate-x-1/2 -translate-y-1/2" },
   { handle: "bottom-right", className: "-bottom-0.25 -right-0.25 translate-x-1/2 translate-y-1/2" },
-  { handle: "bottom", className: "-bottom-0.25 left-1/2 translate-1/2" },
+  { handle: "bottom", className: "-bottom-0.25 left-1/2 -translate-x-1/2 translate-y-1/2" },
   { handle: "bottom-left", className: "-bottom-0.25 -left-0.25 -translate-x-1/2 translate-y-1/2" },
   { handle: "left", className: "-left-0.25 top-1/2 -translate-1/2" },
 ];
