@@ -15,8 +15,8 @@ function useSidebarVisibility() {
   const hasLeftSidebar = sidebarLayout.left.length > 0;
   const hasRightSidebar = sidebarLayout.right.length > 0;
 
-  const leftSidebarVisible = hasLeftSidebar && !leftSidebar?.isCollapsed;
-  const rightSidebarVisible = hasRightSidebar && !rightSidebar?.isCollapsed;
+  const leftSidebarVisible = hasLeftSidebar && leftSidebar?.isCollapsed === false;
+  const rightSidebarVisible = hasRightSidebar && rightSidebar?.isCollapsed === false;
   const isSidebarCollapsed = useCallback(
     (side: SidebarId) => {
       const panel = side === "left" ? leftSidebar : rightSidebar;
