@@ -1,5 +1,6 @@
 import { DragDropProvider, useDraggable } from "@dnd-kit/react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -11,15 +12,53 @@ import { createSidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
 import { AppLayoutSidebar, SidebarEmptyDropTarget } from "../AppLayoutSidebar";
 import { SidebarViewTarget } from "../SidebarViewPortal";
 
+const dragMocks = vi.hoisted(() => ({ handles: new Map<string, Element>() }));
+
 vi.mock("@dnd-kit/react", () => ({
   DragDropProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useDroppable: () => ({ isDropTarget: false, ref: () => undefined }),
-  useDraggable: vi.fn(() => ({
-    handleRef: () => undefined,
+  useDraggable: vi.fn(({ id }: { id: string }) => ({
+    handleRef: (element: Element | null) => {
+      if (element) dragMocks.handles.set(id, element);
+      else dragMocks.handles.delete(id);
+    },
     isDragging: false,
     ref: () => undefined,
   })),
 }));
+
+vi.mock("@/components/ui/resizable", async (importOriginal) => {
+  const React = await import("react");
+  const actual = await importOriginal<typeof import("@/components/ui/resizable")>();
+
+  return {
+    ...actual,
+    ResizablePanelControl: ({
+      children,
+    }: {
+      children: (state: {
+        isAvailable: boolean;
+        isCollapsed: boolean;
+        isDisabled: boolean;
+        isExpanded: boolean;
+        isMixed: boolean;
+      }) => React.ReactNode;
+    }) => {
+      const [isExpanded, setIsExpanded] = React.useState(true);
+      return (
+        <div onClick={() => setIsExpanded((expanded) => !expanded)}>
+          {children({
+            isAvailable: true,
+            isCollapsed: !isExpanded,
+            isDisabled: false,
+            isExpanded,
+            isMixed: false,
+          })}
+        </div>
+      );
+    },
+  };
+});
 
 describe("AppLayoutSidebar", () => {
   it("renders a draggable single-view sidebar without a sortable panel group", () => {
@@ -39,9 +78,15 @@ describe("AppLayoutSidebar", () => {
 
     const sidebar = screen.getByRole("complementary", { name: "Left sidebar" });
     expect(sidebar.querySelector('[data-sidebar-view="sources"]')).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Drag Imported Sources to move it between sidebars" }),
-    ).toBeInTheDocument();
+    const header = screen.getByRole("button", {
+      name: "Drag Imported Sources or press D to start or finish moving it between sidebars",
+    });
+
+    expect(header).toBeInTheDocument();
+
+    expect(header).not.toHaveAttribute("aria-expanded");
+    expect(dragMocks.handles.get("sources")).toBe(header);
+    expect(header.querySelector("svg")).toBeInTheDocument();
     expect(sidebar.querySelector('[data-slot="resizable-panel-group"]')).toBeNull();
 
     const draggable = vi.mocked(useDraggable).mock.calls.at(-1)?.[0];
@@ -53,6 +98,79 @@ describe("AppLayoutSidebar", () => {
     expect(draggable?.sensors?.[0]).toMatchObject({
       options: { activationConstraints: [{ options: { value: 6 } }] },
     });
+    expect(draggable?.sensors?.[1]).toMatchObject({
+      options: { keyboardCodes: { start: ["KeyD"] } },
+    });
+  });
+
+  it("toggles a multi-panel header on click while keeping drag clicks separate", async () => {
+    const user = userEvent.setup();
+    const hosts = createSidebarViewHosts();
+
+    render(
+      <DragDropProvider>
+        <ResizablePanelContextProvider>
+          <AppLayoutSidebar
+            draggingViewId={null}
+            hosts={hosts}
+            placement={null}
+            side="left"
+            views={["sources", "activity"]}
+          />
+        </ResizablePanelContextProvider>
+      </DragDropProvider>,
+    );
+
+    const header = await screen.findByRole("button", {
+      name: "Collapse Imported Sources; drag or press D to start or finish moving it between sidebars",
+    });
+
+    expect(dragMocks.handles.get("sources")).toBe(header);
+    expect(header).toHaveAttribute("aria-expanded", "true");
+    expect(header).toHaveAttribute("aria-controls", "editor-source-imported-sources");
+
+    await user.click(header);
+    await waitFor(() => expect(header).toHaveAttribute("aria-expanded", "false"));
+
+    // A sub-threshold pointer movement leaves the interaction as a regular click.
+    fireEvent.pointerDown(header, {
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+      isPrimary: true,
+      pointerId: 1,
+    });
+    fireEvent.pointerMove(header, { clientX: 103, clientY: 104, pointerId: 1 });
+    fireEvent.pointerUp(header, { clientX: 103, clientY: 104, pointerId: 1 });
+    fireEvent.click(header);
+    await waitFor(() => expect(header).toHaveAttribute("aria-expanded", "true"));
+
+    // Crossing the pointer sensor threshold starts a drag and must not toggle the panel.
+    fireEvent.pointerDown(header, {
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+      isPrimary: true,
+      pointerId: 2,
+    });
+    fireEvent.pointerMove(header, { clientX: 106, clientY: 100, pointerId: 2 });
+    fireEvent.pointerUp(header, { clientX: 106, clientY: 100, pointerId: 2 });
+    // Some browsers suppress click after a completed drag. Keyboard toggle
+    // must still work in that case.
+    header.focus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(header).toHaveAttribute("aria-expanded", "false"));
+
+    await user.click(header);
+    expect(header).toHaveAttribute("aria-expanded", "true");
+
+    // Native Enter and Space activations continue to use the panel control.
+    header.focus();
+    fireEvent.keyDown(header, { key: " " });
+    fireEvent.keyUp(header, { key: " " });
+    // jsdom does not synthesize the native button click for Space.
+    fireEvent.click(header, { detail: 0 });
+    await waitFor(() => expect(header).toHaveAttribute("aria-expanded", "false"));
   });
 
   it("keeps the empty sidebar detection area invisible and shows a boundary line only when active", () => {

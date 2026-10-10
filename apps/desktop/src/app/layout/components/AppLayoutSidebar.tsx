@@ -6,7 +6,7 @@ import {
 } from "@dnd-kit/dom";
 import { useDraggable, useDroppable } from "@dnd-kit/react";
 import { ChevronRight, GripVertical } from "lucide-react";
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
@@ -45,11 +45,25 @@ const VIEW_PANEL_SIZES: Record<SidebarViewId, { defaultSize: string; minSize: st
   sources: { minSize: "18.75rem", defaultSize: "45" },
 };
 
+const SIDEBAR_DRAG_THRESHOLD = 6;
+
 const SIDEBAR_DRAG_SENSORS = [
   PointerSensor.configure({
-    activationConstraints: [new PointerActivationConstraints.Distance({ value: 6 })],
+    activationConstraints: [
+      new PointerActivationConstraints.Distance({ value: SIDEBAR_DRAG_THRESHOLD }),
+    ],
   }),
-  KeyboardSensor,
+  KeyboardSensor.configure({
+    keyboardCodes: {
+      cancel: ["Escape"],
+      down: ["ArrowDown"],
+      end: ["KeyD", "Tab"],
+      left: ["ArrowLeft"],
+      right: ["ArrowRight"],
+      start: ["KeyD"],
+      up: ["ArrowUp"],
+    },
+  }),
 ];
 
 function AppLayoutSidebar({
@@ -224,6 +238,7 @@ function SidebarViewFrame({
       <SidebarViewHeader
         collapsible={collapsible}
         handleRef={draggable.handleRef}
+        isDragging={draggable.isDragging}
         viewId={viewId}
       />
       <SidebarViewTarget host={host} />
@@ -245,57 +260,100 @@ function useSidebarDraggable(viewId: SidebarViewId) {
 function SidebarViewHeader({
   collapsible,
   handleRef,
+  isDragging,
   viewId,
 }: {
   collapsible: boolean;
   handleRef: (element: Element | null) => void;
+  isDragging: boolean;
   viewId: SidebarViewId;
 }) {
   const { t } = useTranslation();
   const title = viewId === "sources" ? t("source.importedSources") : t("layout.activityFeed");
-  const collapseLabel =
-    viewId === "sources"
-      ? t("layout.collapseView", { view: t("source.importedSources") })
-      : t("layout.collapseView", { view: t("layout.activityFeed") });
-
-  const expandLabel =
-    viewId === "sources"
-      ? t("layout.expandView", { view: t("source.importedSources") })
-      : t("layout.expandView", { view: t("layout.activityFeed") });
-
   const panelId = VIEW_PANEL_IDS[viewId];
+  const pointerStart = useRef<{ pointerId: number; x: number; y: number } | null>(null);
+  const suppressToggleClick = useRef(false);
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      const start = pointerStart.current;
+      if (!start || event.pointerId !== start.pointerId) return;
+
+      if (Math.hypot(event.clientX - start.x, event.clientY - start.y) >= SIDEBAR_DRAG_THRESHOLD) {
+        suppressToggleClick.current = true;
+      }
+    };
+
+    document.addEventListener("pointermove", handlePointerMove, true);
+    return () => document.removeEventListener("pointermove", handlePointerMove, true);
+  }, []);
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0 || event.isPrimary === false) return;
+
+    pointerStart.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    suppressToggleClick.current = false;
+  };
+
+  const handleClickCapture = (event: React.MouseEvent<HTMLButtonElement>) => {
+    // Keyboard activation has detail 0 and remains a normal toggle even if a
+    // completed pointer drag did not produce a browser click event.
+    if (event.detail === 0 && !isDragging) return;
+    if (!suppressToggleClick.current && !isDragging) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    suppressToggleClick.current = false;
+    pointerStart.current = null;
+  };
+
+  const renderHeaderButton = (isExpanded?: boolean) => (
+    <Button
+      aria-controls={collapsible ? panelId : undefined}
+      aria-expanded={collapsible ? isExpanded : undefined}
+      aria-label={
+        collapsible
+          ? isExpanded
+            ? t("layout.collapseAndDragView", { view: title })
+            : t("layout.expandAndDragView", { view: title })
+          : t("layout.dragView", { view: title })
+      }
+      className={cn(
+        "w-full min-w-0 cursor-grab justify-start gap-2 rounded-md p-1 text-left text-secondary-foreground hover:bg-muted/70 active:cursor-grabbing",
+        isDragging && "cursor-grabbing",
+      )}
+      onClickCapture={handleClickCapture}
+      onPointerCancel={() => {
+        pointerStart.current = null;
+        suppressToggleClick.current = false;
+      }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={() => {
+        pointerStart.current = null;
+      }}
+      ref={handleRef}
+      type="button"
+      variant="ghost"
+    >
+      <GripVertical aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">{title}</span>
+      {collapsible ? (
+        <ChevronRight
+          aria-hidden="true"
+          className={cn("size-4 shrink-0 transition-transform", isExpanded && "rotate-90")}
+        />
+      ) : null}
+    </Button>
+  );
+
+  if (!collapsible) return <div className="flex shrink-0 py-1">{renderHeaderButton()}</div>;
 
   return (
-    <div className="flex shrink-0 items-center gap-1 py-1">
-      <button
-        aria-label={t("layout.dragView", { view: title })}
-        className="flex min-w-0 flex-1 cursor-grab items-center gap-2 rounded-md p-1 text-left text-secondary-foreground active:cursor-grabbing"
-        ref={handleRef}
-        type="button"
-      >
-        <GripVertical aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-        <span className="truncate text-sm font-medium">{title}</span>
-      </button>
-
-      {collapsible ? (
-        <ResizablePanelControl panelId={panelId}>
-          {({ isExpanded }) => (
-            <Button
-              aria-label={isExpanded ? collapseLabel : expandLabel}
-              className="size-7 shrink-0 p-0 text-secondary-foreground"
-              size="icon-sm"
-              type="button"
-              variant="ghost"
-            >
-              <ChevronRight
-                aria-hidden="true"
-                className={cn("size-4 shrink-0 transition-transform", isExpanded && "rotate-90")}
-              />
-            </Button>
-          )}
-        </ResizablePanelControl>
-      ) : null}
-    </div>
+    <ResizablePanelControl panelId={panelId}>
+      {({ isExpanded }) => (
+        <div className="flex shrink-0 py-1">{renderHeaderButton(isExpanded)}</div>
+      )}
+    </ResizablePanelControl>
   );
 }
 

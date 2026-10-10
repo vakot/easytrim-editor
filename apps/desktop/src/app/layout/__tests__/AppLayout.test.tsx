@@ -528,7 +528,9 @@ describe("AppLayout sidebar drag and drop", () => {
     });
     expect(store.getState().preferences.sidebarLayout.right).toEqual(["activity"]);
     expect(
-      screen.getByRole("button", { name: "Drag Activity Feed to move it between sidebars" }),
+      screen.getByRole("button", {
+        name: "Drag Activity Feed or press D to start or finish moving it between sidebars",
+      }),
     ).toBeInTheDocument();
 
     const leftSidebar = screen.getByRole("complementary", { name: "Left sidebar" });
