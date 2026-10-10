@@ -92,6 +92,7 @@ describe("editing instances slice", () => {
       expect.objectContaining({
         fileSizeBytes: 12_345,
         sourcePath: firstSource.sourcePath,
+        trim: { kind: "full-source" },
         updatedAtMicros: 1_700_000_000_000_000,
       }),
     ]);
@@ -105,6 +106,29 @@ describe("editing instances slice", () => {
     expect(selectSourceListEntries(root())[0]).toEqual(
       expect.objectContaining({ durationMicros: 5_000_000, fileSizeBytes: 12_345 }),
     );
+  });
+
+  it("updates the source list trim from the saved snapshot", () => {
+    const initial = instance("source");
+    let state = editingInstancesReducer(undefined, editingInstancesAdded([initial]));
+    const root = () => ({ editingInstances: state }) as never;
+    const trimmedSnapshot = createEditorSnapshot({
+      audioTracks: initial.snapshot.audio.tracks,
+      crop: initial.snapshot.crop,
+      mergeAudio: initial.snapshot.audio.mergeAudio,
+      source: initial.snapshot.source,
+      trim: { endMicros: 3_000_000, startMicros: 1_000_000 },
+    });
+
+    state = editingInstancesReducer(
+      state,
+      editingInstanceSnapshotUpdated({ id: initial.id, snapshot: trimmedSnapshot }),
+    );
+
+    expect(selectSourceListEntries(root())[0]?.trim).toEqual({
+      endMicros: 3_000_000,
+      startMicros: 1_000_000,
+    });
   });
 
   it("keeps all attempts for one instance visible", () => {

@@ -1,3 +1,4 @@
+import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import type {
   AppError,
   AudioExportRequest,
@@ -41,6 +42,7 @@ interface EditingInstanceListEntry {
   importedAtMicros?: number;
   sourceAvailability: SourceAvailability;
   sourcePath: string;
+  trim?: EditorSnapshot["trim"];
   updatedAtMicros?: number;
 }
 

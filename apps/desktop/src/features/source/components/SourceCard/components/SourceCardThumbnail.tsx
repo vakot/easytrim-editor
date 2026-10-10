@@ -6,6 +6,7 @@ import { Spinner } from "@/components/ui/spinner";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectImportedSourceThumbnail } from "@/app/store/slices/preview-slice";
+import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { cn } from "@/lib/class-names.utils";
 
 import { formatDuration } from "../../../lib/media-formatters.utils";
@@ -31,6 +32,7 @@ function SourceCardThumbnail({
     (thumbnail === undefined || thumbnail.status === "loading");
 
   const durationMicros = source.durationMicros;
+  const trimSegment = getTrimSegment(source.trim, durationMicros);
 
   return (
     <div
@@ -83,9 +85,35 @@ function SourceCardThumbnail({
         </Badge>
       ) : null}
 
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 h-1.5 overflow-hidden bg-black/40"
+      >
+        <span
+          className="absolute inset-y-0 bg-primary"
+          style={{ left: trimSegment.left, width: trimSegment.width }}
+        />
+      </div>
+
       {children}
     </div>
   );
+}
+
+function getTrimSegment(
+  trim: EditorSnapshot["trim"] | undefined,
+  durationMicros: number | undefined,
+): { left: string; width: string } {
+  if (!trim) return { left: "0%", width: "0%" };
+  if ("kind" in trim) return { left: "0%", width: "100%" };
+  if (durationMicros === undefined || durationMicros <= 0) {
+    return { left: "0%", width: "0%" };
+  }
+
+  return {
+    left: `${(trim.startMicros / durationMicros) * 100}%`,
+    width: `${((trim.endMicros - trim.startMicros) / durationMicros) * 100}%`,
+  };
 }
 
 export { SourceCardThumbnail };

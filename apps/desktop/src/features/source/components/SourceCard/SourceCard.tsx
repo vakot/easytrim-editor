@@ -95,6 +95,7 @@ function toSourceListEntry(source: SourceCardSource): EditingInstanceListEntry {
     ...(source.importedAtMicros === undefined ? {} : { importedAtMicros: source.importedAtMicros }),
     sourceAvailability: source.sourceAvailability,
     sourcePath: sourceRef.sourcePath,
+    ...(source.snapshot.trim === undefined ? {} : { trim: { ...source.snapshot.trim } }),
     ...(sourceRef.updatedAtMicros === undefined
       ? {}
       : { updatedAtMicros: sourceRef.updatedAtMicros }),
