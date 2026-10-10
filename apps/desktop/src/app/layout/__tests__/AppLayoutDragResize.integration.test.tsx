@@ -276,6 +276,7 @@ describe("AppLayout drag and resize integration", () => {
           "pointer-events-none",
         );
         expect(indicator).toHaveStyle({ top: `${expectedIndicatorTop}px` });
+        expect(indicator).toHaveClass(expectedIndex === 0 ? "translate-y-0" : "-translate-y-full");
         expect(indicator?.parentElement).toBe(sidebar);
         const dragPreview = document.querySelector(`[data-sidebar-drag-preview="${viewId}"]`);
         expect(dragPreview).toBeInTheDocument();

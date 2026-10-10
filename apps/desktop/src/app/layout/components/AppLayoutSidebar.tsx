@@ -72,7 +72,11 @@ function AppLayoutSidebar({
       ref={ref}
     >
       {placement?.destination === side ? (
-        <SidebarInsertionIndicator placement={placement} side={side} />
+        <SidebarInsertionIndicator
+          placement={placement}
+          side={side}
+          viewCount={views.filter((viewId) => viewId !== placement.viewId).length}
+        />
       ) : null}
       {views.length === 1 ? (
         <SidebarViewStandalone
@@ -112,14 +116,26 @@ function AppLayoutSidebar({
 function SidebarInsertionIndicator({
   placement,
   side,
+  viewCount,
 }: {
   placement: SidebarDropPlacement;
   side: SidebarId;
+  viewCount: number;
 }) {
+  const verticalAlignment =
+    placement.insertionIndex === 0
+      ? "translate-y-0"
+      : placement.insertionIndex === viewCount
+        ? "-translate-y-full"
+        : "-translate-y-1/2";
+
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-3 z-40 h-1 -translate-y-1/2 rounded bg-primary transition-[top] duration-150 motion-reduce:transition-none"
+      className={cn(
+        "pointer-events-none absolute inset-x-3 z-40 h-1 rounded bg-primary transition-[top] duration-150 motion-reduce:transition-none",
+        verticalAlignment,
+      )}
       data-sidebar-drop-indicator={side}
       data-sidebar-drop-indicator-index={placement.insertionIndex}
       style={{ top: placement.indicatorOffset }}
