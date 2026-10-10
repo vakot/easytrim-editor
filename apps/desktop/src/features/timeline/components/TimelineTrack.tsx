@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useMemo } from "react";
+import { createContext, useContext, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
@@ -8,7 +8,7 @@ import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-in
 import { selectSceneMarkersEnabled } from "@/app/store/slices/editor-tools-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { clampPlaybackMicros } from "@/domain/playback";
-import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
+import { minimumSelectionMicros, timelinePercent, type TrimRange } from "@/domain/trim";
 import { audioTrackColor } from "@/features/audio";
 import { useTimeline, useTimelineReadiness } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
@@ -19,24 +19,37 @@ import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
 import { createTimelineSnapTargets } from "../lib/timeline-snap";
 
 import { Playhead, SegmentDragHandle, TrimHandle } from "./TimelineHandles";
-import styles from "./TimelinePanel.module.css";
 
 const TIMELINE_MARKER_STYLES = {
   scene: "bg-destructive",
 } as const;
 
 function TimelineTrack() {
+  return (
+    <Timeline>
+      <TimelineSegment />
+
+      <TimelineSceneMarkers />
+
+      <TimelineAudioActivityMarkers />
+
+      <TimelinePlayhead />
+      <TimelineTrimHandle boundary="start" />
+      <TimelineDragHandle />
+      <TimelineTrimHandle boundary="end" />
+    </Timeline>
+  );
+}
+
+function Timeline({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
+
   const media = useAppSelector(selectSourceMedia);
   const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const audioTracks = useAppSelector(selectAudioTracks);
   const readiness = useTimelineReadiness();
   const timeline = useTimeline();
-  const timelineMarkers = useMemo(
-    () => createTimelineMarkers(sceneBoundariesMicros, audioTracks, audioTrackColor),
-    [audioTracks, sceneBoundariesMicros],
-  );
 
   const visibleAudioActivityRanges = audioTracks.flatMap((track) =>
     track.activityVisible && track.activityAnalysis.status === "ready"
@@ -56,9 +69,7 @@ function TimelineTrack() {
   const range = timeline.trim ?? EMPTY_TIMELINE_RANGE;
   const disabled = !readiness.canInteract;
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
-  const playheadValue = clampPlaybackMicros(timeline.playheadMicros, range.sourceDurationMicros);
-  const playheadPercent = timelinePercent(playheadValue, range.sourceDurationMicros);
-  const minimumDurationMicros = minimumSelectionMicros(range.sourceDurationMicros);
+
   const {
     finishScrub,
     finishSegmentDrag,
@@ -95,109 +106,193 @@ function TimelineTrack() {
   });
 
   return (
-    <div
-      aria-label={t("timeline.playhead.accessibility.track")}
-      className={cn(
-        styles.track,
-        disabled && "cursor-not-allowed",
-        disabled && styles.trackDisabled,
-      )}
-      onLostPointerCapture={(event) => finishScrub(event, false)}
-      onPointerCancel={(event) => finishScrub(event, false)}
-      onPointerDown={(event) => {
-        if (!disabled && event.target === event.currentTarget) {
-          startScrub(event, event.currentTarget);
-        }
+    <TimelineTrackContext.Provider
+      value={{
+        finishScrub,
+        finishSegmentDrag,
+        finishTrimDrag,
+        handlePlayheadKeyboard,
+        handleSegmentKeyboard,
+        handleTrimKeyboard,
+        handleTrimPointer,
+        moveScrub,
+        moveSegmentDrag,
+        resetBoundary,
+        scrubDragging,
+        segmentDragging,
+        segmentSnapActive,
+        startScrub,
+        startSegmentDrag,
+        trackRef,
+        trimDragState,
+        range,
+        disabled,
+        playheadMicros: timeline.playheadMicros,
+        playheadRef: timeline.playheadRef,
       }}
-      onPointerMove={moveScrub}
-      onPointerUp={(event) => finishScrub(event, true)}
-      ref={trackRef}
     >
       <div
-        className={cn(styles.selection, disabled && styles.selectionDisabled)}
-        style={{
-          left: "var(--timeline-trim-start)",
-          right: "var(--timeline-trim-end-inset)",
-        }}
-      />
-      <SceneMarkers sourceDurationMicros={range.sourceDurationMicros} />
-      <AudioActivityMarkers
-        markers={timelineMarkers}
-        sourceDurationMicros={range.sourceDurationMicros}
-      />
-      <SegmentDragHandle
-        disabled={disabled}
-        dragging={segmentDragging}
-        onKeyDown={handleSegmentKeyboard}
-        onLostPointerCapture={(event) => finishSegmentDrag(event, false)}
-        onPointerCancel={(event) => finishSegmentDrag(event, false)}
-        onPointerDown={startSegmentDrag}
-        onPointerMove={moveSegmentDrag}
-        onPointerUp={(event) => finishSegmentDrag(event, true)}
-        range={range}
-        snapActive={segmentSnapActive}
-      />
-      <Playhead
-        disabled={disabled}
-        dragging={scrubDragging}
-        maximum={range.sourceDurationMicros}
-        onKeyDown={handlePlayheadKeyboard}
+        aria-label={t("timeline.playhead.accessibility.track")}
+        className={cn(
+          "segment-markers relative h-13 cursor-pointer rounded-md border bg-muted/30 text-muted",
+          disabled && "pointer-events-none",
+        )}
         onLostPointerCapture={(event) => finishScrub(event, false)}
         onPointerCancel={(event) => finishScrub(event, false)}
-        onPointerDown={(event) => startScrub(event, event.currentTarget)}
+        onPointerDown={(event) => {
+          if (event.target === event.currentTarget) {
+            startScrub(event, event.currentTarget);
+          }
+        }}
         onPointerMove={moveScrub}
         onPointerUp={(event) => finishScrub(event, true)}
-        percent={playheadPercent}
-        playheadRef={timeline.playheadRef}
-        value={playheadValue}
-      />
-      <TrimHandle
-        boundary="start"
-        disabled={disabled}
-        dragging={trimDragState?.boundary === "start"}
-        maximum={range.endMicros - minimumDurationMicros}
-        minimum={0}
-        onDoubleClick={() => resetBoundary("start")}
-        onKeyDown={(event) => handleTrimKeyboard("start", event)}
-        onPointerDown={(event) => handleTrimPointer("start", event, true)}
-        onPointerEnd={() => finishTrimDrag("start")}
-        onPointerMove={(event) => handleTrimPointer("start", event, false)}
-        snapActive={trimDragState?.boundary === "start" && trimDragState.snapActive}
-        value={range.startMicros}
-      />
-      <TrimHandle
-        boundary="end"
-        disabled={disabled}
-        dragging={trimDragState?.boundary === "end"}
-        maximum={range.sourceDurationMicros}
-        minimum={range.startMicros + minimumDurationMicros}
-        onDoubleClick={() => resetBoundary("end")}
-        onKeyDown={(event) => handleTrimKeyboard("end", event)}
-        onPointerDown={(event) => handleTrimPointer("end", event, true)}
-        onPointerEnd={() => finishTrimDrag("end")}
-        onPointerMove={(event) => handleTrimPointer("end", event, false)}
-        snapActive={trimDragState?.boundary === "end" && trimDragState.snapActive}
-        value={range.endMicros}
-      />
-    </div>
+        ref={trackRef}
+      >
+        {children}
+      </div>
+    </TimelineTrackContext.Provider>
   );
 }
 
-function AudioActivityMarkers({
-  markers,
-  sourceDurationMicros,
-}: {
-  markers: ReturnType<typeof createTimelineMarkers>;
-  sourceDurationMicros: number;
-}) {
+function TimelineTrimHandle({
+  boundary,
+}: Pick<React.ComponentProps<typeof TrimHandle>, "boundary">) {
+  const {
+    disabled,
+    finishTrimDrag,
+    handleTrimKeyboard,
+    handleTrimPointer,
+    range,
+    resetBoundary,
+    trimDragState,
+  } = useTimelineTrack();
+
+  const isStart = boundary === "start";
+  const minimumDurationMicros = minimumSelectionMicros(range.sourceDurationMicros);
+  const value = isStart ? range.startMicros : range.endMicros;
+  const min = isStart ? range.startMicros + minimumDurationMicros : 0;
+  const max = isStart ? range.endMicros - minimumDurationMicros : range.sourceDurationMicros;
+
+  return (
+    <TrimHandle
+      boundary={boundary}
+      disabled={disabled}
+      dragging={trimDragState?.boundary === "end"}
+      max={max}
+      min={min}
+      onDoubleClick={() => resetBoundary(boundary)}
+      onKeyDown={(event) => handleTrimKeyboard(boundary, event)}
+      onLostPointerCapture={() => finishTrimDrag(boundary)}
+      onPointerCancel={() => finishTrimDrag(boundary)}
+      onPointerDown={(event) => handleTrimPointer(boundary, event, true)}
+      onPointerMove={(event) => handleTrimPointer(boundary, event, false)}
+      onPointerUp={() => finishTrimDrag(boundary)}
+      snapActive={trimDragState?.boundary === boundary && trimDragState.snapActive}
+      value={value}
+    />
+  );
+}
+
+function TimelineDragHandle() {
+  const {
+    disabled,
+    finishSegmentDrag,
+    handleSegmentKeyboard,
+    moveSegmentDrag,
+    range,
+    segmentDragging,
+    segmentSnapActive,
+    startSegmentDrag,
+  } = useTimelineTrack();
+
+  const durationMicros = range.endMicros - range.startMicros;
+
+  return (
+    <SegmentDragHandle
+      disabled={disabled}
+      dragging={segmentDragging}
+      max={range.sourceDurationMicros - durationMicros}
+      min={0}
+      onKeyDown={handleSegmentKeyboard}
+      onLostPointerCapture={(event) => finishSegmentDrag(event, false)}
+      onPointerCancel={(event) => finishSegmentDrag(event, false)}
+      onPointerDown={startSegmentDrag}
+      onPointerMove={moveSegmentDrag}
+      onPointerUp={(event) => finishSegmentDrag(event, true)}
+      snapActive={segmentSnapActive}
+      value={range.startMicros}
+    />
+  );
+}
+
+function TimelinePlayhead() {
+  const {
+    disabled,
+    finishScrub,
+    handlePlayheadKeyboard,
+    moveScrub,
+    playheadMicros,
+    playheadRef,
+    range,
+    scrubDragging,
+    startScrub,
+  } = useTimelineTrack();
+
+  const playheadValue = clampPlaybackMicros(playheadMicros, range.sourceDurationMicros);
+
+  return (
+    <Playhead
+      disabled={disabled}
+      dragging={scrubDragging}
+      max={range.sourceDurationMicros}
+      min={0}
+      onKeyDown={handlePlayheadKeyboard}
+      onLostPointerCapture={(event) => finishScrub(event, false)}
+      onPointerCancel={(event) => finishScrub(event, false)}
+      onPointerDown={(event) => startScrub(event, event.currentTarget)}
+      onPointerMove={moveScrub}
+      onPointerUp={(event) => finishScrub(event, true)}
+      ref={playheadRef}
+      value={playheadValue}
+    />
+  );
+}
+
+function TimelineSegment() {
+  const { disabled } = useTimelineTrack();
+
+  return (
+    <div
+      className={cn(
+        "pointer-events-none absolute inset-x-0 -inset-y-px mx-2 box-border border-y-2 border-primary bg-primary/10",
+        disabled && "opacity-50",
+      )}
+      style={{
+        left: "var(--timeline-trim-start)",
+        right: "var(--timeline-trim-end-inset)",
+      }}
+    />
+  );
+}
+
+function TimelineAudioActivityMarkers() {
+  const { range } = useTimelineTrack();
+
+  const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
+  const audioTracks = useAppSelector(selectAudioTracks);
+  const timelineMarkers = useMemo(
+    () => createTimelineMarkers(sceneBoundariesMicros, audioTracks, audioTrackColor),
+    [audioTracks, sceneBoundariesMicros],
+  );
+
   const shouldReduceMotion = useReducedMotion() === true;
 
   return (
     <AnimatePresence>
-      {markers
+      {timelineMarkers
         .filter((marker) => marker.kind === "audioActivity")
         .map((marker) => {
-          const markerPercent = timelinePercent(marker.timeMicros, sourceDurationMicros);
+          const markerPercent = timelinePercent(marker.timeMicros, range.sourceDurationMicros);
           return (
             <motion.div
               animate={{ opacity: 1 }}
@@ -215,7 +310,9 @@ function AudioActivityMarkers({
   );
 }
 
-function SceneMarkers({ sourceDurationMicros }: { sourceDurationMicros: number }) {
+function TimelineSceneMarkers() {
+  const { range } = useTimelineTrack();
+
   const enabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const shouldReduceMotion = useReducedMotion() === true;
@@ -234,13 +331,33 @@ function SceneMarkers({ sourceDurationMicros }: { sourceDurationMicros: number }
               exit={{ opacity: 0, height: 0 }}
               initial={shouldReduceMotion ? false : { opacity: 0 }}
               key={boundaryMicros}
-              style={{ left: `${timelinePercent(boundaryMicros, sourceDurationMicros)}%` }}
+              style={{ left: `${timelinePercent(boundaryMicros, range.sourceDurationMicros)}%` }}
               transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
             />
           ))
         : null}
     </AnimatePresence>
   );
+}
+
+const TimelineTrackContext = createContext<
+  | (ReturnType<typeof useTrimTimelineInteractions> & {
+      disabled: boolean;
+      playheadMicros: number;
+      playheadRef: React.RefObject<HTMLButtonElement | null>;
+      range: TrimRange;
+    })
+  | null
+>(null);
+
+function useTimelineTrack() {
+  const context = useContext(TimelineTrackContext);
+
+  if (!context) {
+    throw new Error("Timeline components must be used withing Timeline");
+  }
+
+  return context;
 }
 
 export { TimelineTrack };

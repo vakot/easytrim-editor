@@ -7,4 +7,35 @@
     minmax(0, 1fr);
 }
 
+@layer utilities {
+  .segment-markers {
+    --segments: 16;
+    --marker-width: 1px;
+    --marker-color: currentColor;
+
+    position: relative;
+    isolation: isolate;
+  }
+
+  .segment-markers::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent calc(100% / var(--segments) - var(--marker-width)),
+      var(--marker-color) calc(100% / var(--segments) - var(--marker-width)),
+      var(--marker-color) calc(100% / var(--segments))
+    );
+
+    mask-image: linear-gradient(
+      to right,
+      #000 0 calc(100% - var(--marker-width)),
+      transparent calc(100% - var(--marker-width))
+    );
+  }
 }
