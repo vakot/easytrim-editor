@@ -4,7 +4,7 @@ import {
   type DragMoveEvent,
   useDroppable,
 } from "@dnd-kit/react";
-import { useCallback, useLayoutEffect, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
@@ -20,6 +20,7 @@ import {
   resolveSidebarDropPlacement,
   type SidebarDropPlacement,
   type SidebarViewBounds,
+  type SidebarViewId,
 } from "@/app/layout/lib/sidebar-layout";
 import { createSidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -44,6 +45,7 @@ function AppLayout() {
   const [viewHosts] = useState(createSidebarViewHosts);
   const [isDraggingView, setIsDraggingView] = useState(false);
   const [dropPlacement, setDropPlacement] = useState<SidebarDropPlacement | null>(null);
+  const dragStartPanelBounds = useRef<Map<SidebarViewId, SidebarViewBounds>>(new Map());
 
   const isCompact = layoutDensity === "compact";
 
@@ -90,10 +92,8 @@ function AppLayout() {
       const destinationBounds: SidebarViewBounds[] = sidebarLayout[destination]
         .filter((item) => item !== viewId)
         .flatMap((item) => {
-          const element = document.querySelector<HTMLElement>(`[data-sidebar-view="${item}"]`);
-          if (!element) return [];
-          const bounds = element.getBoundingClientRect();
-          return [{ bottom: bounds.bottom, top: bounds.top, viewId: item }];
+          const bounds = dragStartPanelBounds.current.get(item);
+          return bounds ? [bounds] : [];
         });
 
       return resolveSidebarDropPlacement(
@@ -108,6 +108,22 @@ function AppLayout() {
     [sidebarLayout],
   );
 
+  const handleDragStart = useCallback(() => {
+    dragStartPanelBounds.current = new Map(
+      Array.from(document.querySelectorAll<HTMLElement>("[data-sidebar-view]")).flatMap(
+        (viewElement) => {
+          const viewId = viewElement.dataset.sidebarView;
+          const panel = viewElement.closest<HTMLElement>('[data-slot="resizable-panel"]');
+          if (!isSidebarViewId(viewId) || !panel) return [];
+
+          const bounds = panel.getBoundingClientRect();
+          return [[viewId, { bottom: bounds.bottom, top: bounds.top, viewId }]] as const;
+        },
+      ),
+    );
+    setIsDraggingView(true);
+  }, []);
+
   const handleDragMove = useCallback(
     (event: DragMoveEvent) => setDropPlacement(getDropPlacement(event)),
     [getDropPlacement],
@@ -118,6 +134,7 @@ function AppLayout() {
       const placement = event.canceled ? null : getDropPlacement(event);
       setDropPlacement(null);
       setIsDraggingView(false);
+      dragStartPanelBounds.current.clear();
       if (placement) {
         dispatch(
           sidebarLayoutChanged({
@@ -144,7 +161,7 @@ function AppLayout() {
     <DragDropProvider
       onDragEnd={handleDragEnd}
       onDragMove={handleDragMove}
-      onDragStart={() => setIsDraggingView(true)}
+      onDragStart={handleDragStart}
     >
       <main className="fixed inset-0 grid h-dvh w-screen grid-rows-[2.25rem_minmax(0,1fr)_auto] overflow-hidden bg-background">
         <AppLayoutHeader />

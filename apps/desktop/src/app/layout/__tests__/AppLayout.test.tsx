@@ -492,6 +492,7 @@ describe("AppLayout sidebar drag and drop", () => {
     const left = document.querySelector<HTMLElement>('[data-sidebar-region="left"]')!;
     const right = document.querySelector<HTMLElement>('[data-sidebar-region="right"]')!;
     const rightActivity = right.querySelector<HTMLElement>('[data-sidebar-view="activity"]')!;
+    const rightActivityPanel = rightActivity.closest<HTMLElement>("[data-panel]")!;
     setBounds(left, {
       x: 0,
       y: 0,
@@ -512,7 +513,7 @@ describe("AppLayout sidebar drag and drop", () => {
       width: 320,
       height: 700,
     } as DOMRect);
-    setBounds(rightActivity, {
+    setBounds(rightActivityPanel, {
       x: 960,
       y: 0,
       top: 0,

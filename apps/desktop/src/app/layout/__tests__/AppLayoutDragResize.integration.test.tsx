@@ -232,7 +232,12 @@ describe("AppLayout drag and resize integration", () => {
     const originalSourcePanel = sourcesPanel;
     const originalActivityPanel = activityPanel;
 
-    const dragView = async (viewId: "activity" | "sources", y: number) => {
+    const dragView = async (
+      viewId: "activity" | "sources",
+      y: number,
+      beforeSecondMove?: () => void,
+      expectedPreviewTop = 300,
+    ) => {
       fireEvent.click(
         screen.getByRole("button", {
           name: viewId === "sources" ? "Begin Sources drag" : "Begin Activity drag",
@@ -244,6 +249,7 @@ describe("AppLayout drag and resize integration", () => {
           name: y > 350 ? "Move drag below panels" : "Move drag above panels",
         }),
       );
+      beforeSecondMove?.();
       fireEvent.click(
         screen.getByRole("button", {
           name: y > 350 ? "Move drag below panels" : "Move drag above panels",
@@ -258,6 +264,9 @@ describe("AppLayout drag and resize integration", () => {
           sidebar,
           viewId === "sources" ? ["activity", "sources"] : ["sources", "activity"],
         );
+        const placeholder = document.querySelector('[data-sidebar-drop-placeholder="left"]');
+        expect(placeholder).toHaveAttribute("data-sidebar-drop-placeholder-index", "1");
+        expect(placeholder).toHaveStyle({ top: `${expectedPreviewTop}px` });
         expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
       });
 
@@ -268,7 +277,17 @@ describe("AppLayout drag and resize integration", () => {
       });
     };
 
-    await dragView("sources", 650);
+    await dragView(
+      "sources",
+      650,
+      () => {
+        // Simulate sortable displacement and a collapsed panel while the pointer remains at the
+        // same coordinate. Placement should use the panel geometry captured at drag start.
+        setBounds(activityPanel, 800, 836);
+        setBounds(activityFrame, 800, 900);
+      },
+      600,
+    );
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
     expectValidPanelLayout(sidebar, ["activity", "sources"]);
     expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
