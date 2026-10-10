@@ -369,7 +369,7 @@ function CropViewport() {
                     ))}
                     <Button
                       aria-label={t("preview.crop.resetToDefault")}
-                      className="border-destructive/30"
+                      className="border-destructive/40"
                       disabled={!cropApplied}
                       onClick={(event) => {
                         event.stopPropagation();
