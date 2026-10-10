@@ -127,11 +127,11 @@ function AppLayout() {
                 className="ml-1.5 overflow-hidden!"
                 collapsedSize={0}
                 collapsible
-                defaultSize="20.375rem"
+                defaultSize="20.5rem"
                 groupResizeBehavior="preserve-pixel-size"
                 id="workspace-left-sidebar"
                 maxSize="30rem"
-                minSize="20.375rem"
+                minSize="20.5rem"
               >
                 <AppLayoutPanel className="min-w-xs layout-compact:rounded-l-xl layout-compact:border-y layout-compact:border-l">
                   <AppLayoutSidebar hosts={viewHosts} side="left" views={sidebarLayout.left} />
@@ -174,11 +174,11 @@ function AppLayout() {
                 className="mr-1.5 overflow-hidden!"
                 collapsedSize={0}
                 collapsible
-                defaultSize="20.375rem"
+                defaultSize="20.5rem"
                 groupResizeBehavior="preserve-pixel-size"
                 id="workspace-right-sidebar"
                 maxSize="30rem"
-                minSize="20.375rem"
+                minSize="20.5rem"
               >
                 <AppLayoutPanel className="min-w-xs layout-compact:rounded-r-xl layout-compact:border-y layout-compact:border-r">
                   <AppLayoutSidebar hosts={viewHosts} side="right" views={sidebarLayout.right} />
