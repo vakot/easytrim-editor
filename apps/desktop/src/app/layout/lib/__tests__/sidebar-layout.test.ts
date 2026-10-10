@@ -5,6 +5,7 @@ import {
   moveSidebarView,
   normalizeSidebarLayout,
   resolveSidebarDropPlacement,
+  resolveSidebarDropPlacementAtIndex,
   resolveSidebarInsertionIndex,
   type SidebarLayout,
 } from "../sidebar-layout";
@@ -168,6 +169,18 @@ describe("sidebar layout", () => {
       left: [],
       right: ["sources", "activity"],
     });
+  });
+
+  it("resolves explicit keyboard slots and omits the current effective slot", () => {
+    const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
+    const remainingBounds = [{ bottom: 100, top: 0, viewId: "activity" as const }];
+
+    expect(
+      resolveSidebarDropPlacementAtIndex(layout, "sources", "left", 0, remainingBounds, 0),
+    ).toBeNull();
+    expect(
+      resolveSidebarDropPlacementAtIndex(layout, "sources", "left", 1, remainingBounds, 0),
+    ).toMatchObject({ destination: "left", indicatorOffset: 100, insertionIndex: 1 });
   });
 
   it("does not create duplicate view IDs after drag placements", () => {

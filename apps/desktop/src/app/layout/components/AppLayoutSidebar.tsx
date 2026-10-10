@@ -1,9 +1,4 @@
-import {
-  Feedback,
-  KeyboardSensor,
-  PointerActivationConstraints,
-  PointerSensor,
-} from "@dnd-kit/dom";
+import { Feedback, PointerActivationConstraints, PointerSensor } from "@dnd-kit/dom";
 import { useDraggable, useDroppable } from "@dnd-kit/react";
 import { ChevronRight, GripVertical } from "lucide-react";
 import { Fragment, useEffect, useRef } from "react";
@@ -52,17 +47,6 @@ const SIDEBAR_DRAG_SENSORS = [
     activationConstraints: [
       new PointerActivationConstraints.Distance({ value: SIDEBAR_DRAG_THRESHOLD }),
     ],
-  }),
-  KeyboardSensor.configure({
-    keyboardCodes: {
-      cancel: ["Escape"],
-      down: ["ArrowDown"],
-      end: ["KeyD", "Tab"],
-      left: ["ArrowLeft"],
-      right: ["ArrowRight"],
-      start: ["KeyD"],
-      up: ["ArrowUp"],
-    },
   }),
 ];
 
@@ -238,7 +222,7 @@ function SidebarViewFrame({
       <SidebarViewHeader
         collapsible={collapsible}
         handleRef={draggable.handleRef}
-        isDragging={draggable.isDragging}
+        isDragging={isDragging || draggable.isDragging}
         viewId={viewId}
       />
       <SidebarViewTarget host={host} />
@@ -322,6 +306,7 @@ function SidebarViewHeader({
         "w-full min-w-0 cursor-grab justify-start gap-2 rounded-md p-1 text-left text-secondary-foreground hover:bg-muted/70 active:cursor-grabbing",
         isDragging && "cursor-grabbing",
       )}
+      data-sidebar-view-handle={viewId}
       onClickCapture={handleClickCapture}
       onPointerCancel={() => {
         pointerStart.current = null;

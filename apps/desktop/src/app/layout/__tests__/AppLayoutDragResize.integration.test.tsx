@@ -418,7 +418,7 @@ describe("AppLayout drag and resize integration", () => {
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
 
     const activityHandle = screen.getByRole("button", {
-      name: "Collapse Activity Feed; drag or press D to start or finish moving it between sidebars",
+      name: "Collapse Activity Feed; drag or press D then use the arrow keys to move it; D to drop or Escape to cancel",
     });
 
     fireEvent.pointerDown(activityHandle, {

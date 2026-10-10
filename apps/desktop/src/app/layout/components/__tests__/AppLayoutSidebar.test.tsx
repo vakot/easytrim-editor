@@ -79,7 +79,7 @@ describe("AppLayoutSidebar", () => {
     const sidebar = screen.getByRole("complementary", { name: "Left sidebar" });
     expect(sidebar.querySelector('[data-sidebar-view="sources"]')).toBeInTheDocument();
     const header = screen.getByRole("button", {
-      name: "Drag Imported Sources or press D to start or finish moving it between sidebars",
+      name: "Drag Imported Sources, or press D then use the arrow keys to move it; D to drop or Escape to cancel",
     });
 
     expect(header).toBeInTheDocument();
@@ -94,12 +94,9 @@ describe("AppLayoutSidebar", () => {
       id: "sources",
       type: "sidebar-view",
     });
-    expect(draggable?.sensors).toHaveLength(2);
+    expect(draggable?.sensors).toHaveLength(1);
     expect(draggable?.sensors?.[0]).toMatchObject({
       options: { activationConstraints: [{ options: { value: 6 } }] },
-    });
-    expect(draggable?.sensors?.[1]).toMatchObject({
-      options: { keyboardCodes: { start: ["KeyD"] } },
     });
   });
 
@@ -122,7 +119,7 @@ describe("AppLayoutSidebar", () => {
     );
 
     const header = await screen.findByRole("button", {
-      name: "Collapse Imported Sources; drag or press D to start or finish moving it between sidebars",
+      name: "Collapse Imported Sources; drag or press D then use the arrow keys to move it; D to drop or Escape to cancel",
     });
 
     expect(dragMocks.handles.get("sources")).toBe(header);

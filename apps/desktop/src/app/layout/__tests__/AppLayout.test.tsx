@@ -424,6 +424,119 @@ describe("AppLayout sidebar drag and drop", () => {
     });
   });
 
+  it("reorders panels with keyboard slots and confirms with D", async () => {
+    const store = renderAppLayout();
+    const header = screen.getByRole("button", {
+      name: "Collapse Imported Sources; drag or press D then use the arrow keys to move it; D to drop or Escape to cancel",
+    });
+
+    header.focus();
+    fireEvent.keyDown(header, { key: "d" });
+    expect(document.querySelector('[data-sidebar-drag-preview="sources"]')).toBeInTheDocument();
+    expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent(
+      "Moving Imported Sources",
+    );
+
+    fireEvent.keyDown(header, { key: "ArrowDown" });
+    const indicator = document.querySelector('[data-sidebar-drop-indicator="left"]');
+    expect(indicator).toHaveAttribute("data-sidebar-drop-indicator-index", "1");
+    expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent(
+      "position 2 of 2 in Left sidebar",
+    );
+
+    fireEvent.keyDown(header, { key: "d" });
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
+      expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+    });
+  });
+
+  it("moves a panel to an empty sidebar with keyboard and confirms the destination", async () => {
+    const store = renderAppLayout();
+    const header = screen.getByRole("button", {
+      name: "Collapse Imported Sources; drag or press D then use the arrow keys to move it; D to drop or Escape to cancel",
+    });
+
+    header.focus();
+    fireEvent.keyDown(header, { key: "d" });
+    fireEvent.keyDown(header, { key: "ArrowRight" });
+
+    expect(
+      document.querySelector('[data-sidebar-empty-drop-indicator="right"]'),
+    ).toBeInTheDocument();
+    expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("in Right sidebar");
+
+    fireEvent.keyDown(header, { key: "d" });
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity"]);
+      expect(store.getState().preferences.sidebarLayout.right).toEqual(["sources"]);
+    });
+
+    const movedHeader = screen.getByRole("button", {
+      name: "Drag Imported Sources, or press D then use the arrow keys to move it; D to drop or Escape to cancel",
+    });
+
+    movedHeader.focus();
+    fireEvent.keyDown(movedHeader, { key: "d" });
+    fireEvent.keyDown(movedHeader, { key: "ArrowLeft" });
+    expect(document.querySelector('[data-sidebar-drop-indicator="left"]')).toHaveAttribute(
+      "data-sidebar-drop-indicator-index",
+      "0",
+    );
+    fireEvent.keyDown(movedHeader, { key: "d" });
+
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout.left).toEqual(["sources", "activity"]);
+      expect(store.getState().preferences.sidebarLayout.right).toEqual([]);
+    });
+  });
+
+  it("expands a collapsed populated destination and cancels keyboard movement with Escape", async () => {
+    const store = renderAppLayout();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Simulate moving Activity Feed to the right sidebar" }),
+    );
+
+    const right = document.querySelector<HTMLElement>('[data-sidebar-region="right"]')!;
+    const rightPanel = right.closest<HTMLElement>("[data-panel]")!;
+    fireEvent.click(screen.getByRole("button", { name: "Toggle right sidebar visibility" }));
+    await waitFor(() => expect(Number.parseFloat(rightPanel.style.flexGrow)).toBe(0));
+
+    const sourceHeader = screen.getByRole("button", {
+      name: "Drag Imported Sources, or press D then use the arrow keys to move it; D to drop or Escape to cancel",
+    });
+
+    sourceHeader.focus();
+    fireEvent.keyDown(sourceHeader, { key: "d" });
+    fireEvent.keyDown(sourceHeader, { key: "ArrowRight" });
+
+    await waitFor(() => expect(Number.parseFloat(rightPanel.style.flexGrow)).toBeGreaterThan(0));
+    expect(document.querySelector('[data-sidebar-drop-indicator="right"]')).toHaveAttribute(
+      "data-sidebar-drop-indicator-index",
+      "0",
+    );
+
+    fireEvent.keyDown(sourceHeader, { key: "Escape" });
+    await waitFor(() => expect(Number.parseFloat(rightPanel.style.flexGrow)).toBe(0));
+    expect(store.getState().preferences.sidebarLayout.right).toEqual(["activity"]);
+    expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+    expect(document.querySelector('[data-sidebar-drop-indicator="right"]')).toBeNull();
+    expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent(
+      "Canceled moving Imported Sources",
+    );
+
+    sourceHeader.focus();
+    fireEvent.keyDown(sourceHeader, { key: "d" });
+    fireEvent.keyDown(sourceHeader, { key: "ArrowRight" });
+    await waitFor(() => expect(Number.parseFloat(rightPanel.style.flexGrow)).toBeGreaterThan(0));
+    fireEvent.keyDown(sourceHeader, { key: "d" });
+
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout.right).toEqual(["sources", "activity"]);
+      expect(Number.parseFloat(rightPanel.style.flexGrow)).toBeGreaterThan(0);
+    });
+  });
+
   it("keeps each draggable view inside its registered panel and separators between panels", async () => {
     renderAppLayout();
 
@@ -545,7 +658,7 @@ describe("AppLayout sidebar drag and drop", () => {
     expect(store.getState().preferences.sidebarLayout.right).toEqual(["activity"]);
     expect(
       screen.getByRole("button", {
-        name: "Drag Activity Feed or press D to start or finish moving it between sidebars",
+        name: "Drag Activity Feed, or press D then use the arrow keys to move it; D to drop or Escape to cancel",
       }),
     ).toBeInTheDocument();
 

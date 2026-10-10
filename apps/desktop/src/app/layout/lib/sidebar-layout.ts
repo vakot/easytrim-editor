@@ -111,6 +111,35 @@ function resolveSidebarDropPlacement(
 
   const resolvedIndex = resolveSidebarInsertionIndex(pointerY, orderedBounds);
 
+  return resolveSidebarDropPlacementAtIndex(
+    layout,
+    viewId,
+    destination,
+    resolvedIndex,
+    orderedBounds,
+    regionTop,
+  );
+}
+
+function resolveSidebarDropPlacementAtIndex(
+  layout: SidebarLayout,
+  viewId: SidebarViewId,
+  destination: SidebarId,
+  insertionIndex: number,
+  destinationBounds: SidebarViewBounds[],
+  regionTop: number,
+): SidebarDropPlacement | null {
+  const destinationViews = layout[destination].filter((item) => item !== viewId);
+  const boundsByView = new Map(destinationBounds.map((bounds) => [bounds.viewId, bounds]));
+  const orderedBounds = destinationViews.flatMap((item) => {
+    const bounds = boundsByView.get(item);
+    return bounds ? [bounds] : [];
+  });
+
+  const resolvedIndex = Number.isFinite(insertionIndex)
+    ? Math.max(0, Math.min(orderedBounds.length, Math.trunc(insertionIndex)))
+    : orderedBounds.length;
+
   if (
     layout[destination].includes(viewId) &&
     layout[destination].indexOf(viewId) === resolvedIndex
@@ -151,6 +180,7 @@ export {
   moveSidebarView,
   normalizeSidebarLayout,
   resolveSidebarDropPlacement,
+  resolveSidebarDropPlacementAtIndex,
   resolveSidebarInsertionIndex,
   SIDEBAR_IDS,
   SIDEBAR_VIEW_IDS,
