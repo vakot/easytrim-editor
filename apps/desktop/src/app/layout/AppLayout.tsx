@@ -38,7 +38,8 @@ import {
 } from "@/app/store/slices/preferences-slice";
 import { cn } from "@/lib/class-names.utils";
 
-import { useSidebarPresence, useSidebarVisibility } from "./hooks/useSidebarVisibility";
+import { useSidebarPresence } from "./hooks/useSidebarPresence";
+import { useSidebarVisibility } from "./hooks/useSidebarVisibility";
 
 interface ActiveSidebarDragExpansion {
   collapsedAtStart: Set<SidebarId>;
