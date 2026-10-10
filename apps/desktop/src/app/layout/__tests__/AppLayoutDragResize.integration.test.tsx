@@ -275,6 +275,7 @@ describe("AppLayout drag and resize integration", () => {
         expect(dragPreview).toBeInTheDocument();
         expect(dragPreview?.parentElement).toBe(document.body);
         expect(dragPreview?.closest('[data-slot="resizable-panel-group"]')).toBeNull();
+        expect(dragPreview).toHaveClass("opacity-75");
         expect(dragPreview).toHaveTextContent(
           viewId === "sources" ? "Imported Sources" : "Activity Feed",
         );

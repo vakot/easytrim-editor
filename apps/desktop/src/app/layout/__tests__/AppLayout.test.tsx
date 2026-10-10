@@ -561,6 +561,7 @@ describe("AppLayout sidebar drag and drop", () => {
     const dragPreview = document.querySelector('[data-sidebar-drag-preview="sources"]');
     expect(dragPreview).toBeInTheDocument();
     expect(dragPreview?.parentElement).toBe(document.body);
+    expect(dragPreview).toHaveClass("opacity-75");
     expect(dragPreview).toHaveStyle({ left: "1100px", top: "350px" });
 
     fireEvent.click(screen.getByRole("button", { name: "Drop Sources into the right sidebar" }));

@@ -334,7 +334,7 @@ function SidebarDragPreview({
   return createPortal(
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed z-100 inline-flex max-w-64 items-center gap-2 rounded-lg border border-border bg-card/95 px-3 py-2 text-sm font-medium text-secondary-foreground opacity-95 shadow-xl backdrop-blur-sm"
+      className="pointer-events-none fixed z-100 inline-flex max-w-64 items-center gap-2 rounded-lg border border-border bg-card/95 px-3 py-2 text-sm font-medium text-secondary-foreground opacity-75 shadow-xl backdrop-blur-sm"
       data-sidebar-drag-preview={viewId}
       style={{ left: position.x, top: position.y, transform: "translate(12px, 12px)" }}
     >
