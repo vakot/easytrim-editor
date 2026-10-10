@@ -24,6 +24,7 @@ import {
   isSidebarViewId,
   resolveSidebarDropPlacement,
   type SidebarDropPlacement,
+  type SidebarId,
   type SidebarViewBounds,
   type SidebarViewId,
 } from "@/app/layout/lib/sidebar-layout";
@@ -56,6 +57,7 @@ function AppLayout() {
   } | null>(null);
 
   const dragStartPanelBounds = useRef<Map<SidebarViewId, SidebarViewBounds>>(new Map());
+  const dragStartRegionTops = useRef<Map<SidebarId, number>>(new Map());
 
   const isCompact = layoutDensity === "compact";
 
@@ -106,12 +108,18 @@ function AppLayout() {
           return bounds ? [bounds] : [];
         });
 
+      const regionTop = emptyTarget
+        ? emptyTarget.getBoundingClientRect().top
+        : (dragStartRegionTops.current.get(destination) ??
+          regionElement.getBoundingClientRect().top);
+
       return resolveSidebarDropPlacement(
         sidebarLayout,
         viewId,
         destination,
         position.y,
         destinationBounds,
+        regionTop,
       );
     },
     [sidebarLayout],
@@ -127,6 +135,15 @@ function AppLayout() {
 
           const bounds = panel.getBoundingClientRect();
           return [[viewId, { bottom: bounds.bottom, top: bounds.top, viewId }]] as const;
+        },
+      ),
+    );
+    dragStartRegionTops.current = new Map(
+      Array.from(document.querySelectorAll<HTMLElement>("[data-sidebar-region]")).flatMap(
+        (region) => {
+          const side = region.dataset.sidebarRegion;
+          if (!isSidebarId(side)) return [];
+          return [[side, region.getBoundingClientRect().top]] as const;
         },
       ),
     );
@@ -149,6 +166,7 @@ function AppLayout() {
       setDragPreview(null);
       setIsDraggingView(false);
       dragStartPanelBounds.current.clear();
+      dragStartRegionTops.current.clear();
       if (placement) {
         dispatch(
           sidebarLayoutChanged({
@@ -225,13 +243,6 @@ function AppLayout() {
             >
               <div className="relative size-full min-h-0 min-w-0">
                 <AppLayoutMain />
-
-                {!hasLeftSidebar ? (
-                  <SidebarEmptyDropTarget isDragging={isDraggingView} side="left" />
-                ) : null}
-                {!hasRightSidebar ? (
-                  <SidebarEmptyDropTarget isDragging={isDraggingView} side="right" />
-                ) : null}
               </div>
             </ResizablePanel>
 
@@ -261,6 +272,21 @@ function AppLayout() {
               </ResizablePanel>
             ) : null}
           </ResizablePanelGroup>
+
+          {!hasLeftSidebar ? (
+            <SidebarEmptyDropTarget
+              isActive={dropPlacement?.destination === "left"}
+              isDragging={isDraggingView}
+              side="left"
+            />
+          ) : null}
+          {!hasRightSidebar ? (
+            <SidebarEmptyDropTarget
+              isActive={dropPlacement?.destination === "right"}
+              isDragging={isDraggingView}
+              side="right"
+            />
+          ) : null}
         </div>
 
         <SidebarViewPortals hosts={viewHosts} />

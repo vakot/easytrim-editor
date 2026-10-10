@@ -58,11 +58,21 @@ describe("sidebar layout", () => {
 
   it("moves the first panel below the second using the resolved slot", () => {
     const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
-    const placement = resolveSidebarDropPlacement(layout, "sources", "left", 80, [
-      { bottom: 100, top: 0, viewId: "activity" },
-    ]);
+    const placement = resolveSidebarDropPlacement(
+      layout,
+      "sources",
+      "left",
+      80,
+      [{ bottom: 100, top: 0, viewId: "activity" }],
+      0,
+    );
 
-    expect(placement).toMatchObject({ destination: "left", insertionIndex: 1, viewId: "sources" });
+    expect(placement).toMatchObject({
+      destination: "left",
+      indicatorOffset: 100,
+      insertionIndex: 1,
+      viewId: "sources",
+    });
     expect(
       moveSidebarView(layout, "sources", placement!.destination, placement!.insertionIndex),
     ).toEqual({
@@ -73,11 +83,21 @@ describe("sidebar layout", () => {
 
   it("moves the second panel above the first using the resolved slot", () => {
     const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
-    const placement = resolveSidebarDropPlacement(layout, "activity", "left", 20, [
-      { bottom: 100, top: 0, viewId: "sources" },
-    ]);
+    const placement = resolveSidebarDropPlacement(
+      layout,
+      "activity",
+      "left",
+      20,
+      [{ bottom: 100, top: 0, viewId: "sources" }],
+      0,
+    );
 
-    expect(placement).toMatchObject({ destination: "left", insertionIndex: 0, viewId: "activity" });
+    expect(placement).toMatchObject({
+      destination: "left",
+      indicatorOffset: 0,
+      insertionIndex: 0,
+      viewId: "activity",
+    });
     expect(
       moveSidebarView(layout, "activity", placement!.destination, placement!.insertionIndex),
     ).toEqual({
@@ -90,9 +110,14 @@ describe("sidebar layout", () => {
     const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
 
     expect(
-      resolveSidebarDropPlacement(layout, "activity", "left", 120, [
-        { bottom: 100, top: 0, viewId: "sources" },
-      ]),
+      resolveSidebarDropPlacement(
+        layout,
+        "activity",
+        "left",
+        120,
+        [{ bottom: 100, top: 0, viewId: "sources" }],
+        0,
+      ),
     ).toBeNull();
     expect(moveSidebarView(layout, "activity", "left", 1)).toBe(layout);
   });
@@ -101,9 +126,14 @@ describe("sidebar layout", () => {
     const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
 
     expect(
-      resolveSidebarDropPlacement(layout, "sources", "left", -10, [
-        { bottom: 100, top: 0, viewId: "activity" },
-      ]),
+      resolveSidebarDropPlacement(
+        layout,
+        "sources",
+        "left",
+        -10,
+        [{ bottom: 100, top: 0, viewId: "activity" }],
+        0,
+      ),
     ).toBeNull();
     expect(moveSidebarView(layout, "sources", "left", 0)).toBe(layout);
   });
@@ -122,9 +152,14 @@ describe("sidebar layout", () => {
 
   it("places a moved view at the expected index in the other populated sidebar", () => {
     const layout: SidebarLayout = { left: ["sources"], right: ["activity"] };
-    const placement = resolveSidebarDropPlacement(layout, "sources", "right", 20, [
-      { bottom: 100, top: 0, viewId: "activity" },
-    ]);
+    const placement = resolveSidebarDropPlacement(
+      layout,
+      "sources",
+      "right",
+      20,
+      [{ bottom: 100, top: 0, viewId: "activity" }],
+      0,
+    );
 
     expect(placement).toMatchObject({ destination: "right", insertionIndex: 0, viewId: "sources" });
     expect(

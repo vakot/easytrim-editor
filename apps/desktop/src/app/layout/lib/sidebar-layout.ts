@@ -11,6 +11,7 @@ interface SidebarLayout {
 
 interface SidebarDropPlacement {
   destination: SidebarId;
+  indicatorOffset: number;
   insertionIndex: number;
   viewId: SidebarViewId;
 }
@@ -99,16 +100,16 @@ function resolveSidebarDropPlacement(
   destination: SidebarId,
   pointerY: number,
   destinationBounds: SidebarViewBounds[],
+  regionTop: number,
 ): SidebarDropPlacement | null {
   const destinationViews = layout[destination].filter((item) => item !== viewId);
   const boundsByView = new Map(destinationBounds.map((bounds) => [bounds.viewId, bounds]));
-  const resolvedIndex = resolveSidebarInsertionIndex(
-    pointerY,
-    destinationViews.flatMap((item) => {
-      const bounds = boundsByView.get(item);
-      return bounds ? [bounds] : [];
-    }),
-  );
+  const orderedBounds = destinationViews.flatMap((item) => {
+    const bounds = boundsByView.get(item);
+    return bounds ? [bounds] : [];
+  });
+
+  const resolvedIndex = resolveSidebarInsertionIndex(pointerY, orderedBounds);
 
   if (
     layout[destination].includes(viewId) &&
@@ -117,7 +118,19 @@ function resolveSidebarDropPlacement(
     return null;
   }
 
-  return { destination, insertionIndex: resolvedIndex, viewId };
+  const previousBounds = orderedBounds[resolvedIndex - 1];
+  const nextBounds = orderedBounds[resolvedIndex];
+  const boundary =
+    previousBounds && nextBounds
+      ? (previousBounds.bottom + nextBounds.top) / 2
+      : (nextBounds?.top ?? previousBounds?.bottom ?? regionTop);
+
+  return {
+    destination,
+    indicatorOffset: boundary - regionTop,
+    insertionIndex: resolvedIndex,
+    viewId,
+  };
 }
 
 function resolveSidebarInsertionIndex(

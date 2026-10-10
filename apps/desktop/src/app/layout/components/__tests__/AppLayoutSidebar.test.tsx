@@ -44,14 +44,28 @@ describe("AppLayoutSidebar", () => {
     });
   });
 
-  it("registers an empty sidebar drop target while a view is dragged", () => {
-    render(
+  it("keeps the empty sidebar detection area invisible and shows a boundary line only when active", () => {
+    const { unmount } = render(
       <DragDropProvider>
-        <SidebarEmptyDropTarget isDragging side="right" />
+        <SidebarEmptyDropTarget isActive={false} isDragging side="right" />
       </DragDropProvider>,
     );
 
-    expect(screen.getByRole("region", { name: "Right sidebar" })).toBeVisible();
+    const target = document.querySelector<HTMLElement>('[data-sidebar-empty-drop-target="right"]');
+    expect(target).toHaveClass("pointer-events-none", "w-[50vw]", "right-0");
+    expect(target).not.toHaveClass("border-2", "bg-background/10", "shadow-xl");
+    expect(target?.querySelector("[data-sidebar-empty-drop-indicator]")).toBeNull();
+
+    unmount();
+    render(
+      <DragDropProvider>
+        <SidebarEmptyDropTarget isActive isDragging side="right" />
+      </DragDropProvider>,
+    );
+
+    const indicator = document.querySelector('[data-sidebar-empty-drop-indicator="right"]');
+    expect(indicator).toHaveClass("absolute", "inset-y-0", "w-1", "bg-primary");
+    expect(indicator?.parentElement).toHaveClass("pointer-events-none");
   });
 });
 

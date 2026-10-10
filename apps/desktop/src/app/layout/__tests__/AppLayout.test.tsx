@@ -393,7 +393,7 @@ describe("AppLayout sidebar drag and drop", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Preview Sources below Activity" }));
 
-    expectPanelStructure(sidebar, ["activity", "sources"]);
+    expectPanelStructure(sidebar, ["sources", "activity"]);
     expect(registration).toHaveAttribute("data-sources-panel-registered", "true");
     expect(registration).toHaveAttribute("data-activity-panel-registered", "true");
 
@@ -553,11 +553,11 @@ describe("AppLayout sidebar drag and drop", () => {
       screen.getByRole("button", { name: "Preview moving Sources to the right sidebar" }),
     );
 
-    const placeholder = document.querySelector('[data-sidebar-drop-placeholder="right"]');
-    expect(placeholder).toHaveAttribute("data-sidebar-drop-placeholder-index", "1");
-    expect(placeholder).toHaveClass("rounded-lg", "border-2", "border-dashed", "bg-primary/5");
-    expect(placeholder?.closest("[data-panel]")?.id).toBe("workspace-right-sidebar");
-    expect(placeholder?.closest('[data-slot="resizable-panel-group"]')?.id).toBe("workspace");
+    const indicator = document.querySelector('[data-sidebar-drop-indicator="right"]');
+    expect(indicator).toHaveAttribute("data-sidebar-drop-indicator-index", "1");
+    expect(indicator).toHaveClass("absolute", "h-1", "bg-primary", "pointer-events-none");
+    expect(indicator).toHaveStyle({ top: "700px" });
+    expect(indicator?.closest('[data-slot="resizable-panel-group"]')?.id).toBe("workspace");
     const dragPreview = document.querySelector('[data-sidebar-drag-preview="sources"]');
     expect(dragPreview).toBeInTheDocument();
     expect(dragPreview?.parentElement).toBe(document.body);
@@ -568,7 +568,7 @@ describe("AppLayout sidebar drag and drop", () => {
     await waitFor(() => {
       expect(store.getState().preferences.sidebarLayout.right).toEqual(["activity", "sources"]);
     });
-    expect(document.querySelector('[data-sidebar-drop-placeholder="right"]')).toBeNull();
+    expect(document.querySelector('[data-sidebar-drop-indicator="right"]')).toBeNull();
     expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
   });
 });

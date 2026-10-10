@@ -238,8 +238,8 @@ describe("AppLayout drag and resize integration", () => {
     const dragView = async (
       viewId: "activity" | "sources",
       y: number,
-      expectedViews: Array<"activity" | "sources">,
       expectedIndex: number,
+      expectedIndicatorTop: number,
       beforeSecondMove?: () => void,
     ) => {
       fireEvent.click(
@@ -261,27 +261,16 @@ describe("AppLayout drag and resize integration", () => {
       );
 
       await waitFor(() => {
-        expect(
-          document.querySelector('[data-sidebar-drop-placeholder="left"]'),
-        ).toBeInTheDocument();
-        expectValidPanelLayout(sidebar, expectedViews);
-        const placeholder = document.querySelector('[data-sidebar-drop-placeholder="left"]');
-        expect(placeholder).toHaveAttribute(
-          "data-sidebar-drop-placeholder-index",
+        expect(document.querySelector('[data-sidebar-drop-indicator="left"]')).toBeInTheDocument();
+        expectValidPanelLayout(sidebar, store.getState().preferences.sidebarLayout.left);
+        const indicator = document.querySelector('[data-sidebar-drop-indicator="left"]');
+        expect(indicator).toHaveAttribute(
+          "data-sidebar-drop-indicator-index",
           String(expectedIndex),
         );
-        expect(placeholder).toHaveClass(
-          "absolute",
-          "inset-0",
-          "rounded-lg",
-          "border-2",
-          "border-dashed",
-          "bg-primary/5",
-        );
-        expect(placeholder?.closest(`[data-sidebar-view="${viewId}"]`)).toBeInTheDocument();
-        expect(placeholder?.closest("[data-panel]")?.id).toBe(
-          viewId === "sources" ? "editor-source-imported-sources" : "editor-source-activity-feed",
-        );
+        expect(indicator).toHaveClass("absolute", "h-1", "bg-primary", "pointer-events-none");
+        expect(indicator).toHaveStyle({ top: `${expectedIndicatorTop}px` });
+        expect(indicator?.parentElement).toBe(sidebar);
         const dragPreview = document.querySelector(`[data-sidebar-drag-preview="${viewId}"]`);
         expect(dragPreview).toBeInTheDocument();
         expect(dragPreview?.parentElement).toBe(document.body);
@@ -301,16 +290,16 @@ describe("AppLayout drag and resize integration", () => {
       fireEvent.click(screen.getByRole("button", { name: "Finish drag" }));
 
       await waitFor(() => {
-        expect(document.querySelector('[data-sidebar-drop-placeholder="left"]')).toBeNull();
+        expect(document.querySelector('[data-sidebar-drop-indicator="left"]')).toBeNull();
         expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
       });
     };
 
     setBounds(activityPanel, 300, 336);
     setBounds(activityFrame, 300, 336);
-    await dragView("sources", 650, ["activity", "sources"], 1, () => {
-      // Simulate sortable displacement and a collapsed panel while the pointer remains at the
-      // same coordinate. Placement should use the panel geometry captured at drag start.
+    await dragView("sources", 650, 1, 336, () => {
+      // Simulate a collapsed panel while the pointer remains at the same coordinate. Placement
+      // should use the panel geometry captured at drag start.
       setBounds(activityPanel, 800, 836);
       setBounds(activityFrame, 800, 900);
     });
@@ -324,7 +313,7 @@ describe("AppLayout drag and resize integration", () => {
     setBounds(activityFrame, 0, 36);
     setBounds(sourcesPanel, 36, 700);
     setBounds(sourcesFrame, 36, 700);
-    await dragView("activity", 650, ["sources", "activity"], 1);
+    await dragView("activity", 650, 1, 700);
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["sources", "activity"]);
     expectValidPanelLayout(sidebar, ["sources", "activity"]);
     expect(sourcesPanel.style.flexGrow).toBe(panelSizes.get(sourcesPanel.id));
@@ -339,7 +328,7 @@ describe("AppLayout drag and resize integration", () => {
     setBounds(sourcesFrame, 0, 300);
     setBounds(activityPanel, 300, 700);
     setBounds(activityFrame, 300, 700);
-    await dragView("activity", 50, ["activity", "sources"], 0);
+    await dragView("activity", 50, 0, 0);
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
 
     fireEvent.click(screen.getByRole("button", { name: "Begin Activity drag" }));
@@ -348,11 +337,11 @@ describe("AppLayout drag and resize integration", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Move drag below panels" }));
     fireEvent.click(screen.getByRole("button", { name: "Move drag below panels" }));
-    expect(document.querySelector('[data-sidebar-drop-placeholder="left"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-sidebar-drop-indicator="left"]')).toBeInTheDocument();
     expect(document.querySelector('[data-sidebar-drag-preview="activity"]')).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Cancel drag" }));
     await waitFor(() => {
-      expect(document.querySelector('[data-sidebar-drop-placeholder="left"]')).toBeNull();
+      expect(document.querySelector('[data-sidebar-drop-indicator="left"]')).toBeNull();
       expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
     });
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
