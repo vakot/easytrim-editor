@@ -75,7 +75,7 @@ function SourceListContent({ className }: SourceListContentProps) {
   } = useSourceListScrollController(sources);
 
   return (
-    <ScrollArea className={cn("min-h-0 flex-1", className)} viewportRef={setScrollParent}>
+    <ScrollArea className={cn("min-h-0 flex-1 pb-3", className)} viewportRef={setScrollParent}>
       {search.trim() && sources.length === 0 ? (
         <div className="text-center text-sm text-muted-foreground" role="status">
           {t("source.search.noResults")}
