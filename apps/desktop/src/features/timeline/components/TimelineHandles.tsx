@@ -1,109 +1,78 @@
-import type { KeyboardEvent, PointerEvent, RefObject } from "react";
+import { GripHorizontal, GripVertical } from "lucide-react";
+import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { TrimBoundary, TrimRange } from "@/domain/trim";
-import { cn } from "@/lib/class-names.utils";
+import { Button } from "@/components/ui/button";
 
-import styles from "./TimelinePanel.module.css";
+import { timelinePercent, type TrimBoundary } from "@/domain/trim";
+import { cn } from "@/lib/class-names.utils";
 
 function formatAccessibleTime(micros: number): string {
   return (micros / 1_000_000).toFixed(3);
 }
 
-interface SegmentDragHandleProps {
-  disabled?: boolean;
-  dragging: boolean;
-  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
-  onLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerCancel: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerUp: (event: PointerEvent<HTMLButtonElement>) => void;
-  range: TrimRange;
-  snapActive: boolean;
-}
-
 function SegmentDragHandle({
-  disabled = false,
+  className,
   dragging,
-  onKeyDown,
-  onLostPointerCapture,
-  onPointerCancel,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
-  range,
+  max,
+  min,
   snapActive,
-}: SegmentDragHandleProps) {
+  value,
+  ...props
+}: Omit<ComponentProps<typeof Button>, "children"> & {
+  dragging: boolean;
+  max: number;
+  min: number;
+  snapActive: boolean;
+  value: number;
+}) {
   const { t } = useTranslation();
-  const durationMicros = range.endMicros - range.startMicros;
+
   return (
-    <button
+    <Button
       aria-label={t("timeline.segment.actions.moveSegment")}
-      aria-valuemax={range.sourceDurationMicros - durationMicros}
-      aria-valuemin={0}
-      aria-valuenow={range.startMicros}
+      aria-valuemax={max}
+      aria-valuemin={min}
+      aria-valuenow={value}
       aria-valuetext={t("timeline.playhead.accessibility.startsAt", {
         time: t("timeline.playhead.accessibility.seconds", {
-          value: formatAccessibleTime(range.startMicros),
+          value: formatAccessibleTime(value),
         }),
       })}
       className={cn(
-        "segment-drag-handle",
-        styles.segment,
-        "select-none",
-        disabled && ["cursor-not-allowed", styles.segmentDisabled],
+        "absolute top-1/2 z-4 -translate-1/2! cursor-grab touch-none rounded-full transition-colors data-[dragging=true]:cursor-grabbing",
+        className,
       )}
       data-dragging={dragging ? "true" : undefined}
       data-editor-keyboard="timeline-slider"
       data-snap-active={snapActive ? "true" : undefined}
-      disabled={disabled}
-      onKeyDown={onKeyDown}
-      onLostPointerCapture={onLostPointerCapture}
-      onPointerCancel={onPointerCancel}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
       role="slider"
+      size="icon-sm"
       style={{ left: "var(--timeline-trim-center)" }}
       type="button"
+      {...props}
     >
-      <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path d="m7 7-5 5 5 5v-3h10v3l5-5-5-5v3H7z" />
-      </svg>
-    </button>
+      <GripHorizontal aria-hidden="true" />
+    </Button>
   );
-}
-
-interface TrimHandleProps {
-  boundary: TrimBoundary;
-  disabled?: boolean;
-  dragging: boolean;
-  maximum: number;
-  minimum: number;
-  onDoubleClick: () => void;
-  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
-  onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerEnd: () => void;
-  onPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
-  snapActive: boolean;
-  value: number;
 }
 
 function TrimHandle({
   boundary,
-  disabled = false,
   dragging,
-  maximum,
-  minimum,
-  onDoubleClick,
-  onKeyDown,
-  onPointerDown,
-  onPointerEnd,
-  onPointerMove,
+  max,
+  min,
   snapActive,
   value,
-}: TrimHandleProps) {
+  ...props
+}: Omit<ComponentProps<typeof Button>, "children"> & {
+  boundary: TrimBoundary;
+  dragging: boolean;
+  max: number;
+  min: number;
+  snapActive: boolean;
+  value: number;
+}) {
   const { t } = useTranslation();
   const label =
     boundary === "start"
@@ -111,95 +80,65 @@ function TrimHandle({
       : t("timeline.segment.accessibility.trimEnd");
 
   return (
-    <button
+    <Button
       aria-label={label}
-      aria-valuemax={maximum}
-      aria-valuemin={minimum}
+      aria-valuemax={max}
+      aria-valuemin={min}
       aria-valuenow={value}
       aria-valuetext={t("timeline.playhead.accessibility.seconds", {
         value: formatAccessibleTime(value),
       })}
       className={cn(
-        "trim-handle",
-        `trim-handle-${boundary}`,
-        styles.trim,
-        boundary === "start" ? styles.start : styles.end,
-        "select-none",
-        disabled && cn("cursor-not-allowed", styles.trimDisabled),
+        "absolute -inset-y-1 z-3 h-auto w-4 min-w-auto -translate-x-1/2 translate-y-0! cursor-ew-resize touch-none rounded-xs border-primary p-0 transition-colors hover:border-primary/80",
+        boundary === "start" ? "rounded-l-md" : "rounded-r-md",
       )}
       data-dragging={dragging ? "true" : undefined}
       data-editor-keyboard="timeline-slider"
       data-snap-active={snapActive ? "true" : undefined}
-      disabled={disabled}
-      onDoubleClick={onDoubleClick}
-      onKeyDown={onKeyDown}
-      onLostPointerCapture={onPointerEnd}
-      onPointerCancel={onPointerEnd}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerEnd}
       role="slider"
       style={{
         left: boundary === "start" ? "var(--timeline-trim-start)" : "var(--timeline-trim-end)",
       }}
       type="button"
+      {...props}
     >
-      <span aria-hidden="true" />
-    </button>
+      <GripVertical aria-hidden="true" />
+    </Button>
   );
 }
 
 function Playhead({
-  disabled = false,
   dragging,
-  maximum,
-  onKeyDown,
-  onLostPointerCapture,
-  onPointerCancel,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
-  percent,
-  playheadRef,
+  max,
+  min,
   value,
-}: {
-  disabled?: boolean;
+  ...props
+}: React.ComponentProps<"button"> & {
   dragging: boolean;
-  maximum: number;
-  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
-  onLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerCancel: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerUp: (event: PointerEvent<HTMLButtonElement>) => void;
-  percent: number;
-  playheadRef: RefObject<HTMLButtonElement | null>;
+  max: number;
+  min: number;
   value: number;
 }) {
   const { t } = useTranslation();
+
   return (
     <button
       aria-label={t("timeline.playhead.accessibility.playbackPosition")}
-      aria-valuemax={maximum}
-      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuemin={min}
       aria-valuenow={value}
       aria-valuetext={t("timeline.playhead.accessibility.seconds", {
         value: formatAccessibleTime(value),
       })}
-      className={cn("playhead", "select-none", disabled && "opacity-30", styles.playhead)}
+      className={cn(
+        "absolute -inset-y-1 z-2 w-4 -translate-x-1/2 cursor-ew-resize touch-none bg-transparent! transition-colors outline-none before:absolute before:inset-y-0 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:bg-foreground before:content-[''] after:absolute after:top-0 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] focus-visible:before:border-ring focus-visible:before:ring-3 focus-visible:before:ring-ring/50 focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 disabled:pointer-events-none disabled:before:bg-muted-foreground disabled:after:bg-muted-foreground",
+      )}
       data-dragging={dragging ? "true" : undefined}
       data-editor-keyboard="timeline-slider"
-      disabled={disabled}
-      onKeyDown={onKeyDown}
-      onLostPointerCapture={onLostPointerCapture}
-      onPointerCancel={onPointerCancel}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      ref={playheadRef}
       role="slider"
-      style={{ left: `${percent}%` }}
+      style={{ left: `${timelinePercent(value, max)}%` }}
       type="button"
+      {...props}
     />
   );
 }

@@ -71,7 +71,7 @@ function PlaybackControls({ className }: { className?: string }) {
               : t("preview.segment.setStartUnavailable")
           }
         >
-          <SquareArrowRight />
+          <SquareArrowRight aria-hidden="true" />
         </TransportButton>
         <AnimatePresence initial={false}>
           {showMarkerNavigation ? (
@@ -108,7 +108,7 @@ function PlaybackControls({ className }: { className?: string }) {
                   type="button"
                   variant="ghost"
                 >
-                  <ChevronsLeft />
+                  <ChevronsLeft aria-hidden="true" />
                 </MotionButton>
               </TooltipTrigger>
               <TooltipContent>{previousMarkerCommand.label}</TooltipContent>
@@ -129,7 +129,7 @@ function PlaybackControls({ className }: { className?: string }) {
           shortcut={{ code: "ArrowLeft", key: "ArrowLeft", modifier: "none" }}
           title={t("preview.frame.previousFrameTooltip")}
         >
-          <SkipBack />
+          <SkipBack aria-hidden="true" />
         </TransportButton>
         <TransportButton
           disabled={disabled}
@@ -145,7 +145,7 @@ function PlaybackControls({ className }: { className?: string }) {
               : t("preview.playback.playTooltip")
           }
         >
-          {playback.isPlaying ? <Pause /> : <Play />}
+          {playback.isPlaying ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
         </TransportButton>
         <TransportButton
           disabled={disabled}
@@ -161,7 +161,7 @@ function PlaybackControls({ className }: { className?: string }) {
           shortcut={{ code: "ArrowRight", key: "ArrowRight", modifier: "none" }}
           title={t("preview.frame.nextFrameTooltip")}
         >
-          <SkipForward />
+          <SkipForward aria-hidden="true" />
         </TransportButton>
         <AnimatePresence initial={false}>
           {showMarkerNavigation ? (
@@ -198,7 +198,7 @@ function PlaybackControls({ className }: { className?: string }) {
                   type="button"
                   variant="ghost"
                 >
-                  <ChevronsRight />
+                  <ChevronsRight aria-hidden="true" />
                 </MotionButton>
               </TooltipTrigger>
               <TooltipContent>{nextMarkerCommand.label}</TooltipContent>
@@ -218,7 +218,7 @@ function PlaybackControls({ className }: { className?: string }) {
               : t("preview.segment.setEndUnavailable")
           }
         >
-          <SquareArrowLeft />
+          <SquareArrowLeft aria-hidden="true" />
         </TransportButton>
       </div>
       {playback.transportError ? (

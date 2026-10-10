@@ -339,16 +339,16 @@ describe("AudioTrackRow", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         arrayBuffer: async () => {
-          const buffer = new ArrayBuffer(12 + 10 * 2);
+          const buffer = new ArrayBuffer(12 + 40 * 2);
           const view = new DataView(buffer);
           view.setUint8(0, 0x45);
           view.setUint8(1, 0x54);
           view.setUint8(2, 0x57);
           view.setUint8(3, 0x46);
-          view.setUint16(4, 1, true);
+          view.setUint16(4, 2, true);
           view.setUint16(6, 1, true);
           view.setUint32(8, 1_280, true);
-          for (let run = 0; run < 10; run += 1) {
+          for (let run = 0; run < 40; run += 1) {
             view.setUint8(12 + run * 2, 0xff);
             view.setUint8(13 + run * 2, 128);
           }
@@ -433,6 +433,7 @@ describe("AudioTrackRow", () => {
       "ResizeObserver",
       class {
         observe() {}
+        unobserve() {}
         disconnect() {}
       },
     );
@@ -441,17 +442,23 @@ describe("AudioTrackRow", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         arrayBuffer: async () => {
-          const buffer = new ArrayBuffer(14);
+          const buffer = new ArrayBuffer(20);
           const view = new DataView(buffer);
           view.setUint8(0, 0x45);
           view.setUint8(1, 0x54);
           view.setUint8(2, 0x57);
           view.setUint8(3, 0x46);
-          view.setUint16(4, 1, true);
+          view.setUint16(4, 2, true);
           view.setUint16(6, 0, true);
           view.setUint32(8, 2, true);
           view.setUint8(12, 128);
           view.setUint8(13, 128);
+          view.setUint8(14, 128);
+          view.setUint8(15, 128);
+          view.setUint8(16, 128);
+          view.setUint8(17, 128);
+          view.setUint8(18, 128);
+          view.setUint8(19, 128);
           return buffer;
         },
       }),
@@ -480,19 +487,7 @@ describe("AudioTrackRow", () => {
     });
     await waitFor(() => expect(strokeStyle).toHaveBeenCalledWith("rgb(239 191 4)"));
     const canvas = document.querySelector<HTMLCanvasElement>("canvas");
-    expect(canvas?.style.backgroundColor).toBe("var(--muted)");
-    expect(canvas?.style.backgroundImage).toContain("var(--foreground)");
-
-    const outsideStart = document.querySelector<HTMLElement>(
-      '[data-slot="audio-waveform-outside-selection"][data-edge="start"]',
-    );
-
-    const outsideEnd = document.querySelector<HTMLElement>(
-      '[data-slot="audio-waveform-outside-selection"][data-edge="end"]',
-    );
-
-    expect(outsideStart).toHaveStyle({ left: "0%", width: "25%" });
-    expect(outsideEnd).toHaveStyle({ left: "75%", right: "0%" });
+    expect(canvas).toHaveClass("size-full", "opacity-80");
 
     fireEvent.click(screen.getByRole("button", { name: /preview primary color/i }));
 

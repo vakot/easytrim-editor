@@ -17,7 +17,7 @@ use crate::{
 
 pub const MIN_WAVEFORM_WIDTH: u32 = 64;
 pub const MAX_WAVEFORM_WIDTH: u32 = 4_096;
-const WAVEFORM_FORMAT_VERSION: u16 = 1;
+const WAVEFORM_FORMAT_VERSION: u16 = 2;
 const WAVEFORM_HEADER_SIZE: usize = 12;
 const WAVEFORM_FLAG_RLE: u16 = 1;
 const WAVEFORM_TIMEOUT: Duration = Duration::from_secs(60 * 60);
@@ -263,7 +263,7 @@ fn pcm_stream_arguments(
         source_path.as_os_str().to_owned(),
         OsString::from("-filter_complex"),
         OsString::from(format!(
-            "[0:{stream_index}]{effect_chain}aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
+            "[0:{stream_index}]{effect_chain}aformat=sample_fmts=s16:channel_layouts=stereo[pcm]"
         )),
         OsString::from("-map"),
         OsString::from("[pcm]"),
@@ -301,28 +301,35 @@ fn write_binned_pcm(
     let samples_per_column = sample_count / width;
     let remainder = sample_count % width;
     let mut buffer = [0_u8; 16 * 1024];
-    let mut amplitudes = Vec::with_capacity(width as usize);
+    let mut envelope = Vec::with_capacity(width as usize * 4);
 
     // Keep showwavespic's existing column boundaries: each column gets the integer
     // quotient, then the remainder is assigned to the final column.
     for column in 0..width {
         let mut remaining = samples_per_column + u64::from(column == width - 1) * remainder;
         let total_samples = remaining;
-        let mut magnitude_sum = 0_u64;
+        let mut square_sum = [0_u64; 2];
+        let mut peak = [0_u32; 2];
         while remaining > 0 {
-            let samples = remaining.min((buffer.len() / 2) as u64) as usize;
-            let bytes = &mut buffer[..samples * 2];
+            let frames = remaining.min((buffer.len() / 4) as u64) as usize;
+            let bytes = &mut buffer[..frames * 4];
             reader.read_exact(bytes)?;
-            for sample in bytes.chunks_exact(2) {
-                let value = i16::from_le_bytes([sample[0], sample[1]]) as i32;
-                magnitude_sum += value.unsigned_abs() as u64;
+            for frame in bytes.chunks_exact(4) {
+                for (channel, sample) in frame.chunks_exact(2).enumerate() {
+                    let value = i16::from_le_bytes([sample[0], sample[1]]) as i32;
+                    let magnitude = value.unsigned_abs();
+                    peak[channel] = peak[channel].max(magnitude);
+                    square_sum[channel] += u64::from(magnitude) * u64::from(magnitude);
+                }
             }
-            remaining -= samples as u64;
+            remaining -= frames as u64;
         }
 
-        let average = magnitude_sum as f64 / total_samples as f64;
-        let amplitude = ((average / 32_768.0).sqrt() * f64::from(u8::MAX)).round() as u8;
-        amplitudes.push(amplitude);
+        for channel in 0..2 {
+            let rms = (square_sum[channel] as f64 / total_samples as f64).sqrt();
+            envelope.push(scale_amplitude(f64::from(peak[channel])));
+            envelope.push(scale_amplitude(rms));
+        }
     }
 
     let mut trailing = [0_u8; 1];
@@ -332,8 +339,8 @@ fn write_binned_pcm(
             "decoded audio sample count did not match the analyzed count",
         ));
     }
-    let encoded = encode_rle(&amplitudes);
-    let flags = if encoded.len() < amplitudes.len() {
+    let encoded = encode_rle(&envelope);
+    let flags = if encoded.len() < envelope.len() {
         WAVEFORM_FLAG_RLE
     } else {
         0
@@ -342,9 +349,13 @@ fn write_binned_pcm(
     writer.write_all(if flags == WAVEFORM_FLAG_RLE {
         &encoded
     } else {
-        &amplitudes
+        &envelope
     })?;
     writer.flush()
+}
+
+fn scale_amplitude(amplitude: f64) -> u8 {
+    ((amplitude / 32_768.0) * f64::from(u8::MAX)).round() as u8
 }
 
 fn encode_rle(samples: &[u8]) -> Vec<u8> {
@@ -597,7 +608,7 @@ mod tests {
 
         let pcm_args = pcm_stream_arguments(source_path, 4, &empty_processing());
         assert!(pcm_args.iter().any(|argument| {
-            argument == "[0:4]aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
+            argument == "[0:4]aformat=sample_fmts=s16:channel_layouts=stereo[pcm]"
         }));
         assert_eq!(pcm_args.last().unwrap(), "pipe:1");
     }
@@ -635,7 +646,7 @@ mod tests {
                 .all(|argument| !argument.to_string_lossy().contains("alimiter"))
         );
         assert!(pcm_args.iter().any(|argument| {
-            argument == "[0:4]highpass=f=100.000,afftdn=nr=12:nf=-35,aformat=sample_fmts=s16:channel_layouts=mono[pcm]"
+            argument == "[0:4]highpass=f=100.000,afftdn=nr=12:nf=-35,aformat=sample_fmts=s16:channel_layouts=stereo[pcm]"
         }));
         assert!(
             pcm_args
@@ -658,8 +669,8 @@ mod tests {
     }
 
     #[test]
-    fn sample_binning_matches_showwavespic_column_boundaries() {
-        let samples = [1_i16, -2, 3, -4, 5, -6, 7, -8, 9, -10, 11];
+    fn sample_binning_preserves_peak_and_rms_for_each_stereo_channel() {
+        let samples = [100_i16, 1_000, 200, 0, 300, 0, 400, 0];
         let mut source = Cursor::new(
             samples
                 .iter()
@@ -668,11 +679,12 @@ mod tests {
         );
         let mut output = Vec::new();
 
-        write_binned_pcm(&mut source, &mut output, samples.len() as u64, 4)
+        write_binned_pcm(&mut source, &mut output, 4, 2)
             .expect("samples are reduced into four buckets");
 
         assert_eq!(&output[..4], b"ETWF");
-        assert_eq!(&output[12..], [2, 3, 3, 4]);
+        assert_eq!(u16::from_le_bytes([output[4], output[5]]), 2);
+        assert_eq!(&output[12..], [2, 1, 8, 6, 3, 3, 0, 0]);
     }
 
     #[test]
@@ -680,7 +692,7 @@ mod tests {
         let mut output = Vec::new();
         write_envelope_header(&mut output, 1_280, 0).expect("header is written");
         assert_eq!(&output[..4], b"ETWF");
-        assert_eq!(u16::from_le_bytes([output[4], output[5]]), 1);
+        assert_eq!(u16::from_le_bytes([output[4], output[5]]), 2);
         assert_eq!(u16::from_le_bytes(output[6..8].try_into().unwrap()), 0);
         assert_eq!(u32::from_le_bytes(output[8..12].try_into().unwrap()), 1_280);
         assert_eq!(output.len(), super::WAVEFORM_HEADER_SIZE);
@@ -783,7 +795,7 @@ mod tests {
             .enumerate()
             .map(|(position, stream_index)| {
                 format!(
-                    "[0:{stream_index}]aformat=channel_layouts=mono,showwavespic=s=1280x56:colors=0x8b5cf6:scale=sqrt[waveform{position}]"
+                    "[0:{stream_index}]aformat=channel_layouts=mono,showwavespic=s=1280x56:colors=0x8b5cf6:scale=lin[waveform{position}]"
                 )
             })
             .collect::<Vec<_>>()
@@ -865,13 +877,13 @@ mod tests {
             let envelope = fs::read(artifact.path()).unwrap();
             let reference_image = fs::read(reference.path()).unwrap();
             assert_eq!(&envelope[..4], b"ETWF");
-            assert_eq!(u16::from_le_bytes(envelope[4..6].try_into().unwrap()), 1);
+            assert_eq!(u16::from_le_bytes(envelope[4..6].try_into().unwrap()), 2);
             let flags = u16::from_le_bytes(envelope[6..8].try_into().unwrap());
             assert_eq!(
                 u32::from_le_bytes(envelope[8..12].try_into().unwrap()),
                 1280
             );
-            assert!(envelope.len() <= 12 + 1280);
+            assert!(envelope.len() <= 12 + 1280 * 4);
             assert_eq!(&reference_image[..8], b"\x89PNG\r\n\x1a\n");
             assert_eq!(
                 u32::from_be_bytes(reference_image[16..20].try_into().unwrap()),
@@ -882,15 +894,15 @@ mod tests {
                 56
             );
 
-            let amplitudes = if flags == super::WAVEFORM_FLAG_RLE {
-                decode_rle(&envelope[12..], 1280)
+            let values = if flags == super::WAVEFORM_FLAG_RLE {
+                decode_rle(&envelope[12..], 1280 * 4)
             } else {
                 envelope[12..].to_vec()
             };
             if position % 2 == 0 {
-                assert!(amplitudes.iter().all(|amplitude| *amplitude > 0));
+                assert!(values.chunks_exact(4).all(|bin| bin[0] > 0 && bin[1] > 0));
             } else {
-                assert!(amplitudes.iter().all(|amplitude| *amplitude == 0));
+                assert!(values.iter().all(|amplitude| *amplitude == 0));
             }
 
             let decoded_reference = run_bounded(
@@ -914,7 +926,8 @@ mod tests {
             .unwrap();
             assert!(decoded_reference.status.success());
             assert_eq!(decoded_reference.stdout.len(), 1280 * 56 * 3);
-            for (column, amplitude) in amplitudes.iter().enumerate() {
+            for (column, bin) in values.chunks_exact(4).enumerate() {
+                let amplitude = bin[0];
                 let actual_half_height = decoded_reference
                     .stdout
                     .chunks_exact(1280 * 3)
