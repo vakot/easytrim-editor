@@ -332,7 +332,9 @@ describe("App", () => {
     render(<App />);
     expect(screen.getByRole("banner", { name: "Window title bar" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Export Queue" })).not.toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: /Imported Sources/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /Imported Sources.*arrow keys to move it/ }),
+    ).toBeInTheDocument();
   });
 
   it("opens the existing Command Palette from the centered title-bar search button", async () => {
@@ -873,9 +875,13 @@ describe("App", () => {
     await openSourcePicker(user);
 
     await waitForSourcePresence(true);
-    expect(await screen.findByRole("button", { name: /Imported Sources/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /Imported Sources.*arrow keys to move it/ }),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(selection.displayName)[0]).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Activity Feed/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Activity Feed.*arrow keys to move it/ }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
       "http://easytrim-media.localhost/source-1?variant=source",

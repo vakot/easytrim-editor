@@ -520,20 +520,6 @@ describe("AppLayout drag and resize integration", () => {
       configurable: true,
       value: (x: number, y: number) => (x > 1000 && y < 700 ? emptyRightTarget : sidebar),
     });
-    Object.defineProperty(emptyRightTarget, "getBoundingClientRect", {
-      configurable: true,
-      value: () =>
-        ({
-          bottom: 800,
-          height: 800,
-          left: 1000,
-          right: 2000,
-          top: 0,
-          width: 1000,
-          x: 1000,
-          y: 0,
-        }) as DOMRect,
-    });
 
     const customLeftSidebarSize = leftSidebarPanel.style.flexGrow;
     const previousWorkspaceSidebarWidth = leftSidebarPanel.offsetWidth;
