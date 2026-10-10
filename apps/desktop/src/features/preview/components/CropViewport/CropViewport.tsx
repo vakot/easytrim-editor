@@ -317,6 +317,7 @@ function CropViewport() {
               className="absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 gap-1 rounded-xl border border-border/70 bg-background/90 p-1 shadow-lg backdrop-blur-sm"
               data-crop-aspect-ratio-presets
               onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
               role="group"
             >
               <Button
@@ -344,7 +345,11 @@ function CropViewport() {
                 aria-label={t("preview.crop.resetToDefault")}
                 className="size-10"
                 disabled={!cropApplied}
-                onClick={resetCropToDefault}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  resetCropToDefault();
+                }}
+                onPointerDown={(event) => event.stopPropagation()}
                 size="icon"
                 variant="destructive"
               >
