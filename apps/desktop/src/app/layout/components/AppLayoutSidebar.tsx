@@ -42,6 +42,23 @@ const VIEW_PANEL_IDS: Record<SidebarViewId, string> = {
   sources: "editor-source-imported-sources",
 };
 
+function getSidebarInsertionIndex(
+  sidebar: HTMLElement,
+  viewId: SidebarViewId,
+  clientY: number,
+): number {
+  const items = Array.from(sidebar.querySelectorAll<HTMLElement>("[data-sidebar-view]")).filter(
+    (item) => item.dataset.sidebarView !== viewId,
+  );
+
+  const targetIndex = items.findIndex((item) => {
+    const bounds = item.getBoundingClientRect();
+    return clientY < bounds.top + bounds.height / 2;
+  });
+
+  return targetIndex < 0 ? items.length : targetIndex;
+}
+
 function AppLayoutSidebar({
   draggedViewId,
   dropPreview,
@@ -94,18 +111,14 @@ function AppLayoutSidebar({
       const viewId = event.dataTransfer.getData("application/x-easytrim-sidebar-view");
       if (!sidebar || !isSidebarViewId(viewId)) return;
 
-      const items = Array.from(sidebar.querySelectorAll<HTMLElement>("[data-sidebar-view]")).filter(
-        (item) => item.dataset.sidebarView !== viewId,
-      );
+      const insertionIndex =
+        dropPreview?.side === side
+          ? dropPreview.index
+          : getSidebarInsertionIndex(sidebar, viewId, event.clientY);
 
-      const targetIndex = items.findIndex((item) => {
-        const bounds = item.getBoundingClientRect();
-        return event.clientY < bounds.top + bounds.height / 2;
-      });
-
-      onDrop(viewId, side, targetIndex < 0 ? items.length : targetIndex);
+      onDrop(viewId, side, insertionIndex);
     },
-    [onDrop, side],
+    [dropPreview, onDrop, side],
   );
 
   if (views.length === 0) return null;
@@ -140,6 +153,7 @@ function AppLayoutSidebar({
         <ResizablePanelGroup
           className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
           id={side === "left" ? "editor-source" : "editor-right-sidebar"}
+          key={`${side}:${views.join(":")}`}
           orientation="vertical"
           persisted
         >

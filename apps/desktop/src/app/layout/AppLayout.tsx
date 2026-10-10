@@ -69,6 +69,7 @@ function AppLayout() {
         <ResizablePanelGroup
           className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
           id="workspace"
+          key={`${sidebarLayout.left.length > 0}:${sidebarLayout.right.length > 0}`}
           persisted
         >
           {sidebarLayout.left.length > 0 ? (
