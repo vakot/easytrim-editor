@@ -67,6 +67,17 @@ vi.mock("@dnd-kit/react", () => ({
         }}
         type="button"
       />
+      <button
+        aria-label="Simulate moving Sources to the right sidebar"
+        onClick={() => {
+          onDragStart();
+          onDragEnd({
+            canceled: false,
+            operation: { position: { current: { x: 1100, y: 350 } }, source: { id: "sources" } },
+          });
+        }}
+        type="button"
+      />
     </>
   ),
   useDroppable: () => ({ isDropTarget: false, ref: () => undefined }),
@@ -108,6 +119,20 @@ function renderAppLayout() {
 }
 
 describe("AppLayout sidebar drag and drop", () => {
+  it("renders separators only for sidebars that are present", async () => {
+    renderAppLayout();
+
+    expect(document.querySelectorAll(".workspace-separator")).toHaveLength(1);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Simulate moving Activity Feed to the right sidebar" }),
+    );
+
+    await waitFor(() => {
+      expect(document.querySelectorAll(".workspace-separator")).toHaveLength(2);
+    });
+  });
+
   it("updates the rendered panel order after a sidebar drop", async () => {
     const store = renderAppLayout();
 
@@ -221,5 +246,48 @@ describe("AppLayout sidebar drag and drop", () => {
     expect(
       screen.getByRole("button", { name: "Drag Activity Feed to move it between sidebars" }),
     ).toBeInTheDocument();
+
+    const leftSidebar = screen.getByRole("complementary", { name: "Left sidebar" });
+    const rightSidebar = screen.getByRole("complementary", { name: "Right sidebar" });
+    const sources = leftSidebar.querySelector<HTMLElement>('[data-sidebar-view="sources"]')!;
+    setBounds(leftSidebar, {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 320,
+      bottom: 700,
+      width: 320,
+      height: 700,
+    } as DOMRect);
+    setBounds(sources, {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 320,
+      bottom: 300,
+      width: 320,
+      height: 300,
+    } as DOMRect);
+    setBounds(rightSidebar, {
+      x: 960,
+      y: 0,
+      top: 0,
+      left: 960,
+      right: 1280,
+      bottom: 700,
+      width: 320,
+      height: 700,
+    } as DOMRect);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Simulate moving Sources to the right sidebar" }),
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole("complementary", { name: "Left sidebar" })).not.toBeInTheDocument();
+      expect(document.querySelectorAll(".workspace-separator")).toHaveLength(1);
+    });
   });
 });
