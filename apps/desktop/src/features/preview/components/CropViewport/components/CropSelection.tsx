@@ -20,14 +20,14 @@ interface CropSelectionProps {
 }
 
 const HANDLES: Array<{ className: string; handle: Exclude<CropHandle, "move"> }> = [
-  { handle: "top-left", className: "-left-2 -top-2" },
-  { handle: "top", className: "-top-2 left-1/2 -translate-x-1/2" },
-  { handle: "top-right", className: "-right-2 -top-2" },
-  { handle: "right", className: "-right-2 top-1/2 -translate-y-1/2" },
-  { handle: "bottom-right", className: "-bottom-2 -right-2" },
-  { handle: "bottom", className: "-bottom-2 left-1/2 -translate-x-1/2" },
-  { handle: "bottom-left", className: "-bottom-2 -left-2" },
-  { handle: "left", className: "-left-2 top-1/2 -translate-y-1/2" },
+  { handle: "top-left", className: "-left-0.25 -top-0.25 -translate-1/2" },
+  { handle: "top", className: "-top-0.25 left-1/2 -translate-1/2" },
+  { handle: "top-right", className: "-right-0.25 -top-0.25 translate-x-1/2 -translate-y-1/2" },
+  { handle: "right", className: "-right-0.25 top-1/2 translate-x-1/2 -translate-y-1/2" },
+  { handle: "bottom-right", className: "-bottom-0.25 -right-0.25 translate-x-1/2 translate-y-1/2" },
+  { handle: "bottom", className: "-bottom-0.25 left-1/2 translate-1/2" },
+  { handle: "bottom-left", className: "-bottom-0.25 -left-0.25 -translate-x-1/2 translate-y-1/2" },
+  { handle: "left", className: "-left-0.25 top-1/2 -translate-1/2" },
 ];
 
 function CropSelection({
@@ -100,6 +100,7 @@ function CropSelection({
           />
         </svg>
       ) : null}
+
       {HANDLES.map(({ className, handle }) => {
         const modelHandle = handleAfterRotation(handle, rotation);
         const visualHandle = handleAfterFlip(modelHandle, flipHorizontal, flipVertical);
@@ -107,7 +108,7 @@ function CropSelection({
           <button
             aria-label={handleLabels[visualHandle]}
             className={cn(
-              "absolute z-10 size-4 rounded-full border-2 border-background bg-primary shadow-sm",
+              "absolute z-10 size-4 rounded-full border-2 border-background bg-primary",
               className,
               resizeCursor(visualHandle),
             )}

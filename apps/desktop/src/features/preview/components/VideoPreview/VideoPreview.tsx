@@ -25,7 +25,7 @@ function VideoPreview() {
 
   if (preview.status === "failed") {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-full items-center justify-center p-2">
         <Alert className="max-w-md" variant="destructive">
           <AlertCircle />
           <AlertTitle>{t("preview.info.playbackError")}</AlertTitle>
