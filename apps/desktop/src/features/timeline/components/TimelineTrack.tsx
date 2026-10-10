@@ -170,14 +170,14 @@ function TimelineTrimHandle({
   const isStart = boundary === "start";
   const minimumDurationMicros = minimumSelectionMicros(range.sourceDurationMicros);
   const value = isStart ? range.startMicros : range.endMicros;
-  const min = isStart ? range.startMicros + minimumDurationMicros : 0;
+  const min = isStart ? 0 : range.startMicros + minimumDurationMicros;
   const max = isStart ? range.endMicros - minimumDurationMicros : range.sourceDurationMicros;
 
   return (
     <TrimHandle
       boundary={boundary}
       disabled={disabled}
-      dragging={trimDragState?.boundary === "end"}
+      dragging={trimDragState?.boundary === boundary}
       max={max}
       min={min}
       onDoubleClick={() => resetBoundary(boundary)}

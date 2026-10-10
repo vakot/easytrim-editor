@@ -143,6 +143,28 @@ function audioPreview(
   };
 }
 
+function installWaveformFetchMock() {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL) => {
+      const requestUrl =
+        typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+
+      const width = Number(new URL(requestUrl).searchParams.get("width"));
+      const buffer = new ArrayBuffer(12 + width * 4);
+      const view = new DataView(buffer);
+      view.setUint8(0, 0x45);
+      view.setUint8(1, 0x54);
+      view.setUint8(2, 0x57);
+      view.setUint8(3, 0x46);
+      view.setUint16(4, 2, true);
+      view.setUint32(8, width, true);
+      new Uint8Array(buffer, 12).fill(128);
+      return { ok: true, arrayBuffer: async () => buffer } as Response;
+    }),
+  );
+}
+
 let sourceDropListener: ((event: SourceDropEvent) => void) | undefined;
 let stopSourceMediaRuntime: (() => void) | undefined;
 
@@ -1089,6 +1111,7 @@ describe("App", () => {
   });
 
   it("prepares aligned waveforms and keeps audio output choices in memory", async () => {
+    installWaveformFetchMock();
     const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
       width: 1_024,
       height: 42,
@@ -1154,7 +1177,7 @@ describe("App", () => {
         ),
       );
       await waitFor(() =>
-        expect(document.querySelectorAll("img[aria-hidden='true']")).toHaveLength(2),
+        expect(document.querySelectorAll("canvas[aria-hidden='true']")).toHaveLength(2),
       );
 
       bounds.mockReturnValue({
@@ -1202,6 +1225,7 @@ describe("App", () => {
   }, 10_000);
 
   it("keeps tracks enabled when waveform preparation fails and retries per track", async () => {
+    installWaveformFetchMock();
     const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
       width: 896,
       height: 42,
@@ -1248,10 +1272,13 @@ describe("App", () => {
         "true",
       );
       await user.click(retry);
-      await waitFor(() => expect(document.querySelector(".waveform-image")).not.toBeNull());
+      await waitFor(() =>
+        expect(document.querySelector("canvas[aria-hidden='true']")).not.toBeNull(),
+      );
       expect(mocks.prepareWaveforms).toHaveBeenCalledTimes(2);
     } finally {
       bounds.mockRestore();
+      vi.unstubAllGlobals();
     }
   });
 

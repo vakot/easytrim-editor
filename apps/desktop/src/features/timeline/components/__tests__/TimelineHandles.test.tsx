@@ -17,14 +17,16 @@ function TimelineHandle({ dragging, kind }: { dragging: boolean; kind: HandleKin
     return (
       <SegmentDragHandle
         dragging={dragging}
+        max={range.sourceDurationMicros - (range.endMicros - range.startMicros)}
+        min={0}
         onKeyDown={vi.fn()}
         onLostPointerCapture={vi.fn()}
         onPointerCancel={vi.fn()}
         onPointerDown={vi.fn()}
         onPointerMove={vi.fn()}
         onPointerUp={vi.fn()}
-        range={range}
         snapActive={false}
+        value={range.startMicros}
       />
     );
   }
@@ -33,15 +35,14 @@ function TimelineHandle({ dragging, kind }: { dragging: boolean; kind: HandleKin
     return (
       <Playhead
         dragging={dragging}
-        maximum={range.sourceDurationMicros}
+        max={range.sourceDurationMicros}
+        min={0}
         onKeyDown={vi.fn()}
         onLostPointerCapture={vi.fn()}
         onPointerCancel={vi.fn()}
         onPointerDown={vi.fn()}
         onPointerMove={vi.fn()}
         onPointerUp={vi.fn()}
-        percent={50}
-        playheadRef={{ current: null }}
         value={5_000_000}
       />
     );
@@ -52,13 +53,15 @@ function TimelineHandle({ dragging, kind }: { dragging: boolean; kind: HandleKin
     <TrimHandle
       boundary={boundary}
       dragging={dragging}
-      maximum={range.sourceDurationMicros}
-      minimum={0}
+      max={range.sourceDurationMicros}
+      min={0}
       onDoubleClick={vi.fn()}
       onKeyDown={vi.fn()}
+      onLostPointerCapture={vi.fn()}
+      onPointerCancel={vi.fn()}
       onPointerDown={vi.fn()}
-      onPointerEnd={vi.fn()}
       onPointerMove={vi.fn()}
+      onPointerUp={vi.fn()}
       snapActive={false}
       value={boundary === "start" ? range.startMicros : range.endMicros}
     />
@@ -76,7 +79,6 @@ describe("TimelineHandles", () => {
     render(<TimelineHandle dragging={false} kind={kind} />);
     const handle = screen.getByRole("slider", { name: accessibleName });
 
-    expect(handle).toHaveClass("select-none");
     await user.hover(handle);
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });

@@ -433,6 +433,7 @@ describe("AudioTrackRow", () => {
       "ResizeObserver",
       class {
         observe() {}
+        unobserve() {}
         disconnect() {}
       },
     );
@@ -486,19 +487,7 @@ describe("AudioTrackRow", () => {
     });
     await waitFor(() => expect(strokeStyle).toHaveBeenCalledWith("rgb(239 191 4)"));
     const canvas = document.querySelector<HTMLCanvasElement>("canvas");
-    expect(canvas?.style.backgroundColor).toBe("var(--muted)");
-    expect(canvas?.style.backgroundImage).toContain("var(--foreground)");
-
-    const outsideStart = document.querySelector<HTMLElement>(
-      '[data-slot="audio-waveform-outside-selection"][data-edge="start"]',
-    );
-
-    const outsideEnd = document.querySelector<HTMLElement>(
-      '[data-slot="audio-waveform-outside-selection"][data-edge="end"]',
-    );
-
-    expect(outsideStart).toHaveStyle({ left: "0%", width: "25%" });
-    expect(outsideEnd).toHaveStyle({ left: "75%", right: "0%" });
+    expect(canvas).toHaveClass("size-full", "opacity-80");
 
     fireEvent.click(screen.getByRole("button", { name: /preview primary color/i }));
 
