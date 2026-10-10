@@ -284,6 +284,13 @@ export const en = {
     toggleBottomPanel: "Toggle bottom panel",
     leftSidebar: "Left sidebar",
     rightSidebar: "Right sidebar",
+    available: "Available",
+    openView: "Open",
+    docks: "Docks",
+    workspaceViewDescription: "Workspace tool",
+    dockPlacement: {
+      instructions: "Move to a sidebar and click to place. Press Escape to cancel.",
+    },
     dragView: "Drag {{view}}, or press D then use the arrow keys to move it; D to drop or Escape to cancel",
     collapseAndDragView: "Collapse {{view}}; drag or press D then use the arrow keys to move it; D to drop or Escape to cancel",
     expandAndDragView: "Expand {{view}}; drag or press D then use the arrow keys to move it; D to drop or Escape to cancel",

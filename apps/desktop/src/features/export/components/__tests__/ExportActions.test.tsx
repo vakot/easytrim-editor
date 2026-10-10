@@ -112,7 +112,7 @@ describe("ExportActions", () => {
 
     await user.click(screen.getByRole("button", { name: /Export Queue$/ }));
 
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
     const stripMetadata = screen.getByRole("checkbox", {
       name: "Strip metadata and chapters from exports",
     });
@@ -178,6 +178,6 @@ describe("ExportActions", () => {
 
     await user.click(screen.getByRole("button", { name: /Export Queue$/ }));
 
-    expect(screen.getByRole("button", { name: "Start queue" })).not.toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Start queue" })).not.toBeDisabled();
   });
 });

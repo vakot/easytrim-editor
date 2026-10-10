@@ -5,14 +5,34 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ResizablePanelContextProvider, usePanelCommand } from "@/components/ui/resizable";
 
+import { WorkspaceViewsProvider } from "@/app/contexts/workspace-views-provider";
 import { AppLayout } from "@/app/layout/AppLayout";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 
 const draggableElements = vi.hoisted(() => new Map<string, HTMLElement>());
 
-vi.mock("@/app/layout/components/AppLayoutHeader", () => ({
-  AppLayoutHeader: () => <header />,
-}));
+vi.mock("@/app/layout/components/AppLayoutHeader", async () => {
+  const { useWorkspaceViews } = await import("@/app/contexts/workspace-views-context");
+
+  return {
+    AppLayoutHeader: () => {
+      const { openView, requestDockPlacement } = useWorkspaceViews();
+      return (
+        <header>
+          <button onClick={() => openView("activity")} type="button">
+            Open Activity Feed
+          </button>
+          <button onClick={() => requestDockPlacement("exportQueue")} type="button">
+            Place Export Queue
+          </button>
+          <button onClick={() => window.dispatchEvent(new Event("editor-action"))} type="button">
+            Editor action
+          </button>
+        </header>
+      );
+    },
+  };
+});
 
 vi.mock("@/app/layout/components/AppLayoutFooter", () => ({
   AppLayoutFooter: () => <footer />,
@@ -20,6 +40,10 @@ vi.mock("@/app/layout/components/AppLayoutFooter", () => ({
 
 vi.mock("@/app/layout/components/AppLayoutMain", () => ({
   AppLayoutMain: () => <div>Editor content</div>,
+}));
+
+vi.mock("@/app/layout/components/WorkspaceViewContent", () => ({
+  WorkspaceViewContent: ({ viewId }: { viewId: string }) => <div>{viewId} view content</div>,
 }));
 
 vi.mock("@/app/layout/components/AppLayoutPanel", () => ({
@@ -306,10 +330,12 @@ function renderAppLayout() {
 
   render(
     <Provider store={store}>
-      <ResizablePanelContextProvider>
-        <SidebarPanelRegistrationProbe />
-        <AppLayout />
-      </ResizablePanelContextProvider>
+      <WorkspaceViewsProvider>
+        <ResizablePanelContextProvider>
+          <SidebarPanelRegistrationProbe />
+          <AppLayout />
+        </ResizablePanelContextProvider>
+      </WorkspaceViewsProvider>
     </Provider>,
   );
 
@@ -381,12 +407,16 @@ function SidebarPanelRegistrationProbe() {
   );
 }
 
-function expectPanelStructure(sidebar: HTMLElement, viewIds: Array<"activity" | "sources">) {
+function expectPanelStructure(
+  sidebar: HTMLElement,
+  viewIds: Array<"activity" | "exportQueue" | "sources">,
+) {
   const group = sidebar.querySelector<HTMLElement>('[data-slot="resizable-panel-group"]');
   expect(group).not.toBeNull();
 
-  const panelIds: Record<"activity" | "sources", string> = {
+  const panelIds: Record<"activity" | "exportQueue" | "sources", string> = {
     activity: "editor-source-activity-feed",
+    exportQueue: "editor-source-export-queue",
     sources: "editor-source-imported-sources",
   };
 
@@ -411,6 +441,83 @@ function expectPanelStructure(sidebar: HTMLElement, viewIds: Array<"activity" | 
 }
 
 describe("AppLayout sidebar drag and drop", () => {
+  it("opens a view in a dialog only after selecting it", async () => {
+    renderAppLayout();
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open Activity Feed" }));
+
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(await screen.findByText("activity view content")).toBeInTheDocument();
+  });
+
+  it("places a dock in an empty sidebar, blocks workspace actions, and cancels without layout changes", async () => {
+    const store = renderAppLayout();
+    const workspace = document.getElementById("workspace")!;
+    const rightTarget = document.querySelector<HTMLElement>(
+      '[data-sidebar-empty-drop-target="right"]',
+    )!;
+
+    const bounds = (left: number, right: number) =>
+      ({
+        bottom: 800,
+        height: 800,
+        left,
+        right,
+        top: 0,
+        width: right - left,
+        x: left,
+        y: 0,
+      }) as DOMRect;
+
+    setBounds(workspace, bounds(0, 1280));
+    setBounds(rightTarget, bounds(640, 1280));
+    const workspaceAction = vi.fn();
+    window.addEventListener("editor-action", workspaceAction);
+
+    fireEvent.click(screen.getByRole("button", { name: "Place Export Queue" }));
+    expect(
+      screen.getByText("Move to a sidebar and click to place. Press Escape to cancel."),
+    ).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Editor action" }), {
+      clientX: 500,
+      clientY: 900,
+    });
+    expect(workspaceAction).not.toHaveBeenCalled();
+    expect(store.getState().preferences.sidebarLayout).toEqual({
+      left: ["sources", "activity"],
+      right: [],
+    });
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(store.getState().preferences.sidebarLayout.right).toEqual([]);
+    expect(
+      screen.queryByText("Move to a sidebar and click to place. Press Escape to cancel."),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Place Export Queue" }));
+    fireEvent.pointerMove(document, { clientX: 1000, clientY: 400 });
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-sidebar-empty-drop-indicator="right"]'),
+      ).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Editor action" }), {
+      clientX: 1000,
+      clientY: 400,
+    });
+
+    await waitFor(() =>
+      expect(store.getState().preferences.sidebarLayout).toEqual({
+        left: ["sources", "activity"],
+        right: ["exportQueue"],
+      }),
+    );
+    expect(workspaceAction).not.toHaveBeenCalled();
+    window.removeEventListener("editor-action", workspaceAction);
+  });
+
   it("renders separators only for sidebars that are present", async () => {
     renderAppLayout();
 

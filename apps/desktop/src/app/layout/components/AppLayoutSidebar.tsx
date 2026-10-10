@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -14,6 +15,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 
+import { DockViewMenuItems } from "@/app/layout/components/DockViewMenuItems";
 import { SidebarViewTarget } from "@/app/layout/components/SidebarViewPortal";
 import type {
   SidebarDropPlacement,
@@ -33,11 +35,13 @@ interface AppLayoutSidebarProps {
 
 const VIEW_PANEL_IDS: Record<SidebarViewId, string> = {
   activity: "editor-source-activity-feed",
+  exportQueue: "editor-source-export-queue",
   sources: "editor-source-imported-sources",
 };
 
 const VIEW_PANEL_SIZES: Record<SidebarViewId, { defaultSize: string; minSize: string }> = {
   activity: { minSize: "12.5rem", defaultSize: "30" },
+  exportQueue: { minSize: "18.75rem", defaultSize: "35" },
   sources: { minSize: "18.75rem", defaultSize: "45" },
 };
 
@@ -64,52 +68,59 @@ function AppLayoutSidebar({
   if (views.length === 0) return null;
 
   return (
-    <aside
-      aria-label={side === "left" ? t("layout.leftSidebar") : t("layout.rightSidebar")}
-      className="relative flex size-full min-h-0 min-w-0 flex-col overflow-hidden px-3"
-      data-sidebar-region={side}
-      ref={ref}
-    >
-      {placement?.destination === side ? (
-        <SidebarInsertionIndicator
-          placement={placement}
-          side={side}
-          viewCount={views.filter((viewId) => viewId !== placement.viewId).length}
-        />
-      ) : null}
-      {views.length === 1 ? (
-        <SidebarViewStandalone
-          collapsible={false}
-          host={hosts[views[0]!]}
-          isDragging={draggingViewId === views[0]}
-          viewId={views[0]!}
-        />
-      ) : (
-        <ResizablePanelGroup
-          className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
-          id={side === "left" ? "editor-source" : "editor-right-sidebar"}
-          orientation="vertical"
-          panelIds={views.map((viewId) => VIEW_PANEL_IDS[viewId])}
-          persisted
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <aside
+          aria-label={side === "left" ? t("layout.leftSidebar") : t("layout.rightSidebar")}
+          className="relative flex size-full min-h-0 min-w-0 flex-col overflow-hidden px-3"
+          data-sidebar-region={side}
+          ref={ref}
         >
-          {views.map((viewId, index) => (
-            <Fragment key={viewId}>
-              {index > 0 && (
-                <ResizableHandle className="bg-transparent">
-                  <div className="h-px w-full bg-border" />
-                </ResizableHandle>
-              )}
-              <SidebarViewPanel
-                collapsible
-                host={hosts[viewId]}
-                isDragging={draggingViewId === viewId}
-                viewId={viewId}
-              />
-            </Fragment>
-          ))}
-        </ResizablePanelGroup>
-      )}
-    </aside>
+          {placement?.destination === side ? (
+            <SidebarInsertionIndicator
+              placement={placement}
+              side={side}
+              viewCount={views.filter((viewId) => viewId !== placement.viewId).length}
+            />
+          ) : null}
+          {views.length === 1 ? (
+            <SidebarViewStandalone
+              collapsible={false}
+              host={hosts[views[0]!]}
+              isDragging={draggingViewId === views[0]}
+              viewId={views[0]!}
+            />
+          ) : (
+            <ResizablePanelGroup
+              className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
+              id={side === "left" ? "editor-source" : "editor-right-sidebar"}
+              orientation="vertical"
+              panelIds={views.map((viewId) => VIEW_PANEL_IDS[viewId])}
+              persisted
+            >
+              {views.map((viewId, index) => (
+                <Fragment key={viewId}>
+                  {index > 0 && (
+                    <ResizableHandle className="bg-transparent">
+                      <div className="h-px w-full bg-border" />
+                    </ResizableHandle>
+                  )}
+                  <SidebarViewPanel
+                    collapsible
+                    host={hosts[viewId]}
+                    isDragging={draggingViewId === viewId}
+                    viewId={viewId}
+                  />
+                </Fragment>
+              ))}
+            </ResizablePanelGroup>
+          )}
+        </aside>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <DockViewMenuItems contextSide={side} />
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
@@ -255,7 +266,13 @@ function SidebarViewHeader({
   viewId: SidebarViewId;
 }) {
   const { t } = useTranslation();
-  const title = viewId === "sources" ? t("source.importedSources") : t("layout.activityFeed");
+  const title =
+    viewId === "sources"
+      ? t("source.importedSources")
+      : viewId === "activity"
+        ? t("layout.activityFeed")
+        : t("queue.title");
+
   const panelId = VIEW_PANEL_IDS[viewId];
   const pointerStart = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const suppressToggleClick = useRef(false);
@@ -364,7 +381,7 @@ function SidebarEmptyDropTarget({
       <div
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute inset-y-0 z-40 w-lg",
+          "pointer-events-none absolute inset-y-0 z-40 w-[50vw]",
           side === "left" ? "left-0" : "right-0",
         )}
         data-sidebar-empty-drop-target={side}
@@ -392,7 +409,12 @@ function SidebarDragPreview({
   viewId: SidebarViewId;
 }) {
   const { t } = useTranslation();
-  const title = viewId === "sources" ? t("source.importedSources") : t("layout.activityFeed");
+  const title =
+    viewId === "sources"
+      ? t("source.importedSources")
+      : viewId === "activity"
+        ? t("layout.activityFeed")
+        : t("queue.title");
 
   return createPortal(
     <Card

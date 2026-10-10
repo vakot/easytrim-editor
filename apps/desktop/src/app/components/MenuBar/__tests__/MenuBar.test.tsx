@@ -15,6 +15,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CommandPalette } from "@/app/components/CommandPalette";
 import { SettingsDialog } from "@/app/components/SettingsDialog";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
+import { WorkspaceViewsProvider } from "@/app/contexts/workspace-views-provider";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
@@ -42,7 +43,7 @@ const menuState = vi.hoisted(() => ({
   source: {
     isReady: true,
     selection: null as SourceRef | null,
-    media: null as Record<string, never> | null,
+    media: null as { audioStreams: never[] } | null,
   },
   crop: {
     value: { x: 0, y: 0, width: 1, height: 1 },
@@ -205,7 +206,8 @@ describe("MenuBarTest", () => {
       ? { displayName: "source.mp4", sourcePath: "C:/Media/source.mp4" }
       : null;
     menuState.source.isReady = overrides.canExport ?? true;
-    menuState.source.media = menuState.source.selection && menuState.source.isReady ? {} : null;
+    menuState.source.media =
+      menuState.source.selection && menuState.source.isReady ? { audioStreams: [] } : null;
     menuState.crop.value =
       overrides.canSave === false
         ? { x: 0.1, y: 0, width: 0.9, height: 1 }
@@ -300,17 +302,19 @@ describe("MenuBarTest", () => {
               <ChangelogProvider>
                 <ResizablePanelContextProvider>
                   <CommandPaletteProvider>
-                    <SettingsDialogProvider>
-                      <ApplicationCommandsProvider>
-                        <ThemeProvider>
-                          <AppMenuBar />
-                          <CommandPalette />
-                          <ExportActions />
-                          <SettingsDialog />
-                          <SettingsOpenIndicator />
-                        </ThemeProvider>
-                      </ApplicationCommandsProvider>
-                    </SettingsDialogProvider>
+                    <WorkspaceViewsProvider>
+                      <SettingsDialogProvider>
+                        <ApplicationCommandsProvider>
+                          <ThemeProvider>
+                            <AppMenuBar />
+                            <CommandPalette />
+                            <ExportActions />
+                            <SettingsDialog />
+                            <SettingsOpenIndicator />
+                          </ThemeProvider>
+                        </ApplicationCommandsProvider>
+                      </SettingsDialogProvider>
+                    </WorkspaceViewsProvider>
                   </CommandPaletteProvider>
                 </ResizablePanelContextProvider>
               </ChangelogProvider>
@@ -364,8 +368,12 @@ describe("MenuBarTest", () => {
     renderMenus();
 
     await user.click(getMenuTrigger("View"));
-    await user.click(screen.getByRole("menuitem", { name: /Export Queue/ }));
+    await user.click(screen.getByRole("menuitem", { name: "Open" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Export Queue/ }));
 
+    expect(menuState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "export/exportQueueDialogOpened" }),
+    );
     expect(await screen.findByRole("dialog", { name: "Export Queue" })).toBeVisible();
   });
 
@@ -966,13 +974,13 @@ describe("MenuBarTest", () => {
 
     await waitFor(() => {
       expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
-      expect(screen.getByRole("menuitem", { name: /Export Queue/ })).toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: "Open" })).toBeInTheDocument();
     });
 
     await user.hover(fileButton);
     await waitFor(() => {
       expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
-      expect(screen.queryByRole("menuitem", { name: /Export Queue/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole("menuitem", { name: "Open" })).not.toBeInTheDocument();
     });
   });
 

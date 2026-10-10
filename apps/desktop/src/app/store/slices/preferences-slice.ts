@@ -71,6 +71,14 @@ const preferencesSlice = createSlice({
         action.payload.insertionIndex,
       );
     },
+    sidebarViewRemoved: (state, action: PayloadAction<SidebarViewId>) => {
+      state.sidebarLayout.left = state.sidebarLayout.left.filter(
+        (viewId) => viewId !== action.payload,
+      );
+      state.sidebarLayout.right = state.sidebarLayout.right.filter(
+        (viewId) => viewId !== action.payload,
+      );
+    },
     layoutDensityChanged: (state, action: PayloadAction<LayoutDensity>) => {
       state.layoutDensity = action.payload;
     },
@@ -132,6 +140,7 @@ const {
   preferenceChanged,
   primaryColorChanged,
   sidebarLayoutChanged,
+  sidebarViewRemoved,
   themePreferenceChanged,
   uiScaleDecreased,
   uiScaleIncreased,
@@ -220,6 +229,7 @@ export {
   selectThemePreference,
   selectUiScalePercent,
   sidebarLayoutChanged,
+  sidebarViewRemoved,
   themePreferenceChanged,
   uiScaleDecreased,
   uiScaleIncreased,

@@ -1,39 +1,20 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
-
+import { WorkspaceViewContent } from "@/app/layout/components/WorkspaceViewContent";
+import { SIDEBAR_VIEW_IDS } from "@/app/layout/lib/sidebar-layout";
 import type { SidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
-import { ActivityFeed } from "@/features/activity";
-import {
-  SourceList,
-  SourceListCloseAll,
-  SourceListContent,
-  SourceListSearch,
-} from "@/features/source";
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectSidebarLayout } from "@/app/store/slices/preferences-slice";
 
 function SidebarViewPortals({ hosts }: { hosts: SidebarViewHosts }) {
+  const sidebarLayout = useAppSelector(selectSidebarLayout);
+  const visibleViews = new Set([...sidebarLayout.left, ...sidebarLayout.right]);
+
   return (
     <>
-      {createPortal(
-        <SourceList>
-          <div className="mt-1 flex min-h-0 flex-1 flex-col">
-            <div className="flex gap-2">
-              <SourceListSearch />
-              <SourceListCloseAll />
-            </div>
-            <SourceListContent />
-          </div>
-        </SourceList>,
-        hosts.sources,
-        "sources",
-      )}
-      {createPortal(
-        <ScrollArea className="flex-1 before:top-2">
-          <ActivityFeed className="pb-3" />
-        </ScrollArea>,
-        hosts.activity,
-        "activity",
+      {SIDEBAR_VIEW_IDS.filter((viewId) => visibleViews.has(viewId)).map((viewId) =>
+        createPortal(<WorkspaceViewContent viewId={viewId} />, hosts[viewId], viewId),
       )}
     </>
   );

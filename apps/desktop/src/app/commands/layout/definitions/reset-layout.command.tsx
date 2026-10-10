@@ -26,6 +26,7 @@ function useResetLayoutCommand() {
   const sourceViewsPanel = usePanelCommand([
     "editor-source-imported-sources",
     "editor-source-activity-feed",
+    "editor-source-export-queue",
   ]);
 
   const panelCommands = [leftSidebarPanel, rightSidebarPanel, timelinePanel, sourceViewsPanel];

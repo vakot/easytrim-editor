@@ -77,7 +77,7 @@ const state = {
   },
   export: { availableQueueFinishActions: ["exit", "nothing"], queueFinishAction: "nothing" },
   source: {
-    media: {},
+    media: { audioStreams: [] },
     source: { displayName: "source.mp4", sourcePath: "C:/source.mp4" },
     status: "ready",
   },
@@ -149,6 +149,8 @@ vi.mock("@/lib/diagnostics", () => ({
   diagnostics: { error: mocks.diagnosticsError },
 }));
 
+import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
+import { WorkspaceViewsProvider } from "@/app/contexts/workspace-views-provider";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";
@@ -159,6 +161,7 @@ import { SettingsDialogProvider } from "../SettingsDialogProvider";
 function RuntimeProbe() {
   const { commands, executeCommand } = useApplicationCommands();
   const { isSettingsOpen } = useSettingsDialog();
+  const { dialogViewId, dockPlacementRequest } = useWorkspaceViews();
 
   return (
     <div>
@@ -195,6 +198,22 @@ function RuntimeProbe() {
       <button onClick={() => void executeCommand("open-settings", "palette")} type="button">
         open-settings-palette
       </button>
+      <button
+        onClick={() => void executeCommand("open-workspace-view-activity", "menu")}
+        type="button"
+      >
+        open-workspace-view-activity-menu
+      </button>
+      <button
+        onClick={() => void executeCommand("dock-workspace-view-exportQueue", "menu")}
+        type="button"
+      >
+        dock-workspace-view-exportQueue-menu
+      </button>
+      {dialogViewId ? <output data-testid="open-workspace-view">{dialogViewId}</output> : null}
+      {dockPlacementRequest ? (
+        <output data-testid="dock-workspace-view">{dockPlacementRequest.viewId}</output>
+      ) : null}
       {isSettingsOpen ? <span data-testid="settings-open-from-command" /> : null}
     </div>
   );
@@ -204,9 +223,11 @@ function runtimeUi() {
   return (
     <EditorRuntimeTestProvider>
       <SettingsDialogProvider>
-        <ApplicationCommandsProvider>
-          <RuntimeProbe />
-        </ApplicationCommandsProvider>
+        <WorkspaceViewsProvider>
+          <ApplicationCommandsProvider>
+            <RuntimeProbe />
+          </ApplicationCommandsProvider>
+        </WorkspaceViewsProvider>
       </SettingsDialogProvider>
     </EditorRuntimeTestProvider>
   );
@@ -253,7 +274,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(63);
+    ).toHaveLength(75);
     expect(
       screen
         .getAllByRole("button")
@@ -373,6 +394,22 @@ describe("ApplicationCommandsProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 
     expect(mocks.requestSourceDelete).toHaveBeenCalledWith({ sourceIds: ["source-1"] });
+  });
+
+  it("routes Open and Docks through the shared workspace view commands", async () => {
+    renderRuntime();
+
+    expect(screen.getByRole("button", { name: "open-workspace-view-activity" })).toHaveAttribute(
+      "data-surfaces",
+      "menu",
+    );
+    expect(screen.getByRole("button", { name: "dock-workspace-view-exportQueue" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "open-workspace-view-activity-menu" }));
+    expect(screen.getByTestId("open-workspace-view")).toHaveTextContent("activity");
+
+    fireEvent.click(screen.getByRole("button", { name: "dock-workspace-view-exportQueue-menu" }));
+    expect(screen.getByTestId("dock-workspace-view")).toHaveTextContent("exportQueue");
   });
 
   it("opens Settings through the application command", async () => {
@@ -531,6 +568,7 @@ describe("ApplicationCommandsProvider", () => {
     expect(mocks.panelCommandIds).toContainEqual([
       "editor-source-imported-sources",
       "editor-source-activity-feed",
+      "editor-source-export-queue",
     ]);
   });
 

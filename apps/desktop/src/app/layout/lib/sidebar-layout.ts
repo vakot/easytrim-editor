@@ -1,5 +1,5 @@
 const SIDEBAR_IDS = ["left", "right"] as const;
-const SIDEBAR_VIEW_IDS = ["sources", "activity"] as const;
+const SIDEBAR_VIEW_IDS = ["sources", "activity", "exportQueue"] as const;
 
 type SidebarId = (typeof SIDEBAR_IDS)[number];
 type SidebarViewId = (typeof SIDEBAR_VIEW_IDS)[number];
@@ -57,11 +57,6 @@ function normalizeSidebarLayout(value: unknown): SidebarLayout {
 
   const left = collect(value.left);
   const right = collect(value.right);
-
-  // New views join the default region so persisted layouts remain usable after updates.
-  for (const viewId of DEFAULT_SIDEBAR_LAYOUT.left) {
-    if (!seen.has(viewId)) left.push(viewId);
-  }
 
   return { left, right };
 }

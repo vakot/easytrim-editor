@@ -1,6 +1,6 @@
 import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -42,7 +42,7 @@ interface KeyboardSidebarDrag {
   viewId: SidebarViewId;
 }
 
-type ActiveSidebarDragMode = "keyboard" | "pointer" | null;
+type ActiveSidebarDragMode = "keyboard" | "pointer" | "placement" | null;
 
 function useSidebarDragAndDrop() {
   const dispatch = useAppDispatch();
@@ -53,6 +53,7 @@ function useSidebarDragAndDrop() {
   const [dropPlacement, setDropPlacement] = useState<SidebarDropPlacement | null>(null);
   const [dragPreview, setDragPreview] = useState<SidebarDragPreview | null>(null);
   const [keyboardDragAnnouncement, setKeyboardDragAnnouncement] = useState("");
+  const [isDockPlacementMode, setIsDockPlacementMode] = useState(false);
 
   const dragGeometry = useRef<SidebarDragGeometry>({
     panelBounds: new Map(),
@@ -62,6 +63,8 @@ function useSidebarDragAndDrop() {
   const dragSidebarExpansion = useRef<ActiveSidebarDragExpansion | null>(null);
   const activeDragMode = useRef<ActiveSidebarDragMode>(null);
   const keyboardSidebarDrag = useRef<KeyboardSidebarDrag | null>(null);
+  const dockPlacementViewId = useRef<SidebarViewId | null>(null);
+  const dockPlacementPosition = useRef<SidebarDragPosition>({ x: 0, y: 0 });
 
   const initializeSidebarDrag = useCallback(
     (viewId: SidebarViewId, position: SidebarDragPosition) => {
@@ -190,7 +193,145 @@ function useSidebarDragAndDrop() {
     setDropPlacement(null);
     setDragPreview(null);
     setIsDraggingView(false);
+    setIsDockPlacementMode(false);
   }, []);
+
+  const getDockPlacement = useCallback(
+    (viewId: SidebarViewId, position: SidebarDragPosition) => {
+      updateDragSidebarExpansion(position);
+      const expansion = dragSidebarExpansion.current;
+      const proximitySide = getSidebarProximitySide(position);
+      const autoExpandedDestination =
+        proximitySide && expansion?.temporarilyExpanded.has(proximitySide) ? proximitySide : null;
+
+      const dropRegion = getSidebarDropRegion(position, autoExpandedDestination);
+      if (!dropRegion) return null;
+
+      const { destination, region, usesEmptyTarget } = dropRegion;
+      const geometry = captureSidebarDragGeometry();
+      const destinationBounds: SidebarViewBounds[] = sidebarLayout[destination]
+        .filter((item) => item !== viewId)
+        .flatMap((item) => {
+          const bounds = geometry.panelBounds.get(item);
+          return bounds ? [bounds] : [];
+        });
+
+      const regionTop = usesEmptyTarget
+        ? region.getBoundingClientRect().top
+        : (geometry.regionTops.get(destination) ?? region.getBoundingClientRect().top);
+
+      return resolveSidebarDropPlacement(
+        sidebarLayout,
+        viewId,
+        destination,
+        position.y,
+        destinationBounds,
+        regionTop,
+      );
+    },
+    [sidebarLayout, updateDragSidebarExpansion],
+  );
+
+  const beginDockPlacement = useCallback(
+    (viewId: SidebarViewId) => {
+      if (activeDragMode.current !== null) return;
+
+      const workspace = document.getElementById("workspace")?.getBoundingClientRect();
+      const position = workspace
+        ? { x: (workspace.left + workspace.right) / 2, y: (workspace.top + workspace.bottom) / 2 }
+        : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
+      activeDragMode.current = "placement";
+      dockPlacementViewId.current = viewId;
+      dockPlacementPosition.current = position;
+      initializeSidebarDrag(viewId, position);
+      setIsDockPlacementMode(true);
+    },
+    [initializeSidebarDrag],
+  );
+
+  const finishDockPlacement = useCallback(
+    (canceled: boolean, position = dockPlacementPosition.current) => {
+      const viewId = dockPlacementViewId.current;
+      if (!viewId || activeDragMode.current !== "placement") return;
+
+      const placement = canceled ? null : getDockPlacement(viewId, position);
+      for (const side of dragSidebarExpansion.current?.expandedByDrag ?? []) {
+        const keepExpanded = placement?.destination === side;
+        sidebarVisibility.setSidebarExpanded(side, keepExpanded, { persist: keepExpanded });
+      }
+
+      clearDragState();
+      dockPlacementViewId.current = null;
+      if (placement) {
+        dispatch(
+          sidebarLayoutChanged({
+            destination: placement.destination,
+            insertionIndex: placement.insertionIndex,
+            viewId: placement.viewId,
+          }),
+        );
+      }
+    },
+    [clearDragState, dispatch, getDockPlacement, sidebarVisibility],
+  );
+
+  useEffect(() => {
+    if (!isDockPlacementMode) return;
+
+    const updateFromPointer = (event: Pick<PointerEvent, "clientX" | "clientY">) => {
+      const viewId = dockPlacementViewId.current;
+      if (!viewId || activeDragMode.current !== "placement") return;
+
+      const position = { x: event.clientX, y: event.clientY };
+      dockPlacementPosition.current = position;
+      const placement = getDockPlacement(viewId, position);
+      setDropPlacement(placement);
+      setDragPreview({ position, viewId });
+    };
+
+    const stopWorkspaceAction = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    };
+
+    const handlePointerDown = (event: PointerEvent) => stopWorkspaceAction(event);
+    const handleClick = (event: MouseEvent) => {
+      stopWorkspaceAction(event);
+      if (event.button === 0) {
+        const viewId = dockPlacementViewId.current;
+        const position = { x: event.clientX, y: event.clientY };
+        if (viewId && getDockPlacement(viewId, position)) {
+          finishDockPlacement(false, position);
+        }
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      stopWorkspaceAction(event);
+      if (event.key === "Escape") finishDockPlacement(true);
+    };
+
+    const handleResize = () =>
+      updateFromPointer({
+        clientX: dockPlacementPosition.current.x,
+        clientY: dockPlacementPosition.current.y,
+      });
+
+    document.addEventListener("pointermove", updateFromPointer, true);
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("click", handleClick, true);
+    document.addEventListener("keydown", handleKeyDown, true);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      document.removeEventListener("pointermove", updateFromPointer, true);
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("click", handleClick, true);
+      document.removeEventListener("keydown", handleKeyDown, true);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [finishDockPlacement, getDockPlacement, isDockPlacementMode]);
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -269,12 +410,18 @@ function useSidebarDragAndDrop() {
             view:
               currentDrag.viewId === "sources"
                 ? t("source.importedSources")
-                : t("layout.activityFeed"),
+                : currentDrag.viewId === "activity"
+                  ? t("layout.activityFeed")
+                  : t("queue.title"),
           }),
         );
       } else {
         const viewTitle =
-          currentDrag.viewId === "sources" ? t("source.importedSources") : t("layout.activityFeed");
+          currentDrag.viewId === "sources"
+            ? t("source.importedSources")
+            : currentDrag.viewId === "activity"
+              ? t("layout.activityFeed")
+              : t("queue.title");
 
         setKeyboardDragAnnouncement(
           canceled
@@ -328,7 +475,12 @@ function useSidebarDragAndDrop() {
         setDropPlacement(placement);
         setKeyboardDragAnnouncement(
           t("layout.keyboardDragStarted", {
-            view: viewId === "sources" ? t("source.importedSources") : t("layout.activityFeed"),
+            view:
+              viewId === "sources"
+                ? t("source.importedSources")
+                : viewId === "activity"
+                  ? t("layout.activityFeed")
+                  : t("queue.title"),
           }),
         );
         return;
@@ -420,7 +572,9 @@ function useSidebarDragAndDrop() {
           view:
             keyboardDrag.viewId === "sources"
               ? t("source.importedSources")
-              : t("layout.activityFeed"),
+              : keyboardDrag.viewId === "activity"
+                ? t("layout.activityFeed")
+                : t("queue.title"),
         }),
       );
     },
@@ -436,12 +590,14 @@ function useSidebarDragAndDrop() {
 
   return {
     dragPreview,
+    beginDockPlacement,
     dropPlacement,
     handleDragEnd,
     handleDragMove,
     handleDragStart,
     handleKeyboardDragKeyDown,
     isDraggingView,
+    isDockPlacementMode,
     keyboardDragAnnouncement,
     sidebarLayout,
     sidebarVisibility,

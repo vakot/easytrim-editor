@@ -16,7 +16,7 @@ describe("sidebar layout", () => {
     expect(normalizeSidebarLayout({ left: ["activity"] })).toEqual(DEFAULT_SIDEBAR_LAYOUT);
   });
 
-  it("removes unknown and duplicate views and restores missing supported views", () => {
+  it("removes unknown and duplicate views while preserving empty sidebars", () => {
     expect(
       normalizeSidebarLayout({
         left: ["activity", "unknown", "activity"],
@@ -24,7 +24,7 @@ describe("sidebar layout", () => {
       }),
     ).toEqual({ left: ["activity"], right: ["sources"] });
 
-    expect(normalizeSidebarLayout({ left: [], right: [] })).toEqual(DEFAULT_SIDEBAR_LAYOUT);
+    expect(normalizeSidebarLayout({ left: [], right: [] })).toEqual({ left: [], right: [] });
   });
 
   it("moves a view across sidebars at the requested insertion point", () => {
