@@ -20,7 +20,7 @@ function useResetLayoutCommand() {
   const activityFeedView = useAppSelector(selectActivityFeedView);
   const layoutDensity = useAppSelector(selectLayoutDensity);
   const sidebarLayout = useAppSelector(selectSidebarLayout);
-  const leftSidebarPanel = usePanelCommand("workspace-sidebar");
+  const leftSidebarPanel = usePanelCommand("workspace-left-sidebar");
   const rightSidebarPanel = usePanelCommand("workspace-right-sidebar");
   const timelinePanel = usePanelCommand("editor-stage-timeline");
   const sourceViewsPanel = usePanelCommand([

@@ -79,7 +79,7 @@ function AppLayout() {
                 collapsible
                 defaultSize="25rem"
                 groupResizeBehavior="preserve-pixel-size"
-                id="workspace-sidebar"
+                id="workspace-left-sidebar"
                 maxSize="30rem"
                 minSize="15rem"
               >

@@ -7,7 +7,7 @@ import { commandSearchTerms } from "@/app/commands/core/application-command.util
 
 function usePanelCommands() {
   const { t } = useTranslation();
-  const left = usePanelCommand("workspace-sidebar");
+  const left = usePanelCommand("workspace-left-sidebar");
   const right = usePanelCommand("workspace-right-sidebar");
   const bottom = usePanelCommand("editor-stage-timeline");
   return [

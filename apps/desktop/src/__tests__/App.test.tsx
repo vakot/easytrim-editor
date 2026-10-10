@@ -593,14 +593,14 @@ describe("App", () => {
     render(<App />);
 
     await waitFor(() => expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled());
-    const sourcePanel = document.getElementById("workspace-sidebar");
+    const sourcePanel = document.getElementById("workspace-left-sidebar");
     const previewPanel = document.getElementById("editor-stage-preview");
     const timelinePanel = document.getElementById("editor-stage-timeline");
     const audioPanel = document.getElementById("editor-stage-audio");
 
     await user.click(screen.getByRole("checkbox", { name: replacementSelection.displayName }));
 
-    expect(document.getElementById("workspace-sidebar")).toBe(sourcePanel);
+    expect(document.getElementById("workspace-left-sidebar")).toBe(sourcePanel);
     expect(document.getElementById("editor-stage-preview")).toBe(previewPanel);
     expect(document.getElementById("editor-stage-timeline")).toBe(timelinePanel);
     expect(document.getElementById("editor-stage-audio")).toBe(audioPanel);
@@ -977,7 +977,7 @@ describe("App", () => {
     expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "false");
     expect(playbackSpeedButton).not.toHaveClass("text-primary");
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
-    const sourcePanel = document.getElementById("workspace-sidebar");
+    const sourcePanel = document.getElementById("workspace-left-sidebar");
     expect(sourcePanel).not.toBeNull();
     expect(document.getElementById("editor-stage-preview")).toContainElement(
       screen.getByLabelText("Source video preview"),

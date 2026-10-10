@@ -525,7 +525,7 @@ describe("ApplicationCommandsProvider", () => {
       expect.objectContaining({ type: "preferences/layoutReset" }),
     );
     expect(mocks.resetPanels).toHaveBeenCalledTimes(3);
-    expect(mocks.panelCommandIds).toContain("workspace-sidebar");
+    expect(mocks.panelCommandIds).toContain("workspace-left-sidebar");
     expect(mocks.panelCommandIds).toContain("workspace-right-sidebar");
     expect(mocks.panelCommandIds).toContain("editor-stage-timeline");
     expect(mocks.panelCommandIds).toContainEqual([
