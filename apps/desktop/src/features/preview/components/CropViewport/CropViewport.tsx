@@ -1,3 +1,4 @@
+import { RotateCcw } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type PointerEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,6 +10,7 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   cropReset,
   selectCrop,
+  selectCropApplied,
   selectFlipHorizontal,
   selectFlipVertical,
   selectRotationDegrees,
@@ -54,6 +56,7 @@ function CropViewport() {
   const { videoRef } = usePreviewRuntime();
   const { registerHandlers } = usePreviewTransform();
   const crop = useAppSelector(selectCrop);
+  const cropApplied = useAppSelector(selectCropApplied);
   const flipHorizontal = useAppSelector(selectFlipHorizontal);
   const flipVertical = useAppSelector(selectFlipVertical);
   const rotationDegrees = useAppSelector(selectRotationDegrees);
@@ -339,12 +342,13 @@ function CropViewport() {
               ))}
               <Button
                 aria-label={t("preview.crop.resetToDefault")}
-                className="h-10 min-w-10 px-2 text-xs"
+                className="size-10"
+                disabled={!cropApplied}
                 onClick={resetCropToDefault}
-                size="sm"
-                variant="ghost"
+                size="icon"
+                variant="destructive"
               >
-                {t("common.actions.resetToDefault")}
+                <RotateCcw aria-hidden="true" />
               </Button>
             </div>
           ) : null}
