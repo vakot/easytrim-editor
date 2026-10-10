@@ -45,14 +45,19 @@ vi.mock("@dnd-kit/react", () => ({
     children: React.ReactNode;
     onDragEnd: (event: unknown) => void;
     onDragMove: (event: unknown) => void;
-    onDragStart: () => void;
+    onDragStart: (event: unknown) => void;
   }) => (
     <>
       {children}
       <button
         aria-label="Preview Sources below Activity"
         onClick={() => {
-          onDragStart();
+          onDragStart({
+            operation: {
+              position: { current: { x: 120, y: 590 } },
+              source: { id: "sources" },
+            },
+          });
           onDragMove({
             canceled: false,
             operation: { position: { current: { x: 120, y: 590 } }, source: { id: "sources" } },
@@ -73,7 +78,12 @@ vi.mock("@dnd-kit/react", () => ({
       <button
         aria-label="Simulate moving Sources to the bottom of the left sidebar"
         onClick={() => {
-          onDragStart();
+          onDragStart({
+            operation: {
+              position: { current: { x: 120, y: 590 } },
+              source: { id: "sources" },
+            },
+          });
           const event = {
             canceled: false,
             operation: { position: { current: { x: 120, y: 590 } }, source: { id: "sources" } },
@@ -87,7 +97,12 @@ vi.mock("@dnd-kit/react", () => ({
       <button
         aria-label="Simulate moving Activity Feed to the right sidebar"
         onClick={() => {
-          onDragStart();
+          onDragStart({
+            operation: {
+              position: { current: { x: 1100, y: 350 } },
+              source: { id: "activity" },
+            },
+          });
           const event = {
             canceled: false,
             operation: { position: { current: { x: 1100, y: 350 } }, source: { id: "activity" } },
@@ -101,7 +116,12 @@ vi.mock("@dnd-kit/react", () => ({
       <button
         aria-label="Preview moving Sources to the right sidebar"
         onClick={() => {
-          onDragStart();
+          onDragStart({
+            operation: {
+              position: { current: { x: 1100, y: 350 } },
+              source: { id: "sources" },
+            },
+          });
           onDragMove({
             canceled: false,
             operation: { position: { current: { x: 1100, y: 350 } }, source: { id: "sources" } },
@@ -122,7 +142,12 @@ vi.mock("@dnd-kit/react", () => ({
       <button
         aria-label="Simulate moving Sources to the right sidebar"
         onClick={() => {
-          onDragStart();
+          onDragStart({
+            operation: {
+              position: { current: { x: 1100, y: 350 } },
+              source: { id: "sources" },
+            },
+          });
           const event = {
             canceled: false,
             operation: { position: { current: { x: 1100, y: 350 } }, source: { id: "sources" } },
@@ -532,6 +557,10 @@ describe("AppLayout sidebar drag and drop", () => {
       "data-sidebar-drop-placeholder-index",
       "1",
     );
+    const dragPreview = document.querySelector('[data-sidebar-drag-preview="sources"]');
+    expect(dragPreview).toBeInTheDocument();
+    expect(dragPreview?.parentElement).toBe(document.body);
+    expect(dragPreview).toHaveStyle({ left: "1100px", top: "350px" });
 
     fireEvent.click(screen.getByRole("button", { name: "Drop Sources into the right sidebar" }));
 
@@ -539,5 +568,6 @@ describe("AppLayout sidebar drag and drop", () => {
       expect(store.getState().preferences.sidebarLayout.right).toEqual(["activity", "sources"]);
     });
     expect(document.querySelector('[data-sidebar-drop-placeholder="right"]')).toBeNull();
+    expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
   });
 });

@@ -40,6 +40,9 @@ vi.mock("@/app/layout/components/AppLayoutHeader", async () => {
         <button onClick={() => manager?.actions.stop()} type="button">
           Finish drag
         </button>
+        <button onClick={() => manager?.actions.stop({ canceled: true })} type="button">
+          Cancel drag
+        </button>
       </header>
     );
   }
@@ -271,6 +274,19 @@ describe("AppLayout drag and resize integration", () => {
         expect(placeholder).toHaveStyle({ top: `${expectedPreviewTop}px` });
         expect(placeholder).toHaveClass("border-t-2", "-translate-y-1/2");
         expect(placeholder).not.toHaveClass("h-12");
+        const dragPreview = document.querySelector(`[data-sidebar-drag-preview="${viewId}"]`);
+        expect(dragPreview).toBeInTheDocument();
+        expect(dragPreview?.parentElement).toBe(document.body);
+        expect(dragPreview?.closest('[data-slot="resizable-panel-group"]')).toBeNull();
+        expect(dragPreview).toHaveTextContent(
+          viewId === "sources" ? "Imported Sources" : "Activity Feed",
+        );
+        expect(dragPreview?.querySelector("svg")).toBeInTheDocument();
+        expect(dragPreview).toHaveStyle({
+          left: "100px",
+          top: `${y > 350 ? 650 : 50}px`,
+          transform: "translate(12px, 12px)",
+        });
         expect(screen.getByTestId("panel-registration")).toHaveAttribute("data-registered", "true");
       });
 
@@ -278,6 +294,7 @@ describe("AppLayout drag and resize integration", () => {
 
       await waitFor(() => {
         expect(document.querySelector('[data-sidebar-drop-placeholder="left"]')).toBeNull();
+        expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
       });
     };
 
@@ -315,6 +332,21 @@ describe("AppLayout drag and resize integration", () => {
     setBounds(activityPanel, 300, 700);
     setBounds(activityFrame, 300, 700);
     await dragView("activity", 50, ["activity", "sources"], 0, 0);
+    expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Begin Activity drag" }));
+    await waitFor(() => {
+      expect(document.querySelector('[data-sidebar-drag-preview="activity"]')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Move drag below panels" }));
+    fireEvent.click(screen.getByRole("button", { name: "Move drag below panels" }));
+    expect(document.querySelector('[data-sidebar-drop-placeholder="left"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-sidebar-drag-preview="activity"]')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel drag" }));
+    await waitFor(() => {
+      expect(document.querySelector('[data-sidebar-drop-placeholder="left"]')).toBeNull();
+      expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+    });
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
   });
 });

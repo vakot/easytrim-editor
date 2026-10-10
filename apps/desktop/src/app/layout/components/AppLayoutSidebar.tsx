@@ -2,6 +2,7 @@ import { Feedback } from "@dnd-kit/dom";
 import { useDraggable, useDroppable } from "@dnd-kit/react";
 import { ChevronRight, GripVertical } from "lucide-react";
 import { Fragment } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -278,4 +279,28 @@ function SidebarEmptyDropTarget({ isDragging, side }: { isDragging: boolean; sid
   );
 }
 
-export { AppLayoutSidebar, SidebarEmptyDropTarget };
+function SidebarDragPreview({
+  position,
+  viewId,
+}: {
+  position: { x: number; y: number };
+  viewId: SidebarViewId;
+}) {
+  const { t } = useTranslation();
+  const title = viewId === "sources" ? t("source.importedSources") : t("layout.activityFeed");
+
+  return createPortal(
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed z-100 inline-flex max-w-64 items-center gap-2 rounded-lg border border-border bg-card/95 px-3 py-2 text-sm font-medium text-secondary-foreground opacity-95 shadow-xl backdrop-blur-sm"
+      data-sidebar-drag-preview={viewId}
+      style={{ left: position.x, top: position.y, transform: "translate(12px, 12px)" }}
+    >
+      <GripVertical aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+      <span className="truncate">{title}</span>
+    </div>,
+    document.body,
+  );
+}
+
+export { AppLayoutSidebar, SidebarDragPreview, SidebarEmptyDropTarget };

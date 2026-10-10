@@ -2,6 +2,7 @@ import {
   DragDropProvider,
   type DragEndEvent,
   type DragMoveEvent,
+  type DragStartEvent,
   useDroppable,
 } from "@dnd-kit/react";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
@@ -12,7 +13,11 @@ import { AppLayoutFooter } from "@/app/layout/components/AppLayoutFooter";
 import { AppLayoutHeader } from "@/app/layout/components/AppLayoutHeader";
 import { AppLayoutMain } from "@/app/layout/components/AppLayoutMain";
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";
-import { AppLayoutSidebar, SidebarEmptyDropTarget } from "@/app/layout/components/AppLayoutSidebar";
+import {
+  AppLayoutSidebar,
+  SidebarDragPreview,
+  SidebarEmptyDropTarget,
+} from "@/app/layout/components/AppLayoutSidebar";
 import { SidebarViewPortals } from "@/app/layout/components/SidebarViewPortal";
 import {
   isSidebarId,
@@ -45,6 +50,11 @@ function AppLayout() {
   const [viewHosts] = useState(createSidebarViewHosts);
   const [isDraggingView, setIsDraggingView] = useState(false);
   const [dropPlacement, setDropPlacement] = useState<SidebarDropPlacement | null>(null);
+  const [dragPreview, setDragPreview] = useState<{
+    position: { x: number; y: number };
+    viewId: SidebarViewId;
+  } | null>(null);
+
   const dragStartPanelBounds = useRef<Map<SidebarViewId, SidebarViewBounds>>(new Map());
 
   const isCompact = layoutDensity === "compact";
@@ -56,7 +66,7 @@ function AppLayout() {
         return null;
       }
 
-      const position = ("to" in event ? event.to : undefined) ?? event.operation.position.current;
+      const position = getDragPosition(event);
       if (!position) return null;
 
       const containsPointer = (element: HTMLElement) => {
@@ -108,7 +118,7 @@ function AppLayout() {
     [sidebarLayout],
   );
 
-  const handleDragStart = useCallback(() => {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     dragStartPanelBounds.current = new Map(
       Array.from(document.querySelectorAll<HTMLElement>("[data-sidebar-view]")).flatMap(
         (viewElement) => {
@@ -121,11 +131,15 @@ function AppLayout() {
         },
       ),
     );
+    setDragPreview(getSidebarDragPreview(event));
     setIsDraggingView(true);
   }, []);
 
   const handleDragMove = useCallback(
-    (event: DragMoveEvent) => setDropPlacement(getDropPlacement(event)),
+    (event: DragMoveEvent) => {
+      setDropPlacement(getDropPlacement(event));
+      setDragPreview(getSidebarDragPreview(event));
+    },
     [getDropPlacement],
   );
 
@@ -133,6 +147,7 @@ function AppLayout() {
     (event: DragEndEvent) => {
       const placement = event.canceled ? null : getDropPlacement(event);
       setDropPlacement(null);
+      setDragPreview(null);
       setIsDraggingView(false);
       dragStartPanelBounds.current.clear();
       if (placement) {
@@ -252,9 +267,24 @@ function AppLayout() {
         <SidebarViewPortals hosts={viewHosts} />
         <SidebarDropSurface />
         <AppLayoutFooter />
+        {dragPreview ? (
+          <SidebarDragPreview position={dragPreview.position} viewId={dragPreview.viewId} />
+        ) : null}
       </main>
     </DragDropProvider>
   );
+}
+
+function getDragPosition(event: DragStartEvent | DragMoveEvent | DragEndEvent) {
+  return ("to" in event ? event.to : undefined) ?? event.operation.position.current;
+}
+
+function getSidebarDragPreview(event: DragStartEvent | DragMoveEvent) {
+  const viewId = event.operation.source?.id;
+  const position = getDragPosition(event);
+  if (!isSidebarViewId(viewId) || !position) return null;
+
+  return { position: { x: position.x, y: position.y }, viewId };
 }
 
 function SidebarDropSurface() {
