@@ -181,6 +181,22 @@ vi.mock("@dnd-kit/react", () => ({
         type="button"
       />
       <button
+        aria-label="Expand right sidebar and immediately drop sources"
+        onClick={() => {
+          onDragStart({
+            operation: { position: { current: { x: 200, y: 350 } }, source: { id: "sources" } },
+          });
+          const event = {
+            canceled: false,
+            operation: { position: { current: { x: 1000, y: 350 } }, source: { id: "sources" } },
+          };
+
+          onDragMove(event);
+          onDragEnd(event);
+        }}
+        type="button"
+      />
+      <button
         aria-label="Move drag outside sidebar proximity"
         onClick={() =>
           onDragMove({
@@ -687,6 +703,66 @@ describe("AppLayout sidebar drag and drop", () => {
       expect(Number.parseFloat(rightSidebarPanel.style.flexGrow)).toBeGreaterThan(0);
     });
     expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+  });
+
+  it("drops into an automatically expanded sidebar before its geometry updates", async () => {
+    const store = renderAppLayout();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Simulate moving Activity Feed to the right sidebar" }),
+    );
+
+    const left = document.querySelector<HTMLElement>('[data-sidebar-region="left"]')!;
+    const right = document.querySelector<HTMLElement>('[data-sidebar-region="right"]')!;
+    const rightSidebarPanel = right.closest<HTMLElement>("[data-panel]")!;
+    const rightActivityPanel = right
+      .querySelector<HTMLElement>('[data-sidebar-view="activity"]')!
+      .closest<HTMLElement>("[data-panel]")!;
+
+    setBounds(left, {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 320,
+      bottom: 800,
+      width: 320,
+      height: 800,
+    } as DOMRect);
+    setBounds(rightActivityPanel, {
+      x: 960,
+      y: 300,
+      top: 300,
+      left: 960,
+      right: 1280,
+      bottom: 700,
+      width: 320,
+      height: 400,
+    } as DOMRect);
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle right sidebar visibility" }));
+    await waitFor(() => {
+      expect(Number.parseFloat(rightSidebarPanel.style.flexGrow)).toBe(0);
+    });
+    setBounds(right, {
+      x: 1280,
+      y: 0,
+      top: 0,
+      left: 1280,
+      right: 1280,
+      bottom: 800,
+      width: 0,
+      height: 800,
+    } as DOMRect);
+
+    // The mock invokes move and end synchronously, before expansion can update geometry.
+    fireEvent.click(
+      screen.getByRole("button", { name: "Expand right sidebar and immediately drop sources" }),
+    );
+
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout.right).toEqual(["sources", "activity"]);
+      expect(Number.parseFloat(rightSidebarPanel.style.flexGrow)).toBeGreaterThan(0);
+    });
   });
 
   it("uses the visible populated-sidebar preview index when applying the drop", async () => {

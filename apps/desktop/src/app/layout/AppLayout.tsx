@@ -208,6 +208,11 @@ function AppLayout() {
       const position = getDragPosition(event);
       if (!position) return null;
 
+      const expansion = dragSidebarExpansion.current;
+      const proximitySide = getSidebarProximitySide(position);
+      const autoExpandedDestination =
+        proximitySide && expansion?.temporarilyExpanded.has(proximitySide) ? proximitySide : null;
+
       const containsPointer = (element: HTMLElement) => {
         const bounds = element.getBoundingClientRect();
         return (
@@ -222,19 +227,24 @@ function AppLayout() {
         document.querySelectorAll<HTMLElement>("[data-sidebar-empty-drop-target]"),
       ).find(containsPointer);
 
-      const populatedRegion = Array.from(
-        document.querySelectorAll<HTMLElement>("[data-sidebar-region]"),
-      ).find(containsPointer);
+      const emptyTargetSide = emptyTarget?.dataset.sidebarEmptyDropTarget;
+      const usesEmptyTarget = !autoExpandedDestination && isSidebarId(emptyTargetSide);
 
-      const destination = isSidebarId(emptyTarget?.dataset.sidebarEmptyDropTarget)
-        ? emptyTarget.dataset.sidebarEmptyDropTarget
-        : populatedRegion?.dataset.sidebarRegion;
+      const populatedRegion = autoExpandedDestination
+        ? document.querySelector<HTMLElement>(`[data-sidebar-region="${autoExpandedDestination}"]`)
+        : Array.from(document.querySelectorAll<HTMLElement>("[data-sidebar-region]")).find(
+            containsPointer,
+          );
+
+      const destination = autoExpandedDestination
+        ? autoExpandedDestination
+        : usesEmptyTarget
+          ? emptyTargetSide
+          : populatedRegion?.dataset.sidebarRegion;
 
       if (!isSidebarId(destination)) return null;
 
-      const regionElement = isSidebarId(emptyTarget?.dataset.sidebarEmptyDropTarget)
-        ? emptyTarget
-        : populatedRegion;
+      const regionElement = usesEmptyTarget ? emptyTarget : populatedRegion;
 
       if (!regionElement) return null;
 
@@ -245,8 +255,8 @@ function AppLayout() {
           return bounds ? [bounds] : [];
         });
 
-      const regionTop = emptyTarget
-        ? emptyTarget.getBoundingClientRect().top
+      const regionTop = usesEmptyTarget
+        ? regionElement.getBoundingClientRect().top
         : (dragStartRegionTops.current.get(destination) ??
           regionElement.getBoundingClientRect().top);
 
