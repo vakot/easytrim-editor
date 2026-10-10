@@ -139,10 +139,16 @@ function AppLayout() {
               </ResizablePanel>
             ) : null}
 
-            <AppLayoutSeparator isCollapsed={!leftSidebarVisible} isCompact={isCompact} />
+            {hasLeftSidebar ? (
+              <AppLayoutSeparator isCollapsed={!leftSidebarVisible} isCompact={isCompact} />
+            ) : null}
 
             <ResizablePanel
-              className="overflow-hidden!"
+              className={cn(
+                "overflow-hidden!",
+                !hasLeftSidebar && "ml-1.5",
+                !hasRightSidebar && "mr-1.5",
+              )}
               groupResizeBehavior="preserve-relative-size"
               id="workspace-content"
               minSize="50rem"
@@ -159,7 +165,9 @@ function AppLayout() {
               </div>
             </ResizablePanel>
 
-            <AppLayoutSeparator isCollapsed={!rightSidebarVisible} isCompact={isCompact} />
+            {hasRightSidebar ? (
+              <AppLayoutSeparator isCollapsed={!rightSidebarVisible} isCompact={isCompact} />
+            ) : null}
 
             {hasRightSidebar ? (
               <ResizablePanel
