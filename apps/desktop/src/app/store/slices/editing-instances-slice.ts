@@ -57,7 +57,9 @@ function makeListEntry(
 ): EditingInstanceListEntry {
   const source = instance.snapshot.source;
   const trim = instance.snapshot.trim;
-  const durationMicros = instance.media?.durationMicros ?? previous?.durationMicros;
+  const durationMicros =
+    instance.media?.durationMicros ?? instance.sourceDurationMicros ?? previous?.durationMicros;
+
   return {
     displayName: source.displayName,
     ...(durationMicros === undefined ? {} : { durationMicros }),
@@ -179,6 +181,7 @@ const editingInstancesSlice = createSlice({
       const instance = getInstance(state, action.payload.id);
       if (instance) {
         instance.media = action.payload.media;
+        instance.sourceDurationMicros = action.payload.media.durationMicros;
         updateSourceListDuration(state, action.payload.id, action.payload.media.durationMicros);
       }
     },
@@ -212,6 +215,7 @@ const editingInstancesSlice = createSlice({
         instance.optimizedArguments = action.payload.optimizedArguments;
       if (action.payload.media) {
         instance.media = action.payload.media;
+        instance.sourceDurationMicros = action.payload.media.durationMicros;
         updateSourceListDuration(state, action.payload.id, action.payload.media.durationMicros);
       }
       if (listMetadataChanged || snapshotTrimChanged)
@@ -606,6 +610,7 @@ const editingInstancesSlice = createSlice({
         instance.snapshot = action.payload.snapshot;
         if (action.payload.media) {
           instance.media = action.payload.media;
+          instance.sourceDurationMicros = action.payload.media.durationMicros;
           updateSourceListDuration(state, action.payload.id, action.payload.media.durationMicros);
         }
         if (listMetadataChanged || snapshotTrimChanged)

@@ -96,6 +96,7 @@ interface EditingInstance {
   origin: InstanceOrigin;
   snapshot: import("@/domain/editor-snapshot").EditorSnapshot;
   sourceAvailability: SourceAvailability;
+  sourceDurationMicros?: number;
 }
 
 interface EditingInstancesState {

@@ -32,6 +32,9 @@ function toEditingInstance(instance: WorkspaceRecoveryInstance): EditingInstance
     ...(instance.gifSettings === undefined
       ? {}
       : { gifSettings: structuredClone(instance.gifSettings) }),
+    ...(instance.sourceDurationMicros === undefined
+      ? {}
+      : { sourceDurationMicros: instance.sourceDurationMicros }),
     origin: instance.origin,
     snapshot: structuredClone(instance.snapshot),
     sourceAvailability: instance.sourceAvailability,

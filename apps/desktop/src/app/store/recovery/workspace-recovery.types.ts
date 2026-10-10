@@ -16,6 +16,7 @@ export interface WorkspaceRecoveryInstance {
   origin: InstanceOrigin;
   snapshot: EditorSnapshot;
   sourceAvailability: "available" | "deleted" | "missing";
+  sourceDurationMicros?: number;
 }
 
 export interface WorkspaceRecoveryBackup {
