@@ -1,4 +1,5 @@
 import { DEFAULT_LAYOUT_DENSITY, type LayoutDensity } from "@/app/layout/lib/layout-density";
+import { DEFAULT_SIDEBAR_LAYOUT, type SidebarLayout } from "@/app/layout/lib/sidebar-layout";
 import { DEFAULT_PRIMARY_COLOR, type PrimaryColor, type ThemePreference } from "@/app/theme/theme";
 
 export type ActivityFeedView = "default" | "compact" | "branch";
@@ -19,6 +20,7 @@ interface Preferences {
   mergeAudioEnabledDefault: boolean;
   playbackVolumePercent: number;
   primaryColor: PrimaryColor;
+  sidebarLayout: SidebarLayout;
   segmentPlaybackEnabledDefault: boolean;
   stripMetadataOnExport: boolean;
   theme: ThemePreference;
@@ -41,6 +43,10 @@ export const DEFAULT_PREFERENCES: Preferences = {
   theme: "system",
   uiScalePercent: DEFAULT_UI_SCALE_PERCENT,
   primaryColor: DEFAULT_PRIMARY_COLOR,
+  sidebarLayout: {
+    left: [...DEFAULT_SIDEBAR_LAYOUT.left],
+    right: [...DEFAULT_SIDEBAR_LAYOUT.right],
+  },
   lastAudiblePlaybackVolumePercent: DEFAULT_PLAYBACK_VOLUME_PERCENT,
   playbackVolumePercent: DEFAULT_PLAYBACK_VOLUME_PERCENT,
   lastSeenChangelogVersion: null,

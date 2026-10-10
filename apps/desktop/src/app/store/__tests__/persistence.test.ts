@@ -15,6 +15,7 @@ import {
   layoutDensityChanged,
   preferenceChanged,
   primaryColorChanged,
+  sidebarLayoutChanged,
   themePreferenceChanged,
   uiScaleIncreased,
 } from "@/app/store/slices/preferences-slice";
@@ -393,6 +394,42 @@ describe("Redux Persist store integration", () => {
     const persistedRoot = await readPersistedRoot(storage);
     expect(JSON.parse(String(persistedRoot.preferences))).toMatchObject({
       activityFeedView: "compact",
+    });
+  });
+
+  it("persists sidebar view placement through Preferences", async () => {
+    const { persistor, storage, store } = await createPersistedTestStore();
+
+    store.dispatch(
+      sidebarLayoutChanged({ destination: "right", insertionIndex: 0, viewId: "activity" }),
+    );
+    await persistor.flush();
+
+    expect(store.getState().preferences.sidebarLayout).toEqual({
+      left: ["sources"],
+      right: ["activity"],
+    });
+    expect(JSON.parse(String((await readPersistedRoot(storage)).preferences))).toMatchObject({
+      sidebarLayout: { left: ["sources"], right: ["activity"] },
+    });
+  });
+
+  it("normalizes invalid persisted sidebar views to known unique placements", async () => {
+    const storage = createTestStorage({
+      [`persist:${persistConfig.key}`]: JSON.stringify({
+        preferences: JSON.stringify({
+          ...DEFAULT_PREFERENCES,
+          sidebarLayout: { left: ["activity", "unknown", "activity"], right: ["sources"] },
+        }),
+        _persist: JSON.stringify({ version: 2, rehydrated: true }),
+      }),
+    });
+
+    const { store } = await createPersistedTestStore(storage);
+
+    expect(store.getState().preferences.sidebarLayout).toEqual({
+      left: ["activity"],
+      right: ["sources"],
     });
   });
 
