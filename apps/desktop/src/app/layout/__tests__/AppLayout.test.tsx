@@ -8,7 +8,7 @@ import { ResizablePanelContextProvider, usePanelCommand } from "@/components/ui/
 import { AppLayout } from "@/app/layout/AppLayout";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 
-const sortableElements = vi.hoisted(() => new Map<string, HTMLElement>());
+const draggableElements = vi.hoisted(() => new Map<string, HTMLElement>());
 
 vi.mock("@/app/layout/components/AppLayoutHeader", () => ({
   AppLayoutHeader: () => <header />,
@@ -136,14 +136,11 @@ vi.mock("@dnd-kit/react", () => ({
     </>
   ),
   useDroppable: () => ({ isDropTarget: false, ref: () => undefined }),
-}));
-
-vi.mock("@dnd-kit/react/sortable", () => ({
-  useSortable: ({ id }: { id: string }) => ({
-    handleRef: () => undefined,
+  useDraggable: ({ id }: { id: string }) => ({
     isDragging: false,
+    handleRef: () => undefined,
     ref: (element: Element | null) => {
-      if (element) sortableElements.set(id, element as HTMLElement);
+      if (element) draggableElements.set(id, element as HTMLElement);
     },
   }),
 }));
@@ -218,7 +215,7 @@ function expectPanelStructure(sidebar: HTMLElement, viewIds: Array<"activity" | 
     const frame = sidebar.querySelector<HTMLElement>(`[data-sidebar-view="${viewId}"]`);
     const panel = frame?.closest("[data-panel]");
     expect(panel?.id).toBe(panelIds[viewId]);
-    expect(sortableElements.get(viewId)).toBe(panel);
+    expect(draggableElements.get(viewId)).toBe(panel);
   }
 }
 
@@ -307,7 +304,7 @@ describe("AppLayout sidebar drag and drop", () => {
     });
   });
 
-  it("keeps each sortable view inside its registered panel and separators between panels", async () => {
+  it("keeps each draggable view inside its registered panel and separators between panels", async () => {
     renderAppLayout();
 
     const sidebar = screen.getByRole("complementary", { name: "Left sidebar" });
@@ -365,8 +362,8 @@ describe("AppLayout sidebar drag and drop", () => {
     });
     expectPanelStructure(sidebar, ["sources", "activity"]);
     const panelElementsBeforeDrop = new Map([
-      ["sources", sortableElements.get("sources")],
-      ["activity", sortableElements.get("activity")],
+      ["sources", draggableElements.get("sources")],
+      ["activity", draggableElements.get("activity")],
     ]);
 
     fireEvent.click(screen.getByRole("button", { name: "Preview Sources below Activity" }));
@@ -381,8 +378,8 @@ describe("AppLayout sidebar drag and drop", () => {
       expectPanelStructure(sidebar, ["activity", "sources"]);
       expect(registration).toHaveAttribute("data-sources-panel-registered", "true");
       expect(registration).toHaveAttribute("data-activity-panel-registered", "true");
-      expect(sortableElements.get("sources")).toBe(panelElementsBeforeDrop.get("sources"));
-      expect(sortableElements.get("activity")).toBe(panelElementsBeforeDrop.get("activity"));
+      expect(draggableElements.get("sources")).toBe(panelElementsBeforeDrop.get("sources"));
+      expect(draggableElements.get("activity")).toBe(panelElementsBeforeDrop.get("activity"));
     });
   });
 

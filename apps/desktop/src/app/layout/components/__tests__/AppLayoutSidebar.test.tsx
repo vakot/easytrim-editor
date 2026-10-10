@@ -1,5 +1,4 @@
-import { DragDropProvider } from "@dnd-kit/react";
-import { useSortable } from "@dnd-kit/react/sortable";
+import { DragDropProvider, useDraggable } from "@dnd-kit/react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -15,10 +14,7 @@ import { SidebarViewTarget } from "../SidebarViewPortal";
 vi.mock("@dnd-kit/react", () => ({
   DragDropProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useDroppable: () => ({ isDropTarget: false, ref: () => undefined }),
-}));
-
-vi.mock("@dnd-kit/react/sortable", () => ({
-  useSortable: vi.fn(() => ({
+  useDraggable: vi.fn(() => ({
     handleRef: () => undefined,
     isDragging: false,
     ref: () => undefined,
@@ -26,7 +22,7 @@ vi.mock("@dnd-kit/react/sortable", () => ({
 }));
 
 describe("AppLayoutSidebar", () => {
-  it("renders a sortable single-view sidebar", () => {
+  it("renders a draggable single-view sidebar without a sortable panel group", () => {
     const hosts = createSidebarViewHosts();
 
     render(
@@ -42,20 +38,10 @@ describe("AppLayoutSidebar", () => {
     ).toBeInTheDocument();
     expect(sidebar.querySelector('[data-slot="resizable-panel-group"]')).toBeNull();
 
-    const plugins = vi.mocked(useSortable).mock.calls.at(-1)?.[0].plugins;
-    expect(plugins).toBeTypeOf("function");
-
-    const configurePlugins = plugins as unknown as (plugins: unknown[]) => unknown[];
-    class SortableKeyboardPlugin {}
-    class OptimisticSortingPlugin {}
-
-    expect(
-      configurePlugins([
-        SortableKeyboardPlugin,
-        OptimisticSortingPlugin,
-        { plugin: OptimisticSortingPlugin },
-      ]),
-    ).toEqual([SortableKeyboardPlugin]);
+    expect(vi.mocked(useDraggable).mock.calls.at(-1)?.[0]).toMatchObject({
+      id: "sources",
+      type: "sidebar-view",
+    });
   });
 
   it("registers an empty sidebar drop target while a view is dragged", () => {

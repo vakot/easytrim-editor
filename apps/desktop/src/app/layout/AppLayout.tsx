@@ -54,7 +54,7 @@ function AppLayout() {
         return null;
       }
 
-      const position = event.operation.position.current;
+      const position = ("to" in event ? event.to : undefined) ?? event.operation.position.current;
       if (!position) return null;
 
       const containsPointer = (element: HTMLElement) => {

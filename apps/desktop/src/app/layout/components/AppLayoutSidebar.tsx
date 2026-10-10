@@ -1,5 +1,5 @@
-import { useDroppable } from "@dnd-kit/react";
-import { useSortable } from "@dnd-kit/react/sortable";
+import { Feedback } from "@dnd-kit/dom";
+import { useDraggable, useDroppable } from "@dnd-kit/react";
 import { ChevronRight, GripVertical } from "lucide-react";
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
@@ -65,8 +65,6 @@ function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarPro
         <SidebarViewStandalone
           collapsible={false}
           host={hosts[previewViews[0]!]}
-          index={0}
-          side={side}
           viewId={previewViews[0]!}
         />
       ) : (
@@ -83,13 +81,7 @@ function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarPro
                   <div className="h-px w-full bg-border" />
                 </ResizableHandle>
               )}
-              <SidebarViewPanel
-                collapsible
-                host={hosts[viewId]}
-                index={index}
-                side={side}
-                viewId={viewId}
-              />
+              <SidebarViewPanel collapsible host={hosts[viewId]} viewId={viewId} />
             </Fragment>
           ))}
         </ResizablePanelGroup>
@@ -101,28 +93,29 @@ function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarPro
 function SidebarViewPanel({
   collapsible,
   host,
-  index,
-  side,
   viewId,
 }: {
   collapsible: boolean;
   host: HTMLDivElement;
-  index: number;
-  side: SidebarId;
   viewId: SidebarViewId;
 }) {
-  const sortable = useSidebarSortable(side, viewId, index);
+  const draggable = useSidebarDraggable(viewId);
 
   return (
     <ResizablePanel
       className="flex min-h-0 flex-col overflow-hidden!"
       collapsedSize="2.25rem"
       collapsible
-      elementRef={sortable.ref}
+      elementRef={draggable.ref}
       id={VIEW_PANEL_IDS[viewId]}
       {...VIEW_PANEL_SIZES[viewId]}
     >
-      <SidebarViewFrame collapsible={collapsible} host={host} sortable={sortable} viewId={viewId} />
+      <SidebarViewFrame
+        collapsible={collapsible}
+        draggable={draggable}
+        host={host}
+        viewId={viewId}
+      />
     </ResizablePanel>
   );
 }
@@ -130,60 +123,54 @@ function SidebarViewPanel({
 function SidebarViewStandalone({
   collapsible,
   host,
-  index,
-  side,
   viewId,
 }: {
   collapsible: boolean;
   host: HTMLDivElement;
-  index: number;
-  side: SidebarId;
   viewId: SidebarViewId;
 }) {
-  const sortable = useSidebarSortable(side, viewId, index);
+  const draggable = useSidebarDraggable(viewId);
 
   return (
-    <SidebarViewFrame collapsible={collapsible} host={host} sortable={sortable} viewId={viewId} />
+    <SidebarViewFrame collapsible={collapsible} draggable={draggable} host={host} viewId={viewId} />
   );
 }
 
 function SidebarViewFrame({
   collapsible,
+  draggable,
   host,
-  sortable,
   viewId,
 }: {
   collapsible: boolean;
+  draggable: ReturnType<typeof useSidebarDraggable>;
   host: HTMLDivElement;
-  sortable: ReturnType<typeof useSidebarSortable>;
   viewId: SidebarViewId;
 }) {
   return (
     <div
       className={cn(
         "flex size-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-        sortable.isDragging && "bg-card opacity-60",
+        draggable.isDragging && "bg-card opacity-60",
       )}
       data-sidebar-view={viewId}
     >
-      <SidebarViewHeader collapsible={collapsible} handleRef={sortable.handleRef} viewId={viewId} />
+      <SidebarViewHeader
+        collapsible={collapsible}
+        handleRef={draggable.handleRef}
+        viewId={viewId}
+      />
       <SidebarViewTarget host={host} />
     </div>
   );
 }
 
-function useSidebarSortable(side: SidebarId, viewId: SidebarViewId, index: number) {
-  return useSortable({
-    accept: "sidebar-view",
-    group: side,
+function useSidebarDraggable(viewId: SidebarViewId) {
+  return useDraggable({
     id: viewId,
-    index,
-    // The optimistic plugin reparents this element across sibling panels, so React owns panel order.
-    plugins: (plugins) =>
-      plugins.filter((plugin) => {
-        const pluginType = "plugin" in plugin ? plugin.plugin : plugin;
-        return Reflect.get(pluginType, "name") !== "OptimisticSortingPlugin";
-      }),
+    // The default feedback inserts a copied panel sibling into ResizablePanelGroup.
+    // React owns the preview order, so suppress DnD's structural placeholder and transform.
+    plugins: [Feedback.configure({ feedback: "none" })],
     type: "sidebar-view",
   });
 }
