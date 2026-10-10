@@ -893,9 +893,11 @@ export const en = {
       source: "Source video preview",
     },
     crop: {
+      aspectRatioPresets: "Crop aspect ratio presets",
       bottom: "Resize crop from bottom",
       bottomLeft: "Resize crop from bottom left",
       bottomRight: "Resize crop from bottom right",
+      freeform: "Free",
       left: "Resize crop from left",
       preview: "Video crop preview",
       right: "Resize crop from right",

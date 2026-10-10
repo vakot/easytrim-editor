@@ -3,6 +3,8 @@ import { type PointerEvent, useCallback, useEffect, useLayoutEffect, useMemo, us
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   cropReset,
@@ -24,6 +26,7 @@ import { usePreviewRuntime, usePreviewTransform } from "@/features/preview";
 import { useTimelineTransport } from "@/features/timeline";
 import { saveFramePng } from "@/lib/tauri/media";
 
+import { CROP_ASPECT_RATIO_PRESETS } from "../../lib/crop-aspect-ratio.utils";
 import type { CropHandle } from "../../lib/crop-geometry.utils";
 import { capturePreviewFrame, frameFileNameFor, frameNumberAt } from "../../lib/frame-capture";
 import { previewGeometryFor, sourceCropForRotation } from "../../lib/preview-geometry";
@@ -102,7 +105,16 @@ function CropViewport() {
     resumeAfterCropRef.current = false;
   }, [cropSelection.isOpen, resumeAfterInteraction, suspendForInteraction]);
 
-  const { clearDrag, isDragging, isEditing, open, startDrag } = cropSelection;
+  const {
+    aspectRatioPreset,
+    clearDrag,
+    isDragging,
+    isEditing,
+    open,
+    selectAspectRatioPreset,
+    startDrag,
+  } = cropSelection;
+
   const resolved = presentation;
   const geometry = previewGeometryFor(sourceWidth, sourceHeight, resolved.crop, resolved.rotation);
   const cropIsOpen = resolved.cropIsOpen;
@@ -137,9 +149,10 @@ function CropViewport() {
 
   const resetTransform = useCallback(() => {
     clearDrag();
+    selectAspectRatioPreset("freeform");
     dispatch(cropReset());
     dispatch(commitActiveEditingInstanceDraft());
-  }, [clearDrag, dispatch]);
+  }, [clearDrag, dispatch, selectAspectRatioPreset]);
 
   const captureCurrentFrame = useCallback(() => {
     const video = videoRef.current;
@@ -294,6 +307,37 @@ function CropViewport() {
             visible={cropIsOpen && isEditing}
             widthTarget={cropRulerWidthTarget}
           />
+          {cropIsOpen ? (
+            <div
+              aria-label={t("preview.crop.aspectRatioPresets")}
+              className="absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 gap-1 rounded-xl border border-border/70 bg-background/90 p-1 shadow-lg backdrop-blur-sm"
+              data-crop-aspect-ratio-presets
+              onClick={(event) => event.stopPropagation()}
+              role="group"
+            >
+              <Button
+                aria-pressed={aspectRatioPreset === "freeform"}
+                className="h-10 min-w-10 px-2 text-xs"
+                onClick={() => selectAspectRatioPreset("freeform")}
+                size="sm"
+                variant={aspectRatioPreset === "freeform" ? "secondary" : "ghost"}
+              >
+                {t("preview.crop.freeform")}
+              </Button>
+              {CROP_ASPECT_RATIO_PRESETS.map(({ label }) => (
+                <Button
+                  aria-pressed={aspectRatioPreset === label}
+                  className="h-10 min-w-10 px-2 text-xs"
+                  key={label}
+                  onClick={() => selectAspectRatioPreset(label)}
+                  size="sm"
+                  variant={aspectRatioPreset === label ? "secondary" : "ghost"}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          ) : null}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-10 border border-primary/70 bg-primary/5 opacity-0 ring-1 ring-primary/20 transition-opacity duration-(--preview-transition-duration) ease-in-out group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"

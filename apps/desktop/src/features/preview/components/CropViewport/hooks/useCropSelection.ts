@@ -13,6 +13,11 @@ import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-medi
 import type { RotationDegrees } from "@/domain/rotation";
 
 import {
+  type CropAspectRatioPreset,
+  fitCropToAspectRatio,
+  resizeCropToAspectRatio,
+} from "../../../lib/crop-aspect-ratio.utils";
+import {
   type CropHandle,
   type CropRect,
   moveCrop,
@@ -50,6 +55,31 @@ function useCropSelection(
   const crop = useAppSelector(selectCrop);
   const [isOpen, setIsOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [aspectRatioPreset, setAspectRatioPreset] = useState<CropAspectRatioPreset>("freeform");
+
+  const selectAspectRatioPreset = useCallback(
+    (preset: CropAspectRatioPreset) => {
+      setAspectRatioPreset(preset);
+      if (preset === "freeform" || !sourceMedia) return;
+
+      const ratio = aspectRatioForPreset(preset);
+      if (ratio === null) return;
+      const rotatedSourceAspect =
+        rotationDegrees === 90 || rotationDegrees === 270
+          ? sourceMedia.video.height / sourceMedia.video.width
+          : sourceMedia.video.width / sourceMedia.video.height;
+
+      const nextCrop = fitCropToAspectRatio(crop, ratio / rotatedSourceAspect);
+      dispatch(
+        cropChanged({
+          crop: nextCrop,
+          resolution: cropResolutionFor(sourceMedia.video ?? null, nextCrop, rotationDegrees),
+        }),
+      );
+      dispatch(commitActiveEditingInstanceDraft());
+    },
+    [crop, dispatch, rotationDegrees, sourceMedia],
+  );
 
   const open = useCallback(() => {
     setIsOpen(true);
@@ -113,17 +143,30 @@ function useCropSelection(
     const deltaY =
       ((event.clientY - drag.startY) / drag.sourceHeight) * (drag.flipVertical ? -1 : 1);
 
+    const presetRatio = aspectRatioForPreset(aspectRatioPreset);
+    const ratio =
+      presetRatio === null || !sourceMedia
+        ? null
+        : presetRatio /
+          (rotationDegrees === 90 || rotationDegrees === 270
+            ? sourceMedia.video.height / sourceMedia.video.width
+            : sourceMedia.video.width / sourceMedia.video.height);
+
     const movedCrop =
       drag.handle === "move"
         ? moveCrop(drag.crop, deltaX, deltaY)
-        : resizeCrop(drag.crop, drag.handle, deltaX, deltaY);
+        : ratio === null
+          ? resizeCrop(drag.crop, drag.handle, deltaX, deltaY)
+          : resizeCropToAspectRatio(drag.crop, drag.handle, deltaX, deltaY, ratio);
 
-    const nextCrop = event.shiftKey
+    const snappedCrop = event.shiftKey
       ? snapCropToGuides(movedCrop, drag.handle, {
           x: SNAP_REACH_PX / drag.sourceWidth,
           y: SNAP_REACH_PX / drag.sourceHeight,
         })
       : movedCrop;
+
+    const nextCrop = ratio === null ? snappedCrop : fitCropToAspectRatio(snappedCrop, ratio);
 
     if (sourceMedia) {
       dispatch(
@@ -155,8 +198,27 @@ function useCropSelection(
     isOpen,
     moveDrag,
     open,
+    aspectRatioPreset,
+    selectAspectRatioPreset,
     startDrag,
   };
+}
+
+function aspectRatioForPreset(preset: CropAspectRatioPreset): number | null {
+  switch (preset) {
+    case "16:9":
+      return 16 / 9;
+    case "9:16":
+      return 9 / 16;
+    case "1:1":
+      return 1;
+    case "4:3":
+      return 4 / 3;
+    case "4:5":
+      return 4 / 5;
+    case "freeform":
+      return null;
+  }
 }
 
 export { useCropSelection };
