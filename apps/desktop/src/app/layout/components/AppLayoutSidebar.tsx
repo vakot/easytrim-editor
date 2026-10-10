@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -362,7 +363,7 @@ function SidebarEmptyDropTarget({
       <div
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute inset-y-0 z-40 w-[50vw]",
+          "pointer-events-none absolute inset-y-0 z-40 w-lg",
           side === "left" ? "left-0" : "right-0",
         )}
         data-sidebar-empty-drop-target={side}
@@ -373,7 +374,7 @@ function SidebarEmptyDropTarget({
           aria-hidden="true"
           className={cn(
             "pointer-events-none absolute inset-y-0 z-40 w-1 rounded bg-primary",
-            side === "left" ? "left-0" : "right-0",
+            side === "left" ? "left-px" : "right-px",
           )}
           data-sidebar-empty-drop-indicator={side}
         />
@@ -393,15 +394,14 @@ function SidebarDragPreview({
   const title = viewId === "sources" ? t("source.importedSources") : t("layout.activityFeed");
 
   return createPortal(
-    <div
-      aria-hidden="true"
-      className="pointer-events-none fixed z-100 inline-flex max-w-64 items-center gap-2 rounded-lg border border-border bg-card/95 px-3 py-2 text-sm font-medium text-secondary-foreground opacity-75 shadow-xl backdrop-blur-sm"
+    <Card
+      className="pointer-events-none fixed z-100 flex-row items-center gap-2 rounded-md px-2 py-1.5 opacity-75"
       data-sidebar-drag-preview={viewId}
-      style={{ left: position.x, top: position.y, transform: "translate(12px, 12px)" }}
+      style={{ left: position.x, top: position.y }}
     >
       <GripVertical aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-      <span className="truncate">{title}</span>
-    </div>,
+      <span className="truncate text-sm">{title}</span>
+    </Card>,
     document.body,
   );
 }
