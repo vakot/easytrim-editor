@@ -27,7 +27,13 @@ describe("AppLayoutSidebar", () => {
 
     render(
       <DragDropProvider>
-        <AppLayoutSidebar hosts={hosts} placement={null} side="left" views={["sources"]} />
+        <AppLayoutSidebar
+          draggingViewId={null}
+          hosts={hosts}
+          placement={null}
+          side="left"
+          views={["sources"]}
+        />
       </DragDropProvider>,
     );
 
@@ -38,9 +44,14 @@ describe("AppLayoutSidebar", () => {
     ).toBeInTheDocument();
     expect(sidebar.querySelector('[data-slot="resizable-panel-group"]')).toBeNull();
 
-    expect(vi.mocked(useDraggable).mock.calls.at(-1)?.[0]).toMatchObject({
+    const draggable = vi.mocked(useDraggable).mock.calls.at(-1)?.[0];
+    expect(draggable).toMatchObject({
       id: "sources",
       type: "sidebar-view",
+    });
+    expect(draggable?.sensors).toHaveLength(2);
+    expect(draggable?.sensors?.[0]).toMatchObject({
+      options: { activationConstraints: [{ options: { value: 6 } }] },
     });
   });
 

@@ -345,5 +345,61 @@ describe("AppLayout drag and resize integration", () => {
       expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
     });
     expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
+
+    const activityHandle = screen.getByRole("button", {
+      name: "Drag Activity Feed to move it between sidebars",
+    });
+
+    fireEvent.pointerDown(activityHandle, {
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+      isPrimary: true,
+      pointerId: 1,
+      pointerType: "mouse",
+    });
+    expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+    expect(activityFrame).not.toHaveClass("opacity-50");
+
+    fireEvent.pointerMove(document, {
+      clientX: 103,
+      clientY: 104,
+      pointerId: 1,
+      pointerType: "mouse",
+    });
+    expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+    expect(document.querySelector("[data-sidebar-drop-indicator]")).toBeNull();
+    expect(activityFrame).not.toHaveClass("opacity-50");
+    fireEvent.pointerUp(document, { clientX: 103, clientY: 104, pointerId: 1 });
+    fireEvent.click(activityHandle);
+    expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
+    expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+    expect(activityFrame).not.toHaveClass("opacity-50");
+
+    fireEvent.pointerDown(activityHandle, {
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+      isPrimary: true,
+      pointerId: 2,
+      pointerType: "mouse",
+    });
+    fireEvent.pointerMove(document, {
+      clientX: 104,
+      clientY: 105,
+      pointerId: 2,
+      pointerType: "mouse",
+    });
+    await waitFor(() => {
+      expect(document.querySelector('[data-sidebar-drag-preview="activity"]')).toBeInTheDocument();
+      expect(sidebar.querySelector('[data-sidebar-view="activity"]')).toHaveClass("opacity-50");
+    });
+    fireEvent.pointerCancel(document, { pointerId: 2 });
+    await waitFor(() => {
+      expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
+      expect(document.querySelector("[data-sidebar-drop-indicator]")).toBeNull();
+      expect(sidebar.querySelector('[data-sidebar-view="activity"]')).not.toHaveClass("opacity-50");
+    });
+    expect(store.getState().preferences.sidebarLayout.left).toEqual(["activity", "sources"]);
   });
 });

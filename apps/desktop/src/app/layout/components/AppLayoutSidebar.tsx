@@ -1,4 +1,9 @@
-import { Feedback } from "@dnd-kit/dom";
+import {
+  Feedback,
+  KeyboardSensor,
+  PointerActivationConstraints,
+  PointerSensor,
+} from "@dnd-kit/dom";
 import { useDraggable, useDroppable } from "@dnd-kit/react";
 import { ChevronRight, GripVertical } from "lucide-react";
 import { Fragment } from "react";
@@ -23,6 +28,7 @@ import type { SidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
 import { cn } from "@/lib/class-names.utils";
 
 interface AppLayoutSidebarProps {
+  draggingViewId: SidebarViewId | null;
   hosts: SidebarViewHosts;
   placement: SidebarDropPlacement | null;
   side: SidebarId;
@@ -39,7 +45,20 @@ const VIEW_PANEL_SIZES: Record<SidebarViewId, { defaultSize: string; minSize: st
   sources: { minSize: "18.75rem", defaultSize: "45" },
 };
 
-function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarProps) {
+const SIDEBAR_DRAG_SENSORS = [
+  PointerSensor.configure({
+    activationConstraints: [new PointerActivationConstraints.Distance({ value: 6 })],
+  }),
+  KeyboardSensor,
+];
+
+function AppLayoutSidebar({
+  draggingViewId,
+  hosts,
+  placement,
+  side,
+  views,
+}: AppLayoutSidebarProps) {
   const { t } = useTranslation();
   const { ref } = useDroppable({ accept: "sidebar-view", id: side, type: "sidebar-region" });
 
@@ -56,7 +75,12 @@ function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarPro
         <SidebarInsertionIndicator placement={placement} side={side} />
       ) : null}
       {views.length === 1 ? (
-        <SidebarViewStandalone collapsible={false} host={hosts[views[0]!]} viewId={views[0]!} />
+        <SidebarViewStandalone
+          collapsible={false}
+          host={hosts[views[0]!]}
+          isDragging={draggingViewId === views[0]}
+          viewId={views[0]!}
+        />
       ) : (
         <ResizablePanelGroup
           className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
@@ -71,7 +95,12 @@ function AppLayoutSidebar({ hosts, placement, side, views }: AppLayoutSidebarPro
                   <div className="h-px w-full bg-border" />
                 </ResizableHandle>
               )}
-              <SidebarViewPanel collapsible host={hosts[viewId]} viewId={viewId} />
+              <SidebarViewPanel
+                collapsible
+                host={hosts[viewId]}
+                isDragging={draggingViewId === viewId}
+                viewId={viewId}
+              />
             </Fragment>
           ))}
         </ResizablePanelGroup>
@@ -101,10 +130,12 @@ function SidebarInsertionIndicator({
 function SidebarViewPanel({
   collapsible,
   host,
+  isDragging,
   viewId,
 }: {
   collapsible: boolean;
   host: HTMLDivElement;
+  isDragging: boolean;
   viewId: SidebarViewId;
 }) {
   const draggable = useSidebarDraggable(viewId);
@@ -122,6 +153,7 @@ function SidebarViewPanel({
         collapsible={collapsible}
         draggable={draggable}
         host={host}
+        isDragging={isDragging}
         viewId={viewId}
       />
     </ResizablePanel>
@@ -131,16 +163,24 @@ function SidebarViewPanel({
 function SidebarViewStandalone({
   collapsible,
   host,
+  isDragging,
   viewId,
 }: {
   collapsible: boolean;
   host: HTMLDivElement;
+  isDragging: boolean;
   viewId: SidebarViewId;
 }) {
   const draggable = useSidebarDraggable(viewId);
 
   return (
-    <SidebarViewFrame collapsible={collapsible} draggable={draggable} host={host} viewId={viewId} />
+    <SidebarViewFrame
+      collapsible={collapsible}
+      draggable={draggable}
+      host={host}
+      isDragging={isDragging}
+      viewId={viewId}
+    />
   );
 }
 
@@ -148,18 +188,20 @@ function SidebarViewFrame({
   collapsible,
   draggable,
   host,
+  isDragging,
   viewId,
 }: {
   collapsible: boolean;
   draggable: ReturnType<typeof useSidebarDraggable>;
   host: HTMLDivElement;
+  isDragging: boolean;
   viewId: SidebarViewId;
 }) {
   return (
     <div
       className={cn(
         "relative flex size-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden transition-[background-color,opacity] duration-150 motion-reduce:transition-none",
-        draggable.isDragging && "bg-card opacity-50",
+        isDragging && "bg-card opacity-50",
       )}
       data-sidebar-view={viewId}
     >
@@ -177,8 +219,9 @@ function useSidebarDraggable(viewId: SidebarViewId) {
   return useDraggable({
     id: viewId,
     // The default feedback inserts a copied panel sibling into ResizablePanelGroup.
-    // React owns the preview order, so suppress DnD's structural placeholder and transform.
+    // AppLayout owns the visual preview, so suppress DnD's structural clone and transform.
     plugins: [Feedback.configure({ feedback: "none" })],
+    sensors: SIDEBAR_DRAG_SENSORS,
     type: "sidebar-view",
   });
 }

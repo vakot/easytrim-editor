@@ -218,6 +218,7 @@ function AppLayout() {
               >
                 <AppLayoutPanel className="min-w-xs layout-compact:rounded-l-xl layout-compact:border-y layout-compact:border-l">
                   <AppLayoutSidebar
+                    draggingViewId={dragPreview?.viewId ?? null}
                     hosts={viewHosts}
                     placement={dropPlacement}
                     side="left"
@@ -263,6 +264,7 @@ function AppLayout() {
               >
                 <AppLayoutPanel className="min-w-xs layout-compact:rounded-r-xl layout-compact:border-y layout-compact:border-r">
                   <AppLayoutSidebar
+                    draggingViewId={dragPreview?.viewId ?? null}
                     hosts={viewHosts}
                     placement={dropPlacement}
                     side="right"
