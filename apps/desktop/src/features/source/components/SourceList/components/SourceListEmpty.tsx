@@ -42,7 +42,7 @@ function SourceListEmpty() {
       aria-label={t("source.title")}
       className={cn(
         styles.container,
-        "flex w-full items-center justify-center overflow-hidden py-8",
+        "flex h-full items-center justify-center overflow-hidden py-8",
       )}
     >
       <Empty className="w-full border-0 p-0">
