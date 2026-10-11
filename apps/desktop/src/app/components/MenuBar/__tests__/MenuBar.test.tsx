@@ -16,7 +16,7 @@ import { CommandPalette } from "@/app/components/CommandPalette";
 import { SettingsDialog } from "@/app/components/SettingsDialog";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
-import { WorkspaceViewsProvider } from "@/app/contexts/workspace-views-provider";
+import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";

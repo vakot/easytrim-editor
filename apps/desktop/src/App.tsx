@@ -14,7 +14,7 @@ import { DiagnosticsRecoveryDialog } from "@/app/components/DiagnosticsRecoveryD
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { SettingsDialog } from "@/app/components/SettingsDialog";
 import { WorkspaceRecoveryNotice } from "@/app/components/WorkspaceRecoveryNotice";
-import { WorkspaceViewsProvider } from "@/app/contexts/workspace-views-provider";
+import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { AppLayout } from "@/app/layout";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { AppUpdatesProvider } from "@/app/providers/AppUpdatesProvider";

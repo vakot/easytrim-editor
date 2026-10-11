@@ -20,7 +20,7 @@ import {
   SETTINGS_SHORTCUT,
 } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
-import { WorkspaceViewsProvider } from "@/app/contexts/workspace-views-provider";
+import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
