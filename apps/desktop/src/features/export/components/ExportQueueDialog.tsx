@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -11,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -19,15 +17,12 @@ import {
   exportQueueDialogClosed,
   selectExportQueueDialogOpen,
 } from "@/app/store/slices/export-slice";
-import {
-  preferenceChanged,
-  selectStripMetadataOnExport,
-} from "@/app/store/slices/preferences-slice";
 
 import {
   ExportQueue,
   ExportQueueContent,
   ExportQueueStartButton,
+  ExportQueueStripMetadataCheckbox,
   ExportQueueSummary,
 } from "../components/ExportQueue";
 
@@ -35,7 +30,6 @@ function ExportQueueDialog() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const open = useAppSelector(selectExportQueueDialogOpen);
-  const stripMetadataOnExport = useAppSelector(selectStripMetadataOnExport);
 
   return (
     <Dialog
@@ -58,26 +52,7 @@ function ExportQueueDialog() {
           </ScrollArea>
 
           <DialogFooter className="sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                checked={stripMetadataOnExport}
-                id="queue-strip-metadata"
-                onCheckedChange={(checked) =>
-                  dispatch(
-                    preferenceChanged({
-                      key: "stripMetadataOnExport",
-                      enabled: checked === true,
-                    }),
-                  )
-                }
-              />
-              <Label
-                className="text-sm font-normal text-muted-foreground"
-                htmlFor="queue-strip-metadata"
-              >
-                {t("settings.preferences.stripMetadata.commandLabel")}
-              </Label>
-            </div>
+            <ExportQueueStripMetadataCheckbox />
             <div className="flex items-center justify-end gap-2">
               <DialogClose asChild>
                 <Button variant="outline">{t("common.actions.close")}</Button>

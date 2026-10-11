@@ -1,4 +1,5 @@
 export { ExportQueueContent } from "./components/ExportQueueContent";
-export { ExportQueueSummary } from "./components/ExportQueueSummary";
 export { ExportQueueStartButton } from "./components/ExportQueueStartButton";
+export { ExportQueueStripMetadataCheckbox } from "./components/ExportQueueStripMetadataCheckbox";
+export { ExportQueueSummary } from "./components/ExportQueueSummary";
 export { ExportQueue } from "./ExportQueue";

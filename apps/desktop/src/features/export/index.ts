@@ -4,6 +4,7 @@ export {
   ExportQueue,
   ExportQueueContent,
   ExportQueueStartButton,
+  ExportQueueStripMetadataCheckbox,
   ExportQueueSummary,
 } from "./components/ExportQueue";
 export { useQueueDeleteSource } from "./contexts/queue-delete-source-context";
