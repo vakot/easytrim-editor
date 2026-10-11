@@ -3,7 +3,7 @@ import "@/i18n/config";
 import type { Meta, StoryObj } from "@storybook/react";
 import { Provider } from "react-redux";
 
-import { ExportQueue, ExportQueueContent, ExportQueueSummary } from "../";
+import { ExportQueue, ExportQueueContent, ExportQueueList, ExportQueueSummary } from "../";
 
 import { createStoryStore, type ExportQueueStoryItem } from "./export-queue.stories.fixtures";
 
@@ -72,7 +72,9 @@ function ExportQueueStory({ items }: { items: ExportQueueStoryItem[] }) {
             <span className="text-xs">Export history</span>
           </div>
           <div className="max-h-128 overflow-auto rounded-md border p-1">
-            <ExportQueueContent />
+            <ExportQueueContent>
+              <ExportQueueList />
+            </ExportQueueContent>
           </div>
         </div>
       </ExportQueue>
