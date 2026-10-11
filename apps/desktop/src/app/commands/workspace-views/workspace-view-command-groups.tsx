@@ -40,8 +40,8 @@ function useWorkspaceViewCommandGroups() {
       icon: viewIcons[view.id],
       id: `open-workspace-view-${view.id}` as const,
       label,
-      searchTerms: commandSearchTerms(`${label}|open|view|workspace`),
-      surfaces: ["menu"] as const,
+      searchTerms: commandSearchTerms(`${label}|open|view|workspace|dialog|panel`),
+      surfaces: ["menu", "palette"] as const,
       run() {
         openView(view.id);
       },
@@ -62,6 +62,7 @@ function useWorkspaceViewCommandGroups() {
       return {
         checked: side !== null,
         enabled: true,
+        keepOpen: contextSide ? undefined : false,
         hint: side
           ? side === "left"
             ? t("layout.leftSidebar")
@@ -72,8 +73,8 @@ function useWorkspaceViewCommandGroups() {
           ? (`dock-workspace-view-${view.id}-${contextSide}` as const)
           : (`dock-workspace-view-${view.id}` as const),
         label,
-        searchTerms: commandSearchTerms(`${label}|dock|sidebar|workspace`),
-        surfaces: ["menu"] as const,
+        searchTerms: commandSearchTerms(`${label}|dock|docks|sidebar|workspace`),
+        surfaces: contextSide ? (["menu"] as const) : (["menu", "palette"] as const),
         run() {
           if (side) {
             dispatch(sidebarViewRemoved(view.id));

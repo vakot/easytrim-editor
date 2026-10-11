@@ -401,7 +401,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(screen.getByRole("button", { name: "open-workspace-view-activity" })).toHaveAttribute(
       "data-surfaces",
-      "menu",
+      "menu,palette",
     );
     expect(screen.getByRole("button", { name: "dock-workspace-view-exportQueue" })).toBeEnabled();
 

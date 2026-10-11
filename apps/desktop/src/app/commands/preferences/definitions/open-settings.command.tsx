@@ -16,7 +16,7 @@ function useOpenSettingsCommand() {
     run: openSettings,
     id: "open-settings" as const,
     label,
-    searchTerms: commandSearchTerms(`${label}|preferences|configuration`),
+    searchTerms: commandSearchTerms(`${label}|open|dialog|preferences|configuration`),
     shortcut: SETTINGS_SHORTCUT,
     variant: "default" as const,
   };
