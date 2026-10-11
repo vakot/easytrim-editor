@@ -13,6 +13,7 @@ import {
   editingInstanceExportAttemptQueued,
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
+import { exportQueueDialogOpened } from "@/app/store/slices/export-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt } from "@/domain/editing-instance";
 import { firstSource } from "@/test/source.fixtures";
@@ -20,6 +21,17 @@ import { firstSource } from "@/test/source.fixtures";
 import { ExportActions } from "../ExportActions";
 
 const exportCommands = [
+  {
+    enabled: true,
+    group: { id: "workspace-view-open", label: "Open" },
+    icon: null,
+    id: "open-workspace-view-exportQueue",
+    label: "Export Queue",
+    pending: false,
+    searchTerms: [],
+    surfaces: ["button", "menu", "palette"],
+    variant: "default",
+  },
   {
     enabled: false,
     group: { id: "export", label: "Export" },
@@ -55,7 +67,11 @@ function renderExportActions(store = createAppStore()) {
             ApplicationCommandId,
             ApplicationCommand<ApplicationCommandId>
           >,
-          executeCommand: async () => undefined,
+          executeCommand: async (id) => {
+            if (id === "open-workspace-view-exportQueue") {
+              store.dispatch(exportQueueDialogOpened());
+            }
+          },
         }}
       >
         <TooltipProvider>

@@ -29,7 +29,6 @@ import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import { selectExportQueueSummary } from "@/app/store/slices/editing-instances-slice";
 import {
-  exportQueueDialogOpened,
   selectExportQueueDialogOpen,
 } from "@/app/store/slices/export-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
@@ -129,7 +128,8 @@ function ExportQueueTrigger({
   queueSize: number;
 }) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
+  const command = useApplicationCommand("open-workspace-view-exportQueue");
+  const { executeCommand } = useApplicationCommands();
 
   return (
     <ExportActionButton
@@ -140,7 +140,7 @@ function ExportQueueTrigger({
           {finishedExports}/{queueSize}
         </Badge>
       }
-      onClick={() => dispatch(exportQueueDialogOpened())}
+      onClick={() => void executeCommand(command.id, "button")}
       variant="default"
     >
       {t("queue.title")}
