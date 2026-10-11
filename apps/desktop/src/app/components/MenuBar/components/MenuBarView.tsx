@@ -103,20 +103,22 @@ function MenuBarViewContent() {
       <MenubarSeparator />
 
       <MenubarGroup>
-        <MenubarGroup>
-          {WORKSPACE_VIEWS.map((view) => (
-            <ApplicationCommandMenuItem
-              asChild
-              commandId={`open-workspace-view-${view.id}` as ApplicationCommandId}
-              key={view.id}
-            >
-              <MenubarItem>
-                <ApplicationCommandLabel />
-              </MenubarItem>
-            </ApplicationCommandMenuItem>
-          ))}
-        </MenubarGroup>
+        {WORKSPACE_VIEWS.map((view) => (
+          <ApplicationCommandMenuItem
+            asChild
+            commandId={`open-workspace-view-${view.id}` as ApplicationCommandId}
+            key={view.id}
+          >
+            <MenubarItem>
+              <ApplicationCommandLabel />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
+        ))}
+      </MenubarGroup>
 
+      <MenubarSeparator />
+
+      <MenubarGroup>
         <MenubarSub>
           <MenubarSubTrigger>{t("layout.docks")}</MenubarSubTrigger>
           <MenubarSubContent>
