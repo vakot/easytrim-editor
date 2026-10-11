@@ -131,8 +131,8 @@ describe("SourceCard", () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole("menuitem", { name: "Delete File" }));
 
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
-    expect(screen.getByText("Delete source file?")).toBeInTheDocument();
+    expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
+    expect(await screen.findByText("Delete source file?")).toBeInTheDocument();
   });
 
   it("shows individual context actions for a non-selected card", () => {

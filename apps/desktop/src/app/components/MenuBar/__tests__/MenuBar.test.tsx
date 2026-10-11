@@ -532,7 +532,7 @@ describe("MenuBarTest", () => {
     expect(nativeDiagnostics.revealDiagnosticLogs).toHaveBeenCalledOnce();
     await user.click(getMenuTrigger("Help"));
     await user.click(screen.getByRole("menuitem", { name: "Changelog" }));
-    expect(screen.getByRole("heading", { name: "Changelog" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Changelog" })).toBeInTheDocument();
     await user.click(
       screen.getByRole("dialog").querySelector("button[data-variant='default']") as HTMLElement,
     );
@@ -864,7 +864,7 @@ describe("MenuBarTest", () => {
     expect(deleteSourceItem).toHaveAttribute("data-variant", "destructive");
 
     await user.click(deleteSourceItem);
-    expect(screen.getByRole("heading", { name: "Delete source file?" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Delete source file?" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("heading", { name: "Delete source file?" })).not.toBeInTheDocument();
