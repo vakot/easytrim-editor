@@ -9,6 +9,7 @@ import { SidebarDragPreview } from "@/app/layout/components/AppLayoutSidebar";
 import { AppLayoutWorkspace } from "@/app/layout/components/AppLayoutWorkspace";
 import { SidebarViewPortals } from "@/app/layout/components/SidebarViewPortal";
 import { useSidebarDragAndDrop } from "@/app/layout/hooks/useSidebarDragAndDrop";
+import type { SidebarViewId } from "@/app/layout/lib/sidebar-layout";
 import { createSidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectUiScalePercent } from "@/app/store/slices/preferences-slice";
@@ -31,6 +32,12 @@ const SourcesWorkspaceDialog = lazy(() =>
   })),
 );
 
+const WORKSPACE_DIALOGS: Record<SidebarViewId, typeof ActivityWorkspaceDialog> = {
+  activity: ActivityWorkspaceDialog,
+  exportQueue: ExportQueueDialog,
+  sources: SourcesWorkspaceDialog,
+};
+
 function AppLayout() {
   const uiScalePercent = useAppSelector(selectUiScalePercent);
   const [viewHosts] = useState(createSidebarViewHosts);
@@ -38,6 +45,8 @@ function AppLayout() {
   const beginDockPlacement = drag.beginDockPlacement;
   const { closeDialog, consumeDockPlacementRequest, dialogViewId, dockPlacementRequest } =
     useWorkspaceViews();
+
+  const WorkspaceDialog = dialogViewId ? WORKSPACE_DIALOGS[dialogViewId] : null;
 
   const handleDialogOpenChange = (open: boolean) => {
     if (!open) closeDialog();
@@ -92,14 +101,8 @@ function AppLayout() {
           />
         ) : null}
         <Suspense fallback={null}>
-          {dialogViewId === "activity" ? (
-            <ActivityWorkspaceDialog onOpenChange={handleDialogOpenChange} open />
-          ) : null}
-          {dialogViewId === "exportQueue" ? (
-            <ExportQueueDialog onOpenChange={handleDialogOpenChange} open />
-          ) : null}
-          {dialogViewId === "sources" ? (
-            <SourcesWorkspaceDialog onOpenChange={handleDialogOpenChange} open />
+          {WorkspaceDialog ? (
+            <WorkspaceDialog onOpenChange={handleDialogOpenChange} open />
           ) : null}
         </Suspense>
       </main>
