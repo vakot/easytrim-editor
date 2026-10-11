@@ -1,4 +1,5 @@
-import { DragDropProvider } from "@dnd-kit/react";
+import { AutoScroller } from "@dnd-kit/dom";
+import { DragDropProvider, useDragDropManager } from "@dnd-kit/react";
 import { lazy, Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -73,6 +74,7 @@ function AppLayout() {
       onDragMove={drag.handleDragMove}
       onDragStart={drag.handleDragStart}
     >
+      <DragAutoScrollControl active={drag.isDraggingView} />
       <main
         className="fixed inset-0 grid h-dvh w-screen grid-rows-[2.25rem_minmax(0,1fr)_auto] overflow-hidden bg-background"
         onKeyDown={drag.handleKeyboardDragKeyDown}
@@ -106,6 +108,20 @@ function AppLayout() {
       </main>
     </DragDropProvider>
   );
+}
+
+function DragAutoScrollControl({ active }: { active: boolean }) {
+  const manager = useDragDropManager();
+
+  useLayoutEffect(() => {
+    const autoScroller = manager?.registry.plugins.get(AutoScroller);
+    if (!autoScroller) return;
+
+    if (active) autoScroller.disable();
+    else autoScroller.enable();
+  }, [active, manager]);
+
+  return null;
 }
 
 function DockPlacementFeedback() {
