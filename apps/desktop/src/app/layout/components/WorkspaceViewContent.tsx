@@ -21,14 +21,15 @@ const ExportQueueWorkspaceView = lazy(() =>
   })),
 );
 
+const SIDEBAR_VIEWS: Record<SidebarViewId, React.LazyExoticComponent<() => React.JSX.Element>> = {
+  sources: SourcesWorkspaceView,
+  exportQueue: ExportQueueWorkspaceView,
+  activity: ActivityWorkspaceView,
+};
+
 function WorkspaceViewContent({ viewId }: { viewId: SidebarViewId }) {
   const { t } = useTranslation();
-  const View =
-    viewId === "sources"
-      ? SourcesWorkspaceView
-      : viewId === "activity"
-        ? ActivityWorkspaceView
-        : ExportQueueWorkspaceView;
+  const View = SIDEBAR_VIEWS[viewId];
 
   return (
     <Suspense
@@ -38,7 +39,9 @@ function WorkspaceViewContent({ viewId }: { viewId: SidebarViewId }) {
         </div>
       }
     >
-      <View />
+      <div className="flex flex-1 px-2" data-slot="layout-workspace-view">
+        <View />
+      </div>
     </Suspense>
   );
 }

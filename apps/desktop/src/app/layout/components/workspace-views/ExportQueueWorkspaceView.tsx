@@ -15,7 +15,7 @@ function ExportQueueWorkspaceView() {
         <span className="min-w-0 truncate px-2 text-muted-foreground">
           <ExportQueueSummary />
         </span>
-        <ScrollArea className="min-h-0 flex-1">
+        <ScrollArea className="-mx-2 min-h-0 flex-1 px-2">
           <ExportQueueContent className="py-2" />
         </ScrollArea>
         <div className="flex flex-col gap-2 border-t pt-2">

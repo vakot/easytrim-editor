@@ -17,7 +17,7 @@ function ActivityFeedEmpty() {
       aria-label={t("layout.activityFeed")}
       className="flex items-center justify-center overflow-hidden"
     >
-      <Empty className="w-full max-w-md">
+      <Empty className="w-full max-w-md border-0">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <History aria-hidden="true" />

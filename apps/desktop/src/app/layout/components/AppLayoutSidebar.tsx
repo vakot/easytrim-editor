@@ -72,7 +72,7 @@ function AppLayoutSidebar({
       <ContextMenuTrigger asChild>
         <aside
           aria-label={side === "left" ? t("layout.leftSidebar") : t("layout.rightSidebar")}
-          className="relative flex size-full min-h-0 min-w-0 flex-col overflow-hidden px-3"
+          className="relative flex size-full min-h-0 min-w-0 flex-col overflow-hidden px-1"
           data-sidebar-region={side}
           ref={ref}
         >
@@ -101,7 +101,7 @@ function AppLayoutSidebar({
               {views.map((viewId, index) => (
                 <Fragment key={viewId}>
                   {index > 0 && (
-                    <ResizableHandle className="bg-transparent">
+                    <ResizableHandle className="bg-transparent px-2">
                       <div className="h-px w-full bg-border" />
                     </ResizableHandle>
                   )}
