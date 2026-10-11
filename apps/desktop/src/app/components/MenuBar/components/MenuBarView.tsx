@@ -29,6 +29,7 @@ import {
   ApplicationCommandMenuItem,
   ApplicationCommandShortcut,
 } from "@/app/components/ApplicationCommandMenuItem";
+import { preloadCommandPalette } from "@/app/components/CommandPalette/command-palette.loader";
 import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
 import { DockViewMenuItems } from "@/app/layout/components/DockViewMenuItems";
@@ -41,6 +42,9 @@ import {
 } from "@/app/store/slices/preferences-slice";
 import { PRIMARY_COLOR_PRESETS } from "@/app/theme/theme";
 import { ColorSample } from "@/components/color";
+import { preloadOnIntent } from "@/lib/lazy-component";
+
+const preloadCommandPaletteOnIntent = preloadOnIntent(preloadCommandPalette);
 
 const themeIcons = {
   system: <Monitor aria-hidden="true" />,
@@ -72,7 +76,11 @@ function MenuBarViewContent() {
   return (
     <>
       <MenubarGroup>
-        <MenubarItem onSelect={() => openCommandPalette()}>
+        <MenubarItem
+          onFocus={preloadCommandPaletteOnIntent}
+          onPointerEnter={preloadCommandPaletteOnIntent}
+          onSelect={() => openCommandPalette()}
+        >
           {t("commands.title")}
           <MenubarShortcut>
             <Kbd>/</Kbd>

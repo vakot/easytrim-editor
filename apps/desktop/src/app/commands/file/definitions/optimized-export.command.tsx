@@ -8,7 +8,6 @@ import {
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
-import { openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
 
 import { OPTIMIZED_EXPORT_SHORTCUT } from "../file-shortcuts.constants";
 
@@ -20,6 +19,7 @@ function useOptimizedExportCommand() {
     enabled,
     icon: <Settings2 aria-hidden="true" />,
     async run({ surface }: ApplicationCommandExecutionContext) {
+      const { openOptimizedExportDialog } = await import("@/app/store/thunks/export-thunks");
       await dispatch(openOptimizedExportDialog(commandOrigin("optimized-export", surface)));
     },
     id: "optimized-export" as const,

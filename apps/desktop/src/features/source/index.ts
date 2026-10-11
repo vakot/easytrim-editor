@@ -1,12 +1,6 @@
+export { RestoreSource } from "./components/RestoreSource";
 export { SourceBreadcrumb } from "./components/SourceBreadcrumb";
 export { SourceDropOverlay } from "./components/SourceDropOverlay";
-export {
-  SourceList,
-  SourceListCloseAll,
-  SourceListContent,
-  SourceListSearch,
-} from "./components/SourceList";
-export { RestoreSource } from "./components/SourceMenuActions";
 export { SourceNavigation } from "./components/SourceNavigation";
 export { useSourceDelete } from "./contexts/source-delete-context";
 export { formatBytes, formatSourcePath } from "./lib/media-formatters.utils";

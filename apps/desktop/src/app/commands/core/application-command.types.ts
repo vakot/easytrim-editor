@@ -31,6 +31,7 @@ interface ApplicationCommand<Id extends string = string> {
   keepOpen?: boolean;
   label: string;
   pending: boolean;
+  preload?: () => void;
   searchTerms: readonly string[];
   shortcut?: ApplicationShortcut;
   /** Surfaces where the command is available; omitted means all surfaces. */

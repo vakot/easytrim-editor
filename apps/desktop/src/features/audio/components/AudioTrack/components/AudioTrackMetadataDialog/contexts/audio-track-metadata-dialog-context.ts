@@ -3,6 +3,7 @@ import { createContext, useContext } from "react";
 const AudioTrackMetadataDialogContext = createContext<{
   closeMetadataDialog: () => void;
   openMetadataDialog: () => void;
+  preloadMetadata: () => void;
 } | null>(null);
 
 function useAudioTrackMetadataDialog() {

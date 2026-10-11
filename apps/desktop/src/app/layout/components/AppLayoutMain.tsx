@@ -1,6 +1,11 @@
-import { type RefObject, useCallback, useLayoutEffect, useRef } from "react";
+import { type RefObject, Suspense, useCallback, useLayoutEffect, useRef } from "react";
 
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+  usePanelCommand,
+} from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
@@ -10,7 +15,7 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectLayoutDensity } from "@/app/store/slices/preferences-slice";
 import { selectAudioPanelStreamCount, selectSourceMedia } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
-import { AudioPanel } from "@/features/audio";
+import { LazyAudioPanel } from "@/features/audio/audio-panel.loader";
 import { ExportActions } from "@/features/export";
 import { Preview } from "@/features/preview";
 import { SourceBreadcrumb } from "@/features/source";
@@ -67,8 +72,11 @@ function AppLayoutMain() {
   const audioStreamsCount = useAppSelector(selectAudioPanelStreamCount);
   const availableAudioStreamsCount = media ? audioStreamsCount : 0;
   const bottomPanelCommand = useApplicationCommand("toggle-bottom-panel");
+  const timelinePanelCommand = usePanelCommand("editor-stage-timeline");
   const layoutDensity = useAppSelector(selectLayoutDensity);
   const { leftSidebarVisible, rightSidebarVisible } = useSidebarVisibility();
+  const isTimelinePanelExpanded =
+    timelinePanelCommand.isAvailable && !timelinePanelCommand.isCollapsed;
 
   const timelinePaneRef = useRef<HTMLDivElement>(null);
 
@@ -138,7 +146,11 @@ function AppLayoutMain() {
             layoutRegion="workspace-timeline"
           >
             <TimelinePanel />
-            {availableAudioStreamsCount > 0 && <AudioPanel />}
+            {availableAudioStreamsCount > 0 && isTimelinePanelExpanded ? (
+              <Suspense fallback={<div aria-busy="true" className="min-h-0 flex-1" />}>
+                <LazyAudioPanel />
+              </Suspense>
+            ) : null}
           </AppLayoutPanel>
         </ResizablePanel>
       </ResizablePanelGroup>

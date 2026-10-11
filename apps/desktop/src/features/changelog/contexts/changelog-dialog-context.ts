@@ -2,6 +2,7 @@ import { createContext, useContext } from "react";
 
 interface ChangelogDialogContextValue {
   openChangelog: () => void;
+  preloadChangelog: () => void;
 }
 
 const ChangelogDialogContext = createContext<ChangelogDialogContextValue | null>(null);

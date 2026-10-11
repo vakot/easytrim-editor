@@ -1,16 +1,12 @@
-import Fuse, { type IFuseOptions } from "fuse.js";
-
 import type {
   ApplicationCommand,
   ApplicationCommandDefinition,
   ApplicationCommandGroup,
   ApplicationCommandGroupMetadata,
-  ApplicationCommandMatch,
   ApplicationCommandSurface,
   ApplicationShortcut,
   ShortcutPlatform,
 } from "@/app/commands/core/application-command.types";
-import { FUZZY_SEARCH_OPTIONS } from "@/lib/fuzzy-search.consts";
 
 function defineApplicationCommandGroup<
   const Commands extends readonly ApplicationCommandDefinition[],
@@ -28,46 +24,6 @@ function isApplicationCommandAvailableOnSurface(
 ): boolean {
   return command.surfaces?.includes(surface) ?? true;
 }
-
-function filterApplicationCommands<Id extends string>(
-  commands: readonly ApplicationCommand<Id>[],
-  query: string,
-): ApplicationCommandMatch<Id>[] {
-  const normalizedQuery = query.trim();
-  if (!normalizedQuery) {
-    return commands.map((command) => ({
-      command,
-      groupMatched: false,
-      groupMatchRanges: [],
-      labelMatched: false,
-      labelMatchRanges: [],
-      searchTermMatched: false,
-    }));
-  }
-
-  return new Fuse(commands, commandSearchOptions)
-    .search(normalizedQuery)
-    .map(({ item: command, matches }) => {
-      const labelMatchRanges = matches?.find(({ key }) => key === "label")?.indices ?? [];
-      const groupMatchRanges = matches?.find(({ key }) => key === "group.label")?.indices ?? [];
-      const searchTermMatched = matches?.some(({ key }) => key === "searchTerms") ?? false;
-
-      return {
-        command,
-        groupMatched: groupMatchRanges.length > 0,
-        groupMatchRanges,
-        labelMatched: labelMatchRanges.length > 0,
-        labelMatchRanges,
-        searchTermMatched,
-      };
-    });
-}
-
-const commandSearchOptions = {
-  includeMatches: true,
-  keys: ["label", "group.label", "searchTerms"],
-  ...FUZZY_SEARCH_OPTIONS,
-} satisfies IFuseOptions<ApplicationCommand>;
 
 function getShortcutDisplayKeys(
   shortcut: ApplicationShortcut,
@@ -166,6 +122,7 @@ function materializeApplicationCommands<Id extends string>(
     id: definition.id,
     label: definition.label,
     pending: pendingIds.has(definition.id),
+    preload: definition.preload,
     searchTerms: definition.searchTerms,
     hint: definition.hint,
     shortcut: definition.shortcut,
@@ -197,7 +154,6 @@ export {
   commandsById,
   commandSearchTerms,
   defineApplicationCommandGroup,
-  filterApplicationCommands,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
   isApplicationCommandAvailableOnSurface,

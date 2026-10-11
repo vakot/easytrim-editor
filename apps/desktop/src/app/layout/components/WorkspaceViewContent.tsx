@@ -1,35 +1,12 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { SidebarViewId } from "@/app/layout/lib/sidebar-layout";
-
-const SourcesWorkspaceView = lazy(() =>
-  import("./workspace-views/SourcesWorkspaceView").then((module) => ({
-    default: module.SourcesWorkspaceView,
-  })),
-);
-
-const ActivityWorkspaceView = lazy(() =>
-  import("./workspace-views/ActivityWorkspaceView").then((module) => ({
-    default: module.ActivityWorkspaceView,
-  })),
-);
-
-const ExportQueueWorkspaceView = lazy(() =>
-  import("./workspace-views/ExportQueueWorkspaceView").then((module) => ({
-    default: module.ExportQueueWorkspaceView,
-  })),
-);
-
-const SIDEBAR_VIEWS: Record<SidebarViewId, React.LazyExoticComponent<() => React.JSX.Element>> = {
-  sources: SourcesWorkspaceView,
-  exportQueue: ExportQueueWorkspaceView,
-  activity: ActivityWorkspaceView,
-};
+import { WORKSPACE_VIEW_COMPONENTS } from "@/app/layout/lib/workspace-view-loaders";
 
 function WorkspaceViewContent({ viewId }: { viewId: SidebarViewId }) {
   const { t } = useTranslation();
-  const View = SIDEBAR_VIEWS[viewId];
+  const View = WORKSPACE_VIEW_COMPONENTS[viewId];
 
   return (
     <Suspense

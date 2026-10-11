@@ -7,6 +7,10 @@ import {
 } from "@/app/commands/core/application-command.utils";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
 import type { SidebarId, SidebarViewId } from "@/app/layout/lib/sidebar-layout";
+import {
+  preloadWorkspaceDialog,
+  preloadWorkspaceView,
+} from "@/app/layout/lib/workspace-view-loaders";
 import { getSidebarViewSide, WORKSPACE_VIEWS } from "@/app/layout/lib/workspace-view-registry";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -38,6 +42,9 @@ function useWorkspaceViewCommandGroups() {
     return {
       enabled: true,
       icon: viewIcons[view.id],
+      preload: () => {
+        void preloadWorkspaceDialog(view.id).catch(() => undefined);
+      },
       id: `open-workspace-view-${view.id}` as const,
       label,
       searchTerms: commandSearchTerms(`${label}|open|view|workspace|dialog|panel`),
@@ -72,6 +79,9 @@ function useWorkspaceViewCommandGroups() {
             : t("layout.rightSidebar")
           : undefined,
         icon: viewIcons[view.id],
+        preload: () => {
+          void preloadWorkspaceView(view.id).catch(() => undefined);
+        },
         id: contextSide
           ? (`dock-workspace-view-${view.id}-${contextSide}` as const)
           : (`dock-workspace-view-${view.id}` as const),

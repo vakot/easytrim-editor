@@ -7,13 +7,13 @@ import type {
 } from "../core/application-command.types";
 import {
   assertUniqueCommandIds,
-  filterApplicationCommands,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
   isApplicationCommandAvailableOnSurface,
   isShortcutEvent,
   materializeApplicationCommands,
 } from "../core/application-command.utils";
+import { filterApplicationCommands } from "../core/application-command-search.utils";
 import {
   AUDIO_EXPORT_SHORTCUT,
   FAST_EXPORT_SHORTCUT,

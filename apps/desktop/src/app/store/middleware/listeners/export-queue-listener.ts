@@ -12,14 +12,16 @@ import {
 } from "@/app/store/slices/editing-instances-slice";
 import { selectAutoStartQueueEnabled } from "@/app/store/slices/preferences-slice";
 import type { AppDispatch } from "@/app/store/store";
-import { startSourceExportQueue } from "@/app/store/thunks/export-thunks";
 
 import { listenerMiddleware } from "../listener-middleware";
 
 listenerMiddleware.startListening({
   actionCreator: editingInstanceExportAttemptQueued,
-  effect: (action, listenerApi) => {
+  effect: async (action, listenerApi) => {
     if (selectAutoStartQueueEnabled(listenerApi.getState())) {
+      const { startSourceExportQueue } = await import("@/app/store/thunks/export-thunks");
+      if (listenerApi.signal.aborted || !selectAutoStartQueueEnabled(listenerApi.getState()))
+        return;
       const dispatch = listenerApi.dispatch as unknown as AppDispatch;
       dispatch(startSourceExportQueue(action.payload.id));
     }
@@ -28,8 +30,11 @@ listenerMiddleware.startListening({
 
 listenerMiddleware.startListening({
   actionCreator: editingInstanceExportRetried,
-  effect: (action, listenerApi) => {
+  effect: async (action, listenerApi) => {
     if (selectAutoStartQueueEnabled(listenerApi.getState())) {
+      const { startSourceExportQueue } = await import("@/app/store/thunks/export-thunks");
+      if (listenerApi.signal.aborted || !selectAutoStartQueueEnabled(listenerApi.getState()))
+        return;
       const dispatch = listenerApi.dispatch as unknown as AppDispatch;
       dispatch(startSourceExportQueue(action.payload.id));
     }

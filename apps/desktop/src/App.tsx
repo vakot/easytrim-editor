@@ -13,7 +13,7 @@ import { CommandPalette } from "@/app/components/CommandPalette";
 import { DiagnosticsRecoveryDialog } from "@/app/components/DiagnosticsRecoveryDialog";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
-import { SettingsDialog } from "@/app/components/SettingsDialog";
+import { SettingsDialogMount } from "@/app/components/SettingsDialog/SettingsDialogMount";
 import { WorkspaceRecoveryNotice } from "@/app/components/WorkspaceRecoveryNotice";
 import { AppLayout } from "@/app/layout";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
@@ -25,11 +25,11 @@ import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectDropListenerError } from "@/app/store/slices/import-workflow-slice";
 import { persistor, store } from "@/app/store/store";
-import { loadQueueFinishActions } from "@/app/store/thunks/export-thunks";
+import { loadQueueFinishActions } from "@/app/store/thunks/queue-finish-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ActivityToasts } from "@/features/activity";
 import { ChangelogProvider } from "@/features/changelog";
-import { ExportDialog, QueueDeleteSourceProvider } from "@/features/export";
+import { ExportDialogMount, QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider, SourceDropOverlay } from "@/features/source";
 import { localizeAppError } from "@/i18n/app-errors";
@@ -59,12 +59,12 @@ function EasyTrimEditorApp() {
                       <SettingsDialogProvider>
                         <ApplicationCommandsProvider>
                           <AppLayout />
-                          <SettingsDialog />
+                          <SettingsDialogMount />
                           <CommandPalette />
 
                           <Toaster />
                           <ActivityToasts />
-                          <ExportDialog />
+                          <ExportDialogMount />
                           <DiagnosticsRecoveryDialog />
                           <WorkspaceRecoveryNotice />
                           <SourceDropOverlay />

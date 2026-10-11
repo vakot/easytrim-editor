@@ -43,6 +43,32 @@ pnpm build:storybook
 pnpm build:web
 ```
 
+## Bundle analysis
+
+Generate interactive production bundle reports on demand with:
+
+```sh
+pnpm build:analyze
+```
+
+The treemap report is written to `apps/desktop/dist/bundle-analysis.html`; the dependency graph
+is written to `apps/desktop/dist/bundle-analysis-network.html`. The treemap helps find large
+modules and compare emitted chunks, including parsed, gzip, and Brotli sizes. The network report
+shows why modules are included and how static and dynamic imports connect. Reports are ignored by
+Git with the rest of `dist/`. The analyzer runs only in this opt-in mode; a regular `pnpm build`
+or `pnpm build:web` clears the previous frontend output before producing release files, so the
+reports do not ship in production artifacts.
+
+To investigate startup JavaScript, start at the HTML entry and its statically imported chunks.
+In the network view, follow those imports to the project modules and dependencies that contribute
+to the initial graph. Use the treemap to rank their emitted size, then compare gzip and Brotli
+values when estimating transfer cost. Inspect large eager imports and feature barrels for optional
+dialogs, menus, or tools that could move behind a lazy entrypoint. Check the dependency graph before
+splitting: keep shared primitives and command infrastructure eager, and avoid boundaries that
+duplicate common dependencies or create sequential chunk waterfalls. Dynamic-import edges are
+candidate boundaries; confirm that the UI can remain unmounted until opened and still preload on
+pointer hover or keyboard focus.
+
 Native checks run from the repository root and use the workspace Cargo manifest:
 
 ```sh

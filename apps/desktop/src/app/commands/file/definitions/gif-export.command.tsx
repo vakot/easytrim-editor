@@ -8,7 +8,6 @@ import {
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
-import { openGifExportDialog } from "@/app/store/thunks/export-thunks";
 
 import { GIF_EXPORT_SHORTCUT } from "../file-shortcuts.constants";
 
@@ -20,6 +19,7 @@ function useGifExportCommand() {
     enabled,
     icon: <Film aria-hidden="true" />,
     async run({ surface }: ApplicationCommandExecutionContext) {
+      const { openGifExportDialog } = await import("@/app/store/thunks/export-thunks");
       await dispatch(openGifExportDialog(commandOrigin("gif-export", surface)));
     },
     id: "gif-export" as const,

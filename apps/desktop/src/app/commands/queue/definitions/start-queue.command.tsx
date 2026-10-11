@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueueSummary } from "@/app/store/slices/editing-instances-slice";
-import { startExportQueue } from "@/app/store/thunks/export-thunks";
 
 function useStartQueueCommand() {
   const { t } = useTranslation();
@@ -20,6 +19,7 @@ function useStartQueueCommand() {
     searchTerms: commandSearchTerms(`${label}|start|queued exports`),
     surfaces: ["palette", "button"] as const,
     async run() {
+      const { startExportQueue } = await import("@/app/store/thunks/export-thunks");
       await dispatch(startExportQueue());
     },
     variant: "default" as const,

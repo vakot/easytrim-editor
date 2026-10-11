@@ -108,3 +108,21 @@ Do not add test-only production exports or disable serializability/lint checks t
 
 Application menus use `MenuGroup` for each contiguous item section, with `MenuSeparator` between
 groups, including one-item groups and nested submenu sections.
+
+## Optional UI loading
+
+Load optional, feature-heavy Dialogs, Popovers, Menus, and similar UI with `React.lazy` or a
+dynamic import. Keep shared UI primitives, triggers, and command definitions lightweight and
+eagerly available. Do not lazy-load every small component; choose boundaries that keep substantial
+feature code out of startup bundles without creating many tiny chunks or dependency waterfalls.
+
+Loading and mounting are separate concerns. An unopened optional UI must not render its content or
+run component effects. Keep its state owner and any background work outside that optional content
+when those must remain active while the UI is closed.
+
+For interactive entrypoints, expose an intent preload and call it on pointer hover and keyboard
+focus. Use one cached module loader for both preloading and rendering. Opening must still work when
+no preload occurred, including touch activation and keyboard commands. Put a local `Suspense`
+boundary near the entrypoint and use a fallback that preserves layout and focus behavior. Preserve
+component identity across renders so opening and closing does not cause unrelated remounts or state
+loss.

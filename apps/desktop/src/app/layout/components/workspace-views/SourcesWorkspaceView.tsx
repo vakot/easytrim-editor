@@ -3,7 +3,7 @@ import {
   SourceListCloseAll,
   SourceListContent,
   SourceListSearch,
-} from "@/features/source";
+} from "@/features/source/source-list";
 
 function SourcesWorkspaceView() {
   return (

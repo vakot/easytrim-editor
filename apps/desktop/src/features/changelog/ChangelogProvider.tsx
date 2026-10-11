@@ -1,4 +1,4 @@
-import { type PropsWithChildren, useEffect, useState } from "react";
+import { type PropsWithChildren, Suspense, useEffect, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -7,10 +7,17 @@ import {
 } from "@/app/store/slices/preferences-slice";
 import { CHANGELOG } from "@/generated/changelog";
 import { getCurrentVersion } from "@/lib/app-version.utils";
+import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
-import { ChangelogDialog, type ChangelogDialogMode } from "./components/ChangelogDialog";
+import type { ChangelogDialogProps } from "./components/ChangelogDialog";
 import { ChangelogDialogContext } from "./contexts/changelog-dialog-context";
 import { getAvailableChangelog, getChangelogStartupState } from "./lib/changelog.utils";
+
+const ChangelogDialog = lazyWithPreload<ChangelogDialogProps>(() =>
+  import("./components/ChangelogDialog").then((module) => ({ default: module.ChangelogDialog })),
+);
+
+const preloadChangelogDialog = preloadOnIntent(() => ChangelogDialog.preload());
 
 function ChangelogProvider({ children }: PropsWithChildren) {
   const dispatch = useAppDispatch();
@@ -21,7 +28,7 @@ function ChangelogProvider({ children }: PropsWithChildren) {
   const availableReleases = getAvailableChangelog(CHANGELOG, currentVersion);
   const startupState = getChangelogStartupState(CHANGELOG, lastSeenVersion, currentVersion);
   const unseenReleases = startupState.unseenReleases;
-  const mode: ChangelogDialogMode | null = manualOpen
+  const mode = manualOpen
     ? "changelog"
     : !whatsNewDismissed && !startupState.initializeSeenVersion && unseenReleases.length > 0
       ? "whats-new"
@@ -45,16 +52,25 @@ function ChangelogProvider({ children }: PropsWithChildren) {
     setManualOpen(false);
   };
 
-  const openChangelog = () => setManualOpen(true);
+  const openChangelog = () => {
+    preloadChangelogDialog();
+    setManualOpen(true);
+  };
 
   return (
-    <ChangelogDialogContext.Provider value={{ openChangelog }}>
+    <ChangelogDialogContext.Provider
+      value={{ openChangelog, preloadChangelog: preloadChangelogDialog }}
+    >
       {children}
-      <ChangelogDialog
-        mode={mode}
-        onClose={closeDialog}
-        releases={mode === "whats-new" ? unseenReleases : availableReleases}
-      />
+      {mode ? (
+        <Suspense fallback={null}>
+          <ChangelogDialog
+            mode={mode}
+            onClose={closeDialog}
+            releases={mode === "whats-new" ? unseenReleases : availableReleases}
+          />
+        </Suspense>
+      ) : null}
     </ChangelogDialogContext.Provider>
   );
 }

@@ -39,7 +39,7 @@ describe("AudioTrackMetadataDialog", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Open metadata" }));
-    const titleInput = screen.getByRole("textbox", { name: "Track title" });
+    const titleInput = await screen.findByRole("textbox", { name: "Track title" });
     expect(titleInput).toHaveValue("");
     expect(titleInput).toHaveAttribute("placeholder", "Source title");
 
@@ -47,7 +47,9 @@ describe("AudioTrackMetadataDialog", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
     await user.click(screen.getByRole("button", { name: "Open metadata" }));
 
-    expect(screen.getByRole("textbox", { name: "Track title" })).toHaveValue("Saved custom title");
+    expect(await screen.findByRole("textbox", { name: "Track title" })).toHaveValue(
+      "Saved custom title",
+    );
   });
 
   it("uses the track row fallback as the title placeholder when the source has no title", async () => {
@@ -67,11 +69,9 @@ describe("AudioTrackMetadataDialog", () => {
 
     await user.click(screen.getByRole("button", { name: "Open metadata" }));
 
-    expect(screen.getByRole("textbox", { name: "Track title" })).toHaveValue("");
-    expect(screen.getByRole("textbox", { name: "Track title" })).toHaveAttribute(
-      "placeholder",
-      "und",
-    );
+    const titleInput = await screen.findByRole("textbox", { name: "Track title" });
+    expect(titleInput).toHaveValue("");
+    expect(titleInput).toHaveAttribute("placeholder", "und");
   });
 
   it("preserves an existing custom title when saving without changes", async () => {
@@ -96,7 +96,7 @@ describe("AudioTrackMetadataDialog", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Open metadata" }));
-    expect(screen.getByRole("textbox", { name: "Track title" })).toHaveValue(
+    expect(await screen.findByRole("textbox", { name: "Track title" })).toHaveValue(
       "Existing custom title",
     );
     await user.click(screen.getByRole("button", { name: "Save" }));
@@ -133,18 +133,16 @@ describe("AudioTrackMetadataDialog", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Open metadata" }));
-    await user.clear(screen.getByRole("textbox", { name: "Track title" }));
+    await user.clear(await screen.findByRole("textbox", { name: "Track title" }));
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(controller.updateMetadata).toHaveBeenCalledWith("", true, undefined, false);
     expect(track.metadata.title).toBeUndefined();
 
     await user.click(screen.getByRole("button", { name: "Open metadata" }));
-    expect(screen.getByRole("textbox", { name: "Track title" })).toHaveValue("");
-    expect(screen.getByRole("textbox", { name: "Track title" })).toHaveAttribute(
-      "placeholder",
-      "Source title",
-    );
+    const titleInput = await screen.findByRole("textbox", { name: "Track title" });
+    expect(titleInput).toHaveValue("");
+    expect(titleInput).toHaveAttribute("placeholder", "Source title");
   });
 
   it.each([
@@ -167,7 +165,7 @@ describe("AudioTrackMetadataDialog", () => {
       );
 
       await user.click(screen.getByRole("button", { name: "Open metadata" }));
-      await user.click(screen.getByRole("button", { name: "Use source language" }));
+      await user.click(await screen.findByRole("button", { name: "Use source language" }));
 
       expect(screen.getByRole("button", { name: "Language" })).toHaveTextContent(expected);
     },

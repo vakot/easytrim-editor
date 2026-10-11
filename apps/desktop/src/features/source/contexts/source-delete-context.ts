@@ -7,6 +7,7 @@ interface SourceDeleteRequest {
 }
 
 interface SourceDeleteContextValue {
+  preloadSourceDelete: () => void;
   requestSourceDelete: (request: SourceDeleteRequest) => void;
 }
 

@@ -6,10 +6,11 @@ import { useChangelogDialog } from "@/features/changelog";
 
 function useOpenChangelogCommand() {
   const { t } = useTranslation();
-  const { openChangelog } = useChangelogDialog();
+  const { openChangelog, preloadChangelog } = useChangelogDialog();
   return {
     enabled: true,
     icon: <ScrollText aria-hidden="true" />,
+    preload: preloadChangelog,
     run: openChangelog,
     id: "open-changelog" as const,
     label: t("support.changelog.open"),

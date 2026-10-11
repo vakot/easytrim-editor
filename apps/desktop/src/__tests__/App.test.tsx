@@ -344,7 +344,7 @@ describe("App", () => {
     const searchButton = await screen.findByRole("button", { name: "Search commands" });
     await user.click(searchButton);
 
-    expect(screen.getByRole("dialog", { name: "Command Palette" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Command Palette" })).toBeInTheDocument();
   });
 
   it("keeps the title-bar search trigger visible during a manual media recheck", async () => {
@@ -430,7 +430,9 @@ describe("App", () => {
         screen.getByRole("checkbox", { name: replacementSelection.displayName }),
       ).toBeInTheDocument(),
     );
-    await user.click(screen.getByRole("checkbox", { name: replacementSelection.displayName }));
+    await user.click(
+      await screen.findByRole("checkbox", { name: replacementSelection.displayName }),
+    );
     await waitFor(() =>
       expect(selectSourceSelection(store.getState())).toEqual(replacementSelection),
     );
@@ -600,7 +602,9 @@ describe("App", () => {
     const timelinePanel = document.getElementById("editor-stage-timeline");
     const audioPanel = document.getElementById("editor-stage-audio");
 
-    await user.click(screen.getByRole("checkbox", { name: replacementSelection.displayName }));
+    await user.click(
+      await screen.findByRole("checkbox", { name: replacementSelection.displayName }),
+    );
 
     expect(document.getElementById("workspace-left-sidebar")).toBe(sourcePanel);
     expect(document.getElementById("editor-stage-preview")).toBe(previewPanel);
@@ -615,7 +619,7 @@ describe("App", () => {
     expect(selectedSegmentHeading).toBeInTheDocument();
     expect(selectedSegmentHeading.closest(".select-none")).toBeNull();
     expect(screen.getByLabelText("Current playback time").closest(".select-none")).toBeNull();
-    expect(screen.getByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument();
@@ -1064,6 +1068,24 @@ describe("App", () => {
     expect(document.getElementById("editor-stage-audio")).toBeNull();
   });
 
+  it("unmounts audio rows while the bottom panel is collapsed and restores them on expand", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    expect(await screen.findByTestId("audio-tracks-scroll")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Toggle bottom panel" }));
+    await waitFor(() =>
+      expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Toggle bottom panel" }));
+    expect(await screen.findByTestId("audio-tracks-scroll")).toBeInTheDocument();
+  });
+
   it("closes an open export dialog on Escape", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
@@ -1081,7 +1103,7 @@ describe("App", () => {
     fireEvent.keyDown(window, { key: "i", code: "KeyI" });
     expect(startHandle).toHaveAttribute("aria-valuenow", "0");
     await user.click(screen.getByRole("menuitem", { name: /Optimized Export/ }));
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: " ", code: "Space" });
     expect(play).not.toHaveBeenCalled();
