@@ -36,14 +36,15 @@ function useWorkspaceSidebarWidths({
     const wasPresent = previousSidebarPresence.current;
     previousSidebarPresence.current = { left, right };
 
-    const sidebarWasAdded = (!wasPresent.left && left) || (!wasPresent.right && right);
-    if (!sidebarWasAdded) return;
+    const addedSidebars = (["left", "right"] as const).filter(
+      (side) => !wasPresent[side] && (side === "left" ? left : right),
+    );
+    if (addedSidebars.length === 0) return;
 
     const frame = window.requestAnimationFrame(() => {
-      for (const side of ["left", "right"] as const) {
-        const isPresent = side === "left" ? left : right;
+      for (const side of addedSidebars) {
         const width = Number.parseFloat(workspaceSidebarWidthsRef.current[side] ?? "");
-        if (isPresent && Number.isFinite(width) && width > 0) {
+        if (Number.isFinite(width) && width > 0) {
           resizeSidebarRef.current(side, width);
         }
       }
