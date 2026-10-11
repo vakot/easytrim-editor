@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed the bottom audio panel resetting its state and blinking when switching sources.
+
 ## [1.13.4]
 
 ### Added
