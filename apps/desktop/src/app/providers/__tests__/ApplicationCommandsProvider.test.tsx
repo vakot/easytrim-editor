@@ -25,6 +25,8 @@ const mocks = vi.hoisted(() => ({
     origin,
     type: "export/gif",
   })),
+  preloadWorkspaceDialog: vi.fn(() => Promise.resolve()),
+  preloadWorkspaceView: vi.fn(() => Promise.resolve()),
   requestSourceDelete: vi.fn(),
   resetPanels: vi.fn(),
   panelCommandIds: [] as (string | string[])[],
@@ -97,6 +99,10 @@ vi.mock("@/app/store/thunks/export-thunks", () => ({
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
   chooseSourceRequested: mocks.chooseSourceRequested,
   closeActiveEditingInstanceRequested: mocks.closeActiveEditingInstanceRequested,
+}));
+vi.mock("@/app/layout/lib/workspace-view-loaders", () => ({
+  preloadWorkspaceDialog: mocks.preloadWorkspaceDialog,
+  preloadWorkspaceView: mocks.preloadWorkspaceView,
 }));
 vi.mock("@/features/source", () => ({
   useSourceDelete: () => ({ requestSourceDelete: mocks.requestSourceDelete }),
@@ -207,6 +213,14 @@ function RuntimeProbe() {
         open-workspace-view-activity-menu
       </button>
       <button
+        onClick={() =>
+          commands.find((command) => command.id === "open-workspace-view-activity")?.preload?.()
+        }
+        type="button"
+      >
+        preload-open-workspace-view-activity
+      </button>
+      <button
         onClick={() => void executeCommand("dock-workspace-view-exportQueue", "menu")}
         type="button"
       >
@@ -248,6 +262,8 @@ describe("ApplicationCommandsProvider", () => {
     mocks.panelsAreReset = true;
     mocks.diagnosticsError.mockClear();
     mocks.requestSourceDelete.mockClear();
+    mocks.preloadWorkspaceDialog.mockClear();
+    mocks.preloadWorkspaceView.mockClear();
     mocks.startAudioExportRequested.mockClear();
     mocks.availableVersion = null;
     mocks.updateStatus = "idle";
@@ -415,6 +431,15 @@ describe("ApplicationCommandsProvider", () => {
     expect(screen.getByTestId("dock-workspace-view")).toHaveTextContent("exportQueue");
   });
 
+  it("preloads only the Dialog implementation for an Open command", () => {
+    renderRuntime();
+
+    fireEvent.click(screen.getByRole("button", { name: "preload-open-workspace-view-activity" }));
+
+    expect(mocks.preloadWorkspaceDialog).toHaveBeenCalledExactlyOnceWith("activity");
+    expect(mocks.preloadWorkspaceView).not.toHaveBeenCalled();
+  });
+
   it("opens Settings through the application command", async () => {
     const user = (await import("@testing-library/user-event")).default.setup();
     renderRuntime();
@@ -453,13 +478,15 @@ describe("ApplicationCommandsProvider", () => {
     expect(command).toBeEnabled();
     fireEvent.click(command);
 
-    expect(mocks.startAudioExportRequested).toHaveBeenCalledWith({
-      id: "palette.audio-export",
-      type: "menu",
-    });
-    expect(mocks.dispatch).toHaveBeenCalledWith({
-      origin: { id: "palette.audio-export", type: "menu" },
-      type: "export/audio",
+    await waitFor(() => {
+      expect(mocks.startAudioExportRequested).toHaveBeenCalledWith({
+        id: "palette.audio-export",
+        type: "menu",
+      });
+      expect(mocks.dispatch).toHaveBeenCalledWith({
+        origin: { id: "palette.audio-export", type: "menu" },
+        type: "export/audio",
+      });
     });
 
     state.audio.tracks[0]!.enabled = false;

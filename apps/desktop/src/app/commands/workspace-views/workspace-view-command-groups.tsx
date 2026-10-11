@@ -43,7 +43,6 @@ function useWorkspaceViewCommandGroups() {
       enabled: true,
       icon: viewIcons[view.id],
       preload: () => {
-        void preloadWorkspaceView(view.id).catch(() => undefined);
         void preloadWorkspaceDialog(view.id).catch(() => undefined);
       },
       id: `open-workspace-view-${view.id}` as const,
