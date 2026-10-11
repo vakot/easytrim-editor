@@ -65,6 +65,7 @@ function useWorkspaceViewCommandGroups() {
       return {
         checked: side !== null,
         enabled: true,
+        keepOpen: contextSide ? undefined : side !== null,
         hint: side
           ? side === "left"
             ? t("layout.leftSidebar")
