@@ -1,5 +1,5 @@
 import { List, MoreHorizontal, Scissors, Settings2 } from "lucide-react";
-import { type ComponentProps, lazy, Suspense } from "react";
+import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -28,9 +28,6 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import { selectExportQueueSummary } from "@/app/store/slices/editing-instances-slice";
-import {
-  selectExportQueueDialogOpen,
-} from "@/app/store/slices/export-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   openOptimizedExportDialog,
@@ -38,15 +35,10 @@ import {
 } from "@/app/store/thunks/export-thunks";
 import { cn } from "@/lib/class-names.utils";
 
-const ExportQueueDialog = lazy(() =>
-  import("./ExportQueueDialog").then((module) => ({ default: module.ExportQueueDialog })),
-);
-
 function ExportActions() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
-  const exportQueueDialogOpen = useAppSelector(selectExportQueueDialogOpen);
   const sourceReady = useAppSelector(selectSourceReady);
   const hasSelectedAudio = useAppSelector((state) =>
     selectAudioTracks(state).some((track) => track.enabled),
@@ -69,11 +61,6 @@ function ExportActions() {
       <ExportActionTooltip tooltip={t("queue.actions.openExportQueue")}>
         <ExportQueueTrigger finishedExports={finishedExports} queueSize={queueSize} />
       </ExportActionTooltip>
-      {exportQueueDialogOpen ? (
-        <Suspense fallback={null}>
-          <ExportQueueDialog />
-        </Suspense>
-      ) : null}
 
       <ExportActionTooltip
         disabled={!fastExportAvailable}

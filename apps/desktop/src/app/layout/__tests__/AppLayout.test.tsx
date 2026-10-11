@@ -46,6 +46,15 @@ vi.mock("@/app/layout/components/WorkspaceViewContent", () => ({
   WorkspaceViewContent: ({ viewId }: { viewId: string }) => <div>{viewId} view content</div>,
 }));
 
+vi.mock("@/app/layout/components/workspace-dialogs/ActivityWorkspaceDialog", () => ({
+  ActivityWorkspaceDialog: ({ open }: { open: boolean }) =>
+    open ? (
+      <div aria-label="Activity Feed" role="dialog">
+        Activity view dialog
+      </div>
+    ) : null,
+}));
+
 vi.mock("@/app/layout/components/AppLayoutPanel", () => ({
   AppLayoutPanel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
@@ -447,8 +456,8 @@ describe("AppLayout sidebar drag and drop", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Open Activity Feed" }));
 
-    expect(await screen.findByRole("dialog")).toBeInTheDocument();
-    expect(await screen.findByText("activity view content")).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Activity Feed" })).toBeInTheDocument();
+    expect(await screen.findByText("Activity view dialog")).toBeInTheDocument();
   });
 
   it("places a dock in an empty sidebar, blocks workspace actions, and cancels without layout changes", async () => {

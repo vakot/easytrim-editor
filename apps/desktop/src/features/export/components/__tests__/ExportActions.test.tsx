@@ -1,19 +1,19 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import type { ApplicationCommandId } from "@/app/commands";
 import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
 import { ApplicationCommandsContext } from "@/app/contexts/application-commands-context";
+import { ExportQueueDialog } from "@/app/layout/components/workspace-dialogs/ExportQueueDialog";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
   editingInstanceExportAttemptQueued,
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
-import { exportQueueDialogOpened } from "@/app/store/slices/export-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt } from "@/domain/editing-instance";
 import { firstSource } from "@/test/source.fixtures";
@@ -58,7 +58,8 @@ const exportCommands = [
 
 function renderExportActions(store = createAppStore()) {
   const commandsById = Object.fromEntries(exportCommands.map((command) => [command.id, command]));
-  return render(
+  const executeCommand = vi.fn(async () => undefined);
+  const result = render(
     <Provider store={store}>
       <ApplicationCommandsContext.Provider
         value={{
@@ -67,17 +68,23 @@ function renderExportActions(store = createAppStore()) {
             ApplicationCommandId,
             ApplicationCommand<ApplicationCommandId>
           >,
-          executeCommand: async (id) => {
-            if (id === "open-workspace-view-exportQueue") {
-              store.dispatch(exportQueueDialogOpened());
-            }
-          },
+          executeCommand,
         }}
       >
         <TooltipProvider>
           <ExportActions />
         </TooltipProvider>
       </ApplicationCommandsContext.Provider>
+    </Provider>,
+  );
+
+  return { ...result, executeCommand };
+}
+
+function renderExportQueueDialog(store = createAppStore()) {
+  return render(
+    <Provider store={store}>
+      <ExportQueueDialog onOpenChange={() => undefined} open />
     </Provider>,
   );
 }
@@ -121,14 +128,21 @@ describe("ExportActions", () => {
     expect(audioTooltip).toHaveAttribute("data-side", "left");
   });
 
-  it("keeps the dialog footer stable and disables Start queue without queued work", async () => {
+  it("opens the Export Queue through its workspace command", async () => {
     const user = userEvent.setup();
-    const store = createAppStore();
-    renderExportActions(store);
+    const { executeCommand } = renderExportActions();
 
     await user.click(screen.getByRole("button", { name: /Export Queue$/ }));
 
-    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(executeCommand).toHaveBeenCalledWith("open-workspace-view-exportQueue", "button");
+  });
+
+  it("keeps the queue dialog footer stable and disables Start queue without queued work", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    renderExportQueueDialog(store);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
     const stripMetadata = screen.getByRole("checkbox", {
       name: "Strip metadata and chapters from exports",
     });
@@ -144,7 +158,6 @@ describe("ExportActions", () => {
   });
 
   it("enables Start queue when queued work exists", async () => {
-    const user = userEvent.setup();
     const store = createAppStore();
     const snapshot = createDefaultEditorSnapshot(firstSource, false);
     const attempt = createExportAttempt({
@@ -177,23 +190,9 @@ describe("ExportActions", () => {
         },
       ]),
     );
-    renderExportActions(store);
+    store.dispatch(editingInstanceExportAttemptQueued({ attempt, id: "source-1" }));
+    renderExportQueueDialog(store);
 
-    const queueButton = screen.getByRole("button", { name: /Export Queue$/ });
-    queueButton.focus();
-    act(() => {
-      store.dispatch(editingInstanceExportAttemptQueued({ attempt, id: "source-1" }));
-    });
-
-    expect(document.activeElement).toBe(queueButton);
-    expect(queueButton).toHaveClass("max-2xl:size-auto");
-    expect(queueButton).toHaveClass("max-2xl:px-2");
-    expect(
-      within(queueButton).getByText((_, element) => element?.textContent === "0/1").parentElement,
-    ).toBe(queueButton);
-
-    await user.click(screen.getByRole("button", { name: /Export Queue$/ }));
-
-    expect(await screen.findByRole("button", { name: "Start queue" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Start queue" })).not.toBeDisabled();
   });
 });

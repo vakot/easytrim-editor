@@ -12,32 +12,24 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  exportQueueDialogClosed,
-  selectExportQueueDialogOpen,
-} from "@/app/store/slices/export-slice";
-
 import {
   ExportQueue,
   ExportQueueContent,
   ExportQueueStartButton,
   ExportQueueStripMetadataCheckbox,
   ExportQueueSummary,
-} from "../components/ExportQueue";
+} from "@/features/export";
 
-function ExportQueueDialog() {
+interface ExportQueueDialogProps {
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}
+
+function ExportQueueDialog({ onOpenChange, open }: ExportQueueDialogProps) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const open = useAppSelector(selectExportQueueDialogOpen);
 
   return (
-    <Dialog
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) dispatch(exportQueueDialogClosed());
-      }}
-      open={open}
-    >
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <ExportQueue>
         <DialogContent className="max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
           <DialogHeader className="-mx-4 border-b px-4 pb-4">
