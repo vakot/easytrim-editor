@@ -129,7 +129,8 @@ export default defineConfig(
         {
           patterns: [
             {
-              regex: "^@/features/(?!export/queue(?:/|$)|source/source-list(?:/|$))[^/]+/.+",
+              regex:
+                "^@/features/(?!export/queue(?:/|$)|source/source-list(?:/|$)|audio/audio-panel\\.loader(?:/|$))[^/]+/.+",
               message: "Import features through their public index API.",
             },
           ],
@@ -146,7 +147,8 @@ export default defineConfig(
         {
           patterns: [
             {
-              regex: "^@/features/(?!export/queue(?:/|$)|source/source-list(?:/|$))[^/]+/.+",
+              regex:
+                "^@/features/(?!export/queue(?:/|$)|source/source-list(?:/|$)|audio/audio-panel\\.loader(?:/|$))[^/]+/.+",
               message: "Import features through their public index API.",
             },
             {

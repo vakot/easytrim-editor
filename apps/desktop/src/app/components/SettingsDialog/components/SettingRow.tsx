@@ -51,13 +51,22 @@ function CommandSwitch({
 }) {
   const command = useApplicationCommand(commandId);
   const { executeCommand } = useApplicationCommands();
+  const { onFocus, onPointerEnter, ...switchProps } = props;
 
   return (
     <Switch
       checked={Boolean(command.checked)}
       disabled={!command.enabled || command.pending}
       onCheckedChange={() => void executeCommand(command.id, "dialog")}
-      {...props}
+      {...switchProps}
+      onFocus={(event) => {
+        onFocus?.(event);
+        command.preload?.();
+      }}
+      onPointerEnter={(event) => {
+        onPointerEnter?.(event);
+        command.preload?.();
+      }}
     />
   );
 }
@@ -72,13 +81,22 @@ function CommandButton({
 }) {
   const command = useApplicationCommand(commandId);
   const { executeCommand } = useApplicationCommands();
+  const { onFocus, onPointerEnter, ...buttonProps } = props;
 
   return (
     <Button
       disabled={!command.enabled || command.pending}
       onClick={() => void executeCommand(command.id, "dialog")}
       type={type}
-      {...props}
+      {...buttonProps}
+      onFocus={(event) => {
+        onFocus?.(event);
+        command.preload?.();
+      }}
+      onPointerEnter={(event) => {
+        onPointerEnter?.(event);
+        command.preload?.();
+      }}
     >
       {children ?? command.label}
     </Button>

@@ -34,13 +34,22 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             {
+              name: "shared-ui",
+              test: /[\\/]components[\\/]ui[\\/]/,
+              minShareCount: 2,
+              minSize: 12_000,
+              priority: 5,
+            },
+            {
               name: "icons",
               test: /lucide-react/,
+              priority: 10,
               minShareCount: 2,
             },
             {
               name: "radix-ui",
               test: /radix-ui/,
+              priority: 10,
               minShareCount: 2,
               minSize: 12_000,
             },

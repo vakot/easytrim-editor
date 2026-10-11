@@ -7,6 +7,7 @@ import { commandSearchTerms } from "@/app/commands/core/application-command.util
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSidebarLayout } from "@/app/store/slices/preferences-slice";
 import { selectHasAudio } from "@/app/store/slices/source-slice";
+import { preloadAudioPanel } from "@/features/audio/audio-panel.loader";
 
 function usePanelCommands() {
   const { t } = useTranslation();
@@ -46,6 +47,7 @@ function usePanelCommands() {
       checked: hasAudio && !bottom.isCollapsed,
       enabled: bottom.isAvailable && hasAudio,
       icon: <PanelBottom aria-hidden="true" />,
+      preload: preloadAudioPanel,
       run: bottom.toggle,
       id: "toggle-bottom-panel" as const,
       label: t("layout.showBottomPanel"),

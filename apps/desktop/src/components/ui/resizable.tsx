@@ -439,11 +439,23 @@ function usePanelState(panelId: PanelId) {
 
 function usePanelCommand(panelId: PanelId | PanelId[]) {
   const panelIds = Array.isArray(panelId) ? panelId : [panelId];
-  const { panels } = useResizablePanelContext();
+  const { panels, updatePanelState } = useResizablePanelContext();
   const panelStates = panelIds.flatMap((id) => {
     const panel = panels[id];
-    return panel ? [{ panel }] : [];
+    return panel ? [{ id, panel }] : [];
   });
+
+  const setPanelCollapsed = (id: PanelId, panel: PanelState, isCollapsed: boolean) => {
+    if (panel.isCollapsed === isCollapsed) return;
+
+    panel.runUserInteraction(() => {
+      if (isCollapsed) panel.ref.current?.collapse();
+      else panel.ref.current?.expand();
+    });
+    updatePanelState(id, (current) =>
+      current.isCollapsed === isCollapsed ? current : { ...current, isCollapsed },
+    );
+  };
 
   const isAvailable = panelStates.length === panelIds.length;
   const collapsedCount = panelStates.filter(({ panel }) => panel.isCollapsed).length;
@@ -452,21 +464,14 @@ function usePanelCommand(panelId: PanelId | PanelId[]) {
     isAvailable && panelStates.every(({ panel }) => panel.isCollapsed === panel.isDefaultCollapsed);
 
   const toggle = () => {
-    panelStates.forEach(({ panel }) => {
-      panel.runUserInteraction(() => {
-        if (panel.isCollapsed) panel.ref.current?.expand();
-        else panel.ref.current?.collapse();
-      });
+    panelStates.forEach(({ id, panel }) => {
+      setPanelCollapsed(id, panel, !panel.isCollapsed);
     });
   };
 
   const reset = () => {
-    panelStates.forEach(({ panel }) => {
-      if (panel.isCollapsed === panel.isDefaultCollapsed) return;
-      panel.runUserInteraction(() => {
-        if (panel.isDefaultCollapsed) panel.ref.current?.collapse();
-        else panel.ref.current?.expand();
-      });
+    panelStates.forEach(({ id, panel }) => {
+      setPanelCollapsed(id, panel, panel.isDefaultCollapsed);
     });
   };
 
