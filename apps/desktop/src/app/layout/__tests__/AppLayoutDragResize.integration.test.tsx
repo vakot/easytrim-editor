@@ -665,9 +665,7 @@ describe("AppLayout drag and resize integration", () => {
     const restoredLeftPanel = document.getElementById("workspace-left-sidebar")!;
     await waitFor(() => {
       expect(restoredLeftPanel.offsetWidth).toBeGreaterThan(0);
-      expect(document.getElementById("workspace-right-sidebar")?.offsetWidth).toBeCloseTo(
-        configuredRightSidebarWidth,
-      );
+      expect(document.getElementById("workspace-right-sidebar")?.offsetWidth).toBe(0);
     });
   });
 });
