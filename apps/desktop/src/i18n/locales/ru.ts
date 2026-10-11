@@ -85,8 +85,6 @@ export const ru = {
       resetNotice: "Текущий монтаж будет сброшен",
       title: "Перетащите видео сюда",
     },
-    explorer: "Источники",
-    importedSources: "Импортированные источники",
     navigation: {
       next: "Следующий источник",
       previous: "Предыдущий источник",
@@ -295,7 +293,6 @@ export const ru = {
     showBottomPanel: "Показать нижнюю панель",
     toggleLeftPanel: "Переключить левую панель",
     toggleBottomPanel: "Переключить нижнюю панель",
-    activityFeed: "Лента активности",
     layoutDensity: "Плотность интерфейса",
     view: "Вид",
     uiScaling: "Масштаб интерфейса",
@@ -511,6 +508,7 @@ export const ru = {
       description: "Завершённые действия появятся здесь",
       title: "Записей пока нет",
     },
+    title: "Лента активности",
   },
   export: {
     fastExport: {

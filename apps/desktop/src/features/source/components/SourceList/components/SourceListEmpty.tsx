@@ -39,7 +39,7 @@ function SourceListEmpty() {
 
   return (
     <section
-      aria-label={t("source.explorer")}
+      aria-label={t("source.title")}
       className={cn(
         styles.container,
         "flex w-full items-center justify-center overflow-hidden py-8",

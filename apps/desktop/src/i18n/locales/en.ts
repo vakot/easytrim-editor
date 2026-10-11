@@ -129,9 +129,6 @@ export const en = {
       resetNotice: "The current edit will be reset",
       title: "Drag and drop videos here",
     },
-    explorer: "Source explorer",
-    explorerDescription: "Search imported videos and manage open source files",
-    importedSources: "Imported Sources",
     navigation: {
       next: "Next source",
       previous: "Previous source",
@@ -178,6 +175,8 @@ export const en = {
     thumbnail: {
       accessibleLabel: "Thumbnail for {{name}}",
     },
+    title: "Imported Sources",
+    description: "Search imported videos and manage open source files",
   },
   app: {
     brand: "EasyTrim Editor",
@@ -298,7 +297,6 @@ export const en = {
     keyboardDragDropped: "Moved {{view}} to {{sidebar}}.",
     keyboardDragCanceled: "Canceled moving {{view}}.",
     keyboardDragUnchanged: "{{view}} remains in its current position.",
-    activityFeed: "Activity Feed",
     layoutDensity: "Layout Density",
     view: "View",
     uiScaling: "UI Scaling",

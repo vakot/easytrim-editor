@@ -28,10 +28,8 @@ function SourcesWorkspaceDialog({ onOpenChange, open }: SourcesWorkspaceDialogPr
       <SourceList>
         <DialogContent className="h-[min(80dvh,40rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden pb-0 sm:max-w-lg">
           <DialogHeader className="-mx-4 border-b px-4 pb-4">
-            <DialogTitle>{t("source.importedSources")}</DialogTitle>
-            <DialogDescription className="sr-only">
-              {t("source.explorerDescription")}
-            </DialogDescription>
+            <DialogTitle>{t("source.title")}</DialogTitle>
+            <DialogDescription className="sr-only">{t("source.description")}</DialogDescription>
           </DialogHeader>
 
           <div className="flex min-h-0 flex-1 flex-col pt-3">

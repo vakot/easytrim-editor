@@ -30,9 +30,9 @@ function useWorkspaceViewCommandGroups() {
   const openCommands = WORKSPACE_VIEWS.map((view) => {
     const label =
       view.id === "sources"
-        ? t("source.importedSources")
+        ? t("source.title")
         : view.id === "activity"
-          ? t("layout.activityFeed")
+          ? t("activity.title")
           : t("queue.title");
 
     return {
@@ -57,9 +57,9 @@ function useWorkspaceViewCommandGroups() {
       const side = getSidebarViewSide(layout, view.id);
       const label =
         view.id === "sources"
-          ? t("source.importedSources")
+          ? t("source.title")
           : view.id === "activity"
-            ? t("layout.activityFeed")
+            ? t("activity.title")
             : t("queue.title");
 
       return {

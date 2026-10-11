@@ -409,18 +409,18 @@ function useSidebarDragAndDrop() {
             sidebar: destinationTitle,
             view:
               currentDrag.viewId === "sources"
-                ? t("source.importedSources")
+                ? t("source.title")
                 : currentDrag.viewId === "activity"
-                  ? t("layout.activityFeed")
+                  ? t("activity.title")
                   : t("queue.title"),
           }),
         );
       } else {
         const viewTitle =
           currentDrag.viewId === "sources"
-            ? t("source.importedSources")
+            ? t("source.title")
             : currentDrag.viewId === "activity"
-              ? t("layout.activityFeed")
+              ? t("activity.title")
               : t("queue.title");
 
         setKeyboardDragAnnouncement(
@@ -477,9 +477,9 @@ function useSidebarDragAndDrop() {
           t("layout.keyboardDragStarted", {
             view:
               viewId === "sources"
-                ? t("source.importedSources")
+                ? t("source.title")
                 : viewId === "activity"
-                  ? t("layout.activityFeed")
+                  ? t("activity.title")
                   : t("queue.title"),
           }),
         );
@@ -571,9 +571,9 @@ function useSidebarDragAndDrop() {
           sidebar: destinationTitle,
           view:
             keyboardDrag.viewId === "sources"
-              ? t("source.importedSources")
+              ? t("source.title")
               : keyboardDrag.viewId === "activity"
-                ? t("layout.activityFeed")
+                ? t("activity.title")
                 : t("queue.title"),
         }),
       );

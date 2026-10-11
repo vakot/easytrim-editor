@@ -268,9 +268,9 @@ function SidebarViewHeader({
   const { t } = useTranslation();
   const title =
     viewId === "sources"
-      ? t("source.importedSources")
+      ? t("source.title")
       : viewId === "activity"
-        ? t("layout.activityFeed")
+        ? t("activity.title")
         : t("queue.title");
 
   const panelId = VIEW_PANEL_IDS[viewId];
@@ -411,9 +411,9 @@ function SidebarDragPreview({
   const { t } = useTranslation();
   const title =
     viewId === "sources"
-      ? t("source.importedSources")
+      ? t("source.title")
       : viewId === "activity"
-        ? t("layout.activityFeed")
+        ? t("activity.title")
         : t("queue.title");
 
   return createPortal(

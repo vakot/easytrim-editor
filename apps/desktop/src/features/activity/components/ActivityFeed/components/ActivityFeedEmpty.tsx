@@ -14,7 +14,7 @@ function ActivityFeedEmpty() {
 
   return (
     <section
-      aria-label={t("layout.activityFeed")}
+      aria-label={t("activity.title")}
       className="flex items-center justify-center overflow-hidden"
     >
       <Empty className="w-full max-w-md border-0">
