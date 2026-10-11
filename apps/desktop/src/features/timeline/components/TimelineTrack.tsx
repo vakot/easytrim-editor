@@ -89,7 +89,22 @@ function Timeline({ children }: { children: React.ReactNode }) {
     snapTargetsMicros,
   });
 
-  const { finishPointer, movePointer, resetBoundary, startScrub, trackRef } = interactions;
+  const {
+    finishPointer,
+    movePointer,
+    resetBoundary,
+    scrubDragging,
+    segmentDragging,
+    startScrub,
+    trackRef,
+    trimDragState,
+  } = interactions;
+
+  const trackCursorClass = segmentDragging
+    ? "cursor-grabbing"
+    : scrubDragging || trimDragState
+      ? "cursor-ew-resize"
+      : "cursor-pointer";
 
   const dragAwareDoubleClick = useDragAwareDoubleClick<HTMLElement>((_event, pointerDownTarget) => {
     if (!(pointerDownTarget instanceof Element)) return;
@@ -111,7 +126,8 @@ function Timeline({ children }: { children: React.ReactNode }) {
       <div
         aria-label={t("timeline.playhead.accessibility.track")}
         className={cn(
-          "segment-markers relative h-13 cursor-pointer rounded-md border bg-muted/30 text-muted",
+          "segment-markers relative h-13 rounded-md border bg-muted/30 text-muted",
+          trackCursorClass,
           disabled && "pointer-events-none",
         )}
         onDoubleClick={dragAwareDoubleClick.onDoubleClick}

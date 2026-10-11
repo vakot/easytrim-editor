@@ -83,4 +83,15 @@ describe("TimelineHandles", () => {
     await user.hover(handle);
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
+
+  it.each([
+    ["trim-start", false, "cursor-ew-resize"],
+    ["trim-end", false, "cursor-ew-resize"],
+    ["playhead", false, "cursor-ew-resize"],
+    ["segment", false, "cursor-grab"],
+    ["segment", true, "data-[dragging=true]:cursor-grabbing"],
+  ] as const)("uses the %s cursor style while dragging=%s", (kind, dragging, cursorClass) => {
+    render(<TimelineHandle dragging={dragging} kind={kind} />);
+    expect(screen.getByRole("slider")).toHaveClass(cursorClass);
+  });
 });

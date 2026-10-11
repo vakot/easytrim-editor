@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Fixed timeline dragging stopping unexpectedly.
 - Prevented slider and timeline drags from triggering double-click actions on release.
 - Restored double-click reset actions on timeline trim handles.
+- Kept the cursor matched to the timeline element being dragged.
 
 ## [1.13.3]
 
