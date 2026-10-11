@@ -6,8 +6,8 @@ export const translationCoverage = {
     percentage: 100,
   },
   ru: {
-    translatedUnits: 691,
+    translatedUnits: 781,
     totalUnits: 781,
-    percentage: 88,
+    percentage: 100,
   },
 } as const;

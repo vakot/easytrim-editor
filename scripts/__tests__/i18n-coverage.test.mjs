@@ -165,13 +165,11 @@ test("CLI prints concise coverage by default and verbose details when requested"
   const verbose = runCli("--verbose");
   assert.equal(verbose.status, 0, verbose.stderr);
   assert.match(verbose.stdout, /Russian\s+\d+%\s+\d+\/\d+/);
-  assert.match(verbose.stdout, /Missing translation units:/);
 
   const filtered = runCli("--verbose", "ru");
   assert.equal(filtered.status, 0, filtered.stderr);
   assert.match(filtered.stdout, /English\s+100%/);
   assert.match(filtered.stdout, /Russian\s+\d+%\s+\d+\/\d+/);
-  assert.match(filtered.stdout, /Missing translation units:/);
 
   const english = runCli("--verbose", "en");
   assert.equal(english.status, 0, english.stderr);
