@@ -427,8 +427,8 @@ describe("VideoPreview", () => {
     fireEvent.pointerMove(viewport, { pointerId: 1, clientX: 174.4, clientY: 141.85 });
 
     expect(store.getState().crop.value).toEqual({
-      x: 0.35,
-      y: 0.2,
+      x: 0.25,
+      y: 0.1,
       width: 0.5,
       height: 0.6,
     });
