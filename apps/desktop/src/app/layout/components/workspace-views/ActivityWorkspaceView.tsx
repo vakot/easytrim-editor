@@ -1,12 +1,12 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
-
-import { ActivityFeed } from "@/features/activity";
+import { ActivityFeed, ActivityFeedContent, ActivityFeedList } from "@/features/activity";
 
 function ActivityWorkspaceView() {
   return (
-    <ScrollArea className="-mx-2 flex-1 px-2 before:top-2">
-      <ActivityFeed className="pb-1" />
-    </ScrollArea>
+    <ActivityFeed>
+      <ActivityFeedContent className="-mx-2 px-2">
+        <ActivityFeedList className="py-2" />
+      </ActivityFeedContent>
+    </ActivityFeed>
   );
 }
 

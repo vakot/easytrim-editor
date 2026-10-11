@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 import { cn } from "@/lib/class-names.utils";
@@ -35,10 +36,22 @@ import { useExportQueue } from "../contexts/ExportQueueContext";
 
 import { ExportQueueEmpty } from "./ExportQueueEmpty";
 
-function ExportQueueContent({ className }: { className?: string }) {
+function ExportQueueContent({ className, ...props }: React.ComponentProps<typeof ScrollArea>) {
   const { queue } = useExportQueue();
 
   if (!queue.length) return <ExportQueueEmpty />;
+
+  return (
+    <ScrollArea
+      className={cn("min-h-0 flex-1", className)}
+      data-testid="export-queue-scroll-area"
+      {...props}
+    />
+  );
+}
+
+function ExportQueueList({ className }: { className?: string }) {
+  const { queue } = useExportQueue();
 
   return (
     <ul className={cn("flex w-full flex-col gap-2", className)}>
@@ -131,4 +144,4 @@ function ExportQueueListItem() {
   );
 }
 
-export { ExportQueueContent };
+export { ExportQueueContent, ExportQueueList };

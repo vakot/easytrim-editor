@@ -25,23 +25,24 @@ function SourcesWorkspaceDialog({ onOpenChange, open }: SourcesWorkspaceDialogPr
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="grid max-h-[min(88dvh,56rem)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden sm:max-w-4xl">
-        <DialogHeader className="border-b pb-3">
-          <DialogTitle>{t("source.importedSources")}</DialogTitle>
-          <DialogDescription className="sr-only">
-            {t("layout.workspaceViewDescription")}
-          </DialogDescription>
-        </DialogHeader>
-        <SourceList>
+      <SourceList>
+        <DialogContent className="h-[min(80dvh,40rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden pb-0 sm:max-w-lg">
+          <DialogHeader className="-mx-4 border-b px-4 pb-4">
+            <DialogTitle>{t("source.importedSources")}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("source.explorerDescription")}
+            </DialogDescription>
+          </DialogHeader>
+
           <div className="flex min-h-0 flex-1 flex-col pt-3">
-            <div className="flex items-center gap-2 pb-3">
+            <div className="flex items-center gap-2">
               <SourceListSearch />
               <SourceListCloseAll />
             </div>
-            <SourceListContent className="min-h-0 flex-1" />
+            <SourceListContent className="-mx-2 px-2" fadeColor="var(--popover)" />
           </div>
-        </SourceList>
-      </DialogContent>
+        </DialogContent>
+      </SourceList>
     </Dialog>
   );
 }

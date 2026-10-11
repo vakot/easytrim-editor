@@ -3,6 +3,7 @@ export { ExportDialog } from "./components/ExportDialog";
 export {
   ExportQueue,
   ExportQueueContent,
+  ExportQueueList,
   ExportQueueStartButton,
   ExportQueueStripMetadataCheckbox,
   ExportQueueSummary,

@@ -21,10 +21,7 @@ function DockViewMenuItems({ contextSide }: { contextSide?: SidebarId }) {
     <>
       {WORKSPACE_VIEWS.map(({ id: viewId }) =>
         contextSide ? (
-          <ContextDockViewItem
-            commandId={getDockViewCommandId(viewId, contextSide)}
-            key={viewId}
-          />
+          <ContextDockViewItem commandId={getDockViewCommandId(viewId, contextSide)} key={viewId} />
         ) : (
           <MenubarDockViewItem commandId={getDockViewCommandId(viewId)} key={viewId} />
         ),

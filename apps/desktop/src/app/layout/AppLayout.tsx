@@ -101,9 +101,7 @@ function AppLayout() {
           />
         ) : null}
         <Suspense fallback={null}>
-          {WorkspaceDialog ? (
-            <WorkspaceDialog onOpenChange={handleDialogOpenChange} open />
-          ) : null}
+          {WorkspaceDialog ? <WorkspaceDialog onOpenChange={handleDialogOpenChange} open /> : null}
         </Suspense>
       </main>
     </DragDropProvider>

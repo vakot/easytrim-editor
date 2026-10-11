@@ -7,9 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { ActivityFeed } from "@/features/activity";
+import { ActivityFeed, ActivityFeedContent, ActivityFeedList } from "@/features/activity";
 
 interface ActivityWorkspaceDialogProps {
   onOpenChange: (open: boolean) => void;
@@ -21,17 +20,18 @@ function ActivityWorkspaceDialog({ onOpenChange, open }: ActivityWorkspaceDialog
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="grid h-[min(84dvh,50rem)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden sm:max-w-3xl">
-        <DialogHeader className="border-b pb-3">
-          <DialogTitle>{t("layout.activityFeed")}</DialogTitle>
-          <DialogDescription className="sr-only">
-            {t("layout.workspaceViewDescription")}
-          </DialogDescription>
-        </DialogHeader>
-        <ScrollArea className="-mx-4 min-h-0 px-4">
-          <ActivityFeed className="py-4" />
-        </ScrollArea>
-      </DialogContent>
+      <ActivityFeed>
+        <DialogContent className="h-[min(80dvh,40rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden pb-0 sm:max-w-lg">
+          <DialogHeader className="-mx-4 border-b px-4 pb-4">
+            <DialogTitle>{t("layout.activityFeed")}</DialogTitle>
+            <DialogDescription>{t("activity.description")}</DialogDescription>
+          </DialogHeader>
+
+          <ActivityFeedContent className="-mx-2 px-2" fadeColor="var(--popover)">
+            <ActivityFeedList className="py-2" />
+          </ActivityFeedContent>
+        </DialogContent>
+      </ActivityFeed>
     </Dialog>
   );
 }

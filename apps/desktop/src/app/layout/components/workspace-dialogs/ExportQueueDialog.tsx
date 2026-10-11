@@ -10,11 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 import {
   ExportQueue,
   ExportQueueContent,
+  ExportQueueList,
   ExportQueueStartButton,
   ExportQueueStripMetadataCheckbox,
   ExportQueueSummary,
@@ -31,7 +31,7 @@ function ExportQueueDialog({ onOpenChange, open }: ExportQueueDialogProps) {
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <ExportQueue>
-        <DialogContent className="max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
+        <DialogContent className="h-[min(80dvh,40rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
           <DialogHeader className="-mx-4 border-b px-4 pb-4">
             <DialogTitle>{t("queue.title")}</DialogTitle>
             <DialogDescription>
@@ -39,9 +39,9 @@ function ExportQueueDialog({ onOpenChange, open }: ExportQueueDialogProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="-mx-4 min-h-0 px-4" data-testid="export-queue-scroll-area">
-            <ExportQueueContent className="py-2" />
-          </ScrollArea>
+          <ExportQueueContent className="-mx-2 px-2" fadeColor="var(--popover)">
+            <ExportQueueList className="py-2" />
+          </ExportQueueContent>
 
           <DialogFooter className="sm:items-center sm:justify-between">
             <ExportQueueStripMetadataCheckbox />

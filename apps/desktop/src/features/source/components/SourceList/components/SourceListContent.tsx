@@ -58,11 +58,10 @@ const virtuosoComponents = {
   ScrollSeekPlaceholder: SourceListScrollSeekPlaceholder,
 };
 
-interface SourceListContentProps {
-  className?: string;
-}
-
-function SourceListContent({ className }: SourceListContentProps) {
+function SourceListContent({
+  className,
+  ...props
+}: Omit<React.ComponentProps<typeof ScrollArea>, "children" | "viewportRef">) {
   const { closingSourceIds, matchesBySourceId, search, sources } = useSourceListData();
   const { t } = useTranslation();
   const {
@@ -74,7 +73,11 @@ function SourceListContent({ className }: SourceListContentProps) {
   } = useSourceListScrollController(sources);
 
   return (
-    <ScrollArea className={cn("min-h-0 flex-1", className)} viewportRef={setScrollParent}>
+    <ScrollArea
+      className={cn("min-h-0 flex-1", className)}
+      viewportRef={setScrollParent}
+      {...props}
+    >
       {search.trim() && sources.length === 0 ? (
         <div className="text-center text-sm text-muted-foreground" role="status">
           {t("source.search.noResults")}

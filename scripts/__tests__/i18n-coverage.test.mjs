@@ -71,7 +71,7 @@ test("counts ordinary leaves and plural families as semantic translation units",
 test("counts a completely missing plural family as one missing unit", () => {
   const coverage = coverageFor(
     `export const en = {
-      queue: { jobs_one: "{{count}} job", jobs_other: "{{count}} jobs" },
+      queue: { entries_one: "{{count}} entry", entries_other: "{{count}} entries" },
       common: { save: "Save" },
     } as const;`,
     {
@@ -82,7 +82,7 @@ test("counts a completely missing plural family as one missing unit", () => {
   const russian = coverage.find((entry) => entry.locale === "ru");
   assert.equal(russian?.translatedUnits, 1);
   assert.equal(russian?.totalUnits, 2);
-  assert.deepEqual(russian?.missingUnits, ["queue.jobs"]);
+  assert.deepEqual(russian?.missingUnits, ["queue.entries"]);
 });
 
 test("uses deterministic integer rounding for percentage coverage", () => {

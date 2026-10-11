@@ -1,1 +1,1 @@
-export { ActivityFeed } from "./ActivityFeed";
+export { ActivityFeed, ActivityFeedContent, ActivityFeedList } from "./ActivityFeed";
