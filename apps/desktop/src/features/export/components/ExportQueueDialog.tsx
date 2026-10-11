@@ -23,10 +23,13 @@ import {
   preferenceChanged,
   selectStripMetadataOnExport,
 } from "@/app/store/slices/preferences-slice";
-import { startExportQueue } from "@/app/store/thunks/export-thunks";
 
-import { ExportQueue, ExportQueueContent, ExportQueueSummary } from "../components/ExportQueue";
-import { useExportQueue } from "../components/ExportQueue/contexts/ExportQueueContext";
+import {
+  ExportQueue,
+  ExportQueueContent,
+  ExportQueueStartButton,
+  ExportQueueSummary,
+} from "../components/ExportQueue";
 
 function ExportQueueDialog() {
   const { t } = useTranslation();
@@ -85,22 +88,6 @@ function ExportQueueDialog() {
         </DialogContent>
       </ExportQueue>
     </Dialog>
-  );
-}
-
-function ExportQueueStartButton() {
-  const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const { summary } = useExportQueue();
-
-  return (
-    <Button
-      disabled={summary.queued === 0}
-      onClick={() => void dispatch(startExportQueue())}
-      type="button"
-    >
-      {t("queue.actions.startQueue")}
-    </Button>
   );
 }
 
