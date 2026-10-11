@@ -15,7 +15,7 @@ function ExportQueueEmpty() {
   return (
     <section
       aria-label={t("queue.title")}
-      className="flex min-h-full items-center justify-center overflow-hidden"
+      className="flex h-full items-center justify-center overflow-hidden"
     >
       <Empty className="w-full max-w-md border-0">
         <EmptyHeader>

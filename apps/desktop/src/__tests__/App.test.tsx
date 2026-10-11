@@ -328,12 +328,12 @@ afterEach(() => {
 });
 
 describe("App", () => {
-  it("keeps the editor visible without deprecated queue widgets", () => {
+  it("keeps the editor visible without deprecated queue widgets", async () => {
     render(<App />);
     expect(screen.getByRole("banner", { name: "Window title bar" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Export Queue" })).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Drag Imported Sources to move it between sidebars" }),
+      await screen.findByRole("button", { name: /Imported Sources.*arrow keys to move it/ }),
     ).toBeInTheDocument();
   });
 
@@ -445,7 +445,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.queryByText("Start a new clip")).not.toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Source explorer" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Imported Sources" })).toBeInTheDocument();
     const shortcutList = screen.getByRole("list", { name: "Keyboard shortcuts" });
     expect(within(shortcutList).getAllByRole("listitem")).toHaveLength(7);
     for (const label of [
@@ -876,11 +876,11 @@ describe("App", () => {
 
     await waitForSourcePresence(true);
     expect(
-      screen.getByRole("button", { name: "Drag Imported Sources to move it between sidebars" }),
+      await screen.findByRole("button", { name: /Imported Sources.*arrow keys to move it/ }),
     ).toBeInTheDocument();
     expect(screen.getAllByText(selection.displayName)[0]).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Drag Activity Feed to move it between sidebars" }),
+      screen.getByRole("button", { name: /Activity Feed.*arrow keys to move it/ }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",

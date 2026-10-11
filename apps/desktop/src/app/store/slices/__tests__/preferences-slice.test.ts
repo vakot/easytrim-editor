@@ -21,6 +21,7 @@ import {
   selectStripMetadataOnExport,
   selectThemePreference,
   sidebarLayoutChanged,
+  sidebarViewRemoved,
   themePreferenceChanged,
   uiScalingReset,
 } from "@/app/store/slices/preferences-slice";
@@ -66,6 +67,19 @@ describe("preferences Redux domain", () => {
     expect(selectSidebarLayout({ preferences: nextState } as RootState)).toEqual({
       left: ["sources"],
       right: ["activity"],
+    });
+  });
+
+  it("removes docked views without restoring them on a later layout change", () => {
+    const withoutSources = preferencesReducer(undefined, sidebarViewRemoved("sources"));
+    const afterAddingQueue = preferencesReducer(
+      withoutSources,
+      sidebarLayoutChanged({ destination: "right", insertionIndex: 0, viewId: "exportQueue" }),
+    );
+
+    expect(afterAddingQueue.sidebarLayout).toEqual({
+      left: [],
+      right: ["exportQueue", "activity"],
     });
   });
 

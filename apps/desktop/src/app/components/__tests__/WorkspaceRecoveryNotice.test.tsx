@@ -15,7 +15,7 @@ import {
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
-import { SourceList } from "@/features/source";
+import { SourceList, SourceListContent } from "@/features/source";
 import { firstSource } from "@/test/source.fixtures";
 
 const CURRENT_KEY = "easytrim:workspace-recovery:current";
@@ -53,7 +53,9 @@ describe("workspace recovery entry points", () => {
     render(
       <Provider store={store}>
         <WorkspaceRecoveryNotice />
-        <SourceList>{() => <div />}</SourceList>
+        <SourceList>
+          <SourceListContent />
+        </SourceList>
       </Provider>,
     );
 
@@ -70,7 +72,9 @@ describe("workspace recovery entry points", () => {
     const store = setup();
     render(
       <Provider store={store}>
-        <SourceList>{() => <div />}</SourceList>
+        <SourceList>
+          <SourceListContent />
+        </SourceList>
       </Provider>,
     );
 

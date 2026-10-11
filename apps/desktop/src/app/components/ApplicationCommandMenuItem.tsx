@@ -129,7 +129,16 @@ function ApplicationCommandShortcut({ command }: { command?: ApplicationCommand 
   );
 }
 
+function ApplicationCommandHint({ command }: { command?: ApplicationCommand } = {}) {
+  const context = useContext(ApplicationCommandMenuContext);
+  const resolvedCommand = command ?? context?.command;
+  if (!resolvedCommand?.hint) return null;
+
+  return <span className={menuClassNames.shortcut}>{resolvedCommand.hint}</span>;
+}
+
 export {
+  ApplicationCommandHint,
   ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,

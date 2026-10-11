@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 - Added crop aspect-ratio presets, freeform resizing, and an option to reset the crop to its full-frame default.
 - Added customizable left and right sidebars for moving and reordering the Imported Sources and Activity Feed views.
+- Added View > Open and View > Docks menus with dedicated workspace dialogs, sidebar context menus, and interactive dock placement.
+- Added a Start Queue command to the Command Center, shared by the Export Queue dialog and sidebar.
 
 ### Changed
 

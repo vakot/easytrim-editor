@@ -8,13 +8,14 @@ function useSidebarPresence(side: SidebarId, hasSidebar: boolean) {
   const panel = usePanelState(`workspace-${side}-sidebar`);
   const [isMounted, setIsMounted] = useState(hasSidebar);
   const previousHasSidebar = useRef(hasSidebar);
-  const hasSidebarRef = useRef(hasSidebar);
+  const presenceVersion = useRef(0);
   const shouldExpandWhenRegistered = useRef(false);
   const closeTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    hasSidebarRef.current = hasSidebar;
     const wasPresent = previousHasSidebar.current;
+    if (wasPresent !== hasSidebar) presenceVersion.current += 1;
+    const transitionVersion = presenceVersion.current;
     previousHasSidebar.current = hasSidebar;
 
     if (hasSidebar) {
@@ -36,6 +37,11 @@ function useSidebarPresence(side: SidebarId, hasSidebar: boolean) {
       return;
     }
 
+    if (!isMounted && wasPresent) {
+      setIsMounted(true);
+      return;
+    }
+
     if (!isMounted || closeTimer.current !== null) return;
 
     const panelHandle = panel?.ref.current;
@@ -46,7 +52,9 @@ function useSidebarPresence(side: SidebarId, hasSidebar: boolean) {
     closeTimer.current = window.setTimeout(
       () => {
         closeTimer.current = null;
-        if (!hasSidebarRef.current) setIsMounted(false);
+        if (presenceVersion.current === transitionVersion) {
+          setIsMounted(false);
+        }
       },
       wasCollapsed || prefersReducedMotion ? 0 : 200,
     );

@@ -11,12 +11,16 @@ import {
 } from "../sidebar-layout";
 
 describe("sidebar layout", () => {
+  it("defaults to Sources on the left and Activity on the right without Export Queue", () => {
+    expect(DEFAULT_SIDEBAR_LAYOUT).toEqual({ left: ["sources"], right: ["activity"] });
+  });
+
   it("uses the default layout when persisted data has the wrong shape", () => {
     expect(normalizeSidebarLayout(null)).toEqual(DEFAULT_SIDEBAR_LAYOUT);
     expect(normalizeSidebarLayout({ left: ["activity"] })).toEqual(DEFAULT_SIDEBAR_LAYOUT);
   });
 
-  it("removes unknown and duplicate views and restores missing supported views", () => {
+  it("removes unknown and duplicate views while preserving empty sidebars", () => {
     expect(
       normalizeSidebarLayout({
         left: ["activity", "unknown", "activity"],
@@ -24,7 +28,7 @@ describe("sidebar layout", () => {
       }),
     ).toEqual({ left: ["activity"], right: ["sources"] });
 
-    expect(normalizeSidebarLayout({ left: [], right: [] })).toEqual(DEFAULT_SIDEBAR_LAYOUT);
+    expect(normalizeSidebarLayout({ left: [], right: [] })).toEqual({ left: [], right: [] });
   });
 
   it("moves a view across sidebars at the requested insertion point", () => {
@@ -41,11 +45,13 @@ describe("sidebar layout", () => {
   });
 
   it("reorders a view and clamps the insertion index", () => {
-    expect(moveSidebarView(DEFAULT_SIDEBAR_LAYOUT, "sources", "left", 2)).toEqual({
+    const layout: SidebarLayout = { left: ["sources", "activity"], right: [] };
+
+    expect(moveSidebarView(layout, "sources", "left", 2)).toEqual({
       left: ["activity", "sources"],
       right: [],
     });
-    expect(moveSidebarView(DEFAULT_SIDEBAR_LAYOUT, "activity", "right", 9)).toEqual({
+    expect(moveSidebarView(layout, "activity", "right", 9)).toEqual({
       left: ["sources"],
       right: ["activity"],
     });

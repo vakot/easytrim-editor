@@ -129,8 +129,6 @@ export const en = {
       resetNotice: "The current edit will be reset",
       title: "Drag and drop videos here",
     },
-    explorer: "Source explorer",
-    importedSources: "Imported Sources",
     navigation: {
       next: "Next source",
       previous: "Previous source",
@@ -177,6 +175,8 @@ export const en = {
     thumbnail: {
       accessibleLabel: "Thumbnail for {{name}}",
     },
+    title: "Imported Sources",
+    description: "Search imported videos and manage open source files",
   },
   app: {
     brand: "EasyTrim Editor",
@@ -284,6 +284,11 @@ export const en = {
     toggleBottomPanel: "Toggle bottom panel",
     leftSidebar: "Left sidebar",
     rightSidebar: "Right sidebar",
+    openView: "Open",
+    docks: "Docks",
+    dockPlacement: {
+      instructions: "Use Left or Right to choose a sidebar and Up or Down for position, then press Enter or D to place. You can also move the pointer and click. Press Escape to cancel.",
+    },
     dragView: "Drag {{view}}, or press D then use the arrow keys to move it; D to drop or Escape to cancel",
     collapseAndDragView: "Collapse {{view}}; drag or press D then use the arrow keys to move it; D to drop or Escape to cancel",
     expandAndDragView: "Expand {{view}}; drag or press D then use the arrow keys to move it; D to drop or Escape to cancel",
@@ -292,7 +297,6 @@ export const en = {
     keyboardDragDropped: "Moved {{view}} to {{sidebar}}.",
     keyboardDragCanceled: "Canceled moving {{view}}.",
     keyboardDragUnchanged: "{{view}} remains in its current position.",
-    activityFeed: "Activity Feed",
     layoutDensity: "Layout Density",
     view: "View",
     uiScaling: "UI Scaling",
@@ -499,6 +503,8 @@ export const en = {
     },
   },
   activity: {
+    title: "Activity Feed",
+    description: "Review recent imports, exports, and workspace changes across sessions",
     time: {
       now: "Now",
     },
@@ -780,8 +786,6 @@ export const en = {
       completed_other: "{{count}} completed",
       failed_one: "{{count}} failed",
       failed_other: "{{count}} failed",
-      jobs_one: "{{count}} job",
-      jobs_other: "{{count}} jobs",
       queued_one: "{{count}} queued",
       queued_other: "{{count}} queued",
       processing_one: "{{count}} processing",

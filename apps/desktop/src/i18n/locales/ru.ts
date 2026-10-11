@@ -28,6 +28,7 @@ export const ru = {
     unknown: "Неизвестно",
   },
   source: {
+    description: "Ищите импортированные видео и управляйте открытыми исходными файлами",
     actions: {
       title: "Действия с источником",
     },
@@ -85,8 +86,6 @@ export const ru = {
       resetNotice: "Текущий монтаж будет сброшен",
       title: "Перетащите видео сюда",
     },
-    explorer: "Источники",
-    importedSources: "Импортированные источники",
     navigation: {
       next: "Следующий источник",
       previous: "Предыдущий источник",
@@ -134,6 +133,7 @@ export const ru = {
     thumbnail: {
       accessibleLabel: "Миниатюра файла {{name}}",
     },
+    title: "Импортированные источники",
     errors: {
       restoringSourceFilesFromTrashIsNotSupportedOnThisPlatform: "Восстановление исходных файлов из корзины не поддерживается на этой платформе",
       selectedSourceLocationIsNotSupported: "Выбранное расположение источника не поддерживается",
@@ -292,10 +292,26 @@ export const ru = {
     zoomOut: "Уменьшить масштаб (-25%)",
     zoomReset: "Сбросить масштаб (100%)",
     showLeftPanel: "Показать левую панель",
+    showRightPanel: "Показать правую панель",
     showBottomPanel: "Показать нижнюю панель",
     toggleLeftPanel: "Переключить левую панель",
+    toggleRightPanel: "Переключить правую панель",
     toggleBottomPanel: "Переключить нижнюю панель",
-    activityFeed: "Лента активности",
+    leftSidebar: "Левая боковая панель",
+    rightSidebar: "Правая боковая панель",
+    openView: "Открыть",
+    docks: "Панели",
+    dockPlacement: {
+      instructions: "Выберите боковую панель клавишами ← или →, а положение — клавишами ↑ или ↓. Нажмите Enter или D, чтобы разместить панель. Также можно переместить указатель и щёлкнуть. Нажмите Escape для отмены.",
+    },
+    dragView: "Перетащите {{view}} или нажмите D, затем перемещайте стрелками; нажмите D, чтобы разместить, или Escape для отмены",
+    collapseAndDragView: "Свернуть {{view}}; перетащите его или нажмите D и перемещайте стрелками; нажмите D, чтобы разместить, или Escape для отмены",
+    expandAndDragView: "Развернуть {{view}}; перетащите его или нажмите D и перемещайте стрелками; нажмите D, чтобы разместить, или Escape для отмены",
+    keyboardDragStarted: "Перемещение: {{view}}. Стрелки вверх и вниз меняют положение, влево и вправо — боковую панель. Нажмите D, чтобы разместить, или Escape для отмены.",
+    keyboardDragPosition: "{{view}}: положение {{position}} из {{count}} на панели «{{sidebar}}».",
+    keyboardDragDropped: "{{view}} перемещён на панель «{{sidebar}}».",
+    keyboardDragCanceled: "Перемещение {{view}} отменено.",
+    keyboardDragUnchanged: "{{view}} остался на прежнем месте.",
     layoutDensity: "Плотность интерфейса",
     view: "Вид",
     uiScaling: "Масштаб интерфейса",
@@ -372,6 +388,11 @@ export const ru = {
         description: "Объединять включённые аудиодорожки в новых экспортах",
         label: "Объединять аудио",
         commandLabel: "Объединять аудио по умолчанию",
+      },
+      stripMetadata: {
+        description: "Удалять метаданные контейнера и главы исходного файла в новых экспортах",
+        label: "Удалять метаданные",
+        commandLabel: "Удалять метаданные и главы при экспорте",
       },
       reset: "Сбросить настройки редактирования",
     },
@@ -471,6 +492,7 @@ export const ru = {
       layoutPanelsVisibility: "Компоновка / Видимость панелей",
       preferences: "Параметры",
       preferencesAudio: "Параметры / Аудио",
+      preferencesExport: "Параметры / Экспорт",
       preferencesPlayback: "Параметры / Воспроизведение",
       previewFrame: "Предпросмотр / Кадр",
       previewTransform: "Предпросмотр / Трансформация",
@@ -490,6 +512,8 @@ export const ru = {
       openFolder: "каталог|импорт|источник",
       optimizedExport: "оптимизированный экспорт|оптимизировать|экспорт",
       fastExport: "быстрый экспорт|быстрый|экспорт",
+      gifExport: "экспорт gif|gif|анимированное изображение",
+      audioExport: "экспорт аудио|аудио|m4a|mp3|wav",
       saveCurrentFrame: "сохранить|кадр|изображение|png",
     },
   },
@@ -511,6 +535,8 @@ export const ru = {
       description: "Завершённые действия появятся здесь",
       title: "Записей пока нет",
     },
+    description: "Просматривайте недавние импорты, экспорты и изменения рабочей области в разных сеансах",
+    title: "Лента активности",
   },
   export: {
     fastExport: {
@@ -523,6 +549,17 @@ export const ru = {
       action: "Быстрый экспорт",
       unavailable: "Быстрый экспорт недоступен после преобразования видео",
       tooltip: "Экспортировать выбранный сегмент без перекодирования",
+    },
+    audioExport: {
+      action: "Экспорт аудио",
+      tooltip: "Экспортировать выбранный сегмент аудио в формате M4A, MP3 или WAV",
+      noTracks: "Выберите аудиодорожку для экспорта",
+      started: "Экспорт аудио начат",
+      exporting: "Экспорт аудио…",
+      completed: "Экспорт аудио завершён",
+      failed: "Не удалось экспортировать аудио",
+      cancelled: "Экспорт аудио отменён",
+      interrupted: "Экспорт аудио прерван",
     },
     preset: {
       builtIn: {
@@ -582,6 +619,7 @@ export const ru = {
     commandPreview: {
       copy: "Копировать команду",
       copied: "Команда скопирована",
+      label: "Предпросмотр команды",
       preparing: "Подготовка команды к просмотру…",
     },
     optimized: {
@@ -601,10 +639,44 @@ export const ru = {
         saveNotice: "После подтверждения откроется системный диалог сохранения",
       },
     },
+    gif: {
+      action: "Экспорт GIF",
+      tooltip: "Экспортировать выбранный сегмент в формате GIF",
+      started: "Экспорт GIF начат",
+      running: "Экспорт GIF…",
+      completed: "Экспорт GIF завершён",
+      cancelled: "Экспорт GIF отменён",
+      failed: "Не удалось экспортировать GIF",
+      interrupted: "Экспорт GIF прерван",
+      dialog: {
+        title: "Экспортировать выбранный сегмент в GIF",
+        description: "Выберите разрешение и частоту кадров GIF перед сохранением",
+        optionsLabel: "Параметры экспорта GIF",
+      },
+      preset: {
+        label: "Пресет качества",
+        compact: "Компактный",
+        balanced: "Сбалансированный",
+        highQuality: "Высокое качество",
+        custom: "Пользовательский",
+      },
+      paletteColors: {
+        label: "Максимум цветов в палитре",
+      },
+      dithering: {
+        label: "Дизеринг",
+        none: "Нет",
+        bayer: "Байер",
+        sierra2_4a: "Sierra 2-4a",
+      },
+    },
     actions: {
       saveChanges: "Сохранить изменения",
       start: "Экспортировать",
       accessibleLabel: "Действия экспорта",
+      more: "Ещё",
+      moreFormats: "Другие форматы экспорта",
+      sourceRequired: "Откройте видео перед экспортом",
     },
     bitrate: {
       label: "Битрейт",
@@ -621,9 +693,13 @@ export const ru = {
       sourceOption: "{{height}}p · {{width}} × {{height}} (источник)",
     },
     frameRate: {
+      customValueWillBeApplied: "Будет применена заданная частота кадров",
       fpsLabel: "FPS",
       framesLabel: "Кадры",
       label: "Частота кадров",
+      invalidValue: "Укажите частоту кадров больше 0 и не выше 120 FPS.",
+      noMatchingSuggestions: "Нет подходящих вариантов частоты кадров",
+      suggestionsLabel: "Показать варианты частоты кадров",
       value: "{{value}} FPS",
     },
     aspectRatio: {
@@ -639,6 +715,12 @@ export const ru = {
       exportWasCancelled: "Экспорт отменён",
       fileOrFolderIsNoLongerAvailable: "Файл или папка больше недоступны",
       outputNameIsRequired: "Укажите имя выходного файла",
+      outputContainerIsNotCompatibleWithSelectedStreams: "Выбранный контейнер несовместим с выбранными видео- и аудиопотоками",
+      audioTrackIsRequired: "Выберите хотя бы одну аудиодорожку для экспорта",
+      audioOutputFormatIsInvalid: "Выберите файл в формате M4A, MP3 или WAV",
+      audioRequiresMergedTracks: "Объедините выбранные аудиодорожки для экспорта в MP3 или WAV",
+      gifEncodingSettingsAreInvalid: "Параметры кодирования GIF заданы неверно",
+      globalMetadataCannotBeSetWhenStrippingMetadata: "Нельзя задать глобальные метаданные в пользовательских параметрах оптимизированного экспорта, если удаление метаданных включено",
       renderedOutputCouldNotBeVerified: "Не удалось проверить экспортированный файл",
       renderedOutputIsEmpty: "Экспортированный файл пуст",
       selectedOutputLocationIsNotSupported: "Выбранное место сохранения не поддерживается",
@@ -662,6 +744,7 @@ export const ru = {
     actions: {
       cancelExport: "Отменить экспорт",
       editExport: "Изменить экспорт",
+      moreExportActions: "Другие действия с экспортом",
       openExportQueue: "Открыть очередь экспорта",
       restoreEdit: "Восстановить монтаж",
       revealOutput: "Показать файл в папке",
@@ -691,7 +774,9 @@ export const ru = {
       },
     },
     routes: {
+      audioExport: "Экспорт аудио",
       fastExport: "Быстрый экспорт",
+      gifExport: "Экспорт GIF",
       optimizedExport: "Оптимизированный экспорт",
     },
     title: "Очередь экспорта",
@@ -737,10 +822,6 @@ export const ru = {
       failed_few: "С ошибкой: {{count}}",
       failed_many: "С ошибкой: {{count}}",
       failed_other: "С ошибкой: {{count}}",
-      jobs_one: "{{count}} задание",
-      jobs_few: "{{count}} задания",
-      jobs_many: "{{count}} заданий",
-      jobs_other: "{{count}} задания",
       queued_one: "В очереди: {{count}}",
       queued_few: "В очереди: {{count}}",
       queued_many: "В очереди: {{count}}",
@@ -830,11 +911,14 @@ export const ru = {
       source: "Предпросмотр исходного видео",
     },
     crop: {
+      aspectRatioPresets: "Предустановки соотношения сторон обрезки",
       bottom: "Изменить обрезку снизу",
       bottomLeft: "Изменить обрезку снизу слева",
       bottomRight: "Изменить обрезку снизу справа",
+      freeform: "Свободная",
       left: "Изменить обрезку слева",
       preview: "Предпросмотр обрезки видео",
+      resetToDefault: "Сбросить обрезку",
       right: "Изменить обрезку справа",
       top: "Изменить обрезку сверху",
       topLeft: "Изменить обрезку сверху слева",
@@ -987,6 +1071,30 @@ export const ru = {
       channels_few: "{{count}} канала",
       channels_many: "{{count}} каналов",
       channels_other: "{{count}} канала",
+      metadata: {
+        title: "Метаданные выходного аудио",
+        description: "Укажите название и язык, которые будут записаны в экспортированные аудиодорожки.",
+        actions: {
+          edit: "Изменить метаданные",
+        },
+        fields: {
+          default: {
+            label: "По умолчанию",
+            disabledTooltip: "Сначала включите эту дорожку",
+          },
+          title: {
+            label: "Название дорожки",
+          },
+          language: {
+            label: "Язык",
+            noResults: "Языки не найдены",
+            actions: {
+              select: "Выбрать язык",
+              reset: "Использовать язык источника",
+            },
+          },
+        },
+      },
     },
     highPass: {
       label: "Фильтр высоких частот",
@@ -1030,6 +1138,15 @@ export const ru = {
     waveform: {
       preparing: "Подготовка формы волны…",
       unavailable: "Форма волны недоступна",
+      displayMode: {
+        label: "Отображение формы волны",
+        peakDescription: "амплитуда кратковременных пиков",
+        peakShort: "Пики",
+        rmsDescription: "средняя энергия сигнала",
+        rmsShort: "RMS",
+        stereoDescription: "активность левого и правого каналов",
+        stereoShort: "Стерео",
+      },
     },
     errors: {
       audioPreviewStreamIndexesMustBeUnique: "Индексы аудиопотоков предпросмотра должны быть уникальными",

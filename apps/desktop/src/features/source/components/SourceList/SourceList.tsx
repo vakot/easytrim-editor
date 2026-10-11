@@ -12,19 +12,13 @@ import { createSourceSearcher } from "../../lib/source-search.utils";
 
 import { SourceListCloseAll } from "./components/SourceListCloseAll";
 import { SourceListContent } from "./components/SourceListContent";
-import { SourceListEmpty } from "./components/SourceListEmpty";
 import { SourceListSearch } from "./components/SourceListSearch";
-import type { SourceListState } from "./contexts/SourceListContext";
 import {
   SOURCE_LIST_CLOSE_ANIMATION_DURATION_MS,
   SourceListContext,
 } from "./contexts/SourceListContext";
 
-interface SourceListProps {
-  children?: ReactNode | ((state: Pick<SourceListState, "search" | "sources">) => ReactNode);
-}
-
-function SourceList({ children }: SourceListProps) {
+function SourceList({ children }: { children?: ReactNode }) {
   const dispatch = useAppDispatch();
   const sources = useAppSelector(selectSourceListEntries);
   const searchEntries = useAppSelector(selectSourceSearchEntries);
@@ -90,11 +84,6 @@ function SourceList({ children }: SourceListProps) {
     [closingSourceIds, dispatch, prefersReducedMotion, sourcesById],
   );
 
-  if (sources.length === 0) return <SourceListEmpty />;
-
-  const child =
-    typeof children === "function" ? children({ search, sources: filteredSources }) : children;
-
   return (
     <SourceListContext.Provider
       value={{
@@ -106,15 +95,9 @@ function SourceList({ children }: SourceListProps) {
         sources: filteredSources,
       }}
     >
-      {child ?? <SourceListContent />}
+      {children}
     </SourceListContext.Provider>
   );
 }
 
-export {
-  SourceList,
-  SourceListCloseAll,
-  SourceListContent,
-  type SourceListProps,
-  SourceListSearch,
-};
+export { SourceList, SourceListCloseAll, SourceListContent, SourceListSearch };

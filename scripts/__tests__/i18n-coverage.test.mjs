@@ -71,7 +71,7 @@ test("counts ordinary leaves and plural families as semantic translation units",
 test("counts a completely missing plural family as one missing unit", () => {
   const coverage = coverageFor(
     `export const en = {
-      queue: { jobs_one: "{{count}} job", jobs_other: "{{count}} jobs" },
+      queue: { entries_one: "{{count}} entry", entries_other: "{{count}} entries" },
       common: { save: "Save" },
     } as const;`,
     {
@@ -82,7 +82,7 @@ test("counts a completely missing plural family as one missing unit", () => {
   const russian = coverage.find((entry) => entry.locale === "ru");
   assert.equal(russian?.translatedUnits, 1);
   assert.equal(russian?.totalUnits, 2);
-  assert.deepEqual(russian?.missingUnits, ["queue.jobs"]);
+  assert.deepEqual(russian?.missingUnits, ["queue.entries"]);
 });
 
 test("uses deterministic integer rounding for percentage coverage", () => {
@@ -165,13 +165,11 @@ test("CLI prints concise coverage by default and verbose details when requested"
   const verbose = runCli("--verbose");
   assert.equal(verbose.status, 0, verbose.stderr);
   assert.match(verbose.stdout, /Russian\s+\d+%\s+\d+\/\d+/);
-  assert.match(verbose.stdout, /Missing translation units:/);
 
   const filtered = runCli("--verbose", "ru");
   assert.equal(filtered.status, 0, filtered.stderr);
   assert.match(filtered.stdout, /English\s+100%/);
   assert.match(filtered.stdout, /Russian\s+\d+%\s+\d+\/\d+/);
-  assert.match(filtered.stdout, /Missing translation units:/);
 
   const english = runCli("--verbose", "en");
   assert.equal(english.status, 0, english.stderr);

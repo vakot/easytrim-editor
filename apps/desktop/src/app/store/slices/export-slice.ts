@@ -22,7 +22,6 @@ interface ExportUiState {
   commandPreviewError: AppError | null;
   dialogRoute: "optimized" | "gif";
   exportPlanRequestId: number | null;
-  exportQueueDialogOpen: boolean;
   launchError: AppError | null;
   optimizedDialogOpen: boolean;
   queueEdit: { attemptId: string; instanceId: string; route: "fast" | "optimized" | "gif" } | null;
@@ -42,7 +41,6 @@ export const initialExportState: ExportUiState = {
   commandPreviewError: null,
   dialogRoute: "optimized",
   launchError: null,
-  exportQueueDialogOpen: false,
   optimizedDialogOpen: false,
   exportPlanRequestId: null,
   queueFinishAction: "nothing",
@@ -55,12 +53,6 @@ const exportSlice = createSlice({
   name: "export",
   initialState: initialExportState,
   reducers: {
-    exportQueueDialogOpened: (state) => {
-      state.exportQueueDialogOpen = true;
-    },
-    exportQueueDialogClosed: (state) => {
-      state.exportQueueDialogOpen = false;
-    },
     optimizedExportDialogOpened: (state) => {
       state.optimizedDialogOpen = true;
       state.dialogRoute = "optimized";
@@ -202,8 +194,6 @@ const {
   exportPlanFailed,
   exportPlanReceived,
   exportPlanRequested,
-  exportQueueDialogClosed,
-  exportQueueDialogOpened,
   gifExportDialogOpened,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
@@ -231,9 +221,6 @@ const selectExportDialogOpen = (state: RootState): boolean => state.export.optim
 const selectExportDialogRoute = (state: RootState): ExportUiState["dialogRoute"] =>
   state.export.dialogRoute;
 
-const selectExportQueueDialogOpen = (state: RootState): boolean =>
-  state.export.exportQueueDialogOpen;
-
 const selectExportCommandPreview = (state: RootState): string => state.export.commandPreview;
 const selectExportCommandPreviewError = (state: RootState): AppError | null =>
   state.export.commandPreviewError;
@@ -254,8 +241,6 @@ export {
   exportPlanFailed,
   exportPlanReceived,
   exportPlanRequested,
-  exportQueueDialogClosed,
-  exportQueueDialogOpened,
   exportReducer,
   gifExportDialogOpened,
   optimizedExportDialogClosed,
@@ -272,7 +257,6 @@ export {
   selectExportDialogOpen,
   selectExportDialogRoute,
   selectExportLaunchError,
-  selectExportQueueDialogOpen,
   selectQueueEdit,
   selectQueueFinishAction,
   selectRunningExportMetrics,

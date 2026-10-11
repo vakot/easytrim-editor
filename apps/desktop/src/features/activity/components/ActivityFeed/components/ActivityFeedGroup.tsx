@@ -56,7 +56,7 @@ function ActivityFeedGroup({
 
   return (
     <div className={cn("flex flex-col", isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3")}>
-      <div className="sticky top-0 z-10 bg-card">
+      <AnimatePresence initial={false}>
         <Marker className={sessionSeparatorClassNames[presentation.tone]} variant="separator">
           <MarkerContent className="flex-row items-center gap-1 text-xs font-medium">
             {group.isCurrent ? (
@@ -77,9 +77,7 @@ function ActivityFeedGroup({
             )}
           </MarkerContent>
         </Marker>
-      </div>
 
-      <AnimatePresence initial={false}>
         {activityItems.map((item) => {
           if (item.kind === "branch") {
             return (

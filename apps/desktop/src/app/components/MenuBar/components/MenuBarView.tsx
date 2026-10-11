@@ -21,6 +21,7 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
+import type { ApplicationCommandId } from "@/app/commands";
 import { getPrimaryColorCommandId, getThemeCommandId } from "@/app/commands/appearance";
 import {
   ApplicationCommandIcon,
@@ -30,8 +31,9 @@ import {
 } from "@/app/components/ApplicationCommandMenuItem";
 import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
+import { DockViewMenuItems } from "@/app/layout/components/DockViewMenuItems";
+import { WORKSPACE_VIEWS } from "@/app/layout/lib/workspace-view-registry";
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectExportQueueSummary } from "@/app/store/slices/editing-instances-slice";
 import {
   selectPrimaryColor,
   selectThemePreference,
@@ -67,10 +69,6 @@ function MenuBarViewContent() {
   const { t } = useTranslation();
   const { openCommandPalette } = useCommandPalette();
 
-  const queueSummary = useAppSelector(selectExportQueueSummary);
-  const finishedExports = queueSummary.completed + queueSummary.failed;
-  const queueSize = finishedExports + queueSummary.queued + queueSummary.rendering;
-
   return (
     <>
       <MenubarGroup>
@@ -80,15 +78,6 @@ function MenuBarViewContent() {
             <Kbd>/</Kbd>
           </MenubarShortcut>
         </MenubarItem>
-
-        <ApplicationCommandMenuItem asChild commandId="open-export-queue">
-          <MenubarItem>
-            {t("queue.title")}
-            <MenubarShortcut className="text-xs">
-              {finishedExports}/{queueSize}
-            </MenubarShortcut>
-          </MenubarItem>
-        </ApplicationCommandMenuItem>
       </MenubarGroup>
 
       <MenubarSeparator />
@@ -107,6 +96,33 @@ function MenuBarViewContent() {
 
           <MenubarSubContent>
             <MenuBarViewLayout />
+          </MenubarSubContent>
+        </MenubarSub>
+      </MenubarGroup>
+
+      <MenubarSeparator />
+
+      <MenubarGroup>
+        {WORKSPACE_VIEWS.map((view) => (
+          <ApplicationCommandMenuItem
+            asChild
+            commandId={`open-workspace-view-${view.id}` as ApplicationCommandId}
+            key={view.id}
+          >
+            <MenubarItem>
+              <ApplicationCommandLabel />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
+        ))}
+      </MenubarGroup>
+
+      <MenubarSeparator />
+
+      <MenubarGroup>
+        <MenubarSub>
+          <MenubarSubTrigger>{t("layout.docks")}</MenubarSubTrigger>
+          <MenubarSubContent>
+            <DockViewMenuItems />
           </MenubarSubContent>
         </MenubarSub>
       </MenubarGroup>

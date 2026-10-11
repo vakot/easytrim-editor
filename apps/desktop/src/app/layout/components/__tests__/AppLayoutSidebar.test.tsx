@@ -180,7 +180,7 @@ describe("AppLayoutSidebar", () => {
     );
 
     const target = document.querySelector<HTMLElement>('[data-sidebar-empty-drop-target="right"]');
-    expect(target).toHaveClass("pointer-events-none", "w-[50vw]", "right-0");
+    expect(target).toHaveClass("pointer-events-none", "w-lg", "right-0");
     expect(target).not.toHaveClass("border-2", "bg-background/10", "shadow-xl");
     expect(target?.querySelector("[data-sidebar-empty-drop-indicator]")).toBeNull();
 
@@ -199,10 +199,11 @@ describe("AppLayoutSidebar", () => {
       "pointer-events-none",
       "absolute",
       "inset-y-0",
+      "z-40",
       "w-1",
       "rounded",
       "bg-primary",
-      "right-0",
+      "right-px",
     );
     expect(indicator?.parentElement).toBe(workspace);
     expect(indicator).not.toHaveClass("left-82", "right-82");
@@ -222,8 +223,8 @@ describe("AppLayoutSidebar", () => {
 
     const leftIndicator = document.querySelector('[data-sidebar-empty-drop-indicator="left"]');
 
-    expect(leftTarget).toHaveClass("pointer-events-none", "w-[50vw]", "left-0");
-    expect(leftIndicator).toHaveClass("w-1", "rounded", "bg-primary", "left-0");
+    expect(leftTarget).toHaveClass("pointer-events-none", "w-lg", "left-0");
+    expect(leftIndicator).toHaveClass("w-1", "rounded", "bg-primary", "left-px");
     expect(leftIndicator?.parentElement).toBe(screen.getByTestId("workspace"));
   });
 });
