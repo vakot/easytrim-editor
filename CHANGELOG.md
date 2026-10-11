@@ -12,6 +12,12 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Crop selection movement now snaps its center to the existing 25%, 50%, and 75% guides.
+- Improved timeline header alignment and sizing.
+
+### Fixed
+
+- Fixed timeline dragging stopping unexpectedly.
+- Prevented slider drags from triggering double-click actions on release.
 
 ## [1.13.3]
 
