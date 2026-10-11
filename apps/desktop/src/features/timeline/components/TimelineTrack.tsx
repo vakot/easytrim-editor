@@ -106,9 +106,10 @@ function Timeline({ children }: { children: React.ReactNode }) {
       ? "cursor-ew-resize"
       : "cursor-pointer";
 
-  const dragAwareDoubleClick = useDragAwareDoubleClick<HTMLElement>((_event, pointerDownTarget) => {
-    if (!(pointerDownTarget instanceof Element)) return;
-    const handle = pointerDownTarget.closest<HTMLElement>("[data-trim-boundary]");
+  const dragAwareDoubleClick = useDragAwareDoubleClick<HTMLElement>((event, pointerDownTarget) => {
+    const target = pointerDownTarget ?? event.target;
+    if (!(target instanceof Element)) return;
+    const handle = target.closest<HTMLElement>("[data-trim-boundary]");
     const boundary = handle?.dataset.trimBoundary;
     if (boundary === "start" || boundary === "end") resetBoundary(boundary);
   });
