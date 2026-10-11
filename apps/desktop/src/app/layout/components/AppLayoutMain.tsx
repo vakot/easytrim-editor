@@ -70,9 +70,8 @@ const EMPTY_TIMELINE_RANGE = {
 function AppLayoutMain() {
   const media = useAppSelector(selectSourceMedia);
   const audioStreamsCount = useAppSelector(selectAudioPanelStreamCount);
-  const availableAudioStreamsCount = media ? audioStreamsCount : 0;
-  const bottomPanelCommand = useApplicationCommand("toggle-bottom-panel");
   const timelinePanelCommand = usePanelCommand("editor-stage-timeline");
+  const bottomPanelCommand = useApplicationCommand("toggle-bottom-panel");
   const layoutDensity = useAppSelector(selectLayoutDensity);
   const { leftSidebarVisible, rightSidebarVisible } = useSidebarVisibility();
   const isTimelinePanelExpanded =
@@ -135,7 +134,7 @@ function AppLayoutMain() {
           collapsible={bottomPanelCommand.enabled}
           groupResizeBehavior="preserve-pixel-size"
           id="editor-stage-timeline"
-          {...getTimelinePanelSize(availableAudioStreamsCount, isCompact)}
+          {...getTimelinePanelSize(audioStreamsCount, isCompact)}
         >
           <AppLayoutPanel
             className={cn(
@@ -146,7 +145,8 @@ function AppLayoutMain() {
             layoutRegion="workspace-timeline"
           >
             <TimelinePanel />
-            {availableAudioStreamsCount > 0 && isTimelinePanelExpanded ? (
+            {/* Retain the lazy subtree while replacement source metadata is loading. */}
+            {audioStreamsCount > 0 && isTimelinePanelExpanded ? (
               <Suspense fallback={<div aria-busy="true" className="min-h-0 flex-1" />}>
                 <LazyAudioPanel />
               </Suspense>

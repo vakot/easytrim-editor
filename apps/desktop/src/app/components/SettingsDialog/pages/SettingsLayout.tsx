@@ -36,6 +36,10 @@ function SettingsLayout() {
         <CommandSwitch aria-label={t("layout.showLeftPanel")} commandId="toggle-left-panel" />
       </SettingRow>
 
+      <SettingRow label={t("layout.showRightPanel")}>
+        <CommandSwitch aria-label={t("layout.showRightPanel")} commandId="toggle-right-panel" />
+      </SettingRow>
+
       <SettingRow label={t("layout.showBottomPanel")}>
         <CommandSwitch aria-label={t("layout.showBottomPanel")} commandId="toggle-bottom-panel" />
       </SettingRow>

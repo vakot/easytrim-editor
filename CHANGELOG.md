@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.13.4]
+
 ### Added
 
 - Added crop aspect-ratio presets, freeform resizing, and an option to reset the crop to its full-frame default.

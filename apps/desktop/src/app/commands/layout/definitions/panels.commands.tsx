@@ -6,12 +6,12 @@ import { usePanelCommand } from "@/components/ui/resizable";
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSidebarLayout } from "@/app/store/slices/preferences-slice";
-import { selectHasAudio } from "@/app/store/slices/source-slice";
+import { selectAudioPanelStreamCount } from "@/app/store/slices/source-slice";
 import { preloadAudioPanel } from "@/features/audio/audio-panel.loader";
 
 function usePanelCommands() {
   const { t } = useTranslation();
-  const hasAudio = useAppSelector(selectHasAudio);
+  const hasAudio = useAppSelector(selectAudioPanelStreamCount) > 0;
   const sidebarLayout = useAppSelector(selectSidebarLayout);
   const hasLeftSidebar = sidebarLayout.left.length > 0;
   const hasRightSidebar = sidebarLayout.right.length > 0;

@@ -111,8 +111,6 @@ const sourceReducer = sourceSlice.reducer;
 
 const selectSourceSelection = (state: RootState): SourceRef | null => state.source.source;
 const selectSourceMedia = (state: RootState): MediaInfo | null => state.source.media;
-const selectHasAudio = (state: RootState): boolean =>
-  (state.source.media?.audioStreams.length ?? 0) > 0;
 
 const selectAudioPanelStreamCount = (state: RootState): number =>
   state.source.audioPanelStreamCount;
@@ -129,7 +127,6 @@ export {
   capabilitiesReady,
   selectAudioPanelStreamCount,
   selectCapabilities,
-  selectHasAudio,
   selectHasSource,
   selectSourceLoadToken,
   selectSourceMedia,
