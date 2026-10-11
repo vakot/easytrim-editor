@@ -151,8 +151,8 @@ vi.mock("@/lib/diagnostics", () => ({
   diagnostics: { error: mocks.diagnosticsError },
 }));
 
-import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
 import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
+import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";

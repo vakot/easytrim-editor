@@ -95,6 +95,7 @@ function TrimHandle({
       data-dragging={dragging ? "true" : undefined}
       data-editor-keyboard="timeline-slider"
       data-snap-active={snapActive ? "true" : undefined}
+      data-trim-boundary={boundary}
       role="slider"
       style={{
         left: boundary === "start" ? "var(--timeline-trim-start)" : "var(--timeline-trim-end)",

@@ -2,6 +2,8 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { createContext, useContext, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useDragAwareDoubleClick } from "@/components/ui/useDragAwareDoubleClick";
+
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
@@ -70,25 +72,7 @@ function Timeline({ children }: { children: React.ReactNode }) {
   const disabled = !readiness.canInteract;
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
 
-  const {
-    finishScrub,
-    finishSegmentDrag,
-    finishTrimDrag,
-    handlePlayheadKeyboard,
-    handleSegmentKeyboard,
-    handleTrimKeyboard,
-    handleTrimPointer,
-    moveScrub,
-    moveSegmentDrag,
-    resetBoundary,
-    scrubDragging,
-    segmentDragging,
-    segmentSnapActive,
-    startScrub,
-    startSegmentDrag,
-    trackRef,
-    trimDragState,
-  } = useTrimTimelineInteractions({
+  const interactions = useTrimTimelineInteractions({
     frameRate,
     onChange: timeline.onChange,
     onMoveSegment: timeline.onMoveSegment,
@@ -105,26 +89,35 @@ function Timeline({ children }: { children: React.ReactNode }) {
     snapTargetsMicros,
   });
 
+  const {
+    finishPointer,
+    movePointer,
+    resetBoundary,
+    scrubDragging,
+    segmentDragging,
+    startScrub,
+    trackRef,
+    trimDragState,
+  } = interactions;
+
+  const trackCursorClass = segmentDragging
+    ? "cursor-grabbing"
+    : scrubDragging || trimDragState
+      ? "cursor-ew-resize"
+      : "cursor-pointer";
+
+  const dragAwareDoubleClick = useDragAwareDoubleClick<HTMLElement>((event, pointerDownTarget) => {
+    const target = pointerDownTarget ?? event.target;
+    if (!(target instanceof Element)) return;
+    const handle = target.closest<HTMLElement>("[data-trim-boundary]");
+    const boundary = handle?.dataset.trimBoundary;
+    if (boundary === "start" || boundary === "end") resetBoundary(boundary);
+  });
+
   return (
     <TimelineTrackContext.Provider
       value={{
-        finishScrub,
-        finishSegmentDrag,
-        finishTrimDrag,
-        handlePlayheadKeyboard,
-        handleSegmentKeyboard,
-        handleTrimKeyboard,
-        handleTrimPointer,
-        moveScrub,
-        moveSegmentDrag,
-        resetBoundary,
-        scrubDragging,
-        segmentDragging,
-        segmentSnapActive,
-        startScrub,
-        startSegmentDrag,
-        trackRef,
-        trimDragState,
+        ...interactions,
         range,
         disabled,
         playheadMicros: timeline.playheadMicros,
@@ -134,18 +127,24 @@ function Timeline({ children }: { children: React.ReactNode }) {
       <div
         aria-label={t("timeline.playhead.accessibility.track")}
         className={cn(
-          "segment-markers relative h-13 cursor-pointer rounded-md border bg-muted/30 text-muted",
+          "segment-markers relative h-13 rounded-md border bg-muted/30 text-muted",
+          trackCursorClass,
           disabled && "pointer-events-none",
         )}
-        onLostPointerCapture={(event) => finishScrub(event, false)}
-        onPointerCancel={(event) => finishScrub(event, false)}
+        onDoubleClick={dragAwareDoubleClick.onDoubleClick}
+        onLostPointerCapture={(event) => finishPointer(event, false)}
+        onPointerCancel={(event) => finishPointer(event, false)}
+        onPointerCancelCapture={dragAwareDoubleClick.onPointerCancelCapture}
         onPointerDown={(event) => {
           if (event.target === event.currentTarget) {
-            startScrub(event, event.currentTarget);
+            startScrub(event);
           }
         }}
-        onPointerMove={moveScrub}
-        onPointerUp={(event) => finishScrub(event, true)}
+        onPointerDownCapture={dragAwareDoubleClick.onPointerDownCapture}
+        onPointerMove={movePointer}
+        onPointerMoveCapture={dragAwareDoubleClick.onPointerMoveCapture}
+        onPointerUp={(event) => finishPointer(event, true)}
+        onPointerUpCapture={dragAwareDoubleClick.onPointerUpCapture}
         ref={trackRef}
       >
         {children}
@@ -157,15 +156,8 @@ function Timeline({ children }: { children: React.ReactNode }) {
 function TimelineTrimHandle({
   boundary,
 }: Pick<React.ComponentProps<typeof TrimHandle>, "boundary">) {
-  const {
-    disabled,
-    finishTrimDrag,
-    handleTrimKeyboard,
-    handleTrimPointer,
-    range,
-    resetBoundary,
-    trimDragState,
-  } = useTimelineTrack();
+  const { disabled, handleTrimKeyboard, handleTrimPointer, range, trimDragState } =
+    useTimelineTrack();
 
   const isStart = boundary === "start";
   const minimumDurationMicros = minimumSelectionMicros(range.sourceDurationMicros);
@@ -180,13 +172,8 @@ function TimelineTrimHandle({
       dragging={trimDragState?.boundary === boundary}
       max={max}
       min={min}
-      onDoubleClick={() => resetBoundary(boundary)}
       onKeyDown={(event) => handleTrimKeyboard(boundary, event)}
-      onLostPointerCapture={() => finishTrimDrag(boundary)}
-      onPointerCancel={() => finishTrimDrag(boundary)}
       onPointerDown={(event) => handleTrimPointer(boundary, event, true)}
-      onPointerMove={(event) => handleTrimPointer(boundary, event, false)}
-      onPointerUp={() => finishTrimDrag(boundary)}
       snapActive={trimDragState?.boundary === boundary && trimDragState.snapActive}
       value={value}
     />
@@ -196,9 +183,7 @@ function TimelineTrimHandle({
 function TimelineDragHandle() {
   const {
     disabled,
-    finishSegmentDrag,
     handleSegmentKeyboard,
-    moveSegmentDrag,
     range,
     segmentDragging,
     segmentSnapActive,
@@ -214,11 +199,7 @@ function TimelineDragHandle() {
       max={range.sourceDurationMicros - durationMicros}
       min={0}
       onKeyDown={handleSegmentKeyboard}
-      onLostPointerCapture={(event) => finishSegmentDrag(event, false)}
-      onPointerCancel={(event) => finishSegmentDrag(event, false)}
       onPointerDown={startSegmentDrag}
-      onPointerMove={moveSegmentDrag}
-      onPointerUp={(event) => finishSegmentDrag(event, true)}
       snapActive={segmentSnapActive}
       value={range.startMicros}
     />
@@ -228,9 +209,7 @@ function TimelineDragHandle() {
 function TimelinePlayhead() {
   const {
     disabled,
-    finishScrub,
     handlePlayheadKeyboard,
-    moveScrub,
     playheadMicros,
     playheadRef,
     range,
@@ -247,11 +226,7 @@ function TimelinePlayhead() {
       max={range.sourceDurationMicros}
       min={0}
       onKeyDown={handlePlayheadKeyboard}
-      onLostPointerCapture={(event) => finishScrub(event, false)}
-      onPointerCancel={(event) => finishScrub(event, false)}
-      onPointerDown={(event) => startScrub(event, event.currentTarget)}
-      onPointerMove={moveScrub}
-      onPointerUp={(event) => finishScrub(event, true)}
+      onPointerDown={startScrub}
       ref={playheadRef}
       value={playheadValue}
     />

@@ -169,7 +169,7 @@ function useTrimTimelineInteractions({
 
   function handleTrimPointer(
     boundary: TrimBoundary,
-    event: PointerEvent<HTMLButtonElement>,
+    event: PointerEvent<HTMLElement>,
     capture: boolean,
   ) {
     if (capture) {
@@ -181,8 +181,8 @@ function useTrimTimelineInteractions({
         boundary,
         bounds,
       };
+      trackRef.current?.setPointerCapture?.(event.pointerId);
       onTrimDragStart();
-      event.currentTarget.setPointerCapture?.(event.pointerId);
     } else if (
       trimDragRef.current?.pointerId !== event.pointerId ||
       (event.currentTarget.hasPointerCapture &&
@@ -283,7 +283,7 @@ function useTrimTimelineInteractions({
     onMoveSegment(next);
   }
 
-  function startSegmentDrag(event: PointerEvent<HTMLButtonElement>) {
+  function startSegmentDrag(event: PointerEvent<HTMLElement>) {
     if (event.button !== 0 || event.isPrimary === false) return;
     event.stopPropagation();
     const bounds = trackRef.current?.getBoundingClientRect();
@@ -300,12 +300,12 @@ function useTrimTimelineInteractions({
       lastPointerMicros: pointerPositionMicros,
       snapModifierActive: event.shiftKey,
     };
+    trackRef.current?.setPointerCapture?.(event.pointerId);
     setSegmentDragging(true);
     onSegmentDragStart();
-    event.currentTarget.setPointerCapture?.(event.pointerId);
   }
 
-  function moveSegmentDrag(event: PointerEvent<HTMLButtonElement>) {
+  function moveSegmentDrag(event: PointerEvent<HTMLElement>) {
     const drag = segmentDragRef.current;
     if (drag?.pointerId !== event.pointerId) return;
     event.preventDefault();
@@ -314,7 +314,7 @@ function useTrimTimelineInteractions({
     updateSegmentFromPointer(pointerPositionMicros, event.shiftKey);
   }
 
-  function finishSegmentDrag(event: PointerEvent<HTMLButtonElement>, includePosition: boolean) {
+  function finishSegmentDrag(event: PointerEvent<HTMLElement>, includePosition: boolean) {
     const drag = segmentDragRef.current;
     if (drag?.pointerId !== event.pointerId) return;
     event.preventDefault();
@@ -371,14 +371,14 @@ function useTrimTimelineInteractions({
     return snapTarget?.timeMicros ?? pointer.micros;
   }
 
-  function startScrub(event: PointerEvent<HTMLElement>, captureTarget: HTMLElement) {
+  function startScrub(event: PointerEvent<HTMLElement>) {
     if (event.button !== 0 || event.isPrimary === false) return;
     event.stopPropagation();
     const bounds = trackRef.current?.getBoundingClientRect();
     if (!bounds) return;
     scrubDragRef.current = { bounds, pointerId: event.pointerId };
+    trackRef.current?.setPointerCapture?.(event.pointerId);
     setScrubDragging(true);
-    captureTarget.setPointerCapture?.(event.pointerId);
     onScrubStart();
     onScrub(scrubMicros(event.clientX, event.shiftKey, bounds));
   }
@@ -401,6 +401,36 @@ function useTrimTimelineInteractions({
     scrubDragRef.current = null;
     setScrubDragging(false);
     onScrubEnd();
+  }
+
+  function movePointer(event: PointerEvent<HTMLElement>) {
+    const trimDrag = trimDragRef.current;
+    if (trimDrag?.pointerId === event.pointerId) {
+      handleTrimPointer(trimDrag.boundary, event, false);
+      return;
+    }
+
+    if (segmentDragRef.current?.pointerId === event.pointerId) {
+      moveSegmentDrag(event);
+      return;
+    }
+
+    moveScrub(event);
+  }
+
+  function finishPointer(event: PointerEvent<HTMLElement>, includePosition: boolean) {
+    const trimDrag = trimDragRef.current;
+    if (trimDrag?.pointerId === event.pointerId) {
+      finishTrimDrag(trimDrag.boundary);
+      return;
+    }
+
+    if (segmentDragRef.current?.pointerId === event.pointerId) {
+      finishSegmentDrag(event, includePosition);
+      return;
+    }
+
+    finishScrub(event, includePosition);
   }
 
   function handlePlayheadKeyboard(event: KeyboardEvent<HTMLButtonElement>) {
@@ -440,7 +470,9 @@ function useTrimTimelineInteractions({
     resetBoundary,
     startSegmentDrag,
     moveSegmentDrag,
+    movePointer,
     finishSegmentDrag,
+    finishPointer,
     handleSegmentKeyboard,
     startScrub,
     moveScrub,

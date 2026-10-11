@@ -234,6 +234,7 @@ function removeThumbnailDemand(instanceId: string, consumerId?: string) {
   const hasConsumerDemand = [...thumbnailDemandByConsumer.values()].some((demand) =>
     demand.has(instanceId),
   );
+
   if (!unscopedThumbnailDemand.has(instanceId) && !hasConsumerDemand) {
     thumbnailDemand.delete(instanceId);
   }

@@ -52,26 +52,27 @@ function TimelinePanel() {
       data-testid="timeline-fixed-content"
     >
       <div className={styles.timelineHeader}>
-        <div className="grid w-full grid-cols-(--editor-timeline-track-grid-columns) gap-2">
-          <div className="min-w-0 justify-self-start">
-            <h2
-              className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
-              id="timeline-title"
-            >
-              {t("timeline.segment.labels.selectedSegment")}
-            </h2>
-            <PlaybackTimecode />
-          </div>
+        <div className="flex w-full gap-2">
+          <div className="flex flex-1 items-center gap-3">
+            <div className="w-(--editor-track-controls-width) min-w-0 justify-self-start">
+              <h2
+                className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+                id="timeline-title"
+              >
+                {t("timeline.segment.labels.selectedSegment")}
+              </h2>
+              <PlaybackTimecode />
+            </div>
 
-          <div className="flex items-center justify-between gap-2">
             <div className="flex flex-1 gap-1">
               <PlaybackSpeedControl />
               <PlaybackVolumeControl />
             </div>
-
-            <PlaybackControls className="flex-1" />
-            <TimelineValues className="flex-1 justify-end" />
           </div>
+
+          <PlaybackControls className="flex-1" />
+
+          <TimelineValues className="flex-1 justify-end" />
         </div>
       </div>
 

@@ -918,7 +918,9 @@ describe("App", () => {
       screen.getByLabelText("Current playback time"),
     );
     expect(
-      within(timelineHeading as HTMLElement).getByLabelText("Preview playback controls"),
+      within(screen.getByTestId("timeline-fixed-content")).getByLabelText(
+        "Preview playback controls",
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Trim" })).not.toBeInTheDocument();
     expect(document.getElementById("editor-stage")).toBeInTheDocument();
