@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { SettingsDialog } from "@/app/components/SettingsDialog";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
@@ -21,6 +20,8 @@ import { ChangelogProvider } from "@/features/changelog";
 import { QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
+
+import { SettingsDialog } from "../SettingsDialog";
 
 const meta = {
   component: SettingsDialogStory,
