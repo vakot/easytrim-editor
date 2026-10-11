@@ -445,7 +445,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.queryByText("Start a new clip")).not.toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Source explorer" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Imported Sources" })).toBeInTheDocument();
     const shortcutList = screen.getByRole("list", { name: "Keyboard shortcuts" });
     expect(within(shortcutList).getAllByRole("listitem")).toHaveLength(7);
     for (const label of [

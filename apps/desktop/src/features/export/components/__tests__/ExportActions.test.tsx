@@ -13,6 +13,7 @@ import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snap
 import {
   editingInstanceExportAttemptQueued,
   editingInstancesAdded,
+  selectExportQueueSummary,
 } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt } from "@/domain/editing-instance";
@@ -82,9 +83,37 @@ function renderExportActions(store = createAppStore()) {
 }
 
 function renderExportQueueDialog(store = createAppStore()) {
+  const startQueueCommand = {
+    enabled: selectExportQueueSummary(store.getState()).queued > 0,
+    group: { id: "export-queue", label: "Export Queue" },
+    icon: null,
+    id: "start-export-queue",
+    label: "Start queue",
+    pending: false,
+    searchTerms: [],
+    surfaces: ["button", "palette"],
+    variant: "default",
+  } satisfies ApplicationCommand<ApplicationCommandId>;
+
+  const commands = [...exportCommands, startQueueCommand];
+  const commandsById = Object.fromEntries(commands.map((command) => [command.id, command]));
+
   return render(
     <Provider store={store}>
-      <ExportQueueDialog onOpenChange={() => undefined} open />
+      <ApplicationCommandsContext.Provider
+        value={{
+          commands,
+          commandsById: commandsById as unknown as Record<
+            ApplicationCommandId,
+            ApplicationCommand<ApplicationCommandId>
+          >,
+          executeCommand: vi.fn(async () => undefined),
+        }}
+      >
+        <TooltipProvider>
+          <ExportQueueDialog onOpenChange={() => undefined} open />
+        </TooltipProvider>
+      </ApplicationCommandsContext.Provider>
     </Provider>,
   );
 }
@@ -154,7 +183,7 @@ describe("ExportActions", () => {
     expect(
       within(screen.getByRole("dialog")).getAllByRole("button", { name: "Close" }),
     ).toHaveLength(2);
-    expect(screen.getByRole("dialog")).toHaveClass("max-h-[min(80dvh,48rem)]");
+    expect(screen.getByRole("dialog")).toHaveClass("h-[min(80dvh,40rem)]");
   });
 
   it("enables Start queue when queued work exists", async () => {

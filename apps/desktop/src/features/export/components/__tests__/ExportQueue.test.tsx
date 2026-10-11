@@ -20,7 +20,12 @@ import { createAppStore } from "@/app/store/store";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
 import { firstSource } from "@/test/source.fixtures";
 
-import { ExportQueue, ExportQueueContent, ExportQueueSummary } from "../ExportQueue";
+import {
+  ExportQueue,
+  ExportQueueContent,
+  ExportQueueList,
+  ExportQueueSummary,
+} from "../ExportQueue";
 
 function createSource(): EditingInstance {
   const snapshot = createDefaultEditorSnapshot(firstSource, false);
@@ -109,7 +114,9 @@ describe("ExportQueue", () => {
       <Provider store={store}>
         <TooltipProvider>
           <ExportQueue>
-            <ExportQueueContent />
+            <ExportQueueContent>
+              <ExportQueueList />
+            </ExportQueueContent>
           </ExportQueue>
         </TooltipProvider>
       </Provider>,
@@ -144,7 +151,9 @@ describe("ExportQueue", () => {
       <Provider store={store}>
         <TooltipProvider>
           <ExportQueue>
-            <ExportQueueContent />
+            <ExportQueueContent>
+              <ExportQueueList />
+            </ExportQueueContent>
           </ExportQueue>
         </TooltipProvider>
       </Provider>,
@@ -199,14 +208,16 @@ describe("ExportQueue", () => {
         <TooltipProvider>
           <ExportQueue>
             <ExportQueueSummary />
-            <ExportQueueContent />
+            <ExportQueueContent>
+              <ExportQueueList />
+            </ExportQueueContent>
           </ExportQueue>
         </TooltipProvider>
       </Provider>,
     );
 
     expect(
-      screen.getByText("5 jobs · 1 processing · 1 queued · 1 failed · 1 canceled · 1 completed"),
+      screen.getByText("1 processing · 1 queued · 1 failed · 1 canceled · 1 completed"),
     ).toBeInTheDocument();
     expect(screen.getByText("Processing…")).toHaveAttribute("data-variant", "default");
     expect(screen.getByText("Completed")).toHaveAttribute("data-variant", "success");

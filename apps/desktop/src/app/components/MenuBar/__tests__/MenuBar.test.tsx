@@ -366,8 +366,7 @@ describe("MenuBarTest", () => {
     renderMenus();
 
     await user.click(getMenuTrigger("View"));
-    await user.click(screen.getByRole("menuitem", { name: "Open" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: /Export Queue/ }));
+    await user.click(screen.getByRole("menuitem", { name: /Export Queue/ }));
 
     expect(screen.getByTestId("workspace-dialog-view")).toHaveTextContent("exportQueue");
   });
@@ -969,13 +968,13 @@ describe("MenuBarTest", () => {
 
     await waitFor(() => {
       expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
-      expect(screen.getByRole("menuitem", { name: "Open" })).toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: "Imported Sources" })).toBeInTheDocument();
     });
 
     await user.hover(fileButton);
     await waitFor(() => {
       expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
-      expect(screen.queryByRole("menuitem", { name: "Open" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("menuitem", { name: "Imported Sources" })).not.toBeInTheDocument();
     });
   });
 

@@ -22,9 +22,6 @@ test("validates the repository translation graph", async () => {
   assert.equal(report.resourceLeafCount, report.usedResourceLeafCount);
   assert.equal(report.resourceUnitCount, report.usedResourceUnitCount);
   assert.ok(report.resourceUnitCount < report.resourceLeafCount);
-  assert.ok(
-    report.translationUnits.some((unit) => unit.key === "queue.summary.jobs" && unit.forms),
-  );
 });
 
 test("rejects dynamic keys and inline fallbacks", () => {
