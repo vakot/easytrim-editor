@@ -42,7 +42,8 @@ function useResetLayoutCommand() {
     layoutDensity !== DEFAULT_PREFERENCES.layoutDensity ||
     sidebarLayout.left.length !== DEFAULT_SIDEBAR_LAYOUT.left.length ||
     sidebarLayout.left.some((viewId, index) => viewId !== DEFAULT_SIDEBAR_LAYOUT.left[index]) ||
-    sidebarLayout.right.length !== DEFAULT_SIDEBAR_LAYOUT.right.length;
+    sidebarLayout.right.length !== DEFAULT_SIDEBAR_LAYOUT.right.length ||
+    sidebarLayout.right.some((viewId, index) => viewId !== DEFAULT_SIDEBAR_LAYOUT.right[index]);
 
   return {
     enabled:

@@ -258,6 +258,7 @@ describe("ApplicationCommandsProvider", () => {
     state.source.status = "ready";
     state.preferences.activityFeedView = "default";
     state.preferences.layoutDensity = "default";
+    state.preferences.sidebarLayout = { left: ["sources"], right: ["activity"] };
     state.preferences.autoStartQueueEnabled = true;
     state.preferences.deleteSourceOnRenderFinish = false;
     state.preferences.theme = "system";
@@ -575,6 +576,13 @@ describe("ApplicationCommandsProvider", () => {
   it("enables layout reset when density or activity-feed view differs from its default", () => {
     state.preferences.layoutDensity = "compact";
     state.preferences.activityFeedView = "branch";
+    renderRuntime();
+
+    expect(screen.getByRole("button", { name: "reset-layout" })).toBeEnabled();
+  });
+
+  it("enables layout reset when right-sidebar contents differ from their default", () => {
+    state.preferences.sidebarLayout = { left: ["sources"], right: ["exportQueue"] };
     renderRuntime();
 
     expect(screen.getByRole("button", { name: "reset-layout" })).toBeEnabled();
