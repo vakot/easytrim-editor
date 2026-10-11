@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Reduced the editor's initial JavaScript payload by deferring optional interface features until needed.
 - Crop selection movement now snaps its center to the existing 25%, 50%, and 75% guides.
 
 ### Fixed

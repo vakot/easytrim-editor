@@ -27,6 +27,28 @@ export default defineConfig({
     },
   },
   clearScreen: false,
+  // Keep shared UI dependencies together across the optional feature chunks.
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "icons",
+              test: /lucide-react/,
+              minShareCount: 2,
+            },
+            {
+              name: "radix-ui",
+              test: /radix-ui/,
+              minShareCount: 2,
+              minSize: 12_000,
+            },
+          ],
+        },
+      },
+    },
+  },
   server: {
     port: 1420,
     strictPort: true,
