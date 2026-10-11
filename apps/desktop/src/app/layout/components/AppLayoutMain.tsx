@@ -71,8 +71,8 @@ function AppLayoutMain() {
   const media = useAppSelector(selectSourceMedia);
   const audioStreamsCount = useAppSelector(selectAudioPanelStreamCount);
   const availableAudioStreamsCount = media ? audioStreamsCount : 0;
-  const bottomPanelCommand = useApplicationCommand("toggle-bottom-panel");
   const timelinePanelCommand = usePanelCommand("editor-stage-timeline");
+  const bottomPanelCommand = useApplicationCommand("toggle-bottom-panel");
   const layoutDensity = useAppSelector(selectLayoutDensity);
   const { leftSidebarVisible, rightSidebarVisible } = useSidebarVisibility();
   const isTimelinePanelExpanded =
@@ -135,7 +135,7 @@ function AppLayoutMain() {
           collapsible={bottomPanelCommand.enabled}
           groupResizeBehavior="preserve-pixel-size"
           id="editor-stage-timeline"
-          {...getTimelinePanelSize(availableAudioStreamsCount, isCompact)}
+          {...getTimelinePanelSize(audioStreamsCount, isCompact)}
         >
           <AppLayoutPanel
             className={cn(
