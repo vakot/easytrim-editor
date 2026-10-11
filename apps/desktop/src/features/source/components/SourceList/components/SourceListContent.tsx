@@ -9,6 +9,7 @@ import { cn } from "@/lib/class-names.utils";
 import { useSourceListData } from "../contexts/SourceListContext";
 import { useSourceListScrollController } from "../hooks/useSourceListScrollController";
 
+import { SourceListEmpty } from "./SourceListEmpty";
 import { SourceListItem } from "./SourceListItem";
 
 const SourceListVirtualizedList = forwardRef<HTMLDivElement, ListProps<HTMLDivElement>>(
@@ -71,6 +72,8 @@ function SourceListContent({
     scrollSeekConfiguration,
     setScrollParent,
   } = useSourceListScrollController(sources);
+
+  if (sources.length === 0) return <SourceListEmpty />;
 
   return (
     <ScrollArea

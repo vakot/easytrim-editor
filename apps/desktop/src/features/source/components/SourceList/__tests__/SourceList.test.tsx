@@ -262,12 +262,8 @@ describe("source queue controls", () => {
       <TooltipProvider>
         <Provider store={store}>
           <SourceList>
-            {() => (
-              <>
-                <SourceListCloseAll />
-                <SourceListContent />
-              </>
-            )}
+            <SourceListCloseAll />
+            <SourceListContent />
           </SourceList>
         </Provider>
       </TooltipProvider>,
