@@ -14,7 +14,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { CommandPalette } from "@/app/components/CommandPalette";
 import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
-import { SettingsDialog } from "@/app/components/SettingsDialog";
+import { SettingsDialog } from "@/app/components/SettingsDialog/SettingsDialog";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
