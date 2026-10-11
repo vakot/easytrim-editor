@@ -1,24 +1,18 @@
-import { useTranslation } from "react-i18next";
-
 import { Button } from "@/components/ui/button";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
-import { startExportQueue } from "@/app/store/thunks/export-thunks";
-
-import { useExportQueue } from "../contexts/ExportQueueContext";
+import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 
 function ExportQueueStartButton() {
-  const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const { summary } = useExportQueue();
+  const command = useApplicationCommand("start-export-queue");
+  const { executeCommand } = useApplicationCommands();
 
   return (
     <Button
-      disabled={summary.queued === 0}
-      onClick={() => void dispatch(startExportQueue())}
+      disabled={!command.enabled || command.pending}
+      onClick={() => void executeCommand(command.id, "button")}
       type="button"
     >
-      {t("queue.actions.startQueue")}
+      {command.label}
     </Button>
   );
 }

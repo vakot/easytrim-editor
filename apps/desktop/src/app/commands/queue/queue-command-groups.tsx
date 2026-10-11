@@ -7,12 +7,14 @@ import { useDeleteSourceOnFinishCommand } from "./definitions/delete-source-on-f
 import { useOpenExportQueueCommand } from "./definitions/open-export-queue.command";
 import { useQueueFinishCommands } from "./definitions/queue-finish.commands";
 import { useResetQueueSettingsCommand } from "./definitions/reset-queue-settings.command";
+import { useStartQueueCommand } from "./definitions/start-queue.command";
 
 function useQueueCommandGroups() {
   const { t } = useTranslation();
   const deleteSource = useDeleteSourceOnFinishCommand();
   const autoStartQueue = useAutoStartQueueCommand();
   const openExportQueue = useOpenExportQueueCommand();
+  const startQueue = useStartQueueCommand();
   const finishActions = useQueueFinishCommands();
   const resetQueueSettings = useResetQueueSettingsCommand();
   return [
@@ -28,6 +30,7 @@ function useQueueCommandGroups() {
     ),
     defineApplicationCommandGroup("queue", t("queue.title"), [
       openExportQueue,
+      startQueue,
       autoStartQueue,
       resetQueueSettings,
     ]),
