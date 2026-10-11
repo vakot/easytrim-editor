@@ -28,7 +28,7 @@ describe("SettingsGeneral", () => {
 
     await user.click(screen.getByRole("button", { name: "Language" }));
     const listbox = screen.getByRole("listbox");
-    expect(within(listbox).getByText(`${translationCoverage.ru.percentage}%`)).toBeVisible();
+    expect(within(listbox).getAllByText(`${translationCoverage.ru.percentage}%`)).toHaveLength(2);
     expect(within(listbox).getAllByRole("progressbar")).toHaveLength(2);
     expect(
       within(listbox)

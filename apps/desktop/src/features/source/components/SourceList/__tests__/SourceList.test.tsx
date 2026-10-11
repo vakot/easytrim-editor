@@ -430,6 +430,9 @@ describe("source queue controls", () => {
 
     await user.clear(screen.getByRole("searchbox", { name: "Search sources" }));
     await waitFor(() => expect(virtuosoHarness.props?.data).toHaveLength(12));
+    await waitFor(() => {
+      expect(thumbnailActions.prepare).toHaveBeenLastCalledWith(["source-1", "source-2"]);
+    });
     thumbnailActions.prepare.mockClear();
     await user.click(screen.getByRole("button", { name: "Mock enter scroll seek" }));
     expect(document.querySelectorAll('[role="presentation"]')).toHaveLength(3);
