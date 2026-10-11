@@ -23,7 +23,7 @@ function ActivityWorkspaceDialog({ onOpenChange, open }: ActivityWorkspaceDialog
       <ActivityFeed>
         <DialogContent className="h-[min(80dvh,40rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden pb-0 sm:max-w-lg">
           <DialogHeader className="-mx-4 border-b px-4 pb-4">
-            <DialogTitle>{t("layout.activityFeed")}</DialogTitle>
+            <DialogTitle>{t("activity.title")}</DialogTitle>
             <DialogDescription>{t("activity.description")}</DialogDescription>
           </DialogHeader>
 

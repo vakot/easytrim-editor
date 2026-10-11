@@ -130,6 +130,7 @@ export const en = {
       title: "Drag and drop videos here",
     },
     explorer: "Source explorer",
+    explorerDescription: "Search imported videos and manage open source files",
     importedSources: "Imported Sources",
     navigation: {
       next: "Next source",
@@ -504,6 +505,8 @@ export const en = {
     },
   },
   activity: {
+    title: "Activity Feed",
+    description: "Review recent imports, exports, and workspace changes across sessions",
     time: {
       now: "Now",
     },
