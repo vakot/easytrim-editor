@@ -48,7 +48,6 @@ function ResizablePanelGroup({ persisted, ...props }: ResizablePanelGroupProps) 
 }
 
 type ResizableLayoutStorage = ResizablePrimitive.LayoutStorage;
-type ResizableGroupImperativeHandle = ResizablePrimitive.GroupImperativeHandle;
 
 interface PersistedResizablePanelGroupProps extends Omit<
   ResizablePrimitive.GroupProps,
@@ -490,4 +489,4 @@ export {
   usePanelRef,
   usePanelState,
 };
-export type { ResizableGroupImperativeHandle, ResizableLayoutStorage, ResizablePanelControlState };
+export type { ResizableLayoutStorage, ResizablePanelControlState };

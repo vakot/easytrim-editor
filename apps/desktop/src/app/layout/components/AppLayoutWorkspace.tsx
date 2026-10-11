@@ -1,11 +1,6 @@
 import { useDroppable } from "@dnd-kit/react";
 
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-  useGroupRef,
-} from "@/components/ui/resizable";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { AppLayoutMain } from "@/app/layout/components/AppLayoutMain";
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";
@@ -22,7 +17,6 @@ import { cn } from "@/lib/class-names.utils";
 
 import { useSidebarPresence } from "../hooks/useSidebarPresence";
 import type { SidebarVisibility } from "../hooks/useSidebarVisibility";
-import { useWorkspaceSidebarWidths } from "../hooks/useWorkspaceSidebarWidths";
 
 interface AppLayoutWorkspaceProps {
   dragPreviewViewId: SidebarViewId | null;
@@ -44,21 +38,13 @@ function AppLayoutWorkspace({
   const isCompact = useAppSelector(selectLayoutDensity) === "compact";
   const leftSidebarPresence = useSidebarPresence("left", sidebarVisibility.hasLeftSidebar);
   const rightSidebarPresence = useSidebarPresence("right", sidebarVisibility.hasRightSidebar);
-  const workspaceGroupRef = useGroupRef();
-  const { handleWorkspaceLayoutChanged, workspaceSidebarWidths } = useWorkspaceSidebarWidths({
-    left: sidebarVisibility.hasLeftSidebar,
-    right: sidebarVisibility.hasRightSidebar,
-    workspaceGroupRef,
-  });
 
   return (
     <div className="relative min-h-0 min-w-0">
       {/* Direct panel children are required for persisted layout to discover every panel ID. */}
       <ResizablePanelGroup
         className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
-        groupRef={workspaceGroupRef}
         id="workspace"
-        onLayoutChanged={handleWorkspaceLayoutChanged}
         onlySaveAfterUserInteractions
         persisted
       >
@@ -66,9 +52,7 @@ function AppLayoutWorkspace({
           className="ml-1.5 overflow-hidden!"
           collapsedSize={0}
           collapsible
-          defaultSize={
-            sidebarVisibility.hasLeftSidebar ? (workspaceSidebarWidths.left ?? "20.5rem") : "0px"
-          }
+          defaultSize={sidebarVisibility.hasLeftSidebar ? "20.5rem" : "0px"}
           disabled={!sidebarVisibility.hasLeftSidebar}
           groupResizeBehavior="preserve-pixel-size"
           id="workspace-left-sidebar"
@@ -121,9 +105,7 @@ function AppLayoutWorkspace({
           className="mr-1.5 overflow-hidden!"
           collapsedSize={0}
           collapsible
-          defaultSize={
-            sidebarVisibility.hasRightSidebar ? (workspaceSidebarWidths.right ?? "20.5rem") : "0px"
-          }
+          defaultSize={sidebarVisibility.hasRightSidebar ? "20.5rem" : "0px"}
           disabled={!sidebarVisibility.hasRightSidebar}
           groupResizeBehavior="preserve-pixel-size"
           id="workspace-right-sidebar"

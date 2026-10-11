@@ -214,12 +214,12 @@ describe("AppLayout drag and resize integration", () => {
       sidebarLayoutChanged({ destination: "left", insertionIndex: 1, viewId: "activity" }),
     );
     localStorage.setItem(
-      "react-resizable-panels:workspace:workspace-left-sidebar:workspace-content",
-      JSON.stringify({ "workspace-left-sidebar": 30, "workspace-content": 70 }),
-    );
-    localStorage.setItem(
-      "react-resizable-panels:workspace-sidebar-widths",
-      JSON.stringify({ left: 480, right: 360 }),
+      "react-resizable-panels:workspace:workspace-left-sidebar:workspace-content:workspace-right-sidebar",
+      JSON.stringify({
+        "workspace-content": 58,
+        "workspace-left-sidebar": 24,
+        "workspace-right-sidebar": 18,
+      }),
     );
     const getBoundingClientRect = Element.prototype.getBoundingClientRect;
     vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
@@ -577,9 +577,12 @@ describe("AppLayout drag and resize integration", () => {
       localStorage.getItem(
         "react-resizable-panels:workspace:workspace-left-sidebar:workspace-content:workspace-right-sidebar",
       ),
-    ).toBeNull();
-    expect(localStorage.getItem("react-resizable-panels:workspace-sidebar-widths")).toBe(
-      JSON.stringify({ left: 480, right: 360 }),
+    ).toBe(
+      JSON.stringify({
+        "workspace-content": 58,
+        "workspace-left-sidebar": 24,
+        "workspace-right-sidebar": 18,
+      }),
     );
 
     act(() => {
@@ -648,8 +651,16 @@ describe("AppLayout drag and resize integration", () => {
       });
     });
     expect(document.getElementById("workspace")).toBe(workspaceGroup);
-    expect(localStorage.getItem("react-resizable-panels:workspace-sidebar-widths")).toBe(
-      JSON.stringify({ left: 480, right: configuredRightSidebarWidth }),
+    expect(
+      localStorage.getItem(
+        "react-resizable-panels:workspace:workspace-left-sidebar:workspace-content:workspace-right-sidebar",
+      ),
+    ).toBe(
+      JSON.stringify({
+        "workspace-content": 58,
+        "workspace-left-sidebar": 24,
+        "workspace-right-sidebar": 18,
+      }),
     );
     const restoredLeftPanel = document.getElementById("workspace-left-sidebar")!;
     await waitFor(() => {

@@ -43,21 +43,12 @@ function useSidebarVisibility() {
     [leftSidebar, rightSidebar],
   );
 
-  const resizeSidebar = useCallback(
-    (side: SidebarId, width: number) => {
-      const panel = side === "left" ? leftSidebar : rightSidebar;
-      panel?.ref.current?.resize(width);
-    },
-    [leftSidebar, rightSidebar],
-  );
-
   return {
     hasLeftSidebar,
     hasRightSidebar,
     leftSidebarVisible,
     rightSidebarVisible,
     isSidebarCollapsed,
-    resizeSidebar,
     setSidebarExpanded,
   };
 }
