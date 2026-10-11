@@ -73,6 +73,14 @@ function SourceListContent({
     setScrollParent,
   } = useSourceListScrollController(sources);
 
+  if (search.trim() && sources.length === 0) {
+    return (
+      <div className="text-center text-sm text-muted-foreground" role="status">
+        {t("source.search.noResults")}
+      </div>
+    );
+  }
+
   if (sources.length === 0) return <SourceListEmpty />;
 
   return (
@@ -81,11 +89,7 @@ function SourceListContent({
       viewportRef={setScrollParent}
       {...props}
     >
-      {search.trim() && sources.length === 0 ? (
-        <div className="text-center text-sm text-muted-foreground" role="status">
-          {t("source.search.noResults")}
-        </div>
-      ) : customScrollParent ? (
+      {customScrollParent ? (
         <Virtuoso
           className="w-full"
           components={virtuosoComponents}

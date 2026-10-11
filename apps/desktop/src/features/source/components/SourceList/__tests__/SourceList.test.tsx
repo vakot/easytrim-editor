@@ -131,7 +131,9 @@ describe("source queue controls", () => {
   it("renders file, folder, and drag-and-drop actions when no sources are imported", () => {
     render(
       <Provider store={createAppStore()}>
-        <SourceList />
+        <SourceList>
+          <SourceListContent />
+        </SourceList>
       </Provider>,
     );
 
