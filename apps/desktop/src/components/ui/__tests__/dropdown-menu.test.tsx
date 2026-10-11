@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -25,6 +26,28 @@ function renderMenu(item: ReactNode) {
 }
 
 describe("DropdownMenu selection items", () => {
+  it("moves focus into the menu and restores the trigger on Escape", async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu>
+        <DropdownMenuTrigger>Open menu</DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem>First item</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Open menu" });
+    await user.tab();
+    expect(trigger).toHaveFocus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(screen.getByRole("menuitem", { name: "First item" })).toHaveFocus());
+
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(screen.queryByRole("menuitem", { name: "First item" })).not.toBeInTheDocument();
+  });
+
   it("closes regular menu items by default", () => {
     const onSelect = vi.fn();
     renderMenu(<DropdownMenuItem onSelect={onSelect}>Item</DropdownMenuItem>);

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -40,7 +40,7 @@ describe("SourceDeleteProvider", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Request delete" }));
-    expect(screen.getAllByRole("alertdialog")).toHaveLength(1);
+    expect(await screen.findAllByRole("alertdialog")).toHaveLength(1);
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
@@ -54,8 +54,8 @@ describe("SourceDeleteProvider", () => {
       </SourceDeleteProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Request delete" }));
-    await userEvent.setup().click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Request delete" }));
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Delete" }));
 
     await waitFor(() => expect(mocks.dispatch).toHaveBeenCalledWith(expect.any(Function)));
   });

@@ -29,11 +29,21 @@ interface AudioTrackActionsProps {
 
 function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
   const { t } = useTranslation();
-  const { openMetadataDialog } = useAudioTrackMetadataDialog();
+  const { openMetadataDialog, preloadMetadata } = useAudioTrackMetadataDialog();
+  const { preloadEffects } = useAudioTrackEffectsDialog();
   const track = controller.track;
 
   return (
-    <DropdownMenuContent>
+    <DropdownMenuContent
+      onFocus={() => {
+        preloadMetadata();
+        preloadEffects();
+      }}
+      onPointerEnter={() => {
+        preloadMetadata();
+        preloadEffects();
+      }}
+    >
       <AudioTrackToggleMenuCheckboxItem controller={controller}>
         <DropdownMenuCheckboxItem keepOpen>{t("common.actions.enable")}</DropdownMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
@@ -83,11 +93,21 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
 
 function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
   const { t } = useTranslation();
-  const { openMetadataDialog } = useAudioTrackMetadataDialog();
+  const { openMetadataDialog, preloadMetadata } = useAudioTrackMetadataDialog();
+  const { preloadEffects } = useAudioTrackEffectsDialog();
   const track = controller.track;
 
   return (
-    <ContextMenuContent>
+    <ContextMenuContent
+      onFocus={() => {
+        preloadMetadata();
+        preloadEffects();
+      }}
+      onPointerEnter={() => {
+        preloadMetadata();
+        preloadEffects();
+      }}
+    >
       <AudioTrackToggleMenuCheckboxItem controller={controller}>
         <ContextMenuCheckboxItem keepOpen>{t("common.actions.enable")}</ContextMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
@@ -204,11 +224,13 @@ function AudioTrackEffectsMenuItem({
   children,
 }: { children?: React.ReactNode } & AudioTrackActionsProps) {
   const { t } = useTranslation();
-  const { openEffects } = useAudioTrackEffectsDialog();
+  const { openEffects, preloadEffects } = useAudioTrackEffectsDialog();
 
   const commandProps = {
     "aria-label": t("audio.effects.open"),
     onSelect: () => openEffects(),
+    onFocus: preloadEffects,
+    onPointerEnter: preloadEffects,
   };
 
   return <Slot {...commandProps}>{children}</Slot>;

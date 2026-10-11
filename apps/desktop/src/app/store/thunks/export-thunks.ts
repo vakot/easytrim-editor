@@ -39,7 +39,6 @@ import {
   optimizedExportDialogOpened,
   queueEditFinished,
   queueEditStarted,
-  queueFinishActionsAvailable,
   selectExportDialogOpen,
   selectExportDialogRoute,
   selectQueueEdit,
@@ -83,7 +82,6 @@ import type {
   OptimizedExportRequest,
 } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
-import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
 import { analyzeTrackLoudness } from "./audio-track-thunks";
 import type { AppThunk } from "./source-media-thunks";
@@ -104,15 +102,6 @@ function nextTimestamp() {
 function nextAttemptId() {
   return `attempt-${++exportAttemptSequence}`;
 }
-
-const loadQueueFinishActions = (): AppThunk => async (dispatch) => {
-  try {
-    const actions = await availableQueueFinishActions();
-    dispatch(queueFinishActionsAvailable(actions.includes("nothing") ? actions : ["nothing"]));
-  } catch {
-    dispatch(queueFinishActionsAvailable(["exit", "nothing"]));
-  }
-};
 
 const startSourceExportQueue =
   (instanceId: string): AppThunk =>
@@ -884,7 +873,6 @@ export {
   cancelOptimizedExportDialogRequested,
   editExportAttemptRequested,
   exportSettingsChangedRequested,
-  loadQueueFinishActions,
   openGifExportDialog,
   openOptimizedExportDialog,
   refreshExportPlan,

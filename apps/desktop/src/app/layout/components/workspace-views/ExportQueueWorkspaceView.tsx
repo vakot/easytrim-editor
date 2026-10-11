@@ -5,7 +5,7 @@ import {
   ExportQueueStartButton,
   ExportQueueStripMetadataCheckbox,
   ExportQueueSummary,
-} from "@/features/export";
+} from "@/features/export/queue";
 
 function ExportQueueWorkspaceView() {
   return (

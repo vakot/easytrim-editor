@@ -1,6 +1,6 @@
 import { AutoScroller } from "@dnd-kit/dom";
 import { DragDropProvider, useDragDropManager } from "@dnd-kit/react";
-import { lazy, Suspense, useEffect, useLayoutEffect, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
@@ -10,34 +10,10 @@ import { SidebarDragPreview } from "@/app/layout/components/AppLayoutSidebar";
 import { AppLayoutWorkspace } from "@/app/layout/components/AppLayoutWorkspace";
 import { SidebarViewPortals } from "@/app/layout/components/SidebarViewPortal";
 import { useSidebarDragAndDrop } from "@/app/layout/hooks/useSidebarDragAndDrop";
-import type { SidebarViewId } from "@/app/layout/lib/sidebar-layout";
 import { createSidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
+import { WORKSPACE_DIALOG_COMPONENTS } from "@/app/layout/lib/workspace-view-loaders";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectUiScalePercent } from "@/app/store/slices/preferences-slice";
-
-const ActivityWorkspaceDialog = lazy(() =>
-  import("@/app/layout/components/workspace-dialogs/ActivityWorkspaceDialog").then((module) => ({
-    default: module.ActivityWorkspaceDialog,
-  })),
-);
-
-const ExportQueueDialog = lazy(() =>
-  import("@/app/layout/components/workspace-dialogs/ExportQueueDialog").then((module) => ({
-    default: module.ExportQueueDialog,
-  })),
-);
-
-const SourcesWorkspaceDialog = lazy(() =>
-  import("@/app/layout/components/workspace-dialogs/SourcesWorkspaceDialog").then((module) => ({
-    default: module.SourcesWorkspaceDialog,
-  })),
-);
-
-const WORKSPACE_DIALOGS: Record<SidebarViewId, typeof ActivityWorkspaceDialog> = {
-  activity: ActivityWorkspaceDialog,
-  exportQueue: ExportQueueDialog,
-  sources: SourcesWorkspaceDialog,
-};
 
 function AppLayout() {
   const uiScalePercent = useAppSelector(selectUiScalePercent);
@@ -47,7 +23,7 @@ function AppLayout() {
   const { closeDialog, consumeDockPlacementRequest, dialogViewId, dockPlacementRequest } =
     useWorkspaceViews();
 
-  const WorkspaceDialog = dialogViewId ? WORKSPACE_DIALOGS[dialogViewId] : null;
+  const WorkspaceDialog = dialogViewId ? WORKSPACE_DIALOG_COMPONENTS[dialogViewId] : null;
 
   const handleDialogOpenChange = (open: boolean) => {
     if (!open) closeDialog();

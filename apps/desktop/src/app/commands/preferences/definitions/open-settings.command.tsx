@@ -3,7 +3,9 @@ import { useTranslation } from "react-i18next";
 
 import { SETTINGS_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
+import { preloadSettingsDialog } from "@/app/components/SettingsDialog/settings-dialog.loader";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
+import { preloadOnIntent } from "@/lib/lazy-component";
 
 function useOpenSettingsCommand() {
   const { t } = useTranslation();
@@ -13,6 +15,7 @@ function useOpenSettingsCommand() {
   return {
     enabled: true,
     icon: <Settings aria-hidden="true" />,
+    preload: preloadOnIntent(preloadSettingsDialog),
     run: openSettings,
     id: "open-settings" as const,
     label,

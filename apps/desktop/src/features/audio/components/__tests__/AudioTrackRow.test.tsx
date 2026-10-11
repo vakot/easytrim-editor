@@ -126,7 +126,7 @@ function renderGainControl(enabled = true) {
       <AudioPlaybackContext.Provider
         value={{ ...audioPlayback, clearLiveAudioTrackGain, setLiveAudioTrackGain }}
       >
-        <AudioTrackEffectsDialogContext.Provider value={{ openEffects }}>
+        <AudioTrackEffectsDialogContext.Provider value={{ openEffects, preloadEffects: vi.fn() }}>
           <TooltipProvider>
             <AudioTrackGainControl
               onLiveGainChange={() => undefined}
@@ -296,7 +296,7 @@ describe("AudioTrackRow", () => {
     ).toBeInTheDocument();
     await user.click(normalizationTrigger);
 
-    const normalizationTab = screen.getByRole("tab", { name: /loudness normalization/i });
+    const normalizationTab = await screen.findByRole("tab", { name: /loudness normalization/i });
     expect(normalizationTab).toHaveAttribute("aria-selected", "true");
 
     await user.click(screen.getByRole("tab", { name: /high-pass filter/i }));
@@ -996,8 +996,8 @@ describe("AudioTrackRow", () => {
 
     await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
 
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByLabelText(/title/i)).toBeInTheDocument();
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(await screen.findByLabelText(/title/i)).toBeInTheDocument();
   });
 
   it("uses the source title as the placeholder and inherits it when submitted empty", async () => {

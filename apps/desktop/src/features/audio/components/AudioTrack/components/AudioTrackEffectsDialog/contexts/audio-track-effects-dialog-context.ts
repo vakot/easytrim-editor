@@ -4,6 +4,7 @@ import type { AudioTrackEffectId } from "../../AudioTrackEffectsLibrary/consts/a
 
 const AudioTrackEffectsDialogContext = createContext<{
   openEffects: (initialView?: AudioTrackEffectId) => void;
+  preloadEffects: () => void;
 } | null>(null);
 
 function useAudioTrackEffectsDialog() {

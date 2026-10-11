@@ -13,7 +13,7 @@ import {
   SourceListCloseAll,
   SourceListContent,
   SourceListSearch,
-} from "@/features/source";
+} from "@/features/source/source-list";
 
 interface SourcesWorkspaceDialogProps {
   onOpenChange: (open: boolean) => void;

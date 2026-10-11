@@ -9,7 +9,6 @@ import { commandSearchTerms } from "@/app/commands/core/application-command.util
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
-import { startAudioExportRequested } from "@/app/store/thunks/export-thunks";
 
 import { AUDIO_EXPORT_SHORTCUT } from "../file-shortcuts.constants";
 
@@ -25,6 +24,7 @@ function useAudioExportCommand() {
     enabled: sourceReady && hasSelectedAudio,
     icon: <AudioLines aria-hidden="true" />,
     async run({ surface }: ApplicationCommandExecutionContext) {
+      const { startAudioExportRequested } = await import("@/app/store/thunks/export-thunks");
       await dispatch(startAudioExportRequested(commandOrigin("audio-export", surface)));
     },
     id: "audio-export" as const,

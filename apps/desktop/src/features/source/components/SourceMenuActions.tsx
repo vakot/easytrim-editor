@@ -1,4 +1,10 @@
-import { cloneElement, type MouseEventHandler, type ReactElement } from "react";
+import {
+  cloneElement,
+  type FocusEventHandler,
+  type MouseEventHandler,
+  type PointerEventHandler,
+  type ReactElement,
+} from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -14,10 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
-import {
-  closeEditingInstancesRequested,
-  restoreSourceFileRequested,
-} from "@/app/store/thunks/source-media-thunks";
+import { closeEditingInstancesRequested } from "@/app/store/thunks/source-media-thunks";
 
 import { useSourceDelete } from "../contexts/source-delete-context";
 
@@ -26,6 +29,8 @@ import { useSourceListCloseRequest } from "./SourceList/contexts/SourceListConte
 type ActionElement = ReactElement<{
   disabled?: boolean;
   onClick?: MouseEventHandler;
+  onFocus?: FocusEventHandler;
+  onPointerEnter?: PointerEventHandler;
   onSelect?: (event: Event) => void;
 }>;
 
@@ -51,11 +56,14 @@ interface SourceActionProps {
  * @description Wraps an action trigger with source deletion behavior and disables it when the source is already deleted.
  */
 function DeleteSource({ children, event = "select", source }: SourceActionProps) {
-  const { requestSourceDelete } = useSourceDelete();
+  const { preloadSourceDelete, requestSourceDelete } = useSourceDelete();
   const item = withDisabled(children, !source || source.sourceAvailability === "deleted");
-  const trigger = withAction(item, event, () => {
-    if (source) requestSourceDelete({ sourceIds: [source.id] });
-  });
+  const trigger = withPreload(
+    withAction(item, event, () => {
+      if (source) requestSourceDelete({ sourceIds: [source.id] });
+    }),
+    preloadSourceDelete,
+  );
 
   return event === "select" ? withPreventedSelect(trigger) : trigger;
 }
@@ -117,29 +125,6 @@ function CloseSources({ children, sources = [] }: SourceActionProps) {
  * @name RestoreSource
  * @description Adds source restoration behavior to a compatible action trigger for a deleted source or a source path without an open instance.
  */
-function RestoreSource({
-  children,
-  event = "select",
-  itemId,
-  source,
-  sourcePath,
-}: SourceActionProps) {
-  const dispatch = useAppDispatch();
-  const targetId = source?.id ?? itemId;
-  const targetPath = source?.sourcePath ?? sourcePath;
-
-  if (!targetPath || (source && source.sourceAvailability !== "deleted")) return null;
-
-  return withAction(children, event, () => {
-    void dispatch(
-      restoreSourceFileRequested({
-        ...(targetId ? { itemId: targetId } : {}),
-        sourcePath: targetPath,
-      }),
-    );
-  });
-}
-
 function withDisabled(children: ActionElement, disabled: boolean) {
   return cloneElement(children, { disabled: disabled || Boolean(children.props.disabled) });
 }
@@ -171,4 +156,17 @@ function withPreventedSelect(children: ActionElement) {
   });
 }
 
-export { CloseSource, CloseSources, DeleteSource, RestoreSource };
+function withPreload(children: ActionElement, preload: () => void) {
+  return cloneElement(children, {
+    onFocus: (event) => {
+      children.props.onFocus?.(event);
+      preload();
+    },
+    onPointerEnter: (event) => {
+      children.props.onPointerEnter?.(event);
+      preload();
+    },
+  });
+}
+
+export { CloseSource, CloseSources, DeleteSource };

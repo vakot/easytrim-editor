@@ -29,11 +29,12 @@ import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import { selectExportQueueSummary } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
-import {
-  openOptimizedExportDialog,
-  startFastExportRequested,
-} from "@/app/store/thunks/export-thunks";
 import { cn } from "@/lib/class-names.utils";
+import { preloadOnIntent } from "@/lib/lazy-component";
+
+import { preloadExportDialog } from "./ExportDialog/export-dialog.loader";
+
+const preloadExportDialogOnIntent = preloadOnIntent(preloadExportDialog);
 
 function ExportActions() {
   const { t } = useTranslation();
@@ -75,9 +76,11 @@ function ExportActions() {
           aria-keyshortcuts={getShortcutAriaValue(FAST_EXPORT_SHORTCUT)}
           disabled={!fastExportAvailable}
           icon={<Scissors aria-hidden="true" />}
-          onClick={() =>
-            void dispatch(startFastExportRequested({ id: "toolbar.fast-export", type: "button" }))
-          }
+          onClick={() => {
+            void import("@/app/store/thunks/export-thunks").then(({ startFastExportRequested }) =>
+              dispatch(startFastExportRequested({ id: "toolbar.fast-export", type: "button" })),
+            );
+          }}
         >
           {t("export.fastExport.action")}
         </ExportActionButton>
@@ -92,11 +95,15 @@ function ExportActions() {
           aria-keyshortcuts={getShortcutAriaValue(OPTIMIZED_EXPORT_SHORTCUT)}
           disabled={!sourceReady}
           icon={<Settings2 aria-hidden="true" />}
-          onClick={() =>
-            void dispatch(
-              openOptimizedExportDialog({ id: "toolbar.optimized-export", type: "button" }),
-            )
-          }
+          onClick={() => {
+            void import("@/app/store/thunks/export-thunks").then(({ openOptimizedExportDialog }) =>
+              dispatch(
+                openOptimizedExportDialog({ id: "toolbar.optimized-export", type: "button" }),
+              ),
+            );
+          }}
+          onFocus={preloadExportDialogOnIntent}
+          onPointerEnter={preloadExportDialogOnIntent}
         >
           {t("export.optimized.action")}
         </ExportActionButton>
@@ -160,6 +167,8 @@ function MoreExportActionsDropdown({
           align="end"
           className="max-w-[calc(100vw-1rem)]"
           data-export-actions-dropdown=""
+          onFocus={preloadExportDialogOnIntent}
+          onPointerEnter={preloadExportDialogOnIntent}
         >
           <ExportFormatMenuItem
             command={audioExport}

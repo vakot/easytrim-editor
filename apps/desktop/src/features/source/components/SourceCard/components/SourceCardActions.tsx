@@ -17,7 +17,8 @@ import { cn } from "@/lib/class-names.utils";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import { getRevealLabel } from "../../../lib/source.utils";
-import { CloseSource, DeleteSource, RestoreSource } from "../../SourceMenuActions";
+import { RestoreSource } from "../../RestoreSource";
+import { CloseSource, DeleteSource } from "../../SourceMenuActions";
 import { useSourceCardData } from "../hooks/useSourceCardData";
 
 /**

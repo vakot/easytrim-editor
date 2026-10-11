@@ -15,7 +15,7 @@ import {
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
-import { SourceList, SourceListContent } from "@/features/source";
+import { SourceList, SourceListContent } from "@/features/source/source-list";
 import { firstSource } from "@/test/source.fixtures";
 
 const CURRENT_KEY = "easytrim:workspace-recovery:current";

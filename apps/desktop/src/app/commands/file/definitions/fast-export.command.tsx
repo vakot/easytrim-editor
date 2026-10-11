@@ -9,7 +9,6 @@ import { commandSearchTerms } from "@/app/commands/core/application-command.util
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
-import { startFastExportRequested } from "@/app/store/thunks/export-thunks";
 
 import { FAST_EXPORT_SHORTCUT } from "../file-shortcuts.constants";
 
@@ -23,6 +22,7 @@ function useFastExportCommand() {
     enabled: canExport && !cropApplied && !transformApplied,
     icon: <ScissorsIcon aria-hidden="true" />,
     async run({ surface }: ApplicationCommandExecutionContext) {
+      const { startFastExportRequested } = await import("@/app/store/thunks/export-thunks");
       await dispatch(startFastExportRequested(commandOrigin("fast-export", surface)));
     },
     id: "fast-export" as const,

@@ -129,7 +129,7 @@ export default defineConfig(
         {
           patterns: [
             {
-              regex: "^@/features/[^/]+/.+",
+              regex: "^@/features/(?!export/queue(?:/|$)|source/source-list(?:/|$))[^/]+/.+",
               message: "Import features through their public index API.",
             },
           ],
@@ -146,7 +146,7 @@ export default defineConfig(
         {
           patterns: [
             {
-              regex: "^@/features/[^/]+/.+",
+              regex: "^@/features/(?!export/queue(?:/|$)|source/source-list(?:/|$))[^/]+/.+",
               message: "Import features through their public index API.",
             },
             {

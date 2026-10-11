@@ -60,6 +60,8 @@ function ApplicationCommandMenuItem({
     onSelect: () => {
       void context.executeCommand();
     },
+    onFocus: command.preload,
+    onPointerEnter: command.preload,
     variant: command.variant,
     ...(command.checked === undefined ? {} : { checked: command.checked }),
   };
