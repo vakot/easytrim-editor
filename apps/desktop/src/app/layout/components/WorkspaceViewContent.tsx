@@ -39,7 +39,7 @@ function WorkspaceViewContent({ viewId }: { viewId: SidebarViewId }) {
         </div>
       }
     >
-      <div className="flex flex-1 px-2" data-slot="layout-workspace-view">
+      <div className="flex min-h-0 flex-1 px-2" data-slot="layout-workspace-view">
         <View />
       </div>
     </Suspense>

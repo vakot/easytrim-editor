@@ -13,7 +13,7 @@ function SourcesWorkspaceView() {
           <SourceListSearch />
           <SourceListCloseAll />
         </div>
-        <SourceListContent className="-mx-2 px-2 pb-3" />
+        <SourceListContent className="-mx-2 px-2" />
       </div>
     </SourceList>
   );

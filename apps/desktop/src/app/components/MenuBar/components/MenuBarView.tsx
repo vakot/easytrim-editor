@@ -84,36 +84,6 @@ function MenuBarViewContent() {
 
       <MenubarGroup>
         <MenubarSub>
-          <MenubarSubTrigger>{t("layout.openView")}</MenubarSubTrigger>
-          <MenubarSubContent>
-            <MenubarGroup>
-              {WORKSPACE_VIEWS.map((view) => (
-                <ApplicationCommandMenuItem
-                  asChild
-                  commandId={`open-workspace-view-${view.id}` as ApplicationCommandId}
-                  key={view.id}
-                >
-                  <MenubarItem>
-                    <ApplicationCommandLabel />
-                  </MenubarItem>
-                </ApplicationCommandMenuItem>
-              ))}
-            </MenubarGroup>
-          </MenubarSubContent>
-        </MenubarSub>
-
-        <MenubarSub>
-          <MenubarSubTrigger>{t("layout.docks")}</MenubarSubTrigger>
-          <MenubarSubContent>
-            <DockViewMenuItems />
-          </MenubarSubContent>
-        </MenubarSub>
-      </MenubarGroup>
-
-      <MenubarSeparator />
-
-      <MenubarGroup>
-        <MenubarSub>
           <MenubarSubTrigger>{t("settings.appearance.title")}</MenubarSubTrigger>
 
           <MenubarSubContent>
@@ -126,6 +96,31 @@ function MenuBarViewContent() {
 
           <MenubarSubContent>
             <MenuBarViewLayout />
+          </MenubarSubContent>
+        </MenubarSub>
+      </MenubarGroup>
+
+      <MenubarSeparator />
+
+      <MenubarGroup>
+        <MenubarGroup>
+          {WORKSPACE_VIEWS.map((view) => (
+            <ApplicationCommandMenuItem
+              asChild
+              commandId={`open-workspace-view-${view.id}` as ApplicationCommandId}
+              key={view.id}
+            >
+              <MenubarItem>
+                <ApplicationCommandLabel />
+              </MenubarItem>
+            </ApplicationCommandMenuItem>
+          ))}
+        </MenubarGroup>
+
+        <MenubarSub>
+          <MenubarSubTrigger>{t("layout.docks")}</MenubarSubTrigger>
+          <MenubarSubContent>
+            <DockViewMenuItems />
           </MenubarSubContent>
         </MenubarSub>
       </MenubarGroup>
