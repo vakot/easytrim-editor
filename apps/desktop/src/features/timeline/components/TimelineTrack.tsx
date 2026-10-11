@@ -91,9 +91,9 @@ function Timeline({ children }: { children: React.ReactNode }) {
 
   const { finishPointer, movePointer, resetBoundary, startScrub, trackRef } = interactions;
 
-  const dragAwareDoubleClick = useDragAwareDoubleClick<HTMLElement>((event) => {
-    if (!(event.target instanceof Element)) return;
-    const handle = event.target.closest<HTMLElement>("[data-trim-boundary]");
+  const dragAwareDoubleClick = useDragAwareDoubleClick<HTMLElement>((_event, pointerDownTarget) => {
+    if (!(pointerDownTarget instanceof Element)) return;
+    const handle = pointerDownTarget.closest<HTMLElement>("[data-trim-boundary]");
     const boundary = handle?.dataset.trimBoundary;
     if (boundary === "start" || boundary === "end") resetBoundary(boundary);
   });

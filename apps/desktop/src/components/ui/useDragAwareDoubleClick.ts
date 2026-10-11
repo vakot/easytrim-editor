@@ -8,9 +8,10 @@ interface ActivePointer {
 }
 
 function useDragAwareDoubleClick<T extends HTMLElement>(
-  onDoubleClick?: React.MouseEventHandler<T>,
+  onDoubleClick?: (event: React.MouseEvent<T>, pointerDownTarget: EventTarget | null) => void,
 ) {
   const activePointerRef = useRef<ActivePointer | null>(null);
+  const pointerDownTargetRef = useRef<EventTarget | null>(null);
   const suppressDoubleClickRef = useRef(false);
   const suppressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -23,6 +24,7 @@ function useDragAwareDoubleClick<T extends HTMLElement>(
 
   const onPointerDownCapture = useCallback((event: React.PointerEvent<T>) => {
     if (event.button !== 0 || event.isPrimary === false) return;
+    pointerDownTargetRef.current = event.target;
     activePointerRef.current = {
       clientX: event.clientX,
       clientY: event.clientY,
@@ -55,6 +57,7 @@ function useDragAwareDoubleClick<T extends HTMLElement>(
   const onPointerCancelCapture = useCallback((event: React.PointerEvent<T>) => {
     if (activePointerRef.current?.pointerId === event.pointerId) {
       activePointerRef.current = null;
+      pointerDownTargetRef.current = null;
     }
   }, []);
 
@@ -64,12 +67,14 @@ function useDragAwareDoubleClick<T extends HTMLElement>(
         event.preventDefault();
         event.stopPropagation();
         suppressDoubleClickRef.current = false;
+        pointerDownTargetRef.current = null;
         if (suppressTimeoutRef.current) clearTimeout(suppressTimeoutRef.current);
         suppressTimeoutRef.current = null;
         return;
       }
 
-      onDoubleClick?.(event);
+      onDoubleClick?.(event, pointerDownTargetRef.current);
+      pointerDownTargetRef.current = null;
     },
     [onDoubleClick],
   );

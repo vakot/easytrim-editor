@@ -32,7 +32,7 @@ function Slider({
   ...props
 }: React.ComponentProps<typeof SliderPrimitive.Root> & { markers?: readonly SliderMarker[] }) {
   const [dragging, setDragging] = React.useState(false);
-  const dragAwareDoubleClick = useDragAwareDoubleClick<HTMLElement>(onDoubleClick);
+  const dragAwareDoubleClick = useDragAwareDoubleClick<HTMLDivElement>(onDoubleClick);
   const _values = React.useMemo(
     () => (Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max]),
     [value, defaultValue, min, max],
