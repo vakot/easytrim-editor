@@ -142,6 +142,24 @@ Keep these regions visible without navigation:
 - Hide decorative waveforms from assistive technology and expose useful audio labels as text.
 - Keep every setting, error, and export action keyboard-reachable.
 
+## Load optional UI on demand
+
+- Load feature-heavy optional Dialogs, Popovers, Menus, and similar UI with `React.lazy` or dynamic
+  imports. Keep shared primitives, triggers, and command infrastructure lightweight and eager.
+- Lazy loading does not lazy-mount content. Do not render unopened optional content or run its
+  effects until it is opened. Keep shared state owners and background operations independent of
+  optional UI mounting.
+- For interactive lazy entrypoints, preload on pointer hover and keyboard focus with the same
+  cached module loader used for rendering. Direct activation must work without preloading, including
+  touch and keyboard commands.
+- Place a local `Suspense` boundary near the entrypoint. Use a fallback that avoids layout shifts
+  and preserves focus behavior.
+- Avoid excessive micro-chunks and dependency waterfalls. Select boundaries based on bundle impact;
+  do not wrap every small component in `React.lazy`.
+- Keep lazy imports out of eagerly imported feature barrels and command definitions. Preserve
+  component identity, dialog/menu focus behavior, state, subscriptions, and Dock/Export Queue
+  interactions when changing mount boundaries.
+
 ## Integrate native operations
 
 - Keep request/result/error/progress types in the typed Tauri adapter.
