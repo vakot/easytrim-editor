@@ -4,6 +4,7 @@ import { Slider as SliderPrimitive } from "radix-ui";
 import * as React from "react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useDragAwareDoubleClick } from "@/components/ui/useDragAwareDoubleClick";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -22,13 +23,16 @@ function Slider({
   markers = [],
   max = 100,
   min = 0,
+  onDoubleClick,
   onPointerCancelCapture,
   onPointerDownCapture,
+  onPointerMoveCapture,
   onPointerUpCapture,
   value,
   ...props
 }: React.ComponentProps<typeof SliderPrimitive.Root> & { markers?: readonly SliderMarker[] }) {
   const [dragging, setDragging] = React.useState(false);
+  const dragAwareDoubleClick = useDragAwareDoubleClick<HTMLElement>(onDoubleClick);
   const _values = React.useMemo(
     () => (Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max]),
     [value, defaultValue, min, max],
@@ -46,15 +50,23 @@ function Slider({
       disabled={disabled}
       max={max}
       min={min}
+      onDoubleClick={dragAwareDoubleClick.onDoubleClick}
       onPointerCancelCapture={(event) => {
+        dragAwareDoubleClick.onPointerCancelCapture(event);
         setDragging(false);
         onPointerCancelCapture?.(event);
       }}
       onPointerDownCapture={(event) => {
+        dragAwareDoubleClick.onPointerDownCapture(event);
         setDragging(!disabled);
         onPointerDownCapture?.(event);
       }}
+      onPointerMoveCapture={(event) => {
+        dragAwareDoubleClick.onPointerMoveCapture(event);
+        onPointerMoveCapture?.(event);
+      }}
       onPointerUpCapture={(event) => {
+        dragAwareDoubleClick.onPointerUpCapture(event);
         setDragging(false);
         onPointerUpCapture?.(event);
       }}
