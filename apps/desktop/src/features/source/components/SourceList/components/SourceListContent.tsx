@@ -9,6 +9,7 @@ import { cn } from "@/lib/class-names.utils";
 import { useSourceListData } from "../contexts/SourceListContext";
 import { useSourceListScrollController } from "../hooks/useSourceListScrollController";
 
+import { SourceListEmpty } from "./SourceListEmpty";
 import { SourceListItem } from "./SourceListItem";
 
 const SourceListVirtualizedList = forwardRef<HTMLDivElement, ListProps<HTMLDivElement>>(
@@ -53,17 +54,15 @@ function SourceListEdgeSpacer() {
 }
 
 const virtuosoComponents = {
-  Footer: SourceListEdgeSpacer,
   Header: SourceListEdgeSpacer,
   List: SourceListVirtualizedList,
   ScrollSeekPlaceholder: SourceListScrollSeekPlaceholder,
 };
 
-interface SourceListContentProps {
-  className?: string;
-}
-
-function SourceListContent({ className }: SourceListContentProps) {
+function SourceListContent({
+  className,
+  ...props
+}: Omit<React.ComponentProps<typeof ScrollArea>, "children" | "viewportRef">) {
   const { closingSourceIds, matchesBySourceId, search, sources } = useSourceListData();
   const { t } = useTranslation();
   const {
@@ -74,13 +73,23 @@ function SourceListContent({ className }: SourceListContentProps) {
     setScrollParent,
   } = useSourceListScrollController(sources);
 
+  if (search.trim() && sources.length === 0) {
+    return (
+      <div className="text-center text-sm text-muted-foreground" role="status">
+        {t("source.search.noResults")}
+      </div>
+    );
+  }
+
+  if (sources.length === 0) return <SourceListEmpty />;
+
   return (
-    <ScrollArea className={cn("min-h-0 flex-1 pb-3", className)} viewportRef={setScrollParent}>
-      {search.trim() && sources.length === 0 ? (
-        <div className="text-center text-sm text-muted-foreground" role="status">
-          {t("source.search.noResults")}
-        </div>
-      ) : customScrollParent ? (
+    <ScrollArea
+      className={cn("min-h-0 flex-1", className)}
+      viewportRef={setScrollParent}
+      {...props}
+    >
+      {customScrollParent ? (
         <Virtuoso
           className="w-full"
           components={virtuosoComponents}

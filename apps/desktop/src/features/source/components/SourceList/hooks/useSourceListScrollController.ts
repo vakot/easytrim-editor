@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { ListRange } from "react-virtuoso";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
@@ -20,6 +20,7 @@ const increaseViewportBy = {
 
 function useSourceListScrollController(sources: EditingInstanceListEntry[]) {
   const dispatch = useAppDispatch();
+  const consumerId = useId();
   const demandedIdsRef = useRef(new Set<string>());
   const rangeRef = useRef<ListRange | null>(null);
   const scrollSeekingRef = useRef(false);
@@ -35,10 +36,10 @@ function useSourceListScrollController(sources: EditingInstanceListEntry[]) {
     (sourceIds: Iterable<string>) => {
       for (const sourceId of sourceIds) {
         if (!demandedIdsRef.current.delete(sourceId)) continue;
-        dispatch(releaseImportedSourceThumbnailDemand(sourceId));
+        dispatch(releaseImportedSourceThumbnailDemand(sourceId, consumerId));
       }
     },
-    [dispatch],
+    [consumerId, dispatch],
   );
 
   const updateDemandForRange = useCallback(
@@ -61,10 +62,10 @@ function useSourceListScrollController(sources: EditingInstanceListEntry[]) {
       }
 
       if (newlyDemanded.length > 0) {
-        dispatch(prepareImportedSourceThumbnailsRequested(newlyDemanded));
+        dispatch(prepareImportedSourceThumbnailsRequested(newlyDemanded, consumerId));
       }
     },
-    [dispatch, releaseDemand, sourceEntriesById, sources],
+    [consumerId, dispatch, releaseDemand, sourceEntriesById, sources],
   );
 
   const handleScrollSeekChange = useCallback(() => {

@@ -13,7 +13,9 @@ function useOpenChangelogCommand() {
     run: openChangelog,
     id: "open-changelog" as const,
     label: t("support.changelog.open"),
-    searchTerms: commandSearchTerms(`${t("support.changelog.open")}|what's new|release notes`),
+    searchTerms: commandSearchTerms(
+      `${t("support.changelog.open")}|open|dialog|what's new|release notes`,
+    ),
     variant: "default" as const,
   };
 }

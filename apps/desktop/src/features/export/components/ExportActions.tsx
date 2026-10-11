@@ -4,25 +4,12 @@ import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
@@ -41,31 +28,17 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import { selectExportQueueSummary } from "@/app/store/slices/editing-instances-slice";
-import {
-  exportQueueDialogClosed,
-  exportQueueDialogOpened,
-  selectExportQueueDialogOpen,
-} from "@/app/store/slices/export-slice";
-import {
-  preferenceChanged,
-  selectStripMetadataOnExport,
-} from "@/app/store/slices/preferences-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import {
   openOptimizedExportDialog,
-  startExportQueue,
   startFastExportRequested,
 } from "@/app/store/thunks/export-thunks";
 import { cn } from "@/lib/class-names.utils";
-
-import { ExportQueue, ExportQueueContent, ExportQueueSummary } from "../components/ExportQueue";
-import { useExportQueue } from "../components/ExportQueue/contexts/ExportQueueContext";
 
 function ExportActions() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
-  const exportQueueDialogOpen = useAppSelector(selectExportQueueDialogOpen);
   const sourceReady = useAppSelector(selectSourceReady);
   const hasSelectedAudio = useAppSelector((state) =>
     selectAudioTracks(state).some((track) => track.enabled),
@@ -74,7 +47,6 @@ function ExportActions() {
   const cropApplied = useAppSelector(selectCropApplied);
   const transformApplied = useAppSelector(selectTransformApplied);
   const queueSummary = useAppSelector(selectExportQueueSummary);
-  const stripMetadataOnExport = useAppSelector(selectStripMetadataOnExport);
   const finishedExports = queueSummary.completed + queueSummary.failed;
   const queueSize = finishedExports + queueSummary.queued + queueSummary.rendering;
 
@@ -86,60 +58,9 @@ function ExportActions() {
       className="flex shrink-0 items-center gap-1"
       role="toolbar"
     >
-      <Dialog
-        onOpenChange={(open) =>
-          dispatch(open ? exportQueueDialogOpened() : exportQueueDialogClosed())
-        }
-        open={exportQueueDialogOpen}
-      >
-        <ExportQueue>
-          <ExportActionTooltip tooltip={t("queue.actions.openExportQueue")}>
-            <ExportQueueTrigger finishedExports={finishedExports} queueSize={queueSize} />
-          </ExportActionTooltip>
-
-          <DialogContent className="max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
-            <DialogHeader className="-mx-4 border-b px-4 pb-4">
-              <DialogTitle>{t("queue.title")}</DialogTitle>
-              <DialogDescription>
-                <ExportQueueSummary />
-              </DialogDescription>
-            </DialogHeader>
-
-            <ScrollArea className="-mx-4 min-h-0 px-4" data-testid="export-queue-scroll-area">
-              <ExportQueueContent className="py-2" />
-            </ScrollArea>
-
-            <DialogFooter className="sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={stripMetadataOnExport}
-                  id="queue-strip-metadata"
-                  onCheckedChange={(checked) =>
-                    dispatch(
-                      preferenceChanged({
-                        key: "stripMetadataOnExport",
-                        enabled: checked === true,
-                      }),
-                    )
-                  }
-                />
-                <Label
-                  className="text-sm font-normal text-muted-foreground"
-                  htmlFor="queue-strip-metadata"
-                >
-                  {t("settings.preferences.stripMetadata.commandLabel")}
-                </Label>
-              </div>
-              <div className="flex items-center justify-end gap-2">
-                <DialogClose asChild>
-                  <Button variant="outline">{t("common.actions.close")}</Button>
-                </DialogClose>
-                <ExportQueueStartButton />
-              </div>
-            </DialogFooter>
-          </DialogContent>
-        </ExportQueue>
-      </Dialog>
+      <ExportActionTooltip tooltip={t("queue.actions.openExportQueue")}>
+        <ExportQueueTrigger finishedExports={finishedExports} queueSize={queueSize} />
+      </ExportActionTooltip>
 
       <ExportActionTooltip
         disabled={!fastExportAvailable}
@@ -194,22 +115,23 @@ function ExportQueueTrigger({
   queueSize: number;
 }) {
   const { t } = useTranslation();
+  const command = useApplicationCommand("open-workspace-view-exportQueue");
+  const { executeCommand } = useApplicationCommands();
 
   return (
-    <DialogTrigger asChild>
-      <ExportActionButton
-        className="max-2xl:size-auto max-2xl:h-7 max-2xl:gap-1 max-2xl:px-2"
-        icon={<List aria-hidden="true" />}
-        indicator={
-          <Badge size="xs" variant="secondary">
-            {finishedExports}/{queueSize}
-          </Badge>
-        }
-        variant="default"
-      >
-        {t("queue.title")}
-      </ExportActionButton>
-    </DialogTrigger>
+    <ExportActionButton
+      className="max-2xl:size-auto max-2xl:h-7 max-2xl:gap-1 max-2xl:px-2"
+      icon={<List aria-hidden="true" />}
+      indicator={
+        <Badge size="xs" variant="secondary">
+          {finishedExports}/{queueSize}
+        </Badge>
+      }
+      onClick={() => void executeCommand(command.id, "button")}
+      variant="default"
+    >
+      {t("queue.title")}
+    </ExportActionButton>
   );
 }
 
@@ -299,22 +221,6 @@ function ExportFormatMenuItem({
         {disabled && disabledReason ? disabledReason : tooltip}
       </TooltipContent>
     </Tooltip>
-  );
-}
-
-function ExportQueueStartButton() {
-  const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const { summary } = useExportQueue();
-
-  return (
-    <Button
-      disabled={summary.queued === 0}
-      onClick={() => void dispatch(startExportQueue())}
-      type="button"
-    >
-      {t("queue.actions.startQueue")}
-    </Button>
   );
 }
 

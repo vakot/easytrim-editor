@@ -6,6 +6,7 @@ import { usePreferencesCommandGroups } from "./preferences";
 import { usePreviewCommandGroups } from "./preview";
 import { useQueueCommandGroups } from "./queue";
 import { useSourceCommandGroups } from "./source";
+import { useWorkspaceViewCommandGroups } from "./workspace-views";
 
 function useApplicationCommandGroups() {
   const file = useFileCommandGroups();
@@ -16,6 +17,7 @@ function useApplicationCommandGroups() {
   const layout = useLayoutCommandGroups();
   const preview = usePreviewCommandGroups();
   const source = useSourceCommandGroups();
+  const workspaceViews = useWorkspaceViewCommandGroups();
   return [
     ...file,
     ...help,
@@ -25,6 +27,7 @@ function useApplicationCommandGroups() {
     ...layout,
     ...preview,
     ...source,
+    ...workspaceViews,
   ] as const;
 }
 

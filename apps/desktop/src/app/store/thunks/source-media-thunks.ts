@@ -199,9 +199,54 @@ const thumbnailQueue: Array<{ instanceId: string; sourcePath: string }> = [];
 const thumbnailRequestsInFlight = new Set<string>();
 const activeThumbnailRequests = new Set<string>();
 const thumbnailDemand = new Set<string>();
+const thumbnailDemandByConsumer = new Map<string, Set<string>>();
+const unscopedThumbnailDemand = new Set<string>();
 const thumbnailLastUsed = new Map<string, number>();
 let activeThumbnailRequestCount = 0;
 let thumbnailAccessSequence = 0;
+
+function addThumbnailDemand(instanceId: string, consumerId?: string) {
+  if (!consumerId) {
+    unscopedThumbnailDemand.add(instanceId);
+    thumbnailDemand.add(instanceId);
+    return;
+  }
+
+  let consumerDemand = thumbnailDemandByConsumer.get(consumerId);
+  if (!consumerDemand) {
+    consumerDemand = new Set();
+    thumbnailDemandByConsumer.set(consumerId, consumerDemand);
+  }
+
+  consumerDemand.add(instanceId);
+  thumbnailDemand.add(instanceId);
+}
+
+function removeThumbnailDemand(instanceId: string, consumerId?: string) {
+  if (consumerId) {
+    const consumerDemand = thumbnailDemandByConsumer.get(consumerId);
+    consumerDemand?.delete(instanceId);
+    if (consumerDemand?.size === 0) thumbnailDemandByConsumer.delete(consumerId);
+  } else {
+    unscopedThumbnailDemand.delete(instanceId);
+  }
+
+  const hasConsumerDemand = [...thumbnailDemandByConsumer.values()].some((demand) =>
+    demand.has(instanceId),
+  );
+  if (!unscopedThumbnailDemand.has(instanceId) && !hasConsumerDemand) {
+    thumbnailDemand.delete(instanceId);
+  }
+}
+
+function removeAllThumbnailDemand(instanceId: string) {
+  unscopedThumbnailDemand.delete(instanceId);
+  for (const [consumerId, demand] of thumbnailDemandByConsumer) {
+    demand.delete(instanceId);
+    if (demand.size === 0) thumbnailDemandByConsumer.delete(consumerId);
+  }
+  thumbnailDemand.delete(instanceId);
+}
 
 function touchThumbnail(instanceId: string) {
   thumbnailLastUsed.set(instanceId, ++thumbnailAccessSequence);
@@ -245,9 +290,11 @@ function ensureThumbnailPoolRoom(dispatch: AppDispatch, getState: () => RootStat
 }
 
 const releaseImportedSourceThumbnailDemand =
-  (instanceId: string): AppThunk<void> =>
+  (instanceId: string, consumerId?: string): AppThunk<void> =>
   (dispatch, getState) => {
-    thumbnailDemand.delete(instanceId);
+    removeThumbnailDemand(instanceId, consumerId);
+    if (thumbnailDemand.has(instanceId)) return;
+
     if (!activeThumbnailRequests.has(instanceId)) {
       const queueIndex = thumbnailQueue.findIndex((request) => request.instanceId === instanceId);
       if (queueIndex >= 0) {
@@ -265,7 +312,7 @@ const releaseImportedSourceThumbnailDemand =
 const releaseImportedSourceThumbnailForInstance =
   (instanceId: string): AppThunk<void> =>
   (dispatch, getState) => {
-    thumbnailDemand.delete(instanceId);
+    removeAllThumbnailDemand(instanceId);
     const queueIndex = thumbnailQueue.findIndex((request) => request.instanceId === instanceId);
     if (queueIndex >= 0) thumbnailQueue.splice(queueIndex, 1);
     if (!activeThumbnailRequests.has(instanceId)) thumbnailRequestsInFlight.delete(instanceId);
@@ -377,7 +424,7 @@ function thumbnailDemandData(source: ThumbnailDemandSource) {
 }
 
 const prepareImportedSourceThumbnailsRequested =
-  (instances: ThumbnailDemandSource[]): AppThunk<void> =>
+  (instances: ThumbnailDemandSource[], consumerId?: string): AppThunk<void> =>
   (dispatch, getState) => {
     const importedThumbnails = selectImportedSourceThumbnails(getState());
     for (const source of instances) {
@@ -385,7 +432,7 @@ const prepareImportedSourceThumbnailsRequested =
       const current = selectEditingInstanceById(getState(), demand.id);
       if (!current || current.sourceAvailability !== "available") continue;
 
-      thumbnailDemand.add(demand.id);
+      addThumbnailDemand(demand.id, consumerId);
 
       const currentThumbnail = importedThumbnails[demand.id];
       if (currentThumbnail?.status === "ready") {

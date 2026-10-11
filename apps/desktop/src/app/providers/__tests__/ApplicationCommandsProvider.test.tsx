@@ -70,14 +70,14 @@ const state = {
     mergeAudioEnabledDefault: false,
     primaryColor: "#efbf04",
     segmentPlaybackEnabledDefault: true,
-    sidebarLayout: { left: ["sources", "activity"], right: [] },
+    sidebarLayout: { left: ["sources"], right: ["activity"] },
     stripMetadataOnExport: false,
     theme: "system",
     uiScalePercent: 100,
   },
   export: { availableQueueFinishActions: ["exit", "nothing"], queueFinishAction: "nothing" },
   source: {
-    media: {},
+    media: { audioStreams: [] },
     source: { displayName: "source.mp4", sourcePath: "C:/source.mp4" },
     status: "ready",
   },
@@ -130,7 +130,9 @@ vi.mock("@/app/hooks/useAppUpdates", () => ({
 vi.mock("@/components/ui/resizable", () => ({
   usePanelCommand: (panelIds: string | string[]) => {
     mocks.panelCommandIds.push(panelIds);
-    const isAvailable = panelIds !== "workspace-right-sidebar";
+    const isAvailable =
+      panelIds !== "workspace-right-sidebar" && panelIds !== "editor-source-export-queue";
+
     return {
       isAvailable,
       isCollapsed: false,
@@ -149,6 +151,8 @@ vi.mock("@/lib/diagnostics", () => ({
   diagnostics: { error: mocks.diagnosticsError },
 }));
 
+import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
+import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";
@@ -159,6 +163,7 @@ import { SettingsDialogProvider } from "../SettingsDialogProvider";
 function RuntimeProbe() {
   const { commands, executeCommand } = useApplicationCommands();
   const { isSettingsOpen } = useSettingsDialog();
+  const { dialogViewId, dockPlacementRequest } = useWorkspaceViews();
 
   return (
     <div>
@@ -195,6 +200,22 @@ function RuntimeProbe() {
       <button onClick={() => void executeCommand("open-settings", "palette")} type="button">
         open-settings-palette
       </button>
+      <button
+        onClick={() => void executeCommand("open-workspace-view-activity", "menu")}
+        type="button"
+      >
+        open-workspace-view-activity-menu
+      </button>
+      <button
+        onClick={() => void executeCommand("dock-workspace-view-exportQueue", "menu")}
+        type="button"
+      >
+        dock-workspace-view-exportQueue-menu
+      </button>
+      {dialogViewId ? <output data-testid="open-workspace-view">{dialogViewId}</output> : null}
+      {dockPlacementRequest ? (
+        <output data-testid="dock-workspace-view">{dockPlacementRequest.viewId}</output>
+      ) : null}
       {isSettingsOpen ? <span data-testid="settings-open-from-command" /> : null}
     </div>
   );
@@ -204,9 +225,11 @@ function runtimeUi() {
   return (
     <EditorRuntimeTestProvider>
       <SettingsDialogProvider>
-        <ApplicationCommandsProvider>
-          <RuntimeProbe />
-        </ApplicationCommandsProvider>
+        <WorkspaceViewsProvider>
+          <ApplicationCommandsProvider>
+            <RuntimeProbe />
+          </ApplicationCommandsProvider>
+        </WorkspaceViewsProvider>
       </SettingsDialogProvider>
     </EditorRuntimeTestProvider>
   );
@@ -235,6 +258,7 @@ describe("ApplicationCommandsProvider", () => {
     state.source.status = "ready";
     state.preferences.activityFeedView = "default";
     state.preferences.layoutDensity = "default";
+    state.preferences.sidebarLayout = { left: ["sources"], right: ["activity"] };
     state.preferences.autoStartQueueEnabled = true;
     state.preferences.deleteSourceOnRenderFinish = false;
     state.preferences.theme = "system";
@@ -253,7 +277,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(63);
+    ).toHaveLength(75);
     expect(
       screen
         .getAllByRole("button")
@@ -373,6 +397,22 @@ describe("ApplicationCommandsProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 
     expect(mocks.requestSourceDelete).toHaveBeenCalledWith({ sourceIds: ["source-1"] });
+  });
+
+  it("routes Open and Docks through the shared workspace view commands", async () => {
+    renderRuntime();
+
+    expect(screen.getByRole("button", { name: "open-workspace-view-activity" })).toHaveAttribute(
+      "data-surfaces",
+      "menu,palette",
+    );
+    expect(screen.getByRole("button", { name: "dock-workspace-view-exportQueue" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "open-workspace-view-activity-menu" }));
+    expect(screen.getByTestId("open-workspace-view")).toHaveTextContent("activity");
+
+    fireEvent.click(screen.getByRole("button", { name: "dock-workspace-view-exportQueue-menu" }));
+    expect(screen.getByTestId("dock-workspace-view")).toHaveTextContent("exportQueue");
   });
 
   it("opens Settings through the application command", async () => {
@@ -515,8 +555,8 @@ describe("ApplicationCommandsProvider", () => {
     expect(mocks.dispatch).not.toHaveBeenCalled();
   });
 
-  it("resets layout preferences and panels from the menu surface", () => {
-    state.preferences.layoutDensity = "compact";
+  it("resets registered panels when an undocked view panel is unavailable", () => {
+    mocks.panelsAreReset = false;
     renderRuntime();
 
     fireEvent.click(screen.getByRole("button", { name: "reset-layout-menu" }));
@@ -524,19 +564,25 @@ describe("ApplicationCommandsProvider", () => {
     expect(mocks.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "preferences/layoutReset" }),
     );
-    expect(mocks.resetPanels).toHaveBeenCalledTimes(3);
+    expect(mocks.resetPanels).toHaveBeenCalledTimes(4);
     expect(mocks.panelCommandIds).toContain("workspace-left-sidebar");
     expect(mocks.panelCommandIds).toContain("workspace-right-sidebar");
     expect(mocks.panelCommandIds).toContain("editor-stage-timeline");
-    expect(mocks.panelCommandIds).toContainEqual([
-      "editor-source-imported-sources",
-      "editor-source-activity-feed",
-    ]);
+    expect(mocks.panelCommandIds).toContain("editor-source-imported-sources");
+    expect(mocks.panelCommandIds).toContain("editor-source-activity-feed");
+    expect(mocks.panelCommandIds).toContain("editor-source-export-queue");
   });
 
   it("enables layout reset when density or activity-feed view differs from its default", () => {
     state.preferences.layoutDensity = "compact";
     state.preferences.activityFeedView = "branch";
+    renderRuntime();
+
+    expect(screen.getByRole("button", { name: "reset-layout" })).toBeEnabled();
+  });
+
+  it("enables layout reset when right-sidebar contents differ from their default", () => {
+    state.preferences.sidebarLayout = { left: ["sources"], right: ["exportQueue"] };
     renderRuntime();
 
     expect(screen.getByRole("button", { name: "reset-layout" })).toBeEnabled();

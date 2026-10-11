@@ -23,12 +23,18 @@ function useResetLayoutCommand() {
   const leftSidebarPanel = usePanelCommand("workspace-left-sidebar");
   const rightSidebarPanel = usePanelCommand("workspace-right-sidebar");
   const timelinePanel = usePanelCommand("editor-stage-timeline");
-  const sourceViewsPanel = usePanelCommand([
-    "editor-source-imported-sources",
-    "editor-source-activity-feed",
-  ]);
+  const importedSourcesPanel = usePanelCommand("editor-source-imported-sources");
+  const activityFeedPanel = usePanelCommand("editor-source-activity-feed");
+  const exportQueuePanel = usePanelCommand("editor-source-export-queue");
 
-  const panelCommands = [leftSidebarPanel, rightSidebarPanel, timelinePanel, sourceViewsPanel];
+  const panelCommands = [
+    leftSidebarPanel,
+    rightSidebarPanel,
+    timelinePanel,
+    importedSourcesPanel,
+    activityFeedPanel,
+    exportQueuePanel,
+  ];
 
   const label = t("common.actions.resetToDefault");
   const hasLayoutPreferencesToReset =
@@ -36,7 +42,8 @@ function useResetLayoutCommand() {
     layoutDensity !== DEFAULT_PREFERENCES.layoutDensity ||
     sidebarLayout.left.length !== DEFAULT_SIDEBAR_LAYOUT.left.length ||
     sidebarLayout.left.some((viewId, index) => viewId !== DEFAULT_SIDEBAR_LAYOUT.left[index]) ||
-    sidebarLayout.right.length !== DEFAULT_SIDEBAR_LAYOUT.right.length;
+    sidebarLayout.right.length !== DEFAULT_SIDEBAR_LAYOUT.right.length ||
+    sidebarLayout.right.some((viewId, index) => viewId !== DEFAULT_SIDEBAR_LAYOUT.right[index]);
 
   return {
     enabled:

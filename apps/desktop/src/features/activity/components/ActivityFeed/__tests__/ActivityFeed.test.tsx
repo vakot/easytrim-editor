@@ -4,10 +4,27 @@ import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
 const restoreSourceFromTrash = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const openFileLocation = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const activityFeedState = vi.hoisted(() => ({
+  currentAppVersion: "1.3.0",
+  currentSessionId: null as string | null,
+  entries: [] as unknown[],
+  sessions: [] as unknown[],
+}));
 
 vi.mock("@/lib/tauri/media", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/tauri/media")>()),
+  openFileLocation,
   restoreSourceFromTrash,
+}));
+
+vi.mock("@/lib/app-version.utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/app-version.utils")>()),
+  getCurrentVersion: () => activityFeedState.currentAppVersion,
+}));
+
+vi.mock("../../../hooks/useActivityFeed", () => ({
+  useActivityFeed: () => activityFeedState,
 }));
 
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
@@ -17,7 +34,7 @@ import { activityFeedViewChanged } from "@/app/store/slices/preferences-slice";
 import { createAppStore } from "@/app/store/store";
 
 import type { ActivityEntry } from "../../../lib/activity-projection";
-import { ActivityFeedView } from "../ActivityFeed";
+import { ActivityFeed, ActivityFeedContent, ActivityFeedList } from "../ActivityFeed";
 
 const session = {
   appVersion: "1.3.0",
@@ -27,7 +44,6 @@ const session = {
 
 function renderActivity(
   entry: ActivityEntry,
-  onAction = vi.fn(),
   activityFeedView: "default" | "compact" | "branch" = "default",
   options: {
     additionalEntries?: ActivityEntry[];
@@ -37,19 +53,21 @@ function renderActivity(
   } = {},
 ) {
   const currentSessionId = options.currentSessionId ?? "current-session";
+  activityFeedState.currentAppVersion = options.currentAppVersion ?? "1.3.0";
+  activityFeedState.currentSessionId = currentSessionId;
+  activityFeedState.entries = [entry, ...(options.additionalEntries ?? [])];
+  activityFeedState.sessions = options.sessions ?? [session];
   const store = createAppStore();
   store.dispatch(activityFeedViewChanged(activityFeedView));
   return render(
     <Provider store={store}>
       <TooltipProvider delayDuration={0}>
         <ResizablePanelContextProvider>
-          <ActivityFeedView
-            currentAppVersion={options.currentAppVersion ?? "1.3.0"}
-            currentSessionId={currentSessionId}
-            entries={[entry, ...(options.additionalEntries ?? [])]}
-            onAction={onAction}
-            sessions={options.sessions ?? [session]}
-          />
+          <ActivityFeed>
+            <ActivityFeedContent>
+              <ActivityFeedList />
+            </ActivityFeedContent>
+          </ActivityFeed>
         </ResizablePanelContextProvider>
       </TooltipProvider>
     </Provider>,
@@ -106,7 +124,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
     }));
 
     try {
-      const { container } = renderActivity(entries[0]!, vi.fn(), "default", {
+      const { container } = renderActivity(entries[0]!, "default", {
         additionalEntries: [entries[1]!],
         sessions,
       });
@@ -142,7 +160,6 @@ describe("ActivityFeedView file lifecycle entries", () => {
           status: "completed",
           title: "File deleted",
         },
-        vi.fn(),
         "default",
         { currentSessionId: "current-session", sessions: [oldSession] },
       );
@@ -184,7 +201,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
     }));
 
     try {
-      const { container } = renderActivity(entries[0]!, vi.fn(), "default", {
+      const { container } = renderActivity(entries[0]!, "default", {
         additionalEntries: [entries[1]!],
         sessions,
       });
@@ -226,7 +243,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
     }));
 
     try {
-      const { container } = renderActivity(entries[0]!, vi.fn(), "default", {
+      const { container } = renderActivity(entries[0]!, "default", {
         additionalEntries: [entries[1]!],
         sessions,
       });
@@ -274,7 +291,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
     }));
 
     try {
-      const { container } = renderActivity(entries[0]!, vi.fn(), "default", {
+      const { container } = renderActivity(entries[0]!, "default", {
         additionalEntries: [entries[1]!],
         sessions,
       });
@@ -314,7 +331,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
     }));
 
     try {
-      const { container } = renderActivity(entries[0]!, vi.fn(), "default", {
+      const { container } = renderActivity(entries[0]!, "default", {
         additionalEntries: [entries[1]!],
         sessions,
       });
@@ -377,7 +394,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
     };
 
     try {
-      const { container } = renderActivity(currentEntry, vi.fn(), "default", {
+      const { container } = renderActivity(currentEntry, "default", {
         additionalEntries: [historicalEntry, olderHistoricalEntry],
         sessions: [session, historicalSession, olderHistoricalSession],
       });
@@ -423,28 +440,21 @@ describe("ActivityFeedView file lifecycle entries", () => {
     ["Fast Export", "fast-export", "Fast Export completed"],
     ["Optimized Export", "optimized-export", "Optimized export completed"],
   ] as const)("offers the Open action for a completed %s", async (_label, kind, title) => {
-    const onAction = vi.fn();
     const user = userEvent.setup();
-    renderActivity(
-      {
-        action: { kind: "open", path: "C:/Exports/result.mp4" },
-        id: `current-session:${kind}:ffmpeg.export`,
-        kind,
-        path: "C:/Exports/result.mp4",
-        sessionId: "current-session",
-        startedAt: "2026-08-31T08:30:00.000Z",
-        status: "completed",
-        title,
-      },
-      onAction,
-    );
+    renderActivity({
+      action: { kind: "open", path: "C:/Exports/result.mp4" },
+      id: `current-session:${kind}:ffmpeg.export`,
+      kind,
+      path: "C:/Exports/result.mp4",
+      sessionId: "current-session",
+      startedAt: "2026-08-31T08:30:00.000Z",
+      status: "completed",
+      title,
+    });
 
     await user.click(screen.getByRole("button", { name: "Open" }));
 
-    expect(onAction).toHaveBeenCalledWith({
-      kind: "open",
-      path: "C:/Exports/result.mp4",
-    });
+    expect(openFileLocation).toHaveBeenCalledWith("C:/Exports/result.mp4");
   });
 
   it("renders a branch header and muted rows without repeating the path", () => {
@@ -459,7 +469,6 @@ describe("ActivityFeedView file lifecycle entries", () => {
         status: "completed",
         title: "Render completed",
       },
-      vi.fn(),
       "branch",
     );
 
@@ -475,13 +484,11 @@ describe("ActivityFeedView file lifecycle entries", () => {
   });
 
   it("uses the shared restore action after a completed deletion", async () => {
-    const onAction = vi.fn();
     const user = userEvent.setup();
-    renderActivity(fileEntry("completed"), onAction);
+    renderActivity(fileEntry("completed"));
 
     await user.click(screen.getByRole("button", { name: "Restore" }));
 
-    expect(onAction).not.toHaveBeenCalled();
     expect(restoreSourceFromTrash).toHaveBeenCalledWith("C:/Media/source.mp4");
   });
 

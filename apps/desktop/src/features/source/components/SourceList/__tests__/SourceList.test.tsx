@@ -131,11 +131,13 @@ describe("source queue controls", () => {
   it("renders file, folder, and drag-and-drop actions when no sources are imported", () => {
     render(
       <Provider store={createAppStore()}>
-        <SourceList />
+        <SourceList>
+          <SourceListContent />
+        </SourceList>
       </Provider>,
     );
 
-    expect(screen.getByRole("region", { name: "Source explorer" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Imported Sources" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Open File/ })).toHaveTextContent("CtrlO");
     expect(screen.getByRole("button", { name: /Open Folder/ })).toHaveTextContent("CtrlK");
     expect(screen.getByText("Drag and drop videos here")).toBeInTheDocument();
@@ -262,12 +264,8 @@ describe("source queue controls", () => {
       <TooltipProvider>
         <Provider store={store}>
           <SourceList>
-            {() => (
-              <>
-                <SourceListCloseAll />
-                <SourceListContent />
-              </>
-            )}
+            <SourceListCloseAll />
+            <SourceListContent />
           </SourceList>
         </Provider>
       </TooltipProvider>,
@@ -432,6 +430,9 @@ describe("source queue controls", () => {
 
     await user.clear(screen.getByRole("searchbox", { name: "Search sources" }));
     await waitFor(() => expect(virtuosoHarness.props?.data).toHaveLength(12));
+    await waitFor(() => {
+      expect(thumbnailActions.prepare).toHaveBeenLastCalledWith(["source-1", "source-2"]);
+    });
     thumbnailActions.prepare.mockClear();
     await user.click(screen.getByRole("button", { name: "Mock enter scroll seek" }));
     expect(document.querySelectorAll('[role="presentation"]')).toHaveLength(3);

@@ -20,6 +20,7 @@ import {
   SETTINGS_SHORTCUT,
 } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
+import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
@@ -87,9 +88,11 @@ function TooltipTestProvider({ children, store }: { children: ReactNode; store: 
               <PreviewTransformProvider>
                 <ChangelogProvider>
                   <ResizablePanelContextProvider>
-                    <SettingsDialogProvider>
-                      <ApplicationCommandsProvider>{children}</ApplicationCommandsProvider>
-                    </SettingsDialogProvider>
+                    <WorkspaceViewsProvider>
+                      <SettingsDialogProvider>
+                        <ApplicationCommandsProvider>{children}</ApplicationCommandsProvider>
+                      </SettingsDialogProvider>
+                    </WorkspaceViewsProvider>
                   </ResizablePanelContextProvider>
                 </ChangelogProvider>
               </PreviewTransformProvider>
@@ -401,7 +404,7 @@ describe("VideoPreview", () => {
     frameBounds.mockRestore();
   });
 
-  it("uses target frame bounds to map crop dragging during a frame morph", () => {
+  it("uses the crop output bounds to map dragging while the preview frame morphs", () => {
     const store = createAppStore();
     store.dispatch(
       cropChanged({
@@ -411,7 +414,10 @@ describe("VideoPreview", () => {
     );
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
     const viewport = container.querySelector('[aria-label="Video crop preview"]') as HTMLElement;
-    vi.spyOn(viewport, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 800, 600));
+    vi.spyOn(
+      container.querySelector("[data-preview-viewport]")!,
+      "getBoundingClientRect",
+    ).mockReturnValue(new DOMRect(0, 0, 800, 600));
 
     openCropTool(viewport);
 

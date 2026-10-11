@@ -4,15 +4,15 @@ import { defineApplicationCommandGroup } from "@/app/commands/core/application-c
 
 import { useAutoStartQueueCommand } from "./definitions/auto-start-queue.command";
 import { useDeleteSourceOnFinishCommand } from "./definitions/delete-source-on-finish.command";
-import { useOpenExportQueueCommand } from "./definitions/open-export-queue.command";
 import { useQueueFinishCommands } from "./definitions/queue-finish.commands";
 import { useResetQueueSettingsCommand } from "./definitions/reset-queue-settings.command";
+import { useStartQueueCommand } from "./definitions/start-queue.command";
 
 function useQueueCommandGroups() {
   const { t } = useTranslation();
   const deleteSource = useDeleteSourceOnFinishCommand();
   const autoStartQueue = useAutoStartQueueCommand();
-  const openExportQueue = useOpenExportQueueCommand();
+  const startQueue = useStartQueueCommand();
   const finishActions = useQueueFinishCommands();
   const resetQueueSettings = useResetQueueSettingsCommand();
   return [
@@ -27,7 +27,7 @@ function useQueueCommandGroups() {
       finishActions,
     ),
     defineApplicationCommandGroup("queue", t("queue.title"), [
-      openExportQueue,
+      startQueue,
       autoStartQueue,
       resetQueueSettings,
     ]),

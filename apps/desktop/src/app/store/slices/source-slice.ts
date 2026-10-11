@@ -113,6 +113,7 @@ const selectSourceSelection = (state: RootState): SourceRef | null => state.sour
 const selectSourceMedia = (state: RootState): MediaInfo | null => state.source.media;
 const selectHasAudio = (state: RootState): boolean =>
   (state.source.media?.audioStreams.length ?? 0) > 0;
+
 const selectAudioPanelStreamCount = (state: RootState): number =>
   state.source.audioPanelStreamCount;
 
