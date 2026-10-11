@@ -1,11 +1,10 @@
 import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 
-import type { SidebarViewId } from "@/app/layout/lib/sidebar-layout";
-
 import {
   type DockPlacementRequest,
   WorkspaceViewsContext,
 } from "@/app/contexts/workspace-views-context";
+import type { SidebarViewId } from "@/app/layout/lib/sidebar-layout";
 
 function WorkspaceViewsProvider({ children }: { children: ReactNode }) {
   const [dialogViewId, setDialogViewId] = useState<SidebarViewId | null>(null);
