@@ -7,6 +7,8 @@ import { ResizablePanelContextProvider, usePanelCommand } from "@/components/ui/
 
 import { WorkspaceViewsProvider } from "@/app/contexts/workspace-views-provider";
 import { AppLayout } from "@/app/layout/AppLayout";
+import { DEFAULT_SIDEBAR_LAYOUT, type SidebarLayout } from "@/app/layout/lib/sidebar-layout";
+import { DEFAULT_PREFERENCES } from "@/app/preferences";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 
 const draggableElements = vi.hoisted(() => new Map<string, HTMLElement>());
@@ -325,8 +327,16 @@ function setBounds(element: HTMLElement, bounds: DOMRect) {
   });
 }
 
-function renderAppLayout() {
-  const store = configureStore({ reducer: { preferences: preferencesReducer } });
+const TWO_VIEWS_ON_LEFT_LAYOUT: SidebarLayout = { left: ["sources", "activity"], right: [] };
+
+function renderAppLayout(sidebarLayout = TWO_VIEWS_ON_LEFT_LAYOUT) {
+  const store = configureStore({
+    reducer: { preferences: preferencesReducer },
+    preloadedState: {
+      preferences: { ...DEFAULT_PREFERENCES, sidebarLayout },
+    },
+  });
+
   vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
     x: 0,
     y: 0,
@@ -451,6 +461,26 @@ function expectPanelStructure(
 }
 
 describe("AppLayout sidebar drag and drop", () => {
+  it("starts with Sources on the left and Activity on the right without Export Queue", () => {
+    const store = renderAppLayout(DEFAULT_SIDEBAR_LAYOUT);
+
+    expect(store.getState().preferences.sidebarLayout).toEqual({
+      left: ["sources"],
+      right: ["activity"],
+    });
+    expect(
+      screen
+        .getByRole("complementary", { name: "Left sidebar" })
+        .querySelector('[data-sidebar-view="sources"]'),
+    ).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole("complementary", { name: "Right sidebar" })
+        .querySelector('[data-sidebar-view="activity"]'),
+    ).toBeInTheDocument();
+    expect(document.querySelector('[data-sidebar-view="exportQueue"]')).toBeNull();
+  });
+
   it("opens a view in a dialog only after selecting it", async () => {
     renderAppLayout();
 

@@ -210,6 +210,9 @@ describe("AppLayout drag and resize integration", () => {
       removeListener: () => undefined,
     }));
     const store = configureStore({ reducer: { preferences: preferencesReducer } });
+    store.dispatch(
+      sidebarLayoutChanged({ destination: "left", insertionIndex: 1, viewId: "activity" }),
+    );
     localStorage.setItem(
       "react-resizable-panels:workspace:workspace-left-sidebar:workspace-content",
       JSON.stringify({ "workspace-left-sidebar": 30, "workspace-content": 70 }),

@@ -78,8 +78,8 @@ describe("preferences Redux domain", () => {
     );
 
     expect(afterAddingQueue.sidebarLayout).toEqual({
-      left: ["activity"],
-      right: ["exportQueue"],
+      left: [],
+      right: ["exportQueue", "activity"],
     });
   });
 

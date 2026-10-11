@@ -23,8 +23,8 @@ interface SidebarViewBounds {
 }
 
 const DEFAULT_SIDEBAR_LAYOUT: SidebarLayout = {
-  left: ["sources", "activity"],
-  right: [],
+  left: ["sources"],
+  right: ["activity"],
 };
 
 function isSidebarId(value: unknown): value is SidebarId {
@@ -44,7 +44,10 @@ function normalizeSidebarLayout(value: unknown): SidebarLayout {
     !Array.isArray(value.left) ||
     !Array.isArray(value.right)
   ) {
-    return { left: [...DEFAULT_SIDEBAR_LAYOUT.left], right: [] };
+    return {
+      left: [...DEFAULT_SIDEBAR_LAYOUT.left],
+      right: [...DEFAULT_SIDEBAR_LAYOUT.right],
+    };
   }
 
   const seen = new Set<SidebarViewId>();

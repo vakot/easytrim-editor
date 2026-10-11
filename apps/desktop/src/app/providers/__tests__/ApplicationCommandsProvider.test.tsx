@@ -70,7 +70,7 @@ const state = {
     mergeAudioEnabledDefault: false,
     primaryColor: "#efbf04",
     segmentPlaybackEnabledDefault: true,
-    sidebarLayout: { left: ["sources", "activity"], right: [] },
+    sidebarLayout: { left: ["sources"], right: ["activity"] },
     stripMetadataOnExport: false,
     theme: "system",
     uiScalePercent: 100,
