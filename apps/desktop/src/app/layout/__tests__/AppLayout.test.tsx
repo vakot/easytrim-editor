@@ -486,7 +486,9 @@ describe("AppLayout sidebar drag and drop", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Place Export Queue" }));
     expect(
-      screen.getByText("Move to a sidebar and click to place. Press Escape to cancel."),
+      screen.getByText(
+        "Use Left or Right to choose a sidebar and Up or Down for position, then press Enter or D to place. You can also move the pointer and click. Press Escape to cancel.",
+      ),
     ).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Editor action" }), {
@@ -502,7 +504,9 @@ describe("AppLayout sidebar drag and drop", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(store.getState().preferences.sidebarLayout.right).toEqual([]);
     expect(
-      screen.queryByText("Move to a sidebar and click to place. Press Escape to cancel."),
+      screen.queryByText(
+        "Use Left or Right to choose a sidebar and Up or Down for position, then press Enter or D to place. You can also move the pointer and click. Press Escape to cancel.",
+      ),
     ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Place Export Queue" }));
@@ -525,6 +529,42 @@ describe("AppLayout sidebar drag and drop", () => {
     );
     expect(workspaceAction).not.toHaveBeenCalled();
     window.removeEventListener("editor-action", workspaceAction);
+  });
+
+  it.each(["Enter", "d"])("places a dock with the keyboard using %s", async (confirmKey) => {
+    const store = renderAppLayout();
+    const workspace = document.getElementById("workspace")!;
+    const rightTarget = document.querySelector<HTMLElement>(
+      '[data-sidebar-empty-drop-target="right"]',
+    )!;
+
+    const bounds = (left: number, right: number) =>
+      ({
+        bottom: 800,
+        height: 800,
+        left,
+        right,
+        top: 0,
+        width: right - left,
+        x: left,
+        y: 0,
+      }) as DOMRect;
+
+    setBounds(workspace, bounds(0, 1280));
+    setBounds(rightTarget, bounds(640, 1280));
+    fireEvent.click(screen.getByRole("button", { name: "Place Export Queue" }));
+
+    fireEvent.keyDown(document, { key: "ArrowRight" });
+    expect(
+      document.querySelector('[data-sidebar-empty-drop-indicator="right"]'),
+    ).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: confirmKey });
+
+    await waitFor(() => {
+      expect(store.getState().preferences.sidebarLayout.right).toEqual(["exportQueue"]);
+    });
+    expect(document.querySelector('[data-sidebar-empty-drop-indicator="right"]')).toBeNull();
+    expect(document.querySelector("[data-sidebar-drag-preview]")).toBeNull();
   });
 
   it("renders separators only for sidebars that are present", async () => {

@@ -287,7 +287,7 @@ export const en = {
     openView: "Open",
     docks: "Docks",
     dockPlacement: {
-      instructions: "Move to a sidebar and click to place. Press Escape to cancel.",
+      instructions: "Use Left or Right to choose a sidebar and Up or Down for position, then press Enter or D to place. You can also move the pointer and click. Press Escape to cancel.",
     },
     dragView: "Drag {{view}}, or press D then use the arrow keys to move it; D to drop or Escape to cancel",
     collapseAndDragView: "Collapse {{view}}; drag or press D then use the arrow keys to move it; D to drop or Escape to cancel",

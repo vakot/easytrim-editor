@@ -255,7 +255,13 @@ function useSidebarDragAndDrop() {
       const viewId = dockPlacementViewId.current;
       if (!viewId || activeDragMode.current !== "placement") return;
 
-      const placement = canceled ? null : getDockPlacement(viewId, position);
+      const keyboardPlacement = keyboardSidebarDrag.current;
+      const placement = canceled
+        ? null
+        : keyboardPlacement?.viewId === viewId
+          ? keyboardPlacement.placement
+          : getDockPlacement(viewId, position);
+
       for (const side of dragSidebarExpansion.current?.expandedByDrag ?? []) {
         const keepExpanded = placement?.destination === side;
         sidebarVisibility.setSidebarExpanded(side, keepExpanded, { persist: keepExpanded });
@@ -283,6 +289,7 @@ function useSidebarDragAndDrop() {
       const viewId = dockPlacementViewId.current;
       if (!viewId || activeDragMode.current !== "placement") return;
 
+      keyboardSidebarDrag.current = null;
       const position = { x: event.clientX, y: event.clientY };
       dockPlacementPosition.current = position;
       const placement = getDockPlacement(viewId, position);
@@ -310,7 +317,90 @@ function useSidebarDragAndDrop() {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       stopWorkspaceAction(event);
-      if (event.key === "Escape") finishDockPlacement(true);
+      if (event.key === "Escape") {
+        finishDockPlacement(true);
+        return;
+      }
+
+      const viewId = dockPlacementViewId.current;
+      if (!viewId || activeDragMode.current !== "placement") return;
+
+      if (
+        event.key !== "ArrowUp" &&
+        event.key !== "ArrowDown" &&
+        event.key !== "ArrowLeft" &&
+        event.key !== "ArrowRight"
+      ) {
+        if (
+          event.key === "Enter" ||
+          (!event.repeat &&
+            event.key.toLowerCase() === "d" &&
+            !event.altKey &&
+            !event.ctrlKey &&
+            !event.metaKey)
+        ) {
+          if (keyboardSidebarDrag.current?.placement) finishDockPlacement(false);
+        }
+        return;
+      }
+
+      const current = keyboardSidebarDrag.current;
+      const destination: SidebarId =
+        event.key === "ArrowLeft"
+          ? "left"
+          : event.key === "ArrowRight"
+            ? "right"
+            : (current?.destination ?? "left");
+
+      const maximumIndex = sidebarLayout[destination].filter((item) => item !== viewId).length;
+      const currentIndex = current?.insertionIndex ?? 0;
+      const insertionIndex =
+        event.key === "ArrowUp"
+          ? Math.max(0, currentIndex - 1)
+          : event.key === "ArrowDown"
+            ? Math.min(maximumIndex, currentIndex + 1)
+            : Math.min(maximumIndex, currentIndex);
+
+      updateDragSidebarDestination(destination);
+      const placement = getKeyboardDropPlacement(viewId, destination, insertionIndex);
+      const initialPosition = current?.initialPosition ?? dockPlacementPosition.current;
+      keyboardSidebarDrag.current = {
+        destination,
+        initialPosition,
+        insertionIndex,
+        placement,
+        viewId,
+      };
+      setDropPlacement(placement);
+      setDragPreview({
+        position: getKeyboardPreviewPosition(
+          destination,
+          placement?.indicatorOffset,
+          dragGeometry.current.regionTops.get(destination),
+          initialPosition,
+        ),
+        viewId,
+      });
+
+      if (placement) {
+        const destinationTitle =
+          destination === "left" ? t("layout.leftSidebar") : t("layout.rightSidebar");
+
+        const availableSlots = maximumIndex + 1;
+        setKeyboardDragAnnouncement(
+          t("layout.keyboardDragPosition", {
+            count: availableSlots,
+            position: insertionIndex + 1,
+            sidebar: destinationTitle,
+            view:
+              viewId === "sources"
+                ? t("source.title")
+                : viewId === "activity"
+                  ? t("activity.title")
+                  : t("queue.title"),
+          }),
+        );
+      }
     };
 
     const handleResize = () =>
@@ -331,7 +421,15 @@ function useSidebarDragAndDrop() {
       document.removeEventListener("keydown", handleKeyDown, true);
       window.removeEventListener("resize", handleResize);
     };
-  }, [finishDockPlacement, getDockPlacement, isDockPlacementMode]);
+  }, [
+    finishDockPlacement,
+    getDockPlacement,
+    getKeyboardDropPlacement,
+    isDockPlacementMode,
+    sidebarLayout,
+    t,
+    updateDragSidebarDestination,
+  ]);
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {

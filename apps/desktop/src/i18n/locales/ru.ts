@@ -132,6 +132,7 @@ export const ru = {
     thumbnail: {
       accessibleLabel: "Миниатюра файла {{name}}",
     },
+    title: "Импортированные источники",
     errors: {
       restoringSourceFilesFromTrashIsNotSupportedOnThisPlatform: "Восстановление исходных файлов из корзины не поддерживается на этой платформе",
       selectedSourceLocationIsNotSupported: "Выбранное расположение источника не поддерживается",

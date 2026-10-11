@@ -130,7 +130,9 @@ vi.mock("@/app/hooks/useAppUpdates", () => ({
 vi.mock("@/components/ui/resizable", () => ({
   usePanelCommand: (panelIds: string | string[]) => {
     mocks.panelCommandIds.push(panelIds);
-    const isAvailable = panelIds !== "workspace-right-sidebar";
+    const isAvailable =
+      panelIds !== "workspace-right-sidebar" && panelIds !== "editor-source-export-queue";
+
     return {
       isAvailable,
       isCollapsed: false,
@@ -552,8 +554,8 @@ describe("ApplicationCommandsProvider", () => {
     expect(mocks.dispatch).not.toHaveBeenCalled();
   });
 
-  it("resets layout preferences and panels from the menu surface", () => {
-    state.preferences.layoutDensity = "compact";
+  it("resets registered panels when an undocked view panel is unavailable", () => {
+    mocks.panelsAreReset = false;
     renderRuntime();
 
     fireEvent.click(screen.getByRole("button", { name: "reset-layout-menu" }));
@@ -561,15 +563,13 @@ describe("ApplicationCommandsProvider", () => {
     expect(mocks.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "preferences/layoutReset" }),
     );
-    expect(mocks.resetPanels).toHaveBeenCalledTimes(3);
+    expect(mocks.resetPanels).toHaveBeenCalledTimes(4);
     expect(mocks.panelCommandIds).toContain("workspace-left-sidebar");
     expect(mocks.panelCommandIds).toContain("workspace-right-sidebar");
     expect(mocks.panelCommandIds).toContain("editor-stage-timeline");
-    expect(mocks.panelCommandIds).toContainEqual([
-      "editor-source-imported-sources",
-      "editor-source-activity-feed",
-      "editor-source-export-queue",
-    ]);
+    expect(mocks.panelCommandIds).toContain("editor-source-imported-sources");
+    expect(mocks.panelCommandIds).toContain("editor-source-activity-feed");
+    expect(mocks.panelCommandIds).toContain("editor-source-export-queue");
   });
 
   it("enables layout reset when density or activity-feed view differs from its default", () => {
