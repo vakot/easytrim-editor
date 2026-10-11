@@ -44,7 +44,7 @@ function ContextDockViewItem({ commandId }: { commandId: ApplicationCommandId })
 function MenubarDockViewItem({ commandId }: { commandId: ApplicationCommandId }) {
   return (
     <ApplicationCommandMenuItem asChild commandId={commandId}>
-      <MenubarCheckboxItem keepOpen>
+      <MenubarCheckboxItem>
         <ApplicationCommandLabel />
         <ApplicationCommandHint />
       </MenubarCheckboxItem>

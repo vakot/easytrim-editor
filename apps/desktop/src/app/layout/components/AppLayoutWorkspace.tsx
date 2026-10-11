@@ -55,17 +55,20 @@ function AppLayoutWorkspace({
         onlySaveAfterUserInteractions
         persisted
       >
-        {leftSidebarPresence.isMounted ? (
-          <ResizablePanel
-            className="ml-1.5 overflow-hidden!"
-            collapsedSize={0}
-            collapsible
-            defaultSize={workspaceSidebarWidths.left ?? "20.5rem"}
-            groupResizeBehavior="preserve-pixel-size"
-            id="workspace-left-sidebar"
-            maxSize="32rem"
-            minSize="20.5rem"
-          >
+        <ResizablePanel
+          className="ml-1.5 overflow-hidden!"
+          collapsedSize={0}
+          collapsible
+          defaultSize={
+            sidebarVisibility.hasLeftSidebar ? (workspaceSidebarWidths.left ?? "20.5rem") : "0px"
+          }
+          disabled={!sidebarVisibility.hasLeftSidebar}
+          groupResizeBehavior="preserve-pixel-size"
+          id="workspace-left-sidebar"
+          maxSize="32rem"
+          minSize="20.5rem"
+        >
+          {leftSidebarPresence.isMounted ? (
             <WorkspaceSidebarContent
               draggingViewId={dragPreviewViewId}
               dropPlacement={dropPlacement}
@@ -73,8 +76,8 @@ function AppLayoutWorkspace({
               viewHosts={viewHosts}
               views={sidebarLayout.left}
             />
-          </ResizablePanel>
-        ) : null}
+          ) : null}
+        </ResizablePanel>
 
         {leftSidebarPresence.isMounted ? (
           <AppLayoutSeparator
@@ -107,17 +110,20 @@ function AppLayoutWorkspace({
           />
         ) : null}
 
-        {rightSidebarPresence.isMounted ? (
-          <ResizablePanel
-            className="mr-1.5 overflow-hidden!"
-            collapsedSize={0}
-            collapsible
-            defaultSize={workspaceSidebarWidths.right ?? "20.5rem"}
-            groupResizeBehavior="preserve-pixel-size"
-            id="workspace-right-sidebar"
-            maxSize="32rem"
-            minSize="20.5rem"
-          >
+        <ResizablePanel
+          className="mr-1.5 overflow-hidden!"
+          collapsedSize={0}
+          collapsible
+          defaultSize={
+            sidebarVisibility.hasRightSidebar ? (workspaceSidebarWidths.right ?? "20.5rem") : "0px"
+          }
+          disabled={!sidebarVisibility.hasRightSidebar}
+          groupResizeBehavior="preserve-pixel-size"
+          id="workspace-right-sidebar"
+          maxSize="32rem"
+          minSize="20.5rem"
+        >
+          {rightSidebarPresence.isMounted ? (
             <WorkspaceSidebarContent
               draggingViewId={dragPreviewViewId}
               dropPlacement={dropPlacement}
@@ -125,8 +131,8 @@ function AppLayoutWorkspace({
               viewHosts={viewHosts}
               views={sidebarLayout.right}
             />
-          </ResizablePanel>
-        ) : null}
+          ) : null}
+        </ResizablePanel>
       </ResizablePanelGroup>
 
       {!sidebarVisibility.hasLeftSidebar ? (

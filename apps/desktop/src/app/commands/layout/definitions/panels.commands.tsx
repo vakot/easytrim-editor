@@ -5,30 +5,38 @@ import { usePanelCommand } from "@/components/ui/resizable";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectSidebarLayout } from "@/app/store/slices/preferences-slice";
 import { selectHasAudio } from "@/app/store/slices/source-slice";
 
 function usePanelCommands() {
   const { t } = useTranslation();
   const hasAudio = useAppSelector(selectHasAudio);
+  const sidebarLayout = useAppSelector(selectSidebarLayout);
+  const hasLeftSidebar = sidebarLayout.left.length > 0;
+  const hasRightSidebar = sidebarLayout.right.length > 0;
   const left = usePanelCommand("workspace-left-sidebar");
   const right = usePanelCommand("workspace-right-sidebar");
   const bottom = usePanelCommand("editor-stage-timeline");
   return [
     {
-      checked: !left.isCollapsed,
-      enabled: left.isAvailable,
+      checked: hasLeftSidebar && !left.isCollapsed,
+      enabled: left.isAvailable && hasLeftSidebar,
       icon: <PanelLeft aria-hidden="true" />,
-      run: left.toggle,
+      run: () => {
+        if (hasLeftSidebar) left.toggle();
+      },
       id: "toggle-left-panel" as const,
       label: t("layout.showLeftPanel"),
       searchTerms: commandSearchTerms(t("layout.showLeftPanel")),
       variant: "default" as const,
     },
     {
-      checked: !right.isCollapsed,
-      enabled: right.isAvailable,
+      checked: hasRightSidebar && !right.isCollapsed,
+      enabled: right.isAvailable && hasRightSidebar,
       icon: <PanelRight aria-hidden="true" />,
-      run: right.toggle,
+      run: () => {
+        if (hasRightSidebar) right.toggle();
+      },
       id: "toggle-right-panel" as const,
       label: t("layout.showRightPanel"),
       searchTerms: commandSearchTerms(t("layout.showRightPanel")),

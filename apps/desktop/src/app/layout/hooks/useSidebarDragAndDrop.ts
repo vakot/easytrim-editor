@@ -28,18 +28,18 @@ import { selectSidebarLayout, sidebarLayoutChanged } from "@/app/store/slices/pr
 
 import { useSidebarVisibility } from "./useSidebarVisibility";
 
-interface ActiveSidebarDragExpansion {
-  collapsedAtStart: Set<SidebarId>;
-  expandedByDrag: Set<SidebarId>;
-  temporarilyExpanded: Set<SidebarId>;
-}
-
 interface KeyboardSidebarDrag {
   destination: SidebarId;
   initialPosition: SidebarDragPosition;
   insertionIndex: number;
   placement: SidebarDropPlacement | null;
   viewId: SidebarViewId;
+}
+
+interface ActiveSidebarDragExpansion {
+  collapsedAtStart: Set<SidebarId>;
+  expandedByDrag: Set<SidebarId>;
+  temporarilyExpanded: Set<SidebarId>;
 }
 
 type ActiveSidebarDragMode = "keyboard" | "pointer" | "placement" | null;
@@ -129,10 +129,11 @@ function useSidebarDragAndDrop() {
       const position = getDragPosition(event);
       if (!position) return null;
 
-      const expansion = dragSidebarExpansion.current;
       const proximitySide = getSidebarProximitySide(position);
       const autoExpandedDestination =
-        proximitySide && expansion?.temporarilyExpanded.has(proximitySide) ? proximitySide : null;
+        proximitySide && dragSidebarExpansion.current?.temporarilyExpanded.has(proximitySide)
+          ? proximitySide
+          : null;
 
       const dropRegion = getSidebarDropRegion(position, autoExpandedDestination);
       if (!dropRegion) return null;
@@ -199,10 +200,11 @@ function useSidebarDragAndDrop() {
   const getDockPlacement = useCallback(
     (viewId: SidebarViewId, position: SidebarDragPosition) => {
       updateDragSidebarExpansion(position);
-      const expansion = dragSidebarExpansion.current;
       const proximitySide = getSidebarProximitySide(position);
       const autoExpandedDestination =
-        proximitySide && expansion?.temporarilyExpanded.has(proximitySide) ? proximitySide : null;
+        proximitySide && dragSidebarExpansion.current?.temporarilyExpanded.has(proximitySide)
+          ? proximitySide
+          : null;
 
       const dropRegion = getSidebarDropRegion(position, autoExpandedDestination);
       if (!dropRegion) return null;
@@ -561,7 +563,6 @@ function useSidebarDragAndDrop() {
         activeDragMode.current = "keyboard";
         initializeSidebarDrag(viewId, initialPosition);
         updateDragSidebarDestination(destination);
-
         const placement = getKeyboardDropPlacement(viewId, destination, insertionIndex);
         keyboardSidebarDrag.current = {
           destination,
