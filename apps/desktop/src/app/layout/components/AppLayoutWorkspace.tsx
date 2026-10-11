@@ -1,6 +1,11 @@
 import { useDroppable } from "@dnd-kit/react";
 
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+  useGroupRef,
+} from "@/components/ui/resizable";
 
 import { AppLayoutMain } from "@/app/layout/components/AppLayoutMain";
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";
@@ -39,10 +44,11 @@ function AppLayoutWorkspace({
   const isCompact = useAppSelector(selectLayoutDensity) === "compact";
   const leftSidebarPresence = useSidebarPresence("left", sidebarVisibility.hasLeftSidebar);
   const rightSidebarPresence = useSidebarPresence("right", sidebarVisibility.hasRightSidebar);
+  const workspaceGroupRef = useGroupRef();
   const { handleWorkspaceLayoutChanged, workspaceSidebarWidths } = useWorkspaceSidebarWidths({
     left: sidebarVisibility.hasLeftSidebar,
-    resizeSidebar: sidebarVisibility.resizeSidebar,
     right: sidebarVisibility.hasRightSidebar,
+    workspaceGroupRef,
   });
 
   return (
@@ -50,6 +56,7 @@ function AppLayoutWorkspace({
       {/* Direct panel children are required for persisted layout to discover every panel ID. */}
       <ResizablePanelGroup
         className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
+        groupRef={workspaceGroupRef}
         id="workspace"
         onLayoutChanged={handleWorkspaceLayoutChanged}
         onlySaveAfterUserInteractions

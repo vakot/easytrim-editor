@@ -1,4 +1,7 @@
+import type { RefObject } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+import type { ResizableGroupImperativeHandle } from "@/components/ui/resizable";
 
 import type { SidebarId } from "@/app/layout/lib/sidebar-layout";
 import {
@@ -12,25 +15,20 @@ interface WorkspaceSidebarPresence {
 }
 
 interface UseWorkspaceSidebarWidthsOptions extends WorkspaceSidebarPresence {
-  resizeSidebar: (side: SidebarId, width: number) => void;
+  workspaceGroupRef: RefObject<ResizableGroupImperativeHandle | null>;
 }
 
 function useWorkspaceSidebarWidths({
   left,
-  resizeSidebar,
   right,
+  workspaceGroupRef,
 }: UseWorkspaceSidebarWidthsOptions) {
   const [workspaceSidebarWidths, setWorkspaceSidebarWidths] = useState<
     Partial<Record<SidebarId, string>>
   >(getSavedWorkspaceSidebarWidths);
 
   const workspaceSidebarWidthsRef = useRef(workspaceSidebarWidths);
-  const resizeSidebarRef = useRef(resizeSidebar);
   const previousSidebarPresence = useRef({ left, right });
-
-  useEffect(() => {
-    resizeSidebarRef.current = resizeSidebar;
-  }, [resizeSidebar]);
 
   useEffect(() => {
     const wasPresent = previousSidebarPresence.current;
@@ -39,19 +37,44 @@ function useWorkspaceSidebarWidths({
     const addedSidebars = (["left", "right"] as const).filter(
       (side) => !wasPresent[side] && (side === "left" ? left : right),
     );
+
     if (addedSidebars.length === 0) return;
 
     const frame = window.requestAnimationFrame(() => {
-      for (const side of addedSidebars) {
-        const width = Number.parseFloat(workspaceSidebarWidthsRef.current[side] ?? "");
-        if (Number.isFinite(width) && width > 0) {
-          resizeSidebarRef.current(side, width);
-        }
+      const workspace = document.getElementById("workspace");
+      if (!workspace) return;
+
+      const separatorWidth = Array.from(
+        workspace.querySelectorAll<HTMLElement>(":scope > [data-separator]"),
+      ).reduce((total, separator) => total + separator.getBoundingClientRect().width, 0);
+
+      const availableWidth = workspace.getBoundingClientRect().width - separatorWidth;
+      if (availableWidth <= 0) return;
+
+      const layout: Record<string, number> = {};
+      let sidebarsWidth = 0;
+      for (const side of ["left", "right"] as const) {
+        const isPresent = side === "left" ? left : right;
+        const panelId = `workspace-${side}-sidebar`;
+        const width = isPresent
+          ? Number.parseFloat(workspaceSidebarWidthsRef.current[side] ?? "")
+          : 0;
+
+        if (isPresent && (!Number.isFinite(width) || width <= 0)) continue;
+
+        layout[panelId] = (width / availableWidth) * 100;
+        sidebarsWidth += width;
       }
+
+      layout["workspace-content"] = Math.max(
+        0,
+        ((availableWidth - sidebarsWidth) / availableWidth) * 100,
+      );
+      workspaceGroupRef.current?.setLayout(layout);
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [left, right]);
+  }, [left, right, workspaceGroupRef]);
 
   const handleWorkspaceLayoutChanged = useCallback(
     (layout: Record<string, number>, meta: { isUserInteraction: boolean }) => {

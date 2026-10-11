@@ -625,7 +625,12 @@ describe("AppLayout drag and resize integration", () => {
         sidebarLayoutChanged({ destination: "left", insertionIndex: 1, viewId: "sources" }),
       );
     });
-    await waitFor(() => expect(document.getElementById("workspace-right-sidebar")).toBeNull());
+    await waitFor(() => expect(closingRightSidebar).toHaveAttribute("data-disabled", "true"));
+    await waitFor(() =>
+      expect(closingRightSidebar.querySelector("[data-sidebar-region]")).toBeNull(),
+    );
+    expect(document.getElementById("workspace-right-sidebar")).toBe(closingRightSidebar);
+    expect(closingRightSidebar.isConnected).toBe(true);
     expect(document.getElementById("workspace")).toBe(workspaceGroup);
 
     act(() => {

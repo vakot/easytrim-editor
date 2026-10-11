@@ -69,6 +69,7 @@ vi.mock("@/app/layout/components/SidebarViewPortal", () => ({
 }));
 
 vi.mock("@dnd-kit/react", () => ({
+  useDragDropManager: () => ({ registry: { plugins: { get: () => undefined } } }),
   DragDropProvider: ({
     children,
     onDragEnd,
