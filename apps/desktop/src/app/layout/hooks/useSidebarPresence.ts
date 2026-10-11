@@ -9,12 +9,10 @@ function useSidebarPresence(side: SidebarId, hasSidebar: boolean) {
   const [isMounted, setIsMounted] = useState(hasSidebar);
   const previousHasSidebar = useRef(hasSidebar);
   const presenceVersion = useRef(0);
-  const hasSidebarRef = useRef(hasSidebar);
   const shouldExpandWhenRegistered = useRef(false);
   const closeTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    hasSidebarRef.current = hasSidebar;
     const wasPresent = previousHasSidebar.current;
     if (wasPresent !== hasSidebar) presenceVersion.current += 1;
     const transitionVersion = presenceVersion.current;
@@ -54,7 +52,7 @@ function useSidebarPresence(side: SidebarId, hasSidebar: boolean) {
     closeTimer.current = window.setTimeout(
       () => {
         closeTimer.current = null;
-        if (presenceVersion.current === transitionVersion && !hasSidebarRef.current) {
+        if (presenceVersion.current === transitionVersion) {
           setIsMounted(false);
         }
       },

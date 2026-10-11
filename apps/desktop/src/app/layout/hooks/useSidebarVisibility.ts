@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 import { usePanelState } from "@/components/ui/resizable";
 
@@ -43,14 +43,24 @@ function useSidebarVisibility() {
     [leftSidebar, rightSidebar],
   );
 
-  return {
-    hasLeftSidebar,
-    hasRightSidebar,
-    leftSidebarVisible,
-    rightSidebarVisible,
-    isSidebarCollapsed,
-    setSidebarExpanded,
-  };
+  return useMemo(
+    () => ({
+      hasLeftSidebar,
+      hasRightSidebar,
+      leftSidebarVisible,
+      rightSidebarVisible,
+      isSidebarCollapsed,
+      setSidebarExpanded,
+    }),
+    [
+      hasLeftSidebar,
+      hasRightSidebar,
+      isSidebarCollapsed,
+      leftSidebarVisible,
+      rightSidebarVisible,
+      setSidebarExpanded,
+    ],
+  );
 }
 
 export { useSidebarVisibility };
