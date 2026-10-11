@@ -36,7 +36,11 @@ import { useExportQueue } from "../contexts/ExportQueueContext";
 
 import { ExportQueueEmpty } from "./ExportQueueEmpty";
 
-function ExportQueueContent({ className, ...props }: React.ComponentProps<typeof ScrollArea>) {
+function ExportQueueContent({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof ScrollArea>) {
   const { queue } = useExportQueue();
 
   if (!queue.length) return <ExportQueueEmpty />;
@@ -46,7 +50,9 @@ function ExportQueueContent({ className, ...props }: React.ComponentProps<typeof
       className={cn("min-h-0 flex-1", className)}
       data-testid="export-queue-scroll-area"
       {...props}
-    />
+    >
+      {children ?? <ExportQueueList />}
+    </ScrollArea>
   );
 }
 
