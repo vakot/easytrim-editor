@@ -2,6 +2,7 @@ import { BookmarkPlus, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -230,7 +231,9 @@ function ChapterDraftDialog({
               </label>
             </div>
             {error ? (
-              <p className="text-xs text-destructive">{t("timeline.chapters.status.invalid")}</p>
+              <Alert variant="destructive">
+                <AlertDescription>{t("timeline.chapters.status.invalid")}</AlertDescription>
+              </Alert>
             ) : null}
             <DialogFooter>
               <Button onClick={onCancel} type="button" variant="outline">
