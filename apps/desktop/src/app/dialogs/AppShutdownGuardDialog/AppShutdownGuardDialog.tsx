@@ -43,7 +43,10 @@ function AppShutdownGuardDialog() {
 
       if (hasProcessableExports) {
         setContinuation(() => continuation);
-        setOpen(true);
+        void LazyAppShutdownGuardDialogContent.preload().then(
+          () => setOpen(true),
+          () => setOpen(true),
+        );
         return;
       }
 
