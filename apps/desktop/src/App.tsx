@@ -9,7 +9,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
-import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { WorkspaceRecoveryNotice } from "@/app/components/WorkspaceRecoveryNotice";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppDiagnosticsRecoveryDialog } from "@/app/dialogs/AppDiagnosticsRecoveryDialog";
@@ -22,6 +21,7 @@ import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
 import { EditorRuntimeProviders } from "@/app/providers/EditorRuntimeProviders";
 import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
 import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
+import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectDropListenerError } from "@/app/store/slices/import-workflow-slice";
 import { persistor, store } from "@/app/store/store";

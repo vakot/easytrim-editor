@@ -12,7 +12,6 @@ import { describe, expect, it, vi } from "vitest";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
@@ -22,6 +21,7 @@ import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
 import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
+import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
 import { ChangelogProvider } from "@/features/changelog";

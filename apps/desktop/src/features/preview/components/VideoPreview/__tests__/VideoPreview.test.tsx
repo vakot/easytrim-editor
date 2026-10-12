@@ -20,9 +20,9 @@ import {
   SETTINGS_SHORTCUT,
 } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
-import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
+import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { cropChanged, flipToggled, rotationChanged } from "@/app/store/slices/crop-slice";
 import {
