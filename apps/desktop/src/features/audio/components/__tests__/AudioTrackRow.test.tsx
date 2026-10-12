@@ -24,7 +24,7 @@ import { createAppStore } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { useTheme } from "@/app/theme/useTheme";
 import { audioTrackLoudnessInputsKey, type AudioTrackProcessing } from "@/domain/audio-processing";
-import { audioTrackColor } from "@/features/audio";
+import { audioTrackColor,AudioTrackEffectsDialogContext } from "@/features/audio";
 // eslint-disable-next-line no-restricted-imports -- Test owns a focused audio runtime fixture.
 import {
   AudioPlaybackContext,
@@ -33,7 +33,6 @@ import {
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
-import { AudioTrackEffectsDialogContext } from "../AudioTrack/components/AudioTrackEffectsDialog/contexts/audio-track-effects-dialog-context";
 import { AudioTrackGainControl } from "../AudioTrack/components/AudioTrackGainControl";
 
 const audioPlayback = {

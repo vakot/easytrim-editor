@@ -14,11 +14,7 @@ import {
   LibraryPage,
 } from "@/components/library";
 import { AUDIO_PROCESSING_STAGES, type AudioProcessingStage } from "@/domain/audio-processing";
-
-import {
-  type AudioTrackEffectsDraft,
-  useAudioTrackEffectsDraft,
-} from "../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
+import { type AudioTrackEffectsDraft, useAudioTrackEffectsDraft } from "@/features/audio";
 
 import {
   AUDIO_TRACK_EFFECTS,

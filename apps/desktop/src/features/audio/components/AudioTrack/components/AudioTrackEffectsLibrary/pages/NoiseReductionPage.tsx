@@ -10,8 +10,8 @@ import {
   removeAudioTrackSignalEffect,
   setAudioTrackSignalEffect,
 } from "@/domain/audio-processing";
+import { useAudioTrackEffectsDraft } from "@/features/audio";
 
-import { useAudioTrackEffectsDraft } from "../../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
 import {
   AudioTrackEffectsLibraryPage,
   AudioTrackEffectsLibraryPageBasic,

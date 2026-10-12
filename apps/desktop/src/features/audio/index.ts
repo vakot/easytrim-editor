@@ -1,6 +1,15 @@
 export { AudioPlaybackProvider } from "./AudioPlaybackProvider";
 export { useAudioPlayback } from "./contexts/audio-playback-context";
 export { useAudioTransport } from "./contexts/audio-transport-context";
+export {
+  AudioTrackEffectsDialog,
+  AudioTrackEffectsDialogContext,
+  AudioTrackEffectsDialogTrigger,
+  type AudioTrackEffectsDraft,
+  AudioTrackEffectsDraftProvider,
+  useAudioTrackEffectsDialog,
+  useAudioTrackEffectsDraft,
+} from "./dialogs/AudioTrackEffectsDialog";
 export { audioTrackColor } from "./lib/audio-track-color";
 export {
   amplitudeToMeterLevel,

@@ -4,7 +4,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   DialogClose,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -13,14 +12,15 @@ import {
 
 import { localizeAppError } from "@/i18n/app-errors";
 
-import type { AudioTrackController } from "../../../../hooks/useAudioTrackController";
-import { audioTrackDisplayName } from "../../../../lib/audio-track-name.utils";
-import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
+import { AudioTrackEffectsLibrary } from "../../components/AudioTrack/components/AudioTrackEffectsLibrary";
 import {
   AUDIO_TRACK_EFFECTS,
   type AudioTrackEffectId,
-} from "../AudioTrackEffectsLibrary/consts/audio-track-effects";
+} from "../../components/AudioTrack/components/AudioTrackEffectsLibrary/consts/audio-track-effects";
+import type { AudioTrackController } from "../../hooks/useAudioTrackController";
+import { audioTrackDisplayName } from "../../lib/audio-track-name.utils";
 
+import { AudioTrackEffectsDraftProvider } from "./components/AudioTrackEffectsDraftProvider";
 import { useAudioTrackEffectsDraft } from "./contexts/audio-track-effects-draft-context";
 import {
   getAudioTrackEffectsDraftProcessing,
@@ -30,13 +30,26 @@ import {
 
 interface AudioTrackEffectsDialogContentProps {
   controller: AudioTrackController;
+  initialProcessing: import("@/domain/audio-processing").AudioTrackProcessing;
   initialView?: AudioTrackEffectId;
 }
 
 function AudioTrackEffectsDialogContent({
   controller,
+  initialProcessing,
   initialView,
 }: AudioTrackEffectsDialogContentProps) {
+  return (
+    <AudioTrackEffectsDraftProvider initialProcessing={initialProcessing}>
+      <AudioTrackEffectsDialogPanel controller={controller} initialView={initialView} />
+    </AudioTrackEffectsDraftProvider>
+  );
+}
+
+function AudioTrackEffectsDialogPanel({
+  controller,
+  initialView,
+}: Omit<AudioTrackEffectsDialogContentProps, "initialProcessing">) {
   const { t } = useTranslation();
   const { draft } = useAudioTrackEffectsDraft();
   const track = controller.track;
@@ -54,7 +67,7 @@ function AudioTrackEffectsDialogContent({
   const isValid = isAudioTrackEffectsDraftValid(draft, AUDIO_TRACK_EFFECTS);
 
   return (
-    <DialogContent className="h-full max-h-[min(80dvh,32rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl">
+    <>
       <DialogHeader className="m-0! -mx-4 border-b p-4">
         <DialogTitle>{t("audio.effects.dialog.title", { title })}</DialogTitle>
         <DialogDescription>{t("audio.effects.dialog.description")}</DialogDescription>
@@ -97,7 +110,7 @@ function AudioTrackEffectsDialogContent({
           </DialogClose>
         </div>
       </DialogFooter>
-    </DialogContent>
+    </>
   );
 }
 

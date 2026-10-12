@@ -28,6 +28,7 @@ import {
   loudnessNormalizationTargets,
 } from "@/domain/audio-processing";
 import { timelinePercent } from "@/domain/trim";
+import { AudioTrackEffectsDialog } from "@/features/audio";
 import { cn } from "@/lib/class-names.utils";
 
 import {
@@ -45,7 +46,6 @@ import {
   AudioTrackDropdownMenuContent,
 } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
-import { AudioTrackEffectsDialog } from "./components/AudioTrackEffectsDialog";
 import { AudioTrackGainControl } from "./components/AudioTrackGainControl";
 import { AudioTrackMetadataDialog } from "./components/AudioTrackMetadataDialog";
 import { AudioTrackToggle } from "./components/AudioTrackToggle";

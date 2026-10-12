@@ -18,9 +18,10 @@ import {
 import { Slot } from "@/components/ui/slot";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { AudioTrackEffectsDialogTrigger, useAudioTrackEffectsDialog } from "@/features/audio";
+
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 
-import { useAudioTrackEffectsDialog } from "./AudioTrackEffectsDialog/contexts/audio-track-effects-dialog-context";
 import { useAudioTrackMetadataDialog } from "./AudioTrackMetadataDialog/contexts/audio-track-metadata-dialog-context";
 
 interface AudioTrackActionsProps {
@@ -76,7 +77,7 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
 
       <DropdownMenuSeparator />
 
-      <AudioTrackEffectsMenuItem controller={controller}>
+      <AudioTrackEffectsMenuItem>
         <DropdownMenuItem inset>
           <DropdownMenuIcon side="left">
             <WandSparkles />
@@ -140,7 +141,7 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
 
       <ContextMenuSeparator />
 
-      <AudioTrackEffectsMenuItem controller={controller}>
+      <AudioTrackEffectsMenuItem>
         <ContextMenuItem inset>
           <ContextMenuIcon side="left">
             <WandSparkles />
@@ -220,20 +221,14 @@ function AudioTrackDefaultMenuCheckboxItem({
   );
 }
 
-function AudioTrackEffectsMenuItem({
-  children,
-}: { children?: React.ReactNode } & AudioTrackActionsProps) {
+function AudioTrackEffectsMenuItem({ children }: { children?: React.ReactNode }) {
   const { t } = useTranslation();
-  const { openEffects, preloadEffects } = useAudioTrackEffectsDialog();
 
-  const commandProps = {
-    "aria-label": t("audio.effects.open"),
-    onSelect: () => openEffects(),
-    onFocus: preloadEffects,
-    onPointerEnter: preloadEffects,
-  };
-
-  return <Slot {...commandProps}>{children}</Slot>;
+  return (
+    <AudioTrackEffectsDialogTrigger aria-label={t("audio.effects.open")} asChild>
+      <Slot>{children}</Slot>
+    </AudioTrackEffectsDialogTrigger>
+  );
 }
 
 function activityActionLabel(

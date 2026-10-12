@@ -21,10 +21,9 @@ import { useAppDispatch } from "@/app/store/redux-hooks";
 import { audioTrackProcessingChanged } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 import { type AudioTrackProcessing, sameAudioTrackProcessing } from "@/domain/audio-processing";
+import { AudioTrackEffectsDraftProvider, useAudioTrackEffectsDraft } from "@/features/audio";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
-import { AudioTrackEffectsDraftProvider } from "../../AudioTrackEffectsDialog/components/AudioTrackEffectsDraftProvider";
-import { useAudioTrackEffectsDraft } from "../../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
 import {
   AudioTrackEffectsLibraryPage,

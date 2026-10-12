@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import type { AudioTrackProcessing } from "@/domain/audio-processing";
+import { AudioTrackEffectsDraftProvider } from "@/features/audio";
 
-import { AudioTrackEffectsDraftProvider } from "../../AudioTrackEffectsDialog/components/AudioTrackEffectsDraftProvider";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
 import {
   AUDIO_TRACK_EFFECTS,
