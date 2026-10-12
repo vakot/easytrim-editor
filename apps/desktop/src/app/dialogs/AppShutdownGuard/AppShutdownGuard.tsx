@@ -1,20 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog";
 
 import { clearWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectHasProcessableExports } from "@/app/store/slices/editing-instances-slice";
+import { lazyWithPreload } from "@/lib/lazy-component";
 import {
   closeWindow,
   listenForWindowCloseRequests,
@@ -22,12 +13,26 @@ import {
   type WindowShutdownContinuation,
 } from "@/lib/tauri/window";
 
+const LazyAppShutdownGuardContent = lazyWithPreload<{
+  onConfirmClose: () => void;
+}>(() =>
+  import("./AppShutdownGuardContent").then((module) => ({
+    default: module.AppShutdownGuardContent,
+  })),
+);
+
 function AppShutdownGuard() {
-  const { t } = useTranslation();
   const hasProcessableExports = useAppSelector(selectHasProcessableExports);
   const [open, setOpen] = useState(false);
   const allowClose = useRef(false);
   const pendingContinuation = useRef<WindowShutdownContinuation | null>(null);
+
+  const openShutdownConfirmation = useCallback(() => {
+    void LazyAppShutdownGuardContent.preload().then(
+      () => setOpen(true),
+      () => setOpen(true),
+    );
+  }, []);
 
   const acceptClose = useCallback(async () => {
     await clearWorkspaceRecoveryOnAcceptedShutdown();
@@ -36,27 +41,27 @@ function AppShutdownGuard() {
       await closeWindow();
     } catch {
       allowClose.current = false;
-      setOpen(true);
+      openShutdownConfirmation();
     }
-  }, []);
+  }, [openShutdownConfirmation]);
 
   const handleShutdownRequest = useCallback(
     (continuation?: WindowShutdownContinuation) => {
       if (hasProcessableExports) {
         pendingContinuation.current = continuation ?? null;
-        setOpen(true);
+        openShutdownConfirmation();
         return;
       }
 
       if (continuation) {
         void clearWorkspaceRecoveryOnAcceptedShutdown()
           .then(continuation)
-          .catch(() => setOpen(true));
+          .catch(openShutdownConfirmation);
       } else {
         void acceptClose();
       }
     },
-    [acceptClose, hasProcessableExports],
+    [acceptClose, hasProcessableExports, openShutdownConfirmation],
   );
 
   useEffect(() => {
@@ -69,7 +74,7 @@ function AppShutdownGuard() {
         return true;
       },
       () => {
-        if (hasProcessableExports) setOpen(true);
+        if (hasProcessableExports) openShutdownConfirmation();
         else void acceptClose();
       },
     );
@@ -80,7 +85,7 @@ function AppShutdownGuard() {
       unlistenShutdown();
       void unlistenPromise.then((unlisten) => unlisten());
     };
-  }, [acceptClose, handleShutdownRequest, hasProcessableExports]);
+  }, [acceptClose, handleShutdownRequest, hasProcessableExports, openShutdownConfirmation]);
 
   const confirmClose = () => {
     const continuation = pendingContinuation.current;
@@ -90,7 +95,7 @@ function AppShutdownGuard() {
       setOpen(false);
       void clearWorkspaceRecoveryOnAcceptedShutdown()
         .then(continuation)
-        .catch(() => setOpen(true));
+        .catch(openShutdownConfirmation);
       return;
     }
 
@@ -101,18 +106,9 @@ function AppShutdownGuard() {
   return (
     <AlertDialog onOpenChange={setOpen} open={open}>
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{t("app.shutdown.confirmation.title")}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {t("app.shutdown.confirmation.description")}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{t("common.actions.back")}</AlertDialogCancel>
-          <AlertDialogAction onClick={confirmClose} variant="destructive">
-            {t("queue.onFinished.shortOptions.exit")}
-          </AlertDialogAction>
-        </AlertDialogFooter>
+        <Suspense fallback={null}>
+          <LazyAppShutdownGuardContent onConfirmClose={confirmClose} />
+        </Suspense>
       </AlertDialogContent>
     </AlertDialog>
   );

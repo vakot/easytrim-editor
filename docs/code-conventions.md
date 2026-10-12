@@ -148,6 +148,11 @@ local `Suspense` boundary:
 </Dialog>
 ```
 
+Render `DialogContent` or `AlertDialogContent` directly under its root without checking `open` in
+the component tree. Radix mounts the content subtree only while the dialog is open and unmounts it
+when closed, so an extra `{open ? ... : null}` guard is redundant. A lazy content child inside the
+Radix content subtree will not render until the dialog opens.
+
 `<DialogName>Content` contains the dialog's inner UI and must not render `DialogContent` itself.
 Export a separate `<DialogName>Trigger` that wraps the shadcn/Radix `DialogTrigger`, starts the
 same cached lazy import on pointer hover and keyboard focus, and forwards trigger props. Callers
