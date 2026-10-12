@@ -13,22 +13,22 @@ import {
   type WindowShutdownContinuation,
 } from "@/lib/tauri/window";
 
-const LazyAppShutdownGuardContent = lazyWithPreload<{
+const LazyAppShutdownGuardDialogContent = lazyWithPreload<{
   onConfirmClose: () => void;
 }>(() =>
-  import("./AppShutdownGuardContent").then((module) => ({
-    default: module.AppShutdownGuardContent,
+  import("./AppShutdownGuardDialogContent").then((module) => ({
+    default: module.AppShutdownGuardDialogContent,
   })),
 );
 
-function AppShutdownGuard() {
+function AppShutdownGuardDialog() {
   const hasProcessableExports = useAppSelector(selectHasProcessableExports);
   const [open, setOpen] = useState(false);
   const allowClose = useRef(false);
   const pendingContinuation = useRef<WindowShutdownContinuation | null>(null);
 
   const openShutdownConfirmation = useCallback(() => {
-    void LazyAppShutdownGuardContent.preload().then(
+    void LazyAppShutdownGuardDialogContent.preload().then(
       () => setOpen(true),
       () => setOpen(true),
     );
@@ -107,11 +107,11 @@ function AppShutdownGuard() {
     <AlertDialog onOpenChange={setOpen} open={open}>
       <AlertDialogContent>
         <Suspense fallback={null}>
-          <LazyAppShutdownGuardContent onConfirmClose={confirmClose} />
+          <LazyAppShutdownGuardDialogContent onConfirmClose={confirmClose} />
         </Suspense>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
 
-export { AppShutdownGuard };
+export { AppShutdownGuardDialog };

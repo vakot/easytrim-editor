@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AppShutdownGuard } from "../AppShutdownGuard";
+import { AppShutdownGuardDialog } from "../AppShutdownGuardDialog";
 
 const shutdownState = vi.hoisted(() => ({ hasProcessableExports: false }));
 const windowActions = vi.hoisted(() => ({
@@ -17,7 +17,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
 }));
 vi.mock("@/lib/tauri/window", () => windowActions);
 
-describe("AppShutdownGuard", () => {
+describe("AppShutdownGuardDialog", () => {
   let shouldPreventClose: (() => boolean) | undefined;
   let onCloseRequested: (() => void) | undefined;
   let onShutdownRequested: ((continuation?: () => void | Promise<void>) => void) | undefined;
@@ -46,7 +46,7 @@ describe("AppShutdownGuard", () => {
   it("clears recovery only after accepting a close request with no active exports", async () => {
     localStorage.setItem("easytrim:workspace-recovery:current", "current");
     localStorage.setItem("easytrim:workspace-recovery:candidate", "candidate");
-    render(<AppShutdownGuard />);
+    render(<AppShutdownGuardDialog />);
 
     await waitFor(() => expect(shouldPreventClose).toBeDefined());
     expect(shouldPreventClose?.()).toBe(true);
@@ -62,7 +62,7 @@ describe("AppShutdownGuard", () => {
     localStorage.setItem("easytrim:workspace-recovery:current", "current");
     localStorage.setItem("easytrim:workspace-recovery:candidate", "candidate");
     const user = userEvent.setup();
-    render(<AppShutdownGuard />);
+    render(<AppShutdownGuardDialog />);
 
     onShutdownRequested?.();
     await waitFor(() => expect(screen.getByRole("alertdialog")).toBeInTheDocument());
@@ -75,7 +75,7 @@ describe("AppShutdownGuard", () => {
   it("confirms before closing while exports are queued or rendering", async () => {
     shutdownState.hasProcessableExports = true;
     const user = userEvent.setup();
-    render(<AppShutdownGuard />);
+    render(<AppShutdownGuardDialog />);
 
     await waitFor(() => expect(shouldPreventClose).toBeDefined());
     expect(shouldPreventClose?.()).toBe(true);
@@ -96,7 +96,7 @@ describe("AppShutdownGuard", () => {
     shutdownState.hasProcessableExports = true;
     const continueUpdate = vi.fn(() => Promise.resolve());
     const user = userEvent.setup();
-    render(<AppShutdownGuard />);
+    render(<AppShutdownGuardDialog />);
 
     await waitFor(() => expect(shouldPreventClose).toBeDefined());
     onShutdownRequested?.(continueUpdate);

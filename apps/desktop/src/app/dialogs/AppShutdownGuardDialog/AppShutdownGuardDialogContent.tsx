@@ -9,7 +9,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-function AppShutdownGuardContent({ onConfirmClose }: { onConfirmClose: () => void }) {
+function AppShutdownGuardDialogContent({ onConfirmClose }: { onConfirmClose: () => void }) {
   const { t } = useTranslation();
 
   return (
@@ -30,4 +30,4 @@ function AppShutdownGuardContent({ onConfirmClose }: { onConfirmClose: () => voi
   );
 }
 
-export { AppShutdownGuardContent };
+export { AppShutdownGuardDialogContent };

@@ -14,7 +14,7 @@ import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceView
 import { SettingsDialogMount } from "@/app/components/SettingsDialog/SettingsDialogMount";
 import { WorkspaceRecoveryNotice } from "@/app/components/WorkspaceRecoveryNotice";
 import { AppDiagnosticsRecoveryDialog } from "@/app/dialogs/AppDiagnosticsRecoveryDialog";
-import { AppShutdownGuard } from "@/app/dialogs/AppShutdownGuard";
+import { AppShutdownGuardDialog } from "@/app/dialogs/AppShutdownGuardDialog";
 import { AppLayout } from "@/app/layout";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { AppUpdatesProvider } from "@/app/providers/AppUpdatesProvider";
@@ -50,7 +50,7 @@ function EasyTrimEditorApp() {
         <SourceDeleteProvider>
           <QueueDeleteSourceProvider>
             <PreviewTransformProvider>
-              <AppShutdownGuard />
+              <AppShutdownGuardDialog />
 
               <AppUpdatesProvider>
                 <EditorRuntimeProviders>
