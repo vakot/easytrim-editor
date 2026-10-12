@@ -130,10 +130,12 @@ boundary near the entrypoint and use a fallback that preserves layout and focus 
 component identity across renders so opening and closing does not cause unrelated remounts or state
 loss.
 
-Product dialogs use a folder named `dialogs/<DialogName>/` under their owning feature or app area.
-Keep the Radix wrapper and preload trigger in `<DialogName>.tsx`, optional dialog-local context in
-`<DialogName>Context.ts`, and the inner content in `<DialogName>Content.tsx`. The wrapper owns the
-`Dialog` root, `DialogContent`, lazy import, and local `Suspense` boundary:
+Product dialogs use a folder named `dialogs/<DialogName>/` under their owning feature. App dialogs
+live under `apps/desktop/src/app/dialogs/<DialogName>/`, alongside `app/components/`; never nest
+`app/dialogs` inside `app/components`. Keep the Radix wrapper and preload trigger in
+`<DialogName>.tsx`, optional dialog-local context in `<DialogName>Context.ts`, and the inner content
+in `<DialogName>Content.tsx`. The wrapper owns the `Dialog` root, `DialogContent`, lazy import, and
+local `Suspense` boundary:
 
 ```tsx
 <Dialog>

@@ -10,11 +10,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppShutdownGuard } from "@/app/components/AppShutdownGuard";
 import { CommandPalette } from "@/app/components/CommandPalette";
-import { AppDiagnosticsRecoveryDialog } from "@/app/components/dialogs/AppDiagnosticsRecoveryDialog";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { SettingsDialogMount } from "@/app/components/SettingsDialog/SettingsDialogMount";
 import { WorkspaceRecoveryNotice } from "@/app/components/WorkspaceRecoveryNotice";
+import { AppDiagnosticsRecoveryDialog } from "@/app/dialogs/AppDiagnosticsRecoveryDialog";
 import { AppLayout } from "@/app/layout";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { AppUpdatesProvider } from "@/app/providers/AppUpdatesProvider";
