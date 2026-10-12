@@ -12,6 +12,7 @@ const windowActions = vi.hoisted(() => ({
   destroyWindow: vi.fn(() => Promise.resolve()),
   listenForWindowCloseRequests: vi.fn(),
   listenForWindowShutdownRequests: vi.fn(),
+  preloadDialog: vi.fn(),
   unlisten: vi.fn(),
 }));
 
@@ -19,6 +20,16 @@ vi.mock("@/app/store/redux-hooks", () => ({
   useAppSelector: () => shutdownState.hasProcessableExports,
 }));
 vi.mock("@/lib/tauri/window", () => windowActions);
+vi.mock("@/lib/lazy-component", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/lazy-component")>();
+  const React = await import("react");
+
+  return {
+    ...actual,
+    lazyWithPreload: (loader: () => Promise<{ default: React.ComponentType<unknown> }>) =>
+      Object.assign(React.lazy(loader), { preload: windowActions.preloadDialog }),
+  };
+});
 
 describe("AppShutdownGuardDialog", () => {
   let onCloseRequested: (() => void) | undefined;
@@ -27,6 +38,7 @@ describe("AppShutdownGuardDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     shutdownState.hasProcessableExports = false;
+    windowActions.preloadDialog.mockResolvedValue(undefined);
     onCloseRequested = undefined;
     onShutdownRequested = undefined;
     windowActions.completeShutdown.mockImplementation(
@@ -127,5 +139,33 @@ describe("AppShutdownGuardDialog", () => {
 
     await waitFor(() => expect(continueUpdate).toHaveBeenCalledOnce());
     expect(windowActions.destroyWindow).not.toHaveBeenCalled();
+  });
+
+  it("uses the latest shutdown request received while dialog content is preloading", async () => {
+    shutdownState.hasProcessableExports = true;
+    let finishPreload!: () => void;
+    windowActions.preloadDialog.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishPreload = resolve;
+      }),
+    );
+    const closeContinuation = vi.fn(() => Promise.resolve());
+    const updateContinuation = vi.fn(() => Promise.resolve());
+    const user = userEvent.setup();
+    render(<AppShutdownGuardDialog />);
+
+    await waitFor(() => expect(onShutdownRequested).toBeDefined());
+    onShutdownRequested?.(closeContinuation);
+    onShutdownRequested?.(updateContinuation);
+
+    expect(windowActions.preloadDialog).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+
+    finishPreload();
+    await screen.findByRole("alertdialog");
+    await user.click(screen.getByRole("button", { name: "Exit" }));
+
+    await waitFor(() => expect(updateContinuation).toHaveBeenCalledOnce());
+    expect(closeContinuation).not.toHaveBeenCalled();
   });
 });

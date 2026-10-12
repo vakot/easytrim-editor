@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -28,38 +28,40 @@ const LazyAppShutdownGuardDialogContent = lazyWithPreload<{
   continuation?: WindowShutdownContinuation;
 }>(() => loadDialog().then((module) => ({ default: module.AppShutdownGuardDialogContent })));
 
-function AppShutdownGuardDialog({
-  __scopeAlertDialog,
-}: {
-  __scopeAlertDialog?: AlertDialogScope;
-}) {
+function AppShutdownGuardDialog({ __scopeAlertDialog }: { __scopeAlertDialog?: AlertDialogScope }) {
   const alertDialogScope = useAppShutdownGuardDialogScope(__scopeAlertDialog);
   const { t } = useTranslation();
   const hasProcessableExports = useAppSelector(selectHasProcessableExports);
   const [open, setOpen] = useState(false);
   const [continuation, setContinuation] = useState<WindowShutdownContinuation>();
+  const pendingRequest = useRef<{ continuation?: WindowShutdownContinuation } | null>(null);
 
   const handleOpenChange = useCallback((nextOpen: boolean) => {
     setOpen(nextOpen);
 
     if (!nextOpen) {
+      pendingRequest.current = null;
       setContinuation(undefined);
     }
   }, []);
 
   const handleShutdownRequest = useCallback(
     (continuation?: WindowShutdownContinuation) => {
-      if (open) {
-        if (continuation) setContinuation(() => continuation);
+      if (pendingRequest.current) {
+        // The latest request replaces the continuation until the user accepts the confirmation.
+        pendingRequest.current = { continuation };
+        setContinuation(() => continuation);
         return;
       }
 
       if (hasProcessableExports) {
+        pendingRequest.current = { continuation };
         setContinuation(() => continuation);
-        void LazyAppShutdownGuardDialogContent.preload().then(
-          () => setOpen(true),
-          () => setOpen(true),
-        );
+        const openAfterPreload = () => {
+          if (pendingRequest.current) setOpen(true);
+        };
+
+        void LazyAppShutdownGuardDialogContent.preload().then(openAfterPreload, openAfterPreload);
         return;
       }
 
@@ -70,7 +72,7 @@ function AppShutdownGuardDialog({
         });
       });
     },
-    [open, hasProcessableExports, t],
+    [hasProcessableExports, t],
   );
 
   useEffect(() => {
