@@ -9,22 +9,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import {
-  type BuiltInPresetId,
-  type ExportPreset,
-  getPresetDisplayName,
-} from "@/app/store/lib/export-presets";
+import { type BuiltInPresetId, getPresetDisplayName } from "@/app/store/lib/export-presets";
 import { useAppDispatch } from "@/app/store/redux-hooks";
 import { exportPresetDeleted, exportPresetSelected } from "@/app/store/slices/export-presets-slice";
 
-interface PresetDeleteDialogContentProps {
-  onConfirm: () => void;
-  preset: ExportPreset | null;
-}
+import { usePresetDeleteDialog } from "./PresetDeleteDialogContext";
 
-function PresetDeleteDialogContent({ onConfirm, preset }: PresetDeleteDialogContentProps) {
+function PresetDeleteDialogContent() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const { preset } = usePresetDeleteDialog();
   const builtInNames: Record<BuiltInPresetId, string> = {
     "hevc-nvenc-p1": t("export.preset.builtIn.p1.name"),
     "hevc-nvenc-p2": t("export.preset.builtIn.p2.name"),
@@ -40,7 +34,6 @@ function PresetDeleteDialogContent({ onConfirm, preset }: PresetDeleteDialogCont
       dispatch(exportPresetSelected(preset.id));
       dispatch(exportPresetDeleted());
     }
-    onConfirm();
   }
 
   return (
@@ -64,4 +57,3 @@ function PresetDeleteDialogContent({ onConfirm, preset }: PresetDeleteDialogCont
 }
 
 export { PresetDeleteDialogContent };
-export type { PresetDeleteDialogContentProps };

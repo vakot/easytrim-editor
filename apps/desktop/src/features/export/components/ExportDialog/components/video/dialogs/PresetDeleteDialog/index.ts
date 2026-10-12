@@ -1,1 +1,1 @@
-export { PresetDeleteDialog } from "./PresetDeleteDialog";
+export { PresetDeleteDialog, PresetDeleteDialogTrigger } from "./PresetDeleteDialog";

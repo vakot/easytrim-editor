@@ -3,7 +3,13 @@ import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  DialogClose,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,14 +31,13 @@ import {
   selectExportPresetList,
 } from "@/app/store/slices/export-presets-slice";
 
-interface PresetEditorDialogContentProps {
-  mode: "create" | "edit";
-  onClose: () => void;
-  preset: ExportPreset | null;
-}
+import { usePresetEditorDialog } from "./PresetEditorDialogContext";
 
-function PresetEditorDialogContent({ mode, onClose, preset }: PresetEditorDialogContentProps) {
+function PresetEditorDialogContent() {
   const { t } = useTranslation();
+  const { request } = usePresetEditorDialog();
+  const mode = request?.mode ?? "create";
+  const preset = request?.mode === "edit" ? request.preset : null;
   const builtInLabels: Record<BuiltInPresetId, { name: string }> = {
     "hevc-nvenc-p1": { name: t("export.preset.builtIn.p1.name") },
     "hevc-nvenc-p2": { name: t("export.preset.builtIn.p2.name") },
@@ -69,7 +74,7 @@ function PresetEditorDialogContent({ mode, onClose, preset }: PresetEditorDialog
     tooLong: t("export.preset.validation.tooLong"),
   };
 
-  function savePreset() {
+  function savePreset(event: React.MouseEvent<HTMLButtonElement>) {
     let error: PresetNameError | null = null;
 
     if (mode === "create") {
@@ -85,6 +90,7 @@ function PresetEditorDialogContent({ mode, onClose, preset }: PresetEditorDialog
     }
 
     if (error) {
+      event.preventDefault();
       setPresetError(error);
       return;
     }
@@ -114,8 +120,6 @@ function PresetEditorDialogContent({ mode, onClose, preset }: PresetEditorDialog
       dispatch(exportArgumentsChanged(draftArguments));
       dispatch(exportPresetCreated({ name: draftName }));
     }
-
-    onClose();
   }
 
   if (mode === "edit" && !preset) return null;
@@ -153,14 +157,19 @@ function PresetEditorDialogContent({ mode, onClose, preset }: PresetEditorDialog
         ) : null}
       </div>
       <DialogFooter>
-        <Button onClick={onClose} variant="outline">
-          {t("common.actions.cancel")}
-        </Button>
-        <Button onClick={savePreset}>{t("common.actions.save")}</Button>
+        <DialogClose asChild>
+          <Button type="button" variant="outline">
+            {t("common.actions.cancel")}
+          </Button>
+        </DialogClose>
+        <DialogClose asChild>
+          <Button onClick={savePreset} type="button">
+            {t("common.actions.save")}
+          </Button>
+        </DialogClose>
       </DialogFooter>
     </>
   );
 }
 
 export { PresetEditorDialogContent };
-export type { PresetEditorDialogContentProps };

@@ -1,42 +1,68 @@
-import { Suspense } from "react";
+import React, { Suspense, useState } from "react";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
-import { lazyWithPreload } from "@/lib/lazy-component";
+import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
-import type { PresetEditorDialogContentProps } from "./PresetEditorDialogContent";
+import type { PresetEditorRequest } from "./PresetEditorDialogContext";
+import { PresetEditorDialogContext, usePresetEditorDialog } from "./PresetEditorDialogContext";
 
-const LazyPresetEditorDialogContent = lazyWithPreload<PresetEditorDialogContentProps>(() =>
+const LazyPresetEditorDialogContent = lazyWithPreload<React.FragmentProps>(() =>
   import("./PresetEditorDialogContent").then((module) => ({
     default: module.PresetEditorDialogContent,
   })),
 );
 
-const PresetEditorDialog = Object.assign(
-  function PresetEditorDialog({
-    mode,
-    onOpenChange,
-    open,
-    preset,
-  }: Omit<PresetEditorDialogContentProps, "onClose"> & {
-    onOpenChange: (open: boolean) => void;
-    open: boolean;
-  }) {
-    return (
-      <Dialog onOpenChange={onOpenChange} open={open}>
+const preloadPresetEditorDialogContent = preloadOnIntent(() =>
+  LazyPresetEditorDialogContent.preload(),
+);
+
+function PresetEditorDialog({ children }: React.PropsWithChildren) {
+  const [request, setRequest] = useState<PresetEditorRequest | null>(null);
+
+  return (
+    <PresetEditorDialogContext.Provider value={{ request, setRequest }}>
+      <Dialog onOpenChange={(open) => !open && setRequest(null)}>
+        {children}
         <DialogContent className="sm:max-w-xl">
           <Suspense fallback={null}>
-            <LazyPresetEditorDialogContent
-              mode={mode}
-              onClose={() => onOpenChange(false)}
-              preset={preset}
-            />
+            <LazyPresetEditorDialogContent />
           </Suspense>
         </DialogContent>
       </Dialog>
-    );
-  },
-  { preload: () => LazyPresetEditorDialogContent.preload() },
-);
+    </PresetEditorDialogContext.Provider>
+  );
+}
 
-export { PresetEditorDialog };
+function PresetEditorDialogTrigger({
+  onClick,
+  onFocus,
+  onPointerEnter,
+  request,
+  ...props
+}: Omit<React.ComponentProps<typeof DialogTrigger>, "onClick"> & {
+  onClick?: React.ComponentProps<typeof DialogTrigger>["onClick"];
+  request: PresetEditorRequest;
+}) {
+  const { setRequest } = usePresetEditorDialog();
+
+  return (
+    <DialogTrigger
+      onClick={(event) => {
+        setRequest(request);
+        onClick?.(event);
+      }}
+      onFocus={(event) => {
+        onFocus?.(event);
+        preloadPresetEditorDialogContent();
+      }}
+      onPointerEnter={(event) => {
+        onPointerEnter?.(event);
+        preloadPresetEditorDialogContent();
+      }}
+      {...props}
+    />
+  );
+}
+
+export { PresetEditorDialog, PresetEditorDialogTrigger };

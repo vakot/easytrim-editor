@@ -1,1 +1,1 @@
-export { PresetEditorDialog } from "./PresetEditorDialog";
+export { PresetEditorDialog, PresetEditorDialogTrigger } from "./PresetEditorDialog";

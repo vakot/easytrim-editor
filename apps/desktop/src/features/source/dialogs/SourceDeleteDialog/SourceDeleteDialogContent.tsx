@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -77,7 +78,13 @@ function SourceDeleteDialogContent({
               })}
         </AlertDialogDescription>
       </AlertDialogHeader>
-      {error ? <p className="text-sm text-destructive">{localizeAppError(error, t)}</p> : null}
+
+      {error ? (
+        <Alert variant="destructive">
+          <AlertDescription>{localizeAppError(error, t)}</AlertDescription>
+        </Alert>
+      ) : null}
+
       <AlertDialogFooter>
         <AlertDialogCancel disabled={pending}>{t("common.actions.cancel")}</AlertDialogCancel>
         <AlertDialogAction
