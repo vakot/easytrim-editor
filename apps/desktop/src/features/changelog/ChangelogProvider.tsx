@@ -1,4 +1,4 @@
-import { type PropsWithChildren, Suspense, useEffect, useState } from "react";
+import { type PropsWithChildren, useEffect, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -7,15 +7,11 @@ import {
 } from "@/app/store/slices/preferences-slice";
 import { CHANGELOG } from "@/generated/changelog";
 import { getCurrentVersion } from "@/lib/app-version.utils";
-import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
+import { preloadOnIntent } from "@/lib/lazy-component";
 
-import type { ChangelogDialogProps } from "./components/ChangelogDialog";
 import { ChangelogDialogContext } from "./contexts/changelog-dialog-context";
+import { ChangelogDialog } from "./dialogs/ChangelogDialog/ChangelogDialog";
 import { getAvailableChangelog, getChangelogStartupState } from "./lib/changelog.utils";
-
-const ChangelogDialog = lazyWithPreload<ChangelogDialogProps>(() =>
-  import("./components/ChangelogDialog").then((module) => ({ default: module.ChangelogDialog })),
-);
 
 const preloadChangelogDialog = preloadOnIntent(() => ChangelogDialog.preload());
 
@@ -62,15 +58,11 @@ function ChangelogProvider({ children }: PropsWithChildren) {
       value={{ openChangelog, preloadChangelog: preloadChangelogDialog }}
     >
       {children}
-      {mode ? (
-        <Suspense fallback={null}>
-          <ChangelogDialog
-            mode={mode}
-            onClose={closeDialog}
-            releases={mode === "whats-new" ? unseenReleases : availableReleases}
-          />
-        </Suspense>
-      ) : null}
+      <ChangelogDialog
+        mode={mode}
+        onClose={closeDialog}
+        releases={mode === "whats-new" ? unseenReleases : availableReleases}
+      />
     </ChangelogDialogContext.Provider>
   );
 }

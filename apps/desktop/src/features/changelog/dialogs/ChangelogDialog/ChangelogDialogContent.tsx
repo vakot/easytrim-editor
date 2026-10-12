@@ -3,14 +3,7 @@ import { ExternalLink, ScrollText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Empty,
   EmptyDescription,
@@ -22,21 +15,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
-import type { ChangelogCategory, ChangelogRelease } from "../types";
+import type { ChangelogCategory, ChangelogRelease } from "../../types";
 
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/blob/master/CHANGELOG.md";
 
-type ChangelogDialogMode = "changelog" | "whats-new";
-
-interface ChangelogDialogProps {
-  mode: ChangelogDialogMode | null;
+interface ChangelogDialogContentProps {
+  isWhatsNew: boolean;
   onClose: () => void;
   releases: readonly ChangelogRelease[];
 }
 
-function ChangelogDialog({ mode, onClose, releases }: ChangelogDialogProps) {
+function ChangelogDialogContent({ isWhatsNew, onClose, releases }: ChangelogDialogContentProps) {
   const { t } = useTranslation();
-  const isWhatsNew = mode === "whats-new";
 
   const title = isWhatsNew ? t("support.whatsNew.title") : t("support.changelog.title");
 
@@ -45,32 +35,30 @@ function ChangelogDialog({ mode, onClose, releases }: ChangelogDialogProps) {
     : t("support.changelog.description");
 
   return (
-    <Dialog onOpenChange={(open) => !open && onClose()} open={mode !== null}>
-      <DialogContent className="grid max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-2xl">
-        <DialogHeader className="-mx-4 border-b px-4 pb-4">
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
+    <>
+      <DialogHeader className="-mx-4 border-b px-4 pb-4">
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
+      </DialogHeader>
 
-        <ScrollArea className="-mx-4 min-h-0 px-4" fadeColor="var(--popover)">
-          <ChangelogDialogContent releases={releases} />
-        </ScrollArea>
+      <ScrollArea className="-mx-4 min-h-0 px-4" fadeColor="var(--popover)">
+        <ChangelogReleaseList releases={releases} />
+      </ScrollArea>
 
-        <DialogFooter className="items-center sm:justify-between">
-          <Button onClick={() => void openExternalUrl(CHANGELOG_URL)} type="button" variant="ghost">
-            <ExternalLink aria-hidden="true" />
-            {t("support.project.actions.viewOnGitHub")}
-          </Button>
-          <Button onClick={onClose} type="button">
-            {t("common.actions.close")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <DialogFooter className="items-center sm:justify-between">
+        <Button onClick={() => void openExternalUrl(CHANGELOG_URL)} type="button" variant="ghost">
+          <ExternalLink aria-hidden="true" />
+          {t("support.project.actions.viewOnGitHub")}
+        </Button>
+        <Button onClick={onClose} type="button">
+          {t("common.actions.close")}
+        </Button>
+      </DialogFooter>
+    </>
   );
 }
 
-function ChangelogDialogContent({ releases }: { releases: ChangelogDialogProps["releases"] }) {
+function ChangelogReleaseList({ releases }: { releases: readonly ChangelogRelease[] }) {
   if (!releases.length) return <ChangelogDialogEmpty />;
 
   return (
@@ -141,5 +129,5 @@ function translateCategory(t: TFunction, category: ChangelogCategory): string {
   }
 }
 
-export { ChangelogDialog };
-export type { ChangelogDialogMode, ChangelogDialogProps };
+export { ChangelogDialogContent };
+export type { ChangelogDialogContentProps };
