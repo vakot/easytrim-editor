@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -144,11 +145,7 @@ function ChapterManagerDialogContent() {
               </Button>
             </div>
           ))}
-          {chapters.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">
-              {t("timeline.chapters.empty")}
-            </p>
-          ) : null}
+          {chapters.length === 0 ? <ChapterListEmpty /> : null}
           <DialogFooter>
             <Button disabled={!trim} onClick={beginCreate} type="button">
               <BookmarkPlus /> {t("timeline.chapters.actions.addChapter")}
@@ -247,6 +244,23 @@ function ChapterDraftDialog({
         ) : null}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ChapterListEmpty() {
+  const { t } = useTranslation();
+
+  return (
+    <Empty className="gap-2 border-0 p-4">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <BookmarkPlus aria-hidden="true" />
+        </EmptyMedia>
+        <EmptyTitle className="text-sm font-normal tracking-normal">
+          {t("timeline.chapters.empty")}
+        </EmptyTitle>
+      </EmptyHeader>
+    </Empty>
   );
 }
 
