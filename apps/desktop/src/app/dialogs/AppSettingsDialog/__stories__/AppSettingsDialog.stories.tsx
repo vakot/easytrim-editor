@@ -9,6 +9,7 @@ import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
+import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { EditorRuntimeProviders } from "@/app/providers/EditorRuntimeProviders";
@@ -21,18 +22,16 @@ import { QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
 
-import { SettingsDialog } from "../SettingsDialog";
-
 const meta = {
-  component: SettingsDialogStory,
+  component: AppSettingsDialogStory,
   parameters: { layout: "fullscreen" },
   title: "App/Settings Dialog",
-} satisfies Meta<typeof SettingsDialogStory>;
+} satisfies Meta<typeof AppSettingsDialogStory>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-function SettingsDialogStory() {
+function AppSettingsDialogStory() {
   const store = useMemo(() => createAppStore(), []);
   return (
     <Provider store={store}>
@@ -56,8 +55,8 @@ function SettingsDialogStory() {
                         <ResizablePanelContextProvider>
                           <ChangelogProvider>
                             <ApplicationCommandsProvider>
-                              <SettingsStoryControls />
-                              <SettingsDialog />
+                              <AppSettingsDialogStoryControls />
+                              <AppSettingsDialog />
                             </ApplicationCommandsProvider>
                           </ChangelogProvider>
                         </ResizablePanelContextProvider>
@@ -74,7 +73,7 @@ function SettingsDialogStory() {
   );
 }
 
-function SettingsStoryControls() {
+function AppSettingsDialogStoryControls() {
   const { openSettings } = useSettingsDialog();
   return (
     <div className="flex h-screen items-center justify-center bg-background">

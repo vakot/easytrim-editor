@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
 import { useCallback, useMemo, useState } from "react";
 
-import { preloadSettingsDialog } from "@/app/components/SettingsDialog/settings-dialog.loader";
 import { SettingsDialogContext } from "@/app/contexts/settings-dialog-context";
+import { preloadAppSettingsDialog } from "@/app/dialogs/AppSettingsDialog/app-settings-dialog.loader";
 
 function SettingsDialogProvider({ children }: { children: ReactNode }) {
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const openSettings = useCallback(() => {
-    void preloadSettingsDialog().catch(() => undefined);
+    void preloadAppSettingsDialog().catch(() => undefined);
     setSettingsOpen(true);
   }, []);
 

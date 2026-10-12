@@ -14,9 +14,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { CommandPalette } from "@/app/components/CommandPalette";
 import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
-import { SettingsDialog } from "@/app/components/SettingsDialog/SettingsDialog";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
+import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
@@ -307,7 +307,7 @@ describe("MenuBarTest", () => {
                             <CommandPalette />
                             <ExportActions />
                             <WorkspaceDialogSelectionProbe />
-                            <SettingsDialog />
+                            <AppSettingsDialog />
                             <SettingsOpenIndicator />
                           </ThemeProvider>
                         </ApplicationCommandsProvider>
@@ -376,7 +376,7 @@ describe("MenuBarTest", () => {
     renderMenus({ hasQueuedItems: true, hasActiveItem: true });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Preferences" }));
+    await user.click(await screen.findByRole("tab", { name: "Preferences" }));
     expect(screen.queryByRole("tab", { name: "Queue" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reset editing settings" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reset queue settings" })).toBeInTheDocument();
@@ -392,7 +392,7 @@ describe("MenuBarTest", () => {
     renderMenus({ themePreference: "dark", primaryColor: "#4299e1" });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Appearance" }));
+    await user.click(await screen.findByRole("tab", { name: "Appearance" }));
     expect(screen.queryByRole("button", { name: "Reset to default" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
   });
@@ -405,7 +405,7 @@ describe("MenuBarTest", () => {
     });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Preferences" }));
+    await user.click(await screen.findByRole("tab", { name: "Preferences" }));
     await user.click(screen.getByRole("button", { name: "Reset queue settings" }));
 
     expect(menuState.dispatch).toHaveBeenCalledWith(
@@ -422,7 +422,7 @@ describe("MenuBarTest", () => {
     });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Preferences" }));
+    await user.click(await screen.findByRole("tab", { name: "Preferences" }));
     await user.click(screen.getByRole("combobox", { name: "On queue finished" }));
     await user.click(screen.getByRole("option", { name: "Exit application" }));
     expect(menuState.dispatch).toHaveBeenCalledWith(
@@ -435,7 +435,7 @@ describe("MenuBarTest", () => {
     renderMenus();
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Preferences" }));
+    await user.click(await screen.findByRole("tab", { name: "Preferences" }));
     const deleteSourceItem = screen.getByRole("switch", { name: "Delete source" });
     expect(deleteSourceItem).not.toBeChecked();
 
@@ -464,7 +464,7 @@ describe("MenuBarTest", () => {
     });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Preferences" }));
+    await user.click(await screen.findByRole("tab", { name: "Preferences" }));
     const deleteSourceItem = screen.getByRole("switch", { name: "Delete source" });
     expect(deleteSourceItem).toBeChecked();
 
