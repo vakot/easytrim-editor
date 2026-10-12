@@ -22,12 +22,12 @@ vi.mock("@/app/hooks/useApplicationCommands", () => ({
   }),
 }));
 
-import { CommandPalette as BaseCommandPalette } from "../CommandPalette";
+import { AppCommandPaletteDialog as BaseAppCommandPaletteDialog } from "../AppCommandPaletteDialog";
 
 function CommandPalette() {
   return (
     <CommandPaletteProvider>
-      <BaseCommandPalette />
+      <BaseAppCommandPaletteDialog />
     </CommandPaletteProvider>
   );
 }
@@ -78,7 +78,7 @@ describe("CommandPalette semantic icons", () => {
     render(
       <CommandPaletteProvider>
         <OpenPaletteControl />
-        <BaseCommandPalette />
+        <BaseAppCommandPaletteDialog />
       </CommandPaletteProvider>,
     );
 

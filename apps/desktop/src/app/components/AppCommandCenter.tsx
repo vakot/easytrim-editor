@@ -13,8 +13,8 @@ import {
   getShortcutAriaValue,
   getShortcutDisplayKeys,
 } from "@/app/commands/core/application-command.utils";
-import { preloadCommandPalette } from "@/app/components/CommandPalette/command-palette.loader";
 import { useCommandPalette } from "@/app/contexts/command-palette-context";
+import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
 import {
@@ -25,7 +25,7 @@ import {
 import { cn } from "@/lib/class-names.utils";
 import { preloadOnIntent } from "@/lib/lazy-component";
 
-const preloadCommandPaletteOnIntent = preloadOnIntent(preloadCommandPalette);
+const preloadCommandPaletteOnIntent = preloadOnIntent(AppCommandPaletteDialog.preload);
 
 const MotionButton = motion.create(Button);
 

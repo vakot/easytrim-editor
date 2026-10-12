@@ -12,10 +12,10 @@ import { describe, expect, it, vi } from "vitest";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { CommandPalette } from "@/app/components/CommandPalette";
 import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
+import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
@@ -304,7 +304,7 @@ describe("MenuBarTest", () => {
                         <ApplicationCommandsProvider>
                           <ThemeProvider>
                             <AppMenuBar />
-                            <CommandPalette />
+                            <AppCommandPaletteDialog />
                             <ExportActions />
                             <WorkspaceDialogSelectionProbe />
                             <AppSettingsDialog />

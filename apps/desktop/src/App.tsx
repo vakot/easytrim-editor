@@ -8,10 +8,10 @@ import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { CommandPalette } from "@/app/components/CommandPalette";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { WorkspaceRecoveryNotice } from "@/app/components/WorkspaceRecoveryNotice";
+import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppDiagnosticsRecoveryDialog } from "@/app/dialogs/AppDiagnosticsRecoveryDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
 import { AppShutdownGuardDialog } from "@/app/dialogs/AppShutdownGuardDialog";
@@ -60,7 +60,7 @@ function EasyTrimEditorApp() {
                         <ApplicationCommandsProvider>
                           <AppLayout />
                           <AppSettingsDialog />
-                          <CommandPalette />
+                          <AppCommandPaletteDialog />
 
                           <Toaster />
                           <ActivityToasts />

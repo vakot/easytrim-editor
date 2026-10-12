@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 
 import {
   Command,
-  CommandDialog,
   CommandEmpty,
   CommandGroup,
   CommandInput,
@@ -14,6 +13,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Highlight } from "@/components/ui/highlight";
 import { InputGroupAddon } from "@/components/ui/input-group";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
@@ -38,30 +38,26 @@ type CommandPaletteGroupMatches = {
   matches: ApplicationCommandMatch<ApplicationCommandId>[];
 };
 
-interface CommandPaletteDialogProps {
+interface AppCommandPaletteDialogContentProps {
   commands: readonly ApplicationCommand<ApplicationCommandId>[];
   executeCommand: (command: ApplicationCommand<ApplicationCommandId>) => void;
-  onOpenChange: (open: boolean) => void;
 }
 
-function CommandPaletteDialog({
+function AppCommandPaletteDialogContent({
   commands,
   executeCommand,
-  onOpenChange,
-}: CommandPaletteDialogProps) {
+}: AppCommandPaletteDialogContentProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const matches = filterApplicationCommands(commands, query);
   const groups = groupCommandMatches(matches);
 
   return (
-    <CommandDialog
-      className="top-1/2 h-[min(60dvh,32rem)] -translate-y-1/2 overflow-hidden rounded-xl! p-0 sm:max-w-md"
-      description={t("commands.description")}
-      onOpenChange={onOpenChange}
-      open
-      title={t("commands.title")}
-    >
+    <>
+      <DialogHeader className="sr-only">
+        <DialogTitle>{t("commands.title")}</DialogTitle>
+        <DialogDescription>{t("commands.description")}</DialogDescription>
+      </DialogHeader>
       <Command label={t("common.search.commands")} shouldFilter={false}>
         <CommandInputGroup>
           <CommandInput
@@ -83,7 +79,7 @@ function CommandPaletteDialog({
                 heading={<Highlight ranges={group.groupMatchRanges}>{group.groupLabel}</Highlight>}
               >
                 {group.matches.map((match) => (
-                  <CommandPaletteItem
+                  <AppCommandPaletteItem
                     executeCommand={executeCommand}
                     key={match.command.id}
                     match={match}
@@ -94,18 +90,19 @@ function CommandPaletteDialog({
           ))}
         </CommandList>
       </Command>
-    </CommandDialog>
+    </>
   );
 }
 
-function CommandPaletteItem({
+function AppCommandPaletteItem({
   executeCommand,
   match,
 }: {
-  executeCommand: CommandPaletteDialogProps["executeCommand"];
+  executeCommand: AppCommandPaletteDialogContentProps["executeCommand"];
   match: ApplicationCommandMatch<ApplicationCommandId>;
 }) {
   const { command } = match;
+
   return (
     <CommandItem
       aria-busy={command.pending}
@@ -170,5 +167,5 @@ function mergeRanges(
     .sort(([firstStart], [secondStart]) => firstStart - secondStart);
 }
 
-export { CommandPaletteDialog };
-export type { CommandPaletteDialogProps };
+export { AppCommandPaletteDialogContent };
+export type { AppCommandPaletteDialogContentProps };
