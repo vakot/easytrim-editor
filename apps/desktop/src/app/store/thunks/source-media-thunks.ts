@@ -14,6 +14,7 @@ import {
   withdrawPendingExport,
 } from "@/app/store/integration/export-queue-runtime";
 import { getReplacementEditingInstance } from "@/app/store/lib/editing-instances";
+import { selectChapters } from "@/app/store/slices/chapters-slice";
 import {
   audioPreviewsLoading,
   audioPreviewsReady,
@@ -534,6 +535,7 @@ async function prepareSelectedSource(
         flipVertical: snapshot.flipVertical,
         rotation: snapshot.rotation,
         sceneBoundariesMicros: snapshot.sceneBoundariesMicros,
+        chapters: snapshot.chapters,
         audioTracks: snapshot.audio.tracks,
         mergeAudio: snapshot.audio.mergeAudio,
       })
@@ -713,6 +715,7 @@ async function prepareSelectedSource(
       trim: { kind: "full-source" },
       crop: null,
       rotation: 0,
+      chapters: selectChapters(getState()),
       audioTracks: selectAudioTracks(getState()),
       mergeAudio: selectMergeAudio(getState()),
     });

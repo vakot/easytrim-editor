@@ -1,5 +1,6 @@
 import { type AudioTrackSettings, serializeAudioTrackSettings } from "./audio-processing";
 import type { CropRect } from "./crop";
+import type { EditorChapter, MediaInfo } from "./media";
 import type { RotationDegrees } from "./rotation";
 import type { SourceRef } from "./source";
 import { createFullTrimRange, type TrimRange } from "./trim";
@@ -12,6 +13,7 @@ interface EditorSnapshot {
     tracks: AudioTrackSettings[];
   };
   crop: CropRect | null;
+  chapters?: EditorChapter[];
   flipHorizontal?: boolean;
   flipVertical?: boolean;
   rotation?: RotationDegrees;
@@ -23,6 +25,7 @@ interface EditorSnapshot {
 function createEditorSnapshot(input: {
   audioTracks: EditorSnapshot["audio"]["tracks"];
   crop: CropRect | null;
+  chapters?: EditorChapter[];
   flipHorizontal?: boolean;
   flipVertical?: boolean;
   mergeAudio: boolean;
@@ -35,6 +38,9 @@ function createEditorSnapshot(input: {
     source: { ...input.source },
     trim: "kind" in input.trim ? { kind: input.trim.kind } : { ...input.trim },
     crop: input.crop ? { ...input.crop } : null,
+    ...(input.chapters === undefined
+      ? {}
+      : { chapters: input.chapters.map((chapter) => ({ ...chapter })) }),
     flipHorizontal: input.flipHorizontal ?? false,
     flipVertical: input.flipVertical ?? false,
     rotation: input.rotation ?? 0,
@@ -48,6 +54,15 @@ function createEditorSnapshot(input: {
   };
 }
 
+function editorChaptersFromMedia(media: MediaInfo): EditorChapter[] {
+  return media.chapters.map((chapter, index) => ({
+    endMicros: chapter.endMicros,
+    id: `source-${chapter.id}`,
+    startMicros: chapter.startMicros,
+    title: chapter.title?.trim() || `Chapter ${index + 1}`,
+  }));
+}
+
 function resolveEditorSnapshotTrim(
   trim: EditorSnapshotTrim,
   sourceDurationMicros: number,
@@ -59,6 +74,6 @@ function resolveEditorSnapshotTrim(
   return { ...trim, sourceDurationMicros };
 }
 
-export { createEditorSnapshot, resolveEditorSnapshotTrim };
+export { createEditorSnapshot, editorChaptersFromMedia, resolveEditorSnapshotTrim };
 
 export type { EditorSnapshot };

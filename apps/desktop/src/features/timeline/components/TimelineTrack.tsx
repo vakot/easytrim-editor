@@ -6,10 +6,12 @@ import { useDragAwareDoubleClick } from "@/components/ui/useDragAwareDoubleClick
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
+import { selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
 import { selectSceneMarkersEnabled } from "@/app/store/slices/editor-tools-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { clampPlaybackMicros } from "@/domain/playback";
+import { formatPlaybackTime } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent, type TrimRange } from "@/domain/trim";
 import { audioTrackColor } from "@/features/audio";
 import { useTimeline, useTimelineReadiness } from "@/features/timeline";
@@ -30,6 +32,8 @@ function TimelineTrack() {
   return (
     <Timeline>
       <TimelineSegment />
+
+      <TimelineChapterMarkers />
 
       <TimelineSceneMarkers />
 
@@ -120,6 +124,7 @@ function Timeline({ children }: { children: React.ReactNode }) {
         ...interactions,
         range,
         disabled,
+        onSeek: timeline.onSeek,
         playheadMicros: timeline.playheadMicros,
         playheadRef: timeline.playheadRef,
       }}
@@ -285,6 +290,52 @@ function TimelineAudioActivityMarkers() {
   );
 }
 
+function TimelineChapterMarkers() {
+  const { onSeek, range } = useTimelineTrack();
+  const chapters = useAppSelector(selectChapters);
+  const { t } = useTranslation();
+
+  return (
+    <>
+      {chapters.map((chapter) => {
+        const left = timelinePercent(chapter.startMicros, range.sourceDurationMicros);
+        const right = timelinePercent(chapter.endMicros, range.sourceDurationMicros);
+        return (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1 left-0 z-2 h-1 rounded-full bg-primary/20"
+            key={`span-${chapter.id}`}
+            style={{ left: `${left}%`, width: `${Math.max(0.15, right - left)}%` }}
+          />
+        );
+      })}
+      {chapters.map((chapter) => {
+        const left = timelinePercent(chapter.startMicros, range.sourceDurationMicros);
+        const rangeLabel = `${formatPlaybackTime(chapter.startMicros, undefined)} – ${formatPlaybackTime(chapter.endMicros, undefined)}`;
+        const label = t("timeline.chapters.markerLabel", {
+          title: chapter.title,
+          range: rangeLabel,
+        });
+        return (
+          <button
+            aria-label={label}
+            className="absolute top-0 z-3 size-2 -translate-x-1/2 rounded-b-sm bg-primary shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
+            key={chapter.id}
+            onClick={(event) => {
+              event.stopPropagation();
+              onSeek(chapter.startMicros);
+            }}
+            onPointerDown={(event) => event.stopPropagation()}
+            style={{ left: `${left}%` }}
+            title={label}
+            type="button"
+          />
+        );
+      })}
+    </>
+  );
+}
+
 function TimelineSceneMarkers() {
   const { range } = useTimelineTrack();
 
@@ -318,6 +369,7 @@ function TimelineSceneMarkers() {
 const TimelineTrackContext = createContext<
   | (ReturnType<typeof useTrimTimelineInteractions> & {
       disabled: boolean;
+      onSeek: (micros: number) => void;
       playheadMicros: number;
       playheadRef: React.RefObject<HTMLButtonElement | null>;
       range: TrimRange;

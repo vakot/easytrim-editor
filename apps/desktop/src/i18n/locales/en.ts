@@ -941,6 +941,20 @@ export const en = {
         findSceneChanges: "Find scene changes in the source video",
       },
     },
+    chapters: {
+      actions: {
+        addChapter: "Add chapter from selected segment",
+        deleteChapter: "Delete {{title}}",
+        editChapter: "Edit {{title}}",
+        manageChapters: "Manage chapters",
+      },
+      description: "Chapters follow the source timeline and are clipped to the selected segment during export.",
+      empty: "No chapters yet",
+      fields: { endSeconds: "End (seconds)", startSeconds: "Start (seconds)", title: "Title" },
+      markerLabel: "{{title}} · {{range}}",
+      status: { invalid: "Enter a title and a valid chapter range." },
+      title: "Chapters",
+    },
     segment: {
       actions: {
         moveSegment: "Move selected segment",

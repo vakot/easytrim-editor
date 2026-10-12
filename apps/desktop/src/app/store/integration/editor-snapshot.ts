@@ -5,6 +5,7 @@ import {
   selectRotationDegrees,
 } from "@/app/store/slices/crop-slice";
 import { selectActiveEditingInstance } from "@/app/store/slices/editing-instances-slice";
+import { selectChapters } from "@/app/store/slices/chapters-slice";
 import type { RootState } from "@/app/store/store";
 import { serializeAudioTrackSettings } from "@/domain/audio-processing";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
@@ -41,6 +42,7 @@ function createEditorSnapshotFromState(state: RootState, source: SourceRef): Edi
     flipVertical: selectFlipVertical(state),
     rotation: selectRotationDegrees(state),
     sceneBoundariesMicros,
+    chapters: selectChapters(state),
     audioTracks: state.audio.tracks.map(serializeAudioTrackSettings),
     mergeAudio: state.audio.mergeAudio,
   });

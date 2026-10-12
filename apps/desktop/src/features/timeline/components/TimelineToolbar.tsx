@@ -21,6 +21,7 @@ import { cn } from "@/lib/class-names.utils";
 import { useSceneDetection } from "../hooks/useSceneDetection";
 
 import { StereoAudioMeter } from "./StereoAudioMeter";
+import { ChapterManagerDialog } from "./ChapterManagerDialog";
 
 function TimelineToolbar() {
   const { t } = useTranslation();
@@ -36,6 +37,7 @@ function TimelineToolbar() {
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
         <SceneDetectionTool />
+        <ChapterManagerDialog />
       </div>
 
       <Card className="flex-1 gap-0 rounded-md border border-border bg-muted p-0 ring-0">

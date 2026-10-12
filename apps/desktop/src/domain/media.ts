@@ -41,6 +41,7 @@ interface ExportResult {
 interface FastExportRequest {
   audioMetadata?: AudioTrackMetadataSelection[];
   audioTracks: AudioTrackSelection[];
+  chapters?: EditorChapter[];
   mergeAudio: boolean;
   rotationDegrees: import("./rotation").RotationDegrees;
   sourcePath: string;
@@ -146,6 +147,13 @@ interface ChapterInfo {
   title?: string;
 }
 
+interface EditorChapter {
+  endMicros: number;
+  id: string;
+  startMicros: number;
+  title: string;
+}
+
 interface MediaInfo {
   audioStreams: AudioStream[];
   bitrate?: number;
@@ -166,6 +174,7 @@ export type {
   AudioStream,
   AudioTrackMetadataSelection,
   ChapterInfo,
+  EditorChapter,
   ExportProgress,
   ExportResult,
   FastExportRequest,

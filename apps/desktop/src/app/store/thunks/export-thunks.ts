@@ -12,6 +12,7 @@ import {
 } from "@/app/store/integration/export-queue-runtime";
 import { outputDefaults } from "@/app/store/lib/export-defaults";
 import { selectAudioTracks, selectMergeAudio } from "@/app/store/slices/audio-slice";
+import { selectChapters } from "@/app/store/slices/chapters-slice";
 import {
   selectCrop,
   selectCropApplied,
@@ -564,6 +565,7 @@ function getCurrentExportSnapshot(state: ReturnType<Parameters<AppThunk>[1]>) {
     flipHorizontal: selectFlipHorizontal(state),
     flipVertical: selectFlipVertical(state),
     rotation: selectRotationDegrees(state),
+    chapters: selectChapters(state),
     audioTracks: selectAudioTracks(state).map(serializeAudioTrackSettings),
     mergeAudio: selectMergeAudio(state),
   });
@@ -607,6 +609,7 @@ function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportR
     mergeAudio: selectMergeAudio(state),
     stripMetadata: state.preferences.stripMetadataOnExport,
     rotationDegrees: transform.rotationDegrees,
+    chapters: selectChapters(state),
   };
 }
 
@@ -645,6 +648,7 @@ function getOptimizedRequest(
     mergeAudio: selectMergeAudio(state),
     stripMetadata: state.preferences.stripMetadataOnExport,
     rotationDegrees: transform.rotationDegrees,
+    chapters: selectChapters(state),
     resolution: settings.resolution,
     crop: selectCropApplied(state) ? transform.crop : undefined,
     flipHorizontal: transform.flipHorizontal,
