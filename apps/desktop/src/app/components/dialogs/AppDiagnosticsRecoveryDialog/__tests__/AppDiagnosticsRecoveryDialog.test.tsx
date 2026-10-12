@@ -12,7 +12,7 @@ vi.mock("@/lib/tauri/diagnostics", () => ({
   revealDiagnosticReport,
 }));
 
-import { DiagnosticsRecoveryDialog } from "../DiagnosticsRecoveryDialog";
+import { AppDiagnosticsRecoveryDialog } from "../AppDiagnosticsRecoveryDialog";
 
 const recovery = {
   classification: "abnormal_shutdown" as const,
@@ -21,16 +21,16 @@ const recovery = {
   sessionId: "session-1",
 };
 
-describe("DiagnosticsRecoveryDialog", () => {
+describe("AppDiagnosticsRecoveryDialog", () => {
   it("stays absent when startup has no recovery report", () => {
-    render(<DiagnosticsRecoveryDialog recovery={null} />);
+    render(<AppDiagnosticsRecoveryDialog recovery={null} />);
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
   it("shows abnormal shutdown recovery and reveals the selected report", async () => {
-    render(<DiagnosticsRecoveryDialog recovery={recovery} />);
+    render(<AppDiagnosticsRecoveryDialog recovery={recovery} />);
 
-    expect(screen.getByRole("alertdialog")).toHaveTextContent(
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent(
       "EasyTrim did not shut down normally",
     );
     fireEvent.click(screen.getByRole("button", { name: "Show Report" }));

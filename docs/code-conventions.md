@@ -8,6 +8,9 @@ agent quality and scope policy remains in [`.agents/rules/code-quality.md`](../.
 - Frontend directories use `kebab-case`; `__tests__` is the reserved test-directory exception.
 - Application React component files use `PascalCase.tsx` and normally export the matching named
   component. `components/ui` keeps ecosystem `kebab-case.tsx` names for shadcn/Radix primitives.
+- Components under `apps/desktop/src/app` use the `App<ComponentName>` prefix in their file and
+  exported component names. Components under `apps/desktop/src/app/layout` use
+  `AppLayout<ComponentName>`; the layout root may be named `AppLayout`.
 - Feature-owned components live under the feature's `components/` directory. Keep small components
   as direct children; place a cohesive large component in a nested package with its internal
   `components/`, `hooks/`, `contexts/`, `lib/`, optional container, and `index.ts` barrel.
@@ -149,3 +152,7 @@ same cached lazy import on pointer hover and keyboard focus, and forwards trigge
 provide their own trigger UI with `asChild`. Keep `DialogNameContext` out unless trigger and content
 need to share dialog-local state. Keep heavy context and effects inside the lazy content when they
 do not need to live while the dialog is closed.
+
+For dialogs opened automatically or programmatically without an interactive trigger, preload from
+the event that requests opening before setting the dialog open. Do not add a hidden trigger solely
+for preloading.
