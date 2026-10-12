@@ -21,6 +21,7 @@ import {
 import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 type SettingsPageId = "general" | "appearance" | "preferences" | "layout" | "about";
+const DEFAULT_PAGE: SettingsPageId = "general";
 
 const LazySettingsAbout = lazyWithPreload<React.FragmentProps>(() =>
   import("./pages/SettingsAbout").then((module) => ({ default: module.SettingsAbout })),
@@ -45,17 +46,17 @@ const LazySettingsPreferences = lazyWithPreload<React.FragmentProps>(() =>
 );
 
 const preloadSettingsPage = {
-  about: preloadOnIntent(() => LazySettingsAbout.preload()),
-  appearance: preloadOnIntent(() => LazySettingsAppearance.preload()),
-  general: preloadOnIntent(() => LazySettingsGeneral.preload()),
-  layout: preloadOnIntent(() => LazySettingsLayout.preload()),
-  preferences: preloadOnIntent(() => LazySettingsPreferences.preload()),
-} satisfies Record<SettingsPageId, () => void>;
+  about: () => LazySettingsAbout.preload(),
+  appearance: () => LazySettingsAppearance.preload(),
+  general: () => LazySettingsGeneral.preload(),
+  layout: () => LazySettingsLayout.preload(),
+  preferences: () => LazySettingsPreferences.preload(),
+} satisfies Record<SettingsPageId, () => Promise<unknown>>;
 
 const AppSettingsDialogContent = Object.assign(
   function AppSettingsDialogContent() {
     const { t } = useTranslation();
-    const [selectedPage, setSelectedPage] = useState<SettingsPageId>("general");
+    const [selectedPage, setSelectedPage] = useState<SettingsPageId>(DEFAULT_PAGE);
 
     return (
       <>
@@ -113,12 +114,12 @@ const AppSettingsDialogContent = Object.assign(
       </>
     );
   },
-  { preloadDefaultPage: () => LazySettingsGeneral.preload() },
+  { preloadDefaultPage: () => preloadSettingsPage[DEFAULT_PAGE]() },
 );
 
 function AppSettingsPageItem({ page }: { page: SettingsPageId }) {
   const { t } = useTranslation();
-  const preload = preloadSettingsPage[page];
+  const preload = preloadOnIntent(preloadSettingsPage[page]);
 
   return (
     <LibraryNavigationItem onFocus={preload} onPointerEnter={preload} value={page}>
