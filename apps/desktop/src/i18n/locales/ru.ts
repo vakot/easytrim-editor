@@ -957,6 +957,21 @@ export const ru = {
         findSceneChanges: "Найти смены сцен в исходном видео",
       },
     },
+    chapters: {
+      actions: {
+        addChapter: "Добавить главу",
+        deleteChapter: "Удалить {{title}}",
+        editChapter: "Редактировать {{title}}",
+        manageChapters: "Управлять главами",
+      },
+      description: "Главы следуют таймлайну источника и оберзаются к выбранному сегменту по время экспорта.",
+      empty: "Глав пока нет",
+      fields: { endSeconds: "Конец (секунды)", startSeconds: "Начала (секунды)", title: "Название" },
+      markerLabel: "{{title}} · {{range}}",
+      status: { invalid: "Введите название и правильные границы." },
+      title: "Главы",
+      tooltips: { manageChapters: "Управление главами" },
+    },
     segment: {
       actions: {
         moveSegment: "Переместить выбранный сегмент",

@@ -5,7 +5,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   DialogClose,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -56,7 +55,7 @@ function ChapterDraftDialogContent() {
   };
 
   return (
-    <DialogContent className="sm:max-w-lg">
+    <>
       <DialogHeader>
         <DialogTitle>{draft.title || t("timeline.chapters.title")}</DialogTitle>
         <DialogDescription>{t("timeline.chapters.description")}</DialogDescription>
@@ -101,13 +100,13 @@ function ChapterDraftDialogContent() {
             value={(draft.endMicros / 1_000_000).toFixed(3)}
           />
         </div>
-
-        {error ? (
-          <Alert variant="destructive">
-            <AlertDescription>{t("timeline.chapters.status.invalid")}</AlertDescription>
-          </Alert>
-        ) : null}
       </div>
+
+      {error ? (
+        <Alert variant="destructive">
+          <AlertDescription>{t("timeline.chapters.status.invalid")}</AlertDescription>
+        </Alert>
+      ) : null}
 
       <DialogFooter>
         <DialogClose asChild>
@@ -121,7 +120,7 @@ function ChapterDraftDialogContent() {
           </Button>
         </DialogClose>
       </DialogFooter>
-    </DialogContent>
+    </>
   );
 }
 

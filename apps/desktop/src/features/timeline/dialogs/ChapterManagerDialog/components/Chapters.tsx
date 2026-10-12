@@ -21,7 +21,7 @@ function Chapters({ children }: { children: React.ReactNode }) {
 
 function ChaptersContent({ className, ...props }: React.ComponentProps<typeof ScrollArea>) {
   const chapters = useAppSelector(selectChapters);
-  if (!chapters) return <ChaptersEmpty />;
+  if (!chapters.length) return <ChaptersEmpty />;
   return (
     <ScrollArea
       className={cn("min-h-0 flex-1", className)}
@@ -31,11 +31,11 @@ function ChaptersContent({ className, ...props }: React.ComponentProps<typeof Sc
   );
 }
 
-function ChaptersList() {
+function ChaptersList({ className, ...props }: Omit<React.ComponentProps<"ul">, "children">) {
   const chapters = useAppSelector(selectChapters);
 
   return (
-    <ul className="grid gap-3">
+    <ul className={cn("grid gap-3", className)} {...props}>
       {chapters.map((chapter) => (
         <li key={chapter.id}>
           <ChaptersListItem chapter={chapter} />

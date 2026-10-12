@@ -1,4 +1,4 @@
-import { BetweenVerticalStart, Clapperboard, Repeat } from "lucide-react";
+import { BetweenVerticalStart, BookmarkPlus, Clapperboard, Repeat } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ function TimelineToolbar() {
           <LoopPlaybackTool />
           <SegmentPlaybackTool />
           <SceneDetectionTool />
-          <ChapterManagerDialogTrigger />
+          <ChaptersTool />
         </div>
 
         <Card className="flex-1 gap-0 rounded-md border border-border bg-muted p-0 ring-0">
@@ -48,6 +48,28 @@ function TimelineToolbar() {
         </Card>
       </div>
     </ChapterManagerDialog>
+  );
+}
+
+function ChaptersTool() {
+  const { t } = useTranslation();
+
+  return (
+    <Tooltip preserveOnTrigger>
+      <TooltipTrigger asChild>
+        <ChapterManagerDialogTrigger asChild>
+          <Button
+            aria-label={t("timeline.chapters.actions.manageChapters")}
+            size="icon-sm"
+            type="button"
+            variant="secondary"
+          >
+            <BookmarkPlus />
+          </Button>
+        </ChapterManagerDialogTrigger>
+      </TooltipTrigger>
+      <TooltipContent>{t("timeline.chapters.tooltips.manageChapters")}</TooltipContent>
+    </Tooltip>
   );
 }
 

@@ -943,7 +943,7 @@ export const en = {
     },
     chapters: {
       actions: {
-        addChapter: "Add chapter from selected segment",
+        addChapter: "Add chapter",
         deleteChapter: "Delete {{title}}",
         editChapter: "Edit {{title}}",
         manageChapters: "Manage chapters",
@@ -954,6 +954,7 @@ export const en = {
       markerLabel: "{{title}} · {{range}}",
       status: { invalid: "Enter a title and a valid chapter range." },
       title: "Chapters",
+      tooltips: { manageChapters: "Manage chapters" },
     },
     segment: {
       actions: {

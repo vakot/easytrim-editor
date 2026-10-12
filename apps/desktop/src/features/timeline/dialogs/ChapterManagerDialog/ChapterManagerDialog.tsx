@@ -1,16 +1,12 @@
-import { BookmarkPlus } from "lucide-react";
-import React, { Suspense, useState } from "react";
-import { useTranslation } from "react-i18next";
+import React from "react";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
 import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
-const LazyChapterManagerDialogContent = lazyWithPreload<{ sourceKey: string }>(() =>
+const LazyChapterManagerDialogContent = lazyWithPreload<React.FragmentProps>(() =>
   import("./ChapterManagerDialogContent").then((module) => ({
     default: module.ChapterManagerDialogContent,
   })),
@@ -22,32 +18,29 @@ const preloadChapterManagerDialogContent = preloadOnIntent(() =>
 
 function ChapterManagerDialog({ children }: { children: React.ReactNode }) {
   const source = useAppSelector(selectSourceSelection);
-  const [open, setOpen] = useState(false);
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog>
       {children}
-      {open ? (
-        <Suspense fallback={null}>
-          <LazyChapterManagerDialogContent sourceKey={source?.sourcePath ?? "no-source"} />
-        </Suspense>
-      ) : null}
+      <DialogContent className="h-[min(80dvh,40rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
+        <React.Suspense fallback={null}>
+          <LazyChapterManagerDialogContent key={source?.sourcePath ?? "no-source"} />
+        </React.Suspense>
+      </DialogContent>
     </Dialog>
   );
 }
 
 function ChapterManagerDialogTrigger({
-  disabled,
   onFocus,
   onPointerEnter,
   ...props
-}: React.ComponentProps<typeof DialogTrigger>) {
-  const { t } = useTranslation();
-  const trim = useAppSelector(selectTrim);
+}: Omit<React.ComponentProps<typeof DialogTrigger>, "disabled">) {
+  const source = useAppSelector(selectSourceSelection);
 
   return (
     <DialogTrigger
-      disabled={!trim || disabled}
+      disabled={!source}
       onFocus={(event) => {
         onFocus?.(event);
         preloadChapterManagerDialogContent();
@@ -57,18 +50,7 @@ function ChapterManagerDialogTrigger({
         preloadChapterManagerDialogContent();
       }}
       {...props}
-      asChild
-    >
-      <Button
-        aria-label={t("timeline.chapters.actions.manageChapters")}
-        disabled={!trim || disabled}
-        size="icon-sm"
-        type="button"
-        variant="secondary"
-      >
-        <BookmarkPlus />
-      </Button>
-    </DialogTrigger>
+    />
   );
 }
 
