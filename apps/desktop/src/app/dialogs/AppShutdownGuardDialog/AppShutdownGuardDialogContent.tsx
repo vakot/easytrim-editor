@@ -9,8 +9,36 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-function AppShutdownGuardDialogContent({ onConfirmClose }: { onConfirmClose: () => void }) {
+import { clearWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
+import { closeWindow, type WindowShutdownContinuation } from "@/lib/tauri/window";
+
+function AppShutdownGuardDialogContent({
+  continuation,
+}: {
+  continuation?: WindowShutdownContinuation;
+}) {
   const { t } = useTranslation();
+
+  const handleAccept = async () => {
+    // TODO: simple allow shutdown
+    try {
+      await clearWorkspaceRecoveryOnAcceptedShutdown();
+
+      if (continuation) {
+        continuation?.();
+        return;
+      }
+
+      await closeWindow();
+    } catch {
+      handleReject();
+    }
+  };
+
+  const handleReject = async () => {
+    // TODO: simple reject shutdown
+    return;
+  };
 
   return (
     <>
@@ -21,8 +49,8 @@ function AppShutdownGuardDialogContent({ onConfirmClose }: { onConfirmClose: () 
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>{t("common.actions.back")}</AlertDialogCancel>
-        <AlertDialogAction onClick={onConfirmClose} variant="destructive">
+        <AlertDialogCancel onClick={handleReject}>{t("common.actions.back")}</AlertDialogCancel>
+        <AlertDialogAction onClick={handleAccept} variant="destructive">
           {t("queue.onFinished.shortOptions.exit")}
         </AlertDialogAction>
       </AlertDialogFooter>
