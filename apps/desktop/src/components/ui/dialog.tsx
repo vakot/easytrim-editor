@@ -12,8 +12,9 @@ import { cn } from "@/lib/class-names.utils";
 const createDialogScope = DialogPrimitive.createDialogScope;
 
 type Scope = ReturnType<ReturnType<typeof createDialogScope>>;
+type DialogScope = Scope["__scopeDialog"];
 type ScopeProps = {
-  __scopeDialog?: Scope["__scopeDialog"];
+  __scopeDialog?: DialogScope;
 };
 
 type ScopedProps<T extends React.ElementType> = React.ComponentProps<T> & ScopeProps;
@@ -198,3 +199,4 @@ export {
   DialogTitle,
   DialogTrigger,
 };
+export type { DialogScope };

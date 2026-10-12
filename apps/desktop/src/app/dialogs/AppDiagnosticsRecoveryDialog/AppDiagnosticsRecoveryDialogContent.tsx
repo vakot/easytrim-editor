@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { AlertDialogScope } from "@/components/ui/alert-dialog";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -15,7 +16,13 @@ import { diagnostics } from "@/lib/diagnostics";
 import { revealDiagnosticReport } from "@/lib/tauri/diagnostics";
 import type { StartupRecovery } from "@/lib/tauri/diagnostics.types";
 
-function AppDiagnosticsRecoveryDialogContent({ recovery }: { recovery: StartupRecovery }) {
+function AppDiagnosticsRecoveryDialogContent({
+  __scopeAlertDialog,
+  recovery,
+}: {
+  __scopeAlertDialog?: AlertDialogScope;
+  recovery: StartupRecovery;
+}) {
   const [revealFailed, setRevealFailed] = useState(false);
   const { t } = useTranslation();
 
@@ -35,8 +42,10 @@ function AppDiagnosticsRecoveryDialogContent({ recovery }: { recovery: StartupRe
   return (
     <>
       <AlertDialogHeader>
-        <AlertDialogTitle>{t("app.diagnosticsRecovery.confirmation.title")}</AlertDialogTitle>
-        <AlertDialogDescription>
+        <AlertDialogTitle __scopeAlertDialog={__scopeAlertDialog}>
+          {t("app.diagnosticsRecovery.confirmation.title")}
+        </AlertDialogTitle>
+        <AlertDialogDescription __scopeAlertDialog={__scopeAlertDialog}>
           {t("app.diagnosticsRecovery.confirmation.description")}
         </AlertDialogDescription>
       </AlertDialogHeader>
@@ -50,8 +59,11 @@ function AppDiagnosticsRecoveryDialogContent({ recovery }: { recovery: StartupRe
       ) : null}
 
       <AlertDialogFooter>
-        <AlertDialogCancel>{t("common.actions.close")}</AlertDialogCancel>
+        <AlertDialogCancel __scopeAlertDialog={__scopeAlertDialog}>
+          {t("common.actions.close")}
+        </AlertDialogCancel>
         <AlertDialogAction
+          __scopeAlertDialog={__scopeAlertDialog}
           onClick={(event) => {
             event.preventDefault();
             void showReport();

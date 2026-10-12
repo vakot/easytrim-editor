@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 
+import type { AlertDialogScope } from "@/components/ui/alert-dialog";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -15,7 +16,11 @@ import { exportPresetDeleted, exportPresetSelected } from "@/app/store/slices/ex
 
 import { usePresetDeleteDialog } from "./PresetDeleteDialogContext";
 
-function PresetDeleteDialogContent() {
+function PresetDeleteDialogContent({
+  __scopeAlertDialog,
+}: {
+  __scopeAlertDialog?: AlertDialogScope;
+}) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { preset } = usePresetDeleteDialog();
@@ -39,16 +44,24 @@ function PresetDeleteDialogContent() {
   return (
     <>
       <AlertDialogHeader>
-        <AlertDialogTitle>{t("export.preset.delete.title")}</AlertDialogTitle>
-        <AlertDialogDescription>
+        <AlertDialogTitle __scopeAlertDialog={__scopeAlertDialog}>
+          {t("export.preset.delete.title")}
+        </AlertDialogTitle>
+        <AlertDialogDescription __scopeAlertDialog={__scopeAlertDialog}>
           {t("export.preset.delete.description", {
             name: preset ? getPresetDisplayName(preset, (id) => builtInNames[id]) : "",
           })}
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
-        <AlertDialogAction onClick={deletePreset} variant="destructive">
+        <AlertDialogCancel __scopeAlertDialog={__scopeAlertDialog}>
+          {t("common.actions.cancel")}
+        </AlertDialogCancel>
+        <AlertDialogAction
+          __scopeAlertDialog={__scopeAlertDialog}
+          onClick={deletePreset}
+          variant="destructive"
+        >
           {t("export.preset.actions.delete")}
         </AlertDialogAction>
       </AlertDialogFooter>

@@ -10,7 +10,13 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import type { DialogScope } from "@/components/ui/dialog";
+import {
+  createDialogScope,
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportDialogOpen, selectExportLaunchError } from "@/app/store/slices/export-slice";
@@ -30,10 +36,16 @@ const LazyExportDialogContent = lazyWithPreload<ExportDialogContentProps>(() =>
   })),
 );
 
+const useExportDialogScope = createDialogScope();
+
 const ExportDialogOriginContext = createContext<((origin: DiagnosticOrigin) => void) | null>(null);
 
 const ExportDialog = Object.assign(
-  function ExportDialog({ children }: PropsWithChildren) {
+  function ExportDialog({
+    __scopeDialog,
+    children,
+  }: PropsWithChildren<{ __scopeDialog?: DialogScope }>) {
+    const dialogScope = useExportDialogScope(__scopeDialog);
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const open = useAppSelector(selectExportDialogOpen);
@@ -53,16 +65,19 @@ const ExportDialog = Object.assign(
     }
 
     return (
-      <Dialog onOpenChange={handleOpenChange} open={open}>
+      <Dialog {...dialogScope} onOpenChange={handleOpenChange} open={open}>
         <ExportDialogOriginContext.Provider
           value={(nextOrigin) => {
             origin.current = nextOrigin;
           }}
         >
           {children}
-          <DialogContent className="sm:max-w-xl">
+          <DialogContent {...dialogScope} className="sm:max-w-xl">
             <Suspense fallback={null}>
-              <LazyExportDialogContent onCancel={() => handleOpenChange(false)} />
+              <LazyExportDialogContent
+                __scopeDialog={dialogScope.__scopeDialog}
+                onCancel={() => handleOpenChange(false)}
+              />
             </Suspense>
           </DialogContent>
         </ExportDialogOriginContext.Provider>
@@ -77,6 +92,7 @@ export { ExportDialog };
 const preloadExportDialogOnIntent = preloadOnIntent(() => ExportDialog.preload());
 
 function ExportDialogTrigger({
+  __scopeDialog,
   onClick,
   onFocus,
   onPointerEnter,
@@ -85,11 +101,13 @@ function ExportDialogTrigger({
 }: ComponentProps<typeof DialogTrigger> & {
   origin?: DiagnosticOrigin;
 }) {
+  const dialogScope = useExportDialogScope(__scopeDialog);
   const setOrigin = useContext(ExportDialogOriginContext);
   if (!setOrigin) throw new Error("ExportDialogTrigger must be used within ExportDialog");
 
   return (
     <DialogTrigger
+      {...dialogScope}
       {...props}
       onClick={(event) => {
         onClick?.(event);

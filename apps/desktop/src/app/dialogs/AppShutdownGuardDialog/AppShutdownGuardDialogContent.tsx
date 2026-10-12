@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { AlertDialogScope } from "@/components/ui/alert-dialog";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -15,8 +16,10 @@ import { Spinner } from "@/components/ui/spinner";
 import { completeShutdown, type WindowShutdownContinuation } from "@/lib/tauri/window";
 
 function AppShutdownGuardDialogContent({
+  __scopeAlertDialog,
   continuation,
 }: {
+  __scopeAlertDialog?: AlertDialogScope;
   continuation?: WindowShutdownContinuation;
 }) {
   const { t } = useTranslation();
@@ -42,8 +45,10 @@ function AppShutdownGuardDialogContent({
   return (
     <>
       <AlertDialogHeader>
-        <AlertDialogTitle>{t("app.shutdown.confirmation.title")}</AlertDialogTitle>
-        <AlertDialogDescription>
+        <AlertDialogTitle __scopeAlertDialog={__scopeAlertDialog}>
+          {t("app.shutdown.confirmation.title")}
+        </AlertDialogTitle>
+        <AlertDialogDescription __scopeAlertDialog={__scopeAlertDialog}>
           {t("app.shutdown.confirmation.description")}
         </AlertDialogDescription>
       </AlertDialogHeader>
@@ -55,9 +60,12 @@ function AppShutdownGuardDialogContent({
       )}
 
       <AlertDialogFooter>
-        <AlertDialogCancel disabled={pending}>{t("common.actions.back")}</AlertDialogCancel>
+        <AlertDialogCancel __scopeAlertDialog={__scopeAlertDialog} disabled={pending}>
+          {t("common.actions.back")}
+        </AlertDialogCancel>
 
         <AlertDialogAction
+          __scopeAlertDialog={__scopeAlertDialog}
           disabled={pending}
           onClick={(event) => {
             event.preventDefault();

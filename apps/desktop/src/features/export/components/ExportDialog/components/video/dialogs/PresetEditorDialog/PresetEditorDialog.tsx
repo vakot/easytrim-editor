@@ -1,13 +1,14 @@
 import React, { Suspense, useState } from "react";
 
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import type { DialogScope } from "@/components/ui/dialog";
+import { createDialogScope, Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 import type { PresetEditorRequest } from "./PresetEditorDialogContext";
 import { PresetEditorDialogContext, usePresetEditorDialog } from "./PresetEditorDialogContext";
 
-const LazyPresetEditorDialogContent = lazyWithPreload<React.FragmentProps>(() =>
+const LazyPresetEditorDialogContent = lazyWithPreload<{ __scopeDialog?: DialogScope }>(() =>
   import("./PresetEditorDialogContent").then((module) => ({
     default: module.PresetEditorDialogContent,
   })),
@@ -17,16 +18,22 @@ const preloadPresetEditorDialogContent = preloadOnIntent(() =>
   LazyPresetEditorDialogContent.preload(),
 );
 
-function PresetEditorDialog({ children }: React.PropsWithChildren) {
+const usePresetEditorDialogScope = createDialogScope();
+
+function PresetEditorDialog({
+  __scopeDialog,
+  children,
+}: React.PropsWithChildren<{ __scopeDialog?: DialogScope }>) {
+  const dialogScope = usePresetEditorDialogScope(__scopeDialog);
   const [request, setRequest] = useState<PresetEditorRequest | null>(null);
 
   return (
     <PresetEditorDialogContext.Provider value={{ request, setRequest }}>
-      <Dialog onOpenChange={(open) => !open && setRequest(null)}>
+      <Dialog {...dialogScope} onOpenChange={(open) => !open && setRequest(null)}>
         {children}
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent {...dialogScope} className="sm:max-w-xl">
           <Suspense fallback={null}>
-            <LazyPresetEditorDialogContent />
+            <LazyPresetEditorDialogContent __scopeDialog={dialogScope.__scopeDialog} />
           </Suspense>
         </DialogContent>
       </Dialog>
@@ -35,6 +42,7 @@ function PresetEditorDialog({ children }: React.PropsWithChildren) {
 }
 
 function PresetEditorDialogTrigger({
+  __scopeDialog,
   onClick,
   onFocus,
   onPointerEnter,
@@ -44,10 +52,12 @@ function PresetEditorDialogTrigger({
   onClick?: React.ComponentProps<typeof DialogTrigger>["onClick"];
   request: PresetEditorRequest;
 }) {
+  const dialogScope = usePresetEditorDialogScope(__scopeDialog);
   const { setRequest } = usePresetEditorDialog();
 
   return (
     <DialogTrigger
+      {...dialogScope}
       onClick={(event) => {
         setRequest(request);
         onClick?.(event);

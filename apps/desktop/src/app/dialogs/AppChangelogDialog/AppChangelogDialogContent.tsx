@@ -2,6 +2,7 @@ import { ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import type { DialogScope } from "@/components/ui/dialog";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -11,12 +12,14 @@ import { openExternalUrl } from "@/lib/open-external-url.utils";
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/blob/master/CHANGELOG.md";
 
 interface AppChangelogDialogContentProps {
+  __scopeDialog?: DialogScope;
   isWhatsNew: boolean;
   onClose: () => void;
   releases: readonly ChangelogRelease[];
 }
 
 function AppChangelogDialogContent({
+  __scopeDialog,
   isWhatsNew,
   onClose,
   releases,
@@ -32,15 +35,15 @@ function AppChangelogDialogContent({
   return (
     <>
       <DialogHeader className="-mx-4 border-b px-4 pb-4">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
+        <DialogTitle __scopeDialog={__scopeDialog}>{title}</DialogTitle>
+        <DialogDescription __scopeDialog={__scopeDialog}>{description}</DialogDescription>
       </DialogHeader>
 
       <ScrollArea className="-mx-4 min-h-0 px-4" fadeColor="var(--popover)">
         <ChangelogList releases={releases} />
       </ScrollArea>
 
-      <DialogFooter className="items-center sm:justify-between">
+      <DialogFooter __scopeDialog={__scopeDialog} className="items-center sm:justify-between">
         <Button onClick={() => void openExternalUrl(CHANGELOG_URL)} type="button" variant="ghost">
           <ExternalLink aria-hidden="true" />
           {t("support.project.actions.viewOnGitHub")}

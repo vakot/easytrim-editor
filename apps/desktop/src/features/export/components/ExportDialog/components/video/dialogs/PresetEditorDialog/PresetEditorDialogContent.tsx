@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import type { DialogScope } from "@/components/ui/dialog";
 import {
   DialogClose,
   DialogDescription,
@@ -33,7 +34,7 @@ import {
 
 import { usePresetEditorDialog } from "./PresetEditorDialogContext";
 
-function PresetEditorDialogContent() {
+function PresetEditorDialogContent({ __scopeDialog }: { __scopeDialog?: DialogScope }) {
   const { t } = useTranslation();
   const { request } = usePresetEditorDialog();
   const mode = request?.mode ?? "create";
@@ -127,8 +128,10 @@ function PresetEditorDialogContent() {
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{t("export.preset.create.title")}</DialogTitle>
-        <DialogDescription>{t("export.preset.create.description")}</DialogDescription>
+        <DialogTitle __scopeDialog={__scopeDialog}>{t("export.preset.create.title")}</DialogTitle>
+        <DialogDescription __scopeDialog={__scopeDialog}>
+          {t("export.preset.create.description")}
+        </DialogDescription>
       </DialogHeader>
       <div className="grid gap-3">
         <div className="grid gap-1.5">
@@ -156,13 +159,13 @@ function PresetEditorDialogContent() {
           </Alert>
         ) : null}
       </div>
-      <DialogFooter>
-        <DialogClose asChild>
+      <DialogFooter __scopeDialog={__scopeDialog}>
+        <DialogClose __scopeDialog={__scopeDialog} asChild>
           <Button type="button" variant="outline">
             {t("common.actions.cancel")}
           </Button>
         </DialogClose>
-        <DialogClose asChild>
+        <DialogClose __scopeDialog={__scopeDialog} asChild>
           <Button onClick={savePreset} type="button">
             {t("common.actions.save")}
           </Button>

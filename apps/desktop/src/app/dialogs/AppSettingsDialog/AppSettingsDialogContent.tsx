@@ -4,6 +4,7 @@ import React, { type ReactNode, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
+import type { DialogScope } from "@/components/ui/dialog";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Separator } from "@/components/ui/separator";
@@ -54,15 +55,19 @@ const preloadSettingsPage = {
 } satisfies Record<SettingsPageId, () => Promise<unknown>>;
 
 const AppSettingsDialogContent = Object.assign(
-  function AppSettingsDialogContent() {
+  function AppSettingsDialogContent({ __scopeDialog }: { __scopeDialog?: DialogScope }) {
     const { t } = useTranslation();
     const [selectedPage, setSelectedPage] = useState<SettingsPageId>(DEFAULT_PAGE);
 
     return (
       <>
         <DialogHeader className="m-0! border-b p-4">
-          <DialogTitle>{getSettingsPageTitle(t, selectedPage)}</DialogTitle>
-          <DialogDescription>{getSettingsPageDescription(t, selectedPage)}</DialogDescription>
+          <DialogTitle __scopeDialog={__scopeDialog}>
+            {getSettingsPageTitle(t, selectedPage)}
+          </DialogTitle>
+          <DialogDescription __scopeDialog={__scopeDialog}>
+            {getSettingsPageDescription(t, selectedPage)}
+          </DialogDescription>
         </DialogHeader>
 
         <Library

@@ -1,6 +1,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import type { DialogScope } from "@/components/ui/dialog";
+import { createDialogScope, Dialog, DialogContent } from "@/components/ui/dialog";
 
 import { useChangelogDialog } from "@/app/hooks/useAppDialog";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -15,14 +16,19 @@ import { lazyWithPreload } from "@/lib/lazy-component";
 
 import type { AppChangelogDialogContentProps } from "./AppChangelogDialogContent";
 
-const LazyAppChangelogDialogContent = lazyWithPreload<AppChangelogDialogContentProps>(() =>
+const useAppChangelogDialogScope = createDialogScope();
+
+const LazyAppChangelogDialogContent = lazyWithPreload<
+  AppChangelogDialogContentProps & { __scopeDialog?: DialogScope }
+>(() =>
   import("./AppChangelogDialogContent").then((module) => ({
     default: module.AppChangelogDialogContent,
   })),
 );
 
 const AppChangelogDialog = Object.assign(
-  function AppChangelogDialog() {
+  function AppChangelogDialog({ __scopeDialog }: { __scopeDialog?: DialogScope }) {
+    const dialogScope = useAppChangelogDialogScope(__scopeDialog);
     const dispatch = useAppDispatch();
     const lastSeenVersion = useAppSelector(selectLastSeenChangelogVersion);
     const { closeDialog, isOpen, openDialog } = useChangelogDialog();
@@ -70,10 +76,11 @@ const AppChangelogDialog = Object.assign(
     }, [closeDialog, currentVersion, dispatch, mode]);
 
     return (
-      <Dialog onOpenChange={(open) => !open && handleClose()} open={isOpen}>
-        <DialogContent className="grid max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-2xl">
+      <Dialog {...dialogScope} onOpenChange={(open) => !open && handleClose()} open={isOpen}>
+        <DialogContent {...dialogScope} className="grid max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-2xl">
           <Suspense fallback={null}>
             <LazyAppChangelogDialogContent
+              __scopeDialog={dialogScope.__scopeDialog}
               isWhatsNew={mode === "whats-new"}
               onClose={handleClose}
               releases={mode === "whats-new" ? startupState.unseenReleases : availableReleases}

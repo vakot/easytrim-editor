@@ -8,26 +8,73 @@ import { buttonVariants } from "@/components/ui/button";
 
 import { cn } from "@/lib/class-names.utils";
 
-function AlertDialog({ ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
-  return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
+const createAlertDialogScope = AlertDialogPrimitive.createAlertDialogScope;
+
+type Scope = ReturnType<ReturnType<typeof createAlertDialogScope>>;
+type AlertDialogScope = Scope["__scopeAlertDialog"];
+type ScopeProps = {
+  __scopeAlertDialog?: AlertDialogScope;
+};
+
+type ScopedProps<T extends React.ElementType> = React.ComponentProps<T> & ScopeProps;
+type ScopedComponentType<T extends React.ElementType> = React.ComponentType<ScopedProps<T>>;
+
+const ScopedAlertDialog = AlertDialogPrimitive.Root as ScopedComponentType<
+  typeof AlertDialogPrimitive.Root
+>;
+
+const ScopedAlertDialogTrigger = AlertDialogPrimitive.Trigger as ScopedComponentType<
+  typeof AlertDialogPrimitive.Trigger
+>;
+
+const ScopedAlertDialogPortal = AlertDialogPrimitive.Portal as ScopedComponentType<
+  typeof AlertDialogPrimitive.Portal
+>;
+
+const ScopedAlertDialogOverlay = AlertDialogPrimitive.Overlay as ScopedComponentType<
+  typeof AlertDialogPrimitive.Overlay
+>;
+
+const ScopedAlertDialogContent = AlertDialogPrimitive.Content as ScopedComponentType<
+  typeof AlertDialogPrimitive.Content
+>;
+
+const ScopedAlertDialogTitle = AlertDialogPrimitive.Title as ScopedComponentType<
+  typeof AlertDialogPrimitive.Title
+>;
+
+const ScopedAlertDialogDescription = AlertDialogPrimitive.Description as ScopedComponentType<
+  typeof AlertDialogPrimitive.Description
+>;
+
+const ScopedAlertDialogAction = AlertDialogPrimitive.Action as ScopedComponentType<
+  typeof AlertDialogPrimitive.Action
+>;
+
+const ScopedAlertDialogCancel = AlertDialogPrimitive.Cancel as ScopedComponentType<
+  typeof AlertDialogPrimitive.Cancel
+>;
+
+function AlertDialog({ ...props }: React.ComponentProps<typeof ScopedAlertDialog>) {
+  return <ScopedAlertDialog data-slot="alert-dialog" {...props} />;
 }
 
-function AlertDialogTrigger({
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
-  return <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />;
+function AlertDialogTrigger({ ...props }: React.ComponentProps<typeof ScopedAlertDialogTrigger>) {
+  return <ScopedAlertDialogTrigger data-slot="alert-dialog-trigger" {...props} />;
 }
 
-function AlertDialogPortal({ ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Portal>) {
-  return <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />;
+function AlertDialogPortal({ ...props }: React.ComponentProps<typeof ScopedAlertDialogPortal>) {
+  return <ScopedAlertDialogPortal data-slot="alert-dialog-portal" {...props} />;
 }
 
 function AlertDialogOverlay({
+  __scopeAlertDialog,
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
+}: React.ComponentProps<typeof ScopedAlertDialogOverlay>) {
   return (
-    <AlertDialogPrimitive.Overlay
+    <ScopedAlertDialogOverlay
+      __scopeAlertDialog={__scopeAlertDialog}
       className={cn(
         "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className,
@@ -39,13 +86,15 @@ function AlertDialogOverlay({
 }
 
 function AlertDialogContent({
+  __scopeAlertDialog,
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
+}: React.ComponentProps<typeof ScopedAlertDialogContent>) {
   return (
-    <AlertDialogPortal>
-      <AlertDialogOverlay />
-      <AlertDialogPrimitive.Content
+    <AlertDialogPortal __scopeAlertDialog={__scopeAlertDialog}>
+      <AlertDialogOverlay __scopeAlertDialog={__scopeAlertDialog} />
+      <ScopedAlertDialogContent
+        __scopeAlertDialog={__scopeAlertDialog}
         className={cn(
           "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] min-w-0 -translate-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none *:min-w-0 sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className,
@@ -81,11 +130,13 @@ function AlertDialogFooter({ className, ...props }: React.ComponentProps<"div">)
 }
 
 function AlertDialogTitle({
+  __scopeAlertDialog,
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
+}: React.ComponentProps<typeof ScopedAlertDialogTitle>) {
   return (
-    <AlertDialogPrimitive.Title
+    <ScopedAlertDialogTitle
+      __scopeAlertDialog={__scopeAlertDialog}
       className={cn(
         "min-w-0 font-heading text-base leading-none font-medium wrap-anywhere",
         className,
@@ -97,11 +148,13 @@ function AlertDialogTitle({
 }
 
 function AlertDialogDescription({
+  __scopeAlertDialog,
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Description>) {
+}: React.ComponentProps<typeof ScopedAlertDialogDescription>) {
   return (
-    <AlertDialogPrimitive.Description
+    <ScopedAlertDialogDescription
+      __scopeAlertDialog={__scopeAlertDialog}
       className={cn(
         "min-w-0 text-sm wrap-anywhere text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
         className,
@@ -113,14 +166,16 @@ function AlertDialogDescription({
 }
 
 function AlertDialogAction({
+  __scopeAlertDialog,
   className,
   size,
   variant,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Action> &
+}: React.ComponentProps<typeof ScopedAlertDialogAction> &
   Pick<VariantProps<typeof buttonVariants>, "size" | "variant">) {
   return (
-    <AlertDialogPrimitive.Action
+    <ScopedAlertDialogAction
+      __scopeAlertDialog={__scopeAlertDialog}
       className={cn(buttonVariants({ size, variant }), className)}
       data-slot="alert-dialog-action"
       {...props}
@@ -129,13 +184,15 @@ function AlertDialogAction({
 }
 
 function AlertDialogCancel({
+  __scopeAlertDialog,
   className,
   size,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Cancel> &
+}: React.ComponentProps<typeof ScopedAlertDialogCancel> &
   Pick<VariantProps<typeof buttonVariants>, "size">) {
   return (
-    <AlertDialogPrimitive.Cancel
+    <ScopedAlertDialogCancel
+      __scopeAlertDialog={__scopeAlertDialog}
       className={cn(buttonVariants({ size, variant: "outline" }), className)}
       data-slot="alert-dialog-cancel"
       {...props}
@@ -155,4 +212,6 @@ export {
   AlertDialogPortal,
   AlertDialogTitle,
   AlertDialogTrigger,
+  createAlertDialogScope,
 };
+export type { AlertDialogScope };

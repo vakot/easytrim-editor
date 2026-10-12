@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import type { DialogScope } from "@/components/ui/dialog";
+import { createDialogScope, Dialog, DialogContent } from "@/components/ui/dialog";
 
 import type { ApplicationCommandId } from "@/app/commands";
 import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
@@ -16,6 +17,8 @@ import { lazyWithPreload } from "@/lib/lazy-component";
 
 import type { AppCommandPaletteDialogContentProps } from "./AppCommandPaletteDialogContent";
 
+const useAppCommandPaletteDialogScope = createDialogScope();
+
 const LazyAppCommandPaletteDialogContent = lazyWithPreload<AppCommandPaletteDialogContentProps>(
   () =>
     import("./AppCommandPaletteDialogContent").then((module) => ({
@@ -24,7 +27,8 @@ const LazyAppCommandPaletteDialogContent = lazyWithPreload<AppCommandPaletteDial
 );
 
 const AppCommandPaletteDialog = Object.assign(
-  function AppCommandPaletteDialog() {
+  function AppCommandPaletteDialog({ __scopeDialog }: { __scopeDialog?: DialogScope }) {
+    const dialogScope = useAppCommandPaletteDialogScope(__scopeDialog);
     const { closeDialog, isOpen, openDialog } = useCommandPaletteDialog();
     const { commands, executeCommand: executeApplicationCommand } = useApplicationCommands();
     const paletteCommands = commands.filter((command) =>
@@ -70,13 +74,15 @@ const AppCommandPaletteDialog = Object.assign(
     }
 
     return (
-      <Dialog onOpenChange={handleOpenChange} open={isOpen}>
+      <Dialog {...dialogScope} onOpenChange={handleOpenChange} open={isOpen}>
         <DialogContent
+          {...dialogScope}
           className="top-1/2 h-[min(60dvh,32rem)] -translate-y-1/2 overflow-hidden rounded-xl! p-0 sm:max-w-md"
           showCloseButton={false}
         >
           <Suspense fallback={null}>
             <LazyAppCommandPaletteDialogContent
+              __scopeDialog={dialogScope.__scopeDialog}
               commands={paletteCommands}
               executeCommand={executeCommand}
             />

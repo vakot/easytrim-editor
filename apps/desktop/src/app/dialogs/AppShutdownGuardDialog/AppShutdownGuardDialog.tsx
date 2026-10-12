@@ -2,7 +2,12 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog";
+import type { AlertDialogScope } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  createAlertDialogScope,
+} from "@/components/ui/alert-dialog";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectHasProcessableExports } from "@/app/store/slices/editing-instances-slice";
@@ -16,11 +21,19 @@ import {
 
 const loadDialog = () => import("./AppShutdownGuardDialogContent");
 
+const useAppShutdownGuardDialogScope = createAlertDialogScope();
+
 const LazyAppShutdownGuardDialogContent = lazyWithPreload<{
+  __scopeAlertDialog?: AlertDialogScope;
   continuation?: WindowShutdownContinuation;
 }>(() => loadDialog().then((module) => ({ default: module.AppShutdownGuardDialogContent })));
 
-function AppShutdownGuardDialog() {
+function AppShutdownGuardDialog({
+  __scopeAlertDialog,
+}: {
+  __scopeAlertDialog?: AlertDialogScope;
+}) {
+  const alertDialogScope = useAppShutdownGuardDialogScope(__scopeAlertDialog);
   const { t } = useTranslation();
   const hasProcessableExports = useAppSelector(selectHasProcessableExports);
   const [open, setOpen] = useState(false);
@@ -71,10 +84,13 @@ function AppShutdownGuardDialog() {
   }, [handleShutdownRequest]);
 
   return (
-    <AlertDialog onOpenChange={handleOpenChange} open={open}>
-      <AlertDialogContent>
+    <AlertDialog {...alertDialogScope} onOpenChange={handleOpenChange} open={open}>
+      <AlertDialogContent {...alertDialogScope}>
         <Suspense fallback={null}>
-          <LazyAppShutdownGuardDialogContent continuation={continuation} />
+          <LazyAppShutdownGuardDialogContent
+            __scopeAlertDialog={alertDialogScope.__scopeAlertDialog}
+            continuation={continuation}
+          />
         </Suspense>
       </AlertDialogContent>
     </AlertDialog>

@@ -13,6 +13,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
+import type { DialogScope } from "@/components/ui/dialog";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Highlight } from "@/components/ui/highlight";
 import { InputGroupAddon } from "@/components/ui/input-group";
@@ -39,11 +40,13 @@ type CommandPaletteGroupMatches = {
 };
 
 interface AppCommandPaletteDialogContentProps {
+  __scopeDialog?: DialogScope;
   commands: readonly ApplicationCommand<ApplicationCommandId>[];
   executeCommand: (command: ApplicationCommand<ApplicationCommandId>) => void;
 }
 
 function AppCommandPaletteDialogContent({
+  __scopeDialog,
   commands,
   executeCommand,
 }: AppCommandPaletteDialogContentProps) {
@@ -55,8 +58,10 @@ function AppCommandPaletteDialogContent({
   return (
     <>
       <DialogHeader className="sr-only">
-        <DialogTitle>{t("commands.title")}</DialogTitle>
-        <DialogDescription>{t("commands.description")}</DialogDescription>
+        <DialogTitle __scopeDialog={__scopeDialog}>{t("commands.title")}</DialogTitle>
+        <DialogDescription __scopeDialog={__scopeDialog}>
+          {t("commands.description")}
+        </DialogDescription>
       </DialogHeader>
       <Command label={t("common.search.commands")} shouldFilter={false}>
         <CommandInputGroup>

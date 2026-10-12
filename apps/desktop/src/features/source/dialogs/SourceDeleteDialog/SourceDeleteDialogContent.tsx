@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { AlertDialogScope } from "@/components/ui/alert-dialog";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -19,12 +20,14 @@ import { normalizeSourceKey } from "@/domain/source";
 import { localizeAppError } from "@/i18n/app-errors";
 
 interface SourceDeleteDialogContentProps {
+  __scopeAlertDialog?: AlertDialogScope;
   sourceIds: readonly string[];
   target?: "file" | "folder";
   targetName?: string;
 }
 
 function SourceDeleteDialogContent({
+  __scopeAlertDialog,
   sourceIds,
   target = "file",
   targetName,
@@ -62,12 +65,12 @@ function SourceDeleteDialogContent({
   return (
     <>
       <AlertDialogHeader>
-        <AlertDialogTitle>
+        <AlertDialogTitle __scopeAlertDialog={__scopeAlertDialog}>
           {isFolder
             ? t("source.delete.confirmation.folderTitle")
             : t("source.delete.confirmation.title")}
         </AlertDialogTitle>
-        <AlertDialogDescription>
+        <AlertDialogDescription __scopeAlertDialog={__scopeAlertDialog}>
           {isFolder
             ? t("source.delete.confirmation.folderDescription", { name: targetName })
             : t("source.delete.confirmation.description", {
@@ -86,8 +89,11 @@ function SourceDeleteDialogContent({
       ) : null}
 
       <AlertDialogFooter>
-        <AlertDialogCancel disabled={pending}>{t("common.actions.cancel")}</AlertDialogCancel>
+        <AlertDialogCancel __scopeAlertDialog={__scopeAlertDialog} disabled={pending}>
+          {t("common.actions.cancel")}
+        </AlertDialogCancel>
         <AlertDialogAction
+          __scopeAlertDialog={__scopeAlertDialog}
           disabled={pending || items.length === 0}
           onClick={handleDeleteSource}
           variant="destructive"

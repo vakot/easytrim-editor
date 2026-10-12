@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 
+import type { AlertDialogScope } from "@/components/ui/alert-dialog";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -9,20 +10,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-function QueueDeleteSourceDialogContent({ onConfirm }: { onConfirm: () => void }) {
+function QueueDeleteSourceDialogContent({
+  __scopeAlertDialog,
+  onConfirm,
+}: {
+  __scopeAlertDialog?: AlertDialogScope;
+  onConfirm: () => void;
+}) {
   const { t } = useTranslation();
 
   return (
     <>
       <AlertDialogHeader>
-        <AlertDialogTitle>{t("queue.deleteSource.confirmation.title")}</AlertDialogTitle>
-        <AlertDialogDescription>
+        <AlertDialogTitle __scopeAlertDialog={__scopeAlertDialog}>
+          {t("queue.deleteSource.confirmation.title")}
+        </AlertDialogTitle>
+        <AlertDialogDescription __scopeAlertDialog={__scopeAlertDialog}>
           {t("queue.deleteSource.confirmation.description")}
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>{t("common.actions.back")}</AlertDialogCancel>
-        <AlertDialogAction onClick={onConfirm} variant="destructive">
+        <AlertDialogCancel __scopeAlertDialog={__scopeAlertDialog}>
+          {t("common.actions.back")}
+        </AlertDialogCancel>
+        <AlertDialogAction
+          __scopeAlertDialog={__scopeAlertDialog}
+          onClick={onConfirm}
+          variant="destructive"
+        >
           {t("queue.deleteSource.enable")}
         </AlertDialogAction>
       </AlertDialogFooter>

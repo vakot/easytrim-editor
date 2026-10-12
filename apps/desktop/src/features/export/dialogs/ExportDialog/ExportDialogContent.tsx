@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import type { DialogScope } from "@/components/ui/dialog";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -33,10 +34,11 @@ import { GifExportOptions } from "../../components/ExportDialog/components/gif";
 import { VideoExportOptions } from "../../components/ExportDialog/components/video";
 
 interface ExportDialogContentProps {
+  __scopeDialog?: DialogScope;
   onCancel: () => void;
 }
 
-function ExportDialogContent({ onCancel }: ExportDialogContentProps) {
+function ExportDialogContent({ __scopeDialog, onCancel }: ExportDialogContentProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const open = useAppSelector(selectExportDialogOpen);
@@ -93,10 +95,12 @@ function ExportDialogContent({ onCancel }: ExportDialogContentProps) {
   return (
     <>
       <DialogHeader>
-        <DialogTitle>
+        <DialogTitle __scopeDialog={__scopeDialog}>
           {queueEdit ? t("export.optimized.dialog.editTitle") : routeComposition.title}
         </DialogTitle>
-        <DialogDescription>{routeComposition.description}</DialogDescription>
+        <DialogDescription __scopeDialog={__scopeDialog}>
+          {routeComposition.description}
+        </DialogDescription>
       </DialogHeader>
 
       {routeComposition.options}
@@ -111,7 +115,7 @@ function ExportDialogContent({ onCancel }: ExportDialogContentProps) {
         error={commandPreviewError ? localizeAppError(commandPreviewError, t) : undefined}
       />
 
-      <DialogFooter className="min-w-0 items-center sm:justify-between">
+      <DialogFooter __scopeDialog={__scopeDialog} className="min-w-0 items-center sm:justify-between">
         <p className="min-w-0 flex-1 text-xs text-muted-foreground">
           {t("export.optimized.dialog.saveNotice")}
         </p>
