@@ -18,34 +18,36 @@ import {
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { cn } from "@/lib/class-names.utils";
 
+import { ChapterManagerDialog, ChapterManagerDialogTrigger } from "../dialogs/ChapterManagerDialog";
 import { useSceneDetection } from "../hooks/useSceneDetection";
 
-import { ChapterManagerDialog } from "./ChapterManagerDialog";
 import { StereoAudioMeter } from "./StereoAudioMeter";
 
 function TimelineToolbar() {
   const { t } = useTranslation();
 
   return (
-    <div
-      aria-label={t("timeline.playhead.accessibility.tools")}
-      className="flex w-full items-stretch gap-1"
-      data-slot="timeline-toolbar"
-      role="toolbar"
-    >
-      <div className="grid auto-cols-max grid-flow-col grid-rows-[repeat(2,1.75rem)] gap-1">
-        <LoopPlaybackTool />
-        <SegmentPlaybackTool />
-        <SceneDetectionTool />
-        <ChapterManagerDialog />
-      </div>
+    <ChapterManagerDialog>
+      <div
+        aria-label={t("timeline.playhead.accessibility.tools")}
+        className="flex w-full items-stretch gap-1"
+        data-slot="timeline-toolbar"
+        role="toolbar"
+      >
+        <div className="grid auto-cols-max grid-flow-col grid-rows-[repeat(2,1.75rem)] gap-1">
+          <LoopPlaybackTool />
+          <SegmentPlaybackTool />
+          <SceneDetectionTool />
+          <ChapterManagerDialogTrigger />
+        </div>
 
-      <Card className="flex-1 gap-0 rounded-md border border-border bg-muted p-0 ring-0">
-        <CardContent className="flex h-full flex-col p-1">
-          <StereoAudioMeter />
-        </CardContent>
-      </Card>
-    </div>
+        <Card className="flex-1 gap-0 rounded-md border border-border bg-muted p-0 ring-0">
+          <CardContent className="flex h-full flex-col p-1">
+            <StereoAudioMeter />
+          </CardContent>
+        </Card>
+      </div>
+    </ChapterManagerDialog>
   );
 }
 
