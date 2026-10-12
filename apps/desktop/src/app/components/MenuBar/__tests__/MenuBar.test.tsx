@@ -16,7 +16,7 @@ import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
-import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
+import { useSettingsDialog } from "@/app/hooks/useAppDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";

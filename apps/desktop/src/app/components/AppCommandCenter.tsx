@@ -14,7 +14,7 @@ import {
   getShortcutDisplayKeys,
 } from "@/app/commands/core/application-command.utils";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
-import { useCommandPaletteDialog } from "@/app/hooks/useCommandPaletteDialog";
+import { useCommandPaletteDialog } from "@/app/hooks/useAppDialog";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
 import {

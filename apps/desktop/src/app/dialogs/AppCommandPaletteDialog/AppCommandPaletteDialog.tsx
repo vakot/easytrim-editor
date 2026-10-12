@@ -8,8 +8,8 @@ import {
   isApplicationCommandAvailableOnSurface,
   isShortcutEvent,
 } from "@/app/commands/core/application-command.utils";
+import { useCommandPaletteDialog } from "@/app/hooks/useAppDialog";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
-import { useCommandPaletteDialog } from "@/app/hooks/useCommandPaletteDialog";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 import { lazyWithPreload } from "@/lib/lazy-component";

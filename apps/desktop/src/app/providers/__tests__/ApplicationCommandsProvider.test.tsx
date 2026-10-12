@@ -158,8 +158,8 @@ vi.mock("@/lib/diagnostics", () => ({
 }));
 
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
+import { useSettingsDialog } from "@/app/hooks/useAppDialog";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
-import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
-import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
+import { useSettingsDialog } from "@/app/hooks/useAppDialog";
 import { lazyWithPreload } from "@/lib/lazy-component";
 
 const LazyAppSettingsDialogContent = lazyWithPreload<Record<string, never>>(() =>

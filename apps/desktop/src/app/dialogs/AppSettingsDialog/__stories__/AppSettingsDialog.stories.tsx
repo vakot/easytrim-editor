@@ -10,7 +10,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
-import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
+import { useSettingsDialog } from "@/app/hooks/useAppDialog";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { EditorRuntimeProviders } from "@/app/providers/EditorRuntimeProviders";

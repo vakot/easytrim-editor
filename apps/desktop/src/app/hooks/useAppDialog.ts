@@ -21,4 +21,12 @@ function useAppDialog(dialogId: AppDialogId) {
   return { closeDialog, isOpen: isDialogOpen(dialogId), openDialog, toggleDialog };
 }
 
-export { useAppDialog };
+function useCommandPaletteDialog() {
+  return useAppDialog("command-palette");
+}
+
+function useSettingsDialog() {
+  return useAppDialog("settings");
+}
+
+export { useAppDialog, useCommandPaletteDialog, useSettingsDialog };

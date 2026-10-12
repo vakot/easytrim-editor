@@ -7,7 +7,7 @@ import {
   AUDIO_EXPORT_SHORTCUT,
   GIF_EXPORT_SHORTCUT,
 } from "@/app/commands/file/file-shortcuts.constants";
-import { useCommandPaletteDialog } from "@/app/hooks/useCommandPaletteDialog";
+import { useCommandPaletteDialog } from "@/app/hooks/useAppDialog";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 
 const mocks = vi.hoisted(() => ({
