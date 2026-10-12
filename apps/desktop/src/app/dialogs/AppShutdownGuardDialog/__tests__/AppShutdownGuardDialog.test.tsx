@@ -124,6 +124,19 @@ describe("AppShutdownGuardDialog", () => {
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
   });
 
+  it("shows an update continuation failure inside the open confirmation dialog", async () => {
+    shutdownState.hasProcessableExports = true;
+    const continueUpdate = vi.fn(() => Promise.reject(new Error("Update installation failed")));
+    const user = userEvent.setup();
+    render(<AppShutdownGuardDialog />);
+
+    onShutdownRequested?.(continueUpdate);
+    await user.click(await screen.findByRole("button", { name: "Exit" }));
+
+    expect(await screen.findByText("Update installation failed")).toBeInTheDocument();
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+  });
+
   it("runs an update continuation only after confirming the active queue can be lost", async () => {
     shutdownState.hasProcessableExports = true;
     const continueUpdate = vi.fn(() => Promise.resolve());
