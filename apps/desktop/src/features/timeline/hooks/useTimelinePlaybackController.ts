@@ -14,6 +14,7 @@ import { canSetTrimBoundaryAtPlayhead, type TrimRange } from "@/domain/trim";
 import { useAudioPlayback, useAudioTransport } from "@/features/audio";
 import { type PreviewPlaybackFrame, usePreviewMediaTransport } from "@/features/preview";
 
+import { useChapterTimelineEditing } from "../contexts/chapter-timeline-editing-context";
 import { FRAME_SHUTTLE_PLAYBACK_RATE, type FrameShuttleDirection } from "../lib/editor-shortcuts";
 import { cancelFrame, syncPlayheadElements } from "../lib/playhead-sync";
 
@@ -41,6 +42,15 @@ function useTimelinePlaybackController() {
   const sourceSelection = useAppSelector(selectSourceSelection);
   const media = useAppSelector(selectSourceMedia);
   const trim = useAppSelector(selectTrim) ?? EMPTY_TRIM;
+  const chapterEditing = useChapterTimelineEditing();
+  const chapterRange = chapterEditing.chapter
+    ? {
+        ...trim,
+        endMicros: chapterEditing.chapter.endMicros,
+        startMicros: chapterEditing.chapter.startMicros,
+      }
+    : null;
+
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
 
   const sourcePath = sourceSelection?.sourcePath ?? null;
@@ -161,6 +171,8 @@ function useTimelinePlaybackController() {
   }, [nativeLoopEnabled, setNativeLoopEnabled]);
 
   const playbackModes = usePlaybackModes({
+    chapterEditing: chapterEditing.chapter !== null,
+    chapterRange,
     loopEnabled: loopPlaybackEnabled,
     segmentEnabled: segmentPlaybackEnabled,
   });

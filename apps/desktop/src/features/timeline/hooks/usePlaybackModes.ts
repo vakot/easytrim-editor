@@ -15,9 +15,13 @@ type PlaybackBoundaryResult =
   { reached: false } | { action: ReachedBoundaryAction | null; reached: true };
 
 function usePlaybackModes({
+  chapterEditing,
+  chapterRange,
   loopEnabled,
   segmentEnabled,
 }: {
+  chapterEditing?: boolean;
+  chapterRange?: TrimRange | null;
   loopEnabled: boolean;
   segmentEnabled: boolean;
 }) {
@@ -25,10 +29,19 @@ function usePlaybackModes({
   const boundaryHandledRef = useRef(false);
   const loopEnabledRef = useRef(loopEnabled);
   const segmentEnabledRef = useRef(segmentEnabled);
+  const chapterEditingRef = useRef(chapterEditing ?? false);
+  const chapterRangeRef = useRef(chapterRange ?? null);
   useEffect(() => {
     loopEnabledRef.current = loopEnabled;
     segmentEnabledRef.current = segmentEnabled;
-  }, [loopEnabled, segmentEnabled]);
+    chapterEditingRef.current = chapterEditing ?? false;
+    chapterRangeRef.current = chapterRange ?? null;
+  }, [chapterEditing, chapterRange, loopEnabled, segmentEnabled]);
+
+  useEffect(() => {
+    playbackRangeRef.current = null;
+    boundaryHandledRef.current = false;
+  }, [chapterEditing]);
 
   function consumeBoundaryInRange(
     currentMicros: number,
@@ -50,12 +63,18 @@ function usePlaybackModes({
   }
 
   const activeRange = useCallback((trim: TrimRange, playbackStartMicrosValue: number) => {
+    const chapterRange = chapterRangeRef.current;
+    const isChapterSegment =
+      segmentEnabledRef.current && chapterEditingRef.current && chapterRange !== null;
+
+    const selectedRange = isChapterSegment && chapterRange ? chapterRange : trim;
+
     return playbackRange(
-      trim.sourceDurationMicros,
-      trim.startMicros,
-      segmentEnabledRef.current && playbackStartMicrosValue > trim.endMicros
-        ? trim.sourceDurationMicros
-        : trim.endMicros,
+      selectedRange.sourceDurationMicros,
+      selectedRange.startMicros,
+      segmentEnabledRef.current && !isChapterSegment && playbackStartMicrosValue > selectedRange.endMicros
+        ? selectedRange.sourceDurationMicros
+        : selectedRange.endMicros,
       segmentEnabledRef.current,
     );
   }, []);
@@ -64,6 +83,13 @@ function usePlaybackModes({
     (currentMicros: number, trim: TrimRange) => {
       const range = activeRange(trim, currentMicros);
       playbackRangeRef.current = range;
+      if (
+        segmentEnabledRef.current &&
+        chapterEditingRef.current &&
+        (currentMicros < range.startMicros || currentMicros > range.endMicros)
+      ) {
+        return range.startMicros;
+      }
       return currentMicros;
     },
     [activeRange],

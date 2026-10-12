@@ -1139,6 +1139,10 @@ export const en = {
       },
     },
     chapters: {
+      accessibility: {
+        chapterEnd: "End of {{title}}",
+        chapterStart: "Start of {{title}}",
+      },
       actions: {
         addChapter: "Add chapter",
         deleteChapter: "Delete {{title}}",

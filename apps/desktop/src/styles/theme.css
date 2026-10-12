@@ -1,5 +1,18 @@
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --animate-wiggle: wiggle 1s ease-in-out infinite;
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(-3deg);
+    }
+    50% {
+      transform: rotate(3deg);
+    }
+  }
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Inter", sans-serif;

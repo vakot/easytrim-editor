@@ -1,4 +1,4 @@
-import { BetweenVerticalStart, BookmarkPlus, Clapperboard, Repeat } from "lucide-react";
+import { BetweenVerticalStart, BookmarkPlus, Clapperboard, Repeat, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { cn } from "@/lib/class-names.utils";
 
+import { useChapterTimelineEditing } from "../contexts/chapter-timeline-editing-context";
 import { ChapterManagerDialog, ChapterManagerDialogTrigger } from "../dialogs/ChapterManagerDialog";
 import { useSceneDetection } from "../hooks/useSceneDetection";
 
@@ -51,6 +52,26 @@ function TimelineToolbar() {
 
 function ChaptersTool() {
   const { t } = useTranslation();
+  const chapterEditing = useChapterTimelineEditing();
+
+  if (chapterEditing.chapter) {
+    return (
+      <Tooltip preserveOnTrigger>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={t("common.actions.save")}
+            className="animate-wiggle motion-reduce:animate-none"
+            onClick={chapterEditing.save}
+            size="icon-sm"
+            type="button"
+          >
+            <Save />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t("common.actions.save")}</TooltipContent>
+      </Tooltip>
+    );
+  }
 
   return (
     <ChapterManagerDialog>

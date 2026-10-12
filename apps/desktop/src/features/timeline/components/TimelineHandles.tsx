@@ -59,7 +59,9 @@ function SegmentDragHandle({
 
 function TrimHandle({
   boundary,
+  className,
   dragging,
+  label: accessibleLabel,
   max,
   min,
   snapActive,
@@ -68,6 +70,7 @@ function TrimHandle({
 }: Omit<ComponentProps<typeof Button>, "children"> & {
   boundary: TrimBoundary;
   dragging: boolean;
+  label?: string;
   max: number;
   min: number;
   snapActive: boolean;
@@ -75,9 +78,10 @@ function TrimHandle({
 }) {
   const { t } = useTranslation();
   const label =
-    boundary === "start"
+    accessibleLabel ??
+    (boundary === "start"
       ? t("timeline.segment.accessibility.trimStart")
-      : t("timeline.segment.accessibility.trimEnd");
+      : t("timeline.segment.accessibility.trimEnd"));
 
   return (
     <Button
@@ -91,6 +95,7 @@ function TrimHandle({
       className={cn(
         "absolute -inset-y-1 z-3 h-auto w-4 min-w-auto -translate-x-1/2 translate-y-0! cursor-ew-resize touch-none rounded-xs border-primary p-0 transition-colors hover:border-primary/80",
         boundary === "start" ? "rounded-l-md" : "rounded-r-md",
+        className,
       )}
       data-dragging={dragging ? "true" : undefined}
       data-editor-keyboard="timeline-slider"
@@ -109,13 +114,16 @@ function TrimHandle({
 }
 
 function Playhead({
+  className,
   dragging,
+  elevated = false,
   max,
   min,
   value,
   ...props
 }: React.ComponentProps<"button"> & {
   dragging: boolean;
+  elevated?: boolean;
   max: number;
   min: number;
   value: number;
@@ -133,6 +141,8 @@ function Playhead({
       })}
       className={cn(
         "absolute -inset-y-1 z-2 w-4 -translate-x-1/2 cursor-ew-resize touch-none bg-transparent! transition-colors outline-none before:absolute before:inset-y-0 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:bg-foreground before:content-[''] after:absolute after:top-0 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] focus-visible:before:border-ring focus-visible:before:ring-3 focus-visible:before:ring-ring/50 focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 disabled:pointer-events-none disabled:before:bg-muted-foreground disabled:after:bg-muted-foreground",
+        elevated && "z-10",
+        className,
       )}
       data-dragging={dragging ? "true" : undefined}
       data-editor-keyboard="timeline-slider"

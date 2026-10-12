@@ -19,6 +19,7 @@ import {
 } from "../lib/timeline-snap";
 
 interface TrimTimelineInteractionOptions {
+  excludeRangeBoundariesFromSnapping?: boolean;
   frameRate?: FrameRate;
   onChange: (boundary: TrimBoundary, range: TrimRange) => void;
   onMoveSegment: (range: TrimRange) => void;
@@ -33,6 +34,7 @@ interface TrimTimelineInteractionOptions {
   playheadMicros: number;
   range: TrimRange;
   snapTargetsMicros: readonly number[];
+  syncGeometry?: boolean;
 }
 
 interface TrimDragState {
@@ -41,6 +43,7 @@ interface TrimDragState {
 }
 
 function useTrimTimelineInteractions({
+  excludeRangeBoundariesFromSnapping = false,
   frameRate,
   onChange,
   onMoveSegment,
@@ -55,6 +58,7 @@ function useTrimTimelineInteractions({
   playheadMicros,
   range,
   snapTargetsMicros,
+  syncGeometry = true,
 }: TrimTimelineInteractionOptions) {
   const trackRef = useRef<HTMLDivElement>(null);
   const scrubDragRef = useRef<{ bounds: DOMRect; pointerId: number } | null>(null);
@@ -95,14 +99,17 @@ function useTrimTimelineInteractions({
   function flushGeometry() {
     if (geometryFrameRef.current !== null) cancelAnimationFrame(geometryFrameRef.current);
     geometryFrameRef.current = null;
-    syncTimelineGeometry(
-      trackRef.current?.closest<HTMLElement>("[data-slot='timeline-pane']") ?? null,
-      rangeRef.current,
-    );
+    if (syncGeometry) {
+      syncTimelineGeometry(
+        trackRef.current?.closest<HTMLElement>("[data-slot='timeline-pane']") ?? null,
+        rangeRef.current,
+      );
+    }
   }
 
   function syncRange(nextRange: TrimRange) {
     rangeRef.current = nextRange;
+    if (!syncGeometry) return;
     if (geometryFrameRef.current !== null) return;
     geometryFrameRef.current = requestAnimationFrame(flushGeometry);
   }
@@ -136,6 +143,7 @@ function useTrimTimelineInteractions({
         snapTargetsMicros,
       ),
       activeAnchorId,
+      excludeRangeBoundariesFromSnapping,
     );
   }
 

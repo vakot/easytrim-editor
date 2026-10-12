@@ -7,8 +7,17 @@ import {
   TimelineTransportContext,
 } from "./contexts/timeline-runtime-contexts";
 import { useTimelinePlaybackController } from "./hooks/useTimelinePlaybackController";
+import { ChapterTimelineEditingProvider } from "./ChapterTimelineEditingProvider";
 
 function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
+  return (
+    <ChapterTimelineEditingProvider>
+      <TimelinePlaybackRuntimeProvider>{children}</TimelinePlaybackRuntimeProvider>
+    </ChapterTimelineEditingProvider>
+  );
+}
+
+function TimelinePlaybackRuntimeProvider({ children }: { children: ReactNode }) {
   const runtime = useTimelinePlaybackController();
   const playhead = useMemo(
     () => ({

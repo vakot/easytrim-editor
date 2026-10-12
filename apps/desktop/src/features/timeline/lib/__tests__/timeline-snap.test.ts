@@ -8,6 +8,7 @@ import {
   createTimelineSnapTargets,
   findNearestTimelineSnapAnchor,
   isTimelineSnapPositionAligned,
+  type TimelineSnapAnchor,
 } from "../timeline-snap";
 
 const audioActivityRanges: AudioActivityRange[] = [
@@ -100,6 +101,36 @@ describe("timeline snap anchors", () => {
     ).toMatchObject({ id: "marker-0", timeMicros: 3_000_000 });
     expect(
       findNearestTimelineSnapAnchor(9_950_000, 100, 10_000_000, anchors, "trim-start"),
+    ).toBeNull();
+  });
+
+  it("excludes both active chapter boundaries from chapter handle snapping", () => {
+    const anchors: TimelineSnapAnchor[] = [
+      {
+        id: "trim-center",
+        movesWith: [],
+        reachableTimeRange: { maximumMicros: 10_000_000, minimumMicros: 0 },
+        timeMicros: 5_000_000,
+      },
+      {
+        id: "trim-start",
+        movesWith: [],
+        reachableTimeRange: { maximumMicros: 10_000_000, minimumMicros: 0 },
+        timeMicros: 4_000_000,
+      },
+      {
+        id: "trim-end",
+        movesWith: [],
+        reachableTimeRange: { maximumMicros: 10_000_000, minimumMicros: 0 },
+        timeMicros: 6_000_000,
+      },
+    ];
+
+    expect(
+      findNearestTimelineSnapAnchor(4_000_000, 1_000, 10_000_000, anchors, "trim-center"),
+    ).toMatchObject({ id: "trim-start", timeMicros: 4_000_000 });
+    expect(
+      findNearestTimelineSnapAnchor(4_000_000, 1_000, 10_000_000, anchors, "trim-center", true),
     ).toBeNull();
   });
 

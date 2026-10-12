@@ -101,6 +101,7 @@ function findNearestTimelineSnapAnchor(
   sourceDurationMicros: number,
   anchors: readonly TimelineSnapAnchor[],
   activeAnchorId: TimelineSnapAnchorId,
+  excludeRangeBoundaries = false,
 ): TimelineSnapAnchor | null {
   if (trackWidth <= 0 || sourceDurationMicros <= 0) return null;
 
@@ -112,6 +113,8 @@ function findNearestTimelineSnapAnchor(
 
   for (const anchor of anchors) {
     if (anchor.id === activeAnchorId || anchor.movesWith.includes(activeAnchorId)) continue;
+    if (excludeRangeBoundaries && (anchor.id === "trim-start" || anchor.id === "trim-end"))
+      continue;
     if (
       anchor.timeMicros < activeAnchor.reachableTimeRange.minimumMicros ||
       anchor.timeMicros > activeAnchor.reachableTimeRange.maximumMicros

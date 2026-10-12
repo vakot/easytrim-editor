@@ -16,6 +16,7 @@ import { audioTrackColor } from "@/features/audio";
 import { useTimeline, useTimelineReadiness } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 
+import { useChapterTimelineEditing } from "../contexts/chapter-timeline-editing-context";
 import { useTrimTimelineInteractions } from "../hooks/useTrimTimelineInteractions";
 import { createTimelineMarkers } from "../lib/timeline-markers";
 import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
@@ -42,6 +43,7 @@ function TimelineTrack() {
       <TimelineTrimHandle boundary="start" />
       <TimelineDragHandle />
       <TimelineTrimHandle boundary="end" />
+      <TimelineChapterRange />
     </Timeline>
   );
 }
@@ -56,6 +58,7 @@ function Timeline({ children }: { children: React.ReactNode }) {
   const audioTracks = useAppSelector(selectAudioTracks);
   const readiness = useTimelineReadiness();
   const timeline = useTimeline();
+  const chapterEditing = useChapterTimelineEditing();
 
   const visibleAudioActivityRanges = audioTracks.flatMap((track) =>
     track.activityVisible && track.activityAnalysis.status === "ready"
@@ -68,18 +71,37 @@ function Timeline({ children }: { children: React.ReactNode }) {
       createTimelineSnapTargets(
         sceneMarkersEnabled ? sceneBoundariesMicros : [],
         visibleAudioActivityRanges,
-        chapters.flatMap(({ endMicros, startMicros }) => [startMicros, endMicros]),
+        chapters
+          .filter(({ id }) => id !== chapterEditing.chapter?.id)
+          .flatMap(({ endMicros, startMicros }) => [startMicros, endMicros]),
       ),
-    [visibleAudioActivityRanges, sceneBoundariesMicros, sceneMarkersEnabled, chapters],
+    [
+      visibleAudioActivityRanges,
+      sceneBoundariesMicros,
+      sceneMarkersEnabled,
+      chapters,
+      chapterEditing.chapter?.id,
+    ],
   );
 
-  const range = timeline.trim ?? EMPTY_TIMELINE_RANGE;
+  const trimRange = timeline.trim ?? EMPTY_TIMELINE_RANGE;
+  const range = chapterEditing.chapter
+    ? {
+        endMicros: chapterEditing.chapter.endMicros,
+        sourceDurationMicros: trimRange.sourceDurationMicros,
+        startMicros: chapterEditing.chapter.startMicros,
+      }
+    : trimRange;
+
   const disabled = !readiness.canInteract;
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
 
   const interactions = useTrimTimelineInteractions({
+    excludeRangeBoundariesFromSnapping: chapterEditing.chapter !== null,
     frameRate,
-    onChange: timeline.onChange,
+    onChange: chapterEditing.chapter
+      ? (_boundary, nextRange) => chapterEditing.updateRange(nextRange)
+      : timeline.onChange,
     onMoveSegment: timeline.onMoveSegment,
     onScrub: timeline.onScrub,
     onScrubEnd: timeline.onScrubEnd,
@@ -91,6 +113,7 @@ function Timeline({ children }: { children: React.ReactNode }) {
     onTrimDragStart: timeline.onTrimDragStart,
     playheadMicros: timeline.playheadMicros,
     range,
+    syncGeometry: !chapterEditing.chapter,
     snapTargetsMicros,
   });
 
@@ -124,7 +147,9 @@ function Timeline({ children }: { children: React.ReactNode }) {
       value={{
         ...interactions,
         range,
+        trimRange,
         disabled,
+        isEditingChapter: chapterEditing.chapter !== null,
         onSeek: timeline.onSeek,
         playheadMicros: timeline.playheadMicros,
         playheadRef: timeline.playheadRef,
@@ -142,7 +167,7 @@ function Timeline({ children }: { children: React.ReactNode }) {
         onPointerCancel={(event) => finishPointer(event, false)}
         onPointerCancelCapture={dragAwareDoubleClick.onPointerCancelCapture}
         onPointerDown={(event) => {
-          if (event.target === event.currentTarget) {
+          if (!chapterEditing.chapter && event.target === event.currentTarget) {
             startScrub(event);
           }
         }}
@@ -162,19 +187,28 @@ function Timeline({ children }: { children: React.ReactNode }) {
 function TimelineTrimHandle({
   boundary,
 }: Pick<React.ComponentProps<typeof TrimHandle>, "boundary">) {
-  const { disabled, handleTrimKeyboard, handleTrimPointer, range, trimDragState } =
-    useTimelineTrack();
+  const {
+    disabled,
+    handleTrimKeyboard,
+    handleTrimPointer,
+    isEditingChapter,
+    trimDragState,
+    trimRange,
+  } = useTimelineTrack();
 
   const isStart = boundary === "start";
-  const minimumDurationMicros = minimumSelectionMicros(range.sourceDurationMicros);
-  const value = isStart ? range.startMicros : range.endMicros;
-  const min = isStart ? 0 : range.startMicros + minimumDurationMicros;
-  const max = isStart ? range.endMicros - minimumDurationMicros : range.sourceDurationMicros;
+  const minimumDurationMicros = minimumSelectionMicros(trimRange.sourceDurationMicros);
+  const value = isStart ? trimRange.startMicros : trimRange.endMicros;
+  const min = isStart ? 0 : trimRange.startMicros + minimumDurationMicros;
+  const max = isStart
+    ? trimRange.endMicros - minimumDurationMicros
+    : trimRange.sourceDurationMicros;
 
   return (
     <TrimHandle
       boundary={boundary}
-      disabled={disabled}
+      className={cn(isEditingChapter && "opacity-25")}
+      disabled={disabled || isEditingChapter}
       dragging={trimDragState?.boundary === boundary}
       max={max}
       min={min}
@@ -190,25 +224,76 @@ function TimelineDragHandle() {
   const {
     disabled,
     handleSegmentKeyboard,
-    range,
+    isEditingChapter,
     segmentDragging,
     segmentSnapActive,
     startSegmentDrag,
+    trimRange,
   } = useTimelineTrack();
 
-  const durationMicros = range.endMicros - range.startMicros;
+  const durationMicros = trimRange.endMicros - trimRange.startMicros;
 
   return (
     <SegmentDragHandle
-      disabled={disabled}
+      className={cn(isEditingChapter && "opacity-25")}
+      disabled={disabled || isEditingChapter}
       dragging={segmentDragging}
-      max={range.sourceDurationMicros - durationMicros}
+      max={trimRange.sourceDurationMicros - durationMicros}
       min={0}
       onKeyDown={handleSegmentKeyboard}
       onPointerDown={startSegmentDrag}
       snapActive={segmentSnapActive}
-      value={range.startMicros}
+      value={trimRange.startMicros}
     />
+  );
+}
+
+function TimelineChapterRange() {
+  const chapterEditing = useChapterTimelineEditing();
+  const { disabled, handleTrimKeyboard, handleTrimPointer, range, trimDragState } =
+    useTimelineTrack();
+
+  const { t } = useTranslation();
+
+  if (!chapterEditing.chapter) return null;
+
+  const activeChapter = chapterEditing.chapter;
+  const startPercent = timelinePercent(range.startMicros, range.sourceDurationMicros);
+  const endPercent = timelinePercent(range.endMicros, range.sourceDurationMicros);
+  const minimumDurationMicros = minimumSelectionMicros(range.sourceDurationMicros);
+
+  return (
+    <>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 z-5 mx-2 box-border border-y-2 border-primary bg-primary/25"
+        style={{ left: `${startPercent}%`, width: `${endPercent - startPercent}%` }}
+      />
+      {(["start", "end"] as const).map((boundary) => {
+        const isStart = boundary === "start";
+        const value = isStart ? range.startMicros : range.endMicros;
+        const label = isStart
+          ? t("timeline.chapters.accessibility.chapterStart", { title: activeChapter.title })
+          : t("timeline.chapters.accessibility.chapterEnd", { title: activeChapter.title });
+
+        return (
+          <TrimHandle
+            boundary={boundary}
+            className="z-8 border-primary bg-background shadow-md"
+            disabled={disabled}
+            dragging={trimDragState?.boundary === boundary}
+            label={label}
+            max={isStart ? range.endMicros - minimumDurationMicros : range.sourceDurationMicros}
+            min={isStart ? 0 : range.startMicros + minimumDurationMicros}
+            onKeyDown={(event) => handleTrimKeyboard(boundary, event)}
+            onPointerDown={(event) => handleTrimPointer(boundary, event, true)}
+            snapActive={trimDragState?.boundary === boundary && trimDragState.snapActive}
+            style={{ left: `${timelinePercent(value, range.sourceDurationMicros)}%` }}
+            value={value}
+          />
+        );
+      })}
+    </>
   );
 }
 
@@ -216,6 +301,7 @@ function TimelinePlayhead() {
   const {
     disabled,
     handlePlayheadKeyboard,
+    isEditingChapter,
     playheadMicros,
     playheadRef,
     range,
@@ -229,6 +315,7 @@ function TimelinePlayhead() {
     <Playhead
       disabled={disabled}
       dragging={scrubDragging}
+      elevated={isEditingChapter}
       max={range.sourceDurationMicros}
       min={0}
       onKeyDown={handlePlayheadKeyboard}
@@ -240,13 +327,14 @@ function TimelinePlayhead() {
 }
 
 function TimelineSegment() {
-  const { disabled } = useTimelineTrack();
+  const { disabled, isEditingChapter } = useTimelineTrack();
 
   return (
     <div
       className={cn(
         "pointer-events-none absolute inset-x-0 -inset-y-px mx-2 box-border border-y-2 border-primary bg-primary/10",
         disabled && "opacity-50",
+        isEditingChapter && "opacity-25",
       )}
       style={{
         left: "var(--timeline-trim-start)",
@@ -257,7 +345,7 @@ function TimelineSegment() {
 }
 
 function TimelineAudioActivityMarkers() {
-  const { range } = useTimelineTrack();
+  const { isEditingChapter, range } = useTimelineTrack();
 
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const audioTracks = useAppSelector(selectAudioTracks);
@@ -278,7 +366,10 @@ function TimelineAudioActivityMarkers() {
             <motion.div
               animate={{ opacity: 1 }}
               aria-hidden="true"
-              className="pointer-events-none absolute inset-y-0 z-0 w-px"
+              className={cn(
+                "pointer-events-none absolute inset-y-0 z-0 w-px",
+                isEditingChapter && "opacity-25",
+              )}
               exit={{ opacity: 0 }}
               initial={shouldReduceMotion ? false : { opacity: 0 }}
               key={`${marker.streamIndex}-${marker.timeMicros}`}
@@ -292,7 +383,8 @@ function TimelineAudioActivityMarkers() {
 }
 
 function TimelineChapterMarkers() {
-  const { onSeek, range } = useTimelineTrack();
+  const { isEditingChapter, onSeek, range } = useTimelineTrack();
+  const chapterEditing = useChapterTimelineEditing();
   const chapters = useAppSelector(selectChapters);
   const { t } = useTranslation();
 
@@ -304,7 +396,10 @@ function TimelineChapterMarkers() {
         return (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute top-1 left-0 z-2 h-1 rounded-full bg-primary/20"
+            className={cn(
+              "pointer-events-none absolute top-1 left-0 z-2 h-1 rounded-full bg-primary/20",
+              isEditingChapter && "opacity-25",
+            )}
             key={`span-${chapter.id}`}
             style={{ left: `${left}%`, width: `${Math.max(0.15, right - left)}%` }}
           />
@@ -318,13 +413,18 @@ function TimelineChapterMarkers() {
           range: rangeLabel,
         });
 
-        return (
+        return chapterEditing.chapter?.id === chapter.id ? null : (
           <button
             aria-label={label}
-            className="absolute top-0 z-3 h-2 w-3 -translate-x-1/2 rounded-t-sm bg-primary shadow-sm after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-x-4 after:border-t-4 after:border-x-transparent after:border-t-primary focus-visible:ring-2 focus-visible:ring-ring"
+            className={cn(
+              "absolute top-0 z-3 h-2 w-3 -translate-x-1/2 rounded-t-sm bg-primary shadow-sm after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-x-4 after:border-t-4 after:border-x-transparent after:border-t-primary focus-visible:ring-2 focus-visible:ring-ring",
+              isEditingChapter && "opacity-30",
+            )}
+            disabled={isEditingChapter}
             key={chapter.id}
             onClick={(event) => {
               event.stopPropagation();
+              chapterEditing.edit(chapter);
               onSeek(chapter.startMicros);
             }}
             onPointerDown={(event) => event.stopPropagation()}
@@ -339,7 +439,7 @@ function TimelineChapterMarkers() {
 }
 
 function TimelineSceneMarkers() {
-  const { range } = useTimelineTrack();
+  const { isEditingChapter, range } = useTimelineTrack();
 
   const enabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
@@ -355,6 +455,7 @@ function TimelineSceneMarkers() {
               className={cn(
                 "pointer-events-none absolute top-1/2 z-1 w-0.5 -translate-1/2",
                 TIMELINE_MARKER_STYLES.scene,
+                isEditingChapter && "opacity-25",
               )}
               exit={{ opacity: 0, height: 0 }}
               initial={shouldReduceMotion ? false : { opacity: 0 }}
@@ -371,10 +472,12 @@ function TimelineSceneMarkers() {
 const TimelineTrackContext = createContext<
   | (ReturnType<typeof useTrimTimelineInteractions> & {
       disabled: boolean;
+      isEditingChapter: boolean;
       onSeek: (micros: number) => void;
       playheadMicros: number;
       playheadRef: React.RefObject<HTMLButtonElement | null>;
       range: TrimRange;
+      trimRange: TrimRange;
     })
   | null
 >(null);
