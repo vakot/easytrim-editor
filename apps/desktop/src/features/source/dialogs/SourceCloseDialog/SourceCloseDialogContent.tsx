@@ -37,7 +37,11 @@ function SourceCloseDialogContent({
         <AlertDialogCancel __scopeAlertDialog={__scopeAlertDialog}>
           {t("common.actions.cancel")}
         </AlertDialogCancel>
-        <AlertDialogAction __scopeAlertDialog={__scopeAlertDialog} onClick={onConfirm} variant="destructive">
+        <AlertDialogAction
+          __scopeAlertDialog={__scopeAlertDialog}
+          onClick={onConfirm}
+          variant="destructive"
+        >
           {t("common.actions.close")}
         </AlertDialogAction>
       </AlertDialogFooter>

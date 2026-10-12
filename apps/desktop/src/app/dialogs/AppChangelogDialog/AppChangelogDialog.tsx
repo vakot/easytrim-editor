@@ -77,7 +77,10 @@ const AppChangelogDialog = Object.assign(
 
     return (
       <Dialog {...dialogScope} onOpenChange={(open) => !open && handleClose()} open={isOpen}>
-        <DialogContent {...dialogScope} className="grid max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-2xl">
+        <DialogContent
+          {...dialogScope}
+          className="grid max-h-[min(80dvh,48rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-2xl"
+        >
           <Suspense fallback={null}>
             <LazyAppChangelogDialogContent
               __scopeDialog={dialogScope.__scopeDialog}

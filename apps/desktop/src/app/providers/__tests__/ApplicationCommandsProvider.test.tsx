@@ -108,6 +108,7 @@ vi.mock("@/features/source", () => ({
   useSourceDelete: () => ({ requestSourceDelete: mocks.requestSourceDelete }),
 }));
 vi.mock("@/features/export", () => ({
+  ExportDialog: { preload: vi.fn(() => Promise.resolve()) },
   useQueueDeleteSource: () => ({ requestEnableSourceDeletion: vi.fn() }),
 }));
 vi.mock("@/features/preview", () => ({

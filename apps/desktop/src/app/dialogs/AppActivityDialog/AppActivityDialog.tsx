@@ -28,7 +28,10 @@ const AppActivityDialog = Object.assign(
     const dialogScope = useAppActivityDialogScope(__scopeDialog);
     return (
       <Dialog {...dialogScope} onOpenChange={onOpenChange} open={open}>
-        <DialogContent {...dialogScope} className="h-[min(80dvh,40rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden pb-0 sm:max-w-lg">
+        <DialogContent
+          {...dialogScope}
+          className="h-[min(80dvh,40rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden pb-0 sm:max-w-lg"
+        >
           <Suspense fallback={null}>
             <LazyAppActivityDialogContent __scopeDialog={dialogScope.__scopeDialog} />
           </Suspense>

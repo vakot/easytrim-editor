@@ -75,15 +75,15 @@ describe("PresetManager built-in localization", () => {
 
       await userEvent.click(screen.getByRole("button", { name: builtInName }));
       await userEvent.click(screen.getByRole("menuitem", { name: addLabel }));
-      expect(screen.getByLabelText(nameLabel)).toHaveAttribute("placeholder", placeholder);
-      await userEvent.type(screen.getByLabelText(nameLabel), "Custom");
+      expect(await screen.findByLabelText(nameLabel)).toHaveAttribute("placeholder", placeholder);
+      await userEvent.type(await screen.findByLabelText(nameLabel), "Custom");
       await userEvent.click(screen.getByRole("button", { name: saveLabel }));
 
       await openPresetActions("Custom", 7);
       await userEvent.click(
         screen.getByRole("menuitem", { name: presetActionLabel("Edit", "Изменить") }),
       );
-      expect(screen.getByLabelText(nameLabel)).toHaveValue("Custom");
+      expect(await screen.findByLabelText(nameLabel)).toHaveValue("Custom");
       expect(screen.getByLabelText(nameLabel)).toHaveAttribute("placeholder", placeholder);
     },
   );

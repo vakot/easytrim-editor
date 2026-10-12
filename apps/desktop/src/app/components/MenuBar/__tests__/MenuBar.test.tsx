@@ -14,6 +14,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
+import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
 import { useSettingsDialog } from "@/app/hooks/useAppDialog";
@@ -304,6 +305,7 @@ describe("MenuBarTest", () => {
                         <ExportDialog>
                           <ExportActions />
                         </ExportDialog>
+                        <AppChangelogDialog />
                         <WorkspaceDialogSelectionProbe />
                         <AppSettingsDialog />
                         <SettingsOpenIndicator />
@@ -364,7 +366,9 @@ describe("MenuBarTest", () => {
     await user.click(getMenuTrigger("View"));
     await user.click(screen.getByRole("menuitem", { name: /Export Queue/ }));
 
-    expect(await screen.findByTestId("workspace-dialog-view")).toHaveTextContent("exportQueue");
+    await waitFor(() =>
+      expect(screen.getByTestId("workspace-dialog-view")).toHaveTextContent("exportQueue"),
+    );
   });
 
   it("keeps queue configuration in Preferences, separate from queue actions", async () => {

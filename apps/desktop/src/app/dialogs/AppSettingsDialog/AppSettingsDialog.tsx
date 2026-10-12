@@ -26,7 +26,10 @@ const AppSettingsDialog = Object.assign(
 
     return (
       <Dialog {...dialogScope} onOpenChange={(open) => !open && closeDialog()} open={isOpen}>
-        <DialogContent {...dialogScope} className="h-full max-h-[min(80dvh,32rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl">
+        <DialogContent
+          {...dialogScope}
+          className="h-full max-h-[min(80dvh,32rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
+        >
           <Suspense fallback={null}>
             <LazyAppSettingsDialogContent __scopeDialog={dialogScope.__scopeDialog} />
           </Suspense>

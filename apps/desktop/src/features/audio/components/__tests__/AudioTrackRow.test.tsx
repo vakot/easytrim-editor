@@ -878,9 +878,9 @@ describe("AudioTrackRow", () => {
     const { store } = renderRow();
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
-    await user.click(screen.getByRole("tab", { name: /limiter/i }));
+    await user.click(await screen.findByRole("tab", { name: /limiter/i }));
 
-    const toggle = screen.getByRole("switch", { name: /limiter/i });
+    const toggle = await screen.findByRole("switch", { name: /limiter/i });
     await user.click(toggle);
     const ceiling = screen.getByRole("slider", { name: /output ceiling/i });
     ceiling.focus();

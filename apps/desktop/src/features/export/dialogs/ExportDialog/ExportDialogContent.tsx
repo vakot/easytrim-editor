@@ -115,7 +115,10 @@ function ExportDialogContent({ __scopeDialog, onCancel }: ExportDialogContentPro
         error={commandPreviewError ? localizeAppError(commandPreviewError, t) : undefined}
       />
 
-      <DialogFooter __scopeDialog={__scopeDialog} className="min-w-0 items-center sm:justify-between">
+      <DialogFooter
+        __scopeDialog={__scopeDialog}
+        className="min-w-0 items-center sm:justify-between"
+      >
         <p className="min-w-0 flex-1 text-xs text-muted-foreground">
           {t("export.optimized.dialog.saveNotice")}
         </p>

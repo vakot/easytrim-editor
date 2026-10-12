@@ -828,7 +828,7 @@ describe("VideoPreview", () => {
     expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "0");
   });
 
-  it("confirms before resetting preview transformations", () => {
+  it("confirms before resetting preview transformations", async () => {
     const store = createAppStore();
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
 
@@ -838,14 +838,16 @@ describe("VideoPreview", () => {
     selectTransformAction(viewport, "Flip vertically");
     selectTransformAction(viewport, "Reset to default");
 
-    expect(screen.getByRole("alertdialog")).toHaveTextContent("Reset video transformations?");
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent(
+      "Reset video transformations?",
+    );
     expect(store.getState().crop).toMatchObject({
       flipHorizontal: true,
       flipVertical: true,
       rotationDegrees: 180,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Reset to default" }));
 
     expect(store.getState().crop).toMatchObject({
       flipHorizontal: false,
@@ -855,40 +857,43 @@ describe("VideoPreview", () => {
     });
   });
 
-  it.each([false, true])("resets a transformed partial crop while editor open=%s", (cropOpen) => {
-    const store = createAppStore();
-    store.dispatch(
-      cropChanged({
-        crop: { x: 0.15, y: 0.2, width: 0.6, height: 0.5 },
-        resolution: { width: 576, height: 450 },
-      }),
-    );
-    store.dispatch(rotationChanged(270));
-    store.dispatch(flipToggled("horizontal"));
-    store.dispatch(flipToggled("vertical"));
-    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
-    const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
+  it.each([false, true])(
+    "resets a transformed partial crop while editor open=%s",
+    async (cropOpen) => {
+      const store = createAppStore();
+      store.dispatch(
+        cropChanged({
+          crop: { x: 0.15, y: 0.2, width: 0.6, height: 0.5 },
+          resolution: { width: 576, height: 450 },
+        }),
+      );
+      store.dispatch(rotationChanged(270));
+      store.dispatch(flipToggled("horizontal"));
+      store.dispatch(flipToggled("vertical"));
+      const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
+      const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
 
-    if (cropOpen) openCropTool(viewport);
-    selectTransformAction(viewport, "Reset to default");
-    fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
+      if (cropOpen) openCropTool(viewport);
+      selectTransformAction(viewport, "Reset to default");
+      fireEvent.click(await screen.findByRole("button", { name: "Reset to default" }));
 
-    expect(store.getState().crop).toMatchObject({
-      flipHorizontal: false,
-      flipVertical: false,
-      rotationDegrees: 0,
-      value: { x: 0, y: 0, width: 1, height: 1 },
-    });
-    expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "360");
-    expect(container.querySelector("[data-flip-layer]")).toHaveAttribute(
-      "data-flip-horizontal",
-      "false",
-    );
-    expect(container.querySelector("[data-source-geometry]")).toHaveAttribute(
-      "data-source-geometry",
-      cropOpen ? "full-rotated-source" : "crop-relative-source",
-    );
-  });
+      expect(store.getState().crop).toMatchObject({
+        flipHorizontal: false,
+        flipVertical: false,
+        rotationDegrees: 0,
+        value: { x: 0, y: 0, width: 1, height: 1 },
+      });
+      expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "360");
+      expect(container.querySelector("[data-flip-layer]")).toHaveAttribute(
+        "data-flip-horizontal",
+        "false",
+      );
+      expect(container.querySelector("[data-source-geometry]")).toHaveAttribute(
+        "data-source-geometry",
+        cropOpen ? "full-rotated-source" : "crop-relative-source",
+      );
+    },
+  );
 
   it("toggles playback on a left click and supports the context menu", async () => {
     playback.toggle.mockClear();

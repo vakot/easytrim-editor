@@ -275,12 +275,12 @@ describe("source queue controls", () => {
     expect(selectSourceListEntries(store.getState())).toHaveLength(2);
 
     const dialog = screen.getByRole("alertdialog");
-    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await user.click(await within(dialog).findByRole("button", { name: "Cancel" }));
     expect(selectSourceListEntries(store.getState())).toHaveLength(2);
 
     await user.click(screen.getByRole("button", { name: "Close all open sources" }));
     await user.click(
-      within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }),
+      await within(screen.getByRole("alertdialog")).findByRole("button", { name: "Close" }),
     );
 
     await waitFor(() => expect(selectSourceListEntries(store.getState())).toHaveLength(0));

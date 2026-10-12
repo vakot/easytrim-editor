@@ -32,7 +32,10 @@ function ChapterManagerDialog({
   return (
     <Dialog {...dialogScope}>
       {children}
-      <DialogContent {...dialogScope} className="h-[min(80dvh,40rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
+      <DialogContent
+        {...dialogScope}
+        className="h-[min(80dvh,40rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg"
+      >
         <React.Suspense fallback={null}>
           <LazyChapterManagerDialogContent
             __scopeDialog={dialogScope.__scopeDialog}
