@@ -72,7 +72,9 @@ function usePlaybackModes({
     return playbackRange(
       selectedRange.sourceDurationMicros,
       selectedRange.startMicros,
-      segmentEnabledRef.current && !isChapterSegment && playbackStartMicrosValue > selectedRange.endMicros
+      segmentEnabledRef.current &&
+        !isChapterSegment &&
+        playbackStartMicrosValue > selectedRange.endMicros
         ? selectedRange.sourceDurationMicros
         : selectedRange.endMicros,
       segmentEnabledRef.current,
