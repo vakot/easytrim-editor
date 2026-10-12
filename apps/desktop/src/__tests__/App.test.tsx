@@ -970,7 +970,10 @@ describe("App", () => {
     expect(
       videoToolbar.querySelector('[data-slot="timeline-tools-divider"]'),
     ).not.toBeInTheDocument();
-    expect(within(videoToolbar).getAllByRole("button")).toHaveLength(3);
+    expect(within(videoToolbar).getAllByRole("button")).toHaveLength(4);
+    expect(
+      within(videoToolbar).getByRole("button", { name: "Manage chapters" }),
+    ).toBeInTheDocument();
     const timelineFixedContent = screen.getByTestId("timeline-fixed-content");
     expect(
       within(timelineFixedContent).getByRole("button", { name: "Playback speed" }),

@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { i18n } from "@/i18n/config";
-import { translationCoverage } from "@/i18n/resources";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
 import { SettingsGeneral } from "../SettingsGeneral";
@@ -12,6 +11,16 @@ vi.mock("@/lib/open-external-url.utils", () => ({ openExternalUrl: vi.fn() }));
 
 const TRANSLATION_GUIDE_URL =
   "https://github.com/vakot/easytrim-editor/blob/master/apps/desktop/src/i18n/README.md";
+
+const translationCoverage = vi.hoisted(() => ({
+  en: { percentage: 83 },
+  ru: { percentage: 47 },
+}));
+
+vi.mock("@/i18n/resources", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/i18n/resources")>()),
+  translationCoverage,
+}));
 
 describe("SettingsGeneral", () => {
   beforeEach(async () => {
@@ -28,7 +37,8 @@ describe("SettingsGeneral", () => {
 
     await user.click(screen.getByRole("button", { name: "Language" }));
     const listbox = screen.getByRole("listbox");
-    expect(within(listbox).getAllByText(`${translationCoverage.ru.percentage}%`)).toHaveLength(2);
+    expect(within(listbox).getByText("83%")).toBeInTheDocument();
+    expect(within(listbox).getByText("47%")).toBeInTheDocument();
     expect(within(listbox).getAllByRole("progressbar")).toHaveLength(2);
     expect(
       within(listbox)

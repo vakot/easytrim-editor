@@ -14,6 +14,7 @@ import { sourceFailed, sourceReady } from "@/app/store/actions/source-actions";
 import { appMiddleware } from "@/app/store/middleware";
 import { createPersistedReducer, type PersistStorage, reduxStorage } from "@/app/store/persistence";
 import { audioReducer } from "@/app/store/slices/audio-slice";
+import { chaptersReducer } from "@/app/store/slices/chapters-slice";
 import { cropReducer } from "@/app/store/slices/crop-slice";
 import { editingInstancesReducer } from "@/app/store/slices/editing-instances-slice";
 import {
@@ -32,6 +33,7 @@ import { trimReducer } from "@/app/store/slices/trim-slice";
 
 const combinedReducer = combineReducers({
   audio: audioReducer,
+  chapters: chaptersReducer,
   crop: cropReducer,
   editingInstances: editingInstancesReducer,
   editorTools: editorToolsReducer,

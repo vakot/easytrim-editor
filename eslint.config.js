@@ -65,7 +65,7 @@ export default defineConfig(
           type: "natural",
         },
       ],
-      // Keep object-literal insertion order intact; only destructuring is mechanically sorted.
+      // Keep object-literal insertion order intact outside locale dictionaries.
       "perfectionist/sort-objects": [
         "error",
         {
@@ -102,6 +102,19 @@ export default defineConfig(
             ["^\\.\\.(?!/?$)", "^\\.\\./?$"],
             ["^\\./(?=.*/)(?!/?$)", "^\\.(?!/?$)", "^\\./?$"],
           ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["apps/desktop/src/i18n/locales/*.ts"],
+    rules: {
+      "perfectionist/sort-objects": [
+        "error",
+        {
+          ignoreCase: true,
+          order: "asc",
+          type: "natural",
         },
       ],
     },

@@ -24,6 +24,7 @@ import {
   waveformsFailed,
   waveformsLoading,
 } from "@/app/store/slices/audio-slice";
+import { selectChapters } from "@/app/store/slices/chapters-slice";
 import {
   activeEditingInstanceChanged,
   editingInstanceClosed,
@@ -534,6 +535,7 @@ async function prepareSelectedSource(
         flipVertical: snapshot.flipVertical,
         rotation: snapshot.rotation,
         sceneBoundariesMicros: snapshot.sceneBoundariesMicros,
+        chapters: snapshot.chapters,
         audioTracks: snapshot.audio.tracks,
         mergeAudio: snapshot.audio.mergeAudio,
       })
@@ -713,6 +715,7 @@ async function prepareSelectedSource(
       trim: { kind: "full-source" },
       crop: null,
       rotation: 0,
+      chapters: selectChapters(getState()),
       audioTracks: selectAudioTracks(getState()),
       mergeAudio: selectMergeAudio(getState()),
     });

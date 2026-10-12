@@ -1,3 +1,4 @@
+import { selectChapters } from "@/app/store/slices/chapters-slice";
 import {
   selectCrop,
   selectFlipHorizontal,
@@ -41,6 +42,7 @@ function createEditorSnapshotFromState(state: RootState, source: SourceRef): Edi
     flipVertical: selectFlipVertical(state),
     rotation: selectRotationDegrees(state),
     sceneBoundariesMicros,
+    chapters: selectChapters(state),
     audioTracks: state.audio.tracks.map(serializeAudioTrackSettings),
     mergeAudio: state.audio.mergeAudio,
   });

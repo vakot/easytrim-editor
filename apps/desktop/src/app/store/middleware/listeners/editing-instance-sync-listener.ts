@@ -2,6 +2,7 @@ import { editingInstanceActivated } from "@/app/store/actions/editing-instance-a
 import { sourceCleared, sourceReady } from "@/app/store/actions/source-actions";
 import { createEditorSnapshotFromState } from "@/app/store/integration/editor-snapshot";
 import { releaseQueuedExportEdit } from "@/app/store/integration/export-queue-runtime";
+import { chapterAdded, chapterDeleted, chapterUpdated } from "@/app/store/slices/chapters-slice";
 import { cropChanged, rotationChanged, selectCropResolution } from "@/app/store/slices/crop-slice";
 import {
   editingInstanceGifSettingsChanged,
@@ -17,6 +18,20 @@ import {
 import type { AppDispatch } from "@/app/store/store";
 
 import { listenerMiddleware } from "../listener-middleware";
+
+listenerMiddleware.startListening({
+  matcher: (action) =>
+    chapterAdded.match(action) || chapterUpdated.match(action) || chapterDeleted.match(action),
+  effect: (_, listenerApi) => {
+    const state = listenerApi.getState();
+    const instance = selectActiveEditingInstance(state);
+    const source = state.source.source;
+    if (!instance || !source || !state.source.media) return;
+    const snapshot = createEditorSnapshotFromState(state, source);
+    if (!snapshot) return;
+    listenerApi.dispatch(editingInstanceSnapshotUpdated({ id: instance.id, snapshot }));
+  },
+});
 
 listenerMiddleware.startListening({
   matcher: (
