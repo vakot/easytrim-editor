@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -8,9 +10,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Spinner } from "@/components/ui/spinner";
 
-import { clearWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
-import { closeWindow, type WindowShutdownContinuation } from "@/lib/tauri/window";
+import { completeShutdown, type WindowShutdownContinuation } from "@/lib/tauri/window";
 
 function AppShutdownGuardDialogContent({
   continuation,
@@ -18,26 +20,23 @@ function AppShutdownGuardDialogContent({
   continuation?: WindowShutdownContinuation;
 }) {
   const { t } = useTranslation();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string>();
 
-  const handleAccept = async () => {
-    // TODO: simple allow shutdown
+  const handleConfirm = async () => {
+    if (pending) return;
+
+    setPending(true);
+    setError(undefined);
+
     try {
-      await clearWorkspaceRecoveryOnAcceptedShutdown();
-
-      if (continuation) {
-        continuation?.();
-        return;
-      }
-
-      await closeWindow();
-    } catch {
-      handleReject();
+      await completeShutdown(continuation);
+    } catch (error) {
+      console.error("Failed to shut down the application:", error);
+      setError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPending(false);
     }
-  };
-
-  const handleReject = async () => {
-    // TODO: simple reject shutdown
-    return;
   };
 
   return (
@@ -48,9 +47,25 @@ function AppShutdownGuardDialogContent({
           {t("app.shutdown.confirmation.description")}
         </AlertDialogDescription>
       </AlertDialogHeader>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       <AlertDialogFooter>
-        <AlertDialogCancel onClick={handleReject}>{t("common.actions.back")}</AlertDialogCancel>
-        <AlertDialogAction onClick={handleAccept} variant="destructive">
+        <AlertDialogCancel disabled={pending}>{t("common.actions.back")}</AlertDialogCancel>
+
+        <AlertDialogAction
+          disabled={pending}
+          onClick={(event) => {
+            event.preventDefault();
+            void handleConfirm();
+          }}
+          variant="destructive"
+        >
+          {pending && <Spinner />}
           {t("queue.onFinished.shortOptions.exit")}
         </AlertDialogAction>
       </AlertDialogFooter>

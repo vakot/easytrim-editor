@@ -1,4 +1,6 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog";
 
@@ -6,50 +8,70 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectHasProcessableExports } from "@/app/store/slices/editing-instances-slice";
 import { lazyWithPreload } from "@/lib/lazy-component";
 import {
+  completeShutdown,
   listenForWindowCloseRequests,
   listenForWindowShutdownRequests,
   type WindowShutdownContinuation,
 } from "@/lib/tauri/window";
 
+const loadDialog = () => import("./AppShutdownGuardDialogContent");
+
 const LazyAppShutdownGuardDialogContent = lazyWithPreload<{
   continuation?: WindowShutdownContinuation;
-}>(() =>
-  import("./AppShutdownGuardDialogContent").then((module) => ({
-    default: module.AppShutdownGuardDialogContent,
-  })),
-);
+}>(() => loadDialog().then((module) => ({ default: module.AppShutdownGuardDialogContent })));
 
 function AppShutdownGuardDialog() {
+  const { t } = useTranslation();
   const hasProcessableExports = useAppSelector(selectHasProcessableExports);
   const [open, setOpen] = useState(false);
-  const [pendingContinuation, setPendingContinuation] = useState<WindowShutdownContinuation>();
+  const [continuation, setContinuation] = useState<WindowShutdownContinuation>();
 
-  const handleCloseRequest = useCallback((continuation?: WindowShutdownContinuation) => {
-    setPendingContinuation(continuation);
-    setOpen(true);
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    setOpen(nextOpen);
+
+    if (!nextOpen) {
+      setContinuation(undefined);
+    }
   }, []);
 
-  const handleCloseRejected = useCallback(() => {
-    setPendingContinuation(undefined);
-    setOpen(false);
-  }, []);
+  const handleShutdownRequest = useCallback(
+    (continuation?: WindowShutdownContinuation) => {
+      if (open) {
+        if (continuation) setContinuation(() => continuation);
+        return;
+      }
+
+      if (hasProcessableExports) {
+        setContinuation(() => continuation);
+        setOpen(true);
+        return;
+      }
+
+      void completeShutdown(continuation).catch((error: unknown) => {
+        console.error("Failed to shut down the application:", error);
+        toast.error(t("app.shutdown.errors.failed"), {
+          description: error instanceof Error ? error.message : String(error),
+        });
+      });
+    },
+    [open, hasProcessableExports, t],
+  );
 
   useEffect(() => {
-    // TODO: only open dialog when hasProcessableExports
-    const unlistenPromise = listenForWindowCloseRequests(() => false, handleCloseRequest); // TODO: reset to close on reject - handleCloseRejected
-    const unlistenShutdown = listenForWindowShutdownRequests(handleCloseRequest); // TODO: reset to close on reject - handleCloseRejected
+    const unlistenPromise = listenForWindowCloseRequests(handleShutdownRequest);
+    const unlistenShutdown = listenForWindowShutdownRequests(handleShutdownRequest);
 
     return () => {
       unlistenShutdown();
       void unlistenPromise.then((unlisten) => unlisten());
     };
-  }, [hasProcessableExports, handleCloseRequest]);
+  }, [handleShutdownRequest]);
 
   return (
-    <AlertDialog onOpenChange={setOpen} open={open}>
+    <AlertDialog onOpenChange={handleOpenChange} open={open}>
       <AlertDialogContent>
         <Suspense fallback={null}>
-          <LazyAppShutdownGuardDialogContent continuation={pendingContinuation} />
+          <LazyAppShutdownGuardDialogContent continuation={continuation} />
         </Suspense>
       </AlertDialogContent>
     </AlertDialog>

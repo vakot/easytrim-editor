@@ -1,6 +1,8 @@
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
+import { clearWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
+
 const WINDOW_SHUTDOWN_REQUESTED = "easytrim:window-shutdown-requested";
 
 export type WindowShutdownContinuation = () => void | Promise<void>;
@@ -29,6 +31,10 @@ function closeWindow(): Promise<void> {
   return getNativeWindow()?.close() ?? Promise.resolve();
 }
 
+function destroyWindow(): Promise<void> {
+  return getNativeWindow()?.destroy() ?? Promise.resolve();
+}
+
 function requestWindowShutdown(continuation?: WindowShutdownContinuation): Promise<void> {
   if (typeof window !== "undefined") {
     const event = new CustomEvent(WINDOW_SHUTDOWN_REQUESTED, {
@@ -42,6 +48,16 @@ function requestWindowShutdown(continuation?: WindowShutdownContinuation): Promi
   }
 
   return closeWindow();
+}
+
+async function completeShutdown(continuation?: WindowShutdownContinuation) {
+  await clearWorkspaceRecoveryOnAcceptedShutdown();
+
+  if (continuation) {
+    await continuation();
+  } else {
+    await destroyWindow();
+  }
 }
 
 function listenForWindowShutdownRequests(
@@ -64,13 +80,9 @@ function listenForWindowShutdownRequests(
   return () => window.removeEventListener(WINDOW_SHUTDOWN_REQUESTED, handleShutdownRequested);
 }
 
-function listenForWindowCloseRequests(
-  shouldPreventClose: () => boolean,
-  onCloseRequested: () => void,
-): Promise<UnlistenFn> {
+function listenForWindowCloseRequests(onCloseRequested: () => void): Promise<UnlistenFn> {
   return (
     getNativeWindow()?.onCloseRequested((event) => {
-      if (!shouldPreventClose()) return;
       event.preventDefault();
       onCloseRequested();
     }) ?? Promise.resolve(() => undefined)
@@ -83,6 +95,8 @@ function isWindowMaximized(): Promise<boolean> {
 
 export {
   closeWindow,
+  completeShutdown,
+  destroyWindow,
   isWindowMaximized,
   listenForWindowCloseRequests,
   listenForWindowShutdownRequests,

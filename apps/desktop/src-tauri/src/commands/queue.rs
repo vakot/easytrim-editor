@@ -1,4 +1,4 @@
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 use crate::{
     application::queue::{available_finish_actions, execute_system_action},
@@ -18,7 +18,11 @@ pub fn perform_queue_finish_action(
 ) -> Result<(), AppError> {
     match action {
         QueueFinishAction::Exit => {
-            app.exit(0);
+            if let Some(window) = app.get_webview_window("main") {
+                window.close().map_err(|error| {
+                    AppError::internal(format!("Could not close main window: {error}"))
+                })?;
+            }
             Ok(())
         }
         QueueFinishAction::SystemSleep | QueueFinishAction::SystemShutdown => {

@@ -2,11 +2,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { clearWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
+
 import { AppShutdownGuardDialog } from "../AppShutdownGuardDialog";
 
 const shutdownState = vi.hoisted(() => ({ hasProcessableExports: false }));
 const windowActions = vi.hoisted(() => ({
-  closeWindow: vi.fn(() => Promise.resolve()),
+  completeShutdown: vi.fn(),
+  destroyWindow: vi.fn(() => Promise.resolve()),
   listenForWindowCloseRequests: vi.fn(),
   listenForWindowShutdownRequests: vi.fn(),
   unlisten: vi.fn(),
@@ -18,16 +21,25 @@ vi.mock("@/app/store/redux-hooks", () => ({
 vi.mock("@/lib/tauri/window", () => windowActions);
 
 describe("AppShutdownGuardDialog", () => {
-  let shouldPreventClose: (() => boolean) | undefined;
   let onCloseRequested: (() => void) | undefined;
   let onShutdownRequested: ((continuation?: () => void | Promise<void>) => void) | undefined;
 
   beforeEach(() => {
     vi.clearAllMocks();
     shutdownState.hasProcessableExports = false;
-    shouldPreventClose = undefined;
     onCloseRequested = undefined;
     onShutdownRequested = undefined;
+    windowActions.completeShutdown.mockImplementation(
+      async (continuation?: () => void | Promise<void>) => {
+        await clearWorkspaceRecoveryOnAcceptedShutdown();
+
+        if (continuation) {
+          await continuation();
+        } else {
+          await windowActions.destroyWindow();
+        }
+      },
+    );
     windowActions.listenForWindowShutdownRequests.mockImplementation(
       (shutdownRequested: (continuation?: () => void | Promise<void>) => void) => {
         onShutdownRequested = shutdownRequested;
@@ -35,8 +47,7 @@ describe("AppShutdownGuardDialog", () => {
       },
     );
     windowActions.listenForWindowCloseRequests.mockImplementation(
-      async (preventClose: () => boolean, closeRequested: () => void) => {
-        shouldPreventClose = preventClose;
+      async (closeRequested: () => void) => {
         onCloseRequested = closeRequested;
         return windowActions.unlisten;
       },
@@ -48,10 +59,9 @@ describe("AppShutdownGuardDialog", () => {
     localStorage.setItem("easytrim:workspace-recovery:candidate", "candidate");
     render(<AppShutdownGuardDialog />);
 
-    await waitFor(() => expect(shouldPreventClose).toBeDefined());
-    expect(shouldPreventClose?.()).toBe(true);
+    await waitFor(() => expect(onCloseRequested).toBeDefined());
     onCloseRequested?.();
-    await waitFor(() => expect(windowActions.closeWindow).toHaveBeenCalledOnce());
+    await waitFor(() => expect(windowActions.destroyWindow).toHaveBeenCalledOnce());
     expect(localStorage.getItem("easytrim:workspace-recovery:current")).toBeNull();
     expect(localStorage.getItem("easytrim:workspace-recovery:candidate")).toBeNull();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
@@ -65,8 +75,7 @@ describe("AppShutdownGuardDialog", () => {
     render(<AppShutdownGuardDialog />);
 
     onShutdownRequested?.();
-    await waitFor(() => expect(screen.getByRole("alertdialog")).toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "Back" }));
+    await user.click(await screen.findByRole("button", { name: "Back" }));
 
     expect(localStorage.getItem("easytrim:workspace-recovery:current")).toBe("current");
     expect(localStorage.getItem("easytrim:workspace-recovery:candidate")).toBe("candidate");
@@ -77,8 +86,7 @@ describe("AppShutdownGuardDialog", () => {
     const user = userEvent.setup();
     render(<AppShutdownGuardDialog />);
 
-    await waitFor(() => expect(shouldPreventClose).toBeDefined());
-    expect(shouldPreventClose?.()).toBe(true);
+    await waitFor(() => expect(onCloseRequested).toBeDefined());
     onShutdownRequested?.();
 
     await waitFor(() =>
@@ -88,8 +96,20 @@ describe("AppShutdownGuardDialog", () => {
     );
     await user.click(screen.getByRole("button", { name: "Exit" }));
 
-    await waitFor(() => expect(windowActions.closeWindow).toHaveBeenCalledOnce());
-    expect(shouldPreventClose?.()).toBe(false);
+    await waitFor(() => expect(windowActions.destroyWindow).toHaveBeenCalledOnce());
+  });
+
+  it("shows shutdown errors inside the open confirmation dialog", async () => {
+    shutdownState.hasProcessableExports = true;
+    windowActions.completeShutdown.mockRejectedValueOnce(new Error("Window could not close"));
+    const user = userEvent.setup();
+    render(<AppShutdownGuardDialog />);
+
+    onShutdownRequested?.();
+    await user.click(await screen.findByRole("button", { name: "Exit" }));
+
+    expect(await screen.findByText("Window could not close")).toBeInTheDocument();
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
   });
 
   it("runs an update continuation only after confirming the active queue can be lost", async () => {
@@ -98,14 +118,14 @@ describe("AppShutdownGuardDialog", () => {
     const user = userEvent.setup();
     render(<AppShutdownGuardDialog />);
 
-    await waitFor(() => expect(shouldPreventClose).toBeDefined());
+    await waitFor(() => expect(onCloseRequested).toBeDefined());
     onShutdownRequested?.(continueUpdate);
 
-    await waitFor(() => expect(screen.getByRole("alertdialog")).toBeInTheDocument());
+    await screen.findByRole("alertdialog");
     expect(continueUpdate).not.toHaveBeenCalled();
-    await user.click(screen.getByRole("button", { name: "Exit" }));
+    await user.click(await screen.findByRole("button", { name: "Exit" }));
 
     await waitFor(() => expect(continueUpdate).toHaveBeenCalledOnce());
-    expect(windowActions.closeWindow).not.toHaveBeenCalled();
+    expect(windowActions.destroyWindow).not.toHaveBeenCalled();
   });
 });
