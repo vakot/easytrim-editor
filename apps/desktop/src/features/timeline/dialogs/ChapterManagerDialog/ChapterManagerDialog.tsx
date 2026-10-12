@@ -35,8 +35,8 @@ function ChapterManagerDialogContent() {
   const { t } = useTranslation();
 
   return (
-    <DialogContent className="sm:max-w-lg">
-      <DialogHeader>
+    <DialogContent className="h-[min(80dvh,40rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
+      <DialogHeader className="-mx-4 border-b px-4 pb-4">
         <DialogTitle>{t("timeline.chapters.title")}</DialogTitle>
         <DialogDescription>{t("timeline.chapters.description")}</DialogDescription>
       </DialogHeader>

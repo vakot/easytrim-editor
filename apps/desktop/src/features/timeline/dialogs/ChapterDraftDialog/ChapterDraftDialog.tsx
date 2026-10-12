@@ -43,7 +43,7 @@ function ChapterDraftDialog({
 
   return (
     <ChapterDraftContext.Provider value={{ draft, setDraft }}>
-      <Dialog {...props} onOpenChange={handleOpenChange} open={open}>
+      <Dialog onOpenChange={handleOpenChange} open={open} {...props}>
         {children}
         {open ? (
           <Suspense fallback={null}>

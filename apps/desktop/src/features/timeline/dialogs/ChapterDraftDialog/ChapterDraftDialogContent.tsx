@@ -107,20 +107,20 @@ function ChapterDraftDialogContent() {
             <AlertDescription>{t("timeline.chapters.status.invalid")}</AlertDescription>
           </Alert>
         ) : null}
-
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="button" variant="outline">
-              {t("common.actions.cancel")}
-            </Button>
-          </DialogClose>
-          <DialogClose asChild>
-            <Button onClick={handleSave} type="button">
-              {t("common.actions.save")}
-            </Button>
-          </DialogClose>
-        </DialogFooter>
       </div>
+
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button type="button" variant="outline">
+            {t("common.actions.cancel")}
+          </Button>
+        </DialogClose>
+        <DialogClose asChild>
+          <Button onClick={handleSave} type="button">
+            {t("common.actions.save")}
+          </Button>
+        </DialogClose>
+      </DialogFooter>
     </DialogContent>
   );
 }
