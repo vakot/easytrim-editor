@@ -629,12 +629,14 @@ describe("MenuBarTest", () => {
     renderMenus();
     await user.click(getMenuTrigger("Settings"));
 
+    const generalTab = await screen.findByRole("tab", { name: "General" });
+    expect(generalTab).toHaveFocus();
+    expect(generalTab).toHaveAttribute("aria-selected", "true");
     const preferencesTab = screen.getByRole("tab", { name: "Preferences" });
-    expect(screen.getByRole("tab", { name: "General" })).toHaveAttribute("aria-selected", "true");
     await user.click(preferencesTab);
     expect(preferencesTab).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Editing")).toBeInTheDocument();
-    expect(screen.getByText("Reset editing settings")).toBeInTheDocument();
+    expect(await screen.findByText("Editing")).toBeInTheDocument();
+    expect(await screen.findByText("Reset editing settings")).toBeInTheDocument();
 
     const loopSwitch = screen.getByRole("switch", { name: "Loop" });
     expect(loopSwitch).toBeChecked();

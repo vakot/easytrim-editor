@@ -127,7 +127,12 @@ function AppSettingsPageItem({ page }: { page: SettingsPageId }) {
   const preload = preloadOnIntent(preloadSettingsPage[page]);
 
   return (
-    <LibraryNavigationItem onFocus={preload} onPointerEnter={preload} value={page}>
+    <LibraryNavigationItem
+      autoFocus={page === DEFAULT_PAGE}
+      onFocus={preload}
+      onPointerEnter={preload}
+      value={page}
+    >
       {getSettingsPageTitle(t, page)}
     </LibraryNavigationItem>
   );
