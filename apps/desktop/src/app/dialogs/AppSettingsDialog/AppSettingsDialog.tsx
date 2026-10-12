@@ -25,7 +25,15 @@ const AppSettingsDialog = Object.assign(
       </Dialog>
     );
   },
-  { preload: () => LazyAppSettingsDialogContent.preload() },
+  {
+    preload: () =>
+      Promise.all([LazyAppSettingsDialogContent.preload(), import("./pages/SettingsGeneral")]).then(
+        () =>
+          import("./AppSettingsDialogContent").then((module) =>
+            module.AppSettingsDialogContent.preloadDefaultPage(),
+          ),
+      ),
+  },
 );
 
 export { AppSettingsDialog };

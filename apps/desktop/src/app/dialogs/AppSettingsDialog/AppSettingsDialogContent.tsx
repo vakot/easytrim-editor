@@ -52,66 +52,69 @@ const preloadSettingsPage = {
   preferences: preloadOnIntent(() => LazySettingsPreferences.preload()),
 } satisfies Record<SettingsPageId, () => void>;
 
-function AppSettingsDialogContent() {
-  const { t } = useTranslation();
-  const [selectedPage, setSelectedPage] = useState<SettingsPageId>("general");
+const AppSettingsDialogContent = Object.assign(
+  function AppSettingsDialogContent() {
+    const { t } = useTranslation();
+    const [selectedPage, setSelectedPage] = useState<SettingsPageId>("general");
 
-  return (
-    <>
-      <DialogHeader className="m-0! border-b p-4">
-        <DialogTitle>{getSettingsPageTitle(t, selectedPage)}</DialogTitle>
-        <DialogDescription>{getSettingsPageDescription(t, selectedPage)}</DialogDescription>
-      </DialogHeader>
+    return (
+      <>
+        <DialogHeader className="m-0! border-b p-4">
+          <DialogTitle>{getSettingsPageTitle(t, selectedPage)}</DialogTitle>
+          <DialogDescription>{getSettingsPageDescription(t, selectedPage)}</DialogDescription>
+        </DialogHeader>
 
-      <Library
-        onValueChange={(value) => setSelectedPage(value as SettingsPageId)}
-        value={selectedPage}
-      >
-        <LibraryNavigation aria-label={t("settings.navigationLabel")}>
-          <LibraryNavigationGroup>
-            <AppSettingsPageItem page="general" />
-            <AppSettingsPageItem page="appearance" />
-            <AppSettingsPageItem page="preferences" />
-            <AppSettingsPageItem page="layout" />
-            <AppSettingsPageItem page="about" />
-          </LibraryNavigationGroup>
-        </LibraryNavigation>
+        <Library
+          onValueChange={(value) => setSelectedPage(value as SettingsPageId)}
+          value={selectedPage}
+        >
+          <LibraryNavigation aria-label={t("settings.navigationLabel")}>
+            <LibraryNavigationGroup>
+              <AppSettingsPageItem page="general" />
+              <AppSettingsPageItem page="appearance" />
+              <AppSettingsPageItem page="preferences" />
+              <AppSettingsPageItem page="layout" />
+              <AppSettingsPageItem page="about" />
+            </LibraryNavigationGroup>
+          </LibraryNavigation>
 
-        <Separator orientation="vertical" />
+          <Separator orientation="vertical" />
 
-        <LibraryContent>
-          <AppSettingsPage page="general">
-            <Badge
-              className="h-8 gap-2 border-primary/10 bg-primary/5 text-muted-foreground"
-              variant="outline"
-            >
-              <Keyboard aria-hidden="true" className="size-4" />
-              {t("settings.general.shortcutHint")}
-              <KbdGroup>
-                {getShortcutDisplayKeys(SETTINGS_SHORTCUT).map((key) => (
-                  <Kbd key={key}>{key}</Kbd>
-                ))}
-              </KbdGroup>
-            </Badge>
-            <LazySettingsGeneral />
-          </AppSettingsPage>
-          <AppSettingsPage page="appearance">
-            <LazySettingsAppearance />
-          </AppSettingsPage>
-          <AppSettingsPage page="preferences">
-            <LazySettingsPreferences />
-          </AppSettingsPage>
-          <AppSettingsPage page="layout">
-            <LazySettingsLayout />
-          </AppSettingsPage>
-          <AppSettingsPage page="about">
-            <LazySettingsAbout />
-          </AppSettingsPage>
-        </LibraryContent>
-      </Library>
-    </>
-  );
-}
+          <LibraryContent>
+            <AppSettingsPage page="general">
+              <Badge
+                className="h-8 gap-2 border-primary/10 bg-primary/5 text-muted-foreground"
+                variant="outline"
+              >
+                <Keyboard aria-hidden="true" className="size-4" />
+                {t("settings.general.shortcutHint")}
+                <KbdGroup>
+                  {getShortcutDisplayKeys(SETTINGS_SHORTCUT).map((key) => (
+                    <Kbd key={key}>{key}</Kbd>
+                  ))}
+                </KbdGroup>
+              </Badge>
+              <LazySettingsGeneral />
+            </AppSettingsPage>
+            <AppSettingsPage page="appearance">
+              <LazySettingsAppearance />
+            </AppSettingsPage>
+            <AppSettingsPage page="preferences">
+              <LazySettingsPreferences />
+            </AppSettingsPage>
+            <AppSettingsPage page="layout">
+              <LazySettingsLayout />
+            </AppSettingsPage>
+            <AppSettingsPage page="about">
+              <LazySettingsAbout />
+            </AppSettingsPage>
+          </LibraryContent>
+        </Library>
+      </>
+    );
+  },
+  { preloadDefaultPage: () => LazySettingsGeneral.preload() },
+);
 
 function AppSettingsPageItem({ page }: { page: SettingsPageId }) {
   const { t } = useTranslation();
