@@ -8,7 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import type { ApplicationCommandId } from "@/app/commands";
 import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
 import { ApplicationCommandsContext } from "@/app/contexts/application-commands-context";
-import { ExportQueueDialog } from "@/app/layout/components/workspace-dialogs/ExportQueueDialog";
+import { AppExportQueueDialog } from "@/app/dialogs/AppExportQueueDialog";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
   editingInstanceExportAttemptQueued,
@@ -82,7 +82,9 @@ function renderExportActions(store = createAppStore()) {
   return { ...result, executeCommand };
 }
 
-function renderExportQueueDialog(store = createAppStore()) {
+async function renderExportQueueDialog(store = createAppStore()) {
+  await AppExportQueueDialog.preload();
+
   const startQueueCommand = {
     enabled: selectExportQueueSummary(store.getState()).queued > 0,
     group: { id: "export-queue", label: "Export Queue" },
@@ -111,7 +113,7 @@ function renderExportQueueDialog(store = createAppStore()) {
         }}
       >
         <TooltipProvider>
-          <ExportQueueDialog onOpenChange={() => undefined} open />
+          <AppExportQueueDialog onOpenChange={() => undefined} open />
         </TooltipProvider>
       </ApplicationCommandsContext.Provider>
     </Provider>,
@@ -169,7 +171,7 @@ describe("ExportActions", () => {
   it("keeps the queue dialog footer stable and disables Start queue without queued work", async () => {
     const user = userEvent.setup();
     const store = createAppStore();
-    renderExportQueueDialog(store);
+    await renderExportQueueDialog(store);
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     const stripMetadata = screen.getByRole("checkbox", {
@@ -220,7 +222,7 @@ describe("ExportActions", () => {
       ]),
     );
     store.dispatch(editingInstanceExportAttemptQueued({ attempt, id: "source-1" }));
-    renderExportQueueDialog(store);
+    await renderExportQueueDialog(store);
 
     expect(screen.getByRole("button", { name: "Start queue" })).not.toBeDisabled();
   });

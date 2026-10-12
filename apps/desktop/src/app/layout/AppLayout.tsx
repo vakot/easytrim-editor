@@ -1,6 +1,6 @@
 import { AutoScroller } from "@dnd-kit/dom";
 import { DragDropProvider, useDragDropManager } from "@dnd-kit/react";
-import { Suspense, useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
@@ -78,9 +78,7 @@ function AppLayout() {
             viewId={drag.dragPreview.viewId}
           />
         ) : null}
-        <Suspense fallback={null}>
-          {WorkspaceDialog ? <WorkspaceDialog onOpenChange={handleDialogOpenChange} open /> : null}
-        </Suspense>
+        {WorkspaceDialog ? <WorkspaceDialog onOpenChange={handleDialogOpenChange} open /> : null}
       </main>
     </DragDropProvider>
   );

@@ -48,8 +48,8 @@ vi.mock("@/app/layout/components/WorkspaceViewContent", () => ({
   WorkspaceViewContent: ({ viewId }: { viewId: string }) => <div>{viewId} view content</div>,
 }));
 
-vi.mock("@/app/layout/components/workspace-dialogs/ActivityWorkspaceDialog", () => ({
-  ActivityWorkspaceDialog: ({ open }: { open: boolean }) =>
+vi.mock("@/app/dialogs/AppActivityDialog", () => ({
+  AppActivityDialog: ({ open }: { open: boolean }) =>
     open ? (
       <div aria-label="Activity Feed" role="dialog">
         Activity view dialog

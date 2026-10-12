@@ -25,14 +25,11 @@ function AppDiagnosticsRecoveryDialog({
     if (!recovery) return;
 
     let active = true;
-    void LazyAppDiagnosticsRecoveryDialogContent.preload().then(
-      () => {
-        if (active) setOpen(true);
-      },
-      () => {
-        if (active) setOpen(true);
-      },
-    );
+    const openAfterPreload = () => {
+      if (active) setOpen(true);
+    };
+
+    void LazyAppDiagnosticsRecoveryDialogContent.preload().then(openAfterPreload, openAfterPreload);
 
     return () => {
       active = false;

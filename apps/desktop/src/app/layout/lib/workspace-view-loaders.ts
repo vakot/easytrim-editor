@@ -1,3 +1,6 @@
+import { AppActivityDialog } from "@/app/dialogs/AppActivityDialog";
+import { AppExportQueueDialog } from "@/app/dialogs/AppExportQueueDialog";
+import { AppSourcesDialog } from "@/app/dialogs/AppSourcesDialog";
 import { lazyWithPreload } from "@/lib/lazy-component";
 
 import type { SidebarViewId } from "./sidebar-layout";
@@ -20,33 +23,6 @@ const ExportQueueWorkspaceView = lazyWithPreload<Record<string, never>>(() =>
   })),
 );
 
-const ActivityWorkspaceDialog = lazyWithPreload<{
-  onOpenChange: (open: boolean) => void;
-  open: boolean;
-}>(() =>
-  import("../components/workspace-dialogs/ActivityWorkspaceDialog").then((module) => ({
-    default: module.ActivityWorkspaceDialog,
-  })),
-);
-
-const ExportQueueDialog = lazyWithPreload<{
-  onOpenChange: (open: boolean) => void;
-  open: boolean;
-}>(() =>
-  import("../components/workspace-dialogs/ExportQueueDialog").then((module) => ({
-    default: module.ExportQueueDialog,
-  })),
-);
-
-const SourcesWorkspaceDialog = lazyWithPreload<{
-  onOpenChange: (open: boolean) => void;
-  open: boolean;
-}>(() =>
-  import("../components/workspace-dialogs/SourcesWorkspaceDialog").then((module) => ({
-    default: module.SourcesWorkspaceDialog,
-  })),
-);
-
 const WORKSPACE_VIEW_COMPONENTS = {
   activity: ActivityWorkspaceView,
   exportQueue: ExportQueueWorkspaceView,
@@ -54,10 +30,13 @@ const WORKSPACE_VIEW_COMPONENTS = {
 } satisfies Record<SidebarViewId, typeof SourcesWorkspaceView>;
 
 const WORKSPACE_DIALOG_COMPONENTS = {
-  activity: ActivityWorkspaceDialog,
-  exportQueue: ExportQueueDialog,
-  sources: SourcesWorkspaceDialog,
-} satisfies Record<SidebarViewId, typeof ActivityWorkspaceDialog>;
+  activity: AppActivityDialog,
+  exportQueue: AppExportQueueDialog,
+  sources: AppSourcesDialog,
+} satisfies Record<
+  SidebarViewId,
+  typeof AppActivityDialog | typeof AppExportQueueDialog | typeof AppSourcesDialog
+>;
 
 function preloadWorkspaceView(viewId: SidebarViewId) {
   return WORKSPACE_VIEW_COMPONENTS[viewId].preload();
