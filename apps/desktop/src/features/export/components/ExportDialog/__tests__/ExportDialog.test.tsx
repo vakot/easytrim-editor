@@ -34,7 +34,7 @@ import { createAppStore } from "@/app/store/store";
 import { openGifExportDialog, openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
 import { firstSource, media } from "@/test/source.fixtures";
 
-import { ExportDialog } from "../ExportDialog";
+import { ExportDialog } from "../../../dialogs/ExportDialog";
 
 describe("ExportDialog", () => {
   it("requests one command preview when one dialog open is dispatched", async () => {

@@ -1,16 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropResolution } from "@/app/store/slices/crop-slice";
@@ -21,13 +13,10 @@ import {
   selectExportCommandPreviewError,
   selectExportDialogOpen,
   selectExportDialogRoute,
-  selectExportLaunchError,
   selectQueueEdit,
 } from "@/app/store/slices/export-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import {
-  cancelOptimizedExportDialogRequested,
-  openOptimizedExportDialog,
   refreshExportPlan,
   startGifExportRequested,
   startOptimizedExportRequested,
@@ -35,11 +24,19 @@ import {
 import { gifSettingsWithDefaults } from "@/domain/gif-export";
 import { localizeAppError } from "@/i18n/app-errors";
 
-import { CommandPreview, ExportResolution, FrameRate } from "./components/common";
-import { GifExportOptions } from "./components/gif";
-import { VideoExportOptions } from "./components/video";
+import {
+  CommandPreview,
+  ExportResolution,
+  FrameRate,
+} from "../../components/ExportDialog/components/common";
+import { GifExportOptions } from "../../components/ExportDialog/components/gif";
+import { VideoExportOptions } from "../../components/ExportDialog/components/video";
 
-function ExportDialog() {
+interface ExportDialogContentProps {
+  onCancel: () => void;
+}
+
+function ExportDialogContent({ onCancel }: ExportDialogContentProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const open = useAppSelector(selectExportDialogOpen);
@@ -65,7 +62,6 @@ function ExportDialog() {
   const argumentsText = useAppSelector(selectExportArguments);
   const commandPreview = useAppSelector(selectExportCommandPreview);
   const commandPreviewError = useAppSelector(selectExportCommandPreviewError);
-  const launchError = useAppSelector(selectExportLaunchError);
   const previousArgumentsText = useRef(argumentsText);
   const [frameRateValid, setFrameRateValid] = useState(true);
 
@@ -94,67 +90,50 @@ function ExportDialog() {
         title: t("export.actions.start"),
       };
 
-  const onOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) {
-      void dispatch(openOptimizedExportDialog());
-    } else {
-      dispatch(cancelOptimizedExportDialogRequested());
-    }
-  };
-
   return (
     <>
-      <Dialog onOpenChange={onOpenChange} open={open}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>
-              {queueEdit ? t("export.optimized.dialog.editTitle") : routeComposition.title}
-            </DialogTitle>
-            <DialogDescription>{routeComposition.description}</DialogDescription>
-          </DialogHeader>
+      <DialogHeader>
+        <DialogTitle>
+          {queueEdit ? t("export.optimized.dialog.editTitle") : routeComposition.title}
+        </DialogTitle>
+        <DialogDescription>{routeComposition.description}</DialogDescription>
+      </DialogHeader>
 
-          {routeComposition.options}
-          <ExportResolution cropResolution={cropResolution} settings={settings} />
-          <FrameRate
-            key={`${dialogRoute}-${activeInstance?.id ?? ""}`}
-            onValidityChange={setFrameRateValid}
-            settings={settings}
-          />
-          <CommandPreview
-            command={commandPreview}
-            error={commandPreviewError ? localizeAppError(commandPreviewError, t) : undefined}
-          />
+      {routeComposition.options}
+      <ExportResolution cropResolution={cropResolution} settings={settings} />
+      <FrameRate
+        key={`${dialogRoute}-${activeInstance?.id ?? ""}`}
+        onValidityChange={setFrameRateValid}
+        settings={settings}
+      />
+      <CommandPreview
+        command={commandPreview}
+        error={commandPreviewError ? localizeAppError(commandPreviewError, t) : undefined}
+      />
 
-          <DialogFooter className="min-w-0 items-center sm:justify-between">
-            <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-              {t("export.optimized.dialog.saveNotice")}
-            </p>
-            <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
-              <Button onClick={() => onOpenChange(false)} variant="outline">
-                {t("common.actions.cancel")}
-              </Button>
-              <Button
-                disabled={!frameRateValid}
-                onClick={() =>
-                  void dispatch(
-                    queueEdit ? startOptimizedExportRequested() : routeComposition.primaryAction(),
-                  )
-                }
-              >
-                {queueEdit ? t("export.actions.saveChanges") : routeComposition.primaryLabel}
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {launchError ? (
-        <Alert className="absolute top-full right-5 z-40 mt-2 w-80" variant="destructive">
-          <AlertDescription>{localizeAppError(launchError, t)}</AlertDescription>
-        </Alert>
-      ) : null}
+      <DialogFooter className="min-w-0 items-center sm:justify-between">
+        <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+          {t("export.optimized.dialog.saveNotice")}
+        </p>
+        <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
+          <Button onClick={onCancel} variant="outline">
+            {t("common.actions.cancel")}
+          </Button>
+          <Button
+            disabled={!frameRateValid}
+            onClick={() =>
+              void dispatch(
+                queueEdit ? startOptimizedExportRequested() : routeComposition.primaryAction(),
+              )
+            }
+          >
+            {queueEdit ? t("export.actions.saveChanges") : routeComposition.primaryLabel}
+          </Button>
+        </div>
+      </DialogFooter>
     </>
   );
 }
 
-export { ExportDialog };
+export { ExportDialogContent };
+export type { ExportDialogContentProps };

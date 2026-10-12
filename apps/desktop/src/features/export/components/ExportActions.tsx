@@ -32,9 +32,9 @@ import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { cn } from "@/lib/class-names.utils";
 import { preloadOnIntent } from "@/lib/lazy-component";
 
-import { preloadExportDialog } from "./ExportDialog/export-dialog.loader";
+import { ExportDialog } from "../dialogs/ExportDialog";
 
-const preloadExportDialogOnIntent = preloadOnIntent(preloadExportDialog);
+const preloadExportDialogOnIntent = preloadOnIntent(() => ExportDialog.preload());
 
 function ExportActions() {
   const { t } = useTranslation();
@@ -96,11 +96,15 @@ function ExportActions() {
           disabled={!sourceReady}
           icon={<Settings2 aria-hidden="true" />}
           onClick={() => {
-            void import("@/app/store/thunks/export-thunks").then(({ openOptimizedExportDialog }) =>
-              dispatch(
-                openOptimizedExportDialog({ id: "toolbar.optimized-export", type: "button" }),
-              ),
-            );
+            const openDialog = () =>
+              void import("@/app/store/thunks/export-thunks").then(
+                ({ openOptimizedExportDialog }) =>
+                  dispatch(
+                    openOptimizedExportDialog({ id: "toolbar.optimized-export", type: "button" }),
+                  ),
+              );
+
+            void ExportDialog.preload().then(openDialog, openDialog);
           }}
           onFocus={preloadExportDialogOnIntent}
           onPointerEnter={preloadExportDialogOnIntent}
