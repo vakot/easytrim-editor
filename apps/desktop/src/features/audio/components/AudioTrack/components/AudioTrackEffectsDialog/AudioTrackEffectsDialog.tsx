@@ -1,6 +1,7 @@
 import { type ReactNode, Suspense, useCallback, useState } from "react";
 
-import { LibraryDialog } from "@/components/library";
+import { Dialog } from "@/components/ui/dialog";
+
 import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 import type { AudioTrackController } from "../../../../hooks/useAudioTrackController";
@@ -50,7 +51,7 @@ function AudioTrackEffectsDialog({ children, controller }: AudioTrackEffectsDial
     <AudioTrackEffectsDialogContext.Provider value={{ openEffects, preloadEffects }}>
       {children}
 
-      <LibraryDialog onOpenChange={setOpen} open={open}>
+      <Dialog onOpenChange={setOpen} open={open}>
         {open ? (
           <Suspense fallback={null}>
             <AudioTrackEffectsDraftProvider initialProcessing={track.processing} key={draftSession}>
@@ -61,7 +62,7 @@ function AudioTrackEffectsDialog({ children, controller }: AudioTrackEffectsDial
             </AudioTrackEffectsDraftProvider>
           </Suspense>
         ) : null}
-      </LibraryDialog>
+      </Dialog>
     </AudioTrackEffectsDialogContext.Provider>
   );
 }

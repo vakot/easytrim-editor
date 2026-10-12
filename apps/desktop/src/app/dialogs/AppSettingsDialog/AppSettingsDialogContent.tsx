@@ -4,6 +4,7 @@ import { lazy, type ReactNode, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Separator } from "@/components/ui/separator";
 
@@ -12,9 +13,6 @@ import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.
 import {
   Library,
   LibraryContent,
-  LibraryDialogDescription,
-  LibraryDialogHeader,
-  LibraryDialogTitle,
   LibraryNavigation,
   LibraryNavigationGroup,
   LibraryNavigationItem,
@@ -51,12 +49,10 @@ function AppSettingsDialogContent() {
 
   return (
     <>
-      <LibraryDialogHeader>
-        <LibraryDialogTitle>{getSettingsPageTitle(t, selectedPage)}</LibraryDialogTitle>
-        <LibraryDialogDescription>
-          {getSettingsPageDescription(t, selectedPage)}
-        </LibraryDialogDescription>
-      </LibraryDialogHeader>
+      <DialogHeader className="m-0! border-b p-4">
+        <DialogTitle>{getSettingsPageTitle(t, selectedPage)}</DialogTitle>
+        <DialogDescription>{getSettingsPageDescription(t, selectedPage)}</DialogDescription>
+      </DialogHeader>
 
       <Library
         onValueChange={(value) => setSelectedPage(value as SettingsPageId)}
