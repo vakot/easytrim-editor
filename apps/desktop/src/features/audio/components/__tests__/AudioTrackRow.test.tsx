@@ -24,7 +24,7 @@ import { createAppStore } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { useTheme } from "@/app/theme/useTheme";
 import { audioTrackLoudnessInputsKey, type AudioTrackProcessing } from "@/domain/audio-processing";
-import { audioTrackColor } from "@/features/audio";
+import { audioTrackColor, AudioTrackEffectsDialog } from "@/features/audio";
 // eslint-disable-next-line no-restricted-imports -- Test owns a focused audio runtime fixture.
 import {
   AudioPlaybackContext,
@@ -32,6 +32,7 @@ import {
 } from "@/features/audio/contexts/audio-playback-context";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
+import { useAudioTrackController } from "../../hooks/useAudioTrackController";
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
 import { AudioTrackGainControl } from "../AudioTrack/components/AudioTrackGainControl";
 
@@ -95,6 +96,28 @@ function PrimaryColorPreviewButton() {
   );
 }
 
+function GainControlDialogHarness({
+  onLiveGainChange,
+  streamIndex,
+  trackNumber,
+}: {
+  onLiveGainChange: (gainDb: number | null) => void;
+  streamIndex: number;
+  trackNumber: number;
+}) {
+  const controller = useAudioTrackController(streamIndex);
+
+  return (
+    <AudioTrackEffectsDialog controller={controller}>
+      <AudioTrackGainControl
+        onLiveGainChange={onLiveGainChange}
+        streamIndex={streamIndex}
+        trackNumber={trackNumber}
+      />
+    </AudioTrackEffectsDialog>
+  );
+}
+
 function renderGainControl(enabled = true) {
   const store = createAppStore({
     getItem: async () => null,
@@ -125,7 +148,7 @@ function renderGainControl(enabled = true) {
         value={{ ...audioPlayback, clearLiveAudioTrackGain, setLiveAudioTrackGain }}
       >
         <TooltipProvider>
-          <AudioTrackGainControl
+          <GainControlDialogHarness
             onLiveGainChange={() => undefined}
             streamIndex={2}
             trackNumber={1}
