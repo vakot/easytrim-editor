@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
-  DialogContent,
+  DialogClose,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -29,10 +29,8 @@ import {
   languageCodeFromMetadata,
 } from "@/domain/languages";
 
-import type { AudioTrackController } from "../../../../hooks/useAudioTrackController";
-import { audioTrackDisplayName } from "../../../../lib/audio-track-name.utils";
-
-import { useAudioTrackMetadataDialog } from "./contexts/audio-track-metadata-dialog-context";
+import type { AudioTrackController } from "../../hooks/useAudioTrackController";
+import { audioTrackDisplayName } from "../../lib/audio-track-name.utils";
 
 interface AudioTrackMetadataDialogContentProps {
   controller: AudioTrackController;
@@ -40,7 +38,6 @@ interface AudioTrackMetadataDialogContentProps {
 
 function AudioTrackMetadataDialogContent({ controller }: AudioTrackMetadataDialogContentProps) {
   const { t } = useTranslation();
-  const { closeMetadataDialog } = useAudioTrackMetadataDialog();
   const { stream, track, trackNumber } = controller;
   const [metadataTitle, setMetadataTitle] = useState(track?.metadata.title ?? "");
   const [metadataTitleChanged, setMetadataTitleChanged] = useState(false);
@@ -59,7 +56,7 @@ function AudioTrackMetadataDialogContent({ controller }: AudioTrackMetadataDialo
   );
 
   return (
-    <DialogContent>
+    <>
       <form
         className="grid gap-4"
         onSubmit={(event) => {
@@ -70,7 +67,6 @@ function AudioTrackMetadataDialogContent({ controller }: AudioTrackMetadataDialo
             metadataLanguage ?? undefined,
             metadataLanguageChanged,
           );
-          closeMetadataDialog();
         }}
       >
         <DialogHeader>
@@ -150,10 +146,12 @@ function AudioTrackMetadataDialogContent({ controller }: AudioTrackMetadataDialo
           </LanguageSelector>
         </div>
         <DialogFooter>
-          <Button type="submit">{t("common.actions.save")}</Button>
+          <DialogClose asChild>
+            <Button type="submit">{t("common.actions.save")}</Button>
+          </DialogClose>
         </DialogFooter>
       </form>
-    </DialogContent>
+    </>
   );
 }
 

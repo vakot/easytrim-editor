@@ -10,6 +10,12 @@ export {
   useAudioTrackEffectsDialog,
   useAudioTrackEffectsDraft,
 } from "./dialogs/AudioTrackEffectsDialog";
+export {
+  AudioTrackMetadataDialog,
+  AudioTrackMetadataDialogContext,
+  AudioTrackMetadataDialogTrigger,
+  useAudioTrackMetadataDialog,
+} from "./dialogs/AudioTrackMetadataDialog";
 export { audioTrackColor } from "./lib/audio-track-color";
 export {
   amplitudeToMeterLevel,

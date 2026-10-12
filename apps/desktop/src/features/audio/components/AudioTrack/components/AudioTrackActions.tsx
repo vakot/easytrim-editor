@@ -18,11 +18,14 @@ import {
 import { Slot } from "@/components/ui/slot";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { AudioTrackEffectsDialogTrigger, useAudioTrackEffectsDialog } from "@/features/audio";
+import {
+  AudioTrackEffectsDialogTrigger,
+  AudioTrackMetadataDialogTrigger,
+  useAudioTrackEffectsDialog,
+  useAudioTrackMetadataDialog,
+} from "@/features/audio";
 
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
-
-import { useAudioTrackMetadataDialog } from "./AudioTrackMetadataDialog/contexts/audio-track-metadata-dialog-context";
 
 interface AudioTrackActionsProps {
   controller: AudioTrackController;
@@ -30,7 +33,7 @@ interface AudioTrackActionsProps {
 
 function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
   const { t } = useTranslation();
-  const { openMetadataDialog, preloadMetadata } = useAudioTrackMetadataDialog();
+  const { preloadMetadata } = useAudioTrackMetadataDialog();
   const { preloadEffects } = useAudioTrackEffectsDialog();
   const track = controller.track;
 
@@ -65,15 +68,17 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
         </DropdownMenuCheckboxItem>
       </AudioTrackDefaultMenuCheckboxItem>
 
-      <DropdownMenuItem inset onSelect={openMetadataDialog}>
-        <DropdownMenuIcon side="left">
-          <Pencil />
-        </DropdownMenuIcon>
-        {t("audio.tracks.metadata.actions.edit")}
-        <DropdownMenuIcon side="right">
-          <ChevronRight />
-        </DropdownMenuIcon>
-      </DropdownMenuItem>
+      <AudioTrackMetadataDialogTrigger asChild>
+        <DropdownMenuItem inset>
+          <DropdownMenuIcon side="left">
+            <Pencil />
+          </DropdownMenuIcon>
+          {t("audio.tracks.metadata.actions.edit")}
+          <DropdownMenuIcon side="right">
+            <ChevronRight />
+          </DropdownMenuIcon>
+        </DropdownMenuItem>
+      </AudioTrackMetadataDialogTrigger>
 
       <DropdownMenuSeparator />
 
@@ -94,7 +99,7 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
 
 function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
   const { t } = useTranslation();
-  const { openMetadataDialog, preloadMetadata } = useAudioTrackMetadataDialog();
+  const { preloadMetadata } = useAudioTrackMetadataDialog();
   const { preloadEffects } = useAudioTrackEffectsDialog();
   const track = controller.track;
 
@@ -129,15 +134,17 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
         </ContextMenuCheckboxItem>
       </AudioTrackDefaultMenuCheckboxItem>
 
-      <ContextMenuItem inset onSelect={openMetadataDialog}>
-        <ContextMenuIcon side="left">
-          <Pencil />
-        </ContextMenuIcon>
-        {t("audio.tracks.metadata.actions.edit")}
-        <ContextMenuIcon side="right">
-          <ChevronRight />
-        </ContextMenuIcon>
-      </ContextMenuItem>
+      <AudioTrackMetadataDialogTrigger asChild>
+        <ContextMenuItem inset>
+          <ContextMenuIcon side="left">
+            <Pencil />
+          </ContextMenuIcon>
+          {t("audio.tracks.metadata.actions.edit")}
+          <ContextMenuIcon side="right">
+            <ChevronRight />
+          </ContextMenuIcon>
+        </ContextMenuItem>
+      </AudioTrackMetadataDialogTrigger>
 
       <ContextMenuSeparator />
 

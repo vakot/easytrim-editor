@@ -1,8 +1,7 @@
 import { createContext, useContext } from "react";
 
 const AudioTrackMetadataDialogContext = createContext<{
-  closeMetadataDialog: () => void;
-  openMetadataDialog: () => void;
+  openMetadataDialog: () => Promise<void>;
   preloadMetadata: () => void;
 } | null>(null);
 

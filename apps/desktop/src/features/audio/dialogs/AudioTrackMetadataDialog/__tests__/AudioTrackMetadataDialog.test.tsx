@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import type { AudioTrackController } from "../../../../../hooks/useAudioTrackController";
+import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 import { AudioTrackMetadataDialog } from "../AudioTrackMetadataDialog";
 import { useAudioTrackMetadataDialog } from "../contexts/audio-track-metadata-dialog-context";
 
