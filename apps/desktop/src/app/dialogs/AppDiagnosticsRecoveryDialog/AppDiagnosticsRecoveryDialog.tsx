@@ -43,13 +43,11 @@ function AppDiagnosticsRecoveryDialog({
 
   return (
     <AlertDialog onOpenChange={setOpen} open={open}>
-      {open ? (
-        <AlertDialogContent>
-          <Suspense fallback={null}>
-            <LazyAppDiagnosticsRecoveryDialogContent recovery={recovery} />
-          </Suspense>
-        </AlertDialogContent>
-      ) : null}
+      <AlertDialogContent>
+        <Suspense fallback={null}>
+          <LazyAppDiagnosticsRecoveryDialogContent recovery={recovery} />
+        </Suspense>
+      </AlertDialogContent>
     </AlertDialog>
   );
 }
