@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added editable video chapters with timeline markers and trim-aware chapter export.
+- Added editable video chapters with timeline range editing, markers, and trim-aware export.
 
 ## [1.13.4]
 
