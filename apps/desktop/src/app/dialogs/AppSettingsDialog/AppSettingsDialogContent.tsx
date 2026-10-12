@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 import { Keyboard } from "lucide-react";
-import { type ReactNode, Suspense, useState } from "react";
+import React, { type ReactNode, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -22,23 +22,23 @@ import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 type SettingsPageId = "general" | "appearance" | "preferences" | "layout" | "about";
 
-const LazySettingsAbout = lazyWithPreload<Record<string, never>>(() =>
+const LazySettingsAbout = lazyWithPreload<React.FragmentProps>(() =>
   import("./pages/SettingsAbout").then((module) => ({ default: module.SettingsAbout })),
 );
 
-const LazySettingsAppearance = lazyWithPreload<Record<string, never>>(() =>
+const LazySettingsAppearance = lazyWithPreload<React.FragmentProps>(() =>
   import("./pages/SettingsAppearance").then((module) => ({ default: module.SettingsAppearance })),
 );
 
-const LazySettingsGeneral = lazyWithPreload<Record<string, never>>(() =>
+const LazySettingsGeneral = lazyWithPreload<React.FragmentProps>(() =>
   import("./pages/SettingsGeneral").then((module) => ({ default: module.SettingsGeneral })),
 );
 
-const LazySettingsLayout = lazyWithPreload<Record<string, never>>(() =>
+const LazySettingsLayout = lazyWithPreload<React.FragmentProps>(() =>
   import("./pages/SettingsLayout").then((module) => ({ default: module.SettingsLayout })),
 );
 
-const LazySettingsPreferences = lazyWithPreload<Record<string, never>>(() =>
+const LazySettingsPreferences = lazyWithPreload<React.FragmentProps>(() =>
   import("./pages/SettingsPreferences").then((module) => ({
     default: module.SettingsPreferences,
   })),
