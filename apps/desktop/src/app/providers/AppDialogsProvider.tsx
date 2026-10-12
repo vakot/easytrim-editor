@@ -2,63 +2,65 @@ import { type ReactNode, useCallback, useMemo, useState } from "react";
 
 import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import { isShortcutEvent } from "@/app/commands/core/application-command.utils";
+import type { AppDialogId } from "@/app/contexts/app-dialogs-context";
 import { AppDialogsContext } from "@/app/contexts/app-dialogs-context";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked, isEditableTarget } from "@/lib/hotkeys.utils";
 
+const dialogPreloaders: Record<AppDialogId, () => Promise<unknown>> = {
+  "command-palette": AppCommandPaletteDialog.preload,
+  settings: AppSettingsDialog.preload,
+};
+
 function AppDialogsProvider({ children }: { children: ReactNode }) {
-  const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const [isSettingsOpen, setSettingsOpen] = useState(false);
+  const [openDialogIds, setOpenDialogIds] = useState<ReadonlySet<AppDialogId>>(() => new Set());
 
-  const openCommandPalette = useCallback(() => {
-    void AppCommandPaletteDialog.preload().catch(() => undefined);
-    setCommandPaletteOpen(true);
+  const isOpen = useCallback(
+    (dialogId: AppDialogId) => openDialogIds.has(dialogId),
+    [openDialogIds],
+  );
+
+  const openDialog = useCallback((dialogId: AppDialogId) => {
+    void dialogPreloaders[dialogId]().catch(() => undefined);
+    setOpenDialogIds((current) => {
+      if (current.has(dialogId)) return current;
+      return new Set(current).add(dialogId);
+    });
   }, []);
 
-  const closeCommandPalette = useCallback(() => setCommandPaletteOpen(false), []);
-
-  const toggleCommandPalette = useCallback(() => {
-    void AppCommandPaletteDialog.preload().catch(() => undefined);
-    setCommandPaletteOpen((open) => !open);
+  const closeDialog = useCallback((dialogId: AppDialogId) => {
+    setOpenDialogIds((current) => {
+      if (!current.has(dialogId)) return current;
+      const next = new Set(current);
+      next.delete(dialogId);
+      return next;
+    });
   }, []);
 
-  const openSettings = useCallback(() => {
-    void AppSettingsDialog.preload().catch(() => undefined);
-    setSettingsOpen(true);
+  const toggleDialog = useCallback((dialogId: AppDialogId) => {
+    void dialogPreloaders[dialogId]().catch(() => undefined);
+    setOpenDialogIds((current) => {
+      const next = new Set(current);
+      if (current.has(dialogId)) next.delete(dialogId);
+      else next.add(dialogId);
+      return next;
+    });
   }, []);
-
-  const closeSettings = useCallback(() => setSettingsOpen(false), []);
 
   useKeyboardShortcut(
     (event) =>
       isShortcutEvent(event, COMMAND_PALETTE_SHORTCUT) &&
-      (isCommandPaletteOpen ||
+      (isOpen("command-palette") ||
         (!isEditableTarget(event.target) && !isApplicationInteractionBlocked())),
-    toggleCommandPalette,
+    () => toggleDialog("command-palette"),
     { allowEditableTarget: true },
   );
 
   const value = useMemo(
-    () => ({
-      closeCommandPalette,
-      closeSettings,
-      isCommandPaletteOpen,
-      isSettingsOpen,
-      openCommandPalette,
-      openSettings,
-      toggleCommandPalette,
-    }),
-    [
-      closeCommandPalette,
-      closeSettings,
-      isCommandPaletteOpen,
-      isSettingsOpen,
-      openCommandPalette,
-      openSettings,
-      toggleCommandPalette,
-    ],
+    () => ({ closeDialog, isOpen, openDialog, toggleDialog }),
+    [closeDialog, isOpen, openDialog, toggleDialog],
   );
 
   return <AppDialogsContext.Provider value={value}>{children}</AppDialogsContext.Provider>;

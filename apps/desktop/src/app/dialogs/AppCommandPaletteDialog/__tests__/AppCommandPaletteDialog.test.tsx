@@ -7,7 +7,7 @@ import {
   AUDIO_EXPORT_SHORTCUT,
   GIF_EXPORT_SHORTCUT,
 } from "@/app/commands/file/file-shortcuts.constants";
-import { useAppDialogs } from "@/app/hooks/useAppDialogs";
+import { useCommandPaletteDialog } from "@/app/hooks/useCommandPaletteDialog";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 
 const mocks = vi.hoisted(() => ({
@@ -33,8 +33,8 @@ function CommandPalette() {
 }
 
 function OpenPaletteControl() {
-  const { openCommandPalette } = useAppDialogs();
-  return <button onClick={openCommandPalette}>Open palette</button>;
+  const { openDialog } = useCommandPaletteDialog();
+  return <button onClick={openDialog}>Open palette</button>;
 }
 
 function createCommand(

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
-import { useAppDialogs } from "@/app/hooks/useAppDialogs";
+import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { lazyWithPreload } from "@/lib/lazy-component";
 
 const LazyAppSettingsDialogContent = lazyWithPreload<Record<string, never>>(() =>
@@ -13,10 +13,10 @@ const LazyAppSettingsDialogContent = lazyWithPreload<Record<string, never>>(() =
 
 const AppSettingsDialog = Object.assign(
   function AppSettingsDialog() {
-    const { closeSettings, isSettingsOpen } = useAppDialogs();
+    const { closeDialog, isOpen } = useSettingsDialog();
 
     return (
-      <Dialog onOpenChange={(open) => !open && closeSettings()} open={isSettingsOpen}>
+      <Dialog onOpenChange={(open) => !open && closeDialog()} open={isOpen}>
         <DialogContent className="h-full max-h-[min(80dvh,32rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl">
           <Suspense fallback={null}>
             <LazyAppSettingsDialogContent />

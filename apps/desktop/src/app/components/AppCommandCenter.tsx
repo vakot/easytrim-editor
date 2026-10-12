@@ -14,7 +14,7 @@ import {
   getShortcutDisplayKeys,
 } from "@/app/commands/core/application-command.utils";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
-import { useAppDialogs } from "@/app/hooks/useAppDialogs";
+import { useCommandPaletteDialog } from "@/app/hooks/useCommandPaletteDialog";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
 import {
@@ -64,7 +64,7 @@ function AppCommandCenter({ children }: { children?: React.ReactNode }) {
 
 function AppCommandCenterTrigger() {
   const { t } = useTranslation();
-  const { openCommandPalette } = useAppDialogs();
+  const { openDialog } = useCommandPaletteDialog();
   const shouldReduceMotion = useReducedMotion();
 
   return (
@@ -86,7 +86,7 @@ function AppCommandCenterTrigger() {
               borderWidth: 0,
             }
       }
-      onClick={openCommandPalette}
+      onClick={openDialog}
       onFocus={preloadCommandPaletteOnIntent}
       onPointerEnter={preloadCommandPaletteOnIntent}
       size="xs"

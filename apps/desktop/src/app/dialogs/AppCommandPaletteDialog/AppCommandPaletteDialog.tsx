@@ -8,8 +8,8 @@ import {
   isApplicationCommandAvailableOnSurface,
   isShortcutEvent,
 } from "@/app/commands/core/application-command.utils";
-import { useAppDialogs } from "@/app/hooks/useAppDialogs";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import { useCommandPaletteDialog } from "@/app/hooks/useCommandPaletteDialog";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 import { lazyWithPreload } from "@/lib/lazy-component";
@@ -25,7 +25,7 @@ const LazyAppCommandPaletteDialogContent = lazyWithPreload<AppCommandPaletteDial
 
 const AppCommandPaletteDialog = Object.assign(
   function AppCommandPaletteDialog() {
-    const { closeCommandPalette, isCommandPaletteOpen, openCommandPalette } = useAppDialogs();
+    const { closeDialog, isOpen, openDialog } = useCommandPaletteDialog();
     const { commands, executeCommand: executeApplicationCommand } = useApplicationCommands();
     const paletteCommands = commands.filter((command) =>
       isApplicationCommandAvailableOnSurface(command, "palette"),
@@ -33,7 +33,7 @@ const AppCommandPaletteDialog = Object.assign(
 
     useKeyboardShortcut(
       (event) =>
-        !isCommandPaletteOpen &&
+        !isOpen &&
         !isApplicationInteractionBlocked() &&
         commands.some(
           (command) =>
@@ -59,18 +59,18 @@ const AppCommandPaletteDialog = Object.assign(
     );
 
     function handleOpenChange(open: boolean) {
-      if (open) openCommandPalette();
-      else closeCommandPalette();
+      if (open) openDialog();
+      else closeDialog();
     }
 
     function executeCommand(command: ApplicationCommand<ApplicationCommandId>) {
       if (!command.enabled || command.pending) return;
       void executeApplicationCommand(command.id, "palette");
-      if (!(command.keepOpen ?? command.checked !== undefined)) closeCommandPalette();
+      if (!(command.keepOpen ?? command.checked !== undefined)) closeDialog();
     }
 
     return (
-      <Dialog onOpenChange={handleOpenChange} open={isCommandPaletteOpen}>
+      <Dialog onOpenChange={handleOpenChange} open={isOpen}>
         <DialogContent
           className="top-1/2 h-[min(60dvh,32rem)] -translate-y-1/2 overflow-hidden rounded-xl! p-0 sm:max-w-md"
           showCloseButton={false}

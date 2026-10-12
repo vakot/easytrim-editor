@@ -30,8 +30,8 @@ import {
   ApplicationCommandShortcut,
 } from "@/app/components/ApplicationCommandMenuItem";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
-import { useAppDialogs } from "@/app/hooks/useAppDialogs";
 import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
+import { useCommandPaletteDialog } from "@/app/hooks/useCommandPaletteDialog";
 import { DockViewMenuItems } from "@/app/layout/components/DockViewMenuItems";
 import { WORKSPACE_VIEWS } from "@/app/layout/lib/workspace-view-registry";
 import { useAppSelector } from "@/app/store/redux-hooks";
@@ -71,7 +71,7 @@ function MenuBarView() {
 
 function MenuBarViewContent() {
   const { t } = useTranslation();
-  const { openCommandPalette } = useAppDialogs();
+  const { openDialog } = useCommandPaletteDialog();
 
   return (
     <>
@@ -79,7 +79,7 @@ function MenuBarViewContent() {
         <MenubarItem
           onFocus={preloadCommandPaletteOnIntent}
           onPointerEnter={preloadCommandPaletteOnIntent}
-          onSelect={() => openCommandPalette()}
+          onSelect={() => openDialog()}
         >
           {t("commands.title")}
           <MenubarShortcut>

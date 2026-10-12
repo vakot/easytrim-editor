@@ -10,7 +10,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
-import { useAppDialogs } from "@/app/hooks/useAppDialogs";
+import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { EditorRuntimeProviders } from "@/app/providers/EditorRuntimeProviders";
@@ -74,10 +74,10 @@ function AppSettingsDialogStory() {
 }
 
 function AppSettingsDialogStoryControls() {
-  const { openSettings } = useAppDialogs();
+  const { openDialog } = useSettingsDialog();
   return (
     <div className="flex h-screen items-center justify-center bg-background">
-      <Button onClick={openSettings}>Open Settings</Button>
+      <Button onClick={openDialog}>Open Settings</Button>
     </div>
   );
 }

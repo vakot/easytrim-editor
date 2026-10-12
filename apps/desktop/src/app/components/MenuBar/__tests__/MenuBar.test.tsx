@@ -16,7 +16,7 @@ import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
-import { useAppDialogs } from "@/app/hooks/useAppDialogs";
+import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
@@ -102,8 +102,8 @@ function getMenuTrigger(name: string) {
 }
 
 function SettingsOpenIndicator() {
-  const { isSettingsOpen } = useAppDialogs();
-  return isSettingsOpen ? <span data-testid="settings-open" /> : null;
+  const { isOpen } = useSettingsDialog();
+  return isOpen ? <span data-testid="settings-open" /> : null;
 }
 
 function WorkspaceDialogSelectionProbe() {
