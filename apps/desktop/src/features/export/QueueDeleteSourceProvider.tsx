@@ -1,28 +1,21 @@
 import { type PropsWithChildren, useCallback, useState } from "react";
-import { useTranslation } from "react-i18next";
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
 import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 
 import { QueueDeleteSourceContext } from "./contexts/queue-delete-source-context";
+import { QueueDeleteSourceDialog } from "./dialogs/QueueDeleteSourceDialog";
 
 function QueueDeleteSourceProvider({ children }: PropsWithChildren) {
-  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [requested, setRequested] = useState(false);
 
-  const requestEnableSourceDeletion = useCallback(() => setRequested(true), []);
+  const requestEnableSourceDeletion = useCallback(() => {
+    const openAfterPreload = () => setRequested(true);
+
+    void QueueDeleteSourceDialog.preload().then(openAfterPreload, openAfterPreload);
+  }, []);
+
   const close = useCallback(() => setRequested(false), []);
   const confirm = useCallback(() => {
     dispatch(preferenceChanged({ enabled: true, key: "deleteSourceOnRenderFinish" }));
@@ -32,22 +25,11 @@ function QueueDeleteSourceProvider({ children }: PropsWithChildren) {
   return (
     <QueueDeleteSourceContext.Provider value={{ requestEnableSourceDeletion }}>
       {children}
-      <AlertDialog onOpenChange={(open) => !open && close()} open={requested}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("queue.deleteSource.confirmation.title")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("queue.deleteSource.confirmation.description")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.actions.back")}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirm} variant="destructive">
-              {t("queue.deleteSource.enable")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <QueueDeleteSourceDialog
+        onConfirm={confirm}
+        onOpenChange={(open) => !open && close()}
+        open={requested}
+      />
     </QueueDeleteSourceContext.Provider>
   );
 }
