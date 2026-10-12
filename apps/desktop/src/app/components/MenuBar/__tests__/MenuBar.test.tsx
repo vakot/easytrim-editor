@@ -16,11 +16,10 @@ import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
-import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
+import { useAppDialogs } from "@/app/hooks/useAppDialogs";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
+import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
-import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
-import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
@@ -103,7 +102,7 @@ function getMenuTrigger(name: string) {
 }
 
 function SettingsOpenIndicator() {
-  const { isSettingsOpen } = useSettingsDialog();
+  const { isSettingsOpen } = useAppDialogs();
   return isSettingsOpen ? <span data-testid="settings-open" /> : null;
 }
 
@@ -298,22 +297,20 @@ describe("MenuBarTest", () => {
             <PreviewTransformProvider>
               <ChangelogProvider>
                 <ResizablePanelContextProvider>
-                  <CommandPaletteProvider>
+                  <AppDialogsProvider>
                     <WorkspaceViewsProvider>
-                      <SettingsDialogProvider>
-                        <ApplicationCommandsProvider>
-                          <ThemeProvider>
-                            <AppMenuBar />
-                            <AppCommandPaletteDialog />
-                            <ExportActions />
-                            <WorkspaceDialogSelectionProbe />
-                            <AppSettingsDialog />
-                            <SettingsOpenIndicator />
-                          </ThemeProvider>
-                        </ApplicationCommandsProvider>
-                      </SettingsDialogProvider>
+                      <ApplicationCommandsProvider>
+                        <ThemeProvider>
+                          <AppMenuBar />
+                          <AppCommandPaletteDialog />
+                          <ExportActions />
+                          <WorkspaceDialogSelectionProbe />
+                          <AppSettingsDialog />
+                          <SettingsOpenIndicator />
+                        </ThemeProvider>
+                      </ApplicationCommandsProvider>
                     </WorkspaceViewsProvider>
-                  </CommandPaletteProvider>
+                  </AppDialogsProvider>
                 </ResizablePanelContextProvider>
               </ChangelogProvider>
             </PreviewTransformProvider>

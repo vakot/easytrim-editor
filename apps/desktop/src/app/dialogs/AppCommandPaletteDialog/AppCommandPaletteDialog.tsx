@@ -8,7 +8,7 @@ import {
   isApplicationCommandAvailableOnSurface,
   isShortcutEvent,
 } from "@/app/commands/core/application-command.utils";
-import { useCommandPalette } from "@/app/contexts/command-palette-context";
+import { useAppDialogs } from "@/app/hooks/useAppDialogs";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
@@ -25,7 +25,7 @@ const LazyAppCommandPaletteDialogContent = lazyWithPreload<AppCommandPaletteDial
 
 const AppCommandPaletteDialog = Object.assign(
   function AppCommandPaletteDialog() {
-    const { closeCommandPalette, isCommandPaletteOpen, openCommandPalette } = useCommandPalette();
+    const { closeCommandPalette, isCommandPaletteOpen, openCommandPalette } = useAppDialogs();
     const { commands, executeCommand: executeApplicationCommand } = useApplicationCommands();
     const paletteCommands = commands.filter((command) =>
       isApplicationCommandAvailableOnSurface(command, "palette"),

@@ -158,17 +158,17 @@ vi.mock("@/lib/diagnostics", () => ({
 }));
 
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
+import { useAppDialogs } from "@/app/hooks/useAppDialogs";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
-import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
+import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";
 
 import { ApplicationCommandsProvider } from "../ApplicationCommandsProvider";
-import { SettingsDialogProvider } from "../SettingsDialogProvider";
 
 function RuntimeProbe() {
   const { commands, executeCommand } = useApplicationCommands();
-  const { isSettingsOpen } = useSettingsDialog();
+  const { isSettingsOpen } = useAppDialogs();
   const { dialogViewId, dockPlacementRequest } = useWorkspaceViews();
 
   return (
@@ -238,13 +238,13 @@ function RuntimeProbe() {
 function runtimeUi() {
   return (
     <EditorRuntimeTestProvider>
-      <SettingsDialogProvider>
+      <AppDialogsProvider>
         <WorkspaceViewsProvider>
           <ApplicationCommandsProvider>
             <RuntimeProbe />
           </ApplicationCommandsProvider>
         </WorkspaceViewsProvider>
-      </SettingsDialogProvider>
+      </AppDialogsProvider>
     </EditorRuntimeTestProvider>
   );
 }

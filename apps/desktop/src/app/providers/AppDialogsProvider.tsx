@@ -2,30 +2,34 @@ import { type ReactNode, useCallback, useMemo, useState } from "react";
 
 import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import { isShortcutEvent } from "@/app/commands/core/application-command.utils";
-import { CommandPaletteContext } from "@/app/contexts/command-palette-context";
+import { AppDialogsContext } from "@/app/contexts/app-dialogs-context";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
+import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked, isEditableTarget } from "@/lib/hotkeys.utils";
 
-function CommandPaletteProvider({ children }: { children: ReactNode }) {
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [sessionId, setSessionId] = useState(0);
+function AppDialogsProvider({ children }: { children: ReactNode }) {
+  const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [isSettingsOpen, setSettingsOpen] = useState(false);
+
   const openCommandPalette = useCallback(() => {
     void AppCommandPaletteDialog.preload().catch(() => undefined);
-    setSessionId((current) => current + 1);
-    setIsCommandPaletteOpen(true);
+    setCommandPaletteOpen(true);
   }, []);
 
-  const closeCommandPalette = useCallback(() => {
-    setSessionId((current) => current + 1);
-    setIsCommandPaletteOpen(false);
-  }, []);
+  const closeCommandPalette = useCallback(() => setCommandPaletteOpen(false), []);
 
   const toggleCommandPalette = useCallback(() => {
     void AppCommandPaletteDialog.preload().catch(() => undefined);
-    setSessionId((current) => current + 1);
-    setIsCommandPaletteOpen((open) => !open);
+    setCommandPaletteOpen((open) => !open);
   }, []);
+
+  const openSettings = useCallback(() => {
+    void AppSettingsDialog.preload().catch(() => undefined);
+    setSettingsOpen(true);
+  }, []);
+
+  const closeSettings = useCallback(() => setSettingsOpen(false), []);
 
   useKeyboardShortcut(
     (event) =>
@@ -39,21 +43,25 @@ function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       closeCommandPalette,
+      closeSettings,
       isCommandPaletteOpen,
+      isSettingsOpen,
       openCommandPalette,
-      sessionId,
+      openSettings,
       toggleCommandPalette,
     }),
     [
       closeCommandPalette,
+      closeSettings,
       isCommandPaletteOpen,
+      isSettingsOpen,
       openCommandPalette,
-      sessionId,
+      openSettings,
       toggleCommandPalette,
     ],
   );
 
-  return <CommandPaletteContext.Provider value={value}>{children}</CommandPaletteContext.Provider>;
+  return <AppDialogsContext.Provider value={value}>{children}</AppDialogsContext.Provider>;
 }
 
-export { CommandPaletteProvider };
+export { AppDialogsProvider };

@@ -10,11 +10,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
-import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
+import { useAppDialogs } from "@/app/hooks/useAppDialogs";
+import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { EditorRuntimeProviders } from "@/app/providers/EditorRuntimeProviders";
 import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
-import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { createAppStore } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ChangelogProvider } from "@/features/changelog";
@@ -47,7 +47,7 @@ function AppSettingsDialogStory() {
         <TooltipProvider>
           <ThemeProvider>
             <LayoutDensityProvider>
-              <SettingsDialogProvider>
+              <AppDialogsProvider>
                 <SourceDeleteProvider>
                   <QueueDeleteSourceProvider>
                     <PreviewTransformProvider>
@@ -64,7 +64,7 @@ function AppSettingsDialogStory() {
                     </PreviewTransformProvider>
                   </QueueDeleteSourceProvider>
                 </SourceDeleteProvider>
-              </SettingsDialogProvider>
+              </AppDialogsProvider>
             </LayoutDensityProvider>
           </ThemeProvider>
         </TooltipProvider>
@@ -74,7 +74,7 @@ function AppSettingsDialogStory() {
 }
 
 function AppSettingsDialogStoryControls() {
-  const { openSettings } = useSettingsDialog();
+  const { openSettings } = useAppDialogs();
   return (
     <div className="flex h-screen items-center justify-center bg-background">
       <Button onClick={openSettings}>Open Settings</Button>

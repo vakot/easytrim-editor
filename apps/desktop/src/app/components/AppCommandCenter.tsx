@@ -13,8 +13,8 @@ import {
   getShortcutAriaValue,
   getShortcutDisplayKeys,
 } from "@/app/commands/core/application-command.utils";
-import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
+import { useAppDialogs } from "@/app/hooks/useAppDialogs";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
 import {
@@ -64,7 +64,7 @@ function AppCommandCenter({ children }: { children?: React.ReactNode }) {
 
 function AppCommandCenterTrigger() {
   const { t } = useTranslation();
-  const { openCommandPalette } = useCommandPalette();
+  const { openCommandPalette } = useAppDialogs();
   const shouldReduceMotion = useReducedMotion();
 
   return (

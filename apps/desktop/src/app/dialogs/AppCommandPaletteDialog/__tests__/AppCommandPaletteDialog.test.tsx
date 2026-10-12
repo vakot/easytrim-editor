@@ -7,8 +7,8 @@ import {
   AUDIO_EXPORT_SHORTCUT,
   GIF_EXPORT_SHORTCUT,
 } from "@/app/commands/file/file-shortcuts.constants";
-import { useCommandPalette } from "@/app/contexts/command-palette-context";
-import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
+import { useAppDialogs } from "@/app/hooks/useAppDialogs";
+import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 
 const mocks = vi.hoisted(() => ({
   commands: [] as ApplicationCommand[],
@@ -26,14 +26,14 @@ import { AppCommandPaletteDialog as BaseAppCommandPaletteDialog } from "../AppCo
 
 function CommandPalette() {
   return (
-    <CommandPaletteProvider>
+    <AppDialogsProvider>
       <BaseAppCommandPaletteDialog />
-    </CommandPaletteProvider>
+    </AppDialogsProvider>
   );
 }
 
 function OpenPaletteControl() {
-  const { openCommandPalette } = useCommandPalette();
+  const { openCommandPalette } = useAppDialogs();
   return <button onClick={openCommandPalette}>Open palette</button>;
 }
 
@@ -76,10 +76,10 @@ describe("CommandPalette semantic icons", () => {
 
   it("opens through the shared capability and resets its query when closed", async () => {
     render(
-      <CommandPaletteProvider>
+      <AppDialogsProvider>
         <OpenPaletteControl />
         <BaseAppCommandPaletteDialog />
-      </CommandPaletteProvider>,
+      </AppDialogsProvider>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Open palette" }));

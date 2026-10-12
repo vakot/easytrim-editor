@@ -15,12 +15,11 @@ import { AppDiagnosticsRecoveryDialog } from "@/app/dialogs/AppDiagnosticsRecove
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
 import { AppShutdownGuardDialog } from "@/app/dialogs/AppShutdownGuardDialog";
 import { AppLayout } from "@/app/layout";
+import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { AppUpdatesProvider } from "@/app/providers/AppUpdatesProvider";
-import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
 import { EditorRuntimeProviders } from "@/app/providers/EditorRuntimeProviders";
 import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
-import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectDropListenerError } from "@/app/store/slices/import-workflow-slice";
@@ -55,36 +54,34 @@ function EasyTrimEditorApp() {
               <AppUpdatesProvider>
                 <EditorRuntimeProviders>
                   <ResizablePanelContextProvider>
-                    <CommandPaletteProvider>
-                      <SettingsDialogProvider>
-                        <ApplicationCommandsProvider>
-                          <AppLayout />
-                          <AppSettingsDialog />
-                          <AppCommandPaletteDialog />
+                    <AppDialogsProvider>
+                      <ApplicationCommandsProvider>
+                        <AppLayout />
+                        <AppSettingsDialog />
+                        <AppCommandPaletteDialog />
 
-                          <Toaster />
-                          <ActivityToasts />
-                          <ExportDialogMount />
-                          <AppDiagnosticsRecoveryDialog />
-                          <WorkspaceRecoveryNotice />
-                          <SourceDropOverlay />
-                          <NativeDialogOverlay />
+                        <Toaster />
+                        <ActivityToasts />
+                        <ExportDialogMount />
+                        <AppDiagnosticsRecoveryDialog />
+                        <WorkspaceRecoveryNotice />
+                        <SourceDropOverlay />
+                        <NativeDialogOverlay />
 
-                          {dropListenerError ? (
-                            <Alert
-                              className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
-                              variant="destructive"
-                            >
-                              <AlertDescription>
-                                {t("app.dragUnavailable", {
-                                  message: localizeAppError(dropListenerError, t),
-                                })}
-                              </AlertDescription>
-                            </Alert>
-                          ) : null}
-                        </ApplicationCommandsProvider>
-                      </SettingsDialogProvider>
-                    </CommandPaletteProvider>
+                        {dropListenerError ? (
+                          <Alert
+                            className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+                            variant="destructive"
+                          >
+                            <AlertDescription>
+                              {t("app.dragUnavailable", {
+                                message: localizeAppError(dropListenerError, t),
+                              })}
+                            </AlertDescription>
+                          </Alert>
+                        ) : null}
+                      </ApplicationCommandsProvider>
+                    </AppDialogsProvider>
                   </ResizablePanelContextProvider>
                 </EditorRuntimeProviders>
               </AppUpdatesProvider>

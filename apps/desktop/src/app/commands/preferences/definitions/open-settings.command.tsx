@@ -4,12 +4,12 @@ import { useTranslation } from "react-i18next";
 import { SETTINGS_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
-import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
+import { useAppDialogs } from "@/app/hooks/useAppDialogs";
 import { preloadOnIntent } from "@/lib/lazy-component";
 
 function useOpenSettingsCommand() {
   const { t } = useTranslation();
-  const { openSettings } = useSettingsDialog();
+  const { openSettings } = useAppDialogs();
   const label = t("settings.title");
 
   return {

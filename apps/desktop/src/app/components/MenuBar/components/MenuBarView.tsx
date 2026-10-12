@@ -29,8 +29,8 @@ import {
   ApplicationCommandMenuItem,
   ApplicationCommandShortcut,
 } from "@/app/components/ApplicationCommandMenuItem";
-import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
+import { useAppDialogs } from "@/app/hooks/useAppDialogs";
 import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
 import { DockViewMenuItems } from "@/app/layout/components/DockViewMenuItems";
 import { WORKSPACE_VIEWS } from "@/app/layout/lib/workspace-view-registry";
@@ -71,7 +71,7 @@ function MenuBarView() {
 
 function MenuBarViewContent() {
   const { t } = useTranslation();
-  const { openCommandPalette } = useCommandPalette();
+  const { openCommandPalette } = useAppDialogs();
 
   return (
     <>

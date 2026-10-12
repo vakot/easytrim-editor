@@ -20,8 +20,8 @@ import {
   SETTINGS_SHORTCUT,
 } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
+import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
-import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
 import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { cropChanged, flipToggled, rotationChanged } from "@/app/store/slices/crop-slice";
@@ -89,9 +89,9 @@ function TooltipTestProvider({ children, store }: { children: ReactNode; store: 
                 <ChangelogProvider>
                   <ResizablePanelContextProvider>
                     <WorkspaceViewsProvider>
-                      <SettingsDialogProvider>
+                      <AppDialogsProvider>
                         <ApplicationCommandsProvider>{children}</ApplicationCommandsProvider>
-                      </SettingsDialogProvider>
+                      </AppDialogsProvider>
                     </WorkspaceViewsProvider>
                   </ResizablePanelContextProvider>
                 </ChangelogProvider>
