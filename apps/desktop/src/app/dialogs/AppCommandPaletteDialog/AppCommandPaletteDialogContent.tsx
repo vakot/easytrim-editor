@@ -67,6 +67,7 @@ function AppCommandPaletteDialogContent({
         <CommandInputGroup>
           <CommandInput
             aria-label={t("common.search.commands")}
+            autoFocus
             onValueChange={setQuery}
             placeholder={t("common.search.commandsPlaceholder")}
             value={query}
