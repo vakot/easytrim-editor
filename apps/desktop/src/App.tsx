@@ -10,6 +10,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { WorkspaceRecoveryNotice } from "@/app/components/WorkspaceRecoveryNotice";
+import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppDiagnosticsRecoveryDialog } from "@/app/dialogs/AppDiagnosticsRecoveryDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
@@ -27,7 +28,6 @@ import { persistor, store } from "@/app/store/store";
 import { loadQueueFinishActions } from "@/app/store/thunks/queue-finish-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ActivityToasts } from "@/features/activity";
-import { ChangelogProvider } from "@/features/changelog";
 import { ExportDialogMount, QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider, SourceDropOverlay } from "@/features/source";
@@ -45,50 +45,49 @@ function EasyTrimEditorApp() {
 
   return (
     <TooltipProvider>
-      <ChangelogProvider>
-        <SourceDeleteProvider>
-          <QueueDeleteSourceProvider>
-            <PreviewTransformProvider>
-              <AppShutdownGuardDialog />
+      <SourceDeleteProvider>
+        <QueueDeleteSourceProvider>
+          <PreviewTransformProvider>
+            <AppShutdownGuardDialog />
 
-              <AppUpdatesProvider>
-                <EditorRuntimeProviders>
-                  <ResizablePanelContextProvider>
-                    <AppDialogsProvider>
-                      <ApplicationCommandsProvider>
-                        <AppLayout />
-                        <AppSettingsDialog />
-                        <AppCommandPaletteDialog />
+            <AppUpdatesProvider>
+              <EditorRuntimeProviders>
+                <ResizablePanelContextProvider>
+                  <AppDialogsProvider>
+                    <ApplicationCommandsProvider>
+                      <AppLayout />
+                      <AppSettingsDialog />
+                      <AppCommandPaletteDialog />
+                      <AppChangelogDialog />
 
-                        <Toaster />
-                        <ActivityToasts />
-                        <ExportDialogMount />
-                        <AppDiagnosticsRecoveryDialog />
-                        <WorkspaceRecoveryNotice />
-                        <SourceDropOverlay />
-                        <NativeDialogOverlay />
+                      <Toaster />
+                      <ActivityToasts />
+                      <ExportDialogMount />
+                      <AppDiagnosticsRecoveryDialog />
+                      <WorkspaceRecoveryNotice />
+                      <SourceDropOverlay />
+                      <NativeDialogOverlay />
 
-                        {dropListenerError ? (
-                          <Alert
-                            className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
-                            variant="destructive"
-                          >
-                            <AlertDescription>
-                              {t("app.dragUnavailable", {
-                                message: localizeAppError(dropListenerError, t),
-                              })}
-                            </AlertDescription>
-                          </Alert>
-                        ) : null}
-                      </ApplicationCommandsProvider>
-                    </AppDialogsProvider>
-                  </ResizablePanelContextProvider>
-                </EditorRuntimeProviders>
-              </AppUpdatesProvider>
-            </PreviewTransformProvider>
-          </QueueDeleteSourceProvider>
-        </SourceDeleteProvider>
-      </ChangelogProvider>
+                      {dropListenerError ? (
+                        <Alert
+                          className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+                          variant="destructive"
+                        >
+                          <AlertDescription>
+                            {t("app.dragUnavailable", {
+                              message: localizeAppError(dropListenerError, t),
+                            })}
+                          </AlertDescription>
+                        </Alert>
+                      ) : null}
+                    </ApplicationCommandsProvider>
+                  </AppDialogsProvider>
+                </ResizablePanelContextProvider>
+              </EditorRuntimeProviders>
+            </AppUpdatesProvider>
+          </PreviewTransformProvider>
+        </QueueDeleteSourceProvider>
+      </SourceDeleteProvider>
     </TooltipProvider>
   );
 }

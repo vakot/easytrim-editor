@@ -33,7 +33,6 @@ import {
 } from "@/app/store/slices/preview-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { type AppStore, createAppStore } from "@/app/store/store";
-import { ChangelogProvider } from "@/features/changelog";
 import { QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
@@ -86,15 +85,13 @@ function TooltipTestProvider({ children, store }: { children: ReactNode; store: 
           <SourceDeleteProvider>
             <QueueDeleteSourceProvider>
               <PreviewTransformProvider>
-                <ChangelogProvider>
-                  <ResizablePanelContextProvider>
-                    <WorkspaceViewsProvider>
-                      <AppDialogsProvider>
-                        <ApplicationCommandsProvider>{children}</ApplicationCommandsProvider>
-                      </AppDialogsProvider>
-                    </WorkspaceViewsProvider>
-                  </ResizablePanelContextProvider>
-                </ChangelogProvider>
+                <ResizablePanelContextProvider>
+                  <WorkspaceViewsProvider>
+                    <AppDialogsProvider>
+                      <ApplicationCommandsProvider>{children}</ApplicationCommandsProvider>
+                    </AppDialogsProvider>
+                  </WorkspaceViewsProvider>
+                </ResizablePanelContextProvider>
               </PreviewTransformProvider>
             </QueueDeleteSourceProvider>
           </SourceDeleteProvider>

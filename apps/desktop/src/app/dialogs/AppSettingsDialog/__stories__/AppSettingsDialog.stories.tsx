@@ -17,7 +17,6 @@ import { EditorRuntimeProviders } from "@/app/providers/EditorRuntimeProviders";
 import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
 import { createAppStore } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { ChangelogProvider } from "@/features/changelog";
 import { QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
@@ -53,12 +52,10 @@ function AppSettingsDialogStory() {
                     <PreviewTransformProvider>
                       <EditorRuntimeProviders>
                         <ResizablePanelContextProvider>
-                          <ChangelogProvider>
-                            <ApplicationCommandsProvider>
-                              <AppSettingsDialogStoryControls />
-                              <AppSettingsDialog />
-                            </ApplicationCommandsProvider>
-                          </ChangelogProvider>
+                          <ApplicationCommandsProvider>
+                            <AppSettingsDialogStoryControls />
+                            <AppSettingsDialog />
+                          </ApplicationCommandsProvider>
                         </ResizablePanelContextProvider>
                       </EditorRuntimeProviders>
                     </PreviewTransformProvider>

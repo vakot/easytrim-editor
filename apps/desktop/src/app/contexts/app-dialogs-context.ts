@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-type AppDialogId = "command-palette" | "settings";
+type AppDialogId = "changelog" | "command-palette" | "settings";
 
 interface AppDialogsContextValue {
   closeDialog: (dialogId: AppDialogId) => void;

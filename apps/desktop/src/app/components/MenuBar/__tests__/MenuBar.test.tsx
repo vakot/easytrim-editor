@@ -23,7 +23,6 @@ import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommands
 import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
-import { ChangelogProvider } from "@/features/changelog";
 import { ExportActions, QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
@@ -295,24 +294,22 @@ describe("MenuBarTest", () => {
         <SourceDeleteProvider>
           <QueueDeleteSourceProvider>
             <PreviewTransformProvider>
-              <ChangelogProvider>
-                <ResizablePanelContextProvider>
-                  <AppDialogsProvider>
-                    <WorkspaceViewsProvider>
-                      <ApplicationCommandsProvider>
-                        <ThemeProvider>
-                          <AppMenuBar />
-                          <AppCommandPaletteDialog />
-                          <ExportActions />
-                          <WorkspaceDialogSelectionProbe />
-                          <AppSettingsDialog />
-                          <SettingsOpenIndicator />
-                        </ThemeProvider>
-                      </ApplicationCommandsProvider>
-                    </WorkspaceViewsProvider>
-                  </AppDialogsProvider>
-                </ResizablePanelContextProvider>
-              </ChangelogProvider>
+              <ResizablePanelContextProvider>
+                <AppDialogsProvider>
+                  <WorkspaceViewsProvider>
+                    <ApplicationCommandsProvider>
+                      <ThemeProvider>
+                        <AppMenuBar />
+                        <AppCommandPaletteDialog />
+                        <ExportActions />
+                        <WorkspaceDialogSelectionProbe />
+                        <AppSettingsDialog />
+                        <SettingsOpenIndicator />
+                      </ThemeProvider>
+                    </ApplicationCommandsProvider>
+                  </WorkspaceViewsProvider>
+                </AppDialogsProvider>
+              </ResizablePanelContextProvider>
             </PreviewTransformProvider>
           </QueueDeleteSourceProvider>
         </SourceDeleteProvider>

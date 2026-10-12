@@ -25,8 +25,12 @@ function useCommandPaletteDialog() {
   return useAppDialog("command-palette");
 }
 
+function useChangelogDialog() {
+  return useAppDialog("changelog");
+}
+
 function useSettingsDialog() {
   return useAppDialog("settings");
 }
 
-export { useAppDialog, useCommandPaletteDialog, useSettingsDialog };
+export { useAppDialog, useChangelogDialog, useCommandPaletteDialog, useSettingsDialog };

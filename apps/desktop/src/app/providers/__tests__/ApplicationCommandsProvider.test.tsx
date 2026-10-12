@@ -107,7 +107,6 @@ vi.mock("@/app/layout/lib/workspace-view-loaders", () => ({
 vi.mock("@/features/source", () => ({
   useSourceDelete: () => ({ requestSourceDelete: mocks.requestSourceDelete }),
 }));
-vi.mock("@/features/changelog", () => ({ useChangelogDialog: () => ({ openChangelog: vi.fn() }) }));
 vi.mock("@/features/export", () => ({
   useQueueDeleteSource: () => ({ requestEnableSourceDeletion: vi.fn() }),
 }));

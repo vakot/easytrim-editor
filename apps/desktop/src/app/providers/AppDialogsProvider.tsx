@@ -4,12 +4,14 @@ import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-comman
 import { isShortcutEvent } from "@/app/commands/core/application-command.utils";
 import type { AppDialogId } from "@/app/contexts/app-dialogs-context";
 import { AppDialogsContext } from "@/app/contexts/app-dialogs-context";
+import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked, isEditableTarget } from "@/lib/hotkeys.utils";
 
 const dialogPreloaders: Record<AppDialogId, () => Promise<unknown>> = {
+  changelog: AppChangelogDialog.preload,
   "command-palette": AppCommandPaletteDialog.preload,
   settings: AppSettingsDialog.preload,
 };
