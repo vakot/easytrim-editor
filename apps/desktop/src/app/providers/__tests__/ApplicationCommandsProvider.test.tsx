@@ -424,7 +424,7 @@ describe("ApplicationCommandsProvider", () => {
     expect(screen.getByRole("button", { name: "dock-workspace-view-exportQueue" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "open-workspace-view-activity-menu" }));
-    expect(screen.getByTestId("open-workspace-view")).toHaveTextContent("activity");
+    expect(await screen.findByTestId("open-workspace-view")).toHaveTextContent("activity");
 
     fireEvent.click(screen.getByRole("button", { name: "dock-workspace-view-exportQueue-menu" }));
     expect(screen.getByTestId("dock-workspace-view")).toHaveTextContent("exportQueue");

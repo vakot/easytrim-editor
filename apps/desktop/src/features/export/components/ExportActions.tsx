@@ -135,6 +135,8 @@ function ExportQueueTrigger({
         </Badge>
       }
       onClick={() => void executeCommand(command.id, "button")}
+      onFocus={command.preload}
+      onPointerEnter={command.preload}
       variant="default"
     >
       {t("queue.title")}

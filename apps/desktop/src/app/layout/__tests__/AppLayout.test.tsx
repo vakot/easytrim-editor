@@ -49,12 +49,15 @@ vi.mock("@/app/layout/components/WorkspaceViewContent", () => ({
 }));
 
 vi.mock("@/app/dialogs/AppActivityDialog", () => ({
-  AppActivityDialog: ({ open }: { open: boolean }) =>
-    open ? (
-      <div aria-label="Activity Feed" role="dialog">
-        Activity view dialog
-      </div>
-    ) : null,
+  AppActivityDialog: Object.assign(
+    ({ open }: { open: boolean }) =>
+      open ? (
+        <div aria-label="Activity Feed" role="dialog">
+          Activity view dialog
+        </div>
+      ) : null,
+    { preload: () => Promise.resolve() },
+  ),
 }));
 
 vi.mock("@/app/layout/components/AppLayoutPanel", () => ({

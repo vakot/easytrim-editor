@@ -5,6 +5,7 @@ import {
   WorkspaceViewsContext,
 } from "@/app/contexts/workspace-views-context";
 import type { SidebarViewId } from "@/app/layout/lib/sidebar-layout";
+import { preloadWorkspaceDialog } from "@/app/layout/lib/workspace-view-loaders";
 
 function WorkspaceViewsProvider({ children }: { children: ReactNode }) {
   const [dialogViewId, setDialogViewId] = useState<SidebarViewId | null>(null);
@@ -13,8 +14,18 @@ function WorkspaceViewsProvider({ children }: { children: ReactNode }) {
   );
 
   const requestId = useRef(0);
+  const dialogOpenRequestId = useRef(0);
 
-  const openView = useCallback((viewId: SidebarViewId) => setDialogViewId(viewId), []);
+  const openView = useCallback((viewId: SidebarViewId) => {
+    dialogOpenRequestId.current += 1;
+    const currentRequestId = dialogOpenRequestId.current;
+
+    void preloadWorkspaceDialog(viewId)
+      .catch(() => undefined)
+      .then(() => {
+        if (currentRequestId === dialogOpenRequestId.current) setDialogViewId(viewId);
+      });
+  }, []);
 
   const requestDockPlacement = useCallback((viewId: SidebarViewId) => {
     requestId.current += 1;
@@ -25,7 +36,10 @@ function WorkspaceViewsProvider({ children }: { children: ReactNode }) {
     setDockPlacementRequest((current) => (current?.id === consumedId ? null : current));
   }, []);
 
-  const closeDialog = useCallback(() => setDialogViewId(null), []);
+  const closeDialog = useCallback(() => {
+    dialogOpenRequestId.current += 1;
+    setDialogViewId(null);
+  }, []);
 
   const value = useMemo(
     () => ({

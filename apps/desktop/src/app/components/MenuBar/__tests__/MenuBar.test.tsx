@@ -362,7 +362,7 @@ describe("MenuBarTest", () => {
     await user.click(getMenuTrigger("View"));
     await user.click(screen.getByRole("menuitem", { name: /Export Queue/ }));
 
-    expect(screen.getByTestId("workspace-dialog-view")).toHaveTextContent("exportQueue");
+    expect(await screen.findByTestId("workspace-dialog-view")).toHaveTextContent("exportQueue");
   });
 
   it("keeps queue configuration in Preferences, separate from queue actions", async () => {
