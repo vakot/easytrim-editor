@@ -5,24 +5,12 @@ import {
   type PointerEventHandler,
   type ReactElement,
 } from "react";
-import { useTranslation } from "react-i18next";
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
 import { closeEditingInstancesRequested } from "@/app/store/thunks/source-media-thunks";
 
 import { useSourceDelete } from "../contexts/source-delete-context";
+import { SourceCloseDialog, SourceCloseDialogTrigger } from "../dialogs/SourceCloseDialog";
 
 import { useSourceListCloseRequest } from "./SourceList/contexts/SourceListContext";
 
@@ -88,36 +76,19 @@ function CloseSource({ children, event = "select", source }: SourceActionProps) 
  * @description Adds batch close behavior to a compatible action trigger for multiple source editing instances.
  */
 function CloseSources({ children, sources = [] }: SourceActionProps) {
-  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const requestCloseSources = useSourceListCloseRequest();
   const sourceIds = sources.map(({ id }) => id);
   const trigger = withDisabled(children, sourceIds.length === 0);
+  const handleCloseSources = () => {
+    if (requestCloseSources) requestCloseSources(sourceIds);
+    else void dispatch(closeEditingInstancesRequested(sourceIds));
+  };
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{t("source.close.confirmation.title")}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {t("source.close.confirmation.description", { count: sourceIds.length })}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => {
-              if (requestCloseSources) requestCloseSources(sourceIds);
-              else void dispatch(closeEditingInstancesRequested(sourceIds));
-            }}
-            variant="destructive"
-          >
-            {t("common.actions.close")}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <SourceCloseDialog onConfirm={handleCloseSources} sourceCount={sourceIds.length}>
+      <SourceCloseDialogTrigger asChild>{trigger}</SourceCloseDialogTrigger>
+    </SourceCloseDialog>
   );
 }
 
