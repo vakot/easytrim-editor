@@ -1,74 +1,67 @@
 import { BookmarkPlus } from "lucide-react";
+import React, { Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
+import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
-import { ChapterDraftDialog, ChapterDraftDialogTrigger } from "../ChapterDraftDialog";
+const LazyChapterManagerDialogContent = lazyWithPreload<{ sourceKey: string }>(() =>
+  import("./ChapterManagerDialogContent").then((module) => ({
+    default: module.ChapterManagerDialogContent,
+  })),
+);
 
-import { Chapters, ChaptersContent, ChaptersList } from "./components/Chapters";
+const preloadChapterManagerDialogContent = preloadOnIntent(() =>
+  LazyChapterManagerDialogContent.preload(),
+);
 
 function ChapterManagerDialog({ children }: { children: React.ReactNode }) {
   const source = useAppSelector(selectSourceSelection);
+  const [open, setOpen] = useState(false);
 
   return (
-    <Dialog>
+    <Dialog onOpenChange={setOpen} open={open}>
       {children}
-      <ChapterManagerDialogContent key={source?.sourcePath ?? "no-source"} />
+      {open ? (
+        <Suspense fallback={null}>
+          <LazyChapterManagerDialogContent sourceKey={source?.sourcePath ?? "no-source"} />
+        </Suspense>
+      ) : null}
     </Dialog>
   );
 }
 
-function ChapterManagerDialogContent() {
-  const { t } = useTranslation();
-
-  return (
-    <DialogContent className="h-[min(80dvh,40rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden sm:max-w-lg">
-      <DialogHeader className="-mx-4 border-b px-4 pb-4">
-        <DialogTitle>{t("timeline.chapters.title")}</DialogTitle>
-        <DialogDescription>{t("timeline.chapters.description")}</DialogDescription>
-      </DialogHeader>
-
-      <Chapters>
-        <ChaptersContent>
-          <ChaptersList />
-        </ChaptersContent>
-      </Chapters>
-
-      <DialogFooter>
-        <ChapterDraftDialog>
-          <ChapterDraftDialogTrigger asChild>
-            <Button type="button">
-              <BookmarkPlus /> {t("timeline.chapters.actions.addChapter")}
-            </Button>
-          </ChapterDraftDialogTrigger>
-        </ChapterDraftDialog>
-      </DialogFooter>
-    </DialogContent>
-  );
-}
-
-function ChapterManagerDialogTrigger() {
+function ChapterManagerDialogTrigger({
+  disabled,
+  onFocus,
+  onPointerEnter,
+  ...props
+}: React.ComponentProps<typeof DialogTrigger>) {
   const { t } = useTranslation();
   const trim = useAppSelector(selectTrim);
 
   return (
-    <DialogTrigger asChild>
+    <DialogTrigger
+      disabled={!trim || disabled}
+      onFocus={(event) => {
+        onFocus?.(event);
+        preloadChapterManagerDialogContent();
+      }}
+      onPointerEnter={(event) => {
+        onPointerEnter?.(event);
+        preloadChapterManagerDialogContent();
+      }}
+      {...props}
+      asChild
+    >
       <Button
         aria-label={t("timeline.chapters.actions.manageChapters")}
-        disabled={!trim}
+        disabled={!trim || disabled}
         size="icon-sm"
         type="button"
         variant="secondary"

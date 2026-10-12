@@ -1,2 +1,1 @@
-export { ChapterManagerDialogTrigger } from "./ChapterManagerDialog";
-export { LazyChapterManagerDialog as ChapterManagerDialog } from "./LazyChapterManagerDialog";
+export { ChapterManagerDialog, ChapterManagerDialogTrigger } from "./ChapterManagerDialog";
