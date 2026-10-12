@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 import { Keyboard } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { lazy, type ReactNode, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -21,13 +21,29 @@ import {
   LibraryPage,
 } from "@/components/library";
 
-import { SettingsAbout } from "./pages/SettingsAbout";
-import { SettingsAppearance } from "./pages/SettingsAppearance";
-import { SettingsGeneral } from "./pages/SettingsGeneral";
-import { SettingsLayout } from "./pages/SettingsLayout";
-import { SettingsPreferences } from "./pages/SettingsPreferences";
-
 type SettingsPageId = "general" | "appearance" | "preferences" | "layout" | "about";
+
+const LazySettingsAbout = lazy(() =>
+  import("./pages/SettingsAbout").then((module) => ({ default: module.SettingsAbout })),
+);
+
+const LazySettingsAppearance = lazy(() =>
+  import("./pages/SettingsAppearance").then((module) => ({ default: module.SettingsAppearance })),
+);
+
+const LazySettingsGeneral = lazy(() =>
+  import("./pages/SettingsGeneral").then((module) => ({ default: module.SettingsGeneral })),
+);
+
+const LazySettingsLayout = lazy(() =>
+  import("./pages/SettingsLayout").then((module) => ({ default: module.SettingsLayout })),
+);
+
+const LazySettingsPreferences = lazy(() =>
+  import("./pages/SettingsPreferences").then((module) => ({
+    default: module.SettingsPreferences,
+  })),
+);
 
 function AppSettingsDialogContent() {
   const { t } = useTranslation();
@@ -72,19 +88,19 @@ function AppSettingsDialogContent() {
                 ))}
               </KbdGroup>
             </Badge>
-            <SettingsGeneral />
+            <LazySettingsGeneral />
           </AppSettingsPage>
           <AppSettingsPage page="appearance">
-            <SettingsAppearance />
+            <LazySettingsAppearance />
           </AppSettingsPage>
           <AppSettingsPage page="preferences">
-            <SettingsPreferences />
+            <LazySettingsPreferences />
           </AppSettingsPage>
           <AppSettingsPage page="layout">
-            <SettingsLayout />
+            <LazySettingsLayout />
           </AppSettingsPage>
           <AppSettingsPage page="about">
-            <SettingsAbout />
+            <LazySettingsAbout />
           </AppSettingsPage>
         </LibraryContent>
       </Library>
@@ -102,9 +118,11 @@ function AppSettingsPageItem({ page }: { page: SettingsPageId }) {
 
 function AppSettingsPage({ children, page }: { children: ReactNode; page: SettingsPageId }) {
   return (
-    <LibraryPage className="space-y-4" value={page}>
-      {children}
-    </LibraryPage>
+    <Suspense fallback={null}>
+      <LibraryPage className="space-y-4" value={page}>
+        {children}
+      </LibraryPage>
+    </Suspense>
   );
 }
 

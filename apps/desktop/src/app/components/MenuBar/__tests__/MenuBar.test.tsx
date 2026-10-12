@@ -378,7 +378,7 @@ describe("MenuBarTest", () => {
     await user.click(getMenuTrigger("Settings"));
     await user.click(await screen.findByRole("tab", { name: "Preferences" }));
     expect(screen.queryByRole("tab", { name: "Queue" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reset editing settings" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Reset editing settings" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Reset queue settings" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: /Start queue/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Skip" })).not.toBeInTheDocument();
@@ -394,7 +394,7 @@ describe("MenuBarTest", () => {
     await user.click(getMenuTrigger("Settings"));
     await user.click(await screen.findByRole("tab", { name: "Appearance" }));
     expect(screen.queryByRole("button", { name: "Reset to default" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Reset" })).toBeVisible();
   });
 
   it("resets queue finish and delete-source settings from Settings", async () => {
