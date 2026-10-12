@@ -17,6 +17,7 @@ import {
 } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt } from "@/domain/editing-instance";
+import { ExportDialog } from "@/features/export";
 import { firstSource } from "@/test/source.fixtures";
 
 import { ExportActions } from "../ExportActions";
@@ -73,7 +74,9 @@ function renderExportActions(store = createAppStore()) {
         }}
       >
         <TooltipProvider>
-          <ExportActions />
+          <ExportDialog>
+            <ExportActions />
+          </ExportDialog>
         </TooltipProvider>
       </ApplicationCommandsContext.Provider>
     </Provider>,

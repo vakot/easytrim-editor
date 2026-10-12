@@ -28,7 +28,7 @@ import { persistor, store } from "@/app/store/store";
 import { loadQueueFinishActions } from "@/app/store/thunks/queue-finish-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ActivityToasts } from "@/features/activity";
-import { ExportDialogMount, QueueDeleteSourceProvider } from "@/features/export";
+import { ExportDialog, QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider, SourceDropOverlay } from "@/features/source";
 import { localizeAppError } from "@/i18n/app-errors";
@@ -55,14 +55,15 @@ function EasyTrimEditorApp() {
                 <ResizablePanelContextProvider>
                   <AppDialogsProvider>
                     <ApplicationCommandsProvider>
-                      <AppLayout />
+                      <ExportDialog>
+                        <AppLayout />
+                      </ExportDialog>
                       <AppSettingsDialog />
                       <AppCommandPaletteDialog />
                       <AppChangelogDialog />
 
                       <Toaster />
                       <ActivityToasts />
-                      <ExportDialogMount />
                       <AppDiagnosticsRecoveryDialog />
                       <WorkspaceRecoveryNotice />
                       <SourceDropOverlay />

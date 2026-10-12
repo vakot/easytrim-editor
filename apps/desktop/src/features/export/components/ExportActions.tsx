@@ -32,7 +32,7 @@ import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { cn } from "@/lib/class-names.utils";
 import { preloadOnIntent } from "@/lib/lazy-component";
 
-import { ExportDialog } from "../dialogs/ExportDialog";
+import { ExportDialog, ExportDialogTrigger } from "../dialogs/ExportDialog";
 
 const preloadExportDialogOnIntent = preloadOnIntent(() => ExportDialog.preload());
 
@@ -91,26 +91,15 @@ function ExportActions() {
         shortcut={OPTIMIZED_EXPORT_SHORTCUT}
         tooltip={t("export.optimized.tooltip")}
       >
-        <ExportActionButton
-          aria-keyshortcuts={getShortcutAriaValue(OPTIMIZED_EXPORT_SHORTCUT)}
-          disabled={!sourceReady}
-          icon={<Settings2 aria-hidden="true" />}
-          onClick={() => {
-            const openDialog = () =>
-              void import("@/app/store/thunks/export-thunks").then(
-                ({ openOptimizedExportDialog }) =>
-                  dispatch(
-                    openOptimizedExportDialog({ id: "toolbar.optimized-export", type: "button" }),
-                  ),
-              );
-
-            void ExportDialog.preload().then(openDialog, openDialog);
-          }}
-          onFocus={preloadExportDialogOnIntent}
-          onPointerEnter={preloadExportDialogOnIntent}
-        >
-          {t("export.optimized.action")}
-        </ExportActionButton>
+        <ExportDialogTrigger asChild>
+          <ExportActionButton
+            aria-keyshortcuts={getShortcutAriaValue(OPTIMIZED_EXPORT_SHORTCUT)}
+            disabled={!sourceReady}
+            icon={<Settings2 aria-hidden="true" />}
+          >
+            {t("export.optimized.action")}
+          </ExportActionButton>
+        </ExportDialogTrigger>
       </ExportActionTooltip>
 
       <MoreExportActionsDropdown hasSelectedAudio={hasSelectedAudio} sourceReady={sourceReady} />

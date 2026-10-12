@@ -10,7 +10,6 @@ import {
   removeAudioTrackSignalEffect,
   setAudioTrackSignalEffect,
 } from "@/domain/audio-processing";
-import { useAudioTrackEffectsDraft } from "@/features/audio";
 
 import {
   AudioTrackEffectsLibraryPage,
@@ -21,6 +20,7 @@ import {
   AudioTrackEffectsLibraryPageTitle,
   AudioTrackEffectsLibraryPageToggle,
 } from "../components/AudioTrackEffectsLibraryPage";
+import { useAudioTrackEffectsDraft } from "../contexts/audio-track-effects-draft-context";
 
 const DEFAULT_HIGH_PASS_CUTOFF_HZ = 80;
 const MIN_HIGH_PASS_CUTOFF_HZ = AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS[0];

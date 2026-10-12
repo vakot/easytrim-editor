@@ -118,7 +118,7 @@ function AudioTrackGainControl({
     <div className="flex size-full items-center justify-center p-2">
       <Tooltip>
         <TooltipTrigger asChild>
-          <AudioTrackEffectsDialogTrigger asChild initialView="loudnessNormalization">
+          <AudioTrackEffectsDialogTrigger initialView="loudnessNormalization">
             <Button
               aria-label={t("audio.normalization.label")}
               className="text-xs leading-none font-normal text-muted-foreground tabular-nums"

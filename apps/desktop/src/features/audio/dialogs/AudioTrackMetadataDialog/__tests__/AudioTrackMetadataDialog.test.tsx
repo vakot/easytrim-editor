@@ -3,16 +3,16 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
-import { AudioTrackMetadataDialog } from "../AudioTrackMetadataDialog";
-import { useAudioTrackMetadataDialog } from "../contexts/audio-track-metadata-dialog-context";
+import {
+  AudioTrackMetadataDialog,
+  AudioTrackMetadataDialogTrigger,
+} from "../AudioTrackMetadataDialog";
 
 function OpenMetadataDialogButton() {
-  const { openMetadataDialog } = useAudioTrackMetadataDialog();
-
   return (
-    <button onClick={openMetadataDialog} type="button">
-      Open metadata
-    </button>
+    <AudioTrackMetadataDialogTrigger asChild>
+      <button type="button">Open metadata</button>
+    </AudioTrackMetadataDialogTrigger>
   );
 }
 

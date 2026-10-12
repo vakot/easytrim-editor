@@ -23,7 +23,7 @@ import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommands
 import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
-import { ExportActions, QueueDeleteSourceProvider } from "@/features/export";
+import { ExportActions, ExportDialog, QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
 import { i18n } from "@/i18n/config";
@@ -301,7 +301,9 @@ describe("MenuBarTest", () => {
                       <ThemeProvider>
                         <AppMenuBar />
                         <AppCommandPaletteDialog />
-                        <ExportActions />
+                        <ExportDialog>
+                          <ExportActions />
+                        </ExportDialog>
                         <WorkspaceDialogSelectionProbe />
                         <AppSettingsDialog />
                         <SettingsOpenIndicator />

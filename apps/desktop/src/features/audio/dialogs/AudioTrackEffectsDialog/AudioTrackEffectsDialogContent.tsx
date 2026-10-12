@@ -1,3 +1,4 @@
+import { useReducer } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import type { AudioTrackProcessing } from "@/domain/audio-processing";
 import { localizeAppError } from "@/i18n/app-errors";
 
 import { AudioTrackEffectsLibrary } from "../../components/AudioTrack/components/AudioTrackEffectsLibrary";
@@ -17,20 +19,23 @@ import {
   AUDIO_TRACK_EFFECTS,
   type AudioTrackEffectId,
 } from "../../components/AudioTrack/components/AudioTrackEffectsLibrary/consts/audio-track-effects";
-import type { AudioTrackController } from "../../hooks/useAudioTrackController";
-import { audioTrackDisplayName } from "../../lib/audio-track-name.utils";
-
-import { AudioTrackEffectsDraftProvider } from "./components/AudioTrackEffectsDraftProvider";
-import { useAudioTrackEffectsDraft } from "./contexts/audio-track-effects-draft-context";
 import {
+  AudioTrackEffectsDraftContext,
+  useAudioTrackEffectsDraft,
+} from "../../components/AudioTrack/components/AudioTrackEffectsLibrary/contexts/audio-track-effects-draft-context";
+import { audioTrackEffectsDraftReducer } from "../../components/AudioTrack/components/AudioTrackEffectsLibrary/lib/audio-track-effects-draft.reducer";
+import {
+  createAudioTrackEffectsDraft,
   getAudioTrackEffectsDraftProcessing,
   isAudioTrackEffectsDraftDirty,
   isAudioTrackEffectsDraftValid,
-} from "./audio-track-effects-draft.utils";
+} from "../../components/AudioTrack/components/AudioTrackEffectsLibrary/lib/audio-track-effects-draft.utils";
+import type { AudioTrackController } from "../../hooks/useAudioTrackController";
+import { audioTrackDisplayName } from "../../lib/audio-track-name.utils";
 
 interface AudioTrackEffectsDialogContentProps {
   controller: AudioTrackController;
-  initialProcessing: import("@/domain/audio-processing").AudioTrackProcessing;
+  initialProcessing: AudioTrackProcessing;
   initialView?: AudioTrackEffectId;
 }
 
@@ -39,10 +44,16 @@ function AudioTrackEffectsDialogContent({
   initialProcessing,
   initialView,
 }: AudioTrackEffectsDialogContentProps) {
+  const [draft, dispatch] = useReducer(
+    audioTrackEffectsDraftReducer,
+    initialProcessing,
+    createAudioTrackEffectsDraft,
+  );
+
   return (
-    <AudioTrackEffectsDraftProvider initialProcessing={initialProcessing}>
+    <AudioTrackEffectsDraftContext.Provider value={{ dispatch, draft }}>
       <AudioTrackEffectsDialogPanel controller={controller} initialView={initialView} />
-    </AudioTrackEffectsDraftProvider>
+    </AudioTrackEffectsDraftContext.Provider>
   );
 }
 
@@ -115,4 +126,3 @@ function AudioTrackEffectsDialogPanel({
 }
 
 export { AudioTrackEffectsDialogContent };
-export type { AudioTrackEffectsDialogContentProps };

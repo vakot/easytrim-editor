@@ -7,15 +7,29 @@ import {
   getAudioTrackSignalEffect,
   sameLoudnessNormalization,
 } from "@/domain/audio-processing";
-
-import { HighPassPage } from "../pages/HighPassPage";
-import { LimiterPage } from "../pages/LimiterPage";
-import { NoiseReductionPage } from "../pages/NoiseReductionPage";
-import { NormalizeLoudnessPage } from "../pages/NormalizeLoudnessPage";
+import { lazyWithPreload } from "@/lib/lazy-component";
 
 interface AudioTrackEffectsPageProps {
   streamIndex: number;
 }
+
+const LazyHighPassPage = lazyWithPreload<AudioTrackEffectsPageProps>(() =>
+  import("../pages/HighPassPage").then((module) => ({ default: module.HighPassPage })),
+);
+
+const LazyNoiseReductionPage = lazyWithPreload<AudioTrackEffectsPageProps>(() =>
+  import("../pages/NoiseReductionPage").then((module) => ({ default: module.NoiseReductionPage })),
+);
+
+const LazyNormalizeLoudnessPage = lazyWithPreload<AudioTrackEffectsPageProps>(() =>
+  import("../pages/NormalizeLoudnessPage").then((module) => ({
+    default: module.NormalizeLoudnessPage,
+  })),
+);
+
+const LazyLimiterPage = lazyWithPreload<AudioTrackEffectsPageProps>(() =>
+  import("../pages/LimiterPage").then((module) => ({ default: module.LimiterPage })),
+);
 
 interface AudioTrackEffectDescriptor {
   defaultSelected?: boolean;
@@ -24,6 +38,7 @@ interface AudioTrackEffectDescriptor {
   isEnabled: (processing: AudioTrackProcessing) => boolean;
   label: (t: TFunction) => string;
   Page: ComponentType<AudioTrackEffectsPageProps>;
+  preload: () => Promise<unknown>;
   stage: AudioProcessingStage;
 }
 
@@ -33,7 +48,8 @@ const AUDIO_TRACK_EFFECTS = [
     id: "highPass",
     stage: "cleanup",
     label: (t) => t("audio.highPass.label"),
-    Page: HighPassPage,
+    Page: LazyHighPassPage,
+    preload: () => LazyHighPassPage.preload(),
     isEnabled: (processing) =>
       getAudioTrackSignalEffect(processing, "highPass", "cleanup") !== undefined,
     isDirty: (initial, current) =>
@@ -44,7 +60,8 @@ const AUDIO_TRACK_EFFECTS = [
     id: "noiseReduction",
     stage: "cleanup",
     label: (t) => t("audio.noiseReduction.label"),
-    Page: NoiseReductionPage,
+    Page: LazyNoiseReductionPage,
+    preload: () => LazyNoiseReductionPage.preload(),
     isEnabled: (processing) =>
       getAudioTrackSignalEffect(processing, "noiseReduction") !== undefined,
     isDirty: (initial, current) =>
@@ -55,7 +72,8 @@ const AUDIO_TRACK_EFFECTS = [
     id: "loudnessNormalization",
     stage: "levelPolicy",
     label: (t) => t("audio.normalization.label"),
-    Page: NormalizeLoudnessPage,
+    Page: LazyNormalizeLoudnessPage,
+    preload: () => LazyNormalizeLoudnessPage.preload(),
     isEnabled: (processing) => processing.loudnessNormalization !== undefined,
     isDirty: (initial, current) =>
       !sameLoudnessNormalization(initial.loudnessNormalization, current.loudnessNormalization),
@@ -64,7 +82,8 @@ const AUDIO_TRACK_EFFECTS = [
     id: "limiter",
     stage: "finalProtection",
     label: (t) => t("audio.limiter.label"),
-    Page: LimiterPage,
+    Page: LazyLimiterPage,
+    preload: () => LazyLimiterPage.preload(),
     isEnabled: (processing) => getAudioTrackSignalEffect(processing, "limiter") !== undefined,
     isDirty: (initial, current) => {
       const initialLimiter = getAudioTrackSignalEffect(initial, "limiter");

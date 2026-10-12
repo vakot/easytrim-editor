@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Separator } from "@/components/ui/separator";
@@ -14,13 +14,17 @@ import {
   LibraryPage,
 } from "@/components/library";
 import { AUDIO_PROCESSING_STAGES, type AudioProcessingStage } from "@/domain/audio-processing";
-import { type AudioTrackEffectsDraft, useAudioTrackEffectsDraft } from "@/features/audio";
+import { preloadOnIntent } from "@/lib/lazy-component";
 
 import {
   AUDIO_TRACK_EFFECTS,
   type AudioTrackEffectDescriptor,
   type AudioTrackEffectId,
 } from "./consts/audio-track-effects";
+import {
+  type AudioTrackEffectsDraft,
+  useAudioTrackEffectsDraft,
+} from "./contexts/audio-track-effects-draft-context";
 
 interface AudioTrackEffectsLibraryProps {
   effects?: readonly AudioTrackEffectDescriptor[];
@@ -45,6 +49,10 @@ function AudioTrackEffectsLibrary({
       stageGroups[0]?.effects[0]?.id,
   );
 
+  const [loadedEffects, setLoadedEffects] = useState(
+    () => new Set(selectedEffect === undefined ? [] : [selectedEffect]),
+  );
+
   const { draft } = useAudioTrackEffectsDraft();
   const stageLabels: Record<AudioProcessingStage, string> = {
     cleanup: t("audio.effects.stages.cleanup"),
@@ -54,7 +62,13 @@ function AudioTrackEffectsLibrary({
   };
 
   return (
-    <Library onValueChange={setSelectedEffect} value={selectedEffect}>
+    <Library
+      onValueChange={(value) => {
+        setSelectedEffect(value);
+        setLoadedEffects((current) => new Set(current).add(value));
+      }}
+      value={selectedEffect}
+    >
       <LibraryNavigation aria-label={t("audio.effects.open")}>
         {stageGroups.map(({ effects: stageEffects, stage }) => (
           <LibraryNavigationGroup
@@ -75,7 +89,11 @@ function AudioTrackEffectsLibrary({
       <LibraryContent>
         {effects.map(({ id, Page }) => (
           <LibraryPage forceMount hidden={selectedEffect !== id} key={id} value={id}>
-            <Page streamIndex={streamIndex} />
+            {loadedEffects.has(id) ? (
+              <Suspense fallback={null}>
+                <Page streamIndex={streamIndex} />
+              </Suspense>
+            ) : null}
           </LibraryPage>
         ))}
       </LibraryContent>
@@ -91,6 +109,7 @@ function AudioTrackEffectTab({
   effect: AudioTrackEffectDescriptor;
 }) {
   const { t } = useTranslation();
+  const preload = preloadOnIntent(effect.preload);
 
   const enabled = effect.isEnabled(draft.processing);
   const dirty =
@@ -98,7 +117,12 @@ function AudioTrackEffectTab({
     draft.effectStatus[effect.id]?.dirty;
 
   return (
-    <LibraryNavigationItem className="px-8" value={effect.id}>
+    <LibraryNavigationItem
+      className="px-8"
+      onFocus={preload}
+      onPointerEnter={preload}
+      value={effect.id}
+    >
       {enabled ? (
         <LibraryNavigationItemIndicator>
           <Check />

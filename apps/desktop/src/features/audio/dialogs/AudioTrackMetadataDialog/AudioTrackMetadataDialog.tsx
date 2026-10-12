@@ -10,13 +10,14 @@ import {
   AudioTrackMetadataDialogContext,
   useAudioTrackMetadataDialog,
 } from "./contexts/audio-track-metadata-dialog-context";
-import type { AudioTrackMetadataDialogContentProps } from "./AudioTrackMetadataDialogContent";
+import type { AudioTrackMetadataDialogContent } from "./AudioTrackMetadataDialogContent";
 
-const LazyAudioTrackMetadataDialogContent = lazyWithPreload<AudioTrackMetadataDialogContentProps>(
-  () =>
-    import("./AudioTrackMetadataDialogContent").then((module) => ({
-      default: module.AudioTrackMetadataDialogContent,
-    })),
+const LazyAudioTrackMetadataDialogContent = lazyWithPreload<
+  ComponentProps<typeof AudioTrackMetadataDialogContent>
+>(() =>
+  import("./AudioTrackMetadataDialogContent").then((module) => ({
+    default: module.AudioTrackMetadataDialogContent,
+  })),
 );
 
 const preloadAudioTrackMetadata = preloadOnIntent(() =>

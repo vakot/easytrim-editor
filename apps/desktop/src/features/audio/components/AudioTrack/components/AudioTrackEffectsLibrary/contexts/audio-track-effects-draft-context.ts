@@ -24,7 +24,7 @@ const AudioTrackEffectsDraftContext = createContext<AudioTrackEffectsDraftContex
 function useAudioTrackEffectsDraft() {
   const context = useContext(AudioTrackEffectsDraftContext);
   if (!context) {
-    throw new Error("useAudioTrackEffectsDraft must be used within AudioTrackEffectsDraftProvider");
+    throw new Error("useAudioTrackEffectsDraft must be used within AudioTrackEffectsDialogContent");
   }
   return context;
 }

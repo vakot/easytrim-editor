@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
-import { useAudioTrackEffectsDraft } from "@/features/audio";
-
+import { useAudioTrackEffectsDraft } from "../../../contexts/audio-track-effects-draft-context";
 import { NormalizeLoudnessContext } from "../contexts/normalize-loudness-context";
 import { useLoudnessAnalysis } from "../hooks/useLoudnessAnalysis";
 import { useNormalizeLoudnessForm } from "../hooks/useNormalizeLoudnessForm";

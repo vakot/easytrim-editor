@@ -1,8 +1,7 @@
 import { type AudioTrackProcessing, cloneAudioTrackProcessing } from "@/domain/audio-processing";
 
-import type { AudioTrackEffectDescriptor } from "../../components/AudioTrack/components/AudioTrackEffectsLibrary/consts/audio-track-effects";
-
-import type { AudioTrackEffectsDraft } from "./contexts/audio-track-effects-draft-context";
+import type { AudioTrackEffectDescriptor } from "../consts/audio-track-effects";
+import type { AudioTrackEffectsDraft } from "../contexts/audio-track-effects-draft-context";
 
 function getAudioTrackEffectsDraftProcessing(draft: AudioTrackEffectsDraft): AudioTrackProcessing {
   return cloneAudioTrackProcessing(draft.processing);
@@ -26,7 +25,19 @@ function isAudioTrackEffectsDraftValid(
   return effects.every((effect) => draft.effectStatus[effect.id]?.valid ?? true);
 }
 
+function createAudioTrackEffectsDraft(
+  initialProcessing: AudioTrackProcessing,
+): AudioTrackEffectsDraft {
+  const processing = cloneAudioTrackProcessing(initialProcessing);
+  return {
+    effectStatus: {},
+    initialProcessing: cloneAudioTrackProcessing(processing),
+    processing,
+  };
+}
+
 export {
+  createAudioTrackEffectsDraft,
   getAudioTrackEffectsDraftProcessing,
   isAudioTrackEffectsDraftDirty,
   isAudioTrackEffectsDraftValid,

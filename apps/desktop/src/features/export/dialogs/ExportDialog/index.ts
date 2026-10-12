@@ -1,1 +1,1 @@
-export { ExportDialog } from "./ExportDialog";
+export { ExportDialog, ExportDialogTrigger } from "./ExportDialog";

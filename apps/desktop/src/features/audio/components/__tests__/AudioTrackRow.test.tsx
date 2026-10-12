@@ -24,7 +24,7 @@ import { createAppStore } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { useTheme } from "@/app/theme/useTheme";
 import { audioTrackLoudnessInputsKey, type AudioTrackProcessing } from "@/domain/audio-processing";
-import { audioTrackColor,AudioTrackEffectsDialogContext } from "@/features/audio";
+import { audioTrackColor } from "@/features/audio";
 // eslint-disable-next-line no-restricted-imports -- Test owns a focused audio runtime fixture.
 import {
   AudioPlaybackContext,
@@ -112,7 +112,6 @@ function renderGainControl(enabled = true) {
 
   const clearLiveAudioTrackGain = vi.fn();
   const setLiveAudioTrackGain = vi.fn();
-  const openEffects = vi.fn();
   const gainCommits: number[] = [];
   const dispatch = store.dispatch;
   store.dispatch = ((action: Parameters<typeof dispatch>[0]) => {
@@ -125,15 +124,13 @@ function renderGainControl(enabled = true) {
       <AudioPlaybackContext.Provider
         value={{ ...audioPlayback, clearLiveAudioTrackGain, setLiveAudioTrackGain }}
       >
-        <AudioTrackEffectsDialogContext.Provider value={{ openEffects, preloadEffects: vi.fn() }}>
-          <TooltipProvider>
-            <AudioTrackGainControl
-              onLiveGainChange={() => undefined}
-              streamIndex={2}
-              trackNumber={1}
-            />
-          </TooltipProvider>
-        </AudioTrackEffectsDialogContext.Provider>
+        <TooltipProvider>
+          <AudioTrackGainControl
+            onLiveGainChange={() => undefined}
+            streamIndex={2}
+            trackNumber={1}
+          />
+        </TooltipProvider>
       </AudioPlaybackContext.Provider>
     </Provider>,
   );

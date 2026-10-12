@@ -18,12 +18,7 @@ import {
 import { Slot } from "@/components/ui/slot";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import {
-  AudioTrackEffectsDialogTrigger,
-  AudioTrackMetadataDialogTrigger,
-  useAudioTrackEffectsDialog,
-  useAudioTrackMetadataDialog,
-} from "@/features/audio";
+import { AudioTrackEffectsDialogTrigger, AudioTrackMetadataDialogTrigger } from "@/features/audio";
 
 import type { AudioTrackController } from "../../../hooks/useAudioTrackController";
 
@@ -33,21 +28,10 @@ interface AudioTrackActionsProps {
 
 function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
   const { t } = useTranslation();
-  const { preloadMetadata } = useAudioTrackMetadataDialog();
-  const { preloadEffects } = useAudioTrackEffectsDialog();
   const track = controller.track;
 
   return (
-    <DropdownMenuContent
-      onFocus={() => {
-        preloadMetadata();
-        preloadEffects();
-      }}
-      onPointerEnter={() => {
-        preloadMetadata();
-        preloadEffects();
-      }}
-    >
+    <DropdownMenuContent>
       <AudioTrackToggleMenuCheckboxItem controller={controller}>
         <DropdownMenuCheckboxItem keepOpen>{t("common.actions.enable")}</DropdownMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
@@ -82,7 +66,7 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
 
       <DropdownMenuSeparator />
 
-      <AudioTrackEffectsMenuItem>
+      <AudioTrackEffectsDialogTrigger asChild>
         <DropdownMenuItem inset>
           <DropdownMenuIcon side="left">
             <WandSparkles />
@@ -92,28 +76,17 @@ function AudioTrackDropdownMenuContent({ controller }: AudioTrackActionsProps) {
             <ChevronRight />
           </DropdownMenuIcon>
         </DropdownMenuItem>
-      </AudioTrackEffectsMenuItem>
+      </AudioTrackEffectsDialogTrigger>
     </DropdownMenuContent>
   );
 }
 
 function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
   const { t } = useTranslation();
-  const { preloadMetadata } = useAudioTrackMetadataDialog();
-  const { preloadEffects } = useAudioTrackEffectsDialog();
   const track = controller.track;
 
   return (
-    <ContextMenuContent
-      onFocus={() => {
-        preloadMetadata();
-        preloadEffects();
-      }}
-      onPointerEnter={() => {
-        preloadMetadata();
-        preloadEffects();
-      }}
-    >
+    <ContextMenuContent>
       <AudioTrackToggleMenuCheckboxItem controller={controller}>
         <ContextMenuCheckboxItem keepOpen>{t("common.actions.enable")}</ContextMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
@@ -148,7 +121,7 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
 
       <ContextMenuSeparator />
 
-      <AudioTrackEffectsMenuItem>
+      <AudioTrackEffectsDialogTrigger asChild>
         <ContextMenuItem inset>
           <ContextMenuIcon side="left">
             <WandSparkles />
@@ -158,7 +131,7 @@ function AudioTrackContextMenuContent({ controller }: AudioTrackActionsProps) {
             <ChevronRight />
           </ContextMenuIcon>
         </ContextMenuItem>
-      </AudioTrackEffectsMenuItem>
+      </AudioTrackEffectsDialogTrigger>
     </ContextMenuContent>
   );
 }
@@ -225,16 +198,6 @@ function AudioTrackDefaultMenuCheckboxItem({
         {t("audio.tracks.metadata.fields.default.disabledTooltip")}
       </TooltipContent>
     </Tooltip>
-  );
-}
-
-function AudioTrackEffectsMenuItem({ children }: { children?: React.ReactNode }) {
-  const { t } = useTranslation();
-
-  return (
-    <AudioTrackEffectsDialogTrigger aria-label={t("audio.effects.open")} asChild>
-      <Slot>{children}</Slot>
-    </AudioTrackEffectsDialogTrigger>
   );
 }
 

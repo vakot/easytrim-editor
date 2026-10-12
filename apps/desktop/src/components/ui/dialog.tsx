@@ -144,7 +144,10 @@ function DialogDescription({
   );
 }
 
+const createDialogScope = DialogPrimitive.createDialogScope;
+
 export {
+  createDialogScope,
   Dialog,
   DialogClose,
   DialogContent,

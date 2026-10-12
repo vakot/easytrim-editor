@@ -11,18 +11,32 @@ import {
   AudioTrackEffectsDialogContext,
   useAudioTrackEffectsDialog,
 } from "./contexts/audio-track-effects-dialog-context";
-import type { AudioTrackEffectsDialogContentProps } from "./AudioTrackEffectsDialogContent";
+import type { AudioTrackEffectsDialogContent } from "./AudioTrackEffectsDialogContent";
 
-const LazyAudioTrackEffectsDialogContent = lazyWithPreload<AudioTrackEffectsDialogContentProps>(
-  () =>
-    import("./AudioTrackEffectsDialogContent").then((module) => ({
-      default: module.AudioTrackEffectsDialogContent,
-    })),
+const LazyAudioTrackEffectsDialogContent = lazyWithPreload<
+  ComponentProps<typeof AudioTrackEffectsDialogContent>
+>(() =>
+  import("./AudioTrackEffectsDialogContent").then((module) => ({
+    default: module.AudioTrackEffectsDialogContent,
+  })),
 );
 
-const preloadAudioTrackEffects = preloadOnIntent(() =>
-  LazyAudioTrackEffectsDialogContent.preload(),
-);
+function preloadAudioTrackEffects(initialView?: AudioTrackEffectId) {
+  preloadOnIntent(async () => {
+    const [, { AUDIO_TRACK_EFFECTS }] = await Promise.all([
+      LazyAudioTrackEffectsDialogContent.preload(),
+      import("../../components/AudioTrack/components/AudioTrackEffectsLibrary/consts/audio-track-effects"),
+    ]);
+
+    const effect =
+      AUDIO_TRACK_EFFECTS.find(({ id }) => id === initialView) ??
+      AUDIO_TRACK_EFFECTS.find(
+        (candidate) => "defaultSelected" in candidate && candidate.defaultSelected,
+      );
+
+    await effect?.preload();
+  })();
+}
 
 interface AudioTrackEffectsDialogProps {
   children: ReactNode;
@@ -35,8 +49,8 @@ function AudioTrackEffectsDialog({ children, controller }: AudioTrackEffectsDial
   const track = controller.track;
   const stream = controller.stream;
 
-  const preloadEffects = useCallback(() => {
-    preloadAudioTrackEffects();
+  const preloadEffects = useCallback((view?: AudioTrackEffectId) => {
+    preloadAudioTrackEffects(view);
   }, []);
 
   const openEffects = useCallback(async (view?: AudioTrackEffectId) => {
