@@ -32,12 +32,15 @@ import {
 import type { AudioTrackController } from "../../hooks/useAudioTrackController";
 import { audioTrackDisplayName } from "../../lib/audio-track-name.utils";
 
+import { useAudioTrackMetadataDialogScope } from "./hooks/useAudioTrackMetadataDialogScope";
+
 interface AudioTrackMetadataDialogContentProps {
   controller: AudioTrackController;
 }
 
 function AudioTrackMetadataDialogContent({ controller }: AudioTrackMetadataDialogContentProps) {
   const { t } = useTranslation();
+  const dialogScope = useAudioTrackMetadataDialogScope(undefined);
   const { stream, track, trackNumber } = controller;
   const [metadataTitle, setMetadataTitle] = useState(track?.metadata.title ?? "");
   const [metadataTitleChanged, setMetadataTitleChanged] = useState(false);
@@ -70,8 +73,10 @@ function AudioTrackMetadataDialogContent({ controller }: AudioTrackMetadataDialo
         }}
       >
         <DialogHeader>
-          <DialogTitle>{t("audio.tracks.metadata.title")}</DialogTitle>
-          <DialogDescription>{t("audio.tracks.metadata.description")}</DialogDescription>
+          <DialogTitle {...dialogScope}>{t("audio.tracks.metadata.title")}</DialogTitle>
+          <DialogDescription {...dialogScope}>
+            {t("audio.tracks.metadata.description")}
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
           <Label htmlFor={`audio-track-title-${track.streamIndex}`}>
@@ -145,8 +150,8 @@ function AudioTrackMetadataDialogContent({ controller }: AudioTrackMetadataDialo
             </LanguageSelectorContent>
           </LanguageSelector>
         </div>
-        <DialogFooter>
-          <DialogClose asChild>
+        <DialogFooter showCloseButton {...dialogScope}>
+          <DialogClose {...dialogScope} asChild>
             <Button type="submit">{t("common.actions.save")}</Button>
           </DialogClose>
         </DialogFooter>

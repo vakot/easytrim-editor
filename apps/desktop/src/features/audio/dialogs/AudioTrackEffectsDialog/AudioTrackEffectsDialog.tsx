@@ -7,11 +7,12 @@ import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 import type { AudioTrackEffectId } from "../../components/AudioTrack/components/AudioTrackEffectsLibrary/consts/audio-track-effects";
 import type { AudioTrackController } from "../../hooks/useAudioTrackController";
 
+import { useAudioTrackEffectsDialogScope } from "./hooks/useAudioTrackEffectsDialogScope";
+import type { AudioTrackEffectsDialogContent } from "./AudioTrackEffectsDialogContent";
 import {
   AudioTrackEffectsDialogContext,
   useAudioTrackEffectsDialog,
-} from "./contexts/audio-track-effects-dialog-context";
-import type { AudioTrackEffectsDialogContent } from "./AudioTrackEffectsDialogContent";
+} from "./AudioTrackEffectsDialogContext";
 
 const LazyAudioTrackEffectsDialogContent = lazyWithPreload<
   ComponentProps<typeof AudioTrackEffectsDialogContent>
@@ -38,35 +39,34 @@ function preloadAudioTrackEffects(initialView?: AudioTrackEffectId) {
   })();
 }
 
-interface AudioTrackEffectsDialogProps {
+function AudioTrackEffectsDialog({
+  children,
+  controller,
+}: {
   children: ReactNode;
   controller: AudioTrackController;
-}
-
-function AudioTrackEffectsDialog({ children, controller }: AudioTrackEffectsDialogProps) {
+}) {
+  const dialogScope = useAudioTrackEffectsDialogScope(undefined);
   const [open, setOpen] = useState(false);
   const [initialView, setInitialView] = useState<AudioTrackEffectId | undefined>();
   const track = controller.track;
   const stream = controller.stream;
 
-  const preloadEffects = useCallback((view?: AudioTrackEffectId) => {
-    preloadAudioTrackEffects(view);
-  }, []);
-
-  const openEffects = useCallback(async (view?: AudioTrackEffectId) => {
+  const selectEffectsView = useCallback((view?: AudioTrackEffectId) => {
     setInitialView(view);
-    await LazyAudioTrackEffectsDialogContent.preload();
-    setOpen(true);
   }, []);
 
   if (!track || !stream) return children;
 
   return (
-    <AudioTrackEffectsDialogContext.Provider value={{ openEffects, preloadEffects }}>
-      {children}
+    <AudioTrackEffectsDialogContext.Provider value={{ selectEffectsView }}>
+      <Dialog {...dialogScope} onOpenChange={setOpen} open={open}>
+        {children}
 
-      <Dialog onOpenChange={setOpen} open={open}>
-        <DialogContent className="h-full max-h-[min(80dvh,32rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl">
+        <DialogContent
+          {...dialogScope}
+          className="h-full max-h-[min(80dvh,32rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
+        >
           <Suspense fallback={null}>
             <LazyAudioTrackEffectsDialogContent
               controller={controller}
@@ -87,23 +87,27 @@ function AudioTrackEffectsDialogTrigger({
   onPointerEnter,
   ...props
 }: ComponentProps<typeof DialogTrigger> & { initialView?: AudioTrackEffectId }) {
-  const { openEffects, preloadEffects } = useAudioTrackEffectsDialog();
+  const dialogScope = useAudioTrackEffectsDialogScope(undefined);
+  const { selectEffectsView } = useAudioTrackEffectsDialog();
+
+  const preloadEffects = useCallback((view?: AudioTrackEffectId) => {
+    preloadAudioTrackEffects(view);
+  }, []);
 
   return (
     <DialogTrigger
+      {...dialogScope}
       {...props}
       onClick={(event) => {
         onClick?.(event);
-        if (event.defaultPrevented) return;
-        event.preventDefault();
-        void openEffects(initialView);
+        if (!event.defaultPrevented) selectEffectsView(initialView);
       }}
       onFocus={(event) => {
-        preloadEffects();
+        preloadEffects(initialView);
         onFocus?.(event);
       }}
       onPointerEnter={(event) => {
-        preloadEffects();
+        preloadEffects(initialView);
         onPointerEnter?.(event);
       }}
     />

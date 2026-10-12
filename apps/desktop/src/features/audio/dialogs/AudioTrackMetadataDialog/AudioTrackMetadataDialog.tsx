@@ -6,10 +6,7 @@ import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 import type { AudioTrackController } from "../../hooks/useAudioTrackController";
 
-import {
-  AudioTrackMetadataDialogContext,
-  useAudioTrackMetadataDialog,
-} from "./contexts/audio-track-metadata-dialog-context";
+import { useAudioTrackMetadataDialogScope } from "./hooks/useAudioTrackMetadataDialogScope";
 import type { AudioTrackMetadataDialogContent } from "./AudioTrackMetadataDialogContent";
 
 const LazyAudioTrackMetadataDialogContent = lazyWithPreload<
@@ -31,30 +28,23 @@ function AudioTrackMetadataDialog({
   children: ReactNode;
   controller: AudioTrackController;
 }) {
+  const dialogScope = useAudioTrackMetadataDialogScope(undefined);
   const [open, setOpen] = useState(false);
   const track = controller.track;
   const stream = controller.stream;
 
-  const preloadMetadata = useCallback(() => preloadAudioTrackMetadata(), []);
-  const openMetadataDialog = useCallback(async () => {
-    await LazyAudioTrackMetadataDialogContent.preload();
-    setOpen(true);
-  }, []);
-
   if (!track || !stream) return children;
 
   return (
-    <AudioTrackMetadataDialogContext.Provider value={{ openMetadataDialog, preloadMetadata }}>
+    <Dialog {...dialogScope} onOpenChange={setOpen} open={open}>
       {children}
 
-      <Dialog onOpenChange={setOpen} open={open}>
-        <DialogContent>
-          <Suspense fallback={null}>
-            <LazyAudioTrackMetadataDialogContent controller={controller} />
-          </Suspense>
-        </DialogContent>
-      </Dialog>
-    </AudioTrackMetadataDialogContext.Provider>
+      <DialogContent {...dialogScope}>
+        <Suspense fallback={null}>
+          <LazyAudioTrackMetadataDialogContent controller={controller} />
+        </Suspense>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -64,17 +54,14 @@ function AudioTrackMetadataDialogTrigger({
   onPointerEnter,
   ...props
 }: ComponentProps<typeof DialogTrigger>) {
-  const { openMetadataDialog, preloadMetadata } = useAudioTrackMetadataDialog();
+  const dialogScope = useAudioTrackMetadataDialogScope(undefined);
+  const preloadMetadata = useCallback(() => preloadAudioTrackMetadata(), []);
 
   return (
     <DialogTrigger
+      {...dialogScope}
       {...props}
-      onClick={(event) => {
-        onClick?.(event);
-        if (event.defaultPrevented) return;
-        event.preventDefault();
-        void openMetadataDialog();
-      }}
+      onClick={onClick}
       onFocus={(event) => {
         preloadMetadata();
         onFocus?.(event);

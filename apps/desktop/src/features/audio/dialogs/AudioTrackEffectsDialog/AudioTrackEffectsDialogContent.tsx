@@ -33,6 +33,8 @@ import {
 import type { AudioTrackController } from "../../hooks/useAudioTrackController";
 import { audioTrackDisplayName } from "../../lib/audio-track-name.utils";
 
+import { useAudioTrackEffectsDialogScope } from "./hooks/useAudioTrackEffectsDialogScope";
+
 interface AudioTrackEffectsDialogContentProps {
   controller: AudioTrackController;
   initialProcessing: AudioTrackProcessing;
@@ -62,6 +64,7 @@ function AudioTrackEffectsDialogPanel({
   initialView,
 }: Omit<AudioTrackEffectsDialogContentProps, "initialProcessing">) {
   const { t } = useTranslation();
+  const dialogScope = useAudioTrackEffectsDialogScope(undefined);
   const { draft } = useAudioTrackEffectsDraft();
   const track = controller.track;
   const stream = controller.stream;
@@ -80,8 +83,10 @@ function AudioTrackEffectsDialogPanel({
   return (
     <>
       <DialogHeader className="m-0! -mx-4 border-b p-4">
-        <DialogTitle>{t("audio.effects.dialog.title", { title })}</DialogTitle>
-        <DialogDescription>{t("audio.effects.dialog.description")}</DialogDescription>
+        <DialogTitle {...dialogScope}>{t("audio.effects.dialog.title", { title })}</DialogTitle>
+        <DialogDescription {...dialogScope}>
+          {t("audio.effects.dialog.description")}
+        </DialogDescription>
       </DialogHeader>
 
       <AudioTrackEffectsLibrary initialView={initialView} streamIndex={track.streamIndex} />
@@ -100,17 +105,17 @@ function AudioTrackEffectsDialogPanel({
         </div>
       ) : null}
 
-      <DialogFooter className="m-0! min-w-0 items-center sm:justify-between">
+      <DialogFooter {...dialogScope} className="m-0! min-w-0 items-center sm:justify-between">
         <p className="min-w-0 flex-1 text-xs text-muted-foreground">
           {t("audio.effects.dialog.applyNotice")}
         </p>
         <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
-          <DialogClose asChild>
+          <DialogClose {...dialogScope} asChild>
             <Button type="button" variant="outline">
               {t("common.actions.cancel")}
             </Button>
           </DialogClose>
-          <DialogClose asChild>
+          <DialogClose {...dialogScope} asChild>
             <Button
               disabled={!isDirty || !isValid}
               onClick={() => controller.applyProcessing(draftProcessing)}
