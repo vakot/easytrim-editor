@@ -2,21 +2,29 @@ import { Suspense } from "react";
 
 import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
 import { LibraryDialog, LibraryDialogContent } from "@/components/library";
+import { lazyWithPreload } from "@/lib/lazy-component";
 
-import { LazyAppSettingsDialogContent } from "./app-settings-dialog.loader";
+const LazyAppSettingsDialogContent = lazyWithPreload<Record<string, never>>(() =>
+  import("./AppSettingsDialogContent").then((module) => ({
+    default: module.AppSettingsDialogContent,
+  })),
+);
 
-function AppSettingsDialog() {
-  const { closeSettings, isSettingsOpen } = useSettingsDialog();
+const AppSettingsDialog = Object.assign(
+  function AppSettingsDialog() {
+    const { closeSettings, isSettingsOpen } = useSettingsDialog();
 
-  return (
-    <LibraryDialog onOpenChange={(open) => !open && closeSettings()} open={isSettingsOpen}>
-      <LibraryDialogContent>
-        <Suspense fallback={null}>
-          <LazyAppSettingsDialogContent />
-        </Suspense>
-      </LibraryDialogContent>
-    </LibraryDialog>
-  );
-}
+    return (
+      <LibraryDialog onOpenChange={(open) => !open && closeSettings()} open={isSettingsOpen}>
+        <LibraryDialogContent>
+          <Suspense fallback={null}>
+            <LazyAppSettingsDialogContent />
+          </Suspense>
+        </LibraryDialogContent>
+      </LibraryDialog>
+    );
+  },
+  { preload: () => LazyAppSettingsDialogContent.preload() },
+);
 
 export { AppSettingsDialog };
