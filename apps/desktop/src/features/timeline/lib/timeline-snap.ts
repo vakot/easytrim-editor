@@ -22,9 +22,11 @@ interface TimelineSnapAnchor {
 function createTimelineSnapTargets(
   sceneBoundariesMicros: readonly number[],
   audioActivityRanges: readonly AudioActivityRange[],
+  chapterBoundariesMicros: readonly number[] = [],
 ) {
   return [
     ...sceneBoundariesMicros,
+    ...chapterBoundariesMicros,
     ...audioActivityRanges.flatMap(({ endMicros, startMicros }) => [startMicros, endMicros]),
   ].sort((left, right) => left - right);
 }

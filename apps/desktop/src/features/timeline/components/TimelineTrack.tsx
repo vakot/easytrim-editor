@@ -50,6 +50,7 @@ function Timeline({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
 
   const media = useAppSelector(selectSourceMedia);
+  const chapters = useAppSelector(selectChapters);
   const sceneMarkersEnabled = useAppSelector(selectSceneMarkersEnabled);
   const sceneBoundariesMicros = useAppSelector(selectActiveSceneBoundariesMicros);
   const audioTracks = useAppSelector(selectAudioTracks);
@@ -67,8 +68,9 @@ function Timeline({ children }: { children: React.ReactNode }) {
       createTimelineSnapTargets(
         sceneMarkersEnabled ? sceneBoundariesMicros : [],
         visibleAudioActivityRanges,
+        chapters.flatMap(({ endMicros, startMicros }) => [startMicros, endMicros]),
       ),
-    [visibleAudioActivityRanges, sceneBoundariesMicros, sceneMarkersEnabled],
+    [visibleAudioActivityRanges, sceneBoundariesMicros, sceneMarkersEnabled, chapters],
   );
 
   const range = timeline.trim ?? EMPTY_TIMELINE_RANGE;
