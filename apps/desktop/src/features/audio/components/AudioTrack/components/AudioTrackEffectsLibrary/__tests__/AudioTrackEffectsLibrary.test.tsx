@@ -104,13 +104,13 @@ describe("AudioTrackEffectsLibrary", () => {
     expect(tabs[0]?.querySelector("svg.lucide-check")).toBeInTheDocument();
     expect(tabs[1]?.querySelector(".rounded-full")).toBeInTheDocument();
     expect(screen.getByText("First effect controls")).toBeVisible();
-    expect(screen.getByText("Second effect controls").parentElement).not.toBeVisible();
+    expect(screen.queryByText("Second effect controls")).not.toBeInTheDocument();
 
     tabs[0]?.focus();
     await user.keyboard("{ArrowDown}");
     expect(tabs[1]).toHaveFocus();
     expect(tabs[1]).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Second effect controls")).toBeVisible();
+    expect(await screen.findByText("Second effect controls")).toBeVisible();
     expect(screen.getByText("First effect controls").parentElement).not.toBeVisible();
   });
 
