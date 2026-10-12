@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -199,36 +200,45 @@ function ChapterDraftDialog({
         </DialogHeader>
         {draft ? (
           <div className="grid gap-3">
-            <label className="grid gap-1 text-xs text-muted-foreground">
-              {t("timeline.chapters.fields.title")}
+            <div className="grid gap-1">
+              <Label className="text-xs text-muted-foreground" htmlFor="chapter-title">
+                {t("timeline.chapters.fields.title")}
+              </Label>
               <Input
                 autoFocus
+                id="chapter-title"
                 maxLength={256}
                 onChange={(event) => onDraftChange({ ...draft, title: event.target.value })}
                 value={draft.title}
               />
-            </label>
+            </div>
             <div className="grid grid-cols-2 gap-3">
-              <label className="grid gap-1 text-xs text-muted-foreground">
-                {t("timeline.chapters.fields.startSeconds")}
+              <div className="grid gap-1">
+                <Label className="text-xs text-muted-foreground" htmlFor="chapter-start-seconds">
+                  {t("timeline.chapters.fields.startSeconds")}
+                </Label>
                 <Input
+                  id="chapter-start-seconds"
                   min={0}
                   onChange={(event) => onSetSeconds("startMicros", event.target.value)}
                   step={0.001}
                   type="number"
                   value={(draft.startMicros / 1_000_000).toFixed(3)}
                 />
-              </label>
-              <label className="grid gap-1 text-xs text-muted-foreground">
-                {t("timeline.chapters.fields.endSeconds")}
+              </div>
+              <div className="grid gap-1">
+                <Label className="text-xs text-muted-foreground" htmlFor="chapter-end-seconds">
+                  {t("timeline.chapters.fields.endSeconds")}
+                </Label>
                 <Input
+                  id="chapter-end-seconds"
                   min={0}
                   onChange={(event) => onSetSeconds("endMicros", event.target.value)}
                   step={0.001}
                   type="number"
                   value={(draft.endMicros / 1_000_000).toFixed(3)}
                 />
-              </label>
+              </div>
             </div>
             {error ? (
               <Alert variant="destructive">
