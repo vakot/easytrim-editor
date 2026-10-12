@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 import { Keyboard } from "lucide-react";
-import { lazy, type ReactNode, Suspense, useState } from "react";
+import { type ReactNode, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,30 +18,39 @@ import {
   LibraryNavigationItem,
   LibraryPage,
 } from "@/components/library";
+import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 type SettingsPageId = "general" | "appearance" | "preferences" | "layout" | "about";
 
-const LazySettingsAbout = lazy(() =>
+const LazySettingsAbout = lazyWithPreload<Record<string, never>>(() =>
   import("./pages/SettingsAbout").then((module) => ({ default: module.SettingsAbout })),
 );
 
-const LazySettingsAppearance = lazy(() =>
+const LazySettingsAppearance = lazyWithPreload<Record<string, never>>(() =>
   import("./pages/SettingsAppearance").then((module) => ({ default: module.SettingsAppearance })),
 );
 
-const LazySettingsGeneral = lazy(() =>
+const LazySettingsGeneral = lazyWithPreload<Record<string, never>>(() =>
   import("./pages/SettingsGeneral").then((module) => ({ default: module.SettingsGeneral })),
 );
 
-const LazySettingsLayout = lazy(() =>
+const LazySettingsLayout = lazyWithPreload<Record<string, never>>(() =>
   import("./pages/SettingsLayout").then((module) => ({ default: module.SettingsLayout })),
 );
 
-const LazySettingsPreferences = lazy(() =>
+const LazySettingsPreferences = lazyWithPreload<Record<string, never>>(() =>
   import("./pages/SettingsPreferences").then((module) => ({
     default: module.SettingsPreferences,
   })),
 );
+
+const preloadSettingsPage = {
+  about: preloadOnIntent(() => LazySettingsAbout.preload()),
+  appearance: preloadOnIntent(() => LazySettingsAppearance.preload()),
+  general: preloadOnIntent(() => LazySettingsGeneral.preload()),
+  layout: preloadOnIntent(() => LazySettingsLayout.preload()),
+  preferences: preloadOnIntent(() => LazySettingsPreferences.preload()),
+} satisfies Record<SettingsPageId, () => void>;
 
 function AppSettingsDialogContent() {
   const { t } = useTranslation();
@@ -106,9 +115,12 @@ function AppSettingsDialogContent() {
 
 function AppSettingsPageItem({ page }: { page: SettingsPageId }) {
   const { t } = useTranslation();
+  const preload = preloadSettingsPage[page];
 
   return (
-    <LibraryNavigationItem value={page}>{getSettingsPageTitle(t, page)}</LibraryNavigationItem>
+    <LibraryNavigationItem onFocus={preload} onPointerEnter={preload} value={page}>
+      {getSettingsPageTitle(t, page)}
+    </LibraryNavigationItem>
   );
 }
 
