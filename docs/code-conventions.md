@@ -126,3 +126,26 @@ no preload occurred, including touch activation and keyboard commands. Put a loc
 boundary near the entrypoint and use a fallback that preserves layout and focus behavior. Preserve
 component identity across renders so opening and closing does not cause unrelated remounts or state
 loss.
+
+Product dialogs use a folder named `dialogs/<DialogName>/` under their owning feature or app area.
+Keep the Radix wrapper and preload trigger in `<DialogName>.tsx`, optional dialog-local context in
+`<DialogName>Context.ts`, and the inner content in `<DialogName>Content.tsx`. The wrapper owns the
+`Dialog` root, `DialogContent`, lazy import, and local `Suspense` boundary:
+
+```tsx
+<Dialog>
+  {children}
+  <DialogContent>
+    <Suspense fallback={null}>
+      <LazyDialogNameContent />
+    </Suspense>
+  </DialogContent>
+</Dialog>
+```
+
+`<DialogName>Content` contains the dialog's inner UI and must not render `DialogContent` itself.
+Export a separate `<DialogName>Trigger` that wraps the shadcn/Radix `DialogTrigger`, starts the
+same cached lazy import on pointer hover and keyboard focus, and forwards trigger props. Callers
+provide their own trigger UI with `asChild`. Keep `DialogNameContext` out unless trigger and content
+need to share dialog-local state. Keep heavy context and effects inside the lazy content when they
+do not need to live while the dialog is closed.
