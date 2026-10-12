@@ -41,7 +41,10 @@ function AudioTrackMetadataDialog({
 
       <DialogContent {...dialogScope}>
         <Suspense fallback={null}>
-          <LazyAudioTrackMetadataDialogContent controller={controller} />
+          <LazyAudioTrackMetadataDialogContent
+            controller={controller}
+            onClose={() => setOpen(false)}
+          />
         </Suspense>
       </DialogContent>
     </Dialog>

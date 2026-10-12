@@ -3,13 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import {
-  DialogClose,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -36,9 +30,13 @@ import { useAudioTrackMetadataDialogScope } from "./hooks/useAudioTrackMetadataD
 
 interface AudioTrackMetadataDialogContentProps {
   controller: AudioTrackController;
+  onClose: () => void;
 }
 
-function AudioTrackMetadataDialogContent({ controller }: AudioTrackMetadataDialogContentProps) {
+function AudioTrackMetadataDialogContent({
+  controller,
+  onClose,
+}: AudioTrackMetadataDialogContentProps) {
   const { t } = useTranslation();
   const dialogScope = useAudioTrackMetadataDialogScope(undefined);
   const { stream, track, trackNumber } = controller;
@@ -70,6 +68,7 @@ function AudioTrackMetadataDialogContent({ controller }: AudioTrackMetadataDialo
             metadataLanguage ?? undefined,
             metadataLanguageChanged,
           );
+          onClose();
         }}
       >
         <DialogHeader>
@@ -151,9 +150,7 @@ function AudioTrackMetadataDialogContent({ controller }: AudioTrackMetadataDialo
           </LanguageSelector>
         </div>
         <DialogFooter showCloseButton {...dialogScope}>
-          <DialogClose {...dialogScope} asChild>
-            <Button type="submit">{t("common.actions.save")}</Button>
-          </DialogClose>
+          <Button type="submit">{t("common.actions.save")}</Button>
         </DialogFooter>
       </form>
     </>

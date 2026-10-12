@@ -17,6 +17,28 @@ function OpenMetadataDialogButton() {
 }
 
 describe("AudioTrackMetadataDialog", () => {
+  it("saves edited metadata before closing the dialog", async () => {
+    const user = userEvent.setup();
+    const controller = {
+      stream: { language: "eng", streamIndex: 0, title: "Source title" },
+      track: { metadata: {}, streamIndex: 0 },
+      updateMetadata: vi.fn(),
+    } as unknown as AudioTrackController;
+
+    render(
+      <AudioTrackMetadataDialog controller={controller}>
+        <OpenMetadataDialogButton />
+      </AudioTrackMetadataDialog>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Open metadata" }));
+    await user.type(await screen.findByRole("textbox", { name: "Track title" }), "Edited title");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(controller.updateMetadata).toHaveBeenCalledWith("Edited title", true, "en", false);
+    expect(screen.queryByRole("textbox", { name: "Track title" })).not.toBeInTheDocument();
+  });
+
   it("restores a saved custom title when reopening the dialog", async () => {
     const user = userEvent.setup();
     const track: { metadata: { title?: string }; streamIndex: number } = {
