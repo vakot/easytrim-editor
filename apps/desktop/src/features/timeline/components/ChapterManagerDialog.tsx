@@ -2,15 +2,6 @@ import { BookmarkPlus, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  chapterAdded,
-  chapterDeleted,
-  chapterUpdated,
-  selectChapters,
-} from "@/app/store/slices/chapters-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
-import type { EditorChapter } from "@/domain/media";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,13 +12,30 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import {
+  chapterAdded,
+  chapterDeleted,
+  chapterUpdated,
+  selectChapters,
+} from "@/app/store/slices/chapters-slice";
+import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
+import type { EditorChapter } from "@/domain/media";
 import { formatPlaybackTime } from "@/domain/playback";
 
 function ChapterManagerDialog() {
+  const source = useAppSelector(selectSourceSelection);
+  return <ChapterManagerDialogContent key={source?.sourcePath ?? "no-source"} />;
+}
+
+function ChapterManagerDialogContent() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const chapters = useAppSelector(selectChapters);
   const trim = useAppSelector(selectTrim);
+  const media = useAppSelector(selectSourceMedia);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<EditorChapter | null>(null);
   const [error, setError] = useState(false);
@@ -48,7 +56,9 @@ function ChapterManagerDialog() {
       !draft ||
       !draft.title.trim() ||
       draft.startMicros < 0 ||
-      draft.endMicros <= draft.startMicros
+      draft.endMicros <= draft.startMicros ||
+      !media ||
+      draft.endMicros > media.durationMicros
     ) {
       setError(true);
       return;

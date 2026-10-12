@@ -2,8 +2,10 @@ use std::{
     cmp::Ordering,
     collections::HashSet,
     ffi::OsString,
+    fs::{self, OpenOptions},
     hash::{DefaultHasher, Hash, Hasher},
-    path::Path,
+    io::Write,
+    path::{Path, PathBuf},
 };
 
 use serde::{Deserialize, Serialize};
@@ -60,8 +62,109 @@ pub struct FastExportRequest {
     pub audio_metadata: Vec<AudioTrackMetadataSelection>,
     pub merge_audio: bool,
     #[serde(default)]
+    pub chapters: Option<Vec<ExportChapter>>,
+    #[serde(default)]
     pub strip_metadata: bool,
     pub rotation_degrees: u16,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportChapter {
+    pub start_micros: i64,
+    pub end_micros: i64,
+    pub title: String,
+}
+
+pub struct ChapterMetadataFile {
+    directory: PathBuf,
+    path: PathBuf,
+}
+
+impl ChapterMetadataFile {
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl Drop for ChapterMetadataFile {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.directory);
+    }
+}
+
+pub fn create_chapter_metadata_file(
+    chapters: Option<&[ExportChapter]>,
+    trim: &TrimSelection,
+    strip_metadata: bool,
+) -> Result<Option<ChapterMetadataFile>, AppError> {
+    let Some(chapters) = chapters.filter(|chapters| !strip_metadata && !chapters.is_empty()) else {
+        return Ok(None);
+    };
+    let mut contents = String::from(";FFMETADATA1\n");
+    for chapter in chapters {
+        let start = chapter.start_micros.max(trim.start_micros);
+        let end = chapter.end_micros.min(trim.end_micros);
+        if end <= start {
+            continue;
+        }
+        contents.push_str("[CHAPTER]\nTIMEBASE=1/1000000\n");
+        contents.push_str(&format!(
+            "START={}\nEND={}\n",
+            start - trim.start_micros,
+            end - trim.start_micros
+        ));
+        contents.push_str("title=");
+        contents.push_str(&escape_ffmetadata_value(&chapter.title));
+        contents.push('\n');
+    }
+
+    let directory =
+        std::env::temp_dir().join(format!("easytrim-chapters-{}", uuid::Uuid::new_v4()));
+    fs::create_dir(&directory)
+        .map_err(|_| AppError::internal("Chapter metadata could not be prepared."))?;
+    let path = directory.join("chapters.ffmeta");
+    let write_result = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)
+        .and_then(|mut file| file.write_all(contents.as_bytes()));
+    if write_result.is_err() {
+        let _ = fs::remove_dir_all(&directory);
+        return Err(AppError::internal(
+            "Chapter metadata could not be prepared.",
+        ));
+    }
+    Ok(Some(ChapterMetadataFile { directory, path }))
+}
+
+pub fn output_supports_chapters(output_path: &Path) -> bool {
+    output_path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            matches!(
+                extension.to_ascii_lowercase().as_str(),
+                "mkv" | "mp4" | "mov" | "webm"
+            )
+        })
+}
+
+fn escape_ffmetadata_value(value: &str) -> String {
+    let mut escaped = String::with_capacity(value.len());
+    for character in value.chars() {
+        if matches!(character, '\\' | '=' | ';' | '#') {
+            escaped.push('\\');
+        }
+        if character == '\n' {
+            escaped.push_str("\\n");
+        } else if character == '\r' {
+            escaped.push_str("\\r");
+        } else {
+            escaped.push(character);
+        }
+    }
+    escaped
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
@@ -257,6 +360,8 @@ pub struct OptimizedExportRequest {
     pub audio_metadata: Vec<AudioTrackMetadataSelection>,
     pub merge_audio: bool,
     #[serde(default)]
+    pub chapters: Option<Vec<ExportChapter>>,
+    #[serde(default)]
     pub strip_metadata: bool,
     pub rotation_degrees: u16,
     pub resolution: ResolutionSelection,
@@ -397,13 +502,25 @@ impl LoudnessNormalization {
     }
 }
 
+#[cfg(test)]
 pub fn build_fast_arguments(
     source: &MediaInfo,
     request: &FastExportRequest,
     source_path: &Path,
     output_path: &Path,
 ) -> Result<Vec<OsString>, AppError> {
+    build_fast_arguments_with_chapters(source, request, source_path, output_path, None)
+}
+
+pub fn build_fast_arguments_with_chapters(
+    source: &MediaInfo,
+    request: &FastExportRequest,
+    source_path: &Path,
+    output_path: &Path,
+    chapter_metadata_path: Option<&Path>,
+) -> Result<Vec<OsString>, AppError> {
     validate_common_request(source, &request.trim, &request.audio_tracks)?;
+    validate_export_chapters(source, request.chapters.as_deref())?;
     validate_audio_metadata_selection(source, &request.audio_tracks, &request.audio_metadata)?;
     validate_rotation(request.rotation_degrees)?;
     if request.rotation_degrees != 0 {
@@ -413,7 +530,8 @@ pub fn build_fast_arguments(
     }
     validate_output_container(source, request, output_path)?;
 
-    let mut arguments = common_input_arguments(source_path, &request.trim);
+    let mut arguments =
+        common_input_arguments_with_chapters(source_path, &request.trim, chapter_metadata_path);
     arguments.extend([
         OsString::from("-map"),
         OsString::from(format!("0:{}", source.video.stream_index)),
@@ -475,6 +593,12 @@ pub fn build_fast_arguments(
         request.merge_audio && request.audio_tracks.len() > 1,
     );
     append_metadata_stripping_arguments(&mut arguments, request.strip_metadata);
+    append_chapter_mapping_arguments(
+        &mut arguments,
+        request.chapters.as_deref(),
+        chapter_metadata_path,
+        request.strip_metadata,
+    );
     arguments.extend([
         OsString::from("-sn"),
         OsString::from("-dn"),
@@ -693,13 +817,25 @@ pub fn build_audio_arguments(
     Ok(arguments)
 }
 
+#[cfg(test)]
 pub fn build_optimized_arguments(
     source: &MediaInfo,
     request: &OptimizedExportRequest,
     source_path: &Path,
     output_path: &Path,
 ) -> Result<Vec<OsString>, AppError> {
+    build_optimized_arguments_with_chapters(source, request, source_path, output_path, None)
+}
+
+pub fn build_optimized_arguments_with_chapters(
+    source: &MediaInfo,
+    request: &OptimizedExportRequest,
+    source_path: &Path,
+    output_path: &Path,
+    chapter_metadata_path: Option<&Path>,
+) -> Result<Vec<OsString>, AppError> {
     validate_common_request(source, &request.trim, &request.audio_tracks)?;
+    validate_export_chapters(source, request.chapters.as_deref())?;
     validate_audio_metadata_selection(source, &request.audio_tracks, &request.audio_metadata)?;
     validate_resolution(&request.resolution)?;
     validate_crop(request.crop.as_ref())?;
@@ -712,7 +848,8 @@ pub fn build_optimized_arguments(
         ));
     }
 
-    let mut arguments = common_input_arguments(source_path, &request.trim);
+    let mut arguments =
+        common_input_arguments_with_chapters(source_path, &request.trim, chapter_metadata_path);
     arguments.extend([
         OsString::from("-map"),
         OsString::from(format!("0:{}", source.video.stream_index)),
@@ -791,6 +928,12 @@ pub fn build_optimized_arguments(
         request.merge_audio && request.audio_tracks.len() > 1,
     );
     append_metadata_stripping_arguments(&mut arguments, request.strip_metadata);
+    append_chapter_mapping_arguments(
+        &mut arguments,
+        request.chapters.as_deref(),
+        chapter_metadata_path,
+        request.strip_metadata,
+    );
     arguments.extend([
         OsString::from("-sn"),
         OsString::from("-dn"),
@@ -919,11 +1062,17 @@ pub fn optimized_command_preview(
     source: &MediaInfo,
     request: &OptimizedExportRequest,
 ) -> Result<String, AppError> {
-    let arguments = build_optimized_arguments(
+    let chapter_metadata_path = request
+        .chapters
+        .as_ref()
+        .filter(|chapters| !chapters.is_empty() && !request.strip_metadata)
+        .map(|_| Path::new("<chapters>"));
+    let arguments = build_optimized_arguments_with_chapters(
         source,
         request,
         Path::new("<source>"),
         Path::new("<output>"),
+        chapter_metadata_path,
     )?;
     Ok(command_preview(arguments))
 }
@@ -963,6 +1112,66 @@ fn common_input_arguments(source_path: &Path, trim: &TrimSelection) -> Vec<OsStr
         OsString::from("-t"),
         OsString::from(format_seconds_f64(duration)),
     ]
+}
+
+fn common_input_arguments_with_chapters(
+    source_path: &Path,
+    trim: &TrimSelection,
+    chapter_metadata_path: Option<&Path>,
+) -> Vec<OsString> {
+    let mut arguments = common_input_arguments(source_path, trim);
+    if let Some(chapter_metadata_path) = chapter_metadata_path {
+        let output_duration = arguments.pop().expect("common input duration exists");
+        let duration_option = arguments
+            .pop()
+            .expect("common input duration option exists");
+        arguments.extend([
+            OsString::from("-f"),
+            OsString::from("ffmetadata"),
+            OsString::from("-i"),
+            chapter_metadata_path.as_os_str().to_owned(),
+            duration_option,
+            output_duration,
+        ]);
+    }
+    arguments
+}
+
+fn append_chapter_mapping_arguments(
+    arguments: &mut Vec<OsString>,
+    chapters: Option<&[ExportChapter]>,
+    chapter_metadata_path: Option<&Path>,
+    strip_metadata: bool,
+) {
+    if strip_metadata {
+        return;
+    }
+    if chapters.is_some() && chapter_metadata_path.is_none() {
+        arguments.extend([OsString::from("-map_chapters"), OsString::from("-1")]);
+    } else if chapter_metadata_path.is_some() {
+        arguments.extend([OsString::from("-map_chapters"), OsString::from("1")]);
+    }
+}
+
+fn validate_export_chapters(
+    source: &MediaInfo,
+    chapters: Option<&[ExportChapter]>,
+) -> Result<(), AppError> {
+    if chapters.is_some_and(|chapters| {
+        chapters.iter().any(|chapter| {
+            chapter.start_micros < 0
+                || chapter.end_micros <= chapter.start_micros
+                || chapter.end_micros > source.duration_micros
+                || chapter.title.trim().is_empty()
+                || chapter.title.chars().count() > 256
+                || chapter.title.chars().any(char::is_control)
+        })
+    }) {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportSelectedExportRangeIsInvalid,
+        ));
+    }
+    Ok(())
 }
 
 fn append_metadata_stripping_arguments(arguments: &mut Vec<OsString>, strip_metadata: bool) {
@@ -1716,6 +1925,7 @@ mod tests {
             }],
             audio_metadata: Vec::new(),
             merge_audio: false,
+            chapters: None,
             rotation_degrees: 0,
             strip_metadata: false,
             resolution: ResolutionSelection {
@@ -1796,6 +2006,7 @@ mod tests {
             audio_tracks,
             audio_metadata: Vec::new(),
             merge_audio: false,
+            chapters: None,
             strip_metadata: false,
             rotation_degrees: 0,
         }
@@ -2391,6 +2602,7 @@ mod tests {
                             audio_tracks: vec![audio_track(1), audio_track(2)],
                             audio_metadata: audio_metadata.clone(),
                             merge_audio: false,
+                            chapters: None,
                             strip_metadata: false,
                             rotation_degrees: 0,
                         },
@@ -2488,6 +2700,7 @@ mod tests {
                 }],
                 audio_metadata: Vec::new(),
                 merge_audio: false,
+                chapters: None,
                 rotation_degrees: 0,
                 strip_metadata: false,
             },
@@ -2520,6 +2733,7 @@ mod tests {
                 audio_tracks: Vec::new(),
                 audio_metadata: Vec::new(),
                 merge_audio: false,
+                chapters: None,
                 rotation_degrees: 0,
                 strip_metadata: false,
             },
@@ -2548,6 +2762,7 @@ mod tests {
                 audio_tracks: Vec::new(),
                 audio_metadata: Vec::new(),
                 merge_audio: false,
+                chapters: None,
                 strip_metadata: true,
                 rotation_degrees: 0,
             },
@@ -2602,6 +2817,7 @@ mod tests {
                 audio_tracks: Vec::new(),
                 audio_metadata: Vec::new(),
                 merge_audio: false,
+                chapters: None,
                 rotation_degrees: 90,
                 strip_metadata: false,
             },
@@ -2645,6 +2861,7 @@ mod tests {
                 ],
                 audio_metadata: Vec::new(),
                 merge_audio: true,
+                chapters: None,
                 rotation_degrees: 0,
                 strip_metadata: false,
             },
@@ -2685,6 +2902,7 @@ mod tests {
                 }],
                 audio_metadata: Vec::new(),
                 merge_audio: false,
+                chapters: None,
                 rotation_degrees: 0,
                 strip_metadata: false,
             },
@@ -3269,6 +3487,7 @@ mod tests {
                 }],
                 audio_metadata: Vec::new(),
                 merge_audio: false,
+                chapters: None,
                 rotation_degrees: 0,
                 strip_metadata: false,
                 resolution: ResolutionSelection {
@@ -3719,6 +3938,7 @@ mod tests {
                 audio_tracks: vec![track.clone()],
                 audio_metadata: Vec::new(),
                 merge_audio: false,
+                chapters: None,
                 rotation_degrees: 0,
                 strip_metadata: false,
             },

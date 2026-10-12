@@ -2,8 +2,8 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import type { EditorChapter } from "@/domain/media";
 import { editorChaptersFromMedia } from "@/domain/editor-snapshot";
+import type { EditorChapter } from "@/domain/media";
 
 import type { RootState } from "../store";
 
@@ -53,4 +53,4 @@ const { chapterAdded, chapterDeleted, chapterUpdated } = chaptersSlice.actions;
 const chaptersReducer = chaptersSlice.reducer;
 const selectChapters = (state: RootState): EditorChapter[] => state.chapters.items;
 
-export { chapterAdded, chapterDeleted, chapterUpdated, chaptersReducer, selectChapters };
+export { chapterAdded, chapterDeleted, chaptersReducer, chapterUpdated, selectChapters };

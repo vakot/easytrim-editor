@@ -10,8 +10,7 @@ import { selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
 import { selectSceneMarkersEnabled } from "@/app/store/slices/editor-tools-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
-import { clampPlaybackMicros } from "@/domain/playback";
-import { formatPlaybackTime } from "@/domain/playback";
+import { clampPlaybackMicros, formatPlaybackTime } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent, type TrimRange } from "@/domain/trim";
 import { audioTrackColor } from "@/features/audio";
 import { useTimeline, useTimelineReadiness } from "@/features/timeline";
@@ -316,10 +315,11 @@ function TimelineChapterMarkers() {
           title: chapter.title,
           range: rangeLabel,
         });
+
         return (
           <button
             aria-label={label}
-            className="absolute top-0 z-3 size-2 -translate-x-1/2 rounded-b-sm bg-primary shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute top-0 z-3 h-2 w-3 -translate-x-1/2 rounded-t-sm bg-primary shadow-sm after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-x-4 after:border-t-4 after:border-x-transparent after:border-t-primary focus-visible:ring-2 focus-visible:ring-ring"
             key={chapter.id}
             onClick={(event) => {
               event.stopPropagation();

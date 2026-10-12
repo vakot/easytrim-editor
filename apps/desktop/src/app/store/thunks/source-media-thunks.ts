@@ -14,7 +14,6 @@ import {
   withdrawPendingExport,
 } from "@/app/store/integration/export-queue-runtime";
 import { getReplacementEditingInstance } from "@/app/store/lib/editing-instances";
-import { selectChapters } from "@/app/store/slices/chapters-slice";
 import {
   audioPreviewsLoading,
   audioPreviewsReady,
@@ -25,6 +24,7 @@ import {
   waveformsFailed,
   waveformsLoading,
 } from "@/app/store/slices/audio-slice";
+import { selectChapters } from "@/app/store/slices/chapters-slice";
 import {
   activeEditingInstanceChanged,
   editingInstanceClosed,

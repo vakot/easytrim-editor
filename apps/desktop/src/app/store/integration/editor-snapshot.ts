@@ -1,3 +1,4 @@
+import { selectChapters } from "@/app/store/slices/chapters-slice";
 import {
   selectCrop,
   selectFlipHorizontal,
@@ -5,7 +6,6 @@ import {
   selectRotationDegrees,
 } from "@/app/store/slices/crop-slice";
 import { selectActiveEditingInstance } from "@/app/store/slices/editing-instances-slice";
-import { selectChapters } from "@/app/store/slices/chapters-slice";
 import type { RootState } from "@/app/store/store";
 import { serializeAudioTrackSettings } from "@/domain/audio-processing";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";

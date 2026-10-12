@@ -34,7 +34,8 @@ pub fn cleanup_stale_media_artifacts() {
         let is_easytrim_artifact = name.starts_with("easytrim-preview-")
             || name.starts_with("easytrim-audio-preview-")
             || name.starts_with("easytrim-thumbnail-")
-            || name.starts_with("easytrim-waveform-");
+            || name.starts_with("easytrim-waveform-")
+            || name.starts_with("easytrim-chapters-");
         if !is_easytrim_artifact || !entry.file_type().is_ok_and(|file_type| file_type.is_dir()) {
             continue;
         }

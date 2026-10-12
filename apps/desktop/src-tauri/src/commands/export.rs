@@ -18,9 +18,10 @@ use crate::{
     error::{AppError, AppErrorMessageId},
     media::export::{
         AudioExportRequest, FastExportRequest, GifExportRequest, OptimizedExportRequest,
-        build_audio_arguments, build_fast_arguments, build_gif_arguments,
-        build_optimized_arguments, fast_export_output_extensions, gif_command_preview,
-        optimized_command_preview,
+        build_audio_arguments, build_fast_arguments_with_chapters, build_gif_arguments,
+        build_optimized_arguments_with_chapters, create_chapter_metadata_file,
+        fast_export_output_extensions, gif_command_preview, optimized_command_preview,
+        output_supports_chapters,
     },
     media::loudness::{LoudnessAnalysis, LoudnessAnalysisRequest, analyze_loudness},
     media::probe::MediaInfo,
@@ -304,7 +305,22 @@ pub async fn export_fast(
         })?;
         let output_path = state.resolve_output(&output_id)?;
         let display_name = output_display_name(&output_path)?;
-        let arguments = build_fast_arguments(&media, &request, &source.path, &output_path)?;
+        let chapter_metadata = if output_supports_chapters(&output_path) {
+            create_chapter_metadata_file(
+                request.chapters.as_deref(),
+                &request.trim,
+                request.strip_metadata,
+            )?
+        } else {
+            None
+        };
+        let arguments = build_fast_arguments_with_chapters(
+            &media,
+            &request,
+            &source.path,
+            &output_path,
+            chapter_metadata.as_ref().map(|metadata| metadata.path()),
+        )?;
         run_export(
             state.clone(),
             Arc::clone(&diagnostics),
@@ -342,7 +358,22 @@ pub async fn render_optimized(
         })?;
         let output_path = state.resolve_output(&output_id)?;
         let display_name = output_display_name(&output_path)?;
-        let arguments = build_optimized_arguments(&media, &request, &source.path, &output_path)?;
+        let chapter_metadata = if output_supports_chapters(&output_path) {
+            create_chapter_metadata_file(
+                request.chapters.as_deref(),
+                &request.trim,
+                request.strip_metadata,
+            )?
+        } else {
+            None
+        };
+        let arguments = build_optimized_arguments_with_chapters(
+            &media,
+            &request,
+            &source.path,
+            &output_path,
+            chapter_metadata.as_ref().map(|metadata| metadata.path()),
+        )?;
         run_export(
             state.clone(),
             Arc::clone(&diagnostics),

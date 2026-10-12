@@ -20,8 +20,8 @@ import { cn } from "@/lib/class-names.utils";
 
 import { useSceneDetection } from "../hooks/useSceneDetection";
 
-import { StereoAudioMeter } from "./StereoAudioMeter";
 import { ChapterManagerDialog } from "./ChapterManagerDialog";
+import { StereoAudioMeter } from "./StereoAudioMeter";
 
 function TimelineToolbar() {
   const { t } = useTranslation();

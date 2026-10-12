@@ -12,8 +12,8 @@ interface EditorSnapshot {
     mergeAudio: boolean;
     tracks: AudioTrackSettings[];
   };
-  crop: CropRect | null;
   chapters?: EditorChapter[];
+  crop: CropRect | null;
   flipHorizontal?: boolean;
   flipVertical?: boolean;
   rotation?: RotationDegrees;
@@ -24,8 +24,8 @@ interface EditorSnapshot {
 
 function createEditorSnapshot(input: {
   audioTracks: EditorSnapshot["audio"]["tracks"];
-  crop: CropRect | null;
   chapters?: EditorChapter[];
+  crop: CropRect | null;
   flipHorizontal?: boolean;
   flipVertical?: boolean;
   mergeAudio: boolean;
@@ -55,12 +55,27 @@ function createEditorSnapshot(input: {
 }
 
 function editorChaptersFromMedia(media: MediaInfo): EditorChapter[] {
-  return media.chapters.map((chapter, index) => ({
-    endMicros: chapter.endMicros,
-    id: `source-${chapter.id}`,
-    startMicros: chapter.startMicros,
-    title: chapter.title?.trim() || `Chapter ${index + 1}`,
-  }));
+  return media.chapters.flatMap((chapter, index) => {
+    const startMicros = Math.max(0, chapter.startMicros);
+    const endMicros = Math.min(media.durationMicros, chapter.endMicros);
+    if (endMicros <= startMicros) return [];
+    const title = Array.from(chapter.title?.trim() || `Chapter ${index + 1}`)
+      .filter((character) => {
+        const codePoint = character.codePointAt(0) ?? 0;
+        return codePoint > 0x1f && (codePoint < 0x7f || codePoint > 0x9f);
+      })
+      .join("")
+      .slice(0, 256);
+
+    return [
+      {
+        endMicros,
+        id: `source-${chapter.id}`,
+        startMicros,
+        title: title || `Chapter ${index + 1}`,
+      },
+    ];
+  });
 }
 
 function resolveEditorSnapshotTrim(
