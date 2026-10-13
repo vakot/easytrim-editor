@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { FrameRate } from "@/domain/media";
+import { frameToMicros } from "@/domain/media-time";
+import { microsToFrame } from "@/features/playback";
 // This test composes Preview's seek scheduler with Playback's controller.
 // eslint-disable-next-line no-restricted-imports
 import { createPreviewSeekScheduler } from "@/features/preview/lib/preview-seek-scheduler";
@@ -32,12 +35,13 @@ function createDeferred<T>() {
   return { promise, resolve };
 }
 
-function createNativePreviewHarness(durationMicros = 2_000_000) {
+function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput = false) {
   const video = document.createElement("video");
   let currentTime = 0;
   let readyState: number = HTMLMediaElement.HAVE_CURRENT_DATA;
   let seeking = false;
   let paused = true;
+  let audioPosition: number | null = null;
   const frameCallbacks = new Set<(timestamp: number, mediaTime: number) => void>();
   const observerCallbacks = new Set<
     Parameters<PlaybackDriver["video"]["registerMediaObserver"]>[0]
@@ -74,8 +78,8 @@ function createNativePreviewHarness(durationMicros = 2_000_000) {
   const scheduler = createPreviewSeekScheduler(video);
   const driver: PlaybackDriver = {
     audio: {
-      getCurrentTimeSeconds: () => null,
-      hasActiveOutput: false,
+      getCurrentTimeSeconds: () => audioPosition,
+      hasActiveOutput: hasAudioOutput,
       isReady: true,
       pause: vi.fn(),
       prepareAt: vi.fn(async () => undefined),
@@ -128,6 +132,9 @@ function createNativePreviewHarness(durationMicros = 2_000_000) {
       currentTime = seconds;
       for (const observer of observerCallbacks) observer.onTimeUpdate(seconds);
     },
+    setAudioPosition(seconds: number | null) {
+      audioPosition = seconds;
+    },
     flushAnimationFrames: createAnimationFrameQueue(),
     playNextFrame(mediaTime: number) {
       const callbacks = [...frameCallbacks];
@@ -142,6 +149,9 @@ function createNativePreviewHarness(durationMicros = 2_000_000) {
       paused = true;
       video.dispatchEvent(new Event("pause"));
       for (const observer of observerCallbacks) observer.onPause(true);
+    },
+    notifyNativeEnded() {
+      for (const observer of observerCallbacks) observer.onEnded();
     },
     dispose() {
       controller.dispose();
@@ -209,56 +219,96 @@ describe("native preview playback integration", () => {
     preview.dispose();
   });
 
-  it("resumes repeatedly near EOF when currentTime advances beyond the final presented frame", async () => {
-    const durationMicros = 500_000;
-    const durationSeconds = durationMicros / 1_000_000;
-    const lastAudioPosition = durationSeconds - 1 / 48_000;
-    const preview = createNativePreviewHarness(durationMicros);
-    let audioPosition = 0;
-    vi.spyOn(preview.driver.audio, "getCurrentTimeSeconds").mockImplementation(() => audioPosition);
-    vi.spyOn(preview.driver.audio, "startAlignedWithVideoAt").mockImplementation(
-      async (videoPosition) => {
-        audioPosition = Math.min(videoPosition + 0.15, lastAudioPosition);
-        return audioPosition;
-      },
-    );
+  it.each([
+    ["30 fps", { numerator: 30, denominator: 1 }],
+    ["60 fps", { numerator: 60, denominator: 1 }],
+    ["24000/1001 fps", { numerator: 24_000, denominator: 1_001 }],
+    ["30000/1001 fps", { numerator: 30_000, denominator: 1_001 }],
+  ] as [string, FrameRate][])(
+    "preserves the final presented frame and finalizes EOF at native completion for %s with and without audio",
+    async (_label, frameRate) => {
+      for (const hasAudioOutput of [false, true]) {
+        const frameCount = 3;
+        const durationMicros = Math.round(
+          (frameCount * 1_000_000 * frameRate.denominator) / frameRate.numerator,
+        );
 
-    preview.controller.play();
-    await vi.waitFor(() => expect(preview.driver.audio.startAlignedWithVideoAt).toHaveBeenCalled());
-    await vi.waitFor(() => expect(preview.pendingPlaybackFrameCount).toBeGreaterThan(1));
-    preview.advanceMediaTime(0.15);
-    await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
+        const durationSeconds = durationMicros / 1_000_000;
+        const lastAudioPosition = durationSeconds - 1 / 48_000;
+        const lastFrameMicros = frameToMicros(frameCount - 1, frameRate);
+        const lastFrameSeconds = lastFrameMicros / 1_000_000;
+        const preview = createNativePreviewHarness(durationMicros, hasAudioOutput);
 
-    audioPosition = 0.35;
-    preview.advanceMediaTime(0.35);
-    preview.playNextFrame(0.35);
-    preview.controller.pause();
-    expect(preview.controller.getSnapshot().positionMicros).toBe(350_000);
+        if (hasAudioOutput) {
+          vi.spyOn(preview.driver.audio, "startAlignedWithVideoAt").mockImplementation(
+            async (videoPosition) => {
+              const audioStart = Math.min(videoPosition + 0.15, lastAudioPosition);
+              preview.setAudioPosition(audioStart);
+              return audioStart;
+            },
+          );
+        }
 
-    preview.controller.play();
-    await vi.waitFor(() => expect(preview.driver.audio.prepareAt).toHaveBeenLastCalledWith(0.35));
-    await vi.waitFor(() =>
-      expect(preview.driver.audio.startAlignedWithVideoAt).toHaveBeenCalledTimes(2),
-    );
-    preview.playNextFrame(0.466_667);
-    expect(preview.controller.getSnapshot().isPlaying).toBe(false);
+        preview.controller.play();
+        await vi.waitFor(() => expect(preview.video.play).toHaveBeenCalled());
+        if (hasAudioOutput) {
+          await vi.waitFor(() =>
+            expect(preview.driver.audio.startAlignedWithVideoAt).toHaveBeenCalled(),
+          );
+          preview.advanceMediaTime(Math.min(0.15, lastAudioPosition));
+        }
+        preview.playNextFrame(lastFrameSeconds);
+        await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
 
-    preview.advanceMediaTime(lastAudioPosition);
-    await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
-    expect(preview.controller.getSnapshot().positionMicros).toBeCloseTo(
-      lastAudioPosition * 1_000_000,
-    );
+        if (hasAudioOutput) preview.setAudioPosition(durationSeconds);
+        preview.advanceMediaTime(durationSeconds);
+        preview.playNextFrame(lastFrameSeconds);
 
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      preview.controller.pause();
-      preview.controller.play();
-      await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
-    }
+        expect(preview.controller.getSnapshot().isPlaying).toBe(true);
+        expect(
+          microsToFrame(preview.controller.getSnapshot().positionMicros, frameRate, frameCount),
+        ).toBe(frameCount - 1);
+        expect(preview.controller.getSnapshot().positionMicros).toBeLessThan(durationMicros);
 
-    expect(preview.driver.audio.prepareAt).toHaveBeenLastCalledWith(lastAudioPosition);
-    expect(preview.video.currentTime).toBe(lastAudioPosition);
-    preview.dispose();
-  });
+        preview.controller.pause();
+        expect(preview.controller.getSnapshot()).toMatchObject({
+          isPlaying: false,
+          positionMicros: lastFrameMicros,
+        });
+
+        preview.controller.play();
+        await vi.waitFor(() =>
+          expect(preview.driver.audio.prepareAt).toHaveBeenLastCalledWith(lastFrameSeconds),
+        );
+        preview.finishSeek();
+        if (hasAudioOutput) {
+          await vi.waitFor(() =>
+            expect(preview.driver.audio.startAlignedWithVideoAt).toHaveBeenCalledTimes(2),
+          );
+          preview.advanceMediaTime(lastAudioPosition);
+          preview.playNextFrame(lastFrameSeconds);
+        }
+        await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
+        preview.notifyNativeEnded();
+
+        expect(preview.controller.getSnapshot()).toEqual({
+          durationMicros,
+          isPlaying: false,
+          positionMicros: durationMicros,
+        });
+
+        preview.controller.play();
+        await vi.waitFor(() => expect(preview.driver.audio.prepareAt).toHaveBeenLastCalledWith(0));
+        preview.flushAnimationFrames();
+        preview.finishSeek();
+        await vi.waitFor(() => {
+          expect(preview.video.currentTime).toBe(0);
+          expect(preview.video.play).toHaveBeenCalledTimes(3);
+        });
+        preview.dispose();
+      }
+    },
+  );
 
   it.each([0, 1, 2])("starts from frame %i without offsetting its timestamp", async (frame) => {
     const preview = createNativePreviewHarness();

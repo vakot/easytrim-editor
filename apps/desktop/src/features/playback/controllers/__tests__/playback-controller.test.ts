@@ -302,7 +302,7 @@ describe("playback controller", () => {
     expect(playback.driver.audio.pause).toHaveBeenCalled();
   });
 
-  it("freezes the audio master position on pause and ignores stale video updates", async () => {
+  it("freezes the last published playback position on pause and ignores stale video updates", async () => {
     const playback = createPlaybackDriver();
     const { driver } = playback;
     let audioPosition = 1.4;
@@ -324,7 +324,7 @@ describe("playback controller", () => {
 
     expect(controller.getSnapshot()).toMatchObject({
       isPlaying: false,
-      positionMicros: 1_520_000,
+      positionMicros: 1_400_000,
     });
     expect(vi.mocked(driver.audio.pause).mock.invocationCallOrder.at(-1)).toBeLessThan(
       vi.mocked(driver.video.pause).mock.invocationCallOrder.at(-1) ?? Infinity,

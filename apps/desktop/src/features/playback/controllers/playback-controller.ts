@@ -110,8 +110,7 @@ class PlaybackController {
     this.unregisterMediaObserver = video.registerMediaObserver({
       onEnded: () => {
         if (this.mediaSessionId !== mediaSessionId) return;
-        this.pause();
-        this.setPosition(this.snapshot.durationMicros);
+        this.finishAtEndOfMedia();
       },
       onPause: (isPaused) => {
         if (this.mediaSessionId !== mediaSessionId) return;
@@ -129,15 +128,17 @@ class PlaybackController {
       onPlaybackError: () => {
         if (this.mediaSessionId === mediaSessionId) this.pause();
       },
-      onTimeUpdate: (seconds) => {
+      onTimeUpdate: () => {
         if (this.mediaSessionId !== mediaSessionId) return;
         if (this.lifecycle !== "starting") return;
-        this.publishMediaTime(seconds);
         const video = this.driver?.video;
+        const currentTimeSeconds = video?.getCurrentTimeSeconds();
         if (
           video &&
           this.startupTargetSeconds !== null &&
-          seconds >= this.startupTargetSeconds &&
+          currentTimeSeconds !== null &&
+          currentTimeSeconds !== undefined &&
+          currentTimeSeconds >= this.startupTargetSeconds &&
           !video.isSeekPending()
         ) {
           this.resolveStartupFrameWait?.(true);
@@ -222,31 +223,14 @@ class PlaybackController {
 
   pause = () => {
     const driver = this.driver;
-    const previousLifecycle = this.lifecycle;
-    const shouldCapturePosition = previousLifecycle !== "paused";
-    const audioClockWasActive =
-      previousLifecycle === "playing" &&
-      driver !== null &&
-      driver.audio.getCurrentTimeSeconds() !== null;
 
     this.seekGeneration += 1;
     this.cancelStartup();
     this.lifecycle = "paused";
     this.stopPlaybackClock();
 
-    if (audioClockWasActive && driver) {
-      driver.audio.pause();
-      const audioPosition = driver.audio.getCurrentTimeSeconds();
-      if (audioPosition !== null) this.setPosition(audioPosition * MICROS_PER_SECOND);
-      driver.video.pause();
-    } else {
-      driver?.video.pause();
-      const videoPosition = driver?.video.getCurrentTimeSeconds();
-      if (shouldCapturePosition && videoPosition !== null && videoPosition !== undefined) {
-        this.setPosition(videoPosition * MICROS_PER_SECOND);
-      }
-      driver?.audio.pause();
-    }
+    driver?.audio.pause();
+    driver?.video.pause();
 
     this.setIsPlaying(false);
   };
@@ -309,6 +293,20 @@ class PlaybackController {
     this.lifecycle = "playing";
     this.mediaStartRequested = false;
     this.setIsPlaying(true);
+  }
+
+  private finishAtEndOfMedia() {
+    this.seekGeneration += 1;
+    this.cancelStartup();
+    this.lifecycle = "paused";
+    this.stopPlaybackClock();
+    this.driver?.audio.pause();
+    this.driver?.video.pause();
+    this.update({
+      ...this.snapshot,
+      isPlaying: false,
+      positionMicros: this.snapshot.durationMicros,
+    });
   }
 
   private cancelStartup() {
@@ -393,18 +391,15 @@ class PlaybackController {
       const driver = this.driver;
       if (!driver || this.mediaSessionId === null || this.mediaSessionId === undefined) return;
       const audioClockSeconds = driver.audio.getCurrentTimeSeconds();
-      const clockSeconds = this.lifecycle === "starting" ? seconds : (audioClockSeconds ?? seconds);
+      const clockSeconds =
+        this.lifecycle === "starting" || audioClockSeconds === null
+          ? seconds
+          : Math.min(audioClockSeconds, seconds);
+
       if (!driver.video.isSeekPending()) {
         this.publishMediaTime(clockSeconds);
         if (audioClockSeconds !== null && this.lifecycle === "playing") {
           this.syncVideoToAudio(audioClockSeconds);
-        }
-        if (
-          this.lifecycle === "playing" &&
-          this.snapshot.positionMicros >= this.snapshot.durationMicros
-        ) {
-          this.pause();
-          return;
         }
       }
       this.playbackFrame = driver.video.requestPlaybackFrame(tick);
