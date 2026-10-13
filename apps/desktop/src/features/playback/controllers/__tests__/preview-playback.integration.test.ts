@@ -70,6 +70,7 @@ function createNativePreviewHarness() {
       isReady: true,
       pause: vi.fn(),
       prepareAt: vi.fn(async () => undefined),
+      registerPlaybackErrorObserver: () => () => undefined,
       seek: vi.fn(),
       startAlignedWithVideoAt: vi.fn(async (seconds: number) => seconds),
     },

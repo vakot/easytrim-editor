@@ -192,6 +192,111 @@ describe("WebAudioEngine", () => {
     engine.close();
   });
 
+  it("reports a subsequent decode failure after successful audio startup", async () => {
+    const { context, sources } = createContext();
+    const onPlaybackError = vi.fn();
+    let rejectNextBatch: ((error: Error) => void) | undefined;
+    const decode = vi.fn(
+      async (_selection: AudioTrackSelection, startMicros: number, durationMicros: number) => {
+        if (startMicros > 0) {
+          return new Promise<ReturnType<typeof chunk>>((_resolve, reject) => {
+            rejectNextBatch = reject;
+          });
+        }
+        return chunk(durationMicros);
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), onPlaybackError);
+    engine.setDuration(8_000_000);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+    ]);
+
+    await engine.startAt(0);
+
+    expect(sources).toHaveLength(1);
+    await vi.waitFor(() => expect(rejectNextBatch).toBeDefined());
+    expect(onPlaybackError).not.toHaveBeenCalled();
+    rejectNextBatch?.(new Error("Subsequent PCM batch failed."));
+    await vi.waitFor(() => expect(onPlaybackError).toHaveBeenCalledOnce());
+    expect(sources[0]?.stop).toHaveBeenCalledOnce();
+    expect(engine.currentTimeSeconds).toBe(0);
+    engine.close();
+  });
+
+  it("ignores a subsequent batch failure after a seek supersedes its generation", async () => {
+    const { context } = createContext();
+    const onPlaybackError = vi.fn();
+    let rejectSupersededBatch: ((error: Error) => void) | undefined;
+    const decode = vi.fn(
+      (_selection: AudioTrackSelection, startMicros: number, durationMicros: number) => {
+        if (startMicros === 2_000_000) {
+          return new Promise<ReturnType<typeof chunk>>((_resolve, reject) => {
+            rejectSupersededBatch = reject;
+          });
+        }
+        return Promise.resolve(chunk(durationMicros));
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), onPlaybackError);
+    engine.setDuration(8_000_000);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+    ]);
+
+    await engine.startAt(0);
+    await vi.waitFor(() => expect(rejectSupersededBatch).toBeDefined());
+    engine.seek(1);
+    await vi.waitFor(() =>
+      expect(decode).toHaveBeenCalledWith(
+        selection(1),
+        1_000_000,
+        2_000_000,
+        expect.any(AbortSignal),
+      ),
+    );
+    rejectSupersededBatch?.(new Error("Superseded PCM batch failed."));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(onPlaybackError).not.toHaveBeenCalled();
+    expect(engine.currentTimeSeconds).toBeCloseTo(1);
+    engine.close();
+  });
+
+  it("ignores a pending batch failure after the audio session is disposed", async () => {
+    const { context } = createContext();
+    const onPlaybackError = vi.fn();
+    let rejectPendingBatch: ((error: Error) => void) | undefined;
+    const decode = vi.fn(
+      (_selection: AudioTrackSelection, startMicros: number, durationMicros: number) => {
+        if (startMicros === 2_000_000) {
+          return new Promise<ReturnType<typeof chunk>>((_resolve, reject) => {
+            rejectPendingBatch = reject;
+          });
+        }
+        return Promise.resolve(chunk(durationMicros));
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), onPlaybackError);
+    engine.setDuration(8_000_000);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+    ]);
+
+    await engine.startAt(0);
+    await vi.waitFor(() => expect(rejectPendingBatch).toBeDefined());
+    engine.close();
+    rejectPendingBatch?.(new Error("Disposed PCM batch failed."));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(onPlaybackError).not.toHaveBeenCalled();
+  });
+
   it("schedules every active track against the same AudioContext time", async () => {
     const { context, filters, sources } = createContext();
     const decode = vi.fn(

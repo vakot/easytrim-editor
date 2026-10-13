@@ -4,6 +4,7 @@ import { PlaybackController, type PlaybackDriver } from "../playback-controller"
 
 function createPlaybackDriver() {
   let observer: Parameters<PlaybackDriver["video"]["registerMediaObserver"]>[0] | null = null;
+  let audioPlaybackErrorObserver: (() => void) | null = null;
   let playbackFrameCallback: Parameters<PlaybackDriver["video"]["requestPlaybackFrame"]>[0] | null =
     null;
 
@@ -14,6 +15,12 @@ function createPlaybackDriver() {
       isReady: true,
       pause: vi.fn(),
       prepareAt: vi.fn(async () => undefined),
+      registerPlaybackErrorObserver: vi.fn((nextObserver) => {
+        audioPlaybackErrorObserver = nextObserver;
+        return () => {
+          if (audioPlaybackErrorObserver === nextObserver) audioPlaybackErrorObserver = null;
+        };
+      }),
       seek: vi.fn(),
       startAlignedWithVideoAt: vi.fn(async (seconds: number) => seconds + 0.15),
     },
@@ -43,6 +50,10 @@ function createPlaybackDriver() {
     get observer() {
       if (!observer) throw new Error("Playback observer is not connected.");
       return observer;
+    },
+    notifyAudioPlaybackError() {
+      if (!audioPlaybackErrorObserver) throw new Error("Audio error observer is not connected.");
+      audioPlaybackErrorObserver();
     },
     get playbackFrameCallback() {
       if (!playbackFrameCallback) throw new Error("Playback clock is not running.");
@@ -189,6 +200,21 @@ describe("playback controller", () => {
     expect(driver.video.pause).toHaveBeenCalled();
   });
 
+  it("pauses both transports when active audio reports a later playback failure", async () => {
+    const playback = createPlaybackDriver();
+    const controller = createPlaybackController(playback.driver, 2_000_000);
+
+    controller.play();
+    await vi.waitFor(() => expect(controller.getSnapshot().isPlaying).toBe(true));
+
+    playback.notifyAudioPlaybackError();
+
+    expect(controller.getSnapshot().isPlaying).toBe(false);
+    expect(playback.driver.audio.pause).toHaveBeenCalled();
+    expect(playback.driver.video.pause).toHaveBeenCalled();
+    controller.dispose();
+  });
+
   it("waits for native video startup before scheduling audio against its future position", async () => {
     const playback = createPlaybackDriver();
     const startVideo = createDeferred<void>();
@@ -224,6 +250,9 @@ describe("playback controller", () => {
       const durationSeconds = durationMicros / 1_000_000;
       vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(startSeconds);
       vi.mocked(playback.driver.audio.getCurrentTimeSeconds).mockReturnValue(startSeconds);
+      vi.mocked(playback.driver.audio.startAlignedWithVideoAt).mockImplementation(async (seconds) =>
+        Math.min(seconds + 0.15, durationSeconds - 1 / 48_000),
+      );
       const controller = createPlaybackController(playback.driver, durationMicros);
 
       controller.seek(positionMicros);

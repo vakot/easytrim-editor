@@ -23,6 +23,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   const audioTracks = useAppSelector(selectAudioTracks);
   const playbackVolumePercent = useAppSelector(selectPlaybackVolumePercent);
   const sessionRef = useRef<AudioPlaybackSession | null>(null);
+  const playbackErrorObserverRef = useRef<(() => void) | null>(null);
 
   const enabledTracks = useMemo(() => audioTracks.filter((track) => track.enabled), [audioTracks]);
   const webAudioTracks: WebAudioTrack[] = useMemo(
@@ -69,9 +70,13 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
     if (!sourcePath || !media || typeof AudioContext === "undefined") return;
     const session = new AudioPlaybackSession(sourcePath);
     sessionRef.current = session;
+    const unregisterPlaybackErrorObserver = session.registerPlaybackErrorObserver(() => {
+      playbackErrorObserverRef.current?.();
+    });
 
     return () => {
       if (sessionRef.current === session) sessionRef.current = null;
+      unregisterPlaybackErrorObserver();
       session.close();
     };
   }, [activeInstanceId, media, sourcePath]);
@@ -115,6 +120,13 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
     [],
   );
 
+  const registerPlaybackErrorObserver = useCallback((observer: () => void) => {
+    playbackErrorObserverRef.current = observer;
+    return () => {
+      if (playbackErrorObserverRef.current === observer) playbackErrorObserverRef.current = null;
+    };
+  }, []);
+
   const getCurrentTimeSeconds = useCallback(() => {
     const session = sessionRef.current;
     return session?.hasTracks ? session.currentTimeSeconds : null;
@@ -136,6 +148,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       isReady,
       pause,
       prepareAt,
+      registerPlaybackErrorObserver,
       seek,
       startAlignedWithVideoAt,
     }),
@@ -145,6 +158,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       isReady,
       pause,
       prepareAt,
+      registerPlaybackErrorObserver,
       seek,
       startAlignedWithVideoAt,
     ],

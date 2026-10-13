@@ -90,6 +90,7 @@ class WebAudioEngine {
     private readonly context: AudioContext,
     private readonly decodeChunk: DecodeChunk,
     private readonly onEnded: () => void,
+    private readonly onPlaybackError: () => void = () => undefined,
   ) {
     this.audioMix = context.createGain();
     const graph = connectPlaybackAudioGraph(context, this.audioMix);
@@ -613,7 +614,9 @@ class WebAudioEngine {
         return;
       }
     } catch {
-      if (generation === this.generation) this.pause();
+      if (generation !== this.generation) return;
+      this.pause();
+      this.onPlaybackError();
       return;
     } finally {
       if (generation === this.generation) this.batchInFlight = false;

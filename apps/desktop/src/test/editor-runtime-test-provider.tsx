@@ -50,6 +50,7 @@ function EditorRuntimeTestProvider({
           isReady: false,
           pause: noOperation,
           prepareAt: async () => undefined,
+          registerPlaybackErrorObserver: () => noOperation,
           seek: noOperation,
           startAlignedWithVideoAt: async (seconds: number) => seconds + 0.15,
         },
@@ -76,6 +77,7 @@ function EditorRuntimeTestProvider({
     isReady: false,
     pause: noOperation,
     prepareAt: async () => undefined,
+    registerPlaybackErrorObserver: () => noOperation,
     seek: noOperation,
     startAlignedWithVideoAt: async (seconds: number) => seconds + 0.15,
   } satisfies AudioPlaybackAdapter;

@@ -6,6 +6,7 @@ class AudioPlaybackSession {
   private readonly context: AudioContext;
   private readonly engine: WebAudioEngine;
   private closed = false;
+  private playbackErrorObserver: (() => void) | null = null;
 
   constructor(sourcePath: string) {
     this.context = new AudioContext();
@@ -14,6 +15,7 @@ class AudioPlaybackSession {
       (selection, startMicros, chunkDurationMicros, signal) =>
         decodeAudioPlaybackChunk(sourcePath, selection, startMicros, chunkDurationMicros, signal),
       () => undefined,
+      () => this.playbackErrorObserver?.(),
     );
   }
 
@@ -59,6 +61,13 @@ class AudioPlaybackSession {
 
   startAlignedWithVideoAt(videoPositionSeconds: number) {
     return this.engine.startAlignedWithVideoAt(videoPositionSeconds);
+  }
+
+  registerPlaybackErrorObserver(observer: () => void) {
+    this.playbackErrorObserver = observer;
+    return () => {
+      if (this.playbackErrorObserver === observer) this.playbackErrorObserver = null;
+    };
   }
 
   seek(seconds: number) {

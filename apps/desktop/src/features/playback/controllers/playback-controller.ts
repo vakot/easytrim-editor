@@ -19,6 +19,7 @@ class PlaybackController {
   private readonly listeners = new Set<() => void>();
   private driver: PlaybackDriver | null = null;
   private unregisterMediaObserver: (() => void) | null = null;
+  private unregisterAudioPlaybackErrorObserver: (() => void) | null = null;
   private playbackFrame: ReturnType<PreviewVideoAdapter["requestPlaybackFrame"]> = null;
   private startupFrame: ReturnType<PreviewVideoAdapter["requestPlaybackFrame"]> = null;
   private resolveStartupFrameWait: (() => void) | null = null;
@@ -43,17 +44,28 @@ class PlaybackController {
     const videoObserverChanged =
       this.driver?.video.registerMediaObserver !== driver.video.registerMediaObserver;
 
+    const audioErrorObserverChanged =
+      this.driver?.audio.registerPlaybackErrorObserver !==
+      driver.audio.registerPlaybackErrorObserver;
+
     if (sessionChanged) this.detachSession();
 
     if (!sessionChanged && videoObserverChanged) {
       this.unregisterMediaObserver?.();
       this.unregisterMediaObserver = null;
     }
+    if (!sessionChanged && audioErrorObserverChanged) {
+      this.unregisterAudioPlaybackErrorObserver?.();
+      this.unregisterAudioPlaybackErrorObserver = null;
+    }
 
     this.mediaSessionId = mediaSessionId;
     this.driver = driver;
     if (mediaSessionId !== null) {
       if (sessionChanged || videoObserverChanged) this.registerVideoObserver(driver.video);
+      if (sessionChanged || audioErrorObserverChanged) {
+        this.registerAudioPlaybackErrorObserver(driver.audio);
+      }
     }
 
     const nextSnapshot = {
@@ -128,12 +140,27 @@ class PlaybackController {
     });
   }
 
+  private registerAudioPlaybackErrorObserver(audio: AudioPlaybackAdapter) {
+    const mediaSessionId = this.mediaSessionId;
+    this.unregisterAudioPlaybackErrorObserver = audio.registerPlaybackErrorObserver(() => {
+      if (
+        this.mediaSessionId !== mediaSessionId ||
+        (this.lifecycle !== "playing" && this.lifecycle !== "starting")
+      ) {
+        return;
+      }
+      this.pause();
+    });
+  }
+
   private detachSession() {
     this.cancelStartup();
     this.lifecycle = "paused";
     this.stopPlaybackClock();
     this.unregisterMediaObserver?.();
     this.unregisterMediaObserver = null;
+    this.unregisterAudioPlaybackErrorObserver?.();
+    this.unregisterAudioPlaybackErrorObserver = null;
     this.driver?.video.pause();
     this.driver?.audio.pause();
   }

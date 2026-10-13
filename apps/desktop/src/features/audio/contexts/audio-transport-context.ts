@@ -6,6 +6,7 @@ interface AudioPlaybackAdapter {
   isReady: boolean;
   pause: () => void;
   prepareAt: (seconds: number) => Promise<void>;
+  registerPlaybackErrorObserver: (observer: () => void) => () => void;
   seek: (seconds: number) => void;
   startAlignedWithVideoAt: (videoPositionSeconds: number) => Promise<number>;
 }
