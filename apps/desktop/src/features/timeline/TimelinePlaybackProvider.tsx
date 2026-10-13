@@ -48,8 +48,28 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
 
   const frameRateForConversion = frameRate ?? DEFAULT_FRAME_RATE;
 
-  const [currentFrame, setCurrentFrameState] = useState(0);
-  const [isPlaying, setIsPlayingState] = useState(false);
+  const sessionKey = JSON.stringify([activeInstanceId, source?.sourcePath ?? null, previewKey]);
+  const [playbackState, setPlaybackState] = useState(() => ({
+    sessionKey,
+    currentFrame: 0,
+    isPlaying: false,
+  }));
+
+  if (playbackState.sessionKey !== sessionKey) {
+    setPlaybackState({ sessionKey, currentFrame: 0, isPlaying: false });
+  }
+
+  const { currentFrame, isPlaying } = playbackState;
+
+  const setCurrentFrameState = useCallback(
+    (frame: number) => setPlaybackState((state) => ({ ...state, currentFrame: frame })),
+    [],
+  );
+
+  const setIsPlayingState = useCallback(
+    (playing: boolean) => setPlaybackState((state) => ({ ...state, isPlaying: playing })),
+    [],
+  );
 
   const clampFrame = useCallback(
     (frame: number) =>
@@ -62,7 +82,7 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
       const nextFrame = clampFrame(frame);
       setCurrentFrameState(nextFrame);
     },
-    [clampFrame],
+    [clampFrame, setCurrentFrameState],
   );
 
   const setCurrentFrame = useCallback(
@@ -81,7 +101,7 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
     pauseMedia();
     pauseAudio();
     setIsPlayingState(false);
-  }, [pauseAudio, pauseMedia]);
+  }, [pauseAudio, pauseMedia, setIsPlayingState]);
 
   const setIsPlaying = useCallback(
     (shouldPlay: boolean) => {
@@ -113,9 +133,9 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    publishFrame(0);
-    pause();
-  }, [activeInstanceId, pause, publishFrame, previewKey, source?.sourcePath]);
+    pauseMedia();
+    pauseAudio();
+  }, [pauseAudio, pauseMedia, sessionKey]);
 
   useEffect(() => {
     setPlaybackRate(1);
@@ -146,6 +166,7 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
       pauseAudio,
       publishFrame,
       registerMediaObserver,
+      setIsPlayingState,
       syncAudioTo,
     ],
   );
