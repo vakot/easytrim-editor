@@ -302,6 +302,79 @@ describe("playback controller", () => {
     expect(playback.driver.audio.pause).toHaveBeenCalled();
   });
 
+  it("freezes the audio master position on pause and ignores stale video updates", async () => {
+    const playback = createPlaybackDriver();
+    const { driver } = playback;
+    let audioPosition = 1.4;
+    vi.mocked(driver.audio.getCurrentTimeSeconds).mockImplementation(() => audioPosition);
+    vi.mocked(driver.video.getCurrentTimeSeconds).mockReturnValue(1.25);
+    const controller = createPlaybackController(driver, 2_000_000);
+
+    controller.play();
+    await vi.waitFor(() => expect(driver.audio.startAlignedWithVideoAt).toHaveBeenCalled());
+    playback.playbackFrameCallback(0, 1.4);
+    await vi.waitFor(() => expect(controller.getSnapshot().isPlaying).toBe(true));
+
+    audioPosition = 1.52;
+    vi.mocked(driver.video.getCurrentTimeSeconds).mockReturnValue(1.5);
+    const staleFrame = playback.playbackFrameCallback;
+    controller.pause();
+    staleFrame(0, 1.6);
+    playback.observer.onTimeUpdate(1.48);
+
+    expect(controller.getSnapshot()).toMatchObject({
+      isPlaying: false,
+      positionMicros: 1_520_000,
+    });
+    expect(vi.mocked(driver.audio.pause).mock.invocationCallOrder.at(-1)).toBeLessThan(
+      vi.mocked(driver.video.pause).mock.invocationCallOrder.at(-1) ?? Infinity,
+    );
+    controller.dispose();
+  });
+
+  it("captures the video position when pausing during startup", async () => {
+    const playback = createPlaybackDriver();
+    const startAudio = createDeferred<number>();
+    vi.mocked(playback.driver.audio.getCurrentTimeSeconds).mockReturnValue(0.9);
+    vi.mocked(playback.driver.audio.startAlignedWithVideoAt).mockReturnValue(startAudio.promise);
+    vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(0.25);
+    const controller = createPlaybackController(playback.driver, 2_000_000);
+
+    controller.play();
+    await vi.waitFor(() =>
+      expect(playback.driver.audio.startAlignedWithVideoAt).toHaveBeenCalled(),
+    );
+    playback.playbackFrameCallback(0, 0.25);
+    controller.pause();
+    startAudio.resolve(1.05);
+    await Promise.resolve();
+    playback.observer.onTimeUpdate(0.2);
+
+    expect(controller.getSnapshot()).toMatchObject({
+      isPlaying: false,
+      positionMicros: 250_000,
+    });
+    expect(playback.driver.video.pause).toHaveBeenCalled();
+    expect(playback.driver.audio.pause).toHaveBeenCalled();
+    controller.dispose();
+  });
+
+  it("preserves the scrub target when pause and delayed timeupdate follow the seek", () => {
+    const playback = createPlaybackDriver();
+    vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(0.2);
+    const controller = createPlaybackController(playback.driver, 2_000_000);
+
+    controller.seek(800_000);
+    controller.pause();
+    playback.observer.onTimeUpdate(0.2);
+
+    expect(controller.getSnapshot()).toMatchObject({
+      isPlaying: false,
+      positionMicros: 800_000,
+    });
+    controller.dispose();
+  });
+
   it("can resume after a scrub invalidates pending playback startup", async () => {
     const { driver } = createPlaybackDriver();
     const pendingPreparation = createDeferred<void>();

@@ -109,18 +109,13 @@ class PlaybackController {
     this.unregisterMediaObserver = video.registerMediaObserver({
       onEnded: () => {
         if (this.mediaSessionId !== mediaSessionId) return;
-        this.setPosition(this.snapshot.durationMicros);
         this.pause();
+        this.setPosition(this.snapshot.durationMicros);
       },
       onPause: (isPaused) => {
         if (this.mediaSessionId !== mediaSessionId) return;
-        if (!isPaused) return;
-        this.seekGeneration += 1;
-        this.cancelStartup();
-        this.stopPlaybackClock();
-        this.lifecycle = "paused";
-        this.driver?.audio.pause();
-        this.setIsPlaying(false);
+        if (!isPaused || this.lifecycle === "paused") return;
+        this.pause();
       },
       onPlay: () => {
         if (this.mediaSessionId !== mediaSessionId) return;
@@ -135,7 +130,7 @@ class PlaybackController {
       },
       onTimeUpdate: (seconds) => {
         if (this.mediaSessionId !== mediaSessionId) return;
-        if (!this.snapshot.isPlaying) this.publishMediaTime(seconds);
+        if (this.lifecycle === "starting") this.publishMediaTime(seconds);
       },
     });
   }
@@ -215,12 +210,33 @@ class PlaybackController {
   };
 
   pause = () => {
+    const driver = this.driver;
+    const previousLifecycle = this.lifecycle;
+    const shouldCapturePosition = previousLifecycle !== "paused";
+    const audioClockWasActive =
+      previousLifecycle === "playing" &&
+      driver !== null &&
+      driver.audio.getCurrentTimeSeconds() !== null;
+
     this.seekGeneration += 1;
     this.cancelStartup();
     this.lifecycle = "paused";
     this.stopPlaybackClock();
-    this.driver?.video.pause();
-    this.driver?.audio.pause();
+
+    if (audioClockWasActive && driver) {
+      driver.audio.pause();
+      const audioPosition = driver.audio.getCurrentTimeSeconds();
+      if (audioPosition !== null) this.setPosition(audioPosition * MICROS_PER_SECOND);
+      driver.video.pause();
+    } else {
+      driver?.video.pause();
+      const videoPosition = driver?.video.getCurrentTimeSeconds();
+      if (shouldCapturePosition && videoPosition !== null && videoPosition !== undefined) {
+        this.setPosition(videoPosition * MICROS_PER_SECOND);
+      }
+      driver?.audio.pause();
+    }
+
     this.setIsPlaying(false);
   };
 
