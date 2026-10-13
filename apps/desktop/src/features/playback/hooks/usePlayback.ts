@@ -77,9 +77,7 @@ function useTimelinePlayback(
 
   return {
     currentFrame,
-    durationMicros,
     framesCount,
-    positionMicros,
     seekFrame: (frame: number) => {
       seek(frameToPlaybackMicros(frame, framesCount, durationMicros, conversionFrameRate));
     },
