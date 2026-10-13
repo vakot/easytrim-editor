@@ -170,6 +170,34 @@ describe("playback controller", () => {
     await vi.waitFor(() => expect(controller.getSnapshot().isPlaying).toBe(true));
   });
 
+  it.each([
+    { durationMicros: 1_000_000, positionMicros: 900_000 },
+    { durationMicros: 100_000, positionMicros: 0 },
+  ])(
+    "bounds the shared startup position to EOF for a $durationMicros microsecond media range",
+    async ({ durationMicros, positionMicros }) => {
+      const playback = createPlaybackDriver();
+      const startSeconds = positionMicros / 1_000_000;
+      const durationSeconds = durationMicros / 1_000_000;
+      vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(startSeconds);
+      vi.mocked(playback.driver.audio.getCurrentTimeSeconds).mockReturnValue(startSeconds);
+      const controller = createPlaybackController(playback.driver, durationMicros);
+
+      controller.seek(positionMicros);
+      controller.play();
+
+      await vi.waitFor(() =>
+        expect(playback.driver.audio.startAlignedWithVideoAt).toHaveBeenCalledWith(startSeconds),
+      );
+      playback.playbackFrameCallback(0, durationSeconds);
+      await vi.waitFor(() => expect(controller.getSnapshot().isPlaying).toBe(true));
+
+      expect(playback.driver.audio.prepareAt).toHaveBeenLastCalledWith(startSeconds);
+      expect(controller.getSnapshot().positionMicros).toBe(positionMicros);
+      controller.dispose();
+    },
+  );
+
   it("cancels the shared-start wait when playback is paused", async () => {
     const playback = createPlaybackDriver();
     vi.mocked(playback.driver.audio.getCurrentTimeSeconds).mockReturnValue(0.4);

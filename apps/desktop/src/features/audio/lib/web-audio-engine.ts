@@ -277,7 +277,13 @@ class WebAudioEngine {
   }
 
   async startAlignedWithVideoAt(videoPositionSeconds: number): Promise<number> {
-    const audioStartPosition = videoPositionSeconds + AUDIO_START_LEAD_SECONDS;
+    const lastSampleFrame = Math.max(0, this.durationFrames - 1);
+    const startFrame = Math.min(
+      this.secondsToFrame(videoPositionSeconds + AUDIO_START_LEAD_SECONDS),
+      lastSampleFrame,
+    );
+
+    const audioStartPosition = startFrame / SAMPLE_RATE;
     await this.startPreparedAt(audioStartPosition);
     return audioStartPosition;
   }

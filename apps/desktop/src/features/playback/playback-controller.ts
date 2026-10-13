@@ -204,8 +204,19 @@ class PlaybackController {
       await driver.video.play();
       if (!this.isCurrentStartup(generation)) return;
 
-      const videoPosition = driver.video.getCurrentTimeSeconds() ?? seconds;
-      const audioStartPosition = await driver.audio.startAlignedWithVideoAt(videoPosition);
+      const durationSeconds = this.snapshot.durationMicros / MICROS_PER_SECOND;
+      const videoPosition = Math.max(
+        0,
+        Math.min(durationSeconds, driver.video.getCurrentTimeSeconds() ?? seconds),
+      );
+
+      const requestedAudioStartPosition = await driver.audio.startAlignedWithVideoAt(videoPosition);
+
+      const audioStartPosition = Math.max(
+        0,
+        Math.min(durationSeconds, requestedAudioStartPosition),
+      );
+
       if (!this.isCurrentStartup(generation)) return;
 
       if (driver.audio.getCurrentTimeSeconds() !== null) {

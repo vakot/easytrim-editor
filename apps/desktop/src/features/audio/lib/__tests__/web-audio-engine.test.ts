@@ -274,6 +274,47 @@ describe("WebAudioEngine", () => {
     engine.close();
   });
 
+  it.each([
+    { durationMicros: 1_000_000, positionMicros: 900_000 },
+    { durationMicros: 100_000, positionMicros: 0 },
+  ])(
+    "schedules the final valid sample for a $durationMicros microsecond media range",
+    async ({ durationMicros, positionMicros }) => {
+      const { context, sources } = createContext();
+      const decode = vi.fn(
+        async (_selection: AudioTrackSelection, _startMicros: number, rangeMicros: number) =>
+          chunk(rangeMicros),
+      );
+
+      const engine = new WebAudioEngine(context, decode, vi.fn());
+      engine.setDuration(durationMicros);
+      engine.setTracks([
+        { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+      ]);
+
+      await engine.prepareAt(positionMicros / 1_000_000);
+      const audioStartPosition = await engine.startAlignedWithVideoAt(positionMicros / 1_000_000);
+
+      const lastSampleFrame = Math.round((durationMicros * 48_000) / 1_000_000) - 1;
+      const expectedAudioStartPosition = lastSampleFrame / 48_000;
+      const preparedStartFrame = Math.round((positionMicros * 48_000) / 1_000_000);
+      expect(audioStartPosition).toBe(expectedAudioStartPosition);
+      expect(audioStartPosition).toBeLessThan(durationMicros / 1_000_000);
+      expect(decode).toHaveBeenCalledWith(
+        selection(1),
+        positionMicros,
+        durationMicros - positionMicros,
+        expect.any(AbortSignal),
+      );
+      expect(sources[0]?.start).toHaveBeenCalledWith(
+        5.15,
+        (lastSampleFrame - preparedStartFrame) / 48_000,
+      );
+
+      engine.close();
+    },
+  );
+
   it("discards an in-flight chunk when a seek invalidates its generation", async () => {
     const { context, sources } = createContext();
     let resolveChunk: ((value: ReturnType<typeof chunk>) => void) | undefined;
