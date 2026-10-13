@@ -9,6 +9,7 @@ interface PlaybackDriver {
 interface PlaybackSnapshot {
   durationMicros: number;
   isPlaying: boolean;
+  isVideoMuted: boolean;
   positionMicros: number;
 }
 
@@ -22,16 +23,25 @@ class PlaybackController {
   private startupGeneration = 0;
   private lifecycle: "paused" | "starting" | "playing" = "paused";
   private mediaStartRequested = false;
+  private lastVideoSyncAt = 0;
 
   constructor(
     private driver: PlaybackDriver,
     durationMicros: number,
   ) {
-    this.snapshot = { durationMicros, isPlaying: false, positionMicros: 0 };
+    this.snapshot = {
+      durationMicros,
+      isVideoMuted: driver.audio.hasActiveOutput,
+      isPlaying: false,
+      positionMicros: 0,
+    };
   }
 
   updateDriver = (driver: PlaybackDriver) => {
     this.driver = driver;
+    if (driver.audio.hasActiveOutput !== this.snapshot.isVideoMuted) {
+      this.update({ ...this.snapshot, isVideoMuted: driver.audio.hasActiveOutput });
+    }
   };
 
   getSnapshot = () => this.snapshot;
@@ -66,7 +76,7 @@ class PlaybackController {
       },
       onPlaybackError: () => this.pause(),
       onTimeUpdate: (seconds) => {
-        if (!this.snapshot.isPlaying) this.publishMediaTime(seconds, false);
+        if (!this.snapshot.isPlaying) this.publishMediaTime(seconds);
       },
     });
 
@@ -91,7 +101,7 @@ class PlaybackController {
     if (!Number.isFinite(nextPosition)) return;
     this.setPosition(nextPosition);
     const seconds = nextPosition / MICROS_PER_SECOND;
-    this.driver.audio.syncTo(seconds, true);
+    this.driver.audio.seek(seconds);
     this.driver.video.seek(seconds, false);
   };
 
@@ -99,7 +109,7 @@ class PlaybackController {
     const driver = this.driver;
     if (
       !driver.video.isReady ||
-      (driver.audio.usesWebAudio && !driver.audio.isReady) ||
+      (driver.audio.hasActiveOutput && !driver.audio.isReady) ||
       this.snapshot.durationMicros <= 0 ||
       this.snapshot.isPlaying ||
       this.lifecycle !== "paused"
@@ -130,15 +140,14 @@ class PlaybackController {
     else this.play();
   };
 
-  private publishMediaTime(seconds: number, synchronizeAudio = true) {
+  private publishMediaTime(seconds: number) {
     if (this.driver.video.isSeekPending()) return;
     this.setPosition(seconds * MICROS_PER_SECOND);
-    if (synchronizeAudio) this.driver.audio.syncTo(seconds);
   }
 
   private async startPlayback(generation: number, seconds: number) {
     try {
-      await this.driver.audio.resumeAudioContext();
+      await this.driver.audio.resume();
       if (!this.isCurrentStartup(generation)) return;
 
       await new Promise<void>((resolve) => {
@@ -191,23 +200,28 @@ class PlaybackController {
       const audioClockSeconds = this.driver.audio.getCurrentTimeSeconds();
       const clockSeconds = audioClockSeconds ?? seconds;
       if (!this.driver.video.isSeekPending()) {
-        this.publishMediaTime(clockSeconds, false);
-        if (audioClockSeconds !== null) this.driver.audio.syncTo(clockSeconds);
+        this.publishMediaTime(clockSeconds);
+        if (audioClockSeconds !== null) this.syncVideoToAudio(audioClockSeconds);
         if (this.snapshot.positionMicros >= this.snapshot.durationMicros) {
           this.pause();
           return;
         }
       }
-      this.playbackFrame = this.requestPlaybackFrame(tick);
+      this.playbackFrame = this.driver.video.requestPlaybackFrame(tick);
     };
 
-    this.playbackFrame = this.requestPlaybackFrame(tick);
+    this.playbackFrame = this.driver.video.requestPlaybackFrame(tick);
   }
 
-  private requestPlaybackFrame(callback: (timestamp: number, mediaTimeSeconds: number) => void) {
-    return this.driver.audio.usesWebAudio
-      ? this.driver.audio.requestPlaybackFrame(callback)
-      : this.driver.video.requestPlaybackFrame(callback);
+  private syncVideoToAudio(seconds: number) {
+    const now = performance.now();
+    if (now - this.lastVideoSyncAt < 500) return;
+    this.lastVideoSyncAt = now;
+
+    const videoSeconds = this.driver.video.getCurrentTimeSeconds();
+    if (videoSeconds !== null && Math.abs(videoSeconds - seconds) > 0.12) {
+      this.driver.video.setCurrentTimeSeconds(seconds);
+    }
   }
 
   private stopPlaybackClock() {

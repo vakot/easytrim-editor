@@ -1,4 +1,4 @@
-import { type RefObject, useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
@@ -10,28 +10,30 @@ import {
   effectiveAudioTrackGainDb,
   getAudioTrackLiveHighPassEffects,
 } from "@/domain/audio-processing";
-import { decodeAudioPlaybackChunk } from "@/lib/tauri/media";
 
-import type { StereoAudioMeterNodes } from "../lib/stereo-audio-meter";
-import { WebAudioEngine, type WebAudioTrack } from "../lib/web-audio-engine";
+import type { AudioPlaybackContract } from "../contexts/audio-playback-context";
+import type { AudioPlaybackAdapter } from "../contexts/audio-transport-context";
+import { AudioPlaybackSession } from "../lib/audio-playback-session";
+import type { WebAudioTrack } from "../lib/web-audio-engine";
+
+interface AudioPlaybackRuntime {
+  adapter: AudioPlaybackAdapter;
+  controls: AudioPlaybackContract;
+}
 
 function useAudioPlaybackRuntime({
   activeInstanceId,
   durationMicros,
-  videoRef,
 }: {
   activeInstanceId: string | null;
   durationMicros: number;
-  videoRef: RefObject<HTMLVideoElement | null>;
-}) {
+}): AudioPlaybackRuntime {
   const sourcePath = useAppSelector(selectSourceSelection)?.sourcePath ?? null;
   const media = useAppSelector(selectSourceMedia);
   const audioTracks = useAppSelector(selectAudioTracks);
   const playbackVolumePercent = useAppSelector(selectPlaybackVolumePercent);
-  const engineRef = useRef<WebAudioEngine | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const audioMeterRef = useRef<StereoAudioMeterNodes | null>(null);
-  const lastVideoSyncAtRef = useRef(0);
+  const sessionRef = useRef<AudioPlaybackSession | null>(null);
+  const audioMeterRef = useRef<AudioPlaybackContract["audioMeterRef"]["current"]>(null);
 
   const enabledTracks = useMemo(() => audioTracks.filter((track) => track.enabled), [audioTracks]);
   const webAudioTracks: WebAudioTrack[] = useMemo(
@@ -49,6 +51,7 @@ function useAudioPlaybackRuntime({
         ) {
           return [];
         }
+
         const selection: AudioTrackSelection = {
           ...loudnessAnalysis,
           processing: audioTrackPlaybackFfmpegProcessing(track.processing),
@@ -69,120 +72,69 @@ function useAudioPlaybackRuntime({
 
   useEffect(() => {
     if (!sourcePath || !media || typeof AudioContext === "undefined") return;
-    const context = new AudioContext();
-    const engine = new WebAudioEngine(
-      context,
-      (selection, startMicros, chunkDurationMicros, signal) =>
-        decodeAudioPlaybackChunk(sourcePath, selection, startMicros, chunkDurationMicros, signal),
-      () => undefined,
-    );
-
-    engineRef.current = engine;
-    audioContextRef.current = context;
-    audioMeterRef.current = engine.meter;
+    const session = new AudioPlaybackSession(sourcePath);
+    sessionRef.current = session;
+    audioMeterRef.current = session.meter;
 
     return () => {
-      if (engineRef.current === engine) engineRef.current = null;
-      if (audioContextRef.current === context) audioContextRef.current = null;
+      if (sessionRef.current === session) sessionRef.current = null;
       audioMeterRef.current = null;
-      engine.close();
-      void context.close().catch(() => undefined);
+      session.close();
     };
   }, [activeInstanceId, media, sourcePath]);
 
   useEffect(() => {
-    const engine = engineRef.current;
-    if (!engine) return;
-    engine.setDuration(durationMicros);
-    engine.setTracks(webAudioTracks);
+    const session = sessionRef.current;
+    if (!session) return;
+    session.setDuration(durationMicros);
+    session.setTracks(webAudioTracks);
   }, [activeInstanceId, durationMicros, media, sourcePath, webAudioTracks]);
 
   useEffect(() => {
-    const engine = engineRef.current;
-    if (!engine) return;
-    engine.setOutputGain(playbackVolumePercent / 100);
+    sessionRef.current?.setOutputGain(playbackVolumePercent / 100);
   }, [activeInstanceId, media, playbackVolumePercent, sourcePath]);
 
   useEffect(() => {
-    const engine = engineRef.current;
-    if (!engine) return;
-    engine.setMono(
+    const isMono =
       webAudioTracks.length > 0 &&
-        webAudioTracks.every(
-          (track) =>
-            media?.audioStreams.find((stream) => stream.streamIndex === track.streamIndex)
-              ?.channels === 1,
-        ),
-    );
+      webAudioTracks.every(
+        (track) =>
+          media?.audioStreams.find((stream) => stream.streamIndex === track.streamIndex)
+            ?.channels === 1,
+      );
+
+    sessionRef.current?.setMono(isMono);
   }, [activeInstanceId, media, sourcePath, webAudioTracks]);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = enabledTracks.length > 0;
-    return () => {
-      video.muted = false;
-    };
-  }, [enabledTracks.length, videoRef]);
+  const pause = useCallback(() => sessionRef.current?.pause(), []);
 
-  const pause = useCallback(() => engineRef.current?.pause(), []);
-
-  const startAt = useCallback((seconds: number) => {
-    const engine = engineRef.current;
-    return engine ? engine.startAt(seconds) : Promise.resolve();
-  }, []);
-
-  const syncTo = useCallback(
-    (seconds: number, force = false) => {
-      if (force) {
-        engineRef.current?.seek(seconds);
-        return;
-      }
-      const video = videoRef.current;
-      if (!video || video.paused || video.ended) return;
-      const now = performance.now();
-      if (now - lastVideoSyncAtRef.current < 500) return;
-      lastVideoSyncAtRef.current = now;
-      if (Math.abs(video.currentTime - seconds) > 0.12) video.currentTime = seconds;
-    },
-    [videoRef],
+  const startAt = useCallback(
+    (seconds: number) => sessionRef.current?.startAt(seconds) ?? Promise.resolve(),
+    [],
   );
+
+  const seek = useCallback((seconds: number) => sessionRef.current?.seek(seconds), []);
 
   const setPlaybackRate = useCallback((rate: number) => {
-    engineRef.current?.setPlaybackRate(rate);
+    sessionRef.current?.setPlaybackRate(rate);
   }, []);
 
-  const resumeAudioContext = useCallback(
-    () => audioContextRef.current?.resume() ?? Promise.resolve(),
-    [],
-  );
+  const resume = useCallback(() => sessionRef.current?.resume() ?? Promise.resolve(), []);
 
   const getCurrentTimeSeconds = useCallback(() => {
-    const engine = engineRef.current;
-    return engine?.hasTracks ? engine.currentTimeSeconds : null;
+    const session = sessionRef.current;
+    return session?.hasTracks ? session.currentTimeSeconds : null;
   }, []);
 
-  const requestPlaybackFrame = useCallback(
-    (callback: (timestamp: number, mediaTimeSeconds: number) => void) => {
-      if (!engineRef.current?.hasTracks) return null;
-      const frame = window.requestAnimationFrame((timestamp) => {
-        callback(timestamp, engineRef.current?.currentTimeSeconds ?? 0);
-      });
-
-      return { cancel: () => window.cancelAnimationFrame(frame) };
-    },
-    [],
-  );
-
   const setLiveAudioTrackGain = useCallback((streamIndex: number, gainDb: number) => {
-    engineRef.current?.setTrackGain(streamIndex, gainDb);
+    sessionRef.current?.setTrackGain(streamIndex, gainDb);
   }, []);
 
   const clearLiveAudioTrackGain = useCallback(
     (streamIndex: number) => {
       const track = audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
       if (track)
-        engineRef.current?.setTrackGain(streamIndex, effectiveAudioTrackGainDb(track.processing));
+        sessionRef.current?.setTrackGain(streamIndex, effectiveAudioTrackGainDb(track.processing));
     },
     [audioTracks],
   );
@@ -194,21 +146,37 @@ function useAudioPlaybackRuntime({
   );
 
   const isReady = !requiresLoudnessAnalysis && sourcePath !== null && media !== null;
+  const hasActiveOutput = enabledTracks.length > 0 && typeof AudioContext !== "undefined";
 
-  return {
-    audioMeterRef,
-    clearLiveAudioTrackGain,
-    getCurrentTimeSeconds,
-    isReady,
-    pause,
-    requestPlaybackFrame,
-    resumeAudioContext,
-    setLiveAudioTrackGain,
-    setPlaybackRate,
-    startAt,
-    syncTo,
-    usesWebAudio: enabledTracks.length > 0 && typeof AudioContext !== "undefined",
-  };
+  const adapter = useMemo<AudioPlaybackAdapter>(
+    () => ({
+      getCurrentTimeSeconds,
+      hasActiveOutput,
+      isReady,
+      pause,
+      resume,
+      seek,
+      setPlaybackRate,
+      startAt,
+    }),
+    [
+      getCurrentTimeSeconds,
+      hasActiveOutput,
+      isReady,
+      pause,
+      resume,
+      seek,
+      setPlaybackRate,
+      startAt,
+    ],
+  );
+
+  const controls = useMemo<AudioPlaybackContract>(
+    () => ({ audioMeterRef, clearLiveAudioTrackGain, setLiveAudioTrackGain }),
+    [clearLiveAudioTrackGain, setLiveAudioTrackGain],
+  );
+
+  return { adapter, controls };
 }
 
 export { useAudioPlaybackRuntime };

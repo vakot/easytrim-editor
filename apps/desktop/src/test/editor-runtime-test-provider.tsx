@@ -1,4 +1,4 @@
-import type { ReactNode, RefObject } from "react";
+import { type ReactNode, type RefObject, useMemo } from "react";
 
 // eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies feature-owned contexts.
 import {
@@ -46,34 +46,6 @@ const preview = {
   videoRef,
 } satisfies PreviewRuntimeContract;
 
-const playbackController = new PlaybackController(
-  {
-    audio: {
-      getCurrentTimeSeconds: () => null,
-      isReady: false,
-      pause: noOperation,
-      requestPlaybackFrame: () => null,
-      resumeAudioContext: async () => undefined,
-      setPlaybackRate: noOperation,
-      startAt: async () => undefined,
-      syncTo: noOperation,
-      usesWebAudio: false,
-    },
-    video: {
-      isReady: false,
-      isSeekPending: () => false,
-      pause: noOperation,
-      play: async () => undefined,
-      registerMediaObserver: () => noOperation,
-      requestPlaybackFrame: () => null,
-      seek: noOperation,
-      sessionKey: null,
-      setPlaybackRate: noOperation,
-    },
-  },
-  0,
-);
-
 const audioPlayback = {
   audioMeterRef: { current: null },
   clearLiveAudioTrackGain: noOperation,
@@ -87,16 +59,48 @@ function EditorRuntimeTestProvider({
   children: ReactNode;
   usesWebAudio?: boolean;
 }) {
+  const playbackController = useMemo(
+    () =>
+      new PlaybackController(
+        {
+          audio: {
+            getCurrentTimeSeconds: () => null,
+            hasActiveOutput: usesWebAudio,
+            isReady: false,
+            pause: noOperation,
+            resume: async () => undefined,
+            seek: noOperation,
+            setPlaybackRate: noOperation,
+            startAt: async () => undefined,
+          },
+          video: {
+            getCurrentTimeSeconds: () => null,
+            isReady: false,
+            isSeekPending: () => false,
+            pause: noOperation,
+            play: async () => undefined,
+            registerMediaObserver: () => noOperation,
+            requestPlaybackFrame: () => null,
+            seek: noOperation,
+            sessionKey: null,
+            setCurrentTimeSeconds: noOperation,
+            setPlaybackRate: noOperation,
+          },
+        },
+        0,
+      ),
+    [usesWebAudio],
+  );
+
   const audioTransport = {
     getCurrentTimeSeconds: () => null,
+    hasActiveOutput: usesWebAudio,
     isReady: false,
     pause: noOperation,
-    requestPlaybackFrame: () => null,
-    resumeAudioContext: async () => undefined,
+    resume: async () => undefined,
+    seek: noOperation,
     setPlaybackRate: noOperation,
     startAt: async () => undefined,
-    syncTo: noOperation,
-    usesWebAudio,
   } satisfies AudioPlaybackAdapter;
 
   return (

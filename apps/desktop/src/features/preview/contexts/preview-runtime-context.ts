@@ -1,4 +1,4 @@
-import { createContext, type RefObject, useContext, useMemo } from "react";
+import { createContext, type RefObject, useCallback, useContext, useMemo } from "react";
 
 interface PreviewMediaObserver {
   onEnded: () => void;
@@ -13,6 +13,7 @@ interface PreviewPlaybackFrame {
 }
 
 interface PreviewVideoAdapter {
+  getCurrentTimeSeconds: () => number | null;
   isReady: boolean;
   isSeekPending: () => boolean;
   pause: () => void;
@@ -23,6 +24,7 @@ interface PreviewVideoAdapter {
   ) => PreviewPlaybackFrame | null;
   seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
   sessionKey: string | null;
+  setCurrentTimeSeconds: (seconds: number) => void;
   setPlaybackRate: (rate: number) => void;
 }
 
@@ -68,29 +70,46 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
     requestPlaybackFrame,
     seekMedia: seek,
     setPlaybackRate,
+    videoRef,
   } = usePreviewRuntime();
+
+  const getCurrentTimeSeconds = useCallback(
+    () => videoRef.current?.currentTime ?? null,
+    [videoRef],
+  );
+
+  const setCurrentTimeSeconds = useCallback(
+    (seconds: number) => {
+      if (videoRef.current) videoRef.current.currentTime = seconds;
+    },
+    [videoRef],
+  );
 
   return useMemo(
     () => ({
       isReady,
       isSeekPending,
+      getCurrentTimeSeconds,
       pause,
       play,
       registerMediaObserver,
       requestPlaybackFrame,
       seek,
       sessionKey,
+      setCurrentTimeSeconds,
       setPlaybackRate,
     }),
     [
       isReady,
       isSeekPending,
+      getCurrentTimeSeconds,
       pause,
       play,
       registerMediaObserver,
       requestPlaybackFrame,
       seek,
       sessionKey,
+      setCurrentTimeSeconds,
       setPlaybackRate,
     ],
   );

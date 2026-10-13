@@ -58,6 +58,7 @@ const playback = vi.hoisted(() => {
 
 vi.mock("@/features/playback", () => ({
   usePlaybackIsPlaying: () => playback.isPlaying,
+  usePlaybackIsVideoMuted: () => true,
   usePlaybackActions: () => ({
     pause: playback.pause,
     play: playback.play,

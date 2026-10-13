@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
-import { useAudioTransport } from "@/features/audio";
+import { usePlaybackIsVideoMuted } from "@/features/playback";
 import { usePreviewRuntime } from "@/features/preview";
 import { diagnostics } from "@/lib/diagnostics";
 
@@ -22,18 +22,10 @@ function CropViewportVideo({
   transition,
 }: CropViewportVideoProps) {
   const { t } = useTranslation();
-  const {
-    onCanPlay,
-    onEnded,
-    onPause,
-    onPlay,
-    onPlaybackError,
-    onTimeUpdate,
-    setVideoElement,
-  } = usePreviewRuntime();
+  const { onCanPlay, onEnded, onPause, onPlay, onPlaybackError, onTimeUpdate, setVideoElement } =
+    usePreviewRuntime();
 
-  const { usesWebAudio } = useAudioTransport();
-  const videoMuted = usesWebAudio;
+  const videoMuted = usePlaybackIsVideoMuted();
   const preview = useAppSelector(selectPreview);
   const reportedUrl = useRef<string | null>(null);
   const sourceUrl = preview.status === "ready" ? preview.value.url : null;

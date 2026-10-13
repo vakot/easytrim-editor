@@ -10,19 +10,16 @@ function createPlaybackDriver() {
   const driver: PlaybackDriver = {
     audio: {
       getCurrentTimeSeconds: vi.fn(() => null),
+      hasActiveOutput: true,
       isReady: true,
       pause: vi.fn(),
-      requestPlaybackFrame: vi.fn((callback) => {
-        playbackFrameCallback = callback;
-        return { cancel: vi.fn() };
-      }),
-      resumeAudioContext: vi.fn(async () => undefined),
+      resume: vi.fn(async () => undefined),
+      seek: vi.fn(),
       setPlaybackRate: vi.fn(),
       startAt: vi.fn(async () => undefined),
-      syncTo: vi.fn(),
-      usesWebAudio: true,
     },
     video: {
+      getCurrentTimeSeconds: vi.fn(() => 0),
       sessionKey: "preview",
       isReady: true,
       isSeekPending: () => false,
@@ -39,6 +36,7 @@ function createPlaybackDriver() {
         return { cancel: vi.fn() };
       }),
       seek: vi.fn((_seconds, _approximate, onSettled) => onSettled?.()),
+      setCurrentTimeSeconds: vi.fn(),
       setPlaybackRate: vi.fn(),
     },
   };
@@ -74,17 +72,19 @@ describe("playback controller", () => {
 
     expect(controller.getSnapshot()).toEqual({
       durationMicros: 2_000_000,
+      isVideoMuted: true,
       isPlaying: false,
       positionMicros: 2_000_000,
     });
     expect(driver.video.seek).toHaveBeenCalledWith(2, false);
-    expect(driver.audio.syncTo).toHaveBeenCalledWith(2, true);
+    expect(driver.audio.seek).toHaveBeenCalledWith(2);
   });
 
   it("only marks playback active after the audio and preview participants start", async () => {
     const playback = createPlaybackDriver();
     const { driver } = playback;
     vi.mocked(driver.audio.getCurrentTimeSeconds).mockReturnValue(1.25);
+    const performanceNowSpy = vi.spyOn(performance, "now").mockReturnValue(1_000);
     const controller = new PlaybackController(driver, 2_000_000);
     const disconnect = controller.connect();
 
@@ -95,15 +95,18 @@ describe("playback controller", () => {
 
     expect(controller.getSnapshot()).toEqual({
       durationMicros: 2_000_000,
+      isVideoMuted: true,
       isPlaying: true,
       positionMicros: 1_250_000,
     });
-    expect(driver.audio.syncTo).toHaveBeenCalledWith(1.25);
+    expect(driver.video.setCurrentTimeSeconds).toHaveBeenCalledWith(1.25);
+    performanceNowSpy.mockRestore();
 
     playback.observer.onEnded();
 
     expect(controller.getSnapshot()).toEqual({
       durationMicros: 2_000_000,
+      isVideoMuted: true,
       isPlaying: false,
       positionMicros: 2_000_000,
     });
@@ -181,7 +184,17 @@ describe("playback controller", () => {
 
     controller.play();
 
-    expect(driver.audio.resumeAudioContext).not.toHaveBeenCalled();
+    expect(driver.audio.resume).not.toHaveBeenCalled();
     expect(controller.getSnapshot().isPlaying).toBe(false);
+  });
+
+  it("updates the video mute policy when the audio output changes", () => {
+    const { driver } = createPlaybackDriver();
+    const controller = new PlaybackController(driver, 2_000_000);
+    driver.audio.hasActiveOutput = false;
+
+    controller.updateDriver(driver);
+
+    expect(controller.getSnapshot().isVideoMuted).toBe(false);
   });
 });
