@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
+import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import { selectPlaybackVolumePercent } from "@/app/store/slices/preferences-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 import {
@@ -11,29 +12,17 @@ import {
   getAudioTrackLiveHighPassEffects,
 } from "@/domain/audio-processing";
 
-import type { AudioPlaybackContract } from "../contexts/audio-playback-context";
 import type { AudioPlaybackAdapter } from "../contexts/audio-transport-context";
 import { AudioPlaybackSession } from "../lib/audio-playback-session";
 import type { WebAudioTrack } from "../lib/web-audio-engine";
 
-interface AudioPlaybackRuntime {
-  adapter: AudioPlaybackAdapter;
-  controls: AudioPlaybackContract;
-}
-
-function useAudioPlaybackRuntime({
-  activeInstanceId,
-  durationMicros,
-}: {
-  activeInstanceId: string | null;
-  durationMicros: number;
-}): AudioPlaybackRuntime {
+function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const sourcePath = useAppSelector(selectSourceSelection)?.sourcePath ?? null;
   const media = useAppSelector(selectSourceMedia);
   const audioTracks = useAppSelector(selectAudioTracks);
   const playbackVolumePercent = useAppSelector(selectPlaybackVolumePercent);
   const sessionRef = useRef<AudioPlaybackSession | null>(null);
-  const audioMeterRef = useRef<AudioPlaybackContract["audioMeterRef"]["current"]>(null);
 
   const enabledTracks = useMemo(() => audioTracks.filter((track) => track.enabled), [audioTracks]);
   const webAudioTracks: WebAudioTrack[] = useMemo(
@@ -74,11 +63,9 @@ function useAudioPlaybackRuntime({
     if (!sourcePath || !media || typeof AudioContext === "undefined") return;
     const session = new AudioPlaybackSession(sourcePath);
     sessionRef.current = session;
-    audioMeterRef.current = session.meter;
 
     return () => {
       if (sessionRef.current === session) sessionRef.current = null;
-      audioMeterRef.current = null;
       session.close();
     };
   }, [activeInstanceId, media, sourcePath]);
@@ -86,9 +73,9 @@ function useAudioPlaybackRuntime({
   useEffect(() => {
     const session = sessionRef.current;
     if (!session) return;
-    session.setDuration(durationMicros);
+    session.setDuration(media?.durationMicros ?? 0);
     session.setTracks(webAudioTracks);
-  }, [activeInstanceId, durationMicros, media, sourcePath, webAudioTracks]);
+  }, [activeInstanceId, media, sourcePath, webAudioTracks]);
 
   useEffect(() => {
     sessionRef.current?.setOutputGain(playbackVolumePercent / 100);
@@ -126,19 +113,6 @@ function useAudioPlaybackRuntime({
     return session?.hasTracks ? session.currentTimeSeconds : null;
   }, []);
 
-  const setLiveAudioTrackGain = useCallback((streamIndex: number, gainDb: number) => {
-    sessionRef.current?.setTrackGain(streamIndex, gainDb);
-  }, []);
-
-  const clearLiveAudioTrackGain = useCallback(
-    (streamIndex: number) => {
-      const track = audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
-      if (track)
-        sessionRef.current?.setTrackGain(streamIndex, effectiveAudioTrackGainDb(track.processing));
-    },
-    [audioTracks],
-  );
-
   const requiresLoudnessAnalysis = enabledTracks.some(
     (track) =>
       track.processing.loudnessNormalization !== undefined &&
@@ -148,7 +122,7 @@ function useAudioPlaybackRuntime({
   const isReady = !requiresLoudnessAnalysis && sourcePath !== null && media !== null;
   const hasActiveOutput = enabledTracks.length > 0 && typeof AudioContext !== "undefined";
 
-  const adapter = useMemo<AudioPlaybackAdapter>(
+  return useMemo<AudioPlaybackAdapter>(
     () => ({
       getCurrentTimeSeconds,
       hasActiveOutput,
@@ -170,13 +144,6 @@ function useAudioPlaybackRuntime({
       startAt,
     ],
   );
-
-  const controls = useMemo<AudioPlaybackContract>(
-    () => ({ audioMeterRef, clearLiveAudioTrackGain, setLiveAudioTrackGain }),
-    [clearLiveAudioTrackGain, setLiveAudioTrackGain],
-  );
-
-  return { adapter, controls };
 }
 
 export { useAudioPlaybackRuntime };

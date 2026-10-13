@@ -1,4 +1,6 @@
-import type { PreviewPlaybackFrame } from "@/features/preview";
+interface PlaybackFrame {
+  cancel: () => void;
+}
 
 interface PlaybackAudioAdapter {
   getCurrentTimeSeconds: () => number | null;
@@ -26,7 +28,7 @@ interface PlaybackVideoAdapter {
   }) => () => void;
   requestPlaybackFrame: (
     callback: (timestamp: number, mediaTimeSeconds: number) => void,
-  ) => PreviewPlaybackFrame | null;
+  ) => PlaybackFrame | null;
   seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
   setCurrentTimeSeconds: (seconds: number) => void;
   setPlaybackRate: (rate: number) => void;
@@ -51,7 +53,7 @@ class PlaybackController {
   private readonly listeners = new Set<() => void>();
   private driver: PlaybackDriver | null = null;
   private unregisterMediaObserver: (() => void) | null = null;
-  private playbackFrame: PreviewPlaybackFrame | null = null;
+  private playbackFrame: PlaybackFrame | null = null;
   private startupGeneration = 0;
   private mediaSessionId: number | null | undefined;
   private lifecycle: "paused" | "starting" | "playing" = "paused";

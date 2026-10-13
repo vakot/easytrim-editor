@@ -2,11 +2,6 @@ import { type ReactNode, type RefObject, useMemo } from "react";
 
 // eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies feature-owned contexts.
 import {
-  AudioPlaybackContext,
-  type AudioPlaybackContract,
-} from "@/features/audio/contexts/audio-playback-context";
-// eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies feature-owned contexts.
-import {
   type AudioPlaybackAdapter,
   AudioTransportContext,
 } from "@/features/audio/contexts/audio-transport-context";
@@ -45,12 +40,6 @@ const preview = {
   },
   videoRef,
 } satisfies PreviewRuntimeContract;
-
-const audioPlayback = {
-  audioMeterRef: { current: null },
-  clearLiveAudioTrackGain: noOperation,
-  setLiveAudioTrackGain: noOperation,
-} satisfies AudioPlaybackContract;
 
 function EditorRuntimeTestProvider({
   children,
@@ -105,11 +94,9 @@ function EditorRuntimeTestProvider({
 
   return (
     <PreviewRuntimeContext.Provider value={preview}>
-      <AudioPlaybackContext.Provider value={audioPlayback}>
-        <AudioTransportContext.Provider value={audioTransport}>
-          <PlaybackContext.Provider value={playbackController}>{children}</PlaybackContext.Provider>
-        </AudioTransportContext.Provider>
-      </AudioPlaybackContext.Provider>
+      <AudioTransportContext.Provider value={audioTransport}>
+        <PlaybackContext.Provider value={playbackController}>{children}</PlaybackContext.Provider>
+      </AudioTransportContext.Provider>
     </PreviewRuntimeContext.Provider>
   );
 }

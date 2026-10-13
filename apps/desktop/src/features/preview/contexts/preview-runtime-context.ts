@@ -58,6 +58,21 @@ function usePreviewRuntime(): PreviewRuntimeContract {
   return runtime;
 }
 
+function usePreviewReady(): boolean {
+  return usePreviewRuntime().isPreviewReady;
+}
+
+function usePreviewVideoRef(): RefObject<HTMLVideoElement | null> {
+  return usePreviewRuntime().videoRef;
+}
+
+function usePreviewVideoElementEvents() {
+  const { onCanPlay, onEnded, onPause, onPlay, onPlaybackError, onTimeUpdate, setVideoElement } =
+    usePreviewRuntime();
+
+  return { onCanPlay, onEnded, onPause, onPlay, onPlaybackError, onTimeUpdate, setVideoElement };
+}
+
 function usePreviewVideoAdapter(): PreviewVideoAdapter {
   const {
     isPreviewReady: isReady,
@@ -111,7 +126,13 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
   );
 }
 
-export { PreviewRuntimeContext, usePreviewRuntime, usePreviewVideoAdapter };
+export {
+  PreviewRuntimeContext,
+  usePreviewReady,
+  usePreviewVideoAdapter,
+  usePreviewVideoElementEvents,
+  usePreviewVideoRef,
+};
 export type {
   PreviewMediaObserver,
   PreviewPlaybackFrame,

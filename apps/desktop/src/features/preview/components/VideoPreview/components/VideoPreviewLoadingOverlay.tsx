@@ -9,14 +9,15 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceLoadToken, selectSourceSelection } from "@/app/store/slices/source-slice";
 import { closeActiveEditingInstanceRequested } from "@/app/store/thunks/source-media-thunks";
-import { useAudioTransport } from "@/features/audio";
-import { usePreviewRuntime } from "@/features/preview";
+import { useAudioPlaybackReady } from "@/features/audio";
+
+import { usePreviewReady } from "../../../contexts/preview-runtime-context";
 
 function VideoPreviewLoadingOverlay() {
   const { t } = useTranslation();
 
-  const { isReady: isAudioReady } = useAudioTransport();
-  const { isPreviewReady } = usePreviewRuntime();
+  const isAudioReady = useAudioPlaybackReady();
+  const isPreviewReady = usePreviewReady();
   const isReady = isPreviewReady && isAudioReady;
   const dispatch = useAppDispatch();
 

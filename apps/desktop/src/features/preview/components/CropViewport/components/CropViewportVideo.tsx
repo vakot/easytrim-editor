@@ -5,8 +5,9 @@ import { useTranslation } from "react-i18next";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { usePlaybackIsVideoMuted } from "@/features/playback";
-import { usePreviewRuntime } from "@/features/preview";
 import { diagnostics } from "@/lib/diagnostics";
+
+import { usePreviewVideoElementEvents } from "../../../contexts/preview-runtime-context";
 
 interface CropViewportVideoProps {
   cropIsOpen: boolean;
@@ -23,7 +24,7 @@ function CropViewportVideo({
 }: CropViewportVideoProps) {
   const { t } = useTranslation();
   const { onCanPlay, onEnded, onPause, onPlay, onPlaybackError, onTimeUpdate, setVideoElement } =
-    usePreviewRuntime();
+    usePreviewVideoElementEvents();
 
   const videoMuted = usePlaybackIsVideoMuted();
   const preview = useAppSelector(selectPreview);

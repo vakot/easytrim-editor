@@ -19,7 +19,9 @@ function useAudioPlaybackAdapter(): AudioPlaybackAdapter {
   return transport;
 }
 
-const useAudioTransport = useAudioPlaybackAdapter;
+function useAudioPlaybackReady(): boolean {
+  return useAudioPlaybackAdapter().isReady;
+}
 
-export { AudioTransportContext, useAudioPlaybackAdapter, useAudioTransport };
+export { AudioTransportContext, useAudioPlaybackAdapter, useAudioPlaybackReady };
 export type { AudioPlaybackAdapter };

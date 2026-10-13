@@ -26,9 +26,10 @@ import {
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { isQuarterTurn } from "@/domain/rotation";
 import { usePlaybackActions, usePlaybackIsPlaying } from "@/features/playback";
-import { usePreviewRuntime, usePreviewTransform } from "@/features/preview";
+import { usePreviewTransform } from "@/features/preview";
 import { saveFramePng } from "@/lib/tauri/media";
 
+import { usePreviewVideoRef } from "../../contexts/preview-runtime-context";
 import { CROP_ASPECT_RATIO_PRESETS } from "../../lib/crop-aspect-ratio.utils";
 import type { CropHandle } from "../../lib/crop-geometry.utils";
 import { capturePreviewFrame, frameFileNameFor, frameNumberAt } from "../../lib/frame-capture";
@@ -55,7 +56,7 @@ function CropViewport() {
   const isPlaying = usePlaybackIsPlaying();
   const { pause, play } = usePlaybackActions();
 
-  const { videoRef } = usePreviewRuntime();
+  const videoRef = usePreviewVideoRef();
   const { registerHandlers } = usePreviewTransform();
   const crop = useAppSelector(selectCrop);
   const cropApplied = useAppSelector(selectCropApplied);
