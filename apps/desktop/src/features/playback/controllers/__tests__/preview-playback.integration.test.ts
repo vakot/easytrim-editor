@@ -32,7 +32,7 @@ function createDeferred<T>() {
   return { promise, resolve };
 }
 
-function createNativePreviewHarness() {
+function createNativePreviewHarness(durationMicros = 2_000_000) {
   const video = document.createElement("video");
   let currentTime = 0;
   let readyState: number = HTMLMediaElement.HAVE_CURRENT_DATA;
@@ -110,7 +110,7 @@ function createNativePreviewHarness() {
   };
 
   const controller = new PlaybackController();
-  controller.attach(1, driver, 2_000_000);
+  controller.attach(1, driver, durationMicros);
 
   return {
     controller,
@@ -121,12 +121,21 @@ function createNativePreviewHarness() {
       video.dispatchEvent(new Event("seeked"));
       video.dispatchEvent(new Event("loadeddata"));
     },
+    get pendingPlaybackFrameCount() {
+      return frameCallbacks.size;
+    },
+    advanceMediaTime(seconds: number) {
+      currentTime = seconds;
+      for (const observer of observerCallbacks) observer.onTimeUpdate(seconds);
+    },
     flushAnimationFrames: createAnimationFrameQueue(),
     playNextFrame(mediaTime: number) {
-      const [callback] = frameCallbacks;
-      if (!callback) throw new Error("No playback frame is pending.");
-      frameCallbacks.delete(callback);
-      callback(0, mediaTime);
+      const callbacks = [...frameCallbacks];
+      if (callbacks.length === 0) throw new Error("No playback frame is pending.");
+      for (const callback of callbacks) {
+        frameCallbacks.delete(callback);
+        callback(0, mediaTime);
+      }
     },
     video,
     notifyNativePause() {
@@ -197,6 +206,57 @@ describe("native preview playback integration", () => {
     expect(preview.video.paused).toBe(true);
     expect(preview.driver.audio.pause).toHaveBeenCalled();
     expect(() => preview.playNextFrame(0.3)).toThrow("No playback frame is pending.");
+    preview.dispose();
+  });
+
+  it("resumes repeatedly near EOF when currentTime advances beyond the final presented frame", async () => {
+    const durationMicros = 500_000;
+    const durationSeconds = durationMicros / 1_000_000;
+    const lastAudioPosition = durationSeconds - 1 / 48_000;
+    const preview = createNativePreviewHarness(durationMicros);
+    let audioPosition = 0;
+    vi.spyOn(preview.driver.audio, "getCurrentTimeSeconds").mockImplementation(() => audioPosition);
+    vi.spyOn(preview.driver.audio, "startAlignedWithVideoAt").mockImplementation(
+      async (videoPosition) => {
+        audioPosition = Math.min(videoPosition + 0.15, lastAudioPosition);
+        return audioPosition;
+      },
+    );
+
+    preview.controller.play();
+    await vi.waitFor(() => expect(preview.driver.audio.startAlignedWithVideoAt).toHaveBeenCalled());
+    await vi.waitFor(() => expect(preview.pendingPlaybackFrameCount).toBeGreaterThan(1));
+    preview.advanceMediaTime(0.15);
+    await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
+
+    audioPosition = 0.35;
+    preview.advanceMediaTime(0.35);
+    preview.playNextFrame(0.35);
+    preview.controller.pause();
+    expect(preview.controller.getSnapshot().positionMicros).toBe(350_000);
+
+    preview.controller.play();
+    await vi.waitFor(() => expect(preview.driver.audio.prepareAt).toHaveBeenLastCalledWith(0.35));
+    await vi.waitFor(() =>
+      expect(preview.driver.audio.startAlignedWithVideoAt).toHaveBeenCalledTimes(2),
+    );
+    preview.playNextFrame(0.466_667);
+    expect(preview.controller.getSnapshot().isPlaying).toBe(false);
+
+    preview.advanceMediaTime(lastAudioPosition);
+    await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
+    expect(preview.controller.getSnapshot().positionMicros).toBeCloseTo(
+      lastAudioPosition * 1_000_000,
+    );
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      preview.controller.pause();
+      preview.controller.play();
+      await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
+    }
+
+    expect(preview.driver.audio.prepareAt).toHaveBeenLastCalledWith(lastAudioPosition);
+    expect(preview.video.currentTime).toBe(lastAudioPosition);
     preview.dispose();
   });
 

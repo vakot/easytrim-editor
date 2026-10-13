@@ -22,13 +22,14 @@ class PlaybackController {
   private unregisterAudioPlaybackErrorObserver: (() => void) | null = null;
   private playbackFrame: ReturnType<PreviewVideoAdapter["requestPlaybackFrame"]> = null;
   private startupFrame: ReturnType<PreviewVideoAdapter["requestPlaybackFrame"]> = null;
-  private resolveStartupFrameWait: (() => void) | null = null;
+  private resolveStartupFrameWait: ((reached: boolean) => void) | null = null;
   private startupGeneration = 0;
   private playbackClockGeneration = 0;
   private seekGeneration = 0;
   private mediaSessionId: number | null | undefined;
   private lifecycle: "paused" | "starting" | "playing" = "paused";
   private mediaStartRequested = false;
+  private startupTargetSeconds: number | null = null;
   private lastVideoSyncAt = 0;
 
   constructor() {
@@ -130,7 +131,17 @@ class PlaybackController {
       },
       onTimeUpdate: (seconds) => {
         if (this.mediaSessionId !== mediaSessionId) return;
-        if (this.lifecycle === "starting") this.publishMediaTime(seconds);
+        if (this.lifecycle !== "starting") return;
+        this.publishMediaTime(seconds);
+        const video = this.driver?.video;
+        if (
+          video &&
+          this.startupTargetSeconds !== null &&
+          seconds >= this.startupTargetSeconds &&
+          !video.isSeekPending()
+        ) {
+          this.resolveStartupFrameWait?.(true);
+        }
       },
     });
   }
@@ -305,20 +316,29 @@ class PlaybackController {
     this.mediaStartRequested = false;
     this.startupFrame?.cancel();
     this.startupFrame = null;
-    this.resolveStartupFrameWait?.();
+    this.resolveStartupFrameWait?.(false);
     this.resolveStartupFrameWait = null;
+    this.startupTargetSeconds = null;
   }
 
   private waitForVideoPosition(generation: number, targetSeconds: number): Promise<boolean> {
     const driver = this.driver;
     if (!driver || !this.isCurrentStartup(generation)) return Promise.resolve(false);
     const currentPosition = driver.video.getCurrentTimeSeconds();
-    if (currentPosition !== null && currentPosition >= targetSeconds) return Promise.resolve(true);
+    if (
+      !driver.video.isSeekPending() &&
+      currentPosition !== null &&
+      currentPosition >= targetSeconds
+    ) {
+      return Promise.resolve(true);
+    }
 
     return new Promise((resolve) => {
       const finish = (reached: boolean) => {
+        this.startupFrame?.cancel();
         this.startupFrame = null;
         this.resolveStartupFrameWait = null;
+        this.startupTargetSeconds = null;
         resolve(reached);
       };
 
@@ -328,7 +348,12 @@ class PlaybackController {
           finish(false);
           return;
         }
-        if (mediaTimeSeconds >= targetSeconds) {
+        const currentTimeSeconds = driver.video.getCurrentTimeSeconds();
+        if (
+          !driver.video.isSeekPending() &&
+          (mediaTimeSeconds >= targetSeconds ||
+            (currentTimeSeconds !== null && currentTimeSeconds >= targetSeconds))
+        ) {
           finish(true);
           return;
         }
@@ -338,7 +363,8 @@ class PlaybackController {
         else finish(false);
       };
 
-      this.resolveStartupFrameWait = () => finish(false);
+      this.startupTargetSeconds = targetSeconds;
+      this.resolveStartupFrameWait = finish;
       const frame = driver.video.requestPlaybackFrame(checkPosition);
       if (frame) this.startupFrame = frame;
       else finish(false);
