@@ -228,12 +228,7 @@ class PlaybackController {
         Math.min(durationSeconds, driver.video.getCurrentTimeSeconds() ?? seconds),
       );
 
-      const requestedAudioStartPosition = await driver.audio.startAlignedWithVideoAt(videoPosition);
-
-      const audioStartPosition = Math.max(
-        0,
-        Math.min(durationSeconds, requestedAudioStartPosition),
-      );
+      const audioStartPosition = await driver.audio.startAlignedWithVideoAt(videoPosition);
 
       if (!this.isCurrentStartup(generation)) return;
 
