@@ -163,6 +163,34 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
 afterEach(() => vi.unstubAllGlobals());
 
 describe("native preview playback integration", () => {
+  it.each([30, 60])(
+    "pauses and resumes at the frozen native position across repeated cycles at %i FPS",
+    async (frameRate) => {
+      const preview = createNativePreviewHarness(1_000_000, true);
+      let resumePosition = 0;
+
+      for (let cycle = 1; cycle <= 3; cycle += 1) {
+        preview.controller.play();
+        await vi.waitFor(() => expect(preview.controller.isPlaying).toBe(true));
+        expect(preview.driver.audio.prepareAt).toHaveBeenLastCalledWith(resumePosition);
+
+        const pausedPosition = (cycle * 3) / frameRate;
+        preview.setAudioPosition(pausedPosition - 0.05);
+        preview.advanceMediaTime(pausedPosition);
+        preview.playNextFrame(pausedPosition);
+        preview.controller.togglePlayback();
+
+        expect(preview.controller.isPlaying).toBe(false);
+        expect(preview.video.currentTime).toBe(pausedPosition);
+        expect(preview.controller.getSnapshot().positionMicros).toBe(pausedPosition * 1_000_000);
+        expect(preview.driver.audio.seek).toHaveBeenLastCalledWith(pausedPosition);
+        resumePosition = pausedPosition;
+      }
+
+      preview.dispose();
+    },
+  );
+
   it("updates the Timeline from video frames while audio startup is pending", async () => {
     const preview = createNativePreviewHarness();
     const pendingAudioStart = createDeferred<number>();

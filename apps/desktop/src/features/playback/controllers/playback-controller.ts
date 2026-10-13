@@ -220,8 +220,22 @@ class PlaybackController {
     this.cancelStartup();
     this.transitionLifecycle("paused");
 
-    driver?.audio.pause();
     driver?.video.pause();
+    const pausedVideoPosition = driver?.video.isSeekPending()
+      ? null
+      : driver?.video.getCurrentTimeSeconds();
+
+    if (
+      pausedVideoPosition !== null &&
+      pausedVideoPosition !== undefined &&
+      pausedVideoPosition < this.snapshot.durationMicros / MICROS_PER_SECOND
+    ) {
+      this.setPosition(pausedVideoPosition * MICROS_PER_SECOND);
+    }
+
+    driver?.audio.pause();
+
+    driver?.audio.seek(this.snapshot.positionMicros / MICROS_PER_SECOND);
   };
 
   togglePlayback = () => {
@@ -376,14 +390,14 @@ class PlaybackController {
       const driver = this.driver;
       if (!driver || this.mediaSessionId === null || this.mediaSessionId === undefined) return;
       const audioClockSeconds = driver.audio.getCurrentTimeSeconds();
-      const clockSeconds =
-        this.audioAlignmentPending || audioClockSeconds === null
-          ? seconds
-          : Math.min(audioClockSeconds, seconds);
 
       if (!driver.video.isSeekPending()) {
-        this.publishMediaTime(clockSeconds);
-        if (audioClockSeconds !== null && this.lifecycle === "playing") {
+        this.publishMediaTime(seconds);
+        if (
+          audioClockSeconds !== null &&
+          this.lifecycle === "playing" &&
+          !this.audioAlignmentPending
+        ) {
           this.syncVideoToAudio(audioClockSeconds);
         }
       }
