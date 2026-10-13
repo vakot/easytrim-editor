@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { usePreviewTransform } from "@/features/preview";
-import { useTimelineTransport } from "@/features/timeline";
+import { usePlaybackTransport } from "@/features/timeline";
 
 function useSaveFrameCommand() {
   const { t } = useTranslation();
   const { isAvailable, requestSaveFrame } = usePreviewTransform();
-  const { isPlaying } = useTimelineTransport();
+  const { isPlaying } = usePlaybackTransport();
   const label = t("preview.frame.saveFrame");
 
   return {

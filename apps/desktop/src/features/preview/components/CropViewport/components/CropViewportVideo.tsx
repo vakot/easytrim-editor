@@ -23,10 +23,8 @@ function CropViewportVideo({
 }: CropViewportVideoProps) {
   const { t } = useTranslation();
   const {
-    isNativeLoopEnabled,
     onCanPlay,
     onEnded,
-    onLoadedMetadata,
     onPause,
     onPlay,
     onPlaybackError,
@@ -112,12 +110,10 @@ function CropViewportVideo({
       data-preview-kind={previewKind}
       initial={false}
       key={sourceUrl}
-      loop={isNativeLoopEnabled}
       muted={videoMuted}
       onCanPlay={onCanPlay}
       onEnded={onEnded}
       onError={onError}
-      onLoadedMetadata={onLoadedMetadata}
       onLoadStart={onLoadStart}
       onPause={onPause}
       onPlay={handlePlay}

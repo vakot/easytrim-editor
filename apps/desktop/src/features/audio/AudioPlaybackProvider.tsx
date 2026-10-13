@@ -3,7 +3,6 @@ import { useMemo } from "react";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
-import { selectPlaybackSpeed } from "@/app/store/slices/playback-controls-slice";
 import { usePreviewRuntime } from "@/features/preview";
 
 import { AudioPlaybackContext } from "./contexts/audio-playback-context";
@@ -12,12 +11,11 @@ import { useAudioPlaybackRuntime } from "./hooks/useAudioPlaybackRuntime";
 
 function AudioPlaybackProvider({ children }: { children: ReactNode }) {
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
-  const playbackRate = useAppSelector(selectPlaybackSpeed);
   const preview = usePreviewRuntime();
   const playback = useAudioPlaybackRuntime({
     activeInstanceId,
     isPreviewReady: preview.isPreviewReady,
-    playbackRate,
+    playbackRate: 1,
     previewKey: preview.previewKey,
     videoRef: preview.videoRef,
   });
@@ -25,13 +23,11 @@ function AudioPlaybackProvider({ children }: { children: ReactNode }) {
   const audioPlayback = useMemo(
     () => ({
       audioMeterRef: playback.audioMeterRef,
-      audioPlayheadRef: playback.audioPlayheadRef,
       clearLiveAudioTrackGain: playback.clearLiveAudioTrackGain,
       setLiveAudioTrackGain: playback.setLiveAudioTrackGain,
     }),
     [
       playback.audioMeterRef,
-      playback.audioPlayheadRef,
       playback.clearLiveAudioTrackGain,
       playback.setLiveAudioTrackGain,
     ],

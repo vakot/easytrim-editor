@@ -58,7 +58,7 @@ const playback = vi.hoisted(() => {
 
 vi.mock("@/features/timeline", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/timeline")>()),
-  useTimelineTransport: () => playback,
+  usePlaybackTransport: () => playback,
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({

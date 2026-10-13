@@ -8,7 +8,6 @@ import {
   optimizedExportDialogOpened,
   queueFinishActionChanged,
 } from "@/app/store/slices/export-slice";
-import { playbackSpeedChanged } from "@/app/store/slices/playback-controls-slice";
 import {
   activityFeedViewChanged,
   editingSettingsReset,
@@ -102,7 +101,6 @@ describe("Redux Persist store integration", () => {
   it("configures Preferences as the persisted application domain", () => {
     expect(persistConfig.whitelist).toEqual(["preferences"]);
     expect(persistConfig.whitelist).not.toContain("activityFeedView");
-    expect(persistConfig.whitelist).not.toContain("editorTools");
     expect(persistConfig.whitelist).not.toContain("importWorkflow");
     expect(persistConfig.whitelist).not.toContain("source");
     expect(persistConfig.whitelist).not.toContain("trim");
@@ -118,7 +116,6 @@ describe("Redux Persist store integration", () => {
       [`persist:${persistConfig.key}`]: JSON.stringify({
         preferences: JSON.stringify({
           ...DEFAULT_PREFERENCES,
-          loopPlaybackEnabledDefault: false,
           activityFeedView: "compact",
         }),
         theme: JSON.stringify({
@@ -133,13 +130,10 @@ describe("Redux Persist store integration", () => {
 
     expect(store.getState().preferences).toEqual({
       ...DEFAULT_PREFERENCES,
-      loopPlaybackEnabledDefault: false,
       activityFeedView: "compact",
       theme: "dark",
       primaryColor: "#123456",
     });
-    expect(store.getState().editorTools.loopPlaybackEnabled).toBe(false);
-    expect(store.getState().playbackControls.playbackSpeed).toBe(1);
     expect(store.getState()).not.toHaveProperty("theme");
     expect(store.getState().preferences.activityFeedView).toBe("compact");
 
@@ -199,29 +193,6 @@ describe("Redux Persist store integration", () => {
     );
   });
 
-  it("does not rewrite active tools when a Preference changes", async () => {
-    const { store } = await createPersistedTestStore();
-
-    store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
-
-    expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
-    expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
-  });
-
-  it("never persists active editor tools", async () => {
-    const { persistor, storage, store } = await createPersistedTestStore();
-
-    store.dispatch(playbackSpeedChanged(3));
-    await persistor.flush();
-
-    const persistedRoot = await readPersistedRoot(storage);
-    expect(persistedRoot).not.toHaveProperty("editorTools");
-    expect(persistedRoot).not.toHaveProperty("playbackControls");
-    expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
-      ...DEFAULT_PREFERENCES,
-    });
-  });
-
   it("never persists export runtime state or dialog state", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
     store.dispatch(optimizedExportDialogOpened());
@@ -235,7 +206,7 @@ describe("Redux Persist store integration", () => {
   it("does not read the legacy Preferences storage key", async () => {
     const storage = createTestStorage({
       "easytrim.preferences.v1": JSON.stringify({
-        loopPlaybackEnabledDefault: false,
+        retiredPreference: true,
       }),
     });
 
@@ -265,14 +236,12 @@ describe("Redux Persist store integration", () => {
   it("persists a dispatched preference action without UI storage calls", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
-    store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     await persistor.flush();
 
     const persistedRoot = await readPersistedRoot(storage);
     expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
       ...DEFAULT_PREFERENCES,
-      loopPlaybackEnabledDefault: false,
       stripMetadataOnExport: true,
     });
   });
@@ -280,8 +249,6 @@ describe("Redux Persist store integration", () => {
   it("resets only Editing settings while preserving Queue, Layout, and Appearance", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
-    store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
-    store.dispatch(preferenceChanged({ key: "segmentPlaybackEnabledDefault", enabled: false }));
     store.dispatch(preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }));
     store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
@@ -329,8 +296,6 @@ describe("Redux Persist store integration", () => {
     store.dispatch(themePreferenceChanged("dark"));
     store.dispatch(primaryColorChanged("#123456"));
     store.dispatch(activityFeedViewChanged("branch"));
-    store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
-    store.dispatch(preferenceChanged({ key: "segmentPlaybackEnabledDefault", enabled: false }));
     store.dispatch(preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }));
     store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(layoutDensityChanged("compact"));
@@ -345,8 +310,6 @@ describe("Redux Persist store integration", () => {
       layoutDensity: "compact",
       theme: "dark",
       primaryColor: "#123456",
-      loopPlaybackEnabledDefault: false,
-      segmentPlaybackEnabledDefault: false,
       mergeAudioEnabledDefault: true,
       stripMetadataOnExport: true,
       uiScalePercent: 125,
@@ -358,8 +321,6 @@ describe("Redux Persist store integration", () => {
       layoutDensity: "compact",
       theme: "dark",
       primaryColor: "#123456",
-      loopPlaybackEnabledDefault: false,
-      segmentPlaybackEnabledDefault: false,
       mergeAudioEnabledDefault: true,
       stripMetadataOnExport: true,
       uiScalePercent: 125,
@@ -452,7 +413,7 @@ describe("Redux Persist store integration", () => {
     const first = await createPersistedTestStore(firstStorage);
     const second = await createPersistedTestStore(secondStorage);
 
-    first.store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
+    first.store.dispatch(preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }));
     await first.persistor.flush();
 
     expect(second.store.getState().preferences).toEqual(DEFAULT_PREFERENCES);

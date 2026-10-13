@@ -26,7 +26,7 @@ import {
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { isQuarterTurn } from "@/domain/rotation";
 import { usePreviewRuntime, usePreviewTransform } from "@/features/preview";
-import { useTimelineTransport } from "@/features/timeline";
+import { usePlaybackTransport } from "@/features/timeline";
 import { saveFramePng } from "@/lib/tauri/media";
 
 import { CROP_ASPECT_RATIO_PRESETS } from "../../lib/crop-aspect-ratio.utils";
@@ -52,7 +52,7 @@ import { usePreviewPresentation } from "./hooks/usePreviewPresentation";
 function CropViewport() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { isPlaying, resumeAfterInteraction, suspendForInteraction } = useTimelineTransport();
+  const { isPlaying, resumeAfterInteraction, suspendForInteraction } = usePlaybackTransport();
 
   const { videoRef } = usePreviewRuntime();
   const { registerHandlers } = usePreviewTransform();

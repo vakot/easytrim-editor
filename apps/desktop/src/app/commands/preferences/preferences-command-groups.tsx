@@ -4,23 +4,16 @@ import { defineApplicationCommandGroup } from "@/app/commands/core/application-c
 
 import { useAudioPreferenceCommands } from "./definitions/audio.commands";
 import { useOpenSettingsCommand } from "./definitions/open-settings.command";
-import { usePlaybackPreferenceCommands } from "./definitions/playback.commands";
 import { useResetEditingSettingsCommand } from "./definitions/reset-editing-settings.command";
 import { useStripMetadataCommand } from "./definitions/strip-metadata.command";
 
 function usePreferencesCommandGroups() {
   const { t } = useTranslation();
-  const playback = usePlaybackPreferenceCommands();
   const audio = useAudioPreferenceCommands();
   const resetEditingSettings = useResetEditingSettingsCommand();
   const stripMetadata = useStripMetadataCommand();
   const openSettings = useOpenSettingsCommand();
   return [
-    defineApplicationCommandGroup(
-      "preferences-playback",
-      t("commands.sections.preferencesPlayback"),
-      playback,
-    ),
     defineApplicationCommandGroup(
       "preferences-audio",
       t("commands.sections.preferencesAudio"),

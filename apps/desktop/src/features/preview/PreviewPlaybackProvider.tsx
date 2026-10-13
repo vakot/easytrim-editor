@@ -1,7 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectPlaybackSpeed } from "@/app/store/slices/playback-controls-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceLoadToken, selectSourceSelection } from "@/app/store/slices/source-slice";
 import { handlePreviewPlaybackError } from "@/app/store/thunks/source-media-thunks";
@@ -16,7 +15,6 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
   const sourcePath = useAppSelector(selectSourceSelection)?.sourcePath ?? null;
   const sourceLoadToken = useAppSelector(selectSourceLoadToken);
-  const playbackRate = useAppSelector(selectPlaybackSpeed);
 
   const preview = useAppSelector(selectPreview);
   const previewKey =
@@ -27,7 +25,6 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
   const previewKind = preview.status === "ready" ? preview.value.kind : null;
 
   const [readyPreviewKey, setReadyPreviewKey] = useState<string | null>(null);
-  const [isNativeLoopEnabled, setIsNativeLoopEnabled] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const observerRef = useRef<PreviewMediaObserver | null>(null);
   const seekSchedulerRef = useRef<{
@@ -94,10 +91,6 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
   }, [onCanPlay, previewKey]);
 
   useEffect(() => {
-    if (videoRef.current) videoRef.current.playbackRate = playbackRate;
-  }, [playbackRate, previewKey]);
-
-  useEffect(() => {
     const video = videoRef.current;
     return () => video?.pause();
   }, [previewKey]);
@@ -128,7 +121,6 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
     if (videoRef.current) videoRef.current.playbackRate = rate;
   }, []);
 
-  const onLoadedMetadata = useCallback(() => observerRef.current?.onLoadedMetadata(), []);
   const onPause = useCallback(() => {
     if (previewKind !== null)
       diagnostics.event("media.playback.paused", {
@@ -177,11 +169,9 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
   const runtime = useMemo(
     () => ({
       isPreviewReady: previewKey !== null && readyPreviewKey === previewKey,
-      isNativeLoopEnabled,
       getMediaState,
       isSeekPending,
       onEnded,
-      onLoadedMetadata,
       onPause,
       onPlay,
       onPlaybackError,
@@ -194,18 +184,15 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
       requestPlaybackFrame,
       registerMediaObserver,
       seekMedia,
-      setNativeLoopEnabled: setIsNativeLoopEnabled,
       setPlaybackRate,
       setVideoElement,
       videoRef,
     }),
     [
-      isNativeLoopEnabled,
       getMediaState,
       isSeekPending,
       onCanPlay,
       onEnded,
-      onLoadedMetadata,
       onPause,
       onPlay,
       onPlaybackError,

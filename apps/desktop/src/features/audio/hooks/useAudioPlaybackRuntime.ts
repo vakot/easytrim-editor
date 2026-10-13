@@ -182,7 +182,6 @@ function useAudioPlaybackRuntime({
   const audioMixRef = useRef<GainNode | null>(null);
   const audioMeterRef = useRef<StereoAudioMeterNodes | null>(null);
   const playbackOutputGainRef = useRef<GainNode | null>(null);
-  const audioPlayheadRef = useRef<HTMLDivElement>(null);
   const liveAudioTrackGainRuntimeRef = useRef<LiveAudioTrackGainRuntime | null>(null);
 
   useEffect(() => {
@@ -598,7 +597,6 @@ function useAudioPlaybackRuntime({
 
   return {
     audioMeterRef,
-    audioPlayheadRef,
     clearLiveAudioTrackGain,
     isReady,
     pause,

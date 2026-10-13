@@ -1,9 +1,0 @@
-.timelineHeader {
-  container: timeline-header / inline-size;
-}
-
-@container timeline-header (max-width: 48rem) {
-  .timelineValues > :nth-child(-n + 2) {
-    display: none;
-  }
-}

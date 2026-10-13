@@ -1,225 +1,29 @@
-import { Gauge, Volume1, Volume2, VolumeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  playbackSpeedChanged,
-  selectPlaybackSpeed,
-} from "@/app/store/slices/playback-controls-slice";
-import {
-  playbackVolumeChanged,
-  playbackVolumeToggled,
-  selectPlaybackVolumePercent,
-} from "@/app/store/slices/preferences-slice";
-import {
-  DEFAULT_PLAYBACK_SPEED,
-  PLAYBACK_SPEED_STEPS,
-  type PlaybackSpeed,
-} from "@/domain/playback-speed";
-import { cn } from "@/lib/class-names.utils";
-
-import { PlaybackControls } from "./PlaybackControls";
-import { PlaybackTimecode } from "./PlaybackTimecode";
-import styles from "./TimelinePanel.module.css";
-import { TimelineScale } from "./TimelineScale";
-import { TimelineToolbar } from "./TimelineToolbar";
-import { TimelineTrack } from "./TimelineTrack";
-import { TimelineValues } from "./TimelineValues";
-
-const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
-  value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),
-  label: `${speed}×`,
-}));
-
-const PLAYBACK_SPEED_PRESETS = [0.5, 1, 2, 3].map((speed) => ({
-  value: speed as PlaybackSpeed,
-  label: `${speed}×`,
-}));
+import { useTimelineFrameState } from "../contexts/timeline-runtime-contexts";
 
 function TimelinePanel() {
   const { t } = useTranslation();
+  const { currentFrame, framesCount, setCurrentFrame } = useTimelineFrameState();
 
   return (
-    <section
-      aria-labelledby="timeline-title"
-      className="min-w-0 p-3"
-      data-testid="timeline-fixed-content"
-    >
-      <div className={styles.timelineHeader}>
-        <div className="flex w-full gap-2">
-          <div className="flex flex-1 items-center gap-3">
-            <div className="w-(--editor-track-controls-width) min-w-0 justify-self-start">
-              <h2
-                className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
-                id="timeline-title"
-              >
-                {t("timeline.segment.labels.selectedSegment")}
-              </h2>
-              <PlaybackTimecode />
-            </div>
-
-            <div className="flex flex-1 gap-1">
-              <PlaybackSpeedControl />
-              <PlaybackVolumeControl />
-            </div>
-          </div>
-
-          <PlaybackControls className="flex-1" />
-
-          <TimelineValues className="flex-1 justify-end" />
-        </div>
-      </div>
-
-      <TimelineScale />
-
-      <div
-        className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-3"
-        data-slot="timeline-row"
-      >
-        <TimelineToolbar />
-        <TimelineTrack />
-      </div>
-    </section>
-  );
-}
-
-function PlaybackSpeedControl() {
-  const { t } = useTranslation();
-  const speed = useAppSelector(selectPlaybackSpeed);
-  const dispatch = useAppDispatch();
-  const stepIndex = PLAYBACK_SPEED_STEPS.indexOf(speed);
-  const enabled = speed !== DEFAULT_PLAYBACK_SPEED;
-
-  return (
-    <Tooltip>
-      <Popover>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button
-              aria-label={t("preview.playback.speed")}
-              aria-pressed={enabled}
-              className={cn(enabled && "text-primary aria-expanded:text-primary")}
-              size="icon-sm"
-              type="button"
-              variant="secondary"
-            >
-              <Gauge />
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent>{t("preview.playback.playbackSpeedTooltip")}</TooltipContent>
-
-        <PopoverContent align="start" className="grid w-56 gap-2 p-2.5" side="bottom">
-          <div className="flex items-center gap-1">
-            {PLAYBACK_SPEED_PRESETS.map(({ label, value }) => (
-              <Button
-                className="flex-1"
-                key={`speed-${value}`}
-                onClick={() => dispatch(playbackSpeedChanged(value))}
-                size="xs"
-                variant={speed === value ? "default" : "secondary"}
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Slider
-              aria-label={t("preview.playback.speed")}
-              className="mt-2 min-w-0 flex-1 **:data-[slot=slider-track]:h-1.5"
-              markers={PLAYBACK_SPEED_MARKERS}
-              max={PLAYBACK_SPEED_STEPS.length - 1}
-              min={0}
-              onDoubleClick={() => dispatch(playbackSpeedChanged(DEFAULT_PLAYBACK_SPEED))}
-              onValueChange={([index]) => {
-                const nextSpeed = PLAYBACK_SPEED_STEPS[index ?? stepIndex];
-                if (nextSpeed !== undefined) dispatch(playbackSpeedChanged(nextSpeed));
-              }}
-              step={1}
-              value={[stepIndex]}
-            />
-            <output className="w-10 shrink-0 text-right font-mono text-xs text-muted-foreground">
-              {speed.toFixed(2)}×
-            </output>
-          </div>
-        </PopoverContent>
-      </Popover>
-    </Tooltip>
-  );
-}
-
-function PlaybackVolumeControl() {
-  return (
-    <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
-      <HoverCardTrigger>
-        <PlaybackVolumeControlToggle />
-      </HoverCardTrigger>
-
-      <HoverCardContent align="center" className="max-w-42" side="right">
-        <PlaybackVolumeControlSlider />
-      </HoverCardContent>
-    </HoverCard>
-  );
-}
-
-function PlaybackVolumeControlToggle() {
-  const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const volumePercent = useAppSelector(selectPlaybackVolumePercent);
-  const enabled = volumePercent > 0;
-
-  return (
-    <Tooltip preserveOnTrigger>
-      <TooltipTrigger asChild>
-        <Button
-          aria-label={enabled ? t("audio.tracks.mute") : t("audio.tracks.unmute")}
-          aria-pressed={enabled}
-          className={cn(enabled && "text-primary")}
-          onClick={() => dispatch(playbackVolumeToggled())}
-          size="icon-sm"
-          type="button"
-          variant="secondary"
-        >
-          {enabled ? volumePercent >= 50 ? <Volume2 /> : <Volume1 /> : <VolumeOff />}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        {enabled
-          ? t("preview.playback.playbackVolumeMuteTooltip")
-          : t("preview.playback.playbackVolumeUnmuteTooltip")}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-function PlaybackVolumeControlSlider() {
-  const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const volumePercent = useAppSelector(selectPlaybackVolumePercent);
-
-  return (
-    <div className="flex items-center gap-1">
-      <Slider
-        aria-label={t("preview.playback.volume")}
-        max={100}
+    <section aria-label={t("timeline.playhead.accessibility.track")} className="min-w-0 p-3">
+      <Slider.Root
+        aria-label={t("timeline.playhead.accessibility.playbackPosition")}
+        className="flex min-h-8 w-full items-center"
+        disabled={framesCount === 0}
+        max={Math.max(0, framesCount - 1)}
         min={0}
-        onValueChange={([value]) => {
-          if (value !== undefined) dispatch(playbackVolumeChanged(value));
-        }}
+        onValueChange={([frame]) => setCurrentFrame(frame ?? 0)}
         step={1}
-        value={[volumePercent]}
-      />
-      <output className="w-[5ch] shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-        {volumePercent}%
-      </output>
-    </div>
+        value={[currentFrame]}
+      >
+        <Slider.Track className="h-2 rounded-full" />
+        <Slider.Thumb className="h-7 w-1 rounded-none border-0 bg-primary after:-inset-x-3" />
+      </Slider.Root>
+    </section>
   );
 }
 

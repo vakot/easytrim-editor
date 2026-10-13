@@ -57,8 +57,6 @@ const menuState = vi.hoisted(() => ({
   preferences: {
     activityFeedView: "default",
     layoutDensity: "default",
-    loopPlaybackEnabledDefault: true,
-    segmentPlaybackEnabledDefault: true,
     autoStartQueueEnabled: true,
     deleteSourceOnRenderFinish: false,
     lastSeenChangelogVersion: "1.10.4",
@@ -139,7 +137,6 @@ vi.mock("@/app/store/redux-hooks", () => ({
         capabilities: { status: "checking" },
       },
       crop: menuState.crop,
-      editorTools: { loopPlaybackEnabled: true, segmentPlaybackEnabled: true },
       trim: { value: null },
       export: {
         queue: menuState.export.queue,
@@ -258,12 +255,8 @@ describe("MenuBarTest", () => {
         setPreference(payload.key, payload.enabled);
       }
       if (action.type === "preferences/editingSettingsReset") {
-        menuState.preferences.loopPlaybackEnabledDefault =
-          DEFAULT_PREFERENCES.loopPlaybackEnabledDefault;
         menuState.preferences.mergeAudioEnabledDefault =
           DEFAULT_PREFERENCES.mergeAudioEnabledDefault;
-        menuState.preferences.segmentPlaybackEnabledDefault =
-          DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault;
       }
       if (action.type === "queue/settingsReset") {
         menuState.export.queueFinishAction = "nothing";
@@ -678,11 +671,11 @@ describe("MenuBarTest", () => {
     expect(await screen.findByText("Editing")).toBeInTheDocument();
     expect(await screen.findByText("Reset editing settings")).toBeInTheDocument();
 
-    const loopSwitch = screen.getByRole("switch", { name: "Loop" });
-    expect(loopSwitch).toBeChecked();
-    await user.click(loopSwitch);
-    expect(menuState.preferences.loopPlaybackEnabledDefault).toBe(false);
-    expect(loopSwitch).not.toBeChecked();
+    const mergeSwitch = screen.getByRole("switch", { name: "Merge audio" });
+    expect(mergeSwitch).not.toBeChecked();
+    await user.click(mergeSwitch);
+    expect(menuState.preferences.mergeAudioEnabledDefault).toBe(true);
+    expect(mergeSwitch).toBeChecked();
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });

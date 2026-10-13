@@ -1,94 +1,195 @@
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
+import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
+import { useAudioTransport } from "@/features/audio";
+import { usePreviewMediaTransport } from "@/features/preview";
 
 import {
-  TimelineEditingContext,
-  TimelinePlayheadContext,
-  TimelineReadinessContext,
-  TimelineTransportContext,
+  PlaybackTransportContext,
+  TimelineFrameContext,
 } from "./contexts/timeline-runtime-contexts";
-import { useTimelinePlaybackController } from "./hooks/useTimelinePlaybackController";
+import { frameCountFor, frameToSeconds, secondsToFrame } from "./lib/frame-time";
+
+const DEFAULT_FRAME_RATE = { denominator: 1, numerator: 30 } as const;
 
 function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
-  const runtime = useTimelinePlaybackController();
-  const playhead = useMemo(
-    () => ({
-      displayedPlayheadMicros: runtime.displayedPlayheadMicros,
-      playheadRef: runtime.playheadRef,
-    }),
-    [runtime.displayedPlayheadMicros, runtime.playheadRef],
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
+  const source = useAppSelector(selectSourceSelection);
+  const media = useAppSelector(selectSourceMedia);
+  const {
+    getMediaState,
+    isPreviewReady,
+    pauseMedia,
+    playMedia,
+    previewKey,
+    registerMediaObserver,
+    requestPlaybackFrame,
+    seekMedia,
+    setPlaybackRate,
+  } = usePreviewMediaTransport();
+  const {
+    pause: pauseAudio,
+    resumeAudioContext,
+    setPlaybackRate: setAudioPlaybackRate,
+    startAt: startAudioAt,
+    syncTo: syncAudioTo,
+  } = useAudioTransport();
+
+  const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
+  const metadataFrameCount = media?.video.frameCount;
+  const framesCount =
+    metadataFrameCount && metadataFrameCount > 0
+      ? metadataFrameCount
+      : frameCountFor(media?.durationMicros ?? 0, frameRate);
+  const frameRateForConversion = frameRate ?? DEFAULT_FRAME_RATE;
+
+  const [currentFrame, setCurrentFrameState] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const clampFrame = useCallback(
+    (frame: number) =>
+      framesCount <= 0 ? 0 : Math.max(0, Math.min(framesCount - 1, Math.round(frame))),
+    [framesCount],
   );
 
-  const editing = useMemo(
-    () => ({
-      canSetSegmentEnd: runtime.canSetSegmentEnd,
-      canSetSegmentStart: runtime.canSetSegmentStart,
-      onScrub: runtime.onScrub,
-      onScrubEnd: runtime.onScrubEnd,
-      onScrubStart: runtime.onScrubStart,
-      onSeek: runtime.onSeek,
-      onSegmentDragEnd: runtime.onSegmentDragEnd,
-      onSegmentDragStart: runtime.onSegmentDragStart,
-      onSegmentMove: runtime.onSegmentMove,
-      onSetSegmentBoundary: runtime.onSetSegmentBoundary,
-      onTrimBoundaryChange: runtime.onTrimBoundaryChange,
-      onTrimDragEnd: runtime.onTrimDragEnd,
-      onTrimDragStart: runtime.onTrimDragStart,
-    }),
+  const publishFrame = useCallback(
+    (frame: number) => {
+      const nextFrame = clampFrame(frame);
+      setCurrentFrameState(nextFrame);
+    },
+    [clampFrame],
+  );
+
+  const setCurrentFrame = useCallback(
+    (frame: number) => {
+      const nextFrame = clampFrame(frame);
+      publishFrame(nextFrame);
+      if (framesCount === 0) return;
+      const seconds = frameToSeconds(nextFrame, frameRateForConversion);
+      seekMedia(seconds, false);
+      syncAudioTo(seconds, true);
+    },
+    [clampFrame, frameRateForConversion, framesCount, publishFrame, seekMedia, syncAudioTo],
+  );
+
+  const pause = useCallback(() => {
+    pauseMedia();
+    pauseAudio();
+    setIsPlaying(false);
+  }, [pauseAudio, pauseMedia]);
+
+  const toggle = useCallback(() => {
+    if (!isPreviewReady || framesCount === 0) return;
+    if (getMediaState()?.paused === false) {
+      pause();
+      return;
+    }
+
+    const seconds = frameToSeconds(currentFrame, frameRateForConversion);
+    void resumeAudioContext();
+    setAudioPlaybackRate(1);
+    void startAudioAt(seconds).catch(pauseAudio);
+    void playMedia().catch(pauseAudio);
+  }, [
+    frameRateForConversion,
+    framesCount,
+    getMediaState,
+    isPreviewReady,
+    currentFrame,
+    pause,
+    pauseAudio,
+    playMedia,
+    resumeAudioContext,
+    setAudioPlaybackRate,
+    startAudioAt,
+  ]);
+
+  const suspendForInteraction = useCallback(() => {
+    const shouldResume = !getMediaState()?.paused;
+    if (shouldResume) pause();
+    return shouldResume;
+  }, [getMediaState, pause]);
+
+  const resumeAfterInteraction = useCallback(
+    (resumePlayback: boolean) => {
+      if (resumePlayback) toggle();
+    },
+    [toggle],
+  );
+
+  useEffect(() => {
+    publishFrame(0);
+    pause();
+  }, [activeInstanceId, pause, publishFrame, previewKey, source?.sourcePath]);
+
+  useEffect(() => {
+    setPlaybackRate(1);
+    setAudioPlaybackRate(1);
+  }, [setAudioPlaybackRate, setPlaybackRate]);
+
+  useEffect(
+    () =>
+      registerMediaObserver({
+        onEnded: pause,
+        onPause: () => {
+          setIsPlaying(false);
+          pauseAudio();
+        },
+        onPlay: () => setIsPlaying(true),
+        onPlaybackError: pause,
+        onTimeUpdate: (seconds) => {
+          publishFrame(secondsToFrame(seconds, frameRateForConversion, framesCount));
+          syncAudioTo(seconds);
+        },
+      }),
     [
-      runtime.canSetSegmentEnd,
-      runtime.canSetSegmentStart,
-      runtime.onScrub,
-      runtime.onScrubEnd,
-      runtime.onScrubStart,
-      runtime.onSeek,
-      runtime.onSegmentDragEnd,
-      runtime.onSegmentDragStart,
-      runtime.onSegmentMove,
-      runtime.onSetSegmentBoundary,
-      runtime.onTrimBoundaryChange,
-      runtime.onTrimDragEnd,
-      runtime.onTrimDragStart,
+      frameRateForConversion,
+      framesCount,
+      pause,
+      pauseAudio,
+      publishFrame,
+      registerMediaObserver,
+      syncAudioTo,
     ],
   );
 
-  const readiness = useMemo(() => ({ canInteract: runtime.canInteract }), [runtime.canInteract]);
+  useEffect(() => {
+    if (!isPlaying) return;
+    let frame = requestPlaybackFrame(update);
+
+    function update(_timestamp: number, seconds: number) {
+      publishFrame(secondsToFrame(seconds, frameRateForConversion, framesCount));
+      syncAudioTo(seconds);
+      frame = requestPlaybackFrame(update);
+    }
+
+    return () => frame?.cancel();
+  }, [
+    frameRateForConversion,
+    framesCount,
+    isPlaying,
+    publishFrame,
+    requestPlaybackFrame,
+    syncAudioTo,
+  ]);
+
+  const frameState = useMemo(
+    () => ({ currentFrame, framesCount, setCurrentFrame }),
+    [currentFrame, framesCount, setCurrentFrame],
+  );
   const transport = useMemo(
-    () => ({
-      isPlaying: runtime.isPlaying,
-      pause: runtime.pause,
-      resumeAfterInteraction: runtime.resumeAfterInteraction,
-      shuttleDirection: runtime.shuttleDirection,
-      startShuttle: runtime.startShuttle,
-      stepFrame: runtime.stepFrame,
-      stopShuttle: runtime.stopShuttle,
-      suspendForInteraction: runtime.suspendForInteraction,
-      toggle: runtime.toggle,
-      transportError: runtime.transportError,
-    }),
-    [
-      runtime.isPlaying,
-      runtime.pause,
-      runtime.resumeAfterInteraction,
-      runtime.shuttleDirection,
-      runtime.startShuttle,
-      runtime.stepFrame,
-      runtime.stopShuttle,
-      runtime.suspendForInteraction,
-      runtime.toggle,
-      runtime.transportError,
-    ],
+    () => ({ isPlaying, pause, resumeAfterInteraction, suspendForInteraction, toggle }),
+    [isPlaying, pause, resumeAfterInteraction, suspendForInteraction, toggle],
   );
 
   return (
-    <TimelinePlayheadContext.Provider value={playhead}>
-      <TimelineEditingContext.Provider value={editing}>
-        <TimelineReadinessContext.Provider value={readiness}>
-          <TimelineTransportContext.Provider value={transport}>
-            {children}
-          </TimelineTransportContext.Provider>
-        </TimelineReadinessContext.Provider>
-      </TimelineEditingContext.Provider>
-    </TimelinePlayheadContext.Provider>
+    <TimelineFrameContext.Provider value={frameState}>
+      <PlaybackTransportContext.Provider value={transport}>
+        {children}
+      </PlaybackTransportContext.Provider>
+    </TimelineFrameContext.Provider>
   );
 }
 

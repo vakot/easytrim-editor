@@ -17,15 +17,9 @@ import { audioReducer } from "@/app/store/slices/audio-slice";
 import { chaptersReducer } from "@/app/store/slices/chapters-slice";
 import { cropReducer } from "@/app/store/slices/crop-slice";
 import { editingInstancesReducer } from "@/app/store/slices/editing-instances-slice";
-import {
-  createEditorToolsStateFromPreferences,
-  editorToolsInitialized,
-  editorToolsReducer,
-} from "@/app/store/slices/editor-tools-slice";
 import { exportPresetsReducer } from "@/app/store/slices/export-presets-slice";
 import { exportReducer } from "@/app/store/slices/export-slice";
 import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
-import { playbackControlsReducer } from "@/app/store/slices/playback-controls-slice";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 import { previewReducer } from "@/app/store/slices/preview-slice";
 import { sourceReducer } from "@/app/store/slices/source-slice";
@@ -36,8 +30,6 @@ const combinedReducer = combineReducers({
   chapters: chaptersReducer,
   crop: cropReducer,
   editingInstances: editingInstancesReducer,
-  editorTools: editorToolsReducer,
-  playbackControls: playbackControlsReducer,
   export: exportReducer,
   exportPresets: exportPresetsReducer,
   importWorkflow: importWorkflowReducer,
@@ -87,15 +79,7 @@ export type AppStore = ReturnType<typeof createAppStore>;
 export type AppDispatch = AppStore["dispatch"];
 
 function createAppPersistor(appStore: AppStore): Persistor {
-  return persistStore(appStore, undefined, () => {
-    // Redux Persist invokes this only after Preferences has been rehydrated. The
-    // one-time initialization keeps active tools independent from later preference edits.
-    appStore.dispatch(
-      editorToolsInitialized(
-        createEditorToolsStateFromPreferences(appStore.getState().preferences),
-      ),
-    );
-  });
+  return persistStore(appStore);
 }
 
 export const store = createAppStore();

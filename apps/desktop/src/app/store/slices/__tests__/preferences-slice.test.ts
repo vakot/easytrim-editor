@@ -42,20 +42,17 @@ describe("preferences Redux domain", () => {
 
     const nextState = preferencesReducer(
       initialState,
-      preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }),
+      preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }),
     );
 
-    expect(nextState.loopPlaybackEnabledDefault).toBe(false);
-    expect(nextState.mergeAudioEnabledDefault).toBe(initialState.mergeAudioEnabledDefault);
+    expect(nextState.mergeAudioEnabledDefault).toBe(true);
   });
 
   it("changes the activity feed view without changing unrelated preferences", () => {
     const nextState = preferencesReducer(undefined, activityFeedViewChanged("compact"));
 
     expect(nextState.activityFeedView).toBe("compact");
-    expect(nextState.loopPlaybackEnabledDefault).toBe(
-      DEFAULT_PREFERENCES.loopPlaybackEnabledDefault,
-    );
+    expect(nextState.mergeAudioEnabledDefault).toBe(DEFAULT_PREFERENCES.mergeAudioEnabledDefault);
   });
 
   it("moves sidebar views through the persisted layout preference", () => {
@@ -119,8 +116,6 @@ describe("preferences Redux domain", () => {
   it("resets only Editing settings while preserving settings owned by other sections", () => {
     const state = preferencesReducer(
       {
-        loopPlaybackEnabledDefault: false,
-        segmentPlaybackEnabledDefault: false,
         autoStartQueueEnabled: false,
         mergeAudioEnabledDefault: true,
         stripMetadataOnExport: true,
@@ -157,8 +152,6 @@ describe("preferences Redux domain", () => {
       activityFeedView: "branch",
       layoutDensity: "compact",
       sidebarLayout: { left: ["activity"], right: ["sources"] },
-      loopPlaybackEnabledDefault: false,
-      segmentPlaybackEnabledDefault: false,
       mergeAudioEnabledDefault: true,
       stripMetadataOnExport: true,
       autoStartQueueEnabled: false,
@@ -196,8 +189,6 @@ describe("preferences Redux domain", () => {
 
   it("selects focused preference values", () => {
     const preferences: Preferences = {
-      loopPlaybackEnabledDefault: true,
-      segmentPlaybackEnabledDefault: false,
       autoStartQueueEnabled: true,
       mergeAudioEnabledDefault: true,
       stripMetadataOnExport: true,
@@ -216,8 +207,6 @@ describe("preferences Redux domain", () => {
     const state = { preferences } as RootState;
 
     expect(selectPreferences(state)).toEqual(preferences);
-    expect(selectPreferences(state).loopPlaybackEnabledDefault).toBe(true);
-    expect(selectPreferences(state).segmentPlaybackEnabledDefault).toBe(false);
     expect(selectMergeAudioEnabledDefault(state)).toBe(true);
     expect(selectStripMetadataOnExport(state)).toBe(true);
     expect(selectDeleteSourceOnRenderFinish(state)).toBe(false);

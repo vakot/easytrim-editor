@@ -17,61 +17,31 @@ import {
 } from "@/features/preview/contexts/preview-runtime-context";
 // eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies feature-owned contexts.
 import {
-  TimelineEditingContext,
-  type TimelineEditingContract,
-  TimelinePlayheadContext,
-  type TimelinePlayheadContract,
-  TimelineReadinessContext,
-  type TimelineReadinessContract,
-  TimelineTransportContext,
-  type TimelineTransportContract,
+  PlaybackTransportContext,
+  type PlaybackTransport,
+  TimelineFrameContext,
+  type TimelineFrameState,
 } from "@/features/timeline/contexts/timeline-runtime-contexts";
 
 const noOperation = () => undefined;
 const videoRef: RefObject<HTMLVideoElement | null> = { current: null };
-const playheadRef: RefObject<HTMLButtonElement | null> = { current: null };
-
-const timelineEditing = {
-  canSetSegmentEnd: false,
-  canSetSegmentStart: false,
-  onScrub: noOperation,
-  onScrubEnd: noOperation,
-  onScrubStart: noOperation,
-  onSeek: noOperation,
-  onSegmentDragEnd: noOperation,
-  onSegmentDragStart: noOperation,
-  onSegmentMove: noOperation,
-  onSetSegmentBoundary: noOperation,
-  onTrimBoundaryChange: noOperation,
-  onTrimDragEnd: noOperation,
-  onTrimDragStart: noOperation,
-} satisfies TimelineEditingContract;
-
-const timelinePlayhead = {
-  displayedPlayheadMicros: 0,
-  playheadRef,
-} satisfies TimelinePlayheadContract;
-
-const timelineReadiness = { canInteract: false } satisfies TimelineReadinessContract;
-
 const timelineTransport = {
   isPlaying: false,
   pause: noOperation,
   resumeAfterInteraction: noOperation,
-  shuttleDirection: 0,
-  stepFrame: noOperation,
-  startShuttle: noOperation,
-  stopShuttle: noOperation,
   suspendForInteraction: () => false,
   toggle: noOperation,
-  transportError: null,
-} satisfies TimelineTransportContract;
+} satisfies PlaybackTransport;
+
+const timelineFrameState = {
+  currentFrame: 0,
+  framesCount: 0,
+  setCurrentFrame: noOperation,
+} satisfies TimelineFrameState;
 
 const preview = {
   isPreviewReady: false,
-  isNativeLoopEnabled: false,
   onEnded: noOperation,
-  onLoadedMetadata: noOperation,
   onPause: noOperation,
   onPlay: noOperation,
   onPlaybackError: noOperation,
@@ -86,7 +56,6 @@ const preview = {
   requestPlaybackFrame: () => null,
   registerMediaObserver: () => noOperation,
   seekMedia: noOperation,
-  setNativeLoopEnabled: noOperation,
   setPlaybackRate: noOperation,
   setVideoElement: (element: HTMLVideoElement | null) => {
     if (videoRef.current && videoRef.current !== element) videoRef.current.pause();
@@ -97,7 +66,6 @@ const preview = {
 
 const audioPlayback = {
   audioMeterRef: { current: null },
-  audioPlayheadRef: { current: null },
   clearLiveAudioTrackGain: noOperation,
   setLiveAudioTrackGain: noOperation,
 } satisfies AudioPlaybackContract;
@@ -124,15 +92,11 @@ function EditorRuntimeTestProvider({
     <PreviewRuntimeContext.Provider value={preview}>
       <AudioPlaybackContext.Provider value={audioPlayback}>
         <AudioTransportContext.Provider value={audioTransport}>
-          <TimelinePlayheadContext.Provider value={timelinePlayhead}>
-            <TimelineEditingContext.Provider value={timelineEditing}>
-              <TimelineReadinessContext.Provider value={timelineReadiness}>
-                <TimelineTransportContext.Provider value={timelineTransport}>
-                  {children}
-                </TimelineTransportContext.Provider>
-              </TimelineReadinessContext.Provider>
-            </TimelineEditingContext.Provider>
-          </TimelinePlayheadContext.Provider>
+          <TimelineFrameContext.Provider value={timelineFrameState}>
+            <PlaybackTransportContext.Provider value={timelineTransport}>
+              {children}
+            </PlaybackTransportContext.Provider>
+          </TimelineFrameContext.Provider>
         </AudioTransportContext.Provider>
       </AudioPlaybackContext.Provider>
     </PreviewRuntimeContext.Provider>

@@ -8,7 +8,6 @@ import { useFlipCommands } from "./definitions/flip.commands";
 import { useResetTransformCommand } from "./definitions/reset-transform.command";
 import { useRotationCommands } from "./definitions/rotation.commands";
 import { useSaveFrameCommand } from "./definitions/save-frame.command";
-import { useSceneCommands } from "./definitions/scene.commands";
 
 function usePreviewCommandGroups() {
   const { t } = useTranslation();
@@ -18,18 +17,7 @@ function usePreviewCommandGroups() {
   const rotations = useRotationCommands();
   const flips = useFlipCommands();
   const reset = useResetTransformCommand();
-  const { markerCommands, sceneCommands } = useSceneCommands();
   return [
-    defineApplicationCommandGroup(
-      "preview-markers-scene",
-      t("commands.sections.markersScene"),
-      sceneCommands,
-    ),
-    defineApplicationCommandGroup(
-      "preview-markers-navigation",
-      t("commands.sections.markers"),
-      markerCommands,
-    ),
     defineApplicationCommandGroup("preview-frame", t("commands.sections.previewFrame"), [
       saveFrame,
       copyFrame,
