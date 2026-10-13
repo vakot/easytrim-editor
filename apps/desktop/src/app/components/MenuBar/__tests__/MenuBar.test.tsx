@@ -17,7 +17,7 @@ import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
 import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
-import { useSettingsDialog } from "@/app/hooks/useAppDialog";
+import { useChangelogDialog, useSettingsDialog } from "@/app/hooks/useAppDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
@@ -104,6 +104,15 @@ function getMenuTrigger(name: string) {
 function SettingsOpenIndicator() {
   const { isOpen } = useSettingsDialog();
   return isOpen ? <span data-testid="settings-open" /> : null;
+}
+
+function OpenChangelogManuallyButton() {
+  const { openDialog } = useChangelogDialog();
+  return (
+    <button data-testid="open-changelog-manually" onClick={openDialog} type="button">
+      open-changelog-manually
+    </button>
+  );
 }
 
 function WorkspaceDialogSelectionProbe() {
@@ -306,6 +315,7 @@ describe("MenuBarTest", () => {
                           <ExportActions />
                         </ExportDialog>
                         <AppChangelogDialog />
+                        <OpenChangelogManuallyButton />
                         <WorkspaceDialogSelectionProbe />
                         <AppSettingsDialog />
                         <SettingsOpenIndicator />
@@ -368,6 +378,32 @@ describe("MenuBarTest", () => {
 
     await waitFor(() =>
       expect(screen.getByTestId("workspace-dialog-view")).toHaveTextContent("exportQueue"),
+    );
+  });
+
+  it("shows the full changelog when opened manually during What's New", async () => {
+    renderMenus({
+      preferences: {
+        ...DEFAULT_PREFERENCES,
+        lastSeenChangelogVersion: "1.10.4",
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "What’s New" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "v1.10.4" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("open-changelog-manually"));
+
+    expect(await screen.findByRole("heading", { name: "Changelog" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "v1.10.4" })).toBeVisible();
+
+    fireEvent.click(
+      screen
+        .getByRole("dialog")
+        .querySelector('button[data-slot="button"][data-variant="default"]') as HTMLElement,
+    );
+    expect(menuState.dispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "preferences/changelogVersionSeen" }),
     );
   });
 

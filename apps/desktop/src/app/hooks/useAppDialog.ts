@@ -26,7 +26,21 @@ function useCommandPaletteDialog() {
 }
 
 function useChangelogDialog() {
-  return useAppDialog("changelog");
+  const dialog = useAppDialog("changelog");
+  const context = useContext(AppDialogsContext);
+  if (!context) throw new Error("useAppDialog must be used within AppDialogsProvider.");
+
+  const openDialog = useCallback(
+    () => context.openDialog("changelog", { manual: true }),
+    [context],
+  );
+
+  return {
+    ...dialog,
+    isManualOpen: context.isManualOpen("changelog"),
+    openDialog,
+    openDialogAutomatically: dialog.openDialog,
+  };
 }
 
 function useSettingsDialog() {

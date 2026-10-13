@@ -2,7 +2,7 @@ import { type ReactNode, useCallback, useMemo, useState } from "react";
 
 import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import { isShortcutEvent } from "@/app/commands/core/application-command.utils";
-import type { AppDialogId } from "@/app/contexts/app-dialogs-context";
+import type { AppDialogId, AppDialogOpenOptions } from "@/app/contexts/app-dialogs-context";
 import { AppDialogsContext } from "@/app/contexts/app-dialogs-context";
 import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
@@ -18,22 +18,38 @@ const dialogPreloaders: Record<AppDialogId, () => Promise<unknown>> = {
 
 function AppDialogsProvider({ children }: { children: ReactNode }) {
   const [openDialogIds, setOpenDialogIds] = useState<ReadonlySet<AppDialogId>>(() => new Set());
+  const [manualDialogIds, setManualDialogIds] = useState<ReadonlySet<AppDialogId>>(() => new Set());
 
   const isOpen = useCallback(
     (dialogId: AppDialogId) => openDialogIds.has(dialogId),
     [openDialogIds],
   );
 
-  const openDialog = useCallback((dialogId: AppDialogId) => {
+  const isManualOpen = useCallback(
+    (dialogId: AppDialogId) => manualDialogIds.has(dialogId),
+    [manualDialogIds],
+  );
+
+  const openDialog = useCallback((dialogId: AppDialogId, options?: AppDialogOpenOptions) => {
     void dialogPreloaders[dialogId]().catch(() => undefined);
-    setOpenDialogIds((current) => {
-      if (current.has(dialogId)) return current;
-      return new Set(current).add(dialogId);
-    });
+    setOpenDialogIds((current) =>
+      current.has(dialogId) ? current : new Set(current).add(dialogId),
+    );
+    if (options?.manual) {
+      setManualDialogIds((current) =>
+        current.has(dialogId) ? current : new Set(current).add(dialogId),
+      );
+    }
   }, []);
 
   const closeDialog = useCallback((dialogId: AppDialogId) => {
     setOpenDialogIds((current) => {
+      if (!current.has(dialogId)) return current;
+      const next = new Set(current);
+      next.delete(dialogId);
+      return next;
+    });
+    setManualDialogIds((current) => {
       if (!current.has(dialogId)) return current;
       const next = new Set(current);
       next.delete(dialogId);
@@ -49,6 +65,12 @@ function AppDialogsProvider({ children }: { children: ReactNode }) {
       else next.add(dialogId);
       return next;
     });
+    setManualDialogIds((current) => {
+      if (!current.has(dialogId)) return current;
+      const next = new Set(current);
+      next.delete(dialogId);
+      return next;
+    });
   }, []);
 
   useKeyboardShortcut(
@@ -61,8 +83,8 @@ function AppDialogsProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ closeDialog, isOpen, openDialog, toggleDialog }),
-    [closeDialog, isOpen, openDialog, toggleDialog],
+    () => ({ closeDialog, isManualOpen, isOpen, openDialog, toggleDialog }),
+    [closeDialog, isManualOpen, isOpen, openDialog, toggleDialog],
   );
 
   return <AppDialogsContext.Provider value={value}>{children}</AppDialogsContext.Provider>;

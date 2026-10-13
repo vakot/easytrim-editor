@@ -31,7 +31,7 @@ const AppChangelogDialog = Object.assign(
     const dialogScope = useAppChangelogDialogScope(__scopeDialog);
     const dispatch = useAppDispatch();
     const lastSeenVersion = useAppSelector(selectLastSeenChangelogVersion);
-    const { closeDialog, isOpen, openDialog } = useChangelogDialog();
+    const { closeDialog, isManualOpen, isOpen, openDialogAutomatically } = useChangelogDialog();
     const currentVersion = getCurrentVersion();
     const [whatsNewDismissed, setWhatsNewDismissed] = useState(false);
     const availableReleases = getAvailableChangelog(CHANGELOG, currentVersion);
@@ -41,7 +41,7 @@ const AppChangelogDialog = Object.assign(
       startupState.unseenReleases.length > 0 &&
       !whatsNewDismissed;
 
-    const mode = isOpen ? (hasWhatsNew ? "whats-new" : "changelog") : null;
+    const mode = isOpen ? (!isManualOpen && hasWhatsNew ? "whats-new" : "changelog") : null;
 
     useEffect(() => {
       if (!startupState.initializeSeenVersion) return;
@@ -56,7 +56,7 @@ const AppChangelogDialog = Object.assign(
 
       let active = true;
       const openAfterPreload = () => {
-        if (active) openDialog();
+        if (active) openDialogAutomatically();
       };
 
       void LazyAppChangelogDialogContent.preload().then(openAfterPreload, openAfterPreload);
@@ -64,7 +64,7 @@ const AppChangelogDialog = Object.assign(
       return () => {
         active = false;
       };
-    }, [hasWhatsNew, openDialog]);
+    }, [hasWhatsNew, openDialogAutomatically]);
 
     const handleClose = useCallback(() => {
       if (mode === "whats-new") {
