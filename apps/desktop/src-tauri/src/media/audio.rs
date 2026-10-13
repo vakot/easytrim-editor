@@ -106,7 +106,7 @@ fn playback_chunk_arguments(
     let filter_preroll_frames = micros_to_frames(start_micros - seek_micros);
     let requested_frames = micros_to_frames(duration_micros);
     let filter_graph = format!(
-        "{};[audio0]apad=whole_len={},atrim=start_sample={filter_preroll_frames}:end_sample={},asetpts=PTS-STARTPTS[audio_chunk]",
+        "{};[audio0]aresample={PLAYBACK_PCM_SAMPLE_RATE}:async=1:first_pts=0,apad=whole_len={},atrim=start_sample={filter_preroll_frames}:end_sample={},asetpts=PTS-STARTPTS[audio_chunk]",
         audio_filter_graph(selection, false),
         filter_preroll_frames + requested_frames,
         filter_preroll_frames + requested_frames,
@@ -236,6 +236,76 @@ mod tests {
                 OsString::from(PLAYBACK_PCM_SAMPLE_RATE.to_string())
             ]));
         assert_eq!(arguments.last(), Some(&OsString::from("pipe:1")));
+    }
+
+    #[test]
+    fn timestamp_gaps_do_not_truncate_a_playback_pcm_chunk() {
+        let unique_id = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time is valid")
+            .as_nanos();
+        let source_path = std::env::temp_dir().join(format!(
+            "easytrim-playback-timestamp-gap-{}-{unique_id}.nut",
+            std::process::id()
+        ));
+        let generate = run_bounded_cancellable(
+            OsStr::new("ffmpeg"),
+            &[
+                OsString::from("-hide_banner"),
+                OsString::from("-nostdin"),
+                OsString::from("-f"),
+                OsString::from("lavfi"),
+                OsString::from("-i"),
+                OsString::from("sine=frequency=440:sample_rate=48000:duration=6"),
+                OsString::from("-af"),
+                OsString::from(r"asetpts=PTS+gte(N\,1024)*8"),
+                OsString::from("-c:a"),
+                OsString::from("pcm_s16le"),
+                OsString::from("-y"),
+                source_path.as_os_str().to_owned(),
+            ],
+            Duration::from_secs(30),
+            16 * 1024,
+            STDERR_LIMIT,
+            || false,
+        )
+        .expect("FFmpeg creates the playback fixture");
+        assert!(
+            generate.status.success(),
+            "{}",
+            String::from_utf8_lossy(&generate.stderr)
+        );
+
+        let track = AudioTrackSelection {
+            loudness_analysis: None,
+            stream_index: 0,
+            processing: AudioTrackProcessing {
+                gain_db: 0.0,
+                loudness_normalization: None,
+                effects: Vec::new(),
+            },
+        };
+        let output = run_bounded_cancellable(
+            OsStr::new("ffmpeg"),
+            &playback_chunk_arguments(&source_path, &track, 0, 2_000_000),
+            Duration::from_secs(30),
+            PLAYBACK_PCM_MAX_OUTPUT_BYTES,
+            STDERR_LIMIT,
+            || false,
+        )
+        .expect("FFmpeg decodes a playback chunk across a timestamp gap");
+
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(
+            output.stdout.len(),
+            2 * PLAYBACK_PCM_SAMPLE_RATE as usize * 2 * 2
+        );
+
+        let _ = std::fs::remove_file(source_path);
     }
 
     #[test]
