@@ -4,48 +4,62 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createAppStore } from "@/app/store/store";
 
-import {
-  PlaybackTransportContext,
-  TimelineFrameContext,
-} from "../../contexts/timeline-runtime-contexts";
 import { TimelinePanel } from "../TimelinePanel";
+
+const playback = vi.hoisted(() => ({
+  currentFrame: 11,
+  framesCount: 100,
+  isPlaying: false,
+  pause: vi.fn(),
+  seekFrame: vi.fn(),
+  togglePlayback: vi.fn(),
+}));
+
+vi.mock("@/features/playback", () => ({
+  microsToFrame: () => 0,
+  usePlaybackActions: () => ({ pause: playback.pause, togglePlayback: playback.togglePlayback }),
+  usePlaybackIsPlaying: () => playback.isPlaying,
+  useTimelinePlayback: () => ({
+    currentFrame: playback.currentFrame,
+    framesCount: playback.framesCount,
+    seekFrame: playback.seekFrame,
+  }),
+}));
 
 function renderTimelinePanel({
   currentFrame = 11,
   framesCount = 100,
-  setCurrentFrame = vi.fn(),
   isPlaying = false,
-  setIsPlaying = vi.fn(),
 }: {
   currentFrame?: number;
   framesCount?: number;
-  setCurrentFrame?: (frame: number) => void;
   isPlaying?: boolean;
-  setIsPlaying?: (isPlaying: boolean) => void;
 } = {}) {
+  playback.currentFrame = currentFrame;
+  playback.framesCount = framesCount;
+  playback.isPlaying = isPlaying;
+  playback.pause.mockClear();
+  playback.seekFrame.mockClear();
+  playback.togglePlayback.mockClear();
+
   return render(
     <Provider store={createAppStore()}>
-      <TimelineFrameContext.Provider value={{ currentFrame, framesCount, setCurrentFrame }}>
-        <PlaybackTransportContext.Provider value={{ isPlaying, setIsPlaying }}>
-          <TimelinePanel />
-        </PlaybackTransportContext.Provider>
-      </TimelineFrameContext.Provider>
+      <TimelinePanel />
     </Provider>,
   );
 }
 
 describe("TimelinePanel", () => {
   it("uses integer frame values and selects a frame from the playhead", () => {
-    const setCurrentFrame = vi.fn();
-    renderTimelinePanel({ setCurrentFrame });
+    renderTimelinePanel();
 
     const slider = screen.getByRole("slider");
     expect(slider).toHaveAttribute("aria-valuemin", "0");
-    expect(slider).toHaveAttribute("aria-valuemax", "99");
+    expect(slider).toHaveAttribute("aria-valuemax", "100");
     expect(slider).toHaveAttribute("aria-valuenow", "11");
 
     fireEvent.keyDown(slider, { key: "ArrowRight" });
-    expect(setCurrentFrame).toHaveBeenCalledWith(12);
+    expect(playback.seekFrame).toHaveBeenCalledWith(12);
   });
 
   it("disables the slider for unloaded media", () => {
@@ -55,22 +69,19 @@ describe("TimelinePanel", () => {
   });
 
   it("pauses and moves one frame when a frame control is selected", () => {
-    const setCurrentFrame = vi.fn();
-    const setIsPlaying = vi.fn();
-    renderTimelinePanel({ setCurrentFrame, setIsPlaying, isPlaying: true });
+    renderTimelinePanel({ isPlaying: true });
 
     fireEvent.click(screen.getByRole("button", { name: "Next frame" }));
 
-    expect(setIsPlaying).toHaveBeenCalledWith(false);
-    expect(setCurrentFrame).toHaveBeenCalledWith(12);
+    expect(playback.pause).toHaveBeenCalledOnce();
+    expect(playback.seekFrame).toHaveBeenCalledWith(12);
   });
 
   it("sets playback state from the play control", () => {
-    const setIsPlaying = vi.fn();
-    renderTimelinePanel({ setIsPlaying });
+    renderTimelinePanel();
 
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
 
-    expect(setIsPlaying).toHaveBeenCalledWith(true);
+    expect(playback.togglePlayback).toHaveBeenCalledOnce();
   });
 });

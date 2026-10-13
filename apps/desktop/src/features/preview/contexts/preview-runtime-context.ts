@@ -8,18 +8,11 @@ interface PreviewMediaObserver {
   onTimeUpdate: (seconds: number) => void;
 }
 
-interface PreviewMediaState {
-  currentTimeSeconds: number;
-  paused: boolean;
-  seeking: boolean;
-}
-
 interface PreviewPlaybackFrame {
   cancel: () => void;
 }
 
 interface PreviewRuntimeContract {
-  getMediaState: () => PreviewMediaState | null;
   isPreviewReady: boolean;
   isSeekPending: () => boolean;
   onCanPlay: () => void;
@@ -42,20 +35,6 @@ interface PreviewRuntimeContract {
   videoRef: RefObject<HTMLVideoElement | null>;
 }
 
-type PreviewMediaTransportContract = Pick<
-  PreviewRuntimeContract,
-  | "getMediaState"
-  | "isPreviewReady"
-  | "isSeekPending"
-  | "pauseMedia"
-  | "playMedia"
-  | "previewKey"
-  | "registerMediaObserver"
-  | "requestPlaybackFrame"
-  | "seekMedia"
-  | "setPlaybackRate"
->;
-
 const PreviewRuntimeContext = createContext<PreviewRuntimeContract | null>(null);
 
 function usePreviewRuntime(): PreviewRuntimeContract {
@@ -64,26 +43,5 @@ function usePreviewRuntime(): PreviewRuntimeContract {
   return runtime;
 }
 
-function usePreviewMediaTransport(): PreviewMediaTransportContract {
-  const runtime = usePreviewRuntime();
-  return {
-    getMediaState: runtime.getMediaState,
-    isPreviewReady: runtime.isPreviewReady,
-    isSeekPending: runtime.isSeekPending,
-    pauseMedia: runtime.pauseMedia,
-    playMedia: runtime.playMedia,
-    previewKey: runtime.previewKey,
-    registerMediaObserver: runtime.registerMediaObserver,
-    requestPlaybackFrame: runtime.requestPlaybackFrame,
-    seekMedia: runtime.seekMedia,
-    setPlaybackRate: runtime.setPlaybackRate,
-  };
-}
-
-export { PreviewRuntimeContext, usePreviewMediaTransport, usePreviewRuntime };
-export type {
-  PreviewMediaObserver,
-  PreviewMediaState,
-  PreviewPlaybackFrame,
-  PreviewRuntimeContract,
-};
+export { PreviewRuntimeContext, usePreviewRuntime };
+export type { PreviewMediaObserver, PreviewPlaybackFrame, PreviewRuntimeContract };

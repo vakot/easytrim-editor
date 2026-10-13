@@ -41,16 +41,6 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
     videoRef.current = element;
   }, []);
 
-  const getMediaState = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return null;
-    return {
-      currentTimeSeconds: video.currentTime,
-      paused: video.paused,
-      seeking: video.seeking,
-    };
-  }, []);
-
   const isSeekPending = useCallback(
     () => seekSchedulerRef.current?.scheduler.isPending ?? false,
     [],
@@ -169,7 +159,6 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
   const runtime = useMemo(
     () => ({
       isPreviewReady: previewKey !== null && readyPreviewKey === previewKey,
-      getMediaState,
       isSeekPending,
       onEnded,
       onPause,
@@ -189,7 +178,6 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
       videoRef,
     }),
     [
-      getMediaState,
       isSeekPending,
       onCanPlay,
       onEnded,

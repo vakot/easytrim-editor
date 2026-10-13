@@ -25,8 +25,8 @@ import {
 } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { isQuarterTurn } from "@/domain/rotation";
+import { usePlaybackActions, usePlaybackIsPlaying } from "@/features/playback";
 import { usePreviewRuntime, usePreviewTransform } from "@/features/preview";
-import { usePlaybackTransport } from "@/features/timeline";
 import { saveFramePng } from "@/lib/tauri/media";
 
 import { CROP_ASPECT_RATIO_PRESETS } from "../../lib/crop-aspect-ratio.utils";
@@ -52,7 +52,8 @@ import { usePreviewPresentation } from "./hooks/usePreviewPresentation";
 function CropViewport() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { isPlaying, setIsPlaying } = usePlaybackTransport();
+  const isPlaying = usePlaybackIsPlaying();
+  const { pause, play } = usePlaybackActions();
 
   const { videoRef } = usePreviewRuntime();
   const { registerHandlers } = usePreviewTransform();
@@ -99,7 +100,7 @@ function CropViewport() {
     if (cropSelection.isOpen && !cropWasOpenRef.current) {
       cropWasOpenRef.current = true;
       resumeAfterCropRef.current = isPlaying;
-      if (isPlaying) setIsPlaying(false);
+      if (isPlaying) pause();
       return;
     }
     if (!cropSelection.isOpen && cropWasOpenRef.current) {
@@ -107,9 +108,9 @@ function CropViewport() {
     } else {
       return;
     }
-    if (resumeAfterCropRef.current) setIsPlaying(true);
+    if (resumeAfterCropRef.current) play();
     resumeAfterCropRef.current = false;
-  }, [cropSelection.isOpen, isPlaying, setIsPlaying]);
+  }, [cropSelection.isOpen, isPlaying, pause, play]);
 
   const {
     aspectRatioPreset,

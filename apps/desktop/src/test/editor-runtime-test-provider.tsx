@@ -10,32 +10,18 @@ import {
   AudioTransportContext,
   type AudioTransportContract,
 } from "@/features/audio/contexts/audio-transport-context";
+// eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies the playback feature context.
+import { PlaybackContext } from "@/features/playback/contexts/playback-context";
+// eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies a focused fake controller.
+import { PlaybackController } from "@/features/playback/playback-controller";
 // eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies feature-owned contexts.
 import {
   PreviewRuntimeContext,
   type PreviewRuntimeContract,
 } from "@/features/preview/contexts/preview-runtime-context";
-// eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies feature-owned contexts.
-import {
-  PlaybackTransportContext,
-  type PlaybackTransport,
-  TimelineFrameContext,
-  type TimelineFrameState,
-} from "@/features/timeline/contexts/timeline-runtime-contexts";
 
 const noOperation = () => undefined;
 const videoRef: RefObject<HTMLVideoElement | null> = { current: null };
-const timelineTransport = {
-  isPlaying: false,
-  setIsPlaying: noOperation,
-} satisfies PlaybackTransport;
-
-const timelineFrameState = {
-  currentFrame: 0,
-  framesCount: 0,
-  setCurrentFrame: noOperation,
-} satisfies TimelineFrameState;
-
 const preview = {
   isPreviewReady: false,
   onEnded: noOperation,
@@ -46,7 +32,6 @@ const preview = {
   onCanPlay: noOperation,
   onPreviewPlaybackError: noOperation,
   previewKey: null,
-  getMediaState: () => null,
   isSeekPending: () => false,
   pauseMedia: noOperation,
   playMedia: async () => undefined,
@@ -60,6 +45,24 @@ const preview = {
   },
   videoRef,
 } satisfies PreviewRuntimeContract;
+
+const playbackController = new PlaybackController(
+  {
+    isPreviewReady: false,
+    isSeekPending: () => false,
+    pause: noOperation,
+    pauseMedia: noOperation,
+    playMedia: async () => undefined,
+    registerMediaObserver: () => noOperation,
+    requestPlaybackFrame: () => null,
+    resumeAudioContext: async () => undefined,
+    seekMedia: noOperation,
+    setPlaybackRate: noOperation,
+    startAt: async () => [],
+    syncTo: noOperation,
+  },
+  0,
+);
 
 const audioPlayback = {
   audioMeterRef: { current: null },
@@ -89,11 +92,7 @@ function EditorRuntimeTestProvider({
     <PreviewRuntimeContext.Provider value={preview}>
       <AudioPlaybackContext.Provider value={audioPlayback}>
         <AudioTransportContext.Provider value={audioTransport}>
-          <TimelineFrameContext.Provider value={timelineFrameState}>
-            <PlaybackTransportContext.Provider value={timelineTransport}>
-              {children}
-            </PlaybackTransportContext.Provider>
-          </TimelineFrameContext.Provider>
+          <PlaybackContext.Provider value={playbackController}>{children}</PlaybackContext.Provider>
         </AudioTransportContext.Provider>
       </AudioPlaybackContext.Provider>
     </PreviewRuntimeContext.Provider>

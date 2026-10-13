@@ -3,20 +3,31 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectTrim } from "@/app/store/slices/trim-slice";
-import { selectSourceMedia } from "@/app/store/slices/source-slice";
 
-import { usePlaybackTransport, useTimelineFrameState } from "../contexts/timeline-runtime-contexts";
-import { frameFromMicros, formatFrameTimecode } from "../lib/frame-time";
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
+import {
+  microsToFrame,
+  usePlaybackActions,
+  usePlaybackIsPlaying,
+  useTimelinePlayback,
+} from "@/features/playback";
+
+import { formatFrameTimecode } from "../lib/frame-time";
 
 function TimelinePanel() {
   const { t } = useTranslation();
-  const { currentFrame, framesCount, setCurrentFrame } = useTimelineFrameState();
-  const playback = usePlaybackTransport();
   const media = useAppSelector(selectSourceMedia);
   const trim = useAppSelector(selectTrim);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
+  const { currentFrame, framesCount, seekFrame } = useTimelinePlayback(
+    frameRate,
+    media?.video.frameCount,
+  );
+
+  const isPlaying = usePlaybackIsPlaying();
+  const { pause, togglePlayback } = usePlaybackActions();
 
   return (
     <section
@@ -51,8 +62,8 @@ function TimelinePanel() {
             aria-label={t("preview.frame.previous")}
             disabled={framesCount === 0}
             onClick={() => {
-              playback.setIsPlaying(false);
-              setCurrentFrame(currentFrame - 1);
+              pause();
+              seekFrame(currentFrame - 1);
             }}
             size="icon-sm"
             title={t("preview.frame.previousFrameTooltip")}
@@ -62,28 +73,24 @@ function TimelinePanel() {
             <SkipBack aria-hidden="true" />
           </Button>
           <Button
-            aria-label={
-              playback.isPlaying ? t("preview.playback.pause") : t("preview.playback.play")
-            }
+            aria-label={isPlaying ? t("preview.playback.pause") : t("preview.playback.play")}
             className="rounded-full"
             disabled={framesCount === 0}
-            onClick={() => playback.setIsPlaying(!playback.isPlaying)}
+            onClick={togglePlayback}
             size="icon-lg"
             title={
-              playback.isPlaying
-                ? t("preview.playback.pauseTooltip")
-                : t("preview.playback.playTooltip")
+              isPlaying ? t("preview.playback.pauseTooltip") : t("preview.playback.playTooltip")
             }
             type="button"
           >
-            {playback.isPlaying ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+            {isPlaying ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
           </Button>
           <Button
             aria-label={t("preview.frame.next")}
             disabled={framesCount === 0}
             onClick={() => {
-              playback.setIsPlaying(false);
-              setCurrentFrame(currentFrame + 1);
+              pause();
+              seekFrame(currentFrame + 1);
             }}
             size="icon-sm"
             title={t("preview.frame.nextFrameTooltip")}
@@ -99,19 +106,21 @@ function TimelinePanel() {
           className="m-0 flex min-w-0 gap-5 justify-self-end"
         >
           <TimelineTimeValue
+            frame={trim ? microsToFrame(trim.startMicros, frameRate, framesCount) : 0}
             frameRate={frameRate}
             label={t("timeline.segment.labels.start")}
-            frame={trim ? frameFromMicros(trim.startMicros, frameRate) : 0}
           />
           <TimelineTimeValue
+            frame={trim ? microsToFrame(trim.endMicros, frameRate, framesCount) : 0}
             frameRate={frameRate}
             label={t("timeline.segment.labels.end")}
-            frame={trim ? frameFromMicros(trim.endMicros, frameRate) : 0}
           />
           <TimelineTimeValue
+            frame={
+              trim ? microsToFrame(trim.endMicros - trim.startMicros, frameRate, framesCount) : 0
+            }
             frameRate={frameRate}
             label={t("timeline.playhead.labels.duration")}
-            frame={trim ? frameFromMicros(trim.endMicros - trim.startMicros, frameRate) : 0}
           />
         </dl>
       </div>
@@ -120,9 +129,9 @@ function TimelinePanel() {
         aria-label={t("timeline.playhead.accessibility.playbackPosition")}
         className="flex min-h-8 w-full items-center"
         disabled={framesCount === 0}
-        max={framesCount === 0 ? 1 : framesCount - 1}
+        max={framesCount === 0 ? 1 : framesCount}
         min={0}
-        onValueChange={([frame]) => setCurrentFrame(frame ?? 0)}
+        onValueChange={([frame]) => seekFrame(frame ?? 0)}
         step={1}
         value={[currentFrame]}
       >
@@ -135,8 +144,8 @@ function TimelinePanel() {
 
 function TimelineTimeValue({
   frame,
-  label,
   frameRate,
+  label,
 }: {
   frame: number;
   frameRate?: { denominator: number; numerator: number };

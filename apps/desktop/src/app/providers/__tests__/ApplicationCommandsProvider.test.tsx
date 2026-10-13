@@ -117,9 +117,8 @@ vi.mock("@/features/preview", () => ({
     requestSaveFrame: vi.fn(),
   }),
 }));
-vi.mock("@/features/timeline", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/features/timeline")>()),
-  usePlaybackTransport: () => ({ isPlaying: mocks.isPlaying }),
+vi.mock("@/features/playback", () => ({
+  usePlaybackIsPlaying: () => mocks.isPlaying,
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
@@ -288,7 +287,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(75);
+    ).toHaveLength(69);
     expect(
       screen
         .getAllByRole("button")
