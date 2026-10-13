@@ -239,7 +239,7 @@ mod tests {
     }
 
     #[test]
-    fn timestamp_gaps_do_not_truncate_a_playback_pcm_chunk() {
+    fn timestamp_gaps_preserve_positions_across_independently_decoded_chunks() {
         let unique_id = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("system time is valid")
@@ -256,9 +256,11 @@ mod tests {
                 OsString::from("-f"),
                 OsString::from("lavfi"),
                 OsString::from("-i"),
-                OsString::from("sine=frequency=440:sample_rate=48000:duration=6"),
+                OsString::from(
+                    "aevalsrc=0.31*sin(2*PI*440*t)+0.22*sin(2*PI*733*t)+0.1*sin(2*PI*1103*t):s=48000:d=8",
+                ),
                 OsString::from("-af"),
-                OsString::from(r"asetpts=PTS+gte(N\,1024)*8"),
+                OsString::from(r"asetpts=PTS+48000+gte(N\,144384)*256"),
                 OsString::from("-c:a"),
                 OsString::from("pcm_s16le"),
                 OsString::from("-y"),
@@ -276,6 +278,61 @@ mod tests {
             String::from_utf8_lossy(&generate.stderr)
         );
 
+        let probe = run_bounded_cancellable(
+            OsStr::new("ffprobe"),
+            &[
+                OsString::from("-v"),
+                OsString::from("error"),
+                OsString::from("-select_streams"),
+                OsString::from("a:0"),
+                OsString::from("-show_entries"),
+                OsString::from("stream=start_time"),
+                OsString::from("-of"),
+                OsString::from("csv=p=0"),
+                source_path.as_os_str().to_owned(),
+            ],
+            Duration::from_secs(30),
+            16 * 1024,
+            STDERR_LIMIT,
+            || false,
+        )
+        .expect("FFprobe inspects the playback fixture timestamps");
+        assert!(probe.status.success());
+        assert_eq!(String::from_utf8_lossy(&probe.stdout).trim(), "1.000000");
+
+        let packet_probe = run_bounded_cancellable(
+            OsStr::new("ffprobe"),
+            &[
+                OsString::from("-v"),
+                OsString::from("error"),
+                OsString::from("-select_streams"),
+                OsString::from("a:0"),
+                OsString::from("-show_entries"),
+                OsString::from("packet=pts,duration"),
+                OsString::from("-of"),
+                OsString::from("csv=p=0"),
+                source_path.as_os_str().to_owned(),
+            ],
+            Duration::from_secs(30),
+            16 * 1024,
+            STDERR_LIMIT,
+            || false,
+        )
+        .expect("FFprobe inspects the playback fixture packet boundaries");
+        assert!(packet_probe.status.success());
+        let packets = String::from_utf8_lossy(&packet_probe.stdout)
+            .lines()
+            .filter_map(|line| {
+                let (pts, duration) = line.split_once(',')?;
+                Some((pts.parse::<i64>().ok()?, duration.parse::<i64>().ok()?))
+            })
+            .collect::<Vec<_>>();
+        assert!(
+            packets
+                .windows(2)
+                .any(|pair| { pair[1].0 > pair[0].0 + pair[0].1 })
+        );
+
         let track = AudioTrackSelection {
             loudness_analysis: None,
             stream_index: 0,
@@ -285,24 +342,62 @@ mod tests {
                 effects: Vec::new(),
             },
         };
-        let output = run_bounded_cancellable(
-            OsStr::new("ffmpeg"),
-            &playback_chunk_arguments(&source_path, &track, 0, 2_000_000),
-            Duration::from_secs(30),
-            PLAYBACK_PCM_MAX_OUTPUT_BYTES,
-            STDERR_LIMIT,
-            || false,
-        )
-        .expect("FFmpeg decodes a playback chunk across a timestamp gap");
+        let expected_frames = 6 * PLAYBACK_PCM_SAMPLE_RATE as usize;
+        let reference = run_pcm(&[
+            OsString::from("-hide_banner"),
+            OsString::from("-nostdin"),
+            OsString::from("-i"),
+            source_path.as_os_str().to_owned(),
+            OsString::from("-filter_complex"),
+            OsString::from(format!(
+                "[0:a:0]aresample={PLAYBACK_PCM_SAMPLE_RATE}:async=1:first_pts=0,apad=whole_len={expected_frames},atrim=end_sample={expected_frames},asetpts=PTS-STARTPTS[reference]"
+            )),
+            OsString::from("-map"),
+            OsString::from("[reference]"),
+        ]);
+        assert_eq!(reference.len(), expected_frames * 2);
+        assert_eq!(reference[0], 0);
+        assert_ne!(reference[2], 0);
 
+        let mut decoded_chunks = Vec::new();
+        for start_micros in [0, 2_000_000, 4_000_000] {
+            let output = run_bounded_cancellable(
+                OsStr::new("ffmpeg"),
+                &playback_chunk_arguments(&source_path, &track, start_micros, 2_000_000),
+                Duration::from_secs(30),
+                PLAYBACK_PCM_MAX_OUTPUT_BYTES,
+                STDERR_LIMIT,
+                || false,
+            )
+            .expect("FFmpeg independently decodes a playback chunk across a timestamp gap");
+
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert_eq!(
+                output.stdout.len(),
+                2 * PLAYBACK_PCM_SAMPLE_RATE as usize * 2 * 2
+            );
+            decoded_chunks.extend(
+                output
+                    .stdout
+                    .chunks_exact(2)
+                    .map(|sample| i16::from_le_bytes([sample[0], sample[1]])),
+            );
+        }
+
+        assert_eq!(reference.len(), decoded_chunks.len());
+        let max_difference = reference
+            .iter()
+            .zip(&decoded_chunks)
+            .map(|(reference, chunk)| i32::from(*reference).abs_diff(i32::from(*chunk)))
+            .max()
+            .unwrap_or_default();
         assert!(
-            output.status.success(),
-            "{}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-        assert_eq!(
-            output.stdout.len(),
-            2 * PLAYBACK_PCM_SAMPLE_RATE as usize * 2 * 2
+            max_difference < 2,
+            "timestamp-normalized chunks diverged from the absolute-position reference by {max_difference} samples"
         );
 
         let _ = std::fs::remove_file(source_path);
