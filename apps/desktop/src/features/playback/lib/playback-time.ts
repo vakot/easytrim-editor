@@ -1,4 +1,5 @@
 import type { FrameRate } from "@/domain/media";
+import { frameToMicros } from "@/domain/media-time";
 
 function frameCountFor(durationMicros: number, frameRate: FrameRate | undefined) {
   if (
@@ -15,10 +16,6 @@ function frameCountFor(durationMicros: number, frameRate: FrameRate | undefined)
     1,
     Math.round((durationMicros * frameRate.numerator) / (1_000_000 * frameRate.denominator)),
   );
-}
-
-function frameToMicros(frame: number, frameRate: FrameRate) {
-  return Math.round((frame * frameRate.denominator * 1_000_000) / frameRate.numerator);
 }
 
 function frameToPlaybackMicros(
@@ -47,4 +44,4 @@ function microsToFrame(micros: number, frameRate: FrameRate | undefined, framesC
   return Math.max(0, Math.min(framesCount, frame));
 }
 
-export { frameCountFor, frameToPlaybackMicros, microsToFrame };
+export { frameCountFor, frameToMicros, frameToPlaybackMicros, microsToFrame };
