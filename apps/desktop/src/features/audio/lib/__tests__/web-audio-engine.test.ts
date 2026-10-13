@@ -23,10 +23,13 @@ function node() {
 }
 
 function createContext() {
-  const sources: Array<ReturnType<typeof node> & { buffer: AudioBuffer | null; start: ReturnType<typeof vi.fn> }> = [];
+  const sources: Array<
+    ReturnType<typeof node> & { buffer: AudioBuffer | null; start: ReturnType<typeof vi.fn> }
+  > = [];
+
   const gains: ReturnType<typeof node>[] = [];
+  let currentTime = 5;
   const context = {
-    currentTime: 5,
     destination: node(),
     close: vi.fn(async () => undefined),
     createAnalyser: vi.fn(() => ({ ...node(), fftSize: 2048, getFloatTimeDomainData: vi.fn() })),
@@ -57,33 +60,62 @@ function createContext() {
     resume: vi.fn(async () => undefined),
   } as unknown as AudioContext;
 
-  return { context, gains, sources };
+  Object.defineProperty(context, "currentTime", { get: () => currentTime });
+
+  return {
+    context,
+    gains,
+    sources,
+    setCurrentTime: (nextTime: number) => {
+      currentTime = nextTime;
+    },
+  };
 }
 
 function selection(streamIndex: number): AudioTrackSelection {
   return { processing: { gainDb: 0 }, streamIndex };
 }
 
-function chunk(sampleCount = 8) {
-  return { channels: 2, sampleRate: 4, samples: Array.from({ length: sampleCount }, () => 100) };
+function chunk(durationMicros = 2_000_000) {
+  const frameCount = Math.round((durationMicros * 48_000) / 1_000_000);
+  return {
+    channels: 2,
+    sampleRate: 48_000,
+    samples: Array.from({ length: frameCount * 2 }, () => 100),
+  };
 }
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 describe("WebAudioEngine", () => {
   it("schedules every active track against the same AudioContext time", async () => {
     const { context, sources } = createContext();
-    const decode = vi.fn(async () => chunk());
+    const decode = vi.fn(
+      async (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+        chunk(durationMicros),
+    );
+
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(4_000_000);
     const tracks = [1, 2, 3, 4].map((streamIndex) => ({
       gainDb: streamIndex,
-      limiterProcessing: { ceilingDb: -1, stage: "finalProtection" as const, type: "limiter" as const },
+      limiterProcessing: {
+        ceilingDb: -1,
+        stage: "finalProtection" as const,
+        type: "limiter" as const,
+      },
       selection: {
         processing: {
           effects: [
             { cutoffHz: 80 + streamIndex, stage: "cleanup" as const, type: "highPass" as const },
-            { preset: "medium" as const, stage: "cleanup" as const, type: "noiseReduction" as const },
+            {
+              preset: "medium" as const,
+              stage: "cleanup" as const,
+              type: "noiseReduction" as const,
+            },
           ],
           gainDb: 0,
         },
@@ -114,9 +146,9 @@ describe("WebAudioEngine", () => {
     const { context, sources } = createContext();
     let resolveChunk: ((value: ReturnType<typeof chunk>) => void) | undefined;
     const decode = vi.fn(
-      () =>
+      (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
         new Promise<ReturnType<typeof chunk>>((resolve) => {
-          resolveChunk = resolve;
+          resolveChunk = () => resolve(chunk(durationMicros));
         }),
     );
 
@@ -137,24 +169,31 @@ describe("WebAudioEngine", () => {
   it("keeps retained tracks schedulable when tracks are removed or added during playback", async () => {
     const { context } = createContext();
     const decodedStreamIndexes: number[] = [];
-    const decode = vi.fn(async (track: AudioTrackSelection) => {
-      decodedStreamIndexes.push(track.streamIndex);
-      return chunk();
-    });
+    const decode = vi.fn(
+      async (track: AudioTrackSelection, _startMicros: number, durationMicros: number) => {
+        decodedStreamIndexes.push(track.streamIndex);
+        return chunk(durationMicros);
+      },
+    );
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(8_000_000);
-    engine.setTracks([1, 2].map((streamIndex) => ({
-      gainDb: 0,
-      selection: selection(streamIndex),
-      streamIndex,
-    })));
+    engine.setTracks(
+      [1, 2].map((streamIndex) => ({
+        gainDb: 0,
+        selection: selection(streamIndex),
+        streamIndex,
+      })),
+    );
     await engine.startAt(1);
 
     engine.setTracks([
       { gainDb: 0, selection: selection(2), streamIndex: 2 },
       { gainDb: 0, selection: selection(3), streamIndex: 3 },
     ]);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(decodedStreamIndexes).toContain(3);
     expect(engine.hasTracks).toBe(true);
@@ -163,7 +202,12 @@ describe("WebAudioEngine", () => {
 
   it("removes track nodes and keeps output gain on the shared master graph", async () => {
     const { context, gains } = createContext();
-    const engine = new WebAudioEngine(context, async () => chunk(), vi.fn());
+    const engine = new WebAudioEngine(
+      context,
+      async (_selection, _startMicros, durationMicros) => chunk(durationMicros),
+      vi.fn(),
+    );
+
     engine.setDuration(2_000_000);
     engine.setTracks([{ gainDb: -6, selection: selection(4), streamIndex: 4 }]);
     const trackGain = gains.at(-1)!;
@@ -174,5 +218,76 @@ describe("WebAudioEngine", () => {
     expect(trackGain.disconnect).toHaveBeenCalled();
     expect(engine.hasTracks).toBe(false);
     engine.close();
+  });
+
+  it("keeps multitrack sample ranges aligned through delayed decoding and underruns", async () => {
+    vi.useFakeTimers();
+    const { context, setCurrentTime, sources } = createContext();
+    let resolveDelayedChunk: (() => void) | undefined;
+    const decodedRanges: Array<{ startMicros: number; streamIndex: number }> = [];
+    const decode = vi.fn(
+      (track: AudioTrackSelection, startMicros: number, durationMicros: number) => {
+        decodedRanges.push({ startMicros, streamIndex: track.streamIndex });
+        if (startMicros === 2_000_000 && track.streamIndex === 2) {
+          return new Promise<ReturnType<typeof chunk>>((resolve) => {
+            resolveDelayedChunk = () => resolve(chunk(durationMicros));
+          });
+        }
+        return Promise.resolve(chunk(durationMicros));
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(8_000_000);
+    engine.setTracks(
+      [1, 2].map((streamIndex) => ({
+        gainDb: 0,
+        selection: selection(streamIndex),
+        streamIndex,
+      })),
+    );
+
+    await engine.startAt(0);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(decodedRanges).toEqual([
+      { startMicros: 0, streamIndex: 1 },
+      { startMicros: 0, streamIndex: 2 },
+      { startMicros: 2_000_000, streamIndex: 1 },
+      { startMicros: 2_000_000, streamIndex: 2 },
+    ]);
+
+    setCurrentTime(7.3);
+    expect(engine.currentTimeSeconds).toBe(2);
+    resolveDelayedChunk?.();
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(0);
+
+    const delayedRangeSources = sources.slice(2, 4);
+    expect(delayedRangeSources.map((source) => source.start.mock.calls[0]?.[0])).toEqual([
+      7.305, 7.305,
+    ]);
+    expect(engine.currentTimeSeconds).toBe(2);
+
+    setCurrentTime(9.305);
+    expect(engine.currentTimeSeconds).toBeCloseTo(4, 4);
+    await vi.advanceTimersByTimeAsync(100);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(decodedRanges.slice(4)).toEqual([
+      { startMicros: 4_000_000, streamIndex: 1 },
+      { startMicros: 4_000_000, streamIndex: 2 },
+      { startMicros: 6_000_000, streamIndex: 1 },
+      { startMicros: 6_000_000, streamIndex: 2 },
+    ]);
+    const startsByRange = [sources.slice(4, 6), sources.slice(6, 8)].map((range) =>
+      range.map((source) => source.start.mock.calls[0]?.[0]),
+    );
+
+    expect(startsByRange[0]?.[0]).toBe(startsByRange[0]?.[1]);
+    expect(startsByRange[1]?.[0]).toBe(startsByRange[1]?.[1]);
+    expect(startsByRange[1]?.[0]).toBe((startsByRange[0]?.[0] ?? 0) + 2);
+    engine.close();
+    vi.useRealTimers();
   });
 });
