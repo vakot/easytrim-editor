@@ -35,7 +35,9 @@ function AppChangelogDialogContent({
   return (
     <>
       <DialogHeader className="-mx-4 border-b px-4 pb-4">
-        <DialogTitle __scopeDialog={__scopeDialog}>{title}</DialogTitle>
+        <DialogTitle __scopeDialog={__scopeDialog} autoFocus tabIndex={-1}>
+          {title}
+        </DialogTitle>
         <DialogDescription __scopeDialog={__scopeDialog}>{description}</DialogDescription>
       </DialogHeader>
 

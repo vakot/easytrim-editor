@@ -30,7 +30,7 @@ function ChapterManagerDialogContent({ __scopeDialog }: { __scopeDialog?: Dialog
       <DialogFooter __scopeDialog={__scopeDialog}>
         <ChapterDraftDialog>
           <ChapterDraftDialogTrigger asChild>
-            <Button type="button">
+            <Button autoFocus type="button">
               <BookmarkPlus /> {t("timeline.chapters.actions.addChapter")}
             </Button>
           </ChapterDraftDialogTrigger>

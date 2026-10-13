@@ -25,7 +25,9 @@ function AppExportQueueDialogContent({ __scopeDialog }: { __scopeDialog?: Dialog
   return (
     <ExportQueue>
       <DialogHeader className="-mx-4 border-b px-4 pb-4">
-        <DialogTitle __scopeDialog={__scopeDialog}>{t("queue.title")}</DialogTitle>
+        <DialogTitle __scopeDialog={__scopeDialog} autoFocus tabIndex={-1}>
+          {t("queue.title")}
+        </DialogTitle>
         <DialogDescription __scopeDialog={__scopeDialog}>
           <ExportQueueSummary />
         </DialogDescription>

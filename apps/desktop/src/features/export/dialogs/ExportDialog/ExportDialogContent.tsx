@@ -123,7 +123,7 @@ function ExportDialogContent({ __scopeDialog, onCancel }: ExportDialogContentPro
           {t("export.optimized.dialog.saveNotice")}
         </p>
         <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
-          <Button onClick={onCancel} variant="outline">
+          <Button autoFocus onClick={onCancel} variant="outline">
             {t("common.actions.cancel")}
           </Button>
           <Button

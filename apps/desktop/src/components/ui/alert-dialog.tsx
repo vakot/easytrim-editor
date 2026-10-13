@@ -193,6 +193,7 @@ function AlertDialogCancel({
   return (
     <ScopedAlertDialogCancel
       __scopeAlertDialog={__scopeAlertDialog}
+      autoFocus
       className={cn(buttonVariants({ size, variant: "outline" }), className)}
       data-slot="alert-dialog-cancel"
       {...props}

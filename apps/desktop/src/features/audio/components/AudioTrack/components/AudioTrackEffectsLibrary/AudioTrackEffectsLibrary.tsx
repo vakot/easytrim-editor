@@ -78,7 +78,12 @@ function AudioTrackEffectsLibrary({
             label={<span data-slot="audio-track-effects-stage-label">{stageLabels[stage]}</span>}
           >
             {stageEffects.map((effect) => (
-              <AudioTrackEffectTab draft={draft} effect={effect} key={effect.id} />
+              <AudioTrackEffectTab
+                autoFocus={effect.id === selectedEffect}
+                draft={draft}
+                effect={effect}
+                key={effect.id}
+              />
             ))}
           </LibraryNavigationGroup>
         ))}
@@ -102,9 +107,11 @@ function AudioTrackEffectsLibrary({
 }
 
 function AudioTrackEffectTab({
+  autoFocus,
   draft,
   effect,
 }: {
+  autoFocus: boolean;
   draft: AudioTrackEffectsDraft;
   effect: AudioTrackEffectDescriptor;
 }) {
@@ -118,6 +125,7 @@ function AudioTrackEffectTab({
 
   return (
     <LibraryNavigationItem
+      autoFocus={autoFocus}
       className="px-8"
       onFocus={preload}
       onPointerEnter={preload}

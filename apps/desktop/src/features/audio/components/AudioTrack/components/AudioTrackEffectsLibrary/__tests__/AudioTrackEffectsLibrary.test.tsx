@@ -101,6 +101,7 @@ describe("AudioTrackEffectsLibrary", () => {
     const tabs = within(screen.getByRole("tablist")).getAllByRole("tab");
     expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(["First effect", "Second effect"]);
     expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    expect(tabs[0]).toHaveFocus();
     expect(tabs[0]?.querySelector("svg.lucide-check")).toBeInTheDocument();
     expect(tabs[1]?.querySelector(".rounded-full")).toBeInTheDocument();
     expect(screen.getByText("First effect controls")).toBeVisible();

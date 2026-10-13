@@ -11,7 +11,9 @@ function AppActivityDialogContent({ __scopeDialog }: { __scopeDialog?: DialogSco
   return (
     <ActivityFeed>
       <DialogHeader className="-mx-4 border-b px-4 pb-4">
-        <DialogTitle __scopeDialog={__scopeDialog}>{t("activity.title")}</DialogTitle>
+        <DialogTitle __scopeDialog={__scopeDialog} autoFocus tabIndex={-1}>
+          {t("activity.title")}
+        </DialogTitle>
         <DialogDescription __scopeDialog={__scopeDialog}>
           {t("activity.description")}
         </DialogDescription>
