@@ -3,12 +3,44 @@ import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 
 import { timelinePercent, type TrimBoundary } from "@/domain/trim";
 import { cn } from "@/lib/class-names.utils";
 
 function formatAccessibleTime(micros: number): string {
   return (micros / 1_000_000).toFixed(3);
+}
+
+function TimelineSlider({
+  className,
+  onValueChange,
+  value,
+  ...props
+}: Omit<ComponentProps<typeof Slider.Root>, "children" | "onValueChange" | "value"> & {
+  onValueChange: (newValue: number) => void;
+  value: number;
+}) {
+  const handleValueChange = (values: number[]) => {
+    const newValue = values[0];
+    if (!newValue) return;
+    onValueChange(newValue);
+  };
+
+  return (
+    <Slider.Root
+      className={cn("size-full bg-muted", className)}
+      data-editor-keyboard="timeline-slider"
+      onValueChange={handleValueChange}
+      value={[value]}
+      {...props}
+    >
+      <Slider.Track>
+        <Slider.Range />
+      </Slider.Track>
+      <Slider.Thumb className="h-full w-2 bg-red-50"></Slider.Thumb>
+    </Slider.Root>
+  );
 }
 
 function SegmentDragHandle({
@@ -144,4 +176,4 @@ function Playhead({
   );
 }
 
-export { Playhead, SegmentDragHandle, TrimHandle };
+export { Playhead, SegmentDragHandle, TimelineSlider, TrimHandle };

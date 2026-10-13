@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useDragAwareDoubleClick } from "@/components/ui/useDragAwareDoubleClick";
@@ -21,29 +21,16 @@ import { createTimelineMarkers } from "../lib/timeline-markers";
 import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
 import { createTimelineSnapTargets } from "../lib/timeline-snap";
 
-import { Playhead, SegmentDragHandle, TrimHandle } from "./TimelineHandles";
+import { Playhead, SegmentDragHandle, TimelineSlider, TrimHandle } from "./TimelineHandles";
 
 const TIMELINE_MARKER_STYLES = {
   scene: "bg-destructive",
 } as const;
 
 function TimelineTrack() {
-  return (
-    <Timeline>
-      <TimelineSegment />
+  const [value, setValue] = useState(0);
 
-      <TimelineChapterMarkers />
-
-      <TimelineSceneMarkers />
-
-      <TimelineAudioActivityMarkers />
-
-      <TimelinePlayhead />
-      <TimelineTrimHandle boundary="start" />
-      <TimelineDragHandle />
-      <TimelineTrimHandle boundary="end" />
-    </Timeline>
-  );
+  return <TimelineSlider max={1000} min={0} onValueChange={setValue} value={value} />;
 }
 
 function Timeline({ children }: { children: React.ReactNode }) {
