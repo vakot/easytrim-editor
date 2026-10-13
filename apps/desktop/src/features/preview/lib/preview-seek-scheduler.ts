@@ -9,6 +9,7 @@ function createPreviewSeekScheduler(video: HTMLVideoElement) {
   let pending: SeekRequest | null = null;
   let active: SeekRequest | null = null;
   let approximatePosition = false;
+  let hasAppliedSeek = false;
   let scheduledFrame: number | null = null;
   let disposed = false;
 
@@ -25,10 +26,15 @@ function createPreviewSeekScheduler(video: HTMLVideoElement) {
     pending = null;
     active = request;
     try {
-      if (Math.abs(video.currentTime - request.seconds) > 0.0005 || approximatePosition) {
+      if (
+        !hasAppliedSeek ||
+        Math.abs(video.currentTime - request.seconds) > 0.0005 ||
+        approximatePosition
+      ) {
         approximatePosition = request.approximate && typeof video.fastSeek === "function";
         if (approximatePosition) video.fastSeek(request.seconds);
         else video.currentTime = request.seconds;
+        hasAppliedSeek = true;
       }
     } catch {
       pending = request;
@@ -50,16 +56,19 @@ function createPreviewSeekScheduler(video: HTMLVideoElement) {
     active = request;
     pending = null;
     try {
-      const shouldUseApproximate =
-        request.approximate && typeof video.fastSeek === "function";
+      const shouldUseApproximate = request.approximate && typeof video.fastSeek === "function";
+
       const needsSeek =
+        !hasAppliedSeek ||
         Math.abs(video.currentTime - request.seconds) > 0.0005 ||
         approximatePosition ||
         shouldUseApproximate;
+
       approximatePosition = shouldUseApproximate;
       if (needsSeek) {
         if (approximatePosition) video.fastSeek(request.seconds);
         else video.currentTime = request.seconds;
+        hasAppliedSeek = true;
       }
     } catch {
       pending = request;
@@ -86,6 +95,7 @@ function createPreviewSeekScheduler(video: HTMLVideoElement) {
     pending = null;
     active = null;
     approximatePosition = false;
+    hasAppliedSeek = false;
   }
 
   video.addEventListener("seeked", settle);

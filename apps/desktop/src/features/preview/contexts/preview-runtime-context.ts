@@ -2,7 +2,7 @@ import { createContext, type RefObject, useCallback, useContext, useMemo } from 
 
 interface PreviewMediaObserver {
   onEnded: () => void;
-  onPause: () => void;
+  onPause: (isPaused: boolean) => void;
   onPlay: () => void;
   onPlaybackError: () => void;
   onTimeUpdate: (seconds: number) => void;

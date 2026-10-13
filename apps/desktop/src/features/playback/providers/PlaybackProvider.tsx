@@ -9,8 +9,8 @@ import {
 import { useAudioPlaybackAdapter } from "@/features/audio";
 import { usePreviewVideoAdapter } from "@/features/preview";
 
-import { PlaybackContext } from "./contexts/playback-context";
-import { PlaybackController, type PlaybackDriver } from "./playback-controller";
+import { PlaybackContext } from "../contexts/playback-context";
+import { PlaybackController, type PlaybackDriver } from "../controllers/playback-controller";
 
 function PlaybackProvider({ children }: { children: ReactNode }) {
   const source = useAppSelector(selectSourceSelection);

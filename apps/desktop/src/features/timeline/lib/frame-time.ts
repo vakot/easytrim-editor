@@ -15,11 +15,11 @@ function formatFrameTimecode(frame: number, frameRate: FrameRate | undefined) {
   const minutes = Math.floor((wholeSeconds % 3_600) / 60);
   const seconds = wholeSeconds % 60;
 
-  return `${hours.toString().padStart(2, "0")}:${minutes
+  return `TC ${hours.toString().padStart(2, "0")}:${minutes
     .toString()
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}:${frames
     .toString()
-    .padStart(2, "0")}f`;
+    .padStart(2, "0")}`;
 }
 
 export { formatFrameTimecode };

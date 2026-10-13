@@ -98,8 +98,9 @@ class PlaybackController {
         this.setPosition(this.snapshot.durationMicros);
         this.pause();
       },
-      onPause: () => {
+      onPause: (isPaused) => {
         if (this.mediaSessionId !== mediaSessionId) return;
+        if (!isPaused) return;
         this.cancelStartup();
         this.stopPlaybackClock();
         this.lifecycle = "paused";
@@ -138,6 +139,7 @@ class PlaybackController {
     if (!this.driver || this.mediaSessionId === null || this.mediaSessionId === undefined) return;
     if (this.lifecycle === "starting") {
       this.cancelStartup();
+      this.lifecycle = "paused";
       this.driver.video.pause();
       this.driver.audio.pause();
     }

@@ -57,9 +57,24 @@ describe("TimelinePanel", () => {
     expect(slider).toHaveAttribute("aria-valuemin", "0");
     expect(slider).toHaveAttribute("aria-valuemax", "100");
     expect(slider).toHaveAttribute("aria-valuenow", "11");
+    expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
+      "TC 00:00:00:11 / TC 00:00:03:10",
+    );
 
     fireEvent.keyDown(slider, { key: "ArrowRight" });
     expect(playback.seekFrame).toHaveBeenCalledWith(12);
+  });
+
+  it("keeps EOF as the Slider endpoint and displays its timecode without adding a frame", () => {
+    renderTimelinePanel({ currentFrame: 100, framesCount: 100 });
+
+    const slider = screen.getByRole("slider");
+    expect(slider).toHaveAttribute("aria-valuemax", "100");
+    expect(slider).toHaveAttribute("aria-valuenow", "100");
+    expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
+      "TC 00:00:03:10 / TC 00:00:03:10",
+    );
+    expect(screen.queryByText(/Frame 101/)).not.toBeInTheDocument();
   });
 
   it("moves by one frame with global arrows and toggles playback with Space", () => {

@@ -77,7 +77,7 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
             origin: { type: "internal" },
           });
         }
-        observerRef.current?.onPause();
+        observerRef.current?.onPause(element.paused);
       };
 
       const onPlay = () => {

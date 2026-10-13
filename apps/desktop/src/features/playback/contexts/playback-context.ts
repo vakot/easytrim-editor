@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-import type { PlaybackController } from "../playback-controller";
+import type { PlaybackController } from "../controllers/playback-controller";
 
 const PlaybackContext = createContext<PlaybackController | null>(null);
 

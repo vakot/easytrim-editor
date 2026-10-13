@@ -8,7 +8,7 @@ import {
 // eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies the playback feature context.
 import { PlaybackContext } from "@/features/playback/contexts/playback-context";
 // eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies a focused fake controller.
-import { PlaybackController } from "@/features/playback/playback-controller";
+import { PlaybackController } from "@/features/playback/controllers/playback-controller";
 // eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies feature-owned contexts.
 import {
   PreviewRuntimeContext,

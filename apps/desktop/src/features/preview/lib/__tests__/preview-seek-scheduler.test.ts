@@ -45,6 +45,24 @@ function mockAnimationFrames() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("decoder seek backpressure", () => {
+  it("commits and settles the initial exact seek at timestamp zero", () => {
+    const media = decoder();
+    const scheduler = createPreviewSeekScheduler(media.video);
+    const settled = vi.fn();
+
+    scheduler.seek(0, false, settled);
+
+    expect(media.assignments).toHaveBeenCalledWith(0);
+    expect(settled).not.toHaveBeenCalled();
+    expect(scheduler.isPending).toBe(true);
+
+    media.finish();
+
+    expect(settled).toHaveBeenCalledOnce();
+    expect(scheduler.isPending).toBe(false);
+    scheduler.dispose();
+  });
+
   it("retargets an in-flight seek to the latest destination", () => {
     const flushAnimationFrame = mockAnimationFrames();
     const media = decoder();
