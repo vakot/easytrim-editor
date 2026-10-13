@@ -78,7 +78,7 @@ describe("playback controller", () => {
       isPlaying: false,
       positionMicros: 2_000_000,
     });
-    expect(driver.video.seek).toHaveBeenCalledWith(2, false);
+    expect(driver.video.seek).toHaveBeenCalledWith(2, false, expect.any(Function));
     expect(driver.audio.seek).toHaveBeenCalledWith(2);
   });
 
@@ -279,6 +279,36 @@ describe("playback controller", () => {
 
     expect(driver.video.seek).toHaveBeenLastCalledWith(0.8, false, expect.any(Function));
     expect(driver.audio.startAlignedWithVideoAt).toHaveBeenCalledTimes(1);
+    controller.dispose();
+  });
+
+  it("invalidates an old playback frame while rapid seeks are pending", async () => {
+    const playback = createPlaybackDriver();
+    const { driver } = playback;
+    const seekCallbacks: Array<(() => void) | undefined> = [];
+    const controller = createPlaybackController(driver, 2_000_000);
+
+    controller.play();
+    await vi.waitFor(() => expect(controller.getSnapshot().isPlaying).toBe(true));
+    const stalePlaybackFrame = playback.playbackFrameCallback;
+    vi.mocked(driver.video.seek).mockImplementation((_seconds, _approximate, onSettled) => {
+      seekCallbacks.push(onSettled);
+    });
+
+    controller.seek(500_000);
+    controller.seek(750_000);
+    stalePlaybackFrame(0, 1.5);
+
+    expect(controller.getSnapshot().positionMicros).toBe(750_000);
+    expect(driver.video.setCurrentTimeSeconds).not.toHaveBeenCalled();
+
+    seekCallbacks[0]?.();
+    expect(controller.getSnapshot().isPlaying).toBe(true);
+    seekCallbacks[1]?.();
+    playback.playbackFrameCallback(0, 0.8);
+
+    expect(controller.getSnapshot().positionMicros).toBe(800_000);
+    expect(driver.video.setCurrentTimeSeconds).not.toHaveBeenCalled();
     controller.dispose();
   });
 

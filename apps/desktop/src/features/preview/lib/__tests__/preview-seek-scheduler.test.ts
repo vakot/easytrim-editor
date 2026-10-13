@@ -13,6 +13,7 @@ function decoder() {
 
   Object.defineProperties(video, {
     currentTime: { get: () => seconds, set: assignments },
+    readyState: { get: () => HTMLMediaElement.HAVE_NOTHING },
     seeking: { get: () => seeking },
   });
   return {
@@ -45,21 +46,17 @@ function mockAnimationFrames() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("decoder seek backpressure", () => {
-  it("commits and settles the initial exact seek at timestamp zero", () => {
+  it("settles an unchanged timestamp zero without assigning currentTime", () => {
     const media = decoder();
     const scheduler = createPreviewSeekScheduler(media.video);
     const settled = vi.fn();
 
     scheduler.seek(0, false, settled);
 
-    expect(media.assignments).toHaveBeenCalledWith(0);
-    expect(settled).not.toHaveBeenCalled();
-    expect(scheduler.isPending).toBe(true);
-
-    media.finish();
-
+    expect(media.assignments).not.toHaveBeenCalled();
     expect(settled).toHaveBeenCalledOnce();
     expect(scheduler.isPending).toBe(false);
+    expect(media.video.readyState).toBe(HTMLMediaElement.HAVE_NOTHING);
     scheduler.dispose();
   });
 
@@ -93,6 +90,28 @@ describe("decoder seek backpressure", () => {
 
     expect(stale).not.toHaveBeenCalled();
     expect(latest).toHaveBeenCalledOnce();
+    scheduler.dispose();
+  });
+
+  it("reapplies the newest exact target when a stale seeked event reports another position", () => {
+    const flushAnimationFrame = mockAnimationFrames();
+    const media = decoder();
+    const scheduler = createPreviewSeekScheduler(media.video);
+    const settled = vi.fn();
+
+    scheduler.seek(1);
+    scheduler.seek(2, false, settled);
+    flushAnimationFrame();
+
+    media.video.currentTime = 1;
+    media.finish();
+
+    expect(media.video.currentTime).toBe(2);
+    expect(settled).not.toHaveBeenCalled();
+    expect(scheduler.isPending).toBe(true);
+
+    media.finish();
+    expect(settled).toHaveBeenCalledOnce();
     scheduler.dispose();
   });
 

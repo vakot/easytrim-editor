@@ -23,6 +23,8 @@ class PlaybackController {
   private startupFrame: ReturnType<PreviewVideoAdapter["requestPlaybackFrame"]> = null;
   private resolveStartupFrameWait: (() => void) | null = null;
   private startupGeneration = 0;
+  private playbackClockGeneration = 0;
+  private seekGeneration = 0;
   private mediaSessionId: number | null | undefined;
   private lifecycle: "paused" | "starting" | "playing" = "paused";
   private mediaStartRequested = false;
@@ -101,6 +103,7 @@ class PlaybackController {
       onPause: (isPaused) => {
         if (this.mediaSessionId !== mediaSessionId) return;
         if (!isPaused) return;
+        this.seekGeneration += 1;
         this.cancelStartup();
         this.stopPlaybackClock();
         this.lifecycle = "paused";
@@ -145,10 +148,22 @@ class PlaybackController {
     }
     const nextPosition = Math.max(0, Math.min(this.snapshot.durationMicros, positionMicros));
     if (!Number.isFinite(nextPosition)) return;
+    const seekGeneration = ++this.seekGeneration;
+    const resumeClockAfterSeek = this.lifecycle === "playing" && this.snapshot.isPlaying;
+    if (resumeClockAfterSeek) this.stopPlaybackClock();
     this.setPosition(nextPosition);
     const seconds = nextPosition / MICROS_PER_SECOND;
     this.driver.audio.seek(seconds);
-    this.driver.video.seek(seconds, false);
+    this.driver.video.seek(seconds, false, () => {
+      if (
+        seekGeneration === this.seekGeneration &&
+        resumeClockAfterSeek &&
+        this.lifecycle === "playing" &&
+        this.snapshot.isPlaying
+      ) {
+        this.startPlaybackClock();
+      }
+    });
   };
 
   play = () => {
@@ -172,6 +187,7 @@ class PlaybackController {
   };
 
   pause = () => {
+    this.seekGeneration += 1;
     this.cancelStartup();
     this.lifecycle = "paused";
     this.stopPlaybackClock();
@@ -301,7 +317,9 @@ class PlaybackController {
 
   private startPlaybackClock() {
     if (this.playbackFrame) return;
+    const generation = ++this.playbackClockGeneration;
     const tick = (_timestamp: number, seconds: number) => {
+      if (generation !== this.playbackClockGeneration) return;
       this.playbackFrame = null;
       const driver = this.driver;
       if (!driver || this.mediaSessionId === null || this.mediaSessionId === undefined) return;
@@ -335,6 +353,7 @@ class PlaybackController {
   }
 
   private stopPlaybackClock() {
+    this.playbackClockGeneration += 1;
     this.playbackFrame?.cancel();
     this.playbackFrame = null;
   }
