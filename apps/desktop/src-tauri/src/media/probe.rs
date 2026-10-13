@@ -54,6 +54,8 @@ pub struct VideoStream {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub real_frame_rate: Option<FrameRate>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub frame_count: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub rotation_degrees: Option<i32>,
 }
 
@@ -220,6 +222,7 @@ fn parse_probe_output(output: &[u8]) -> Result<MediaInfo, AppError> {
             .real_frame_rate
             .as_deref()
             .and_then(parse_frame_rate),
+        frame_count: primary_video.nb_frames.as_deref().and_then(|value| value.parse().ok()),
         rotation_degrees: rotation(primary_video),
     };
 
@@ -408,6 +411,7 @@ struct ProbeStream {
     average_frame_rate: Option<String>,
     #[serde(rename = "r_frame_rate")]
     real_frame_rate: Option<String>,
+    nb_frames: Option<String>,
     duration: Option<String>,
     channels: Option<u32>,
     channel_layout: Option<String>,
@@ -463,6 +467,7 @@ mod tests {
           "time_base": "1/30000",
           "r_frame_rate": "30000/1001",
           "avg_frame_rate": "30000/1001",
+          "nb_frames": "370",
           "duration": "12.345678",
           "disposition": { "default": 1, "attached_pic": 0 },
           "side_data_list": [{ "rotation": 90 }]
@@ -497,6 +502,7 @@ mod tests {
 
         assert_eq!(info.duration_micros, 12_345_678);
         assert_eq!(info.video.stream_index, 0);
+        assert_eq!(info.video.frame_count, Some(370));
         assert_eq!(info.video.rotation_degrees, Some(90));
         assert_eq!(info.video.color_primaries.as_deref(), Some("bt2020"));
         assert_eq!(info.audio_streams[0].stream_index, 2);

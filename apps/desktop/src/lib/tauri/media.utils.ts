@@ -395,6 +395,7 @@ function parseVideoStream(value: unknown): VideoStream {
     timeBase: optionalString(video.timeBase),
     averageFrameRate: optionalFrameRate(video.averageFrameRate),
     realFrameRate: optionalFrameRate(video.realFrameRate),
+    frameCount: optionalInteger(video.frameCount, "video frame count"),
     rotationDegrees: optionalInteger(video.rotationDegrees, "rotation"),
   };
 }

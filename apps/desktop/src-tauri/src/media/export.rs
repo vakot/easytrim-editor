@@ -1879,6 +1879,7 @@ mod tests {
                 time_base: None,
                 average_frame_rate: None,
                 real_frame_rate: None,
+                frame_count: None,
                 rotation_degrees: None,
             },
             audio_streams: vec![

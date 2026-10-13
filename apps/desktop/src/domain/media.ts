@@ -122,6 +122,7 @@ interface VideoStream {
   height: number;
   pixelFormat?: string;
   realFrameRate?: FrameRate;
+  frameCount?: number;
   rotationDegrees?: number;
   sampleAspectRatio?: string;
   streamIndex: number;
