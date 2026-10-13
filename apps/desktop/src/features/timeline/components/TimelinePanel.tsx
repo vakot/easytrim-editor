@@ -127,7 +127,7 @@ function TimelinePanel() {
 
       <Slider.Root
         aria-label={t("timeline.playhead.accessibility.playbackPosition")}
-        className="flex min-h-8 w-full items-center"
+        className="h-13 w-full data-disabled:opacity-100"
         disabled={framesCount === 0}
         max={framesCount === 0 ? 1 : framesCount}
         min={0}
@@ -135,8 +135,8 @@ function TimelinePanel() {
         step={1}
         value={[currentFrame]}
       >
-        <Slider.Track className="h-2 rounded-full" />
-        <Slider.Thumb className="h-7 w-1 rounded-none border-0 bg-primary after:-inset-x-3" />
+        <Slider.Track className="segment-markers h-13 rounded-md border bg-muted/30 text-muted" />
+        <Slider.Thumb className="h-13 w-4 rounded-none border-0 bg-transparent p-0 shadow-none ring-0 before:absolute before:inset-y-0 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:bg-foreground before:content-[''] after:top-0 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] hover:ring-0 focus-visible:ring-0 focus-visible:before:border-ring focus-visible:before:ring-3 focus-visible:before:ring-ring/50 focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 active:ring-0 data-disabled:pointer-events-none data-disabled:before:bg-muted-foreground data-disabled:after:bg-muted-foreground" />
       </Slider.Root>
     </section>
   );
