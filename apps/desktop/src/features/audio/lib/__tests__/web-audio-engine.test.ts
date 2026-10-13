@@ -166,6 +166,77 @@ describe("WebAudioEngine", () => {
     engine.close();
   });
 
+  it("holds the clock during delayed startup and keeps a paused position stable on resume", async () => {
+    const { context, setCurrentTime } = createContext();
+    let resolveChunk: (() => void) | undefined;
+    const decode = vi.fn(
+      (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+        new Promise<ReturnType<typeof chunk>>((resolve) => {
+          resolveChunk = () => resolve(chunk(durationMicros));
+        }),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ gainDb: 0, selection: selection(1), streamIndex: 1 }]);
+
+    const starting = engine.startAt(1);
+    await Promise.resolve();
+    setCurrentTime(9);
+    expect(engine.currentTimeSeconds).toBe(1);
+
+    resolveChunk?.();
+    await starting;
+    setCurrentTime(10.15);
+    expect(engine.currentTimeSeconds).toBeCloseTo(2);
+
+    engine.pause();
+    setCurrentTime(20);
+    expect(engine.currentTimeSeconds).toBeCloseTo(2);
+
+    const resuming = engine.startAt(engine.currentTimeSeconds);
+    await Promise.resolve();
+    resolveChunk?.();
+    await resuming;
+    setCurrentTime(21.15);
+    expect(engine.currentTimeSeconds).toBeCloseTo(3);
+
+    engine.close();
+  });
+
+  it("keeps the requested seek position stable while replacement audio buffers", async () => {
+    const { context, setCurrentTime, sources } = createContext();
+    let resolveSeekChunk: (() => void) | undefined;
+    const decode = vi.fn(
+      (_selection: AudioTrackSelection, startMicros: number, durationMicros: number) => {
+        if (startMicros >= 3_000_000) {
+          return new Promise<ReturnType<typeof chunk>>((resolve) => {
+            resolveSeekChunk = () => resolve(chunk(durationMicros));
+          });
+        }
+        return Promise.resolve(chunk(durationMicros));
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ gainDb: 0, selection: selection(1), streamIndex: 1 }]);
+    await engine.startAt(0);
+    const sourceCountBeforeSeek = sources.length;
+
+    engine.seek(4);
+    await vi.waitFor(() => expect(resolveSeekChunk).toBeDefined());
+    setCurrentTime(50);
+    expect(engine.currentTimeSeconds).toBe(4);
+
+    resolveSeekChunk?.();
+    await vi.waitFor(() => expect(sources.length).toBeGreaterThan(sourceCountBeforeSeek));
+    setCurrentTime(51.15);
+    expect(engine.currentTimeSeconds).toBeCloseTo(5);
+
+    engine.close();
+  });
+
   it("keeps retained tracks schedulable when tracks are removed or added during playback", async () => {
     const { context } = createContext();
     const decodedStreamIndexes: number[] = [];

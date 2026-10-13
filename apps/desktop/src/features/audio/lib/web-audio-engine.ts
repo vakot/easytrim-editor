@@ -502,16 +502,19 @@ class WebAudioEngine {
 
   private currentPositionFrame(): number {
     if (!this.isPlaying) return Math.min(this.durationFrames, this.anchorPositionFrame);
+
     const elapsedFrames = Math.floor(
       Math.max(0, this.context.currentTime - this.anchorContextTime) *
         SAMPLE_RATE *
         this.playbackRate,
     );
 
+    const scheduledFrames = Math.max(0, this.nextScheduledFrame - this.anchorPositionFrame);
+
+    // The context clock can consume only the contiguous sample range already scheduled.
     return Math.min(
       this.durationFrames,
-      this.nextScheduledFrame,
-      this.anchorPositionFrame + elapsedFrames,
+      this.anchorPositionFrame + Math.min(elapsedFrames, scheduledFrames),
     );
   }
 
