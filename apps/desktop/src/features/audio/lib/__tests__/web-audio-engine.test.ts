@@ -375,6 +375,55 @@ describe("WebAudioEngine", () => {
     engine.close();
   });
 
+  it("continues playback from the last rapid seek while audio replacement is pending", async () => {
+    const { context, setCurrentTime, sources } = createContext();
+    const pendingDecodes: Array<{
+      durationMicros: number;
+      resolve: () => void;
+      startMicros: number;
+    }> = [];
+
+    const decode = vi.fn(
+      (_selection: AudioTrackSelection, startMicros: number, durationMicros: number) => {
+        if (startMicros === 0) return Promise.resolve(chunk(durationMicros));
+
+        return new Promise<ReturnType<typeof chunk>>((resolve) => {
+          pendingDecodes.push({
+            durationMicros,
+            resolve: () => resolve(chunk(durationMicros)),
+            startMicros,
+          });
+        });
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(8_000_000);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+    ]);
+    await engine.startAt(0);
+
+    engine.seek(1.2);
+    await vi.waitFor(() =>
+      expect(pendingDecodes.some(({ startMicros }) => startMicros === 1_200_000)).toBe(true),
+    );
+    engine.seek(0.4);
+    await vi.waitFor(() =>
+      expect(pendingDecodes.some(({ startMicros }) => startMicros === 400_000)).toBe(true),
+    );
+
+    const latestDecode = pendingDecodes.find(({ startMicros }) => startMicros === 400_000);
+    latestDecode?.resolve();
+    await vi.waitFor(() => expect(sources).toHaveLength(2));
+    setCurrentTime(5.3);
+
+    expect(sources[1]?.start).toHaveBeenCalledWith(5.15, 0);
+    expect(engine.currentTimeSeconds).toBeCloseTo(0.55);
+
+    engine.close();
+  });
+
   it("updates live processing without transport restart and reprimes for baked changes", async () => {
     const { context, filters, sources } = createContext();
     const decode = vi.fn(

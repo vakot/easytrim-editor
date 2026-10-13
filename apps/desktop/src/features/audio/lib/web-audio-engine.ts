@@ -79,6 +79,7 @@ class WebAudioEngine {
   private durationMicros = 0;
   private generation = 0;
   private isPlaying = false;
+  private playbackRequested = false;
   private nextScheduledFrame = 0;
   private nextScheduledContextTime = 0;
   private pumpFrame: number | null = null;
@@ -207,6 +208,7 @@ class WebAudioEngine {
 
   async startAt(seconds: number): Promise<void> {
     if (!this.hasTracks || this.durationFrames <= 0) return;
+    this.playbackRequested = true;
     const startFrame = this.secondsToFrame(seconds);
     const prepared = this.preparedBatch;
     const canUsePreparedBatch =
@@ -282,6 +284,7 @@ class WebAudioEngine {
 
   async prepareAt(seconds: number): Promise<void> {
     if (!this.hasTracks || this.durationFrames <= 0) return;
+    this.playbackRequested = false;
     this.generation += 1;
     const generation = this.generation;
     this.isPlaying = false;
@@ -320,6 +323,7 @@ class WebAudioEngine {
   pause(): void {
     this.anchorPositionFrame = this.currentPositionFrame();
     this.isPlaying = false;
+    this.playbackRequested = false;
     this.generation += 1;
     this.preparedBatch = null;
     this.batchInFlight = false;
@@ -329,7 +333,7 @@ class WebAudioEngine {
 
   seek(seconds: number): void {
     const positionFrame = this.secondsToFrame(seconds);
-    const resume = this.isPlaying;
+    const resume = this.playbackRequested || this.isPlaying;
     this.anchorPositionFrame = positionFrame;
     this.nextScheduledFrame = positionFrame;
     this.generation += 1;

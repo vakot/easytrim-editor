@@ -190,6 +190,42 @@ describe("playback controller", () => {
     expect(playback.driver.audio.pause).toHaveBeenCalled();
   });
 
+  it("resumes from the final position after rapid seeks automatically pause playback", async () => {
+    const playback = createPlaybackDriver();
+    const { driver } = playback;
+    const controller = createPlaybackController(driver, 2_000_000);
+
+    controller.play();
+    await vi.waitFor(() => expect(driver.audio.startAlignedWithVideoAt).toHaveBeenCalledTimes(1));
+    playback.playbackFrameCallback(0, 0.15);
+    await vi.waitFor(() => expect(controller.getSnapshot().isPlaying).toBe(true));
+
+    controller.seek(1_200_000);
+    controller.seek(400_000);
+    controller.seek(1_000_000);
+    controller.seek(550_000);
+    vi.mocked(driver.video.getCurrentTimeSeconds).mockReturnValue(0.55);
+    vi.mocked(driver.audio.getCurrentTimeSeconds).mockReturnValue(0.55);
+    playback.observer.onPause();
+
+    expect(controller.getSnapshot()).toEqual({
+      durationMicros: 2_000_000,
+      isPlaying: false,
+      positionMicros: 550_000,
+    });
+    expect(driver.audio.pause).toHaveBeenCalled();
+
+    controller.play();
+    await vi.waitFor(() => expect(driver.audio.prepareAt).toHaveBeenLastCalledWith(0.55));
+    await vi.waitFor(() => expect(driver.audio.startAlignedWithVideoAt).toHaveBeenCalledTimes(2));
+    playback.playbackFrameCallback(0, 0.8);
+    await vi.waitFor(() => expect(controller.getSnapshot().isPlaying).toBe(true));
+
+    expect(driver.video.seek).toHaveBeenLastCalledWith(0.55, false, expect.any(Function));
+    expect(controller.getSnapshot().positionMicros).toBe(550_000);
+    controller.dispose();
+  });
+
   it("does not report playing from a media event before preview startup resolves", async () => {
     const playback = createPlaybackDriver();
     const startPreview = createDeferred<void>();
