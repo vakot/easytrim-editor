@@ -28,6 +28,10 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   const webAudioTracks: WebAudioTrack[] = useMemo(
     () =>
       enabledTracks.flatMap((track) => {
+        const stream = media?.audioStreams.find(
+          (candidate) => candidate.streamIndex === track.streamIndex,
+        );
+
         const loudnessAnalysis =
           track.processing.loudnessNormalization !== undefined &&
           track.loudnessAnalysis.status === "ready"
@@ -52,11 +56,13 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
             gainDb: effectiveAudioTrackGainDb(track.processing),
             liveHighPassEffects: getAudioTrackLiveHighPassEffects(track.processing),
             selection,
+            startTimeMicros: stream?.startTimeMicros ?? 0,
+            durationMicros: stream?.durationMicros,
             streamIndex: track.streamIndex,
           },
         ];
       }),
-    [enabledTracks],
+    [enabledTracks, media],
   );
 
   useEffect(() => {

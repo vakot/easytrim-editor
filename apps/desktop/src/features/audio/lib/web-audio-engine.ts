@@ -22,9 +22,11 @@ interface PcmChunk {
 }
 
 interface WebAudioTrack {
+  durationMicros?: number;
   gainDb: number;
   liveHighPassEffects: AudioTrackHighPass[];
   selection: AudioTrackSelection;
+  startTimeMicros?: number;
   streamIndex: number;
 }
 
@@ -53,6 +55,7 @@ interface PreparedAudioBatch {
 interface ScheduledTrack {
   abortController: AbortController | null;
   cursorFrame: number;
+  durationFrame: number;
   gain: GainNode;
   generation: number;
   highPassFilters: ReturnType<typeof connectAudioTrackRuntime>["highPassFilters"];
@@ -62,6 +65,7 @@ interface ScheduledTrack {
   scheduledThroughFrame: number;
   selection: AudioTrackSelection;
   selectionKey: string;
+  startFrame: number;
   streamIndex: number;
 }
 
@@ -141,10 +145,34 @@ class WebAudioEngine {
       const key = JSON.stringify(track.selection);
       const liveHighPassKey = JSON.stringify(track.liveHighPassEffects);
       const current = this.tracks.get(track.streamIndex);
+      const startFrame = Math.max(
+        0,
+        Math.round(((track.startTimeMicros ?? 0) * SAMPLE_RATE) / 1_000_000),
+      );
+
+      const durationFrame =
+        track.durationMicros === undefined
+          ? this.durationFrames
+          : Math.min(
+              this.durationFrames,
+              Math.round(
+                (((track.startTimeMicros ?? 0) + track.durationMicros) * SAMPLE_RATE) / 1_000_000,
+              ),
+            );
+
       if (current && current.selectionKey !== key) {
         processingChanged = true;
         current.selection = track.selection;
         current.selectionKey = key;
+      }
+
+      if (
+        current &&
+        (current.startFrame !== startFrame || current.durationFrame !== durationFrame)
+      ) {
+        processingChanged = true;
+        current.startFrame = startFrame;
+        current.durationFrame = durationFrame;
       }
 
       const scheduled = current ?? this.createTrack(track, key, liveHighPassKey);
@@ -339,6 +367,15 @@ class WebAudioEngine {
     const scheduled: ScheduledTrack = {
       abortController: null,
       cursorFrame: this.anchorPositionFrame,
+      durationFrame:
+        track.durationMicros === undefined
+          ? this.durationFrames
+          : Math.min(
+              this.durationFrames,
+              Math.round(
+                (((track.startTimeMicros ?? 0) + track.durationMicros) * SAMPLE_RATE) / 1_000_000,
+              ),
+            ),
       generation: this.generation,
       gain: runtime.gain,
       highPassFilters: runtime.highPassFilters,
@@ -348,6 +385,7 @@ class WebAudioEngine {
       scheduledThroughFrame: this.anchorPositionFrame,
       selectionKey,
       selection: track.selection,
+      startFrame: Math.max(0, Math.round(((track.startTimeMicros ?? 0) * SAMPLE_RATE) / 1_000_000)),
       streamIndex: track.streamIndex,
     };
 
@@ -384,14 +422,18 @@ class WebAudioEngine {
     const controller = new AbortController();
     track.abortController = controller;
     try {
-      const startMicros = this.frameToMicros(startFrame);
-      const durationMicros = this.frameToMicros(endFrame - startFrame);
-      const chunk = await this.decodeChunk(
-        track.selection,
-        startMicros,
-        durationMicros,
-        controller.signal,
-      );
+      const decodeStartFrame = Math.max(startFrame, track.startFrame);
+      const decodeEndFrame = Math.min(endFrame, track.durationFrame);
+      const decodeFrameCount = Math.max(0, decodeEndFrame - decodeStartFrame);
+      const chunk =
+        decodeFrameCount > 0
+          ? await this.decodeChunk(
+              track.selection,
+              this.frameToMicros(decodeStartFrame),
+              this.frameToMicros(decodeFrameCount),
+              controller.signal,
+            )
+          : { channels: CHANNELS, sampleRate: SAMPLE_RATE, samples: [] };
 
       if (
         controller.signal.aborted ||
@@ -402,22 +444,25 @@ class WebAudioEngine {
         return null;
       }
 
-      const frameCount = chunk.samples.length / chunk.channels;
+      const decodedFrameCount = chunk.samples.length / chunk.channels;
       if (
         chunk.channels !== CHANNELS ||
         chunk.sampleRate !== SAMPLE_RATE ||
-        !Number.isInteger(frameCount) ||
-        frameCount !== endFrame - startFrame
+        !Number.isInteger(decodedFrameCount) ||
+        decodedFrameCount > decodeFrameCount ||
+        (decodedFrameCount !== decodeFrameCount && decodeEndFrame < track.durationFrame)
       ) {
         throw new Error("Decoded audio did not match its requested sample range.");
       }
 
-      const buffer = this.context.createBuffer(chunk.channels, frameCount, chunk.sampleRate);
+      const frameCount = endFrame - startFrame;
+      const buffer = this.context.createBuffer(CHANNELS, frameCount, SAMPLE_RATE);
       const left = buffer.getChannelData(0);
       const right = buffer.getChannelData(1);
-      for (let frame = 0; frame < frameCount; frame += 1) {
-        left[frame] = chunk.samples[frame * chunk.channels]! / 32768;
-        right[frame] = chunk.samples[frame * chunk.channels + 1]! / 32768;
+      const destinationStartFrame = decodeStartFrame - startFrame;
+      for (let frame = 0; frame < decodedFrameCount; frame += 1) {
+        left[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels]! / 32768;
+        right[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels + 1]! / 32768;
       }
       track.cursorFrame = endFrame;
       return { buffer, endFrame, startFrame, track };

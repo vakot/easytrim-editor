@@ -74,7 +74,8 @@ pub fn decode_playback_chunk(
     let expected_output_bytes = micros_to_frames(duration_micros) as usize * 4;
     if !output.status.success()
         || output.stdout_truncated
-        || output.stdout.len() != expected_output_bytes
+        || output.stdout.len() > expected_output_bytes
+        || output.stdout.len() % 4 != 0
     {
         return Err(AppError::preview_failed(
             AppErrorMessageId::MediaAudioFfmpegCouldNotDecodePlaybackAudio,

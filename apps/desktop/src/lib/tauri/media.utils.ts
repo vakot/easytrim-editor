@@ -371,6 +371,8 @@ function parseAudioStream(value: unknown): AudioStream {
     channels: optionalInteger(audio.channels, "channel count"),
     channelLayout: optionalString(audio.channelLayout),
     sampleRateHz: optionalInteger(audio.sampleRateHz, "sample rate"),
+    startTimeMicros: optionalInteger(audio.startTimeMicros, "audio start time"),
+    durationMicros: optionalInteger(audio.durationMicros, "audio duration"),
     language: optionalString(audio.language),
     title: optionalString(audio.title),
     isDefault: audio.isDefault,

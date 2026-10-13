@@ -32,6 +32,7 @@ function createContext() {
   > = [];
 
   const gains: ReturnType<typeof node>[] = [];
+  const buffers: Array<{ channels: Float32Array[]; duration: number }> = [];
   const filters: Array<{
     connect: ReturnType<typeof vi.fn>;
     disconnect: ReturnType<typeof vi.fn>;
@@ -57,10 +58,16 @@ function createContext() {
       filters.push(filter);
       return filter;
     }),
-    createBuffer: vi.fn((_channels: number, frames: number, sampleRate: number) => ({
-      duration: frames / sampleRate,
-      getChannelData: () => new Float32Array(frames),
-    })),
+    createBuffer: vi.fn((channelCount: number, frames: number, sampleRate: number) => {
+      const audioBuffer = {
+        channels: Array.from({ length: channelCount }, () => new Float32Array(frames)),
+        duration: frames / sampleRate,
+        getChannelData: (channel: number) => audioBuffer.channels[channel]!,
+      };
+
+      buffers.push(audioBuffer);
+      return audioBuffer;
+    }),
     createBufferSource: vi.fn(() => {
       const source = {
         ...node(),
@@ -86,6 +93,7 @@ function createContext() {
   Object.defineProperty(context, "currentTime", { get: () => currentTime });
 
   return {
+    buffers,
     context,
     gains,
     filters,
@@ -115,6 +123,75 @@ afterEach(() => {
 });
 
 describe("WebAudioEngine", () => {
+  it("pads leading gaps and a short valid stream end into the shared sample range", async () => {
+    const { buffers, context, sources } = createContext();
+    const decode = vi.fn(
+      async (track: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+        track.streamIndex === 1 ? chunk(750_000) : chunk(durationMicros),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(4_000_000);
+    engine.setTracks([
+      {
+        durationMicros: 1_000_000,
+        gainDb: 0,
+        liveHighPassEffects: [],
+        selection: selection(1),
+        startTimeMicros: 1_000_000,
+        streamIndex: 1,
+      },
+      {
+        durationMicros: 2_000_000,
+        gainDb: 0,
+        liveHighPassEffects: [],
+        selection: selection(2),
+        startTimeMicros: 0,
+        streamIndex: 2,
+      },
+    ]);
+
+    await engine.startAt(0);
+
+    expect(decode).toHaveBeenNthCalledWith(
+      1,
+      selection(1),
+      1_000_000,
+      1_000_000,
+      expect.any(AbortSignal),
+    );
+    expect(decode).toHaveBeenNthCalledWith(2, selection(2), 0, 2_000_000, expect.any(AbortSignal));
+    expect(sources[0]?.start).toHaveBeenCalledWith(expect.any(Number), 0);
+    expect(sources[1]?.start).toHaveBeenCalledWith(expect.any(Number), 0);
+    const delayedTrack = buffers[0]!;
+    expect(delayedTrack.channels[0]![0]).toBe(0);
+    expect(delayedTrack.channels[0]![48_000]).toBeCloseTo(100 / 32768);
+    expect(delayedTrack.channels[0]![1_800 * 48]).toBe(0);
+
+    engine.close();
+  });
+
+  it("keeps short decodes inside a declared stream range as explicit errors", async () => {
+    const { context } = createContext();
+    const engine = new WebAudioEngine(context, async () => chunk(1_000_000), vi.fn());
+    engine.setDuration(4_000_000);
+    engine.setTracks([
+      {
+        durationMicros: 4_000_000,
+        gainDb: 0,
+        liveHighPassEffects: [],
+        selection: selection(1),
+        startTimeMicros: 0,
+        streamIndex: 1,
+      },
+    ]);
+
+    await expect(engine.startAt(0)).rejects.toThrow(
+      "Decoded audio did not match its requested sample range.",
+    );
+    engine.close();
+  });
+
   it("schedules every active track against the same AudioContext time", async () => {
     const { context, filters, sources } = createContext();
     const decode = vi.fn(
