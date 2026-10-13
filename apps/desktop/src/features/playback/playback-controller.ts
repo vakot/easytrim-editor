@@ -37,6 +37,9 @@ class PlaybackController {
   private readonly listeners = new Set<() => void>();
   private unregisterMediaObserver: (() => void) | null = null;
   private playbackFrame: PreviewPlaybackFrame | null = null;
+  private startupGeneration = 0;
+  private isStarting = false;
+  private mediaStartRequested = false;
 
   constructor(
     private driver: PlaybackDriver,
@@ -65,11 +68,18 @@ class PlaybackController {
         this.pause();
       },
       onPause: () => {
+        this.cancelStartup();
         this.stopPlaybackClock();
         this.driver.pause();
         this.setIsPlaying(false);
       },
-      onPlay: () => this.setIsPlaying(true),
+      onPlay: () => {
+        if (!this.mediaStartRequested) {
+          this.driver.pauseMedia();
+          return;
+        }
+        this.finishStartup();
+      },
       onPlaybackError: () => this.pause(),
       onTimeUpdate: (seconds) => {
         if (!this.snapshot.isPlaying) this.publishMediaTime(seconds, false);
@@ -86,6 +96,7 @@ class PlaybackController {
   };
 
   seek = (positionMicros: number) => {
+    if (this.isStarting) this.cancelStartup();
     const nextPosition = Math.max(0, Math.min(this.snapshot.durationMicros, positionMicros));
     if (!Number.isFinite(nextPosition)) return;
     this.setPosition(nextPosition);
@@ -96,17 +107,24 @@ class PlaybackController {
 
   play = () => {
     const driver = this.driver;
-    if (!driver.isPreviewReady || this.snapshot.durationMicros <= 0) return;
+    if (
+      !driver.isPreviewReady ||
+      this.snapshot.durationMicros <= 0 ||
+      this.snapshot.isPlaying ||
+      this.isStarting
+    ) return;
     if (this.snapshot.positionMicros >= this.snapshot.durationMicros) this.seek(0);
 
     const seconds = this.snapshot.positionMicros / MICROS_PER_SECOND;
-    void driver.resumeAudioContext().catch(() => this.pause());
+    const generation = ++this.startupGeneration;
+    this.isStarting = true;
+    this.mediaStartRequested = false;
     driver.setPlaybackRate(1);
-    void driver.startAt(seconds).catch(() => this.pause());
-    void driver.playMedia().catch(() => this.pause());
+    void this.startPlayback(generation, seconds);
   };
 
   pause = () => {
+    this.cancelStartup();
     this.stopPlaybackClock();
     this.driver.pauseMedia();
     this.driver.pause();
@@ -114,7 +132,7 @@ class PlaybackController {
   };
 
   togglePlayback = () => {
-    if (this.snapshot.isPlaying) this.pause();
+    if (this.snapshot.isPlaying || this.isStarting) this.pause();
     else this.play();
   };
 
@@ -122,6 +140,43 @@ class PlaybackController {
     if (this.driver.isSeekPending()) return;
     this.setPosition(seconds * MICROS_PER_SECOND);
     if (synchronizeAudio) this.driver.syncTo(seconds);
+  }
+
+  private async startPlayback(generation: number, seconds: number) {
+    try {
+      await this.driver.resumeAudioContext();
+      if (!this.isCurrentStartup(generation)) return;
+
+      await new Promise<void>((resolve) => {
+        this.driver.seekMedia(seconds, false, resolve);
+      });
+      if (!this.isCurrentStartup(generation)) return;
+
+      await this.driver.startAt(seconds);
+      if (!this.isCurrentStartup(generation)) return;
+
+      this.mediaStartRequested = true;
+      await this.driver.playMedia();
+      if (this.isCurrentStartup(generation)) this.finishStartup();
+    } catch {
+      if (this.isCurrentStartup(generation)) this.pause();
+    }
+  }
+
+  private isCurrentStartup(generation: number) {
+    return generation === this.startupGeneration && this.isStarting;
+  }
+
+  private finishStartup() {
+    this.isStarting = false;
+    this.mediaStartRequested = false;
+    this.setIsPlaying(true);
+  }
+
+  private cancelStartup() {
+    this.startupGeneration += 1;
+    this.isStarting = false;
+    this.mediaStartRequested = false;
   }
 
   private setPosition(positionMicros: number) {
