@@ -5,8 +5,12 @@ import { PlaybackController, type PlaybackDriver } from "../playback-controller"
 function createPlaybackDriver() {
   let observer: Parameters<PlaybackDriver["video"]["registerMediaObserver"]>[0] | null = null;
   let audioPlaybackErrorObserver: (() => void) | null = null;
-  let playbackFrameCallback: Parameters<PlaybackDriver["video"]["requestPlaybackFrame"]>[0] | null =
-    null;
+  const playbackFrameCallbacks = new Map<
+    number,
+    Parameters<PlaybackDriver["video"]["requestPlaybackFrame"]>[0]
+  >();
+
+  let nextPlaybackFrameId = 0;
 
   const driver: PlaybackDriver = {
     audio: {
@@ -37,8 +41,9 @@ function createPlaybackDriver() {
         };
       }),
       requestPlaybackFrame: vi.fn((callback) => {
-        playbackFrameCallback = callback;
-        return { cancel: vi.fn() };
+        const frameId = nextPlaybackFrameId++;
+        playbackFrameCallbacks.set(frameId, callback);
+        return { cancel: () => playbackFrameCallbacks.delete(frameId) };
       }),
       seek: vi.fn((_seconds, _approximate, onSettled) => onSettled?.()),
       setCurrentTimeSeconds: vi.fn(),
@@ -56,8 +61,14 @@ function createPlaybackDriver() {
       audioPlaybackErrorObserver();
     },
     get playbackFrameCallback() {
-      if (!playbackFrameCallback) throw new Error("Playback clock is not running.");
-      return playbackFrameCallback;
+      if (playbackFrameCallbacks.size === 0) throw new Error("Playback clock is not running.");
+      const callbacks = [...playbackFrameCallbacks.entries()];
+      return (timestamp: number, seconds: number) => {
+        for (const [frameId, callback] of callbacks) {
+          playbackFrameCallbacks.delete(frameId);
+          callback(timestamp, seconds);
+        }
+      };
     },
   };
 }
@@ -261,11 +272,12 @@ describe("playback controller", () => {
       await vi.waitFor(() =>
         expect(playback.driver.audio.startAlignedWithVideoAt).toHaveBeenCalledWith(startSeconds),
       );
-      playback.playbackFrameCallback(0, durationSeconds);
+      const sharedStartSeconds = Math.min(startSeconds + 0.15, durationSeconds - 1 / 48_000);
+      playback.playbackFrameCallback(0, sharedStartSeconds);
       await vi.waitFor(() => expect(controller.getSnapshot().isPlaying).toBe(true));
 
       expect(playback.driver.audio.prepareAt).toHaveBeenLastCalledWith(startSeconds);
-      expect(controller.getSnapshot().positionMicros).toBe(positionMicros);
+      expect(controller.getSnapshot().positionMicros).toBeCloseTo(sharedStartSeconds * 1_000_000);
       controller.dispose();
     },
   );
@@ -373,7 +385,7 @@ describe("playback controller", () => {
     await vi.waitFor(() => expect(controller.getSnapshot().isPlaying).toBe(true));
 
     expect(driver.video.seek).toHaveBeenLastCalledWith(0.55, false, expect.any(Function));
-    expect(controller.getSnapshot().positionMicros).toBe(550_000);
+    expect(controller.getSnapshot().positionMicros).toBe(800_000);
 
     const audioPauseCount = vi.mocked(driver.audio.pause).mock.calls.length;
     playback.observer.onPause(false);

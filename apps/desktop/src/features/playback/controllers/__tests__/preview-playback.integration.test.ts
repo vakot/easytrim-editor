@@ -23,6 +23,15 @@ function createAnimationFrameQueue() {
   };
 }
 
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+
+  return { promise, resolve };
+}
+
 function createNativePreviewHarness() {
   const video = document.createElement("video");
   let currentTime = 0;
@@ -135,6 +144,62 @@ function createNativePreviewHarness() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("native preview playback integration", () => {
+  it("updates the Timeline from video frames while audio startup is pending", async () => {
+    const preview = createNativePreviewHarness();
+    const pendingAudioStart = createDeferred<number>();
+    vi.mocked(preview.driver.audio.startAlignedWithVideoAt).mockReturnValue(
+      pendingAudioStart.promise,
+    );
+
+    preview.controller.play();
+    await vi.waitFor(() =>
+      expect(preview.driver.audio.startAlignedWithVideoAt).toHaveBeenCalledOnce(),
+    );
+
+    expect(preview.controller.getSnapshot()).toMatchObject({
+      isPlaying: false,
+      positionMicros: 0,
+    });
+    preview.playNextFrame(0.05);
+
+    expect(preview.controller.getSnapshot()).toMatchObject({
+      isPlaying: false,
+      positionMicros: 50_000,
+    });
+
+    pendingAudioStart.resolve(0.05);
+    await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
+    preview.dispose();
+  });
+
+  it("stops startup frame updates when a seek supersedes pending audio startup", async () => {
+    const preview = createNativePreviewHarness();
+    const pendingAudioStart = createDeferred<number>();
+    vi.mocked(preview.driver.audio.startAlignedWithVideoAt).mockReturnValue(
+      pendingAudioStart.promise,
+    );
+
+    preview.controller.play();
+    await vi.waitFor(() =>
+      expect(preview.driver.audio.startAlignedWithVideoAt).toHaveBeenCalledOnce(),
+    );
+    preview.playNextFrame(0.05);
+
+    preview.controller.seek(200_000);
+    preview.finishSeek();
+    pendingAudioStart.resolve(0.15);
+    await Promise.resolve();
+
+    expect(preview.controller.getSnapshot()).toMatchObject({
+      isPlaying: false,
+      positionMicros: 200_000,
+    });
+    expect(preview.video.paused).toBe(true);
+    expect(preview.driver.audio.pause).toHaveBeenCalled();
+    expect(() => preview.playNextFrame(0.3)).toThrow("No playback frame is pending.");
+    preview.dispose();
+  });
+
   it.each([0, 1, 2])("starts from frame %i without offsetting its timestamp", async (frame) => {
     const preview = createNativePreviewHarness();
     const position = frame / 30;

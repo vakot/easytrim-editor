@@ -170,6 +170,7 @@ class PlaybackController {
     if (this.lifecycle === "starting") {
       this.cancelStartup();
       this.lifecycle = "paused";
+      this.stopPlaybackClock();
       this.driver.video.pause();
       this.driver.audio.pause();
     }
@@ -248,6 +249,10 @@ class PlaybackController {
       this.mediaStartRequested = true;
       await driver.video.play();
       if (!this.isCurrentStartup(generation)) return;
+
+      // Follow native video frames while audio is being aligned. The shared
+      // playback state stays inactive until both transports finish startup.
+      this.startPlaybackClock();
 
       const durationSeconds = this.snapshot.durationMicros / MICROS_PER_SECOND;
       const videoPosition = Math.max(
@@ -346,11 +351,16 @@ class PlaybackController {
       const driver = this.driver;
       if (!driver || this.mediaSessionId === null || this.mediaSessionId === undefined) return;
       const audioClockSeconds = driver.audio.getCurrentTimeSeconds();
-      const clockSeconds = audioClockSeconds ?? seconds;
+      const clockSeconds = this.lifecycle === "starting" ? seconds : (audioClockSeconds ?? seconds);
       if (!driver.video.isSeekPending()) {
         this.publishMediaTime(clockSeconds);
-        if (audioClockSeconds !== null) this.syncVideoToAudio(audioClockSeconds);
-        if (this.snapshot.positionMicros >= this.snapshot.durationMicros) {
+        if (audioClockSeconds !== null && this.lifecycle === "playing") {
+          this.syncVideoToAudio(audioClockSeconds);
+        }
+        if (
+          this.lifecycle === "playing" &&
+          this.snapshot.positionMicros >= this.snapshot.durationMicros
+        ) {
           this.pause();
           return;
         }
