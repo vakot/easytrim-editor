@@ -52,7 +52,7 @@ import { usePreviewPresentation } from "./hooks/usePreviewPresentation";
 function CropViewport() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { isPlaying, resumeAfterInteraction, suspendForInteraction } = usePlaybackTransport();
+  const { isPlaying, setIsPlaying } = usePlaybackTransport();
 
   const { videoRef } = usePreviewRuntime();
   const { registerHandlers } = usePreviewTransform();
@@ -98,7 +98,8 @@ function CropViewport() {
   useLayoutEffect(() => {
     if (cropSelection.isOpen && !cropWasOpenRef.current) {
       cropWasOpenRef.current = true;
-      resumeAfterCropRef.current = suspendForInteraction();
+      resumeAfterCropRef.current = isPlaying;
+      if (isPlaying) setIsPlaying(false);
       return;
     }
     if (!cropSelection.isOpen && cropWasOpenRef.current) {
@@ -106,9 +107,9 @@ function CropViewport() {
     } else {
       return;
     }
-    resumeAfterInteraction(resumeAfterCropRef.current);
+    if (resumeAfterCropRef.current) setIsPlaying(true);
     resumeAfterCropRef.current = false;
-  }, [cropSelection.isOpen, resumeAfterInteraction, suspendForInteraction]);
+  }, [cropSelection.isOpen, isPlaying, setIsPlaying]);
 
   const {
     aspectRatioPreset,

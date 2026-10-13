@@ -8,10 +8,7 @@ interface TimelineFrameState {
 
 interface PlaybackTransport {
   isPlaying: boolean;
-  pause: () => void;
-  resumeAfterInteraction: (resumePlayback: boolean) => void;
-  suspendForInteraction: () => boolean;
-  toggle: () => void;
+  setIsPlaying: (isPlaying: boolean) => void;
 }
 
 const TimelineFrameContext = createContext<TimelineFrameState | null>(null);
@@ -25,7 +22,8 @@ function useTimelineFrameState() {
 
 function usePlaybackTransport() {
   const transport = useContext(PlaybackTransportContext);
-  if (!transport) throw new Error("Playback transport must be used within TimelinePlaybackProvider.");
+  if (!transport)
+    throw new Error("Playback transport must be used within TimelinePlaybackProvider.");
   return transport;
 }
 

@@ -27,10 +27,7 @@ const noOperation = () => undefined;
 const videoRef: RefObject<HTMLVideoElement | null> = { current: null };
 const timelineTransport = {
   isPlaying: false,
-  pause: noOperation,
-  resumeAfterInteraction: noOperation,
-  suspendForInteraction: () => false,
-  toggle: noOperation,
+  setIsPlaying: noOperation,
 } satisfies PlaybackTransport;
 
 const timelineFrameState = {

@@ -20,8 +20,8 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
   const media = useAppSelector(selectSourceMedia);
   const {
     getMediaState,
-    isSeekPending,
     isPreviewReady,
+    isSeekPending,
     pauseMedia,
     playMedia,
     previewKey,
@@ -30,6 +30,7 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
     seekMedia,
     setPlaybackRate,
   } = usePreviewMediaTransport();
+
   const {
     pause: pauseAudio,
     resumeAudioContext,
@@ -44,10 +45,11 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
     metadataFrameCount && metadataFrameCount > 0
       ? metadataFrameCount
       : frameCountFor(media?.durationMicros ?? 0, frameRate);
+
   const frameRateForConversion = frameRate ?? DEFAULT_FRAME_RATE;
 
   const [currentFrame, setCurrentFrameState] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlayingState] = useState(false);
 
   const clampFrame = useCallback(
     (frame: number) =>
@@ -78,46 +80,36 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
   const pause = useCallback(() => {
     pauseMedia();
     pauseAudio();
-    setIsPlaying(false);
+    setIsPlayingState(false);
   }, [pauseAudio, pauseMedia]);
 
-  const toggle = useCallback(() => {
-    if (!isPreviewReady || framesCount === 0) return;
-    if (getMediaState()?.paused === false) {
-      pause();
-      return;
-    }
+  const setIsPlaying = useCallback(
+    (shouldPlay: boolean) => {
+      if (!shouldPlay) {
+        pause();
+        return;
+      }
+      if (!isPreviewReady || framesCount === 0 || getMediaState()?.paused === false) return;
 
-    const seconds = frameToSeconds(currentFrame, frameRateForConversion);
-    void resumeAudioContext();
-    setAudioPlaybackRate(1);
-    void startAudioAt(seconds).catch(pauseAudio);
-    void playMedia().catch(pauseAudio);
-  }, [
-    frameRateForConversion,
-    framesCount,
-    getMediaState,
-    isPreviewReady,
-    currentFrame,
-    pause,
-    pauseAudio,
-    playMedia,
-    resumeAudioContext,
-    setAudioPlaybackRate,
-    startAudioAt,
-  ]);
-
-  const suspendForInteraction = useCallback(() => {
-    const shouldResume = !getMediaState()?.paused;
-    if (shouldResume) pause();
-    return shouldResume;
-  }, [getMediaState, pause]);
-
-  const resumeAfterInteraction = useCallback(
-    (resumePlayback: boolean) => {
-      if (resumePlayback) toggle();
+      const seconds = frameToSeconds(currentFrame, frameRateForConversion);
+      void resumeAudioContext();
+      setAudioPlaybackRate(1);
+      void startAudioAt(seconds).catch(pauseAudio);
+      void playMedia().catch(pauseAudio);
     },
-    [toggle],
+    [
+      currentFrame,
+      frameRateForConversion,
+      framesCount,
+      getMediaState,
+      isPreviewReady,
+      pause,
+      pauseAudio,
+      playMedia,
+      resumeAudioContext,
+      setAudioPlaybackRate,
+      startAudioAt,
+    ],
   );
 
   useEffect(() => {
@@ -135,10 +127,10 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
       registerMediaObserver({
         onEnded: pause,
         onPause: () => {
-          setIsPlaying(false);
+          setIsPlayingState(false);
           pauseAudio();
         },
-        onPlay: () => setIsPlaying(true),
+        onPlay: () => setIsPlayingState(true),
         onPlaybackError: pause,
         onTimeUpdate: (seconds) => {
           if (isSeekPending()) return;
@@ -185,9 +177,13 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
     () => ({ currentFrame, framesCount, setCurrentFrame }),
     [currentFrame, framesCount, setCurrentFrame],
   );
+
   const transport = useMemo(
-    () => ({ isPlaying, pause, resumeAfterInteraction, suspendForInteraction, toggle }),
-    [isPlaying, pause, resumeAfterInteraction, suspendForInteraction, toggle],
+    () => ({
+      isPlaying,
+      setIsPlaying,
+    }),
+    [isPlaying, setIsPlaying],
   );
 
   return (

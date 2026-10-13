@@ -36,7 +36,7 @@ const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>
     forwardedRef,
   ) {
     const { t } = useTranslation();
-    const { toggle } = usePlaybackTransport();
+    const { isPlaying, setIsPlaying } = usePlaybackTransport();
     const { close, finishDrag, isOpen, moveDrag } = cropSelection;
     const transitionStyle = {
       "--preview-transition-duration": `${PREVIEW_TRANSITION_DURATION * 1000}ms`,
@@ -63,8 +63,8 @@ const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>
         close();
         return;
       }
-      toggle();
-    }, [close, isOpen, toggle]);
+      setIsPlaying(!isPlaying);
+    }, [close, isOpen, isPlaying, setIsPlaying]);
 
     const handlePointerMove = useCallback(
       (event: PointerEvent<HTMLDivElement>) => {

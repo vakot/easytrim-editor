@@ -45,15 +45,11 @@ import { VideoPreview } from "../VideoPreview";
 const playback = vi.hoisted(() => {
   return {
     isPlaying: false as boolean,
-    suspendForInteraction: vi.fn(() => false),
-    resumeAfterInteraction: vi.fn(),
-    toggle: vi.fn(),
+    setIsPlaying: vi.fn(),
   };
 }) satisfies {
   isPlaying: boolean;
-  resumeAfterInteraction: (resumePlayback: boolean) => void;
-  suspendForInteraction: () => boolean;
-  toggle: () => void;
+  setIsPlaying: (isPlaying: boolean) => void;
 };
 
 vi.mock("@/features/timeline", async (importOriginal) => ({
@@ -493,6 +489,8 @@ describe("VideoPreview", () => {
   });
 
   it("suspends timeline playback while crop controls are open", () => {
+    playback.isPlaying = true;
+    playback.setIsPlaying.mockClear();
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector('[aria-label="Video crop preview"]');
@@ -503,7 +501,8 @@ describe("VideoPreview", () => {
     pause.mockClear();
 
     openCropTool(viewport!);
-    expect(playback.suspendForInteraction).toHaveBeenCalled();
+    expect(playback.setIsPlaying).toHaveBeenCalledWith(false);
+    playback.isPlaying = false;
 
     fireEvent.play(video!);
     expect(pause).toHaveBeenCalledOnce();
@@ -896,17 +895,14 @@ describe("VideoPreview", () => {
   );
 
   it("toggles playback on a left click and supports the context menu", async () => {
-    playback.toggle.mockClear();
+    playback.setIsPlaying.mockClear();
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector("[aria-label='Video crop preview']");
     expect(viewport).not.toBeNull();
 
     fireEvent.click(viewport!);
-    expect(playback.toggle).toHaveBeenCalledWith({
-      type: "button",
-      id: "preview.click",
-    });
+    expect(playback.setIsPlaying).toHaveBeenCalledWith(true);
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();
