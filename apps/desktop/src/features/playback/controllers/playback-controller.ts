@@ -8,7 +8,6 @@ interface PlaybackDriver {
 
 interface PlaybackSnapshot {
   durationMicros: number;
-  isPlaying: boolean;
   positionMicros: number;
 }
 
@@ -29,15 +28,12 @@ class PlaybackController {
   private mediaSessionId: number | null | undefined;
   private lifecycle: "paused" | "starting" | "playing" = "paused";
   private mediaStartRequested = false;
+  private audioAlignmentPending = false;
   private startupTargetSeconds: number | null = null;
   private lastVideoSyncAt = 0;
 
   constructor() {
-    this.snapshot = {
-      durationMicros: 0,
-      isPlaying: false,
-      positionMicros: 0,
-    };
+    this.snapshot = this.createSnapshot(0, 0);
   }
 
   attach = (mediaSessionId: number | null, driver: PlaybackDriver, durationMicros: number) => {
@@ -69,19 +65,19 @@ class PlaybackController {
       }
     }
 
-    const nextSnapshot = {
-      ...this.snapshot,
-      durationMicros: mediaSessionId === null ? 0 : durationMicros,
-      isPlaying: sessionChanged ? false : this.snapshot.isPlaying,
-      positionMicros: sessionChanged
-        ? 0
-        : Math.min(this.snapshot.positionMicros, mediaSessionId === null ? 0 : durationMicros),
-    };
+    const nextDurationMicros = mediaSessionId === null ? 0 : durationMicros;
+    const nextPositionMicros = sessionChanged
+      ? 0
+      : Math.min(this.snapshot.positionMicros, nextDurationMicros);
 
-    if (!this.snapshotsEqual(this.snapshot, nextSnapshot)) this.update(nextSnapshot);
+    this.update(nextDurationMicros, nextPositionMicros);
   };
 
   getSnapshot = () => this.snapshot;
+
+  get isPlaying() {
+    return this.lifecycle === "playing";
+  }
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -92,16 +88,8 @@ class PlaybackController {
     this.detachSession();
     this.driver = null;
     this.mediaSessionId = undefined;
-    if (
-      this.snapshot.durationMicros !== 0 ||
-      this.snapshot.isPlaying ||
-      this.snapshot.positionMicros !== 0
-    ) {
-      this.update({
-        durationMicros: 0,
-        isPlaying: false,
-        positionMicros: 0,
-      });
+    if (this.snapshot.durationMicros !== 0 || this.snapshot.positionMicros !== 0) {
+      this.update(0, 0);
     }
   };
 
@@ -123,14 +111,22 @@ class PlaybackController {
           this.lifecycle === "playing" ||
           (this.lifecycle === "starting" && this.mediaStartRequested);
 
-        if (!isExpectedPlay) this.driver?.video.pause();
+        if (!isExpectedPlay) {
+          this.driver?.video.pause();
+          return;
+        }
+        if (this.lifecycle === "starting") {
+          this.mediaStartRequested = false;
+          this.audioAlignmentPending = true;
+          this.transitionLifecycle("playing");
+        }
       },
       onPlaybackError: () => {
         if (this.mediaSessionId === mediaSessionId) this.pause();
       },
       onTimeUpdate: () => {
         if (this.mediaSessionId !== mediaSessionId) return;
-        if (this.lifecycle !== "starting") return;
+        if (this.lifecycle === "paused") return;
         const video = this.driver?.video;
         const currentTimeSeconds = video?.getCurrentTimeSeconds();
         if (
@@ -162,8 +158,7 @@ class PlaybackController {
 
   private detachSession() {
     this.cancelStartup();
-    this.lifecycle = "paused";
-    this.stopPlaybackClock();
+    this.transitionLifecycle("paused");
     this.unregisterMediaObserver?.();
     this.unregisterMediaObserver = null;
     this.unregisterAudioPlaybackErrorObserver?.();
@@ -174,17 +169,16 @@ class PlaybackController {
 
   seek = (positionMicros: number) => {
     if (!this.driver || this.mediaSessionId === null || this.mediaSessionId === undefined) return;
+    this.cancelStartup();
     if (this.lifecycle === "starting") {
-      this.cancelStartup();
-      this.lifecycle = "paused";
-      this.stopPlaybackClock();
+      this.transitionLifecycle("paused");
       this.driver.video.pause();
       this.driver.audio.pause();
     }
     const nextPosition = Math.max(0, Math.min(this.snapshot.durationMicros, positionMicros));
     if (!Number.isFinite(nextPosition)) return;
     const seekGeneration = ++this.seekGeneration;
-    const resumeClockAfterSeek = this.lifecycle === "playing" && this.snapshot.isPlaying;
+    const resumeClockAfterSeek = this.lifecycle === "playing";
     if (resumeClockAfterSeek) this.stopPlaybackClock();
     this.setPosition(nextPosition);
     const seconds = nextPosition / MICROS_PER_SECOND;
@@ -193,8 +187,7 @@ class PlaybackController {
       if (
         seekGeneration === this.seekGeneration &&
         resumeClockAfterSeek &&
-        this.lifecycle === "playing" &&
-        this.snapshot.isPlaying
+        this.lifecycle === "playing"
       ) {
         this.startPlaybackClock();
       }
@@ -208,7 +201,6 @@ class PlaybackController {
       !driver.video.isReady ||
       (driver.audio.hasActiveOutput && !driver.audio.isReady) ||
       this.snapshot.durationMicros <= 0 ||
-      this.snapshot.isPlaying ||
       this.lifecycle !== "paused"
     )
       return;
@@ -216,7 +208,7 @@ class PlaybackController {
 
     const seconds = this.snapshot.positionMicros / MICROS_PER_SECOND;
     const generation = ++this.startupGeneration;
-    this.lifecycle = "starting";
+    this.transitionLifecycle("starting");
     this.mediaStartRequested = false;
     void this.startPlayback(generation, seconds);
   };
@@ -226,17 +218,14 @@ class PlaybackController {
 
     this.seekGeneration += 1;
     this.cancelStartup();
-    this.lifecycle = "paused";
-    this.stopPlaybackClock();
+    this.transitionLifecycle("paused");
 
     driver?.audio.pause();
     driver?.video.pause();
-
-    this.setIsPlaying(false);
   };
 
   togglePlayback = () => {
-    if (this.snapshot.isPlaying || this.lifecycle === "starting") this.pause();
+    if (this.lifecycle !== "paused") this.pause();
     else this.play();
   };
 
@@ -250,20 +239,22 @@ class PlaybackController {
     if (!driver) return;
     try {
       await driver.audio.prepareAt(seconds);
-      if (!this.isCurrentStartup(generation)) return;
+      if (!this.isCurrentPlaybackStart(generation)) return;
 
       await new Promise<void>((resolve) => {
         driver.video.seek(seconds, false, resolve);
       });
-      if (!this.isCurrentStartup(generation)) return;
+      if (!this.isCurrentPlaybackStart(generation)) return;
 
       this.mediaStartRequested = true;
       await driver.video.play();
-      if (!this.isCurrentStartup(generation)) return;
+      if (!this.isCurrentPlaybackStart(generation)) return;
 
-      // Follow native video frames while audio is being aligned. The shared
-      // playback state stays inactive until both transports finish startup.
-      this.startPlaybackClock();
+      this.mediaStartRequested = false;
+      if (this.lifecycle === "starting") {
+        this.audioAlignmentPending = true;
+        this.transitionLifecycle("playing");
+      }
 
       const durationSeconds = this.snapshot.durationMicros / MICROS_PER_SECOND;
       const videoPosition = Math.max(
@@ -273,45 +264,46 @@ class PlaybackController {
 
       const audioStartPosition = await driver.audio.startAlignedWithVideoAt(videoPosition);
 
-      if (!this.isCurrentStartup(generation)) return;
+      if (!this.isCurrentPlaybackStart(generation)) return;
 
       if (driver.audio.getCurrentTimeSeconds() !== null) {
         const reachedSharedStart = await this.waitForVideoPosition(generation, audioStartPosition);
         if (!reachedSharedStart) return;
       }
-      if (this.isCurrentStartup(generation)) this.finishStartup();
+      if (this.isCurrentPlaybackStart(generation)) this.audioAlignmentPending = false;
     } catch {
-      if (this.isCurrentStartup(generation)) this.pause();
+      if (this.isCurrentPlaybackStart(generation)) this.pause();
     }
   }
 
-  private isCurrentStartup(generation: number) {
-    return generation === this.startupGeneration && this.lifecycle === "starting";
+  private isCurrentPlaybackStart(generation: number) {
+    return generation === this.startupGeneration && this.lifecycle !== "paused";
   }
 
-  private finishStartup() {
-    this.lifecycle = "playing";
-    this.mediaStartRequested = false;
-    this.setIsPlaying(true);
+  private transitionLifecycle(nextLifecycle: "paused" | "starting" | "playing", notify = true) {
+    if (this.lifecycle === nextLifecycle) return;
+    const wasPlaying = this.lifecycle === "playing";
+    this.lifecycle = nextLifecycle;
+
+    if (nextLifecycle === "playing") this.startPlaybackClock();
+    else if (wasPlaying) this.stopPlaybackClock();
+
+    if (notify && wasPlaying !== (nextLifecycle === "playing")) this.notifyListeners();
   }
 
   private finishAtEndOfMedia() {
     this.seekGeneration += 1;
     this.cancelStartup();
-    this.lifecycle = "paused";
-    this.stopPlaybackClock();
+    this.transitionLifecycle("paused", false);
     this.driver?.audio.pause();
     this.driver?.video.pause();
-    this.update({
-      ...this.snapshot,
-      isPlaying: false,
-      positionMicros: this.snapshot.durationMicros,
-    });
+    this.update(this.snapshot.durationMicros, this.snapshot.durationMicros, true);
   }
 
   private cancelStartup() {
     this.startupGeneration += 1;
     this.mediaStartRequested = false;
+    this.audioAlignmentPending = false;
     this.startupFrame?.cancel();
     this.startupFrame = null;
     this.resolveStartupFrameWait?.(false);
@@ -321,7 +313,7 @@ class PlaybackController {
 
   private waitForVideoPosition(generation: number, targetSeconds: number): Promise<boolean> {
     const driver = this.driver;
-    if (!driver || !this.isCurrentStartup(generation)) return Promise.resolve(false);
+    if (!driver || !this.isCurrentPlaybackStart(generation)) return Promise.resolve(false);
     const currentPosition = driver.video.getCurrentTimeSeconds();
     if (
       !driver.video.isSeekPending() &&
@@ -342,7 +334,7 @@ class PlaybackController {
 
       const checkPosition = (_timestamp: number, mediaTimeSeconds: number) => {
         this.startupFrame = null;
-        if (!this.isCurrentStartup(generation)) {
+        if (!this.isCurrentPlaybackStart(generation)) {
           finish(false);
           return;
         }
@@ -372,14 +364,7 @@ class PlaybackController {
   private setPosition(positionMicros: number) {
     const nextPosition = Math.max(0, Math.min(this.snapshot.durationMicros, positionMicros));
     if (!Number.isFinite(nextPosition) || nextPosition === this.snapshot.positionMicros) return;
-    this.update({ ...this.snapshot, positionMicros: nextPosition });
-  }
-
-  private setIsPlaying(isPlaying: boolean) {
-    if (isPlaying === this.snapshot.isPlaying) return;
-    this.update({ ...this.snapshot, isPlaying });
-    if (isPlaying) this.startPlaybackClock();
-    else this.stopPlaybackClock();
+    this.update(this.snapshot.durationMicros, nextPosition);
   }
 
   private startPlaybackClock() {
@@ -392,7 +377,7 @@ class PlaybackController {
       if (!driver || this.mediaSessionId === null || this.mediaSessionId === undefined) return;
       const audioClockSeconds = driver.audio.getCurrentTimeSeconds();
       const clockSeconds =
-        this.lifecycle === "starting" || audioClockSeconds === null
+        this.audioAlignmentPending || audioClockSeconds === null
           ? seconds
           : Math.min(audioClockSeconds, seconds);
 
@@ -427,17 +412,27 @@ class PlaybackController {
     this.playbackFrame = null;
   }
 
-  private update(snapshot: PlaybackSnapshot) {
-    this.snapshot = snapshot;
-    for (const listener of this.listeners) listener();
+  private createSnapshot(durationMicros: number, positionMicros: number): PlaybackSnapshot {
+    return {
+      durationMicros,
+      positionMicros,
+    };
   }
 
-  private snapshotsEqual(left: PlaybackSnapshot, right: PlaybackSnapshot) {
-    return (
-      left.durationMicros === right.durationMicros &&
-      left.isPlaying === right.isPlaying &&
-      left.positionMicros === right.positionMicros
-    );
+  private update(durationMicros: number, positionMicros: number, force = false) {
+    if (
+      !force &&
+      durationMicros === this.snapshot.durationMicros &&
+      positionMicros === this.snapshot.positionMicros
+    ) {
+      return;
+    }
+    this.snapshot = this.createSnapshot(durationMicros, positionMicros);
+    this.notifyListeners();
+  }
+
+  private notifyListeners() {
+    for (const listener of this.listeners) listener();
   }
 }
 

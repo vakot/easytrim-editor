@@ -176,18 +176,17 @@ describe("native preview playback integration", () => {
     );
 
     expect(preview.controller.getSnapshot()).toMatchObject({
-      isPlaying: false,
       positionMicros: 0,
     });
     preview.playNextFrame(0.05);
 
     expect(preview.controller.getSnapshot()).toMatchObject({
-      isPlaying: false,
       positionMicros: 50_000,
     });
 
     pendingAudioStart.resolve(0.05);
-    await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
+    await Promise.resolve();
+    expect(preview.controller.isPlaying).toBe(true);
     preview.dispose();
   });
 
@@ -210,12 +209,10 @@ describe("native preview playback integration", () => {
     await Promise.resolve();
 
     expect(preview.controller.getSnapshot()).toMatchObject({
-      isPlaying: false,
       positionMicros: 200_000,
     });
-    expect(preview.video.paused).toBe(true);
-    expect(preview.driver.audio.pause).toHaveBeenCalled();
-    expect(() => preview.playNextFrame(0.3)).toThrow("No playback frame is pending.");
+    expect(preview.video.paused).toBe(false);
+    expect(() => preview.playNextFrame(0.3)).not.toThrow();
     preview.dispose();
   });
 
@@ -258,13 +255,13 @@ describe("native preview playback integration", () => {
           preview.advanceMediaTime(Math.min(0.15, lastAudioPosition));
         }
         preview.playNextFrame(lastFrameSeconds);
-        await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
+        await vi.waitFor(() => expect(preview.controller.isPlaying).toBe(true));
 
         if (hasAudioOutput) preview.setAudioPosition(durationSeconds);
         preview.advanceMediaTime(durationSeconds);
         preview.playNextFrame(lastFrameSeconds);
 
-        expect(preview.controller.getSnapshot().isPlaying).toBe(true);
+        expect(preview.controller.isPlaying).toBe(true);
         expect(
           microsToFrame(preview.controller.getSnapshot().positionMicros, frameRate, frameCount),
         ).toBe(frameCount - 1);
@@ -272,7 +269,6 @@ describe("native preview playback integration", () => {
 
         preview.controller.pause();
         expect(preview.controller.getSnapshot()).toMatchObject({
-          isPlaying: false,
           positionMicros: lastFrameMicros,
         });
 
@@ -288,12 +284,11 @@ describe("native preview playback integration", () => {
           preview.advanceMediaTime(lastAudioPosition);
           preview.playNextFrame(lastFrameSeconds);
         }
-        await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
+        await vi.waitFor(() => expect(preview.controller.isPlaying).toBe(true));
         preview.notifyNativeEnded();
 
         expect(preview.controller.getSnapshot()).toEqual({
           durationMicros,
-          isPlaying: false,
           positionMicros: durationMicros,
         });
 
@@ -320,7 +315,7 @@ describe("native preview playback integration", () => {
 
     await vi.waitFor(() => {
       expect(preview.video.play).toHaveBeenCalledOnce();
-      expect(preview.controller.getSnapshot().isPlaying).toBe(true);
+      expect(preview.controller.isPlaying).toBe(true);
     });
 
     expect(preview.driver.audio.prepareAt).toHaveBeenCalledWith(position);
@@ -333,7 +328,7 @@ describe("native preview playback integration", () => {
     preview.controller.seek((2 / 30) * 1_000_000);
     preview.finishSeek();
     preview.controller.play();
-    await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
+    await vi.waitFor(() => expect(preview.controller.isPlaying).toBe(true));
 
     preview.controller.seek(0);
     preview.controller.seek((1 / 30) * 1_000_000);
@@ -343,13 +338,12 @@ describe("native preview playback integration", () => {
     preview.finishSeek();
 
     expect(preview.controller.getSnapshot()).toMatchObject({
-      isPlaying: false,
       positionMicros: (2 / 30) * 1_000_000,
     });
     expect(preview.video.currentTime).toBe(2 / 30);
 
     preview.controller.play();
-    await vi.waitFor(() => expect(preview.controller.getSnapshot().isPlaying).toBe(true));
+    await vi.waitFor(() => expect(preview.controller.isPlaying).toBe(true));
     preview.playNextFrame(3 / 30);
 
     expect(preview.controller.getSnapshot().positionMicros).toBe((3 / 30) * 1_000_000);

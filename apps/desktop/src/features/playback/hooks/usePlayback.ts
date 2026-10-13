@@ -14,12 +14,12 @@ function usePlaybackSnapshot<Value>(
   return useSyncExternalStore(
     controller.subscribe,
     () => {
-      const { durationMicros, isPlaying, positionMicros } = controller.getSnapshot();
-      return select(positionMicros, durationMicros, isPlaying);
+      const { durationMicros, positionMicros } = controller.getSnapshot();
+      return select(positionMicros, durationMicros, controller.isPlaying);
     },
     () => {
-      const { durationMicros, isPlaying, positionMicros } = controller.getSnapshot();
-      return select(positionMicros, durationMicros, isPlaying);
+      const { durationMicros, positionMicros } = controller.getSnapshot();
+      return select(positionMicros, durationMicros, controller.isPlaying);
     },
   );
 }
