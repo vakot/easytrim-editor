@@ -156,7 +156,9 @@ describe("PresetManager built-in localization", () => {
     await openPresetActions("P3 · Fast", 2);
     await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
 
-    expect(screen.getByText("Delete “P3 · Fast”? This cannot be undone")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Delete “P3 · Fast”? This cannot be undone"),
+    ).toBeInTheDocument();
   });
 
   it("validates custom names against visible built-in names and updates state consistently", async () => {
