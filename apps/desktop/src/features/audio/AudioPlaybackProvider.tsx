@@ -3,6 +3,7 @@ import { useMemo } from "react";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
+import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { usePreviewRuntime } from "@/features/preview";
 
 import { AudioPlaybackContext } from "./contexts/audio-playback-context";
@@ -11,12 +12,11 @@ import { useAudioPlaybackRuntime } from "./hooks/useAudioPlaybackRuntime";
 
 function AudioPlaybackProvider({ children }: { children: ReactNode }) {
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
+  const media = useAppSelector(selectSourceMedia);
   const preview = usePreviewRuntime();
   const playback = useAudioPlaybackRuntime({
     activeInstanceId,
-    isPreviewReady: preview.isPreviewReady,
-    playbackRate: 1,
-    previewKey: preview.previewKey,
+    durationMicros: media?.durationMicros ?? 0,
     videoRef: preview.videoRef,
   });
 
@@ -36,23 +36,25 @@ function AudioPlaybackProvider({ children }: { children: ReactNode }) {
   const audioTransport = useMemo(
     () => ({
       isReady: playback.isReady,
+      getCurrentTimeSeconds: playback.getCurrentTimeSeconds,
       pause: playback.pause,
-      resumeAt: playback.resumeAt,
+      requestPlaybackFrame: playback.requestPlaybackFrame,
       resumeAudioContext: playback.resumeAudioContext,
       setPlaybackRate: playback.setPlaybackRate,
       startAt: playback.startAt,
       syncTo: playback.syncTo,
-      usesExternalAudio: playback.usesExternalAudio,
+      usesWebAudio: playback.usesWebAudio,
     }),
     [
       playback.isReady,
+      playback.getCurrentTimeSeconds,
       playback.pause,
-      playback.resumeAt,
+      playback.requestPlaybackFrame,
       playback.resumeAudioContext,
       playback.setPlaybackRate,
       playback.startAt,
       playback.syncTo,
-      playback.usesExternalAudio,
+      playback.usesWebAudio,
     ],
   );
 

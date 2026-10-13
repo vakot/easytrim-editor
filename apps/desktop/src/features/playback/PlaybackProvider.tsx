@@ -15,7 +15,17 @@ function PlaybackProvider({ children }: { children: ReactNode }) {
   const media = useAppSelector(selectSourceMedia);
   const preview = usePreviewRuntime();
   const audio = useAudioTransport();
-  const driver = useMemo<PlaybackDriver>(() => ({ ...preview, ...audio }), [audio, preview]);
+  const driver = useMemo<PlaybackDriver>(
+    () => ({
+      ...preview,
+      ...audio,
+      requestPlaybackFrame: audio.usesWebAudio
+        ? audio.requestPlaybackFrame
+        : preview.requestPlaybackFrame,
+    }),
+    [audio, preview],
+  );
+
   const sessionKey = JSON.stringify([
     activeInstanceId,
     source?.sourcePath ?? null,

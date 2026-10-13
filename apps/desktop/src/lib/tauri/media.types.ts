@@ -1,4 +1,3 @@
-import type { AudioTrackProcessing } from "@/domain/audio-processing";
 import type {
   AppError,
   AudioExportRequest,
@@ -50,12 +49,10 @@ interface ThumbnailDescriptor {
   url: string;
 }
 
-interface AudioPreviewDescriptor {
-  mediaToken: number;
-  previewRevision: number;
-  processing: AudioTrackProcessing;
-  streamIndex: number;
-  url: string;
+interface PlaybackPcmChunk {
+  channels: number;
+  sampleRate: number;
+  samples: number[];
 }
 
 interface SilenceRange {
@@ -105,7 +102,6 @@ export type SourceDropEvent = { active: boolean; status: "drag" } | SourceImport
 export type {
   AppError,
   AudioExportRequest,
-  AudioPreviewDescriptor,
   AudioStream,
   BinaryCapability,
   BinaryCapabilityErrorId,
@@ -122,6 +118,7 @@ export type {
   MediaInfo,
   OptimizedExportRequest,
   OutputSelection,
+  PlaybackPcmChunk,
   PreviewDescriptor,
   SilenceRange,
   SourceImportResult,

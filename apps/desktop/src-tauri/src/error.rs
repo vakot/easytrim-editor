@@ -122,24 +122,16 @@ pub enum AppErrorMessageId {
     MediaAudioActivityFfmpegIsRequiredToAnalyzeAudioActivity,
     #[serde(rename = "media.audioActivity.inspectTheVideoBeforeDetectingAudioActivity")]
     MediaAudioActivityInspectTheVideoBeforeDetectingAudioActivity,
-    #[serde(rename = "media.audio.audioPreviewsRequireInspectedSourceMedia")]
-    MediaAudioAudioPreviewsRequireInspectedSourceMedia,
-    #[serde(rename = "media.audio.ffmpegCouldNotPrepareAudioPreview")]
-    MediaAudioFfmpegCouldNotPrepareAudioPreview,
-    #[serde(rename = "media.audio.ffmpegIsRequiredToPrepareAudioPreview")]
-    MediaAudioFfmpegIsRequiredToPrepareAudioPreview,
-    #[serde(rename = "media.audio.preparingAudioPreviewTookTooLong")]
-    MediaAudioPreparingAudioPreviewTookTooLong,
-    #[serde(rename = "media.audioPreviewStreamIndexesMustBeUnique")]
-    MediaAudioPreviewStreamIndexesMustBeUnique,
-    #[serde(rename = "media.audio.selectedAudioStreamsCouldNotBePreparedForPreview")]
-    MediaAudioSelectedAudioStreamsCouldNotBePreparedForPreview,
+    #[serde(rename = "media.audio.playbackChunkRequiresInspectedSourceMedia")]
+    MediaAudioPlaybackChunkRequiresInspectedSourceMedia,
+    #[serde(rename = "media.audio.ffmpegCouldNotDecodePlaybackAudio")]
+    MediaAudioFfmpegCouldNotDecodePlaybackAudio,
+    #[serde(rename = "media.audio.ffmpegIsRequiredForPlayback")]
+    MediaAudioFfmpegIsRequiredForPlayback,
+    #[serde(rename = "media.audio.playbackAudioDecodingTookTooLong")]
+    MediaAudioPlaybackAudioDecodingTookTooLong,
     #[serde(rename = "media.audioStreamMetadataIsUnavailableForWaveformGeneration")]
     MediaAudioStreamMetadataIsUnavailableForWaveformGeneration,
-    #[serde(rename = "media.audio.temporaryAudioPreviewDirectoryCouldNotBeCreated")]
-    MediaAudioTemporaryAudioPreviewDirectoryCouldNotBeCreated,
-    #[serde(rename = "media.audio.uniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated")]
-    MediaAudioUniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated,
     #[serde(rename = "media.inspectTheVideoBeforeDetectingAudioActivity")]
     MediaInspectTheVideoBeforeDetectingAudioActivity,
     #[serde(rename = "media.loudness.ffmpegCouldNotAnalyzeAudioLoudness")]
@@ -208,8 +200,6 @@ pub enum AppErrorMessageId {
     MediaSceneSceneDetectionTookTooLong,
     #[serde(rename = "media.scene.sourceContainsTooManyDetectedSceneChanges")]
     MediaSceneSourceContainsTooManyDetectedSceneChanges,
-    #[serde(rename = "media.selectBetweenOneAnd32AudioStreamsForPreview")]
-    MediaSelectBetweenOneAnd32AudioStreamsForPreview,
     #[serde(rename = "media.selectBetweenOneAnd32AudioStreamsForWaveformGeneration")]
     MediaSelectBetweenOneAnd32AudioStreamsForWaveformGeneration,
     #[serde(rename = "media.thumbnailCacheIsUnavailable")]
@@ -271,8 +261,6 @@ pub enum AppErrorMessageId {
     SourceSourceFileCouldNotBeFoundInTrash,
     #[serde(rename = "source.sourcePathMustBeAbsolute")]
     SourceSourcePathMustBeAbsolute,
-    #[serde(rename = "state.audioPreviewIsNotAvailable")]
-    StateAudioPreviewIsNotAvailable,
     #[serde(rename = "state.operationIsNoLongerAvailable")]
     StateOperationIsNoLongerAvailable,
     #[serde(rename = "state.outputLocationIsNoLongerAvailable")]

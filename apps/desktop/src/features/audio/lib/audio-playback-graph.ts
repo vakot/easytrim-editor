@@ -1,4 +1,4 @@
-import { type AudioTrackLimiter, limitAudioPreviewSample } from "@/domain/audio-processing";
+import { type AudioTrackLimiter, limitAudioPlaybackSample } from "@/domain/audio-processing";
 
 import { createStereoAudioMeterNodes, type StereoAudioMeterNodes } from "./stereo-audio-meter";
 
@@ -9,7 +9,7 @@ function limiterCurve(ceilingDb: number): Float32Array<ArrayBuffer> {
 
   for (let index = 0; index < curve.length; index += 1) {
     const sample = (index / (curve.length - 1)) * 2 - 1;
-    curve[index] = limitAudioPreviewSample(sample, ceilingDb);
+    curve[index] = limitAudioPlaybackSample(sample, ceilingDb);
   }
   return curve;
 }
@@ -47,9 +47,7 @@ function updateAudioTrackLimiter(
 function disconnectAudioTrackRuntime(nodes: {
   gain: GainNode;
   limiter: WaveShaperNode | null;
-  source: MediaElementAudioSourceNode;
 }): void {
-  nodes.source.disconnect();
   nodes.gain.disconnect();
   nodes.limiter?.disconnect();
 }

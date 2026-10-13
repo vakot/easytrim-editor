@@ -32,8 +32,8 @@ function CropViewportVideo({
     setVideoElement,
   } = usePreviewRuntime();
 
-  const { usesExternalAudio } = useAudioTransport();
-  const videoMuted = usesExternalAudio && typeof AudioContext === "undefined";
+  const { usesWebAudio } = useAudioTransport();
+  const videoMuted = usesWebAudio;
   const preview = useAppSelector(selectPreview);
   const reportedUrl = useRef<string | null>(null);
   const sourceUrl = preview.status === "ready" ? preview.value.url : null;

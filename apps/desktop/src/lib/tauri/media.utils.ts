@@ -1,13 +1,7 @@
-import {
-  type AudioTrackSignalEffect,
-  type LoudnessNormalization,
-  parseAudioTrackSignalEffects as parseSignalEffects,
-} from "@/domain/audio-processing";
 import type { SourceRef } from "@/domain/source";
 
 import type {
   AppError,
-  AudioPreviewDescriptor,
   AudioStream,
   BinaryCapability,
   BinaryCapabilityErrorId,
@@ -20,6 +14,7 @@ import type {
   MediaCapabilities,
   MediaInfo,
   OutputSelection,
+  PlaybackPcmChunk,
   PreviewDescriptor,
   SilenceRange,
   SourceImportResult,
@@ -263,10 +258,6 @@ function parseThumbnailDescriptor(value: unknown): ThumbnailDescriptor {
   };
 }
 
-function parseAudioPreviewDescriptors(value: unknown): AudioPreviewDescriptor[] {
-  return requireArray(value, "audio preview descriptors").map(parseAudioPreviewDescriptor);
-}
-
 function parseWaveformResults(value: unknown): WaveformResult[] {
   return requireArray(value, "waveform results").map(parseWaveformResult);
 }
@@ -298,52 +289,20 @@ function parseBinaryCapabilityErrorId(value: unknown): BinaryCapabilityErrorId |
   }
 }
 
-function parseAudioPreviewDescriptor(value: unknown): AudioPreviewDescriptor {
-  const preview = requireRecord(value, "audio preview descriptor");
-  const processing = requireRecord(preview.processing, "audio preview processing");
-  const gainDb = optionalFiniteNumber(processing.gainDb, "audio preview gain");
-  if (gainDb === undefined) throw invalidResponse("audio preview gain");
-  const loudnessNormalization = parseLoudnessNormalization(processing.loudnessNormalization);
-  const effects = parseAudioTrackSignalEffects(processing.effects);
-  return {
-    mediaToken: requirePositiveInteger(preview.mediaToken, "audio preview media token"),
-    previewRevision: requirePositiveInteger(preview.previewRevision, "audio preview revision"),
-    processing: {
-      gainDb,
-      ...(effects === undefined ? {} : { effects }),
-      ...(loudnessNormalization === undefined ? {} : { loudnessNormalization }),
-    },
-    streamIndex: requireInteger(preview.streamIndex, "audio preview stream index"),
-    url: requireString(preview.url, "audio preview URL"),
-  };
-}
+function parsePlaybackPcmChunk(value: unknown): PlaybackPcmChunk {
+  const chunk = requireRecord(value, "playback PCM chunk");
+  const channels = requireInteger(chunk.channels, "playback channel count");
+  const sampleRate = requirePositiveInteger(chunk.sampleRate, "playback sample rate");
+  const samples = requireArray(chunk.samples, "playback PCM samples").map((sample) => {
+    const parsed = requireInteger(sample, "playback PCM sample");
+    if (parsed < -32768 || parsed > 32767) throw invalidResponse("playback PCM sample");
+    return parsed;
+  });
 
-function parseAudioTrackSignalEffects(value: unknown): AudioTrackSignalEffect[] | undefined {
-  if (value === null) return undefined;
-  const effects = parseSignalEffects(value);
-  if (value !== undefined && effects === undefined) throw invalidResponse("audio preview effects");
-  return effects;
-}
-
-function parseLoudnessNormalization(value: unknown): LoudnessNormalization | undefined {
-  if (value === undefined || value === null) return undefined;
-  if (value === "webVideo" || value === "streaming" || value === "broadcast") return value;
-
-  const custom = requireRecord(value, "audio preview loudness normalization");
-  const targetLufs = optionalFiniteNumber(custom.targetLufs, "custom loudness target LUFS");
-  const maxTruePeakDb = optionalFiniteNumber(custom.maxTruePeakDb, "custom maximum true peak");
-  if (
-    custom.mode !== "custom" ||
-    targetLufs === undefined ||
-    targetLufs < -36 ||
-    targetLufs > -5 ||
-    maxTruePeakDb === undefined ||
-    maxTruePeakDb < -9 ||
-    maxTruePeakDb > 0
-  ) {
-    throw invalidResponse("audio preview loudness normalization");
+  if (channels !== 2 || samples.length % channels !== 0) {
+    throw invalidResponse("playback PCM chunk");
   }
-  return { maxTruePeakDb, mode: "custom", targetLufs };
+  return { channels, sampleRate, samples };
 }
 
 function parseWaveformResult(value: unknown): WaveformResult {
@@ -509,7 +468,6 @@ function invalidResponse(label: string): AppError {
 
 export {
   normalizeAppError,
-  parseAudioPreviewDescriptors,
   parseExportPlan,
   parseExportProgress,
   parseExportResult,
@@ -517,6 +475,7 @@ export {
   parseMediaCapabilities,
   parseMediaInfo,
   parseOutputSelection,
+  parsePlaybackPcmChunk,
   parsePreviewDescriptor,
   parseSceneBoundaries,
   parseSilenceRanges,

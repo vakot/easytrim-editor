@@ -7,6 +7,7 @@ function createPlaybackDriver() {
   let playbackFrameCallback: Parameters<PlaybackDriver["requestPlaybackFrame"]>[0] | null = null;
   const driver: PlaybackDriver = {
     isPreviewReady: true,
+    getCurrentTimeSeconds: vi.fn(() => null),
     isSeekPending: () => false,
     pause: vi.fn(),
     pauseMedia: vi.fn(),
@@ -24,7 +25,7 @@ function createPlaybackDriver() {
     resumeAudioContext: vi.fn(async () => undefined),
     seekMedia: vi.fn(),
     setPlaybackRate: vi.fn(),
-    startAt: vi.fn(async () => []),
+    startAt: vi.fn(async () => undefined),
     syncTo: vi.fn(),
   };
 
@@ -53,12 +54,14 @@ describe("playback controller", () => {
       isPlaying: false,
       positionMicros: 2_000_000,
     });
-    expect(driver.seekMedia).toHaveBeenCalledWith(2, false, expect.any(Function));
+    expect(driver.seekMedia).toHaveBeenCalledWith(2, false);
+    expect(driver.syncTo).toHaveBeenCalledWith(2, true);
   });
 
   it("uses the media clock and stops at the end of playback", () => {
     const playback = createPlaybackDriver();
     const { driver } = playback;
+    vi.mocked(driver.getCurrentTimeSeconds).mockReturnValue(1.25);
     const controller = new PlaybackController(driver, 2_000_000);
     const disconnect = controller.connect();
 

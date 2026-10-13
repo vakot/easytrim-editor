@@ -1,14 +1,17 @@
 import { createContext, useContext } from "react";
 
 interface AudioTransportContract {
+  getCurrentTimeSeconds: () => number | null;
   isReady: boolean;
   pause: () => void;
-  resumeAt: (seconds: number) => Promise<[void, void[]]>;
+  requestPlaybackFrame: (
+    callback: (timestamp: number, mediaTimeSeconds: number) => void,
+  ) => { cancel: () => void } | null;
   resumeAudioContext: () => Promise<void>;
   setPlaybackRate: (rate: number) => void;
-  startAt: (seconds: number) => Promise<void[]>;
+  startAt: (seconds: number) => Promise<void>;
   syncTo: (seconds: number, force?: boolean) => void;
-  usesExternalAudio: boolean;
+  usesWebAudio: boolean;
 }
 
 const AudioTransportContext = createContext<AudioTransportContract | null>(null);

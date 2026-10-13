@@ -1,165 +1,154 @@
 use std::{
     ffi::{OsStr, OsString},
-    fs, io,
+    io,
     path::Path,
-    process,
-    sync::atomic::{AtomicU64, Ordering},
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
 };
 
 use crate::{
     error::{AppError, AppErrorMessageId},
     media::export::{AudioTrackSelection, audio_filter_graph, validate_audio_track_selections},
     process::{ProcessOutput, run_bounded_cancellable},
-    state::{ActiveSource, AudioPreviewArtifact},
+    state::ActiveSource,
 };
 
-const AUDIO_TIMEOUT: Duration = Duration::from_secs(15 * 60);
 const STDERR_LIMIT: usize = 128 * 1024;
-static NEXT_DIRECTORY_ID: AtomicU64 = AtomicU64::new(0);
+pub const PLAYBACK_PCM_SAMPLE_RATE: u32 = 48_000;
+pub const PLAYBACK_PCM_MAX_CHUNK_MICROS: u64 = 2_000_000;
+const PLAYBACK_PCM_MAX_OUTPUT_BYTES: usize =
+    PLAYBACK_PCM_SAMPLE_RATE as usize * 2 * std::mem::size_of::<i16>() * 2;
 
-pub fn generate_audio_previews(
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlaybackPcmChunk {
+    pub channels: u16,
+    pub sample_rate: u32,
+    pub samples: Vec<i16>,
+}
+
+pub fn decode_playback_chunk(
     source: &ActiveSource,
-    audio_tracks: &[AudioTrackSelection],
-) -> Result<Vec<(AudioTrackSelection, AudioPreviewArtifact)>, AppError> {
+    track: &AudioTrackSelection,
+    start_micros: u64,
+    duration_micros: u64,
+    operation_cancellation: Arc<AtomicBool>,
+) -> Result<PlaybackPcmChunk, AppError> {
     let media = source.media.as_ref().ok_or_else(|| {
         AppError::invalid_request(
-            AppErrorMessageId::MediaAudioAudioPreviewsRequireInspectedSourceMedia,
+            AppErrorMessageId::MediaAudioPlaybackChunkRequiresInspectedSourceMedia,
         )
     })?;
-    validate_audio_track_selections(media, audio_tracks)?;
+    validate_audio_track_selections(media, std::slice::from_ref(track))?;
+    let end_micros = start_micros.checked_add(duration_micros).ok_or_else(|| {
+        AppError::invalid_request(AppErrorMessageId::ExportSelectedExportRangeIsInvalid)
+    })?;
+    let media_duration = u64::try_from(media.duration_micros).unwrap_or_default();
+    if duration_micros == 0
+        || duration_micros > PLAYBACK_PCM_MAX_CHUNK_MICROS
+        || end_micros > media_duration
+    {
+        return Err(AppError::invalid_request(
+            AppErrorMessageId::ExportSelectedExportRangeIsInvalid,
+        ));
+    }
 
-    let artifacts = audio_tracks
-        .iter()
-        .map(|track| create_artifact(track.stream_index).map(|artifact| (track.clone(), artifact)))
-        .collect::<Result<Vec<_>, _>>()?;
-    let arguments = audio_preview_arguments(
-        &source.path,
-        audio_tracks,
-        &artifacts
-            .iter()
-            .map(|(_, artifact)| artifact.path())
-            .collect::<Vec<_>>(),
-    );
+    let arguments = playback_chunk_arguments(&source.path, track, start_micros, duration_micros);
     let output = run_bounded_cancellable(
         OsStr::new("ffmpeg"),
         &arguments,
-        AUDIO_TIMEOUT,
-        16 * 1024,
+        Duration::from_secs(30),
+        PLAYBACK_PCM_MAX_OUTPUT_BYTES,
         STDERR_LIMIT,
-        || source.cancellation.load(Ordering::Acquire),
+        || {
+            source.cancellation.load(Ordering::Acquire)
+                || operation_cancellation.load(Ordering::Acquire)
+        },
     )
     .map_err(process_error)?;
 
-    if output.status.success()
-        && artifacts
-            .iter()
-            .all(|(_, artifact)| artifact.path().is_file())
-    {
-        return Ok(artifacts);
+    if !output.status.success() || output.stdout_truncated || output.stdout.len() % 4 != 0 {
+        return Err(AppError::preview_failed(
+            AppErrorMessageId::MediaAudioFfmpegCouldNotDecodePlaybackAudio,
+            diagnostics(&output, &source.path),
+        ));
     }
 
-    Err(AppError::preview_failed(
-        AppErrorMessageId::MediaAudioSelectedAudioStreamsCouldNotBePreparedForPreview,
-        diagnostics(
-            &output,
-            &source.path,
-            artifacts.iter().map(|(_, artifact)| artifact.path()),
-        ),
-    ))
+    let samples = output
+        .stdout
+        .chunks_exact(2)
+        .map(|sample| i16::from_le_bytes([sample[0], sample[1]]))
+        .collect();
+    Ok(PlaybackPcmChunk {
+        channels: 2,
+        sample_rate: PLAYBACK_PCM_SAMPLE_RATE,
+        samples,
+    })
 }
 
-fn audio_preview_arguments(
+fn playback_chunk_arguments(
     source_path: &Path,
-    audio_tracks: &[AudioTrackSelection],
-    outputs: &[&Path],
+    track: &AudioTrackSelection,
+    start_micros: u64,
+    duration_micros: u64,
 ) -> Vec<OsString> {
-    let mut arguments = vec![
+    let selection = std::slice::from_ref(track);
+    vec![
         OsString::from("-hide_banner"),
         OsString::from("-nostdin"),
-        OsString::from("-n"),
+        OsString::from("-ss"),
+        OsString::from(format_seconds(start_micros)),
         OsString::from("-i"),
         source_path.as_os_str().to_owned(),
+        OsString::from("-t"),
+        OsString::from(format_seconds(duration_micros)),
         OsString::from("-filter_complex"),
-        OsString::from(audio_filter_graph(audio_tracks, false)),
-    ];
-    for (index, output_path) in outputs.iter().enumerate() {
-        arguments.extend([
-            OsString::from("-map"),
-            OsString::from(format!("[audio{index}]")),
-            OsString::from("-vn"),
-            OsString::from("-sn"),
-            OsString::from("-dn"),
-            OsString::from("-c:a"),
-            OsString::from("aac"),
-            OsString::from("-f"),
-            OsString::from("mp4"),
-            output_path.as_os_str().to_owned(),
-        ]);
-    }
-    arguments
+        OsString::from(audio_filter_graph(selection, false)),
+        OsString::from("-map"),
+        OsString::from("[audio0]"),
+        OsString::from("-vn"),
+        OsString::from("-sn"),
+        OsString::from("-dn"),
+        OsString::from("-f"),
+        OsString::from("s16le"),
+        OsString::from("-acodec"),
+        OsString::from("pcm_s16le"),
+        OsString::from("-ar"),
+        OsString::from(PLAYBACK_PCM_SAMPLE_RATE.to_string()),
+        OsString::from("-ac"),
+        OsString::from("2"),
+        OsString::from("pipe:1"),
+    ]
 }
 
-fn create_artifact(stream_index: u32) -> Result<AudioPreviewArtifact, AppError> {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    let base_directory = std::env::temp_dir();
-
-    for _ in 0..100 {
-        let sequence = NEXT_DIRECTORY_ID.fetch_add(1, Ordering::Relaxed);
-        let directory = base_directory.join(format!(
-            "easytrim-audio-preview-{}-{timestamp}-{sequence}",
-            process::id()
-        ));
-        match fs::create_dir(&directory) {
-            Ok(()) => {
-                let path = directory.join(format!("audio-{stream_index}.m4a"));
-                return AudioPreviewArtifact::new(directory, path);
-            }
-            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
-            Err(_) => {
-                return Err(AppError::io_failed(
-                    AppErrorMessageId::MediaAudioTemporaryAudioPreviewDirectoryCouldNotBeCreated,
-                ));
-            }
-        }
-    }
-
-    Err(AppError::io_failed(
-        AppErrorMessageId::MediaAudioUniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated,
-    ))
+fn format_seconds(micros: u64) -> String {
+    format!("{}.{:06}", micros / 1_000_000, micros % 1_000_000)
 }
 
 fn process_error(error: io::Error) -> AppError {
     match error.kind() {
         io::ErrorKind::Interrupted => AppError::source_replaced(),
         io::ErrorKind::NotFound => AppError::preview_failed(
-            AppErrorMessageId::MediaAudioFfmpegIsRequiredToPrepareAudioPreview,
+            AppErrorMessageId::MediaAudioFfmpegIsRequiredForPlayback,
             None::<String>,
         ),
         io::ErrorKind::TimedOut => AppError::preview_failed(
-            AppErrorMessageId::MediaAudioPreparingAudioPreviewTookTooLong,
+            AppErrorMessageId::MediaAudioPlaybackAudioDecodingTookTooLong,
             None::<String>,
         ),
         _ => AppError::preview_failed(
-            AppErrorMessageId::MediaAudioFfmpegCouldNotPrepareAudioPreview,
+            AppErrorMessageId::MediaAudioFfmpegCouldNotDecodePlaybackAudio,
             None::<String>,
         ),
     }
 }
 
-fn diagnostics<'a>(
-    output: &ProcessOutput,
-    source_path: &Path,
-    preview_paths: impl IntoIterator<Item = &'a Path>,
-) -> Option<String> {
-    let mut value = String::from_utf8_lossy(&output.stderr)
+fn diagnostics(output: &ProcessOutput, source_path: &Path) -> Option<String> {
+    let value = String::from_utf8_lossy(&output.stderr)
         .replace(source_path.to_string_lossy().as_ref(), "<source>");
-    for preview_path in preview_paths {
-        value = value.replace(preview_path.to_string_lossy().as_ref(), "<preview>");
-    }
     let value = value.trim();
     (!value.is_empty()).then(|| value.to_owned())
 }
@@ -168,129 +157,45 @@ fn diagnostics<'a>(
 mod tests {
     use std::{ffi::OsString, path::Path};
 
-    use crate::media::export::audio_filter_graph;
+    use crate::media::export::{AudioTrackProcessing, AudioTrackSelection};
 
-    use crate::media::export::{
-        AudioTrackProcessing, AudioTrackSelection, LoudnessNormalization, LoudnessPreset,
-    };
-
-    use super::audio_preview_arguments;
+    use super::{PLAYBACK_PCM_SAMPLE_RATE, playback_chunk_arguments};
 
     #[test]
-    fn builds_one_input_with_multiple_audio_outputs() {
-        let tracks = [
-            AudioTrackSelection {
-                loudness_analysis: Some(crate::media::export::AudioLoudnessAnalysis {
-                    input_lra: Some(5.0),
-                    input_threshold: Some(-30.0),
-                    integrated_lufs: Some(-20.0),
-                    true_peak_db: Some(-5.0),
-                }),
-                stream_index: 2,
-                processing: AudioTrackProcessing {
-                    gain_db: 3.0,
-                    loudness_normalization: Some(LoudnessNormalization::Preset(
-                        LoudnessPreset::Streaming,
-                    )),
-                    effects: Vec::new(),
-                },
-            },
-            AudioTrackSelection {
-                loudness_analysis: None,
-                stream_index: 4,
-                processing: AudioTrackProcessing {
-                    gain_db: 0.0,
-                    loudness_normalization: None,
-                    effects: Vec::new(),
-                },
-            },
-        ];
-        let arguments = audio_preview_arguments(
-            Path::new("C:\\Videos\\source clip.mkv"),
-            &tracks,
-            &[
-                Path::new("C:\\Temp\\audio-2.m4a"),
-                Path::new("C:\\Temp\\audio-4.m4a"),
-            ],
-        );
-
-        assert_eq!(
-            arguments
-                .iter()
-                .filter(|argument| *argument == "-i")
-                .count(),
-            1
-        );
-        assert_eq!(
-            arguments
-                .windows(2)
-                .filter(|pair| pair[0] == "-map")
-                .map(|pair| pair[1].clone())
-                .collect::<Vec<_>>(),
-            [OsString::from("[audio0]"), OsString::from("[audio1]")]
-        );
-        let filter = arguments
-            .windows(2)
-            .find(|pair| pair[0] == "-filter_complex")
-            .map(|pair| pair[1].to_string_lossy())
-            .expect("filter graph exists");
-        assert!(filter.contains("[0:2]loudnorm=I=-16.000:TP=-1.500:LRA=11"));
-        assert!(filter.contains("aresample=48000[audio0]"));
-        assert!(!filter.contains("volume=3.000000dB[audio0]"));
-        assert!(filter.contains("[0:4]volume=0.000000dB[audio1]"));
-        assert!(!filter.contains("volume=3.000000dB"));
-        assert_eq!(
-            arguments
-                .iter()
-                .filter(|argument| *argument == "-c:a")
-                .count(),
-            2
-        );
-        assert!(arguments.contains(&OsString::from("aac")));
-    }
-
-    #[test]
-    fn limited_manual_preview_uses_the_same_filter_order_as_export() {
+    fn builds_bounded_pcm_chunk_arguments_without_shell_interpolation() {
         let track = AudioTrackSelection {
             loudness_analysis: None,
-            stream_index: 2,
+            stream_index: 4,
             processing: AudioTrackProcessing {
-                gain_db: 6.0,
+                gain_db: 0.0,
                 loudness_normalization: None,
-                effects: vec![
-                    crate::media::export::AudioTrackSignalEffect::HighPass {
-                        cutoff_hz: 100.0,
-                        stage: crate::media::export::AudioProcessingStage::Cleanup,
-                    },
-                    crate::media::export::AudioTrackSignalEffect::NoiseReduction {
-                        preset: crate::media::export::NoiseReductionPreset::Medium,
-                        stage: crate::media::export::AudioProcessingStage::Cleanup,
-                    },
-                    crate::media::export::AudioTrackSignalEffect::Limiter {
-                        ceiling_db: -1.0,
-                        stage: crate::media::export::AudioProcessingStage::FinalProtection,
-                    },
-                ],
+                effects: Vec::new(),
             },
         };
-        let preview_arguments = audio_preview_arguments(
-            Path::new("source.mp4"),
-            std::slice::from_ref(&track),
-            &[Path::new("preview.m4a")],
+        let arguments = playback_chunk_arguments(
+            Path::new("C:\\Videos\\source clip.mkv"),
+            &track,
+            1_250_000,
+            2_000_000,
         );
-        let preview_graph = preview_arguments
-            .windows(2)
-            .find(|pair| pair[0] == "-filter_complex")
-            .map(|pair| pair[1].to_string_lossy())
-            .expect("preview filter graph is present");
 
-        assert_eq!(
-            preview_graph,
-            audio_filter_graph(std::slice::from_ref(&track), false)
+        assert_eq!(arguments[2], OsString::from("-ss"));
+        assert_eq!(arguments[3], OsString::from("1.250000"));
+        assert!(
+            arguments
+                .windows(2)
+                .any(|pair| pair == [OsString::from("-t"), OsString::from("2.000000")])
         );
         assert!(
-            preview_graph
-                .contains("highpass=f=100.000,afftdn=nr=12:nf=-35,volume=6.000000dB,alimiter=")
+            arguments
+                .windows(2)
+                .any(|pair| pair == [OsString::from("-map"), OsString::from("[audio0]")])
         );
+        assert!(arguments.windows(2).any(|pair| pair
+            == [
+                OsString::from("-ar"),
+                OsString::from(PLAYBACK_PCM_SAMPLE_RATE.to_string())
+            ]));
+        assert_eq!(arguments.last(), Some(&OsString::from("pipe:1")));
     }
 }

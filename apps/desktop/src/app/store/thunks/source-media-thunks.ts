@@ -15,9 +15,6 @@ import {
 } from "@/app/store/integration/export-queue-runtime";
 import { getReplacementEditingInstance } from "@/app/store/lib/editing-instances";
 import {
-  audioPreviewsLoading,
-  audioPreviewsReady,
-  audioPreviewsUnavailable,
   selectAudioTracks,
   selectMergeAudio,
   waveformReady,
@@ -68,15 +65,9 @@ import {
   selectHasSource,
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import type { AudioTrackProcessing } from "@/domain/audio-processing";
-import {
-  audioTrackExternalPreviewStreamIndexes,
-  audioTrackLoudnessInputsKey,
-  audioTrackPreviewProcessing,
-  getAudioTrackPreLevelEffects,
-} from "@/domain/audio-processing";
+import { getAudioTrackPreLevelEffects } from "@/domain/audio-processing";
 import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import { gifSettingsWithDefaults } from "@/domain/gif-export";
@@ -91,7 +82,6 @@ import {
   chooseSource as chooseSourceDialog,
   inspectMedia,
   moveSourceToTrash,
-  prepareAudioPreviews,
   prepareImportedSourceThumbnail,
   prepareProxyPreview,
   prepareSourcePreview,
@@ -108,7 +98,6 @@ import type {
 } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 
-import { analyzeTrackLoudness } from "./audio-track-thunks";
 
 export type AppThunk<ReturnValue = void | Promise<unknown>> = (
   dispatch: AppDispatch,
@@ -545,140 +534,6 @@ async function prepareSelectedSource(
   const activeInstanceId = selectActiveInstanceId(getState());
   if (activeInstanceId) dispatch(editingInstanceMediaUpdated({ id: activeInstanceId, media }));
 
-  const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
-  const audioOperation = operation.child("audio.preview", {
-    data: { streamCount: audioStreamIndexes.length },
-  });
-
-  const prepareAudio = async () => {
-    const nativeAudioStreamIndex =
-      media.audioStreams.find((stream) => stream.isDefault)?.streamIndex ??
-      media.audioStreams[0]?.streamIndex;
-
-    const maxAnalysisPasses = 8;
-
-    for (let pass = 0; pass < maxAnalysisPasses; pass += 1) {
-      if (!isCurrentSource(getState(), source.sourcePath, loadToken)) {
-        audioOperation.cancel({ reason: "source_replaced" });
-        return;
-      }
-      const state = getState();
-      const trim = selectTrim(state);
-      const tracks = selectAudioTracks(state);
-      if (!trim) return;
-      const requiredIndexes = audioTrackExternalPreviewStreamIndexes(
-        tracks,
-        nativeAudioStreamIndex,
-      );
-
-      const pendingAnalysis = requiredIndexes.flatMap((streamIndex) => {
-        const track = tracks.find((candidate) => candidate.streamIndex === streamIndex);
-        if (!track || track.processing.loudnessNormalization === undefined) return [];
-        const cacheKey = audioTrackLoudnessInputsKey(
-          source.sourcePath,
-          track.streamIndex,
-          trim,
-          track.processing,
-        );
-
-        return shouldQueueLoudnessAnalysis(track.loudnessAnalysis, cacheKey) ? [track] : [];
-      });
-
-      if (pendingAnalysis.length === 0) break;
-
-      for (const track of pendingAnalysis) {
-        await dispatch(analyzeTrackLoudness(track.streamIndex));
-      }
-    }
-
-    if (!isCurrentSource(getState(), source.sourcePath, loadToken)) {
-      audioOperation.cancel({ reason: "source_replaced" });
-      return;
-    }
-    const currentState = getState();
-    const currentTrim = selectTrim(currentState);
-    const tracks = selectAudioTracks(currentState);
-    const requiredIndexes = audioTrackExternalPreviewStreamIndexes(tracks, nativeAudioStreamIndex);
-    const audioTrackSelections = requiredIndexes.flatMap((streamIndex) => {
-      const track = tracks.find((candidate) => candidate.streamIndex === streamIndex);
-      if (!track) return [];
-      const cacheKey = currentTrim
-        ? audioTrackLoudnessInputsKey(
-            source.sourcePath,
-            track.streamIndex,
-            currentTrim,
-            track.processing,
-          )
-        : null;
-
-      if (
-        track.processing.loudnessNormalization !== undefined &&
-        (!cacheKey ||
-          track.loudnessAnalysis.status !== "ready" ||
-          track.loudnessAnalysis.cacheKey !== cacheKey)
-      ) {
-        return [];
-      }
-      return [
-        {
-          ...(track.processing.loudnessNormalization !== undefined &&
-          track.loudnessAnalysis.status === "ready"
-            ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
-            : {}),
-          processing: audioTrackPreviewProcessing(track.processing),
-          streamIndex,
-        },
-      ];
-    });
-
-    if (audioTrackSelections.length !== requiredIndexes.length) {
-      const error = {
-        code: "loudness_analysis_required",
-        messageId: "media.audio.analyzeTrackLoudnessToPrepareAudioPlayback",
-      };
-
-      dispatch(audioPreviewsUnavailable({ error }));
-      audioOperation.fail(error);
-      return;
-    }
-    const requiresProcessedAudioPreview = requiredIndexes.length > 0;
-
-    if (!requiresProcessedAudioPreview) {
-      if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
-        dispatch(audioPreviewsReady({ previews: [] }));
-        audioOperation.complete({ previewCount: 0 });
-      } else {
-        audioOperation.cancel({ reason: "source_replaced" });
-      }
-      return;
-    }
-
-    if (!isCurrentSource(getState(), source.sourcePath, loadToken)) {
-      audioOperation.cancel({ reason: "source_replaced" });
-      return;
-    }
-
-    dispatch(audioPreviewsLoading());
-    try {
-      const previews = await prepareAudioPreviews(source.sourcePath, audioTrackSelections);
-      if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
-        dispatch(audioPreviewsReady({ previews }));
-        audioOperation.complete({ previewCount: previews.length });
-      } else {
-        audioOperation.cancel({ reason: "source_replaced" });
-      }
-    } catch (error: unknown) {
-      audioOperation.fail(error);
-      if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
-        dispatch(
-          audioPreviewsUnavailable({
-            error: normalizeAppError(error),
-          }),
-        );
-      }
-    }
-  };
-
   const previewOperation = operation.child("preview.prepare", {
     data: { kind: "source" },
   });
@@ -700,9 +555,6 @@ async function prepareSelectedSource(
     }
   })();
 
-  // Audio previews are optional and can require a full-source demux. Start them
-  // only after the direct video preview is available so large sources do not
-  // compete with initial video playback.
   await previewPreparation;
   if (!isCurrentSource(getState(), source.sourcePath, loadToken)) {
     operation.cancel({ reason: "source_replaced" });
@@ -720,8 +572,7 @@ async function prepareSelectedSource(
       mergeAudio: selectMergeAudio(getState()),
     });
 
-  operation.complete({ audioStreamCount: audioStreamIndexes.length });
-  void prepareAudio();
+  operation.complete({ audioStreamCount: media.audioStreams.length });
   return result;
 }
 
@@ -744,14 +595,6 @@ function captureActiveEditingInstanceDraft(
       snapshot,
     }),
   );
-}
-
-function shouldQueueLoudnessAnalysis(
-  analysis: { cacheKey?: string; status: string },
-  currentCacheKey: string,
-): boolean {
-  if (analysis.status === "failed" && analysis.cacheKey === currentCacheKey) return false;
-  return analysis.status !== "ready" || analysis.cacheKey !== currentCacheKey;
 }
 
 const commitActiveEditingInstanceDraft = (): AppThunk => (dispatch, getState) => {
@@ -1371,5 +1214,4 @@ export {
   restoreActiveEditingInstanceRequested,
   restoreExportAttemptRequested,
   restoreSourceFileRequested,
-  shouldQueueLoudnessAnalysis,
 };

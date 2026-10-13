@@ -47,7 +47,6 @@ import {
 
 const native = vi.hoisted(() => ({
   analyzeAudioLoudness: vi.fn(),
-  prepareAudioPreviews: vi.fn(),
   activateSourcePath: vi.fn(),
   prepareSourcePreview: vi.fn(),
   chooseOutputPath: vi.fn(),
@@ -70,7 +69,6 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
 beforeEach(() => {
   vi.clearAllMocks();
   native.analyzeAudioLoudness.mockResolvedValue({ integratedLufs: -18, truePeakDb: -2 });
-  native.prepareAudioPreviews.mockResolvedValue([]);
   native.activateSourcePath.mockResolvedValue(firstSource);
   native.prepareSourcePreview.mockResolvedValue({
     kind: "source",

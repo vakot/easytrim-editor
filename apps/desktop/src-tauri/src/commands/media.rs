@@ -2,7 +2,7 @@ use crate::{
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
     error::{AppError, AppErrorMessageId},
     media::{
-        audio::generate_audio_previews,
+        audio::{PlaybackPcmChunk, decode_playback_chunk},
         export::{
             AudioTrackCacheKey, AudioTrackProcessing, AudioTrackSelection,
             validate_audio_track_selections,
@@ -17,17 +17,8 @@ use crate::{
     state::{AppState, PreviewStreamSelection},
 };
 use serde::Serialize;
-use std::{
-    collections::HashMap,
-    path::PathBuf,
-    sync::{
-        Arc,
-        atomic::{AtomicU64, Ordering},
-    },
-};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 use tauri::{AppHandle, Manager, State};
-
-static NEXT_AUDIO_PREVIEW_REVISION: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -48,16 +39,6 @@ pub struct PreviewDescriptor {
 #[serde(rename_all = "camelCase")]
 pub struct ThumbnailDescriptor {
     pub media_token: u64,
-    pub url: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AudioPreviewDescriptor {
-    pub media_token: u64,
-    pub preview_revision: u64,
-    pub processing: crate::media::export::AudioTrackProcessing,
-    pub stream_index: u32,
     pub url: String,
 }
 
@@ -263,50 +244,23 @@ fn record_ffprobe_event(
 }
 
 #[tauri::command]
-pub async fn prepare_audio_previews(
+pub async fn decode_audio_playback_chunk(
+    operation_id: String,
     source_path: String,
-    audio_tracks: Vec<AudioTrackSelection>,
+    track: AudioTrackSelection,
+    start_micros: u64,
+    duration_micros: u64,
     state: State<'_, AppState>,
-) -> Result<Vec<AudioPreviewDescriptor>, AppError> {
-    if audio_tracks.is_empty() || audio_tracks.len() > 32 {
-        return Err(AppError::invalid_request(
-            AppErrorMessageId::MediaSelectBetweenOneAnd32AudioStreamsForPreview,
-        ));
-    }
+) -> Result<PlaybackPcmChunk, AppError> {
     let source = state.resolve_source_by_path(&source_path)?;
-    let media_token = source.load_token;
-    let preview_revision = NEXT_AUDIO_PREVIEW_REVISION.fetch_add(1, Ordering::Relaxed);
-    let mut unique_stream_indexes = audio_tracks
-        .iter()
-        .map(|track| track.stream_index)
-        .collect::<Vec<_>>();
-    unique_stream_indexes.sort_unstable();
-    unique_stream_indexes.dedup();
-    if unique_stream_indexes.len() != audio_tracks.len() {
-        return Err(AppError::invalid_request(
-            AppErrorMessageId::MediaAudioPreviewStreamIndexesMustBeUnique,
-        ));
-    }
-
-    let generated = tauri::async_runtime::spawn_blocking(move || {
-        generate_audio_previews(&source, &audio_tracks)
+    let cancellation = state.register_operation(&operation_id)?;
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        decode_playback_chunk(&source, &track, start_micros, duration_micros, cancellation)
     })
     .await
-    .map_err(|_| AppError::internal("Audio preview preparation stopped unexpectedly."))??;
-
-    let mut results = Vec::with_capacity(generated.len());
-    for (track, artifact) in generated {
-        let stream_index = track.stream_index;
-        state.install_audio_preview(media_token, stream_index, preview_revision, artifact)?;
-        results.push(AudioPreviewDescriptor {
-            media_token,
-            preview_revision,
-            processing: track.processing,
-            stream_index,
-            url: audio_preview_url(media_token, stream_index, preview_revision),
-        });
-    }
-    Ok(results)
+    .map_err(|_| AppError::internal("Audio playback chunk decoding stopped unexpectedly."));
+    state.finish_operation(&operation_id)?;
+    result?
 }
 
 #[tauri::command]
@@ -539,20 +493,6 @@ fn preview_url(media_token: u64, kind: PreviewKind) -> String {
 fn waveform_url(media_token: u64, stream_index: u32, width: u32, revision: &str) -> String {
     format!(
         "http://easytrim-media.localhost/{media_token}?variant=waveform&stream={stream_index}&width={width}&revision={revision}"
-    )
-}
-
-#[cfg(any(target_os = "windows", target_os = "android"))]
-fn audio_preview_url(media_token: u64, stream_index: u32, revision: u64) -> String {
-    format!(
-        "http://easytrim-media.localhost/{media_token}?variant=audio&stream={stream_index}&revision={revision}"
-    )
-}
-
-#[cfg(not(any(target_os = "windows", target_os = "android")))]
-fn audio_preview_url(media_token: u64, stream_index: u32, revision: u64) -> String {
-    format!(
-        "easytrim-media://localhost/{media_token}?variant=audio&stream={stream_index}&revision={revision}"
     )
 }
 

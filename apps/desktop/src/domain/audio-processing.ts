@@ -84,50 +84,26 @@ function effectiveAudioTrackGainDb(processing: AudioTrackProcessing): number {
   return audioTrackLevelMode(processing) === "manual" ? processing.gainDb : 0;
 }
 
-function audioTrackRequiresProcessedPreview(processing: AudioTrackProcessing): boolean {
-  return processing.loudnessNormalization !== undefined || (processing.effects?.length ?? 0) > 0;
+function audioTrackPlaybackProcessing(processing: AudioTrackProcessing): AudioTrackProcessing {
+  return {
+    ...processing,
+    gainDb: 0,
+    ...(processing.loudnessNormalization === undefined && processing.effects
+      ? { effects: processing.effects.filter((effect) => effect.type !== "limiter") }
+      : {}),
+  };
 }
 
-function audioTrackPreviewProcessing(processing: AudioTrackProcessing): AudioTrackProcessing {
-  const limiter = getAudioTrackSignalEffect(processing, "limiter");
-  const bakeManualGain = limiter !== undefined && processing.loudnessNormalization === undefined;
-  return { ...processing, gainDb: bakeManualGain ? processing.gainDb : 0 };
-}
-
-function audioTrackPreviewRuntimeGainDb(
+function audioTrackPlaybackRuntimeGainDb(
   processing: AudioTrackProcessing,
-  previewProcessing: AudioTrackProcessing,
   liveGainDb = processing.gainDb,
 ): number {
-  if (processing.loudnessNormalization !== undefined) return 0;
-  const previewBakesManualGain =
-    getAudioTrackSignalEffect(previewProcessing, "limiter") !== undefined &&
-    previewProcessing.loudnessNormalization === undefined;
-
-  return liveGainDb - (previewBakesManualGain ? previewProcessing.gainDb : 0);
+  return processing.loudnessNormalization !== undefined ? 0 : liveGainDb;
 }
 
-function limitAudioPreviewSample(sample: number, ceilingDb: number): number {
+function limitAudioPlaybackSample(sample: number, ceilingDb: number): number {
   const ceiling = 10 ** (ceilingDb / 20);
   return Math.max(-ceiling, Math.min(ceiling, sample));
-}
-
-function audioTrackExternalPreviewStreamIndexes(
-  tracks: AudioTrackSettings[],
-  nativeAudioStreamIndex: number | undefined,
-): number[] {
-  const enabledTracks = tracks.filter((track) => track.enabled);
-  if (enabledTracks.length > 1) return enabledTracks.map((track) => track.streamIndex);
-
-  const onlyTrack = enabledTracks[0];
-  if (!onlyTrack) return [];
-  if (
-    audioTrackRequiresProcessedPreview(onlyTrack.processing) ||
-    onlyTrack.streamIndex !== nativeAudioStreamIndex
-  ) {
-    return [onlyTrack.streamIndex];
-  }
-  return [];
 }
 
 function audioTrackNormalizationGainDb(
@@ -350,18 +326,6 @@ function sameAudioTrackProcessing(
   );
 }
 
-function sameAudioTrackPreviewProcessing(
-  left: AudioTrackProcessing,
-  right: AudioTrackProcessing,
-): boolean {
-  return (
-    audioTrackPreviewProcessing(left).gainDb === audioTrackPreviewProcessing(right).gainDb &&
-    sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization) &&
-    JSON.stringify(getAudioTrackSignalEffects(left)) ===
-      JSON.stringify(getAudioTrackSignalEffects(right))
-  );
-}
-
 function sameLoudnessNormalization(
   left: LoudnessNormalization | undefined,
   right: LoudnessNormalization | undefined,
@@ -447,13 +411,11 @@ export {
   AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS,
   AUDIO_TRACK_SIGNAL_EFFECT_ORDER,
   audioTrackActivityProcessingChanged,
-  audioTrackExternalPreviewStreamIndexes,
   audioTrackLevelMode,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
-  audioTrackPreviewProcessing,
-  audioTrackPreviewRuntimeGainDb,
-  audioTrackRequiresProcessedPreview,
+  audioTrackPlaybackProcessing,
+  audioTrackPlaybackRuntimeGainDb,
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB,
   DEFAULT_AUDIO_TRACK_PROCESSING,
@@ -462,13 +424,12 @@ export {
   getAudioTrackPreLevelEffects,
   getAudioTrackSignalEffect,
   getAudioTrackSignalEffects,
-  limitAudioPreviewSample,
+  limitAudioPlaybackSample,
   loudnessNormalizationTargets,
   normalizeAudioTrackDefaults,
   parseAudioTrackSignalEffects,
   removeAudioTrackSignalEffect,
   sameAudioTrackLoudnessInputs,
-  sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
   sameLoudnessNormalization,
   serializeAudioTrackSettings,

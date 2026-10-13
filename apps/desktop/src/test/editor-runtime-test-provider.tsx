@@ -49,6 +49,7 @@ const preview = {
 const playbackController = new PlaybackController(
   {
     isPreviewReady: false,
+    getCurrentTimeSeconds: () => null,
     isSeekPending: () => false,
     pause: noOperation,
     pauseMedia: noOperation,
@@ -58,7 +59,7 @@ const playbackController = new PlaybackController(
     resumeAudioContext: async () => undefined,
     seekMedia: noOperation,
     setPlaybackRate: noOperation,
-    startAt: async () => [],
+    startAt: async () => undefined,
     syncTo: noOperation,
   },
   0,
@@ -72,20 +73,21 @@ const audioPlayback = {
 
 function EditorRuntimeTestProvider({
   children,
-  usesExternalAudio = false,
+  usesWebAudio = false,
 }: {
   children: ReactNode;
-  usesExternalAudio?: boolean;
+  usesWebAudio?: boolean;
 }) {
   const audioTransport = {
+    getCurrentTimeSeconds: () => null,
     isReady: false,
     pause: noOperation,
-    resumeAt: async () => [undefined, []],
+    requestPlaybackFrame: () => null,
     resumeAudioContext: async () => undefined,
     setPlaybackRate: noOperation,
-    startAt: async () => [],
+    startAt: async () => undefined,
     syncTo: noOperation,
-    usesExternalAudio,
+    usesWebAudio,
   } satisfies AudioTransportContract;
 
   return (

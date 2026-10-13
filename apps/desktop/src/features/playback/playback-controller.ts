@@ -1,6 +1,7 @@
 import type { PreviewPlaybackFrame } from "@/features/preview";
 
 interface PlaybackDriver {
+  getCurrentTimeSeconds: () => number | null;
   isPreviewReady: boolean;
   isSeekPending: () => boolean;
   pause: () => void;
@@ -19,7 +20,7 @@ interface PlaybackDriver {
   resumeAudioContext: () => Promise<void>;
   seekMedia: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
   setPlaybackRate: (rate: number) => void;
-  startAt: (seconds: number) => Promise<void[]>;
+  startAt: (seconds: number) => Promise<void>;
   syncTo: (seconds: number, force?: boolean) => void;
 }
 
@@ -89,7 +90,8 @@ class PlaybackController {
     if (!Number.isFinite(nextPosition)) return;
     this.setPosition(nextPosition);
     const seconds = nextPosition / MICROS_PER_SECOND;
-    this.driver.seekMedia(seconds, false, () => this.driver.syncTo(seconds, true));
+    this.driver.syncTo(seconds, true);
+    this.driver.seekMedia(seconds, false);
   };
 
   play = () => {
@@ -138,7 +140,16 @@ class PlaybackController {
   private startPlaybackClock() {
     if (this.playbackFrame) return;
     const tick = (_timestamp: number, seconds: number) => {
-      if (!this.driver.isSeekPending()) this.publishMediaTime(seconds);
+      const audioClockSeconds = this.driver.getCurrentTimeSeconds();
+      const clockSeconds = audioClockSeconds ?? seconds;
+      if (!this.driver.isSeekPending()) {
+        this.publishMediaTime(clockSeconds, false);
+        if (audioClockSeconds !== null) this.driver.syncTo(clockSeconds);
+        if (this.snapshot.positionMicros >= this.snapshot.durationMicros) {
+          this.pause();
+          return;
+        }
+      }
       this.playbackFrame = this.driver.requestPlaybackFrame(tick);
     };
 

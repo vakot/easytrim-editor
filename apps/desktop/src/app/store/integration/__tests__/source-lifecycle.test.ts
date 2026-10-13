@@ -57,7 +57,7 @@ describe("source-bound lifecycle", () => {
 
     expect(store.getState().source.source).toBeNull();
     expect(store.getState().trim.value).toBeNull();
-    expect(store.getState().audio.previews).toBeNull();
+    expect(store.getState().audio).toMatchObject({ tracks: [], mergeAudio: false });
     expect(store.getState().preview.value).toEqual({ status: "idle" });
   });
 

@@ -16,7 +16,6 @@ import { previewReady } from "../app/store/slices/preview-slice";
 import { selectHasSource } from "../app/store/slices/source-slice";
 import { store } from "../app/store/store";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
-import type { AudioTrackProcessing } from "../domain/audio-processing";
 import type { EditingInstanceListEntry } from "../domain/editing-instance";
 import type { EditorSnapshot } from "../domain/editor-snapshot";
 import type { SourceRef } from "../domain/source";
@@ -28,7 +27,6 @@ const mocks = vi.hoisted(() => ({
   activateSourcePath: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
-  prepareAudioPreviews: vi.fn(),
   prepareImportedSourceThumbnail: vi.fn(),
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
@@ -45,7 +43,6 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     activateSourcePath: mocks.activateSourcePath,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
-    prepareAudioPreviews: mocks.prepareAudioPreviews,
     prepareImportedSourceThumbnail: mocks.prepareImportedSourceThumbnail,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
@@ -123,20 +120,6 @@ const media: MediaInfo = {
   chapters: [],
 };
 
-function audioPreview(
-  streamIndex: number,
-  processing: AudioTrackProcessing = { gainDb: 0 },
-  previewRevision = 1,
-) {
-  return {
-    mediaToken: 1,
-    previewRevision,
-    processing,
-    streamIndex,
-    url: `http://easytrim-media.localhost/source-1?variant=audio&stream=${streamIndex}&revision=${previewRevision}`,
-  };
-}
-
 let sourceDropListener: ((event: SourceDropEvent) => void) | undefined;
 let stopSourceMediaRuntime: (() => void) | undefined;
 
@@ -157,82 +140,6 @@ async function waitForSourcePresence(expected: boolean) {
   await waitFor(() => expect(selectHasSource(store.getState())).toBe(expected));
 }
 
-function installAudioMocks(initiallyReady = true) {
-  const audioElements: HTMLAudioElement[] = [];
-  const mediaElementSources: Array<{
-    connect: ReturnType<typeof vi.fn>;
-    connectedGain: { gain: { value: number } } | null;
-    disconnect: ReturnType<typeof vi.fn>;
-    element: HTMLMediaElement;
-  }> = [];
-
-  const audioConstructor = vi.fn(function AudioMock() {
-    const element = document.createElement("audio");
-    Object.defineProperty(element, "readyState", {
-      configurable: true,
-      get: () =>
-        initiallyReady ? HTMLMediaElement.HAVE_FUTURE_DATA : HTMLMediaElement.HAVE_METADATA,
-    });
-    Object.defineProperty(element, "pause", { configurable: true, value: vi.fn() });
-
-    audioElements.push(element);
-    return element;
-  });
-
-  const audioContext = {
-    destination: {},
-    currentTime: 0,
-    resume: vi.fn().mockResolvedValue(undefined),
-    close: vi.fn().mockResolvedValue(undefined),
-    createAnalyser: vi.fn(() => ({
-      fftSize: 0,
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-      getFloatTimeDomainData: vi.fn(),
-    })),
-    createChannelSplitter: vi.fn(() => ({
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-    })),
-    createGain: vi.fn(() => ({
-      gain: {
-        value: 1,
-        cancelScheduledValues: vi.fn(),
-        setValueAtTime: vi.fn(),
-        linearRampToValueAtTime: vi.fn(),
-      },
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-    })),
-    createMediaElementSource: vi.fn((element: HTMLMediaElement) => {
-      const source: (typeof mediaElementSources)[number] = {
-        connect: vi.fn(),
-        connectedGain: null,
-        disconnect: vi.fn(),
-        element,
-      };
-
-      source.connect.mockImplementation((destination: unknown) => {
-        source.connectedGain = destination as { gain: { value: number } };
-        return destination;
-      });
-
-      mediaElementSources.push(source);
-      return source;
-    }),
-  };
-
-  vi.stubGlobal("Audio", audioConstructor);
-  vi.stubGlobal(
-    "AudioContext",
-    vi.fn(function AudioContextMock() {
-      return audioContext;
-    }),
-  );
-
-  return { audioConstructor, audioContext, audioElements, mediaElementSources };
-}
-
 beforeEach(() => {
   vi.clearAllMocks();
   store.dispatch(sourceCleared());
@@ -246,18 +153,6 @@ beforeEach(() => {
     sourcePath === replacementSelection.sourcePath ? replacementSelection : selection,
   );
   mocks.inspectMedia.mockResolvedValue(media);
-  mocks.prepareAudioPreviews.mockImplementation(
-    async (
-      _sourcePath: string,
-      audioTracks: Array<{
-        processing: AudioTrackProcessing;
-        streamIndex: number;
-      }>,
-    ) =>
-      audioTracks.map(({ processing, streamIndex }, index) =>
-        audioPreview(streamIndex, processing, index + 1),
-      ),
-  );
   mocks.prepareSourcePreview.mockResolvedValue({
     mediaToken: 1,
     url: "http://easytrim-media.localhost/source-1?variant=source",
@@ -468,179 +363,6 @@ describe("App", () => {
     );
   });
 
-  it("waits for processed multi-track audio previews before playback", async () => {
-    let resolveAudioPreviews!: (previews: ReturnType<typeof audioPreview>[]) => void;
-
-    mocks.chooseSource.mockResolvedValue([selection]);
-    mocks.inspectMedia.mockResolvedValue({
-      ...media,
-      audioStreams: [
-        ...media.audioStreams,
-        {
-          streamIndex: 2,
-          codecName: "ac3",
-          channels: 6,
-          channelLayout: "5.1",
-          sampleRateHz: 48_000,
-          title: "Commentary",
-          isDefault: false,
-        },
-      ],
-    });
-    mocks.prepareAudioPreviews.mockReturnValue(
-      new Promise((resolve) => {
-        resolveAudioPreviews = resolve;
-      }),
-    );
-    mocks.prepareWaveforms.mockReturnValue(new Promise(() => undefined));
-    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
-    const { audioContext, audioElements } = installAudioMocks(false);
-    const user = userEvent.setup();
-
-    try {
-      render(<App />);
-      await openSourcePicker(user);
-      await screen.findByLabelText("Source video preview");
-
-      expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
-      await waitFor(() =>
-        expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
-          selection.sourcePath,
-          expect.stringMatching(/^waveform-/),
-          [1, 2],
-          4_096,
-          { 1: { gainDb: 0 }, 2: { gainDb: 0 } },
-        ),
-      );
-
-      await act(async () => {
-        resolveAudioPreviews([audioPreview(1), audioPreview(2)]);
-      });
-      await waitFor(() => expect(audioElements).toHaveLength(2));
-      for (const audio of audioElements) fireEvent.canPlay(audio);
-      await waitFor(() => expect(screen.getByRole("button", { name: "Play" })).toBeEnabled());
-      await user.click(screen.getByRole("button", { name: "Play" }));
-
-      expect(audioContext.resume).toHaveBeenCalledOnce();
-      expect(play).toHaveBeenCalled();
-    } finally {
-      play.mockRestore();
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it("uses the video element audio clock for a single-track source", async () => {
-    mocks.chooseSource.mockResolvedValue([selection]);
-    const user = userEvent.setup();
-    render(<App />);
-
-    await openSourcePicker(user);
-    const video = await screen.findByLabelText("Source video preview");
-
-    expect(mocks.prepareAudioPreviews).not.toHaveBeenCalled();
-    expect(video).toHaveProperty("muted", false);
-    expect(video).toHaveAttribute("crossorigin", "anonymous");
-  });
-
-  it("uses processed audio previews for multi-track playback", async () => {
-    mocks.chooseSource.mockResolvedValue([selection]);
-    mocks.inspectMedia.mockResolvedValue({
-      ...media,
-      audioStreams: [
-        ...media.audioStreams,
-        {
-          streamIndex: 2,
-          codecName: "ac3",
-          channels: 6,
-          channelLayout: "5.1",
-          sampleRateHz: 48_000,
-          title: "Commentary",
-          isDefault: false,
-        },
-      ],
-    });
-    mocks.prepareAudioPreviews.mockResolvedValue([audioPreview(1), audioPreview(2)]);
-    const { audioElements, mediaElementSources } = installAudioMocks(false);
-
-    const user = userEvent.setup();
-
-    try {
-      render(<App />);
-      await openSourcePicker(user);
-      const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
-      await waitFor(() => expect(audioElements).toHaveLength(2));
-      expect(mediaElementSources.some((source) => source.element === video)).toBe(false);
-      expect(audioElements.map((audio) => audio.src)).toEqual(
-        expect.arrayContaining([
-          expect.stringContaining("stream=1&revision=1"),
-          expect.stringContaining("stream=2&revision=1"),
-        ]),
-      );
-
-      for (const audio of audioElements) fireEvent.canPlay(audio);
-      await waitFor(() => expect(screen.getByRole("button", { name: "Play" })).toBeEnabled());
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it("uses the processed preview for a single enabled non-default track", async () => {
-    mocks.chooseSource.mockResolvedValue([selection]);
-    mocks.inspectMedia.mockResolvedValue({
-      ...media,
-      audioStreams: [
-        ...media.audioStreams,
-        {
-          streamIndex: 2,
-          codecName: "aac",
-          channels: 2,
-          channelLayout: "stereo",
-          sampleRateHz: 48_000,
-          title: "Mic",
-          isDefault: false,
-        },
-        {
-          streamIndex: 3,
-          codecName: "aac",
-          channels: 2,
-          channelLayout: "stereo",
-          sampleRateHz: 48_000,
-          title: "Game",
-          isDefault: false,
-        },
-      ],
-    });
-    mocks.prepareAudioPreviews.mockResolvedValue(
-      [1, 2, 3].map((streamIndex) => ({
-        ...audioPreview(streamIndex),
-      })),
-    );
-    const { audioElements, mediaElementSources } = installAudioMocks();
-    const user = userEvent.setup();
-
-    try {
-      render(<App />);
-      await openSourcePicker(user);
-      const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
-      await waitFor(() => expect(audioElements).toHaveLength(3));
-      expect(mediaElementSources.some((source) => source.element === video)).toBe(false);
-
-      await user.click(screen.getByRole("button", { name: "Mute (eng)" }));
-      await user.click(screen.getByRole("button", { name: "Mute (Game)" }));
-      await waitFor(() =>
-        expect(audioElements.some((audio) => audio.src.includes("stream=2&revision=1"))).toBe(true),
-      );
-
-      await user.click(screen.getByRole("button", { name: "Mute (Mic)" }));
-      await user.click(screen.getByRole("button", { name: "Unmute (Game)" }));
-      await waitFor(() =>
-        expect(audioElements.some((audio) => audio.src.includes("stream=3&revision=1"))).toBe(true),
-      );
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-
   it("opens the source picker with Ctrl+O", () => {
     render(<App />);
 
@@ -761,109 +483,6 @@ describe("App", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
-  it("stops all media and remains restartable when independent audio cannot play", async () => {
-    mocks.chooseSource.mockResolvedValue([selection]);
-    mocks.inspectMedia.mockResolvedValue({
-      ...media,
-      audioStreams: [
-        ...media.audioStreams,
-        {
-          streamIndex: 2,
-          codecName: "aac",
-          channels: 2,
-          channelLayout: "stereo",
-          sampleRateHz: 48_000,
-          language: "commentary",
-          isDefault: false,
-        },
-      ],
-    });
-    mocks.prepareAudioPreviews.mockResolvedValue([audioPreview(1), audioPreview(2)]);
-    const user = userEvent.setup();
-    const audioElements = [document.createElement("audio"), document.createElement("audio")];
-    const audioPlay = vi
-      .fn()
-      .mockRejectedValueOnce(new DOMException("Playback interrupted", "AbortError"))
-      .mockRejectedValueOnce(new DOMException("Playback interrupted", "AbortError"));
-
-    const audioPause = vi.fn();
-    for (const element of audioElements) {
-      Object.defineProperty(element, "pause", { configurable: true, value: audioPause });
-      Object.defineProperty(element, "play", { configurable: true, value: audioPlay });
-    }
-    const audioConstructor = vi.fn(function AudioMock() {
-      return audioElements.shift();
-    });
-
-    const audioContext = {
-      destination: {},
-      currentTime: 0,
-      resume: vi.fn().mockResolvedValue(undefined),
-      close: vi.fn().mockResolvedValue(undefined),
-      createAnalyser: vi.fn(() => ({
-        fftSize: 0,
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-        getFloatTimeDomainData: vi.fn(),
-      })),
-      createChannelSplitter: vi.fn(() => ({
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-      })),
-      createGain: vi.fn(() => ({
-        gain: {
-          value: 1,
-          cancelScheduledValues: vi.fn(),
-          setValueAtTime: vi.fn(),
-          linearRampToValueAtTime: vi.fn(),
-        },
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-      })),
-      createMediaElementSource: vi.fn(() => ({
-        connect: vi.fn((destination: unknown) => destination),
-        disconnect: vi.fn(),
-      })),
-    };
-
-    vi.stubGlobal("Audio", audioConstructor);
-    vi.stubGlobal(
-      "AudioContext",
-      vi.fn(function AudioContextMock() {
-        return audioContext;
-      }),
-    );
-
-    try {
-      render(<App />);
-      await openSourcePicker(user);
-      const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
-      await waitFor(() => expect(audioConstructor).toHaveBeenCalledTimes(2));
-      const videoPlay = vi.spyOn(video, "play").mockImplementation(async () => {
-        fireEvent.play(video);
-      });
-
-      const videoPause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
-
-      await user.click(screen.getByRole("button", { name: "Play" }));
-
-      expect(await screen.findByRole("alert")).toHaveTextContent("Playback could not start");
-      expect(audioContext.resume).toHaveBeenCalledOnce();
-      expect(videoPause).toHaveBeenCalledOnce();
-      expect(audioPause).toHaveBeenCalled();
-      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
-
-      audioPlay.mockResolvedValue(undefined);
-      await user.click(screen.getByRole("button", { name: "Play" }));
-
-      await waitFor(() => expect(videoPlay).toHaveBeenCalledTimes(2));
-      expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
-      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-
   it("stops preview playback when the preview errors", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
@@ -882,45 +501,6 @@ describe("App", () => {
       "data-preview-kind",
       "proxy",
     );
-  });
-
-  it("rebuilds source-bound audio runtime when a proxy preview replaces the source preview", async () => {
-    mocks.chooseSource.mockResolvedValue([selection]);
-    mocks.inspectMedia.mockResolvedValue({
-      ...media,
-      audioStreams: [
-        ...media.audioStreams,
-        {
-          streamIndex: 2,
-          codecName: "aac",
-          channels: 2,
-          channelLayout: "stereo",
-          sampleRateHz: 48_000,
-          language: "commentary",
-          isDefault: false,
-        },
-      ],
-    });
-    mocks.prepareAudioPreviews.mockResolvedValue([audioPreview(1), audioPreview(2)]);
-    const { audioConstructor, audioElements } = installAudioMocks();
-    const user = userEvent.setup();
-
-    try {
-      render(<App />);
-      await openSourcePicker(user);
-      await screen.findByLabelText("Source video preview");
-      await waitFor(() => expect(audioConstructor).toHaveBeenCalledTimes(2));
-
-      fireEvent.error(screen.getByLabelText("Source video preview"));
-      await screen.findByText("Compatible preview");
-      await waitFor(() => expect(audioConstructor).toHaveBeenCalledTimes(6));
-
-      expect(audioElements.slice(0, 2).every((element) => !document.body.contains(element))).toBe(
-        true,
-      );
-    } finally {
-      vi.unstubAllGlobals();
-    }
   });
 
   it("keeps editor shortcuts locked during text entry", async () => {

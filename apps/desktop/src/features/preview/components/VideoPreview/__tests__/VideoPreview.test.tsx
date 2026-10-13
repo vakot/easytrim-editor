@@ -84,7 +84,7 @@ function readyPreview(url: string): Extract<PreviewState, { status: "ready" }> {
 function TooltipTestProvider({ children, store }: { children: ReactNode; store: AppStore }) {
   return (
     <Provider store={store}>
-      <EditorRuntimeTestProvider usesExternalAudio>
+      <EditorRuntimeTestProvider usesWebAudio>
         <TooltipProvider delayDuration={0}>
           <SourceDeleteProvider>
             <QueueDeleteSourceProvider>

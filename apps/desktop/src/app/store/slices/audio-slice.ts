@@ -12,7 +12,6 @@ import {
   getAudioTrackPreLevelEffects,
   normalizeAudioTrackDefaults,
   sameAudioTrackLoudnessInputs,
-  sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
 } from "@/domain/audio-processing";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
@@ -20,7 +19,6 @@ import { normalizeMetadataLanguageCode } from "@/domain/languages";
 import type { AudioActivityRange, LoudnessAnalysis } from "@/domain/media";
 import type {
   AppError,
-  AudioPreviewDescriptor,
   MediaInfo,
   WaveformResult,
 } from "@/lib/tauri/media.types";
@@ -39,164 +37,27 @@ type AudioTrackAnalysis<T> =
   | { cacheKey?: string; operationId: string; status: "ready"; value: T }
   | { cacheKey?: string; error: AppError; operationId: string; status: "failed" };
 
-type AudioTrackPreviewState =
-  | { status: "idle" }
-  | { descriptor?: AudioPreviewDescriptor; operationId: string; status: "loading" }
-  | { descriptor: AudioPreviewDescriptor; status: "ready" }
-  | { descriptor: AudioPreviewDescriptor; status: "stale" }
-  | { descriptor?: AudioPreviewDescriptor; error: AppError; operationId: string; status: "failed" };
-
-type AudioPreviewState =
-  | { previews: AudioPreviewDescriptor[]; status: "idle" }
-  | { previews: AudioPreviewDescriptor[]; status: "loading" }
-  | { previews: AudioPreviewDescriptor[]; status: "ready" }
-  | {
-      error: AppError;
-      previews: AudioPreviewDescriptor[];
-      status: "unavailable";
-    };
-
 interface AudioTrackState extends AudioTrackSettings {
   activityAnalysis: AudioTrackAnalysis<AudioActivityRange[]>;
   activityVisible: boolean;
   loudnessAnalysis: AudioTrackAnalysis<LoudnessAnalysis>;
-  preview: AudioTrackPreviewState;
   waveform: WaveformState;
 }
 
 interface AudioState {
   mergeAudio: boolean;
-  previews: AudioPreviewState | null;
   tracks: AudioTrackState[];
 }
 
 export const initialAudioState: AudioState = {
   tracks: [],
   mergeAudio: false,
-  previews: null,
 };
 
 const audioSlice = createSlice({
   name: "audio",
   initialState: initialAudioState,
   reducers: {
-    audioPreviewsLoading: (state) => {
-      state.previews = { status: "loading", previews: state.previews?.previews ?? [] };
-    },
-    audioPreviewsReady: (state, action: PayloadAction<{ previews: AudioPreviewDescriptor[] }>) => {
-      state.previews = {
-        status: "ready",
-        previews: action.payload.previews,
-      };
-      for (const track of state.tracks) {
-        if (
-          track.preview.status === "loading" ||
-          track.preview.status === "stale" ||
-          (track.preview.status === "failed" && track.preview.operationId !== "initial")
-        )
-          continue;
-        const descriptor = action.payload.previews.find(
-          (preview) => preview.streamIndex === track.streamIndex,
-        );
-
-        if (
-          track.preview.status === "ready" &&
-          descriptor &&
-          track.preview.descriptor.previewRevision > descriptor.previewRevision
-        ) {
-          continue;
-        }
-        track.preview =
-          descriptor && sameAudioTrackPreviewProcessing(descriptor.processing, track.processing)
-            ? { descriptor, status: "ready" }
-            : { status: "idle" };
-      }
-    },
-    audioPreviewsUnavailable: (state, action: PayloadAction<{ error: AppError }>) => {
-      state.previews = {
-        status: "unavailable",
-        previews: [],
-        error: action.payload.error,
-      };
-      for (const track of state.tracks) {
-        if (track.preview.status === "loading") continue;
-        track.preview = {
-          error: action.payload.error,
-          operationId: "initial",
-          status: "failed",
-        };
-      }
-    },
-    audioTrackPreviewStarted: (
-      state,
-      action: PayloadAction<{ operationId: string; streamIndex: number }>,
-    ) => {
-      const track = state.tracks.find(
-        (candidate) => candidate.streamIndex === action.payload.streamIndex,
-      );
-
-      if (track) {
-        const descriptor =
-          track.preview.status === "ready" || track.preview.status === "stale"
-            ? track.preview.descriptor
-            : track.preview.status === "loading"
-              ? track.preview.descriptor
-              : undefined;
-
-        track.preview = {
-          ...(descriptor ? { descriptor } : {}),
-          operationId: action.payload.operationId,
-          status: "loading",
-        };
-      }
-    },
-    audioTrackPreviewReady: (
-      state,
-      action: PayloadAction<{ descriptor: AudioPreviewDescriptor; operationId: string }>,
-    ) => {
-      const track = state.tracks.find(
-        (candidate) => candidate.streamIndex === action.payload.descriptor.streamIndex,
-      );
-
-      if (
-        !track ||
-        track.preview.status !== "loading" ||
-        track.preview.operationId !== action.payload.operationId ||
-        !sameAudioTrackPreviewProcessing(track.processing, action.payload.descriptor.processing)
-      ) {
-        return;
-      }
-      track.preview = { descriptor: action.payload.descriptor, status: "ready" };
-      const previews = state.previews?.previews ?? [];
-      state.previews = {
-        status: "ready",
-        previews: [
-          ...previews.filter(
-            (preview) => preview.streamIndex !== action.payload.descriptor.streamIndex,
-          ),
-          action.payload.descriptor,
-        ],
-      };
-    },
-    audioTrackPreviewFailed: (
-      state,
-      action: PayloadAction<{ error: AppError; operationId: string; streamIndex: number }>,
-    ) => {
-      const track = state.tracks.find(
-        (candidate) => candidate.streamIndex === action.payload.streamIndex,
-      );
-
-      if (
-        track?.preview.status === "loading" &&
-        track.preview.operationId === action.payload.operationId
-      ) {
-        track.preview = {
-          ...(track.preview.descriptor ? { descriptor: track.preview.descriptor } : {}),
-          ...action.payload,
-          status: "failed",
-        };
-      }
-    },
     audioTrackToggled: (state, action: PayloadAction<{ streamIndex: number }>) => {
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
@@ -247,15 +108,6 @@ const audioSlice = createSlice({
       if (track.processing.loudnessNormalization === undefined) {
         track.activityAnalysis = { status: "idle" };
       }
-      if (
-        !sameAudioTrackPreviewProcessing(
-          track.processing,
-          ("descriptor" in track.preview && track.preview.descriptor?.processing) ||
-            track.processing,
-        )
-      ) {
-        track.preview = staleAudioTrackPreview(track.preview);
-      }
     },
     audioTrackProcessingChanged: (
       state,
@@ -267,11 +119,6 @@ const audioSlice = createSlice({
 
       if (!track || sameAudioTrackProcessing(track.processing, action.payload.processing)) return;
       const activityChanged = audioTrackActivityProcessingChanged(
-        track.processing,
-        action.payload.processing,
-      );
-
-      const previewChanged = !sameAudioTrackPreviewProcessing(
         track.processing,
         action.payload.processing,
       );
@@ -289,7 +136,6 @@ const audioSlice = createSlice({
       if (waveformInputsChanged) track.waveform = { status: "idle" };
       if (loudnessInputsChanged) track.loudnessAnalysis = { status: "idle" };
       if (activityChanged) track.activityAnalysis = { status: "idle" };
-      if (previewChanged) track.preview = staleAudioTrackPreview(track.preview);
     },
     audioTrackLoudnessNormalizationChanged: (
       state,
@@ -314,10 +160,8 @@ const audioSlice = createSlice({
       if (!track || processing === null || sameAudioTrackProcessing(track.processing, processing))
         return;
       const activityChanged = audioTrackActivityProcessingChanged(track.processing, processing);
-      const previewChanged = !sameAudioTrackPreviewProcessing(track.processing, processing);
       track.processing = processing;
       if (activityChanged) track.activityAnalysis = { status: "idle" };
-      if (previewChanged) track.preview = staleAudioTrackPreview(track.preview);
     },
     audioTrackActivityVisibilityToggled: (
       state,
@@ -502,32 +346,20 @@ const audioSlice = createSlice({
       .addCase(trimChanged, (state) => {
         for (const track of state.tracks) {
           track.loudnessAnalysis = { status: "idle" };
-          if (track.processing.loudnessNormalization !== undefined) {
-            track.preview = staleAudioTrackPreview(track.preview);
-          }
         }
       })
       .addCase(sourceSelected, (state, action) => {
         state.tracks = [];
         state.mergeAudio = action.payload.mergeAudio ?? false;
-        state.previews = {
-          status: "idle",
-          previews: [],
-        };
       })
       .addCase(editingInstanceActivated, (state, action) => {
         const { media, snapshot } = action.payload;
         state.tracks = media ? createAudioTracks(media, snapshot) : [];
         state.mergeAudio = snapshot.audio.mergeAudio;
-        state.previews = {
-          status: "idle",
-          previews: [],
-        };
       })
       .addCase(sourceCleared, (state) => {
         state.tracks = [];
         state.mergeAudio = false;
-        state.previews = null;
       })
       .addCase(sourceReady, (state, action) => {
         state.tracks = createAudioTracks(action.payload.media, action.payload.snapshot);
@@ -567,21 +399,11 @@ function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTr
       waveform: { status: "idle" },
       loudnessAnalysis: { status: "idle" },
       activityAnalysis: { status: "idle" },
-      preview: { status: "idle" },
       activityVisible: true,
     };
   });
 
   return normalizeAudioTrackDefaults(tracks);
-}
-
-function staleAudioTrackPreview(preview: AudioTrackPreviewState): AudioTrackPreviewState {
-  const descriptor =
-    preview.status === "ready" || preview.status === "stale" || preview.status === "loading"
-      ? preview.descriptor
-      : undefined;
-
-  return descriptor ? { descriptor, status: "stale" } : { status: "idle" };
 }
 
 function applyWaveformResult(state: AudioState, result: WaveformResult) {
@@ -614,9 +436,6 @@ function updateWaveformTracks(
 
 const {
   audioMergeToggled,
-  audioPreviewsLoading,
-  audioPreviewsReady,
-  audioPreviewsUnavailable,
   audioTrackActivityAnalysisFailed,
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
@@ -628,9 +447,6 @@ const {
   audioTrackLoudnessAnalysisStarted,
   audioTrackLoudnessNormalizationChanged,
   audioTrackMetadataChanged,
-  audioTrackPreviewFailed,
-  audioTrackPreviewReady,
-  audioTrackPreviewStarted,
   audioTrackProcessingChanged,
   audioTrackToggled,
   waveformDisplayFailed,
@@ -648,29 +464,8 @@ const selectAudioTracks = (state: RootState): AudioTrackState[] =>
 
 const selectMergeAudio = (state: RootState): boolean => state.audio.mergeAudio;
 
-function audioTrackPlaybackPreviewUrl(
-  track: AudioTrackState,
-  routeRequiresExternalPreview: boolean,
-): string | undefined {
-  if (!routeRequiresExternalPreview) return undefined;
-  const preview = track.preview;
-  if (
-    preview.status === "ready" &&
-    sameAudioTrackPreviewProcessing(track.processing, preview.descriptor.processing)
-  ) {
-    return preview.descriptor.url;
-  }
-  if ((preview.status === "stale" || preview.status === "loading") && preview.descriptor) {
-    return preview.descriptor.url;
-  }
-  return undefined;
-}
-
 export {
   audioMergeToggled,
-  audioPreviewsLoading,
-  audioPreviewsReady,
-  audioPreviewsUnavailable,
   audioReducer,
   audioTrackActivityAnalysisFailed,
   audioTrackActivityAnalysisReady,
@@ -683,10 +478,6 @@ export {
   audioTrackLoudnessAnalysisStarted,
   audioTrackLoudnessNormalizationChanged,
   audioTrackMetadataChanged,
-  audioTrackPlaybackPreviewUrl,
-  audioTrackPreviewFailed,
-  audioTrackPreviewReady,
-  audioTrackPreviewStarted,
   audioTrackProcessingChanged,
   audioTrackToggled,
   selectAudioTracks,
