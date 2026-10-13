@@ -2,7 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
+import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { capabilitiesChecking, capabilitiesReady } from "@/app/store/slices/source-slice";
 import { createAppStore } from "@/app/store/store";
 import type { MediaCapabilities } from "@/lib/tauri/media.types";
@@ -27,9 +27,9 @@ describe("AppCommandCenter", () => {
     const store = createAppStore();
     render(
       <Provider store={store}>
-        <CommandPaletteProvider>
+        <AppDialogsProvider>
           <AppCommandCenter />
-        </CommandPaletteProvider>
+        </AppDialogsProvider>
       </Provider>,
     );
 

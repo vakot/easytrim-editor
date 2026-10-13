@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import type { DialogScope } from "@/components/ui/dialog";
+import { createDialogScope, Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectTrim } from "@/app/store/slices/trim-slice";
@@ -9,7 +10,7 @@ import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 import { ChapterDraftContext, useChapterDraft } from "./ChapterDraftDialogContext";
 
-const LazyChapterDraftDialogContent = lazyWithPreload<React.FragmentProps>(() =>
+const LazyChapterDraftDialogContent = lazyWithPreload<{ __scopeDialog?: DialogScope }>(() =>
   import("./ChapterDraftDialogContent").then((module) => ({
     default: module.ChapterDraftDialogContent,
   })),
@@ -19,7 +20,10 @@ const preloadChapterDraftDialogContent = preloadOnIntent(() =>
   LazyChapterDraftDialogContent.preload(),
 );
 
+const useChapterDraftDialogScope = createDialogScope();
+
 function ChapterDraftDialog({ children, ...props }: React.ComponentProps<typeof Dialog>) {
+  const dialogScope = useChapterDraftDialogScope(props.__scopeDialog);
   const [draft, setDraft] = useState<EditorChapter>(() => ({
     endMicros: 0,
     id: crypto.randomUUID(),
@@ -29,11 +33,11 @@ function ChapterDraftDialog({ children, ...props }: React.ComponentProps<typeof 
 
   return (
     <ChapterDraftContext.Provider value={{ draft, setDraft }}>
-      <Dialog {...props}>
+      <Dialog {...props} {...dialogScope}>
         {children}
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent {...dialogScope} className="sm:max-w-lg">
           <React.Suspense fallback={null}>
-            <LazyChapterDraftDialogContent />
+            <LazyChapterDraftDialogContent __scopeDialog={dialogScope.__scopeDialog} />
           </React.Suspense>
         </DialogContent>
       </Dialog>
@@ -42,17 +46,20 @@ function ChapterDraftDialog({ children, ...props }: React.ComponentProps<typeof 
 }
 
 function ChapterDraftDialogTrigger({
+  __scopeDialog,
   draft,
   onClick,
   onFocus,
   onPointerEnter,
   ...props
 }: Omit<React.ComponentProps<typeof DialogTrigger>, "disabled"> & { draft?: EditorChapter }) {
+  const dialogScope = useChapterDraftDialogScope(__scopeDialog);
   const { setDraft } = useChapterDraft();
   const trim = useAppSelector(selectTrim);
 
   return (
     <DialogTrigger
+      {...dialogScope}
       disabled={!trim && !draft}
       onClick={(event) => {
         setDraft(

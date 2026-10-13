@@ -50,10 +50,11 @@ function AppUpdatesProvider({ children }: { children: ReactNode }) {
       updateRef.current = null;
       setAvailableVersion(null);
       setStatus("idle");
-    } catch {
+    } catch (error) {
       updateRef.current = null;
       setAvailableVersion(null);
       setStatus("error");
+      throw error;
     } finally {
       isInstallingRef.current = false;
       setIsInstalling(false);

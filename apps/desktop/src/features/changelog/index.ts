@@ -1,2 +1,3 @@
-export { ChangelogProvider } from "./ChangelogProvider";
-export { useChangelogDialog } from "./contexts/changelog-dialog-context";
+export { ChangelogList } from "./components/ChangelogList";
+export { getAvailableChangelog, getChangelogStartupState } from "./lib/changelog.utils";
+export type { ChangelogRelease } from "./types";

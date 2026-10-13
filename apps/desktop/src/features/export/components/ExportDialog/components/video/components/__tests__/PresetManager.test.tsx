@@ -47,6 +47,18 @@ afterEach(async () => {
   localStorage.clear();
 });
 
+it("focuses the preset name field when opened before preload finishes", async () => {
+  await i18n.changeLanguage("en");
+  renderPresetManager();
+
+  await userEvent.click(screen.getByRole("button", { name: "P3 · Fast" }));
+  const addPreset = screen.getByRole("menuitem", { name: "Add new preset" });
+  fireEvent.focus(addPreset);
+  fireEvent.click(addPreset);
+
+  expect(await screen.findByLabelText("Name")).toHaveFocus();
+});
+
 const customNamePlaceholderCases = [
   {
     language: "en",
@@ -75,15 +87,15 @@ describe("PresetManager built-in localization", () => {
 
       await userEvent.click(screen.getByRole("button", { name: builtInName }));
       await userEvent.click(screen.getByRole("menuitem", { name: addLabel }));
-      expect(screen.getByLabelText(nameLabel)).toHaveAttribute("placeholder", placeholder);
-      await userEvent.type(screen.getByLabelText(nameLabel), "Custom");
+      expect(await screen.findByLabelText(nameLabel)).toHaveAttribute("placeholder", placeholder);
+      await userEvent.type(await screen.findByLabelText(nameLabel), "Custom");
       await userEvent.click(screen.getByRole("button", { name: saveLabel }));
 
       await openPresetActions("Custom", 7);
       await userEvent.click(
         screen.getByRole("menuitem", { name: presetActionLabel("Edit", "Изменить") }),
       );
-      expect(screen.getByLabelText(nameLabel)).toHaveValue("Custom");
+      expect(await screen.findByLabelText(nameLabel)).toHaveValue("Custom");
       expect(screen.getByLabelText(nameLabel)).toHaveAttribute("placeholder", placeholder);
     },
   );
@@ -156,7 +168,9 @@ describe("PresetManager built-in localization", () => {
     await openPresetActions("P3 · Fast", 2);
     await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
 
-    expect(screen.getByText("Delete “P3 · Fast”? This cannot be undone")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Delete “P3 · Fast”? This cannot be undone"),
+    ).toBeInTheDocument();
   });
 
   it("validates custom names against visible built-in names and updates state consistently", async () => {

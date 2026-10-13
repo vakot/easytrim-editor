@@ -24,7 +24,7 @@ import { createAppStore } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { useTheme } from "@/app/theme/useTheme";
 import { audioTrackLoudnessInputsKey, type AudioTrackProcessing } from "@/domain/audio-processing";
-import { audioTrackColor } from "@/features/audio";
+import { audioTrackColor, AudioTrackEffectsDialog } from "@/features/audio";
 // eslint-disable-next-line no-restricted-imports -- Test owns a focused audio runtime fixture.
 import {
   AudioPlaybackContext,
@@ -32,8 +32,8 @@ import {
 } from "@/features/audio/contexts/audio-playback-context";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
+import { useAudioTrackController } from "../../hooks/useAudioTrackController";
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
-import { AudioTrackEffectsDialogContext } from "../AudioTrack/components/AudioTrackEffectsDialog/contexts/audio-track-effects-dialog-context";
 import { AudioTrackGainControl } from "../AudioTrack/components/AudioTrackGainControl";
 
 const audioPlayback = {
@@ -96,6 +96,28 @@ function PrimaryColorPreviewButton() {
   );
 }
 
+function GainControlDialogHarness({
+  onLiveGainChange,
+  streamIndex,
+  trackNumber,
+}: {
+  onLiveGainChange: (gainDb: number | null) => void;
+  streamIndex: number;
+  trackNumber: number;
+}) {
+  const controller = useAudioTrackController(streamIndex);
+
+  return (
+    <AudioTrackEffectsDialog controller={controller}>
+      <AudioTrackGainControl
+        onLiveGainChange={onLiveGainChange}
+        streamIndex={streamIndex}
+        trackNumber={trackNumber}
+      />
+    </AudioTrackEffectsDialog>
+  );
+}
+
 function renderGainControl(enabled = true) {
   const store = createAppStore({
     getItem: async () => null,
@@ -113,7 +135,6 @@ function renderGainControl(enabled = true) {
 
   const clearLiveAudioTrackGain = vi.fn();
   const setLiveAudioTrackGain = vi.fn();
-  const openEffects = vi.fn();
   const gainCommits: number[] = [];
   const dispatch = store.dispatch;
   store.dispatch = ((action: Parameters<typeof dispatch>[0]) => {
@@ -126,15 +147,13 @@ function renderGainControl(enabled = true) {
       <AudioPlaybackContext.Provider
         value={{ ...audioPlayback, clearLiveAudioTrackGain, setLiveAudioTrackGain }}
       >
-        <AudioTrackEffectsDialogContext.Provider value={{ openEffects, preloadEffects: vi.fn() }}>
-          <TooltipProvider>
-            <AudioTrackGainControl
-              onLiveGainChange={() => undefined}
-              streamIndex={2}
-              trackNumber={1}
-            />
-          </TooltipProvider>
-        </AudioTrackEffectsDialogContext.Provider>
+        <TooltipProvider>
+          <GainControlDialogHarness
+            onLiveGainChange={() => undefined}
+            streamIndex={2}
+            trackNumber={1}
+          />
+        </TooltipProvider>
       </AudioPlaybackContext.Provider>
     </Provider>,
   );
@@ -859,9 +878,9 @@ describe("AudioTrackRow", () => {
     const { store } = renderRow();
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: /effects/i }));
-    await user.click(screen.getByRole("tab", { name: /limiter/i }));
+    await user.click(await screen.findByRole("tab", { name: /limiter/i }));
 
-    const toggle = screen.getByRole("switch", { name: /limiter/i });
+    const toggle = await screen.findByRole("switch", { name: /limiter/i });
     await user.click(toggle);
     const ceiling = screen.getByRole("slider", { name: /output ceiling/i });
     ceiling.focus();

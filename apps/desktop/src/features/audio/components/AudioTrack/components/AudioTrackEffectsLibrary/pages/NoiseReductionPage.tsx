@@ -11,7 +11,6 @@ import {
   setAudioTrackSignalEffect,
 } from "@/domain/audio-processing";
 
-import { useAudioTrackEffectsDraft } from "../../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
 import {
   AudioTrackEffectsLibraryPage,
   AudioTrackEffectsLibraryPageBasic,
@@ -22,6 +21,7 @@ import {
   AudioTrackEffectsLibraryPageTitle,
   AudioTrackEffectsLibraryPageToggle,
 } from "../components/AudioTrackEffectsLibraryPage";
+import { useAudioTrackEffectsDraft } from "../contexts/audio-track-effects-draft-context";
 
 function NoiseReductionPage({ streamIndex }: { streamIndex: number }) {
   const { t } = useTranslation();

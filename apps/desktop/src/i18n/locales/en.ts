@@ -76,6 +76,9 @@ export const en = {
         description: "The active export queue is still running. Any unsaved editing data will be lost",
         title: "Exit while exports are running?",
       },
+      errors: {
+        failed: "Failed to shut down the application",
+      },
     },
     status: {
       checking: "Checking…",

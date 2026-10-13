@@ -8,6 +8,9 @@ agent quality and scope policy remains in [`.agents/rules/code-quality.md`](../.
 - Frontend directories use `kebab-case`; `__tests__` is the reserved test-directory exception.
 - Application React component files use `PascalCase.tsx` and normally export the matching named
   component. `components/ui` keeps ecosystem `kebab-case.tsx` names for shadcn/Radix primitives.
+- Components under `apps/desktop/src/app` use the `App<ComponentName>` prefix in their file and
+  exported component names. Components under `apps/desktop/src/app/layout` use
+  `AppLayout<ComponentName>`; the layout root may be named `AppLayout`.
 - Feature-owned components live under the feature's `components/` directory. Keep small components
   as direct children; place a cohesive large component in a nested package with its internal
   `components/`, `hooks/`, `contexts/`, `lib/`, optional container, and `index.ts` barrel.
@@ -126,3 +129,37 @@ no preload occurred, including touch activation and keyboard commands. Put a loc
 boundary near the entrypoint and use a fallback that preserves layout and focus behavior. Preserve
 component identity across renders so opening and closing does not cause unrelated remounts or state
 loss.
+
+Product dialogs use a folder named `dialogs/<DialogName>/` under their owning feature. App dialogs
+live under `apps/desktop/src/app/dialogs/<DialogName>/`, alongside `app/components/`; never nest
+`app/dialogs` inside `app/components`. Keep the Radix wrapper and preload trigger in
+`<DialogName>.tsx`, optional dialog-local context in `<DialogName>Context.ts`, and the inner content
+in `<DialogName>Content.tsx`. The wrapper owns the `Dialog` root, `DialogContent`, lazy import, and
+local `Suspense` boundary:
+
+```tsx
+<Dialog>
+  {children}
+  <DialogContent>
+    <Suspense fallback={null}>
+      <LazyDialogNameContent />
+    </Suspense>
+  </DialogContent>
+</Dialog>
+```
+
+Render `DialogContent` or `AlertDialogContent` directly under its root without checking `open` in
+the component tree. Radix mounts the content subtree only while the dialog is open and unmounts it
+when closed, so an extra `{open ? ... : null}` guard is redundant. A lazy content child inside the
+Radix content subtree will not render until the dialog opens.
+
+`<DialogName>Content` contains the dialog's inner UI and must not render `DialogContent` itself.
+Export a separate `<DialogName>Trigger` that wraps the shadcn/Radix `DialogTrigger`, starts the
+same cached lazy import on pointer hover and keyboard focus, and forwards trigger props. Callers
+provide their own trigger UI with `asChild`. Keep `DialogNameContext` out unless trigger and content
+need to share dialog-local state. Keep heavy context and effects inside the lazy content when they
+do not need to live while the dialog is closed.
+
+For dialogs opened automatically or programmatically without an interactive trigger, preload from
+the event that requests opening before setting the dialog open. Do not add a hidden trigger solely
+for preloading.

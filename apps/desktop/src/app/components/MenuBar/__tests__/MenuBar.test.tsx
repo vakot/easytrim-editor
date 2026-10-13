@@ -12,20 +12,19 @@ import { describe, expect, it, vi } from "vitest";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { CommandPalette } from "@/app/components/CommandPalette";
-import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
-import { SettingsDialog } from "@/app/components/SettingsDialog/SettingsDialog";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
-import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
+import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
+import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
+import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
+import { useChangelogDialog, useSettingsDialog } from "@/app/hooks/useAppDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
+import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
-import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
-import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
+import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
-import { ChangelogProvider } from "@/features/changelog";
-import { ExportActions, QueueDeleteSourceProvider } from "@/features/export";
+import { ExportActions, ExportDialog, QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
 import { i18n } from "@/i18n/config";
@@ -103,8 +102,17 @@ function getMenuTrigger(name: string) {
 }
 
 function SettingsOpenIndicator() {
-  const { isSettingsOpen } = useSettingsDialog();
-  return isSettingsOpen ? <span data-testid="settings-open" /> : null;
+  const { isOpen } = useSettingsDialog();
+  return isOpen ? <span data-testid="settings-open" /> : null;
+}
+
+function OpenChangelogManuallyButton() {
+  const { openDialog } = useChangelogDialog();
+  return (
+    <button data-testid="open-changelog-manually" onClick={openDialog} type="button">
+      open-changelog-manually
+    </button>
+  );
 }
 
 function WorkspaceDialogSelectionProbe() {
@@ -296,26 +304,26 @@ describe("MenuBarTest", () => {
         <SourceDeleteProvider>
           <QueueDeleteSourceProvider>
             <PreviewTransformProvider>
-              <ChangelogProvider>
-                <ResizablePanelContextProvider>
-                  <CommandPaletteProvider>
-                    <WorkspaceViewsProvider>
-                      <SettingsDialogProvider>
-                        <ApplicationCommandsProvider>
-                          <ThemeProvider>
-                            <AppMenuBar />
-                            <CommandPalette />
-                            <ExportActions />
-                            <WorkspaceDialogSelectionProbe />
-                            <SettingsDialog />
-                            <SettingsOpenIndicator />
-                          </ThemeProvider>
-                        </ApplicationCommandsProvider>
-                      </SettingsDialogProvider>
-                    </WorkspaceViewsProvider>
-                  </CommandPaletteProvider>
-                </ResizablePanelContextProvider>
-              </ChangelogProvider>
+              <ResizablePanelContextProvider>
+                <AppDialogsProvider>
+                  <WorkspaceViewsProvider>
+                    <ApplicationCommandsProvider>
+                      <ThemeProvider>
+                        <AppMenuBar />
+                        <AppCommandPaletteDialog />
+                        <ExportDialog>
+                          <ExportActions />
+                        </ExportDialog>
+                        <AppChangelogDialog />
+                        <OpenChangelogManuallyButton />
+                        <WorkspaceDialogSelectionProbe />
+                        <AppSettingsDialog />
+                        <SettingsOpenIndicator />
+                      </ThemeProvider>
+                    </ApplicationCommandsProvider>
+                  </WorkspaceViewsProvider>
+                </AppDialogsProvider>
+              </ResizablePanelContextProvider>
             </PreviewTransformProvider>
           </QueueDeleteSourceProvider>
         </SourceDeleteProvider>
@@ -368,7 +376,35 @@ describe("MenuBarTest", () => {
     await user.click(getMenuTrigger("View"));
     await user.click(screen.getByRole("menuitem", { name: /Export Queue/ }));
 
-    expect(screen.getByTestId("workspace-dialog-view")).toHaveTextContent("exportQueue");
+    await waitFor(() =>
+      expect(screen.getByTestId("workspace-dialog-view")).toHaveTextContent("exportQueue"),
+    );
+  });
+
+  it("shows the full changelog when opened manually during What's New", async () => {
+    renderMenus({
+      preferences: {
+        ...DEFAULT_PREFERENCES,
+        lastSeenChangelogVersion: "1.10.4",
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "What’s New" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "v1.10.4" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("open-changelog-manually"));
+
+    expect(await screen.findByRole("heading", { name: "Changelog" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "v1.10.4" })).toBeVisible();
+
+    fireEvent.click(
+      screen
+        .getByRole("dialog")
+        .querySelector('button[data-slot="button"][data-variant="default"]') as HTMLElement,
+    );
+    expect(menuState.dispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "preferences/changelogVersionSeen" }),
+    );
   });
 
   it("keeps queue configuration in Preferences, separate from queue actions", async () => {
@@ -376,9 +412,9 @@ describe("MenuBarTest", () => {
     renderMenus({ hasQueuedItems: true, hasActiveItem: true });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Preferences" }));
+    await user.click(await screen.findByRole("tab", { name: "Preferences" }));
     expect(screen.queryByRole("tab", { name: "Queue" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reset editing settings" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Reset editing settings" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Reset queue settings" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: /Start queue/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Skip" })).not.toBeInTheDocument();
@@ -392,9 +428,9 @@ describe("MenuBarTest", () => {
     renderMenus({ themePreference: "dark", primaryColor: "#4299e1" });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Appearance" }));
+    await user.click(await screen.findByRole("tab", { name: "Appearance" }));
     expect(screen.queryByRole("button", { name: "Reset to default" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Reset" })).toBeVisible();
   });
 
   it("resets queue finish and delete-source settings from Settings", async () => {
@@ -405,7 +441,7 @@ describe("MenuBarTest", () => {
     });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Preferences" }));
+    await user.click(await screen.findByRole("tab", { name: "Preferences" }));
     await user.click(screen.getByRole("button", { name: "Reset queue settings" }));
 
     expect(menuState.dispatch).toHaveBeenCalledWith(
@@ -422,7 +458,7 @@ describe("MenuBarTest", () => {
     });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Preferences" }));
+    await user.click(await screen.findByRole("tab", { name: "Preferences" }));
     await user.click(screen.getByRole("combobox", { name: "On queue finished" }));
     await user.click(screen.getByRole("option", { name: "Exit application" }));
     expect(menuState.dispatch).toHaveBeenCalledWith(
@@ -435,7 +471,7 @@ describe("MenuBarTest", () => {
     renderMenus();
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Preferences" }));
+    await user.click(await screen.findByRole("tab", { name: "Preferences" }));
     const deleteSourceItem = screen.getByRole("switch", { name: "Delete source" });
     expect(deleteSourceItem).not.toBeChecked();
 
@@ -464,7 +500,7 @@ describe("MenuBarTest", () => {
     });
 
     await user.click(getMenuTrigger("Settings"));
-    await user.click(screen.getByRole("tab", { name: "Preferences" }));
+    await user.click(await screen.findByRole("tab", { name: "Preferences" }));
     const deleteSourceItem = screen.getByRole("switch", { name: "Delete source" });
     expect(deleteSourceItem).toBeChecked();
 
@@ -633,12 +669,14 @@ describe("MenuBarTest", () => {
     renderMenus();
     await user.click(getMenuTrigger("Settings"));
 
+    const generalTab = await screen.findByRole("tab", { name: "General" });
+    expect(generalTab).toHaveFocus();
+    expect(generalTab).toHaveAttribute("aria-selected", "true");
     const preferencesTab = screen.getByRole("tab", { name: "Preferences" });
-    expect(screen.getByRole("tab", { name: "General" })).toHaveAttribute("aria-selected", "true");
     await user.click(preferencesTab);
     expect(preferencesTab).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Editing")).toBeInTheDocument();
-    expect(screen.getByText("Reset editing settings")).toBeInTheDocument();
+    expect(await screen.findByText("Editing")).toBeInTheDocument();
+    expect(await screen.findByText("Reset editing settings")).toBeInTheDocument();
 
     const loopSwitch = screen.getByRole("switch", { name: "Loop" });
     expect(loopSwitch).toBeChecked();

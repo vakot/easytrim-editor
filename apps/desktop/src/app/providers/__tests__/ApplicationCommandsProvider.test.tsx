@@ -107,8 +107,8 @@ vi.mock("@/app/layout/lib/workspace-view-loaders", () => ({
 vi.mock("@/features/source", () => ({
   useSourceDelete: () => ({ requestSourceDelete: mocks.requestSourceDelete }),
 }));
-vi.mock("@/features/changelog", () => ({ useChangelogDialog: () => ({ openChangelog: vi.fn() }) }));
 vi.mock("@/features/export", () => ({
+  ExportDialog: { preload: vi.fn(() => Promise.resolve()) },
   useQueueDeleteSource: () => ({ requestEnableSourceDeletion: vi.fn() }),
 }));
 vi.mock("@/features/preview", () => ({
@@ -157,18 +157,18 @@ vi.mock("@/lib/diagnostics", () => ({
   diagnostics: { error: mocks.diagnosticsError },
 }));
 
-import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
+import { useSettingsDialog } from "@/app/hooks/useAppDialog";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
-import { useSettingsDialog } from "@/app/hooks/useSettingsDialog";
+import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
+import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";
 
 import { ApplicationCommandsProvider } from "../ApplicationCommandsProvider";
-import { SettingsDialogProvider } from "../SettingsDialogProvider";
 
 function RuntimeProbe() {
   const { commands, executeCommand } = useApplicationCommands();
-  const { isSettingsOpen } = useSettingsDialog();
+  const { isOpen } = useSettingsDialog();
   const { dialogViewId, dockPlacementRequest } = useWorkspaceViews();
 
   return (
@@ -230,7 +230,7 @@ function RuntimeProbe() {
       {dockPlacementRequest ? (
         <output data-testid="dock-workspace-view">{dockPlacementRequest.viewId}</output>
       ) : null}
-      {isSettingsOpen ? <span data-testid="settings-open-from-command" /> : null}
+      {isOpen ? <span data-testid="settings-open-from-command" /> : null}
     </div>
   );
 }
@@ -238,13 +238,13 @@ function RuntimeProbe() {
 function runtimeUi() {
   return (
     <EditorRuntimeTestProvider>
-      <SettingsDialogProvider>
+      <AppDialogsProvider>
         <WorkspaceViewsProvider>
           <ApplicationCommandsProvider>
             <RuntimeProbe />
           </ApplicationCommandsProvider>
         </WorkspaceViewsProvider>
-      </SettingsDialogProvider>
+      </AppDialogsProvider>
     </EditorRuntimeTestProvider>
   );
 }
@@ -425,7 +425,7 @@ describe("ApplicationCommandsProvider", () => {
     expect(screen.getByRole("button", { name: "dock-workspace-view-exportQueue" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "open-workspace-view-activity-menu" }));
-    expect(screen.getByTestId("open-workspace-view")).toHaveTextContent("activity");
+    expect(await screen.findByTestId("open-workspace-view")).toHaveTextContent("activity");
 
     fireEvent.click(screen.getByRole("button", { name: "dock-workspace-view-exportQueue-menu" }));
     expect(screen.getByTestId("dock-workspace-view")).toHaveTextContent("exportQueue");

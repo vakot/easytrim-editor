@@ -42,6 +42,7 @@ function SourceListSearch() {
 
       <InputGroupInput
         aria-label={t("common.search.sources")}
+        autoFocus
         onChange={(event) => setSearchInternal(event.currentTarget.value)}
         placeholder={t("common.search.sourcesPlaceholder")}
         ref={searchInputRef}

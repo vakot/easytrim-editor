@@ -1,15 +1,38 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { type ReactNode, useReducer } from "react";
 import { describe, expect, it } from "vitest";
 
 import type { AudioTrackProcessing } from "@/domain/audio-processing";
 
-import { AudioTrackEffectsDraftProvider } from "../../AudioTrackEffectsDialog/components/AudioTrackEffectsDraftProvider";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
 import {
   AUDIO_TRACK_EFFECTS,
   type AudioTrackEffectDescriptor,
 } from "../consts/audio-track-effects";
+import { AudioTrackEffectsDraftContext } from "../contexts/audio-track-effects-draft-context";
+import { audioTrackEffectsDraftReducer } from "../lib/audio-track-effects-draft.reducer";
+import { createAudioTrackEffectsDraft } from "../lib/audio-track-effects-draft.utils";
+
+function AudioTrackEffectsDraftHarness({
+  children,
+  initialProcessing,
+}: {
+  children: ReactNode;
+  initialProcessing: AudioTrackProcessing;
+}) {
+  const [draft, dispatch] = useReducer(
+    audioTrackEffectsDraftReducer,
+    initialProcessing,
+    createAudioTrackEffectsDraft,
+  );
+
+  return (
+    <AudioTrackEffectsDraftContext.Provider value={{ dispatch, draft }}>
+      {children}
+    </AudioTrackEffectsDraftContext.Provider>
+  );
+}
 
 function FirstEffectPage() {
   return <p>First effect controls</p>;
@@ -25,6 +48,7 @@ const effects: readonly AudioTrackEffectDescriptor[] = [
     stage: "cleanup",
     label: () => "First effect",
     Page: FirstEffectPage,
+    preload: () => Promise.resolve(),
     isEnabled: () => true,
     isDirty: () => false,
   },
@@ -33,6 +57,7 @@ const effects: readonly AudioTrackEffectDescriptor[] = [
     stage: "dynamics",
     label: () => "Second effect",
     Page: SecondEffectPage,
+    preload: () => Promise.resolve(),
     isEnabled: () => false,
     isDirty: () => true,
   },
@@ -68,24 +93,25 @@ describe("AudioTrackEffectsLibrary", () => {
     const user = userEvent.setup();
     const initialProcessing = { gainDb: 0, firstEnabled: true } as AudioTrackProcessing;
     render(
-      <AudioTrackEffectsDraftProvider initialProcessing={initialProcessing}>
+      <AudioTrackEffectsDraftHarness initialProcessing={initialProcessing}>
         <AudioTrackEffectsLibrary effects={effects} streamIndex={2} />
-      </AudioTrackEffectsDraftProvider>,
+      </AudioTrackEffectsDraftHarness>,
     );
 
     const tabs = within(screen.getByRole("tablist")).getAllByRole("tab");
     expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(["First effect", "Second effect"]);
     expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    expect(tabs[0]).toHaveFocus();
     expect(tabs[0]?.querySelector("svg.lucide-check")).toBeInTheDocument();
     expect(tabs[1]?.querySelector(".rounded-full")).toBeInTheDocument();
     expect(screen.getByText("First effect controls")).toBeVisible();
-    expect(screen.getByText("Second effect controls").parentElement).not.toBeVisible();
+    expect(screen.queryByText("Second effect controls")).not.toBeInTheDocument();
 
     tabs[0]?.focus();
     await user.keyboard("{ArrowDown}");
     expect(tabs[1]).toHaveFocus();
     expect(tabs[1]).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Second effect controls")).toBeVisible();
+    expect(await screen.findByText("Second effect controls")).toBeVisible();
     expect(screen.getByText("First effect controls").parentElement).not.toBeVisible();
   });
 
@@ -104,9 +130,9 @@ describe("AudioTrackEffectsLibrary", () => {
     ];
 
     render(
-      <AudioTrackEffectsDraftProvider initialProcessing={{ gainDb: 0 }}>
+      <AudioTrackEffectsDraftHarness initialProcessing={{ gainDb: 0 }}>
         <AudioTrackEffectsLibrary effects={stageEffects} streamIndex={2} />
-      </AudioTrackEffectsDraftProvider>,
+      </AudioTrackEffectsDraftHarness>,
     );
 
     const tablistElement = screen.getByRole("tablist");
