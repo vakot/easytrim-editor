@@ -8,23 +8,18 @@ import { frameCountFor, frameToPlaybackMicros, microsToFrame } from "../lib/play
 const DEFAULT_FRAME_RATE = { denominator: 1, numerator: 30 } as const;
 
 function usePlaybackSnapshot<Value>(
-  select: (
-    positionMicros: number,
-    durationMicros: number,
-    isPlaying: boolean,
-    isVideoMuted: boolean,
-  ) => Value,
+  select: (positionMicros: number, durationMicros: number, isPlaying: boolean) => Value,
 ) {
   const controller = usePlaybackController();
   return useSyncExternalStore(
     controller.subscribe,
     () => {
-      const { durationMicros, isPlaying, isVideoMuted, positionMicros } = controller.getSnapshot();
-      return select(positionMicros, durationMicros, isPlaying, isVideoMuted);
+      const { durationMicros, isPlaying, positionMicros } = controller.getSnapshot();
+      return select(positionMicros, durationMicros, isPlaying);
     },
     () => {
-      const { durationMicros, isPlaying, isVideoMuted, positionMicros } = controller.getSnapshot();
-      return select(positionMicros, durationMicros, isPlaying, isVideoMuted);
+      const { durationMicros, isPlaying, positionMicros } = controller.getSnapshot();
+      return select(positionMicros, durationMicros, isPlaying);
     },
   );
 }
@@ -39,12 +34,6 @@ function usePlaybackDurationMicros() {
 
 function usePlaybackIsPlaying() {
   return usePlaybackSnapshot((_positionMicros, _durationMicros, isPlaying) => isPlaying);
-}
-
-function usePlaybackIsVideoMuted() {
-  return usePlaybackSnapshot(
-    (_positionMicros, _durationMicros, _isPlaying, isVideoMuted) => isVideoMuted,
-  );
 }
 
 function usePlaybackActions() {
@@ -84,4 +73,4 @@ function useTimelinePlayback(
   };
 }
 
-export { usePlaybackActions, usePlaybackIsPlaying, usePlaybackIsVideoMuted, useTimelinePlayback };
+export { usePlaybackActions, usePlaybackIsPlaying, useTimelinePlayback };

@@ -1,2 +1,7 @@
 export { AudioPlaybackProvider } from "./AudioPlaybackProvider";
-export { useAudioPlaybackAdapter, useAudioPlaybackReady } from "./contexts/audio-transport-context";
+export type { AudioPlaybackAdapter } from "./contexts/audio-transport-context";
+export {
+  useAudioPlaybackAdapter,
+  useAudioPlaybackHasActiveOutput,
+  useAudioPlaybackReady,
+} from "./contexts/audio-transport-context";

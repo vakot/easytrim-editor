@@ -19,21 +19,12 @@ const noOperation = () => undefined;
 const videoRef: RefObject<HTMLVideoElement | null> = { current: null };
 const preview = {
   isPreviewReady: false,
-  onEnded: noOperation,
-  onPause: noOperation,
-  onPlay: noOperation,
-  onPlaybackError: noOperation,
-  onTimeUpdate: noOperation,
-  onCanPlay: noOperation,
-  onPreviewPlaybackError: noOperation,
-  previewKey: null,
   isSeekPending: () => false,
   pauseMedia: noOperation,
   playMedia: async () => undefined,
   requestPlaybackFrame: () => null,
   registerMediaObserver: () => noOperation,
   seekMedia: noOperation,
-  setPlaybackRate: noOperation,
   setVideoElement: (element: HTMLVideoElement | null) => {
     if (videoRef.current && videoRef.current !== element) videoRef.current.pause();
     videoRef.current = element;
@@ -60,9 +51,7 @@ function EditorRuntimeTestProvider({
           pause: noOperation,
           prepareAt: async () => undefined,
           seek: noOperation,
-          setPlaybackRate: noOperation,
-          startPreparedAt: async () => undefined,
-          startLeadSeconds: 0.15,
+          startAlignedWithVideoAt: async (seconds: number) => seconds + 0.15,
         },
         video: {
           getCurrentTimeSeconds: () => null,
@@ -74,7 +63,6 @@ function EditorRuntimeTestProvider({
           requestPlaybackFrame: () => null,
           seek: noOperation,
           setCurrentTimeSeconds: noOperation,
-          setPlaybackRate: noOperation,
         },
       },
       0,
@@ -89,9 +77,7 @@ function EditorRuntimeTestProvider({
     pause: noOperation,
     prepareAt: async () => undefined,
     seek: noOperation,
-    setPlaybackRate: noOperation,
-    startPreparedAt: async () => undefined,
-    startLeadSeconds: 0.15,
+    startAlignedWithVideoAt: async (seconds: number) => seconds + 0.15,
   } satisfies AudioPlaybackAdapter;
 
   return (

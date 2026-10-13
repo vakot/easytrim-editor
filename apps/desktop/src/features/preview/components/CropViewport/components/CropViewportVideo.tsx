@@ -1,13 +1,13 @@
 import { motion, type Transition } from "motion/react";
-import { type CSSProperties, type SyntheticEvent, useCallback, useEffect, useRef } from "react";
+import { type CSSProperties, type SyntheticEvent, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
-import { usePlaybackIsVideoMuted } from "@/features/playback";
+import { useAudioPlaybackHasActiveOutput } from "@/features/audio";
 import { diagnostics } from "@/lib/diagnostics";
 
-import { usePreviewVideoElementEvents } from "../../../contexts/preview-runtime-context";
+import { useSetPreviewVideoElement } from "../../../contexts/preview-runtime-context";
 
 interface CropViewportVideoProps {
   cropIsOpen: boolean;
@@ -23,12 +23,9 @@ function CropViewportVideo({
   transition,
 }: CropViewportVideoProps) {
   const { t } = useTranslation();
-  const { onCanPlay, onEnded, onPause, onPlay, onPlaybackError, onTimeUpdate, setVideoElement } =
-    usePreviewVideoElementEvents();
-
-  const videoMuted = usePlaybackIsVideoMuted();
+  const setVideoElement = useSetPreviewVideoElement();
+  const videoMuted = useAudioPlaybackHasActiveOutput();
   const preview = useAppSelector(selectPreview);
-  const reportedUrl = useRef<string | null>(null);
   const sourceUrl = preview.status === "ready" ? preview.value.url : null;
   const previewKind = preview.status === "ready" ? preview.value.kind : null;
 
@@ -40,26 +37,11 @@ function CropViewportVideo({
     });
   }, [previewKind, sourceUrl]);
 
-  useEffect(() => {
-    reportedUrl.current = null;
-  }, [sourceUrl]);
-
-  const onError = useCallback(() => {
-    if (previewKind === null || sourceUrl === null) return;
-    if (reportedUrl.current === sourceUrl) return;
-    reportedUrl.current = sourceUrl;
-    onPlaybackError();
-  }, [onPlaybackError, previewKind, sourceUrl]);
-
   const handlePlay = useCallback(
     (event: SyntheticEvent<HTMLVideoElement>) => {
-      if (cropIsOpen) {
-        event.currentTarget.pause();
-        return;
-      }
-      onPlay();
+      if (cropIsOpen) event.currentTarget.pause();
     },
-    [cropIsOpen, onPlay],
+    [cropIsOpen],
   );
 
   const onLoadStart = useCallback(() => {
@@ -104,14 +86,9 @@ function CropViewportVideo({
       initial={false}
       key={sourceUrl}
       muted={videoMuted}
-      onCanPlay={onCanPlay}
-      onEnded={onEnded}
-      onError={onError}
       onLoadStart={onLoadStart}
-      onPause={onPause}
       onPlay={handlePlay}
       onStalled={onStalled}
-      onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
       onWaiting={onWaiting}
       playsInline
       preload="auto"

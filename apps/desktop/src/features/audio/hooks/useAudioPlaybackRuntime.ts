@@ -14,7 +14,7 @@ import {
 
 import type { AudioPlaybackAdapter } from "../contexts/audio-transport-context";
 import { AudioPlaybackSession } from "../lib/audio-playback-session";
-import { AUDIO_START_LEAD_SECONDS, type WebAudioTrack } from "../lib/web-audio-engine";
+import type { WebAudioTrack } from "../lib/web-audio-engine";
 
 function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
@@ -103,17 +103,15 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
 
   const seek = useCallback((seconds: number) => sessionRef.current?.seek(seconds), []);
 
-  const setPlaybackRate = useCallback((rate: number) => {
-    sessionRef.current?.setPlaybackRate(rate);
-  }, []);
-
   const prepareAt = useCallback(
     (seconds: number) => sessionRef.current?.prepareAt(seconds) ?? Promise.resolve(),
     [],
   );
 
-  const startPreparedAt = useCallback(
-    (seconds: number) => sessionRef.current?.startPreparedAt(seconds) ?? Promise.resolve(),
+  const startAlignedWithVideoAt = useCallback(
+    (videoPositionSeconds: number) =>
+      sessionRef.current?.startAlignedWithVideoAt(videoPositionSeconds) ??
+      Promise.resolve(videoPositionSeconds),
     [],
   );
 
@@ -139,9 +137,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       pause,
       prepareAt,
       seek,
-      setPlaybackRate,
-      startPreparedAt,
-      startLeadSeconds: AUDIO_START_LEAD_SECONDS,
+      startAlignedWithVideoAt,
     }),
     [
       getCurrentTimeSeconds,
@@ -150,8 +146,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       pause,
       prepareAt,
       seek,
-      setPlaybackRate,
-      startPreparedAt,
+      startAlignedWithVideoAt,
     ],
   );
 }

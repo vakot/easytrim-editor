@@ -7,9 +7,7 @@ interface AudioPlaybackAdapter {
   pause: () => void;
   prepareAt: (seconds: number) => Promise<void>;
   seek: (seconds: number) => void;
-  setPlaybackRate: (rate: number) => void;
-  startLeadSeconds: number;
-  startPreparedAt: (seconds: number) => Promise<void>;
+  startAlignedWithVideoAt: (videoPositionSeconds: number) => Promise<number>;
 }
 
 const AudioTransportContext = createContext<AudioPlaybackAdapter | null>(null);
@@ -24,5 +22,14 @@ function useAudioPlaybackReady(): boolean {
   return useAudioPlaybackAdapter().isReady;
 }
 
-export { AudioTransportContext, useAudioPlaybackAdapter, useAudioPlaybackReady };
+function useAudioPlaybackHasActiveOutput(): boolean {
+  return useAudioPlaybackAdapter().hasActiveOutput;
+}
+
+export {
+  AudioTransportContext,
+  useAudioPlaybackAdapter,
+  useAudioPlaybackHasActiveOutput,
+  useAudioPlaybackReady,
+};
 export type { AudioPlaybackAdapter };

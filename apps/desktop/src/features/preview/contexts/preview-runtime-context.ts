@@ -24,28 +24,18 @@ interface PreviewVideoAdapter {
   ) => PreviewPlaybackFrame | null;
   seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
   setCurrentTimeSeconds: (seconds: number) => void;
-  setPlaybackRate: (rate: number) => void;
 }
 
 interface PreviewRuntimeContract {
   isPreviewReady: boolean;
   isSeekPending: () => boolean;
-  onCanPlay: () => void;
-  onEnded: () => void;
-  onPause: () => void;
-  onPlay: () => void;
-  onPlaybackError: () => void;
-  onPreviewPlaybackError: (previewKind: "source" | "proxy") => void;
-  onTimeUpdate: (seconds: number) => void;
   pauseMedia: () => void;
   playMedia: () => Promise<void>;
-  previewKey: string | null;
   registerMediaObserver: (observer: PreviewMediaObserver) => () => void;
   requestPlaybackFrame: (
     callback: (timestamp: number, mediaTimeSeconds: number) => void,
   ) => PreviewPlaybackFrame | null;
   seekMedia: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
-  setPlaybackRate: (rate: number) => void;
   setVideoElement: (element: HTMLVideoElement | null) => void;
   videoRef: RefObject<HTMLVideoElement | null>;
 }
@@ -66,11 +56,8 @@ function usePreviewVideoRef(): RefObject<HTMLVideoElement | null> {
   return usePreviewRuntime().videoRef;
 }
 
-function usePreviewVideoElementEvents() {
-  const { onCanPlay, onEnded, onPause, onPlay, onPlaybackError, onTimeUpdate, setVideoElement } =
-    usePreviewRuntime();
-
-  return { onCanPlay, onEnded, onPause, onPlay, onPlaybackError, onTimeUpdate, setVideoElement };
+function useSetPreviewVideoElement() {
+  return usePreviewRuntime().setVideoElement;
 }
 
 function usePreviewVideoAdapter(): PreviewVideoAdapter {
@@ -82,7 +69,6 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
     registerMediaObserver,
     requestPlaybackFrame,
     seekMedia: seek,
-    setPlaybackRate,
     videoRef,
   } = usePreviewRuntime();
 
@@ -109,7 +95,6 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
       requestPlaybackFrame,
       seek,
       setCurrentTimeSeconds,
-      setPlaybackRate,
     }),
     [
       isReady,
@@ -121,7 +106,6 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
       requestPlaybackFrame,
       seek,
       setCurrentTimeSeconds,
-      setPlaybackRate,
     ],
   );
 }
@@ -130,8 +114,8 @@ export {
   PreviewRuntimeContext,
   usePreviewReady,
   usePreviewVideoAdapter,
-  usePreviewVideoElementEvents,
   usePreviewVideoRef,
+  useSetPreviewVideoElement,
 };
 export type {
   PreviewMediaObserver,

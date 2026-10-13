@@ -57,16 +57,12 @@ class AudioPlaybackSession {
     return this.engine.prepareAt(seconds);
   }
 
-  startPreparedAt(seconds: number) {
-    return this.engine.startPreparedAt(seconds);
+  startAlignedWithVideoAt(videoPositionSeconds: number) {
+    return this.engine.startAlignedWithVideoAt(videoPositionSeconds);
   }
 
   seek(seconds: number) {
     this.engine.seek(seconds);
-  }
-
-  setPlaybackRate(rate: number) {
-    this.engine.setPlaybackRate(rate);
   }
 
   close() {

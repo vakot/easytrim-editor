@@ -81,7 +81,6 @@ class WebAudioEngine {
   private isPlaying = false;
   private nextScheduledFrame = 0;
   private nextScheduledContextTime = 0;
-  private playbackRate = 1;
   private pumpFrame: number | null = null;
   private batchInFlight = false;
   private preparedBatch: PreparedAudioBatch | null = null;
@@ -275,6 +274,12 @@ class WebAudioEngine {
     return this.startAt(seconds);
   }
 
+  async startAlignedWithVideoAt(videoPositionSeconds: number): Promise<number> {
+    const audioStartPosition = videoPositionSeconds + AUDIO_START_LEAD_SECONDS;
+    await this.startPreparedAt(audioStartPosition);
+    return audioStartPosition;
+  }
+
   async prepareAt(seconds: number): Promise<void> {
     if (!this.hasTracks || this.durationFrames <= 0) return;
     this.generation += 1;
@@ -337,13 +342,6 @@ class WebAudioEngine {
       track.scheduledThroughFrame = positionFrame;
     }
     if (resume) void this.startAt(positionFrame / SAMPLE_RATE).catch(() => this.pause());
-  }
-
-  setPlaybackRate(rate: number): void {
-    if (!Number.isFinite(rate) || rate <= 0 || rate === this.playbackRate) return;
-    const position = this.currentPositionFrame();
-    this.playbackRate = rate;
-    if (this.isPlaying) this.seek(position / SAMPLE_RATE);
   }
 
   close(): void {
@@ -504,8 +502,7 @@ class WebAudioEngine {
 
     for (const range of batch) this.schedule(range, sharedStart);
     this.nextScheduledFrame = endFrame;
-    this.nextScheduledContextTime =
-      sharedStart + (endFrame - startFrame) / SAMPLE_RATE / this.playbackRate;
+    this.nextScheduledContextTime = sharedStart + (endFrame - startFrame) / SAMPLE_RATE;
   }
 
   private schedulePreparedBatch(
@@ -540,8 +537,7 @@ class WebAudioEngine {
 
     for (const range of batch) this.schedule(range, sharedStart, startFrame);
     this.nextScheduledFrame = firstRange.endFrame;
-    this.nextScheduledContextTime =
-      sharedStart + (firstRange.endFrame - startFrame) / SAMPLE_RATE / this.playbackRate;
+    this.nextScheduledContextTime = sharedStart + (firstRange.endFrame - startFrame) / SAMPLE_RATE;
   }
 
   private schedule(
@@ -558,7 +554,6 @@ class WebAudioEngine {
     }
     const source = this.context.createBufferSource();
     source.buffer = buffer;
-    source.playbackRate.value = this.playbackRate;
     source.connect(track.input);
     source.onended = () => {
       source.disconnect();
@@ -669,9 +664,7 @@ class WebAudioEngine {
     if (!this.isPlaying) return Math.min(this.durationFrames, this.anchorPositionFrame);
 
     const elapsedFrames = Math.floor(
-      Math.max(0, this.context.currentTime - this.anchorContextTime) *
-        SAMPLE_RATE *
-        this.playbackRate,
+      Math.max(0, this.context.currentTime - this.anchorContextTime) * SAMPLE_RATE,
     );
 
     const scheduledFrames = Math.max(0, this.nextScheduledFrame - this.anchorPositionFrame);
@@ -692,5 +685,5 @@ class WebAudioEngine {
   }
 }
 
-export { AUDIO_START_LEAD_SECONDS, WebAudioEngine };
+export { WebAudioEngine };
 export type { DecodeChunk, PcmChunk, WebAudioTrack };

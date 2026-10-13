@@ -1,49 +1,14 @@
-interface PlaybackFrame {
-  cancel: () => void;
-}
-
-interface PlaybackAudioAdapter {
-  getCurrentTimeSeconds: () => number | null;
-  hasActiveOutput: boolean;
-  isReady: boolean;
-  pause: () => void;
-  prepareAt: (seconds: number) => Promise<void>;
-  seek: (seconds: number) => void;
-  setPlaybackRate: (rate: number) => void;
-  startLeadSeconds: number;
-  startPreparedAt: (seconds: number) => Promise<void>;
-}
-
-interface PlaybackVideoAdapter {
-  getCurrentTimeSeconds: () => number | null;
-  isReady: boolean;
-  isSeekPending: () => boolean;
-  pause: () => void;
-  play: () => Promise<void>;
-  registerMediaObserver: (observer: {
-    onEnded: () => void;
-    onPause: () => void;
-    onPlay: () => void;
-    onPlaybackError: () => void;
-    onTimeUpdate: (seconds: number) => void;
-  }) => () => void;
-  requestPlaybackFrame: (
-    callback: (timestamp: number, mediaTimeSeconds: number) => void,
-  ) => PlaybackFrame | null;
-  seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
-  setCurrentTimeSeconds: (seconds: number) => void;
-  setPlaybackRate: (rate: number) => void;
-}
+import type { AudioPlaybackAdapter } from "@/features/audio";
+import type { PreviewVideoAdapter } from "@/features/preview";
 
 interface PlaybackDriver {
-  audio: PlaybackAudioAdapter;
-  video: PlaybackVideoAdapter;
+  audio: AudioPlaybackAdapter;
+  video: PreviewVideoAdapter;
 }
 
 interface PlaybackSnapshot {
   durationMicros: number;
   isPlaying: boolean;
-  isVideoMuted: boolean;
   positionMicros: number;
 }
 
@@ -54,8 +19,8 @@ class PlaybackController {
   private readonly listeners = new Set<() => void>();
   private driver: PlaybackDriver | null = null;
   private unregisterMediaObserver: (() => void) | null = null;
-  private playbackFrame: PlaybackFrame | null = null;
-  private startupFrame: PlaybackFrame | null = null;
+  private playbackFrame: ReturnType<PreviewVideoAdapter["requestPlaybackFrame"]> = null;
+  private startupFrame: ReturnType<PreviewVideoAdapter["requestPlaybackFrame"]> = null;
   private resolveStartupFrameWait: (() => void) | null = null;
   private startupGeneration = 0;
   private mediaSessionId: number | null | undefined;
@@ -66,7 +31,6 @@ class PlaybackController {
   constructor() {
     this.snapshot = {
       durationMicros: 0,
-      isVideoMuted: false,
       isPlaying: false,
       positionMicros: 0,
     };
@@ -87,15 +51,12 @@ class PlaybackController {
     this.mediaSessionId = mediaSessionId;
     this.driver = driver;
     if (mediaSessionId !== null) {
-      driver.video.setPlaybackRate(1);
-      driver.audio.setPlaybackRate(1);
       if (sessionChanged || videoObserverChanged) this.registerVideoObserver(driver.video);
     }
 
     const nextSnapshot = {
       ...this.snapshot,
       durationMicros: mediaSessionId === null ? 0 : durationMicros,
-      isVideoMuted: mediaSessionId !== null && driver.audio.hasActiveOutput,
       isPlaying: sessionChanged ? false : this.snapshot.isPlaying,
       positionMicros: sessionChanged
         ? 0
@@ -118,20 +79,18 @@ class PlaybackController {
     this.mediaSessionId = undefined;
     if (
       this.snapshot.durationMicros !== 0 ||
-      this.snapshot.isVideoMuted ||
       this.snapshot.isPlaying ||
       this.snapshot.positionMicros !== 0
     ) {
       this.update({
         durationMicros: 0,
-        isVideoMuted: false,
         isPlaying: false,
         positionMicros: 0,
       });
     }
   };
 
-  private registerVideoObserver(video: PlaybackVideoAdapter) {
+  private registerVideoObserver(video: PreviewVideoAdapter) {
     const mediaSessionId = this.mediaSessionId;
     this.unregisterMediaObserver = video.registerMediaObserver({
       onEnded: () => {
@@ -207,8 +166,6 @@ class PlaybackController {
     const generation = ++this.startupGeneration;
     this.lifecycle = "starting";
     this.mediaStartRequested = false;
-    driver.video.setPlaybackRate(1);
-    driver.audio.setPlaybackRate(1);
     void this.startPlayback(generation, seconds);
   };
 
@@ -248,8 +205,7 @@ class PlaybackController {
       if (!this.isCurrentStartup(generation)) return;
 
       const videoPosition = driver.video.getCurrentTimeSeconds() ?? seconds;
-      const audioStartPosition = videoPosition + driver.audio.startLeadSeconds;
-      await driver.audio.startPreparedAt(audioStartPosition);
+      const audioStartPosition = await driver.audio.startAlignedWithVideoAt(videoPosition);
       if (!this.isCurrentStartup(generation)) return;
 
       if (driver.audio.getCurrentTimeSeconds() !== null) {
@@ -379,7 +335,6 @@ class PlaybackController {
     return (
       left.durationMicros === right.durationMicros &&
       left.isPlaying === right.isPlaying &&
-      left.isVideoMuted === right.isVideoMuted &&
       left.positionMicros === right.positionMicros
     );
   }

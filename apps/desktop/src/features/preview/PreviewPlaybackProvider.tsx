@@ -1,4 +1,12 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
@@ -15,7 +23,6 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
   const sourcePath = useAppSelector(selectSourceSelection)?.sourcePath ?? null;
   const sourceLoadToken = useAppSelector(selectSourceLoadToken);
-
   const preview = useAppSelector(selectPreview);
   const previewKey =
     sourcePath && preview.status === "ready"
@@ -27,19 +34,110 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
   const [readyPreviewKey, setReadyPreviewKey] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const observerRef = useRef<PreviewMediaObserver | null>(null);
+  const sourcePathRef = useRef(sourcePath);
+  const previewKeyRef = useRef(previewKey);
+  const previewKindRef = useRef(previewKind);
+  const removeVideoListenersRef = useRef<(() => void) | null>(null);
+  const reportedErrorsRef = useRef(new WeakSet<HTMLVideoElement>());
   const seekSchedulerRef = useRef<{
     scheduler: ReturnType<typeof createPreviewSeekScheduler>;
     video: HTMLVideoElement;
   } | null>(null);
 
-  const setVideoElement = useCallback((element: HTMLVideoElement | null) => {
-    if (videoRef.current && videoRef.current !== element) videoRef.current.pause();
-    if (seekSchedulerRef.current?.video !== element) {
-      seekSchedulerRef.current?.scheduler.dispose();
-      seekSchedulerRef.current = null;
-    }
-    videoRef.current = element;
-  }, []);
+  useLayoutEffect(() => {
+    sourcePathRef.current = sourcePath;
+    previewKeyRef.current = previewKey;
+    previewKindRef.current = previewKind;
+  }, [previewKey, previewKind, sourcePath]);
+
+  const setVideoElement = useCallback(
+    (element: HTMLVideoElement | null) => {
+      const currentVideo = videoRef.current;
+      if (currentVideo && currentVideo !== element) currentVideo.pause();
+      removeVideoListenersRef.current?.();
+      removeVideoListenersRef.current = null;
+
+      if (seekSchedulerRef.current?.video !== element) {
+        seekSchedulerRef.current?.scheduler.dispose();
+        seekSchedulerRef.current = null;
+      }
+      videoRef.current = element;
+      if (!element) return;
+
+      const onCanPlay = () => {
+        const key = previewKeyRef.current;
+        if (key) setReadyPreviewKey(key);
+      };
+
+      const onPause = () => {
+        const kind = previewKindRef.current;
+        if (kind !== null) {
+          diagnostics.event("media.playback.paused", {
+            data: { kind },
+            origin: { type: "internal" },
+          });
+        }
+        observerRef.current?.onPause();
+      };
+
+      const onPlay = () => {
+        const kind = previewKindRef.current;
+        if (kind !== null) {
+          diagnostics.event("media.playback.started", {
+            data: { kind },
+            origin: { type: "internal" },
+          });
+        }
+        observerRef.current?.onPlay();
+      };
+
+      const onEnded = () => {
+        const kind = previewKindRef.current;
+        if (kind !== null) {
+          diagnostics.event("media.playback.ended", {
+            data: { kind },
+            origin: { type: "internal" },
+          });
+        }
+        observerRef.current?.onEnded();
+      };
+
+      const onTimeUpdate = () => observerRef.current?.onTimeUpdate(element.currentTime);
+      const onError = () => {
+        const kind = previewKindRef.current;
+        const path = sourcePathRef.current;
+        if (kind === null || !path || reportedErrorsRef.current.has(element)) return;
+        reportedErrorsRef.current.add(element);
+        diagnostics.error(
+          "media.playback.failed",
+          {
+            code: "media_element_error",
+            message: "The preview media element reported an error.",
+          },
+          { data: { kind }, origin: { type: "internal" } },
+        );
+        observerRef.current?.onPlaybackError();
+        void dispatch(handlePreviewPlaybackError(path, kind));
+      };
+
+      const listeners = [
+        ["canplay", onCanPlay],
+        ["ended", onEnded],
+        ["error", onError],
+        ["pause", onPause],
+        ["play", onPlay],
+        ["timeupdate", onTimeUpdate],
+      ] as const;
+
+      for (const [eventName, listener] of listeners) element.addEventListener(eventName, listener);
+      removeVideoListenersRef.current = () => {
+        for (const [eventName, listener] of listeners) {
+          element.removeEventListener(eventName, listener);
+        }
+      };
+    },
+    [dispatch],
+  );
 
   const isSeekPending = useCallback(
     () => seekSchedulerRef.current?.scheduler.isPending ?? false,
@@ -87,17 +185,12 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
 
   useEffect(
     () => () => {
+      removeVideoListenersRef.current?.();
+      removeVideoListenersRef.current = null;
       seekSchedulerRef.current?.scheduler.dispose();
       seekSchedulerRef.current = null;
     },
     [],
-  );
-
-  const onPreviewPlaybackError = useCallback(
-    (previewKind: "source" | "proxy") => {
-      if (sourcePath) void dispatch(handlePreviewPlaybackError(sourcePath, previewKind));
-    },
-    [dispatch, sourcePath],
   );
 
   const registerMediaObserver = useCallback((observer: PreviewMediaObserver) => {
@@ -107,93 +200,27 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const setPlaybackRate = useCallback((rate: number) => {
-    if (videoRef.current) videoRef.current.playbackRate = rate;
-  }, []);
-
-  const onPause = useCallback(() => {
-    if (previewKind !== null)
-      diagnostics.event("media.playback.paused", {
-        data: { kind: previewKind },
-        origin: { type: "internal" },
-      });
-    observerRef.current?.onPause();
-  }, [previewKind]);
-
-  const onPlay = useCallback(() => {
-    if (previewKind !== null)
-      diagnostics.event("media.playback.started", {
-        data: { kind: previewKind },
-        origin: { type: "internal" },
-      });
-    observerRef.current?.onPlay();
-  }, [previewKind]);
-
-  const onEnded = useCallback(() => {
-    if (previewKind !== null)
-      diagnostics.event("media.playback.ended", {
-        data: { kind: previewKind },
-        origin: { type: "internal" },
-      });
-    observerRef.current?.onEnded();
-  }, [previewKind]);
-
-  const onTimeUpdate = useCallback((seconds: number) => {
-    observerRef.current?.onTimeUpdate(seconds);
-  }, []);
-
-  const onPlaybackError = useCallback(() => {
-    if (previewKind === null || !sourcePath) return;
-    diagnostics.error(
-      "media.playback.failed",
-      {
-        code: "media_element_error",
-        message: "The preview media element reported an error.",
-      },
-      { data: { kind: previewKind }, origin: { type: "internal" } },
-    );
-    observerRef.current?.onPlaybackError();
-    onPreviewPlaybackError(previewKind);
-  }, [onPreviewPlaybackError, previewKind, sourcePath]);
-
   const runtime = useMemo(
     () => ({
       isPreviewReady: previewKey !== null && readyPreviewKey === previewKey,
       isSeekPending,
-      onEnded,
-      onPause,
-      onPlay,
-      onPlaybackError,
-      onTimeUpdate,
-      onCanPlay,
-      onPreviewPlaybackError,
-      previewKey,
       pauseMedia,
       playMedia,
-      requestPlaybackFrame,
       registerMediaObserver,
+      requestPlaybackFrame,
       seekMedia,
-      setPlaybackRate,
       setVideoElement,
       videoRef,
     }),
     [
       isSeekPending,
-      onCanPlay,
-      onEnded,
-      onPause,
-      onPlay,
-      onPlaybackError,
-      onPreviewPlaybackError,
-      onTimeUpdate,
-      previewKey,
       pauseMedia,
       playMedia,
-      requestPlaybackFrame,
+      previewKey,
       readyPreviewKey,
       registerMediaObserver,
+      requestPlaybackFrame,
       seekMedia,
-      setPlaybackRate,
       setVideoElement,
     ],
   );
