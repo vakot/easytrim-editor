@@ -20,6 +20,7 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
   const media = useAppSelector(selectSourceMedia);
   const {
     getMediaState,
+    isSeekPending,
     isPreviewReady,
     pauseMedia,
     playMedia,
@@ -140,6 +141,7 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
         onPlay: () => setIsPlaying(true),
         onPlaybackError: pause,
         onTimeUpdate: (seconds) => {
+          if (isSeekPending()) return;
           publishFrame(secondsToFrame(seconds, frameRateForConversion, framesCount));
           syncAudioTo(seconds);
         },
@@ -147,6 +149,7 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
     [
       frameRateForConversion,
       framesCount,
+      isSeekPending,
       pause,
       pauseAudio,
       publishFrame,
@@ -160,8 +163,10 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
     let frame = requestPlaybackFrame(update);
 
     function update(_timestamp: number, seconds: number) {
-      publishFrame(secondsToFrame(seconds, frameRateForConversion, framesCount));
-      syncAudioTo(seconds);
+      if (!isSeekPending()) {
+        publishFrame(secondsToFrame(seconds, frameRateForConversion, framesCount));
+        syncAudioTo(seconds);
+      }
       frame = requestPlaybackFrame(update);
     }
 
@@ -169,6 +174,7 @@ function TimelinePlaybackProvider({ children }: { children: ReactNode }) {
   }, [
     frameRateForConversion,
     framesCount,
+    isSeekPending,
     isPlaying,
     publishFrame,
     requestPlaybackFrame,
