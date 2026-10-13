@@ -11,7 +11,7 @@ import { disconnectStereoAudioMeterNodes, type StereoAudioMeterNodes } from "./s
 const SAMPLE_RATE = 48_000;
 const PCM_CHUNK_FRAMES = SAMPLE_RATE * 2;
 const MAX_BUFFER_AHEAD_FRAMES = SAMPLE_RATE * 4;
-const START_LEAD_SECONDS = 0.15;
+const AUDIO_START_LEAD_SECONDS = 0.15;
 const MIN_SCHEDULE_LEAD_SECONDS = 0.005;
 const CHANNELS = 2;
 
@@ -45,6 +45,11 @@ interface DecodedSampleRange extends SampleRange {
   track: ScheduledTrack;
 }
 
+interface PreparedAudioBatch {
+  batch: DecodedSampleRange[];
+  generation: number;
+}
+
 interface ScheduledTrack {
   abortController: AbortController | null;
   cursorFrame: number;
@@ -75,6 +80,7 @@ class WebAudioEngine {
   private playbackRate = 1;
   private pumpFrame: number | null = null;
   private batchInFlight = false;
+  private preparedBatch: PreparedAudioBatch | null = null;
 
   constructor(
     private readonly context: AudioContext,
@@ -152,20 +158,102 @@ class WebAudioEngine {
     }
 
     if (this.isPlaying && this.hasTracks && (membershipChanged || processingChanged)) {
+      this.preparedBatch = null;
       this.seek(playbackPositionFrame / SAMPLE_RATE);
     } else if (this.isPlaying && this.hasTracks) {
       this.requestPump();
     } else {
+      if (membershipChanged || processingChanged) {
+        this.generation += 1;
+        this.batchInFlight = false;
+        this.preparedBatch = null;
+        this.stopSources();
+        for (const track of this.tracks.values()) {
+          track.generation = this.generation;
+          track.cursorFrame = playbackPositionFrame;
+          track.scheduledThroughFrame = playbackPositionFrame;
+        }
+      }
       this.cancelPump();
     }
   }
 
   async startAt(seconds: number): Promise<void> {
     if (!this.hasTracks || this.durationFrames <= 0) return;
+    const startFrame = this.secondsToFrame(seconds);
+    const prepared = this.preparedBatch;
+    const canUsePreparedBatch =
+      prepared?.generation === this.generation &&
+      prepared.batch.length > 0 &&
+      startFrame >= prepared.batch[0]!.startFrame &&
+      startFrame < prepared.batch[0]!.endFrame;
+
+    if (!canUsePreparedBatch) this.generation += 1;
+    const generation = this.generation;
+    this.isPlaying = false;
+    this.batchInFlight = true;
+    this.cancelPump();
+    this.stopSources();
+    this.preparedBatch = null;
+    this.anchorPositionFrame = startFrame;
+    this.nextScheduledFrame = startFrame;
+    for (const track of this.tracks.values()) {
+      track.generation = generation;
+      track.scheduledThroughFrame = startFrame;
+      if (!canUsePreparedBatch) track.cursorFrame = startFrame;
+    }
+
+    try {
+      if (!canUsePreparedBatch) await this.context.resume();
+      if (generation !== this.generation) return;
+
+      const firstBatch = canUsePreparedBatch
+        ? prepared.batch
+        : await this.decodeBatch(generation, startFrame, this.nextChunkEndFrame(startFrame));
+
+      if (generation !== this.generation) return;
+
+      const scheduledStart = this.context.currentTime + AUDIO_START_LEAD_SECONDS;
+      this.anchorContextTime = scheduledStart;
+      this.anchorPositionFrame = startFrame;
+      this.nextScheduledContextTime = scheduledStart;
+      if (canUsePreparedBatch) {
+        this.schedulePreparedBatch(firstBatch, startFrame, scheduledStart);
+      } else {
+        this.scheduleBatch(firstBatch, scheduledStart);
+      }
+      this.isPlaying = true;
+      this.batchInFlight = false;
+      this.requestPump();
+    } finally {
+      if (generation === this.generation) this.batchInFlight = false;
+    }
+  }
+
+  startPreparedAt(seconds: number): Promise<void> {
+    if (!this.hasTracks || this.durationFrames <= 0) return Promise.resolve();
+    const startFrame = this.secondsToFrame(seconds);
+    const firstRange = this.preparedBatch?.batch[0];
+    if (
+      this.preparedBatch?.generation !== this.generation ||
+      !firstRange ||
+      startFrame < firstRange.startFrame ||
+      startFrame >= firstRange.endFrame
+    ) {
+      return Promise.reject(
+        new Error("Prepared audio does not cover the requested start position."),
+      );
+    }
+    return this.startAt(seconds);
+  }
+
+  async prepareAt(seconds: number): Promise<void> {
+    if (!this.hasTracks || this.durationFrames <= 0) return;
     this.generation += 1;
     const generation = this.generation;
     this.isPlaying = false;
     this.batchInFlight = true;
+    this.preparedBatch = null;
     this.cancelPump();
     this.stopSources();
     const startFrame = this.secondsToFrame(seconds);
@@ -179,24 +267,18 @@ class WebAudioEngine {
 
     try {
       await this.context.resume();
-      if (generation !== this.generation) return;
-
-      const firstBatch = await this.decodeBatch(
+      if (generation !== this.generation) {
+        throw new Error("Audio preparation was interrupted.");
+      }
+      const batch = await this.decodeBatch(
         generation,
         startFrame,
         this.nextChunkEndFrame(startFrame),
       );
 
-      if (generation !== this.generation) return;
-
-      const scheduledStart = this.context.currentTime + START_LEAD_SECONDS;
-      this.anchorContextTime = scheduledStart;
-      this.anchorPositionFrame = startFrame;
-      this.nextScheduledContextTime = scheduledStart;
-      this.scheduleBatch(firstBatch, scheduledStart);
-      this.isPlaying = true;
-      this.batchInFlight = false;
-      this.requestPump();
+      if (generation !== this.generation) throw new Error("Audio preparation was interrupted.");
+      if (batch.length === 0 && this.hasTracks) throw new Error("Audio preparation failed.");
+      if (batch.length > 0) this.preparedBatch = { batch, generation };
     } finally {
       if (generation === this.generation) this.batchInFlight = false;
     }
@@ -206,6 +288,7 @@ class WebAudioEngine {
     this.anchorPositionFrame = this.currentPositionFrame();
     this.isPlaying = false;
     this.generation += 1;
+    this.preparedBatch = null;
     this.batchInFlight = false;
     this.cancelPump();
     this.stopSources();
@@ -233,10 +316,6 @@ class WebAudioEngine {
     const position = this.currentPositionFrame();
     this.playbackRate = rate;
     if (this.isPlaying) this.seek(position / SAMPLE_RATE);
-  }
-
-  async resumeAudioContext(): Promise<void> {
-    await this.context.resume();
   }
 
   close(): void {
@@ -384,9 +463,52 @@ class WebAudioEngine {
       sharedStart + (endFrame - startFrame) / SAMPLE_RATE / this.playbackRate;
   }
 
-  private schedule(range: DecodedSampleRange, contextStart: number): void {
-    const { buffer, endFrame, startFrame, track } = range;
-    if (startFrame !== track.scheduledThroughFrame) {
+  private schedulePreparedBatch(
+    batch: DecodedSampleRange[],
+    startFrame: number,
+    contextStart: number,
+  ): void {
+    if (batch.length !== this.tracks.size || batch.length === 0) {
+      throw new Error("Prepared audio batch does not include every active track.");
+    }
+    const firstRange = batch[0]!;
+    if (startFrame < firstRange.startFrame || startFrame >= firstRange.endFrame) {
+      throw new Error("Prepared audio does not cover the requested playback position.");
+    }
+    for (const range of batch) {
+      if (
+        range.startFrame !== firstRange.startFrame ||
+        range.endFrame !== firstRange.endFrame ||
+        range.track.scheduledThroughFrame !== startFrame
+      ) {
+        throw new Error("Prepared audio tracks cannot schedule different sample ranges.");
+      }
+    }
+
+    let sharedStart = contextStart;
+    const earliestSafeStart = this.context.currentTime + MIN_SCHEDULE_LEAD_SECONDS;
+    if (sharedStart < earliestSafeStart) {
+      sharedStart = earliestSafeStart;
+      this.anchorContextTime = sharedStart;
+      this.anchorPositionFrame = startFrame;
+    }
+
+    for (const range of batch) this.schedule(range, sharedStart, startFrame);
+    this.nextScheduledFrame = firstRange.endFrame;
+    this.nextScheduledContextTime =
+      sharedStart + (firstRange.endFrame - startFrame) / SAMPLE_RATE / this.playbackRate;
+  }
+
+  private schedule(
+    range: DecodedSampleRange,
+    contextStart: number,
+    scheduledStartFrame = range.startFrame,
+  ): void {
+    const { buffer, endFrame, track } = range;
+    if (scheduledStartFrame < range.startFrame || scheduledStartFrame >= endFrame) {
+      throw new Error("Audio playback cannot start outside its decoded sample range.");
+    }
+    if (scheduledStartFrame !== track.scheduledThroughFrame) {
       throw new Error("Audio buffer sample ranges contain a gap or overlap.");
     }
     const source = this.context.createBufferSource();
@@ -401,7 +523,7 @@ class WebAudioEngine {
         this.onEnded();
       }
     };
-    source.start(contextStart);
+    source.start(contextStart, (scheduledStartFrame - range.startFrame) / SAMPLE_RATE);
     track.nodes.add(source);
     track.scheduledThroughFrame = endFrame;
   }
@@ -525,5 +647,5 @@ class WebAudioEngine {
   }
 }
 
-export { WebAudioEngine };
+export { AUDIO_START_LEAD_SECONDS, WebAudioEngine };
 export type { DecodeChunk, PcmChunk, WebAudioTrack };

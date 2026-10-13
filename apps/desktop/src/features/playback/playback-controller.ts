@@ -7,10 +7,11 @@ interface PlaybackAudioAdapter {
   hasActiveOutput: boolean;
   isReady: boolean;
   pause: () => void;
-  resume: () => Promise<void>;
+  prepareAt: (seconds: number) => Promise<void>;
   seek: (seconds: number) => void;
   setPlaybackRate: (rate: number) => void;
-  startAt: (seconds: number) => Promise<void>;
+  startLeadSeconds: number;
+  startPreparedAt: (seconds: number) => Promise<void>;
 }
 
 interface PlaybackVideoAdapter {
@@ -54,6 +55,8 @@ class PlaybackController {
   private driver: PlaybackDriver | null = null;
   private unregisterMediaObserver: (() => void) | null = null;
   private playbackFrame: PlaybackFrame | null = null;
+  private startupFrame: PlaybackFrame | null = null;
+  private resolveStartupFrameWait: (() => void) | null = null;
   private startupGeneration = 0;
   private mediaSessionId: number | null | undefined;
   private lifecycle: "paused" | "starting" | "playing" = "paused";
@@ -232,7 +235,7 @@ class PlaybackController {
     const driver = this.driver;
     if (!driver) return;
     try {
-      await driver.audio.resume();
+      await driver.audio.prepareAt(seconds);
       if (!this.isCurrentStartup(generation)) return;
 
       await new Promise<void>((resolve) => {
@@ -240,11 +243,19 @@ class PlaybackController {
       });
       if (!this.isCurrentStartup(generation)) return;
 
-      await driver.audio.startAt(seconds);
-      if (!this.isCurrentStartup(generation)) return;
-
       this.mediaStartRequested = true;
       await driver.video.play();
+      if (!this.isCurrentStartup(generation)) return;
+
+      const videoPosition = driver.video.getCurrentTimeSeconds() ?? seconds;
+      const audioStartPosition = videoPosition + driver.audio.startLeadSeconds;
+      await driver.audio.startPreparedAt(audioStartPosition);
+      if (!this.isCurrentStartup(generation)) return;
+
+      if (driver.audio.getCurrentTimeSeconds() !== null) {
+        const reachedSharedStart = await this.waitForVideoPosition(generation, audioStartPosition);
+        if (!reachedSharedStart) return;
+      }
       if (this.isCurrentStartup(generation)) this.finishStartup();
     } catch {
       if (this.isCurrentStartup(generation)) this.pause();
@@ -264,6 +275,46 @@ class PlaybackController {
   private cancelStartup() {
     this.startupGeneration += 1;
     this.mediaStartRequested = false;
+    this.startupFrame?.cancel();
+    this.startupFrame = null;
+    this.resolveStartupFrameWait?.();
+    this.resolveStartupFrameWait = null;
+  }
+
+  private waitForVideoPosition(generation: number, targetSeconds: number): Promise<boolean> {
+    const driver = this.driver;
+    if (!driver || !this.isCurrentStartup(generation)) return Promise.resolve(false);
+    const currentPosition = driver.video.getCurrentTimeSeconds();
+    if (currentPosition !== null && currentPosition >= targetSeconds) return Promise.resolve(true);
+
+    return new Promise((resolve) => {
+      const finish = (reached: boolean) => {
+        this.startupFrame = null;
+        this.resolveStartupFrameWait = null;
+        resolve(reached);
+      };
+
+      const checkPosition = (_timestamp: number, mediaTimeSeconds: number) => {
+        this.startupFrame = null;
+        if (!this.isCurrentStartup(generation)) {
+          finish(false);
+          return;
+        }
+        if (mediaTimeSeconds >= targetSeconds) {
+          finish(true);
+          return;
+        }
+
+        const frame = driver.video.requestPlaybackFrame(checkPosition);
+        if (frame) this.startupFrame = frame;
+        else finish(false);
+      };
+
+      this.resolveStartupFrameWait = () => finish(false);
+      const frame = driver.video.requestPlaybackFrame(checkPosition);
+      if (frame) this.startupFrame = frame;
+      else finish(false);
+    });
   }
 
   private setPosition(positionMicros: number) {

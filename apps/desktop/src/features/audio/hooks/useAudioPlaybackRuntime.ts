@@ -14,7 +14,7 @@ import {
 
 import type { AudioPlaybackAdapter } from "../contexts/audio-transport-context";
 import { AudioPlaybackSession } from "../lib/audio-playback-session";
-import type { WebAudioTrack } from "../lib/web-audio-engine";
+import { AUDIO_START_LEAD_SECONDS, type WebAudioTrack } from "../lib/web-audio-engine";
 
 function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
@@ -95,18 +95,21 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
 
   const pause = useCallback(() => sessionRef.current?.pause(), []);
 
-  const startAt = useCallback(
-    (seconds: number) => sessionRef.current?.startAt(seconds) ?? Promise.resolve(),
-    [],
-  );
-
   const seek = useCallback((seconds: number) => sessionRef.current?.seek(seconds), []);
 
   const setPlaybackRate = useCallback((rate: number) => {
     sessionRef.current?.setPlaybackRate(rate);
   }, []);
 
-  const resume = useCallback(() => sessionRef.current?.resume() ?? Promise.resolve(), []);
+  const prepareAt = useCallback(
+    (seconds: number) => sessionRef.current?.prepareAt(seconds) ?? Promise.resolve(),
+    [],
+  );
+
+  const startPreparedAt = useCallback(
+    (seconds: number) => sessionRef.current?.startPreparedAt(seconds) ?? Promise.resolve(),
+    [],
+  );
 
   const getCurrentTimeSeconds = useCallback(() => {
     const session = sessionRef.current;
@@ -128,20 +131,21 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       hasActiveOutput,
       isReady,
       pause,
-      resume,
+      prepareAt,
       seek,
       setPlaybackRate,
-      startAt,
+      startPreparedAt,
+      startLeadSeconds: AUDIO_START_LEAD_SECONDS,
     }),
     [
       getCurrentTimeSeconds,
       hasActiveOutput,
       isReady,
       pause,
-      resume,
+      prepareAt,
       seek,
       setPlaybackRate,
-      startAt,
+      startPreparedAt,
     ],
   );
 }

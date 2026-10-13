@@ -171,6 +171,32 @@ describe("WebAudioEngine", () => {
     engine.close();
   });
 
+  it("starts a prepared audio range at the synchronized position without decoding again", async () => {
+    const { context, sources } = createContext();
+    const decode = vi.fn(
+      async (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+        chunk(durationMicros),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(4_000_000);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+    ]);
+
+    await engine.prepareAt(1);
+    await expect(engine.startPreparedAt(3)).rejects.toThrow(
+      "Prepared audio does not cover the requested start position.",
+    );
+    await engine.startPreparedAt(1.2);
+
+    expect(decode.mock.calls[0]?.[1]).toBe(1_000_000);
+    expect(decode.mock.calls.some(([, startMicros]) => startMicros === 1_200_000)).toBe(false);
+    expect(sources[0]?.start).toHaveBeenCalledWith(5.15, 0.2);
+    expect(engine.currentTimeSeconds).toBeCloseTo(1.2);
+    engine.close();
+  });
+
   it("discards an in-flight chunk when a seek invalidates its generation", async () => {
     const { context, sources } = createContext();
     let resolveChunk: ((value: ReturnType<typeof chunk>) => void) | undefined;

@@ -58,10 +58,11 @@ function EditorRuntimeTestProvider({
           hasActiveOutput: usesWebAudio,
           isReady: false,
           pause: noOperation,
-          resume: async () => undefined,
+          prepareAt: async () => undefined,
           seek: noOperation,
           setPlaybackRate: noOperation,
-          startAt: async () => undefined,
+          startPreparedAt: async () => undefined,
+          startLeadSeconds: 0.15,
         },
         video: {
           getCurrentTimeSeconds: () => null,
@@ -86,10 +87,11 @@ function EditorRuntimeTestProvider({
     hasActiveOutput: usesWebAudio,
     isReady: false,
     pause: noOperation,
-    resume: async () => undefined,
+    prepareAt: async () => undefined,
     seek: noOperation,
     setPlaybackRate: noOperation,
-    startAt: async () => undefined,
+    startPreparedAt: async () => undefined,
+    startLeadSeconds: 0.15,
   } satisfies AudioPlaybackAdapter;
 
   return (

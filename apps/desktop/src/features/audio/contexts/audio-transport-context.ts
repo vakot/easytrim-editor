@@ -5,10 +5,11 @@ interface AudioPlaybackAdapter {
   hasActiveOutput: boolean;
   isReady: boolean;
   pause: () => void;
-  resume: () => Promise<void>;
+  prepareAt: (seconds: number) => Promise<void>;
   seek: (seconds: number) => void;
   setPlaybackRate: (rate: number) => void;
-  startAt: (seconds: number) => Promise<void>;
+  startLeadSeconds: number;
+  startPreparedAt: (seconds: number) => Promise<void>;
 }
 
 const AudioTransportContext = createContext<AudioPlaybackAdapter | null>(null);

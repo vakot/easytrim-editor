@@ -53,8 +53,12 @@ class AudioPlaybackSession {
     this.engine.pause();
   }
 
-  startAt(seconds: number) {
-    return this.engine.startAt(seconds);
+  prepareAt(seconds: number) {
+    return this.engine.prepareAt(seconds);
+  }
+
+  startPreparedAt(seconds: number) {
+    return this.engine.startPreparedAt(seconds);
   }
 
   seek(seconds: number) {
@@ -63,10 +67,6 @@ class AudioPlaybackSession {
 
   setPlaybackRate(rate: number) {
     this.engine.setPlaybackRate(rate);
-  }
-
-  resume() {
-    return this.engine.resumeAudioContext();
   }
 
   close() {
