@@ -1,9 +1,10 @@
-import type { AudioTrackLimiter, AudioTrackSelection } from "@/domain/audio-processing";
+import type { AudioTrackHighPass, AudioTrackSelection } from "@/domain/audio-processing";
 
 import {
+  connectAudioTrackRuntime,
   connectPlaybackAudioGraph,
   disconnectAudioTrackRuntime,
-  updateAudioTrackLimiter,
+  updateAudioTrackHighPass,
 } from "./audio-playback-graph";
 import { disconnectStereoAudioMeterNodes, type StereoAudioMeterNodes } from "./stereo-audio-meter";
 
@@ -22,7 +23,7 @@ interface PcmChunk {
 
 interface WebAudioTrack {
   gainDb: number;
-  limiterProcessing?: AudioTrackLimiter;
+  liveHighPassEffects: AudioTrackHighPass[];
   selection: AudioTrackSelection;
   streamIndex: number;
 }
@@ -49,9 +50,9 @@ interface ScheduledTrack {
   cursorFrame: number;
   gain: GainNode;
   generation: number;
-  limiter: WaveShaperNode | null;
-  limiterKey: string;
-  limiterProcessing?: AudioTrackLimiter;
+  highPassFilters: ReturnType<typeof connectAudioTrackRuntime>["highPassFilters"];
+  input: GainNode;
+  liveHighPassKey: string;
   nodes: Set<AudioBufferSourceNode>;
   scheduledThroughFrame: number;
   selection: AudioTrackSelection;
@@ -113,7 +114,6 @@ class WebAudioEngine {
     const track = this.tracks.get(streamIndex);
     if (!track) return;
     track.gain.gain.setTargetAtTime(10 ** (gainDb / 20), this.context.currentTime, 0.015);
-    updateAudioTrackLimiter(this.context, track, this.audioMix, track.limiterProcessing);
   }
 
   setMono(mono: boolean): void {
@@ -133,7 +133,7 @@ class WebAudioEngine {
     let processingChanged = false;
     for (const track of tracks) {
       const key = JSON.stringify(track.selection);
-      const limiterKey = JSON.stringify(track.limiterProcessing ?? null);
+      const liveHighPassKey = JSON.stringify(track.liveHighPassEffects);
       const current = this.tracks.get(track.streamIndex);
       if (current && current.selectionKey !== key) {
         processingChanged = true;
@@ -141,12 +141,11 @@ class WebAudioEngine {
         current.selectionKey = key;
       }
 
-      const scheduled = current ?? this.createTrack(track, key, limiterKey);
+      const scheduled = current ?? this.createTrack(track, key, liveHighPassKey);
       const now = this.context.currentTime;
-      if (current && current.limiterKey !== limiterKey) {
-        scheduled.limiterKey = limiterKey;
-        scheduled.limiterProcessing = track.limiterProcessing;
-        updateAudioTrackLimiter(this.context, scheduled, this.audioMix, track.limiterProcessing);
+      if (current && scheduled.liveHighPassKey !== liveHighPassKey) {
+        scheduled.liveHighPassKey = liveHighPassKey;
+        updateAudioTrackHighPass(this.context, scheduled, track.liveHighPassEffects);
       }
       scheduled.gain.gain.cancelScheduledValues(now);
       scheduled.gain.gain.setTargetAtTime(10 ** (track.gainDb / 20), now, 0.015);
@@ -255,17 +254,17 @@ class WebAudioEngine {
   private createTrack(
     track: WebAudioTrack,
     selectionKey: string,
-    limiterKey: string,
+    liveHighPassKey: string,
   ): ScheduledTrack {
-    const gain = this.context.createGain();
+    const runtime = connectAudioTrackRuntime(this.context, this.audioMix);
     const scheduled: ScheduledTrack = {
       abortController: null,
       cursorFrame: this.anchorPositionFrame,
       generation: this.generation,
-      gain,
-      limiter: null,
-      limiterKey,
-      limiterProcessing: track.limiterProcessing,
+      gain: runtime.gain,
+      highPassFilters: runtime.highPassFilters,
+      liveHighPassKey,
+      input: runtime.input,
       nodes: new Set(),
       scheduledThroughFrame: this.anchorPositionFrame,
       selectionKey,
@@ -273,8 +272,7 @@ class WebAudioEngine {
       streamIndex: track.streamIndex,
     };
 
-    gain.connect(this.audioMix);
-    updateAudioTrackLimiter(this.context, scheduled, this.audioMix, track.limiterProcessing);
+    updateAudioTrackHighPass(this.context, scheduled, track.liveHighPassEffects);
     this.tracks.set(track.streamIndex, scheduled);
     return scheduled;
   }
@@ -394,7 +392,7 @@ class WebAudioEngine {
     const source = this.context.createBufferSource();
     source.buffer = buffer;
     source.playbackRate.value = this.playbackRate;
-    source.connect(track.gain);
+    source.connect(track.input);
     source.onended = () => {
       source.disconnect();
       track.nodes.delete(source);

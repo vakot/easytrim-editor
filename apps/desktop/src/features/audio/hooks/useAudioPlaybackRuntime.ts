@@ -5,10 +5,10 @@ import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectPlaybackVolumePercent } from "@/app/store/slices/preferences-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 import {
-  audioTrackPlaybackProcessing,
+  audioTrackPlaybackFfmpegProcessing,
   type AudioTrackSelection,
   effectiveAudioTrackGainDb,
-  getAudioTrackSignalEffect,
+  getAudioTrackLiveHighPassEffects,
 } from "@/domain/audio-processing";
 import { decodeAudioPlaybackChunk } from "@/lib/tauri/media";
 
@@ -51,17 +51,14 @@ function useAudioPlaybackRuntime({
         }
         const selection: AudioTrackSelection = {
           ...loudnessAnalysis,
-          processing: audioTrackPlaybackProcessing(track.processing),
+          processing: audioTrackPlaybackFfmpegProcessing(track.processing),
           streamIndex: track.streamIndex,
         };
 
         return [
           {
             gainDb: effectiveAudioTrackGainDb(track.processing),
-            limiterProcessing:
-              track.processing.loudnessNormalization === undefined
-                ? getAudioTrackSignalEffect(track.processing, "limiter")
-                : undefined,
+            liveHighPassEffects: getAudioTrackLiveHighPassEffects(track.processing),
             selection,
             streamIndex: track.streamIndex,
           },
@@ -76,13 +73,7 @@ function useAudioPlaybackRuntime({
     const engine = new WebAudioEngine(
       context,
       (selection, startMicros, chunkDurationMicros, signal) =>
-        decodeAudioPlaybackChunk(
-          sourcePath,
-          selection,
-          startMicros,
-          chunkDurationMicros,
-          signal,
-        ),
+        decodeAudioPlaybackChunk(sourcePath, selection, startMicros, chunkDurationMicros, signal),
       () => undefined,
     );
 
@@ -141,18 +132,21 @@ function useAudioPlaybackRuntime({
     return engine ? engine.startAt(seconds) : Promise.resolve();
   }, []);
 
-  const syncTo = useCallback((seconds: number, force = false) => {
-    if (force) {
-      engineRef.current?.seek(seconds);
-      return;
-    }
-    const video = videoRef.current;
-    if (!video || video.paused || video.ended) return;
-    const now = performance.now();
-    if (now - lastVideoSyncAtRef.current < 500) return;
-    lastVideoSyncAtRef.current = now;
-    if (Math.abs(video.currentTime - seconds) > 0.12) video.currentTime = seconds;
-  }, [videoRef]);
+  const syncTo = useCallback(
+    (seconds: number, force = false) => {
+      if (force) {
+        engineRef.current?.seek(seconds);
+        return;
+      }
+      const video = videoRef.current;
+      if (!video || video.paused || video.ended) return;
+      const now = performance.now();
+      if (now - lastVideoSyncAtRef.current < 500) return;
+      lastVideoSyncAtRef.current = now;
+      if (Math.abs(video.currentTime - seconds) > 0.12) video.currentTime = seconds;
+    },
+    [videoRef],
+  );
 
   const setPlaybackRate = useCallback((rate: number) => {
     engineRef.current?.setPlaybackRate(rate);
@@ -187,7 +181,8 @@ function useAudioPlaybackRuntime({
   const clearLiveAudioTrackGain = useCallback(
     (streamIndex: number) => {
       const track = audioTracks.find((candidate) => candidate.streamIndex === streamIndex);
-      if (track) engineRef.current?.setTrackGain(streamIndex, effectiveAudioTrackGainDb(track.processing));
+      if (track)
+        engineRef.current?.setTrackGain(streamIndex, effectiveAudioTrackGainDb(track.processing));
     },
     [audioTracks],
   );

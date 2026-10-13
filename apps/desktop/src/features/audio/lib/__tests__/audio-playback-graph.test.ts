@@ -1,13 +1,25 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  connectAudioTrackRuntime,
   connectPlaybackAudioGraph,
   disconnectAudioTrackRuntime,
-  updateAudioTrackLimiter,
+  updateAudioTrackHighPass,
 } from "../audio-playback-graph";
 
-const limiterAt = (ceilingDb: number) =>
-  ({ ceilingDb, stage: "finalProtection", type: "limiter" }) as const;
+function parameter() {
+  return { setTargetAtTime: vi.fn(), value: 0 };
+}
+
+function filter() {
+  return {
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    frequency: parameter(),
+    Q: parameter(),
+    type: "highpass",
+  } as unknown as BiquadFilterNode;
+}
 
 describe("playback audio graph", () => {
   it("meters per-track output before global playback-volume attenuation", () => {
@@ -32,58 +44,47 @@ describe("playback audio graph", () => {
     expect(outputGain.connect).toHaveBeenCalledWith(destination);
   });
 
-  it("disconnects and recreates the runtime Limiter graph symmetrically", () => {
-    const firstLimiter = {
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-      oversample: "none",
-      curve: null,
-    } as unknown as WaveShaperNode;
-
-    const secondLimiter = {
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-      oversample: "none",
-      curve: null,
-    } as unknown as WaveShaperNode;
-
+  it("routes live high-pass stages around gain and updates their parameters in place", () => {
+    const cleanup = filter();
+    const dynamics = filter();
+    const finalProtection = filter();
+    const input = { connect: vi.fn(), disconnect: vi.fn() } as unknown as GainNode;
     const gain = { connect: vi.fn(), disconnect: vi.fn() } as unknown as GainNode;
-    const source = { disconnect: vi.fn() } as unknown as MediaElementAudioSourceNode;
     const audioMix = { connect: vi.fn() } as unknown as GainNode;
     const context = {
-      createWaveShaper: vi
+      createBiquadFilter: vi
         .fn()
-        .mockReturnValueOnce(firstLimiter)
-        .mockReturnValueOnce(secondLimiter),
+        .mockReturnValueOnce(cleanup)
+        .mockReturnValueOnce(dynamics)
+        .mockReturnValueOnce(finalProtection),
+      createGain: vi.fn().mockReturnValueOnce(input).mockReturnValueOnce(gain),
+      currentTime: 2,
     } as unknown as AudioContext;
 
-    const nodes: {
-      gain: GainNode;
-      limiter: WaveShaperNode | null;
-      source: MediaElementAudioSourceNode;
-    } = { gain, limiter: null, source };
+    const nodes = connectAudioTrackRuntime(context, audioMix);
 
-    updateAudioTrackLimiter(context, nodes, audioMix, limiterAt(-1));
-    expect(nodes.limiter).toBe(firstLimiter);
-    expect(gain.disconnect).toHaveBeenCalledTimes(1);
-    expect(gain.connect).toHaveBeenLastCalledWith(firstLimiter);
-    expect(firstLimiter.connect).toHaveBeenCalledWith(audioMix);
+    expect(input.connect).toHaveBeenCalledWith(cleanup);
+    expect(cleanup.connect).toHaveBeenCalledWith(dynamics);
+    expect(dynamics.connect).toHaveBeenCalledWith(gain);
+    expect(gain.connect).toHaveBeenCalledWith(finalProtection);
+    expect(finalProtection.connect).toHaveBeenCalledWith(audioMix);
+    expect(cleanup.Q.value).toBeCloseTo(Math.SQRT1_2);
 
-    updateAudioTrackLimiter(context, nodes, audioMix, undefined);
-    expect(gain.disconnect).toHaveBeenCalledTimes(2);
-    expect(firstLimiter.disconnect).toHaveBeenCalledTimes(1);
-    expect(nodes.limiter).toBeNull();
-    expect(gain.connect).toHaveBeenLastCalledWith(audioMix);
+    updateAudioTrackHighPass(context, nodes, [
+      { cutoffHz: 80, stage: "cleanup", type: "highPass" },
+      { cutoffHz: 120, stage: "finalProtection", type: "highPass" },
+    ]);
 
-    updateAudioTrackLimiter(context, nodes, audioMix, limiterAt(-2));
-    expect(nodes.limiter).toBe(secondLimiter);
-    expect(gain.disconnect).toHaveBeenCalledTimes(3);
-    expect(gain.connect).toHaveBeenLastCalledWith(secondLimiter);
-    expect(secondLimiter.connect).toHaveBeenCalledWith(audioMix);
+    expect(cleanup.frequency.setTargetAtTime).toHaveBeenCalledWith(80, 2, 0.015);
+    expect(dynamics.frequency.setTargetAtTime).toHaveBeenCalledWith(0, 2, 0.015);
+    expect(finalProtection.frequency.setTargetAtTime).toHaveBeenCalledWith(120, 2, 0.015);
 
     disconnectAudioTrackRuntime(nodes);
-    expect(source.disconnect).toHaveBeenCalledTimes(1);
-    expect(gain.disconnect).toHaveBeenCalledTimes(4);
-    expect(secondLimiter.disconnect).toHaveBeenCalledTimes(1);
+
+    expect(input.disconnect).toHaveBeenCalledOnce();
+    expect(gain.disconnect).toHaveBeenCalledOnce();
+    expect(cleanup.disconnect).toHaveBeenCalledOnce();
+    expect(dynamics.disconnect).toHaveBeenCalledOnce();
+    expect(finalProtection.disconnect).toHaveBeenCalledOnce();
   });
 });

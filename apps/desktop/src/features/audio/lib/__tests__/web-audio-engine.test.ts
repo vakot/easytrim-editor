@@ -24,15 +24,39 @@ function node() {
 
 function createContext() {
   const sources: Array<
-    ReturnType<typeof node> & { buffer: AudioBuffer | null; start: ReturnType<typeof vi.fn> }
+    ReturnType<typeof node> & {
+      buffer: AudioBuffer | null;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }
   > = [];
 
   const gains: ReturnType<typeof node>[] = [];
+  const filters: Array<{
+    connect: ReturnType<typeof vi.fn>;
+    disconnect: ReturnType<typeof vi.fn>;
+    frequency: ReturnType<typeof parameter>;
+    Q: ReturnType<typeof parameter>;
+    type: BiquadFilterType;
+  }> = [];
+
   let currentTime = 5;
   const context = {
     destination: node(),
     close: vi.fn(async () => undefined),
     createAnalyser: vi.fn(() => ({ ...node(), fftSize: 2048, getFloatTimeDomainData: vi.fn() })),
+    createBiquadFilter: vi.fn(() => {
+      const filter = {
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        frequency: parameter(0),
+        Q: parameter(Math.SQRT1_2),
+        type: "highpass" as BiquadFilterType,
+      };
+
+      filters.push(filter);
+      return filter;
+    }),
     createBuffer: vi.fn((_channels: number, frames: number, sampleRate: number) => ({
       duration: frames / sampleRate,
       getChannelData: () => new Float32Array(frames),
@@ -56,7 +80,6 @@ function createContext() {
       gains.push(gain);
       return gain;
     }),
-    createWaveShaper: vi.fn(() => ({ ...node(), curve: null, oversample: "none" })),
     resume: vi.fn(async () => undefined),
   } as unknown as AudioContext;
 
@@ -65,6 +88,7 @@ function createContext() {
   return {
     context,
     gains,
+    filters,
     sources,
     setCurrentTime: (nextTime: number) => {
       currentTime = nextTime;
@@ -92,7 +116,7 @@ afterEach(() => {
 
 describe("WebAudioEngine", () => {
   it("schedules every active track against the same AudioContext time", async () => {
-    const { context, sources } = createContext();
+    const { context, filters, sources } = createContext();
     const decode = vi.fn(
       async (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
         chunk(durationMicros),
@@ -102,19 +126,21 @@ describe("WebAudioEngine", () => {
     engine.setDuration(4_000_000);
     const tracks = [1, 2, 3, 4].map((streamIndex) => ({
       gainDb: streamIndex,
-      limiterProcessing: {
-        ceilingDb: -1,
-        stage: "finalProtection" as const,
-        type: "limiter" as const,
-      },
+      liveHighPassEffects: [
+        { cutoffHz: 80 + streamIndex, stage: "cleanup" as const, type: "highPass" as const },
+      ],
       selection: {
         processing: {
           effects: [
-            { cutoffHz: 80 + streamIndex, stage: "cleanup" as const, type: "highPass" as const },
             {
               preset: "medium" as const,
               stage: "cleanup" as const,
               type: "noiseReduction" as const,
+            },
+            {
+              ceilingDb: -1,
+              stage: "finalProtection" as const,
+              type: "limiter" as const,
             },
           ],
           gainDb: 0,
@@ -129,7 +155,10 @@ describe("WebAudioEngine", () => {
     await engine.startAt(1.25);
 
     expect(decode).toHaveBeenCalledTimes(8);
-    expect(context.createWaveShaper).toHaveBeenCalledTimes(4);
+    expect(context.createBiquadFilter).toHaveBeenCalledTimes(12);
+    expect(
+      filters.filter((filter) => filter.frequency.setTargetAtTime.mock.calls.at(-1)?.[0] > 0),
+    ).toHaveLength(4);
     expect(sources.length).toBeGreaterThanOrEqual(4);
     expect(sources.map((source) => source.start.mock.calls[0]?.[0])).toEqual([
       sources[0]?.start.mock.calls[0]?.[0],
@@ -154,7 +183,9 @@ describe("WebAudioEngine", () => {
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(4_000_000);
-    engine.setTracks([{ gainDb: 0, selection: selection(2), streamIndex: 2 }]);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(2), streamIndex: 2 },
+    ]);
 
     const starting = engine.startAt(0);
     await Promise.resolve();
@@ -178,7 +209,9 @@ describe("WebAudioEngine", () => {
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(8_000_000);
-    engine.setTracks([{ gainDb: 0, selection: selection(1), streamIndex: 1 }]);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+    ]);
 
     const starting = engine.startAt(1);
     await Promise.resolve();
@@ -220,7 +253,9 @@ describe("WebAudioEngine", () => {
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(8_000_000);
-    engine.setTracks([{ gainDb: 0, selection: selection(1), streamIndex: 1 }]);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+    ]);
     await engine.startAt(0);
     const sourceCountBeforeSeek = sources.length;
 
@@ -234,6 +269,74 @@ describe("WebAudioEngine", () => {
     setCurrentTime(51.15);
     expect(engine.currentTimeSeconds).toBeCloseTo(5);
 
+    engine.close();
+  });
+
+  it("updates live processing without transport restart and reprimes for baked changes", async () => {
+    const { context, filters, sources } = createContext();
+    const decode = vi.fn(
+      async (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+        chunk(durationMicros),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(8_000_000);
+
+    const selectionWithNoiseReduction = {
+      processing: {
+        effects: [
+          { preset: "light" as const, stage: "cleanup" as const, type: "noiseReduction" as const },
+        ],
+        gainDb: 0,
+      },
+      streamIndex: 1,
+    };
+
+    engine.setTracks([
+      {
+        gainDb: 0,
+        liveHighPassEffects: [],
+        selection: selectionWithNoiseReduction,
+        streamIndex: 1,
+      },
+    ]);
+    await engine.startAt(0);
+    const firstSource = sources[0]!;
+
+    engine.setTracks([
+      {
+        gainDb: -3,
+        liveHighPassEffects: [{ cutoffHz: 120, stage: "cleanup", type: "highPass" }],
+        selection: selectionWithNoiseReduction,
+        streamIndex: 1,
+      },
+    ]);
+
+    expect(firstSource.stop).not.toHaveBeenCalled();
+    expect(filters[0]?.frequency.setTargetAtTime).toHaveBeenLastCalledWith(120, 5, 0.015);
+
+    engine.setTracks([
+      {
+        gainDb: -3,
+        liveHighPassEffects: [{ cutoffHz: 120, stage: "cleanup", type: "highPass" }],
+        selection: {
+          ...selectionWithNoiseReduction,
+          processing: {
+            effects: [
+              {
+                preset: "strong" as const,
+                stage: "cleanup" as const,
+                type: "noiseReduction" as const,
+              },
+            ],
+            gainDb: 0,
+          },
+        },
+        streamIndex: 1,
+      },
+    ]);
+
+    expect(firstSource.stop).toHaveBeenCalledOnce();
     engine.close();
   });
 
@@ -252,6 +355,7 @@ describe("WebAudioEngine", () => {
     engine.setTracks(
       [1, 2].map((streamIndex) => ({
         gainDb: 0,
+        liveHighPassEffects: [],
         selection: selection(streamIndex),
         streamIndex,
       })),
@@ -259,8 +363,8 @@ describe("WebAudioEngine", () => {
     await engine.startAt(1);
 
     engine.setTracks([
-      { gainDb: 0, selection: selection(2), streamIndex: 2 },
-      { gainDb: 0, selection: selection(3), streamIndex: 3 },
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(2), streamIndex: 2 },
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(3), streamIndex: 3 },
     ]);
     await Promise.resolve();
     await Promise.resolve();
@@ -280,7 +384,9 @@ describe("WebAudioEngine", () => {
     );
 
     engine.setDuration(2_000_000);
-    engine.setTracks([{ gainDb: -6, selection: selection(4), streamIndex: 4 }]);
+    engine.setTracks([
+      { gainDb: -6, liveHighPassEffects: [], selection: selection(4), streamIndex: 4 },
+    ]);
     const trackGain = gains.at(-1)!;
 
     engine.setOutputGain(0.5);
@@ -313,6 +419,7 @@ describe("WebAudioEngine", () => {
     engine.setTracks(
       [1, 2].map((streamIndex) => ({
         gainDb: 0,
+        liveHighPassEffects: [],
         selection: selection(streamIndex),
         streamIndex,
       })),

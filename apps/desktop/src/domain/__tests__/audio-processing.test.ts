@@ -6,13 +6,13 @@ import {
   audioTrackLevelMode,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
-  audioTrackPlaybackProcessing,
+  audioTrackPlaybackFfmpegProcessing,
   audioTrackPlaybackRuntimeGainDb,
   type AudioTrackProcessing,
   effectiveAudioTrackGainDb,
+  getAudioTrackLiveHighPassEffects,
   getAudioTrackSignalEffect,
   getAudioTrackSignalEffects,
-  limitAudioPlaybackSample,
   loudnessNormalizationTargets,
   normalizeAudioTrackDefaults,
   parseAudioTrackSignalEffects,
@@ -82,22 +82,42 @@ describe("audio track level policy", () => {
     expect(effectiveAudioTrackGainDb({ gainDb: processing.gainDb })).toBe(-2.5);
   });
 
-  it("keeps gain on the live track node while decoding processed PCM", () => {
+  it("keeps high-pass and gain live while decoding complex effects through FFmpeg", () => {
     const limited = {
       gainDb: 6,
-      effects: [{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }],
+      effects: [
+        { cutoffHz: 80, stage: "cleanup", type: "highPass" },
+        { preset: "medium", stage: "cleanup", type: "noiseReduction" },
+        { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+      ],
     } satisfies AudioTrackProcessing;
 
     const linear = { gainDb: 6 };
 
-    expect(audioTrackPlaybackProcessing(limited)).toEqual({ ...limited, effects: [], gainDb: 0 });
+    expect(audioTrackPlaybackFfmpegProcessing(limited)).toEqual({
+      ...limited,
+      effects: [
+        { preset: "medium", stage: "cleanup", type: "noiseReduction" },
+        { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+      ],
+      gainDb: 0,
+    });
+    expect(getAudioTrackLiveHighPassEffects(limited)).toEqual([
+      { cutoffHz: 80, stage: "cleanup", type: "highPass" },
+    ]);
     expect(audioTrackPlaybackRuntimeGainDb(limited)).toBe(6);
     expect(audioTrackPlaybackRuntimeGainDb(limited, 8)).toBe(8);
     const normalized = { ...limited, loudnessNormalization: "streaming" as const };
-    expect(audioTrackPlaybackProcessing(normalized)).toEqual({ ...normalized, gainDb: 0 });
-    expect(audioTrackPlaybackProcessing(linear)).toEqual({ gainDb: 0 });
+    expect(audioTrackPlaybackFfmpegProcessing(normalized)).toEqual({
+      ...normalized,
+      effects: [
+        { preset: "medium", stage: "cleanup", type: "noiseReduction" },
+        { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+      ],
+      gainDb: 0,
+    });
+    expect(audioTrackPlaybackFfmpegProcessing(linear)).toEqual({ gainDb: 0 });
     expect(audioTrackPlaybackRuntimeGainDb(linear)).toBe(6);
-    expect(limitAudioPlaybackSample(0.9 * 10 ** (6 / 20), -1)).toBeCloseTo(10 ** (-1 / 20));
   });
 
   it("treats normalization targets as analysis independent and reports its level targets", () => {

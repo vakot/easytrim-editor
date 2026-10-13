@@ -30,7 +30,7 @@ type AudioTrackSignalEffect =
       stage: "finalProtection";
       type: "limiter";
     };
-type AudioTrackLimiter = Extract<AudioTrackSignalEffect, { type: "limiter" }>;
+type AudioTrackHighPass = Extract<AudioTrackSignalEffect, { type: "highPass" }>;
 type NoiseReductionPreset = "light" | "medium" | "strong";
 
 interface CustomLoudnessNormalization {
@@ -84,14 +84,24 @@ function effectiveAudioTrackGainDb(processing: AudioTrackProcessing): number {
   return audioTrackLevelMode(processing) === "manual" ? processing.gainDb : 0;
 }
 
-function audioTrackPlaybackProcessing(processing: AudioTrackProcessing): AudioTrackProcessing {
+function audioTrackPlaybackFfmpegProcessing(
+  processing: AudioTrackProcessing,
+): AudioTrackProcessing {
+  // Web Audio owns high-pass and gain live; FFmpeg keeps noise reduction, normalization, and
+  // limiting aligned with export.
   return {
     ...processing,
     gainDb: 0,
-    ...(processing.loudnessNormalization === undefined && processing.effects
-      ? { effects: processing.effects.filter((effect) => effect.type !== "limiter") }
+    ...(processing.effects
+      ? { effects: processing.effects.filter((effect) => effect.type !== "highPass") }
       : {}),
   };
+}
+
+function getAudioTrackLiveHighPassEffects(processing: AudioTrackProcessing): AudioTrackHighPass[] {
+  return getAudioTrackSignalEffects(processing).filter(
+    (effect): effect is AudioTrackHighPass => effect.type === "highPass",
+  );
 }
 
 function audioTrackPlaybackRuntimeGainDb(
@@ -99,11 +109,6 @@ function audioTrackPlaybackRuntimeGainDb(
   liveGainDb = processing.gainDb,
 ): number {
   return processing.loudnessNormalization !== undefined ? 0 : liveGainDb;
-}
-
-function limitAudioPlaybackSample(sample: number, ceilingDb: number): number {
-  const ceiling = 10 ** (ceilingDb / 20);
-  return Math.max(-ceiling, Math.min(ceiling, sample));
 }
 
 function audioTrackNormalizationGainDb(
@@ -394,7 +399,7 @@ const DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION: CustomLoudnessNormalization = {
 export type {
   AudioLoudnessAnalysis,
   AudioProcessingStage,
-  AudioTrackLimiter,
+  AudioTrackHighPass,
   AudioTrackMetadata,
   AudioTrackProcessing,
   AudioTrackSelection,
@@ -414,17 +419,17 @@ export {
   audioTrackLevelMode,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
-  audioTrackPlaybackProcessing,
+  audioTrackPlaybackFfmpegProcessing,
   audioTrackPlaybackRuntimeGainDb,
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB,
   DEFAULT_AUDIO_TRACK_PROCESSING,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
   effectiveAudioTrackGainDb,
+  getAudioTrackLiveHighPassEffects,
   getAudioTrackPreLevelEffects,
   getAudioTrackSignalEffect,
   getAudioTrackSignalEffects,
-  limitAudioPlaybackSample,
   loudnessNormalizationTargets,
   normalizeAudioTrackDefaults,
   parseAudioTrackSignalEffects,
