@@ -17,11 +17,27 @@ function PlaybackProvider({ children }: { children: ReactNode }) {
   const audio = useAudioTransport();
   const driver = useMemo<PlaybackDriver>(
     () => ({
-      ...preview,
-      ...audio,
-      requestPlaybackFrame: audio.usesWebAudio
-        ? audio.requestPlaybackFrame
-        : preview.requestPlaybackFrame,
+      audio: {
+        getCurrentTimeSeconds: audio.getCurrentTimeSeconds,
+        isReady: audio.isReady,
+        pause: audio.pause,
+        requestPlaybackFrame: audio.requestPlaybackFrame,
+        resumeAudioContext: audio.resumeAudioContext,
+        setPlaybackRate: audio.setPlaybackRate,
+        startAt: audio.startAt,
+        syncTo: audio.syncTo,
+        usesWebAudio: audio.usesWebAudio,
+      },
+      preview: {
+        isReady: preview.isPreviewReady,
+        isSeekPending: preview.isSeekPending,
+        pause: preview.pauseMedia,
+        play: preview.playMedia,
+        registerMediaObserver: preview.registerMediaObserver,
+        requestPlaybackFrame: preview.requestPlaybackFrame,
+        seek: preview.seekMedia,
+        setPlaybackRate: preview.setPlaybackRate,
+      },
     }),
     [audio, preview],
   );

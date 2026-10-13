@@ -1,27 +1,37 @@
 import type { PreviewPlaybackFrame } from "@/features/preview";
 
 interface PlaybackDriver {
-  getCurrentTimeSeconds: () => number | null;
-  isPreviewReady: boolean;
-  isSeekPending: () => boolean;
-  pause: () => void;
-  pauseMedia: () => void;
-  playMedia: () => Promise<void>;
-  registerMediaObserver: (observer: {
-    onEnded: () => void;
-    onPause: () => void;
-    onPlay: () => void;
-    onPlaybackError: () => void;
-    onTimeUpdate: (seconds: number) => void;
-  }) => () => void;
-  requestPlaybackFrame: (
-    callback: (timestamp: number, mediaTimeSeconds: number) => void,
-  ) => PreviewPlaybackFrame | null;
-  resumeAudioContext: () => Promise<void>;
-  seekMedia: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
-  setPlaybackRate: (rate: number) => void;
-  startAt: (seconds: number) => Promise<void>;
-  syncTo: (seconds: number, force?: boolean) => void;
+  audio: {
+    getCurrentTimeSeconds: () => number | null;
+    isReady: boolean;
+    pause: () => void;
+    requestPlaybackFrame: (
+      callback: (timestamp: number, mediaTimeSeconds: number) => void,
+    ) => PreviewPlaybackFrame | null;
+    resumeAudioContext: () => Promise<void>;
+    setPlaybackRate: (rate: number) => void;
+    startAt: (seconds: number) => Promise<void>;
+    syncTo: (seconds: number, force?: boolean) => void;
+    usesWebAudio: boolean;
+  };
+  preview: {
+    isReady: boolean;
+    isSeekPending: () => boolean;
+    pause: () => void;
+    play: () => Promise<void>;
+    registerMediaObserver: (observer: {
+      onEnded: () => void;
+      onPause: () => void;
+      onPlay: () => void;
+      onPlaybackError: () => void;
+      onTimeUpdate: (seconds: number) => void;
+    }) => () => void;
+    requestPlaybackFrame: (
+      callback: (timestamp: number, mediaTimeSeconds: number) => void,
+    ) => PreviewPlaybackFrame | null;
+    seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
+    setPlaybackRate: (rate: number) => void;
+  };
 }
 
 interface PlaybackSnapshot {
@@ -38,7 +48,7 @@ class PlaybackController {
   private unregisterMediaObserver: (() => void) | null = null;
   private playbackFrame: PreviewPlaybackFrame | null = null;
   private startupGeneration = 0;
-  private isStarting = false;
+  private lifecycle: "paused" | "starting" | "playing" = "paused";
   private mediaStartRequested = false;
 
   constructor(
@@ -61,8 +71,9 @@ class PlaybackController {
 
   connect = () => {
     const driver = this.driver;
-    driver.setPlaybackRate(1);
-    this.unregisterMediaObserver = driver.registerMediaObserver({
+    driver.preview.setPlaybackRate(1);
+    driver.audio.setPlaybackRate(1);
+    this.unregisterMediaObserver = driver.preview.registerMediaObserver({
       onEnded: () => {
         this.setPosition(this.snapshot.durationMicros);
         this.pause();
@@ -70,15 +81,16 @@ class PlaybackController {
       onPause: () => {
         this.cancelStartup();
         this.stopPlaybackClock();
-        this.driver.pause();
+        this.lifecycle = "paused";
+        this.driver.audio.pause();
         this.setIsPlaying(false);
       },
       onPlay: () => {
-        if (!this.mediaStartRequested) {
-          this.driver.pauseMedia();
-          return;
-        }
-        this.finishStartup();
+        const isExpectedPlay =
+          this.lifecycle === "playing" ||
+          (this.lifecycle === "starting" && this.mediaStartRequested);
+
+        if (!isExpectedPlay) this.driver.preview.pause();
       },
       onPlaybackError: () => this.pause(),
       onTimeUpdate: (seconds) => {
@@ -89,74 +101,84 @@ class PlaybackController {
     return () => {
       this.unregisterMediaObserver?.();
       this.unregisterMediaObserver = null;
+      this.cancelStartup();
+      this.lifecycle = "paused";
       this.stopPlaybackClock();
-      driver.pauseMedia();
-      driver.pause();
+      driver.preview.pause();
+      driver.audio.pause();
     };
   };
 
   seek = (positionMicros: number) => {
-    if (this.isStarting) this.cancelStartup();
+    if (this.lifecycle === "starting") {
+      this.cancelStartup();
+      this.driver.preview.pause();
+      this.driver.audio.pause();
+    }
     const nextPosition = Math.max(0, Math.min(this.snapshot.durationMicros, positionMicros));
     if (!Number.isFinite(nextPosition)) return;
     this.setPosition(nextPosition);
     const seconds = nextPosition / MICROS_PER_SECOND;
-    this.driver.syncTo(seconds, true);
-    this.driver.seekMedia(seconds, false);
+    this.driver.audio.syncTo(seconds, true);
+    this.driver.preview.seek(seconds, false);
   };
 
   play = () => {
     const driver = this.driver;
     if (
-      !driver.isPreviewReady ||
+      !driver.preview.isReady ||
+      (driver.audio.usesWebAudio && !driver.audio.isReady) ||
       this.snapshot.durationMicros <= 0 ||
       this.snapshot.isPlaying ||
-      this.isStarting
-    ) return;
+      this.lifecycle !== "paused"
+    )
+      return;
     if (this.snapshot.positionMicros >= this.snapshot.durationMicros) this.seek(0);
 
     const seconds = this.snapshot.positionMicros / MICROS_PER_SECOND;
     const generation = ++this.startupGeneration;
-    this.isStarting = true;
+    this.lifecycle = "starting";
     this.mediaStartRequested = false;
-    driver.setPlaybackRate(1);
+    driver.preview.setPlaybackRate(1);
+    driver.audio.setPlaybackRate(1);
     void this.startPlayback(generation, seconds);
   };
 
   pause = () => {
     this.cancelStartup();
+    this.lifecycle = "paused";
     this.stopPlaybackClock();
-    this.driver.pauseMedia();
-    this.driver.pause();
+    this.driver.preview.pause();
+    this.driver.audio.pause();
     this.setIsPlaying(false);
   };
 
   togglePlayback = () => {
-    if (this.snapshot.isPlaying || this.isStarting) this.pause();
+    if (this.snapshot.isPlaying || this.lifecycle === "starting") this.pause();
     else this.play();
   };
 
   private publishMediaTime(seconds: number, synchronizeAudio = true) {
-    if (this.driver.isSeekPending()) return;
+    if (this.driver.preview.isSeekPending()) return;
     this.setPosition(seconds * MICROS_PER_SECOND);
-    if (synchronizeAudio) this.driver.syncTo(seconds);
+    if (synchronizeAudio) this.driver.audio.syncTo(seconds);
   }
 
   private async startPlayback(generation: number, seconds: number) {
     try {
-      await this.driver.resumeAudioContext();
+      await this.driver.audio.resumeAudioContext();
       if (!this.isCurrentStartup(generation)) return;
 
       await new Promise<void>((resolve) => {
-        this.driver.seekMedia(seconds, false, resolve);
+        this.driver.preview.seek(seconds, false, resolve);
       });
       if (!this.isCurrentStartup(generation)) return;
 
-      await this.driver.startAt(seconds);
+      await this.driver.audio.startAt(seconds);
       if (!this.isCurrentStartup(generation)) return;
 
       this.mediaStartRequested = true;
-      await this.driver.playMedia();
+      await this.driver.preview.play();
       if (this.isCurrentStartup(generation)) this.finishStartup();
     } catch {
       if (this.isCurrentStartup(generation)) this.pause();
@@ -164,18 +186,17 @@ class PlaybackController {
   }
 
   private isCurrentStartup(generation: number) {
-    return generation === this.startupGeneration && this.isStarting;
+    return generation === this.startupGeneration && this.lifecycle === "starting";
   }
 
   private finishStartup() {
-    this.isStarting = false;
+    this.lifecycle = "playing";
     this.mediaStartRequested = false;
     this.setIsPlaying(true);
   }
 
   private cancelStartup() {
     this.startupGeneration += 1;
-    this.isStarting = false;
     this.mediaStartRequested = false;
   }
 
@@ -195,20 +216,26 @@ class PlaybackController {
   private startPlaybackClock() {
     if (this.playbackFrame) return;
     const tick = (_timestamp: number, seconds: number) => {
-      const audioClockSeconds = this.driver.getCurrentTimeSeconds();
+      const audioClockSeconds = this.driver.audio.getCurrentTimeSeconds();
       const clockSeconds = audioClockSeconds ?? seconds;
-      if (!this.driver.isSeekPending()) {
+      if (!this.driver.preview.isSeekPending()) {
         this.publishMediaTime(clockSeconds, false);
-        if (audioClockSeconds !== null) this.driver.syncTo(clockSeconds);
+        if (audioClockSeconds !== null) this.driver.audio.syncTo(clockSeconds);
         if (this.snapshot.positionMicros >= this.snapshot.durationMicros) {
           this.pause();
           return;
         }
       }
-      this.playbackFrame = this.driver.requestPlaybackFrame(tick);
+      this.playbackFrame = this.requestPlaybackFrame(tick);
     };
 
-    this.playbackFrame = this.driver.requestPlaybackFrame(tick);
+    this.playbackFrame = this.requestPlaybackFrame(tick);
+  }
+
+  private requestPlaybackFrame(callback: (timestamp: number, mediaTimeSeconds: number) => void) {
+    return this.driver.audio.usesWebAudio
+      ? this.driver.audio.requestPlaybackFrame(callback)
+      : this.driver.preview.requestPlaybackFrame(callback);
   }
 
   private stopPlaybackClock() {
