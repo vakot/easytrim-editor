@@ -82,7 +82,6 @@ function EditorRuntimeTestProvider({
             registerMediaObserver: () => noOperation,
             requestPlaybackFrame: () => null,
             seek: noOperation,
-            sessionKey: null,
             setCurrentTimeSeconds: noOperation,
             setPlaybackRate: noOperation,
           },

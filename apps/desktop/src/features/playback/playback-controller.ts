@@ -1,9 +1,40 @@
-import type { AudioPlaybackAdapter } from "@/features/audio";
-import type { PreviewPlaybackFrame, PreviewVideoAdapter } from "@/features/preview";
+import type { PreviewPlaybackFrame } from "@/features/preview";
+
+interface PlaybackAudioAdapter {
+  getCurrentTimeSeconds: () => number | null;
+  hasActiveOutput: boolean;
+  isReady: boolean;
+  pause: () => void;
+  resume: () => Promise<void>;
+  seek: (seconds: number) => void;
+  setPlaybackRate: (rate: number) => void;
+  startAt: (seconds: number) => Promise<void>;
+}
+
+interface PlaybackVideoAdapter {
+  getCurrentTimeSeconds: () => number | null;
+  isReady: boolean;
+  isSeekPending: () => boolean;
+  pause: () => void;
+  play: () => Promise<void>;
+  registerMediaObserver: (observer: {
+    onEnded: () => void;
+    onPause: () => void;
+    onPlay: () => void;
+    onPlaybackError: () => void;
+    onTimeUpdate: (seconds: number) => void;
+  }) => () => void;
+  requestPlaybackFrame: (
+    callback: (timestamp: number, mediaTimeSeconds: number) => void,
+  ) => PreviewPlaybackFrame | null;
+  seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
+  setCurrentTimeSeconds: (seconds: number) => void;
+  setPlaybackRate: (rate: number) => void;
+}
 
 interface PlaybackDriver {
-  audio: AudioPlaybackAdapter;
-  video: PreviewVideoAdapter;
+  audio: PlaybackAudioAdapter;
+  video: PlaybackVideoAdapter;
 }
 
 interface PlaybackSnapshot {

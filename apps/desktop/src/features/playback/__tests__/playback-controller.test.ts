@@ -20,7 +20,6 @@ function createPlaybackDriver() {
     },
     video: {
       getCurrentTimeSeconds: vi.fn(() => 0),
-      sessionKey: "preview",
       isReady: true,
       isSeekPending: () => false,
       pause: vi.fn(),
