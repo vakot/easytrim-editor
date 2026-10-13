@@ -14,6 +14,7 @@ interface PreviewPlaybackFrame {
 
 interface PreviewVideoAdapter {
   getCurrentTimeSeconds: () => number | null;
+  isEnded: () => boolean;
   isReady: boolean;
   isSeekPending: () => boolean;
   pause: () => void;
@@ -84,11 +85,14 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
     [videoRef],
   );
 
+  const isEnded = useCallback(() => videoRef.current?.ended ?? false, [videoRef]);
+
   return useMemo(
     () => ({
       isReady,
       isSeekPending,
       getCurrentTimeSeconds,
+      isEnded,
       pause,
       play,
       registerMediaObserver,
@@ -100,6 +104,7 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
       isReady,
       isSeekPending,
       getCurrentTimeSeconds,
+      isEnded,
       pause,
       play,
       registerMediaObserver,

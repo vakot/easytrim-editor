@@ -56,6 +56,7 @@ function EditorRuntimeTestProvider({
         },
         video: {
           getCurrentTimeSeconds: () => null,
+          isEnded: () => false,
           isReady: false,
           isSeekPending: () => false,
           pause: noOperation,

@@ -22,6 +22,8 @@ import { createPreviewSeekScheduler } from "./lib/preview-seek-scheduler";
 function getVideoState(video: HTMLVideoElement) {
   return {
     currentTimeSeconds: video.currentTime,
+    durationSeconds: Number.isFinite(video.duration) ? video.duration : 0,
+    ended: video.ended,
     paused: video.paused,
     readyState: video.readyState,
     seeking: video.seeking,
@@ -117,7 +119,7 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
         const kind = previewKindRef.current;
         if (kind !== null) {
           diagnostics.event("media.playback.paused", {
-            data: { kind },
+            data: { ...getVideoState(element), kind },
             origin: { type: "internal" },
           });
         }
@@ -137,10 +139,11 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
       };
 
       const onEnded = () => {
+        debugVideoEvent("ended event", element);
         const kind = previewKindRef.current;
         if (kind !== null) {
           diagnostics.event("media.playback.ended", {
-            data: { kind },
+            data: { ...getVideoState(element), kind },
             origin: { type: "internal" },
           });
         }

@@ -30,6 +30,7 @@ function createPlaybackDriver() {
     },
     video: {
       getCurrentTimeSeconds: vi.fn(() => 0),
+      isEnded: vi.fn(() => false),
       isReady: true,
       isSeekPending: vi.fn(() => false),
       pause: vi.fn(),
@@ -130,6 +131,7 @@ describe("playback controller", () => {
     expect(driver.audio.startAlignedWithVideoAt).toHaveBeenCalledWith(1.25);
     performanceNowSpy.mockRestore();
 
+    vi.mocked(driver.video.isEnded).mockReturnValue(true);
     playback.observer.onEnded();
 
     expect(controller.getSnapshot()).toEqual({
@@ -174,6 +176,7 @@ describe("playback controller", () => {
     const playback = createPlaybackDriver();
     const controller = createPlaybackController(playback.driver, 2_000_000);
 
+    vi.mocked(playback.driver.video.isEnded).mockReturnValue(true);
     playback.observer.onEnded();
     controller.play();
     await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
@@ -181,6 +184,18 @@ describe("playback controller", () => {
     expect(controller.getSnapshot().positionMicros).toBe(0);
     expect(playback.driver.audio.prepareAt).toHaveBeenCalledWith(0);
     expect(playback.driver.video.seek).toHaveBeenLastCalledWith(0, false, expect.any(Function));
+    controller.dispose();
+  });
+
+  it("ignores a delayed ended event after the native video has moved away from EOF", () => {
+    const playback = createPlaybackDriver();
+    const controller = createPlaybackController(playback.driver, 2_000_000);
+
+    controller.seek(700_000);
+    playback.observer.onEnded();
+
+    expect(controller.getSnapshot().positionMicros).toBe(700_000);
+
     controller.dispose();
   });
 

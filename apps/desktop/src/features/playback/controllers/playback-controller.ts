@@ -1,5 +1,6 @@
 import type { AudioPlaybackAdapter } from "@/features/audio";
 import type { PreviewVideoAdapter } from "@/features/preview";
+import { diagnostics } from "@/lib/diagnostics";
 
 interface PlaybackDriver {
   audio: AudioPlaybackAdapter;
@@ -98,11 +99,17 @@ class PlaybackController {
     this.unregisterMediaObserver = video.registerMediaObserver({
       onEnded: () => {
         if (this.mediaSessionId !== mediaSessionId) return;
-        this.finishAtEndOfMedia();
+        if (!this.driver?.video.isEnded()) return;
+        this.finishAtEndOfMedia("ended_event");
       },
       onPause: (isPaused) => {
         if (this.mediaSessionId !== mediaSessionId) return;
-        if (!isPaused || this.lifecycle === "paused") return;
+        if (!isPaused) return;
+        if (this.driver?.video.isEnded()) {
+          this.finishAtEndOfMedia("pause_event");
+          return;
+        }
+        if (this.lifecycle === "paused") return;
         this.pause();
       },
       onPlay: () => {
@@ -126,6 +133,10 @@ class PlaybackController {
       },
       onTimeUpdate: () => {
         if (this.mediaSessionId !== mediaSessionId) return;
+        if (this.driver?.video.isEnded()) {
+          this.finishAtEndOfMedia("time_update");
+          return;
+        }
         if (this.lifecycle === "paused") return;
         const video = this.driver?.video;
         const currentTimeSeconds = video?.getCurrentTimeSeconds();
@@ -305,7 +316,28 @@ class PlaybackController {
     if (notify && wasPlaying !== (nextLifecycle === "playing")) this.notifyListeners();
   }
 
-  private finishAtEndOfMedia() {
+  private finishAtEndOfMedia(
+    source: "ended_event" | "pause_event" | "time_update" | "video_frame",
+  ) {
+    if (
+      this.lifecycle === "paused" &&
+      this.snapshot.positionMicros === this.snapshot.durationMicros
+    ) {
+      return;
+    }
+
+    const driver = this.driver;
+    diagnostics.event("media.playback.finalized", {
+      data: {
+        durationMicros: this.snapshot.durationMicros,
+        lifecycle: this.lifecycle,
+        positionBeforeMicros: this.snapshot.positionMicros,
+        source,
+        videoCurrentTimeSeconds: driver?.video.getCurrentTimeSeconds() ?? null,
+        videoEnded: driver?.video.isEnded() ?? false,
+      },
+      origin: { type: "internal" },
+    });
     this.seekGeneration += 1;
     this.cancelStartup();
     this.transitionLifecycle("paused", false);
@@ -389,6 +421,10 @@ class PlaybackController {
       this.playbackFrame = null;
       const driver = this.driver;
       if (!driver || this.mediaSessionId === null || this.mediaSessionId === undefined) return;
+      if (driver.video.isEnded()) {
+        this.finishAtEndOfMedia("video_frame");
+        return;
+      }
       const audioClockSeconds = driver.audio.getCurrentTimeSeconds();
 
       if (!driver.video.isSeekPending()) {

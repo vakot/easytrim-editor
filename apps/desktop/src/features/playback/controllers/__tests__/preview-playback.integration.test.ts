@@ -41,6 +41,7 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
   let readyState: number = HTMLMediaElement.HAVE_CURRENT_DATA;
   let seeking = false;
   let paused = true;
+  let ended = false;
   let audioPosition: number | null = null;
   const frameCallbacks = new Set<(timestamp: number, mediaTime: number) => void>();
   const observerCallbacks = new Set<
@@ -52,12 +53,14 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
       get: () => currentTime,
       set: (seconds: number) => {
         currentTime = seconds;
+        ended = false;
         seeking = true;
         readyState = HTMLMediaElement.HAVE_METADATA;
         video.dispatchEvent(new Event("seeking"));
       },
     },
     paused: { get: () => paused },
+    ended: { get: () => ended },
     readyState: { get: () => readyState },
     seeking: { get: () => seeking },
   });
@@ -89,6 +92,7 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
     },
     video: {
       getCurrentTimeSeconds: () => currentTime,
+      isEnded: () => ended,
       isReady: readyState >= HTMLMediaElement.HAVE_CURRENT_DATA,
       isSeekPending: () => scheduler.isPending,
       pause: () => video.pause(),
@@ -149,6 +153,9 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
       paused = true;
       video.dispatchEvent(new Event("pause"));
       for (const observer of observerCallbacks) observer.onPause(true);
+    },
+    setNativeEnded(value: boolean) {
+      ended = value;
     },
     notifyNativeEnded() {
       for (const observer of observerCallbacks) observer.onEnded();
@@ -250,7 +257,7 @@ describe("native preview playback integration", () => {
     ["24000/1001 fps", { numerator: 24_000, denominator: 1_001 }],
     ["30000/1001 fps", { numerator: 30_000, denominator: 1_001 }],
   ] as [string, FrameRate][])(
-    "preserves the final presented frame and finalizes EOF at native completion for %s with and without audio",
+    "preserves the final presented frame and finalizes EOF from native ended state for %s with and without audio",
     async (_label, frameRate) => {
       for (const hasAudioOutput of [false, true]) {
         const frameCount = 3;
@@ -313,7 +320,8 @@ describe("native preview playback integration", () => {
           preview.playNextFrame(lastFrameSeconds);
         }
         await vi.waitFor(() => expect(preview.controller.isPlaying).toBe(true));
-        preview.notifyNativeEnded();
+        preview.setNativeEnded(true);
+        preview.notifyNativePause();
 
         expect(preview.controller.getSnapshot()).toEqual({
           durationMicros,
@@ -332,6 +340,22 @@ describe("native preview playback integration", () => {
       }
     },
   );
+
+  it("does not treat a manual pause just before EOF as natural completion", async () => {
+    const preview = createNativePreviewHarness(1_000_000);
+    const pausePosition = 0.999;
+
+    preview.controller.play();
+    await vi.waitFor(() => expect(preview.controller.isPlaying).toBe(true));
+    preview.advanceMediaTime(pausePosition);
+    preview.playNextFrame(pausePosition);
+    preview.controller.pause();
+
+    expect(preview.controller.isPlaying).toBe(false);
+    expect(preview.controller.getSnapshot().positionMicros).toBe(999_000);
+
+    preview.dispose();
+  });
 
   it.each([0, 1, 2])("starts from frame %i without offsetting its timestamp", async (frame) => {
     const preview = createNativePreviewHarness();
