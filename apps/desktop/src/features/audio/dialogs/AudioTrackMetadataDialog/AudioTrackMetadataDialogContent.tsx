@@ -83,6 +83,7 @@ function AudioTrackMetadataDialogContent({
           </Label>
           <Input
             autoComplete="off"
+            autoFocus
             id={`audio-track-title-${track.streamIndex}`}
             maxLength={256}
             onChange={(event) => {

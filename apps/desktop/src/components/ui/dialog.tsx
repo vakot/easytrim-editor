@@ -149,7 +149,9 @@ function DialogFooter({
     >
       {showCloseButton && (
         <ScopedDialogClose __scopeDialog={__scopeDialog} asChild>
-          <Button variant="outline">{t("common.actions.close")}</Button>
+          <Button type="button" variant="outline">
+            {t("common.actions.close")}
+          </Button>
         </ScopedDialogClose>
       )}
       {children}

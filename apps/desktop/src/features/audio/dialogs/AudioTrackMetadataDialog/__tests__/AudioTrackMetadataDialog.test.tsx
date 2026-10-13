@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -17,6 +17,25 @@ function OpenMetadataDialogButton() {
 }
 
 describe("AudioTrackMetadataDialog", () => {
+  it("focuses the title field when the lazy content mounts", async () => {
+    const controller = {
+      stream: { language: "eng", streamIndex: 0, title: "Source title" },
+      track: { metadata: {}, streamIndex: 0 },
+      updateMetadata: vi.fn(),
+    } as unknown as AudioTrackController;
+
+    render(
+      <AudioTrackMetadataDialog controller={controller}>
+        <OpenMetadataDialogButton />
+      </AudioTrackMetadataDialog>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Open metadata" }));
+
+    const titleInput = await screen.findByRole("textbox", { name: "Track title" });
+    expect(titleInput).toHaveFocus();
+  });
+
   it("saves edited metadata before closing the dialog", async () => {
     const user = userEvent.setup();
     const controller = {
@@ -36,6 +55,32 @@ describe("AudioTrackMetadataDialog", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(controller.updateMetadata).toHaveBeenCalledWith("Edited title", true, "en", false);
+    expect(screen.queryByRole("textbox", { name: "Track title" })).not.toBeInTheDocument();
+  });
+
+  it("closes without saving when the footer Close button is clicked", async () => {
+    const user = userEvent.setup();
+    const controller = {
+      stream: { language: "eng", streamIndex: 0, title: "Source title" },
+      track: { metadata: {}, streamIndex: 0 },
+      updateMetadata: vi.fn(),
+    } as unknown as AudioTrackController;
+
+    render(
+      <AudioTrackMetadataDialog controller={controller}>
+        <OpenMetadataDialogButton />
+      </AudioTrackMetadataDialog>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Open metadata" }));
+    await user.type(await screen.findByRole("textbox", { name: "Track title" }), "Unsaved title");
+    await user.click(
+      within(document.querySelector('[data-slot="dialog-footer"]')!).getByRole("button", {
+        name: "Close",
+      }),
+    );
+
+    expect(controller.updateMetadata).not.toHaveBeenCalled();
     expect(screen.queryByRole("textbox", { name: "Track title" })).not.toBeInTheDocument();
   });
 
