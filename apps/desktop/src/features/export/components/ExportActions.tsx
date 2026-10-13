@@ -32,9 +32,9 @@ import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { cn } from "@/lib/class-names.utils";
 import { preloadOnIntent } from "@/lib/lazy-component";
 
-import { preloadExportDialog } from "./ExportDialog/export-dialog.loader";
+import { ExportDialog, ExportDialogTrigger } from "../dialogs/ExportDialog";
 
-const preloadExportDialogOnIntent = preloadOnIntent(preloadExportDialog);
+const preloadExportDialogOnIntent = preloadOnIntent(() => ExportDialog.preload());
 
 function ExportActions() {
   const { t } = useTranslation();
@@ -91,22 +91,15 @@ function ExportActions() {
         shortcut={OPTIMIZED_EXPORT_SHORTCUT}
         tooltip={t("export.optimized.tooltip")}
       >
-        <ExportActionButton
-          aria-keyshortcuts={getShortcutAriaValue(OPTIMIZED_EXPORT_SHORTCUT)}
-          disabled={!sourceReady}
-          icon={<Settings2 aria-hidden="true" />}
-          onClick={() => {
-            void import("@/app/store/thunks/export-thunks").then(({ openOptimizedExportDialog }) =>
-              dispatch(
-                openOptimizedExportDialog({ id: "toolbar.optimized-export", type: "button" }),
-              ),
-            );
-          }}
-          onFocus={preloadExportDialogOnIntent}
-          onPointerEnter={preloadExportDialogOnIntent}
-        >
-          {t("export.optimized.action")}
-        </ExportActionButton>
+        <ExportDialogTrigger asChild>
+          <ExportActionButton
+            aria-keyshortcuts={getShortcutAriaValue(OPTIMIZED_EXPORT_SHORTCUT)}
+            disabled={!sourceReady}
+            icon={<Settings2 aria-hidden="true" />}
+          >
+            {t("export.optimized.action")}
+          </ExportActionButton>
+        </ExportDialogTrigger>
       </ExportActionTooltip>
 
       <MoreExportActionsDropdown hasSelectedAudio={hasSelectedAudio} sourceReady={sourceReady} />
@@ -135,6 +128,8 @@ function ExportQueueTrigger({
         </Badge>
       }
       onClick={() => void executeCommand(command.id, "button")}
+      onFocus={command.preload}
+      onPointerEnter={command.preload}
       variant="default"
     >
       {t("queue.title")}

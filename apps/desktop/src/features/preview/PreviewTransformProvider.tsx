@@ -1,24 +1,12 @@
 import { type PropsWithChildren, useCallback, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 import {
   PreviewTransformContext,
   type PreviewTransformHandlers,
 } from "./contexts/preview-transform-context";
+import { PreviewTransformResetDialog } from "./dialogs/PreviewTransformResetDialog";
 
 function PreviewTransformProvider({ children }: PropsWithChildren) {
-  const { t } = useTranslation();
   const handlersRef = useRef<PreviewTransformHandlers | null>(null);
   const [isAvailable, setIsAvailable] = useState(false);
   const [resetRequested, setResetRequested] = useState(false);
@@ -45,7 +33,12 @@ function PreviewTransformProvider({ children }: PropsWithChildren) {
     [],
   );
 
-  const requestReset = useCallback(() => setResetRequested(true), []);
+  const requestReset = useCallback(() => {
+    const openAfterPreload = () => setResetRequested(true);
+
+    void PreviewTransformResetDialog.preload().then(openAfterPreload, openAfterPreload);
+  }, []);
+
   const cancelReset = useCallback(() => setResetRequested(false), []);
   const confirmReset = useCallback(() => {
     handlersRef.current?.resetTransform();
@@ -64,22 +57,11 @@ function PreviewTransformProvider({ children }: PropsWithChildren) {
       }}
     >
       {children}
-      <AlertDialog onOpenChange={(open) => !open && cancelReset()} open={resetRequested}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("preview.transform.resetConfirmation.title")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("preview.transform.resetConfirmation.description")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmReset} variant="destructive">
-              {t("common.actions.resetToDefault")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <PreviewTransformResetDialog
+        onConfirm={confirmReset}
+        onOpenChange={(open) => !open && cancelReset()}
+        open={resetRequested}
+      />
     </PreviewTransformContext.Provider>
   );
 }

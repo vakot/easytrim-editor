@@ -11,6 +11,10 @@ const { chooseGifOutputPath, chooseOutputPath, planGifExport, planOptimizedExpor
   }),
 );
 
+const toastError = vi.hoisted(() => vi.fn());
+
+vi.mock("sonner", () => ({ toast: { error: toastError } }));
+
 vi.mock("@/lib/tauri/media", () => ({
   chooseGifOutputPath,
   chooseOutputPath,
@@ -34,7 +38,7 @@ import { createAppStore } from "@/app/store/store";
 import { openGifExportDialog, openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
 import { firstSource, media } from "@/test/source.fixtures";
 
-import { ExportDialog } from "../ExportDialog";
+import { ExportDialog } from "../../../dialogs/ExportDialog";
 
 describe("ExportDialog", () => {
   it("requests one command preview when one dialog open is dispatched", async () => {
@@ -70,7 +74,7 @@ describe("ExportDialog", () => {
 
     await store.dispatch(openOptimizedExportDialog());
 
-    expect(screen.getByTestId("video-export-options")).toBeInTheDocument();
+    expect(await screen.findByTestId("video-export-options")).toBeInTheDocument();
     expect(screen.queryByTestId("gif-export-options")).not.toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Frame rate" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Frame rate" })).toHaveValue("");
@@ -131,7 +135,7 @@ describe("ExportDialog", () => {
 
     await store.dispatch(openOptimizedExportDialog());
 
-    expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(2560);
+    expect(await screen.findByRole("spinbutton", { name: "Width" })).toHaveValue(2560);
     expect(screen.getByRole("spinbutton", { name: "Height" })).toHaveValue(1440);
 
     fireEvent.change(screen.getByRole("spinbutton", { name: "Width" }), {
@@ -192,7 +196,7 @@ describe("ExportDialog", () => {
 
     await store.dispatch(openGifExportDialog());
 
-    expect(screen.getByTestId("gif-export-options")).toBeInTheDocument();
+    expect(await screen.findByTestId("gif-export-options")).toBeInTheDocument();
     expect(screen.queryByTestId("video-export-options")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Export selected segment as GIF" })).toBeVisible();
     expect(screen.getByRole("spinbutton", { name: "Width" })).toHaveValue(2_560);
@@ -426,19 +430,20 @@ describe("ExportDialog", () => {
     );
 
     await store.dispatch(openGifExportDialog());
-    fireEvent.click(screen.getByRole("button", { name: "GIF Export" }));
+    fireEvent.click(await screen.findByRole("button", { name: "GIF Export" }));
     await waitFor(() => expect(chooseGifOutputPath).toHaveBeenCalledTimes(1));
     expect(chooseOutputPath).not.toHaveBeenCalled();
 
     chooseGifOutputPath.mockClear();
     chooseOutputPath.mockClear();
     await store.dispatch(openOptimizedExportDialog());
-    fireEvent.click(screen.getByRole("button", { name: "Export" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Export" }));
     await waitFor(() => expect(chooseOutputPath).toHaveBeenCalledTimes(1));
     expect(chooseGifOutputPath).not.toHaveBeenCalled();
   });
 
   it("preserves dialog cancel and launch-error handling", async () => {
+    toastError.mockClear();
     planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg preview" });
     planGifExport.mockResolvedValue({ commandPreview: "ffmpeg gif preview" });
     const store = createAppStore({
@@ -478,7 +483,7 @@ describe("ExportDialog", () => {
       }),
     );
     await waitFor(() =>
-      expect(screen.getByText("Could not open the file location")).toBeInTheDocument(),
+      expect(toastError).toHaveBeenCalledWith("Could not open the file location"),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));

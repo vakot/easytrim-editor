@@ -15,6 +15,7 @@ import {
   editingInstanceExportStarted,
 } from "@/app/store/slices/editing-instances-slice";
 import { createExportAttempt } from "@/domain/editing-instance";
+import { ExportDialog } from "@/features/export";
 import { firstSource } from "@/test/source.fixtures";
 
 import { ExportActions } from "../ExportActions";
@@ -110,7 +111,9 @@ function ExportActionsQueuePulseStory() {
     <Provider store={store}>
       <TooltipProvider>
         <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-4">
-          <ExportActions />
+          <ExportDialog>
+            <ExportActions />
+          </ExportDialog>
           <Button onClick={queueExampleExport} type="button" variant="outline">
             Queue example export
           </Button>

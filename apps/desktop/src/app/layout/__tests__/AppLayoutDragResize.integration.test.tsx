@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ResizablePanelContextProvider, usePanelCommand } from "@/components/ui/resizable";
 
-import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { AppLayout } from "@/app/layout/AppLayout";
+import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { preferencesReducer, sidebarLayoutChanged } from "@/app/store/slices/preferences-slice";
 
 vi.mock("@/app/layout/components/AppLayoutHeader", async () => {

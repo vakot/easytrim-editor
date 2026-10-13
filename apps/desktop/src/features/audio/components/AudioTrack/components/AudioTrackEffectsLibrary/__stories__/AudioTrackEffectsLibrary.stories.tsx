@@ -1,7 +1,7 @@
 import "@/i18n/config";
 
 import type { Meta, StoryObj } from "@storybook/react";
-import { useMemo } from "react";
+import { useMemo, useReducer } from "react";
 import { Provider } from "react-redux";
 
 import { Button } from "@/components/ui/button";
@@ -23,8 +23,6 @@ import { createAppStore } from "@/app/store/store";
 import { type AudioTrackProcessing, sameAudioTrackProcessing } from "@/domain/audio-processing";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
-import { AudioTrackEffectsDraftProvider } from "../../AudioTrackEffectsDialog/components/AudioTrackEffectsDraftProvider";
-import { useAudioTrackEffectsDraft } from "../../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
 import { AudioTrackEffectsLibrary } from "../AudioTrackEffectsLibrary";
 import {
   AudioTrackEffectsLibraryPage,
@@ -38,6 +36,12 @@ import {
   AUDIO_TRACK_EFFECTS,
   type AudioTrackEffectDescriptor,
 } from "../consts/audio-track-effects";
+import {
+  AudioTrackEffectsDraftContext,
+  useAudioTrackEffectsDraft,
+} from "../contexts/audio-track-effects-draft-context";
+import { audioTrackEffectsDraftReducer } from "../lib/audio-track-effects-draft.reducer";
+import { createAudioTrackEffectsDraft } from "../lib/audio-track-effects-draft.utils";
 
 function PlaceholderEffectPage() {
   return (
@@ -65,6 +69,7 @@ const storyEffects: readonly AudioTrackEffectDescriptor[] = [
     stage: "cleanup",
     label: () => "Noise reduction",
     Page: PlaceholderEffectPage,
+    preload: () => Promise.resolve(),
     isEnabled: () => false,
     isDirty: () => true,
   },
@@ -88,15 +93,21 @@ function EffectsLibraryStoryDialog() {
     return { processing, store: appStore, streamIndex };
   }, []);
 
+  const [draft, dispatch] = useReducer(
+    audioTrackEffectsDraftReducer,
+    store.processing,
+    createAudioTrackEffectsDraft,
+  );
+
   return (
     <Provider store={store.store}>
       <Dialog defaultOpen>
-        <AudioTrackEffectsDraftProvider initialProcessing={store.processing}>
+        <AudioTrackEffectsDraftContext.Provider value={{ dispatch, draft }}>
           <EffectsLibraryStoryContent
             initialProcessing={store.processing}
             streamIndex={store.streamIndex}
           />
-        </AudioTrackEffectsDraftProvider>
+        </AudioTrackEffectsDraftContext.Provider>
       </Dialog>
     </Provider>
   );

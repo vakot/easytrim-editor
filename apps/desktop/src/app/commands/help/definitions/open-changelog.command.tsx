@@ -2,16 +2,18 @@ import { ScrollText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
-import { useChangelogDialog } from "@/features/changelog";
+import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
+import { useChangelogDialog } from "@/app/hooks/useAppDialog";
+import { preloadOnIntent } from "@/lib/lazy-component";
 
 function useOpenChangelogCommand() {
   const { t } = useTranslation();
-  const { openChangelog, preloadChangelog } = useChangelogDialog();
+  const { openDialog } = useChangelogDialog();
   return {
     enabled: true,
     icon: <ScrollText aria-hidden="true" />,
-    preload: preloadChangelog,
-    run: openChangelog,
+    preload: preloadOnIntent(AppChangelogDialog.preload),
+    run: openDialog,
     id: "open-changelog" as const,
     label: t("support.changelog.open"),
     searchTerms: commandSearchTerms(

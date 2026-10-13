@@ -18,7 +18,7 @@ vi.mock("@/lib/tauri/updates.utils", () => ({
   isTauriRuntime: nativeUpdates.isTauriRuntime,
 }));
 
-function UpdateProbe() {
+function UpdateProbe({ onInstallError }: { onInstallError?: (error: unknown) => void } = {}) {
   const updates = useAppUpdates();
 
   return (
@@ -28,7 +28,12 @@ function UpdateProbe() {
       <button onClick={() => void updates.checkForUpdates()} type="button">
         Check
       </button>
-      <button onClick={() => void updates.installUpdate()} type="button">
+      <button
+        onClick={() =>
+          void updates.installUpdate().catch((error: unknown) => onInstallError?.(error))
+        }
+        type="button"
+      >
         Install
       </button>
     </div>
@@ -81,13 +86,15 @@ describe("AppUpdatesProvider", () => {
   });
 
   it("keeps an error state when update installation fails", async () => {
-    const install = vi.fn(() => Promise.reject(new Error("installation failed")));
+    const installationError = new Error("installation failed");
+    const install = vi.fn(() => Promise.reject(installationError));
     nativeUpdates.checkForUpdates.mockResolvedValue({ version: availableVersion, install });
+    const onInstallError = vi.fn();
     const user = userEvent.setup();
 
     render(
       <AppUpdatesProvider>
-        <UpdateProbe />
+        <UpdateProbe onInstallError={onInstallError} />
       </AppUpdatesProvider>,
     );
 
@@ -95,6 +102,7 @@ describe("AppUpdatesProvider", () => {
     await user.click(screen.getByRole("button", { name: "Install" }));
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("error"));
+    expect(onInstallError).toHaveBeenCalledWith(installationError);
   });
 
   it("keeps an error state after an automatic or manual check fails", async () => {

@@ -19,6 +19,8 @@ function useGifExportCommand() {
     enabled,
     icon: <Film aria-hidden="true" />,
     async run({ surface }: ApplicationCommandExecutionContext) {
+      const { ExportDialog } = await import("@/features/export");
+      await ExportDialog.preload().catch(() => undefined);
       const { openGifExportDialog } = await import("@/app/store/thunks/export-thunks");
       await dispatch(openGifExportDialog(commandOrigin("gif-export", surface)));
     },

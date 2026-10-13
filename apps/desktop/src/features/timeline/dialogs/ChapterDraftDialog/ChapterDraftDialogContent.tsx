@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import type { DialogScope } from "@/components/ui/dialog";
 import {
   DialogClose,
   DialogDescription,
@@ -19,7 +20,7 @@ import { selectSourceMedia } from "@/app/store/slices/source-slice";
 
 import { useChapterDraft } from "./ChapterDraftDialogContext";
 
-function ChapterDraftDialogContent() {
+function ChapterDraftDialogContent({ __scopeDialog }: { __scopeDialog?: DialogScope }) {
   const { t } = useTranslation();
   const { draft, setDraft } = useChapterDraft();
   const [error, setError] = useState(false);
@@ -57,8 +58,12 @@ function ChapterDraftDialogContent() {
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{draft.title || t("timeline.chapters.title")}</DialogTitle>
-        <DialogDescription>{t("timeline.chapters.description")}</DialogDescription>
+        <DialogTitle __scopeDialog={__scopeDialog}>
+          {draft.title || t("timeline.chapters.title")}
+        </DialogTitle>
+        <DialogDescription __scopeDialog={__scopeDialog}>
+          {t("timeline.chapters.description")}
+        </DialogDescription>
       </DialogHeader>
 
       <div className="grid gap-1">
@@ -108,13 +113,13 @@ function ChapterDraftDialogContent() {
         </Alert>
       ) : null}
 
-      <DialogFooter>
-        <DialogClose asChild>
+      <DialogFooter __scopeDialog={__scopeDialog}>
+        <DialogClose __scopeDialog={__scopeDialog} asChild>
           <Button type="button" variant="outline">
             {t("common.actions.cancel")}
           </Button>
         </DialogClose>
-        <DialogClose asChild>
+        <DialogClose __scopeDialog={__scopeDialog} asChild>
           <Button onClick={handleSave} type="button">
             {t("common.actions.save")}
           </Button>

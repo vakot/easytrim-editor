@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { useAudioTrackEffectsDraft } from "../../../../AudioTrackEffectsDialog/contexts/audio-track-effects-draft-context";
+import { useAudioTrackEffectsDraft } from "../../../contexts/audio-track-effects-draft-context";
 import {
   getDraftLoudnessNormalization,
   isNormalizeLoudnessEffectValid,

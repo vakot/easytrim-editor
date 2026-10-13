@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 import { AppCommandCenter } from "@/app/components/AppCommandCenter";
-import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
+import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import {
   capabilitiesChecking,
   capabilitiesFailed,
@@ -93,14 +93,14 @@ function AppCommandCenterStory({ state }: AppCommandCenterStoryArgs) {
 
   return (
     <Provider store={store}>
-      <CommandPaletteProvider>
+      <AppDialogsProvider>
         <Card className="w-xl items-center">
           <AppCommandCenter key={animationRun} />
           <Button onClick={() => setAnimationRun((run) => run + 1)} size="sm" variant="outline">
             Replay startup animation
           </Button>
         </Card>
-      </CommandPaletteProvider>
+      </AppDialogsProvider>
     </Provider>
   );
 }

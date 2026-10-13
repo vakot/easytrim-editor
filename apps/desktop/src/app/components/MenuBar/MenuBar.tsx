@@ -13,7 +13,7 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
-import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { diagnostics } from "@/lib/diagnostics";
 
 import { MenuBarFile, MenuBarFileContent } from "./components/MenuBarFile";
@@ -52,6 +52,7 @@ function CompactMenuSub({ children, id, label }: CompactMenuSubProps) {
 
 function MenuBar() {
   const { t } = useTranslation();
+  const openSettingsCommand = useApplicationCommand("open-settings");
   const { executeCommand } = useApplicationCommands();
 
   return (
@@ -87,7 +88,11 @@ function MenuBar() {
                 <MenuBarViewContent />
               </CompactMenuSub>
 
-              <MenubarItem onSelect={() => void executeCommand("open-settings", "menu")}>
+              <MenubarItem
+                onFocus={openSettingsCommand.preload}
+                onPointerEnter={openSettingsCommand.preload}
+                onSelect={() => void executeCommand("open-settings", "menu")}
+              >
                 {t("settings.title")}
               </MenubarItem>
 

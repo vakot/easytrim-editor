@@ -154,6 +154,10 @@ Keep these regions visible without navigation:
   touch and keyboard commands.
 - Place a local `Suspense` boundary near the entrypoint. Use a fallback that avoids layout shifts
   and preserves focus behavior.
+- Follow the dialog file convention in `docs/code-conventions.md`: keep the Radix wrapper, trigger,
+  lazy import, and `Suspense` in `<DialogName>.tsx`; put inner UI in `<DialogName>Content.tsx`
+  without `DialogContent`; add `<DialogName>Context.ts` only for dialog-local shared state. Let
+  callers supply trigger UI through the exported trigger's `asChild` prop.
 - Avoid excessive micro-chunks and dependency waterfalls. Select boundaries based on bundle impact;
   do not wrap every small component in `React.lazy`.
 - Keep lazy imports out of eagerly imported feature barrels and command definitions. Preserve

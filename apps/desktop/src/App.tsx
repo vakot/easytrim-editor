@@ -8,28 +8,27 @@ import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { AppShutdownGuard } from "@/app/components/AppShutdownGuard";
-import { CommandPalette } from "@/app/components/CommandPalette";
-import { DiagnosticsRecoveryDialog } from "@/app/components/DiagnosticsRecoveryDialog";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
-import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
-import { SettingsDialogMount } from "@/app/components/SettingsDialog/SettingsDialogMount";
 import { WorkspaceRecoveryNotice } from "@/app/components/WorkspaceRecoveryNotice";
+import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
+import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
+import { AppDiagnosticsRecoveryDialog } from "@/app/dialogs/AppDiagnosticsRecoveryDialog";
+import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
+import { AppShutdownGuardDialog } from "@/app/dialogs/AppShutdownGuardDialog";
 import { AppLayout } from "@/app/layout";
+import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { AppUpdatesProvider } from "@/app/providers/AppUpdatesProvider";
-import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
 import { EditorRuntimeProviders } from "@/app/providers/EditorRuntimeProviders";
 import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
-import { SettingsDialogProvider } from "@/app/providers/SettingsDialogProvider";
+import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectDropListenerError } from "@/app/store/slices/import-workflow-slice";
 import { persistor, store } from "@/app/store/store";
 import { loadQueueFinishActions } from "@/app/store/thunks/queue-finish-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ActivityToasts } from "@/features/activity";
-import { ChangelogProvider } from "@/features/changelog";
-import { ExportDialogMount, QueueDeleteSourceProvider } from "@/features/export";
+import { ExportDialog, QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider, SourceDropOverlay } from "@/features/source";
 import { localizeAppError } from "@/i18n/app-errors";
@@ -46,52 +45,50 @@ function EasyTrimEditorApp() {
 
   return (
     <TooltipProvider>
-      <ChangelogProvider>
-        <SourceDeleteProvider>
-          <QueueDeleteSourceProvider>
-            <PreviewTransformProvider>
-              <AppShutdownGuard />
+      <SourceDeleteProvider>
+        <QueueDeleteSourceProvider>
+          <PreviewTransformProvider>
+            <AppShutdownGuardDialog />
 
-              <AppUpdatesProvider>
-                <EditorRuntimeProviders>
-                  <ResizablePanelContextProvider>
-                    <CommandPaletteProvider>
-                      <SettingsDialogProvider>
-                        <ApplicationCommandsProvider>
-                          <AppLayout />
-                          <SettingsDialogMount />
-                          <CommandPalette />
+            <AppUpdatesProvider>
+              <EditorRuntimeProviders>
+                <ResizablePanelContextProvider>
+                  <AppDialogsProvider>
+                    <ApplicationCommandsProvider>
+                      <ExportDialog>
+                        <AppLayout />
+                      </ExportDialog>
+                      <AppSettingsDialog />
+                      <AppCommandPaletteDialog />
+                      <AppChangelogDialog />
 
-                          <Toaster />
-                          <ActivityToasts />
-                          <ExportDialogMount />
-                          <DiagnosticsRecoveryDialog />
-                          <WorkspaceRecoveryNotice />
-                          <SourceDropOverlay />
-                          <NativeDialogOverlay />
+                      <Toaster />
+                      <ActivityToasts />
+                      <AppDiagnosticsRecoveryDialog />
+                      <WorkspaceRecoveryNotice />
+                      <SourceDropOverlay />
+                      <NativeDialogOverlay />
 
-                          {dropListenerError ? (
-                            <Alert
-                              className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
-                              variant="destructive"
-                            >
-                              <AlertDescription>
-                                {t("app.dragUnavailable", {
-                                  message: localizeAppError(dropListenerError, t),
-                                })}
-                              </AlertDescription>
-                            </Alert>
-                          ) : null}
-                        </ApplicationCommandsProvider>
-                      </SettingsDialogProvider>
-                    </CommandPaletteProvider>
-                  </ResizablePanelContextProvider>
-                </EditorRuntimeProviders>
-              </AppUpdatesProvider>
-            </PreviewTransformProvider>
-          </QueueDeleteSourceProvider>
-        </SourceDeleteProvider>
-      </ChangelogProvider>
+                      {dropListenerError ? (
+                        <Alert
+                          className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+                          variant="destructive"
+                        >
+                          <AlertDescription>
+                            {t("app.dragUnavailable", {
+                              message: localizeAppError(dropListenerError, t),
+                            })}
+                          </AlertDescription>
+                        </Alert>
+                      ) : null}
+                    </ApplicationCommandsProvider>
+                  </AppDialogsProvider>
+                </ResizablePanelContextProvider>
+              </EditorRuntimeProviders>
+            </AppUpdatesProvider>
+          </PreviewTransformProvider>
+        </QueueDeleteSourceProvider>
+      </SourceDeleteProvider>
     </TooltipProvider>
   );
 }

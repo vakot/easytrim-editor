@@ -19,6 +19,8 @@ function useOptimizedExportCommand() {
     enabled,
     icon: <Settings2 aria-hidden="true" />,
     async run({ surface }: ApplicationCommandExecutionContext) {
+      const { ExportDialog } = await import("@/features/export");
+      await ExportDialog.preload().catch(() => undefined);
       const { openOptimizedExportDialog } = await import("@/app/store/thunks/export-thunks");
       await dispatch(openOptimizedExportDialog(commandOrigin("optimized-export", surface)));
     },

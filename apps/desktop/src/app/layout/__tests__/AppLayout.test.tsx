@@ -5,10 +5,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ResizablePanelContextProvider, usePanelCommand } from "@/components/ui/resizable";
 
-import { WorkspaceViewsProvider } from "@/app/components/providers/WorkspaceViewsProvider";
 import { AppLayout } from "@/app/layout/AppLayout";
 import { DEFAULT_SIDEBAR_LAYOUT, type SidebarLayout } from "@/app/layout/lib/sidebar-layout";
 import { DEFAULT_PREFERENCES } from "@/app/preferences";
+import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 
 const draggableElements = vi.hoisted(() => new Map<string, HTMLElement>());
@@ -48,13 +48,16 @@ vi.mock("@/app/layout/components/WorkspaceViewContent", () => ({
   WorkspaceViewContent: ({ viewId }: { viewId: string }) => <div>{viewId} view content</div>,
 }));
 
-vi.mock("@/app/layout/components/workspace-dialogs/ActivityWorkspaceDialog", () => ({
-  ActivityWorkspaceDialog: ({ open }: { open: boolean }) =>
-    open ? (
-      <div aria-label="Activity Feed" role="dialog">
-        Activity view dialog
-      </div>
-    ) : null,
+vi.mock("@/app/dialogs/AppActivityDialog", () => ({
+  AppActivityDialog: Object.assign(
+    ({ open }: { open: boolean }) =>
+      open ? (
+        <div aria-label="Activity Feed" role="dialog">
+          Activity view dialog
+        </div>
+      ) : null,
+    { preload: () => Promise.resolve() },
+  ),
 }));
 
 vi.mock("@/app/layout/components/AppLayoutPanel", () => ({

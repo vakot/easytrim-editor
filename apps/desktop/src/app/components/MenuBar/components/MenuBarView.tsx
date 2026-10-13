@@ -29,8 +29,8 @@ import {
   ApplicationCommandMenuItem,
   ApplicationCommandShortcut,
 } from "@/app/components/ApplicationCommandMenuItem";
-import { preloadCommandPalette } from "@/app/components/CommandPalette/command-palette.loader";
-import { useCommandPalette } from "@/app/contexts/command-palette-context";
+import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
+import { useCommandPaletteDialog } from "@/app/hooks/useAppDialog";
 import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
 import { DockViewMenuItems } from "@/app/layout/components/DockViewMenuItems";
 import { WORKSPACE_VIEWS } from "@/app/layout/lib/workspace-view-registry";
@@ -44,7 +44,7 @@ import { PRIMARY_COLOR_PRESETS } from "@/app/theme/theme";
 import { ColorSample } from "@/components/color";
 import { preloadOnIntent } from "@/lib/lazy-component";
 
-const preloadCommandPaletteOnIntent = preloadOnIntent(preloadCommandPalette);
+const preloadCommandPaletteOnIntent = preloadOnIntent(AppCommandPaletteDialog.preload);
 
 const themeIcons = {
   system: <Monitor aria-hidden="true" />,
@@ -71,7 +71,7 @@ function MenuBarView() {
 
 function MenuBarViewContent() {
   const { t } = useTranslation();
-  const { openCommandPalette } = useCommandPalette();
+  const { openDialog } = useCommandPaletteDialog();
 
   return (
     <>
@@ -79,7 +79,7 @@ function MenuBarViewContent() {
         <MenubarItem
           onFocus={preloadCommandPaletteOnIntent}
           onPointerEnter={preloadCommandPaletteOnIntent}
-          onSelect={() => openCommandPalette()}
+          onSelect={() => openDialog()}
         >
           {t("commands.title")}
           <MenubarShortcut>
