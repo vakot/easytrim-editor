@@ -30,7 +30,7 @@ function formatFrameTimecode(frame: number, frameRate: FrameRate | undefined) {
 
   // This is elapsed-time notation, not SMPTE drop-frame timecode: clock fields use exact rational
   // frame timestamps, and the final field is the zero-based frame ordinal within that second.
-  return `TC ${hours.toString().padStart(2, "0")}:${minutes
+  return `${hours.toString().padStart(2, "0")}:${minutes
     .toString()
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}:${frames
     .toString()
