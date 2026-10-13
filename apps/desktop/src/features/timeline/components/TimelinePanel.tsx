@@ -13,6 +13,8 @@ import {
   usePlaybackIsPlaying,
   useTimelinePlayback,
 } from "@/features/playback";
+import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
+import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
 import { formatFrameTimecode } from "../lib/frame-time";
 
@@ -28,6 +30,37 @@ function TimelinePanel() {
 
   const isPlaying = usePlaybackIsPlaying();
   const { pause, togglePlayback } = usePlaybackActions();
+
+  useKeyboardShortcut(
+    (event) => {
+      if (
+        framesCount === 0 ||
+        isApplicationInteractionBlocked() ||
+        document.querySelector("[data-sidebar-drag-preview]") ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey
+      ) {
+        return false;
+      }
+
+      return (
+        event.key === "ArrowLeft" ||
+        event.key === "ArrowRight" ||
+        (event.code === "Space" && !event.repeat)
+      );
+    },
+    (event) => {
+      if (event.code === "Space") {
+        togglePlayback();
+        return;
+      }
+
+      pause();
+      seekFrame(currentFrame + (event.key === "ArrowLeft" ? -1 : 1));
+    },
+  );
 
   return (
     <section
@@ -136,7 +169,7 @@ function TimelinePanel() {
         value={[currentFrame]}
       >
         <Slider.Track className="segment-markers h-13 rounded-md border bg-muted/30 text-muted" />
-        <Slider.Thumb className="h-13 w-4 rounded-none border-0 bg-transparent p-0 shadow-none ring-0 before:absolute before:inset-y-0 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:bg-foreground before:content-[''] after:top-0 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] hover:ring-0 focus-visible:ring-0 focus-visible:before:border-ring focus-visible:before:ring-3 focus-visible:before:ring-ring/50 focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 active:ring-0 data-disabled:pointer-events-none data-disabled:before:bg-muted-foreground data-disabled:after:bg-muted-foreground" />
+        <Slider.Thumb className="h-13 w-0 rounded-none border-0 bg-transparent p-0 shadow-none ring-0 before:absolute before:inset-y-0 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:bg-foreground before:content-[''] after:top-0 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] hover:ring-0 focus-visible:ring-0 focus-visible:before:border-ring focus-visible:before:ring-3 focus-visible:before:ring-ring/50 focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 active:ring-0 data-disabled:pointer-events-none data-disabled:before:bg-muted-foreground data-disabled:after:bg-muted-foreground" />
       </Slider.Root>
     </section>
   );

@@ -62,6 +62,43 @@ describe("TimelinePanel", () => {
     expect(playback.seekFrame).toHaveBeenCalledWith(12);
   });
 
+  it("moves by one frame with global arrows and toggles playback with Space", () => {
+    renderTimelinePanel();
+
+    fireEvent.keyDown(window, { code: "ArrowRight", key: "ArrowRight" });
+    fireEvent.keyDown(window, { code: "ArrowLeft", key: "ArrowLeft" });
+    fireEvent.keyDown(window, { code: "Space", key: " " });
+    fireEvent.keyDown(window, { code: "Space", key: " ", repeat: true });
+
+    expect(playback.pause).toHaveBeenCalledTimes(2);
+    expect(playback.seekFrame).toHaveBeenNthCalledWith(1, 12);
+    expect(playback.seekFrame).toHaveBeenNthCalledWith(2, 10);
+    expect(playback.togglePlayback).toHaveBeenCalledOnce();
+  });
+
+  it("leaves transport keys to text entry and open dialogs", () => {
+    renderTimelinePanel();
+    const input = document.createElement("input");
+    document.body.append(input);
+
+    fireEvent.keyDown(input, { code: "ArrowRight", key: "ArrowRight" });
+    fireEvent.keyDown(input, { code: "Space", key: " " });
+
+    const dialog = document.createElement("div");
+    dialog.setAttribute("data-state", "open");
+    dialog.setAttribute("role", "dialog");
+    document.body.append(dialog);
+    fireEvent.keyDown(window, { code: "ArrowRight", key: "ArrowRight" });
+    fireEvent.keyDown(window, { code: "Space", key: " " });
+
+    expect(playback.pause).not.toHaveBeenCalled();
+    expect(playback.seekFrame).not.toHaveBeenCalled();
+    expect(playback.togglePlayback).not.toHaveBeenCalled();
+
+    input.remove();
+    dialog.remove();
+  });
+
   it("disables the slider for unloaded media", () => {
     renderTimelinePanel({ currentFrame: 0, framesCount: 0 });
 
