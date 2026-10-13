@@ -59,37 +59,38 @@ function EditorRuntimeTestProvider({
   children: ReactNode;
   usesWebAudio?: boolean;
 }) {
-  const playbackController = useMemo(
-    () =>
-      new PlaybackController(
-        {
-          audio: {
-            getCurrentTimeSeconds: () => null,
-            hasActiveOutput: usesWebAudio,
-            isReady: false,
-            pause: noOperation,
-            resume: async () => undefined,
-            seek: noOperation,
-            setPlaybackRate: noOperation,
-            startAt: async () => undefined,
-          },
-          video: {
-            getCurrentTimeSeconds: () => null,
-            isReady: false,
-            isSeekPending: () => false,
-            pause: noOperation,
-            play: async () => undefined,
-            registerMediaObserver: () => noOperation,
-            requestPlaybackFrame: () => null,
-            seek: noOperation,
-            setCurrentTimeSeconds: noOperation,
-            setPlaybackRate: noOperation,
-          },
+  const playbackController = useMemo(() => {
+    const controller = new PlaybackController();
+    controller.attach(
+      1,
+      {
+        audio: {
+          getCurrentTimeSeconds: () => null,
+          hasActiveOutput: usesWebAudio,
+          isReady: false,
+          pause: noOperation,
+          resume: async () => undefined,
+          seek: noOperation,
+          setPlaybackRate: noOperation,
+          startAt: async () => undefined,
         },
-        0,
-      ),
-    [usesWebAudio],
-  );
+        video: {
+          getCurrentTimeSeconds: () => null,
+          isReady: false,
+          isSeekPending: () => false,
+          pause: noOperation,
+          play: async () => undefined,
+          registerMediaObserver: () => noOperation,
+          requestPlaybackFrame: () => null,
+          seek: noOperation,
+          setCurrentTimeSeconds: noOperation,
+          setPlaybackRate: noOperation,
+        },
+      },
+      0,
+    );
+    return controller;
+  }, [usesWebAudio]);
 
   const audioTransport = {
     getCurrentTimeSeconds: () => null,

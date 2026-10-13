@@ -23,7 +23,6 @@ interface PreviewVideoAdapter {
     callback: (timestamp: number, mediaTimeSeconds: number) => void,
   ) => PreviewPlaybackFrame | null;
   seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
-  sessionKey: string | null;
   setCurrentTimeSeconds: (seconds: number) => void;
   setPlaybackRate: (rate: number) => void;
 }
@@ -65,7 +64,6 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
     isSeekPending,
     pauseMedia: pause,
     playMedia: play,
-    previewKey: sessionKey,
     registerMediaObserver,
     requestPlaybackFrame,
     seekMedia: seek,
@@ -95,7 +93,6 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
       registerMediaObserver,
       requestPlaybackFrame,
       seek,
-      sessionKey,
       setCurrentTimeSeconds,
       setPlaybackRate,
     }),
@@ -108,7 +105,6 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
       registerMediaObserver,
       requestPlaybackFrame,
       seek,
-      sessionKey,
       setCurrentTimeSeconds,
       setPlaybackRate,
     ],
