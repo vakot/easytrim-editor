@@ -47,6 +47,18 @@ afterEach(async () => {
   localStorage.clear();
 });
 
+it("focuses the preset name field when opened before preload finishes", async () => {
+  await i18n.changeLanguage("en");
+  renderPresetManager();
+
+  await userEvent.click(screen.getByRole("button", { name: "P3 · Fast" }));
+  const addPreset = screen.getByRole("menuitem", { name: "Add new preset" });
+  fireEvent.focus(addPreset);
+  fireEvent.click(addPreset);
+
+  expect(await screen.findByLabelText("Name")).toHaveFocus();
+});
+
 const customNamePlaceholderCases = [
   {
     language: "en",

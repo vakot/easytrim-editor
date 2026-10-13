@@ -137,6 +137,7 @@ function PresetEditorDialogContent({ __scopeDialog }: { __scopeDialog?: DialogSc
         <div className="grid gap-1.5">
           <Label htmlFor="preset-name">{t("export.preset.nameLabel")}</Label>
           <Input
+            autoFocus
             id="preset-name"
             onChange={(event) => setDraftName(event.target.value)}
             placeholder={namePlaceholder}
