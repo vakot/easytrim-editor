@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-interface AudioTransportContract {
+interface AudioPlaybackAdapter {
   getCurrentTimeSeconds: () => number | null;
   isReady: boolean;
   pause: () => void;
@@ -14,13 +14,15 @@ interface AudioTransportContract {
   usesWebAudio: boolean;
 }
 
-const AudioTransportContext = createContext<AudioTransportContract | null>(null);
+const AudioTransportContext = createContext<AudioPlaybackAdapter | null>(null);
 
-function useAudioTransport(): AudioTransportContract {
+function useAudioPlaybackAdapter(): AudioPlaybackAdapter {
   const transport = useContext(AudioTransportContext);
   if (!transport) throw new Error("Audio transport must be used within AudioPlaybackProvider.");
   return transport;
 }
 
-export { AudioTransportContext, useAudioTransport };
-export type { AudioTransportContract };
+const useAudioTransport = useAudioPlaybackAdapter;
+
+export { AudioTransportContext, useAudioPlaybackAdapter, useAudioTransport };
+export type { AudioPlaybackAdapter };

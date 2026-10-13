@@ -3,9 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import { PlaybackController, type PlaybackDriver } from "../playback-controller";
 
 function createPlaybackDriver() {
-  let observer: Parameters<PlaybackDriver["preview"]["registerMediaObserver"]>[0] | null = null;
-  let playbackFrameCallback:
-    Parameters<PlaybackDriver["preview"]["requestPlaybackFrame"]>[0] | null = null;
+  let observer: Parameters<PlaybackDriver["video"]["registerMediaObserver"]>[0] | null = null;
+  let playbackFrameCallback: Parameters<PlaybackDriver["video"]["requestPlaybackFrame"]>[0] | null =
+    null;
 
   const driver: PlaybackDriver = {
     audio: {
@@ -22,7 +22,8 @@ function createPlaybackDriver() {
       syncTo: vi.fn(),
       usesWebAudio: true,
     },
-    preview: {
+    video: {
+      sessionKey: "preview",
       isReady: true,
       isSeekPending: () => false,
       pause: vi.fn(),
@@ -76,7 +77,7 @@ describe("playback controller", () => {
       isPlaying: false,
       positionMicros: 2_000_000,
     });
-    expect(driver.preview.seek).toHaveBeenCalledWith(2, false);
+    expect(driver.video.seek).toHaveBeenCalledWith(2, false);
     expect(driver.audio.syncTo).toHaveBeenCalledWith(2, true);
   });
 
@@ -106,14 +107,14 @@ describe("playback controller", () => {
       isPlaying: false,
       positionMicros: 2_000_000,
     });
-    expect(driver.preview.pause).toHaveBeenCalled();
+    expect(driver.video.pause).toHaveBeenCalled();
     expect(driver.audio.pause).toHaveBeenCalled();
     disconnect();
   });
 
   it("keeps playback inactive and pauses both participants when preview startup fails", async () => {
     const { driver } = createPlaybackDriver();
-    vi.mocked(driver.preview.play).mockRejectedValue(new Error("Video playback failed."));
+    vi.mocked(driver.video.play).mockRejectedValue(new Error("Video playback failed."));
     const controller = new PlaybackController(driver, 2_000_000);
     controller.connect();
 
@@ -121,7 +122,7 @@ describe("playback controller", () => {
     await vi.waitFor(() => expect(driver.audio.pause).toHaveBeenCalled());
 
     expect(controller.getSnapshot().isPlaying).toBe(false);
-    expect(driver.preview.pause).toHaveBeenCalled();
+    expect(driver.video.pause).toHaveBeenCalled();
   });
 
   it("does not start preview when required audio startup fails", async () => {
@@ -134,23 +135,23 @@ describe("playback controller", () => {
     await vi.waitFor(() => expect(driver.audio.pause).toHaveBeenCalled());
 
     expect(controller.getSnapshot().isPlaying).toBe(false);
-    expect(driver.preview.play).not.toHaveBeenCalled();
-    expect(driver.preview.pause).toHaveBeenCalled();
+    expect(driver.video.play).not.toHaveBeenCalled();
+    expect(driver.video.pause).toHaveBeenCalled();
   });
 
   it("does not report playing from a media event before preview startup resolves", async () => {
     const playback = createPlaybackDriver();
     const startPreview = createDeferred<void>();
-    vi.mocked(playback.driver.preview.play).mockReturnValue(startPreview.promise);
+    vi.mocked(playback.driver.video.play).mockReturnValue(startPreview.promise);
     const controller = new PlaybackController(playback.driver, 2_000_000);
     controller.connect();
 
     controller.play();
-    await vi.waitFor(() => expect(playback.driver.preview.play).toHaveBeenCalled());
+    await vi.waitFor(() => expect(playback.driver.video.play).toHaveBeenCalled());
     playback.observer.onPlay();
 
     expect(controller.getSnapshot().isPlaying).toBe(false);
-    expect(playback.driver.preview.pause).not.toHaveBeenCalled();
+    expect(playback.driver.video.pause).not.toHaveBeenCalled();
 
     startPreview.resolve();
     await vi.waitFor(() => expect(controller.getSnapshot().isPlaying).toBe(true));
@@ -170,7 +171,7 @@ describe("playback controller", () => {
     await Promise.resolve();
 
     expect(controller.getSnapshot().isPlaying).toBe(false);
-    expect(driver.preview.play).not.toHaveBeenCalled();
+    expect(driver.video.play).not.toHaveBeenCalled();
   });
 
   it("waits for required Web Audio readiness before starting", () => {

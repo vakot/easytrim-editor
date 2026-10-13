@@ -7,8 +7,8 @@ import {
 } from "@/features/audio/contexts/audio-playback-context";
 // eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies feature-owned contexts.
 import {
+  type AudioPlaybackAdapter,
   AudioTransportContext,
-  type AudioTransportContract,
 } from "@/features/audio/contexts/audio-transport-context";
 // eslint-disable-next-line no-restricted-imports -- Test runtime provider supplies the playback feature context.
 import { PlaybackContext } from "@/features/playback/contexts/playback-context";
@@ -59,7 +59,7 @@ const playbackController = new PlaybackController(
       syncTo: noOperation,
       usesWebAudio: false,
     },
-    preview: {
+    video: {
       isReady: false,
       isSeekPending: () => false,
       pause: noOperation,
@@ -67,6 +67,7 @@ const playbackController = new PlaybackController(
       registerMediaObserver: () => noOperation,
       requestPlaybackFrame: () => null,
       seek: noOperation,
+      sessionKey: null,
       setPlaybackRate: noOperation,
     },
   },
@@ -96,7 +97,7 @@ function EditorRuntimeTestProvider({
     startAt: async () => undefined,
     syncTo: noOperation,
     usesWebAudio,
-  } satisfies AudioTransportContract;
+  } satisfies AudioPlaybackAdapter;
 
   return (
     <PreviewRuntimeContext.Provider value={preview}>

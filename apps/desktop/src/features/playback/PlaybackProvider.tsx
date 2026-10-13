@@ -3,8 +3,8 @@ import { type ReactNode, useEffect, useLayoutEffect, useMemo, useState } from "r
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
-import { useAudioTransport } from "@/features/audio";
-import { usePreviewRuntime } from "@/features/preview";
+import { useAudioPlaybackAdapter } from "@/features/audio";
+import { usePreviewVideoAdapter } from "@/features/preview";
 
 import { PlaybackContext } from "./contexts/playback-context";
 import { PlaybackController, type PlaybackDriver } from "./playback-controller";
@@ -13,39 +13,14 @@ function PlaybackProvider({ children }: { children: ReactNode }) {
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const source = useAppSelector(selectSourceSelection);
   const media = useAppSelector(selectSourceMedia);
-  const preview = usePreviewRuntime();
-  const audio = useAudioTransport();
-  const driver = useMemo<PlaybackDriver>(
-    () => ({
-      audio: {
-        getCurrentTimeSeconds: audio.getCurrentTimeSeconds,
-        isReady: audio.isReady,
-        pause: audio.pause,
-        requestPlaybackFrame: audio.requestPlaybackFrame,
-        resumeAudioContext: audio.resumeAudioContext,
-        setPlaybackRate: audio.setPlaybackRate,
-        startAt: audio.startAt,
-        syncTo: audio.syncTo,
-        usesWebAudio: audio.usesWebAudio,
-      },
-      preview: {
-        isReady: preview.isPreviewReady,
-        isSeekPending: preview.isSeekPending,
-        pause: preview.pauseMedia,
-        play: preview.playMedia,
-        registerMediaObserver: preview.registerMediaObserver,
-        requestPlaybackFrame: preview.requestPlaybackFrame,
-        seek: preview.seekMedia,
-        setPlaybackRate: preview.setPlaybackRate,
-      },
-    }),
-    [audio, preview],
-  );
+  const audio = useAudioPlaybackAdapter();
+  const video = usePreviewVideoAdapter();
+  const driver = useMemo<PlaybackDriver>(() => ({ audio, video }), [audio, video]);
 
   const sessionKey = JSON.stringify([
     activeInstanceId,
     source?.sourcePath ?? null,
-    preview.previewKey,
+    video.sessionKey,
     media?.durationMicros ?? 0,
   ]);
 

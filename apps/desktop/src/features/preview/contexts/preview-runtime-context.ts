@@ -1,4 +1,4 @@
-import { createContext, type RefObject, useContext } from "react";
+import { createContext, type RefObject, useContext, useMemo } from "react";
 
 interface PreviewMediaObserver {
   onEnded: () => void;
@@ -10,6 +10,20 @@ interface PreviewMediaObserver {
 
 interface PreviewPlaybackFrame {
   cancel: () => void;
+}
+
+interface PreviewVideoAdapter {
+  isReady: boolean;
+  isSeekPending: () => boolean;
+  pause: () => void;
+  play: () => Promise<void>;
+  registerMediaObserver: (observer: PreviewMediaObserver) => () => void;
+  requestPlaybackFrame: (
+    callback: (timestamp: number, mediaTimeSeconds: number) => void,
+  ) => PreviewPlaybackFrame | null;
+  seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
+  sessionKey: string | null;
+  setPlaybackRate: (rate: number) => void;
 }
 
 interface PreviewRuntimeContract {
@@ -43,5 +57,49 @@ function usePreviewRuntime(): PreviewRuntimeContract {
   return runtime;
 }
 
-export { PreviewRuntimeContext, usePreviewRuntime };
-export type { PreviewMediaObserver, PreviewPlaybackFrame, PreviewRuntimeContract };
+function usePreviewVideoAdapter(): PreviewVideoAdapter {
+  const {
+    isPreviewReady: isReady,
+    isSeekPending,
+    pauseMedia: pause,
+    playMedia: play,
+    previewKey: sessionKey,
+    registerMediaObserver,
+    requestPlaybackFrame,
+    seekMedia: seek,
+    setPlaybackRate,
+  } = usePreviewRuntime();
+
+  return useMemo(
+    () => ({
+      isReady,
+      isSeekPending,
+      pause,
+      play,
+      registerMediaObserver,
+      requestPlaybackFrame,
+      seek,
+      sessionKey,
+      setPlaybackRate,
+    }),
+    [
+      isReady,
+      isSeekPending,
+      pause,
+      play,
+      registerMediaObserver,
+      requestPlaybackFrame,
+      seek,
+      sessionKey,
+      setPlaybackRate,
+    ],
+  );
+}
+
+export { PreviewRuntimeContext, usePreviewRuntime, usePreviewVideoAdapter };
+export type {
+  PreviewMediaObserver,
+  PreviewPlaybackFrame,
+  PreviewRuntimeContract,
+  PreviewVideoAdapter,
+};

@@ -1,37 +1,9 @@
-import type { PreviewPlaybackFrame } from "@/features/preview";
+import type { AudioPlaybackAdapter } from "@/features/audio";
+import type { PreviewPlaybackFrame, PreviewVideoAdapter } from "@/features/preview";
 
 interface PlaybackDriver {
-  audio: {
-    getCurrentTimeSeconds: () => number | null;
-    isReady: boolean;
-    pause: () => void;
-    requestPlaybackFrame: (
-      callback: (timestamp: number, mediaTimeSeconds: number) => void,
-    ) => PreviewPlaybackFrame | null;
-    resumeAudioContext: () => Promise<void>;
-    setPlaybackRate: (rate: number) => void;
-    startAt: (seconds: number) => Promise<void>;
-    syncTo: (seconds: number, force?: boolean) => void;
-    usesWebAudio: boolean;
-  };
-  preview: {
-    isReady: boolean;
-    isSeekPending: () => boolean;
-    pause: () => void;
-    play: () => Promise<void>;
-    registerMediaObserver: (observer: {
-      onEnded: () => void;
-      onPause: () => void;
-      onPlay: () => void;
-      onPlaybackError: () => void;
-      onTimeUpdate: (seconds: number) => void;
-    }) => () => void;
-    requestPlaybackFrame: (
-      callback: (timestamp: number, mediaTimeSeconds: number) => void,
-    ) => PreviewPlaybackFrame | null;
-    seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
-    setPlaybackRate: (rate: number) => void;
-  };
+  audio: AudioPlaybackAdapter;
+  video: PreviewVideoAdapter;
 }
 
 interface PlaybackSnapshot {
@@ -71,9 +43,9 @@ class PlaybackController {
 
   connect = () => {
     const driver = this.driver;
-    driver.preview.setPlaybackRate(1);
+    driver.video.setPlaybackRate(1);
     driver.audio.setPlaybackRate(1);
-    this.unregisterMediaObserver = driver.preview.registerMediaObserver({
+    this.unregisterMediaObserver = driver.video.registerMediaObserver({
       onEnded: () => {
         this.setPosition(this.snapshot.durationMicros);
         this.pause();
@@ -90,7 +62,7 @@ class PlaybackController {
           this.lifecycle === "playing" ||
           (this.lifecycle === "starting" && this.mediaStartRequested);
 
-        if (!isExpectedPlay) this.driver.preview.pause();
+        if (!isExpectedPlay) this.driver.video.pause();
       },
       onPlaybackError: () => this.pause(),
       onTimeUpdate: (seconds) => {
@@ -104,7 +76,7 @@ class PlaybackController {
       this.cancelStartup();
       this.lifecycle = "paused";
       this.stopPlaybackClock();
-      driver.preview.pause();
+      driver.video.pause();
       driver.audio.pause();
     };
   };
@@ -112,7 +84,7 @@ class PlaybackController {
   seek = (positionMicros: number) => {
     if (this.lifecycle === "starting") {
       this.cancelStartup();
-      this.driver.preview.pause();
+      this.driver.video.pause();
       this.driver.audio.pause();
     }
     const nextPosition = Math.max(0, Math.min(this.snapshot.durationMicros, positionMicros));
@@ -120,13 +92,13 @@ class PlaybackController {
     this.setPosition(nextPosition);
     const seconds = nextPosition / MICROS_PER_SECOND;
     this.driver.audio.syncTo(seconds, true);
-    this.driver.preview.seek(seconds, false);
+    this.driver.video.seek(seconds, false);
   };
 
   play = () => {
     const driver = this.driver;
     if (
-      !driver.preview.isReady ||
+      !driver.video.isReady ||
       (driver.audio.usesWebAudio && !driver.audio.isReady) ||
       this.snapshot.durationMicros <= 0 ||
       this.snapshot.isPlaying ||
@@ -139,7 +111,7 @@ class PlaybackController {
     const generation = ++this.startupGeneration;
     this.lifecycle = "starting";
     this.mediaStartRequested = false;
-    driver.preview.setPlaybackRate(1);
+    driver.video.setPlaybackRate(1);
     driver.audio.setPlaybackRate(1);
     void this.startPlayback(generation, seconds);
   };
@@ -148,7 +120,7 @@ class PlaybackController {
     this.cancelStartup();
     this.lifecycle = "paused";
     this.stopPlaybackClock();
-    this.driver.preview.pause();
+    this.driver.video.pause();
     this.driver.audio.pause();
     this.setIsPlaying(false);
   };
@@ -159,7 +131,7 @@ class PlaybackController {
   };
 
   private publishMediaTime(seconds: number, synchronizeAudio = true) {
-    if (this.driver.preview.isSeekPending()) return;
+    if (this.driver.video.isSeekPending()) return;
     this.setPosition(seconds * MICROS_PER_SECOND);
     if (synchronizeAudio) this.driver.audio.syncTo(seconds);
   }
@@ -170,7 +142,7 @@ class PlaybackController {
       if (!this.isCurrentStartup(generation)) return;
 
       await new Promise<void>((resolve) => {
-        this.driver.preview.seek(seconds, false, resolve);
+        this.driver.video.seek(seconds, false, resolve);
       });
       if (!this.isCurrentStartup(generation)) return;
 
@@ -178,7 +150,7 @@ class PlaybackController {
       if (!this.isCurrentStartup(generation)) return;
 
       this.mediaStartRequested = true;
-      await this.driver.preview.play();
+      await this.driver.video.play();
       if (this.isCurrentStartup(generation)) this.finishStartup();
     } catch {
       if (this.isCurrentStartup(generation)) this.pause();
@@ -218,7 +190,7 @@ class PlaybackController {
     const tick = (_timestamp: number, seconds: number) => {
       const audioClockSeconds = this.driver.audio.getCurrentTimeSeconds();
       const clockSeconds = audioClockSeconds ?? seconds;
-      if (!this.driver.preview.isSeekPending()) {
+      if (!this.driver.video.isSeekPending()) {
         this.publishMediaTime(clockSeconds, false);
         if (audioClockSeconds !== null) this.driver.audio.syncTo(clockSeconds);
         if (this.snapshot.positionMicros >= this.snapshot.durationMicros) {
@@ -235,7 +207,7 @@ class PlaybackController {
   private requestPlaybackFrame(callback: (timestamp: number, mediaTimeSeconds: number) => void) {
     return this.driver.audio.usesWebAudio
       ? this.driver.audio.requestPlaybackFrame(callback)
-      : this.driver.preview.requestPlaybackFrame(callback);
+      : this.driver.video.requestPlaybackFrame(callback);
   }
 
   private stopPlaybackClock() {
