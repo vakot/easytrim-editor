@@ -44,7 +44,6 @@ function TimelineMarkersStatic({
         return {
           value,
           label: framesCount > 0 ? formatFrameTimecode(value, frameRate) : "00:00:00:00f",
-          showMarker: false,
           snapTarget: false,
         };
       }),
@@ -53,7 +52,7 @@ function TimelineMarkersStatic({
 
   return (
     <Slider.Markers
-      className="-inset-bs-1 font-mono"
+      className="-inset-bs-1 font-mono **:data-[slot=slider-marker]:bg-transparent"
       markers={markers}
       max={framesCount > 0 ? framesCount : PERCENT_MARKERS.length - 1}
       min={0}

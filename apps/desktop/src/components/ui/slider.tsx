@@ -10,7 +10,6 @@ import { cn } from "@/lib/class-names.utils";
 
 interface SliderMarker {
   label: React.ReactNode;
-  showMarker?: boolean;
   snapTarget?: boolean;
   value: number;
 }
@@ -249,7 +248,6 @@ function Marker({
   className,
   max = 100,
   min = 0,
-  showMarker = true,
   snapTarget = true,
   style,
   value,
@@ -273,8 +271,7 @@ function Marker({
   return (
     <span
       className={cn(
-        "pointer-events-none absolute -inset-y-0.5 w-px -translate-x-1/2",
-        showMarker && "bg-muted-foreground/70",
+        "pointer-events-none absolute -inset-y-0.5 w-px -translate-x-1/2 bg-muted-foreground/70",
         className,
       )}
       data-slot="slider-marker"
@@ -317,7 +314,6 @@ function Markers({
             key={`${marker.value}-${String(marker.label)}`}
             max={max}
             min={min}
-            showMarker={marker.showMarker}
             snapTarget={marker.snapTarget}
             value={marker.value}
           >
