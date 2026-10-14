@@ -214,11 +214,14 @@ function TimelinePanel() {
       </div>
 
       <div className="grid h-17 min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-3">
-        <div className="h-full min-w-0">
+        <div
+          aria-label={t("timeline.playhead.accessibility.tools")}
+          className="h-full min-w-0"
+          role="group"
+        >
           <h3 className="text-[0.625rem] font-bold tracking-wider text-muted-foreground uppercase">
-            Tools
+            {t("timeline.playhead.labels.tools")}
           </h3>
-          <div>TODO</div>
         </div>
 
         <Slider.Group className="relative isolate mt-5 h-13" key={loadToken} sharedScale>
