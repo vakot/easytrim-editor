@@ -5,6 +5,7 @@ import * as React from "react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDragAwareDoubleClick } from "@/components/ui/useDragAwareDoubleClick";
+import { useSliderSnapping } from "@/components/ui/useSliderSnapping";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -47,98 +48,20 @@ function Root({
   const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue ?? [min]);
   const values = value ?? uncontrolledValue;
   const pendingValue = React.useRef(values);
-  const pointer = React.useRef<{
-    root: HTMLDivElement;
-    shift: boolean;
-    thumb: Element | null;
-  } | null>(null);
-
-  function clearSnap() {
-    const active = pointer.current;
-    active?.root.removeAttribute("data-snap-active");
-    active?.thumb?.removeAttribute("data-snap-active");
-  }
+  const snapping = useSliderSnapping({
+    dir,
+    inverted,
+    max,
+    min,
+    minStepsBetweenThumbs,
+    orientation,
+    snap,
+    snapThreshold,
+    step,
+  });
 
   function changeValues(next: number[]) {
-    const active = pointer.current;
-    clearSnap();
-    if (active && snap && (snap === true || active.shift)) {
-      const thumbs = Array.from(active.root.querySelectorAll('[data-slot="slider-thumb"]'));
-      let index = active.thumb ? thumbs.indexOf(active.thumb) : -1;
-      if (index < 0) index = next.findIndex((entry, i) => entry !== values[i]);
-      if (index < 0) index = 0;
-      active.thumb = thumbs[index] ?? null;
-      const bounds = active.root.getBoundingClientRect();
-      const vertical = orientation === "vertical";
-      const length = vertical ? bounds.height : bounds.width;
-      const origin = vertical ? bounds.top : bounds.left;
-      const thumbBounds = active.thumb?.getBoundingClientRect();
-      const thumbSize = thumbBounds ? (vertical ? thumbBounds.height : thumbBounds.width) : 0;
-      const travel = length - thumbSize;
-      const reverse = vertical
-        ? !inverted
-        : (dir ?? getComputedStyle(active.root).direction) === "rtl"
-          ? !inverted
-          : inverted;
-
-      const requested = next[index] ?? min;
-      const scope = active.root.closest('[data-slot="slider-group"]') ?? active.root;
-      // Shared-scale groups snap to declared values; layout rounding is lossy on long ranges.
-      const shared = scope.hasAttribute("data-shared-scale");
-      let distance = snapThreshold;
-      let snapped: number | undefined;
-      if (travel > 0 && max > min) {
-        for (const target of scope.querySelectorAll(
-          '[data-slot="slider-thumb"], [data-slot="slider-marker"]',
-        )) {
-          if (
-            target === active.thumb ||
-            target.getAttribute("data-snap-target") === "false" ||
-            target.closest('[data-slot="slider"][data-snap-target="false"]')
-          )
-            continue;
-          if ((target.closest('[data-slot="slider-group"]') ?? active.root) !== scope) continue;
-          let targetValue: number;
-          if (shared) {
-            targetValue = Number(
-              target.getAttribute("data-slot") === "slider-marker"
-                ? target.getAttribute("data-snap-value")
-                : target.getAttribute("aria-valuenow"),
-            );
-            if (!Number.isFinite(targetValue)) continue;
-          } else {
-            const targetBounds = target.getBoundingClientRect();
-            const targetCoordinate = vertical
-              ? targetBounds.top + targetBounds.height / 2
-              : targetBounds.left + targetBounds.width / 2;
-
-            const targetFraction = (targetCoordinate - origin - thumbSize / 2) / travel;
-            targetValue = min + (reverse ? 1 - targetFraction : targetFraction) * (max - min);
-          }
-
-          const targetDistance = (Math.abs(targetValue - requested) / (max - min)) * travel;
-          const rounded = Number((min + Math.round((targetValue - min) / step) * step).toFixed(10));
-          const gap = step * minStepsBetweenThumbs;
-          const lower = index > 0 ? next[index - 1]! + gap : min;
-          const upper = index < next.length - 1 ? next[index + 1]! - gap : max;
-          if (
-            targetValue < min ||
-            targetValue > max ||
-            rounded < lower ||
-            rounded > upper ||
-            targetDistance > distance
-          )
-            continue;
-          distance = targetDistance;
-          snapped = rounded;
-        }
-      }
-      if (snapped !== undefined) {
-        next = next.map((entry, i) => (i === index ? snapped : entry));
-        active.root.setAttribute("data-snap-active", "true");
-        active.thumb?.setAttribute("data-snap-active", "true");
-      }
-    }
+    next = snapping.apply(next, values);
     pendingValue.current = next;
     if (value === undefined) setUncontrolledValue(next);
     onValueChange?.(next);
@@ -163,14 +86,12 @@ function Root({
         minStepsBetweenThumbs={minStepsBetweenThumbs}
         onDoubleClick={dragAwareDoubleClick.onDoubleClick}
         onLostPointerCapture={(event) => {
-          clearSnap();
-          pointer.current = null;
+          snapping.stop();
           setDragging(false);
           onLostPointerCapture?.(event);
         }}
         onPointerCancelCapture={(event) => {
-          clearSnap();
-          pointer.current = null;
+          snapping.stop();
           setDragging(false);
           dragAwareDoubleClick.onPointerCancelCapture(event);
           onPointerCancelCapture?.(event);
@@ -185,20 +106,11 @@ function Root({
           onPointerDownCapture?.(event);
           if (!disabled && !event.defaultPrevented && event.button === 0) {
             pendingValue.current = values;
-            pointer.current = {
-              root: event.currentTarget,
-              thumb:
-                event.target instanceof Element
-                  ? event.target.closest('[data-slot="slider-thumb"]')
-                  : null,
-              shift: event.shiftKey,
-            };
+            snapping.start(event);
           }
         }}
         onPointerMoveCapture={(event) => {
-          if (pointer.current) {
-            pointer.current.shift = event.shiftKey;
-          }
+          snapping.track(event);
           dragAwareDoubleClick.onPointerMoveCapture(event);
           onPointerMoveCapture?.(event);
         }}
@@ -206,17 +118,11 @@ function Root({
           setDragging(false);
           dragAwareDoubleClick.onPointerUpCapture(event);
           onPointerUpCapture?.(event);
-          const active = pointer.current;
-          queueMicrotask(() => {
-            if (pointer.current === active) {
-              clearSnap();
-              pointer.current = null;
-            }
-          });
+          snapping.release();
         }}
         onValueChange={changeValues}
         onValueCommit={(next) => {
-          onValueCommit?.(pointer.current ? pendingValue.current : next);
+          onValueCommit?.(snapping.active ? pendingValue.current : next);
         }}
         orientation={orientation}
         step={step}
