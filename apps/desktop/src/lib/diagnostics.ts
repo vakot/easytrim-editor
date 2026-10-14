@@ -295,6 +295,7 @@ function subscribeToCurrentSessionDiagnostics(listener: () => void): () => void 
 }
 
 function installGlobalDiagnostics(): () => void {
+  const stopPerformanceCleanup = installReactPerformanceCleanup();
   const onError = (event: ErrorEvent) => {
     diagnostics.fatal("frontend.fatal.error", event.error ?? event.message, {
       data: { filename: event.filename, line: event.lineno, column: event.colno },
@@ -314,10 +315,44 @@ function installGlobalDiagnostics(): () => void {
 
   observePersistence(recordUiHeartbeat);
   return () => {
+    stopPerformanceCleanup();
     window.clearInterval(heartbeat);
     window.removeEventListener("error", onError);
     window.removeEventListener("unhandledrejection", onUnhandledRejection);
   };
+}
+
+function installReactPerformanceCleanup(): () => void {
+  if (
+    !import.meta.env.DEV ||
+    typeof PerformanceObserver === "undefined" ||
+    !PerformanceObserver.supportedEntryTypes.includes("measure")
+  ) {
+    return () => {};
+  }
+
+  // React 19.2's development tracks retain copied props in Chromium's User Timing
+  // buffer indefinitely. Clearing delivered measures preserves DevTools recording
+  // while releasing that buffer; application measures must remain untouched.
+  const observer = new PerformanceObserver((list) => {
+    const names = new Set<string>();
+    for (const entry of list.getEntries()) {
+      const detail: unknown = (entry as PerformanceMeasure).detail;
+      if (!detail || typeof detail !== "object" || !("devtools" in detail)) continue;
+      const devtools = detail.devtools;
+      if (!devtools || typeof devtools !== "object") continue;
+      if (
+        ("track" in devtools && devtools.track === "Components ⚛") ||
+        ("trackGroup" in devtools && devtools.trackGroup === "Scheduler ⚛")
+      ) {
+        names.add(entry.name);
+      }
+    }
+    for (const name of names) performance.clearMeasures(name);
+  });
+
+  observer.observe({ type: "measure", buffered: true });
+  return () => observer.disconnect();
 }
 
 function reportDiagnosticsUnavailable(error: unknown): void {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { bootstrapNativeDiagnostics, persistDiagnosticEvent } = vi.hoisted(() => ({
   bootstrapNativeDiagnostics: vi.fn(() => Promise.resolve<unknown>(null)),
@@ -15,9 +15,83 @@ import {
   diagnostics,
   getCurrentDiagnosticSessionMetadata,
   getCurrentSessionDiagnosticsSnapshot,
+  installGlobalDiagnostics,
   serializeDiagnosticError,
   subscribeToCurrentSessionDiagnostics,
 } from "../diagnostics";
+
+describe("development performance measures", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("releases delivered React measures without clearing application timings", () => {
+    let deliver: PerformanceObserverCallback | undefined;
+    const observe = vi.fn();
+    const disconnect = vi.fn();
+    const clearMeasures = vi.fn();
+    vi.stubEnv("DEV", true);
+    vi.stubGlobal("performance", { ...performance, clearMeasures });
+    vi.stubGlobal(
+      "PerformanceObserver",
+      class {
+        static supportedEntryTypes = ["measure"];
+        observe = observe;
+        disconnect = disconnect;
+        constructor(callback: PerformanceObserverCallback) {
+          deliver = callback;
+        }
+      },
+    );
+    const stop = installGlobalDiagnostics();
+    const entries = [
+      { name: "Timeline", detail: { devtools: { track: "Components ⚛" } } },
+      { name: "Timeline", detail: { devtools: { track: "Components ⚛" } } },
+      { name: "Render", detail: { devtools: { trackGroup: "Scheduler ⚛" } } },
+      { name: "decode", detail: null },
+      { name: "custom", detail: { devtools: { track: "Audio" } } },
+    ].map((entry) => ({
+      ...entry,
+      entryType: "measure",
+      startTime: 0,
+      duration: 1,
+      toJSON: () => entry,
+    }));
+
+    try {
+      expect(observe).toHaveBeenCalledWith({ type: "measure", buffered: true });
+      for (let batch = 0; batch < 100; batch += 1) {
+        deliver?.(
+          {
+            getEntries: () => entries,
+            getEntriesByName: (name) => entries.filter((entry) => entry.name === name),
+            getEntriesByType: () => entries,
+          },
+          {} as PerformanceObserver,
+        );
+      }
+      expect(clearMeasures).toHaveBeenCalledTimes(200);
+      expect(clearMeasures).toHaveBeenCalledWith("Timeline");
+      expect(clearMeasures).toHaveBeenCalledWith("Render");
+      expect(clearMeasures).not.toHaveBeenCalledWith("decode");
+      expect(clearMeasures).not.toHaveBeenCalledWith("custom");
+    } finally {
+      stop();
+    }
+    expect(disconnect).toHaveBeenCalledOnce();
+  });
+
+  it("does not observe performance measures in production", () => {
+    const observer = vi.fn();
+    vi.stubEnv("DEV", false);
+    vi.stubGlobal("PerformanceObserver", observer);
+    const stop = installGlobalDiagnostics();
+    stop();
+    expect(observer).not.toHaveBeenCalled();
+  });
+});
 
 describe("diagnostics", () => {
   beforeEach(() => {
