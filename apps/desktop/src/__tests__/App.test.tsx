@@ -546,6 +546,8 @@ describe("App", () => {
     input.addEventListener("keydown", inputKeyDown);
     play.mockClear();
     pause.mockClear();
+    const playhead = screen.getByRole("slider", { name: "Playhead position" });
+    const lockedPosition = playhead.getAttribute("aria-valuenow");
     fireEvent.keyDown(input, { key: " ", code: "Space" });
     fireEvent.keyDown(input, { key: "ArrowRight", code: "ArrowRight" });
     fireEvent.keyDown(input, { key: "i", code: "KeyI" });
@@ -553,10 +555,7 @@ describe("App", () => {
     expect(inputKeyDown).toHaveBeenCalledTimes(4);
     expect(play).not.toHaveBeenCalled();
     expect(pause).not.toHaveBeenCalled();
-    expect(screen.getByRole("slider", { name: "Playhead position" })).toHaveAttribute(
-      "aria-valuenow",
-      "0",
-    );
+    expect(playhead).toHaveAttribute("aria-valuenow", lockedPosition);
     input.remove();
   });
 

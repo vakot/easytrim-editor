@@ -35,6 +35,8 @@ class PlaybackController {
   private lifecycle: "paused" | "starting" | "playing" = "paused";
   private mediaStartRequested = false;
   private options: PlaybackOptions = { loop: false, segment: null };
+  // Where the video was sought to show the paused position's frame, when that differs from it.
+  private presentationMicros: number | null = null;
 
   constructor() {
     this.snapshot = this.createSnapshot(0, 0);
@@ -174,23 +176,29 @@ class PlaybackController {
     this.driver?.audio.pause();
   }
 
-  seek = (positionMicros: number) => {
+  /**
+   * `presentationMicros` is where the video element seeks to display the position's frame. Frame
+   * seeks pass the frame's midpoint: browsers estimate frame spans from the nominal rate, so a
+   * seek to a millisecond-rounded frame start can land in the previous frame.
+   */
+  seek = (positionMicros: number, presentationMicros = positionMicros) => {
     if (!this.driver || this.mediaSessionId === null || this.mediaSessionId === undefined) return;
-    const nextPosition = Math.max(
-      0,
-      Math.min(this.snapshot.durationMicros, Math.round(positionMicros)),
-    );
+    const clamp = (micros: number) =>
+      Math.max(0, Math.min(this.snapshot.durationMicros, Math.round(micros)));
 
-    if (!Number.isFinite(nextPosition)) return;
+    const nextPosition = clamp(positionMicros);
+    const nextPresentation = clamp(presentationMicros);
+
+    if (!Number.isFinite(nextPosition) || !Number.isFinite(nextPresentation)) return;
     // A scrub is a paused transport operation. Only Play can start a new session.
     this.cancelStartup();
     this.transitionLifecycle("paused", false);
     this.driver.video.pause();
     this.driver.audio.pause();
     this.update(this.snapshot.durationMicros, nextPosition, true);
-    const seconds = nextPosition / MICROS_PER_SECOND;
-    this.driver.audio.seek(seconds);
-    this.driver.video.seek(seconds, false);
+    this.presentationMicros = nextPresentation === nextPosition ? null : nextPresentation;
+    this.driver.audio.seek(nextPosition / MICROS_PER_SECOND);
+    this.driver.video.seek(nextPresentation / MICROS_PER_SECOND, false);
   };
 
   play = () => {
@@ -211,7 +219,9 @@ class PlaybackController {
       this.seek(range.startMicros);
     }
 
-    const seconds = this.snapshot.positionMicros / MICROS_PER_SECOND;
+    // Start from the frame on screen rather than re-seeking to its boundary.
+    const seconds = (this.presentationMicros ?? this.snapshot.positionMicros) / MICROS_PER_SECOND;
+    this.presentationMicros = null;
     const generation = ++this.startupGeneration;
     this.transitionLifecycle("starting");
     this.mediaStartRequested = false;
@@ -220,6 +230,9 @@ class PlaybackController {
 
   pause = () => {
     const driver = this.driver;
+    // A paused frame seek is already settled; syncing from the video would move it to the midpoint.
+    if (this.lifecycle === "paused" && this.presentationMicros !== null) return;
+    this.presentationMicros = null;
 
     this.cancelStartup();
     this.transitionLifecycle("paused", false);

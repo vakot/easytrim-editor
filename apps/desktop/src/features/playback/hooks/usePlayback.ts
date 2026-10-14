@@ -5,6 +5,7 @@ import type { FrameRate } from "@/domain/media";
 import { usePlaybackController } from "../contexts/playback-context";
 import {
   frameCountFor,
+  framePresentationMicros,
   frameToPlaybackMicros,
   playheadFrameAt,
   presentedFrameAt,
@@ -79,7 +80,10 @@ function useTimelinePlayback(frameRate: FrameRate | undefined) {
       conversionFrameRate,
     ),
     seekFrame: (frame: number) => {
-      seek(frameToPlaybackMicros(frame, framesCount, durationMicros, conversionFrameRate));
+      seek(
+        frameToPlaybackMicros(frame, framesCount, durationMicros, conversionFrameRate),
+        framePresentationMicros(frame, framesCount, durationMicros, conversionFrameRate),
+      );
     },
   };
 }

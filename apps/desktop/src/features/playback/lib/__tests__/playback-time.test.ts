@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   frameCountFor,
+  framePresentationMicros,
   frameToPlaybackMicros,
   microsToFrame,
   playheadFrameAt,
@@ -46,5 +47,16 @@ describe("playback frame conversion", () => {
     // A partial final frame still ends at EOF.
     expect(playheadFrameAt(1_467_000, 44, 1_467_000, rate)).toBe(44);
     expect(playheadFrameAt(1_450_000, 44, 1_467_000, rate)).toBeCloseTo(43.5, 1);
+  });
+
+  it("presents a frame from its midpoint and EOF from the final frame", () => {
+    // OBS MKV at 60 fps stores millisecond timestamps (6.067, 6.083, 6.100); Chromium shows the
+    // previous frame for a seek to 6.0833, but the midpoints address each frame unambiguously.
+    const rate = { denominator: 1, numerator: 60 };
+    expect(framePresentationMicros(365, 367, 6_122_000, rate)).toBe(6_091_667);
+    expect(framePresentationMicros(366, 367, 6_122_000, rate)).toBe(6_111_000);
+    expect(framePresentationMicros(367, 367, 6_122_000, rate)).toBe(6_111_000);
+    expect(framePresentationMicros(0, 367, 6_122_000, rate)).toBe(8_334);
+    expect(framePresentationMicros(0, 0, 0, rate)).toBe(0);
   });
 });

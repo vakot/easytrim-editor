@@ -771,4 +771,29 @@ describe("playback controller", () => {
       controller.dispose();
     },
   );
+
+  it("seeks the video to the presentation time while keeping the frame position", async () => {
+    const playback = createPlaybackDriver();
+    const controller = createPlaybackController(playback.driver, 10_000_000);
+
+    controller.seek(6_083_333, 6_091_667);
+
+    expect(controller.getSnapshot().positionMicros).toBe(6_083_333);
+    expect(playback.driver.video.seek).toHaveBeenLastCalledWith(6.091667, false);
+    expect(playback.driver.audio.seek).toHaveBeenLastCalledWith(6.083333);
+
+    // Pausing a settled frame seek must not pull the position to the video's midpoint.
+    vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(6.091667);
+    controller.pause();
+    expect(controller.getSnapshot().positionMicros).toBe(6_083_333);
+
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    expect(playback.driver.video.seek).toHaveBeenLastCalledWith(
+      6.091667,
+      false,
+      expect.any(Function),
+    );
+    controller.dispose();
+  });
 });

@@ -27,6 +27,23 @@ function microsToFrame(micros: number, frameRate: FrameRate | undefined, framesC
   return Math.max(0, Math.min(framesCount, frame));
 }
 
+/**
+ * Where the video element should seek to display `frame`: its midpoint, which every player maps
+ * to that frame even when container timestamps are rounded. EOF displays the final frame.
+ */
+function framePresentationMicros(
+  frame: number,
+  framesCount: number,
+  durationMicros: number,
+  frameRate: FrameRate,
+) {
+  if (framesCount <= 0) return 0;
+  const displayed = Math.max(0, Math.min(framesCount - 1, Math.round(frame)));
+  const start = frameToPlaybackMicros(displayed, framesCount, durationMicros, frameRate);
+  const end = frameToPlaybackMicros(displayed + 1, framesCount, durationMicros, frameRate);
+  return Math.round((start + end) / 2);
+}
+
 /** The frame on screen at `micros`: the last grid boundary at or before it (EOF at the duration). */
 function presentedFrameAt(
   micros: number,
@@ -64,6 +81,7 @@ function playheadFrameAt(
 
 export {
   frameCountFor,
+  framePresentationMicros,
   frameToMicros,
   frameToPlaybackMicros,
   microsToFrame,

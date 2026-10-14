@@ -43,7 +43,10 @@ describe("Timeline frame boundary", () => {
     expect(result.current.currentFrame).toBe(frames);
     expect(result.current.playheadFrame).toBe(frames);
     result.current.seekFrame(frames);
-    expect(controller.seek).toHaveBeenLastCalledWith(duration);
+    expect(controller.seek).toHaveBeenLastCalledWith(
+      duration,
+      Math.round((lastFrameStart + duration) / 2),
+    );
   });
 
   it("derives the frame grid from the playback duration", () => {
