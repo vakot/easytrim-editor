@@ -8,7 +8,6 @@ import type { SourceRef } from "@/domain/source";
 
 import type {
   AudioExportRequest,
-  AudioPreviewDescriptor,
   ExportPlan,
   ExportProgress,
   ExportResult,
@@ -20,6 +19,7 @@ import type {
   MediaInfo,
   OptimizedExportRequest,
   OutputSelection,
+  PlaybackPcmChunk,
   PreviewDescriptor,
   SourceDropEvent,
   SourceImportResult,
@@ -29,7 +29,6 @@ import type {
 } from "./media.types";
 import {
   normalizeAppError,
-  parseAudioPreviewDescriptors,
   parseExportPlan,
   parseExportProgress,
   parseExportResult,
@@ -37,6 +36,7 @@ import {
   parseMediaCapabilities,
   parseMediaInfo,
   parseOutputSelection,
+  parsePlaybackPcmChunk,
   parsePreviewDescriptor,
   parseSceneBoundaries,
   parseSilenceRanges,
@@ -382,16 +382,33 @@ async function releaseImportedSourceThumbnail(mediaToken: number): Promise<void>
   }
 }
 
-async function prepareAudioPreviews(
+async function decodeAudioPlaybackChunk(
   sourcePath: string,
-  audioTracks: AudioTrackSelection[],
-): Promise<AudioPreviewDescriptor[]> {
+  track: AudioTrackSelection,
+  startMicros: number,
+  durationMicros: number,
+  signal: AbortSignal,
+): Promise<PlaybackPcmChunk> {
+  const operationId = crypto.randomUUID();
+  const cancel = () => void cancelOperation(operationId);
+  signal.addEventListener("abort", cancel, { once: true });
   try {
-    return parseAudioPreviewDescriptors(
-      await invoke<unknown>("prepare_audio_previews", { sourcePath, audioTracks }),
+    if (signal.aborted) {
+      throw new DOMException("The audio decode request was cancelled.", "AbortError");
+    }
+    return parsePlaybackPcmChunk(
+      await invoke<unknown>("decode_audio_playback_chunk", {
+        durationMicros,
+        operationId,
+        sourcePath,
+        startMicros,
+        track,
+      }),
     );
   } catch (error: unknown) {
     throw normalizeAppError(error);
+  } finally {
+    signal.removeEventListener("abort", cancel);
   }
 }
 
@@ -499,6 +516,7 @@ export {
   chooseGifOutputPath,
   chooseOutputPath,
   chooseSource,
+  decodeAudioPlaybackChunk,
   detectAudioActivity,
   detectScenes,
   exportAudio,
@@ -509,7 +527,6 @@ export {
   openFileLocation,
   planGifExport,
   planOptimizedExport,
-  prepareAudioPreviews,
   prepareImportedSourceThumbnail,
   prepareProxyPreview,
   prepareSourcePreview,

@@ -174,20 +174,14 @@ function localizeAppError(error: AppError, t: TFunction): string {
       return t("preview.errors.frame.selectedImageLocationIsNotSupported");
     case "frame.suggestedFrameFilenameIsInvalid":
       return t("preview.errors.frame.suggestedFrameFilenameIsInvalid");
-    case "media.audio.audioPreviewsRequireInspectedSourceMedia":
-      return t("audio.errors.audio.audioPreviewsRequireInspectedSourceMedia");
-    case "media.audio.ffmpegCouldNotPrepareAudioPreview":
-      return t("audio.errors.audio.ffmpegCouldNotPrepareAudioPreview");
-    case "media.audio.ffmpegIsRequiredToPrepareAudioPreview":
-      return t("audio.errors.audio.ffmpegIsRequiredToPrepareAudioPreview");
-    case "media.audio.preparingAudioPreviewTookTooLong":
-      return t("audio.errors.audio.preparingAudioPreviewTookTooLong");
-    case "media.audio.selectedAudioStreamsCouldNotBePreparedForPreview":
-      return t("audio.errors.audio.selectedAudioStreamsCouldNotBePreparedForPreview");
-    case "media.audio.temporaryAudioPreviewDirectoryCouldNotBeCreated":
-      return t("audio.errors.audio.temporaryAudioPreviewDirectoryCouldNotBeCreated");
-    case "media.audio.uniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated":
-      return t("audio.errors.audio.uniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated");
+    case "media.audio.playbackChunkRequiresInspectedSourceMedia":
+      return t("audio.errors.audio.playbackChunkRequiresInspectedSourceMedia");
+    case "media.audio.ffmpegCouldNotDecodePlaybackAudio":
+      return t("audio.errors.audio.ffmpegCouldNotDecodePlaybackAudio");
+    case "media.audio.ffmpegIsRequiredForPlayback":
+      return t("audio.errors.audio.ffmpegIsRequiredForPlayback");
+    case "media.audio.playbackAudioDecodingTookTooLong":
+      return t("audio.errors.audio.playbackAudioDecodingTookTooLong");
     case "media.audioActivity.audioActivityAnalysisContainsTooManyRanges":
       return t("audio.activityDetection.errors.audioActivityAnalysisContainsTooManyRanges");
     case "media.audioActivity.audioActivityAnalysisOutputExceededItsSafetyLimit":

@@ -45,20 +45,27 @@ import { VideoPreview } from "../VideoPreview";
 const playback = vi.hoisted(() => {
   return {
     isPlaying: false as boolean,
-    suspendForInteraction: vi.fn(() => false),
-    resumeAfterInteraction: vi.fn(),
-    toggle: vi.fn(),
+    pause: vi.fn(),
+    play: vi.fn(),
+    togglePlayback: vi.fn(),
   };
 }) satisfies {
   isPlaying: boolean;
-  resumeAfterInteraction: (resumePlayback: boolean) => void;
-  suspendForInteraction: () => boolean;
-  toggle: () => void;
+  pause: () => void;
+  play: () => void;
+  togglePlayback: () => void;
 };
 
-vi.mock("@/features/timeline", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/features/timeline")>()),
-  useTimelineTransport: () => playback,
+vi.mock("@/features/playback", () => ({
+  usePlaybackIsPlaying: () => playback.isPlaying,
+  usePlaybackActions: () => ({
+    pause: playback.pause,
+    play: playback.play,
+    togglePlayback: playback.togglePlayback,
+  }),
+}));
+vi.mock("@/features/audio", () => ({
+  useAudioPlaybackHasActiveOutput: () => true,
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
@@ -80,7 +87,7 @@ function readyPreview(url: string): Extract<PreviewState, { status: "ready" }> {
 function TooltipTestProvider({ children, store }: { children: ReactNode; store: AppStore }) {
   return (
     <Provider store={store}>
-      <EditorRuntimeTestProvider usesExternalAudio>
+      <EditorRuntimeTestProvider usesWebAudio>
         <TooltipProvider delayDuration={0}>
           <SourceDeleteProvider>
             <QueueDeleteSourceProvider>
@@ -493,6 +500,8 @@ describe("VideoPreview", () => {
   });
 
   it("suspends timeline playback while crop controls are open", () => {
+    playback.isPlaying = true;
+    playback.pause.mockClear();
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector('[aria-label="Video crop preview"]');
@@ -503,7 +512,8 @@ describe("VideoPreview", () => {
     pause.mockClear();
 
     openCropTool(viewport!);
-    expect(playback.suspendForInteraction).toHaveBeenCalled();
+    expect(playback.pause).toHaveBeenCalledTimes(1);
+    playback.isPlaying = false;
 
     fireEvent.play(video!);
     expect(pause).toHaveBeenCalledOnce();
@@ -896,17 +906,14 @@ describe("VideoPreview", () => {
   );
 
   it("toggles playback on a left click and supports the context menu", async () => {
-    playback.toggle.mockClear();
+    playback.togglePlayback.mockClear();
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector("[aria-label='Video crop preview']");
     expect(viewport).not.toBeNull();
 
     fireEvent.click(viewport!);
-    expect(playback.toggle).toHaveBeenCalledWith({
-      type: "button",
-      id: "preview.click",
-    });
+    expect(playback.togglePlayback).toHaveBeenCalledTimes(1);
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();

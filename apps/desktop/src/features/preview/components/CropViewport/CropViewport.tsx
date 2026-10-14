@@ -25,10 +25,11 @@ import {
 } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { isQuarterTurn } from "@/domain/rotation";
-import { usePreviewRuntime, usePreviewTransform } from "@/features/preview";
-import { useTimelineTransport } from "@/features/timeline";
+import { usePlaybackActions, usePlaybackIsPlaying } from "@/features/playback";
+import { usePreviewTransform } from "@/features/preview";
 import { saveFramePng } from "@/lib/tauri/media";
 
+import { usePreviewVideoRef } from "../../contexts/preview-runtime-context";
 import { CROP_ASPECT_RATIO_PRESETS } from "../../lib/crop-aspect-ratio.utils";
 import type { CropHandle } from "../../lib/crop-geometry.utils";
 import { capturePreviewFrame, frameFileNameFor, frameNumberAt } from "../../lib/frame-capture";
@@ -52,9 +53,10 @@ import { usePreviewPresentation } from "./hooks/usePreviewPresentation";
 function CropViewport() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { isPlaying, resumeAfterInteraction, suspendForInteraction } = useTimelineTransport();
+  const isPlaying = usePlaybackIsPlaying();
+  const { pause, play } = usePlaybackActions();
 
-  const { videoRef } = usePreviewRuntime();
+  const videoRef = usePreviewVideoRef();
   const { registerHandlers } = usePreviewTransform();
   const crop = useAppSelector(selectCrop);
   const cropApplied = useAppSelector(selectCropApplied);
@@ -98,7 +100,8 @@ function CropViewport() {
   useLayoutEffect(() => {
     if (cropSelection.isOpen && !cropWasOpenRef.current) {
       cropWasOpenRef.current = true;
-      resumeAfterCropRef.current = suspendForInteraction();
+      resumeAfterCropRef.current = isPlaying;
+      if (isPlaying) pause();
       return;
     }
     if (!cropSelection.isOpen && cropWasOpenRef.current) {
@@ -106,9 +109,9 @@ function CropViewport() {
     } else {
       return;
     }
-    resumeAfterInteraction(resumeAfterCropRef.current);
+    if (resumeAfterCropRef.current) play();
     resumeAfterCropRef.current = false;
-  }, [cropSelection.isOpen, resumeAfterInteraction, suspendForInteraction]);
+  }, [cropSelection.isOpen, isPlaying, pause, play]);
 
   const {
     aspectRatioPreset,

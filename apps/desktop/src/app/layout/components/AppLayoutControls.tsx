@@ -212,8 +212,6 @@ function AppLayoutControls() {
             className="size-7 p-0 text-secondary-foreground"
             disabled={!bottomPanel.enabled || bottomPanel.pending}
             onClick={() => void executeCommand("toggle-bottom-panel", "button")}
-            onFocus={bottomPanel.preload}
-            onPointerEnter={bottomPanel.preload}
             size="icon-sm"
             variant="ghost"
           >

@@ -3,24 +3,21 @@ import { describe, expect, it } from "vitest";
 import {
   AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS,
   audioTrackActivityProcessingChanged,
-  audioTrackExternalPreviewStreamIndexes,
   audioTrackLevelMode,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
-  audioTrackPreviewProcessing,
-  audioTrackPreviewRuntimeGainDb,
+  audioTrackPlaybackFfmpegProcessing,
+  audioTrackPlaybackRuntimeGainDb,
   type AudioTrackProcessing,
-  audioTrackRequiresProcessedPreview,
   effectiveAudioTrackGainDb,
+  getAudioTrackLiveHighPassEffects,
   getAudioTrackSignalEffect,
   getAudioTrackSignalEffects,
-  limitAudioPreviewSample,
   loudnessNormalizationTargets,
   normalizeAudioTrackDefaults,
   parseAudioTrackSignalEffects,
   removeAudioTrackSignalEffect,
   sameAudioTrackLoudnessInputs,
-  sameAudioTrackPreviewProcessing,
   serializeAudioTrackSettings,
   setAudioTrackSignalEffect,
 } from "../audio-processing";
@@ -76,37 +73,6 @@ describe("audio track metadata", () => {
 });
 
 describe("audio track level policy", () => {
-  it("selects external preview tracks from the active playback route", () => {
-    const manualA = { enabled: true, metadata: {}, processing: { gainDb: 0 }, streamIndex: 2 };
-    const manualB = { enabled: true, metadata: {}, processing: { gainDb: 0 }, streamIndex: 4 };
-    const normalizedA = {
-      ...manualA,
-      processing: { gainDb: 0, loudnessNormalization: "streaming" as const },
-    };
-
-    const effectedA = {
-      ...manualA,
-      processing: {
-        gainDb: 0,
-        effects: [{ cutoffHz: 100, stage: "cleanup" as const, type: "highPass" as const }],
-      },
-    };
-
-    const manualGainOnly = { ...manualA, processing: { gainDb: -6 } };
-
-    expect(audioTrackExternalPreviewStreamIndexes([manualA], 2)).toEqual([]);
-    expect(audioTrackExternalPreviewStreamIndexes([manualGainOnly], 2)).toEqual([]);
-    expect(audioTrackRequiresProcessedPreview(manualGainOnly.processing)).toBe(false);
-    expect(audioTrackRequiresProcessedPreview(effectedA.processing)).toBe(true);
-    expect(audioTrackExternalPreviewStreamIndexes([effectedA], 2)).toEqual([2]);
-    expect(audioTrackExternalPreviewStreamIndexes([normalizedA], 2)).toEqual([2]);
-    expect(audioTrackExternalPreviewStreamIndexes([manualA], 4)).toEqual([2]);
-    expect(audioTrackExternalPreviewStreamIndexes([normalizedA, manualB], 2)).toEqual([2, 4]);
-    expect(
-      audioTrackExternalPreviewStreamIndexes([manualA, { ...manualB, enabled: false }], 2),
-    ).toEqual([]);
-  });
-
   it("uses normalization instead of manual gain while preserving the stored gain", () => {
     const processing = { gainDb: -2.5, loudnessNormalization: "streaming" as const };
 
@@ -116,20 +82,42 @@ describe("audio track level policy", () => {
     expect(effectiveAudioTrackGainDb({ gainDb: processing.gainDb })).toBe(-2.5);
   });
 
-  it("bakes manual gain into limited previews and leaves linear gain runtime-only", () => {
+  it("keeps high-pass and gain live while decoding complex effects through FFmpeg", () => {
     const limited = {
       gainDb: 6,
-      effects: [{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }],
+      effects: [
+        { cutoffHz: 80, stage: "cleanup", type: "highPass" },
+        { preset: "medium", stage: "cleanup", type: "noiseReduction" },
+        { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+      ],
     } satisfies AudioTrackProcessing;
 
     const linear = { gainDb: 6 };
 
-    expect(audioTrackPreviewProcessing(limited)).toEqual(limited);
-    expect(audioTrackPreviewRuntimeGainDb(limited, limited)).toBe(0);
-    expect(audioTrackPreviewRuntimeGainDb(limited, limited, 8)).toBe(2);
-    expect(audioTrackPreviewProcessing(linear)).toEqual({ gainDb: 0 });
-    expect(audioTrackPreviewRuntimeGainDb(linear, { gainDb: 0 })).toBe(6);
-    expect(limitAudioPreviewSample(0.9 * 10 ** (6 / 20), -1)).toBeCloseTo(10 ** (-1 / 20));
+    expect(audioTrackPlaybackFfmpegProcessing(limited)).toEqual({
+      ...limited,
+      effects: [
+        { preset: "medium", stage: "cleanup", type: "noiseReduction" },
+        { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+      ],
+      gainDb: 0,
+    });
+    expect(getAudioTrackLiveHighPassEffects(limited)).toEqual([
+      { cutoffHz: 80, stage: "cleanup", type: "highPass" },
+    ]);
+    expect(audioTrackPlaybackRuntimeGainDb(limited)).toBe(6);
+    expect(audioTrackPlaybackRuntimeGainDb(limited, 8)).toBe(8);
+    const normalized = { ...limited, loudnessNormalization: "streaming" as const };
+    expect(audioTrackPlaybackFfmpegProcessing(normalized)).toEqual({
+      ...normalized,
+      effects: [
+        { preset: "medium", stage: "cleanup", type: "noiseReduction" },
+        { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+      ],
+      gainDb: 0,
+    });
+    expect(audioTrackPlaybackFfmpegProcessing(linear)).toEqual({ gainDb: 0 });
+    expect(audioTrackPlaybackRuntimeGainDb(linear)).toBe(6);
   });
 
   it("treats normalization targets as analysis independent and reports its level targets", () => {
@@ -202,23 +190,6 @@ describe("audio track level policy", () => {
 
     expect(keyForPreset("light")).not.toBe(keyForPreset("medium"));
     expect(keyForPreset("medium")).not.toBe(keyForPreset("strong"));
-  });
-
-  it("includes manual gain in limited preview identity but not in linear or normalized preview identity", () => {
-    const limiter = { ceilingDb: -1, stage: "finalProtection", type: "limiter" } as const;
-    expect(
-      sameAudioTrackPreviewProcessing(
-        { gainDb: 0, effects: [limiter] },
-        { gainDb: 2, effects: [limiter] },
-      ),
-    ).toBe(false);
-    expect(sameAudioTrackPreviewProcessing({ gainDb: 0 }, { gainDb: 2 })).toBe(true);
-    expect(
-      sameAudioTrackPreviewProcessing(
-        { gainDb: 0, loudnessNormalization: "streaming", effects: [limiter] },
-        { gainDb: 2, loudnessNormalization: "streaming", effects: [limiter] },
-      ),
-    ).toBe(true);
   });
 
   it("keeps same-stage signal effects in canonical order as effects are added and updated", () => {

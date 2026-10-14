@@ -7,9 +7,6 @@ import {
 } from "@/app/store/actions/source-actions";
 import {
   audioMergeToggled,
-  audioPreviewsLoading,
-  audioPreviewsReady,
-  audioPreviewsUnavailable,
   audioTrackGainChanged,
   audioTrackToggled,
   waveformDisplayFailed,
@@ -142,30 +139,6 @@ listenerMiddleware.startListening({
     }),
 });
 
-listenerMiddleware.startListening({
-  actionCreator: audioPreviewsLoading,
-  effect: () =>
-    diagnostics.event("audio.preview.state.changed", {
-      data: { status: "loading" },
-      origin: internalOrigin,
-    }),
-});
-listenerMiddleware.startListening({
-  actionCreator: audioPreviewsReady,
-  effect: (action) =>
-    diagnostics.event("audio.preview.state.changed", {
-      data: { previewCount: action.payload.previews.length, status: "ready" },
-      origin: internalOrigin,
-    }),
-});
-listenerMiddleware.startListening({
-  actionCreator: audioPreviewsUnavailable,
-  effect: (action) =>
-    diagnostics.error("audio.preview.state.failed", action.payload.error, {
-      data: { status: "unavailable" },
-      origin: internalOrigin,
-    }),
-});
 listenerMiddleware.startListening({
   actionCreator: audioTrackToggled,
   effect: (action) =>

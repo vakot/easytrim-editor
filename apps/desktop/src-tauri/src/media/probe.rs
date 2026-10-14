@@ -54,6 +54,8 @@ pub struct VideoStream {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub real_frame_rate: Option<FrameRate>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub frame_count: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub rotation_degrees: Option<i32>,
 }
 
@@ -68,6 +70,10 @@ pub struct AudioStream {
     pub channel_layout: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sample_rate_hz: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_time_micros: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub duration_micros: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -220,6 +226,10 @@ fn parse_probe_output(output: &[u8]) -> Result<MediaInfo, AppError> {
             .real_frame_rate
             .as_deref()
             .and_then(parse_frame_rate),
+        frame_count: primary_video
+            .nb_frames
+            .as_deref()
+            .and_then(|value| value.parse().ok()),
         rotation_degrees: rotation(primary_video),
     };
 
@@ -239,6 +249,11 @@ fn parse_probe_output(output: &[u8]) -> Result<MediaInfo, AppError> {
                 .sample_rate
                 .as_deref()
                 .and_then(|value| value.parse().ok()),
+            start_time_micros: stream
+                .start_time
+                .as_deref()
+                .and_then(parse_seconds_to_micros),
+            duration_micros: stream.duration.as_deref().and_then(parse_seconds_to_micros),
             language: stream.tags.get("language").cloned(),
             title: stream.tags.get("title").cloned(),
             is_default: stream
@@ -408,7 +423,9 @@ struct ProbeStream {
     average_frame_rate: Option<String>,
     #[serde(rename = "r_frame_rate")]
     real_frame_rate: Option<String>,
+    nb_frames: Option<String>,
     duration: Option<String>,
+    start_time: Option<String>,
     channels: Option<u32>,
     channel_layout: Option<String>,
     sample_rate: Option<String>,
@@ -463,6 +480,7 @@ mod tests {
           "time_base": "1/30000",
           "r_frame_rate": "30000/1001",
           "avg_frame_rate": "30000/1001",
+          "nb_frames": "370",
           "duration": "12.345678",
           "disposition": { "default": 1, "attached_pic": 0 },
           "side_data_list": [{ "rotation": 90 }]
@@ -472,6 +490,8 @@ mod tests {
           "codec_name": "aac",
           "codec_type": "audio",
           "sample_rate": "48000",
+          "start_time": "0.250000",
+          "duration": "10.500000",
           "channels": 6,
           "channel_layout": "5.1",
           "tags": { "language": "eng", "title": "Surround" },
@@ -497,6 +517,9 @@ mod tests {
 
         assert_eq!(info.duration_micros, 12_345_678);
         assert_eq!(info.video.stream_index, 0);
+        assert_eq!(info.video.frame_count, Some(370));
+        assert_eq!(info.audio_streams[0].start_time_micros, Some(250_000));
+        assert_eq!(info.audio_streams[0].duration_micros, Some(10_500_000));
         assert_eq!(info.video.rotation_degrees, Some(90));
         assert_eq!(info.video.color_primaries.as_deref(), Some("bt2020"));
         assert_eq!(info.audio_streams[0].stream_index, 2);

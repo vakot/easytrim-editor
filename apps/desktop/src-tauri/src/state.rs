@@ -32,7 +32,6 @@ pub fn cleanup_stale_media_artifacts() {
         let name = entry.file_name();
         let name = name.to_string_lossy();
         let is_easytrim_artifact = name.starts_with("easytrim-preview-")
-            || name.starts_with("easytrim-audio-preview-")
             || name.starts_with("easytrim-thumbnail-")
             || name.starts_with("easytrim-waveform-")
             || name.starts_with("easytrim-chapters-");
@@ -94,7 +93,6 @@ impl Drop for TemporaryMediaArtifact {
 }
 
 pub type PreviewArtifact = TemporaryMediaArtifact;
-pub type AudioPreviewArtifact = TemporaryMediaArtifact;
 pub type WaveformArtifact = TemporaryMediaArtifact;
 
 #[derive(Debug)]
@@ -151,7 +149,6 @@ struct ActiveSourceRecord {
     media: Option<MediaInfo>,
     preview_streams: Option<PreviewStreamSelection>,
     preview: Option<PreviewArtifact>,
-    audio_previews: HashMap<u32, (u64, AudioPreviewArtifact)>,
     audio_stream_indexes: Vec<u32>,
     waveform_job: Option<WaveformJobRecord>,
     waveforms: HashMap<u32, WaveformRecord>,
@@ -246,6 +243,25 @@ impl AppState {
         Ok((id, cancellation))
     }
 
+    pub fn register_operation(&self, operation_id: &str) -> Result<Arc<AtomicBool>, AppError> {
+        if operation_id.is_empty()
+            || operation_id.len() > 64
+            || !operation_id
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+        {
+            return Err(AppError::invalid_request(
+                AppErrorMessageId::StateOperationIsNoLongerAvailable,
+            ));
+        }
+        let cancellation = Arc::new(AtomicBool::new(false));
+        self.operations
+            .lock()
+            .map_err(|_| AppError::internal("The in-memory operation registry is unavailable."))?
+            .insert(operation_id.to_owned(), Arc::clone(&cancellation));
+        Ok(cancellation)
+    }
+
     pub fn cancel_operation(&self, operation_id: &str) -> Result<(), AppError> {
         let operations = self
             .operations
@@ -293,7 +309,6 @@ impl AppState {
             media: None,
             preview_streams: None,
             preview: None,
-            audio_previews: HashMap::new(),
             audio_stream_indexes: Vec::new(),
             waveform_job: None,
             waveforms: HashMap::new(),
@@ -600,56 +615,6 @@ impl AppState {
         };
         drop(previous_preview);
         Ok(())
-    }
-
-    pub fn install_audio_preview(
-        &self,
-        load_token: u64,
-        stream_index: u32,
-        preview_revision: u64,
-        preview: AudioPreviewArtifact,
-    ) -> Result<(), AppError> {
-        let previous_preview = {
-            let mut session = self.lock_session()?;
-            let source = active_source_mut(&mut session, load_token)?;
-            if source.cancellation.load(Ordering::Acquire) {
-                return Err(AppError::source_replaced());
-            }
-            if source
-                .audio_previews
-                .get(&stream_index)
-                .is_some_and(|(revision, _)| *revision > preview_revision)
-            {
-                return Ok(());
-            }
-            source
-                .audio_previews
-                .insert(stream_index, (preview_revision, preview))
-        };
-        drop(previous_preview);
-        Ok(())
-    }
-
-    pub fn resolve_audio_preview_path(
-        &self,
-        load_token: u64,
-        stream_index: u32,
-        preview_revision: u64,
-    ) -> Result<PathBuf, AppError> {
-        let session = self.lock_session()?;
-        let source = session
-            .active_source
-            .as_ref()
-            .filter(|source| source.load_token == load_token)
-            .ok_or_else(AppError::source_replaced)?;
-        source
-            .audio_previews
-            .get(&stream_index)
-            .filter(|(revision, _)| *revision == preview_revision)
-            .map(|(_, preview)| preview.path().to_owned())
-            .ok_or_else(|| {
-                AppError::invalid_request(AppErrorMessageId::StateAudioPreviewIsNotAvailable)
-            })
     }
 
     pub fn resolve_preview_path(&self, load_token: u64) -> Result<PathBuf, AppError> {

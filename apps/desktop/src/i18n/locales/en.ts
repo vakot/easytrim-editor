@@ -145,15 +145,11 @@ export const en = {
     errors: {
       audio: {
         analyzeTrackLoudnessToPrepareAudioPlayback: "Analyze track loudness to prepare audio playback",
-        audioPreviewsRequireInspectedSourceMedia: "Audio previews require inspected source media",
-        ffmpegCouldNotPrepareAudioPreview: "FFmpeg could not prepare audio preview",
-        ffmpegIsRequiredToPrepareAudioPreview: "FFmpeg is required to prepare audio preview",
-        preparingAudioPreviewTookTooLong: "Preparing audio preview took too long",
-        selectedAudioStreamsCouldNotBePreparedForPreview: "The selected audio streams could not be prepared for preview",
-        temporaryAudioPreviewDirectoryCouldNotBeCreated: "A temporary audio preview directory could not be created",
-        uniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated: "A unique temporary audio preview directory could not be created",
+        ffmpegCouldNotDecodePlaybackAudio: "FFmpeg could not decode an audio playback chunk",
+        ffmpegIsRequiredForPlayback: "FFmpeg is required for audio playback",
+        playbackAudioDecodingTookTooLong: "Decoding an audio playback chunk took too long",
+        playbackChunkRequiresInspectedSourceMedia: "Inspected source media is required for audio playback",
       },
-      audioPreviewStreamIndexesMustBeUnique: "Audio preview stream indexes must be unique",
       audioStreamMetadataIsUnavailableForWaveformGeneration: "Audio stream metadata is unavailable for waveform generation",
       loudness: {
         ffmpegCouldNotAnalyzeAudioLoudness: "FFmpeg could not analyze audio loudness",

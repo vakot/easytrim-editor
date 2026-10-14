@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
-import { useTimelineTransport } from "@/features/timeline";
+import { usePlaybackActions } from "@/features/playback";
 
 import { PREVIEW_TRANSITION_DURATION } from "../../../lib/preview-transition";
 
@@ -36,7 +36,7 @@ const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>
     forwardedRef,
   ) {
     const { t } = useTranslation();
-    const { toggle } = useTimelineTransport();
+    const { togglePlayback } = usePlaybackActions();
     const { close, finishDrag, isOpen, moveDrag } = cropSelection;
     const transitionStyle = {
       "--preview-transition-duration": `${PREVIEW_TRANSITION_DURATION * 1000}ms`,
@@ -63,8 +63,8 @@ const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>
         close();
         return;
       }
-      toggle({ type: "button", id: "preview.click" });
-    }, [close, isOpen, toggle]);
+      togglePlayback();
+    }, [close, isOpen, togglePlayback]);
 
     const handlePointerMove = useCallback(
       (event: PointerEvent<HTMLDivElement>) => {

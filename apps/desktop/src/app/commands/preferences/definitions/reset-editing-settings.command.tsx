@@ -6,25 +6,19 @@ import { DEFAULT_PREFERENCES } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   editingSettingsReset,
-  selectLoopPlaybackEnabledDefault,
   selectMergeAudioEnabledDefault,
-  selectSegmentPlaybackEnabledDefault,
   selectStripMetadataOnExport,
 } from "@/app/store/slices/preferences-slice";
 
 function useResetEditingSettingsCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const loopPlaybackEnabledDefault = useAppSelector(selectLoopPlaybackEnabledDefault);
-  const segmentPlaybackEnabledDefault = useAppSelector(selectSegmentPlaybackEnabledDefault);
   const mergeAudioEnabledDefault = useAppSelector(selectMergeAudioEnabledDefault);
   const stripMetadataOnExport = useAppSelector(selectStripMetadataOnExport);
   const label = t("common.actions.resetToDefault");
 
   return {
     enabled:
-      loopPlaybackEnabledDefault !== DEFAULT_PREFERENCES.loopPlaybackEnabledDefault ||
-      segmentPlaybackEnabledDefault !== DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault ||
       mergeAudioEnabledDefault !== DEFAULT_PREFERENCES.mergeAudioEnabledDefault ||
       stripMetadataOnExport !== DEFAULT_PREFERENCES.stripMetadataOnExport,
     icon: <RotateCcw aria-hidden="true" />,

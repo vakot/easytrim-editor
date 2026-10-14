@@ -1,66 +1,45 @@
-import { createContext, type RefObject, useContext } from "react";
+import { createContext, type RefObject, useCallback, useContext, useMemo } from "react";
 
 interface PreviewMediaObserver {
   onEnded: () => void;
-  onLoadedMetadata: () => void;
-  onPause: () => void;
+  onPause: (isPaused: boolean) => void;
   onPlay: () => void;
   onPlaybackError: () => void;
   onTimeUpdate: (seconds: number) => void;
-}
-
-interface PreviewMediaState {
-  currentTimeSeconds: number;
-  paused: boolean;
-  seeking: boolean;
 }
 
 interface PreviewPlaybackFrame {
   cancel: () => void;
 }
 
+interface PreviewVideoAdapter {
+  getCurrentTimeSeconds: () => number | null;
+  isEnded: () => boolean;
+  isReady: boolean;
+  isSeekPending: () => boolean;
+  pause: () => void;
+  /** Resolves with the presented media position projected to the current performance time. */
+  play: () => Promise<number>;
+  registerMediaObserver: (observer: PreviewMediaObserver) => () => void;
+  requestPlaybackFrame: (
+    callback: (timestamp: number, mediaTimeSeconds: number) => void,
+  ) => PreviewPlaybackFrame | null;
+  seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
+}
+
 interface PreviewRuntimeContract {
-  getMediaState: () => PreviewMediaState | null;
-  isNativeLoopEnabled: boolean;
   isPreviewReady: boolean;
   isSeekPending: () => boolean;
-  onCanPlay: () => void;
-  onEnded: () => void;
-  onLoadedMetadata: () => void;
-  onPause: () => void;
-  onPlay: () => void;
-  onPlaybackError: () => void;
-  onPreviewPlaybackError: (previewKind: "source" | "proxy") => void;
-  onTimeUpdate: (seconds: number) => void;
   pauseMedia: () => void;
-  playMedia: () => Promise<void>;
-  previewKey: string | null;
+  playMedia: () => Promise<number>;
   registerMediaObserver: (observer: PreviewMediaObserver) => () => void;
   requestPlaybackFrame: (
     callback: (timestamp: number, mediaTimeSeconds: number) => void,
   ) => PreviewPlaybackFrame | null;
   seekMedia: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
-  setNativeLoopEnabled: (enabled: boolean) => void;
-  setPlaybackRate: (rate: number) => void;
   setVideoElement: (element: HTMLVideoElement | null) => void;
   videoRef: RefObject<HTMLVideoElement | null>;
 }
-
-type PreviewMediaTransportContract = Pick<
-  PreviewRuntimeContract,
-  | "getMediaState"
-  | "isNativeLoopEnabled"
-  | "isPreviewReady"
-  | "isSeekPending"
-  | "pauseMedia"
-  | "playMedia"
-  | "previewKey"
-  | "registerMediaObserver"
-  | "requestPlaybackFrame"
-  | "seekMedia"
-  | "setNativeLoopEnabled"
-  | "setPlaybackRate"
->;
 
 const PreviewRuntimeContext = createContext<PreviewRuntimeContract | null>(null);
 
@@ -70,28 +49,73 @@ function usePreviewRuntime(): PreviewRuntimeContract {
   return runtime;
 }
 
-function usePreviewMediaTransport(): PreviewMediaTransportContract {
-  const runtime = usePreviewRuntime();
-  return {
-    getMediaState: runtime.getMediaState,
-    isNativeLoopEnabled: runtime.isNativeLoopEnabled,
-    isPreviewReady: runtime.isPreviewReady,
-    isSeekPending: runtime.isSeekPending,
-    pauseMedia: runtime.pauseMedia,
-    playMedia: runtime.playMedia,
-    previewKey: runtime.previewKey,
-    registerMediaObserver: runtime.registerMediaObserver,
-    requestPlaybackFrame: runtime.requestPlaybackFrame,
-    seekMedia: runtime.seekMedia,
-    setNativeLoopEnabled: runtime.setNativeLoopEnabled,
-    setPlaybackRate: runtime.setPlaybackRate,
-  };
+function usePreviewReady(): boolean {
+  return usePreviewRuntime().isPreviewReady;
 }
 
-export { PreviewRuntimeContext, usePreviewMediaTransport, usePreviewRuntime };
+function usePreviewVideoRef(): RefObject<HTMLVideoElement | null> {
+  return usePreviewRuntime().videoRef;
+}
+
+function useSetPreviewVideoElement() {
+  return usePreviewRuntime().setVideoElement;
+}
+
+function usePreviewVideoAdapter(): PreviewVideoAdapter {
+  const {
+    isPreviewReady: isReady,
+    isSeekPending,
+    pauseMedia: pause,
+    playMedia: play,
+    registerMediaObserver,
+    requestPlaybackFrame,
+    seekMedia: seek,
+    videoRef,
+  } = usePreviewRuntime();
+
+  const getCurrentTimeSeconds = useCallback(
+    () => videoRef.current?.currentTime ?? null,
+    [videoRef],
+  );
+
+  const isEnded = useCallback(() => videoRef.current?.ended ?? false, [videoRef]);
+
+  return useMemo(
+    () => ({
+      isReady,
+      isSeekPending,
+      getCurrentTimeSeconds,
+      isEnded,
+      pause,
+      play,
+      registerMediaObserver,
+      requestPlaybackFrame,
+      seek,
+    }),
+    [
+      isReady,
+      isSeekPending,
+      getCurrentTimeSeconds,
+      isEnded,
+      pause,
+      play,
+      registerMediaObserver,
+      requestPlaybackFrame,
+      seek,
+    ],
+  );
+}
+
+export {
+  PreviewRuntimeContext,
+  usePreviewReady,
+  usePreviewVideoAdapter,
+  usePreviewVideoRef,
+  useSetPreviewVideoElement,
+};
 export type {
   PreviewMediaObserver,
-  PreviewMediaState,
   PreviewPlaybackFrame,
   PreviewRuntimeContract,
+  PreviewVideoAdapter,
 };

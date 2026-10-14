@@ -119,6 +119,7 @@ interface VideoStream {
   colorPrimaries?: string;
   colorSpace?: string;
   colorTransfer?: string;
+  frameCount?: number;
   height: number;
   pixelFormat?: string;
   realFrameRate?: FrameRate;
@@ -133,9 +134,11 @@ interface AudioStream {
   channelLayout?: string;
   channels?: number;
   codecName: string;
+  durationMicros?: number;
   isDefault: boolean;
   language?: string;
   sampleRateHz?: number;
+  startTimeMicros?: number;
   streamIndex: number;
   title?: string;
 }

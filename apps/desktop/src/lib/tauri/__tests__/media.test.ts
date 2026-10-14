@@ -21,6 +21,7 @@ import {
   checkMediaCapabilities,
   chooseOutputPath,
   chooseSource,
+  decodeAudioPlaybackChunk,
   detectAudioActivity,
   exportFast,
   inspectMedia,
@@ -28,7 +29,6 @@ import {
   moveSourceToTrash,
   planGifExport,
   planOptimizedExport,
-  prepareAudioPreviews,
   prepareImportedSourceThumbnail,
   prepareProxyPreview,
   prepareSourcePreview,
@@ -124,89 +124,28 @@ describe("media IPC adapter", () => {
     });
   });
 
-  it("parses audio preview descriptors and preserves canonical signal effects", async () => {
-    const audioTracks = [
-      {
-        streamIndex: 2,
-        processing: {
-          gainDb: 3,
-          loudnessNormalization: "streaming" as const,
-          effects: [
-            { cutoffHz: 120, stage: "cleanup" as const, type: "highPass" as const },
-            {
-              preset: "strong" as const,
-              stage: "cleanup" as const,
-              type: "noiseReduction" as const,
-            },
-            { ceilingDb: -1, stage: "finalProtection" as const, type: "limiter" as const },
-          ],
-        },
-      },
-    ];
-
-    const descriptor = {
-      mediaToken: 4,
-      previewRevision: 12,
-      processing: audioTracks[0]!.processing,
-      streamIndex: 2,
-      url: "easytrim-media://localhost/4?variant=audio&stream=2&revision=12",
-    };
-
-    mocks.invoke.mockResolvedValueOnce([descriptor]);
-
-    await expect(prepareAudioPreviews("C:/Media/clip.mp4", audioTracks)).resolves.toEqual([
-      {
-        ...descriptor,
-        processing: {
-          ...audioTracks[0]!.processing,
-          effects: [
-            { cutoffHz: 120, stage: "cleanup", type: "highPass" },
-            { preset: "strong", stage: "cleanup", type: "noiseReduction" },
-            { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
-          ],
-        },
-      },
-    ]);
-    expect(mocks.invoke).toHaveBeenCalledWith("prepare_audio_previews", {
-      sourcePath: "C:/Media/clip.mp4",
-      audioTracks,
-    });
-  });
-
-  it.each([
-    { ceilingDb: -25, stage: "finalProtection", type: "limiter" },
-    { ceilingDb: -1, stage: "cleanup", type: "limiter" },
-  ])("rejects an invalid limiter returned in an audio preview descriptor", async (effect) => {
-    mocks.invoke.mockResolvedValueOnce([
-      {
-        mediaToken: 4,
-        previewRevision: 12,
-        processing: { gainDb: 0, effects: [effect] },
-        streamIndex: 2,
-        url: "easytrim-media://localhost/4?variant=audio&stream=2&revision=12",
-      },
-    ]);
+  it("decodes a bounded PCM playback chunk through the native command", async () => {
+    const controller = new AbortController();
+    mocks.invoke.mockResolvedValueOnce({ channels: 2, sampleRate: 48_000, samples: [1, -1, 2, -2] });
 
     await expect(
-      prepareAudioPreviews("C:/Media/clip.mp4", [{ streamIndex: 2, processing: { gainDb: 0 } }]),
-    ).rejects.toThrow();
-  });
-
-  it("rejects duplicate singleton effects returned in an audio preview descriptor", async () => {
-    const limiter = { ceilingDb: -1, stage: "finalProtection", type: "limiter" };
-    mocks.invoke.mockResolvedValueOnce([
-      {
-        mediaToken: 4,
-        previewRevision: 12,
-        processing: { gainDb: 0, effects: [limiter, { ...limiter, ceilingDb: -2 }] },
-        streamIndex: 2,
-        url: "easytrim-media://localhost/4?variant=audio&stream=2&revision=12",
-      },
-    ]);
-
-    await expect(
-      prepareAudioPreviews("C:/Media/clip.mp4", [{ streamIndex: 2, processing: { gainDb: 0 } }]),
-    ).rejects.toThrow();
+      decodeAudioPlaybackChunk(
+        "C:/Media/clip.mp4",
+        { streamIndex: 2, processing: { gainDb: 0 } },
+        1_000_000,
+        2_000_000,
+        controller.signal,
+      ),
+    ).resolves.toEqual({ channels: 2, sampleRate: 48_000, samples: [1, -1, 2, -2] });
+    expect(mocks.invoke).toHaveBeenCalledWith(
+      "decode_audio_playback_chunk",
+      expect.objectContaining({
+        durationMicros: 2_000_000,
+        sourcePath: "C:/Media/clip.mp4",
+        startMicros: 1_000_000,
+        track: { streamIndex: 2, processing: { gainDb: 0 } },
+      }),
+    );
   });
 
   it("converts detected silence to activity ranges for one track", async () => {

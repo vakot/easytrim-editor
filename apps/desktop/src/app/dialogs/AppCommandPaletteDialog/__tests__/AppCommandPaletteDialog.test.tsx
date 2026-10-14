@@ -303,7 +303,7 @@ describe("CommandPalette semantic icons", () => {
   it("keeps the palette open after checkbox and radio configuration changes", async () => {
     mocks.commands = [
       ...mocks.commands,
-      createCommand("preference-loop-playback", "Loop playback", "default", <CheckCircle2 />, {
+      createCommand("example-checkbox", "Example checkbox", "default", <CheckCircle2 />, {
         checked: false,
       }),
       createCommand("theme-dark", "Dark", "default", <CheckCircle2 />, { checked: true }),
@@ -311,12 +311,12 @@ describe("CommandPalette semantic icons", () => {
     render(<CommandPalette />);
     fireEvent.keyDown(window, { key: "/", code: "Slash", shiftKey: true });
 
-    fireEvent.click(await screen.findByRole("option", { name: "Loop playback" }));
+    fireEvent.click(await screen.findByRole("option", { name: "Example checkbox" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("option", { name: "Dark" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(mocks.executeCommand).toHaveBeenCalledWith("preference-loop-playback", "palette");
+    expect(mocks.executeCommand).toHaveBeenCalledWith("example-checkbox", "palette");
     expect(mocks.executeCommand).toHaveBeenCalledWith("theme-dark", "palette");
   });
 

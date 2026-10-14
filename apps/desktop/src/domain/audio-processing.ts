@@ -30,7 +30,7 @@ type AudioTrackSignalEffect =
       stage: "finalProtection";
       type: "limiter";
     };
-type AudioTrackLimiter = Extract<AudioTrackSignalEffect, { type: "limiter" }>;
+type AudioTrackHighPass = Extract<AudioTrackSignalEffect, { type: "highPass" }>;
 type NoiseReductionPreset = "light" | "medium" | "strong";
 
 interface CustomLoudnessNormalization {
@@ -84,50 +84,31 @@ function effectiveAudioTrackGainDb(processing: AudioTrackProcessing): number {
   return audioTrackLevelMode(processing) === "manual" ? processing.gainDb : 0;
 }
 
-function audioTrackRequiresProcessedPreview(processing: AudioTrackProcessing): boolean {
-  return processing.loudnessNormalization !== undefined || (processing.effects?.length ?? 0) > 0;
-}
-
-function audioTrackPreviewProcessing(processing: AudioTrackProcessing): AudioTrackProcessing {
-  const limiter = getAudioTrackSignalEffect(processing, "limiter");
-  const bakeManualGain = limiter !== undefined && processing.loudnessNormalization === undefined;
-  return { ...processing, gainDb: bakeManualGain ? processing.gainDb : 0 };
-}
-
-function audioTrackPreviewRuntimeGainDb(
+function audioTrackPlaybackFfmpegProcessing(
   processing: AudioTrackProcessing,
-  previewProcessing: AudioTrackProcessing,
+): AudioTrackProcessing {
+  // Web Audio owns high-pass and gain live; FFmpeg keeps noise reduction, normalization, and
+  // limiting aligned with export.
+  return {
+    ...processing,
+    gainDb: 0,
+    ...(processing.effects
+      ? { effects: processing.effects.filter((effect) => effect.type !== "highPass") }
+      : {}),
+  };
+}
+
+function getAudioTrackLiveHighPassEffects(processing: AudioTrackProcessing): AudioTrackHighPass[] {
+  return getAudioTrackSignalEffects(processing).filter(
+    (effect): effect is AudioTrackHighPass => effect.type === "highPass",
+  );
+}
+
+function audioTrackPlaybackRuntimeGainDb(
+  processing: AudioTrackProcessing,
   liveGainDb = processing.gainDb,
 ): number {
-  if (processing.loudnessNormalization !== undefined) return 0;
-  const previewBakesManualGain =
-    getAudioTrackSignalEffect(previewProcessing, "limiter") !== undefined &&
-    previewProcessing.loudnessNormalization === undefined;
-
-  return liveGainDb - (previewBakesManualGain ? previewProcessing.gainDb : 0);
-}
-
-function limitAudioPreviewSample(sample: number, ceilingDb: number): number {
-  const ceiling = 10 ** (ceilingDb / 20);
-  return Math.max(-ceiling, Math.min(ceiling, sample));
-}
-
-function audioTrackExternalPreviewStreamIndexes(
-  tracks: AudioTrackSettings[],
-  nativeAudioStreamIndex: number | undefined,
-): number[] {
-  const enabledTracks = tracks.filter((track) => track.enabled);
-  if (enabledTracks.length > 1) return enabledTracks.map((track) => track.streamIndex);
-
-  const onlyTrack = enabledTracks[0];
-  if (!onlyTrack) return [];
-  if (
-    audioTrackRequiresProcessedPreview(onlyTrack.processing) ||
-    onlyTrack.streamIndex !== nativeAudioStreamIndex
-  ) {
-    return [onlyTrack.streamIndex];
-  }
-  return [];
+  return processing.loudnessNormalization !== undefined ? 0 : liveGainDb;
 }
 
 function audioTrackNormalizationGainDb(
@@ -350,18 +331,6 @@ function sameAudioTrackProcessing(
   );
 }
 
-function sameAudioTrackPreviewProcessing(
-  left: AudioTrackProcessing,
-  right: AudioTrackProcessing,
-): boolean {
-  return (
-    audioTrackPreviewProcessing(left).gainDb === audioTrackPreviewProcessing(right).gainDb &&
-    sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization) &&
-    JSON.stringify(getAudioTrackSignalEffects(left)) ===
-      JSON.stringify(getAudioTrackSignalEffects(right))
-  );
-}
-
 function sameLoudnessNormalization(
   left: LoudnessNormalization | undefined,
   right: LoudnessNormalization | undefined,
@@ -430,7 +399,7 @@ const DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION: CustomLoudnessNormalization = {
 export type {
   AudioLoudnessAnalysis,
   AudioProcessingStage,
-  AudioTrackLimiter,
+  AudioTrackHighPass,
   AudioTrackMetadata,
   AudioTrackProcessing,
   AudioTrackSelection,
@@ -447,28 +416,25 @@ export {
   AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS,
   AUDIO_TRACK_SIGNAL_EFFECT_ORDER,
   audioTrackActivityProcessingChanged,
-  audioTrackExternalPreviewStreamIndexes,
   audioTrackLevelMode,
   audioTrackLoudnessInputsKey,
   audioTrackNormalizationGainDb,
-  audioTrackPreviewProcessing,
-  audioTrackPreviewRuntimeGainDb,
-  audioTrackRequiresProcessedPreview,
+  audioTrackPlaybackFfmpegProcessing,
+  audioTrackPlaybackRuntimeGainDb,
   cloneAudioTrackProcessing,
   DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB,
   DEFAULT_AUDIO_TRACK_PROCESSING,
   DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
   effectiveAudioTrackGainDb,
+  getAudioTrackLiveHighPassEffects,
   getAudioTrackPreLevelEffects,
   getAudioTrackSignalEffect,
   getAudioTrackSignalEffects,
-  limitAudioPreviewSample,
   loudnessNormalizationTargets,
   normalizeAudioTrackDefaults,
   parseAudioTrackSignalEffects,
   removeAudioTrackSignalEffect,
   sameAudioTrackLoudnessInputs,
-  sameAudioTrackPreviewProcessing,
   sameAudioTrackProcessing,
   sameLoudnessNormalization,
   serializeAudioTrackSettings,
