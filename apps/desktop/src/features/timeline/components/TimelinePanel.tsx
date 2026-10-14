@@ -64,10 +64,7 @@ function TimelinePanel() {
   const media = useAppSelector(selectSourceMedia);
   const loadToken = useAppSelector(selectSourceLoadToken);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
-  const { currentFrame, framesCount, seekFrame } = useTimelinePlayback(
-    frameRate,
-    media?.video.frameCount,
-  );
+  const { currentFrame, framesCount, playheadFrame, seekFrame } = useTimelinePlayback(frameRate);
 
   const trim = useTimelineTrimEditing(framesCount, frameRate);
   const length = trim.range.end - trim.range.start;
@@ -298,7 +295,7 @@ function TimelinePanel() {
             snap="shift"
             step={1}
             style={{ isolation: "auto" }}
-            value={[currentFrame]}
+            value={[playheadFrame]}
           >
             <TimelineMarkers frameRate={frameRate} framesCount={framesCount} />
             <Slider.Track className="segment-markers h-13 rounded-md border bg-muted/30 text-muted" />

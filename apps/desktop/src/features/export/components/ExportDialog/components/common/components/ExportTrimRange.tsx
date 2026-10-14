@@ -25,11 +25,7 @@ function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boo
   const frameRate =
     media?.video.averageFrameRate ?? media?.video.realFrameRate ?? DEFAULT_FRAME_RATE;
 
-  const metadataFrameCount = media?.video.frameCount;
-  const framesCount =
-    metadataFrameCount && metadataFrameCount > 0
-      ? metadataFrameCount
-      : frameCountFor(durationMicros, frameRate);
+  const framesCount = frameCountFor(durationMicros, frameRate);
 
   const adapter = createTrimFrameAdapter(durationMicros, framesCount, frameRate);
 

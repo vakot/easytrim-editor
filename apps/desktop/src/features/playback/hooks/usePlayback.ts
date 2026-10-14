@@ -3,7 +3,12 @@ import { useMemo, useSyncExternalStore } from "react";
 import type { FrameRate } from "@/domain/media";
 
 import { usePlaybackController } from "../contexts/playback-context";
-import { frameCountFor, frameToPlaybackMicros, microsToFrame } from "../lib/playback-time";
+import {
+  frameCountFor,
+  frameToPlaybackMicros,
+  playheadFrameAt,
+  presentedFrameAt,
+} from "../lib/playback-time";
 
 const DEFAULT_FRAME_RATE = { denominator: 1, numerator: 30 } as const;
 
@@ -49,31 +54,30 @@ function usePlaybackActions() {
   );
 }
 
-function useTimelinePlayback(
-  frameRate: FrameRate | undefined,
-  metadataFrameCount: number | undefined,
-) {
+function useTimelinePlayback(frameRate: FrameRate | undefined) {
   const positionMicros = usePlaybackPositionMicros();
   const durationMicros = usePlaybackDurationMicros();
-  const framesCount =
-    metadataFrameCount && metadataFrameCount > 0
-      ? metadataFrameCount
-      : frameCountFor(durationMicros, frameRate);
-
   const conversionFrameRate = frameRate ?? DEFAULT_FRAME_RATE;
-  const currentFrame =
-    positionMicros >= durationMicros
-      ? framesCount
-      : Math.min(
-          Math.max(0, framesCount - 1),
-          microsToFrame(positionMicros, conversionFrameRate, framesCount),
-        );
+  // One grid derived from the playback clock's own duration and rate, so every frame maps to a
+  // reachable time and the final frame ends exactly at EOF.
+  const framesCount = frameCountFor(durationMicros, conversionFrameRate);
 
   const { seek } = usePlaybackActions();
 
   return {
-    currentFrame,
+    currentFrame: presentedFrameAt(
+      positionMicros,
+      framesCount,
+      durationMicros,
+      conversionFrameRate,
+    ),
     framesCount,
+    playheadFrame: playheadFrameAt(
+      positionMicros,
+      framesCount,
+      durationMicros,
+      conversionFrameRate,
+    ),
     seekFrame: (frame: number) => {
       seek(frameToPlaybackMicros(frame, framesCount, durationMicros, conversionFrameRate));
     },

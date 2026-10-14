@@ -125,7 +125,7 @@ function TimelineMarkersChapters({
   framesCount: number;
 }) {
   const chapters = useAppSelector(selectChapters);
-  const { seekFrame } = useTimelinePlayback(frameRate, framesCount);
+  const { seekFrame } = useTimelinePlayback(frameRate);
 
   const frame = (micros: number) => microsToFrame(micros, frameRate, framesCount);
 

@@ -32,6 +32,7 @@ vi.mock("@/features/playback", () => ({
   useTimelinePlayback: () => ({
     currentFrame: playback.currentFrame,
     framesCount: playback.framesCount,
+    playheadFrame: playback.currentFrame,
     seekFrame: playback.seekFrame,
   }),
 }));
