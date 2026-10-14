@@ -753,4 +753,22 @@ describe("playback controller", () => {
     expect(playback.driver.video.play).toHaveBeenCalledTimes(2);
     controller.dispose();
   });
+
+  it.each([false, true])(
+    "waits for the media to end before finishing a segment at the source end (loop %s)",
+    async (loop) => {
+      const playback = createPlaybackDriver();
+      const controller = createPlaybackController(playback.driver, 4_000_000);
+      controller.setOptions({ loop, segment: { startMicros: 0, endMicros: 4_000_000 } });
+      controller.play();
+      await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+      // The native clock reaches EOF before the final frames are presented.
+      playback.playbackFrameCallback(0, 4);
+
+      expect(controller.isPlaying).toBe(true);
+      expect(playback.driver.video.pause).not.toHaveBeenCalled();
+      controller.dispose();
+    },
+  );
 });

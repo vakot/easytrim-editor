@@ -312,10 +312,14 @@ class PlaybackController {
   }
 
   private reachedRangeEnd() {
+    const { endMicros } = this.playbackRange();
+    // The native clock leads the presented frame, so a range ending at EOF must wait for the
+    // media to end on its own; stopping on the clock would drop the final frames.
     return (
+      endMicros < this.snapshot.durationMicros &&
       this.lifecycle === "playing" &&
       !this.driver?.video.isSeekPending() &&
-      this.snapshot.positionMicros >= this.playbackRange().endMicros
+      this.snapshot.positionMicros >= endMicros
     );
   }
 
