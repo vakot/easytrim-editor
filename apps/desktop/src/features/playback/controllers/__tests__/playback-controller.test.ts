@@ -684,4 +684,55 @@ describe("playback controller", () => {
       positionMicros: 0,
     });
   });
+
+  it("restarts at the start of the selected segment when looping", async () => {
+    const playback = createPlaybackDriver();
+    const controller = createPlaybackController(playback.driver, 10_000_000);
+    controller.setOptions({
+      loop: true,
+      segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
+    });
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    expect(controller.getSnapshot().positionMicros).toBe(2_000_000);
+
+    playback.playbackFrameCallback(0, 4.01);
+
+    expect(controller.getSnapshot().positionMicros).toBe(2_000_000);
+    expect(playback.driver.video.seek).toHaveBeenCalledWith(2, false);
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    controller.dispose();
+  });
+
+  it("stops at the end of the selected segment without looping", async () => {
+    const playback = createPlaybackDriver();
+    const controller = createPlaybackController(playback.driver, 10_000_000);
+    controller.setOptions({
+      loop: false,
+      segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
+    });
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+    playback.playbackFrameCallback(0, 4.01);
+
+    expect(controller.isPlaying).toBe(false);
+    expect(controller.getSnapshot().positionMicros).toBe(4_000_000);
+    controller.dispose();
+  });
+
+  it("loops the complete source when the media ends", async () => {
+    const playback = createPlaybackDriver();
+    const controller = createPlaybackController(playback.driver, 4_000_000);
+    controller.setOptions({ loop: true, segment: null });
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+    vi.mocked(playback.driver.video.isEnded).mockReturnValueOnce(true);
+    playback.observer.onEnded();
+
+    expect(controller.getSnapshot().positionMicros).toBe(0);
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    controller.dispose();
+  });
 });

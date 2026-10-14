@@ -1,3 +1,4 @@
+import type { PlaybackRange } from "@/domain/playback";
 import type { AudioPlaybackAdapter } from "@/features/audio";
 import type { PreviewVideoAdapter } from "@/features/preview";
 import { diagnostics } from "@/lib/diagnostics";
@@ -7,10 +8,17 @@ interface PlaybackDriver {
   video: PreviewVideoAdapter;
 }
 
+interface PlaybackOptions {
+  loop: boolean;
+  segment: PlaybackRange | null;
+}
+
 interface PlaybackSnapshot {
   durationMicros: number;
   positionMicros: number;
 }
+
+type PlaybackEndSource = "ended_event" | "pause_event" | "time_update" | "video_frame";
 
 const MICROS_PER_SECOND = 1_000_000;
 
@@ -26,6 +34,7 @@ class PlaybackController {
   private mediaSessionId: number | null | undefined;
   private lifecycle: "paused" | "starting" | "playing" = "paused";
   private mediaStartRequested = false;
+  private options: PlaybackOptions = { loop: false, segment: null };
 
   constructor() {
     this.snapshot = this.createSnapshot(0, 0);
@@ -68,6 +77,10 @@ class PlaybackController {
     this.update(nextDurationMicros, nextPositionMicros);
   };
 
+  setOptions = (options: PlaybackOptions) => {
+    this.options = options;
+  };
+
   getSnapshot = () => this.snapshot;
 
   get isPlaying() {
@@ -94,13 +107,13 @@ class PlaybackController {
       onEnded: () => {
         if (this.mediaSessionId !== mediaSessionId) return;
         if (!this.driver?.video.isEnded()) return;
-        this.finishAtEndOfMedia("ended_event");
+        this.handleRangeEnd("ended_event");
       },
       onPause: (isPaused) => {
         if (this.mediaSessionId !== mediaSessionId) return;
         if (!isPaused) return;
         if (this.driver?.video.isEnded()) {
-          this.finishAtEndOfMedia("pause_event");
+          this.handleRangeEnd("pause_event");
           return;
         }
         if (this.lifecycle === "paused") return;
@@ -127,7 +140,7 @@ class PlaybackController {
       onTimeUpdate: () => {
         if (this.mediaSessionId !== mediaSessionId) return;
         if (this.driver?.video.isEnded()) {
-          this.finishAtEndOfMedia("time_update");
+          this.handleRangeEnd("time_update");
           return;
         }
       },
@@ -187,7 +200,13 @@ class PlaybackController {
       this.lifecycle !== "paused"
     )
       return;
-    if (this.snapshot.positionMicros >= this.snapshot.durationMicros) this.seek(0);
+    const range = this.playbackRange();
+    if (
+      this.snapshot.positionMicros >= range.endMicros ||
+      this.snapshot.positionMicros < range.startMicros
+    ) {
+      this.seek(range.startMicros);
+    }
 
     const seconds = this.snapshot.positionMicros / MICROS_PER_SECOND;
     const generation = ++this.startupGeneration;
@@ -285,9 +304,33 @@ class PlaybackController {
     if (notify && wasPlaying !== (nextLifecycle === "playing")) this.notifyListeners();
   }
 
-  private finishAtEndOfMedia(
-    source: "ended_event" | "pause_event" | "time_update" | "video_frame",
-  ) {
+  private playbackRange(): PlaybackRange {
+    return this.options.segment ?? { startMicros: 0, endMicros: this.snapshot.durationMicros };
+  }
+
+  private reachedRangeEnd() {
+    return (
+      this.lifecycle === "playing" &&
+      !this.driver?.video.isSeekPending() &&
+      this.snapshot.positionMicros >= this.playbackRange().endMicros
+    );
+  }
+
+  private handleRangeEnd(source: PlaybackEndSource) {
+    const range = this.playbackRange();
+    if (this.lifecycle !== "paused" && this.options.loop && range.endMicros > range.startMicros) {
+      this.seek(range.startMicros);
+      this.play();
+      return;
+    }
+    if (range.endMicros >= this.snapshot.durationMicros) {
+      this.finishAtEndOfMedia(source);
+      return;
+    }
+    if (this.lifecycle !== "paused") this.seek(range.endMicros);
+  }
+
+  private finishAtEndOfMedia(source: PlaybackEndSource) {
     if (
       this.lifecycle === "paused" &&
       this.snapshot.positionMicros === this.snapshot.durationMicros
@@ -339,10 +382,14 @@ class PlaybackController {
       const driver = this.driver;
       if (!driver || this.mediaSessionId === null || this.mediaSessionId === undefined) return;
       if (driver.video.isEnded()) {
-        this.finishAtEndOfMedia("video_frame");
+        this.handleRangeEnd("video_frame");
         return;
       }
       this.publishMediaTime(seconds);
+      if (this.reachedRangeEnd()) {
+        this.handleRangeEnd("video_frame");
+        return;
+      }
       if (generation === this.playbackClockGeneration && this.lifecycle === "playing") {
         this.playbackFrame = driver.video.requestPlaybackFrame(tick);
       }
