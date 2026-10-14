@@ -15,8 +15,8 @@ function usePlaybackPreferenceCommands() {
   const loop = useAppSelector(selectLoopPlaybackEnabledDefault);
   const followSegment = useAppSelector(selectSegmentPlaybackEnabledDefault);
   const labels = {
-    loopPlaybackEnabledDefault: t("settings.preferences.loopPlayback.commandLabel"),
-    segmentPlaybackEnabledDefault: t("settings.preferences.followSegment.commandLabel"),
+    loopPlaybackEnabledDefault: t("settings.preferences.playback.loopPlayback.commandLabel"),
+    segmentPlaybackEnabledDefault: t("settings.preferences.playback.followSegment.commandLabel"),
   };
 
   return (

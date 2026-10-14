@@ -29,21 +29,21 @@ function SettingsPreferences() {
     <>
       <SettingsSection title={t("settings.preferences.playback.title")}>
         <SettingRow
-          description={t("settings.preferences.loopPlayback.description")}
-          label={t("settings.preferences.loopPlayback.label")}
+          description={t("settings.preferences.playback.loopPlayback.description")}
+          label={t("settings.preferences.playback.loopPlayback.label")}
         >
           <CommandSwitch
-            aria-label={t("settings.preferences.loopPlayback.label")}
+            aria-label={t("settings.preferences.playback.loopPlayback.label")}
             commandId="preference-loop-playback"
           />
         </SettingRow>
 
         <SettingRow
-          description={t("settings.preferences.followSegment.description")}
-          label={t("settings.preferences.followSegment.label")}
+          description={t("settings.preferences.playback.followSegment.description")}
+          label={t("settings.preferences.playback.followSegment.label")}
         >
           <CommandSwitch
-            aria-label={t("settings.preferences.followSegment.label")}
+            aria-label={t("settings.preferences.playback.followSegment.label")}
             commandId="preference-segment-playback"
           />
         </SettingRow>

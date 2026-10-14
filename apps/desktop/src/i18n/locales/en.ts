@@ -924,17 +924,17 @@ export const en = {
         },
         title: "Editing",
       },
-      followSegment: {
-        commandLabel: "Follow segment by default",
-        description: "Keep playback within the selected segment by default",
-        label: "Follow segment",
-      },
-      loopPlayback: {
-        commandLabel: "Enable loop playback by default",
-        description: "Start new sessions with loop playback enabled",
-        label: "Loop",
-      },
       playback: {
+        followSegment: {
+          commandLabel: "Follow segment by default",
+          description: "Keep playback within the selected segment by default",
+          label: "Follow segment",
+        },
+        loopPlayback: {
+          commandLabel: "Enable loop playback by default",
+          description: "Start new sessions with loop playback enabled",
+          label: "Loop",
+        },
         reset: "Reset playback settings",
         title: "Playback",
       },
