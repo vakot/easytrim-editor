@@ -105,16 +105,17 @@ function ExportDialogContent({ __scopeDialog, onCancel }: ExportDialogContentPro
         </DialogDescription>
       </DialogHeader>
 
-      <ExportTrimRange
-        key={`${dialogRoute}-${activeInstance?.id ?? ""}`}
-        onValidityChange={setTrimRangeValid}
-      />
+
       {routeComposition.options}
       <ExportResolution cropResolution={cropResolution} settings={settings} />
       <FrameRate
         key={`${dialogRoute}-${activeInstance?.id ?? ""}`}
         onValidityChange={setFrameRateValid}
         settings={settings}
+      />
+      <ExportTrimRange
+        key={`trim-${dialogRoute}-${activeInstance?.id ?? ""}`}
+        onValidityChange={setTrimRangeValid}
       />
       <CommandPreview
         command={commandPreview}

@@ -479,23 +479,29 @@ describe("ExportDialog", () => {
     const start = await screen.findByRole("spinbutton", { name: "Start" });
     const end = screen.getByRole("spinbutton", { name: "End" });
     expect(start).toHaveValue(0);
-    expect(end).toHaveValue(5);
+    expect(end).toHaveValue(150);
 
-    fireEvent.change(start, { target: { value: "1.5" } });
-    fireEvent.change(end, { target: { value: "3" } });
+    fireEvent.change(start, { target: { value: "45" } });
+    fireEvent.change(end, { target: { value: "90" } });
     await waitFor(() =>
       expect(planOptimizedExport).toHaveBeenLastCalledWith(
-        expect.objectContaining({ trim: { startMicros: 1_500_000, endMicros: 3_000_000 } }),
+        expect.objectContaining({ trim: { startMicros: 1_501_500, endMicros: 3_003_000 } }),
       ),
     );
     expect(store.getState().trim.value).toEqual(timelineTrim);
 
-    fireEvent.change(end, { target: { value: "6" } });
-    expect(screen.getByRole("alert")).toHaveTextContent("between 0 and 5 seconds");
-    expect(screen.getByRole("button", { name: "Export" })).toBeDisabled();
+    for (const [value, field] of [
+      ["151", end],
+      ["90.5", end],
+      ["70", end],
+    ] as const) {
+      fireEvent.change(field, { target: { value } });
+      expect(screen.getByRole("alert")).toHaveTextContent("between 0 and 150");
+      expect(screen.getByRole("button", { name: "Export" })).toBeDisabled();
+    }
     expect(store.getState().export.dialogTrim).toEqual({
-      startMicros: 1_500_000,
-      endMicros: 3_000_000,
+      startMicros: 1_501_500,
+      endMicros: 3_003_000,
     });
   });
 

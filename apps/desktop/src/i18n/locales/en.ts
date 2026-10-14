@@ -564,8 +564,8 @@ export const en = {
     },
     trimRange: {
       endLabel: "End",
-      invalidValue: "Enter a start and end between 0 and {{duration}} seconds, at least {{minimum}} seconds apart.",
-      label: "Segment (seconds)",
+      invalidValue: "Enter whole frames between 0 and {{frames}}, at least {{minimum}} frames apart.",
+      label: "Selected segment",
       startLabel: "Start",
     },
   },
