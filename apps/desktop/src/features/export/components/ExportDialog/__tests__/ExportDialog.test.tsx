@@ -442,6 +442,63 @@ describe("ExportDialog", () => {
     expect(chooseGifOutputPath).not.toHaveBeenCalled();
   });
 
+  it("edits an export-only segment within the source without changing the timeline trim", async () => {
+    planOptimizedExport.mockClear();
+    planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg preview" });
+    const store = createAppStore({
+      getItem: async () => null,
+      setItem: async () => undefined,
+      removeItem: async () => undefined,
+    });
+
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          exportAttempts: [],
+          id: "instance-1",
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
+          sourceAvailability: "available",
+        },
+      ]),
+    );
+    store.dispatch(activeEditingInstanceChanged("instance-1"));
+    const timelineTrim = store.getState().trim.value;
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ExportDialog />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    await store.dispatch(openOptimizedExportDialog());
+    const start = await screen.findByRole("spinbutton", { name: "Start" });
+    const end = screen.getByRole("spinbutton", { name: "End" });
+    expect(start).toHaveValue(0);
+    expect(end).toHaveValue(5);
+
+    fireEvent.change(start, { target: { value: "1.5" } });
+    fireEvent.change(end, { target: { value: "3" } });
+    await waitFor(() =>
+      expect(planOptimizedExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ trim: { startMicros: 1_500_000, endMicros: 3_000_000 } }),
+      ),
+    );
+    expect(store.getState().trim.value).toEqual(timelineTrim);
+
+    fireEvent.change(end, { target: { value: "6" } });
+    expect(screen.getByRole("alert")).toHaveTextContent("between 0 and 5 seconds");
+    expect(screen.getByRole("button", { name: "Export" })).toBeDisabled();
+    expect(store.getState().export.dialogTrim).toEqual({
+      startMicros: 1_500_000,
+      endMicros: 3_000_000,
+    });
+  });
+
   it("preserves dialog cancel and launch-error handling", async () => {
     toastError.mockClear();
     planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg preview" });

@@ -562,6 +562,12 @@ export const en = {
       sourceOption: "{{height}}p · {{width}} × {{height}} (source)",
       widthLabel: "Width",
     },
+    trimRange: {
+      endLabel: "End",
+      invalidValue: "Enter a start and end between 0 and {{duration}} seconds, at least {{minimum}} seconds apart.",
+      label: "Segment (seconds)",
+      startLabel: "Start",
+    },
   },
   layout: {
     accessibility: {
