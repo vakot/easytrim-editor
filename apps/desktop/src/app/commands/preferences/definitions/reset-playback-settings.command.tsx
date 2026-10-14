@@ -6,21 +6,21 @@ import { DEFAULT_PREFERENCES } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   playbackSettingsReset,
-  selectLoopPlaybackEnabledDefault,
-  selectSegmentPlaybackEnabledDefault,
+  selectLoopPlaybackEnabled,
+  selectSegmentPlaybackEnabled,
 } from "@/app/store/slices/preferences-slice";
 
 function useResetPlaybackSettingsCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const loopPlaybackEnabledDefault = useAppSelector(selectLoopPlaybackEnabledDefault);
-  const segmentPlaybackEnabledDefault = useAppSelector(selectSegmentPlaybackEnabledDefault);
+  const loopPlaybackEnabled = useAppSelector(selectLoopPlaybackEnabled);
+  const segmentPlaybackEnabled = useAppSelector(selectSegmentPlaybackEnabled);
   const label = t("common.actions.resetToDefault");
 
   return {
     enabled:
-      loopPlaybackEnabledDefault !== DEFAULT_PREFERENCES.loopPlaybackEnabledDefault ||
-      segmentPlaybackEnabledDefault !== DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault,
+      loopPlaybackEnabled !== DEFAULT_PREFERENCES.loopPlaybackEnabled ||
+      segmentPlaybackEnabled !== DEFAULT_PREFERENCES.segmentPlaybackEnabled,
     icon: <RotateCcw aria-hidden="true" />,
     surfaces: ["dialog", "menu"] as const,
     run() {

@@ -6,11 +6,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
-  loopPlaybackToggled,
-  segmentPlaybackToggled,
+  preferenceChanged,
   selectLoopPlaybackEnabled,
   selectSegmentPlaybackEnabled,
-} from "@/app/store/slices/editor-tools-slice";
+} from "@/app/store/slices/preferences-slice";
 import { cn } from "@/lib/class-names.utils";
 
 function TimelineToolbar() {
@@ -36,7 +35,7 @@ function LoopPlaybackTool() {
     <TimelineToolButton
       enabled={enabled}
       label={t("preview.playback.loopPlayback")}
-      onClick={() => dispatch(loopPlaybackToggled())}
+      onClick={() => dispatch(preferenceChanged({ key: "loopPlaybackEnabled", enabled: !enabled }))}
       title={
         enabled
           ? t("preview.playback.loopEnabledTooltip")
@@ -57,7 +56,9 @@ function SegmentPlaybackTool() {
     <TimelineToolButton
       enabled={enabled}
       label={t("preview.playback.segmentPlayback")}
-      onClick={() => dispatch(segmentPlaybackToggled())}
+      onClick={() =>
+        dispatch(preferenceChanged({ key: "segmentPlaybackEnabled", enabled: !enabled }))
+      }
       title={
         enabled
           ? t("preview.segment.segmentEnabledTooltip")

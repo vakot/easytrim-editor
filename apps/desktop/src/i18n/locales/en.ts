@@ -926,13 +926,13 @@ export const en = {
       },
       playback: {
         followSegment: {
-          commandLabel: "Follow segment by default",
-          description: "Keep playback within the selected segment by default",
+          commandLabel: "Follow segment",
+          description: "Keep playback within the selected segment",
           label: "Follow segment",
         },
         loopPlayback: {
-          commandLabel: "Enable loop playback by default",
-          description: "Start new sessions with loop playback enabled",
+          commandLabel: "Loop playback",
+          description: "Restart playback when it reaches its end",
           label: "Loop",
         },
         reset: "Reset playback settings",

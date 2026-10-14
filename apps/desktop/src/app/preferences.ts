@@ -16,11 +16,11 @@ interface Preferences {
   lastAudiblePlaybackVolumePercent: number;
   lastSeenChangelogVersion: string | null;
   layoutDensity: LayoutDensity;
-  loopPlaybackEnabledDefault: boolean;
+  loopPlaybackEnabled: boolean;
   mergeAudioEnabledDefault: boolean;
   playbackVolumePercent: number;
   primaryColor: PrimaryColor;
-  segmentPlaybackEnabledDefault: boolean;
+  segmentPlaybackEnabled: boolean;
   sidebarLayout: SidebarLayout;
   stripMetadataOnExport: boolean;
   theme: ThemePreference;
@@ -35,8 +35,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   activityFeedView: "default",
   autoStartQueueEnabled: true,
   deleteSourceOnRenderFinish: false,
-  loopPlaybackEnabledDefault: true,
-  segmentPlaybackEnabledDefault: true,
+  loopPlaybackEnabled: true,
+  segmentPlaybackEnabled: true,
   mergeAudioEnabledDefault: false,
   stripMetadataOnExport: false,
   layoutDensity: DEFAULT_LAYOUT_DENSITY,

@@ -4,7 +4,7 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectLoopPlaybackEnabled,
   selectSegmentPlaybackEnabled,
-} from "@/app/store/slices/editor-tools-slice";
+} from "@/app/store/slices/preferences-slice";
 import {
   selectSourceLoadToken,
   selectSourceMedia,

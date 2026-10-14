@@ -5,18 +5,18 @@ import { commandSearchTerms } from "@/app/commands/core/application-command.util
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   preferenceChanged,
-  selectLoopPlaybackEnabledDefault,
-  selectSegmentPlaybackEnabledDefault,
+  selectLoopPlaybackEnabled,
+  selectSegmentPlaybackEnabled,
 } from "@/app/store/slices/preferences-slice";
 
 function usePlaybackPreferenceCommands() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const loop = useAppSelector(selectLoopPlaybackEnabledDefault);
-  const followSegment = useAppSelector(selectSegmentPlaybackEnabledDefault);
+  const loop = useAppSelector(selectLoopPlaybackEnabled);
+  const followSegment = useAppSelector(selectSegmentPlaybackEnabled);
   const labels = {
-    loopPlaybackEnabledDefault: t("settings.preferences.playback.loopPlayback.commandLabel"),
-    segmentPlaybackEnabledDefault: t("settings.preferences.playback.followSegment.commandLabel"),
+    loopPlaybackEnabled: t("settings.preferences.playback.loopPlayback.commandLabel"),
+    segmentPlaybackEnabled: t("settings.preferences.playback.followSegment.commandLabel"),
   };
 
   return (
@@ -24,13 +24,13 @@ function usePlaybackPreferenceCommands() {
       {
         checked: loop,
         icon: <Repeat aria-hidden="true" />,
-        key: "loopPlaybackEnabledDefault",
+        key: "loopPlaybackEnabled",
         id: "preference-loop-playback" as const,
       },
       {
         checked: followSegment,
         icon: <BetweenVerticalStart aria-hidden="true" />,
-        key: "segmentPlaybackEnabledDefault",
+        key: "segmentPlaybackEnabled",
         id: "preference-segment-playback" as const,
       },
     ] as const

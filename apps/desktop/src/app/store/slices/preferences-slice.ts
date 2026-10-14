@@ -110,8 +110,8 @@ const preferencesSlice = createSlice({
       state.stripMetadataOnExport = DEFAULT_PREFERENCES.stripMetadataOnExport;
     },
     playbackSettingsReset: (state) => {
-      state.loopPlaybackEnabledDefault = DEFAULT_PREFERENCES.loopPlaybackEnabledDefault;
-      state.segmentPlaybackEnabledDefault = DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault;
+      state.loopPlaybackEnabled = DEFAULT_PREFERENCES.loopPlaybackEnabled;
+      state.segmentPlaybackEnabled = DEFAULT_PREFERENCES.segmentPlaybackEnabled;
     },
     themePreferenceChanged: (state, action: PayloadAction<ThemePreference>) => {
       state.theme = action.payload;
@@ -162,11 +162,11 @@ const selectMergeAudioEnabledDefault = (state: RootState): boolean =>
 const selectStripMetadataOnExport = (state: RootState): boolean =>
   selectPreferences(state).stripMetadataOnExport;
 
-const selectLoopPlaybackEnabledDefault = (state: RootState): boolean =>
-  selectPreferences(state).loopPlaybackEnabledDefault;
+const selectLoopPlaybackEnabled = (state: RootState): boolean =>
+  selectPreferences(state).loopPlaybackEnabled;
 
-const selectSegmentPlaybackEnabledDefault = (state: RootState): boolean =>
-  selectPreferences(state).segmentPlaybackEnabledDefault;
+const selectSegmentPlaybackEnabled = (state: RootState): boolean =>
+  selectPreferences(state).segmentPlaybackEnabled;
 
 const selectAutoStartQueueEnabled = (state: RootState): boolean =>
   selectPreferences(state).autoStartQueueEnabled;
@@ -222,12 +222,12 @@ export {
   selectDeleteSourceOnRenderFinish,
   selectLastSeenChangelogVersion,
   selectLayoutDensity,
-  selectLoopPlaybackEnabledDefault,
+  selectLoopPlaybackEnabled,
   selectMergeAudioEnabledDefault,
   selectPlaybackVolumePercent,
   selectPreferences,
   selectPrimaryColor,
-  selectSegmentPlaybackEnabledDefault,
+  selectSegmentPlaybackEnabled,
   selectSidebarLayout,
   selectStripMetadataOnExport,
   selectThemePreference,
