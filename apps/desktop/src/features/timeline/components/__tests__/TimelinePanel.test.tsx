@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
@@ -52,7 +54,9 @@ function renderTimelinePanel({
 
   return render(
     <Provider store={createAppStore()}>
-      <TimelinePanel />
+      <TooltipProvider>
+        <TimelinePanel />
+      </TooltipProvider>
     </Provider>,
   );
 }
@@ -66,7 +70,7 @@ describe("TimelinePanel", () => {
     expect(slider).toHaveAttribute("aria-valuemax", "100");
     expect(slider).toHaveAttribute("aria-valuenow", "11");
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
-      "00:00:00:11 / 00:00:03:10",
+      "00:00:00:11f / 00:00:03:10f",
     );
 
     fireEvent.keyDown(slider, { key: "ArrowRight" });
@@ -80,7 +84,7 @@ describe("TimelinePanel", () => {
     expect(slider).toHaveAttribute("aria-valuemax", "100");
     expect(slider).toHaveAttribute("aria-valuenow", "100");
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
-      "00:00:03:10 / 00:00:03:10",
+      "00:00:03:10f / 00:00:03:10f",
     );
     expect(screen.queryByText(/Frame 101/)).not.toBeInTheDocument();
   });
@@ -164,7 +168,9 @@ function renderTrim({ end = 5000000, isPlaying = false, start = 0 } = {}) {
   playback.seekFrame.mockClear();
   render(
     <Provider store={store}>
-      <TimelinePanel />
+      <TooltipProvider>
+        <TimelinePanel />
+      </TooltipProvider>
     </Provider>,
   );
   return store;

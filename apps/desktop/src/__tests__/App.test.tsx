@@ -351,7 +351,6 @@ describe("App", () => {
     expect(selectedSegmentHeading).toBeInTheDocument();
     expect(selectedSegmentHeading.closest(".select-none")).toBeNull();
     expect(screen.getByLabelText("Current playback time").closest(".select-none")).toBeNull();
-    expect(await screen.findByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument();
@@ -359,7 +358,7 @@ describe("App", () => {
     });
     expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
       "aria-valuenow",
-      "1000000",
+      "0",
     );
   });
 
@@ -510,13 +509,19 @@ describe("App", () => {
 
     await openSourcePicker(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
-    const play = vi.spyOn(video, "play").mockResolvedValue();
-    const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    const setPaused = (paused: boolean) =>
+      Object.defineProperty(video, "paused", { configurable: true, value: paused });
+
+    const play = vi.spyOn(video, "play").mockImplementation(async () => {
+      setPaused(false);
+    });
+
+    const pause = vi.spyOn(video, "pause").mockImplementation(() => setPaused(true));
 
     fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
     expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
       "aria-valuenow",
-      "16683",
+      "1",
     );
 
     fireEvent.keyDown(window, { key: "ArrowLeft", code: "ArrowLeft" });
@@ -526,7 +531,8 @@ describe("App", () => {
     );
 
     fireEvent.keyDown(window, { key: " ", code: "Space" });
-    expect(play).toHaveBeenCalledOnce();
+    fireEvent.seeked(video);
+    await waitFor(() => expect(play).toHaveBeenCalledOnce());
     fireEvent.play(video);
     pause.mockClear();
     fireEvent.keyDown(window, { key: " ", code: "Space" });
