@@ -36,6 +36,7 @@ function createPlaybackDriver() {
       pause: vi.fn(),
       play: vi.fn(async () => {
         observer?.onPlay();
+        return driver.video.getCurrentTimeSeconds() ?? 0;
       }),
       registerMediaObserver: vi.fn((nextObserver) => {
         observer = nextObserver;
@@ -49,7 +50,6 @@ function createPlaybackDriver() {
         return { cancel: () => playbackFrameCallbacks.delete(frameId) };
       }),
       seek: vi.fn((_seconds, _approximate, onSettled) => onSettled?.()),
-      setCurrentTimeSeconds: vi.fn(),
     },
   };
 
@@ -94,6 +94,42 @@ function createPlaybackController(driver: PlaybackDriver, durationMicros: number
 }
 
 describe("playback controller", () => {
+  it("aligns audio to the startup presentation anchor instead of transient native currentTime", async () => {
+    const playback = createPlaybackDriver();
+    vi.mocked(playback.driver.video.play).mockImplementation(async () => {
+      playback.observer.onPlay();
+      return 1.471667;
+    });
+    vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(1.48192);
+    const controller = createPlaybackController(playback.driver, 4_000_000);
+    controller.seek(1_463_062);
+    controller.play();
+    await vi.waitFor(() =>
+      expect(playback.driver.audio.startAlignedWithVideoAt).toHaveBeenCalledWith(1.471667),
+    );
+    expect(controller.isPlaying).toBe(true);
+    controller.dispose();
+  });
+
+  it("does not retain an old frame request when a subscriber pauses during publication", async () => {
+    const playback = createPlaybackDriver();
+    const controller = createPlaybackController(playback.driver, 4_000_000);
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    const unsubscribe = controller.subscribe(() => {
+      if (controller.isPlaying) controller.pause();
+    });
+
+    playback.playbackFrameCallback(0, 0.2);
+    unsubscribe();
+    expect(controller.isPlaying).toBe(false);
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    playback.playbackFrameCallback(0, 0.3);
+    expect(controller.getSnapshot().positionMicros).toBe(300_000);
+    controller.dispose();
+  });
+
   it("keeps a single microsecond position and clamps seeks to EOF", () => {
     const { driver } = createPlaybackDriver();
     const controller = createPlaybackController(driver, 2_000_000);
@@ -104,7 +140,7 @@ describe("playback controller", () => {
       durationMicros: 2_000_000,
       positionMicros: 2_000_000,
     });
-    expect(driver.video.seek).toHaveBeenCalledWith(2, false, expect.any(Function));
+    expect(driver.video.seek).toHaveBeenCalledWith(2, false);
     expect(driver.audio.seek).toHaveBeenCalledWith(2);
   });
 
@@ -243,7 +279,7 @@ describe("playback controller", () => {
 
   it("waits for native video startup before scheduling audio against its future position", async () => {
     const playback = createPlaybackDriver();
-    const startVideo = createDeferred<void>();
+    const startVideo = createDeferred<number>();
     vi.mocked(playback.driver.video.play).mockReturnValue(startVideo.promise);
     vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(0.4);
     vi.mocked(playback.driver.audio.getCurrentTimeSeconds).mockReturnValue(0.4);
@@ -256,7 +292,7 @@ describe("playback controller", () => {
     expect(playback.driver.audio.startAlignedWithVideoAt).not.toHaveBeenCalled();
     expect(controller.isPlaying).toBe(false);
 
-    startVideo.resolve();
+    startVideo.resolve(0.4);
     await vi.waitFor(() =>
       expect(playback.driver.audio.startAlignedWithVideoAt).toHaveBeenCalledWith(0.4),
     );
@@ -291,12 +327,14 @@ describe("playback controller", () => {
       await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
 
       expect(playback.driver.audio.prepareAt).toHaveBeenLastCalledWith(startSeconds);
-      expect(controller.getSnapshot().positionMicros).toBeCloseTo(sharedStartSeconds * 1_000_000);
+      expect(controller.getSnapshot().positionMicros).toBe(
+        Math.round(sharedStartSeconds * 1_000_000),
+      );
       controller.dispose();
     },
   );
 
-  it("cancels the shared-start wait when playback is paused", async () => {
+  it("invalidates pending frame updates when playback is paused", async () => {
     const playback = createPlaybackDriver();
     vi.mocked(playback.driver.audio.getCurrentTimeSeconds).mockReturnValue(0.4);
     vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(0.4);
@@ -346,7 +384,7 @@ describe("playback controller", () => {
     controller.dispose();
   });
 
-  it("keeps the Timeline on rendered video time across audio alignment", async () => {
+  it("keeps the Timeline on native video time across audio alignment", async () => {
     const playback = createPlaybackDriver();
     let audioPosition = 0.65;
     vi.mocked(playback.driver.audio.getCurrentTimeSeconds).mockImplementation(() => audioPosition);
@@ -451,15 +489,18 @@ describe("playback controller", () => {
     stalePlaybackFrame(0, 1.5);
 
     expect(controller.getSnapshot().positionMicros).toBe(750_000);
-    expect(driver.video.setCurrentTimeSeconds).not.toHaveBeenCalled();
 
     seekCallbacks[0]?.();
-    expect(controller.isPlaying).toBe(true);
+    expect(controller.isPlaying).toBe(false);
     seekCallbacks[1]?.();
+    expect(controller.getSnapshot().positionMicros).toBe(750_000);
+    controller.play();
+    await vi.waitFor(() => expect(seekCallbacks).toHaveLength(3));
+    seekCallbacks[2]?.();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
     playback.playbackFrameCallback(0, 0.8);
 
     expect(controller.getSnapshot().positionMicros).toBe(800_000);
-    expect(driver.video.setCurrentTimeSeconds).not.toHaveBeenCalled();
     controller.dispose();
   });
 
@@ -506,7 +547,7 @@ describe("playback controller", () => {
 
   it("reports playing on the native play event before the play promise resolves", async () => {
     const playback = createPlaybackDriver();
-    const startPreview = createDeferred<void>();
+    const startPreview = createDeferred<number>();
     vi.mocked(playback.driver.video.play).mockReturnValue(startPreview.promise);
     const controller = createPlaybackController(playback.driver, 2_000_000);
 
@@ -519,7 +560,7 @@ describe("playback controller", () => {
 
     controller.togglePlayback();
     expect(controller.isPlaying).toBe(false);
-    startPreview.resolve();
+    startPreview.resolve(0);
     await Promise.resolve();
     expect(controller.isPlaying).toBe(false);
   });

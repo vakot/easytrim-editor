@@ -96,7 +96,10 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
       isReady: readyState >= HTMLMediaElement.HAVE_CURRENT_DATA,
       isSeekPending: () => scheduler.isPending,
       pause: () => video.pause(),
-      play: () => video.play(),
+      play: async () => {
+        await video.play();
+        return video.currentTime;
+      },
       registerMediaObserver: (observer) => {
         observerCallbacks.add(observer);
         return () => observerCallbacks.delete(observer);
@@ -111,9 +114,6 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
         };
       },
       seek: (seconds, approximate, onSettled) => scheduler.seek(seconds, approximate, onSettled),
-      setCurrentTimeSeconds: (seconds) => {
-        video.currentTime = seconds;
-      },
     },
   };
 
@@ -246,8 +246,8 @@ describe("native preview playback integration", () => {
     expect(preview.controller.getSnapshot()).toMatchObject({
       positionMicros: 200_000,
     });
-    expect(preview.video.paused).toBe(false);
-    expect(() => preview.playNextFrame(0.3)).not.toThrow();
+    expect(preview.video.paused).toBe(true);
+    expect(preview.pendingPlaybackFrameCount).toBe(0);
     preview.dispose();
   });
 
@@ -359,7 +359,7 @@ describe("native preview playback integration", () => {
 
   it.each([0, 1, 2])("starts from frame %i without offsetting its timestamp", async (frame) => {
     const preview = createNativePreviewHarness();
-    const position = frame / 30;
+    const position = Math.round((frame / 30) * 1_000_000) / 1_000_000;
 
     preview.controller.seek(position * 1_000_000);
     if (frame > 0) preview.finishSeek();
@@ -390,16 +390,16 @@ describe("native preview playback integration", () => {
     preview.finishSeek();
 
     expect(preview.controller.getSnapshot()).toMatchObject({
-      positionMicros: (2 / 30) * 1_000_000,
+      positionMicros: Math.round((2 / 30) * 1_000_000),
     });
-    expect(preview.video.currentTime).toBe(2 / 30);
+    expect(preview.video.currentTime).toBe(0.066667);
 
     preview.controller.play();
     await vi.waitFor(() => expect(preview.controller.isPlaying).toBe(true));
     preview.playNextFrame(3 / 30);
 
     expect(preview.controller.getSnapshot().positionMicros).toBe((3 / 30) * 1_000_000);
-    expect(preview.video.currentTime).toBe(2 / 30);
+    expect(preview.video.currentTime).toBe(0.066667);
     preview.dispose();
   });
 });

@@ -18,20 +18,20 @@ interface PreviewVideoAdapter {
   isReady: boolean;
   isSeekPending: () => boolean;
   pause: () => void;
-  play: () => Promise<void>;
+  /** Resolves with the presented media position projected to the current performance time. */
+  play: () => Promise<number>;
   registerMediaObserver: (observer: PreviewMediaObserver) => () => void;
   requestPlaybackFrame: (
     callback: (timestamp: number, mediaTimeSeconds: number) => void,
   ) => PreviewPlaybackFrame | null;
   seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
-  setCurrentTimeSeconds: (seconds: number) => void;
 }
 
 interface PreviewRuntimeContract {
   isPreviewReady: boolean;
   isSeekPending: () => boolean;
   pauseMedia: () => void;
-  playMedia: () => Promise<void>;
+  playMedia: () => Promise<number>;
   registerMediaObserver: (observer: PreviewMediaObserver) => () => void;
   requestPlaybackFrame: (
     callback: (timestamp: number, mediaTimeSeconds: number) => void,
@@ -78,13 +78,6 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
     [videoRef],
   );
 
-  const setCurrentTimeSeconds = useCallback(
-    (seconds: number) => {
-      if (videoRef.current) videoRef.current.currentTime = seconds;
-    },
-    [videoRef],
-  );
-
   const isEnded = useCallback(() => videoRef.current?.ended ?? false, [videoRef]);
 
   return useMemo(
@@ -98,7 +91,6 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
       registerMediaObserver,
       requestPlaybackFrame,
       seek,
-      setCurrentTimeSeconds,
     }),
     [
       isReady,
@@ -110,7 +102,6 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
       registerMediaObserver,
       requestPlaybackFrame,
       seek,
-      setCurrentTimeSeconds,
     ],
   );
 }

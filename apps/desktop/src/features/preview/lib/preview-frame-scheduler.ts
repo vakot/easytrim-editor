@@ -4,13 +4,8 @@ function requestPreviewPlaybackFrame(
   video: HTMLVideoElement,
   callback: (timestamp: number, mediaTimeSeconds: number) => void,
 ): PreviewPlaybackFrame {
-  if (typeof video.requestVideoFrameCallback === "function") {
-    const id = video.requestVideoFrameCallback((timestamp, metadata) => {
-      callback(timestamp, metadata.mediaTime);
-    });
-
-    return { cancel: () => video.cancelVideoFrameCallback(id) };
-  }
+  // Presented-frame timestamps can lead currentTime and stop before terminal EOF.
+  // Sample the native transport clock for both running and paused UI positions.
   const id = requestAnimationFrame((timestamp) => callback(timestamp, video.currentTime));
   return { cancel: () => cancelAnimationFrame(id) };
 }

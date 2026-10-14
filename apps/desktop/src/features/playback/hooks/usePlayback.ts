@@ -61,7 +61,14 @@ function useTimelinePlayback(
       : frameCountFor(durationMicros, frameRate);
 
   const conversionFrameRate = frameRate ?? DEFAULT_FRAME_RATE;
-  const currentFrame = microsToFrame(positionMicros, conversionFrameRate, framesCount);
+  const currentFrame =
+    positionMicros >= durationMicros
+      ? framesCount
+      : Math.min(
+          Math.max(0, framesCount - 1),
+          microsToFrame(positionMicros, conversionFrameRate, framesCount),
+        );
+
   const { seek } = usePlaybackActions();
 
   return {

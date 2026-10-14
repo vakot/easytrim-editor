@@ -11,7 +11,6 @@ import { disconnectStereoAudioMeterNodes, type StereoAudioMeterNodes } from "./s
 const SAMPLE_RATE = 48_000;
 const PCM_CHUNK_FRAMES = SAMPLE_RATE * 2;
 const MAX_BUFFER_AHEAD_FRAMES = SAMPLE_RATE * 4;
-const AUDIO_START_LEAD_SECONDS = 0.15;
 const MIN_SCHEDULE_LEAD_SECONDS = 0.005;
 const CHANNELS = 2;
 
@@ -207,7 +206,7 @@ class WebAudioEngine {
     }
   }
 
-  async startAt(seconds: number): Promise<void> {
+  async startAt(seconds: number, contextStart?: number): Promise<void> {
     if (!this.hasTracks || this.durationFrames <= 0) return;
     this.playbackRequested = true;
     const startFrame = this.secondsToFrame(seconds);
@@ -243,7 +242,7 @@ class WebAudioEngine {
 
       if (generation !== this.generation) return;
 
-      const scheduledStart = this.context.currentTime + AUDIO_START_LEAD_SECONDS;
+      const scheduledStart = contextStart ?? this.context.currentTime + MIN_SCHEDULE_LEAD_SECONDS;
       this.anchorContextTime = scheduledStart;
       this.anchorPositionFrame = startFrame;
       this.nextScheduledContextTime = scheduledStart;
@@ -260,7 +259,7 @@ class WebAudioEngine {
     }
   }
 
-  startPreparedAt(seconds: number): Promise<void> {
+  startPreparedAt(seconds: number, contextStart?: number): Promise<void> {
     if (!this.hasTracks || this.durationFrames <= 0) return Promise.resolve();
     const startFrame = this.secondsToFrame(seconds);
     const firstRange = this.preparedBatch?.batch[0];
@@ -274,19 +273,26 @@ class WebAudioEngine {
         new Error("Prepared audio does not cover the requested start position."),
       );
     }
-    return this.startAt(seconds);
+    return this.startAt(seconds, contextStart);
   }
 
   async startAlignedWithVideoAt(videoPositionSeconds: number): Promise<number> {
-    const lastSampleFrame = Math.max(0, this.durationFrames - 1);
-    const requestedStartFrame =
-      this.secondsToFrame(videoPositionSeconds) +
-      Math.round(AUDIO_START_LEAD_SECONDS * SAMPLE_RATE);
+    if (!this.hasTracks) return videoPositionSeconds;
+    const contextStart = this.context.currentTime + MIN_SCHEDULE_LEAD_SECONDS;
+    const startFrame = this.secondsToFrame(
+      videoPositionSeconds + Math.max(0, contextStart - this.outputContextTime()),
+    );
 
-    const startFrame = Math.min(requestedStartFrame, lastSampleFrame);
-
+    // If output latency consumes the remaining range, there are no audible samples
+    // left to schedule. Native video completion still owns the terminal EOF state.
+    if (startFrame >= this.durationFrames) {
+      this.pause();
+      this.anchorPositionFrame = this.durationFrames;
+      this.nextScheduledFrame = this.durationFrames;
+      return this.durationFrames / SAMPLE_RATE;
+    }
     const audioStartPosition = startFrame / SAMPLE_RATE;
-    await this.startPreparedAt(audioStartPosition);
+    await this.startPreparedAt(audioStartPosition, contextStart);
 
     return audioStartPosition;
   }
@@ -354,7 +360,15 @@ class WebAudioEngine {
       track.cursorFrame = positionFrame;
       track.scheduledThroughFrame = positionFrame;
     }
-    if (resume) void this.startAt(positionFrame / SAMPLE_RATE).catch(() => this.pause());
+    if (resume) {
+      const start = this.startAt(positionFrame / SAMPLE_RATE);
+      const generation = this.generation;
+      void start.catch(() => {
+        if (generation !== this.generation) return;
+        this.pause();
+        this.onPlaybackError();
+      });
+    }
   }
 
   close(): void {
@@ -506,8 +520,9 @@ class WebAudioEngine {
     let sharedStart = contextStart;
     const earliestSafeStart = this.context.currentTime + MIN_SCHEDULE_LEAD_SECONDS;
     if (sharedStart < earliestSafeStart) {
-      // Underruns freeze the shared media clock at this boundary and resume every
-      // active track together once all tracks have produced the range.
+      // An active transport cannot move a chunk independently of the video clock.
+      // Report the underrun to Playback so both participants stop together.
+      if (this.isPlaying) throw new Error("Audio decoding missed its scheduling boundary.");
       sharedStart = this.context.currentTime + MIN_SCHEDULE_LEAD_SECONDS;
       this.anchorContextTime = sharedStart;
       this.anchorPositionFrame = startFrame;
@@ -566,14 +581,23 @@ class WebAudioEngine {
       throw new Error("Audio buffer sample ranges contain a gap or overlap.");
     }
     const source = this.context.createBufferSource();
+    const generation = this.generation;
     source.buffer = buffer;
     source.connect(track.input);
     source.onended = () => {
       source.disconnect();
       track.nodes.delete(source);
+      if (generation !== this.generation) return;
       if (this.currentPositionFrame() >= this.durationFrames && this.isPlaying) {
         this.pause();
         this.onEnded();
+      } else if (
+        this.isPlaying &&
+        endFrame === this.nextScheduledFrame &&
+        endFrame < this.durationFrames
+      ) {
+        this.pause();
+        this.onPlaybackError();
       }
     };
     source.start(contextStart, (scheduledStartFrame - range.startFrame) / SAMPLE_RATE);
@@ -588,6 +612,11 @@ class WebAudioEngine {
 
   private async pumpNextBatch(generation: number): Promise<void> {
     if (!this.isPlaying || generation !== this.generation || this.batchInFlight) return;
+    if (this.currentPositionFrame() >= this.durationFrames) {
+      this.pause();
+      this.onEnded();
+      return;
+    }
     const horizonFrame = Math.min(
       this.durationFrames,
       this.currentPositionFrame() + MAX_BUFFER_AHEAD_FRAMES,
@@ -679,7 +708,7 @@ class WebAudioEngine {
     if (!this.isPlaying) return Math.min(this.durationFrames, this.anchorPositionFrame);
 
     const elapsedFrames = Math.floor(
-      Math.max(0, this.context.currentTime - this.anchorContextTime) * SAMPLE_RATE,
+      Math.max(0, this.outputContextTime() - this.anchorContextTime) * SAMPLE_RATE,
     );
 
     const scheduledFrames = Math.max(0, this.nextScheduledFrame - this.anchorPositionFrame);
@@ -693,6 +722,27 @@ class WebAudioEngine {
 
   private secondsToFrame(seconds: number): number {
     return Math.min(this.durationFrames, Math.max(0, Math.round(seconds * SAMPLE_RATE)));
+  }
+
+  private outputContextTime(): number {
+    const timestamp = this.context.getOutputTimestamp?.();
+    if (
+      timestamp?.contextTime !== undefined &&
+      timestamp.contextTime > 0 &&
+      timestamp.performanceTime !== undefined &&
+      timestamp.performanceTime > 0
+    ) {
+      return Math.min(
+        this.context.currentTime,
+        timestamp.contextTime + Math.max(0, performance.now() - timestamp.performanceTime) / 1_000,
+      );
+    }
+    return Math.max(
+      0,
+      this.context.currentTime -
+        (this.context.baseLatency || 0) -
+        (this.context.outputLatency || 0),
+    );
   }
 
   private frameToMicros(frame: number): number {

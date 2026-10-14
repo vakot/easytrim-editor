@@ -26,6 +26,7 @@ function createContext() {
   const sources: Array<
     ReturnType<typeof node> & {
       buffer: AudioBuffer | null;
+      onended: (() => void) | null;
       start: ReturnType<typeof vi.fn>;
       stop: ReturnType<typeof vi.fn>;
     }
@@ -123,6 +124,67 @@ afterEach(() => {
 });
 
 describe("WebAudioEngine", () => {
+  it("ignores a queued source completion from an earlier playback generation", async () => {
+    const { context, sources } = createContext();
+    const onError = vi.fn();
+    const engine = new WebAudioEngine(
+      context,
+      async (_track, start, duration) =>
+        start >= 2_000_000
+          ? new Promise<ReturnType<typeof chunk>>(() => undefined)
+          : chunk(duration),
+      vi.fn(),
+      onError,
+    );
+    engine.setDuration(8_000_000);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+    ]);
+    await engine.startAt(0);
+    const oldCompletion = sources[0]!.onended;
+    engine.pause();
+    await engine.prepareAt(0);
+    await engine.startPreparedAt(0);
+    oldCompletion?.();
+    expect(onError).not.toHaveBeenCalled();
+    expect(engine.currentTimeSeconds).toBe(0);
+    expect(sources.at(-1)?.stop).not.toHaveBeenCalled();
+    engine.close();
+  });
+
+  it.each(["source ended", "late decode"])(
+    "reports an underrun to Playback without shifting the audio timeline (%s)",
+    async (notification) => {
+      const { context, setCurrentTime, sources } = createContext();
+      const onError = vi.fn();
+      let finishDecode: (() => void) | undefined;
+      const decode = vi.fn(async (_track: AudioTrackSelection, start: number, duration: number) => {
+        if (start === 2_000_000)
+          await new Promise<void>((resolve) => {
+            finishDecode = resolve;
+          });
+        return chunk(duration);
+      });
+
+      const engine = new WebAudioEngine(context, decode, vi.fn(), onError);
+      engine.setDuration(4_000_000);
+      engine.setTracks([
+        { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+      ]);
+      await engine.startAt(0);
+      await vi.waitFor(() => expect(finishDecode).toBeDefined());
+      setCurrentTime(7.1);
+      if (notification === "source ended") sources[0]?.onended?.();
+      finishDecode?.();
+      await vi.waitFor(() => expect(onError).toHaveBeenCalledOnce());
+      expect(sources).toHaveLength(1);
+      expect(engine.currentTimeSeconds).toBe(2);
+      setCurrentTime(8);
+      expect(engine.currentTimeSeconds).toBe(2);
+      engine.close();
+    },
+  );
+
   it("keeps a fractional-sample resume's final decode within the native media range", async () => {
     const { context, sources } = createContext();
     const onError = vi.fn();
@@ -151,6 +213,65 @@ describe("WebAudioEngine", () => {
     expect(sources[1]!.start.mock.calls[0]![0]).toBe(firstStart + sources[0]!.buffer!.duration);
     engine.close();
   });
+
+  it("aligns scheduling to audible output and does not advance from the render-ahead clock", async () => {
+    const { context, setCurrentTime, sources } = createContext();
+    let outputTime = 4.95;
+    let outputPerformanceTime = 1_000;
+    vi.spyOn(performance, "now").mockImplementation(() => outputPerformanceTime);
+    context.getOutputTimestamp = () => ({
+      contextTime: outputTime,
+      performanceTime: outputPerformanceTime,
+    });
+    const decode = vi.fn(async (_track: AudioTrackSelection, _start: number, duration: number) =>
+      chunk(duration),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(4_000_000);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+    ]);
+    await engine.prepareAt(1);
+    await expect(engine.startAlignedWithVideoAt(1)).resolves.toBeCloseTo(1.055, 5);
+    expect(sources[0]?.start).toHaveBeenCalledWith(5.005, 0.055);
+
+    setCurrentTime(5.15);
+    outputTime = 5.1;
+    outputPerformanceTime = 1_150;
+    expect(engine.currentTimeSeconds).toBeCloseTo(1.15, 4);
+    engine.pause();
+    setCurrentTime(8);
+    outputTime = 7.95;
+    outputPerformanceTime = 4_000;
+    expect(engine.currentTimeSeconds).toBeCloseTo(1.15, 4);
+    engine.close();
+  });
+
+  it.each([
+    { duration: 4_000_000, position: 3_999_000 },
+    { duration: 1_000, position: 0 },
+  ])(
+    "does not schedule past EOF when output lead exceeds the remaining range ($duration)",
+    async ({ duration, position }) => {
+      const { context, sources } = createContext();
+      const decode = vi.fn(async (_track: AudioTrackSelection, _start: number, length: number) =>
+        chunk(length),
+      );
+
+      const engine = new WebAudioEngine(context, decode, vi.fn());
+      engine.setDuration(duration);
+      engine.setTracks([
+        { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+      ]);
+      await engine.prepareAt(position / 1_000_000);
+      await expect(engine.startAlignedWithVideoAt(position / 1_000_000)).resolves.toBe(
+        duration / 1_000_000,
+      );
+      expect(sources).toHaveLength(0);
+      engine.close();
+    },
+  );
 
   it("pads leading gaps and a short valid stream end into the shared sample range", async () => {
     const { buffers, context, sources } = createContext();
@@ -403,7 +524,7 @@ describe("WebAudioEngine", () => {
 
     expect(decode.mock.calls[0]?.[1]).toBe(1_000_000);
     expect(decode.mock.calls.some(([, startMicros]) => startMicros === 1_200_000)).toBe(false);
-    expect(sources[0]?.start).toHaveBeenCalledWith(5.15, 0.2);
+    expect(sources[0]?.start).toHaveBeenCalledWith(5.005, 0.2);
     expect(engine.currentTimeSeconds).toBeCloseTo(1.2);
     engine.close();
   });
@@ -412,7 +533,7 @@ describe("WebAudioEngine", () => {
     { durationMicros: 1_000_000, positionMicros: 900_000 },
     { durationMicros: 100_000, positionMicros: 0 },
   ])(
-    "schedules the final valid sample for a $durationMicros microsecond media range",
+    "schedules only the remaining valid range for a $durationMicros microsecond media range",
     async ({ durationMicros, positionMicros }) => {
       const { context, sources } = createContext();
       const decode = vi.fn(
@@ -429,8 +550,8 @@ describe("WebAudioEngine", () => {
       await engine.prepareAt(positionMicros / 1_000_000);
       const audioStartPosition = await engine.startAlignedWithVideoAt(positionMicros / 1_000_000);
 
-      const lastSampleFrame = Math.round((durationMicros * 48_000) / 1_000_000) - 1;
-      const expectedAudioStartPosition = lastSampleFrame / 48_000;
+      const startFrame = Math.round((positionMicros / 1_000_000 + 0.005) * 48_000);
+      const expectedAudioStartPosition = startFrame / 48_000;
       const preparedStartFrame = Math.round((positionMicros * 48_000) / 1_000_000);
       expect(audioStartPosition).toBe(expectedAudioStartPosition);
       expect(audioStartPosition).toBeLessThan(durationMicros / 1_000_000);
@@ -441,8 +562,8 @@ describe("WebAudioEngine", () => {
         expect.any(AbortSignal),
       );
       expect(sources[0]?.start).toHaveBeenCalledWith(
-        5.15,
-        (lastSampleFrame - preparedStartFrame) / 48_000,
+        5.005,
+        (startFrame - preparedStartFrame) / 48_000,
       );
 
       engine.close();
@@ -498,7 +619,7 @@ describe("WebAudioEngine", () => {
 
     resolveChunk?.();
     await starting;
-    setCurrentTime(10.15);
+    setCurrentTime(10.005);
     expect(engine.currentTimeSeconds).toBeCloseTo(2);
 
     engine.pause();
@@ -509,7 +630,7 @@ describe("WebAudioEngine", () => {
     await Promise.resolve();
     resolveChunk?.();
     await resuming;
-    setCurrentTime(21.15);
+    setCurrentTime(21.005);
     expect(engine.currentTimeSeconds).toBeCloseTo(3);
 
     engine.close();
@@ -544,7 +665,7 @@ describe("WebAudioEngine", () => {
 
     resolveSeekChunk?.();
     await vi.waitFor(() => expect(sources.length).toBeGreaterThan(sourceCountBeforeSeek));
-    setCurrentTime(51.15);
+    setCurrentTime(51.005);
     expect(engine.currentTimeSeconds).toBeCloseTo(5);
 
     engine.close();
@@ -591,9 +712,9 @@ describe("WebAudioEngine", () => {
     const latestDecode = pendingDecodes.find(({ startMicros }) => startMicros === 400_000);
     latestDecode?.resolve();
     await vi.waitFor(() => expect(sources).toHaveLength(2));
-    setCurrentTime(5.3);
+    setCurrentTime(5.155);
 
-    expect(sources[1]?.start).toHaveBeenCalledWith(5.15, 0);
+    expect(sources[1]?.start).toHaveBeenCalledWith(5.005, 0);
     expect(engine.currentTimeSeconds).toBeCloseTo(0.55);
 
     engine.close();
@@ -724,7 +845,7 @@ describe("WebAudioEngine", () => {
     engine.close();
   });
 
-  it("keeps multitrack sample ranges aligned through delayed decoding and underruns", async () => {
+  it("keeps multitrack sample ranges consecutive when delayed decoding finishes before the boundary", async () => {
     vi.useFakeTimers();
     const { context, setCurrentTime, sources } = createContext();
     let resolveDelayedChunk: (() => void) | undefined;
@@ -762,19 +883,19 @@ describe("WebAudioEngine", () => {
       { startMicros: 2_000_000, streamIndex: 2 },
     ]);
 
-    setCurrentTime(7.3);
-    expect(engine.currentTimeSeconds).toBe(2);
+    setCurrentTime(6.8);
+    expect(engine.currentTimeSeconds).toBeCloseTo(1.795, 4);
     resolveDelayedChunk?.();
     await vi.advanceTimersByTimeAsync(0);
     await vi.advanceTimersByTimeAsync(0);
 
     const delayedRangeSources = sources.slice(2, 4);
     expect(delayedRangeSources.map((source) => source.start.mock.calls[0]?.[0])).toEqual([
-      7.305, 7.305,
+      7.005, 7.005,
     ]);
-    expect(engine.currentTimeSeconds).toBe(2);
+    expect(engine.currentTimeSeconds).toBeCloseTo(1.795, 4);
 
-    setCurrentTime(9.305);
+    setCurrentTime(9.005);
     expect(engine.currentTimeSeconds).toBeCloseTo(4, 4);
     await vi.advanceTimersByTimeAsync(100);
     await vi.advanceTimersByTimeAsync(0);

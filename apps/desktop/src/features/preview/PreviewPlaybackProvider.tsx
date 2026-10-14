@@ -17,6 +17,7 @@ import { diagnostics } from "@/lib/diagnostics";
 import type { PreviewMediaObserver } from "./contexts/preview-runtime-context";
 import { PreviewRuntimeContext } from "./contexts/preview-runtime-context";
 import { requestPreviewPlaybackFrame } from "./lib/preview-frame-scheduler";
+import { startPreviewPlayback } from "./lib/preview-playback-start";
 import { createPreviewSeekScheduler } from "./lib/preview-seek-scheduler";
 
 function getVideoState(video: HTMLVideoElement) {
@@ -198,22 +199,19 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
 
   const pauseMedia = useCallback(() => videoRef.current?.pause(), []);
 
-  const playMedia = useCallback(() => {
+  const playMedia = useCallback(async () => {
     const video = videoRef.current;
     if (!video) return Promise.reject(new Error("The preview video is unavailable."));
     debugVideoEvent("play requested", video);
-    return video.play().then(
-      () => {
-        debugVideoEvent("play resolved", video);
-      },
-      (error: unknown) => {
-        diagnostics.error("media.play.rejected", error, {
-          data: getVideoState(video),
-          origin: { type: "internal" },
-        });
-        throw error;
-      },
-    );
+    try {
+      return await startPreviewPlayback(video);
+    } catch (error: unknown) {
+      diagnostics.error("media.play.rejected", error, {
+        data: getVideoState(video),
+        origin: { type: "internal" },
+      });
+      throw error;
+    }
   }, []);
 
   const seekMedia = useCallback((seconds: number, approximate: boolean, onSettled?: () => void) => {
