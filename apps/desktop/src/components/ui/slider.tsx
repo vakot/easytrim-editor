@@ -178,6 +178,10 @@ function Root({
         onPointerCancelCapture?.(event);
       }}
       onPointerDownCapture={(event) => {
+        if (event.button !== 0 || event.isPrimary === false) {
+          event.preventDefault();
+          return;
+        }
         dragAwareDoubleClick.onPointerDownCapture(event);
         onPointerDownCapture?.(event);
         if (!disabled && !event.defaultPrevented && event.button === 0) {

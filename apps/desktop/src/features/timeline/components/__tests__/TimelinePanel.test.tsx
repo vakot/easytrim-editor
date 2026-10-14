@@ -1,8 +1,11 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
+import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
+import { firstSource, media } from "@/test/source.fixtures";
 
 import { TimelinePanel } from "../TimelinePanel";
 
@@ -11,13 +14,18 @@ const playback = vi.hoisted(() => ({
   framesCount: 100,
   isPlaying: false,
   pause: vi.fn(),
+  play: vi.fn(),
   seekFrame: vi.fn(),
   togglePlayback: vi.fn(),
 }));
 
 vi.mock("@/features/playback", () => ({
   microsToFrame: () => 0,
-  usePlaybackActions: () => ({ pause: playback.pause, togglePlayback: playback.togglePlayback }),
+  usePlaybackActions: () => ({
+    pause: playback.pause,
+    play: playback.play,
+    togglePlayback: playback.togglePlayback,
+  }),
   usePlaybackIsPlaying: () => playback.isPlaying,
   useTimelinePlayback: () => ({
     currentFrame: playback.currentFrame,
@@ -58,7 +66,7 @@ describe("TimelinePanel", () => {
     expect(slider).toHaveAttribute("aria-valuemax", "100");
     expect(slider).toHaveAttribute("aria-valuenow", "11");
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
-      "TC 00:00:00:11 / TC 00:00:03:10",
+      "00:00:00:11 / 00:00:03:10",
     );
 
     fireEvent.keyDown(slider, { key: "ArrowRight" });
@@ -72,7 +80,7 @@ describe("TimelinePanel", () => {
     expect(slider).toHaveAttribute("aria-valuemax", "100");
     expect(slider).toHaveAttribute("aria-valuenow", "100");
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
-      "TC 00:00:03:10 / TC 00:00:03:10",
+      "00:00:03:10 / 00:00:03:10",
     );
     expect(screen.queryByText(/Frame 101/)).not.toBeInTheDocument();
   });
@@ -136,4 +144,142 @@ describe("TimelinePanel", () => {
 
     expect(playback.togglePlayback).toHaveBeenCalledOnce();
   });
+});
+
+function renderTrim({ end = 5000000, isPlaying = false, start = 0 } = {}) {
+  const store = createAppStore();
+  const sourceMedia = media(firstSource.sourcePath);
+  sourceMedia.video.averageFrameRate = { numerator: 60, denominator: 1, displayValue: 60 };
+  sourceMedia.video.frameCount = 300;
+  store.dispatch(sourceSelected({ loadToken: 1, source: firstSource }));
+  store.dispatch(sourceReady({ loadToken: 1, media: sourceMedia }));
+  store.dispatch(
+    trimChanged({ trim: { startMicros: start, endMicros: end, sourceDurationMicros: 5000000 } }),
+  );
+  playback.currentFrame = 120;
+  playback.framesCount = 300;
+  playback.isPlaying = isPlaying;
+  playback.pause.mockClear();
+  playback.play.mockClear();
+  playback.seekFrame.mockClear();
+  render(
+    <Provider store={store}>
+      <TimelinePanel />
+    </Provider>,
+  );
+  return store;
+}
+
+describe("Timeline trim editing", () => {
+  it("steps focused boundaries by frames and seconds without moving Playback", () => {
+    const store = renderTrim();
+    const start = screen.getByRole("slider", { name: "Trim start" });
+    fireEvent.keyDown(start, { key: "ArrowRight" });
+    expect(store.getState().trim.value?.startMicros).toBe(16667);
+    fireEvent.keyDown(start, { key: "ArrowRight", shiftKey: true });
+    expect(store.getState().trim.value?.startMicros).toBe(1016667);
+    fireEvent.keyDown(start, { key: "PageUp" });
+    expect(store.getState().trim.value?.startMicros).toBe(2016667);
+    fireEvent.keyDown(start, { key: "End" });
+    expect(store.getState().trim.value?.startMicros).toBe(4000000);
+    fireEvent.keyDown(start, { key: "Home" });
+    expect(store.getState().trim.value?.startMicros).toBe(0);
+    expect(playback.seekFrame).not.toHaveBeenCalled();
+  });
+
+  it("moves the selected segment without changing its frame length", () => {
+    const store = renderTrim({ start: 1000000, end: 3000000 });
+    const move = screen.getByRole("slider", { name: "Move selected segment" });
+    fireEvent.keyDown(move, { key: "ArrowRight", shiftKey: true });
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 1016667, endMicros: 3016667 });
+    fireEvent.keyDown(move, { key: "End" });
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 3000000, endMicros: 5000000 });
+    fireEvent.keyDown(move, { key: "Home" });
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 0, endMicros: 2000000 });
+  });
+
+  it("marks in/out with shortcuts and transport buttons, including crossing the opposite edge", () => {
+    const store = renderTrim({ end: 1000000 });
+    fireEvent.keyDown(window, { code: "KeyI", key: "ш" });
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 2000000, endMicros: 5000000 });
+    fireEvent.click(screen.getByRole("button", { name: "Set segment end" }));
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 0, endMicros: 2000000 });
+    fireEvent.keyDown(window, { code: "KeyI", key: "i", repeat: true });
+    expect(store.getState().trim.value?.startMicros).toBe(0);
+  });
+
+  it("resets each boundary on double click", () => {
+    const store = renderTrim({ start: 1000000, end: 3000000 });
+    fireEvent.doubleClick(screen.getByRole("slider", { name: "Trim start" }));
+    fireEvent.doubleClick(screen.getByRole("slider", { name: "Trim end" }));
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 0, endMicros: 5000000 });
+  });
+
+  it("pauses once during dragging, commits on release, and resumes only prior playback", () => {
+    const store = renderTrim({ isPlaying: true });
+    const start = screen.getByRole("slider", { name: "Trim start" });
+    const root = start.closest('[data-slot="slider"]')!;
+    vi.spyOn(root, "getBoundingClientRect").mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 240,
+      height: 52,
+    } as DOMRect);
+    fireEvent.pointerDown(start, { button: 0, pointerId: 1, clientX: 0 });
+    fireEvent.pointerMove(start, { pointerId: 1, clientX: 60 });
+    expect(store.getState().trim.value?.startMicros).toBe(0);
+    expect(start).toHaveAttribute("aria-valuenow", "60");
+    fireEvent.pointerUp(start, { pointerId: 1, clientX: 60 });
+    expect(store.getState().trim.value?.startMicros).toBe(1000000);
+    expect(playback.pause).toHaveBeenCalledOnce();
+    expect(playback.play).toHaveBeenCalledOnce();
+    expect(playback.seekFrame).not.toHaveBeenCalled();
+  });
+
+  it("discards a drag when the source is cleared", () => {
+    const store = renderTrim({ isPlaying: true });
+    const start = screen.getByRole("slider", { name: "Trim start" });
+    fireEvent.pointerDown(start, { button: 0, pointerId: 1, clientX: 0 });
+    store.dispatch(sourceCleared());
+    fireEvent.pointerUp(start, { pointerId: 1, clientX: 60 });
+    expect(store.getState().trim.value).toBeNull();
+    expect(playback.play).not.toHaveBeenCalled();
+  });
+
+  it("cancels captured input on source replacement and permits immediate keyboard editing", () => {
+    const store = renderTrim({ isPlaying: true });
+    const original = screen.getByRole("slider", { name: "Trim start" });
+    fireEvent.pointerDown(original, { button: 0, pointerId: 1, clientX: 0 });
+    const sourceMedia = store.getState().source.media!;
+    act(() => {
+      store.dispatch(sourceSelected({ loadToken: 2, source: firstSource }));
+      store.dispatch(sourceReady({ loadToken: 2, media: sourceMedia }));
+    });
+    const replacement = screen.getByRole("slider", { name: "Trim start" });
+    expect(replacement).not.toBe(original);
+    fireEvent.keyDown(replacement, { key: "ArrowRight" });
+    fireEvent.pointerUp(original, { pointerId: 1, clientX: 100 });
+    expect(store.getState().trim.value?.startMicros).toBe(16667);
+    expect(playback.play).not.toHaveBeenCalled();
+  });
+
+  it.each(["pointerCancel", "lostPointerCapture"] as const)(
+    "finalizes the last draft on %s without starting paused playback",
+    (event) => {
+      const store = renderTrim();
+      const start = screen.getByRole("slider", { name: "Trim start" });
+      const root = start.closest('[data-slot="slider"]')!;
+      vi.spyOn(root, "getBoundingClientRect").mockReturnValue({
+        left: 0,
+        top: 0,
+        width: 240,
+        height: 52,
+      } as DOMRect);
+      fireEvent.pointerDown(start, { button: 0, pointerId: 1, clientX: 0 });
+      fireEvent.pointerMove(start, { pointerId: 1, clientX: 90 });
+      fireEvent[event](start, { pointerId: 1, clientX: 200 });
+      expect(store.getState().trim.value?.startMicros).toBe(1500000);
+      expect(playback.play).not.toHaveBeenCalled();
+    },
+  );
 });

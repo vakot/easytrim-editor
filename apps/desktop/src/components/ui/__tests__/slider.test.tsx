@@ -60,6 +60,12 @@ function drag(root: HTMLElement, shiftKey = true, clientX = 46) {
 }
 
 describe("Slider snapping", () => {
+  it("ignores secondary buttons and non-primary pointers", () => {
+    const { change, root } = setup();
+    fireEvent.pointerDown(root, { button: 2, pointerId: 1, clientX: 46, shiftKey: true });
+    fireEvent.pointerDown(root, { button: 0, isPrimary: false, pointerId: 2, clientX: 46 });
+    expect(change).not.toHaveBeenCalled();
+  });
   it("preserves a thumb's grab offset and still reaches both endpoints", () => {
     const change = vi.fn();
     render(
