@@ -67,8 +67,10 @@ function TimelinePanel() {
   const { currentFrame, framesCount, seekFrame } = useTimelinePlayback(frameRate);
 
   const trim = useTimelineTrimEditing(framesCount, frameRate);
+  // Every Timeline element shares one scale of real frames: 0 to the last frame.
+  const lastFrame = Math.max(0, framesCount - 1);
   const length = trim.range.end - trim.range.start;
-  const percent = (frame: number) => `${framesCount > 0 ? (frame / framesCount) * 100 : 0}%`;
+  const percent = (frame: number) => `${lastFrame > 0 ? (frame / lastFrame) * 100 : 0}%`;
 
   const isPlaying = usePlaybackIsPlaying();
   const { pause, togglePlayback } = usePlaybackActions();
@@ -146,7 +148,7 @@ function TimelinePanel() {
             {formatFrameTimecode(currentFrame, frameRate)}
             <span className="text-muted-foreground">
               {" / "}
-              {formatFrameTimecode(framesCount, frameRate)}
+              {formatFrameTimecode(lastFrame, frameRate)}
             </span>
           </output>
         </div>
@@ -289,7 +291,7 @@ function TimelinePanel() {
             aria-label={t("timeline.accessibility.playheadPosition")}
             className="h-13"
             disabled={framesCount === 0}
-            max={framesCount === 0 ? 1 : framesCount}
+            max={lastFrame > 0 ? lastFrame : 1}
             min={0}
             onValueChange={([frame]) => seekFrame(frame ?? 0)}
             snap="shift"
@@ -297,7 +299,7 @@ function TimelinePanel() {
             style={{ isolation: "auto" }}
             value={[currentFrame]}
           >
-            <TimelineMarkers frameRate={frameRate} framesCount={framesCount} />
+            <TimelineMarkers frameRate={frameRate} lastFrame={lastFrame} />
             <Slider.Track className="segment-markers h-13 rounded-md border bg-muted/30 text-muted" />
             {trim.enabled && (
               <div
@@ -305,7 +307,7 @@ function TimelinePanel() {
                 data-slot="timeline-selection"
                 style={{
                   left: percent(trim.range.start),
-                  right: percent(framesCount - trim.range.end),
+                  right: percent(lastFrame - trim.range.end),
                 }}
               />
             )}
@@ -333,7 +335,7 @@ function TimelinePanel() {
                     ? trim.bounds.maxStart
                     : moving
                       ? trim.bounds.maxMove + offset
-                      : framesCount;
+                      : lastFrame;
 
                 const value = handle === "end" ? trim.range.end : trim.range.start;
                 const label = t(
@@ -353,7 +355,7 @@ function TimelinePanel() {
                     max={maximum > minimum ? maximum : minimum + 1}
                     min={minimum}
                     onDoubleClick={() => {
-                      if (!moving) trim.change(handle, handle === "start" ? 0 : framesCount);
+                      if (!moving) trim.change(handle, handle === "start" ? 0 : lastFrame);
                     }}
                     onLostPointerCapture={trim.finish}
                     onPointerCancelCapture={trim.finish}

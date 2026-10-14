@@ -479,10 +479,11 @@ describe("ExportDialog", () => {
     const start = await screen.findByRole("spinbutton", { name: "Start" });
     const end = screen.getByRole("spinbutton", { name: "End" });
     expect(start).toHaveValue(0);
-    expect(end).toHaveValue(150);
+    // The End field is the last included frame, matching the Timeline.
+    expect(end).toHaveValue(149);
 
     fireEvent.change(start, { target: { value: "45" } });
-    fireEvent.change(end, { target: { value: "90" } });
+    fireEvent.change(end, { target: { value: "89" } });
     await waitFor(() =>
       expect(planOptimizedExport).toHaveBeenLastCalledWith(
         expect.objectContaining({ trim: { startMicros: 1_501_500, endMicros: 3_003_000 } }),
@@ -491,12 +492,12 @@ describe("ExportDialog", () => {
     expect(store.getState().trim.value).toEqual(timelineTrim);
 
     for (const [value, field] of [
-      ["151", end],
-      ["90.5", end],
+      ["150", end],
+      ["89.5", end],
       ["70", end],
     ] as const) {
       fireEvent.change(field, { target: { value } });
-      expect(screen.getByRole("alert")).toHaveTextContent("between 0 and 150");
+      expect(screen.getByRole("alert")).toHaveTextContent("between 0 and 149");
       expect(screen.getByRole("button", { name: "Export" })).toBeDisabled();
     }
     expect(store.getState().export.dialogTrim).toEqual({

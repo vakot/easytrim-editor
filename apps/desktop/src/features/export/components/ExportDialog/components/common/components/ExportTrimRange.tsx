@@ -50,7 +50,9 @@ function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boo
   function parseFrames(nextStart: string, nextEnd: string) {
     if (!/^\d+$/.test(nextStart.trim()) || !/^\d+$/.test(nextEnd.trim())) return null;
     const range = { start: Number(nextStart), end: Number(nextEnd) };
-    return range.end <= framesCount && range.end >= adapter.bounds(range).minEnd ? range : null;
+    return range.end <= adapter.lastFrame && range.end >= adapter.bounds(range).minEnd
+      ? range
+      : null;
   }
 
   const onRangeChange = (nextStart: string, nextEnd: string) => {
@@ -74,7 +76,7 @@ function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boo
             aria-label={t("export.trimRange.startLabel")}
             id="export-trim-start"
             inputMode="numeric"
-            max={framesCount}
+            max={adapter.lastFrame}
             min={0}
             onChange={(event) => onRangeChange(event.target.value, end)}
             placeholder={t("export.trimRange.startLabel")}
@@ -90,7 +92,7 @@ function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boo
             {...invalidProps}
             aria-label={t("export.trimRange.endLabel")}
             inputMode="numeric"
-            max={framesCount}
+            max={adapter.lastFrame}
             min={0}
             onChange={(event) => onRangeChange(start, event.target.value)}
             placeholder={t("export.trimRange.endLabel")}
@@ -104,8 +106,8 @@ function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boo
       {!isValid ? (
         <p className="text-sm text-destructive" id={errorId} role="alert">
           {t("export.trimRange.invalidValue", {
-            frames: framesCount,
-            minimum: adapter.bounds({ start: 0, end: framesCount }).minEnd,
+            frames: adapter.lastFrame,
+            minimum: adapter.bounds({ start: 0, end: adapter.lastFrame }).minEnd,
           })}
         </p>
       ) : null}

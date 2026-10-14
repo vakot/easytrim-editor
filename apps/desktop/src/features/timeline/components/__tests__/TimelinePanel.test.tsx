@@ -67,26 +67,26 @@ describe("TimelinePanel", () => {
 
     const slider = screen.getByRole("slider");
     expect(slider).toHaveAttribute("aria-valuemin", "0");
-    expect(slider).toHaveAttribute("aria-valuemax", "100");
+    expect(slider).toHaveAttribute("aria-valuemax", "99");
     expect(slider).toHaveAttribute("aria-valuenow", "11");
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
-      "00:00:00:11f / 00:00:03:10f",
+      "00:00:00:11f / 00:00:03:09f",
     );
 
     fireEvent.keyDown(slider, { key: "ArrowRight" });
     expect(playback.seekFrame).toHaveBeenCalledWith(12);
   });
 
-  it("keeps EOF as the Slider endpoint and displays its timecode without adding a frame", () => {
-    renderTimelinePanel({ currentFrame: 100, framesCount: 100 });
+  it("ends the Timeline scale on the last frame so the playhead reaches its endpoint", () => {
+    renderTimelinePanel({ currentFrame: 99, framesCount: 100 });
 
     const slider = screen.getByRole("slider");
-    expect(slider).toHaveAttribute("aria-valuemax", "100");
-    expect(slider).toHaveAttribute("aria-valuenow", "100");
+    expect(slider).toHaveAttribute("aria-valuemax", "99");
+    expect(slider).toHaveAttribute("aria-valuenow", "99");
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
-      "00:00:03:10f / 00:00:03:10f",
+      "00:00:03:09f / 00:00:03:09f",
     );
-    expect(screen.queryByText(/Frame 101/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next frame" })).toBeDisabled();
   });
 
   it("moves by one frame with global arrows and toggles playback with Space", () => {
