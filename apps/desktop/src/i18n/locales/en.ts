@@ -1136,6 +1136,13 @@ export const en = {
     },
   },
   timeline: {
+    accessibility: {
+      playheadPosition: "Playhead position",
+      seconds: "{{value}} seconds",
+      startsAt: "Starts at {{time}}",
+      tools: "Video timeline tools",
+      track: "Video trim timeline",
+    },
     audioMeter: {
       accessibility: {
         audioLevel: "Stereo audio level",
@@ -1169,18 +1176,9 @@ export const en = {
         sourceContainsTooManyDetectedSceneChanges: "The source contains too many detected scene changes",
       },
     },
-    playhead: {
-      accessibility: {
-        playbackPosition: "Playback position",
-        seconds: "{{value}} seconds",
-        startsAt: "Starts at {{time}}",
-        tools: "Video timeline tools",
-        track: "Video trim timeline",
-      },
-      labels: {
-        duration: "Duration",
-        tools: "Tools",
-      },
+    labels: {
+      duration: "Duration",
+      tools: "Tools",
     },
     sceneMarkers: {
       actions: {

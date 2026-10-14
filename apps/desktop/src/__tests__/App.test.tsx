@@ -356,7 +356,7 @@ describe("App", () => {
       expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
     });
-    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+    expect(screen.getByRole("slider", { name: "Playhead position" })).toHaveAttribute(
       "aria-valuenow",
       "0",
     );
@@ -519,13 +519,13 @@ describe("App", () => {
     const pause = vi.spyOn(video, "pause").mockImplementation(() => setPaused(true));
 
     fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
-    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+    expect(screen.getByRole("slider", { name: "Playhead position" })).toHaveAttribute(
       "aria-valuenow",
       "1",
     );
 
     fireEvent.keyDown(window, { key: "ArrowLeft", code: "ArrowLeft" });
-    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+    expect(screen.getByRole("slider", { name: "Playhead position" })).toHaveAttribute(
       "aria-valuenow",
       "0",
     );
@@ -553,7 +553,7 @@ describe("App", () => {
     expect(inputKeyDown).toHaveBeenCalledTimes(4);
     expect(play).not.toHaveBeenCalled();
     expect(pause).not.toHaveBeenCalled();
-    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+    expect(screen.getByRole("slider", { name: "Playhead position" })).toHaveAttribute(
       "aria-valuenow",
       "0",
     );

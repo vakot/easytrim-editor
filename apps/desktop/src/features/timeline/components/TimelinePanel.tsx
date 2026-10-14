@@ -208,25 +208,21 @@ function TimelinePanel() {
           <TimelineTimeValue
             frame={length}
             frameRate={frameRate}
-            label={t("timeline.playhead.labels.duration")}
+            label={t("timeline.labels.duration")}
           />
         </dl>
       </div>
 
       <div className="grid h-17 min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-3">
-        <div
-          aria-label={t("timeline.playhead.accessibility.tools")}
-          className="h-full min-w-0"
-          role="group"
-        >
+        <div aria-label={t("timeline.accessibility.tools")} className="h-full min-w-0" role="group">
           <h3 className="text-[0.625rem] font-bold tracking-wider text-muted-foreground uppercase">
-            {t("timeline.playhead.labels.tools")}
+            {t("timeline.labels.tools")}
           </h3>
         </div>
 
         <Slider.Group className="relative isolate mt-5 h-13" key={loadToken} sharedScale>
           <Slider.Root
-            aria-label={t("timeline.playhead.accessibility.playbackPosition")}
+            aria-label={t("timeline.accessibility.playheadPosition")}
             className="h-13"
             disabled={framesCount === 0}
             max={framesCount === 0 ? 1 : framesCount}
@@ -254,7 +250,7 @@ function TimelinePanel() {
               label={(values) => formatFrameTimecode(values?.[0] ?? 0, frameRate)}
             >
               <Slider.Thumb
-                aria-label={t("timeline.playhead.accessibility.playbackPosition")}
+                aria-label={t("timeline.accessibility.playheadPosition")}
                 className={cn(
                   "pointer-events-none h-13 w-0 before:absolute before:-inset-y-1 before:left-0 before:w-0.5 before:-translate-x-1/2 before:rounded-xs before:bg-white before:content-[''] after:-top-1 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 data-snap-active:after:rounded-t-none",
                 )}

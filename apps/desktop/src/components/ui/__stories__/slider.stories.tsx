@@ -22,12 +22,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: { "aria-label": "Playback position", className: "w-72", defaultValue: [42] },
+  args: { "aria-label": "Playhead position", className: "w-72", defaultValue: [42] },
 };
 
 export const WithMarkers: Story = {
   args: {
-    "aria-label": "Playback position",
+    "aria-label": "Playhead position",
     className: "w-72",
     defaultValue: [30],
     markers: [
