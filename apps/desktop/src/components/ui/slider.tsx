@@ -371,7 +371,7 @@ function Preview({
   label,
 }: React.ComponentProps<typeof Tooltip> & {
   disabled?: boolean;
-  label?: ((values: number[] | undefined) => string) | string;
+  label?: ((values: number[] | undefined) => React.ReactNode) | React.ReactNode;
 }) {
   const { defaultValue, dragging, values } = useSlider();
 
@@ -400,6 +400,12 @@ function Slider({
   value,
   ...props
 }: React.ComponentProps<typeof Root> & { markers?: readonly SliderMarker[] }) {
+  const thumbValues = Array.isArray(value)
+    ? value
+    : Array.isArray(defaultValue)
+      ? defaultValue
+      : [min, max];
+
   return (
     <Root
       className={cn(markers.length > 0 && "py-2", className)}
@@ -421,14 +427,24 @@ function Slider({
         min={min}
       />
 
-      <Preview disabled={disabled}>
-        <Thumb
-          aria-label={ariaLabel}
-          aria-labelledby={ariaLabelledBy}
-          aria-valuetext={ariaValueText}
-          className="size-3 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] after:-inset-2"
-        />
-      </Preview>
+      {thumbValues.map((thumbValue, index) => (
+        <Preview
+          disabled={disabled}
+          key={index}
+          label={
+            ariaValueText ??
+            markers.find((marker) => marker.value === thumbValue)?.label ??
+            String(thumbValue)
+          }
+        >
+          <Thumb
+            aria-label={ariaLabel}
+            aria-labelledby={ariaLabelledBy}
+            aria-valuetext={ariaValueText}
+            className="size-3 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] after:-inset-2"
+          />
+        </Preview>
+      ))}
     </Root>
   );
 }
