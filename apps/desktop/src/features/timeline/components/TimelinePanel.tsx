@@ -123,7 +123,7 @@ function TimelinePanel() {
         !event.target.closest('[aria-labelledby="timeline-title"]')
       ) &&
       (event.code === "KeyI" || event.code === "KeyO"),
-    (event) => trim.setBoundary(event.code === "KeyI" ? "start" : "end", currentFrame),
+    (event) => trim.markFrame(event.code === "KeyI" ? "start" : "end", currentFrame),
   );
 
   return (
@@ -156,15 +156,15 @@ function TimelinePanel() {
           className="flex items-center justify-center gap-1.5"
         >
           <TimelineShortcutTooltip
-            disabled={!trim.enabled || currentFrame >= framesCount}
+            disabled={!trim.enabled}
             shortcut={SET_START_SHORTCUT}
             tooltip={t("preview.segment.setStart")}
           >
             <Button
               aria-keyshortcuts={getShortcutAriaValue(SET_START_SHORTCUT)}
               aria-label={t("preview.segment.setStart")}
-              disabled={!trim.enabled || currentFrame >= framesCount}
-              onClick={() => trim.setBoundary("start", currentFrame)}
+              disabled={!trim.enabled}
+              onClick={() => trim.markFrame("start", currentFrame)}
               size="icon-sm"
               type="button"
               variant="ghost"
@@ -173,14 +173,14 @@ function TimelinePanel() {
             </Button>
           </TimelineShortcutTooltip>
           <TimelineShortcutTooltip
-            disabled={framesCount === 0}
+            disabled={currentFrame <= 0}
             shortcut={PREVIOUS_FRAME_SHORTCUT}
             tooltip={t("preview.frame.previousFrameTooltip")}
           >
             <Button
               aria-keyshortcuts={getShortcutAriaValue(PREVIOUS_FRAME_SHORTCUT)}
               aria-label={t("preview.frame.previous")}
-              disabled={framesCount === 0}
+              disabled={currentFrame <= 0}
               onClick={() => {
                 pause();
                 seekFrame(currentFrame - 1);
@@ -212,14 +212,14 @@ function TimelinePanel() {
             </Button>
           </TimelineShortcutTooltip>
           <TimelineShortcutTooltip
-            disabled={framesCount === 0}
+            disabled={currentFrame >= framesCount - 1}
             shortcut={NEXT_FRAME_SHORTCUT}
             tooltip={t("preview.frame.nextFrameTooltip")}
           >
             <Button
               aria-keyshortcuts={getShortcutAriaValue(NEXT_FRAME_SHORTCUT)}
               aria-label={t("preview.frame.next")}
-              disabled={framesCount === 0}
+              disabled={currentFrame >= framesCount - 1}
               onClick={() => {
                 pause();
                 seekFrame(currentFrame + 1);
@@ -232,15 +232,15 @@ function TimelinePanel() {
             </Button>
           </TimelineShortcutTooltip>
           <TimelineShortcutTooltip
-            disabled={!trim.enabled || currentFrame <= 0}
+            disabled={!trim.enabled}
             shortcut={SET_END_SHORTCUT}
             tooltip={t("preview.segment.setEnd")}
           >
             <Button
               aria-keyshortcuts={getShortcutAriaValue(SET_END_SHORTCUT)}
               aria-label={t("preview.segment.setEnd")}
-              disabled={!trim.enabled || currentFrame <= 0}
-              onClick={() => trim.setBoundary("end", currentFrame)}
+              disabled={!trim.enabled}
+              onClick={() => trim.markFrame("end", currentFrame)}
               size="icon-sm"
               type="button"
               variant="ghost"

@@ -87,12 +87,14 @@ function useTimelineTrimEditing(framesCount: number, frameRate: FrameRate | unde
     if (current.resume) play();
   }
 
-  function setBoundary(handle: "start" | "end", frame: number) {
-    if (!trim || (handle === "start" ? frame >= framesCount : frame <= 0)) return;
+  /** In marks `frame` as the first included frame; Out marks it as the last included frame. */
+  function markFrame(handle: "start" | "end", frame: number) {
+    if (!trim) return;
+    const boundary = handle === "start" ? frame : frame + 1;
     const base = { ...range };
-    if (handle === "start" && frame >= base.end) base.end = framesCount;
-    if (handle === "end" && frame <= base.start) base.start = 0;
-    commit(adapter.edit(base, handle, frame));
+    if (handle === "start" && boundary >= base.end) base.end = framesCount;
+    if (handle === "end" && boundary <= base.start) base.start = 0;
+    commit(adapter.edit(base, handle, boundary));
   }
 
   return {
@@ -103,7 +105,7 @@ function useTimelineTrimEditing(framesCount: number, frameRate: FrameRate | unde
     begin,
     change,
     finish,
-    setBoundary,
+    markFrame,
   };
 }
 

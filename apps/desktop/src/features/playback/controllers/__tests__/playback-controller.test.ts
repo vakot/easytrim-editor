@@ -871,4 +871,64 @@ describe("playback controller", () => {
     expect(playback.driver.audio.prefetchAt).toHaveBeenLastCalledWith(2);
     controller.dispose();
   });
+
+  describe("on a frame grid", () => {
+    const frameRate = { denominator: 1, numerator: 30, displayValue: 30 };
+
+    it("rests a stopped segment on its last frame, not on the first frame after it", async () => {
+      const playback = createPlaybackDriver();
+      const controller = createPlaybackController(playback.driver, 10_000_000);
+      const segment = { startMicros: 2_000_000, endMicros: 4_000_000 };
+      controller.setOptions({ frameRate, loop: false, segment });
+      controller.play();
+      await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+      playback.playbackFrameCallback(0, 4.01);
+
+      expect(controller.isPlaying).toBe(false);
+      // Frame 119 (3.966667 s) is the segment's last frame; frame 120 starts its end boundary.
+      expect(controller.getSnapshot().positionMicros).toBe(3_966_667);
+      expect(playback.driver.video.seek).toHaveBeenLastCalledWith(3.983334, false);
+      controller.dispose();
+    });
+
+    it("rests finished playback on the final frame and restarts from the start on Play", async () => {
+      const playback = createPlaybackDriver();
+      const controller = createPlaybackController(playback.driver, 2_000_000);
+      controller.setOptions({ frameRate, loop: false, segment: null });
+      let videoSeconds = 0;
+      vi.mocked(playback.driver.video.isEnded).mockImplementation(() => videoSeconds >= 2);
+      vi.mocked(playback.driver.video.seek).mockImplementation(
+        (seconds, _approximate, onSettled) => {
+          videoSeconds = seconds;
+          onSettled?.();
+        },
+      );
+
+      controller.play();
+      await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+      videoSeconds = 2;
+      playback.observer.onEnded();
+      expect(controller.isPlaying).toBe(false);
+      expect(controller.getSnapshot().positionMicros).toBe(1_966_667);
+
+      controller.play();
+      await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+      expect(playback.driver.video.seek).toHaveBeenCalledWith(0, false, expect.any(Function));
+      controller.dispose();
+    });
+
+    it("restarts from the range start when Play is pressed on the range's last frame", async () => {
+      const playback = createPlaybackDriver();
+      const controller = createPlaybackController(playback.driver, 2_000_000);
+      controller.setOptions({ frameRate, loop: false, segment: null });
+      controller.seek(1_966_667, 1_983_334);
+
+      controller.play();
+      await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+      expect(playback.driver.audio.prepareAt).toHaveBeenLastCalledWith(0);
+      controller.dispose();
+    });
+  });
 });

@@ -1,7 +1,10 @@
+import type { FrameRate } from "@/domain/media";
 import type { PlaybackRange } from "@/domain/playback";
 import type { AudioPlaybackAdapter } from "@/features/audio";
 import type { PreviewVideoAdapter } from "@/features/preview";
 import { diagnostics } from "@/lib/diagnostics";
+
+import { lastFrameBefore } from "../lib/playback-time";
 
 interface PlaybackDriver {
   audio: AudioPlaybackAdapter;
@@ -9,6 +12,8 @@ interface PlaybackDriver {
 }
 
 interface PlaybackOptions {
+  /** The frame grid; stops rest on a range's last frame rather than on its end boundary. */
+  frameRate?: FrameRate;
   loop: boolean;
   segment: PlaybackRange | null;
 }
@@ -214,8 +219,10 @@ class PlaybackController {
     )
       return;
     const range = this.playbackRange();
+    // On or past the range's last frame there is nothing left to play, so start over.
+    const lastFrameMicros = this.lastFrameOf(range)?.positionMicros ?? range.endMicros;
     if (
-      this.snapshot.positionMicros >= range.endMicros ||
+      this.snapshot.positionMicros >= Math.max(range.startMicros, lastFrameMicros) ||
       this.snapshot.positionMicros < range.startMicros
     ) {
       this.seek(range.startMicros);
@@ -364,7 +371,16 @@ class PlaybackController {
       this.finishAtEndOfMedia(source);
       return;
     }
-    this.seek(range.endMicros);
+    const lastFrame = this.lastFrameOf(range);
+    if (lastFrame) this.seek(lastFrame.positionMicros, lastFrame.presentationMicros);
+    else this.seek(range.endMicros);
+  }
+
+  private lastFrameOf(range: PlaybackRange) {
+    const { frameRate } = this.options;
+    return frameRate
+      ? lastFrameBefore(range.endMicros, this.snapshot.durationMicros, frameRate)
+      : null;
   }
 
   private finishAtEndOfMedia(source: PlaybackEndSource) {
@@ -385,7 +401,13 @@ class PlaybackController {
     this.transitionLifecycle("paused", false);
     this.driver?.audio.pause();
     this.driver?.video.pause();
-    this.update(this.snapshot.durationMicros, this.snapshot.durationMicros, true);
+    // The ended video already shows the final frame; rest the position on it.
+    const lastFrame = this.lastFrameOf(this.playbackRange());
+    this.update(
+      this.snapshot.durationMicros,
+      lastFrame?.positionMicros ?? this.snapshot.durationMicros,
+      true,
+    );
   }
 
   private cancelStartup() {

@@ -38,16 +38,26 @@ function PlaybackProvider({ children }: { children: ReactNode }) {
   const segmentStartMicros = trim?.startMicros;
   const segmentEndMicros = trim?.endMicros;
   const durationMicros = media?.durationMicros ?? 0;
+  const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
 
   useLayoutEffect(() => {
     controller.setOptions({
+      ...(frameRate ? { frameRate } : {}),
       loop,
       segment:
         segmentEnabled && segmentStartMicros !== undefined && segmentEndMicros !== undefined
           ? playbackRange(durationMicros, segmentStartMicros, segmentEndMicros, true)
           : null,
     });
-  }, [controller, durationMicros, loop, segmentEnabled, segmentEndMicros, segmentStartMicros]);
+  }, [
+    controller,
+    durationMicros,
+    frameRate,
+    loop,
+    segmentEnabled,
+    segmentEndMicros,
+    segmentStartMicros,
+  ]);
 
   useEffect(() => () => controller.dispose(), [controller]);
 

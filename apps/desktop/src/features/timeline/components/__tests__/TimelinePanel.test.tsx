@@ -204,14 +204,22 @@ describe("Timeline trim editing", () => {
     expect(store.getState().trim.value).toMatchObject({ startMicros: 0, endMicros: 2000000 });
   });
 
-  it("marks in/out with shortcuts and transport buttons, including crossing the opposite edge", () => {
+  it("marks the playhead frame as first (In) and last (Out) included, crossing the opposite edge", () => {
     const store = renderTrim({ end: 1000000 });
     fireEvent.keyDown(window, { code: "KeyI", key: "ш" });
     expect(store.getState().trim.value).toMatchObject({ startMicros: 2000000, endMicros: 5000000 });
+    // Out on the In frame includes it; the selection keeps its minimum length.
     fireEvent.click(screen.getByRole("button", { name: "Set segment end" }));
-    expect(store.getState().trim.value).toMatchObject({ startMicros: 0, endMicros: 2000000 });
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 2000000, endMicros: 3000000 });
     fireEvent.keyDown(window, { code: "KeyI", key: "i", repeat: true });
-    expect(store.getState().trim.value?.startMicros).toBe(0);
+    expect(store.getState().trim.value?.startMicros).toBe(2000000);
+  });
+
+  it("includes the Out frame and crosses a later start", () => {
+    const store = renderTrim({ start: 3000000, end: 5000000 });
+    fireEvent.click(screen.getByRole("button", { name: "Set segment end" }));
+    // Frame 120 is the last included frame, so the exclusive end boundary is frame 121.
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 0, endMicros: 2016667 });
   });
 
   it("resets each boundary on double click", () => {

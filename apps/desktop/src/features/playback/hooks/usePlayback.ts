@@ -67,10 +67,12 @@ function useTimelinePlayback(frameRate: FrameRate | undefined) {
   return {
     currentFrame,
     framesCount,
+    /** Moves the playhead to a real frame; the EOF boundary is not a playhead position. */
     seekFrame: (frame: number) => {
+      const target = Math.max(0, Math.min(framesCount - 1, Math.round(frame)));
       seek(
-        frameToPlaybackMicros(frame, framesCount, durationMicros, conversionFrameRate),
-        framePresentationMicros(frame, framesCount, durationMicros, conversionFrameRate),
+        frameToPlaybackMicros(target, framesCount, durationMicros, conversionFrameRate),
+        framePresentationMicros(target, framesCount, durationMicros, conversionFrameRate),
       );
     },
   };
