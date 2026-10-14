@@ -503,6 +503,11 @@ describe("ExportDialog", () => {
       startMicros: 1_501_500,
       endMicros: 3_003_000,
     });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(store.getState().export.optimizedDialogOpen).toBe(false));
+    expect(store.getState().export.dialogTrim).toBeNull();
+    expect(store.getState().trim.value).toEqual(timelineTrim);
   });
 
   it("preserves dialog cancel and launch-error handling", async () => {

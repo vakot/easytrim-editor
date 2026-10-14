@@ -242,6 +242,8 @@ async function finishQueuedExportEdit(
     return;
   }
 
+  // Closing the dialog discards its segment, so capture it first.
+  const dialogTrim = selectExportDialogTrim(getState());
   dispatch(optimizedExportDialogClosed());
   dispatch(nativeDialogStateChanged(true));
   try {
@@ -261,9 +263,14 @@ async function finishQueuedExportEdit(
       if (selectActiveInstanceId(getState()) !== instanceId || !selectSourceReady(getState()))
         return;
       const updatedRequest =
-        route === "gif" ? getGifRequest(getState()) : getOptimizedRequest(getState());
+        route === "gif"
+          ? getGifRequest(getState(), exportTrimWith(getState(), dialogTrim))
+          : getOptimizedRequest(getState(), exportTrimWith(getState(), dialogTrim));
 
-      const updatedSnapshot = getCurrentExportSnapshot(getState(), selectDialogExportTrim);
+      const updatedSnapshot = getCurrentExportSnapshot(getState(), (state) =>
+        exportTrimWith(state, dialogTrim),
+      );
+
       if (!updatedRequest || !updatedSnapshot) return;
       if (
         normalizeSourceKey(updatedRequest.sourcePath) !==
@@ -414,16 +421,22 @@ const startOptimizedExportRequested =
       void finishQueuedExportEdit(dispatch, getState);
       return;
     }
+    // Closing the dialog discards its segment, so capture it first.
+    const dialogTrim = selectExportDialogTrim(getState());
     dispatch(optimizedExportDialogClosed());
-    void startEditingInstanceExport("optimized", dispatch, getState, origin);
+    void startEditingInstanceExport("optimized", dispatch, getState, origin, dialogTrim);
   };
 
 const startGifExportRequested = (): AppThunk => (dispatch, getState) => {
+  const dialogTrim = selectExportDialogTrim(getState());
   dispatch(optimizedExportDialogClosed());
-  void startEditingInstanceExport("gif", dispatch, getState, {
-    id: "toolbar.gif-export",
-    type: "button",
-  });
+  void startEditingInstanceExport(
+    "gif",
+    dispatch,
+    getState,
+    { id: "toolbar.gif-export", type: "button" },
+    dialogTrim,
+  );
 };
 
 async function startEditingInstanceExport(
@@ -431,6 +444,7 @@ async function startEditingInstanceExport(
   dispatch: Parameters<AppThunk>[0],
   getState: Parameters<AppThunk>[1],
   origin: DiagnosticOrigin,
+  dialogTrim?: ExportTrim | null,
 ) {
   const initialState = getState();
   const initialInstance = selectActiveEditingInstance(initialState);
@@ -440,7 +454,11 @@ async function startEditingInstanceExport(
     return;
 
   // Dialog routes export the dialog's segment; Fast and Audio export the timeline trim.
-  const trimOf = route === "optimized" || route === "gif" ? selectDialogExportTrim : selectTrim;
+  const trimOf: ExportTrimSelector = (state) =>
+    route === "optimized" || route === "gif"
+      ? exportTrimWith(state, dialogTrim)
+      : selectTrim(state);
+
   const analysis =
     route === "gif"
       ? { state: initialState, status: "ready" as const }
@@ -485,8 +503,8 @@ async function startEditingInstanceExport(
       : route === "audio"
         ? getAudioRequest(currentState, "m4a")
         : route === "gif"
-          ? getGifRequest(currentState)
-          : getOptimizedRequest(currentState);
+          ? getGifRequest(currentState, trim)
+          : getOptimizedRequest(currentState, trim);
 
   if (!initialRequest) return;
   let request: AudioExportRequest | FastExportRequest | GifExportRequest | OptimizedExportRequest =
@@ -595,8 +613,12 @@ type ExportTrim = { endMicros: number; startMicros: number };
 type ExportTrimSelector = (state: ExportState) => ExportTrim | null;
 
 function selectDialogExportTrim(state: ExportState): ExportTrim | null {
+  return exportTrimWith(state, selectExportDialogTrim(state));
+}
+
+function exportTrimWith(state: ExportState, dialogTrim: ExportTrim | null | undefined) {
   const trim = selectTrim(state);
-  return trim ? (selectExportDialogTrim(state) ?? trim) : null;
+  return trim ? (dialogTrim ?? trim) : null;
 }
 
 function timelineTrim(state: ExportState): ExportTrim | null {
@@ -666,9 +688,9 @@ function getAudioRequest(
 
 function getOptimizedRequest(
   state: ReturnType<Parameters<AppThunk>[1]>,
+  trim: ExportTrim | null = selectDialogExportTrim(state),
 ): OptimizedExportRequest | null {
   const source = selectSourceSelection(state);
-  const trim = selectDialogExportTrim(state);
   const media = selectSourceMedia(state);
   const settings = getInitialSettings(state);
   if (!source || !trim || !media || !settings) return null;
@@ -693,9 +715,11 @@ function getOptimizedRequest(
   };
 }
 
-function getGifRequest(state: ReturnType<Parameters<AppThunk>[1]>): GifExportRequest | null {
+function getGifRequest(
+  state: ReturnType<Parameters<AppThunk>[1]>,
+  trim: ExportTrim | null = selectDialogExportTrim(state),
+): GifExportRequest | null {
   const source = selectSourceSelection(state);
-  const trim = selectDialogExportTrim(state);
   const settings = getInitialSettings(state, "gif");
   if (!source || !trim || !settings) return null;
   const transform = exportTransform(state);

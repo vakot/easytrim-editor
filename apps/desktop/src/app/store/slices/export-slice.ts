@@ -21,7 +21,7 @@ interface ExportUiState {
   commandPreview: string;
   commandPreviewError: AppError | null;
   dialogRoute: "optimized" | "gif";
-  // Export-only segment edited in the dialog; never written back to the timeline trim.
+  // Export-only segment edited in the open dialog; never written back to the timeline trim.
   dialogTrim: { endMicros: number; startMicros: number } | null;
   exportPlanRequestId: number | null;
   launchError: AppError | null;
@@ -68,6 +68,7 @@ const exportSlice = createSlice({
     },
     optimizedExportDialogClosed: (state) => {
       state.optimizedDialogOpen = false;
+      state.dialogTrim = null;
     },
     exportDialogTrimChanged: (
       state,
