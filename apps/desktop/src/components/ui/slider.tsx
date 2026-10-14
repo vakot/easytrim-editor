@@ -10,6 +10,8 @@ import { cn } from "@/lib/class-names.utils";
 
 interface SliderMarker {
   label: React.ReactNode;
+  showMarker?: boolean;
+  snapTarget?: boolean;
   value: number;
 }
 
@@ -236,75 +238,86 @@ function Group({
 }
 
 function Marker({
+  children,
   className,
   max = 100,
   min = 0,
+  showMarker = true,
   snapTarget = true,
   style,
   value,
   ...props
-}: Omit<React.ComponentProps<"span">, "value"> & {
-  max?: number;
-  min?: number;
-  snapTarget?: boolean;
-  value: number;
-}) {
+}: Omit<React.ComponentProps<"span">, "value"> &
+  Omit<SliderMarker, "label"> & {
+    max?: number;
+    min?: number;
+  }) {
   const position = max === min ? 0 : (Math.min(max, Math.max(min, value)) - min) / (max - min);
+
+  const isFirst = value === min;
+  const isLast = value === max;
+
+  const labelAlignment =
+    isLast && value === max
+      ? "-right-0 left-auto translate-x-0 text-right"
+      : isFirst && value === min
+        ? "-left-0 translate-x-0"
+        : "left-0 -translate-x-1/2";
+
   return (
     <span
-      className={cn("absolute w-0", className)}
+      className={cn(
+        "pointer-events-none absolute -inset-y-0.5 w-px -translate-x-1/2",
+        showMarker && "bg-muted-foreground/70",
+        className,
+      )}
       data-slot="slider-marker"
       data-snap-target={snapTarget ? undefined : "false"}
       data-snap-value={value}
-      style={{ left: `${position * 100}%`, ...style }}
+      style={{
+        left: `${position * 100}%`,
+        ...style,
+      }}
       {...props}
-    />
+    >
+      <span
+        className={cn(
+          "absolute bottom-full pb-0.5 text-[0.625rem] leading-none whitespace-nowrap text-muted-foreground",
+          labelAlignment,
+        )}
+      >
+        {children}
+      </span>
+    </span>
   );
 }
 
 function Markers({
+  className,
   markers = [],
   max = 100,
   min = 0,
-}: Pick<React.ComponentProps<typeof Root>, "max" | "min"> & { markers?: readonly SliderMarker[] }) {
+}: Pick<React.ComponentProps<typeof Root>, "max" | "min" | "className"> & {
+  markers?: readonly SliderMarker[];
+  offset?: number;
+}) {
   return (
-    <>
-      {markers.map((marker, index) => {
-        const position =
-          max === min ? 0 : (Math.min(max, Math.max(min, marker.value)) - min) / (max - min);
-
-        const isFirst = index === 0;
-        const isLast = index === markers.length - 1;
-
-        const labelAlignment =
-          isLast && marker.value === max
-            ? "-right-1.5 left-auto translate-x-0 text-right"
-            : isFirst && marker.value === min
-              ? "-left-1.5 translate-x-0"
-              : "left-1/2 -translate-x-1/2";
-
-        return (
-          <span
-            className="pointer-events-none absolute top-1/2 h-3 w-px -translate-1/2 bg-muted-foreground/70"
-            data-slot="slider-marker"
-            data-snap-value={marker.value}
+    <div className={cn("absolute inset-0", className)}>
+      <div className="relative size-full">
+        {markers.map((marker) => (
+          <Marker
             key={`${marker.value}-${String(marker.label)}`}
-            style={{
-              left: `calc(${position * 100}% + ${0.375 - position * 0.75}rem)`,
-            }}
+            max={max}
+            min={min}
+            showMarker={marker.showMarker}
+            snapTarget={marker.snapTarget}
+            value={marker.value}
           >
-            <span
-              className={cn(
-                "absolute bottom-full pb-0.5 text-[0.625rem] leading-none whitespace-nowrap text-muted-foreground",
-                labelAlignment,
-              )}
-            >
-              {marker.label}
-            </span>
-          </span>
-        );
-      })}
-    </>
+            {marker.label}
+          </Marker>
+        ))}
+      </div>
+    </div>
   );
 }
 

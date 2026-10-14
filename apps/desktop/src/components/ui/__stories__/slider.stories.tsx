@@ -1,9 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { Slider } from "../slider";
 
 const meta = {
   component: Slider,
+  decorators: [
+    (Story) => (
+      <TooltipProvider>
+        <Story />
+      </TooltipProvider>
+    ),
+  ],
   tags: ["autodocs"],
   title: "Design System/Slider",
 } satisfies Meta<typeof Slider>;

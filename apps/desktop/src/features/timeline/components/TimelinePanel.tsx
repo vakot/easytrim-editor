@@ -98,7 +98,7 @@ function TimelinePanel() {
   return (
     <section
       aria-labelledby="timeline-title"
-      className="grid h-full min-w-0 grid-rows-[auto_minmax(2rem,1fr)] gap-2 p-3"
+      className="grid h-full min-w-0 grid-rows-[auto_minmax(2rem,1fr)] gap-4 p-3"
     >
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
         <div className="min-w-0">
@@ -213,113 +213,122 @@ function TimelinePanel() {
         </dl>
       </div>
 
-      <Slider.Group className="relative isolate h-13" key={loadToken} sharedScale>
-        <Slider.Root
-          aria-label={t("timeline.playhead.accessibility.playbackPosition")}
-          className="h-13"
-          disabled={framesCount === 0}
-          max={framesCount === 0 ? 1 : framesCount}
-          min={0}
-          onValueChange={([frame]) => seekFrame(frame ?? 0)}
-          snap="shift"
-          step={1}
-          style={{ isolation: "auto" }}
-          value={[currentFrame]}
-        >
-          <Slider.Track className="segment-markers h-13 rounded-md border bg-muted/30 text-muted" />
-          {trim.enabled && (
-            <div
-              className="pointer-events-none absolute -inset-y-px mx-2 border-y-2 border-primary bg-primary/10"
-              data-slot="timeline-selection"
-              style={{
-                left: percent(trim.range.start),
-                right: percent(framesCount - trim.range.end),
-              }}
-            />
-          )}
-          <Slider.Thumb
+      <div className="grid h-17 min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-3">
+        <div className="h-full min-w-0">
+          <h3 className="text-[0.625rem] font-bold tracking-wider text-muted-foreground uppercase">
+            Tools
+          </h3>
+          <div></div>
+        </div>
+
+        <Slider.Group className="relative isolate mt-5 h-13" key={loadToken} sharedScale>
+          <Slider.Root
             aria-label={t("timeline.playhead.accessibility.playbackPosition")}
-            className={cn(
-              "pointer-events-none h-13 w-0 before:absolute before:-inset-y-1 before:left-0 before:w-0.5 before:-translate-x-1/2 before:rounded-xs before:bg-white before:content-[''] after:-top-1 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 data-snap-active:after:rounded-t-none",
+            className="h-13"
+            disabled={framesCount === 0}
+            max={framesCount === 0 ? 1 : framesCount}
+            min={0}
+            onValueChange={([frame]) => seekFrame(frame ?? 0)}
+            snap="shift"
+            step={1}
+            style={{ isolation: "auto" }}
+            value={[currentFrame]}
+          >
+            <TimelineMarkers frameRate={frameRate} framesCount={framesCount} />
+            <Slider.Track className="segment-markers h-13 rounded-md border bg-muted/30 text-muted" />
+            {trim.enabled && (
+              <div
+                className="pointer-events-none absolute -inset-y-px mx-2 border-y-2 border-primary bg-primary/10"
+                data-slot="timeline-selection"
+                style={{
+                  left: percent(trim.range.start),
+                  right: percent(framesCount - trim.range.end),
+                }}
+              />
             )}
-          />
-        </Slider.Root>
-        <TimelineMarkers frameRate={frameRate} framesCount={framesCount} />
-        {trim.enabled && (
-          <>
-            {(["start", "end", "move"] as const).map((handle) => {
-              const moving = handle === "move";
-              // The knob is a timeline frame so it can snap exactly with whole-frame thumbs.
-              const offset = moving ? Math.floor(length / 2) : 0;
-              const minimum = handle === "end" ? trim.bounds.minEnd : offset;
-              const maximum =
-                handle === "start"
-                  ? trim.bounds.maxStart
-                  : moving
-                    ? trim.bounds.maxMove + offset
-                    : framesCount;
+            <Slider.Thumb
+              aria-label={t("timeline.playhead.accessibility.playbackPosition")}
+              className={cn(
+                "pointer-events-none h-13 w-0 before:absolute before:-inset-y-1 before:left-0 before:w-0.5 before:-translate-x-1/2 before:rounded-xs before:bg-white before:content-[''] after:-top-1 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 data-snap-active:after:rounded-t-none",
+              )}
+            />
+          </Slider.Root>
+          {trim.enabled && (
+            <>
+              {(["start", "end", "move"] as const).map((handle) => {
+                const moving = handle === "move";
+                // The knob is a timeline frame so it can snap exactly with whole-frame thumbs.
+                const offset = moving ? Math.floor(length / 2) : 0;
+                const minimum = handle === "end" ? trim.bounds.minEnd : offset;
+                const maximum =
+                  handle === "start"
+                    ? trim.bounds.maxStart
+                    : moving
+                      ? trim.bounds.maxMove + offset
+                      : framesCount;
 
-              const value = handle === "end" ? trim.range.end : trim.range.start;
-              const label = t(
-                moving
-                  ? "timeline.segment.actions.moveSegment"
-                  : handle === "start"
-                    ? "timeline.segment.accessibility.trimStart"
-                    : "timeline.segment.accessibility.trimEnd",
-              );
+                const value = handle === "end" ? trim.range.end : trim.range.start;
+                const label = t(
+                  moving
+                    ? "timeline.segment.actions.moveSegment"
+                    : handle === "start"
+                      ? "timeline.segment.accessibility.trimStart"
+                      : "timeline.segment.accessibility.trimEnd",
+                );
 
-              return (
-                <Slider.Root
-                  className="pointer-events-none absolute top-0 h-13 w-auto"
-                  data-trim-handle={handle}
-                  disabled={maximum <= minimum}
-                  key={handle}
-                  max={maximum > minimum ? maximum : minimum + 1}
-                  min={minimum}
-                  onDoubleClick={() => {
-                    if (!moving) trim.change(handle, handle === "start" ? 0 : framesCount);
-                  }}
-                  onLostPointerCapture={trim.finish}
-                  onPointerCancelCapture={trim.finish}
-                  onPointerDownCapture={(event) => {
-                    if (maximum > minimum && event.button === 0 && event.isPrimary !== false)
-                      trim.begin(handle);
-                  }}
-                  onValueChange={([frame]) =>
-                    trim.change(handle, (frame ?? value + offset) - offset)
-                  }
-                  onValueCommit={trim.finish}
-                  snap="shift"
-                  snapTarget={moving ? !trim.dragging : trim.dragging !== "move"}
-                  step={1}
-                  style={{ left: percent(minimum), width: percent(maximum - minimum) }}
-                  value={[value + offset]}
-                >
-                  <Slider.Thumb
-                    aria-label={label}
-                    aria-valuetext={formatFrameTimecode(value, frameRate)}
-                    className="group pointer-events-auto h-13 w-0 border-0 bg-transparent shadow-none hover:ring-0 focus-visible:ring-0 active:ring-0"
+                return (
+                  <Slider.Root
+                    className="pointer-events-none absolute top-0 h-13 w-auto"
+                    data-trim-handle={handle}
+                    disabled={maximum <= minimum}
+                    key={handle}
+                    max={maximum > minimum ? maximum : minimum + 1}
+                    min={minimum}
+                    onDoubleClick={() => {
+                      if (!moving) trim.change(handle, handle === "start" ? 0 : framesCount);
+                    }}
+                    onLostPointerCapture={trim.finish}
+                    onPointerCancelCapture={trim.finish}
+                    onPointerDownCapture={(event) => {
+                      if (maximum > minimum && event.button === 0 && event.isPrimary !== false)
+                        trim.begin(handle);
+                    }}
+                    onValueChange={([frame]) =>
+                      trim.change(handle, (frame ?? value + offset) - offset)
+                    }
+                    onValueCommit={trim.finish}
+                    snap="shift"
+                    snapTarget={moving ? !trim.dragging : trim.dragging !== "move"}
+                    step={1}
+                    style={{ left: percent(minimum), width: percent(maximum - minimum) }}
+                    value={[value + offset]}
                   >
-                    <span
-                      className={
-                        moving
-                          ? "absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3 hover:bg-primary/90 active:cursor-grabbing"
-                          : `absolute -inset-y-1 left-0 flex w-4 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-xs bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3 hover:bg-primary/90 ${handle === "start" ? "rounded-l-md" : "rounded-r-md"}`
-                      }
+                    <Slider.Thumb
+                      aria-label={label}
+                      aria-valuetext={formatFrameTimecode(value, frameRate)}
+                      className="group pointer-events-auto h-13 w-0 border-0 bg-transparent shadow-none hover:ring-0 focus-visible:ring-0 active:ring-0"
                     >
-                      {moving ? (
-                        <GripHorizontal aria-hidden="true" className="size-4" />
-                      ) : (
-                        <GripVertical aria-hidden="true" className="size-4" />
-                      )}
-                    </span>
-                  </Slider.Thumb>
-                </Slider.Root>
-              );
-            })}
-          </>
-        )}
-      </Slider.Group>
+                      <span
+                        className={
+                          moving
+                            ? "absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3 hover:bg-primary/90 active:cursor-grabbing"
+                            : `absolute -inset-y-1 left-0 flex w-4 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-xs bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3 hover:bg-primary/90 ${handle === "start" ? "rounded-l-md" : "rounded-r-md"}`
+                        }
+                      >
+                        {moving ? (
+                          <GripHorizontal aria-hidden="true" className="size-4" />
+                        ) : (
+                          <GripVertical aria-hidden="true" className="size-4" />
+                        )}
+                      </span>
+                    </Slider.Thumb>
+                  </Slider.Root>
+                );
+              })}
+            </>
+          )}
+        </Slider.Group>
+      </div>
     </section>
   );
 }
@@ -335,7 +344,7 @@ function TimelineTimeValue({
 }) {
   return (
     <div className="grid gap-px">
-      <dt className="text-[0.625rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+      <dt className="text-[0.625rem] font-bold tracking-wider text-muted-foreground uppercase">
         {label}
       </dt>
       <dd className="m-0 font-mono text-xs whitespace-nowrap tabular-nums">
