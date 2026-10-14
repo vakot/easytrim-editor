@@ -80,8 +80,6 @@ function Root({
           : inverted;
 
       const requested = next[index] ?? min;
-      const fraction = (requested - min) / (max - min);
-      const coordinate = origin + thumbSize / 2 + (reverse ? 1 - fraction : fraction) * travel;
       const scope = active.root.closest('[data-slot="slider-group"]') ?? active.root;
       // Shared-scale groups snap to declared values; layout rounding is lossy on long ranges.
       const shared = scope.hasAttribute("data-shared-scale");
@@ -98,7 +96,6 @@ function Root({
             continue;
           if ((target.closest('[data-slot="slider-group"]') ?? active.root) !== scope) continue;
           let targetValue: number;
-          let targetDistance: number;
           if (shared) {
             targetValue = Number(
               target.getAttribute("data-slot") === "slider-marker"
@@ -106,7 +103,6 @@ function Root({
                 : target.getAttribute("aria-valuenow"),
             );
             if (!Number.isFinite(targetValue)) continue;
-            targetDistance = (Math.abs(targetValue - requested) / (max - min)) * travel;
           } else {
             const targetBounds = target.getBoundingClientRect();
             const targetCoordinate = vertical
@@ -115,9 +111,9 @@ function Root({
 
             const targetFraction = (targetCoordinate - origin - thumbSize / 2) / travel;
             targetValue = min + (reverse ? 1 - targetFraction : targetFraction) * (max - min);
-            targetDistance = Math.abs(targetCoordinate - coordinate);
           }
 
+          const targetDistance = (Math.abs(targetValue - requested) / (max - min)) * travel;
           const rounded = Number((min + Math.round((targetValue - min) / step) * step).toFixed(10));
           const gap = step * minStepsBetweenThumbs;
           const lower = index > 0 ? next[index - 1]! + gap : min;

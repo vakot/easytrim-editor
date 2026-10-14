@@ -236,6 +236,33 @@ describe("Timeline trim editing", () => {
     expect(playback.seekFrame).not.toHaveBeenCalled();
   });
 
+  it("snaps the playhead and an odd-length selection's knob to the same frame", () => {
+    const store = renderTrim({ start: 500000, end: 2516667 });
+    const playhead = screen.getAllByRole("slider")[0]!.closest('[data-slot="slider"]')!;
+    vi.spyOn(playhead, "getBoundingClientRect").mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 300,
+      height: 52,
+    } as DOMRect);
+    fireEvent.pointerDown(playhead, { button: 0, pointerId: 1, clientX: 94, shiftKey: true });
+    expect(playback.seekFrame).toHaveBeenLastCalledWith(90);
+    fireEvent.pointerUp(playhead, { pointerId: 1, clientX: 94 });
+
+    const move = screen.getByRole("slider", { name: "Move selected segment" });
+    expect(move).toHaveAttribute("aria-valuenow", "90");
+    vi.spyOn(move.closest('[data-slot="slider"]')!, "getBoundingClientRect").mockReturnValue({
+      left: 60,
+      top: 0,
+      width: 179,
+      height: 52,
+    } as DOMRect);
+    fireEvent.pointerDown(move, { button: 0, pointerId: 2, clientX: 118, shiftKey: true });
+    fireEvent.pointerMove(move, { pointerId: 2, clientX: 118, shiftKey: true });
+    fireEvent.pointerUp(move, { pointerId: 2, clientX: 118 });
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 1000000, endMicros: 3016667 });
+  });
+
   it("discards a drag when the source is cleared", () => {
     const store = renderTrim({ isPlaying: true });
     const start = screen.getByRole("slider", { name: "Trim start" });

@@ -16,6 +16,7 @@ import { Slider } from "@/components/ui/slider";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceLoadToken, selectSourceMedia } from "@/app/store/slices/source-slice";
 import { usePlaybackActions, usePlaybackIsPlaying, useTimelinePlayback } from "@/features/playback";
+import { cn } from "@/lib/class-names.utils";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
@@ -212,10 +213,10 @@ function TimelinePanel() {
         </dl>
       </div>
 
-      <Slider.Group className="relative isolate mx-2 h-13" key={loadToken}>
+      <Slider.Group className="relative isolate h-13" key={loadToken} sharedScale>
         <Slider.Root
           aria-label={t("timeline.playhead.accessibility.playbackPosition")}
-          className="h-13 w-full data-disabled:opacity-100 [&>span:has(>[data-slot=slider-thumb])]:z-30"
+          className="h-13"
           disabled={framesCount === 0}
           max={framesCount === 0 ? 1 : framesCount}
           min={0}
@@ -228,7 +229,7 @@ function TimelinePanel() {
           <Slider.Track className="segment-markers h-13 rounded-md border bg-muted/30 text-muted" />
           {trim.enabled && (
             <div
-              className="pointer-events-none absolute -inset-y-px border-y-2 border-primary bg-primary/10"
+              className="pointer-events-none absolute -inset-y-px mx-2 border-y-2 border-primary bg-primary/10"
               data-slot="timeline-selection"
               style={{
                 left: percent(trim.range.start),
@@ -238,7 +239,9 @@ function TimelinePanel() {
           )}
           <Slider.Thumb
             aria-label={t("timeline.playhead.accessibility.playbackPosition")}
-            className="h-13 w-0 rounded-none border-0 bg-transparent p-0 shadow-none ring-0 before:absolute before:inset-y-0 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:bg-foreground before:content-[''] after:top-0 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] hover:ring-0 focus-visible:ring-0 focus-visible:before:border-ring focus-visible:before:ring-3 focus-visible:before:ring-ring/50 focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 active:ring-0 data-disabled:pointer-events-none data-disabled:before:bg-muted-foreground data-disabled:after:bg-muted-foreground"
+            className={cn(
+              "pointer-events-none h-13 w-0 before:absolute before:-inset-y-1 before:left-0 before:w-0.5 before:-translate-x-1/2 before:rounded-xs before:bg-white before:content-[''] after:-top-1 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 data-snap-active:after:rounded-t-none",
+            )}
           />
         </Slider.Root>
         <TimelineMarkers frameRate={frameRate} framesCount={framesCount} />
@@ -246,12 +249,14 @@ function TimelinePanel() {
           <>
             {(["start", "end", "move"] as const).map((handle) => {
               const moving = handle === "move";
-              const minimum = handle === "end" ? trim.bounds.minEnd : 0;
+              // The knob is a timeline frame so it can snap exactly with whole-frame thumbs.
+              const offset = moving ? Math.floor(length / 2) : 0;
+              const minimum = handle === "end" ? trim.bounds.minEnd : offset;
               const maximum =
                 handle === "start"
                   ? trim.bounds.maxStart
                   : moving
-                    ? trim.bounds.maxMove
+                    ? trim.bounds.maxMove + offset
                     : framesCount;
 
               const value = handle === "end" ? trim.range.end : trim.range.start;
@@ -265,7 +270,7 @@ function TimelinePanel() {
 
               return (
                 <Slider.Root
-                  className="pointer-events-none absolute top-0 h-13 w-auto data-disabled:opacity-100"
+                  className="pointer-events-none absolute top-0 h-13 w-auto"
                   data-trim-handle={handle}
                   disabled={maximum <= minimum}
                   key={handle}
@@ -280,16 +285,15 @@ function TimelinePanel() {
                     if (maximum > minimum && event.button === 0 && event.isPrimary !== false)
                       trim.begin(handle);
                   }}
-                  onValueChange={([frame]) => trim.change(handle, frame ?? value)}
+                  onValueChange={([frame]) =>
+                    trim.change(handle, (frame ?? value + offset) - offset)
+                  }
                   onValueCommit={trim.finish}
                   snap="shift"
                   snapTarget={moving ? !trim.dragging : trim.dragging !== "move"}
                   step={1}
-                  style={{
-                    left: percent(moving ? length / 2 : minimum),
-                    width: percent(maximum - minimum),
-                  }}
-                  value={[value]}
+                  style={{ left: percent(minimum), width: percent(maximum - minimum) }}
+                  value={[value + offset]}
                 >
                   <Slider.Thumb
                     aria-label={label}
@@ -299,8 +303,8 @@ function TimelinePanel() {
                     <span
                       className={
                         moving
-                          ? "absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full border border-primary bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3 active:cursor-grabbing"
-                          : `absolute -inset-y-1 left-0 flex w-4 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-xs border border-primary bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3 hover:bg-primary/90 ${handle === "start" ? "rounded-l-md" : "rounded-r-md"}`
+                          ? "absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3 hover:bg-primary/90 active:cursor-grabbing"
+                          : `absolute -inset-y-1 left-0 flex w-4 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-xs bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3 hover:bg-primary/90 ${handle === "start" ? "rounded-l-md" : "rounded-r-md"}`
                       }
                     >
                       {moving ? (
