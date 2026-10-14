@@ -51,12 +51,31 @@ function TimelineMarkersStatic({
   );
 
   return (
-    <Slider.Markers
-      className="-inset-bs-1 font-mono **:data-[slot=slider-marker]:bg-transparent"
-      markers={markers}
-      max={framesCount > 0 ? framesCount : PERCENT_MARKERS.length - 1}
-      min={0}
-    />
+    <>
+      <Slider.Markers
+        className="-inset-bs-1 font-mono **:data-[slot=slider-marker]:bg-transparent"
+        markers={markers}
+        max={framesCount > 0 ? framesCount : PERCENT_MARKERS.length - 1}
+        min={0}
+      />
+      {/* Timecode markers are unsnappable; these keep the timeline edges as snap targets. */}
+      {framesCount > 0 && (
+        <>
+          <Slider.Marker
+            aria-hidden="true"
+            className="bg-transparent"
+            max={framesCount}
+            value={0}
+          />
+          <Slider.Marker
+            aria-hidden="true"
+            className="bg-transparent"
+            max={framesCount}
+            value={framesCount}
+          />
+        </>
+      )}
+    </>
   );
 }
 
