@@ -123,6 +123,35 @@ afterEach(() => {
 });
 
 describe("WebAudioEngine", () => {
+  it("keeps a fractional-sample resume's final decode within the native media range", async () => {
+    const { context, sources } = createContext();
+    const onError = vi.fn();
+    const decode = vi.fn(async (_track: AudioTrackSelection, start: number, duration: number) => {
+      if (start + duration > 4_000_000) throw new Error("Native export range is invalid.");
+      return chunk(duration);
+    });
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), onError);
+    engine.setDuration(4_000_000);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+    ]);
+
+    await engine.startAt(1.463062);
+    await vi.waitFor(() => expect(sources).toHaveLength(2));
+
+    expect(decode).toHaveBeenLastCalledWith(
+      selection(1),
+      3_463_063,
+      536_937,
+      expect.any(AbortSignal),
+    );
+    expect(onError).not.toHaveBeenCalled();
+    const firstStart = sources[0]!.start.mock.calls[0]![0] as number;
+    expect(sources[1]!.start.mock.calls[0]![0]).toBe(firstStart + sources[0]!.buffer!.duration);
+    engine.close();
+  });
+
   it("pads leading gaps and a short valid stream end into the shared sample range", async () => {
     const { buffers, context, sources } = createContext();
     const decode = vi.fn(

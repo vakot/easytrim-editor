@@ -441,7 +441,7 @@ class WebAudioEngine {
           ? await this.decodeChunk(
               track.selection,
               this.frameToMicros(decodeStartFrame),
-              this.frameToMicros(decodeFrameCount),
+              this.frameToMicros(decodeEndFrame) - this.frameToMicros(decodeStartFrame),
               controller.signal,
             )
           : { channels: CHANNELS, sampleRate: SAMPLE_RATE, samples: [] };
@@ -696,7 +696,7 @@ class WebAudioEngine {
   }
 
   private frameToMicros(frame: number): number {
-    return Math.round((frame * 1_000_000) / SAMPLE_RATE);
+    return Math.min(this.durationMicros, Math.round((frame * 1_000_000) / SAMPLE_RATE));
   }
 }
 
