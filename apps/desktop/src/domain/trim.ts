@@ -35,5 +35,5 @@ function requirePositiveInteger(value: number, label: string): number {
   return value;
 }
 
-export { createFullTrimRange, isValidTrimRange };
+export { createFullTrimRange, isValidTrimRange, MIN_SELECTION_MICROS };
 export type { TrimRange };

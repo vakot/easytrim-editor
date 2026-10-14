@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - Added editable video chapters with timeline markers and trim-aware chapter export.
 
+### Changed
+
+- Trim boundaries now stay aligned to video frames when resizing or moving the selected segment.
+
 ## [1.13.4]
 
 ### Added
