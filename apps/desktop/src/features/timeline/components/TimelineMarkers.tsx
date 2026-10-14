@@ -6,6 +6,11 @@ import { selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
 import type { FrameRate } from "@/domain/media";
 import { microsToFrame, useTimelinePlayback } from "@/features/playback";
+import { cn } from "@/lib/class-names.utils";
+
+import { formatFrameTimecode } from "../lib/frame-time";
+
+const PERCENT_MARKERS = [0, 0.25, 0.5, 0.75, 1] as const;
 
 function TimelineMarkers({
   frameRate,
@@ -23,6 +28,28 @@ function TimelineMarkers({
 
   return (
     <>
+      {PERCENT_MARKERS.map((fraction) => {
+        const value = Math.round(fraction * framesCount);
+        return (
+          <Slider.Marker
+            aria-hidden="true"
+            className="pointer-events-none bottom-0 h-1.5 border-l border-muted-foreground/50"
+            key={fraction}
+            max={framesCount}
+            snapTarget={false}
+            value={value}
+          >
+            <span
+              className={cn(
+                "absolute bottom-full pb-0.5 font-mono text-[0.5625rem] leading-none whitespace-nowrap text-muted-foreground tabular-nums",
+                fraction === 0 ? "left-1" : fraction === 1 ? "right-1" : "-translate-x-1/2",
+              )}
+            >
+              {formatFrameTimecode(value, frameRate)}
+            </span>
+          </Slider.Marker>
+        );
+      })}
       <Slider.Marker aria-hidden="true" max={framesCount} value={0} />
       <Slider.Marker aria-hidden="true" max={framesCount} value={framesCount} />
       {scenes.map((micros) => (

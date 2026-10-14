@@ -91,6 +91,7 @@ function Root({
         )) {
           if (
             target === active.thumb ||
+            target.getAttribute("data-snap-target") === "false" ||
             target.closest('[data-slot="slider"][data-snap-target="false"]')
           )
             continue;
@@ -238,15 +239,22 @@ function Marker({
   className,
   max = 100,
   min = 0,
+  snapTarget = true,
   style,
   value,
   ...props
-}: Omit<React.ComponentProps<"span">, "value"> & { max?: number; min?: number; value: number }) {
+}: Omit<React.ComponentProps<"span">, "value"> & {
+  max?: number;
+  min?: number;
+  snapTarget?: boolean;
+  value: number;
+}) {
   const position = max === min ? 0 : (Math.min(max, Math.max(min, value)) - min) / (max - min);
   return (
     <span
       className={cn("absolute w-0", className)}
       data-slot="slider-marker"
+      data-snap-target={snapTarget ? undefined : "false"}
       data-snap-value={value}
       style={{ left: `${position * 100}%`, ...style }}
       {...props}
