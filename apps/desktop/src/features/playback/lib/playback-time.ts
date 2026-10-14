@@ -1,22 +1,5 @@
 import type { FrameRate } from "@/domain/media";
-import { frameToMicros } from "@/domain/media-time";
-
-function frameCountFor(durationMicros: number, frameRate: FrameRate | undefined) {
-  if (
-    !frameRate ||
-    !Number.isFinite(durationMicros) ||
-    durationMicros <= 0 ||
-    frameRate.numerator <= 0 ||
-    frameRate.denominator <= 0
-  ) {
-    return 0;
-  }
-
-  return Math.max(
-    1,
-    Math.round((durationMicros * frameRate.numerator) / (1_000_000 * frameRate.denominator)),
-  );
-}
+import { frameCountFor, frameToMicros } from "@/domain/media-time";
 
 function frameToPlaybackMicros(
   frame: number,

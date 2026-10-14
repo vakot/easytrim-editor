@@ -28,6 +28,7 @@ import { localizeAppError } from "@/i18n/app-errors";
 import {
   CommandPreview,
   ExportResolution,
+  ExportTrimRange,
   FrameRate,
 } from "../../components/ExportDialog/components/common";
 import { GifExportOptions } from "../../components/ExportDialog/components/gif";
@@ -66,6 +67,7 @@ function ExportDialogContent({ __scopeDialog, onCancel }: ExportDialogContentPro
   const commandPreviewError = useAppSelector(selectExportCommandPreviewError);
   const previousArgumentsText = useRef(argumentsText);
   const [frameRateValid, setFrameRateValid] = useState(true);
+  const [trimRangeValid, setTrimRangeValid] = useState(true);
 
   useEffect(() => {
     if (previousArgumentsText.current === argumentsText) return;
@@ -103,12 +105,17 @@ function ExportDialogContent({ __scopeDialog, onCancel }: ExportDialogContentPro
         </DialogDescription>
       </DialogHeader>
 
+
       {routeComposition.options}
       <ExportResolution cropResolution={cropResolution} settings={settings} />
       <FrameRate
         key={`${dialogRoute}-${activeInstance?.id ?? ""}`}
         onValidityChange={setFrameRateValid}
         settings={settings}
+      />
+      <ExportTrimRange
+        key={`trim-${dialogRoute}-${activeInstance?.id ?? ""}`}
+        onValidityChange={setTrimRangeValid}
       />
       <CommandPreview
         command={commandPreview}
@@ -127,7 +134,7 @@ function ExportDialogContent({ __scopeDialog, onCancel }: ExportDialogContentPro
             {t("common.actions.cancel")}
           </Button>
           <Button
-            disabled={!frameRateValid}
+            disabled={!frameRateValid || !trimRangeValid}
             onClick={() =>
               void dispatch(
                 queueEdit ? startOptimizedExportRequested() : routeComposition.primaryAction(),

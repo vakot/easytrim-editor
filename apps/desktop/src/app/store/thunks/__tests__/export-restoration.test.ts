@@ -34,6 +34,7 @@ import {
   cancelOptimizedExportDialogRequested,
   editExportAttemptRequested,
   exportSettingsChangedRequested,
+  exportTrimChangedRequested,
   openOptimizedExportDialog,
   startAudioExportRequested,
   startExportQueue,
@@ -630,15 +631,10 @@ describe("export snapshot restoration", () => {
       width: 1280,
     });
 
-    store.dispatch(
-      trimChanged({
-        trim: { startMicros: 500_000, endMicros: 1_700_000, sourceDurationMicros: 5_000_000 },
-      }),
+    await store.dispatch(
+      exportTrimChangedRequested({ startMicros: 500_000, endMicros: 1_700_000 }),
     );
-    expect(store.getState().trim.value).toMatchObject({
-      startMicros: 500_000,
-      endMicros: 1_700_000,
-    });
+    expect(store.getState().trim.value).toMatchObject(capturedSnapshot.trim);
     store.dispatch(startOptimizedExportRequested());
 
     await vi.waitFor(() => {
@@ -703,11 +699,10 @@ describe("export snapshot restoration", () => {
     });
     expect(store.getState().editingInstances.entities.original?.optimizedSettings).toBeUndefined();
 
-    store.dispatch(
-      trimChanged({
-        trim: { startMicros: 500_000, endMicros: 1_700_000, sourceDurationMicros: 5_000_000 },
-      }),
+    await store.dispatch(
+      exportTrimChangedRequested({ startMicros: 500_000, endMicros: 1_700_000 }),
     );
+    expect(store.getState().trim.value).toMatchObject(capturedSnapshot.trim);
     store.dispatch(startOptimizedExportRequested());
 
     await vi.waitFor(() => {

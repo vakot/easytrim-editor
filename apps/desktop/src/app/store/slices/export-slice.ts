@@ -21,6 +21,8 @@ interface ExportUiState {
   commandPreview: string;
   commandPreviewError: AppError | null;
   dialogRoute: "optimized" | "gif";
+  // Export-only segment edited in the open dialog; never written back to the timeline trim.
+  dialogTrim: { endMicros: number; startMicros: number } | null;
   exportPlanRequestId: number | null;
   launchError: AppError | null;
   optimizedDialogOpen: boolean;
@@ -40,6 +42,7 @@ export const initialExportState: ExportUiState = {
   commandPreview: "",
   commandPreviewError: null,
   dialogRoute: "optimized",
+  dialogTrim: null,
   launchError: null,
   optimizedDialogOpen: false,
   exportPlanRequestId: null,
@@ -65,6 +68,13 @@ const exportSlice = createSlice({
     },
     optimizedExportDialogClosed: (state) => {
       state.optimizedDialogOpen = false;
+      state.dialogTrim = null;
+    },
+    exportDialogTrimChanged: (
+      state,
+      action: PayloadAction<{ endMicros: number; startMicros: number } | null>,
+    ) => {
+      state.dialogTrim = action.payload;
     },
     exportPlanRequested: (state, action: PayloadAction<{ requestId: number }>) => {
       state.exportPlanRequestId = action.payload.requestId;
@@ -181,6 +191,7 @@ const exportSlice = createSlice({
     builder.addCase(sourceCleared, (state) => {
       state.optimizedDialogOpen = false;
       state.dialogRoute = "optimized";
+      state.dialogTrim = null;
       state.exportPlanRequestId = null;
       state.commandPreview = "";
       state.commandPreviewError = null;
@@ -190,6 +201,7 @@ const exportSlice = createSlice({
 });
 
 const {
+  exportDialogTrimChanged,
   exportLaunchFailed,
   exportPlanFailed,
   exportPlanReceived,
@@ -221,6 +233,9 @@ const selectExportDialogOpen = (state: RootState): boolean => state.export.optim
 const selectExportDialogRoute = (state: RootState): ExportUiState["dialogRoute"] =>
   state.export.dialogRoute;
 
+const selectExportDialogTrim = (state: RootState): ExportUiState["dialogTrim"] =>
+  state.export.dialogTrim;
+
 const selectExportCommandPreview = (state: RootState): string => state.export.commandPreview;
 const selectExportCommandPreviewError = (state: RootState): AppError | null =>
   state.export.commandPreviewError;
@@ -237,6 +252,7 @@ const selectRunningExportMetrics = (
 };
 
 export {
+  exportDialogTrimChanged,
   exportLaunchFailed,
   exportPlanFailed,
   exportPlanReceived,
@@ -256,6 +272,7 @@ export {
   selectExportCommandPreviewError,
   selectExportDialogOpen,
   selectExportDialogRoute,
+  selectExportDialogTrim,
   selectExportLaunchError,
   selectQueueEdit,
   selectQueueFinishAction,

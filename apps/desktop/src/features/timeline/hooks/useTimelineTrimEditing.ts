@@ -6,9 +6,8 @@ import { selectSourceLoadToken } from "@/app/store/slices/source-slice";
 import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import type { FrameRate } from "@/domain/media";
+import { createTrimFrameAdapter, type TrimFrames, type TrimHandle } from "@/domain/trim-frames";
 import { usePlaybackActions, usePlaybackIsPlaying } from "@/features/playback";
-
-import { createTrimFrameAdapter, type TrimFrames, type TrimHandle } from "../lib/trim-frames";
 
 function useTimelineTrimEditing(framesCount: number, frameRate: FrameRate | undefined) {
   const trim = useAppSelector(selectTrim);

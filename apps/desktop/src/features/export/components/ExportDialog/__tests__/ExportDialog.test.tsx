@@ -442,6 +442,74 @@ describe("ExportDialog", () => {
     expect(chooseGifOutputPath).not.toHaveBeenCalled();
   });
 
+  it("edits an export-only segment within the source without changing the timeline trim", async () => {
+    planOptimizedExport.mockClear();
+    planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg preview" });
+    const store = createAppStore({
+      getItem: async () => null,
+      setItem: async () => undefined,
+      removeItem: async () => undefined,
+    });
+
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          exportAttempts: [],
+          id: "instance-1",
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
+          sourceAvailability: "available",
+        },
+      ]),
+    );
+    store.dispatch(activeEditingInstanceChanged("instance-1"));
+    const timelineTrim = store.getState().trim.value;
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ExportDialog />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    await store.dispatch(openOptimizedExportDialog());
+    const start = await screen.findByRole("spinbutton", { name: "Start" });
+    const end = screen.getByRole("spinbutton", { name: "End" });
+    expect(start).toHaveValue(0);
+    expect(end).toHaveValue(150);
+
+    fireEvent.change(start, { target: { value: "45" } });
+    fireEvent.change(end, { target: { value: "90" } });
+    await waitFor(() =>
+      expect(planOptimizedExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ trim: { startMicros: 1_501_500, endMicros: 3_003_000 } }),
+      ),
+    );
+    expect(store.getState().trim.value).toEqual(timelineTrim);
+
+    for (const [value, field] of [
+      ["151", end],
+      ["90.5", end],
+      ["70", end],
+    ] as const) {
+      fireEvent.change(field, { target: { value } });
+      expect(screen.getByRole("alert")).toHaveTextContent("between 0 and 150");
+      expect(screen.getByRole("button", { name: "Export" })).toBeDisabled();
+    }
+    expect(store.getState().export.dialogTrim).toEqual({
+      startMicros: 1_501_500,
+      endMicros: 3_003_000,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(store.getState().export.optimizedDialogOpen).toBe(false));
+    expect(store.getState().export.dialogTrim).toBeNull();
+    expect(store.getState().trim.value).toEqual(timelineTrim);
+  });
+
   it("preserves dialog cancel and launch-error handling", async () => {
     toastError.mockClear();
     planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg preview" });

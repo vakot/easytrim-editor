@@ -562,6 +562,12 @@ export const en = {
       sourceOption: "{{height}}p · {{width}} × {{height}} (source)",
       widthLabel: "Width",
     },
+    trimRange: {
+      endLabel: "End",
+      invalidValue: "Enter whole frames between 0 and {{frames}}, at least {{minimum}} frames apart.",
+      label: "Selected segment",
+      startLabel: "Start",
+    },
   },
   layout: {
     accessibility: {
