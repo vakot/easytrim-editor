@@ -35,11 +35,6 @@ function TimelinePanel() {
   );
 
   const trim = useTimelineTrimEditing(framesCount, frameRate);
-  const secondFrames = Math.max(
-    1,
-    Math.round((frameRate?.numerator ?? 30) / (frameRate?.denominator ?? 1)),
-  );
-
   const length = trim.range.end - trim.range.start;
   const percent = (frame: number) => `${framesCount > 0 ? (frame / framesCount) * 100 : 0}%`;
 
@@ -217,16 +212,17 @@ function TimelinePanel() {
         </dl>
       </div>
 
-      <Slider.Group className="relative mx-2 h-13" key={loadToken}>
+      <Slider.Group className="relative isolate mx-2 h-13" key={loadToken}>
         <Slider.Root
           aria-label={t("timeline.playhead.accessibility.playbackPosition")}
-          className="h-13 w-full data-disabled:opacity-100"
+          className="h-13 w-full data-disabled:opacity-100 [&>span:has(>[data-slot=slider-thumb])]:z-30"
           disabled={framesCount === 0}
           max={framesCount === 0 ? 1 : framesCount}
           min={0}
           onValueChange={([frame]) => seekFrame(frame ?? 0)}
           snap="shift"
           step={1}
+          style={{ isolation: "auto" }}
           value={[currentFrame]}
         >
           <Slider.Track className="segment-markers h-13 rounded-md border bg-muted/30 text-muted" />
@@ -242,7 +238,7 @@ function TimelinePanel() {
           )}
           <Slider.Thumb
             aria-label={t("timeline.playhead.accessibility.playbackPosition")}
-            className="h-13 w-0 rounded-none border-0 bg-transparent p-0 shadow-none ring-0 before:absolute before:inset-y-0 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:bg-foreground before:content-[''] after:top-0 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] hover:ring-0 focus-visible:ring-0 focus-visible:before:border-ring focus-visible:before:ring-3 focus-visible:before:ring-ring/50 focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 active:ring-0 data-snap-active:before:bg-primary data-snap-active:after:bg-primary data-disabled:pointer-events-none data-disabled:before:bg-muted-foreground data-disabled:after:bg-muted-foreground"
+            className="h-13 w-0 rounded-none border-0 bg-transparent p-0 shadow-none ring-0 before:absolute before:inset-y-0 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:bg-foreground before:content-[''] after:top-0 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] hover:ring-0 focus-visible:ring-0 focus-visible:before:border-ring focus-visible:before:ring-3 focus-visible:before:ring-ring/50 focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 active:ring-0 data-disabled:pointer-events-none data-disabled:before:bg-muted-foreground data-disabled:after:bg-muted-foreground"
           />
         </Slider.Root>
         <TimelineMarkers frameRate={frameRate} framesCount={framesCount} />
@@ -277,35 +273,6 @@ function TimelinePanel() {
                   min={minimum}
                   onDoubleClick={() => {
                     if (!moving) trim.change(handle, handle === "start" ? 0 : framesCount);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.altKey || event.ctrlKey || event.metaKey) return;
-                    let next: number;
-                    const step = !moving && event.shiftKey ? secondFrames : 1;
-                    switch (event.key) {
-                      case "ArrowLeft":
-                        next = value - step;
-                        break;
-                      case "ArrowRight":
-                        next = value + step;
-                        break;
-                      case "PageDown":
-                        next = value - secondFrames;
-                        break;
-                      case "PageUp":
-                        next = value + secondFrames;
-                        break;
-                      case "Home":
-                        next = minimum;
-                        break;
-                      case "End":
-                        next = maximum;
-                        break;
-                      default:
-                        return;
-                    }
-                    event.preventDefault();
-                    trim.change(handle, next);
                   }}
                   onLostPointerCapture={trim.finish}
                   onPointerCancelCapture={trim.finish}

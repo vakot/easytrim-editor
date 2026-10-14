@@ -66,7 +66,7 @@ describe("Slider snapping", () => {
     fireEvent.pointerDown(root, { button: 0, isPrimary: false, pointerId: 2, clientX: 46 });
     expect(change).not.toHaveBeenCalled();
   });
-  it("preserves a thumb's grab offset and still reaches both endpoints", () => {
+  it("uses native pointer coordinates and reaches both endpoints", () => {
     const change = vi.fn();
     render(
       <Slider.Root data-testid="grab" defaultValue={[50]} onValueChange={change}>
@@ -79,13 +79,23 @@ describe("Slider snapping", () => {
     const grip = screen.getByTestId("grip");
     bounds(root, 0, 100);
     fireEvent.pointerDown(grip, { button: 0, pointerId: 1, clientX: 57 });
-    expect(screen.getByRole("slider")).toHaveAttribute("aria-valuenow", "50");
+    expect(screen.getByRole("slider")).toHaveAttribute("aria-valuenow", "57");
     fireEvent.pointerMove(grip, { pointerId: 1, clientX: 67 });
-    expect(change).toHaveBeenLastCalledWith([60]);
+    expect(change).toHaveBeenLastCalledWith([67]);
     fireEvent.pointerMove(grip, { pointerId: 1, clientX: 120 });
     expect(change).toHaveBeenLastCalledWith([100]);
     fireEvent.pointerMove(grip, { pointerId: 1, clientX: -20 });
     expect(change).toHaveBeenLastCalledWith([0]);
+  });
+
+  it("keeps absolute coordinates after a Shift track click selects a snap target", () => {
+    const { change, root } = setup();
+    fireEvent.pointerDown(root, { button: 0, pointerId: 1, clientX: 46, shiftKey: true });
+    expect(change).toHaveBeenLastCalledWith([50]);
+    fireEvent.pointerMove(root, { pointerId: 1, clientX: 80, shiftKey: true });
+    expect(change).toHaveBeenLastCalledWith([80]);
+    fireEvent.pointerMove(root, { pointerId: 1, clientX: 20, shiftKey: false });
+    expect(change).toHaveBeenLastCalledWith([20]);
   });
 
   it("accounts for rendered thumb insets when snapping", () => {

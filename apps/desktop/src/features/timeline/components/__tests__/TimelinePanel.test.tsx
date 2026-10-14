@@ -171,15 +171,15 @@ function renderTrim({ end = 5000000, isPlaying = false, start = 0 } = {}) {
 }
 
 describe("Timeline trim editing", () => {
-  it("steps focused boundaries by frames and seconds without moving Playback", () => {
+  it("uses native Slider keyboard steps without moving Playback", () => {
     const store = renderTrim();
     const start = screen.getByRole("slider", { name: "Trim start" });
     fireEvent.keyDown(start, { key: "ArrowRight" });
     expect(store.getState().trim.value?.startMicros).toBe(16667);
     fireEvent.keyDown(start, { key: "ArrowRight", shiftKey: true });
-    expect(store.getState().trim.value?.startMicros).toBe(1016667);
+    expect(store.getState().trim.value?.startMicros).toBe(183333);
     fireEvent.keyDown(start, { key: "PageUp" });
-    expect(store.getState().trim.value?.startMicros).toBe(2016667);
+    expect(store.getState().trim.value?.startMicros).toBe(350000);
     fireEvent.keyDown(start, { key: "End" });
     expect(store.getState().trim.value?.startMicros).toBe(4000000);
     fireEvent.keyDown(start, { key: "Home" });
@@ -191,7 +191,7 @@ describe("Timeline trim editing", () => {
     const store = renderTrim({ start: 1000000, end: 3000000 });
     const move = screen.getByRole("slider", { name: "Move selected segment" });
     fireEvent.keyDown(move, { key: "ArrowRight", shiftKey: true });
-    expect(store.getState().trim.value).toMatchObject({ startMicros: 1016667, endMicros: 3016667 });
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 1166667, endMicros: 3166667 });
     fireEvent.keyDown(move, { key: "End" });
     expect(store.getState().trim.value).toMatchObject({ startMicros: 3000000, endMicros: 5000000 });
     fireEvent.keyDown(move, { key: "Home" });

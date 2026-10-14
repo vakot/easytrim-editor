@@ -46,11 +46,8 @@ function Root({
   const values = value ?? uncontrolledValue;
   const pendingValue = React.useRef(values);
   const pointer = React.useRef<{
-    coordinate: number;
     root: HTMLDivElement;
     shift: boolean;
-    startCoordinate: number;
-    startValue: number;
     thumb: Element | null;
   } | null>(null);
 
@@ -63,22 +60,6 @@ function Root({
   function changeValues(next: number[]) {
     const active = pointer.current;
     clearSnap();
-    // Radix uses absolute pointer coordinates. Preserve where a single thumb
-    // was grabbed, including visual children extending beyond its center.
-    if (active?.thumb && next.length === 1) {
-      const bounds = active.root.getBoundingClientRect();
-      const length = orientation === "vertical" ? bounds.height : bounds.width;
-      const reverse =
-        orientation === "vertical"
-          ? !inverted
-          : ((dir ?? getComputedStyle(active.root).direction) === "rtl") !== inverted;
-
-      if (length > 0) {
-        const delta = ((active.coordinate - active.startCoordinate) / length) * (max - min);
-        const requested = active.startValue + (reverse ? -delta : delta);
-        next = [Math.max(min, Math.min(max, min + Math.round((requested - min) / step) * step))];
-      }
-    }
     if (active && snap && (snap === true || active.shift)) {
       const thumbs = Array.from(active.root.querySelectorAll('[data-slot="slider-thumb"]'));
       let index = active.thumb ? thumbs.indexOf(active.thumb) : -1;
@@ -193,16 +174,12 @@ function Root({
                 ? event.target.closest('[data-slot="slider-thumb"]')
                 : null,
             shift: event.shiftKey,
-            startCoordinate: orientation === "vertical" ? event.clientY : event.clientX,
-            coordinate: orientation === "vertical" ? event.clientY : event.clientX,
-            startValue: values[0] ?? min,
           };
         }
       }}
       onPointerMoveCapture={(event) => {
         if (pointer.current) {
           pointer.current.shift = event.shiftKey;
-          pointer.current.coordinate = orientation === "vertical" ? event.clientY : event.clientX;
         }
         dragAwareDoubleClick.onPointerMoveCapture(event);
         onPointerMoveCapture?.(event);
