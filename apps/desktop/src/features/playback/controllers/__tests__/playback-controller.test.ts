@@ -18,6 +18,7 @@ function createPlaybackDriver() {
       hasActiveOutput: true,
       isReady: true,
       pause: vi.fn(),
+      prefetchAt: vi.fn(),
       prepareAt: vi.fn(async () => undefined),
       registerPlaybackErrorObserver: vi.fn((nextObserver) => {
         audioPlaybackErrorObserver = nextObserver;
@@ -851,4 +852,23 @@ describe("playback controller", () => {
       controller.dispose();
     },
   );
+
+  it("prefetches the loop start audio while looping playback runs", async () => {
+    const playback = createPlaybackDriver();
+    const controller = createPlaybackController(playback.driver, 10_000_000);
+    controller.setOptions({ loop: false, segment: null });
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    await vi.waitFor(() =>
+      expect(playback.driver.audio.startAlignedWithVideoAt).toHaveBeenCalled(),
+    );
+    expect(playback.driver.audio.prefetchAt).not.toHaveBeenCalled();
+
+    controller.setOptions({
+      loop: true,
+      segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
+    });
+    expect(playback.driver.audio.prefetchAt).toHaveBeenLastCalledWith(2);
+    controller.dispose();
+  });
 });

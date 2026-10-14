@@ -82,6 +82,7 @@ class PlaybackController {
 
   setOptions = (options: PlaybackOptions) => {
     this.options = options;
+    if (this.lifecycle === "playing") this.prefetchLoopStart();
   };
 
   getSnapshot = () => this.snapshot;
@@ -297,6 +298,7 @@ class PlaybackController {
       const videoPosition = Math.max(0, Math.min(durationSeconds, presentationPosition));
 
       await driver.audio.startAlignedWithVideoAt(videoPosition);
+      if (this.isCurrentPlaybackStart(generation)) this.prefetchLoopStart();
     } catch (error: unknown) {
       if (!this.isCurrentPlaybackStart(generation)) return;
       diagnostics.error("media.playback.startup_failed", error, {
@@ -324,6 +326,12 @@ class PlaybackController {
     else if (wasPlaying) this.stopPlaybackClock();
 
     if (notify && wasPlaying !== (nextLifecycle === "playing")) this.notifyListeners();
+  }
+
+  /** Decodes the loop's restart audio ahead of time so wrapping around needs no decode. */
+  private prefetchLoopStart() {
+    if (!this.options.loop || !this.driver) return;
+    this.driver.audio.prefetchAt(this.playbackRange().startMicros / MICROS_PER_SECOND);
   }
 
   private playbackRange(): PlaybackRange {

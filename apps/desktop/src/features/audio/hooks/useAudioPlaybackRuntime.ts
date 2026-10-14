@@ -113,6 +113,10 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
     [],
   );
 
+  const prefetchAt = useCallback((seconds: number) => {
+    void sessionRef.current?.prefetchAt(seconds);
+  }, []);
+
   const startAlignedWithVideoAt = useCallback(
     (videoPositionSeconds: number) =>
       sessionRef.current?.startAlignedWithVideoAt(videoPositionSeconds) ??
@@ -147,6 +151,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       hasActiveOutput,
       isReady,
       pause,
+      prefetchAt,
       prepareAt,
       registerPlaybackErrorObserver,
       seek,
@@ -157,6 +162,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       hasActiveOutput,
       isReady,
       pause,
+      prefetchAt,
       prepareAt,
       registerPlaybackErrorObserver,
       seek,

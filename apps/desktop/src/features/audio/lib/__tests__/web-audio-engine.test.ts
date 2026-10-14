@@ -136,6 +136,7 @@ describe("WebAudioEngine", () => {
       vi.fn(),
       onError,
     );
+
     engine.setDuration(8_000_000);
     engine.setTracks([
       { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
@@ -526,6 +527,68 @@ describe("WebAudioEngine", () => {
     expect(decode.mock.calls.some(([, startMicros]) => startMicros === 1_200_000)).toBe(false);
     expect(sources[0]?.start).toHaveBeenCalledWith(5.005, 0.2);
     expect(engine.currentTimeSeconds).toBeCloseTo(1.2);
+    engine.close();
+  });
+
+  it("restarts a loop from its prefetched chunk without decoding again", async () => {
+    const { context, sources } = createContext();
+    const decode = vi.fn(
+      async (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+        chunk(durationMicros),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(4_000_000);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(2), streamIndex: 2 },
+    ]);
+
+    // Playback near the loop end is unaffected by decoding the loop start.
+    await engine.prepareAt(3);
+    await engine.startAlignedWithVideoAt(3);
+    const playingSources = sources.length;
+    await engine.prefetchAt(0);
+    expect(sources).toHaveLength(playingSources);
+    expect(sources.every((source) => source.stop.mock.calls.length === 0)).toBe(true);
+    expect(engine.currentTimeSeconds).toBeGreaterThanOrEqual(3);
+
+    decode.mockClear();
+    for (let iteration = 0; iteration < 2; iteration += 1) {
+      await engine.prepareAt(0);
+      await engine.startAlignedWithVideoAt(0);
+    }
+    expect(decode).not.toHaveBeenCalledWith(
+      expect.anything(),
+      0,
+      expect.any(Number),
+      expect.any(AbortSignal),
+    );
+    engine.close();
+  });
+
+  it("discards a prefetched chunk when baked track processing changes", async () => {
+    const { context } = createContext();
+    const decode = vi.fn(
+      async (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+        chunk(durationMicros),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(4_000_000);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+    ]);
+    await engine.prefetchAt(0);
+
+    const processed = { processing: { gainDb: 3 }, streamIndex: 1 };
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: processed, streamIndex: 1 },
+    ]);
+    decode.mockClear();
+    await engine.prepareAt(0);
+
+    expect(decode).toHaveBeenCalledWith(processed, 0, 2_000_000, expect.any(AbortSignal));
     engine.close();
   });
 

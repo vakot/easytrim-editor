@@ -59,6 +59,10 @@ class AudioPlaybackSession {
     return this.engine.prepareAt(seconds);
   }
 
+  prefetchAt(seconds: number) {
+    return this.engine.prefetchAt(seconds);
+  }
+
   startAlignedWithVideoAt(videoPositionSeconds: number) {
     return this.engine.startAlignedWithVideoAt(videoPositionSeconds);
   }

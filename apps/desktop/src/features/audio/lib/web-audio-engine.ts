@@ -51,6 +51,13 @@ interface PreparedAudioBatch {
   generation: number;
 }
 
+/** A decoded start chunk kept outside the playback generations, e.g. a loop's restart point. */
+interface PrefetchedAudioChunk {
+  endFrame: number;
+  ranges: { buffer: AudioBuffer; key: string; track: ScheduledTrack }[];
+  startFrame: number;
+}
+
 interface ScheduledTrack {
   abortController: AbortController | null;
   cursorFrame: number;
@@ -84,6 +91,8 @@ class WebAudioEngine {
   private pumpFrame: number | null = null;
   private batchInFlight = false;
   private preparedBatch: PreparedAudioBatch | null = null;
+  private prefetched: PrefetchedAudioChunk | null = null;
+  private prefetchRequest: { controller: AbortController; startFrame: number } | null = null;
 
   constructor(
     private readonly context: AudioContext,
@@ -110,7 +119,9 @@ class WebAudioEngine {
   }
 
   setDuration(durationMicros: number): void {
-    this.durationMicros = Math.max(0, durationMicros);
+    const next = Math.max(0, durationMicros);
+    if (next !== this.durationMicros) this.discardPrefetch();
+    this.durationMicros = next;
   }
 
   setOutputGain(linearGain: number): void {
@@ -185,6 +196,7 @@ class WebAudioEngine {
       scheduled.gain.gain.setTargetAtTime(10 ** (track.gainDb / 20), now, 0.015);
     }
 
+    if (membershipChanged || processingChanged) this.discardPrefetch();
     if (this.isPlaying && this.hasTracks && (membershipChanged || processingChanged)) {
       this.preparedBatch = null;
       this.seek(playbackPositionFrame / SAMPLE_RATE);
@@ -321,17 +333,48 @@ class WebAudioEngine {
       if (generation !== this.generation) {
         throw new Error("Audio preparation was interrupted.");
       }
-      const batch = await this.decodeBatch(
-        generation,
-        startFrame,
-        this.nextChunkEndFrame(startFrame),
-      );
+      const batch =
+        this.prefetchedBatch(startFrame) ??
+        (await this.decodeBatch(generation, startFrame, this.nextChunkEndFrame(startFrame)));
 
       if (generation !== this.generation) throw new Error("Audio preparation was interrupted.");
       if (batch.length === 0 && this.hasTracks) throw new Error("Audio preparation failed.");
       if (batch.length > 0) this.preparedBatch = { batch, generation };
     } finally {
       if (generation === this.generation) this.batchInFlight = false;
+    }
+  }
+
+  /**
+   * Decodes the chunk starting at `seconds` without touching current playback, so a later
+   * `prepareAt` there (a loop restart) needs no decode. Best effort: failures leave no chunk.
+   */
+  async prefetchAt(seconds: number): Promise<void> {
+    if (!this.hasTracks || this.durationFrames <= 0) return;
+    const startFrame = this.secondsToFrame(seconds);
+    if (this.prefetchedRanges(startFrame) || this.prefetchRequest?.startFrame === startFrame)
+      return;
+
+    this.discardPrefetch();
+    const endFrame = this.nextChunkEndFrame(startFrame);
+    if (endFrame <= startFrame) return;
+    const request = { controller: new AbortController(), startFrame };
+    this.prefetchRequest = request;
+    try {
+      const tracks = [...this.tracks.values()];
+      const ranges = await Promise.all(
+        tracks.map(async (track) => ({
+          buffer: await this.decodeBuffer(track, startFrame, endFrame, request.controller.signal),
+          key: this.prefetchKey(track),
+          track,
+        })),
+      );
+
+      if (this.prefetchRequest === request) this.prefetched = { endFrame, ranges, startFrame };
+    } catch {
+      // A missing prefetch only means the restart decodes on demand.
+    } finally {
+      if (this.prefetchRequest === request) this.prefetchRequest = null;
     }
   }
 
@@ -372,6 +415,7 @@ class WebAudioEngine {
   }
 
   close(): void {
+    this.discardPrefetch();
     this.pause();
     for (const [streamIndex, track] of this.tracks) this.removeTrack(streamIndex, track);
     disconnectStereoAudioMeterNodes(this.audioMeter);
@@ -447,19 +491,7 @@ class WebAudioEngine {
     const controller = new AbortController();
     track.abortController = controller;
     try {
-      const decodeStartFrame = Math.max(startFrame, track.startFrame);
-      const decodeEndFrame = Math.min(endFrame, track.durationFrame);
-      const decodeFrameCount = Math.max(0, decodeEndFrame - decodeStartFrame);
-      const chunk =
-        decodeFrameCount > 0
-          ? await this.decodeChunk(
-              track.selection,
-              this.frameToMicros(decodeStartFrame),
-              this.frameToMicros(decodeEndFrame) - this.frameToMicros(decodeStartFrame),
-              controller.signal,
-            )
-          : { channels: CHANNELS, sampleRate: SAMPLE_RATE, samples: [] };
-
+      const buffer = await this.decodeBuffer(track, startFrame, endFrame, controller.signal);
       if (
         controller.signal.aborted ||
         generation !== this.generation ||
@@ -467,27 +499,6 @@ class WebAudioEngine {
         this.tracks.get(track.streamIndex) !== track
       ) {
         return null;
-      }
-
-      const decodedFrameCount = chunk.samples.length / chunk.channels;
-      if (
-        chunk.channels !== CHANNELS ||
-        chunk.sampleRate !== SAMPLE_RATE ||
-        !Number.isInteger(decodedFrameCount) ||
-        decodedFrameCount > decodeFrameCount ||
-        (decodedFrameCount !== decodeFrameCount && decodeEndFrame < track.durationFrame)
-      ) {
-        throw new Error("Decoded audio did not match its requested sample range.");
-      }
-
-      const frameCount = endFrame - startFrame;
-      const buffer = this.context.createBuffer(CHANNELS, frameCount, SAMPLE_RATE);
-      const left = buffer.getChannelData(0);
-      const right = buffer.getChannelData(1);
-      const destinationStartFrame = decodeStartFrame - startFrame;
-      for (let frame = 0; frame < decodedFrameCount; frame += 1) {
-        left[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels]! / 32768;
-        right[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels + 1]! / 32768;
       }
       track.cursorFrame = endFrame;
       return { buffer, endFrame, startFrame, track };
@@ -497,6 +508,84 @@ class WebAudioEngine {
     } finally {
       if (track.abortController === controller) track.abortController = null;
     }
+  }
+
+  private async decodeBuffer(
+    track: ScheduledTrack,
+    startFrame: number,
+    endFrame: number,
+    signal: AbortSignal,
+  ): Promise<AudioBuffer> {
+    const decodeStartFrame = Math.max(startFrame, track.startFrame);
+    const decodeEndFrame = Math.min(endFrame, track.durationFrame);
+    const decodeFrameCount = Math.max(0, decodeEndFrame - decodeStartFrame);
+    const chunk =
+      decodeFrameCount > 0
+        ? await this.decodeChunk(
+            track.selection,
+            this.frameToMicros(decodeStartFrame),
+            this.frameToMicros(decodeEndFrame) - this.frameToMicros(decodeStartFrame),
+            signal,
+          )
+        : { channels: CHANNELS, sampleRate: SAMPLE_RATE, samples: [] };
+
+    const decodedFrameCount = chunk.samples.length / chunk.channels;
+    if (
+      chunk.channels !== CHANNELS ||
+      chunk.sampleRate !== SAMPLE_RATE ||
+      !Number.isInteger(decodedFrameCount) ||
+      decodedFrameCount > decodeFrameCount ||
+      (decodedFrameCount !== decodeFrameCount && decodeEndFrame < track.durationFrame)
+    ) {
+      throw new Error("Decoded audio did not match its requested sample range.");
+    }
+
+    const buffer = this.context.createBuffer(CHANNELS, endFrame - startFrame, SAMPLE_RATE);
+    const left = buffer.getChannelData(0);
+    const right = buffer.getChannelData(1);
+    const destinationStartFrame = decodeStartFrame - startFrame;
+    for (let frame = 0; frame < decodedFrameCount; frame += 1) {
+      left[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels]! / 32768;
+      right[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels + 1]! / 32768;
+    }
+    return buffer;
+  }
+
+  /** Everything a decoded chunk depends on; a change makes a prefetched chunk stale. */
+  private prefetchKey(track: ScheduledTrack): string {
+    return `${track.selectionKey}|${track.startFrame}|${track.durationFrame}`;
+  }
+
+  private prefetchedRanges(startFrame: number): PrefetchedAudioChunk["ranges"] | null {
+    const prefetched = this.prefetched;
+    if (
+      !prefetched ||
+      prefetched.startFrame !== startFrame ||
+      prefetched.endFrame !== this.nextChunkEndFrame(startFrame) ||
+      prefetched.ranges.length !== this.tracks.size ||
+      prefetched.ranges.some(
+        ({ key, track }) =>
+          this.tracks.get(track.streamIndex) !== track || this.prefetchKey(track) !== key,
+      )
+    ) {
+      return null;
+    }
+    return prefetched.ranges;
+  }
+
+  /** Reuses a prefetched chunk as the prepared batch; AudioBuffers can back many sources. */
+  private prefetchedBatch(startFrame: number): DecodedSampleRange[] | null {
+    const ranges = this.prefetchedRanges(startFrame);
+    if (!ranges) return null;
+    const endFrame = this.nextChunkEndFrame(startFrame);
+    for (const { track } of ranges) track.cursorFrame = endFrame;
+    return ranges.map(({ buffer, track }) => ({ buffer, endFrame, startFrame, track }));
+  }
+
+  private discardPrefetch(): void {
+    this.prefetchRequest?.controller.abort();
+    this.prefetchRequest = null;
+    this.prefetched = null;
   }
 
   private scheduleBatch(batch: DecodedSampleRange[], contextStart: number): void {

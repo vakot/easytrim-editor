@@ -5,6 +5,7 @@ interface AudioPlaybackAdapter {
   hasActiveOutput: boolean;
   isReady: boolean;
   pause: () => void;
+  prefetchAt: (seconds: number) => void;
   prepareAt: (seconds: number) => Promise<void>;
   registerPlaybackErrorObserver: (observer: () => void) => () => void;
   seek: (seconds: number) => void;

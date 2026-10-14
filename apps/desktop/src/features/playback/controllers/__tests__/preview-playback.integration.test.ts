@@ -85,6 +85,7 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
       hasActiveOutput: hasAudioOutput,
       isReady: true,
       pause: vi.fn(),
+      prefetchAt: vi.fn(),
       prepareAt: vi.fn(async () => undefined),
       registerPlaybackErrorObserver: () => () => undefined,
       seek: vi.fn(),
