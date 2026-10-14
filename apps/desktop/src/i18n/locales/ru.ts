@@ -1167,6 +1167,12 @@ export const ru = {
     },
   },
   timeline: {
+    accessibility: {
+      playheadPosition: "Позиция воспроизведения",
+      seconds: "{{value}} с",
+      startsAt: "Начинается в {{time}}",
+      track: "Временная шкала обрезки видео",
+    },
     audioMeter: {
       accessibility: {
         audioLevel: "Уровень стереозвука",
@@ -1200,18 +1206,9 @@ export const ru = {
         sourceContainsTooManyDetectedSceneChanges: "В видео найдено слишком много смен сцен",
       },
     },
-    playhead: {
-      accessibility: {
-        playbackPosition: "Позиция воспроизведения",
-        seconds: "{{value}} с",
-        startsAt: "Начинается в {{time}}",
-        tools: "Инструменты временной шкалы видео",
-        track: "Временная шкала обрезки видео",
-      },
-      labels: {
-        duration: "Длительность",
-        tools: "Инструменты",
-      },
+    labels: {
+      duration: "Длительность",
+      tools: "Инструменты",
     },
     sceneMarkers: {
       actions: {
