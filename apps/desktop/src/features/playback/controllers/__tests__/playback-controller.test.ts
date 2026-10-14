@@ -211,9 +211,20 @@ describe("playback controller", () => {
   it("restarts from timestamp zero after reaching EOF", async () => {
     const playback = createPlaybackDriver();
     const controller = createPlaybackController(playback.driver, 2_000_000);
+    let videoSeconds = 0;
+    vi.mocked(playback.driver.video.isEnded).mockImplementation(() => videoSeconds >= 2);
+    vi.mocked(playback.driver.video.seek).mockImplementation((seconds, _approximate, onSettled) => {
+      videoSeconds = seconds;
+      onSettled?.();
+    });
 
-    vi.mocked(playback.driver.video.isEnded).mockReturnValue(true);
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    videoSeconds = 2;
     playback.observer.onEnded();
+    expect(controller.isPlaying).toBe(false);
+    expect(controller.getSnapshot().positionMicros).toBe(2_000_000);
+
     controller.play();
     await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
 
@@ -796,4 +807,48 @@ describe("playback controller", () => {
     );
     controller.dispose();
   });
+
+  it("keeps a paused seek into the final frame even though the browser reports ended", () => {
+    // Chromium reports `ended` for a paused element anywhere inside the last frame.
+    const playback = createPlaybackDriver();
+    const controller = createPlaybackController(playback.driver, 1_500_000);
+
+    controller.seek(1_466_667, 1_483_333);
+    vi.mocked(playback.driver.video.isEnded).mockReturnValue(true);
+    playback.observer.onTimeUpdate(1.483333);
+    playback.observer.onPause(true);
+    playback.observer.onEnded();
+
+    expect(controller.getSnapshot().positionMicros).toBe(1_466_667);
+    expect(controller.isPlaying).toBe(false);
+    controller.dispose();
+  });
+
+  it.each([
+    { loop: false, position: 1_500_000 },
+    { loop: true, position: 0 },
+  ])(
+    "finishes playback started inside the final frame without rewinding the video (loop $loop)",
+    async ({ loop, position }) => {
+      const playback = createPlaybackDriver();
+      const controller = createPlaybackController(playback.driver, 1_500_000);
+      controller.setOptions({ loop, segment: null });
+      controller.seek(1_466_667, 1_483_333);
+      vi.mocked(playback.driver.video.isEnded).mockReturnValue(true);
+      vi.mocked(playback.driver.video.seek).mockImplementation(
+        (seconds, _approximate, onSettled) => {
+          vi.mocked(playback.driver.video.isEnded).mockReturnValue(seconds >= 1.466667);
+          onSettled?.();
+        },
+      );
+
+      controller.play();
+
+      await vi.waitFor(() => expect(controller.getSnapshot().positionMicros).toBe(position));
+      if (loop) await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+      else expect(controller.isPlaying).toBe(false);
+      expect(playback.driver.video.play).toHaveBeenCalledTimes(loop ? 1 : 0);
+      controller.dispose();
+    },
+  );
 });

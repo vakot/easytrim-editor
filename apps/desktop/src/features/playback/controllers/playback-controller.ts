@@ -18,7 +18,8 @@ interface PlaybackSnapshot {
   positionMicros: number;
 }
 
-type PlaybackEndSource = "ended_event" | "pause_event" | "time_update" | "video_frame";
+type PlaybackEndSource =
+  "ended_event" | "pause_event" | "playback_start" | "time_update" | "video_frame";
 
 const MICROS_PER_SECOND = 1_000_000;
 
@@ -277,6 +278,11 @@ class PlaybackController {
         driver.video.seek(seconds, false, resolve);
       });
       if (!this.isCurrentPlaybackStart(generation)) return;
+      // Starting inside the final frame leaves nothing to play; `play()` would rewind to 0.
+      if (driver.video.isEnded()) {
+        this.handleRangeEnd("playback_start");
+        return;
+      }
 
       this.mediaStartRequested = true;
       const presentationPosition = await driver.video.play();
@@ -337,8 +343,11 @@ class PlaybackController {
   }
 
   private handleRangeEnd(source: PlaybackEndSource) {
+    // Reaching the end is a transition of active playback. Browsers also report `ended` for a
+    // paused element positioned inside the final frame, which must not move the paused position.
+    if (this.lifecycle === "paused") return;
     const range = this.playbackRange();
-    if (this.lifecycle === "playing" && this.options.loop && range.endMicros > range.startMicros) {
+    if (this.options.loop && range.endMicros > range.startMicros) {
       this.seek(range.startMicros);
       this.play();
       return;
@@ -347,17 +356,10 @@ class PlaybackController {
       this.finishAtEndOfMedia(source);
       return;
     }
-    if (this.lifecycle !== "paused") this.seek(range.endMicros);
+    this.seek(range.endMicros);
   }
 
   private finishAtEndOfMedia(source: PlaybackEndSource) {
-    if (
-      this.lifecycle === "paused" &&
-      this.snapshot.positionMicros === this.snapshot.durationMicros
-    ) {
-      return;
-    }
-
     const driver = this.driver;
     diagnostics.event("media.playback.finalized", {
       data: {
