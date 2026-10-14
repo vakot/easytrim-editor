@@ -34,7 +34,7 @@ function formatFrameTimecode(frame: number, frameRate: FrameRate | undefined) {
     .toString()
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}:${frames
     .toString()
-    .padStart(2, "0")}`;
+    .padStart(2, "0")}f`;
 }
 
 export { formatFrameTimecode };

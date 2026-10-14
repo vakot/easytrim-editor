@@ -39,11 +39,11 @@ function TimelineMarkersStatic({
 }) {
   const markers = useMemo<SliderMarker[]>(
     () =>
-      PERCENT_MARKERS.map<SliderMarker>((percent) => {
-        const value = framesCount * percent;
+      PERCENT_MARKERS.map<SliderMarker>((percent, index) => {
+        const value = framesCount > 0 ? framesCount * percent : index;
         return {
           value,
-          label: formatFrameTimecode(value, frameRate),
+          label: framesCount > 0 ? formatFrameTimecode(value, frameRate) : "00:00:00:00f",
           showMarker: false,
           snapTarget: false,
         };
@@ -53,11 +53,10 @@ function TimelineMarkersStatic({
 
   return (
     <Slider.Markers
-      className="-inset-bs-1"
+      className="-inset-bs-1 font-mono"
       markers={markers}
-      max={framesCount}
+      max={framesCount > 0 ? framesCount : PERCENT_MARKERS.length - 1}
       min={0}
-      offset={0}
     />
   );
 }

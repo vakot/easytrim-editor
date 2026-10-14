@@ -218,7 +218,7 @@ function TimelinePanel() {
           <h3 className="text-[0.625rem] font-bold tracking-wider text-muted-foreground uppercase">
             Tools
           </h3>
-          <div></div>
+          <div>TODO</div>
         </div>
 
         <Slider.Group className="relative isolate mt-5 h-13" key={loadToken} sharedScale>
@@ -246,12 +246,17 @@ function TimelinePanel() {
                 }}
               />
             )}
-            <Slider.Thumb
-              aria-label={t("timeline.playhead.accessibility.playbackPosition")}
-              className={cn(
-                "pointer-events-none h-13 w-0 before:absolute before:-inset-y-1 before:left-0 before:w-0.5 before:-translate-x-1/2 before:rounded-xs before:bg-white before:content-[''] after:-top-1 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 data-snap-active:after:rounded-t-none",
-              )}
-            />
+            <Slider.Preview
+              disabled={framesCount === 0}
+              label={(values) => formatFrameTimecode(values?.[0] ?? 0, frameRate)}
+            >
+              <Slider.Thumb
+                aria-label={t("timeline.playhead.accessibility.playbackPosition")}
+                className={cn(
+                  "pointer-events-none h-13 w-0 before:absolute before:-inset-y-1 before:left-0 before:w-0.5 before:-translate-x-1/2 before:rounded-xs before:bg-white before:content-[''] after:-top-1 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 data-snap-active:after:rounded-t-none",
+                )}
+              />
+            </Slider.Preview>
           </Slider.Root>
           {trim.enabled && (
             <>

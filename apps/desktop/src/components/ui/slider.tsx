@@ -44,6 +44,7 @@ function Root({
   snapTarget?: boolean;
   snapThreshold?: number;
 }) {
+  const [dragging, setDragging] = React.useState(false);
   const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue ?? [min]);
   const values = value ?? uncontrolledValue;
   const pendingValue = React.useRef(values);
@@ -147,77 +148,83 @@ function Root({
   const dragAwareDoubleClick = useDragAwareDoubleClick<HTMLDivElement>(onDoubleClick);
 
   return (
-    <SliderPrimitive.Root
-      className={cn(
-        "relative isolate flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col",
-        className,
-      )}
-      data-slot="slider"
-      data-snap-target={snapTarget ? undefined : "false"}
-      dir={dir}
-      disabled={disabled}
-      inverted={inverted}
-      max={max}
-      min={min}
-      minStepsBetweenThumbs={minStepsBetweenThumbs}
-      onDoubleClick={dragAwareDoubleClick.onDoubleClick}
-      onLostPointerCapture={(event) => {
-        clearSnap();
-        pointer.current = null;
-        onLostPointerCapture?.(event);
-      }}
-      onPointerCancelCapture={(event) => {
-        clearSnap();
-        pointer.current = null;
-        dragAwareDoubleClick.onPointerCancelCapture(event);
-        onPointerCancelCapture?.(event);
-      }}
-      onPointerDownCapture={(event) => {
-        if (event.button !== 0 || event.isPrimary === false) {
-          event.preventDefault();
-          return;
-        }
-        dragAwareDoubleClick.onPointerDownCapture(event);
-        onPointerDownCapture?.(event);
-        if (!disabled && !event.defaultPrevented && event.button === 0) {
-          pendingValue.current = values;
-          pointer.current = {
-            root: event.currentTarget,
-            thumb:
-              event.target instanceof Element
-                ? event.target.closest('[data-slot="slider-thumb"]')
-                : null,
-            shift: event.shiftKey,
-          };
-        }
-      }}
-      onPointerMoveCapture={(event) => {
-        if (pointer.current) {
-          pointer.current.shift = event.shiftKey;
-        }
-        dragAwareDoubleClick.onPointerMoveCapture(event);
-        onPointerMoveCapture?.(event);
-      }}
-      onPointerUpCapture={(event) => {
-        dragAwareDoubleClick.onPointerUpCapture(event);
-        onPointerUpCapture?.(event);
-        const active = pointer.current;
-        queueMicrotask(() => {
-          if (pointer.current === active) {
-            clearSnap();
-            pointer.current = null;
+    <SliderContext.Provider value={{ values, defaultValue, max, min, dragging }}>
+      <SliderPrimitive.Root
+        className={cn(
+          "relative isolate flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col",
+          className,
+        )}
+        data-slot="slider"
+        data-snap-target={snapTarget ? undefined : "false"}
+        dir={dir}
+        disabled={disabled}
+        inverted={inverted}
+        max={max}
+        min={min}
+        minStepsBetweenThumbs={minStepsBetweenThumbs}
+        onDoubleClick={dragAwareDoubleClick.onDoubleClick}
+        onLostPointerCapture={(event) => {
+          clearSnap();
+          pointer.current = null;
+          setDragging(false);
+          onLostPointerCapture?.(event);
+        }}
+        onPointerCancelCapture={(event) => {
+          clearSnap();
+          pointer.current = null;
+          setDragging(false);
+          dragAwareDoubleClick.onPointerCancelCapture(event);
+          onPointerCancelCapture?.(event);
+        }}
+        onPointerDownCapture={(event) => {
+          if (event.button !== 0 || event.isPrimary === false) {
+            event.preventDefault();
+            return;
           }
-        });
-      }}
-      onValueChange={changeValues}
-      onValueCommit={(next) => {
-        onValueCommit?.(pointer.current ? pendingValue.current : next);
-      }}
-      orientation={orientation}
-      step={step}
-      value={values}
-      {...props}
-    />
+          setDragging(!disabled);
+          dragAwareDoubleClick.onPointerDownCapture(event);
+          onPointerDownCapture?.(event);
+          if (!disabled && !event.defaultPrevented && event.button === 0) {
+            pendingValue.current = values;
+            pointer.current = {
+              root: event.currentTarget,
+              thumb:
+                event.target instanceof Element
+                  ? event.target.closest('[data-slot="slider-thumb"]')
+                  : null,
+              shift: event.shiftKey,
+            };
+          }
+        }}
+        onPointerMoveCapture={(event) => {
+          if (pointer.current) {
+            pointer.current.shift = event.shiftKey;
+          }
+          dragAwareDoubleClick.onPointerMoveCapture(event);
+          onPointerMoveCapture?.(event);
+        }}
+        onPointerUpCapture={(event) => {
+          setDragging(false);
+          dragAwareDoubleClick.onPointerUpCapture(event);
+          onPointerUpCapture?.(event);
+          const active = pointer.current;
+          queueMicrotask(() => {
+            if (pointer.current === active) {
+              clearSnap();
+              pointer.current = null;
+            }
+          });
+        }}
+        onValueChange={changeValues}
+        onValueCommit={(next) => {
+          onValueCommit?.(pointer.current ? pendingValue.current : next);
+        }}
+        orientation={orientation}
+        step={step}
+        value={values}
+        {...props}
+      />
+    </SliderContext.Provider>
   );
 }
 
@@ -254,15 +261,14 @@ function Marker({
   }) {
   const position = max === min ? 0 : (Math.min(max, Math.max(min, value)) - min) / (max - min);
 
-  const isFirst = value === min;
-  const isLast = value === max;
+  const isMin = value === min;
+  const isMax = value === max;
 
-  const labelAlignment =
-    isLast && value === max
-      ? "-right-0 left-auto translate-x-0 text-right"
-      : isFirst && value === min
-        ? "-left-0 translate-x-0"
-        : "left-0 -translate-x-1/2";
+  const labelAlignment = isMax
+    ? "-right-0 left-auto translate-x-0 text-right"
+    : isMin
+      ? "-left-0 translate-x-0"
+      : "left-0 -translate-x-1/2";
 
   return (
     <span
@@ -285,6 +291,9 @@ function Marker({
           "absolute bottom-full pb-0.5 text-[0.625rem] leading-none whitespace-nowrap text-muted-foreground",
           labelAlignment,
         )}
+        data-slot="slider-marker-label"
+        data-slot-max={isMax ? "true" : undefined}
+        data-slot-min={isMin ? "true" : undefined}
       >
         {children}
       </span>
@@ -299,7 +308,6 @@ function Markers({
   min = 0,
 }: Pick<React.ComponentProps<typeof Root>, "max" | "min" | "className"> & {
   markers?: readonly SliderMarker[];
-  offset?: number;
 }) {
   return (
     <div className={cn("absolute inset-0", className)}>
@@ -354,9 +362,32 @@ function Thumb({ className, ...props }: React.ComponentProps<typeof SliderPrimit
         "relative z-10 block shrink-0 ring-ring/50 select-none after:absolute hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50",
         className,
       )}
-      data-slot="slider-thumb"
       {...props}
+      // Snap queries rely on this slot; wrappers such as tooltip triggers must not replace it.
+      data-slot="slider-thumb"
     />
+  );
+}
+
+function Preview({
+  children,
+  disabled,
+  label,
+}: React.ComponentProps<typeof Tooltip> & {
+  disabled?: boolean;
+  label?: ((values: number[] | undefined) => string) | string;
+}) {
+  const { defaultValue, dragging, values } = useSlider();
+
+  const content = typeof label === "function" ? label(values) : (label ?? values ?? defaultValue);
+
+  return (
+    <Tooltip open={!disabled && dragging} preserveOnTrigger>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="top" sideOffset={8}>
+        {content}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -370,18 +401,9 @@ function Slider({
   markers = [],
   max = 100,
   min = 0,
-  onPointerCancelCapture,
-  onPointerDownCapture,
-  onPointerUpCapture,
   value,
   ...props
 }: React.ComponentProps<typeof Root> & { markers?: readonly SliderMarker[] }) {
-  const [dragging, setDragging] = React.useState(false);
-  const _values = React.useMemo(
-    () => (Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max]),
-    [value, defaultValue, min, max],
-  );
-
   return (
     <Root
       className={cn(markers.length > 0 && "py-2", className)}
@@ -389,18 +411,6 @@ function Slider({
       disabled={disabled}
       max={max}
       min={min}
-      onPointerCancelCapture={(event) => {
-        setDragging(false);
-        onPointerCancelCapture?.(event);
-      }}
-      onPointerDownCapture={(event) => {
-        setDragging(!disabled);
-        onPointerDownCapture?.(event);
-      }}
-      onPointerUpCapture={(event) => {
-        setDragging(false);
-        onPointerUpCapture?.(event);
-      }}
       value={value}
       {...props}
     >
@@ -408,27 +418,39 @@ function Slider({
         <Range />
       </Track>
 
-      <Markers markers={markers} max={max} min={min} />
+      <Markers
+        className="inset-1.5 [&_[data-slot=slider-marker-label][data-slot-max=true]]:-right-1.5 [&_[data-slot=slider-marker-label][data-slot-min=true]]:-left-1.5"
+        markers={markers}
+        max={max}
+        min={min}
+      />
 
-      {Array.from({ length: _values.length }, (_, index) => (
-        <Tooltip key={index} open={!disabled && dragging} preserveOnTrigger>
-          <TooltipTrigger asChild>
-            <Thumb
-              aria-label={ariaLabel}
-              aria-labelledby={ariaLabelledBy}
-              aria-valuetext={ariaValueText}
-              className="size-3 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] after:-inset-2"
-            />
-          </TooltipTrigger>
-          <TooltipContent side="top" sideOffset={8}>
-            {ariaValueText ??
-              markers.find((marker) => marker.value === _values[index])?.label ??
-              _values[index]}
-          </TooltipContent>
-        </Tooltip>
-      ))}
+      <Preview disabled={disabled}>
+        <Thumb
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
+          aria-valuetext={ariaValueText}
+          className="size-3 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] after:-inset-2"
+        />
+      </Preview>
     </Root>
   );
+}
+
+const SliderContext = React.createContext<{
+  defaultValue: number[] | undefined;
+  dragging: boolean;
+  max: number;
+  min: number;
+  values: number[] | undefined;
+} | null>(null);
+
+function useSlider() {
+  const context = React.useContext(SliderContext);
+  if (!context) {
+    throw new Error("Slider.Preview must be used within Slider.Root");
+  }
+  return context;
 }
 
 Slider.Root = Root;
@@ -438,6 +460,7 @@ Slider.Markers = Markers;
 Slider.Track = Track;
 Slider.Range = Range;
 Slider.Thumb = Thumb;
+Slider.Preview = Preview;
 
 export { Slider };
 
