@@ -911,6 +911,17 @@ export const en = {
     preferences: {
       description: "Choose the default behavior for new editing sessions",
       editing: {
+        mergeAudio: {
+          commandLabel: "Merge audio by default",
+          description: "Merge enabled audio tracks for new exports by default",
+          label: "Merge audio",
+        },
+        reset: "Reset editing settings",
+        stripMetadata: {
+          commandLabel: "Strip metadata and chapters from exports",
+          description: "Remove source container metadata and chapters from new exports by default",
+          label: "Strip metadata",
+        },
         title: "Editing",
       },
       followSegment: {
@@ -923,20 +934,9 @@ export const en = {
         description: "Start new sessions with loop playback enabled",
         label: "Loop",
       },
-      mergeAudio: {
-        commandLabel: "Merge audio by default",
-        description: "Merge enabled audio tracks for new exports by default",
-        label: "Merge audio",
-      },
       playback: {
         reset: "Reset playback settings",
         title: "Playback",
-      },
-      reset: "Reset editing settings",
-      stripMetadata: {
-        commandLabel: "Strip metadata and chapters from exports",
-        description: "Remove source container metadata and chapters from new exports by default",
-        label: "Strip metadata",
       },
       title: "Preferences",
     },
