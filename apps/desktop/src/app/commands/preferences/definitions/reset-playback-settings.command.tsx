@@ -15,7 +15,7 @@ function useResetPlaybackSettingsCommand() {
   const dispatch = useAppDispatch();
   const loopPlaybackEnabledDefault = useAppSelector(selectLoopPlaybackEnabledDefault);
   const segmentPlaybackEnabledDefault = useAppSelector(selectSegmentPlaybackEnabledDefault);
-  const label = t("settings.preferences.playback.reset");
+  const label = t("common.actions.resetToDefault");
 
   return {
     enabled:
