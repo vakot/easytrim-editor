@@ -39,8 +39,9 @@ function TimelineMarkersStatic({
 }) {
   const markers = useMemo<SliderMarker[]>(
     () =>
-      PERCENT_MARKERS.map<SliderMarker>((percent, index) => {
-        const value = framesCount > 0 ? framesCount * percent : index;
+      PERCENT_MARKERS.map<SliderMarker>((percent) => {
+        // An empty timeline uses a 0..1 scale.
+        const value = framesCount > 0 ? framesCount * percent : percent;
         return {
           value,
           label: framesCount > 0 ? formatFrameTimecode(value, frameRate) : "00:00:00:00f",
@@ -55,8 +56,6 @@ function TimelineMarkersStatic({
     <Slider.Markers
       className="-inset-bs-1 font-mono **:data-[slot=slider-marker]:bg-transparent"
       markers={markers}
-      max={framesCount > 0 ? framesCount : PERCENT_MARKERS.length - 1}
-      min={0}
     />
   );
 }
@@ -84,7 +83,7 @@ function TimelineMarkersAudioActivity({
             <Slider.Marker
               className="pointer-events-none inset-y-0 border-l"
               key={`${track.streamIndex}-${index}-${edge}`}
-              max={framesCount}
+
               style={{
                 borderColor: `hsl(${((Math.abs(track.streamIndex) * 137.508) % 360).toFixed(1)} 72% 52%)`,
               }}
@@ -112,7 +111,7 @@ function TimelineMarkersSceneActivity({
     <Slider.Marker
       className="pointer-events-none inset-y-0 border-l-2 border-destructive/70"
       key={micros}
-      max={framesCount}
+
       value={frame(micros)}
     />
   ));
@@ -142,7 +141,7 @@ function TimelineMarkersChapters({
           right: `${((framesCount - frame(chapter.endMicros)) / framesCount) * 100}%`,
         }}
       />
-      <Slider.Marker className="top-0 z-10" max={framesCount} value={frame(chapter.startMicros)}>
+      <Slider.Marker className="top-0 z-10" value={frame(chapter.startMicros)}>
         <button
           aria-label={chapter.title}
           className="absolute top-0 -translate-x-1/2 border-x-4 border-t-6 border-x-transparent border-t-primary focus-visible:outline-ring"
@@ -151,7 +150,7 @@ function TimelineMarkersChapters({
           type="button"
         />
       </Slider.Marker>
-      <Slider.Marker aria-hidden="true" max={framesCount} value={frame(chapter.endMicros)} />
+      <Slider.Marker aria-hidden="true" value={frame(chapter.endMicros)} />
     </span>
   ));
 }

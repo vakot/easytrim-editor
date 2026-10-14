@@ -246,17 +246,12 @@ function Group({
 function Marker({
   children,
   className,
-  max = 100,
-  min = 0,
   snapTarget = true,
   style,
   value,
   ...props
-}: Omit<React.ComponentProps<"span">, "value"> &
-  Omit<SliderMarker, "label"> & {
-    max?: number;
-    min?: number;
-  }) {
+}: Omit<React.ComponentProps<"span">, "value"> & Omit<SliderMarker, "label">) {
+  const { max, min } = useSlider();
   const position = max === min ? 0 : (Math.min(max, Math.max(min, value)) - min) / (max - min);
 
   const isMin = value === min;
@@ -301,9 +296,7 @@ function Marker({
 function Markers({
   className,
   markers = [],
-  max = 100,
-  min = 0,
-}: Pick<React.ComponentProps<typeof Root>, "max" | "min" | "className"> & {
+}: Pick<React.ComponentProps<typeof Root>, "className"> & {
   markers?: readonly SliderMarker[];
 }) {
   return (
@@ -312,8 +305,6 @@ function Markers({
         {markers.map((marker) => (
           <Marker
             key={`${marker.value}-${String(marker.label)}`}
-            max={max}
-            min={min}
             snapTarget={marker.snapTarget}
             value={marker.value}
           >
@@ -423,8 +414,6 @@ function Slider({
       <Markers
         className="inset-1.5 [&_[data-slot=slider-marker-label][data-slot-max=true]]:-right-1.5 [&_[data-slot=slider-marker-label][data-slot-min=true]]:-left-1.5"
         markers={markers}
-        max={max}
-        min={min}
       />
 
       {thumbValues.map((thumbValue, index) => (
@@ -460,7 +449,7 @@ const SliderContext = React.createContext<{
 function useSlider() {
   const context = React.useContext(SliderContext);
   if (!context) {
-    throw new Error("Slider.Preview must be used within Slider.Root");
+    throw new Error("Slider parts must be used within Slider.Root");
   }
   return context;
 }

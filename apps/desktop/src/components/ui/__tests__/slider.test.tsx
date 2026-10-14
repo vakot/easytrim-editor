@@ -39,7 +39,9 @@ function setup({
         <Slider.Thumb aria-label="Active" />
       </Slider.Root>
       {marker ? (
-        <Slider.Marker data-testid="target" value={50} />
+        <Slider.Root>
+          <Slider.Marker data-testid="target" value={50} />
+        </Slider.Root>
       ) : (
         <Slider.Root snapTarget={snapTarget} value={[50]}>
           <Slider.Thumb aria-label="Other" data-testid="target" />
@@ -166,8 +168,8 @@ describe("Slider snapping", () => {
         </Slider.Root>
         <Slider.Root max={1000} value={[503]}>
           <Slider.Thumb aria-label="Other" />
+          <Slider.Marker value={497} />
         </Slider.Root>
-        <Slider.Marker max={1000} value={497} />
       </Slider.Group>,
     );
     const root = screen.getByTestId("active");
@@ -232,8 +234,8 @@ describe("Slider snapping", () => {
           snap
         >
           <Slider.Thumb />
+          <Slider.Marker data-testid="direction-target" value={70} />
         </Slider.Root>
-        <Slider.Marker data-testid="direction-target" value={70} />
       </Slider.Group>,
     );
     const root = screen.getByTestId("direction");
