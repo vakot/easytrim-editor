@@ -31,6 +31,7 @@ import {
   selectEditingInstanceById,
 } from "@/app/store/slices/editing-instances-slice";
 import {
+  exportDialogTrimChanged,
   exportLaunchFailed,
   exportPlanFailed,
   exportPlanReceived,
@@ -42,6 +43,7 @@ import {
   queueEditStarted,
   selectExportDialogOpen,
   selectExportDialogRoute,
+  selectExportDialogTrim,
   selectQueueEdit,
 } from "@/app/store/slices/export-slice";
 import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
@@ -197,6 +199,12 @@ const editExportAttemptRequested =
 
       if (!restored) return;
       dispatch(queueEditStarted({ attemptId, instanceId, route: attempt.route }));
+      dispatch(
+        exportDialogTrimChanged({
+          endMicros: request.trim.endMicros,
+          startMicros: request.trim.startMicros,
+        }),
+      );
       dispatch(attempt.route === "gif" ? gifExportDialogOpened() : optimizedExportDialogOpened());
       await dispatch(refreshExportPlan());
     } catch (error: unknown) {
@@ -255,7 +263,7 @@ async function finishQueuedExportEdit(
       const updatedRequest =
         route === "gif" ? getGifRequest(getState()) : getOptimizedRequest(getState());
 
-      const updatedSnapshot = getCurrentExportSnapshot(getState());
+      const updatedSnapshot = getCurrentExportSnapshot(getState(), selectDialogExportTrim);
       if (!updatedRequest || !updatedSnapshot) return;
       if (
         normalizeSourceKey(updatedRequest.sourcePath) !==
@@ -283,6 +291,7 @@ const openOptimizedExportDialog =
   async (dispatch, getState) => {
     const settings = getInitialSettings(getState());
     if (!settings) return;
+    dispatch(exportDialogTrimChanged(timelineTrim(getState())));
     dispatch(optimizedExportDialogOpened());
     await dispatch(refreshExportPlan());
     diagnostics.action("export.dialog.opened", origin);
@@ -292,6 +301,7 @@ const openGifExportDialog =
   (origin: DiagnosticOrigin = { id: "gif-export", type: "button" }): AppThunk =>
   async (dispatch, getState) => {
     if (!getInitialSettings(getState())) return;
+    dispatch(exportDialogTrimChanged(timelineTrim(getState())));
     dispatch(gifExportDialogOpened());
     await dispatch(refreshExportPlan());
     diagnostics.action("export.dialog.opened", origin);
@@ -318,6 +328,13 @@ const exportSettingsChangedRequested =
     if (selectExportDialogOpen(getState())) await dispatch(refreshExportPlan());
   };
 
+const exportTrimChangedRequested =
+  (trim: ExportTrim): AppThunk =>
+  async (dispatch, getState) => {
+    dispatch(exportDialogTrimChanged(trim));
+    if (selectExportDialogOpen(getState())) await dispatch(refreshExportPlan());
+  };
+
 const refreshExportPlan = (): AppThunk => async (dispatch, getState) => {
   const initialState = getState();
   const route = selectExportDialogRoute(initialState);
@@ -329,11 +346,16 @@ const refreshExportPlan = (): AppThunk => async (dispatch, getState) => {
   const analysis =
     route === "gif"
       ? { state: initialState, status: "ready" as const }
-      : await ensureLoudnessAnalysis(dispatch, getState, {
-          instanceId: initialInstance.id,
-          loadToken: initialState.source.loadToken,
-          sourcePath: initialSource.sourcePath,
-        });
+      : await ensureLoudnessAnalysis(
+          dispatch,
+          getState,
+          {
+            instanceId: initialInstance.id,
+            loadToken: initialState.source.loadToken,
+            sourcePath: initialSource.sourcePath,
+          },
+          selectDialogExportTrim,
+        );
 
   if (analysis.status === "failed") {
     dispatch(
@@ -422,14 +444,21 @@ async function startEditingInstanceExport(
   if (initialInstance.draftAvailable === false || initialState.importWorkflow.isNativeDialogOpen)
     return;
 
+  // Dialog routes export the dialog's segment; Fast and Audio export the timeline trim.
+  const trimOf = route === "optimized" || route === "gif" ? selectDialogExportTrim : selectTrim;
   const analysis =
     route === "gif"
       ? { state: initialState, status: "ready" as const }
-      : await ensureLoudnessAnalysis(dispatch, getState, {
-          instanceId: initialInstance.id,
-          loadToken: initialState.source.loadToken,
-          sourcePath: initialSource.sourcePath,
-        });
+      : await ensureLoudnessAnalysis(
+          dispatch,
+          getState,
+          {
+            instanceId: initialInstance.id,
+            loadToken: initialState.source.loadToken,
+            sourcePath: initialSource.sourcePath,
+          },
+          trimOf,
+        );
 
   if (analysis.status === "failed") {
     dispatch(
@@ -446,7 +475,7 @@ async function startEditingInstanceExport(
   const instance = selectActiveEditingInstance(currentState);
   const source = selectSourceSelection(currentState);
   const media = selectSourceMedia(currentState);
-  const trim = selectTrim(currentState);
+  const trim = trimOf(currentState);
   if (
     !instance ||
     !source ||
@@ -473,7 +502,7 @@ async function startEditingInstanceExport(
   let request: AudioExportRequest | FastExportRequest | GifExportRequest | OptimizedExportRequest =
     initialRequest;
 
-  const snapshot = getCurrentExportSnapshot(currentState);
+  const snapshot = getCurrentExportSnapshot(currentState, trimOf);
   if (!snapshot) return;
 
   // Persist the working draft at the export boundary, while the attempt keeps
@@ -554,9 +583,9 @@ async function startEditingInstanceExport(
   }
 }
 
-function getCurrentExportSnapshot(state: ReturnType<Parameters<AppThunk>[1]>) {
+function getCurrentExportSnapshot(state: ExportState, trimOf: ExportTrimSelector = selectTrim) {
   const source = selectSourceSelection(state);
-  const trim = selectTrim(state);
+  const trim = trimOf(state);
   if (!source || !trim) return null;
   return createEditorSnapshot({
     source,
@@ -569,6 +598,20 @@ function getCurrentExportSnapshot(state: ReturnType<Parameters<AppThunk>[1]>) {
     audioTracks: selectAudioTracks(state).map(serializeAudioTrackSettings),
     mergeAudio: selectMergeAudio(state),
   });
+}
+
+type ExportState = ReturnType<Parameters<AppThunk>[1]>;
+type ExportTrim = { endMicros: number; startMicros: number };
+type ExportTrimSelector = (state: ExportState) => ExportTrim | null;
+
+function selectDialogExportTrim(state: ExportState): ExportTrim | null {
+  const trim = selectTrim(state);
+  return trim ? (selectExportDialogTrim(state) ?? trim) : null;
+}
+
+function timelineTrim(state: ExportState): ExportTrim | null {
+  const trim = selectTrim(state);
+  return trim ? { endMicros: trim.endMicros, startMicros: trim.startMicros } : null;
 }
 
 function currentSourceKey(state: ReturnType<Parameters<AppThunk>[1]>) {
@@ -604,7 +647,7 @@ function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportR
   return {
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-    audioTracks: exportAudioTracks(state),
+    audioTracks: exportAudioTracks(state, trim),
     audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
     mergeAudio: selectMergeAudio(state),
     stripMetadata: state.preferences.stripMetadataOnExport,
@@ -623,7 +666,7 @@ function getAudioRequest(
   return {
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-    audioTracks: exportAudioTracks(state),
+    audioTracks: exportAudioTracks(state, trim),
     audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
     mergeAudio: selectMergeAudio(state),
     stripMetadata: state.preferences.stripMetadataOnExport,
@@ -635,7 +678,7 @@ function getOptimizedRequest(
   state: ReturnType<Parameters<AppThunk>[1]>,
 ): OptimizedExportRequest | null {
   const source = selectSourceSelection(state);
-  const trim = selectTrim(state);
+  const trim = selectDialogExportTrim(state);
   const media = selectSourceMedia(state);
   const settings = getInitialSettings(state);
   if (!source || !trim || !media || !settings) return null;
@@ -643,7 +686,7 @@ function getOptimizedRequest(
   return {
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-    audioTracks: exportAudioTracks(state),
+    audioTracks: exportAudioTracks(state, trim),
     audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
     mergeAudio: selectMergeAudio(state),
     stripMetadata: state.preferences.stripMetadataOnExport,
@@ -662,7 +705,7 @@ function getOptimizedRequest(
 
 function getGifRequest(state: ReturnType<Parameters<AppThunk>[1]>): GifExportRequest | null {
   const source = selectSourceSelection(state);
-  const trim = selectTrim(state);
+  const trim = selectDialogExportTrim(state);
   const settings = getInitialSettings(state, "gif");
   if (!source || !trim || !settings) return null;
   const transform = exportTransform(state);
@@ -695,21 +738,22 @@ function exportTransform(state: ReturnType<Parameters<AppThunk>[1]>) {
   );
 }
 
-function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
-  const trim = selectTrim(state);
+function exportAudioTracks(state: ExportState, trim: ExportTrim) {
   const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
   const tracks = selectAudioTracks(state);
   return selectedAudioTracks(tracks).map((selection) => {
     const track = tracks.find((candidate) => candidate.streamIndex === selection.streamIndex);
     if (!track) return selection;
-    const cacheKey = trim
-      ? audioTrackLoudnessInputsKey(sourcePath, selection.streamIndex, trim, selection.processing)
-      : null;
+    const cacheKey = audioTrackLoudnessInputsKey(
+      sourcePath,
+      selection.streamIndex,
+      trim,
+      selection.processing,
+    );
 
     return {
       ...selection,
       ...(selection.processing.loudnessNormalization !== undefined &&
-      cacheKey &&
       track.loudnessAnalysis.status === "ready" &&
       track.loudnessAnalysis.cacheKey === cacheKey
         ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
@@ -722,12 +766,13 @@ async function ensureLoudnessAnalysis(
   dispatch: Parameters<AppThunk>[0],
   getState: Parameters<AppThunk>[1],
   context: { instanceId: string; loadToken: number; sourcePath: string },
+  trimOf: ExportTrimSelector,
 ): Promise<LoudnessAnalysisResult> {
   const maxPasses = 8;
   for (let pass = 0; pass < maxPasses; pass += 1) {
     let state = getState();
     if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
-    const trim = selectTrim(state);
+    const trim = trimOf(state);
     if (!trim) return { status: "failed" };
     const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
 
@@ -750,7 +795,7 @@ async function ensureLoudnessAnalysis(
     for (const pendingTrack of missing) {
       state = getState();
       if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
-      const currentTrim = selectTrim(state);
+      const currentTrim = trimOf(state);
       const currentTrack = selectAudioTracks(state).find(
         (track) => track.streamIndex === pendingTrack.streamIndex,
       );
@@ -782,10 +827,10 @@ async function ensureLoudnessAnalysis(
         return { status: "failed" };
       }
 
-      await dispatch(analyzeTrackLoudness(currentTrack.streamIndex));
+      await dispatch(analyzeTrackLoudness(currentTrack.streamIndex, undefined, currentTrim));
       state = getState();
       if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
-      const afterTrim = selectTrim(state);
+      const afterTrim = trimOf(state);
       const afterTrack = selectAudioTracks(state).find(
         (track) => track.streamIndex === pendingTrack.streamIndex,
       );
@@ -814,7 +859,7 @@ async function ensureLoudnessAnalysis(
 
   const state = getState();
   if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
-  const trim = selectTrim(state);
+  const trim = trimOf(state);
   if (!trim) return { status: "failed" };
   const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
   const allAnalysesReady = selectAudioTracks(state).every((track) => {
@@ -877,6 +922,7 @@ export {
   cancelOptimizedExportDialogRequested,
   editExportAttemptRequested,
   exportSettingsChangedRequested,
+  exportTrimChangedRequested,
   openGifExportDialog,
   openOptimizedExportDialog,
   refreshExportPlan,

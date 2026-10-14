@@ -24,11 +24,12 @@ const activeLoudnessAnalysisJobs = new Map<string, Promise<void>>();
 function analyzeTrackLoudness(
   streamIndex: number,
   processingOverride?: AudioTrackProcessing,
+  trimOverride?: { endMicros: number; startMicros: number },
 ): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
     const state = getState();
     const source = selectSourceSelection(state);
-    const trim = selectTrim(state);
+    const trim = trimOverride ?? selectTrim(state);
     const track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
     if (!source || !trim || !track) return;
 
