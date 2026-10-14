@@ -346,16 +346,11 @@ const refreshExportPlan = (): AppThunk => async (dispatch, getState) => {
   const analysis =
     route === "gif"
       ? { state: initialState, status: "ready" as const }
-      : await ensureLoudnessAnalysis(
-          dispatch,
-          getState,
-          {
-            instanceId: initialInstance.id,
-            loadToken: initialState.source.loadToken,
-            sourcePath: initialSource.sourcePath,
-          },
-          selectDialogExportTrim,
-        );
+      : await ensureLoudnessAnalysis(dispatch, getState, {
+          instanceId: initialInstance.id,
+          loadToken: initialState.source.loadToken,
+          sourcePath: initialSource.sourcePath,
+        });
 
   if (analysis.status === "failed") {
     dispatch(
@@ -449,16 +444,11 @@ async function startEditingInstanceExport(
   const analysis =
     route === "gif"
       ? { state: initialState, status: "ready" as const }
-      : await ensureLoudnessAnalysis(
-          dispatch,
-          getState,
-          {
-            instanceId: initialInstance.id,
-            loadToken: initialState.source.loadToken,
-            sourcePath: initialSource.sourcePath,
-          },
-          trimOf,
-        );
+      : await ensureLoudnessAnalysis(dispatch, getState, {
+          instanceId: initialInstance.id,
+          loadToken: initialState.source.loadToken,
+          sourcePath: initialSource.sourcePath,
+        });
 
   if (analysis.status === "failed") {
     dispatch(
@@ -647,7 +637,7 @@ function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportR
   return {
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-    audioTracks: exportAudioTracks(state, trim),
+    audioTracks: exportAudioTracks(state),
     audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
     mergeAudio: selectMergeAudio(state),
     stripMetadata: state.preferences.stripMetadataOnExport,
@@ -666,7 +656,7 @@ function getAudioRequest(
   return {
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-    audioTracks: exportAudioTracks(state, trim),
+    audioTracks: exportAudioTracks(state),
     audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
     mergeAudio: selectMergeAudio(state),
     stripMetadata: state.preferences.stripMetadataOnExport,
@@ -686,7 +676,7 @@ function getOptimizedRequest(
   return {
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-    audioTracks: exportAudioTracks(state, trim),
+    audioTracks: exportAudioTracks(state),
     audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
     mergeAudio: selectMergeAudio(state),
     stripMetadata: state.preferences.stripMetadataOnExport,
@@ -738,22 +728,22 @@ function exportTransform(state: ReturnType<Parameters<AppThunk>[1]>) {
   );
 }
 
-function exportAudioTracks(state: ExportState, trim: ExportTrim) {
+// Loudness is measured on the timeline selection so exports apply the same gain as playback.
+function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
+  const trim = selectTrim(state);
   const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
   const tracks = selectAudioTracks(state);
   return selectedAudioTracks(tracks).map((selection) => {
     const track = tracks.find((candidate) => candidate.streamIndex === selection.streamIndex);
     if (!track) return selection;
-    const cacheKey = audioTrackLoudnessInputsKey(
-      sourcePath,
-      selection.streamIndex,
-      trim,
-      selection.processing,
-    );
+    const cacheKey = trim
+      ? audioTrackLoudnessInputsKey(sourcePath, selection.streamIndex, trim, selection.processing)
+      : null;
 
     return {
       ...selection,
       ...(selection.processing.loudnessNormalization !== undefined &&
+      cacheKey &&
       track.loudnessAnalysis.status === "ready" &&
       track.loudnessAnalysis.cacheKey === cacheKey
         ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
@@ -766,13 +756,12 @@ async function ensureLoudnessAnalysis(
   dispatch: Parameters<AppThunk>[0],
   getState: Parameters<AppThunk>[1],
   context: { instanceId: string; loadToken: number; sourcePath: string },
-  trimOf: ExportTrimSelector,
 ): Promise<LoudnessAnalysisResult> {
   const maxPasses = 8;
   for (let pass = 0; pass < maxPasses; pass += 1) {
     let state = getState();
     if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
-    const trim = trimOf(state);
+    const trim = selectTrim(state);
     if (!trim) return { status: "failed" };
     const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
 
@@ -795,7 +784,7 @@ async function ensureLoudnessAnalysis(
     for (const pendingTrack of missing) {
       state = getState();
       if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
-      const currentTrim = trimOf(state);
+      const currentTrim = selectTrim(state);
       const currentTrack = selectAudioTracks(state).find(
         (track) => track.streamIndex === pendingTrack.streamIndex,
       );
@@ -827,10 +816,10 @@ async function ensureLoudnessAnalysis(
         return { status: "failed" };
       }
 
-      await dispatch(analyzeTrackLoudness(currentTrack.streamIndex, undefined, currentTrim));
+      await dispatch(analyzeTrackLoudness(currentTrack.streamIndex));
       state = getState();
       if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
-      const afterTrim = trimOf(state);
+      const afterTrim = selectTrim(state);
       const afterTrack = selectAudioTracks(state).find(
         (track) => track.streamIndex === pendingTrack.streamIndex,
       );
@@ -859,7 +848,7 @@ async function ensureLoudnessAnalysis(
 
   const state = getState();
   if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
-  const trim = trimOf(state);
+  const trim = selectTrim(state);
   if (!trim) return { status: "failed" };
   const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
   const allAnalysesReady = selectAudioTracks(state).every((track) => {
