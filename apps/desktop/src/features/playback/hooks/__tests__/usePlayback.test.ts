@@ -21,7 +21,7 @@ describe("Timeline frame boundary", () => {
     { numerator: 60, denominator: 1 },
     { numerator: 30_000, denominator: 1_001 },
     { numerator: 24_000, denominator: 1_001 },
-  ])("moves the playhead through the final frame to EOF at $numerator/$denominator fps", (rate) => {
+  ])("holds the final frame until EOF at $numerator/$denominator fps", (rate) => {
     const frameRate = { ...rate, displayValue: rate.numerator / rate.denominator };
     const frames = 60;
     const duration = Math.round((frames * 1_000_000 * rate.denominator) / rate.numerator);
@@ -36,12 +36,10 @@ describe("Timeline frame boundary", () => {
     const { rerender, result } = renderHook(() => useTimelinePlayback(frameRate));
     expect(result.current.framesCount).toBe(frames);
     expect(result.current.currentFrame).toBe(frames - 1);
-    expect(result.current.playheadFrame).toBeCloseTo(frames - 0.5, 2);
 
     controller.snapshot = { durationMicros: duration, positionMicros: duration };
     rerender();
     expect(result.current.currentFrame).toBe(frames);
-    expect(result.current.playheadFrame).toBe(frames);
     result.current.seekFrame(frames);
     expect(controller.seek).toHaveBeenLastCalledWith(
       duration,
@@ -56,6 +54,5 @@ describe("Timeline frame boundary", () => {
 
     expect(result.current.framesCount).toBe(60);
     expect(result.current.currentFrame).toBe(30);
-    expect(result.current.playheadFrame).toBe(30);
   });
 });

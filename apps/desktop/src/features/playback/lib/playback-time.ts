@@ -64,27 +64,11 @@ function presentedFrameAt(
   return Math.max(0, frame);
 }
 
-/** Continuous playhead position in frame units, so it travels through each frame to EOF. */
-function playheadFrameAt(
-  micros: number,
-  framesCount: number,
-  durationMicros: number,
-  frameRate: FrameRate,
-) {
-  const frame = presentedFrameAt(micros, framesCount, durationMicros, frameRate);
-  if (frame >= framesCount) return framesCount;
-
-  const start = frameToPlaybackMicros(frame, framesCount, durationMicros, frameRate);
-  const end = frameToPlaybackMicros(frame + 1, framesCount, durationMicros, frameRate);
-  return end > start ? frame + Math.min(1, Math.max(0, (micros - start) / (end - start))) : frame;
-}
-
 export {
   frameCountFor,
   framePresentationMicros,
   frameToMicros,
   frameToPlaybackMicros,
   microsToFrame,
-  playheadFrameAt,
   presentedFrameAt,
 };

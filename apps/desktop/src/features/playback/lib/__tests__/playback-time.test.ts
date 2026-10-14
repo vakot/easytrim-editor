@@ -5,7 +5,6 @@ import {
   framePresentationMicros,
   frameToPlaybackMicros,
   microsToFrame,
-  playheadFrameAt,
   presentedFrameAt,
 } from "../playback-time";
 
@@ -39,14 +38,14 @@ describe("playback frame conversion", () => {
     expect(presentedFrameAt(duration, 300, duration, fractionalRate)).toBe(300);
   });
 
-  it("moves the playhead continuously within a frame and reaches EOF at the duration", () => {
+  it("holds each frame for its whole duration and reaches EOF only at the duration", () => {
     const rate = { denominator: 1, numerator: 30 };
-    expect(playheadFrameAt(1_983_334, 60, 2_000_000, rate)).toBeCloseTo(59.5, 3);
-    expect(playheadFrameAt(1_999_999, 60, 2_000_000, rate)).toBeLessThan(60);
-    expect(playheadFrameAt(2_000_000, 60, 2_000_000, rate)).toBe(60);
-    // A partial final frame still ends at EOF.
-    expect(playheadFrameAt(1_467_000, 44, 1_467_000, rate)).toBe(44);
-    expect(playheadFrameAt(1_450_000, 44, 1_467_000, rate)).toBeCloseTo(43.5, 1);
+    expect(presentedFrameAt(1_966_667, 60, 2_000_000, rate)).toBe(59);
+    expect(presentedFrameAt(1_999_999, 60, 2_000_000, rate)).toBe(59);
+    expect(presentedFrameAt(2_000_000, 60, 2_000_000, rate)).toBe(60);
+    // A partial final frame lasts until EOF.
+    expect(presentedFrameAt(1_466_999, 44, 1_467_000, rate)).toBe(43);
+    expect(presentedFrameAt(1_467_000, 44, 1_467_000, rate)).toBe(44);
   });
 
   it("presents a frame from its midpoint and EOF from the final frame", () => {
