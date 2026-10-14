@@ -8,6 +8,7 @@ import {
   editingSettingsReset,
   layoutDensityChanged,
   layoutReset,
+  playbackSettingsReset,
   preferenceChanged,
   preferencesReducer,
   primaryColorChanged,
@@ -80,6 +81,30 @@ describe("preferences Redux domain", () => {
     });
   });
 
+  it("resets only Playback settings", () => {
+    const changed = preferencesReducer(
+      preferencesReducer(
+        preferencesReducer(
+          undefined,
+          preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }),
+        ),
+        preferenceChanged({ key: "segmentPlaybackEnabledDefault", enabled: false }),
+      ),
+      preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }),
+    );
+
+    const state = preferencesReducer(changed, playbackSettingsReset());
+
+    expect(state.loopPlaybackEnabledDefault).toBe(DEFAULT_PREFERENCES.loopPlaybackEnabledDefault);
+    expect(state.segmentPlaybackEnabledDefault).toBe(
+      DEFAULT_PREFERENCES.segmentPlaybackEnabledDefault,
+    );
+    expect(state.mergeAudioEnabledDefault).toBe(true);
+    expect(preferencesReducer(changed, editingSettingsReset()).loopPlaybackEnabledDefault).toBe(
+      false,
+    );
+  });
+
   it("persists the changelog seen marker without resetting it with preferences", () => {
     const seenState = preferencesReducer(undefined, changelogVersionSeen("1.10.4"));
     const resetState = preferencesReducer(seenState, editingSettingsReset());
@@ -117,6 +142,8 @@ describe("preferences Redux domain", () => {
     const state = preferencesReducer(
       {
         autoStartQueueEnabled: false,
+        loopPlaybackEnabledDefault: true,
+        segmentPlaybackEnabledDefault: true,
         mergeAudioEnabledDefault: true,
         stripMetadataOnExport: true,
         deleteSourceOnRenderFinish: true,
@@ -190,6 +217,8 @@ describe("preferences Redux domain", () => {
   it("selects focused preference values", () => {
     const preferences: Preferences = {
       autoStartQueueEnabled: true,
+      loopPlaybackEnabledDefault: true,
+      segmentPlaybackEnabledDefault: true,
       mergeAudioEnabledDefault: true,
       stripMetadataOnExport: true,
       deleteSourceOnRenderFinish: false,

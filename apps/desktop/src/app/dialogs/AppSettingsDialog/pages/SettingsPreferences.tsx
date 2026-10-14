@@ -27,6 +27,35 @@ function SettingsPreferences() {
 
   return (
     <>
+      <SettingsSection title={t("settings.preferences.playback.title")}>
+        <SettingRow
+          description={t("settings.preferences.loopPlayback.description")}
+          label={t("settings.preferences.loopPlayback.label")}
+        >
+          <CommandSwitch
+            aria-label={t("settings.preferences.loopPlayback.label")}
+            commandId="preference-loop-playback"
+          />
+        </SettingRow>
+
+        <SettingRow
+          description={t("settings.preferences.followSegment.description")}
+          label={t("settings.preferences.followSegment.label")}
+        >
+          <CommandSwitch
+            aria-label={t("settings.preferences.followSegment.label")}
+            commandId="preference-segment-playback"
+          />
+        </SettingRow>
+
+        <SettingRow label={t("settings.preferences.playback.reset")}>
+          <CommandReset
+            aria-label={t("settings.preferences.playback.reset")}
+            commandId="reset-playback-settings"
+          />
+        </SettingRow>
+      </SettingsSection>
+
       <SettingsSection title={t("settings.preferences.editing.title")}>
         <SettingRow
           description={t("settings.preferences.mergeAudio.description")}

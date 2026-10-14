@@ -928,6 +928,10 @@ export const en = {
         description: "Merge enabled audio tracks for new exports by default",
         label: "Merge audio",
       },
+      playback: {
+        reset: "Reset playback settings",
+        title: "Playback",
+      },
       reset: "Reset editing settings",
       stripMetadata: {
         commandLabel: "Strip metadata and chapters from exports",
