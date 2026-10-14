@@ -83,6 +83,8 @@ function Root({
       const fraction = (requested - min) / (max - min);
       const coordinate = origin + thumbSize / 2 + (reverse ? 1 - fraction : fraction) * travel;
       const scope = active.root.closest('[data-slot="slider-group"]') ?? active.root;
+      // Shared-scale groups snap to declared values; layout rounding is lossy on long ranges.
+      const shared = scope.hasAttribute("data-shared-scale");
       let distance = snapThreshold;
       let snapped: number | undefined;
       if (travel > 0 && max > min) {
@@ -95,18 +97,31 @@ function Root({
           )
             continue;
           if ((target.closest('[data-slot="slider-group"]') ?? active.root) !== scope) continue;
-          const targetBounds = target.getBoundingClientRect();
-          const targetCoordinate = vertical
-            ? targetBounds.top + targetBounds.height / 2
-            : targetBounds.left + targetBounds.width / 2;
+          let targetValue: number;
+          let targetDistance: number;
+          if (shared) {
+            targetValue = Number(
+              target.getAttribute("data-slot") === "slider-marker"
+                ? target.getAttribute("data-snap-value")
+                : target.getAttribute("aria-valuenow"),
+            );
+            if (!Number.isFinite(targetValue)) continue;
+            targetDistance = (Math.abs(targetValue - requested) / (max - min)) * travel;
+          } else {
+            const targetBounds = target.getBoundingClientRect();
+            const targetCoordinate = vertical
+              ? targetBounds.top + targetBounds.height / 2
+              : targetBounds.left + targetBounds.width / 2;
 
-          const targetFraction = (targetCoordinate - origin - thumbSize / 2) / travel;
-          const targetValue = min + (reverse ? 1 - targetFraction : targetFraction) * (max - min);
+            const targetFraction = (targetCoordinate - origin - thumbSize / 2) / travel;
+            targetValue = min + (reverse ? 1 - targetFraction : targetFraction) * (max - min);
+            targetDistance = Math.abs(targetCoordinate - coordinate);
+          }
+
           const rounded = Number((min + Math.round((targetValue - min) / step) * step).toFixed(10));
           const gap = step * minStepsBetweenThumbs;
           const lower = index > 0 ? next[index - 1]! + gap : min;
           const upper = index < next.length - 1 ? next[index + 1]! - gap : max;
-          const targetDistance = Math.abs(targetCoordinate - coordinate);
           if (
             targetValue < min ||
             targetValue > max ||
@@ -207,8 +222,20 @@ function Root({
   );
 }
 
-function Group({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("relative", className)} data-slot="slider-group" {...props} />;
+/** `sharedScale`: every root and marker in the group uses one value-to-position mapping. */
+function Group({
+  className,
+  sharedScale = false,
+  ...props
+}: React.ComponentProps<"div"> & { sharedScale?: boolean }) {
+  return (
+    <div
+      className={cn("relative", className)}
+      data-shared-scale={sharedScale ? "" : undefined}
+      data-slot="slider-group"
+      {...props}
+    />
+  );
 }
 
 function Marker({
@@ -224,6 +251,7 @@ function Marker({
     <span
       className={cn("absolute w-0", className)}
       data-slot="slider-marker"
+      data-snap-value={value}
       style={{ left: `${position * 100}%`, ...style }}
       {...props}
     />
@@ -255,6 +283,7 @@ function Markers({
           <span
             className="pointer-events-none absolute top-1/2 h-3 w-px -translate-1/2 bg-muted-foreground/70"
             data-slot="slider-marker"
+            data-snap-value={marker.value}
             key={`${marker.value}-${String(marker.label)}`}
             style={{
               left: `calc(${position * 100}% + ${0.375 - position * 0.75}rem)`,

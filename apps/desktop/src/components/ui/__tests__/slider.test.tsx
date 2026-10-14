@@ -151,6 +151,34 @@ describe("Slider snapping", () => {
     fireEvent.pointerCancel(root, { pointerId: 1 });
     expect(root).not.toHaveAttribute("data-snap-active");
   });
+  it("snaps to declared values instead of layout positions in a shared-scale group", () => {
+    const change = vi.fn();
+    render(
+      <Slider.Group sharedScale>
+        <Slider.Root
+          data-testid="active"
+          defaultValue={[10]}
+          max={1000}
+          onValueChange={change}
+          snap
+        >
+          <Slider.Thumb aria-label="Active" />
+        </Slider.Root>
+        <Slider.Root max={1000} value={[503]}>
+          <Slider.Thumb aria-label="Other" />
+        </Slider.Root>
+        <Slider.Marker max={1000} value={497} />
+      </Slider.Group>,
+    );
+    const root = screen.getByTestId("active");
+    bounds(root, 0, 100);
+    drag(root, false, 50.4);
+    expect(change).toHaveBeenLastCalledWith([503]);
+    drag(root, false, 49.6);
+    expect(change).toHaveBeenLastCalledWith([497]);
+    drag(root, false, 70);
+    expect(change).toHaveBeenLastCalledWith([700]);
+  });
   it("snaps to legacy Markers in its own root without a group", () => {
     const change = vi.fn();
     const { container } = render(
