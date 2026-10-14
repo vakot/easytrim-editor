@@ -735,4 +735,22 @@ describe("playback controller", () => {
     await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
     controller.dispose();
   });
+
+  it("keeps playing after the pause event queued by the loop restart", async () => {
+    const playback = createPlaybackDriver();
+    const controller = createPlaybackController(playback.driver, 10_000_000);
+    controller.setOptions({
+      loop: true,
+      segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
+    });
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+    playback.playbackFrameCallback(0, 4.01);
+    playback.observer.onPause(true);
+
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    expect(playback.driver.video.play).toHaveBeenCalledTimes(2);
+    controller.dispose();
+  });
 });

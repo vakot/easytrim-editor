@@ -117,6 +117,9 @@ class PlaybackController {
           return;
         }
         if (this.lifecycle === "paused") return;
+        // A pause event queued by our own pause() (e.g. the loop restart seek) can arrive after
+        // startup began. It must not cancel the startup; only a requested media start is real.
+        if (this.lifecycle === "starting" && !this.mediaStartRequested) return;
         this.pause();
       },
       onPlay: () => {
@@ -318,7 +321,7 @@ class PlaybackController {
 
   private handleRangeEnd(source: PlaybackEndSource) {
     const range = this.playbackRange();
-    if (this.lifecycle !== "paused" && this.options.loop && range.endMicros > range.startMicros) {
+    if (this.lifecycle === "playing" && this.options.loop && range.endMicros > range.startMicros) {
       this.seek(range.startMicros);
       this.play();
       return;
