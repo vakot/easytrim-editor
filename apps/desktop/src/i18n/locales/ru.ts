@@ -1171,7 +1171,6 @@ export const ru = {
       playheadPosition: "Позиция воспроизведения",
       seconds: "{{value}} с",
       startsAt: "Начинается в {{time}}",
-      tools: "Инструменты временной шкалы видео",
       track: "Временная шкала обрезки видео",
     },
     audioMeter: {

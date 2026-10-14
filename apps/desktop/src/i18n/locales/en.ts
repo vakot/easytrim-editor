@@ -1140,7 +1140,6 @@ export const en = {
       playheadPosition: "Playhead position",
       seconds: "{{value}} seconds",
       startsAt: "Starts at {{time}}",
-      tools: "Video timeline tools",
       track: "Video trim timeline",
     },
     audioMeter: {
