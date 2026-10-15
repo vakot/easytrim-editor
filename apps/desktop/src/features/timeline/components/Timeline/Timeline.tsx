@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useDragAwareDoubleClick } from "@/components/ui/useDragAwareDoubleClick";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -221,6 +222,7 @@ function Handle({
   maxMicros,
   micros,
   minMicros = 0,
+  onDoubleClick,
   onDrag,
   onDragEnd,
   onDragStart,
@@ -240,6 +242,8 @@ function Handle({
   const [dragging, setDragging] = React.useState(false);
   const [dragSnapped, setDragSnapped] = React.useState(false);
   const snapActive = (dragging && dragSnapped) || (scrubbed && timeline.scrubSnapped);
+  // A press that moved before release (a drag) must not complete a double click.
+  const doubleClick = useDragAwareDoubleClick<HTMLSpanElement>(onDoubleClick);
 
   function endDrag(event: React.PointerEvent<HTMLSpanElement>) {
     if (!dragging) return;
@@ -261,6 +265,7 @@ function Handle({
       data-dragging={dragging ? "" : undefined}
       data-slot="timeline-handle"
       data-snap-active={snapActive ? "" : undefined}
+      onDoubleClick={doubleClick.onDoubleClick}
       onKeyDown={(event) => {
         onKeyDown?.(event);
         if (inactive || event.defaultPrevented) return;
@@ -282,6 +287,7 @@ function Handle({
       }}
       onLostPointerCapture={endDrag}
       onPointerCancel={endDrag}
+      onPointerCancelCapture={doubleClick.onPointerCancelCapture}
       onPointerDown={(event) => {
         // Handles own their drag; the timeline behind them must not scrub.
         event.stopPropagation();
@@ -290,13 +296,16 @@ function Handle({
         setDragging(true);
         onDragStart?.(timeline.pointerMicros(event, snapExclude).micros);
       }}
+      onPointerDownCapture={doubleClick.onPointerDownCapture}
       onPointerMove={(event) => {
         if (!dragging) return;
         const { micros: next, snapped } = timeline.pointerMicros(event, snapExclude);
         setDragSnapped(snapped);
         onDrag?.(next);
       }}
+      onPointerMoveCapture={doubleClick.onPointerMoveCapture}
       onPointerUp={endDrag}
+      onPointerUpCapture={doubleClick.onPointerUpCapture}
       role="slider"
       style={{ left: `${percentOf(micros, timeline.durationMicros)}%`, ...style }}
       tabIndex={inactive ? -1 : 0}

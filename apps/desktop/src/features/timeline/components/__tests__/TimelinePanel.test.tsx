@@ -275,6 +275,22 @@ describe("Timeline trim editing", () => {
     expect(store.getState().trim.value).toMatchObject({ startMicros: 0, endMicros: 5_000_000 });
   });
 
+  it("ignores a double click completed by a drag", () => {
+    const store = renderPanel({ start: 1_000_000, end: 3_000_000 });
+    layOutTimeline();
+    const start = screen.getByRole("slider", { name: "Trim start" });
+
+    // Click and release, then click, hold and drag: the second release must not reset.
+    fireEvent.pointerDown(start, { button: 0, clientX: 48, pointerId: 1 });
+    fireEvent.pointerUp(start, { clientX: 48, pointerId: 1 });
+    fireEvent.pointerDown(start, { button: 0, clientX: 48, pointerId: 1 });
+    fireEvent.pointerMove(start, { clientX: 72, pointerId: 1 });
+    fireEvent.pointerUp(start, { clientX: 72, pointerId: 1 });
+    fireEvent.doubleClick(start);
+
+    expect(store.getState().trim.value?.startMicros).toBe(1_500_000);
+  });
+
   it("snaps a dragged boundary to a frame, pauses once, and resumes only prior playback", () => {
     const store = renderPanel({ isPlaying: true });
     layOutTimeline();
