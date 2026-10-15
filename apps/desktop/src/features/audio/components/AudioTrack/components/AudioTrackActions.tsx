@@ -75,6 +75,14 @@ function AudioTrackDropdownMenuContent({ streamIndex }: AudioTrackActionsProps) 
 
       <DropdownMenuSeparator />
 
+      <AudioTrackActivityMenuCheckboxItem streamIndex={streamIndex}>
+        <DropdownMenuCheckboxItem keepOpen>
+          <AudioTrackActivityLabel streamIndex={streamIndex} />
+        </DropdownMenuCheckboxItem>
+      </AudioTrackActivityMenuCheckboxItem>
+
+      <DropdownMenuSeparator />
+
       <AudioTrackDefaultMenuCheckboxItem streamIndex={streamIndex}>
         <DropdownMenuCheckboxItem keepOpen>
           {t("audio.tracks.metadata.fields.default.label")}
@@ -119,6 +127,14 @@ function AudioTrackContextMenuContent({ streamIndex }: AudioTrackActionsProps) {
       <AudioTrackToggleMenuCheckboxItem streamIndex={streamIndex}>
         <ContextMenuCheckboxItem keepOpen>{t("common.actions.enable")}</ContextMenuCheckboxItem>
       </AudioTrackToggleMenuCheckboxItem>
+
+      <ContextMenuSeparator />
+
+      <AudioTrackActivityMenuCheckboxItem streamIndex={streamIndex}>
+        <ContextMenuCheckboxItem keepOpen>
+          <AudioTrackActivityLabel streamIndex={streamIndex} />
+        </ContextMenuCheckboxItem>
+      </AudioTrackActivityMenuCheckboxItem>
 
       <ContextMenuSeparator />
 
@@ -169,6 +185,36 @@ function AudioTrackToggleMenuCheckboxItem({
   const commandProps = { checked: isEnabled, onCheckedChange: setEnabled };
 
   return <Slot {...commandProps}>{children}</Slot>;
+}
+
+function AudioTrackActivityMenuCheckboxItem({
+  children,
+  streamIndex,
+}: { children?: ReactNode } & AudioTrackActionsProps) {
+  const { detectActivity, toggleActivityVisibility, track } = useAudioTrackController(streamIndex);
+  if (!track) return null;
+
+  const { status } = track.activityAnalysis;
+  const hasActivity = status === "ready";
+
+  const commandProps = {
+    checked: hasActivity && track.activityVisible,
+    disabled: status === "loading",
+    onCheckedChange: hasActivity ? toggleActivityVisibility : detectActivity,
+  };
+
+  return <Slot {...commandProps}>{children}</Slot>;
+}
+
+function AudioTrackActivityLabel({ streamIndex }: AudioTrackActionsProps) {
+  const { t } = useTranslation();
+  const { track } = useAudioTrackController(streamIndex);
+  const status = track?.activityAnalysis.status ?? "idle";
+
+  if (status === "ready") return t("audio.activityDetection.showRanges");
+  if (status === "loading") return t("audio.activityDetection.analyzing");
+  if (status === "failed") return t("audio.activityDetection.retry");
+  return t("audio.activityDetection.analyze");
 }
 
 function AudioTrackDisplayModeMenuRadioGroup({ children }: { children?: ReactNode }) {

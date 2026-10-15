@@ -5,6 +5,7 @@ import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectVisibleSceneBoundariesMicros } from "@/app/store/slices/scene-detection-slice";
 import type { FrameRate } from "@/domain/media";
+import { audioTrackColor } from "@/features/audio";
 import { useTimelinePlayback } from "@/features/playback";
 
 import { formatTimecode } from "../lib/timecode";
@@ -56,7 +57,7 @@ function TimelineMarkersAudioActivity() {
               key={`${track.streamIndex}-${index}-${edge}`}
               micros={micros}
               style={{
-                borderColor: `hsl(${((Math.abs(track.streamIndex) * 137.508) % 360).toFixed(1)} 72% 52%)`,
+                borderColor: audioTrackColor(track.streamIndex),
               }}
             />
           )),

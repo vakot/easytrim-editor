@@ -9,11 +9,6 @@ All notable changes to this project will be documented in this file.
 - Added editable video chapters with timeline markers and trim-aware chapter export.
 - Export dialogs now support selecting a separate frame-aligned range without changing the Timeline selection.
 
-### Changed
-
-- Trim boundaries now stay aligned to video frames when resizing or moving the selected segment.
-- Merge audio is now one setting shared by all sources and exports instead of a per-source toggle with a default for new editing sessions.
-
 ## [1.13.4]
 
 ### Added

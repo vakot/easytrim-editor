@@ -88,10 +88,16 @@ function AudioTrackRowWaveform({
   streamIndex: number;
 }) {
   const { displayMode } = useAudioTrackDisplayMode();
-  const { stream, track, trackNumber } = useAudioTrackController(streamIndex);
+  const { durationMicros, stream, track, trackColor, trackNumber } =
+    useAudioTrackController(streamIndex);
+
   if (!stream || !track) return null;
 
   const gainDb = liveGainDb ?? track.processing.gainDb;
+  const activityRanges =
+    track.activityVisible && track.activityAnalysis.status === "ready"
+      ? track.activityAnalysis.value
+      : [];
 
   return (
     <div
@@ -104,6 +110,21 @@ function AudioTrackRowWaveform({
         <AudioTrackDisplaySelect streamIndex={streamIndex} />
       </div>
 
+      {durationMicros > 0 &&
+        activityRanges.map((range) => (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 z-1 opacity-22"
+            data-slot="audio-track-activity-range"
+            key={`${range.startMicros}-${range.endMicros}`}
+            style={{
+              backgroundColor: trackColor,
+              left: `${percentOfDuration(range.startMicros, durationMicros)}%`,
+              right: `${100 - percentOfDuration(range.endMicros, durationMicros)}%`,
+            }}
+          />
+        ))}
+
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 right-(--timeline-selection-end-inset) left-(--timeline-selection-start) border-x border-primary/70 bg-primary/5"
@@ -112,6 +133,10 @@ function AudioTrackRowWaveform({
       <AudioTrackGainIndicator gainDb={gainDb} trackNumber={trackNumber} />
     </div>
   );
+}
+
+function percentOfDuration(micros: number, durationMicros: number) {
+  return (Math.max(0, Math.min(durationMicros, micros)) / durationMicros) * 100;
 }
 
 function AudioTrackDisplaySelect({ streamIndex }: { streamIndex: number }) {
