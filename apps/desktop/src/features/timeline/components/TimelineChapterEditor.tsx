@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { chapterUpdated, selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectFrameIndex, selectSourceMedia } from "@/app/store/slices/source-slice";
+import { cn } from "@/lib/class-names.utils";
 
 import { useChapterEditing } from "../contexts/chapter-editing-context";
 import { ChapterDialog } from "../dialogs/ChapterDialog";
@@ -16,6 +17,12 @@ const EDITED_CHAPTER_SNAP_KEY = "edited-chapter";
 const SNAP_EXCLUDE = [EDITED_CHAPTER_SNAP_KEY] as const;
 
 const HANDLE_CLASS_NAME = "group top-0 bottom-auto z-30 h-3.5";
+// The grips light up with the bar between them, which they are siblings of.
+const GRIP_HANDLE_CLASS_NAME = cn(
+  HANDLE_CLASS_NAME,
+  "peer-focus-visible/move:*:ring-3 peer-focus-visible/move:*:ring-ring/50",
+);
+
 const FOCUS_CLASS_NAME =
   "group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3";
 
@@ -59,7 +66,7 @@ function TimelineChapterEditor({ chapterId }: { chapterId: string }) {
       <Timeline.Handle
         aria-keyshortcuts="Enter"
         aria-label={t("timeline.chapters.accessibility.moveChapter", { title: chapter.title })}
-        className={HANDLE_CLASS_NAME}
+        className={cn(HANDLE_CLASS_NAME, "peer/move")}
         data-chapter-handle="move"
         maxMicros={durationMicros - lengthMicros}
         micros={range.startMicros}
@@ -89,7 +96,7 @@ function TimelineChapterEditor({ chapterId }: { chapterId: string }) {
       </Timeline.Handle>
       <Timeline.Handle
         aria-label={t("timeline.chapters.accessibility.chapterStart", { title: chapter.title })}
-        className={HANDLE_CLASS_NAME}
+        className={GRIP_HANDLE_CLASS_NAME}
         data-chapter-handle="start"
         maxMicros={range.maxStartMicros}
         micros={range.startMicros}
@@ -106,7 +113,7 @@ function TimelineChapterEditor({ chapterId }: { chapterId: string }) {
       </Timeline.Handle>
       <Timeline.Handle
         aria-label={t("timeline.chapters.accessibility.chapterEnd", { title: chapter.title })}
-        className={HANDLE_CLASS_NAME}
+        className={GRIP_HANDLE_CLASS_NAME}
         data-chapter-handle="end"
         micros={range.endMicros}
         minMicros={range.minEndMicros}
