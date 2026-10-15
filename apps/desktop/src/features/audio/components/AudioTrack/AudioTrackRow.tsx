@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -15,53 +15,68 @@ import {
 import { AudioTrackMetadataDialog } from "../../dialogs/AudioTrackMetadataDialog";
 import { useAudioTrackController } from "../../hooks/useAudioTrackController";
 import { formatGain } from "../../lib/audio-level.utils";
+import {
+  isWaveformDisplayMode,
+  WAVEFORM_DISPLAY_MODES,
+  type WaveformDisplayMode,
+  waveformDisplayModeDescription,
+  waveformDisplayModeLabel,
+} from "../../lib/waveform-display-mode";
 
 import { AudioTrackActions, AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
 import { AudioTrackGainControl } from "./components/AudioTrackGainControl";
 import { AudioTrackToggle } from "./components/AudioTrackToggle";
-import { AudioTrackWaveform, type WaveformDisplayMode } from "./components/AudioTrackWaveform";
+import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
+import {
+  AudioTrackDisplayModeContext,
+  useAudioTrackDisplayMode,
+} from "./contexts/audio-track-display-mode-context";
 
 const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex: number }) {
   const { stream, track, trackNumber } = useAudioTrackController(streamIndex);
   // The gain being adjusted, previewed on the waveform before it is committed.
   const [liveGainDb, setLiveGainDb] = useState<number | null>(null);
+  const [displayMode, setDisplayMode] = useState<WaveformDisplayMode>("peak");
+  const displayModeContext = useMemo(() => ({ displayMode, setDisplayMode }), [displayMode]);
 
   if (!track || !stream) return null;
 
   return (
-    <AudioTrackMetadataDialog streamIndex={streamIndex}>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <div
-            className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
-            data-slot="audio-track-row"
-          >
-            <div className="flex items-center gap-1">
-              <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
-                <HoverCardTrigger>
-                  <AudioTrackToggle streamIndex={streamIndex} />
-                </HoverCardTrigger>
+    <AudioTrackDisplayModeContext.Provider value={displayModeContext}>
+      <AudioTrackMetadataDialog streamIndex={streamIndex}>
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div
+              className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
+              data-slot="audio-track-row"
+            >
+              <div className="flex items-center gap-1">
+                <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
+                  <HoverCardTrigger>
+                    <AudioTrackToggle streamIndex={streamIndex} />
+                  </HoverCardTrigger>
 
-                <HoverCardContent align="center" className="max-w-42 p-0" side="right">
-                  <AudioTrackGainControl
-                    onLiveGainChange={setLiveGainDb}
-                    streamIndex={streamIndex}
-                    trackNumber={trackNumber}
-                  />
-                </HoverCardContent>
-              </HoverCard>
+                  <HoverCardContent align="center" className="max-w-42 p-0" side="right">
+                    <AudioTrackGainControl
+                      onLiveGainChange={setLiveGainDb}
+                      streamIndex={streamIndex}
+                      trackNumber={trackNumber}
+                    />
+                  </HoverCardContent>
+                </HoverCard>
 
-              <AudioTrackDetails streamIndex={streamIndex} />
-              <AudioTrackActions streamIndex={streamIndex} />
+                <AudioTrackDetails streamIndex={streamIndex} />
+                <AudioTrackActions streamIndex={streamIndex} />
+              </div>
+              <AudioTrackRowWaveform liveGainDb={liveGainDb} streamIndex={streamIndex} />
             </div>
-            <AudioTrackRowWaveform liveGainDb={liveGainDb} streamIndex={streamIndex} />
-          </div>
-        </ContextMenuTrigger>
+          </ContextMenuTrigger>
 
-        <AudioTrackContextMenuContent streamIndex={streamIndex} />
-      </ContextMenu>
-    </AudioTrackMetadataDialog>
+          <AudioTrackContextMenuContent streamIndex={streamIndex} />
+        </ContextMenu>
+      </AudioTrackMetadataDialog>
+    </AudioTrackDisplayModeContext.Provider>
   );
 });
 
@@ -72,7 +87,7 @@ function AudioTrackRowWaveform({
   liveGainDb: number | null;
   streamIndex: number;
 }) {
-  const [displayMode, setDisplayMode] = useState<WaveformDisplayMode>("peak");
+  const { displayMode } = useAudioTrackDisplayMode();
   const { stream, track, trackNumber } = useAudioTrackController(streamIndex);
   if (!stream || !track) return null;
 
@@ -86,11 +101,7 @@ function AudioTrackRowWaveform({
       <AudioTrackWaveform displayMode={displayMode} gainDb={gainDb} stream={stream} track={track} />
 
       <div className="absolute top-1 right-1 z-4">
-        <AudioTrackDisplaySelect
-          onValueChange={(value) => setDisplayMode(value as WaveformDisplayMode)}
-          streamIndex={streamIndex}
-          value={displayMode}
-        />
+        <AudioTrackDisplaySelect streamIndex={streamIndex} />
       </div>
 
       <div
@@ -103,60 +114,39 @@ function AudioTrackRowWaveform({
   );
 }
 
-function AudioTrackDisplaySelect({
-  onValueChange,
-  streamIndex,
-  value,
-}: Pick<React.ComponentProps<typeof Select>, "value" | "onValueChange"> & { streamIndex: number }) {
+function AudioTrackDisplaySelect({ streamIndex }: { streamIndex: number }) {
   const { t } = useTranslation();
-  const displayModeShortLabel =
-    value === "peak"
-      ? t("audio.waveform.displayMode.peakShort")
-      : value === "rms"
-        ? t("audio.waveform.displayMode.rmsShort")
-        : t("audio.waveform.displayMode.stereoShort");
-
-  const displayModeDescription =
-    value === "peak"
-      ? t("audio.waveform.displayMode.peakDescription")
-      : value === "rms"
-        ? t("audio.waveform.displayMode.rmsDescription")
-        : t("audio.waveform.displayMode.stereoDescription");
+  const { displayMode, setDisplayMode } = useAudioTrackDisplayMode();
 
   return (
     <>
-      <Select onValueChange={onValueChange} value={value}>
+      <Select
+        onValueChange={(value) => {
+          if (isWaveformDisplayMode(value)) setDisplayMode(value);
+        }}
+        value={displayMode}
+      >
         <SelectTrigger
           aria-describedby={`audio-waveform-mode-description-${streamIndex}`}
           aria-label={t("audio.waveform.displayMode.label")}
           className="bg-background/25! text-foreground backdrop-blur-xs"
           size="sm"
         >
-          <SelectValue>{displayModeShortLabel}</SelectValue>
+          <SelectValue>{waveformDisplayModeLabel(displayMode, t)}</SelectValue>
         </SelectTrigger>
         <SelectContent align="end">
-          <SelectItem value="peak">
-            {t("audio.waveform.displayMode.peakShort")}
-            <span className="text-muted-foreground!">
-              {t("audio.waveform.displayMode.peakDescription")}
-            </span>
-          </SelectItem>
-          <SelectItem value="rms">
-            {t("audio.waveform.displayMode.rmsShort")}
-            <span className="text-muted-foreground!">
-              {t("audio.waveform.displayMode.rmsDescription")}
-            </span>
-          </SelectItem>
-          <SelectItem value="stereo">
-            {t("audio.waveform.displayMode.stereoShort")}
-            <span className="text-muted-foreground!">
-              {t("audio.waveform.displayMode.stereoDescription")}
-            </span>
-          </SelectItem>
+          {WAVEFORM_DISPLAY_MODES.map((mode) => (
+            <SelectItem key={mode} value={mode}>
+              {waveformDisplayModeLabel(mode, t)}
+              <span className="text-muted-foreground!">
+                {waveformDisplayModeDescription(mode, t)}
+              </span>
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
       <span className="sr-only" id={`audio-waveform-mode-description-${streamIndex}`}>
-        {displayModeDescription}
+        {waveformDisplayModeDescription(displayMode, t)}
       </span>
     </>
   );

@@ -11,6 +11,7 @@ import { localizeAppError } from "@/i18n/app-errors";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
 import { useWaveformPrepare } from "../../../hooks/useWaveformPreparation";
+import type { WaveformDisplayMode } from "../../../lib/waveform-display-mode";
 
 interface AudioTrackWaveformProps {
   displayMode: WaveformDisplayMode;
@@ -18,8 +19,6 @@ interface AudioTrackWaveformProps {
   stream: AudioStream;
   track: AudioTrackState;
 }
-
-export type WaveformDisplayMode = "peak" | "rms" | "stereo";
 
 type WaveformWithStatus<Status extends AudioTrackState["waveform"]["status"]> = Extract<
   AudioTrackState["waveform"],

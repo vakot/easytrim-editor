@@ -6,16 +6,24 @@ import { Button } from "@/components/ui/button";
 import {
   ContextMenuCheckboxItem,
   ContextMenuContent,
+  ContextMenuGroup,
   ContextMenuIcon,
   ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuIcon,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -24,6 +32,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { AudioTrackMetadataDialogTrigger } from "../../../dialogs/AudioTrackMetadataDialog";
 import { useAudioTrackController } from "../../../hooks/useAudioTrackController";
+import {
+  isWaveformDisplayMode,
+  WAVEFORM_DISPLAY_MODES,
+  waveformDisplayModeLabel,
+} from "../../../lib/waveform-display-mode";
+import { useAudioTrackDisplayMode } from "../contexts/audio-track-display-mode-context";
 
 interface AudioTrackActionsProps {
   streamIndex: number;
@@ -78,6 +92,21 @@ function AudioTrackDropdownMenuContent({ streamIndex }: AudioTrackActionsProps) 
           </DropdownMenuIcon>
         </DropdownMenuItem>
       </AudioTrackMetadataDialogTrigger>
+
+      <DropdownMenuSeparator />
+
+      <DropdownMenuGroup>
+        <DropdownMenuLabel>{t("audio.waveform.displayMode.label")}</DropdownMenuLabel>
+        <AudioTrackDisplayModeMenuRadioGroup>
+          <DropdownMenuRadioGroup>
+            {WAVEFORM_DISPLAY_MODES.map((mode) => (
+              <DropdownMenuRadioItem inset keepOpen key={mode} value={mode}>
+                {waveformDisplayModeLabel(mode, t)}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </AudioTrackDisplayModeMenuRadioGroup>
+      </DropdownMenuGroup>
     </DropdownMenuContent>
   );
 }
@@ -110,6 +139,21 @@ function AudioTrackContextMenuContent({ streamIndex }: AudioTrackActionsProps) {
           </ContextMenuIcon>
         </ContextMenuItem>
       </AudioTrackMetadataDialogTrigger>
+
+      <ContextMenuSeparator />
+
+      <ContextMenuGroup>
+        <ContextMenuLabel>{t("audio.waveform.displayMode.label")}</ContextMenuLabel>
+        <AudioTrackDisplayModeMenuRadioGroup>
+          <ContextMenuRadioGroup>
+            {WAVEFORM_DISPLAY_MODES.map((mode) => (
+              <ContextMenuRadioItem inset keepOpen key={mode} value={mode}>
+                {waveformDisplayModeLabel(mode, t)}
+              </ContextMenuRadioItem>
+            ))}
+          </ContextMenuRadioGroup>
+        </AudioTrackDisplayModeMenuRadioGroup>
+      </ContextMenuGroup>
     </ContextMenuContent>
   );
 }
@@ -123,6 +167,18 @@ function AudioTrackToggleMenuCheckboxItem({
 
   // Slot forwards the checkbox item props to the menu-specific item it wraps.
   const commandProps = { checked: isEnabled, onCheckedChange: setEnabled };
+
+  return <Slot {...commandProps}>{children}</Slot>;
+}
+
+function AudioTrackDisplayModeMenuRadioGroup({ children }: { children?: ReactNode }) {
+  const { displayMode, setDisplayMode } = useAudioTrackDisplayMode();
+  const commandProps = {
+    onValueChange: (value: string) => {
+      if (isWaveformDisplayMode(value)) setDisplayMode(value);
+    },
+    value: displayMode,
+  };
 
   return <Slot {...commandProps}>{children}</Slot>;
 }

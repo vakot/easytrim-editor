@@ -488,6 +488,35 @@ describe("AudioTrackRow", () => {
     );
   });
 
+  it("switches the waveform display from the actions and context menus", async () => {
+    const user = userEvent.setup();
+    renderRow();
+    const select = screen.getByRole("combobox", { name: "Waveform display" });
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    expect(screen.getByRole("menuitemradio", { name: "Peak" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await user.click(screen.getByRole("menuitemradio", { name: "RMS" }));
+
+    expect(screen.getByRole("menuitemradio", { name: "RMS" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(select).toHaveTextContent("RMS");
+    await user.keyboard("{Escape}");
+
+    await user.pointer({ keys: "[MouseRight]", target: screen.getByText(/#1 ·/) });
+    expect(screen.getByRole("menuitemradio", { name: "RMS" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await user.click(screen.getByRole("menuitemradio", { name: "Stereo" }));
+
+    expect(select).toHaveTextContent("Stereo");
+  });
+
   it("makes an enabled track the default from its actions menu", async () => {
     const user = userEvent.setup();
     const { store } = renderRow({ streamIndex: 4 });
