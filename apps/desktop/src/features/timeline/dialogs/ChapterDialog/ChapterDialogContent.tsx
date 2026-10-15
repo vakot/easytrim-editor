@@ -14,11 +14,12 @@ import {
   chapterUpdated,
   selectChapters,
 } from "@/app/store/slices/chapters-slice";
-import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { selectFrameIndex } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
+import { FrameRangeInput, type FrameRangeInputValue } from "@/components/frame-range-input";
+import { createTrimFrameAdapter } from "@/domain/trim-frames";
 
 import { useChapterEditing } from "../../contexts/chapter-editing-context";
-import { formatTimecode } from "../../lib/timecode";
 
 import { useChapterDialogScope } from "./hooks/useChapterDialogScope";
 
@@ -33,38 +34,51 @@ function ChapterDialogContent({ chapterId, onClose }: ChapterDialogContentProps)
   const dispatch = useAppDispatch();
   const chapter = useAppSelector(selectChapters).find(({ id }) => id === chapterId);
   const trim = useAppSelector(selectTrim);
-  const media = useAppSelector(selectSourceMedia);
+  const frameIndex = useAppSelector(selectFrameIndex);
   const chapterEditing = useChapterEditing();
-  const [title, setTitle] = useState(chapter?.title ?? "");
+  // The Timeline's frames, so the same frame numbers address the same real frames.
+  const adapter = createTrimFrameAdapter(frameIndex);
 
   // A new chapter spans the selected segment; an existing one keeps its own range.
   const range = chapterId ? chapter : trim;
+  const [initialFrames] = useState(() =>
+    range
+      ? adapter.fromTrim({ ...range, sourceDurationMicros: frameIndex.endMicros })
+      : { end: 0, start: 0 },
+  );
+
+  const [title, setTitle] = useState(chapter?.title ?? "");
+  const [frames, setFrames] = useState<FrameRangeInputValue>({
+    end: String(initialFrames.end),
+    start: String(initialFrames.start),
+  });
+
   if (!range) return null;
 
-  const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const trimmedTitle = title.trim();
+  const parsedFrames = adapter.parse(frames.start, frames.end);
 
   return (
     <form
       className="grid gap-4"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!trimmedTitle) return;
+        if (!trimmedTitle || !parsedFrames) return;
+        // Untouched frames keep the exact range, which need not lie on frame boundaries.
+        const { endMicros, startMicros } =
+          parsedFrames.start === initialFrames.start && parsedFrames.end === initialFrames.end
+            ? range
+            : adapter.toTrim(parsedFrames);
+
         if (chapter) {
-          dispatch(chapterUpdated({ ...chapter, title: trimmedTitle }));
+          dispatch(chapterUpdated({ ...chapter, endMicros, startMicros, title: trimmedTitle }));
         } else {
           const id = crypto.randomUUID();
-          dispatch(
-            chapterAdded({
-              endMicros: range.endMicros,
-              id,
-              startMicros: range.startMicros,
-              title: trimmedTitle,
-            }),
-          );
+          dispatch(chapterAdded({ endMicros, id, startMicros, title: trimmedTitle }));
           // A new chapter goes straight to the timeline to be positioned.
           chapterEditing.edit(id);
         }
+
         onClose();
       }}
     >
@@ -87,14 +101,23 @@ function ChapterDialogContent({ chapterId, onClose }: ChapterDialogContentProps)
           value={title}
         />
       </div>
-      <dl className="m-0 grid gap-1">
-        <dt className="text-sm font-medium">{t("timeline.chapters.fields.range")}</dt>
-        <dd className="m-0 font-mono text-xs text-muted-foreground tabular-nums">
-          {formatTimecode(range.startMicros, frameRate)} –{" "}
-          {formatTimecode(range.endMicros, frameRate)}
-        </dd>
-        <dd className="m-0 text-xs text-muted-foreground">{t("timeline.chapters.rangeHint")}</dd>
-      </dl>
+      <FrameRangeInput
+        endLabel={t("timeline.chapters.fields.end")}
+        error={
+          parsedFrames
+            ? undefined
+            : t("timeline.chapters.status.invalidRange", {
+                frames: adapter.lastFrame,
+                minimum: adapter.bounds({ start: 0, end: adapter.lastFrame }).minEnd,
+              })
+        }
+        id="chapter-start"
+        label={t("timeline.chapters.fields.range")}
+        maxFrame={adapter.lastFrame}
+        onValueChange={setFrames}
+        startLabel={t("timeline.chapters.fields.start")}
+        value={frames}
+      />
       <DialogFooter showCloseButton {...dialogScope}>
         {chapter ? (
           <Button
@@ -111,7 +134,7 @@ function ChapterDialogContent({ chapterId, onClose }: ChapterDialogContentProps)
             <Trash2 aria-hidden="true" />
           </Button>
         ) : null}
-        <Button disabled={!trimmedTitle} type="submit">
+        <Button disabled={!trimmedTitle || !parsedFrames} type="submit">
           {t("common.actions.save")}
         </Button>
       </DialogFooter>

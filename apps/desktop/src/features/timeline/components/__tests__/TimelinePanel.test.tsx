@@ -625,6 +625,9 @@ describe("Timeline chapter editing", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Add chapter" }));
     const title = await screen.findByRole("textbox", { name: "Title" });
+    // The selection's frames: 1 s is frame 60, and its last frame ends at 3 s.
+    expect(screen.getByRole("spinbutton", { name: "Start" })).toHaveValue(60);
+    expect(screen.getByRole("spinbutton", { name: "End" })).toHaveValue(179);
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
     fireEvent.change(title, { target: { value: "  Intro " } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -688,6 +691,68 @@ describe("Timeline chapter editing", () => {
     fireEvent.click(screen.getByRole("button", { name: "Finish chapter editing" }));
     expect(screen.queryByRole("slider", { name: "Move Intro" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add chapter" })).toBeInTheDocument();
+  });
+
+  it("adds a chapter over typed frames", async () => {
+    const store = renderPanel();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add chapter" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "Title" }), {
+      target: { value: "Credits" },
+    });
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Start" }), {
+      target: { value: "240" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(store.getState().chapters.items).toEqual([
+      expect.objectContaining({ endMicros: 5_000_000, startMicros: 4_000_000, title: "Credits" }),
+    ]);
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 0, endMicros: 5_000_000 });
+  });
+
+  it("edits the range in the dialog, committing only when saved", async () => {
+    const store = renderWithChapter();
+    fireEvent.click(screen.getByRole("button", { name: "Edit Intro" }));
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Move Intro" }), { key: "Enter" });
+
+    const start = await screen.findByRole("spinbutton", { name: "Start" });
+    const end = screen.getByRole("spinbutton", { name: "End" });
+    expect(start).toHaveValue(60);
+    expect(end).toHaveValue(179);
+
+    // Less than the one-second minimum of 60 frames.
+    fireEvent.change(end, { target: { value: "100" } });
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Enter whole frames between 0 and 299, at least 59 frames apart.",
+    );
+    expect(start).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+
+    fireEvent.change(start, { target: { value: "30" } });
+    fireEvent.change(end, { target: { value: "209" } });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(chapter(store)).toEqual(intro);
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(chapter(store)).toEqual({ ...intro, endMicros: 3_500_000, startMicros: 500_000 });
+  });
+
+  it("discards dialog edits that are not saved", async () => {
+    const store = renderWithChapter();
+    fireEvent.click(screen.getByRole("button", { name: "Edit Intro" }));
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Move Intro" }), { key: "Enter" });
+
+    fireEvent.change(await screen.findByRole("spinbutton", { name: "Start" }), {
+      target: { value: "0" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Title" }), {
+      target: { value: "Opening" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: "Close" })[0]!);
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(chapter(store)).toEqual(intro);
   });
 
   it("renames and deletes the edited chapter from its dialog", async () => {
