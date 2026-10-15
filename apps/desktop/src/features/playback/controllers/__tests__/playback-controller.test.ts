@@ -17,6 +17,7 @@ function createPlaybackDriver() {
   const driver: PlaybackDriver = {
     audio: {
       getCurrentTimeSeconds: vi.fn(() => null),
+      getMeter: () => null,
       hasActiveOutput: true,
       isReady: true,
       pause: vi.fn(),

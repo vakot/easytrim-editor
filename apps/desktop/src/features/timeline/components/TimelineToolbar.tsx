@@ -2,6 +2,7 @@ import { BetweenVerticalStart, Repeat } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -12,16 +13,24 @@ import {
 } from "@/app/store/slices/preferences-slice";
 import { cn } from "@/lib/class-names.utils";
 
+import { StereoAudioMeter } from "./StereoAudioMeter";
+
 function TimelineToolbar() {
   return (
     <div
       aria-labelledby="timeline-tools-title"
-      className="flex items-center gap-1 pt-1"
+      className="flex items-stretch gap-1 pt-1"
       data-slot="timeline-toolbar"
       role="group"
     >
       <LoopPlaybackTool />
       <SegmentPlaybackTool />
+
+      <Card className="min-w-0 flex-1 gap-0 rounded-md border border-border bg-muted p-0 ring-0">
+        <CardContent className="flex h-full flex-col p-1">
+          <StereoAudioMeter />
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,7 +1,11 @@
 import { createContext, useContext } from "react";
 
+import type { StereoAudioMeterNodes } from "../lib/stereo-audio-meter";
+
 interface AudioPlaybackAdapter {
   getCurrentTimeSeconds: () => number | null;
+  /** The live output meter of the current session, read when a meter needs to sample it. */
+  getMeter: () => StereoAudioMeterNodes | null;
   hasActiveOutput: boolean;
   isReady: boolean;
   pause: () => void;

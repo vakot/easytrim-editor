@@ -46,6 +46,7 @@ function EditorRuntimeTestProvider({
       {
         audio: {
           getCurrentTimeSeconds: () => null,
+          getMeter: () => null,
           hasActiveOutput: usesWebAudio,
           isReady: false,
           pause: noOperation,
@@ -74,6 +75,7 @@ function EditorRuntimeTestProvider({
 
   const audioTransport = {
     getCurrentTimeSeconds: () => null,
+    getMeter: () => null,
     hasActiveOutput: usesWebAudio,
     isReady: false,
     pause: noOperation,

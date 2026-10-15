@@ -136,6 +136,8 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
     return session?.hasTracks ? session.currentTimeSeconds : null;
   }, []);
 
+  const getMeter = useCallback(() => sessionRef.current?.meter ?? null, []);
+
   const requiresLoudnessAnalysis = enabledTracks.some(
     (track) =>
       track.processing.loudnessNormalization !== undefined &&
@@ -148,6 +150,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   return useMemo<AudioPlaybackAdapter>(
     () => ({
       getCurrentTimeSeconds,
+      getMeter,
       hasActiveOutput,
       isReady,
       pause,
@@ -159,6 +162,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
     }),
     [
       getCurrentTimeSeconds,
+      getMeter,
       hasActiveOutput,
       isReady,
       pause,
