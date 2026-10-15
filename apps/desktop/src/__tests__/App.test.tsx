@@ -518,10 +518,11 @@ describe("App", () => {
 
     const pause = vi.spyOn(video, "pause").mockImplementation(() => setPaused(true));
 
+    // One 59.94 FPS frame forward: frame 1 starts at 16.683 ms.
     fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
     expect(screen.getByRole("slider", { name: "Playhead position" })).toHaveAttribute(
       "aria-valuenow",
-      "1",
+      "16683",
     );
 
     fireEvent.keyDown(window, { key: "ArrowLeft", code: "ArrowLeft" });
@@ -535,8 +536,10 @@ describe("App", () => {
     await waitFor(() => expect(play).toHaveBeenCalledOnce());
     fireEvent.play(video);
     pause.mockClear();
+    // Space pauses once the clock reaches the next frame boundary.
     fireEvent.keyDown(window, { key: " ", code: "Space" });
-    expect(pause).toHaveBeenCalledOnce();
+    Object.defineProperty(video, "currentTime", { configurable: true, value: 0.05 });
+    await waitFor(() => expect(pause).toHaveBeenCalled());
     fireEvent.pause(video);
 
     const input = document.createElement("input");

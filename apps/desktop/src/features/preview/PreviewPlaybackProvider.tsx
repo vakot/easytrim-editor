@@ -16,11 +16,7 @@ import { diagnostics } from "@/lib/diagnostics";
 
 import type { PreviewMediaObserver } from "./contexts/preview-runtime-context";
 import { PreviewRuntimeContext } from "./contexts/preview-runtime-context";
-import {
-  forgetPresentedFrame,
-  requestPreviewPlaybackFrame,
-  trackPresentedFrames,
-} from "./lib/preview-frame-scheduler";
+import { requestPreviewPlaybackFrame } from "./lib/preview-frame-scheduler";
 import { startPreviewPlayback } from "./lib/preview-playback-start";
 import { createPreviewSeekScheduler } from "./lib/preview-seek-scheduler";
 
@@ -187,12 +183,10 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
       ] as const;
 
       for (const [eventName, listener] of listeners) element.addEventListener(eventName, listener);
-      const stopTrackingPresentedFrames = trackPresentedFrames(element);
       removeVideoListenersRef.current = () => {
         for (const [eventName, listener] of listeners) {
           element.removeEventListener(eventName, listener);
         }
-        stopTrackingPresentedFrames();
       };
     },
     [dispatch],
@@ -223,7 +217,6 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
   const seekMedia = useCallback((seconds: number, approximate: boolean, onSettled?: () => void) => {
     const video = videoRef.current;
     if (!video) return;
-    forgetPresentedFrame(video);
     if (seekSchedulerRef.current?.video !== video) {
       seekSchedulerRef.current?.scheduler.dispose();
       seekSchedulerRef.current = { scheduler: createPreviewSeekScheduler(video), video };
@@ -262,26 +255,22 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const requestPlaybackFrame = useCallback(
-    (callback: (timestamp: number, mediaTimeSeconds: number) => void) => {
-      const video = videoRef.current;
-      if (!video) return null;
-      return requestPreviewPlaybackFrame(video, (timestamp, mediaTimeSeconds) => {
-        const seekRequest = lastSeekRequestRef.current;
-        if (seekRequest?.awaitingFrame) {
-          seekRequest.awaitingFrame = false;
-          debugVideoEvent("frame after seek", video, {
-            mediaTimeSeconds,
-            requestId: seekRequest.id,
-            requestedSeconds: seekRequest.seconds,
-            timestamp,
-          });
-        }
-        callback(timestamp, mediaTimeSeconds);
-      });
-    },
-    [],
-  );
+  const requestPlaybackFrame = useCallback((callback: (timestamp: number) => void) => {
+    const video = videoRef.current;
+    if (!video) return null;
+    return requestPreviewPlaybackFrame((timestamp) => {
+      const seekRequest = lastSeekRequestRef.current;
+      if (seekRequest?.awaitingFrame) {
+        seekRequest.awaitingFrame = false;
+        debugVideoEvent("frame after seek", video, {
+          requestId: seekRequest.id,
+          requestedSeconds: seekRequest.seconds,
+          timestamp,
+        });
+      }
+      callback(timestamp);
+    });
+  }, []);
 
   const onCanPlay = useCallback(() => {
     if (previewKey) setReadyPreviewKey(previewKey);

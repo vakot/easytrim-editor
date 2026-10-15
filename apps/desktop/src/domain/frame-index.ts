@@ -80,30 +80,48 @@ function createFrameIndex(media: MediaInfo | null): FrameIndex {
 }
 
 /**
- * Where a video element should seek to display `frame`: its midpoint, which every player maps
- * to that frame even when container timestamps are rounded.
+ * Where a video element should seek to display the frame on screen at `micros`: that frame's
+ * midpoint. Chromium can show the previous frame for a seek to a frame's exact start.
  */
-function framePresentationMicros(index: FrameIndex, frame: number) {
+function presentationMicrosAt(index: FrameIndex, micros: number) {
   if (index.count === 0) return 0;
-  const displayed = Math.max(0, Math.min(index.count - 1, Math.round(frame)));
-  return Math.round((index.startOf(displayed) + index.startOf(displayed + 1)) / 2);
+  const frame = index.frameAt(micros);
+  return Math.round((index.startOf(frame) + index.startOf(frame + 1)) / 2);
 }
 
-/** The final frame inside a range ending at `endMicros`: where stopped playback rests. */
-function lastFrameBefore(index: FrameIndex, endMicros: number) {
-  if (index.count === 0) return null;
-  const frame = index.frameAt(endMicros - 1);
-  return {
-    positionMicros: index.startOf(frame),
-    presentationMicros: framePresentationMicros(index, frame),
-  };
+/**
+ * Frame boundaries are the times a position can rest on: every frame start, plus the end of the
+ * last frame. Returns the boundary nearest to `micros`.
+ */
+function nearestBoundaryMicros(index: FrameIndex, micros: number) {
+  if (index.count === 0) return 0;
+  const frame = index.frameAt(micros);
+  const start = index.startOf(frame);
+  const end = index.startOf(frame + 1);
+  return micros - start <= end - micros ? start : end;
+}
+
+/** The boundary after `micros`, or the end when there is none. */
+function nextBoundaryMicros(index: FrameIndex, micros: number) {
+  if (index.count === 0) return 0;
+  return index.startOf(index.frameAt(micros) + 1);
+}
+
+/** The boundary before `micros`, or 0 when there is none. */
+function previousBoundaryMicros(index: FrameIndex, micros: number) {
+  if (index.count === 0 || micros <= 0) return 0;
+  const frame = index.frameAt(micros);
+  const start = index.startOf(frame);
+  return start < micros ? start : index.startOf(Math.max(0, frame - 1));
 }
 
 export {
   createFrameIndex,
   createNominalFrameIndex,
   createRealFrameIndex,
-  framePresentationMicros,
-  lastFrameBefore,
+  nearestBoundaryMicros,
+  nextBoundaryMicros,
+  presentationMicrosAt,
+  previousBoundaryMicros,
 };
 export type { FrameIndex };

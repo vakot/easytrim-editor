@@ -1,73 +1,44 @@
-import { useMemo } from "react";
-
-import { Slider, type SliderMarker } from "@/components/ui/slider";
-
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
-import { selectFrameIndex } from "@/app/store/slices/source-slice";
 import type { FrameRate } from "@/domain/media";
 import { useTimelinePlayback } from "@/features/playback";
 
-import { formatFrameTimecode } from "../lib/frame-time";
+import { formatTimecode } from "../lib/timecode";
 
-const PERCENT_MARKERS = [0, 0.25, 0.5, 0.75, 1] as const;
+import { Timeline } from "./Timeline";
 
-function TimelineMarkers({ frameRate, lastFrame }: { frameRate?: FrameRate; lastFrame: number }) {
+const RULER_FRACTIONS = [0, 0.25, 0.5, 0.75, 1] as const;
+
+function TimelineMarkers({ frameRate }: { frameRate?: FrameRate }) {
   return (
     <>
-      <TimelineMarkersStatic frameRate={frameRate} lastFrame={lastFrame} />
-      <TimelineMarkersAudioActivity frameRate={frameRate} lastFrame={lastFrame} />
-      <TimelineMarkersSceneActivity frameRate={frameRate} lastFrame={lastFrame} />
-      <TimelineMarkersChapters frameRate={frameRate} lastFrame={lastFrame} />
+      <TimelineMarkersRuler frameRate={frameRate} />
+      <TimelineMarkersAudioActivity />
+      <TimelineMarkersSceneActivity />
+      <TimelineMarkersChapters />
     </>
   );
 }
 
-function TimelineMarkersStatic({
-  frameRate,
-  lastFrame,
-}: {
-  frameRate?: FrameRate;
-  lastFrame: number;
-}) {
-  const markers = useMemo<SliderMarker[]>(
-    () =>
-      PERCENT_MARKERS.map<SliderMarker>((percent) => {
-        // An empty timeline uses a 0..1 scale.
-        const value = lastFrame > 0 ? lastFrame * percent : percent;
-        return {
-          value,
-          label: lastFrame > 0 ? formatFrameTimecode(value, frameRate) : "00:00:00:00f",
-          // Only the timeline edges stay snappable.
-          snapTarget: lastFrame > 0 && (percent === 0 || percent === 1),
-        };
-      }),
-    [lastFrame, frameRate],
-  );
-
-  return (
-    <Slider.Markers
-      className="-inset-bs-1 font-mono **:data-[slot=slider-marker]:bg-transparent"
-      markers={markers}
-    />
-  );
+function TimelineMarkersRuler({ frameRate }: { frameRate?: FrameRate }) {
+  const { durationMicros } = useTimelinePlayback();
+  return RULER_FRACTIONS.map((fraction) => {
+    const micros = Math.round(durationMicros * fraction);
+    return (
+      <Timeline.Marker
+        className="-top-1 bg-transparent font-mono"
+        key={fraction}
+        label={formatTimecode(micros, frameRate)}
+        micros={micros}
+      />
+    );
+  });
 }
 
-function TimelineMarkersAudioActivity({
-  frameRate,
-  lastFrame,
-}: {
-  frameRate?: FrameRate;
-  lastFrame: number;
-}) {
+function TimelineMarkersAudioActivity() {
   const tracks = useAppSelector(selectAudioTracks);
-  const frameIndex = useAppSelector(selectFrameIndex);
-
-  const frame = (micros: number) => frameIndex.frameAt(micros);
-
-  if (!lastFrame || !frameRate) return null;
 
   return tracks
     .filter((track) => track.activityVisible)
@@ -76,79 +47,53 @@ function TimelineMarkersAudioActivity({
         track.activityAnalysis.status === "ready" &&
         track.activityAnalysis.value.flatMap((range, index) =>
           [range.startMicros, range.endMicros].map((micros, edge) => (
-            <Slider.Marker
-              className="pointer-events-none inset-y-0 border-l"
+            <Timeline.Marker
+              className="inset-y-0 border-l bg-transparent"
               key={`${track.streamIndex}-${index}-${edge}`}
-
+              micros={micros}
               style={{
                 borderColor: `hsl(${((Math.abs(track.streamIndex) * 137.508) % 360).toFixed(1)} 72% 52%)`,
               }}
-              value={frame(micros)}
             />
           )),
         ),
     );
 }
 
-function TimelineMarkersSceneActivity({
-  frameRate,
-  lastFrame,
-}: {
-  frameRate?: FrameRate;
-  lastFrame: number;
-}) {
+function TimelineMarkersSceneActivity() {
   const scenes = useAppSelector(selectActiveSceneBoundariesMicros);
-  const frameIndex = useAppSelector(selectFrameIndex);
-
-  const frame = (micros: number) => frameIndex.frameAt(micros);
-
-  if (!lastFrame || !frameRate) return null;
 
   return scenes.map((micros) => (
-    <Slider.Marker
-      className="pointer-events-none inset-y-0 border-l-2 border-destructive/70"
+    <Timeline.Marker
+      className="inset-y-0 border-l-2 border-destructive/70 bg-transparent"
       key={micros}
-
-      value={frame(micros)}
+      micros={micros}
     />
   ));
 }
 
-function TimelineMarkersChapters({
-  frameRate,
-  lastFrame,
-}: {
-  frameRate?: FrameRate;
-  lastFrame: number;
-}) {
+function TimelineMarkersChapters() {
   const chapters = useAppSelector(selectChapters);
-  const frameIndex = useAppSelector(selectFrameIndex);
-  const { seekFrame } = useTimelinePlayback();
-
-  const frame = (micros: number) => frameIndex.frameAt(micros);
-
-  if (!lastFrame || !frameRate) return null;
+  const { seekTime } = useTimelinePlayback();
 
   return chapters.map((chapter) => (
     <span key={chapter.id}>
-      <span
+      <Timeline.Range
         aria-hidden="true"
-        className="pointer-events-none absolute top-1.5 h-0.5 bg-primary/25"
-        style={{
-          left: `${(frame(chapter.startMicros) / lastFrame) * 100}%`,
-          right: `${((lastFrame - frame(chapter.endMicros)) / lastFrame) * 100}%`,
-        }}
+        className="top-1.5 bottom-auto h-0.5 bg-primary/25"
+        endMicros={chapter.endMicros}
+        startMicros={chapter.startMicros}
       />
-      <Slider.Marker className="top-0 z-10" value={frame(chapter.startMicros)}>
+      <Timeline.Marker className="top-0 z-10 bg-transparent" micros={chapter.startMicros}>
         <button
           aria-label={chapter.title}
-          className="absolute top-0 -translate-x-1/2 border-x-4 border-t-6 border-x-transparent border-t-primary focus-visible:outline-ring"
-          onClick={() => seekFrame(frame(chapter.startMicros))}
+          className="pointer-events-auto absolute top-0 -translate-x-1/2 border-x-4 border-t-6 border-x-transparent border-t-primary focus-visible:outline-ring"
+          onClick={() => seekTime(chapter.startMicros)}
+          onPointerDown={(event) => event.stopPropagation()}
           title={chapter.title}
           type="button"
         />
-      </Slider.Marker>
-      <Slider.Marker aria-hidden="true" value={frame(chapter.endMicros)} />
+      </Timeline.Marker>
     </span>
   ));
 }

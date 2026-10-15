@@ -43,7 +43,7 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
   let paused = true;
   let ended = false;
   let audioPosition: number | null = null;
-  const frameCallbacks = new Set<(timestamp: number, mediaTime: number) => void>();
+  const frameCallbacks = new Set<(timestamp: number) => void>();
   const observerCallbacks = new Set<
     Parameters<PlaybackDriver["video"]["registerMediaObserver"]>[0]
   >();
@@ -93,7 +93,6 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
     },
     video: {
       getCurrentTimeSeconds: () => currentTime,
-      getPresentedTimeSeconds: () => currentTime,
       isEnded: () => ended,
       isReady: readyState >= HTMLMediaElement.HAVE_CURRENT_DATA,
       isSeekPending: () => scheduler.isPending,
@@ -107,13 +106,8 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
         return () => observerCallbacks.delete(observer);
       },
       requestPlaybackFrame: (callback) => {
-        const frameCallback = (timestamp: number, mediaTime: number) =>
-          callback(timestamp, mediaTime);
-
-        frameCallbacks.add(frameCallback);
-        return {
-          cancel: () => frameCallbacks.delete(frameCallback),
-        };
+        frameCallbacks.add(callback);
+        return { cancel: () => frameCallbacks.delete(callback) };
       },
       seek: (seconds, approximate, onSettled) => scheduler.seek(seconds, approximate, onSettled),
     },
@@ -142,12 +136,14 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
       audioPosition = seconds;
     },
     flushAnimationFrames: createAnimationFrameQueue(),
+    /** A display refresh with the media clock at `mediaTime`. */
     playNextFrame(mediaTime: number) {
       const callbacks = [...frameCallbacks];
       if (callbacks.length === 0) throw new Error("No playback frame is pending.");
+      currentTime = mediaTime;
       for (const callback of callbacks) {
         frameCallbacks.delete(callback);
-        callback(0, mediaTime);
+        callback(0);
       }
     },
     video,
@@ -324,8 +320,11 @@ describe("native preview playback integration", () => {
           preview.playNextFrame(lastFrameSeconds);
         }
         await vi.waitFor(() => expect(preview.controller.isPlaying).toBe(true));
+        // Reaching the end pauses the element first; the ended event finishes playback.
         preview.setNativeEnded(true);
         preview.notifyNativePause();
+        expect(preview.controller.isPlaying).toBe(true);
+        preview.notifyNativeEnded();
 
         expect(preview.controller.getSnapshot()).toEqual({
           durationMicros,
@@ -403,7 +402,6 @@ describe("native preview playback integration", () => {
     preview.playNextFrame(3 / 30);
 
     expect(preview.controller.getSnapshot().positionMicros).toBe((3 / 30) * 1_000_000);
-    expect(preview.video.currentTime).toBe(0.066667);
     preview.dispose();
   });
 });

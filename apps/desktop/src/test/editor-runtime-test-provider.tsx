@@ -57,7 +57,6 @@ function EditorRuntimeTestProvider({
         },
         video: {
           getCurrentTimeSeconds: () => null,
-          getPresentedTimeSeconds: () => null,
           isEnded: () => false,
           isReady: false,
           isSeekPending: () => false,

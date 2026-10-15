@@ -2,7 +2,11 @@ import { useMemo, useSyncExternalStore } from "react";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectFrameIndex } from "@/app/store/slices/source-slice";
-import { framePresentationMicros } from "@/domain/frame-index";
+import {
+  nearestBoundaryMicros,
+  nextBoundaryMicros,
+  previousBoundaryMicros,
+} from "@/domain/frame-index";
 
 import { usePlaybackController } from "../contexts/playback-context";
 
@@ -10,21 +14,24 @@ function usePlaybackSnapshot<Value>(
   select: (positionMicros: number, durationMicros: number, isPlaying: boolean) => Value,
 ) {
   const controller = usePlaybackController();
-  return useSyncExternalStore(
-    controller.subscribe,
-    () => {
-      const { durationMicros, positionMicros } = controller.getSnapshot();
-      return select(positionMicros, durationMicros, controller.isPlaying);
-    },
-    () => {
-      const { durationMicros, positionMicros } = controller.getSnapshot();
-      return select(positionMicros, durationMicros, controller.isPlaying);
-    },
-  );
+  const read = () => {
+    const { durationMicros, positionMicros } = controller.getSnapshot();
+    return select(positionMicros, durationMicros, controller.isPlaying);
+  };
+
+  return useSyncExternalStore(controller.subscribe, read, read);
 }
 
 function usePlaybackIsPlaying() {
   return usePlaybackSnapshot((_positionMicros, _durationMicros, isPlaying) => isPlaying);
+}
+
+/**
+ * A value derived from the playback position. The component re-renders only when the derived
+ * value changes, so a readout can follow the clock without rendering on every refresh.
+ */
+function usePlaybackPosition<Value>(select: (positionMicros: number) => Value) {
+  return usePlaybackSnapshot((positionMicros) => select(positionMicros));
 }
 
 function usePlaybackActions() {
@@ -40,24 +47,29 @@ function usePlaybackActions() {
   );
 }
 
-/** The Timeline's frames: the frame on screen, the frame count, and frame-addressed seeking. */
+/** Navigation over the source's frame boundaries, where every paused position rests. */
 function useTimelinePlayback() {
   const index = useAppSelector(selectFrameIndex);
-  // The Timeline is frame-addressed in every state: it follows the presented frame, not the clock,
-  // and re-renders only when that frame changes.
-  const currentFrame = usePlaybackSnapshot((positionMicros) => index.frameAt(positionMicros));
-  const { seek } = usePlaybackActions();
+  const controller = usePlaybackController();
 
-  return {
-    currentFrame,
-    framesCount: index.count,
-    /** Moves the playhead to a real frame; the end boundary is not a playhead position. */
-    seekFrame: (frame: number) => {
-      if (index.count === 0) return;
-      const target = Math.max(0, Math.min(index.count - 1, Math.round(frame)));
-      seek(index.startOf(target), framePresentationMicros(index, target));
-    },
-  };
+  return useMemo(() => {
+    const position = () => controller.getSnapshot().positionMicros;
+    return {
+      durationMicros: index.endMicros,
+      framesCount: index.count,
+      /** The current position, read when an action needs it rather than on every refresh. */
+      getPositionMicros: position,
+      /** Moves to the frame boundary nearest `micros`. */
+      seekTime: (micros: number) => controller.seek(nearestBoundaryMicros(index, micros)),
+      stepFrame: (direction: -1 | 1) => {
+        controller.pause();
+        const from = position();
+        controller.seek(
+          direction > 0 ? nextBoundaryMicros(index, from) : previousBoundaryMicros(index, from),
+        );
+      },
+    };
+  }, [controller, index]);
 }
 
-export { usePlaybackActions, usePlaybackIsPlaying, useTimelinePlayback };
+export { usePlaybackActions, usePlaybackIsPlaying, usePlaybackPosition, useTimelinePlayback };

@@ -5,12 +5,16 @@ import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-sli
 import { selectFrameIndex, selectSourceLoadToken } from "@/app/store/slices/source-slice";
 import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import { nearestBoundaryMicros } from "@/domain/frame-index";
 import { createTrimFrameAdapter, type TrimFrames, type TrimHandle } from "@/domain/trim-frames";
 import { usePlaybackActions, usePlaybackIsPlaying } from "@/features/playback";
 
+/**
+ * Trim editing in time. Every boundary lands on a real frame boundary of the source; the frame
+ * adapter keeps the minimum selection length and converts to the exported time range.
+ */
 function useTimelineTrimEditing() {
-  const frameIndex = useAppSelector(selectFrameIndex);
-  const framesCount = frameIndex.count;
+  const index = useAppSelector(selectFrameIndex);
   const trim = useAppSelector(selectTrim);
   const instanceId = useAppSelector(selectActiveInstanceId);
   const loadToken = useAppSelector(selectSourceLoadToken);
@@ -18,7 +22,7 @@ function useTimelineTrimEditing() {
   const store = useAppStore();
   const { pause, play } = usePlaybackActions();
   const isPlaying = usePlaybackIsPlaying();
-  const adapter = createTrimFrameAdapter(frameIndex);
+  const adapter = createTrimFrameAdapter(index);
 
   type Interaction = {
     handle: TrimHandle;
@@ -32,10 +36,15 @@ function useTimelineTrimEditing() {
   useEffect(() => {
     interaction.current = null;
   }, [instanceId, loadToken]);
-  const active = draft;
-  const isCurrent = active?.instanceId === instanceId && active?.loadToken === loadToken;
+  const isCurrent = draft?.instanceId === instanceId && draft?.loadToken === loadToken;
   const range =
     (isCurrent && draft?.range) || (trim ? adapter.fromTrim(trim) : { start: 0, end: 0 });
+
+  /** The boundary index nearest `micros`: frame `k` starts at boundary `k`; the end is `count`. */
+  const boundaryAt = (micros: number) => {
+    const boundary = nearestBoundaryMicros(index, micros);
+    return boundary >= index.endMicros ? index.count : index.frameAt(boundary);
+  };
 
   function commit(next: TrimFrames) {
     const state = store.getState();
@@ -52,16 +61,18 @@ function useTimelineTrimEditing() {
   }
 
   function begin(handle: TrimHandle) {
-    if (!trim || framesCount === 0) return;
+    if (!trim || index.count === 0) return;
     interaction.current = { instanceId, loadToken, handle, range, resume: isPlaying };
     pause();
     setDraft(interaction.current);
   }
 
-  function change(handle: TrimHandle, frame: number) {
+  /** Moves a boundary to `micros`; for "move", `micros` is the selection's new start. */
+  function change(handle: TrimHandle, micros: number) {
     const current = interaction.current;
     const currentSource = current?.instanceId === instanceId && current?.loadToken === loadToken;
     if (current && !currentSource) return;
+    const frame = handle === "end" ? boundaryAt(micros) - 1 : boundaryAt(micros);
     const next = adapter.edit(currentSource && current ? current.range : range, handle, frame);
     if (current && currentSource) {
       interaction.current = { ...current, range: next };
@@ -84,24 +95,37 @@ function useTimelineTrimEditing() {
     if (current.resume) play();
   }
 
-  /** In marks `frame` as the first included frame; Out marks it as the last included frame. */
-  function markFrame(handle: "start" | "end", frame: number) {
-    if (!trim) return;
+  /** Moves a boundary, or the whole selection, by one real frame. */
+  function step(handle: TrimHandle, direction: -1 | 1) {
+    if (!trim || index.count === 0) return;
+    const frame = (handle === "end" ? range.end : range.start) + direction;
+    commit(adapter.edit(range, handle, frame));
+  }
+
+  /** In starts the selection at the frame on screen; Out ends it after that frame. */
+  function mark(handle: "start" | "end", positionMicros: number) {
+    if (!trim || index.count === 0) return;
+    const frame = index.frameAt(positionMicros);
     const base = { ...range };
     if (handle === "start" && frame > base.end) base.end = adapter.lastFrame;
     if (handle === "end" && frame < base.start) base.start = 0;
     commit(adapter.edit(base, handle, frame));
   }
 
+  const bounds = adapter.bounds(range);
   return {
-    range,
-    bounds: adapter.bounds(range),
-    enabled: !!trim && framesCount > 0,
-    dragging: isCurrent ? active?.handle : undefined,
+    enabled: !!trim && index.count > 0,
+    dragging: isCurrent ? draft?.handle : undefined,
+    startMicros: index.startOf(range.start),
+    endMicros: index.startOf(range.end + 1),
+    /** The latest start for the current end, and the earliest end for the current start. */
+    maxStartMicros: index.startOf(bounds.maxStart),
+    minEndMicros: index.startOf(bounds.minEnd + 1),
     begin,
     change,
     finish,
-    markFrame,
+    mark,
+    step,
   };
 }
 
