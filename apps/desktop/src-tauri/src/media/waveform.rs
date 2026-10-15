@@ -332,15 +332,15 @@ fn write_binned_pcm(
         ));
     }
 
-    let samples_per_column = sample_count / width;
-    let remainder = sample_count % width;
     let mut buffer = [0_u8; 16 * 1024];
     let mut envelope = Vec::with_capacity(width as usize * 4);
 
-    // Keep showwavespic's existing column boundaries: each column gets the integer
-    // quotient, then the remainder is assigned to the final column.
+    // Column `c` covers the samples from `c * n / width` up to `(c + 1) * n / width`, so a
+    // column's position across the envelope is its time across the audio. Giving the whole
+    // division remainder to one column would push every earlier column's audio later.
+    let column_start = |column: u64| column * sample_count / width;
     for column in 0..width {
-        let mut remaining = samples_per_column + u64::from(column == width - 1) * remainder;
+        let mut remaining = column_start(column + 1) - column_start(column);
         let total_samples = remaining;
         let mut square_sum = [0_u64; 2];
         let mut peak = [0_u32; 2];
@@ -747,6 +747,35 @@ mod tests {
         assert_eq!(&output[..4], b"ETWF");
         assert_eq!(u16::from_le_bytes([output[4], output[5]]), 2);
         assert_eq!(&output[12..], [2, 1, 8, 6, 3, 3, 0, 0]);
+    }
+
+    #[test]
+    fn sample_binning_spreads_an_uneven_sample_count_across_columns() {
+        // Ten stereo frames into four columns: boundaries at 0, 2, 5, 7, 10. A single loud
+        // frame at index 5 belongs to the third column, where its time puts it.
+        let mut samples = [0_i16; 20];
+        samples[10] = i16::MAX;
+        let mut source = Cursor::new(
+            samples
+                .iter()
+                .flat_map(|sample| sample.to_le_bytes())
+                .collect::<Vec<_>>(),
+        );
+        let mut output = Vec::new();
+
+        write_binned_pcm(&mut source, &mut output, 10, 4).expect("samples are reduced");
+
+        let flags = u16::from_le_bytes([output[6], output[7]]);
+        let values = if flags == super::WAVEFORM_FLAG_RLE {
+            decode_rle(&output[12..], 16)
+        } else {
+            output[12..].to_vec()
+        };
+        let peaks = values
+            .chunks_exact(4)
+            .map(|column| column[0])
+            .collect::<Vec<_>>();
+        assert_eq!(peaks, [0, 0, 255, 0]);
     }
 
     #[test]
