@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::{AppError, AppErrorMessageId},
+    media::video_frames::{FrameScanError, scan_video_frames},
     process::run_bounded_cancellable,
 };
 
@@ -57,6 +58,10 @@ pub struct VideoStream {
     pub frame_count: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rotation_degrees: Option<i32>,
+    /// Presentation start of every displayed frame, ascending. Empty when the frames could not
+    /// be read, in which case consumers fall back to the stream's nominal frame rate.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub frame_timestamps_micros: Vec<i64>,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
@@ -111,7 +116,7 @@ pub struct MediaInfo {
 
 pub fn inspect_media_cancellable(
     path: &Path,
-    is_cancelled: impl FnMut() -> bool,
+    mut is_cancelled: impl FnMut() -> bool,
 ) -> Result<MediaInfo, AppError> {
     let arguments = [
         OsString::from("-v"),
@@ -130,7 +135,7 @@ pub fn inspect_media_cancellable(
         PROBE_TIMEOUT,
         PROBE_STDOUT_LIMIT,
         PROBE_STDERR_LIMIT,
-        is_cancelled,
+        &mut is_cancelled,
     )
     .map_err(|error| map_probe_io_error(error, path))?;
 
@@ -148,7 +153,36 @@ pub fn inspect_media_cancellable(
         ));
     }
 
-    parse_probe_output(&output.stdout)
+    let mut media = parse_probe_output(&output.stdout)?;
+    attach_real_frames(&mut media, path, is_cancelled)?;
+    Ok(media)
+}
+
+/// Replaces the metadata duration with the real picture end and records every displayed frame.
+fn attach_real_frames(
+    media: &mut MediaInfo,
+    path: &Path,
+    is_cancelled: impl FnMut() -> bool,
+) -> Result<(), AppError> {
+    let Some(time_base) = media.video.time_base.clone() else {
+        return Ok(());
+    };
+    match scan_video_frames(
+        path,
+        media.video.stream_index,
+        &time_base,
+        media.start_time_micros.unwrap_or(0),
+        is_cancelled,
+    ) {
+        Ok(frames) => {
+            media.duration_micros = frames.end_micros;
+            media.video.frame_timestamps_micros = frames.timestamps_micros;
+            Ok(())
+        }
+        Err(FrameScanError::Cancelled) => Err(AppError::source_replaced()),
+        // Unreadable packet timing keeps the container metadata rather than failing the import.
+        Err(FrameScanError::Unavailable) => Ok(()),
+    }
 }
 
 fn parse_probe_output(output: &[u8]) -> Result<MediaInfo, AppError> {
@@ -231,6 +265,7 @@ fn parse_probe_output(output: &[u8]) -> Result<MediaInfo, AppError> {
             .as_deref()
             .and_then(|value| value.parse().ok()),
         rotation_degrees: rotation(primary_video),
+        frame_timestamps_micros: Vec::new(),
     };
 
     let audio_streams = probe

@@ -1881,6 +1881,7 @@ mod tests {
                 real_frame_rate: None,
                 frame_count: None,
                 rotation_degrees: None,
+                frame_timestamps_micros: Vec::new(),
             },
             audio_streams: vec![
                 AudioStream {
