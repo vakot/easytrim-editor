@@ -176,6 +176,7 @@ describe("TimelinePanel", () => {
     }
     expect(document.querySelector('[data-trim-handle="start"]')).toHaveStyle({ left: "0%" });
     expect(document.querySelector('[data-trim-handle="end"]')).toHaveStyle({ left: "100%" });
+    expect(document.querySelector('[data-trim-handle="move"]')).toHaveStyle({ left: "50%" });
   });
 
   it("steps one frame from the frame controls and stops them at the timeline ends", () => {

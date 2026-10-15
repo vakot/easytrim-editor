@@ -96,6 +96,11 @@ function TimelinePanel() {
     ? { endMicros: trim.endMicros, startMicros: trim.startMicros }
     : { endMicros: axisMicros, startMicros: 0 };
 
+  // Unrounded without a segment: the nominal axis may be a single microsecond.
+  const selectionCenterMicros = trim.enabled
+    ? Math.round((trim.startMicros + trim.endMicros) / 2)
+    : axisMicros / 2;
+
   const snapTargets = (): TimelineSnapTarget[] => [
     { key: "timeline-start", micros: 0 },
     { key: "timeline-end", micros: durationMicros },
@@ -375,7 +380,7 @@ function TimelinePanel() {
               className="group z-20"
               data-trim-handle="move"
               disabled={!trim.enabled}
-              micros={Math.round((selection.startMicros + selection.endMicros) / 2)}
+              micros={selectionCenterMicros}
               onDrag={(center) => trim.change("move", center - moveHalfLength.current)}
               onDragEnd={trim.finish}
               onDragStart={() => {
