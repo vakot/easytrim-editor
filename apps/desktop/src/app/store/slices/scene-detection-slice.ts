@@ -24,7 +24,7 @@ type SceneDetectionState = {
 };
 
 type SceneDetectionStatus =
-  | { error: AppError | null; status: "failed"; }
+  | { error: AppError | null; status: "failed" }
   | { status: "idle" | "loading" | "ready" | "unavailable" };
 
 const initialState: SceneDetectionState = {
