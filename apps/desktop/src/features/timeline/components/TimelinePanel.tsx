@@ -170,7 +170,7 @@ function TimelinePanel() {
   return (
     <section
       aria-labelledby="timeline-title"
-      className="grid h-full min-w-0 grid-rows-[auto_minmax(2rem,1fr)] gap-3 p-3"
+      className="grid min-w-0 shrink-0 grid-rows-[auto_minmax(2rem,1fr)] gap-3 p-3"
     >
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
         <div className="min-w-0">

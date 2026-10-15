@@ -23,6 +23,7 @@ type CapabilityState =
 type SourceStatus = "idle" | "loading-source" | "ready" | "failed";
 
 interface SourceState {
+  audioPanelStreamCount: number;
   capabilities: CapabilityState;
   error: AppError | null;
   loadToken: number;
@@ -32,6 +33,7 @@ interface SourceState {
 }
 
 export const initialSourceState: SourceState = {
+  audioPanelStreamCount: 0,
   status: "idle",
   source: null,
   loadToken: 0,
@@ -69,6 +71,7 @@ const sourceSlice = createSlice({
         state.loadToken = action.payload.loadToken;
         state.media = action.payload.media ?? null;
         if (action.payload.media) {
+          state.audioPanelStreamCount = action.payload.media.audioStreams.length;
         }
         state.error = null;
       })
@@ -76,6 +79,7 @@ const sourceSlice = createSlice({
         state.status = "idle";
         state.source = null;
         state.media = null;
+        state.audioPanelStreamCount = 0;
         state.error = null;
         state.loadToken += 1;
       })
@@ -83,12 +87,14 @@ const sourceSlice = createSlice({
         if (!isValidSourceReadyPayload(state.loadToken, action.payload)) return;
         state.status = "ready";
         state.media = action.payload.media;
+        state.audioPanelStreamCount = action.payload.media.audioStreams.length;
         state.error = null;
       })
       .addCase(sourceFailed, (state, action) => {
         if (action.payload.loadToken !== undefined && state.loadToken !== action.payload.loadToken)
           return;
         state.status = "failed";
+        state.audioPanelStreamCount = 0;
         state.error = action.payload.error;
         if (action.payload.loadToken === undefined) {
           state.source = null;
@@ -113,6 +119,9 @@ const selectFrameIndex: (state: RootState) => FrameIndex = createSelector(
   createFrameIndex,
 );
 
+const selectAudioPanelStreamCount = (state: RootState): number =>
+  state.source.audioPanelStreamCount;
+
 const selectCapabilities = (state: RootState): CapabilityState => state.source.capabilities;
 const selectHasSource = (state: RootState): boolean => state.source.source !== null;
 const selectSourceReady = (state: RootState): boolean =>
@@ -123,6 +132,7 @@ export {
   capabilitiesChecking,
   capabilitiesFailed,
   capabilitiesReady,
+  selectAudioPanelStreamCount,
   selectCapabilities,
   selectFrameIndex,
   selectHasSource,
