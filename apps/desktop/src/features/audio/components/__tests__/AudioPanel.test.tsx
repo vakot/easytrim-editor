@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -10,6 +10,16 @@ import { createAppStore } from "@/app/store/store";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioPanel } from "../AudioPanel";
+
+const { prepareSourceWaveforms } = vi.hoisted(() => ({ prepareSourceWaveforms: vi.fn() }));
+
+vi.mock("@/app/store/thunks/source-media-thunks", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/app/store/thunks/source-media-thunks")>()),
+  prepareSourceWaveforms: (...args: unknown[]) => {
+    prepareSourceWaveforms(...args);
+    return () => undefined;
+  },
+}));
 
 function renderPanel() {
   const store = createAppStore();
@@ -37,6 +47,7 @@ describe("AudioPanel", () => {
     expect(screen.getByText("Surround")).toBeInTheDocument();
     expect(screen.getByText("#2 · AC3 · 5.1")).toBeInTheDocument();
     expect(screen.getByTestId("audio-tracks-scroll")).toBeInTheDocument();
+    expect(prepareSourceWaveforms).toHaveBeenCalledWith(firstSource.sourcePath, [2, 4], 4096);
   });
 
   it("summarizes the output and toggles merging", async () => {
