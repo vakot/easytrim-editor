@@ -941,4 +941,81 @@ describe("playback controller", () => {
       controller.dispose();
     });
   });
+
+  it("blocks every start while held and resumes the interrupted run when released", async () => {
+    const { driver } = createPlaybackDriver();
+    const controller = createPlaybackController(driver, 2_000_000);
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+    const release = controller.hold();
+    expect(controller.isPlaying).toBe(false);
+
+    controller.seek(800_000);
+    controller.togglePlayback();
+    controller.play();
+    expect(driver.video.play).toHaveBeenCalledTimes(1);
+
+    release();
+    release();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    expect(driver.video.play).toHaveBeenCalledTimes(2);
+    expect(driver.video.seek).toHaveBeenLastCalledWith(0.8, false, expect.any(Function));
+    controller.dispose();
+  });
+
+  it("keeps a paused transport paused after a hold", async () => {
+    const { driver } = createPlaybackDriver();
+    const controller = createPlaybackController(driver, 2_000_000);
+
+    const release = controller.hold();
+    controller.togglePlayback();
+    release();
+    await Promise.resolve();
+
+    expect(controller.isPlaying).toBe(false);
+    expect(driver.video.play).not.toHaveBeenCalled();
+    controller.togglePlayback();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    controller.dispose();
+  });
+
+  it("resumes only when the last nested hold is released", async () => {
+    const { driver } = createPlaybackDriver();
+    const controller = createPlaybackController(driver, 2_000_000);
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+    const releaseFirst = controller.hold();
+    const releaseSecond = controller.hold();
+    releaseFirst();
+    controller.play();
+    expect(controller.isPlaying).toBe(false);
+
+    releaseSecond();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    controller.dispose();
+  });
+
+  it("does not resume after an abandoned hold or a media session change", async () => {
+    const { driver } = createPlaybackDriver();
+    const controller = createPlaybackController(driver, 2_000_000);
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+    controller.hold()({ resume: false });
+    await Promise.resolve();
+    expect(controller.isPlaying).toBe(false);
+
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    const release = controller.hold();
+    controller.attach(2, driver, 2_000_000);
+    release();
+    await Promise.resolve();
+
+    expect(controller.isPlaying).toBe(false);
+    expect(driver.video.play).toHaveBeenCalledTimes(2);
+    controller.dispose();
+  });
 });

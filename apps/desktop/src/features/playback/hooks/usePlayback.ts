@@ -38,6 +38,8 @@ function usePlaybackActions() {
   const controller = usePlaybackController();
   return useMemo(
     () => ({
+      /** Pauses and blocks playback until released; see `PlaybackController.hold`. */
+      holdPlayback: controller.hold,
       pause: controller.pause,
       play: controller.play,
       seek: controller.seek,

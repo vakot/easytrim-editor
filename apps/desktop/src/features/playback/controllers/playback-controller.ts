@@ -26,6 +26,9 @@ interface PlaybackSnapshot {
   positionMicros: number;
 }
 
+/** Ends a playback hold; `resume: false` keeps an interrupted run paused. */
+type PlaybackHoldRelease = (options?: { resume?: boolean }) => void;
+
 const MICROS_PER_SECOND = 1_000_000;
 
 /**
@@ -53,6 +56,10 @@ class PlaybackController {
   private pauseAtMicros: number | null = null;
   /** Where the current run started, which decides whether it stops at the segment end. */
   private runStartMicros = 0;
+  /** Active holds; while any is active, playback cannot start. */
+  private holds = 0;
+  /** The session whose run the first hold interrupted, resumed when the last hold is released. */
+  private resumeSessionId: number | null = null;
   private options: PlaybackOptions = {
     frameIndex: createRealFrameIndex([], 0),
     loop: false,
@@ -127,7 +134,7 @@ class PlaybackController {
 
   play = () => {
     const driver = this.driver;
-    if (!driver || !this.hasSession() || this.lifecycle !== "paused") return;
+    if (!driver || !this.hasSession() || this.lifecycle !== "paused" || this.holds > 0) return;
     if (
       !driver.video.isReady ||
       (driver.audio.hasActiveOutput && !driver.audio.isReady) ||
@@ -155,6 +162,35 @@ class PlaybackController {
     if (wasActive) this.update(this.snapshot.durationMicros, clockMicros, true);
     this.driver?.audio.seek(this.snapshot.positionMicros / MICROS_PER_SECOND);
     this.notifyListeners();
+  };
+
+  /**
+   * Pauses and blocks playback until the returned release is called, e.g. for a drag on the
+   * timeline. Holds nest; releasing the last one resumes a run the first one interrupted, unless
+   * the media session changed meanwhile or a release passes `resume: false` (an abandoned drag).
+   * Releasing twice is harmless.
+   */
+  hold = (): PlaybackHoldRelease => {
+    if (this.holds === 0) {
+      const interrupted = this.lifecycle !== "paused" && this.hasSession();
+      this.resumeSessionId = interrupted ? (this.mediaSessionId ?? null) : null;
+      if (interrupted) this.pause();
+    }
+    this.holds += 1;
+
+    let released = false;
+    return ({ resume = true } = {}) => {
+      if (released) return;
+      released = true;
+      if (!resume) this.resumeSessionId = null;
+      this.holds -= 1;
+      if (this.holds > 0) return;
+      const interrupted =
+        this.resumeSessionId !== null && this.resumeSessionId === this.mediaSessionId;
+
+      this.resumeSessionId = null;
+      if (interrupted) this.play();
+    };
   };
 
   /** Pauses when the clock reaches the next frame boundary, so the playhead never moves back. */
@@ -410,4 +446,4 @@ class PlaybackController {
 }
 
 export { PlaybackController };
-export type { PlaybackDriver };
+export type { PlaybackDriver, PlaybackHoldRelease };

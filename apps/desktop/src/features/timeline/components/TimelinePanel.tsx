@@ -8,7 +8,7 @@ import {
   SquareArrowLeft,
   SquareArrowRight,
 } from "lucide-react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-in
 import { selectSourceLoadToken, selectSourceMedia } from "@/app/store/slices/source-slice";
 import type { FrameRate } from "@/domain/media";
 import {
+  type PlaybackHoldRelease,
   usePlaybackActions,
   usePlaybackIsPlaying,
   usePlaybackPosition,
@@ -80,8 +81,18 @@ function TimelinePanel() {
 
   const trim = useTimelineTrimEditing();
   const isPlaying = usePlaybackIsPlaying();
-  const { togglePlayback } = usePlaybackActions();
+  const { holdPlayback, togglePlayback } = usePlaybackActions();
   const [scrubbing, setScrubbing] = useState(false);
+  // Playback stays blocked while the playhead is scrubbed and resumes afterwards if it was running.
+  const releaseScrubPlayback = useRef<PlaybackHoldRelease | null>(null);
+  useEffect(
+    () => () => {
+      // The timeline remounts for a new source without ending the scrub; abandon its hold.
+      releaseScrubPlayback.current?.({ resume: false });
+      releaseScrubPlayback.current = null;
+    },
+    [loadToken],
+  );
   // Half the selection length when its move started: the knob sits at its center.
   const moveHalfLength = useRef(0);
 
@@ -332,8 +343,16 @@ function TimelinePanel() {
           durationMicros={axisMicros}
           key={loadToken}
           onScrub={seekTime}
-          onScrubEnd={() => setScrubbing(false)}
-          onScrubStart={() => setScrubbing(true)}
+          onScrubEnd={() => {
+            releaseScrubPlayback.current?.();
+            releaseScrubPlayback.current = null;
+            setScrubbing(false);
+          }}
+          onScrubStart={() => {
+            releaseScrubPlayback.current?.({ resume: false });
+            releaseScrubPlayback.current = holdPlayback();
+            setScrubbing(true);
+          }}
           snapTargets={snapTargets}
         >
           <Timeline.Track className="segment-markers rounded-md border bg-muted/30 text-muted" />

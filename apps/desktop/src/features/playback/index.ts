@@ -1,3 +1,4 @@
+export type { PlaybackHoldRelease } from "./controllers/playback-controller";
 export {
   usePlaybackActions,
   usePlaybackIsPlaying,
