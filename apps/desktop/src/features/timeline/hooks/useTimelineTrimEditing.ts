@@ -7,7 +7,7 @@ import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { nearestBoundaryMicros } from "@/domain/frame-index";
 import { createTrimFrameAdapter, type TrimFrames, type TrimHandle } from "@/domain/trim-frames";
-import { usePlaybackActions, usePlaybackIsPlaying } from "@/features/playback";
+import { type PlaybackHoldRelease, usePlaybackActions } from "@/features/playback";
 
 /**
  * Trim editing in time. Every boundary lands on a real frame boundary of the source; the frame
@@ -20,8 +20,7 @@ function useTimelineTrimEditing() {
   const loadToken = useAppSelector(selectSourceLoadToken);
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const { pause, play } = usePlaybackActions();
-  const isPlaying = usePlaybackIsPlaying();
+  const { holdPlayback } = usePlaybackActions();
   const adapter = createTrimFrameAdapter(index);
 
   type Interaction = {
@@ -29,13 +28,19 @@ function useTimelineTrimEditing() {
     instanceId: string | null;
     loadToken: number;
     range: TrimFrames;
-    resume: boolean;
+    /** Ends the playback hold taken for the drag, resuming a run it interrupted. */
+    releasePlayback: PlaybackHoldRelease;
   };
   const [draft, setDraft] = useState<Interaction | null>(null);
   const interaction = useRef<Interaction | null>(null);
-  useEffect(() => {
-    interaction.current = null;
-  }, [instanceId, loadToken]);
+  useEffect(
+    () => () => {
+      // The drag is abandoned with its source; the next source must not start playing.
+      interaction.current?.releasePlayback({ resume: false });
+      interaction.current = null;
+    },
+    [instanceId, loadToken],
+  );
   const isCurrent = draft?.instanceId === instanceId && draft?.loadToken === loadToken;
   const range =
     (isCurrent && draft?.range) || (trim ? adapter.fromTrim(trim) : { start: 0, end: 0 });
@@ -62,8 +67,14 @@ function useTimelineTrimEditing() {
 
   function begin(handle: TrimHandle) {
     if (!trim || index.count === 0) return;
-    interaction.current = { instanceId, loadToken, handle, range, resume: isPlaying };
-    pause();
+    interaction.current?.releasePlayback({ resume: false });
+    interaction.current = {
+      instanceId,
+      loadToken,
+      handle,
+      range,
+      releasePlayback: holdPlayback(),
+    };
     setDraft(interaction.current);
   }
 
@@ -86,13 +97,12 @@ function useTimelineTrimEditing() {
     interaction.current = null;
     setDraft(null);
     const state = store.getState();
-    if (
-      selectActiveInstanceId(state) !== current.instanceId ||
-      selectSourceLoadToken(state) !== current.loadToken
-    )
-      return;
-    commit(current.range);
-    if (current.resume) play();
+    const currentSource =
+      selectActiveInstanceId(state) === current.instanceId &&
+      selectSourceLoadToken(state) === current.loadToken;
+
+    if (currentSource) commit(current.range);
+    current.releasePlayback({ resume: currentSource });
   }
 
   /** Moves a boundary, or the whole selection, by one real frame. */

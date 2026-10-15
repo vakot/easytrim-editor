@@ -8,7 +8,7 @@ import {
   SquareArrowLeft,
   SquareArrowRight,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-in
 import { selectSourceLoadToken, selectSourceMedia } from "@/app/store/slices/source-slice";
 import type { FrameRate } from "@/domain/media";
 import {
+  type PlaybackHoldRelease,
   usePlaybackActions,
   usePlaybackIsPlaying,
   usePlaybackPosition,
@@ -29,10 +30,11 @@ import {
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
+import { usePublishTimelineSelection } from "../contexts/timeline-axis-context";
 import { useTimelineTrimEditing } from "../hooks/useTimelineTrimEditing";
 import { formatTimecode } from "../lib/timecode";
 
-import { Timeline, type TimelineSnapTarget } from "./Timeline";
+import { percentOf, Timeline, type TimelineSnapTarget } from "./Timeline";
 import { TimelineMarkers } from "./TimelineMarkers";
 import { TimelineShortcutTooltip } from "./TimelineShortcutTooltip";
 import { TimelineToolbar } from "./TimelineToolbar";
@@ -79,8 +81,18 @@ function TimelinePanel() {
 
   const trim = useTimelineTrimEditing();
   const isPlaying = usePlaybackIsPlaying();
-  const { togglePlayback } = usePlaybackActions();
+  const { holdPlayback, togglePlayback } = usePlaybackActions();
   const [scrubbing, setScrubbing] = useState(false);
+  // Playback stays blocked while the playhead is scrubbed and resumes afterwards if it was running.
+  const releaseScrubPlayback = useRef<PlaybackHoldRelease | null>(null);
+  useEffect(
+    () => () => {
+      // The timeline remounts for a new source without ending the scrub; abandon its hold.
+      releaseScrubPlayback.current?.({ resume: false });
+      releaseScrubPlayback.current = null;
+    },
+    [loadToken],
+  );
   // Half the selection length when its move started: the knob sits at its center.
   const moveHalfLength = useRef(0);
 
@@ -95,6 +107,14 @@ function TimelinePanel() {
   const selection = trim.enabled
     ? { endMicros: trim.endMicros, startMicros: trim.startMicros }
     : { endMicros: axisMicros, startMicros: 0 };
+
+  const publishSelection = usePublishTimelineSelection();
+  const selectionStartPercent = percentOf(selection.startMicros, axisMicros);
+  const selectionEndPercent = percentOf(selection.endMicros, axisMicros);
+  // Views aligned with the timeline follow the drawn selection, including an uncommitted drag.
+  useLayoutEffect(() => {
+    publishSelection?.(selectionStartPercent, selectionEndPercent);
+  }, [publishSelection, selectionEndPercent, selectionStartPercent]);
 
   // Unrounded without a segment: the nominal axis may be a single microsecond.
   const selectionCenterMicros = trim.enabled
@@ -170,7 +190,7 @@ function TimelinePanel() {
   return (
     <section
       aria-labelledby="timeline-title"
-      className="grid h-full min-w-0 grid-rows-[auto_minmax(2rem,1fr)] gap-3 p-3"
+      className="grid min-w-0 shrink-0 grid-rows-[auto_minmax(2rem,1fr)] gap-3 p-3"
     >
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
         <div className="min-w-0">
@@ -323,8 +343,16 @@ function TimelinePanel() {
           durationMicros={axisMicros}
           key={loadToken}
           onScrub={seekTime}
-          onScrubEnd={() => setScrubbing(false)}
-          onScrubStart={() => setScrubbing(true)}
+          onScrubEnd={() => {
+            releaseScrubPlayback.current?.();
+            releaseScrubPlayback.current = null;
+            setScrubbing(false);
+          }}
+          onScrubStart={() => {
+            releaseScrubPlayback.current?.({ resume: false });
+            releaseScrubPlayback.current = holdPlayback();
+            setScrubbing(true);
+          }}
           snapTargets={snapTargets}
         >
           <Timeline.Track className="segment-markers rounded-md border bg-muted/30 text-muted" />

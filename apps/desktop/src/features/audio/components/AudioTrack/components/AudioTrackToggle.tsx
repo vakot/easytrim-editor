@@ -1,0 +1,67 @@
+import { Volume2, VolumeOff } from "lucide-react";
+import type { ComponentPropsWithoutRef } from "react";
+import { forwardRef } from "react";
+import { useTranslation } from "react-i18next";
+
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+import { cn } from "@/lib/class-names.utils";
+import { diagnostics } from "@/lib/diagnostics";
+
+import { useAudioTrackController } from "../../../hooks/useAudioTrackController";
+import { audioTrackDisplayName } from "../../../lib/audio-track-name.utils";
+
+type AudioTrackToggleProps = ComponentPropsWithoutRef<typeof Button> & {
+  streamIndex: number;
+};
+
+const AudioTrackToggle = forwardRef<HTMLButtonElement, AudioTrackToggleProps>(
+  function AudioTrackToggle({ className, onClick, streamIndex, ...props }, ref) {
+    const { t } = useTranslation();
+    const { isEnabled, setEnabled, stream, track, trackNumber } =
+      useAudioTrackController(streamIndex);
+
+    if (!stream || !track) return null;
+    const title = audioTrackDisplayName(
+      track.metadata,
+      stream,
+      t("audio.tracks.defaultName", { number: trackNumber }),
+    );
+
+    const label = isEnabled
+      ? t("audio.tracks.muteWithTitle", { title })
+      : t("audio.tracks.unmuteWithTitle", { title });
+
+    return (
+      <Tooltip preserveOnTrigger>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={label}
+            aria-pressed={isEnabled}
+            className={cn("text-primary", className)}
+            onClick={(event) => {
+              diagnostics.action(
+                "audio.track.toggle.requested",
+                { type: "button", id: "track-toggle" },
+                { streamIndex },
+              );
+              setEnabled(!isEnabled);
+              onClick?.(event);
+            }}
+            ref={ref}
+            size="icon-sm"
+            type="button"
+            variant="ghost"
+            {...props}
+          >
+            {isEnabled ? <Volume2 /> : <VolumeOff />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{label}</TooltipContent>
+      </Tooltip>
+    );
+  },
+);
+
+export { AudioTrackToggle };

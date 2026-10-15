@@ -23,6 +23,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   const audioTracks = useAppSelector(selectAudioTracks);
   const playbackVolumePercent = useAppSelector(selectPlaybackVolumePercent);
   const sessionRef = useRef<AudioPlaybackSession | null>(null);
+  const webAudioTracksRef = useRef<WebAudioTrack[]>([]);
   const playbackErrorObserverRef = useRef<(() => void) | null>(null);
 
   const enabledTracks = useMemo(() => audioTracks.filter((track) => track.enabled), [audioTracks]);
@@ -82,6 +83,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   }, [activeInstanceId, media, sourcePath]);
 
   useEffect(() => {
+    webAudioTracksRef.current = webAudioTracks;
     const session = sessionRef.current;
     if (!session) return;
     session.setDuration(media?.durationMicros ?? 0);
@@ -107,6 +109,15 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   const pause = useCallback(() => sessionRef.current?.pause(), []);
 
   const seek = useCallback((seconds: number) => sessionRef.current?.seek(seconds), []);
+
+  const setLiveTrackGain = useCallback((streamIndex: number, gainDb: number | null) => {
+    const committedGainDb = webAudioTracksRef.current.find(
+      (track) => track.streamIndex === streamIndex,
+    )?.gainDb;
+
+    const nextGainDb = gainDb ?? committedGainDb;
+    if (nextGainDb !== undefined) sessionRef.current?.setTrackGain(streamIndex, nextGainDb);
+  }, []);
 
   const prepareAt = useCallback(
     (seconds: number) => sessionRef.current?.prepareAt(seconds) ?? Promise.resolve(),
@@ -158,6 +169,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       prepareAt,
       registerPlaybackErrorObserver,
       seek,
+      setLiveTrackGain,
       startAlignedWithVideoAt,
     }),
     [
@@ -170,6 +182,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       prepareAt,
       registerPlaybackErrorObserver,
       seek,
+      setLiveTrackGain,
       startAlignedWithVideoAt,
     ],
   );

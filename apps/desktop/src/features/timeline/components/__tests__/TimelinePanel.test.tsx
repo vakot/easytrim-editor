@@ -9,15 +9,18 @@ import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
 import { firstSource, media } from "@/test/source.fixtures";
 
+import { TimelineAxisScope } from "../TimelineAxisScope";
 import { TimelinePanel } from "../TimelinePanel";
 
 const playback = vi.hoisted(() => ({
   durationMicros: 5_000_000,
   framesCount: 300,
+  holdPlayback: vi.fn(),
   isPlaying: false,
   pause: vi.fn(),
   play: vi.fn(),
   positionMicros: 2_000_000,
+  releasePlayback: vi.fn(),
   seekTime: vi.fn(),
   stepFrame: vi.fn(),
   togglePlayback: vi.fn(),
@@ -25,6 +28,7 @@ const playback = vi.hoisted(() => ({
 
 vi.mock("@/features/playback", () => ({
   usePlaybackActions: () => ({
+    holdPlayback: playback.holdPlayback,
     pause: playback.pause,
     play: playback.play,
     togglePlayback: playback.togglePlayback,
@@ -47,6 +51,7 @@ vi.mock("@/features/audio", async (importOriginal) => ({
 
 /** A 5 s, 60 FPS source: frame boundaries every 16.667 ms. */
 function renderPanel({
+  axisScope = false,
   end = 5_000_000,
   isPlaying = false,
   loaded = true,
@@ -72,6 +77,8 @@ function renderPanel({
     positionMicros,
   });
   for (const mock of [
+    playback.holdPlayback,
+    playback.releasePlayback,
     playback.pause,
     playback.play,
     playback.seekTime,
@@ -80,11 +87,16 @@ function renderPanel({
   ]) {
     mock.mockClear();
   }
+  playback.holdPlayback.mockImplementation(() => playback.releasePlayback);
+  const panel = (
+    <TooltipProvider>
+      <TimelinePanel />
+    </TooltipProvider>
+  );
+
   render(
     <Provider store={store}>
-      <TooltipProvider>
-        <TimelinePanel />
-      </TooltipProvider>
+      {axisScope ? <TimelineAxisScope>{panel}</TimelineAxisScope> : panel}
     </Provider>,
   );
   return store;
@@ -221,6 +233,39 @@ describe("TimelinePanel", () => {
     expect(playback.seekTime).toHaveBeenNthCalledWith(2, 2_500_000);
   });
 
+  it("holds playback while scrubbing and releases it when the scrub ends", () => {
+    renderPanel();
+    layOutTimeline();
+    const timeline = document.querySelector('[data-slot="timeline"]')!;
+
+    fireEvent.pointerDown(timeline, { button: 0, clientX: 60, pointerId: 1 });
+    expect(playback.holdPlayback).toHaveBeenCalledOnce();
+    expect(playback.releasePlayback).not.toHaveBeenCalled();
+
+    fireEvent.pointerUp(timeline, { clientX: 120, pointerId: 1 });
+    expect(playback.releasePlayback).toHaveBeenCalledOnce();
+    expect(playback.releasePlayback).toHaveBeenCalledWith();
+  });
+
+  it("abandons the scrub hold without resuming when the source is replaced", () => {
+    const store = renderPanel();
+    layOutTimeline();
+    fireEvent.pointerDown(document.querySelector('[data-slot="timeline"]')!, {
+      button: 0,
+      clientX: 60,
+      pointerId: 1,
+    });
+
+    const sourceMedia = store.getState().source.media!;
+    act(() => {
+      store.dispatch(sourceSelected({ loadToken: 2, source: firstSource }));
+      store.dispatch(sourceReady({ loadToken: 2, media: sourceMedia }));
+    });
+
+    expect(playback.releasePlayback).toHaveBeenCalledOnce();
+    expect(playback.releasePlayback).toHaveBeenCalledWith({ resume: false });
+  });
+
   it("shows start, end and duration of the selection as timecodes", () => {
     renderPanel({ start: 1_000_000, end: 3_500_000 });
     const values = screen.getAllByRole("definition").map((value) => value.textContent);
@@ -305,7 +350,7 @@ describe("Timeline trim editing", () => {
     expect(store.getState().trim.value?.startMicros).toBe(1_500_000);
   });
 
-  it("snaps a dragged boundary to a frame, pauses once, and resumes only prior playback", () => {
+  it("snaps a dragged boundary to a frame while holding playback for the drag", () => {
     const store = renderPanel({ isPlaying: true });
     layOutTimeline();
     const start = screen.getByRole("slider", { name: "Trim start" });
@@ -318,9 +363,27 @@ describe("Timeline trim editing", () => {
     fireEvent.pointerUp(start, { clientX: 61, pointerId: 1 });
 
     expect(store.getState().trim.value?.startMicros).toBe(1_266_667);
-    expect(playback.pause).toHaveBeenCalledOnce();
-    expect(playback.play).toHaveBeenCalledOnce();
+    expect(playback.holdPlayback).toHaveBeenCalledOnce();
+    expect(playback.releasePlayback).toHaveBeenCalledOnce();
+    expect(playback.releasePlayback).toHaveBeenCalledWith({ resume: true });
     expect(playback.seekTime).not.toHaveBeenCalled();
+  });
+
+  it("publishes the drawn selection to aligned views, following an uncommitted drag", () => {
+    const store = renderPanel({ axisScope: true, end: 4_000_000, start: 1_000_000 });
+    layOutTimeline();
+    const scope = document.querySelector<HTMLElement>('[data-slot="timeline-axis-scope"]')!;
+    expect(scope.style.getPropertyValue("--timeline-selection-start")).toBe("20%");
+    expect(scope.style.getPropertyValue("--timeline-selection-end-inset")).toBe("20%");
+
+    const start = screen.getByRole("slider", { name: "Trim start" });
+    fireEvent.pointerDown(start, { button: 0, clientX: 48, pointerId: 1 });
+    // 120 px of 240 px is 2.5 s, exactly frame boundary 150.
+    fireEvent.pointerMove(start, { clientX: 120, pointerId: 1 });
+
+    expect(store.getState().trim.value?.startMicros).toBe(1_000_000);
+    expect(scope.style.getPropertyValue("--timeline-selection-start")).toBe("50%");
+    fireEvent.pointerUp(start, { clientX: 120, pointerId: 1 });
   });
 
   it("drags the whole selection from where it was grabbed", () => {
@@ -345,7 +408,8 @@ describe("Timeline trim editing", () => {
     store.dispatch(sourceCleared());
     fireEvent.pointerUp(start, { clientX: 60, pointerId: 1 });
     expect(store.getState().trim.value).toBeNull();
-    expect(playback.play).not.toHaveBeenCalled();
+    expect(playback.releasePlayback).toHaveBeenCalledOnce();
+    expect(playback.releasePlayback).toHaveBeenCalledWith({ resume: false });
   });
 
   it("cancels captured input on source replacement and permits immediate keyboard editing", () => {
@@ -362,11 +426,12 @@ describe("Timeline trim editing", () => {
     fireEvent.keyDown(replacement, { key: "ArrowRight" });
     fireEvent.pointerUp(original, { clientX: 100, pointerId: 1 });
     expect(store.getState().trim.value?.startMicros).toBe(16_667);
-    expect(playback.play).not.toHaveBeenCalled();
+    expect(playback.releasePlayback).toHaveBeenCalledOnce();
+    expect(playback.releasePlayback).toHaveBeenCalledWith({ resume: false });
   });
 
   it.each(["pointerCancel", "lostPointerCapture"] as const)(
-    "finalizes the last draft on %s without starting paused playback",
+    "finalizes the last draft on %s and releases the playback hold",
     (event) => {
       const store = renderPanel();
       layOutTimeline();
@@ -375,6 +440,7 @@ describe("Timeline trim editing", () => {
       fireEvent.pointerMove(start, { clientX: 72, pointerId: 1 });
       fireEvent[event](start, { clientX: 200, pointerId: 1 });
       expect(store.getState().trim.value?.startMicros).toBe(1_500_000);
+      expect(playback.releasePlayback).toHaveBeenCalledOnce();
       expect(playback.play).not.toHaveBeenCalled();
     },
   );

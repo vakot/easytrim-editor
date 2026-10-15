@@ -1,7 +1,10 @@
+import { Suspense } from "react";
+
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  usePanelCommand,
 } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -10,11 +13,12 @@ import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectLayoutDensity } from "@/app/store/slices/preferences-slice";
-import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { selectAudioPanelStreamCount, selectSourceMedia } from "@/app/store/slices/source-slice";
+import { LazyAudioPanel } from "@/features/audio/audio-panel.loader";
 import { ExportActions } from "@/features/export";
 import { Preview } from "@/features/preview";
 import { SourceBreadcrumb } from "@/features/source";
-import { TimelinePanel } from "@/features/timeline";
+import { TimelineAxisScope, TimelinePanel } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 
 import { useSidebarVisibility } from "../hooks/useSidebarVisibility";
@@ -26,16 +30,39 @@ type PanelSizes = {
   minSize: string;
 };
 
-const getTimelinePanelSize = (isCompact: boolean): PanelSizes => {
-  const size = `${isCompact ? 9.3 : 9.425}rem`;
-  return { collapsedSize: size, defaultSize: size, maxSize: size, minSize: size };
+const TIMELINE_PANEL_DEFAULT_SIZE_REM = 9.425;
+const TIMELINE_PANEL_COMPACT_SIZE_REM = TIMELINE_PANEL_DEFAULT_SIZE_REM - 0.125;
+
+const AUDIO_PANEL_SIZE_LINE_REM = 3.625;
+const AUDIO_PANEL_SIZE_MIN_REM = 7.075;
+
+const getTimelinePanelSize = (lines: number, isCompact: boolean): PanelSizes => {
+  const minSizeRem = isCompact ? TIMELINE_PANEL_COMPACT_SIZE_REM : TIMELINE_PANEL_DEFAULT_SIZE_REM;
+
+  if (lines === 0) {
+    const size = `${minSizeRem}rem`;
+    return { collapsedSize: size, defaultSize: size, maxSize: size, minSize: size };
+  }
+
+  const audioPanelSizeMaxRem = AUDIO_PANEL_SIZE_MIN_REM + (lines - 1) * AUDIO_PANEL_SIZE_LINE_REM;
+
+  return {
+    collapsedSize: `${minSizeRem}rem`,
+    minSize: `${minSizeRem + AUDIO_PANEL_SIZE_MIN_REM}rem`,
+    defaultSize: `${minSizeRem + AUDIO_PANEL_SIZE_MIN_REM}rem`,
+    maxSize: `${minSizeRem + audioPanelSizeMaxRem}rem`,
+  };
 };
 
 function AppLayoutMain() {
   const media = useAppSelector(selectSourceMedia);
+  const audioStreamsCount = useAppSelector(selectAudioPanelStreamCount);
+  const timelinePanelCommand = usePanelCommand("editor-stage-timeline");
   const bottomPanelCommand = useApplicationCommand("toggle-bottom-panel");
   const layoutDensity = useAppSelector(selectLayoutDensity);
   const { leftSidebarVisible, rightSidebarVisible } = useSidebarVisibility();
+  const isTimelinePanelExpanded =
+    timelinePanelCommand.isAvailable && !timelinePanelCommand.isCollapsed;
 
   const isCompact = layoutDensity === "compact";
 
@@ -85,7 +112,7 @@ function AppLayoutMain() {
           collapsible={bottomPanelCommand.enabled}
           groupResizeBehavior="preserve-pixel-size"
           id="editor-stage-timeline"
-          {...getTimelinePanelSize(isCompact)}
+          {...getTimelinePanelSize(audioStreamsCount, isCompact)}
         >
           <AppLayoutPanel
             className={cn(
@@ -95,7 +122,15 @@ function AppLayoutMain() {
             )}
             layoutRegion="workspace-timeline"
           >
-            <TimelinePanel />
+            <TimelineAxisScope>
+              <TimelinePanel />
+              {/* Retain the lazy subtree while replacement source metadata is loading. */}
+              {audioStreamsCount > 0 && isTimelinePanelExpanded ? (
+                <Suspense fallback={<div aria-busy="true" className="min-h-0 flex-1" />}>
+                  <LazyAudioPanel />
+                </Suspense>
+              ) : null}
+            </TimelineAxisScope>
           </AppLayoutPanel>
         </ResizablePanel>
       </ResizablePanelGroup>
