@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added editable video chapters with timeline markers and trim-aware chapter export.
+- Added editable video chapters with a chapter list, frame-accurate ranges, moving and resizing directly on the Timeline, and trim-aware chapter export.
 - Export dialogs now support selecting a separate frame-aligned range without changing the Timeline selection.
 
 ### Fixed
