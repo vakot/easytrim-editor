@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Trim boundaries now stay aligned to video frames when resizing or moving the selected segment.
+- Merge audio is now one setting shared by all sources and exports instead of a per-source toggle with a default for new editing sessions.
 
 ## [1.13.4]
 
