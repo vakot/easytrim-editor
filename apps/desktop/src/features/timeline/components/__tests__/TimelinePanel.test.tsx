@@ -706,11 +706,13 @@ describe("Timeline chapter editing", () => {
     expect(playback.releasePlayback).toHaveBeenCalledWith({ resume: true });
   });
 
-  it("hides the trim handles and their snap targets while a chapter is edited", () => {
+  it("hides the trim selection and handles, and their snap targets, while a chapter is edited", () => {
     const store = renderWithChapter({ end: 4_000_000, positionMicros: 0, start: 2_000_000 });
     layOutTimeline();
     fireEvent.click(screen.getByRole("button", { name: "Edit Intro" }));
 
+    const selection = document.querySelector('[data-slot="timeline-selection"]');
+    expect(selection).toHaveClass("invisible");
     for (const edge of ["start", "end", "move"]) {
       const handle = document.querySelector(`[data-trim-handle="${edge}"]`);
       expect(handle).toHaveClass("invisible");
@@ -725,6 +727,7 @@ describe("Timeline chapter editing", () => {
     expect(chapter(store)?.endMicros).toBe(4_016_667);
 
     fireEvent.keyDown(window, { key: "Escape" });
+    expect(selection).not.toHaveClass("invisible");
     expect(document.querySelector('[data-trim-handle="start"]')).not.toHaveClass("invisible");
     expect(screen.getByRole("slider", { name: "Trim start" })).not.toHaveAttribute("aria-disabled");
   });

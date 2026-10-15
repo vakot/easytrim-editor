@@ -418,7 +418,10 @@ function TimelinePanelContent() {
           <Timeline.Track className="segment-markers rounded-md border bg-muted/30 text-muted" />
           <TimelineMarkers frameRate={frameRate} />
           <Timeline.Range
-            className="-inset-y-px mx-2 border-y-2 border-primary bg-primary/10"
+            className={cn(
+              "-inset-y-px mx-2 border-y-2 border-primary bg-primary/10",
+              editedChapterId && "invisible",
+            )}
             data-slot="timeline-selection"
             endMicros={selection.endMicros}
             startMicros={selection.startMicros}
