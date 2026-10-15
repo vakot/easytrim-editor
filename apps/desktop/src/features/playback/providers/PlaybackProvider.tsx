@@ -6,6 +6,7 @@ import {
   selectSegmentPlaybackEnabled,
 } from "@/app/store/slices/preferences-slice";
 import {
+  selectFrameIndex,
   selectSourceLoadToken,
   selectSourceMedia,
   selectSourceSelection,
@@ -38,11 +39,11 @@ function PlaybackProvider({ children }: { children: ReactNode }) {
   const segmentStartMicros = trim?.startMicros;
   const segmentEndMicros = trim?.endMicros;
   const durationMicros = media?.durationMicros ?? 0;
-  const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
+  const frameIndex = useAppSelector(selectFrameIndex);
 
   useLayoutEffect(() => {
     controller.setOptions({
-      ...(frameRate ? { frameRate } : {}),
+      frameIndex,
       loop,
       segment:
         segmentEnabled && segmentStartMicros !== undefined && segmentEndMicros !== undefined
@@ -52,7 +53,7 @@ function PlaybackProvider({ children }: { children: ReactNode }) {
   }, [
     controller,
     durationMicros,
-    frameRate,
+    frameIndex,
     loop,
     segmentEnabled,
     segmentEndMicros,

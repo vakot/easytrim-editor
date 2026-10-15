@@ -120,6 +120,8 @@ interface VideoStream {
   colorSpace?: string;
   colorTransfer?: string;
   frameCount?: number;
+  /** Presentation start of every displayed frame, ascending; absent when it could not be read. */
+  frameTimestampsMicros?: number[];
   height: number;
   pixelFormat?: string;
   realFrameRate?: FrameRate;

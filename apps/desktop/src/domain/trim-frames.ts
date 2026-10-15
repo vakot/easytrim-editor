@@ -1,15 +1,15 @@
-import type { FrameRate } from "@/domain/media";
-import { frameToMicros } from "@/domain/media-time";
+import type { FrameIndex } from "@/domain/frame-index";
 import { MIN_SELECTION_MICROS, type TrimRange } from "@/domain/trim";
 
 /** A frame selection in the Timeline's coordinates: `end` is the last included frame. */
 type TrimFrames = { end: number; start: number };
 type TrimHandle = "start" | "end" | "move";
 
-function createTrimFrameAdapter(durationMicros: number, framesCount: number, rate: FrameRate) {
-  // A frame's start time; the boundary after the final frame is EOF.
-  const toMicros = (frame: number) =>
-    frame === framesCount ? durationMicros : frameToMicros(frame, rate);
+function createTrimFrameAdapter(index: FrameIndex) {
+  const framesCount = index.count;
+  const durationMicros = index.endMicros;
+  // A frame's start time; the boundary after the final frame is the end of the picture.
+  const toMicros = (frame: number) => index.startOf(frame);
 
   const lastFrame = Math.max(0, framesCount - 1);
   const minimum = Math.min(MIN_SELECTION_MICROS, durationMicros);

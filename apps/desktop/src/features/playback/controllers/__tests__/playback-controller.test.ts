@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { createNominalFrameIndex } from "@/domain/frame-index";
+
 import { PlaybackController, type PlaybackDriver } from "../playback-controller";
 
 function createPlaybackDriver() {
@@ -874,12 +876,14 @@ describe("playback controller", () => {
 
   describe("on a frame grid", () => {
     const frameRate = { denominator: 1, numerator: 30, displayValue: 30 };
+    const frameIndex = (durationMicros: number) =>
+      createNominalFrameIndex(durationMicros, frameRate);
 
     it("rests a stopped segment on its last frame, not on the first frame after it", async () => {
       const playback = createPlaybackDriver();
       const controller = createPlaybackController(playback.driver, 10_000_000);
       const segment = { startMicros: 2_000_000, endMicros: 4_000_000 };
-      controller.setOptions({ frameRate, loop: false, segment });
+      controller.setOptions({ frameIndex: frameIndex(10_000_000), loop: false, segment });
       controller.play();
       await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
 
@@ -895,7 +899,7 @@ describe("playback controller", () => {
     it("rests finished playback on the final frame and restarts from the start on Play", async () => {
       const playback = createPlaybackDriver();
       const controller = createPlaybackController(playback.driver, 2_000_000);
-      controller.setOptions({ frameRate, loop: false, segment: null });
+      controller.setOptions({ frameIndex: frameIndex(2_000_000), loop: false, segment: null });
       let videoSeconds = 0;
       vi.mocked(playback.driver.video.isEnded).mockImplementation(() => videoSeconds >= 2);
       vi.mocked(playback.driver.video.seek).mockImplementation(
@@ -921,7 +925,7 @@ describe("playback controller", () => {
     it("restarts from the range start when Play is pressed on the range's last frame", async () => {
       const playback = createPlaybackDriver();
       const controller = createPlaybackController(playback.driver, 2_000_000);
-      controller.setOptions({ frameRate, loop: false, segment: null });
+      controller.setOptions({ frameIndex: frameIndex(2_000_000), loop: false, segment: null });
       controller.seek(1_966_667, 1_983_334);
 
       controller.play();

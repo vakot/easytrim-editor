@@ -355,8 +355,26 @@ function parseVideoStream(value: unknown): VideoStream {
     averageFrameRate: optionalFrameRate(video.averageFrameRate),
     realFrameRate: optionalFrameRate(video.realFrameRate),
     frameCount: optionalInteger(video.frameCount, "video frame count"),
+    frameTimestampsMicros: optionalFrameTimestamps(video.frameTimestampsMicros),
     rotationDegrees: optionalInteger(video.rotationDegrees, "rotation"),
   };
+}
+
+function optionalFrameTimestamps(value: unknown): number[] | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value)) throw invalidResponse("video frame timestamps");
+  let previous = -1;
+  for (const timestamp of value) {
+    if (
+      typeof timestamp !== "number" ||
+      !Number.isSafeInteger(timestamp) ||
+      timestamp <= previous
+    ) {
+      throw invalidResponse("video frame timestamps");
+    }
+    previous = timestamp;
+  }
+  return value as number[];
 }
 
 function parseAudioStream(value: unknown): AudioStream {

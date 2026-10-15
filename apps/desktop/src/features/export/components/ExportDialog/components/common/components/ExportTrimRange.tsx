@@ -6,28 +6,20 @@ import { Label } from "@/components/ui/label";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportDialogTrim } from "@/app/store/slices/export-slice";
-import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { selectFrameIndex } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { exportTrimChangedRequested } from "@/app/store/thunks/export-thunks";
-import { frameCountFor } from "@/domain/media-time";
 import { createTrimFrameAdapter } from "@/domain/trim-frames";
-
-const DEFAULT_FRAME_RATE = { numerator: 30, denominator: 1 };
 
 function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boolean) => void }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const media = useAppSelector(selectSourceMedia);
+  const frameIndex = useAppSelector(selectFrameIndex);
   const timelineTrim = useAppSelector(selectTrim);
   const dialogTrim = useAppSelector(selectExportDialogTrim);
-  const durationMicros = timelineTrim?.sourceDurationMicros ?? 0;
-  // Match the Timeline's frame grid so the same frame numbers address the same timestamps.
-  const frameRate =
-    media?.video.averageFrameRate ?? media?.video.realFrameRate ?? DEFAULT_FRAME_RATE;
-
-  const framesCount = frameCountFor(durationMicros, frameRate);
-
-  const adapter = createTrimFrameAdapter(durationMicros, framesCount, frameRate);
+  // The Timeline's frames, so the same frame numbers address the same real frames.
+  const adapter = createTrimFrameAdapter(frameIndex);
+  const durationMicros = frameIndex.endMicros;
 
   const [initial] = useState(() =>
     adapter.fromTrim({

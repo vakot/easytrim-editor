@@ -1,10 +1,8 @@
-import type { FrameRate } from "@/domain/media";
+import { type FrameIndex, lastFrameBefore } from "@/domain/frame-index";
 import type { PlaybackRange } from "@/domain/playback";
 import type { AudioPlaybackAdapter } from "@/features/audio";
 import type { PreviewVideoAdapter } from "@/features/preview";
 import { diagnostics } from "@/lib/diagnostics";
-
-import { lastFrameBefore } from "../lib/playback-time";
 
 interface PlaybackDriver {
   audio: AudioPlaybackAdapter;
@@ -12,8 +10,8 @@ interface PlaybackDriver {
 }
 
 interface PlaybackOptions {
-  /** The frame grid; stops rest on a range's last frame rather than on its end boundary. */
-  frameRate?: FrameRate;
+  /** The source's frames; stops rest on a range's last frame rather than on its end boundary. */
+  frameIndex?: FrameIndex;
   loop: boolean;
   segment: PlaybackRange | null;
 }
@@ -377,10 +375,8 @@ class PlaybackController {
   }
 
   private lastFrameOf(range: PlaybackRange) {
-    const { frameRate } = this.options;
-    return frameRate
-      ? lastFrameBefore(range.endMicros, this.snapshot.durationMicros, frameRate)
-      : null;
+    const { frameIndex } = this.options;
+    return frameIndex ? lastFrameBefore(frameIndex, range.endMicros) : null;
   }
 
   private finishAtEndOfMedia(source: PlaybackEndSource) {

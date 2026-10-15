@@ -64,9 +64,9 @@ function TimelinePanel() {
   const media = useAppSelector(selectSourceMedia);
   const loadToken = useAppSelector(selectSourceLoadToken);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
-  const { currentFrame, framesCount, seekFrame } = useTimelinePlayback(frameRate);
+  const { currentFrame, framesCount, seekFrame } = useTimelinePlayback();
 
-  const trim = useTimelineTrimEditing(framesCount, frameRate);
+  const trim = useTimelineTrimEditing();
   // Every Timeline element shares one scale of real frames: 0 to the last frame.
   const lastFrame = Math.max(0, framesCount - 1);
   const length = trim.range.end - trim.range.start;

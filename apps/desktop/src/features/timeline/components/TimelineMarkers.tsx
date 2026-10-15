@@ -6,8 +6,9 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
+import { selectFrameIndex } from "@/app/store/slices/source-slice";
 import type { FrameRate } from "@/domain/media";
-import { microsToFrame, useTimelinePlayback } from "@/features/playback";
+import { useTimelinePlayback } from "@/features/playback";
 
 import { formatFrameTimecode } from "../lib/frame-time";
 
@@ -62,8 +63,9 @@ function TimelineMarkersAudioActivity({
   lastFrame: number;
 }) {
   const tracks = useAppSelector(selectAudioTracks);
+  const frameIndex = useAppSelector(selectFrameIndex);
 
-  const frame = (micros: number) => microsToFrame(micros, frameRate, lastFrame);
+  const frame = (micros: number) => frameIndex.frameAt(micros);
 
   if (!lastFrame || !frameRate) return null;
 
@@ -96,8 +98,9 @@ function TimelineMarkersSceneActivity({
   lastFrame: number;
 }) {
   const scenes = useAppSelector(selectActiveSceneBoundariesMicros);
+  const frameIndex = useAppSelector(selectFrameIndex);
 
-  const frame = (micros: number) => microsToFrame(micros, frameRate, lastFrame);
+  const frame = (micros: number) => frameIndex.frameAt(micros);
 
   if (!lastFrame || !frameRate) return null;
 
@@ -119,9 +122,10 @@ function TimelineMarkersChapters({
   lastFrame: number;
 }) {
   const chapters = useAppSelector(selectChapters);
-  const { seekFrame } = useTimelinePlayback(frameRate);
+  const frameIndex = useAppSelector(selectFrameIndex);
+  const { seekFrame } = useTimelinePlayback();
 
-  const frame = (micros: number) => microsToFrame(micros, frameRate, lastFrame);
+  const frame = (micros: number) => frameIndex.frameAt(micros);
 
   if (!lastFrame || !frameRate) return null;
 

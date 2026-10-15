@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from "react";
 
 import { useAppDispatch, useAppSelector, useAppStore } from "@/app/store/redux-hooks";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
-import { selectSourceLoadToken } from "@/app/store/slices/source-slice";
+import { selectFrameIndex, selectSourceLoadToken } from "@/app/store/slices/source-slice";
 import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
-import type { FrameRate } from "@/domain/media";
 import { createTrimFrameAdapter, type TrimFrames, type TrimHandle } from "@/domain/trim-frames";
 import { usePlaybackActions, usePlaybackIsPlaying } from "@/features/playback";
 
-function useTimelineTrimEditing(framesCount: number, frameRate: FrameRate | undefined) {
+function useTimelineTrimEditing() {
+  const frameIndex = useAppSelector(selectFrameIndex);
+  const framesCount = frameIndex.count;
   const trim = useAppSelector(selectTrim);
   const instanceId = useAppSelector(selectActiveInstanceId);
   const loadToken = useAppSelector(selectSourceLoadToken);
@@ -17,11 +18,7 @@ function useTimelineTrimEditing(framesCount: number, frameRate: FrameRate | unde
   const store = useAppStore();
   const { pause, play } = usePlaybackActions();
   const isPlaying = usePlaybackIsPlaying();
-  const adapter = createTrimFrameAdapter(
-    trim?.sourceDurationMicros ?? 0,
-    framesCount,
-    frameRate ?? { numerator: 30, denominator: 1 },
-  );
+  const adapter = createTrimFrameAdapter(frameIndex);
 
   type Interaction = {
     handle: TrimHandle;
