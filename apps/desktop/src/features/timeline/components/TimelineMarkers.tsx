@@ -111,7 +111,7 @@ function TimelineMarkersChapters() {
         <Timeline.Marker className="top-0 z-10 bg-transparent" micros={chapter.startMicros}>
           <button
             aria-label={t("timeline.chapters.actions.editChapter", { title: chapter.title })}
-            className="pointer-events-auto absolute top-0 -translate-x-1/2 border-x-4 border-t-6 border-x-transparent border-t-primary focus-visible:outline-ring"
+            className="pointer-events-auto absolute -top-1.25 size-4 -translate-x-1/2 focus-visible:outline-ring"
             onClick={() => {
               seekTime(chapter.startMicros);
               chapterEditing.edit(chapter.id);
@@ -119,7 +119,13 @@ function TimelineMarkersChapters() {
             onPointerDown={(event) => event.stopPropagation()}
             title={chapter.title}
             type="button"
-          />
+          >
+            {/* The triangle is centered in a larger hit area. */}
+            <span
+              aria-hidden="true"
+              className="absolute top-1/2 left-1/2 -translate-1/2 border-x-4 border-t-6 border-x-transparent border-t-primary"
+            />
+          </button>
         </Timeline.Marker>
       </span>
     ),
