@@ -1,4 +1,4 @@
-import { BetweenVerticalStart, BookmarkPlus, Check, Clapperboard, Repeat } from "lucide-react";
+import { BetweenVerticalStart, BookmarkPlus, Clapperboard, Repeat, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -176,11 +176,16 @@ function ChaptersTool() {
         <TooltipTrigger asChild>
           <Button
             aria-label={t("timeline.chapters.actions.finishEditing")}
+            className="relative"
             onClick={() => chapterEditing.edit(null)}
             size="icon-sm"
             type="button"
           >
-            <Check />
+            <Save className="z-1 animate-wiggle" />
+            <span
+              aria-hidden="true"
+              className="absolute size-5 animate-ping rounded-sm bg-primary opacity-75"
+            />
           </Button>
         </TooltipTrigger>
         <TooltipContent>{t("timeline.chapters.actions.finishEditing")}</TooltipContent>
