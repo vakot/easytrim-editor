@@ -13,6 +13,8 @@ interface AudioPlaybackAdapter {
   prepareAt: (seconds: number) => Promise<void>;
   registerPlaybackErrorObserver: (observer: () => void) => () => void;
   seek: (seconds: number) => void;
+  /** Previews the playback volume while it is adjusted; `null` restores the committed volume. */
+  setLiveOutputVolume: (volumePercent: number | null) => void;
   /** Previews a track gain while it is adjusted; `null` restores the committed gain. */
   setLiveTrackGain: (streamIndex: number, gainDb: number | null) => void;
   /** Source seconds per second; a running playback restarts from where it is. */

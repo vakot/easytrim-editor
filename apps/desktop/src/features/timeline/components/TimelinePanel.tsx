@@ -44,6 +44,7 @@ import { useTimelineTrimEditing } from "../hooks/useTimelineTrimEditing";
 import { formatTimecode } from "../lib/timecode";
 
 import { PlaybackSpeedControl } from "./PlaybackSpeedControl";
+import { PlaybackVolumeControl } from "./PlaybackVolumeControl";
 import { percentOf, Timeline, type TimelineSnapTarget } from "./Timeline";
 import { EDITED_CHAPTER_SNAP_KEY } from "./TimelineChapterEditor";
 import { TimelineMarkers } from "./TimelineMarkers";
@@ -276,6 +277,7 @@ function TimelinePanelContent() {
 
           <div className="flex gap-1">
             <PlaybackSpeedControl />
+            <PlaybackVolumeControl />
           </div>
         </div>
 

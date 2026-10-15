@@ -26,6 +26,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   const webAudioTracksRef = useRef<WebAudioTrack[]>([]);
   const playbackErrorObserverRef = useRef<(() => void) | null>(null);
   const playbackRateRef = useRef(1);
+  const playbackVolumePercentRef = useRef(playbackVolumePercent);
 
   const enabledTracks = useMemo(() => audioTracks.filter((track) => track.enabled), [audioTracks]);
   const webAudioTracks: WebAudioTrack[] = useMemo(
@@ -93,6 +94,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   }, [activeInstanceId, media, sourcePath, webAudioTracks]);
 
   useEffect(() => {
+    playbackVolumePercentRef.current = playbackVolumePercent;
     sessionRef.current?.setOutputGain(playbackVolumePercent / 100);
   }, [activeInstanceId, media, playbackVolumePercent, sourcePath]);
 
@@ -111,6 +113,10 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   const pause = useCallback(() => sessionRef.current?.pause(), []);
 
   const seek = useCallback((seconds: number) => sessionRef.current?.seek(seconds), []);
+
+  const setLiveOutputVolume = useCallback((volumePercent: number | null) => {
+    sessionRef.current?.setOutputGain((volumePercent ?? playbackVolumePercentRef.current) / 100);
+  }, []);
 
   const setPlaybackRate = useCallback((rate: number) => {
     playbackRateRef.current = rate;
@@ -176,6 +182,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       prepareAt,
       registerPlaybackErrorObserver,
       seek,
+      setLiveOutputVolume,
       setLiveTrackGain,
       setPlaybackRate,
       startAlignedWithVideoAt,
@@ -190,6 +197,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       prepareAt,
       registerPlaybackErrorObserver,
       seek,
+      setLiveOutputVolume,
       setLiveTrackGain,
       setPlaybackRate,
       startAlignedWithVideoAt,

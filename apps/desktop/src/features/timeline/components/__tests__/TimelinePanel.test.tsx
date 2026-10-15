@@ -62,9 +62,14 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
   detectScenes: native.detectScenes,
 }));
 
+const audio = vi.hoisted(() => ({ setLiveOutputVolume: vi.fn() }));
+
 vi.mock("@/features/audio", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/audio")>()),
-  useAudioPlaybackAdapter: () => ({ getMeter: () => null }),
+  useAudioPlaybackAdapter: () => ({
+    getMeter: () => null,
+    setLiveOutputVolume: audio.setLiveOutputVolume,
+  }),
 }));
 
 /** A 5 s, 60 FPS source: frame boundaries every 16.667 ms. */
@@ -266,6 +271,32 @@ describe("TimelinePanel", () => {
     await user.keyboard("{ArrowLeft}");
     expect(store.getState().playbackControls.playbackSpeed).toBe(1.75);
     expect(screen.getByText("1.75×")).toBeInTheDocument();
+  });
+
+  it("mutes the playback volume and restores the last audible one", async () => {
+    const user = userEvent.setup();
+    const store = renderPanel();
+
+    await user.click(screen.getByRole("button", { name: "Mute" }));
+    expect(store.getState().preferences.playbackVolumePercent).toBe(0);
+
+    await user.click(screen.getByRole("button", { name: "Unmute" }));
+    expect(store.getState().preferences.playbackVolumePercent).toBe(100);
+  });
+
+  it("previews a playback volume change and stores it in Preferences when committed", async () => {
+    const user = userEvent.setup();
+    audio.setLiveOutputVolume.mockClear();
+    const store = renderPanel();
+
+    await user.hover(screen.getByRole("button", { name: "Mute" }));
+    const slider = await screen.findByRole("slider", { name: "Playback volume" });
+    slider.focus();
+    await user.keyboard("{ArrowLeft}");
+
+    expect(audio.setLiveOutputVolume).toHaveBeenCalledWith(99);
+    expect(store.getState().preferences.playbackVolumePercent).toBe(99);
+    expect(screen.getByText("99%")).toBeInTheDocument();
   });
 
   it("scrubs to the time under the pointer", () => {
