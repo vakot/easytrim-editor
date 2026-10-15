@@ -178,7 +178,7 @@ function Range({
   const { durationMicros } = useTimeline();
   return (
     <div
-      className={cn("pointer-events-none absolute inset-y-0 mx-2", className)}
+      className={cn("pointer-events-none absolute inset-y-0", className)}
       data-slot="timeline-range"
       style={{
         left: `${percentOf(startMicros, durationMicros)}%`,

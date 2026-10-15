@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { Label } from "@/components/ui/label";
-
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportDialogTrim } from "@/app/store/slices/export-slice";
 import { selectFrameIndex } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { exportTrimChangedRequested } from "@/app/store/thunks/export-thunks";
+import { FrameRangeInput, type FrameRangeInputValue } from "@/components/frame-range-input";
 import { createTrimFrameAdapter } from "@/domain/trim-frames";
 
 function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boolean) => void }) {
@@ -30,80 +28,43 @@ function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boo
     }),
   );
 
-  const [start, setStart] = useState(String(initial.start));
-  const [end, setEnd] = useState(String(initial.end));
-  const isValid = parseFrames(start, end) !== null;
-  const errorId = "export-trim-range-error";
+  const [value, setValue] = useState<FrameRangeInputValue>({
+    end: String(initial.end),
+    start: String(initial.start),
+  });
+
+  const isValid = adapter.parse(value.start, value.end) !== null;
 
   useEffect(() => {
     onValidityChange(isValid);
   }, [isValid, onValidityChange]);
 
-  function parseFrames(nextStart: string, nextEnd: string) {
-    if (!/^\d+$/.test(nextStart.trim()) || !/^\d+$/.test(nextEnd.trim())) return null;
-    const range = { start: Number(nextStart), end: Number(nextEnd) };
-    return range.end <= adapter.lastFrame && range.end >= adapter.bounds(range).minEnd
-      ? range
-      : null;
-  }
-
-  const onRangeChange = (nextStart: string, nextEnd: string) => {
-    setStart(nextStart);
-    setEnd(nextEnd);
-    const range = parseFrames(nextStart, nextEnd);
+  const onValueChange = (next: FrameRangeInputValue) => {
+    setValue(next);
+    const range = adapter.parse(next.start, next.end);
     if (!range) return;
     const { endMicros, startMicros } = adapter.toTrim(range);
     void dispatch(exportTrimChangedRequested({ endMicros, startMicros }));
   };
 
-  const invalidProps = isValid ? {} : { "aria-describedby": errorId, "aria-invalid": true };
-
   return (
-    <section className="grid gap-1.5">
-      <Label htmlFor="export-trim-start">{t("export.trimRange.label")}</Label>
-      <div className="flex items-center gap-2">
-        <InputGroup className="flex-1">
-          <InputGroupInput
-            {...invalidProps}
-            aria-label={t("export.trimRange.startLabel")}
-            id="export-trim-start"
-            inputMode="numeric"
-            max={adapter.lastFrame}
-            min={0}
-            onChange={(event) => onRangeChange(event.target.value, end)}
-            placeholder={t("export.trimRange.startLabel")}
-            step={1}
-            type="number"
-            value={start}
-          />
-          <InputGroupAddon className="text-muted-foreground">f</InputGroupAddon>
-        </InputGroup>
-        <span aria-hidden="true">–</span>
-        <InputGroup className="flex-1">
-          <InputGroupInput
-            {...invalidProps}
-            aria-label={t("export.trimRange.endLabel")}
-            inputMode="numeric"
-            max={adapter.lastFrame}
-            min={0}
-            onChange={(event) => onRangeChange(start, event.target.value)}
-            placeholder={t("export.trimRange.endLabel")}
-            step={1}
-            type="number"
-            value={end}
-          />
-          <InputGroupAddon className="text-muted-foreground">f</InputGroupAddon>
-        </InputGroup>
-      </div>
-      {!isValid ? (
-        <p className="text-sm text-destructive" id={errorId} role="alert">
-          {t("export.trimRange.invalidValue", {
-            frames: adapter.lastFrame,
-            minimum: adapter.bounds({ start: 0, end: adapter.lastFrame }).minEnd,
-          })}
-        </p>
-      ) : null}
-    </section>
+    <FrameRangeInput
+      endLabel={t("export.trimRange.endLabel")}
+      error={
+        isValid
+          ? undefined
+          : t("export.trimRange.invalidValue", {
+              frames: adapter.lastFrame,
+              minimum: adapter.bounds({ start: 0, end: adapter.lastFrame }).minEnd,
+            })
+      }
+      id="export-trim-start"
+      label={t("export.trimRange.label")}
+      maxFrame={adapter.lastFrame}
+      onValueChange={onValueChange}
+      startLabel={t("export.trimRange.startLabel")}
+      value={value}
+    />
   );
 }
 

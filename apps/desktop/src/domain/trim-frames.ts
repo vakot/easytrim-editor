@@ -64,11 +64,19 @@ function createTrimFrameAdapter(index: FrameIndex) {
     return { start, end: start + length };
   }
 
+  /** Typed whole frame numbers as a range, or `null` unless they form a valid one. */
+  function parse(start: string, end: string): TrimFrames | null {
+    if (!/^\d+$/.test(start.trim()) || !/^\d+$/.test(end.trim())) return null;
+    const range = { start: Number(start), end: Number(end) };
+    return range.end <= lastFrame && range.end >= bounds(range).minEnd ? range : null;
+  }
+
   return {
     bounds,
     edit,
     fromTrim,
     lastFrame,
+    parse,
     toTrim: ({ end, start }: TrimFrames): TrimRange => ({
       startMicros: toMicros(start),
       endMicros: toMicros(end + 1),

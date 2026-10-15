@@ -48,6 +48,21 @@ describe("frame-aligned trim", () => {
     });
   });
 
+  it("parses typed whole frames only when they form a valid range", () => {
+    // 5 s at 60 FPS: frames 0..299, at least 60 frames per range.
+    const adapter = createTrimFrameAdapter(
+      createNominalFrameIndex(5_000_000, { numerator: 60, denominator: 1 }),
+    );
+
+    expect(adapter.parse("60", " 119 ")).toEqual({ start: 60, end: 119 });
+    expect(adapter.parse("0", "299")).toEqual({ start: 0, end: 299 });
+    expect(adapter.parse("60", "118")).toBeNull();
+    expect(adapter.parse("0", "300")).toBeNull();
+    expect(adapter.parse("1.5", "200")).toBeNull();
+    expect(adapter.parse("", "200")).toBeNull();
+    expect(adapter.parse("-1", "200")).toBeNull();
+  });
+
   it("keeps sub-second media fully selected", () => {
     const adapter = createTrimFrameAdapter(
       createNominalFrameIndex(150000, { numerator: 60, denominator: 1 }),

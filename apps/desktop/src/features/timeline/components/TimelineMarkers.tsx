@@ -1,4 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useTranslation } from "react-i18next";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectVisibleAudioActivityMarkers } from "@/app/store/slices/audio-slice";
@@ -8,9 +9,11 @@ import type { FrameRate } from "@/domain/media";
 import { audioTrackColor } from "@/features/audio";
 import { useTimelinePlayback } from "@/features/playback";
 
+import { useChapterEditing } from "../contexts/chapter-editing-context";
 import { formatTimecode } from "../lib/timecode";
 
 import { Timeline } from "./Timeline";
+import { TimelineChapterEditor } from "./TimelineChapterEditor";
 
 const RULER_FRACTIONS = [0, 0.25, 0.5, 0.75, 1] as const;
 
@@ -89,29 +92,48 @@ function TimelineMarkersSceneActivity() {
 }
 
 function TimelineMarkersChapters() {
+  const { t } = useTranslation();
   const chapters = useAppSelector(selectChapters);
   const { seekTime } = useTimelinePlayback();
+  const chapterEditing = useChapterEditing();
 
-  return chapters.map((chapter) => (
-    <span key={chapter.id}>
-      <Timeline.Range
-        aria-hidden="true"
-        className="top-1.5 bottom-auto h-0.5 bg-primary/25"
-        endMicros={chapter.endMicros}
-        startMicros={chapter.startMicros}
-      />
-      <Timeline.Marker className="top-0 z-10 bg-transparent" micros={chapter.startMicros}>
-        <button
-          aria-label={chapter.title}
-          className="pointer-events-auto absolute top-0 -translate-x-1/2 border-x-4 border-t-6 border-x-transparent border-t-primary focus-visible:outline-ring"
-          onClick={() => seekTime(chapter.startMicros)}
-          onPointerDown={(event) => event.stopPropagation()}
-          title={chapter.title}
-          type="button"
+  return chapters.map((chapter) =>
+    chapter.id === chapterEditing.chapterId ? (
+      <TimelineChapterEditor chapterId={chapter.id} key={chapter.id} />
+    ) : (
+      <span key={chapter.id}>
+        <Timeline.Range
+          aria-hidden="true"
+          className="top-1.5 bottom-auto h-0.5 bg-primary/25"
+          endMicros={chapter.endMicros}
+          startMicros={chapter.startMicros}
         />
-      </Timeline.Marker>
-    </span>
-  ));
+        <Timeline.Marker className="top-0 z-10 bg-transparent" micros={chapter.startMicros}>
+          <button
+            aria-label={t("timeline.chapters.actions.editChapter", { title: chapter.title })}
+            className="pointer-events-auto absolute -top-3 left-px size-4 -translate-x-1/2 focus-visible:outline-ring"
+            onClick={() => {
+              seekTime(chapter.startMicros);
+              chapterEditing.edit(chapter.id);
+            }}
+            onPointerDown={(event) => event.stopPropagation()}
+            title={chapter.title}
+            type="button"
+          >
+            {/* The triangle is centered in a larger hit area. */}
+            <span
+              aria-hidden="true"
+              className="absolute top-1/2 left-1/2 -translate-1/2 border-x-4 border-t-6 border-x-transparent border-t-primary"
+            />
+            <span
+              aria-hidden="true"
+              className="absolute top-1/2 left-1/2 h-3 w-px -translate-x-1/2 rounded-full bg-primary content-['']"
+            />
+          </button>
+        </Timeline.Marker>
+      </span>
+    ),
+  );
 }
 
 export { TimelineMarkers };
