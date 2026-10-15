@@ -406,4 +406,21 @@ describe("Timeline trim editing", () => {
     expect(playhead).not.toHaveAttribute("data-snap-active");
     fireEvent.pointerUp(timeline, { clientX: 100, pointerId: 1 });
   });
+
+  it("snaps the move knob's center, not the grab point, to the playhead", () => {
+    // Selection 1-3 s (knob at 96 px of 240 px); playhead at 3.5 s (168 px).
+    const store = renderPanel({ start: 1_000_000, end: 3_000_000, positionMicros: 3_500_000 });
+    layOutTimeline();
+    const move = screen.getByRole("slider", { name: "Move selected segment" });
+
+    // Grab 5 px right of the knob's center and drag until the knob is 1 px from the playhead.
+    fireEvent.pointerDown(move, { button: 0, clientX: 101, pointerId: 1 });
+    fireEvent.pointerMove(move, { clientX: 174, pointerId: 1, shiftKey: true });
+    fireEvent.pointerUp(move, { clientX: 174, pointerId: 1 });
+
+    expect(store.getState().trim.value).toMatchObject({
+      startMicros: 2_500_000,
+      endMicros: 4_500_000,
+    });
+  });
 });

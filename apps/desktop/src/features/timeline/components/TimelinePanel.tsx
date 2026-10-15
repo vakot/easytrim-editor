@@ -81,7 +81,8 @@ function TimelinePanel() {
   const isPlaying = usePlaybackIsPlaying();
   const { togglePlayback } = usePlaybackActions();
   const [scrubbing, setScrubbing] = useState(false);
-  const moveOffset = useRef(0);
+  // Half the selection length when its move started: the knob sits at its center.
+  const moveHalfLength = useRef(0);
 
   const timecode = (micros: number) => formatTimecode(micros, frameRate);
   const readout = usePlaybackPosition((position) => formatTimecode(position, frameRate));
@@ -369,10 +370,10 @@ function TimelinePanel() {
                 className="group z-20"
                 data-trim-handle="move"
                 micros={Math.round((trim.startMicros + trim.endMicros) / 2)}
-                onDrag={(micros) => trim.change("move", micros - moveOffset.current)}
+                onDrag={(center) => trim.change("move", center - moveHalfLength.current)}
                 onDragEnd={trim.finish}
-                onDragStart={(micros) => {
-                  moveOffset.current = micros - trim.startMicros;
+                onDragStart={() => {
+                  moveHalfLength.current = (trim.endMicros - trim.startMicros) / 2;
                   trim.begin("move");
                 }}
                 onEnd={() => trim.change("move", durationMicros)}

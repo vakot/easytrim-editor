@@ -49,10 +49,11 @@ function Root({
   const [scrubSnapped, setScrubSnapped] = React.useState(false);
 
   const pointerMicros = React.useCallback(
-    (event: React.PointerEvent, exclude: readonly string[] = []) => {
+    (event: React.PointerEvent, exclude: readonly string[] = [], offsetMicros = 0) => {
       const bounds = layerRef.current?.getBoundingClientRect();
       if (!bounds) return { micros: 0, snapped: false };
-      const micros = microsAtClientX(event.clientX, bounds.left, bounds.width, durationMicros);
+      const pointer = microsAtClientX(event.clientX, bounds.left, bounds.width, durationMicros);
+      const micros = Math.max(0, Math.min(durationMicros, pointer + offsetMicros));
       if (!event.shiftKey) return { micros, snapped: false };
       const snapped = snapToTargets(
         micros,
@@ -199,7 +200,7 @@ type HandleProps = Omit<React.ComponentProps<"span">, "onDrag" | "onDragEnd" | "
   minMicros?: number;
   onDrag?: (micros: number) => void;
   onDragEnd?: () => void;
-  /** Receives the time under the pointer when the drag starts. */
+  /** Receives the handle's time when the drag starts. */
   onDragStart?: (micros: number) => void;
   onEnd?: () => void;
   onHome?: () => void;
@@ -241,6 +242,9 @@ function Handle({
   const inactive = disabled || timeline.disabled;
   const [dragging, setDragging] = React.useState(false);
   const [dragSnapped, setDragSnapped] = React.useState(false);
+  // Where the handle sits relative to the pointer that grabbed it, so the handle (not the
+  // pointer) is what snaps.
+  const grabOffset = React.useRef(0);
   const snapActive = (dragging && dragSnapped) || (scrubbed && timeline.scrubSnapped);
   // A press that moved before release (a drag) must not complete a double click.
   const doubleClick = useDragAwareDoubleClick<HTMLSpanElement>(onDoubleClick);
@@ -294,12 +298,18 @@ function Handle({
         if (inactive || event.button !== 0 || event.isPrimary === false) return;
         event.currentTarget.setPointerCapture?.(event.pointerId);
         setDragging(true);
-        onDragStart?.(timeline.pointerMicros(event, snapExclude).micros);
+        grabOffset.current = micros - timeline.pointerMicros(event, [], 0).micros;
+        onDragStart?.(micros);
       }}
       onPointerDownCapture={doubleClick.onPointerDownCapture}
       onPointerMove={(event) => {
         if (!dragging) return;
-        const { micros: next, snapped } = timeline.pointerMicros(event, snapExclude);
+        const { micros: next, snapped } = timeline.pointerMicros(
+          event,
+          snapExclude,
+          grabOffset.current,
+        );
+
         setDragSnapped(snapped);
         onDrag?.(next);
       }}
