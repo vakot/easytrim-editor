@@ -82,6 +82,7 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
   const driver: PlaybackDriver = {
     audio: {
       getCurrentTimeSeconds: () => audioPosition,
+      getMeter: () => null,
       hasActiveOutput: hasAudioOutput,
       isReady: true,
       pause: vi.fn(),

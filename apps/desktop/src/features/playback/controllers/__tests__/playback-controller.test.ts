@@ -17,6 +17,7 @@ function createPlaybackDriver() {
   const driver: PlaybackDriver = {
     audio: {
       getCurrentTimeSeconds: vi.fn(() => null),
+      getMeter: () => null,
       hasActiveOutput: true,
       isReady: true,
       pause: vi.fn(),
@@ -781,6 +782,65 @@ describe("playback controller", () => {
       expect(controller.getSnapshot().positionMicros).toBe(2_000_000);
       await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
       expect(playback.driver.audio.prepareAt).toHaveBeenLastCalledWith(2.016667);
+      controller.dispose();
+    });
+
+    it("starts a segment run anywhere, before the segment too", async () => {
+      const { controller, playback } = await startPlaying(10_000_000, {
+        loop: false,
+        segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
+      });
+
+      expect(playback.driver.audio.prepareAt).toHaveBeenLastCalledWith(0.016667);
+      playback.playbackFrameCallback(0, 1);
+      expect(controller.isPlaying).toBe(true);
+      expect(controller.getSnapshot().positionMicros).toBe(1_000_000);
+      controller.dispose();
+    });
+
+    it("plays a run started after the segment end through to the source end", async () => {
+      const playback = createPlaybackDriver();
+      const controller = createPlaybackController(playback.driver, 10_000_000);
+      controller.setOptions({
+        frameIndex: frames(10_000_000),
+        loop: false,
+        segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
+      });
+      controller.seek(5_000_000);
+      controller.play();
+      await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+      playback.playbackFrameCallback(0, 9);
+      expect(controller.isPlaying).toBe(true);
+      vi.mocked(playback.driver.video.isEnded).mockReturnValue(true);
+      playback.observer.onEnded();
+
+      expect(controller.isPlaying).toBe(false);
+      expect(controller.getSnapshot().positionMicros).toBe(10_000_000);
+      controller.dispose();
+    });
+
+    it("loops a run started after the segment end back to the segment start", async () => {
+      const playback = createPlaybackDriver();
+      const controller = createPlaybackController(playback.driver, 10_000_000);
+      controller.setOptions({
+        frameIndex: frames(10_000_000),
+        loop: true,
+        segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
+      });
+      controller.seek(5_000_000);
+      controller.play();
+      await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+      vi.mocked(playback.driver.video.isEnded).mockReturnValue(true);
+      playback.observer.onEnded();
+      vi.mocked(playback.driver.video.isEnded).mockReturnValue(false);
+      expect(controller.getSnapshot().positionMicros).toBe(2_000_000);
+      await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+      // The restarted run began inside the segment, so it wraps at the segment end again.
+      playback.playbackFrameCallback(0, 4.003);
+      expect(controller.getSnapshot().positionMicros).toBe(2_000_000);
       controller.dispose();
     });
 

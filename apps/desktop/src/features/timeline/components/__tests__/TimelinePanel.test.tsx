@@ -40,6 +40,11 @@ vi.mock("@/features/playback", () => ({
   }),
 }));
 
+vi.mock("@/features/audio", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/audio")>()),
+  useAudioPlaybackAdapter: () => ({ getMeter: () => null }),
+}));
+
 /** A 5 s, 60 FPS source: frame boundaries every 16.667 ms. */
 function renderPanel({
   end = 5_000_000,

@@ -170,7 +170,7 @@ function TimelinePanel() {
   return (
     <section
       aria-labelledby="timeline-title"
-      className="grid h-full min-w-0 grid-rows-[auto_minmax(2rem,1fr)] gap-4 p-3"
+      className="grid h-full min-w-0 grid-rows-[auto_minmax(2rem,1fr)] gap-3 p-3"
     >
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
         <div className="min-w-0">
@@ -304,10 +304,10 @@ function TimelinePanel() {
         </dl>
       </div>
 
-      <div className="grid h-17 min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-3">
-        <div className="h-full min-w-0">
+      <div className="grid h-19 min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-3">
+        <div className="grid h-full min-w-0 gap-1">
           <h3
-            className="text-[0.625rem] font-bold tracking-wider text-muted-foreground uppercase"
+            className="h-3 text-[0.625rem] font-bold tracking-wider text-muted-foreground uppercase"
             id="timeline-tools-title"
           >
             {t("timeline.labels.tools")}
@@ -318,7 +318,7 @@ function TimelinePanel() {
 
         <Timeline.Root
           aria-label={t("timeline.accessibility.playheadPosition")}
-          className="mt-5 h-13 data-disabled:opacity-50"
+          className="mt-5 mb-1 h-13 data-disabled:opacity-50"
           disabled={empty}
           durationMicros={axisMicros}
           key={loadToken}
@@ -336,68 +336,66 @@ function TimelinePanel() {
             startMicros={selection.startMicros}
           />
           <TimelinePlayhead disabled={empty} frameRate={frameRate} showValue={scrubbing} />
-          <>
-            <Timeline.Handle
-              aria-label={t("timeline.segment.accessibility.trimStart")}
-              className="group z-20"
-              data-trim-handle="start"
-              disabled={!trim.enabled}
-              maxMicros={trim.maxStartMicros}
-              micros={selection.startMicros}
-              onDoubleClick={() => trim.change("start", 0)}
-              onDrag={(micros) => trim.change("start", micros)}
-              onDragEnd={trim.finish}
-              onDragStart={() => trim.begin("start")}
-              onEnd={() => trim.change("start", trim.maxStartMicros)}
-              onHome={() => trim.change("start", 0)}
-              onStep={(direction) => trim.step("start", direction)}
-              snapExclude={["trim-start", "trim-move"]}
-              valueText={timecode(trim.startMicros)}
-            >
-              <TrimGrip edge="start" />
-            </Timeline.Handle>
-            <Timeline.Handle
-              aria-label={t("timeline.segment.accessibility.trimEnd")}
-              className="group z-20"
-              data-trim-handle="end"
-              disabled={!trim.enabled}
-              micros={selection.endMicros}
-              minMicros={trim.minEndMicros}
-              onDoubleClick={() => trim.change("end", durationMicros)}
-              onDrag={(micros) => trim.change("end", micros)}
-              onDragEnd={trim.finish}
-              onDragStart={() => trim.begin("end")}
-              onEnd={() => trim.change("end", durationMicros)}
-              onHome={() => trim.change("end", trim.minEndMicros)}
-              onStep={(direction) => trim.step("end", direction)}
-              snapExclude={["trim-end", "trim-move"]}
-              valueText={timecode(trim.endMicros)}
-            >
-              <TrimGrip edge="end" />
-            </Timeline.Handle>
-            <Timeline.Handle
-              aria-label={t("timeline.segment.actions.moveSegment")}
-              className="group z-20"
-              data-trim-handle="move"
-              disabled={!trim.enabled}
-              micros={selectionCenterMicros}
-              onDrag={(center) => trim.change("move", center - moveHalfLength.current)}
-              onDragEnd={trim.finish}
-              onDragStart={() => {
-                moveHalfLength.current = (trim.endMicros - trim.startMicros) / 2;
-                trim.begin("move");
-              }}
-              onEnd={() => trim.change("move", durationMicros)}
-              onHome={() => trim.change("move", 0)}
-              onStep={(direction) => trim.step("move", direction)}
-              snapExclude={["trim-start", "trim-end", "trim-move"]}
-              valueText={`${timecode(trim.startMicros)} – ${timecode(trim.endMicros)}`}
-            >
-              <span className="absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-aria-disabled:cursor-default group-data-snap-active:ring-3 hover:bg-primary/90 group-aria-disabled:hover:bg-primary active:cursor-grabbing">
-                <GripHorizontal aria-hidden="true" className="size-4" />
-              </span>
-            </Timeline.Handle>
-          </>
+          <Timeline.Handle
+            aria-label={t("timeline.segment.accessibility.trimStart")}
+            className="group z-20"
+            data-trim-handle="start"
+            disabled={!trim.enabled}
+            maxMicros={trim.maxStartMicros}
+            micros={selection.startMicros}
+            onDoubleClick={() => trim.change("start", 0)}
+            onDrag={(micros) => trim.change("start", micros)}
+            onDragEnd={trim.finish}
+            onDragStart={() => trim.begin("start")}
+            onEnd={() => trim.change("start", trim.maxStartMicros)}
+            onHome={() => trim.change("start", 0)}
+            onStep={(direction) => trim.step("start", direction)}
+            snapExclude={["trim-start", "trim-move"]}
+            valueText={timecode(trim.startMicros)}
+          >
+            <TrimGrip edge="start" />
+          </Timeline.Handle>
+          <Timeline.Handle
+            aria-label={t("timeline.segment.accessibility.trimEnd")}
+            className="group z-20"
+            data-trim-handle="end"
+            disabled={!trim.enabled}
+            micros={selection.endMicros}
+            minMicros={trim.minEndMicros}
+            onDoubleClick={() => trim.change("end", durationMicros)}
+            onDrag={(micros) => trim.change("end", micros)}
+            onDragEnd={trim.finish}
+            onDragStart={() => trim.begin("end")}
+            onEnd={() => trim.change("end", durationMicros)}
+            onHome={() => trim.change("end", trim.minEndMicros)}
+            onStep={(direction) => trim.step("end", direction)}
+            snapExclude={["trim-end", "trim-move"]}
+            valueText={timecode(trim.endMicros)}
+          >
+            <TrimGrip edge="end" />
+          </Timeline.Handle>
+          <Timeline.Handle
+            aria-label={t("timeline.segment.actions.moveSegment")}
+            className="group z-20"
+            data-trim-handle="move"
+            disabled={!trim.enabled}
+            micros={selectionCenterMicros}
+            onDrag={(center) => trim.change("move", center - moveHalfLength.current)}
+            onDragEnd={trim.finish}
+            onDragStart={() => {
+              moveHalfLength.current = (trim.endMicros - trim.startMicros) / 2;
+              trim.begin("move");
+            }}
+            onEnd={() => trim.change("move", durationMicros)}
+            onHome={() => trim.change("move", 0)}
+            onStep={(direction) => trim.step("move", direction)}
+            snapExclude={["trim-start", "trim-end", "trim-move"]}
+            valueText={`${timecode(trim.startMicros)} – ${timecode(trim.endMicros)}`}
+          >
+            <span className="absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-aria-disabled:cursor-default group-data-snap-active:ring-3 hover:bg-primary/90 group-aria-disabled:hover:bg-primary active:cursor-grabbing">
+              <GripHorizontal aria-hidden="true" className="size-4" />
+            </span>
+          </Timeline.Handle>
         </Timeline.Root>
       </div>
     </section>
@@ -432,8 +430,8 @@ function TimelinePlayhead({
       showValue={showValue}
       valueText={formatTimecode(position, frameRate)}
     >
-      <span className="absolute -inset-y-1 left-0 w-0.5 -translate-x-1/2 rounded-xs bg-white" />
-      <span className="absolute -top-1 left-0 size-2 -translate-1/2 rounded-full bg-foreground group-data-snap-active:rounded-t-none" />
+      <span className="absolute -inset-y-1 left-0 w-0.5 -translate-x-1/2 rounded-xs bg-white group-focus-visible:ring-3 group-focus-visible:ring-ring/50" />
+      <span className="absolute -top-1 left-0 size-2 -translate-1/2 rounded-full bg-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:rounded-t-none" />
     </Timeline.Handle>
   );
 }
