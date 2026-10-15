@@ -168,6 +168,14 @@ describe("TimelinePanel", () => {
       "aria-disabled",
       "true",
     );
+    for (const edge of ["start", "end", "move"]) {
+      expect(document.querySelector(`[data-trim-handle="${edge}"]`)).toHaveAttribute(
+        "aria-disabled",
+        "true",
+      );
+    }
+    expect(document.querySelector('[data-trim-handle="start"]')).toHaveStyle({ left: "0%" });
+    expect(document.querySelector('[data-trim-handle="end"]')).toHaveStyle({ left: "100%" });
   });
 
   it("steps one frame from the frame controls and stops them at the timeline ends", () => {
