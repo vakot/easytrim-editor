@@ -55,10 +55,7 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
               <AudioTrackDetails streamIndex={streamIndex} />
               <AudioTrackActions streamIndex={streamIndex} />
             </div>
-            <AudioTrackRowWaveform
-              gainDb={liveGainDb ?? track.processing.gainDb}
-              streamIndex={streamIndex}
-            />
+            <AudioTrackRowWaveform liveGainDb={liveGainDb} streamIndex={streamIndex} />
           </div>
         </ContextMenuTrigger>
 
@@ -68,10 +65,18 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
   );
 });
 
-function AudioTrackRowWaveform({ gainDb, streamIndex }: { gainDb: number; streamIndex: number }) {
+function AudioTrackRowWaveform({
+  liveGainDb,
+  streamIndex,
+}: {
+  liveGainDb: number | null;
+  streamIndex: number;
+}) {
   const [displayMode, setDisplayMode] = useState<WaveformDisplayMode>("peak");
   const { stream, track, trackNumber } = useAudioTrackController(streamIndex);
   if (!stream || !track) return null;
+
+  const gainDb = liveGainDb ?? track.processing.gainDb;
 
   return (
     <div
