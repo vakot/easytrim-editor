@@ -348,4 +348,39 @@ describe("Timeline trim editing", () => {
       expect(playback.play).not.toHaveBeenCalled();
     },
   );
+
+  it("snaps a Shift-dragged trim boundary to the playhead", () => {
+    // Playhead at 2 s is 96 px on a 240 px timeline; 100 px is within the snap distance.
+    const store = renderPanel({ positionMicros: 2_000_000 });
+    layOutTimeline();
+    const start = screen.getByRole("slider", { name: "Trim start" });
+    fireEvent.pointerDown(start, { button: 0, clientX: 0, pointerId: 1 });
+    fireEvent.pointerMove(start, { clientX: 100, pointerId: 1, shiftKey: true });
+    fireEvent.pointerUp(start, { clientX: 100, pointerId: 1 });
+    expect(store.getState().trim.value?.startMicros).toBe(2_000_000);
+  });
+
+  it("keeps a Shift-dragged boundary on the timeline edge across pointer moves", () => {
+    const store = renderPanel({ start: 1_000_000, end: 3_000_000 });
+    layOutTimeline();
+    const end = screen.getByRole("slider", { name: "Trim end" });
+    fireEvent.pointerDown(end, { button: 0, clientX: 144, pointerId: 1 });
+    const positions = [];
+    for (const clientX of [236, 237, 238, 237, 236]) {
+      fireEvent.pointerMove(end, { clientX, pointerId: 1, shiftKey: true });
+      positions.push(end.getAttribute("aria-valuenow"));
+    }
+    fireEvent.pointerUp(end, { clientX: 236, pointerId: 1 });
+    expect(new Set(positions)).toEqual(new Set(["5000000"]));
+    expect(store.getState().trim.value?.endMicros).toBe(5_000_000);
+  });
+
+  it("snaps a Shift-scrubbed playhead to the selection's move knob", () => {
+    renderPanel({ start: 1_000_000, end: 3_000_000, positionMicros: 0 });
+    layOutTimeline();
+    const timeline = document.querySelector('[data-slot="timeline"]')!;
+    // The knob sits at 2 s (96 px); the pointer is 4 px away.
+    fireEvent.pointerDown(timeline, { button: 0, clientX: 100, pointerId: 1, shiftKey: true });
+    expect(playback.seekTime).toHaveBeenLastCalledWith(2_000_000);
+  });
 });

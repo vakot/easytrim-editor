@@ -1,1 +1,1 @@
-export { Timeline } from "./Timeline";
+export { Timeline, type TimelineSnapTarget } from "./Timeline";

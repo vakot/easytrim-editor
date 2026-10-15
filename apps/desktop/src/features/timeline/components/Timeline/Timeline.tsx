@@ -13,9 +13,18 @@ type TimelineRootProps = Omit<React.ComponentProps<"div">, "onPointerDown"> & {
   onScrub?: (micros: number) => void;
   onScrubEnd?: () => void;
   onScrubStart?: () => void;
-  /** Times a Shift-drag snaps to when the pointer is near them. */
-  snapTargets?: readonly number[];
+  /**
+   * Named times a Shift-drag snaps to, read when the pointer moves so moving targets such as the
+   * playhead are current. A dragged part excludes its own names, never other targets that happen
+   * to share its time.
+   */
+  snapTargets?: () => readonly TimelineSnapTarget[];
 };
+
+interface TimelineSnapTarget {
+  key: string;
+  micros: number;
+}
 
 /**
  * A horizontal time axis from 0 to `durationMicros`. Pressing anywhere outside a handle scrubs;
@@ -29,21 +38,23 @@ function Root({
   onScrub,
   onScrubEnd,
   onScrubStart,
-  snapTargets = [],
+  snapTargets,
   ...props
 }: TimelineRootProps) {
   const layerRef = React.useRef<HTMLDivElement>(null);
   const scrubbing = React.useRef(false);
 
   const pointerMicros = React.useCallback(
-    (event: React.PointerEvent, exclude?: number) => {
+    (event: React.PointerEvent, exclude: readonly string[] = []) => {
       const bounds = layerRef.current?.getBoundingClientRect();
       if (!bounds) return 0;
       const micros = microsAtClientX(event.clientX, bounds.left, bounds.width, durationMicros);
       if (!event.shiftKey) return micros;
       return snapToTargets(
         micros,
-        snapTargets.filter((target) => target !== exclude),
+        (snapTargets?.() ?? [])
+          .filter((target) => !exclude.includes(target.key))
+          .map((target) => target.micros),
         { durationMicros, thresholdPixels: SNAP_THRESHOLD_PIXELS, width: bounds.width },
       );
     },
@@ -75,16 +86,16 @@ function Root({
           scrubbing.current = true;
           event.currentTarget.setPointerCapture?.(event.pointerId);
           onScrubStart?.();
-          onScrub?.(pointerMicros(event));
+          onScrub?.(pointerMicros(event, SCRUB_EXCLUDES));
         }}
         onPointerMove={(event) => {
-          if (scrubbing.current) onScrub?.(pointerMicros(event));
+          if (scrubbing.current) onScrub?.(pointerMicros(event, SCRUB_EXCLUDES));
         }}
         onPointerUp={endScrub}
         {...props}
       >
         {/* Inset so parts centered on the first and last instant stay inside the timeline. */}
-        <div className="absolute inset-x-2 inset-y-0" data-slot="timeline-layer" ref={layerRef}>
+        <div className="relative size-full" data-slot="timeline-layer" ref={layerRef}>
           {children}
         </div>
       </div>
@@ -96,7 +107,7 @@ function Root({
 function Track({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("pointer-events-none absolute -inset-x-2 inset-y-0", className)}
+      className={cn("pointer-events-none absolute inset-0 size-full", className)}
       data-slot="timeline-track"
       {...props}
     />
@@ -155,7 +166,7 @@ function Range({
   const { durationMicros } = useTimeline();
   return (
     <div
-      className={cn("pointer-events-none absolute inset-y-0", className)}
+      className={cn("pointer-events-none absolute inset-y-0 mx-2", className)}
       data-slot="timeline-range"
       style={{
         left: `${percentOf(startMicros, durationMicros)}%`,
@@ -182,6 +193,8 @@ type HandleProps = Omit<React.ComponentProps<"span">, "onDrag" | "onDragEnd" | "
   onStep?: (direction: -1 | 1) => void;
   /** Shows the value label even when the handle itself is not dragged, e.g. while scrubbing. */
   showValue?: boolean;
+  /** Snap targets this handle never snaps to while dragged: its own, and any moving with it. */
+  snapExclude?: readonly string[];
   /** Shown above the handle while it is dragged, and announced as its value. */
   valueText: string;
 };
@@ -202,6 +215,7 @@ function Handle({
   onKeyDown,
   onStep,
   showValue = false,
+  snapExclude = [],
   style,
   valueText,
   ...props
@@ -255,10 +269,10 @@ function Handle({
         if (inactive || event.button !== 0 || event.isPrimary === false) return;
         event.currentTarget.setPointerCapture?.(event.pointerId);
         setDragging(true);
-        onDragStart?.(timeline.pointerMicros(event, micros));
+        onDragStart?.(timeline.pointerMicros(event, snapExclude));
       }}
       onPointerMove={(event) => {
-        if (dragging) onDrag?.(timeline.pointerMicros(event, micros));
+        if (dragging) onDrag?.(timeline.pointerMicros(event, snapExclude));
       }}
       onPointerUp={endDrag}
       role="slider"
@@ -269,7 +283,7 @@ function Handle({
       {children}
       {(dragging || showValue) && (
         <span
-          className="pointer-events-none absolute bottom-full left-0 mb-2 -translate-x-1/2 rounded-md bg-foreground px-2 py-1 font-mono text-xs whitespace-nowrap text-background"
+          className="pointer-events-none absolute bottom-full left-0 mb-3 -translate-x-1/2 rounded-md bg-foreground px-2 py-1 font-mono text-xs whitespace-nowrap text-background"
           data-slot="timeline-handle-value"
         >
           {valueText}
@@ -279,6 +293,10 @@ function Handle({
   );
 }
 
+/** Scrubbing moves the playhead, so it never snaps to the playhead's own position. */
+const SCRUB_EXCLUDES = ["playhead"] as const;
+
 const Timeline = { Handle, Marker, Range, Root, Track };
 
 export { Timeline };
+export type { TimelineSnapTarget };

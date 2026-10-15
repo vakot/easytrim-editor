@@ -32,7 +32,7 @@ import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 import { useTimelineTrimEditing } from "../hooks/useTimelineTrimEditing";
 import { formatTimecode } from "../lib/timecode";
 
-import { Timeline } from "./Timeline";
+import { Timeline, type TimelineSnapTarget } from "./Timeline";
 import { TimelineMarkers } from "./TimelineMarkers";
 import { TimelineShortcutTooltip } from "./TimelineShortcutTooltip";
 import { TimelineToolbar } from "./TimelineToolbar";
@@ -89,12 +89,22 @@ function TimelinePanel() {
   const atEnd = usePlaybackPosition((position) => position >= durationMicros);
   const empty = framesCount === 0;
 
-  const snapTargets = [
-    0,
-    durationMicros,
-    ...scenes,
-    ...chapters.flatMap((chapter) => [chapter.startMicros, chapter.endMicros]),
-    ...(trim.enabled ? [trim.startMicros, trim.endMicros] : []),
+  const snapTargets = (): TimelineSnapTarget[] => [
+    { key: "timeline-start", micros: 0 },
+    { key: "timeline-end", micros: durationMicros },
+    { key: "playhead", micros: getPositionMicros() },
+    ...scenes.map((micros) => ({ key: "scene", micros })),
+    ...chapters.flatMap((chapter) => [
+      { key: "chapter", micros: chapter.startMicros },
+      { key: "chapter", micros: chapter.endMicros },
+    ]),
+    ...(trim.enabled
+      ? [
+          { key: "trim-start", micros: trim.startMicros },
+          { key: "trim-end", micros: trim.endMicros },
+          { key: "trim-move", micros: Math.round((trim.startMicros + trim.endMicros) / 2) },
+        ]
+      : []),
   ];
 
   useKeyboardShortcut(
@@ -331,6 +341,7 @@ function TimelinePanel() {
                 onEnd={() => trim.change("start", trim.maxStartMicros)}
                 onHome={() => trim.change("start", 0)}
                 onStep={(direction) => trim.step("start", direction)}
+                snapExclude={["trim-start", "trim-move"]}
                 valueText={timecode(trim.startMicros)}
               >
                 <TrimGrip edge="start" />
@@ -348,6 +359,7 @@ function TimelinePanel() {
                 onEnd={() => trim.change("end", durationMicros)}
                 onHome={() => trim.change("end", trim.minEndMicros)}
                 onStep={(direction) => trim.step("end", direction)}
+                snapExclude={["trim-end", "trim-move"]}
                 valueText={timecode(trim.endMicros)}
               >
                 <TrimGrip edge="end" />
@@ -366,6 +378,7 @@ function TimelinePanel() {
                 onEnd={() => trim.change("move", durationMicros)}
                 onHome={() => trim.change("move", 0)}
                 onStep={(direction) => trim.step("move", direction)}
+                snapExclude={["trim-start", "trim-end", "trim-move"]}
                 valueText={`${timecode(trim.startMicros)} – ${timecode(trim.endMicros)}`}
               >
                 <span className="absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 hover:bg-primary/90 active:cursor-grabbing">

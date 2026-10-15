@@ -4,8 +4,8 @@ import { createContext, useContext } from "react";
 interface TimelineContextValue {
   disabled: boolean;
   durationMicros: number;
-  /** The time under a pointer; Shift snaps it to nearby targets other than `exclude`. */
-  pointerMicros: (event: React.PointerEvent, exclude?: number) => number;
+  /** The time under a pointer; Shift snaps it to nearby targets not named in `exclude`. */
+  pointerMicros: (event: React.PointerEvent, exclude?: readonly string[]) => number;
 }
 
 const TimelineContext = createContext<TimelineContextValue | null>(null);
