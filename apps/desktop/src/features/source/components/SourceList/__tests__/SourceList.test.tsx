@@ -177,6 +177,31 @@ describe("source queue controls", () => {
     expect(document.activeElement).toBe(search);
   });
 
+  it("leaves source search unfocused on mount unless asked to focus it", () => {
+    const store = createAppStore();
+    const { unmount } = render(
+      <Provider store={store}>
+        <SourceList>
+          <SourceListSearch />
+        </SourceList>
+      </Provider>,
+    );
+
+    expect(document.activeElement).not.toBe(
+      screen.getByRole("searchbox", { name: "Search sources" }),
+    );
+    unmount();
+
+    render(
+      <Provider store={store}>
+        <SourceList>
+          <SourceListSearch autoFocus />
+        </SourceList>
+      </Provider>,
+    );
+    expect(document.activeElement).toBe(screen.getByRole("searchbox", { name: "Search sources" }));
+  });
+
   it("leaves the browser find shortcut available while search is focused", () => {
     const store = createAppStore();
     const snapshot = createDefaultEditorSnapshot(firstSource);

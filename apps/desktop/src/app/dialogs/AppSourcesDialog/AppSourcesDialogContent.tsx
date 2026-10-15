@@ -24,7 +24,7 @@ function AppSourcesDialogContent({ __scopeDialog }: { __scopeDialog?: DialogScop
 
       <div className="flex min-h-0 flex-1 flex-col pt-3">
         <div className="flex items-center gap-2">
-          <SourceListSearch />
+          <SourceListSearch autoFocus />
           <SourceListCloseAll />
         </div>
         <SourceListContent className="-mx-2 px-2" fadeColor="var(--popover)" />
