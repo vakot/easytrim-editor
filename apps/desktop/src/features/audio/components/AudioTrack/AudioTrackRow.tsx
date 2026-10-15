@@ -146,7 +146,7 @@ function AudioTrackRowWaveform({
   );
 }
 
-const ACTIVITY_RANGE_OPACITY = 0.22;
+const ACTIVITY_RANGE_OPACITY = 0.1;
 
 function percentOfDuration(micros: number, durationMicros: number) {
   return (Math.max(0, Math.min(durationMicros, micros)) / durationMicros) * 100;
