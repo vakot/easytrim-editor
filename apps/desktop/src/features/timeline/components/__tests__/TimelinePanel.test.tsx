@@ -546,7 +546,8 @@ describe("Timeline trim editing", () => {
       "aria-pressed",
       "false",
     );
-    expect(markerCount()).toBe(rulerMarkers);
+    // Hidden markers stay mounted until their exit animation finishes.
+    await waitFor(() => expect(markerCount()).toBe(rulerMarkers));
   });
 
   it("offers a retry when scene detection fails", async () => {

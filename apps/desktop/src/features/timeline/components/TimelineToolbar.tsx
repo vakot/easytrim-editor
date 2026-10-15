@@ -33,9 +33,11 @@ function TimelineToolbar() {
       data-slot="timeline-toolbar"
       role="group"
     >
-      <LoopPlaybackTool />
-      <SegmentPlaybackTool />
-      <SceneDetectionTool />
+      <div className="grid h-full grid-flow-col grid-cols-2 grid-rows-2 gap-1">
+        <LoopPlaybackTool />
+        <SegmentPlaybackTool />
+        <SceneDetectionTool />
+      </div>
 
       <Card className="min-w-0 flex-1 gap-0 rounded-md border border-border bg-muted p-0 ring-0">
         <CardContent className="flex h-full flex-col p-1">

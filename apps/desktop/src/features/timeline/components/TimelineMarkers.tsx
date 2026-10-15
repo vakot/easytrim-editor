@@ -1,3 +1,5 @@
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectChapters } from "@/app/store/slices/chapters-slice";
@@ -10,6 +12,8 @@ import { formatTimecode } from "../lib/timecode";
 import { Timeline } from "./Timeline";
 
 const RULER_FRACTIONS = [0, 0.25, 0.5, 0.75, 1] as const;
+
+const MotionMarker = motion.create(Timeline.Marker);
 
 function TimelineMarkers({ frameRate }: { frameRate?: FrameRate }) {
   return (
@@ -62,14 +66,24 @@ function TimelineMarkersAudioActivity() {
 
 function TimelineMarkersSceneActivity() {
   const scenes = useAppSelector(selectVisibleSceneBoundariesMicros);
+  const shouldReduceMotion = useReducedMotion() === true;
 
-  return scenes.map((micros) => (
-    <Timeline.Marker
-      className="inset-y-0 border-l-2 border-destructive/70 bg-transparent"
-      key={micros}
-      micros={micros}
-    />
-  ));
+  // Markers present when the timeline mounts appear without animating; later ones grow in and out.
+  return (
+    <AnimatePresence initial={false}>
+      {scenes.map((micros) => (
+        <MotionMarker
+          animate={{ opacity: 1, scaleY: 1 }}
+          className="inset-y-0 border-l-2 border-destructive/70 bg-transparent"
+          exit={{ opacity: 0, scaleY: 0 }}
+          initial={{ opacity: 0, scaleY: 0 }}
+          key={micros}
+          micros={micros}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.25, ease: "easeOut" }}
+        />
+      ))}
+    </AnimatePresence>
+  );
 }
 
 function TimelineMarkersChapters() {
