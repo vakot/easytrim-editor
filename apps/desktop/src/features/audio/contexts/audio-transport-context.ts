@@ -13,6 +13,8 @@ interface AudioPlaybackAdapter {
   prepareAt: (seconds: number) => Promise<void>;
   registerPlaybackErrorObserver: (observer: () => void) => () => void;
   seek: (seconds: number) => void;
+  /** Previews a track gain while it is adjusted; `null` restores the committed gain. */
+  setLiveTrackGain: (streamIndex: number, gainDb: number | null) => void;
   startAlignedWithVideoAt: (videoPositionSeconds: number) => Promise<number>;
 }
 

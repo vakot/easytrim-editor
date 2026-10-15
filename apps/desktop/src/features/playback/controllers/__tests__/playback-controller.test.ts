@@ -30,6 +30,7 @@ function createPlaybackDriver() {
         };
       }),
       seek: vi.fn(),
+      setLiveTrackGain: vi.fn(),
       startAlignedWithVideoAt: vi.fn(async (seconds: number) => seconds + 0.15),
     },
     video: {

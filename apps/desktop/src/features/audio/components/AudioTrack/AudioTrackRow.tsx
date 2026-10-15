@@ -2,6 +2,7 @@ import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
   Select,
   SelectContent,
@@ -14,11 +15,14 @@ import { useAudioTrackController } from "../../hooks/useAudioTrackController";
 import { formatGain } from "../../lib/audio-level.utils";
 
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
+import { AudioTrackGainControl } from "./components/AudioTrackGainControl";
 import { AudioTrackToggle } from "./components/AudioTrackToggle";
 import { AudioTrackWaveform, type WaveformDisplayMode } from "./components/AudioTrackWaveform";
 
 const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex: number }) {
-  const { stream, track } = useAudioTrackController(streamIndex);
+  const { stream, track, trackNumber } = useAudioTrackController(streamIndex);
+  // The gain being adjusted, previewed on the waveform before it is committed.
+  const [liveGainDb, setLiveGainDb] = useState<number | null>(null);
 
   if (!track || !stream) return null;
 
@@ -28,10 +32,26 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
       data-slot="audio-track-row"
     >
       <div className="flex items-center gap-1">
-        <AudioTrackToggle streamIndex={streamIndex} />
+        <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
+          <HoverCardTrigger>
+            <AudioTrackToggle streamIndex={streamIndex} />
+          </HoverCardTrigger>
+
+          <HoverCardContent align="center" className="max-w-42 p-0" side="right">
+            <AudioTrackGainControl
+              onLiveGainChange={setLiveGainDb}
+              streamIndex={streamIndex}
+              trackNumber={trackNumber}
+            />
+          </HoverCardContent>
+        </HoverCard>
+
         <AudioTrackDetails streamIndex={streamIndex} />
       </div>
-      <AudioTrackRowWaveform gainDb={track.processing.gainDb} streamIndex={streamIndex} />
+      <AudioTrackRowWaveform
+        gainDb={liveGainDb ?? track.processing.gainDb}
+        streamIndex={streamIndex}
+      />
     </div>
   );
 });

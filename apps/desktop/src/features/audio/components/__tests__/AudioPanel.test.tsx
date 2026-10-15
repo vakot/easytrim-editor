@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createAppStore } from "@/app/store/store";
+import { EditorRuntimeTestProvider } from "@/test/editor-runtime-test-provider";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioPanel } from "../AudioPanel";
@@ -28,9 +29,11 @@ function renderPanel() {
 
   render(
     <Provider store={store}>
-      <TooltipProvider>
-        <AudioPanel />
-      </TooltipProvider>
+      <EditorRuntimeTestProvider>
+        <TooltipProvider>
+          <AudioPanel />
+        </TooltipProvider>
+      </EditorRuntimeTestProvider>
     </Provider>,
   );
 
