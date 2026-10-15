@@ -17,7 +17,7 @@ import type { ApplicationShortcut } from "@/app/commands/core/application-comman
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectChapters } from "@/app/store/slices/chapters-slice";
-import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
+import { selectVisibleSceneBoundariesMicros } from "@/app/store/slices/scene-detection-slice";
 import { selectSourceLoadToken, selectSourceMedia } from "@/app/store/slices/source-slice";
 import type { FrameRate } from "@/domain/media";
 import {
@@ -73,7 +73,7 @@ function TimelinePanel() {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
   const loadToken = useAppSelector(selectSourceLoadToken);
-  const scenes = useAppSelector(selectActiveSceneBoundariesMicros);
+  const scenes = useAppSelector(selectVisibleSceneBoundariesMicros);
   const chapters = useAppSelector(selectChapters);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const { durationMicros, framesCount, getPositionMicros, seekTime, stepFrame } =

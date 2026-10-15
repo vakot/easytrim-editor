@@ -80,6 +80,7 @@ const state = {
     source: { displayName: "source.mp4", sourcePath: "C:/source.mp4" },
     status: "ready",
   },
+  sceneDetection: { markersVisible: true, operation: null },
   trim: { value: null },
 };
 
@@ -287,7 +288,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(72);
+    ).toHaveLength(74);
     expect(
       screen
         .getAllByRole("button")

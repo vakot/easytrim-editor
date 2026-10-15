@@ -1,7 +1,7 @@
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectChapters } from "@/app/store/slices/chapters-slice";
-import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
+import { selectVisibleSceneBoundariesMicros } from "@/app/store/slices/scene-detection-slice";
 import type { FrameRate } from "@/domain/media";
 import { useTimelinePlayback } from "@/features/playback";
 
@@ -61,7 +61,7 @@ function TimelineMarkersAudioActivity() {
 }
 
 function TimelineMarkersSceneActivity() {
-  const scenes = useAppSelector(selectActiveSceneBoundariesMicros);
+  const scenes = useAppSelector(selectVisibleSceneBoundariesMicros);
 
   return scenes.map((micros) => (
     <Timeline.Marker

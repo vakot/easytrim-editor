@@ -139,6 +139,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
         capabilities: { status: "checking" },
       },
       crop: menuState.crop,
+      sceneDetection: { markersVisible: true, operation: null },
       trim: { value: null },
       export: {
         queue: menuState.export.queue,

@@ -24,7 +24,7 @@ type SceneDetectionState = {
 };
 
 type SceneDetectionStatus =
-  | { status: "failed"; error: AppError | null }
+  | { error: AppError | null; status: "failed"; }
   | { status: "idle" | "loading" | "ready" | "unavailable" };
 
 const initialState: SceneDetectionState = {
@@ -120,4 +120,3 @@ export {
   selectSceneMarkersVisible,
   selectVisibleSceneBoundariesMicros,
 };
-export type { SceneDetectionStatus };

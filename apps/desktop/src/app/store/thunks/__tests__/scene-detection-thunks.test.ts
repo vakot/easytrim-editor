@@ -10,6 +10,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
 }));
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
   activeEditingInstanceChanged,
   editingInstancesAdded,
@@ -22,7 +23,6 @@ import {
 } from "@/app/store/slices/scene-detection-slice";
 import { createAppStore } from "@/app/store/store";
 import { detectActiveSourceScenes } from "@/app/store/thunks/scene-detection-thunks";
-import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import { firstSource, media } from "@/test/source.fixtures";
 
 function createStore() {
@@ -56,6 +56,7 @@ function deferred<T>() {
     resolve = res;
     reject = rej;
   });
+
   return { promise, reject, resolve };
 }
 
@@ -100,6 +101,7 @@ describe("scene detection", () => {
       code: "scene_detection_failed",
       message: "media.scene.sceneDetectionTookTooLong",
     };
+
     mocks.detectScenes.mockRejectedValueOnce(error).mockResolvedValueOnce([3_000_000]);
 
     await store.dispatch(detectActiveSourceScenes());
