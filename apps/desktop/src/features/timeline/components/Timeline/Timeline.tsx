@@ -1,5 +1,7 @@
 import * as React from "react";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
 import { cn } from "@/lib/class-names.utils";
 
 import { TimelineContext, useTimeline } from "./contexts/timeline-context";
@@ -281,14 +283,20 @@ function Handle({
       {...props}
     >
       {children}
-      {(dragging || showValue) && (
-        <span
-          className="pointer-events-none absolute bottom-full left-0 mb-3 -translate-x-1/2 rounded-md bg-foreground px-2 py-1 font-mono text-xs whitespace-nowrap text-background"
+      {/* A collision-aware tooltip anchored on the handle's position keeps the value on screen. */}
+      <Tooltip open={dragging || showValue}>
+        <TooltipTrigger asChild>
+          <span aria-hidden="true" className="pointer-events-none absolute top-0 left-0 size-0" />
+        </TooltipTrigger>
+        <TooltipContent
+          className="font-mono tabular-nums"
           data-slot="timeline-handle-value"
+          side="top"
+          sideOffset={12}
         >
           {valueText}
-        </span>
-      )}
+        </TooltipContent>
+      </Tooltip>
     </span>
   );
 }
