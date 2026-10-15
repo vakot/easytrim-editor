@@ -18,7 +18,7 @@ import { LazyAudioPanel } from "@/features/audio/audio-panel.loader";
 import { ExportActions } from "@/features/export";
 import { Preview } from "@/features/preview";
 import { SourceBreadcrumb } from "@/features/source";
-import { TimelinePanel } from "@/features/timeline";
+import { TimelinePanel, TimelinePlayheadScope } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 
 import { useSidebarVisibility } from "../hooks/useSidebarVisibility";
@@ -122,13 +122,15 @@ function AppLayoutMain() {
             )}
             layoutRegion="workspace-timeline"
           >
-            <TimelinePanel />
-            {/* Retain the lazy subtree while replacement source metadata is loading. */}
-            {audioStreamsCount > 0 && isTimelinePanelExpanded ? (
-              <Suspense fallback={<div aria-busy="true" className="min-h-0 flex-1" />}>
-                <LazyAudioPanel />
-              </Suspense>
-            ) : null}
+            <TimelinePlayheadScope>
+              <TimelinePanel />
+              {/* Retain the lazy subtree while replacement source metadata is loading. */}
+              {audioStreamsCount > 0 && isTimelinePanelExpanded ? (
+                <Suspense fallback={<div aria-busy="true" className="min-h-0 flex-1" />}>
+                  <LazyAudioPanel />
+                </Suspense>
+              ) : null}
+            </TimelinePlayheadScope>
           </AppLayoutPanel>
         </ResizablePanel>
       </ResizablePanelGroup>

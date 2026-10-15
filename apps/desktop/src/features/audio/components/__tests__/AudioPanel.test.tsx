@@ -53,6 +53,18 @@ describe("AudioPanel", () => {
     expect(prepareSourceWaveforms).toHaveBeenCalledWith(firstSource.sourcePath, [2, 4], 4096);
   });
 
+  it("draws one non-interactive playhead line across the rows from the shared position", () => {
+    renderPanel();
+
+    const playheads = document.querySelectorAll('[data-slot="audio-playhead"]');
+    expect(playheads).toHaveLength(1);
+    expect(playheads[0]).toHaveClass("left-(--timeline-playhead-position)", "border-dashed");
+
+    const grid = playheads[0]!.closest('[data-slot="audio-playhead-grid"]');
+    expect(grid).toHaveAttribute("aria-hidden", "true");
+    expect(grid).toHaveClass("pointer-events-none", "inset-0");
+  });
+
   it("summarizes the output and toggles merging", async () => {
     const user = userEvent.setup();
     const { store } = renderPanel();
