@@ -24,6 +24,7 @@ interface PreviewVideoAdapter {
   /** Calls back on the next display refresh. */
   requestPlaybackFrame: (callback: (timestamp: number) => void) => PreviewPlaybackFrame | null;
   seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
+  setPlaybackRate: (rate: number) => void;
 }
 
 interface PreviewRuntimeContract {
@@ -34,6 +35,7 @@ interface PreviewRuntimeContract {
   registerMediaObserver: (observer: PreviewMediaObserver) => () => void;
   requestPlaybackFrame: (callback: (timestamp: number) => void) => PreviewPlaybackFrame | null;
   seekMedia: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
+  setPlaybackRate: (rate: number) => void;
   setVideoElement: (element: HTMLVideoElement | null) => void;
   videoRef: RefObject<HTMLVideoElement | null>;
 }
@@ -67,6 +69,7 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
     registerMediaObserver,
     requestPlaybackFrame,
     seekMedia: seek,
+    setPlaybackRate,
     videoRef,
   } = usePreviewRuntime();
 
@@ -88,6 +91,7 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
       registerMediaObserver,
       requestPlaybackFrame,
       seek,
+      setPlaybackRate,
     }),
     [
       isReady,
@@ -99,6 +103,7 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
       registerMediaObserver,
       requestPlaybackFrame,
       seek,
+      setPlaybackRate,
     ],
   );
 }

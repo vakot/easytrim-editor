@@ -20,6 +20,7 @@ import { editingInstancesReducer } from "@/app/store/slices/editing-instances-sl
 import { exportPresetsReducer } from "@/app/store/slices/export-presets-slice";
 import { exportReducer } from "@/app/store/slices/export-slice";
 import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
+import { playbackControlsReducer } from "@/app/store/slices/playback-controls-slice";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 import { previewReducer } from "@/app/store/slices/preview-slice";
 import { sceneDetectionReducer } from "@/app/store/slices/scene-detection-slice";
@@ -34,6 +35,7 @@ const combinedReducer = combineReducers({
   export: exportReducer,
   exportPresets: exportPresetsReducer,
   importWorkflow: importWorkflowReducer,
+  playbackControls: playbackControlsReducer,
   preferences: preferencesReducer,
   preview: previewReducer,
   sceneDetection: sceneDetectionReducer,

@@ -8,6 +8,7 @@ import {
   optimizedExportDialogOpened,
   queueFinishActionChanged,
 } from "@/app/store/slices/export-slice";
+import { playbackSpeedChanged } from "@/app/store/slices/playback-controls-slice";
 import {
   activityFeedViewChanged,
   editingSettingsReset,
@@ -134,6 +135,7 @@ describe("Redux Persist store integration", () => {
       theme: "dark",
       primaryColor: "#123456",
     });
+    expect(store.getState().playbackControls.playbackSpeed).toBe(1);
     expect(store.getState()).not.toHaveProperty("theme");
     expect(store.getState().preferences.activityFeedView).toBe("compact");
 
@@ -191,6 +193,19 @@ describe("Redux Persist store integration", () => {
     expect(invalidStore.store.getState().preferences.primaryColor).toBe(
       DEFAULT_PREFERENCES.primaryColor,
     );
+  });
+
+  it("never persists the playback speed", async () => {
+    const { persistor, storage, store } = await createPersistedTestStore();
+
+    store.dispatch(playbackSpeedChanged(3));
+    await persistor.flush();
+
+    const persistedRoot = await readPersistedRoot(storage);
+    expect(persistedRoot).not.toHaveProperty("playbackControls");
+    expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
+      ...DEFAULT_PREFERENCES,
+    });
   });
 
   it("never persists export runtime state or dialog state", async () => {

@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useState } from "react";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectPlaybackSpeed } from "@/app/store/slices/playback-controls-slice";
 import {
   selectLoopPlaybackEnabled,
   selectSegmentPlaybackEnabled,
@@ -26,6 +27,7 @@ function PlaybackProvider({ children }: { children: ReactNode }) {
   const segmentEnabled = useAppSelector(selectSegmentPlaybackEnabled);
   const trim = useAppSelector(selectTrim);
   const sourceLoadToken = useAppSelector(selectSourceLoadToken);
+  const playbackSpeed = useAppSelector(selectPlaybackSpeed);
   const audio = useAudioPlaybackAdapter();
   const video = usePreviewVideoAdapter();
   const driver = useMemo<PlaybackDriver>(() => ({ audio, video }), [audio, video]);
@@ -59,6 +61,10 @@ function PlaybackProvider({ children }: { children: ReactNode }) {
     segmentEndMicros,
     segmentStartMicros,
   ]);
+
+  useLayoutEffect(() => {
+    controller.setPlaybackRate(playbackSpeed);
+  }, [controller, playbackSpeed]);
 
   useEffect(() => () => controller.dispose(), [controller]);
 

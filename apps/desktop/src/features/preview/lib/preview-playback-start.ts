@@ -36,7 +36,8 @@ async function startPreviewPlayback(video: HTMLVideoElement): Promise<number> {
       resolve(
         Math.max(
           0,
-          metadata.mediaTime + (performance.now() - metadata.expectedDisplayTime) / 1_000,
+          metadata.mediaTime +
+            ((performance.now() - metadata.expectedDisplayTime) / 1_000) * video.playbackRate,
         ),
       );
     });

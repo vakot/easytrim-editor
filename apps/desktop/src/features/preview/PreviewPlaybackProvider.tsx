@@ -255,6 +255,14 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setPlaybackRate = useCallback((rate: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+    // Loading new media resets the rate to the default one.
+    video.defaultPlaybackRate = rate;
+    video.playbackRate = rate;
+  }, []);
+
   const requestPlaybackFrame = useCallback((callback: (timestamp: number) => void) => {
     const video = videoRef.current;
     if (!video) return null;
@@ -312,6 +320,7 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
       registerMediaObserver,
       requestPlaybackFrame,
       seekMedia,
+      setPlaybackRate,
       setVideoElement,
       videoRef,
     }),
@@ -324,6 +333,7 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
       registerMediaObserver,
       requestPlaybackFrame,
       seekMedia,
+      setPlaybackRate,
       setVideoElement,
     ],
   );

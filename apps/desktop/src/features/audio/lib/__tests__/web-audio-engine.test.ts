@@ -27,6 +27,7 @@ function createContext() {
     ReturnType<typeof node> & {
       buffer: AudioBuffer | null;
       onended: (() => void) | null;
+      playbackRate: ReturnType<typeof parameter>;
       start: ReturnType<typeof vi.fn>;
       stop: ReturnType<typeof vi.fn>;
     }
@@ -246,6 +247,43 @@ describe("WebAudioEngine", () => {
     outputTime = 7.95;
     outputPerformanceTime = 4_000;
     expect(engine.currentTimeSeconds).toBeCloseTo(1.15, 4);
+    engine.close();
+  });
+
+  it("plays sources and advances its clock at the playback rate", async () => {
+    const { context, setCurrentTime, sources } = createContext();
+    let outputTime = 4.95;
+    let outputPerformanceTime = 1_000;
+    vi.spyOn(performance, "now").mockImplementation(() => outputPerformanceTime);
+    context.getOutputTimestamp = () => ({
+      contextTime: outputTime,
+      performanceTime: outputPerformanceTime,
+    });
+    const decode = vi.fn(async (_track: AudioTrackSelection, _start: number, duration: number) =>
+      chunk(duration),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(4_000_000);
+    engine.setTracks([
+      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
+    ]);
+    engine.setPlaybackRate(2);
+    await engine.prepareAt(1);
+    // The output latency covers twice as much source time.
+    await expect(engine.startAlignedWithVideoAt(1)).resolves.toBeCloseTo(1.11, 5);
+    expect(sources[0]?.start).toHaveBeenCalledWith(5.005, 0.11);
+    expect(sources[0]?.playbackRate.value).toBe(2);
+
+    // The rest of the first chunk (1.11 s to 3 s) lasts half as long, and the next one follows.
+    await vi.waitFor(() => expect(sources).toHaveLength(2));
+    expect(sources[1]?.start.mock.calls[0]?.[0]).toBeCloseTo(5.95, 5);
+    expect(sources[1]?.playbackRate.value).toBe(2);
+
+    setCurrentTime(5.15);
+    outputTime = 5.1;
+    outputPerformanceTime = 1_150;
+    expect(engine.currentTimeSeconds).toBeCloseTo(1.3, 4);
     engine.close();
   });
 

@@ -53,6 +53,16 @@ describe("native video startup presentation", () => {
     expect(preview.video.cancelVideoFrameCallback).toHaveBeenCalledWith(7);
   });
 
+  it("projects the presented frame by the playback rate", async () => {
+    const preview = createVideo();
+    preview.video.playbackRate = 2;
+    vi.spyOn(performance, "now").mockReturnValue(1_005);
+    const starting = startPreviewPlayback(preview.video);
+    await Promise.resolve();
+    preview.present(1.466667, 1_000);
+    await expect(starting).resolves.toBeCloseTo(1.476667, 6);
+  });
+
   it.each([0, 1 / 60, 2 / 60])("preserves startup at media time %s", async (seconds) => {
     const preview = createVideo();
     vi.spyOn(performance, "now").mockReturnValue(100);
