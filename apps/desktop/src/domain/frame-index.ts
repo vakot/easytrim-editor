@@ -19,7 +19,26 @@ interface FrameIndex {
   startOf(frame: number): number;
 }
 
-function createRealFrameIndex(timestampsMicros: readonly number[], endMicros: number): FrameIndex {
+/** A first frame this close to the start is rounding noise, not a gap before the picture. */
+const LEADING_GAP_TOLERANCE_MICROS = 1_000;
+
+/**
+ * The timeline starts at 0 with the container, so 0 must be a boundary a position can rest on.
+ * When the first picture starts later (B-frame delay, a late video start), the time before it is
+ * frame 0, held on the first picture, and the real frames follow as frames 1 and up.
+ */
+function withLeadingBoundary(timestampsMicros: readonly number[]): readonly number[] {
+  const first = timestampsMicros[0];
+  if (first === undefined || first <= 0) return timestampsMicros;
+  if (first <= LEADING_GAP_TOLERANCE_MICROS) return [0, ...timestampsMicros.slice(1)];
+  return [0, ...timestampsMicros];
+}
+
+function createRealFrameIndex(
+  realTimestampsMicros: readonly number[],
+  endMicros: number,
+): FrameIndex {
+  const timestampsMicros = withLeadingBoundary(realTimestampsMicros);
   const count = timestampsMicros.length;
   return {
     count,
