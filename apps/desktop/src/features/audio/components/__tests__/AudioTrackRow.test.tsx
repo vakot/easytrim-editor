@@ -765,7 +765,9 @@ describe("AudioTrackRow", () => {
     await user.click(showRanges);
 
     expect(store.getState().audio.tracks[0]?.activityVisible).toBe(false);
-    expect(document.querySelector('[data-slot="audio-track-activity-range"]')).toBeNull();
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="audio-track-activity-range"]')).toBeNull(),
+    );
   });
 
   it("allows a muted track to run activity analysis", async () => {
