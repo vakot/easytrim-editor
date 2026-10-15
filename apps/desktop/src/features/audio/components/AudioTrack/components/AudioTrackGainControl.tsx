@@ -119,7 +119,6 @@ function AudioTrackGainSlider({
     <div className="flex h-8 min-w-0 items-center gap-1.5 pt-2">
       <Slider
         aria-label={t("audio.tracks.gainLabel", { number: trackNumber })}
-        className="min-w-0 flex-1 py-0 **:data-[slot=slider-thumb]:size-2.5"
         markers={[
           { label: MIN_GAIN_DB_SLIDER, value: MIN_GAIN_DB_SLIDER },
           { label: "0", value: 0 },
