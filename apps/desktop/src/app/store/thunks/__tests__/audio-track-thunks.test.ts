@@ -21,10 +21,7 @@ import {
   audioTrackToggled,
 } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
-import {
-  analyzeTrackLoudness,
-  detectTrackActivity,
-} from "@/app/store/thunks/audio-track-thunks";
+import { analyzeTrackLoudness, detectTrackActivity } from "@/app/store/thunks/audio-track-thunks";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 function createStore() {

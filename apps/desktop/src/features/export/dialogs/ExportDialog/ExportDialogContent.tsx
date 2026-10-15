@@ -105,7 +105,6 @@ function ExportDialogContent({ __scopeDialog, onCancel }: ExportDialogContentPro
         </DialogDescription>
       </DialogHeader>
 
-
       {routeComposition.options}
       <ExportResolution cropResolution={cropResolution} settings={settings} />
       <FrameRate
