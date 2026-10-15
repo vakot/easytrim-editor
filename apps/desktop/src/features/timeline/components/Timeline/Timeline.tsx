@@ -55,15 +55,13 @@ function Root({
       const pointer = microsAtClientX(event.clientX, bounds.left, bounds.width, durationMicros);
       const micros = Math.max(0, Math.min(durationMicros, pointer + offsetMicros));
       if (!event.shiftKey) return { micros, snapped: false };
-      const snapped = snapToTargets(
+      return snapToTargets(
         micros,
         (snapTargets?.() ?? [])
           .filter((target) => !exclude.includes(target.key))
           .map((target) => target.micros),
         { durationMicros, thresholdPixels: SNAP_THRESHOLD_PIXELS, width: bounds.width },
       );
-
-      return { micros: snapped, snapped: snapped !== micros };
     },
     [durationMicros, snapTargets],
   );

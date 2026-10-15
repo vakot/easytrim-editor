@@ -11,7 +11,10 @@ function microsAtClientX(clientX: number, left: number, width: number, durationM
   return Math.round(fraction * durationMicros);
 }
 
-/** The target within `thresholdPixels` of `micros`, if any, preferring the nearest. */
+/**
+ * The target within `thresholdPixels` of `micros`, preferring the nearest. `snapped` reports a
+ * match even when `micros` already sits exactly on the target.
+ */
 function snapToTargets(
   micros: number,
   targets: readonly number[],
@@ -25,18 +28,18 @@ function snapToTargets(
     width: number;
   },
 ) {
-  if (width <= 0 || durationMicros <= 0) return micros;
+  if (width <= 0 || durationMicros <= 0) return { micros, snapped: false };
   const threshold = (thresholdPixels / width) * durationMicros;
-  let snapped = micros;
+  let result = { micros, snapped: false };
   let distance = threshold;
   for (const target of targets) {
     const gap = Math.abs(target - micros);
     if (gap <= distance) {
       distance = gap;
-      snapped = target;
+      result = { micros: target, snapped: true };
     }
   }
-  return snapped;
+  return result;
 }
 
 export { microsAtClientX, percentOf, snapToTargets };

@@ -19,7 +19,22 @@ describe("timeline scale", () => {
   it("snaps to the nearest target within the pixel threshold", () => {
     const scale = { durationMicros: 2_000_000, thresholdPixels: 12, width: 200 };
     // 12 px are 120 ms on a 200 px timeline of 2 s.
-    expect(snapToTargets(1_000_000, [1_100_000, 1_050_000], scale)).toBe(1_050_000);
-    expect(snapToTargets(1_000_000, [1_200_000], scale)).toBe(1_000_000);
+    expect(snapToTargets(1_000_000, [1_100_000, 1_050_000], scale)).toEqual({
+      micros: 1_050_000,
+      snapped: true,
+    });
+    expect(snapToTargets(1_000_000, [1_200_000], scale)).toEqual({
+      micros: 1_000_000,
+      snapped: false,
+    });
+  });
+
+  it("reports a snap when the time already sits on a target", () => {
+    const scale = { durationMicros: 2_000_000, thresholdPixels: 12, width: 200 };
+    // A pointer past the end clamps onto the end target: still snapped.
+    expect(snapToTargets(2_000_000, [0, 2_000_000], scale)).toEqual({
+      micros: 2_000_000,
+      snapped: true,
+    });
   });
 });
