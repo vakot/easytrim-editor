@@ -32,6 +32,10 @@ const MICROS_PER_SECOND = 1_000_000;
  * One transport for the preview video and the Web Audio tracks. While playing, the position is
  * the media clock. Paused positions rest on frame boundaries: a requested pause lets the clock
  * reach the next boundary, and a range end stops on the range's end boundary.
+ *
+ * An enabled segment constrains only where playback stops and loops, never where it starts: a run
+ * started before the segment end stops (or loops) there, one started after it plays to the source
+ * end, and a loop restarts from the segment start.
  */
 class PlaybackController {
   private snapshot: PlaybackSnapshot = { durationMicros: 0, positionMicros: 0 };
@@ -47,6 +51,8 @@ class PlaybackController {
   private clockGeneration = 0;
   /** A requested pause waiting for the clock to reach this frame boundary. */
   private pauseAtMicros: number | null = null;
+  /** Where the current run started, which decides whether it stops at the segment end. */
+  private runStartMicros = 0;
   private options: PlaybackOptions = {
     frameIndex: createRealFrameIndex([], 0),
     loop: false,
@@ -129,11 +135,10 @@ class PlaybackController {
     ) {
       return;
     }
-    const range = this.playbackRange();
-    const position = this.snapshot.positionMicros;
-    if (position >= range.endMicros || position < range.startMicros) {
-      this.seek(range.startMicros);
+    if (this.snapshot.positionMicros >= this.snapshot.durationMicros) {
+      this.seek(this.options.segment?.startMicros ?? 0);
     }
+    this.runStartMicros = this.snapshot.positionMicros;
 
     const generation = ++this.startupGeneration;
     this.pauseAtMicros = null;
@@ -355,8 +360,15 @@ class PlaybackController {
     this.driver.audio.prefetchAt(this.playbackRange().startMicros / MICROS_PER_SECOND);
   }
 
+  /** The current run's loop start and stop point. */
   private playbackRange(): PlaybackRange {
-    return this.options.segment ?? { startMicros: 0, endMicros: this.snapshot.durationMicros };
+    const { segment } = this.options;
+    const startMicros = segment?.startMicros ?? 0;
+    const stopsAtSegmentEnd = segment !== null && this.runStartMicros < segment.endMicros;
+    return {
+      startMicros,
+      endMicros: stopsAtSegmentEnd ? segment.endMicros : this.snapshot.durationMicros,
+    };
   }
 
   private clockMicros() {
