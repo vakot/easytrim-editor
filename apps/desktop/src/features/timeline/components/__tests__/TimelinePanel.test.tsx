@@ -67,26 +67,26 @@ describe("TimelinePanel", () => {
 
     const slider = screen.getByRole("slider");
     expect(slider).toHaveAttribute("aria-valuemin", "0");
-    expect(slider).toHaveAttribute("aria-valuemax", "100");
+    expect(slider).toHaveAttribute("aria-valuemax", "99");
     expect(slider).toHaveAttribute("aria-valuenow", "11");
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
-      "00:00:00:11f / 00:00:03:10f",
+      "00:00:00:11f / 00:00:03:09f",
     );
 
     fireEvent.keyDown(slider, { key: "ArrowRight" });
     expect(playback.seekFrame).toHaveBeenCalledWith(12);
   });
 
-  it("keeps EOF as the Slider endpoint and displays its timecode without adding a frame", () => {
-    renderTimelinePanel({ currentFrame: 100, framesCount: 100 });
+  it("ends the Timeline scale on the last frame so the playhead reaches its endpoint", () => {
+    renderTimelinePanel({ currentFrame: 99, framesCount: 100 });
 
     const slider = screen.getByRole("slider");
-    expect(slider).toHaveAttribute("aria-valuemax", "100");
-    expect(slider).toHaveAttribute("aria-valuenow", "100");
+    expect(slider).toHaveAttribute("aria-valuemax", "99");
+    expect(slider).toHaveAttribute("aria-valuenow", "99");
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
-      "00:00:03:10f / 00:00:03:10f",
+      "00:00:03:09f / 00:00:03:09f",
     );
-    expect(screen.queryByText(/Frame 101/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next frame" })).toBeDisabled();
   });
 
   it("moves by one frame with global arrows and toggles playback with Space", () => {
@@ -204,14 +204,22 @@ describe("Timeline trim editing", () => {
     expect(store.getState().trim.value).toMatchObject({ startMicros: 0, endMicros: 2000000 });
   });
 
-  it("marks in/out with shortcuts and transport buttons, including crossing the opposite edge", () => {
+  it("marks the playhead frame as first (In) and last (Out) included, crossing the opposite edge", () => {
     const store = renderTrim({ end: 1000000 });
     fireEvent.keyDown(window, { code: "KeyI", key: "ш" });
     expect(store.getState().trim.value).toMatchObject({ startMicros: 2000000, endMicros: 5000000 });
+    // Out on the In frame includes it; the selection keeps its minimum length.
     fireEvent.click(screen.getByRole("button", { name: "Set segment end" }));
-    expect(store.getState().trim.value).toMatchObject({ startMicros: 0, endMicros: 2000000 });
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 2000000, endMicros: 3000000 });
     fireEvent.keyDown(window, { code: "KeyI", key: "i", repeat: true });
-    expect(store.getState().trim.value?.startMicros).toBe(0);
+    expect(store.getState().trim.value?.startMicros).toBe(2000000);
+  });
+
+  it("includes the Out frame and crosses a later start", () => {
+    const store = renderTrim({ start: 3000000, end: 5000000 });
+    fireEvent.click(screen.getByRole("button", { name: "Set segment end" }));
+    // Frame 120 is the last included frame, so the exclusive end boundary is frame 121.
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 0, endMicros: 2016667 });
   });
 
   it("resets each boundary on double click", () => {

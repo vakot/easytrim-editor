@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import {
@@ -9,6 +9,7 @@ import {
   sourceReady,
   sourceSelected,
 } from "@/app/store/actions/source-actions";
+import { createFrameIndex, type FrameIndex } from "@/domain/frame-index";
 import type { SourceRef } from "@/domain/source";
 import type { AppError, MediaCapabilities, MediaInfo } from "@/lib/tauri/media.types";
 
@@ -106,6 +107,12 @@ const sourceReducer = sourceSlice.reducer;
 const selectSourceSelection = (state: RootState): SourceRef | null => state.source.source;
 const selectSourceMedia = (state: RootState): MediaInfo | null => state.source.media;
 
+/** The source's frames: the single frame model for the Timeline, playback, trim and export. */
+const selectFrameIndex: (state: RootState) => FrameIndex = createSelector(
+  [selectSourceMedia],
+  createFrameIndex,
+);
+
 const selectCapabilities = (state: RootState): CapabilityState => state.source.capabilities;
 const selectHasSource = (state: RootState): boolean => state.source.source !== null;
 const selectSourceReady = (state: RootState): boolean =>
@@ -117,6 +124,7 @@ export {
   capabilitiesFailed,
   capabilitiesReady,
   selectCapabilities,
+  selectFrameIndex,
   selectHasSource,
   selectSourceLoadToken,
   selectSourceMedia,

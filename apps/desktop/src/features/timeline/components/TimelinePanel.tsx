@@ -13,6 +13,8 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
+import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
+import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceLoadToken, selectSourceMedia } from "@/app/store/slices/source-slice";
 import { usePlaybackActions, usePlaybackIsPlaying, useTimelinePlayback } from "@/features/playback";
@@ -24,20 +26,51 @@ import { useTimelineTrimEditing } from "../hooks/useTimelineTrimEditing";
 import { formatFrameTimecode } from "../lib/frame-time";
 
 import { TimelineMarkers } from "./TimelineMarkers";
+import { TimelineShortcutTooltip } from "./TimelineShortcutTooltip";
+import { TimelineToolbar } from "./TimelineToolbar";
+
+const SET_START_SHORTCUT = {
+  code: "KeyI",
+  key: "I",
+  modifier: "none",
+} as const satisfies ApplicationShortcut;
+
+const SET_END_SHORTCUT = {
+  code: "KeyO",
+  key: "O",
+  modifier: "none",
+} as const satisfies ApplicationShortcut;
+
+const PREVIOUS_FRAME_SHORTCUT = {
+  code: "ArrowLeft",
+  key: "ArrowLeft",
+  modifier: "none",
+} as const satisfies ApplicationShortcut;
+
+const NEXT_FRAME_SHORTCUT = {
+  code: "ArrowRight",
+  key: "ArrowRight",
+  modifier: "none",
+} as const satisfies ApplicationShortcut;
+
+const PLAY_SHORTCUT = {
+  code: "Space",
+  key: "Space",
+  modifier: "none",
+} as const satisfies ApplicationShortcut;
 
 function TimelinePanel() {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
   const loadToken = useAppSelector(selectSourceLoadToken);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
-  const { currentFrame, framesCount, seekFrame } = useTimelinePlayback(
-    frameRate,
-    media?.video.frameCount,
-  );
+  const { currentFrame, framesCount, seekFrame } = useTimelinePlayback();
 
-  const trim = useTimelineTrimEditing(framesCount, frameRate);
+  const trim = useTimelineTrimEditing();
+  // Every Timeline element shares one scale of real frames: 0 to the last frame.
+  const lastFrame = Math.max(0, framesCount - 1);
   const length = trim.range.end - trim.range.start;
-  const percent = (frame: number) => `${framesCount > 0 ? (frame / framesCount) * 100 : 0}%`;
+  const percent = (frame: number) => `${lastFrame > 0 ? (frame / lastFrame) * 100 : 0}%`;
 
   const isPlaying = usePlaybackIsPlaying();
   const { pause, togglePlayback } = usePlaybackActions();
@@ -92,7 +125,7 @@ function TimelinePanel() {
         !event.target.closest('[aria-labelledby="timeline-title"]')
       ) &&
       (event.code === "KeyI" || event.code === "KeyO"),
-    (event) => trim.setBoundary(event.code === "KeyI" ? "start" : "end", currentFrame),
+    (event) => trim.markFrame(event.code === "KeyI" ? "start" : "end", currentFrame),
   );
 
   return (
@@ -115,7 +148,7 @@ function TimelinePanel() {
             {formatFrameTimecode(currentFrame, frameRate)}
             <span className="text-muted-foreground">
               {" / "}
-              {formatFrameTimecode(framesCount, frameRate)}
+              {formatFrameTimecode(lastFrame, frameRate)}
             </span>
           </output>
         </div>
@@ -124,71 +157,99 @@ function TimelinePanel() {
           aria-label={t("preview.accessibility.controls")}
           className="flex items-center justify-center gap-1.5"
         >
-          <Button
-            aria-keyshortcuts="I"
-            aria-label={t("preview.segment.setStart")}
-            disabled={!trim.enabled || currentFrame >= framesCount}
-            onClick={() => trim.setBoundary("start", currentFrame)}
-            size="icon-sm"
-            title={`${t("preview.segment.setStart")} (I)`}
-            type="button"
-            variant="ghost"
+          <TimelineShortcutTooltip
+            disabled={!trim.enabled}
+            shortcut={SET_START_SHORTCUT}
+            tooltip={t("preview.segment.setStart")}
           >
-            <SquareArrowRight aria-hidden="true" />
-          </Button>
-          <Button
-            aria-label={t("preview.frame.previous")}
-            disabled={framesCount === 0}
-            onClick={() => {
-              pause();
-              seekFrame(currentFrame - 1);
-            }}
-            size="icon-sm"
-            title={t("preview.frame.previousFrameTooltip")}
-            type="button"
-            variant="ghost"
+            <Button
+              aria-keyshortcuts={getShortcutAriaValue(SET_START_SHORTCUT)}
+              aria-label={t("preview.segment.setStart")}
+              disabled={!trim.enabled}
+              onClick={() => trim.markFrame("start", currentFrame)}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <SquareArrowRight aria-hidden="true" />
+            </Button>
+          </TimelineShortcutTooltip>
+          <TimelineShortcutTooltip
+            disabled={currentFrame <= 0}
+            shortcut={PREVIOUS_FRAME_SHORTCUT}
+            tooltip={t("preview.frame.previousFrameTooltip")}
           >
-            <SkipBack aria-hidden="true" />
-          </Button>
-          <Button
-            aria-label={isPlaying ? t("preview.playback.pause") : t("preview.playback.play")}
-            className="rounded-full"
+            <Button
+              aria-keyshortcuts={getShortcutAriaValue(PREVIOUS_FRAME_SHORTCUT)}
+              aria-label={t("preview.frame.previous")}
+              disabled={currentFrame <= 0}
+              onClick={() => {
+                pause();
+                seekFrame(currentFrame - 1);
+              }}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <SkipBack aria-hidden="true" />
+            </Button>
+          </TimelineShortcutTooltip>
+          <TimelineShortcutTooltip
             disabled={framesCount === 0}
-            onClick={togglePlayback}
-            size="icon-lg"
-            title={
+            shortcut={PLAY_SHORTCUT}
+            tooltip={
               isPlaying ? t("preview.playback.pauseTooltip") : t("preview.playback.playTooltip")
             }
-            type="button"
           >
-            {isPlaying ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
-          </Button>
-          <Button
-            aria-label={t("preview.frame.next")}
-            disabled={framesCount === 0}
-            onClick={() => {
-              pause();
-              seekFrame(currentFrame + 1);
-            }}
-            size="icon-sm"
-            title={t("preview.frame.nextFrameTooltip")}
-            type="button"
-            variant="ghost"
+            <Button
+              aria-keyshortcuts={getShortcutAriaValue(PLAY_SHORTCUT)}
+              aria-label={isPlaying ? t("preview.playback.pause") : t("preview.playback.play")}
+              className="rounded-full"
+              disabled={framesCount === 0}
+              onClick={togglePlayback}
+              size="icon-lg"
+              type="button"
+            >
+              {isPlaying ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+            </Button>
+          </TimelineShortcutTooltip>
+          <TimelineShortcutTooltip
+            disabled={currentFrame >= framesCount - 1}
+            shortcut={NEXT_FRAME_SHORTCUT}
+            tooltip={t("preview.frame.nextFrameTooltip")}
           >
-            <SkipForward aria-hidden="true" />
-          </Button>
-          <Button
-            aria-keyshortcuts="O"
-            aria-label={t("preview.segment.setEnd")}
-            disabled={!trim.enabled || currentFrame <= 0}
-            onClick={() => trim.setBoundary("end", currentFrame)}
-            size="icon-sm"
-            title={`${t("preview.segment.setEnd")} (O)`}
-            type="button"
-            variant="ghost"
+            <Button
+              aria-keyshortcuts={getShortcutAriaValue(NEXT_FRAME_SHORTCUT)}
+              aria-label={t("preview.frame.next")}
+              disabled={currentFrame >= framesCount - 1}
+              onClick={() => {
+                pause();
+                seekFrame(currentFrame + 1);
+              }}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <SkipForward aria-hidden="true" />
+            </Button>
+          </TimelineShortcutTooltip>
+          <TimelineShortcutTooltip
+            disabled={!trim.enabled}
+            shortcut={SET_END_SHORTCUT}
+            tooltip={t("preview.segment.setEnd")}
           >
-            <SquareArrowLeft aria-hidden="true" />
-          </Button>
+            <Button
+              aria-keyshortcuts={getShortcutAriaValue(SET_END_SHORTCUT)}
+              aria-label={t("preview.segment.setEnd")}
+              disabled={!trim.enabled}
+              onClick={() => trim.markFrame("end", currentFrame)}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <SquareArrowLeft aria-hidden="true" />
+            </Button>
+          </TimelineShortcutTooltip>
         </div>
 
         <dl
@@ -222,9 +283,7 @@ function TimelinePanel() {
             {t("timeline.labels.tools")}
           </h3>
 
-          <div>
-            <div aria-labelledby="timeline-tools-title" role="group"></div>
-          </div>
+          <TimelineToolbar />
         </div>
 
         <Slider.Group className="relative isolate mt-5 h-13" key={loadToken} sharedScale>
@@ -232,7 +291,7 @@ function TimelinePanel() {
             aria-label={t("timeline.accessibility.playheadPosition")}
             className="h-13"
             disabled={framesCount === 0}
-            max={framesCount === 0 ? 1 : framesCount}
+            max={lastFrame > 0 ? lastFrame : 1}
             min={0}
             onValueChange={([frame]) => seekFrame(frame ?? 0)}
             snap="shift"
@@ -240,7 +299,7 @@ function TimelinePanel() {
             style={{ isolation: "auto" }}
             value={[currentFrame]}
           >
-            <TimelineMarkers frameRate={frameRate} framesCount={framesCount} />
+            <TimelineMarkers frameRate={frameRate} lastFrame={lastFrame} />
             <Slider.Track className="segment-markers h-13 rounded-md border bg-muted/30 text-muted" />
             {trim.enabled && (
               <div
@@ -248,7 +307,7 @@ function TimelinePanel() {
                 data-slot="timeline-selection"
                 style={{
                   left: percent(trim.range.start),
-                  right: percent(framesCount - trim.range.end),
+                  right: percent(lastFrame - trim.range.end),
                 }}
               />
             )}
@@ -276,7 +335,7 @@ function TimelinePanel() {
                     ? trim.bounds.maxStart
                     : moving
                       ? trim.bounds.maxMove + offset
-                      : framesCount;
+                      : lastFrame;
 
                 const value = handle === "end" ? trim.range.end : trim.range.start;
                 const label = t(
@@ -296,7 +355,7 @@ function TimelinePanel() {
                     max={maximum > minimum ? maximum : minimum + 1}
                     min={minimum}
                     onDoubleClick={() => {
-                      if (!moving) trim.change(handle, handle === "start" ? 0 : framesCount);
+                      if (!moving) trim.change(handle, handle === "start" ? 0 : lastFrame);
                     }}
                     onLostPointerCapture={trim.finish}
                     onPointerCancelCapture={trim.finish}

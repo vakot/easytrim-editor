@@ -2,10 +2,17 @@ import { type ReactNode, useEffect, useLayoutEffect, useMemo, useState } from "r
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import {
+  selectLoopPlaybackEnabled,
+  selectSegmentPlaybackEnabled,
+} from "@/app/store/slices/preferences-slice";
+import {
+  selectFrameIndex,
   selectSourceLoadToken,
   selectSourceMedia,
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
+import { playbackRange } from "@/domain/playback";
 import { useAudioPlaybackAdapter } from "@/features/audio";
 import { usePreviewVideoAdapter } from "@/features/preview";
 
@@ -15,6 +22,9 @@ import { PlaybackController, type PlaybackDriver } from "../controllers/playback
 function PlaybackProvider({ children }: { children: ReactNode }) {
   const source = useAppSelector(selectSourceSelection);
   const media = useAppSelector(selectSourceMedia);
+  const loop = useAppSelector(selectLoopPlaybackEnabled);
+  const segmentEnabled = useAppSelector(selectSegmentPlaybackEnabled);
+  const trim = useAppSelector(selectTrim);
   const sourceLoadToken = useAppSelector(selectSourceLoadToken);
   const audio = useAudioPlaybackAdapter();
   const video = usePreviewVideoAdapter();
@@ -25,6 +35,30 @@ function PlaybackProvider({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     controller.attach(mediaSessionId, driver, media?.durationMicros ?? 0);
   }, [controller, driver, media?.durationMicros, mediaSessionId]);
+
+  const segmentStartMicros = trim?.startMicros;
+  const segmentEndMicros = trim?.endMicros;
+  const durationMicros = media?.durationMicros ?? 0;
+  const frameIndex = useAppSelector(selectFrameIndex);
+
+  useLayoutEffect(() => {
+    controller.setOptions({
+      frameIndex,
+      loop,
+      segment:
+        segmentEnabled && segmentStartMicros !== undefined && segmentEndMicros !== undefined
+          ? playbackRange(durationMicros, segmentStartMicros, segmentEndMicros, true)
+          : null,
+    });
+  }, [
+    controller,
+    durationMicros,
+    frameIndex,
+    loop,
+    segmentEnabled,
+    segmentEndMicros,
+    segmentStartMicros,
+  ]);
 
   useEffect(() => () => controller.dispose(), [controller]);
 

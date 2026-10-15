@@ -27,30 +27,59 @@ function SettingsPreferences() {
 
   return (
     <>
-      <SettingsSection title={t("settings.preferences.editing.title")}>
+      <SettingsSection title={t("settings.preferences.playback.title")}>
         <SettingRow
-          description={t("settings.preferences.mergeAudio.description")}
-          label={t("settings.preferences.mergeAudio.label")}
+          description={t("settings.preferences.playback.loopPlayback.description")}
+          label={t("settings.preferences.playback.loopPlayback.label")}
         >
           <CommandSwitch
-            aria-label={t("settings.preferences.mergeAudio.label")}
+            aria-label={t("settings.preferences.playback.loopPlayback.label")}
+            commandId="preference-loop-playback"
+          />
+        </SettingRow>
+
+        <SettingRow
+          description={t("settings.preferences.playback.followSegment.description")}
+          label={t("settings.preferences.playback.followSegment.label")}
+        >
+          <CommandSwitch
+            aria-label={t("settings.preferences.playback.followSegment.label")}
+            commandId="preference-segment-playback"
+          />
+        </SettingRow>
+
+        <SettingRow label={t("settings.preferences.playback.reset")}>
+          <CommandReset
+            aria-label={t("settings.preferences.playback.reset")}
+            commandId="reset-playback-settings"
+          />
+        </SettingRow>
+      </SettingsSection>
+
+      <SettingsSection title={t("settings.preferences.editing.title")}>
+        <SettingRow
+          description={t("settings.preferences.editing.mergeAudio.description")}
+          label={t("settings.preferences.editing.mergeAudio.label")}
+        >
+          <CommandSwitch
+            aria-label={t("settings.preferences.editing.mergeAudio.label")}
             commandId="preference-merge-audio"
           />
         </SettingRow>
 
         <SettingRow
-          description={t("settings.preferences.stripMetadata.description")}
-          label={t("settings.preferences.stripMetadata.label")}
+          description={t("settings.preferences.editing.stripMetadata.description")}
+          label={t("settings.preferences.editing.stripMetadata.label")}
         >
           <CommandSwitch
-            aria-label={t("settings.preferences.stripMetadata.label")}
+            aria-label={t("settings.preferences.editing.stripMetadata.label")}
             commandId="preference-strip-metadata"
           />
         </SettingRow>
 
-        <SettingRow label={t("settings.preferences.reset")}>
+        <SettingRow label={t("settings.preferences.editing.reset")}>
           <CommandReset
-            aria-label={t("settings.preferences.reset")}
+            aria-label={t("settings.preferences.editing.reset")}
             commandId="reset-editing-settings"
           />
         </SettingRow>

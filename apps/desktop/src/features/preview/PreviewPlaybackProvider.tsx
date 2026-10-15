@@ -16,7 +16,11 @@ import { diagnostics } from "@/lib/diagnostics";
 
 import type { PreviewMediaObserver } from "./contexts/preview-runtime-context";
 import { PreviewRuntimeContext } from "./contexts/preview-runtime-context";
-import { requestPreviewPlaybackFrame } from "./lib/preview-frame-scheduler";
+import {
+  forgetPresentedFrame,
+  requestPreviewPlaybackFrame,
+  trackPresentedFrames,
+} from "./lib/preview-frame-scheduler";
 import { startPreviewPlayback } from "./lib/preview-playback-start";
 import { createPreviewSeekScheduler } from "./lib/preview-seek-scheduler";
 
@@ -183,10 +187,12 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
       ] as const;
 
       for (const [eventName, listener] of listeners) element.addEventListener(eventName, listener);
+      const stopTrackingPresentedFrames = trackPresentedFrames(element);
       removeVideoListenersRef.current = () => {
         for (const [eventName, listener] of listeners) {
           element.removeEventListener(eventName, listener);
         }
+        stopTrackingPresentedFrames();
       };
     },
     [dispatch],
@@ -217,6 +223,7 @@ function PreviewPlaybackProvider({ children }: { children: ReactNode }) {
   const seekMedia = useCallback((seconds: number, approximate: boolean, onSettled?: () => void) => {
     const video = videoRef.current;
     if (!video) return;
+    forgetPresentedFrame(video);
     if (seekSchedulerRef.current?.video !== video) {
       seekSchedulerRef.current?.scheduler.dispose();
       seekSchedulerRef.current = { scheduler: createPreviewSeekScheduler(video), video };

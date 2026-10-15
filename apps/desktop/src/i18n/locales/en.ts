@@ -911,28 +911,32 @@ export const en = {
     preferences: {
       description: "Choose the default behavior for new editing sessions",
       editing: {
+        mergeAudio: {
+          commandLabel: "Merge audio by default",
+          description: "Merge enabled audio tracks for new exports by default",
+          label: "Merge audio",
+        },
+        reset: "Reset editing settings",
+        stripMetadata: {
+          commandLabel: "Strip metadata and chapters from exports",
+          description: "Remove source container metadata and chapters from new exports by default",
+          label: "Strip metadata",
+        },
         title: "Editing",
       },
-      followSegment: {
-        commandLabel: "Follow segment by default",
-        description: "Keep playback within the selected segment by default",
-        label: "Follow segment",
-      },
-      loopPlayback: {
-        commandLabel: "Enable loop playback by default",
-        description: "Start new sessions with loop playback enabled",
-        label: "Loop",
-      },
-      mergeAudio: {
-        commandLabel: "Merge audio by default",
-        description: "Merge enabled audio tracks for new exports by default",
-        label: "Merge audio",
-      },
-      reset: "Reset editing settings",
-      stripMetadata: {
-        commandLabel: "Strip metadata and chapters from exports",
-        description: "Remove source container metadata and chapters from new exports by default",
-        label: "Strip metadata",
+      playback: {
+        followSegment: {
+          commandLabel: "Follow segment",
+          description: "Keep playback within the selected segment",
+          label: "Follow segment",
+        },
+        loopPlayback: {
+          commandLabel: "Loop playback",
+          description: "Restart playback when it reaches its end",
+          label: "Loop",
+        },
+        reset: "Reset playback settings",
+        title: "Playback",
       },
       title: "Preferences",
     },

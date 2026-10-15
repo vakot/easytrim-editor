@@ -12,7 +12,7 @@ function useStripMetadataCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const checked = useAppSelector(selectStripMetadataOnExport);
-  const label = t("settings.preferences.stripMetadata.commandLabel");
+  const label = t("settings.preferences.editing.stripMetadata.commandLabel");
 
   return {
     checked,

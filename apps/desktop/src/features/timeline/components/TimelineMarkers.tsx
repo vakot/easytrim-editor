@@ -6,50 +6,45 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
+import { selectFrameIndex } from "@/app/store/slices/source-slice";
 import type { FrameRate } from "@/domain/media";
-import { microsToFrame, useTimelinePlayback } from "@/features/playback";
+import { useTimelinePlayback } from "@/features/playback";
 
 import { formatFrameTimecode } from "../lib/frame-time";
 
 const PERCENT_MARKERS = [0, 0.25, 0.5, 0.75, 1] as const;
 
-function TimelineMarkers({
-  frameRate,
-  framesCount,
-}: {
-  frameRate?: FrameRate;
-  framesCount: number;
-}) {
+function TimelineMarkers({ frameRate, lastFrame }: { frameRate?: FrameRate; lastFrame: number }) {
   return (
     <>
-      <TimelineMarkersStatic frameRate={frameRate} framesCount={framesCount} />
-      <TimelineMarkersAudioActivity frameRate={frameRate} framesCount={framesCount} />
-      <TimelineMarkersSceneActivity frameRate={frameRate} framesCount={framesCount} />
-      <TimelineMarkersChapters frameRate={frameRate} framesCount={framesCount} />
+      <TimelineMarkersStatic frameRate={frameRate} lastFrame={lastFrame} />
+      <TimelineMarkersAudioActivity frameRate={frameRate} lastFrame={lastFrame} />
+      <TimelineMarkersSceneActivity frameRate={frameRate} lastFrame={lastFrame} />
+      <TimelineMarkersChapters frameRate={frameRate} lastFrame={lastFrame} />
     </>
   );
 }
 
 function TimelineMarkersStatic({
   frameRate,
-  framesCount,
+  lastFrame,
 }: {
   frameRate?: FrameRate;
-  framesCount: number;
+  lastFrame: number;
 }) {
   const markers = useMemo<SliderMarker[]>(
     () =>
       PERCENT_MARKERS.map<SliderMarker>((percent) => {
         // An empty timeline uses a 0..1 scale.
-        const value = framesCount > 0 ? framesCount * percent : percent;
+        const value = lastFrame > 0 ? lastFrame * percent : percent;
         return {
           value,
-          label: framesCount > 0 ? formatFrameTimecode(value, frameRate) : "00:00:00:00f",
+          label: lastFrame > 0 ? formatFrameTimecode(value, frameRate) : "00:00:00:00f",
           // Only the timeline edges stay snappable.
-          snapTarget: framesCount > 0 && (percent === 0 || percent === 1),
+          snapTarget: lastFrame > 0 && (percent === 0 || percent === 1),
         };
       }),
-    [framesCount, frameRate],
+    [lastFrame, frameRate],
   );
 
   return (
@@ -62,16 +57,17 @@ function TimelineMarkersStatic({
 
 function TimelineMarkersAudioActivity({
   frameRate,
-  framesCount,
+  lastFrame,
 }: {
   frameRate?: FrameRate;
-  framesCount: number;
+  lastFrame: number;
 }) {
   const tracks = useAppSelector(selectAudioTracks);
+  const frameIndex = useAppSelector(selectFrameIndex);
 
-  const frame = (micros: number) => microsToFrame(micros, frameRate, framesCount);
+  const frame = (micros: number) => frameIndex.frameAt(micros);
 
-  if (!framesCount || !frameRate) return null;
+  if (!lastFrame || !frameRate) return null;
 
   return tracks
     .filter((track) => track.activityVisible)
@@ -96,16 +92,17 @@ function TimelineMarkersAudioActivity({
 
 function TimelineMarkersSceneActivity({
   frameRate,
-  framesCount,
+  lastFrame,
 }: {
   frameRate?: FrameRate;
-  framesCount: number;
+  lastFrame: number;
 }) {
   const scenes = useAppSelector(selectActiveSceneBoundariesMicros);
+  const frameIndex = useAppSelector(selectFrameIndex);
 
-  const frame = (micros: number) => microsToFrame(micros, frameRate, framesCount);
+  const frame = (micros: number) => frameIndex.frameAt(micros);
 
-  if (!framesCount || !frameRate) return null;
+  if (!lastFrame || !frameRate) return null;
 
   return scenes.map((micros) => (
     <Slider.Marker
@@ -119,17 +116,18 @@ function TimelineMarkersSceneActivity({
 
 function TimelineMarkersChapters({
   frameRate,
-  framesCount,
+  lastFrame,
 }: {
   frameRate?: FrameRate;
-  framesCount: number;
+  lastFrame: number;
 }) {
   const chapters = useAppSelector(selectChapters);
-  const { seekFrame } = useTimelinePlayback(frameRate, framesCount);
+  const frameIndex = useAppSelector(selectFrameIndex);
+  const { seekFrame } = useTimelinePlayback();
 
-  const frame = (micros: number) => microsToFrame(micros, frameRate, framesCount);
+  const frame = (micros: number) => frameIndex.frameAt(micros);
 
-  if (!framesCount || !frameRate) return null;
+  if (!lastFrame || !frameRate) return null;
 
   return chapters.map((chapter) => (
     <span key={chapter.id}>
@@ -137,8 +135,8 @@ function TimelineMarkersChapters({
         aria-hidden="true"
         className="pointer-events-none absolute top-1.5 h-0.5 bg-primary/25"
         style={{
-          left: `${(frame(chapter.startMicros) / framesCount) * 100}%`,
-          right: `${((framesCount - frame(chapter.endMicros)) / framesCount) * 100}%`,
+          left: `${(frame(chapter.startMicros) / lastFrame) * 100}%`,
+          right: `${((lastFrame - frame(chapter.endMicros)) / lastFrame) * 100}%`,
         }}
       />
       <Slider.Marker className="top-0 z-10" value={frame(chapter.startMicros)}>

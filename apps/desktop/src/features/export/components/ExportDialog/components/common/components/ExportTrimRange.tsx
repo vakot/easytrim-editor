@@ -6,32 +6,20 @@ import { Label } from "@/components/ui/label";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportDialogTrim } from "@/app/store/slices/export-slice";
-import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { selectFrameIndex } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { exportTrimChangedRequested } from "@/app/store/thunks/export-thunks";
-import { frameCountFor } from "@/domain/media-time";
 import { createTrimFrameAdapter } from "@/domain/trim-frames";
-
-const DEFAULT_FRAME_RATE = { numerator: 30, denominator: 1 };
 
 function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boolean) => void }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const media = useAppSelector(selectSourceMedia);
+  const frameIndex = useAppSelector(selectFrameIndex);
   const timelineTrim = useAppSelector(selectTrim);
   const dialogTrim = useAppSelector(selectExportDialogTrim);
-  const durationMicros = timelineTrim?.sourceDurationMicros ?? 0;
-  // Match the Timeline's frame grid so the same frame numbers address the same timestamps.
-  const frameRate =
-    media?.video.averageFrameRate ?? media?.video.realFrameRate ?? DEFAULT_FRAME_RATE;
-
-  const metadataFrameCount = media?.video.frameCount;
-  const framesCount =
-    metadataFrameCount && metadataFrameCount > 0
-      ? metadataFrameCount
-      : frameCountFor(durationMicros, frameRate);
-
-  const adapter = createTrimFrameAdapter(durationMicros, framesCount, frameRate);
+  // The Timeline's frames, so the same frame numbers address the same real frames.
+  const adapter = createTrimFrameAdapter(frameIndex);
+  const durationMicros = frameIndex.endMicros;
 
   const [initial] = useState(() =>
     adapter.fromTrim({
@@ -54,7 +42,9 @@ function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boo
   function parseFrames(nextStart: string, nextEnd: string) {
     if (!/^\d+$/.test(nextStart.trim()) || !/^\d+$/.test(nextEnd.trim())) return null;
     const range = { start: Number(nextStart), end: Number(nextEnd) };
-    return range.end <= framesCount && range.end >= adapter.bounds(range).minEnd ? range : null;
+    return range.end <= adapter.lastFrame && range.end >= adapter.bounds(range).minEnd
+      ? range
+      : null;
   }
 
   const onRangeChange = (nextStart: string, nextEnd: string) => {
@@ -78,7 +68,7 @@ function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boo
             aria-label={t("export.trimRange.startLabel")}
             id="export-trim-start"
             inputMode="numeric"
-            max={framesCount}
+            max={adapter.lastFrame}
             min={0}
             onChange={(event) => onRangeChange(event.target.value, end)}
             placeholder={t("export.trimRange.startLabel")}
@@ -94,7 +84,7 @@ function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boo
             {...invalidProps}
             aria-label={t("export.trimRange.endLabel")}
             inputMode="numeric"
-            max={framesCount}
+            max={adapter.lastFrame}
             min={0}
             onChange={(event) => onRangeChange(start, event.target.value)}
             placeholder={t("export.trimRange.endLabel")}
@@ -108,8 +98,8 @@ function ExportTrimRange({ onValidityChange }: { onValidityChange: (isValid: boo
       {!isValid ? (
         <p className="text-sm text-destructive" id={errorId} role="alert">
           {t("export.trimRange.invalidValue", {
-            frames: framesCount,
-            minimum: adapter.bounds({ start: 0, end: framesCount }).minEnd,
+            frames: adapter.lastFrame,
+            minimum: adapter.bounds({ start: 0, end: adapter.lastFrame }).minEnd,
           })}
         </p>
       ) : null}

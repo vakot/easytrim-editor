@@ -8,6 +8,7 @@ import {
   editingSettingsReset,
   layoutDensityChanged,
   layoutReset,
+  playbackSettingsReset,
   preferenceChanged,
   preferencesReducer,
   primaryColorChanged,
@@ -80,6 +81,26 @@ describe("preferences Redux domain", () => {
     });
   });
 
+  it("resets only Playback settings", () => {
+    const changed = preferencesReducer(
+      preferencesReducer(
+        preferencesReducer(
+          undefined,
+          preferenceChanged({ key: "loopPlaybackEnabled", enabled: false }),
+        ),
+        preferenceChanged({ key: "segmentPlaybackEnabled", enabled: false }),
+      ),
+      preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }),
+    );
+
+    const state = preferencesReducer(changed, playbackSettingsReset());
+
+    expect(state.loopPlaybackEnabled).toBe(DEFAULT_PREFERENCES.loopPlaybackEnabled);
+    expect(state.segmentPlaybackEnabled).toBe(DEFAULT_PREFERENCES.segmentPlaybackEnabled);
+    expect(state.mergeAudioEnabledDefault).toBe(true);
+    expect(preferencesReducer(changed, editingSettingsReset()).loopPlaybackEnabled).toBe(false);
+  });
+
   it("persists the changelog seen marker without resetting it with preferences", () => {
     const seenState = preferencesReducer(undefined, changelogVersionSeen("1.10.4"));
     const resetState = preferencesReducer(seenState, editingSettingsReset());
@@ -117,6 +138,8 @@ describe("preferences Redux domain", () => {
     const state = preferencesReducer(
       {
         autoStartQueueEnabled: false,
+        loopPlaybackEnabled: true,
+        segmentPlaybackEnabled: true,
         mergeAudioEnabledDefault: true,
         stripMetadataOnExport: true,
         deleteSourceOnRenderFinish: true,
@@ -190,6 +213,8 @@ describe("preferences Redux domain", () => {
   it("selects focused preference values", () => {
     const preferences: Preferences = {
       autoStartQueueEnabled: true,
+      loopPlaybackEnabled: true,
+      segmentPlaybackEnabled: true,
       mergeAudioEnabledDefault: true,
       stripMetadataOnExport: true,
       deleteSourceOnRenderFinish: false,

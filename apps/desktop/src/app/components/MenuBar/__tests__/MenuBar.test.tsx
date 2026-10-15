@@ -60,6 +60,8 @@ const menuState = vi.hoisted(() => ({
     autoStartQueueEnabled: true,
     deleteSourceOnRenderFinish: false,
     lastSeenChangelogVersion: "1.10.4",
+    loopPlaybackEnabled: true,
+    segmentPlaybackEnabled: true,
     mergeAudioEnabledDefault: false,
     stripMetadataOnExport: false,
     theme: "system",

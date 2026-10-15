@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { createNominalFrameIndex } from "@/domain/frame-index";
 import type { FrameRate } from "@/domain/media";
 import { frameToMicros } from "@/domain/media-time";
-import { microsToFrame } from "@/features/playback";
 // This test composes Preview's seek scheduler with Playback's controller.
 // eslint-disable-next-line no-restricted-imports
 import { createPreviewSeekScheduler } from "@/features/preview/lib/preview-seek-scheduler";
@@ -85,6 +85,7 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
       hasActiveOutput: hasAudioOutput,
       isReady: true,
       pause: vi.fn(),
+      prefetchAt: vi.fn(),
       prepareAt: vi.fn(async () => undefined),
       registerPlaybackErrorObserver: () => () => undefined,
       seek: vi.fn(),
@@ -92,6 +93,7 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
     },
     video: {
       getCurrentTimeSeconds: () => currentTime,
+      getPresentedTimeSeconds: () => currentTime,
       isEnded: () => ended,
       isReady: readyState >= HTMLMediaElement.HAVE_CURRENT_DATA,
       isSeekPending: () => scheduler.isPending,
@@ -298,7 +300,9 @@ describe("native preview playback integration", () => {
 
         expect(preview.controller.isPlaying).toBe(true);
         expect(
-          microsToFrame(preview.controller.getSnapshot().positionMicros, frameRate, frameCount),
+          createNominalFrameIndex(durationMicros, frameRate).frameAt(
+            preview.controller.getSnapshot().positionMicros,
+          ),
         ).toBe(frameCount - 1);
         expect(preview.controller.getSnapshot().positionMicros).toBeLessThan(durationMicros);
 

@@ -1,5 +1,7 @@
 import { createContext, type RefObject, useCallback, useContext, useMemo } from "react";
 
+import { presentedTimeSeconds } from "../lib/preview-frame-scheduler";
+
 interface PreviewMediaObserver {
   onEnded: () => void;
   onPause: (isPaused: boolean) => void;
@@ -14,6 +16,8 @@ interface PreviewPlaybackFrame {
 
 interface PreviewVideoAdapter {
   getCurrentTimeSeconds: () => number | null;
+  /** Timestamp of the frame on screen, which can trail or lead the transport clock. */
+  getPresentedTimeSeconds: () => number | null;
   isEnded: () => boolean;
   isReady: boolean;
   isSeekPending: () => boolean;
@@ -21,8 +25,9 @@ interface PreviewVideoAdapter {
   /** Resolves with the presented media position projected to the current performance time. */
   play: () => Promise<number>;
   registerMediaObserver: (observer: PreviewMediaObserver) => () => void;
+  /** Calls back on the next display refresh with the timestamp of the frame on screen. */
   requestPlaybackFrame: (
-    callback: (timestamp: number, mediaTimeSeconds: number) => void,
+    callback: (timestamp: number, presentedTimeSeconds: number) => void,
   ) => PreviewPlaybackFrame | null;
   seek: (seconds: number, approximate: boolean, onSettled?: () => void) => void;
 }
@@ -78,6 +83,11 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
     [videoRef],
   );
 
+  const getPresentedTimeSeconds = useCallback(
+    () => (videoRef.current ? presentedTimeSeconds(videoRef.current) : null),
+    [videoRef],
+  );
+
   const isEnded = useCallback(() => videoRef.current?.ended ?? false, [videoRef]);
 
   return useMemo(
@@ -85,6 +95,7 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
       isReady,
       isSeekPending,
       getCurrentTimeSeconds,
+      getPresentedTimeSeconds,
       isEnded,
       pause,
       play,
@@ -96,6 +107,7 @@ function usePreviewVideoAdapter(): PreviewVideoAdapter {
       isReady,
       isSeekPending,
       getCurrentTimeSeconds,
+      getPresentedTimeSeconds,
       isEnded,
       pause,
       play,

@@ -49,6 +49,7 @@ function EditorRuntimeTestProvider({
           hasActiveOutput: usesWebAudio,
           isReady: false,
           pause: noOperation,
+          prefetchAt: () => undefined,
           prepareAt: async () => undefined,
           registerPlaybackErrorObserver: () => noOperation,
           seek: noOperation,
@@ -56,6 +57,7 @@ function EditorRuntimeTestProvider({
         },
         video: {
           getCurrentTimeSeconds: () => null,
+          getPresentedTimeSeconds: () => null,
           isEnded: () => false,
           isReady: false,
           isSeekPending: () => false,
@@ -76,6 +78,7 @@ function EditorRuntimeTestProvider({
     hasActiveOutput: usesWebAudio,
     isReady: false,
     pause: noOperation,
+    prefetchAt: () => undefined,
     prepareAt: async () => undefined,
     registerPlaybackErrorObserver: () => noOperation,
     seek: noOperation,

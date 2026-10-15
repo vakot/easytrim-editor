@@ -103,6 +103,8 @@ const preferencesTransform = createTransform(
         ([key]) =>
           key !== "editorSourceCollapsibleState" &&
           key !== "snapPlaybackEnabledDefault" &&
+          key !== "loopPlaybackEnabledDefault" &&
+          key !== "segmentPlaybackEnabledDefault" &&
           key !== "customPrimaryColor",
       ),
     ) as Partial<Preferences>;

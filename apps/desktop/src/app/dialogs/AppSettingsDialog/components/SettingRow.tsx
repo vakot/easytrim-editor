@@ -107,7 +107,7 @@ function CommandReset({
   commandId,
   ...props
 }: Omit<React.ComponentProps<typeof CommandButton>, "variant" | "commandId"> & {
-  commandId: "reset-editing-settings" | "reset-queue-settings";
+  commandId: "reset-editing-settings" | "reset-playback-settings" | "reset-queue-settings";
 }) {
   return <CommandButton commandId={commandId} variant="destructive" {...props} />;
 }

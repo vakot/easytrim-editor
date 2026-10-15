@@ -31,7 +31,7 @@ function ExportQueueStripMetadataCheckbox() {
         }
       />
       <Label className="text-sm font-normal text-muted-foreground" htmlFor={id}>
-        {t("settings.preferences.stripMetadata.commandLabel")}
+        {t("settings.preferences.editing.stripMetadata.commandLabel")}
       </Label>
     </div>
   );

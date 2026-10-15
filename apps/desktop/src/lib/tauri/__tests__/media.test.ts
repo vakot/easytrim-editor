@@ -15,6 +15,8 @@ vi.mock("@tauri-apps/api/webview", () => ({
   getCurrentWebview: () => ({ onDragDropEvent: mocks.onDragDropEvent }),
 }));
 
+import { media } from "@/test/source.fixtures";
+
 import {
   activateSourcePath,
   analyzeAudioLoudness,
@@ -126,7 +128,11 @@ describe("media IPC adapter", () => {
 
   it("decodes a bounded PCM playback chunk through the native command", async () => {
     const controller = new AbortController();
-    mocks.invoke.mockResolvedValueOnce({ channels: 2, sampleRate: 48_000, samples: [1, -1, 2, -2] });
+    mocks.invoke.mockResolvedValueOnce({
+      channels: 2,
+      sampleRate: 48_000,
+      samples: [1, -1, 2, -2],
+    });
 
     await expect(
       decodeAudioPlaybackChunk(
@@ -404,6 +410,23 @@ describe("media IPC adapter", () => {
     expect(mocks.invoke).toHaveBeenCalledWith("delete_source_file", {
       sourcePath: "C:/Media/clip.mp4",
     });
+  });
+
+  it("parses the real frame timestamps and rejects unordered ones", async () => {
+    const sourceMedia = media("C:/Media/clip.mp4");
+    mocks.invoke.mockResolvedValue({
+      ...sourceMedia,
+      video: { ...sourceMedia.video, frameTimestampsMicros: [0, 16_667, 1_450_000] },
+    });
+    await expect(inspectMedia("C:/Media/clip.mp4")).resolves.toMatchObject({
+      video: { frameTimestampsMicros: [0, 16_667, 1_450_000] },
+    });
+
+    mocks.invoke.mockResolvedValue({
+      ...sourceMedia,
+      video: { ...sourceMedia.video, frameTimestampsMicros: [0, 16_667, 16_667] },
+    });
+    await expect(inspectMedia("C:/Media/clip.mp4")).rejects.toMatchObject({ code: "internal" });
   });
 
   it("rejects malformed native metadata at the IPC boundary", async () => {

@@ -16,7 +16,11 @@ describe("source trim metadata", () => {
       isValidTrimRange({ startMicros: 0, endMicros: 5_000_000, sourceDurationMicros: 5_000_000 }),
     ).toBe(true);
     expect(
-      isValidTrimRange({ startMicros: 5_000_000, endMicros: 5_000_000, sourceDurationMicros: 5_000_000 }),
+      isValidTrimRange({
+        startMicros: 5_000_000,
+        endMicros: 5_000_000,
+        sourceDurationMicros: 5_000_000,
+      }),
     ).toBe(false);
   });
 });
