@@ -1,10 +1,15 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
+import {
+  activeEditingInstanceChanged,
+  editingInstancesAdded,
+} from "@/app/store/slices/editing-instances-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
 import { firstSource, media } from "@/test/source.fixtures";
@@ -44,6 +49,13 @@ vi.mock("@/features/playback", () => ({
   }),
 }));
 
+const native = vi.hoisted(() => ({ detectScenes: vi.fn() }));
+
+vi.mock("@/lib/tauri/media", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/tauri/media")>()),
+  detectScenes: native.detectScenes,
+}));
+
 vi.mock("@/features/audio", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/audio")>()),
   useAudioPlaybackAdapter: () => ({ getMeter: () => null }),
@@ -60,6 +72,18 @@ function renderPanel({
 } = {}) {
   const store = createAppStore();
   if (loaded) {
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          exportAttempts: [],
+          id: "first",
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource),
+          sourceAvailability: "available",
+        },
+      ]),
+    );
+    store.dispatch(activeEditingInstanceChanged("first"));
     const sourceMedia = media(firstSource.sourcePath);
     sourceMedia.video.averageFrameRate = { numerator: 60, denominator: 1, displayValue: 60 };
     store.dispatch(sourceSelected({ loadToken: 1, source: firstSource }));
@@ -502,5 +526,53 @@ describe("Timeline trim editing", () => {
       startMicros: 2_500_000,
       endMicros: 4_500_000,
     });
+  });
+
+  it("finds scene changes from the toolbar and toggles their markers", async () => {
+    native.detectScenes.mockResolvedValueOnce([1_000_000, 3_000_000]);
+    renderPanel();
+    const markerCount = () => document.querySelectorAll('[data-slot="timeline-marker"]').length;
+    const rulerMarkers = markerCount();
+
+    fireEvent.click(screen.getByRole("button", { name: "Find scene changes" }));
+    const hide = await screen.findByRole("button", { name: "Hide scene markers" });
+
+    expect(native.detectScenes).toHaveBeenCalledWith(firstSource.sourcePath);
+    expect(hide).toHaveAttribute("aria-pressed", "true");
+    expect(markerCount()).toBe(rulerMarkers + 2);
+
+    fireEvent.click(hide);
+    expect(screen.getByRole("button", { name: "Show scene markers" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(markerCount()).toBe(rulerMarkers);
+  });
+
+  it("offers a retry when scene detection fails", async () => {
+    native.detectScenes
+      .mockRejectedValueOnce({
+        code: "scene_detection_failed",
+        messageId: "media.scene.sceneDetectionTookTooLong",
+      })
+      .mockResolvedValueOnce([]);
+    renderPanel();
+
+    fireEvent.click(screen.getByRole("button", { name: "Find scene changes" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Could not find scene changes. Try again" }),
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Finding scene changes took too long");
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Hide scene markers" })).toBeInTheDocument(),
+    );
+  });
+
+  it("disables scene detection for unloaded media", () => {
+    renderPanel({ loaded: false });
+
+    expect(screen.getByRole("button", { name: "Find scene changes" })).toBeDisabled();
   });
 });
