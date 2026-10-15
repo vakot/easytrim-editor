@@ -12,10 +12,12 @@ function AudioTracks() {
   useWaveformPreparation(tracks);
 
   return (
-    <div className="relative grid min-w-0 gap-2">
-      {streams.map((stream) => (
-        <AudioTrackRow key={stream.streamIndex} streamIndex={stream.streamIndex} />
-      ))}
+    <div className="relative min-w-0">
+      <div className="grid min-w-0 gap-2">
+        {streams.map((stream) => (
+          <AudioTrackRow key={stream.streamIndex} streamIndex={stream.streamIndex} />
+        ))}
+      </div>
       <AudioPlayhead />
     </div>
   );
