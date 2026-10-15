@@ -19,7 +19,7 @@ function TimelineToolbar() {
   return (
     <div
       aria-labelledby="timeline-tools-title"
-      className="flex items-stretch gap-1 pt-1"
+      className="flex h-15 items-stretch gap-1"
       data-slot="timeline-toolbar"
       role="group"
     >

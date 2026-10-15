@@ -28,7 +28,7 @@ function TimelineMarkersRuler({ frameRate }: { frameRate?: FrameRate }) {
     const micros = Math.round(durationMicros * fraction);
     return (
       <Timeline.Marker
-        className="-top-1 bg-transparent font-mono"
+        className="-top-1.5 bg-transparent font-mono"
         key={fraction}
         label={formatTimecode(micros, frameRate)}
         micros={micros}
