@@ -72,6 +72,7 @@ function PlaybackSpeedControl() {
           <div className="flex items-center gap-2">
             <Slider
               aria-label={t("preview.playback.speed")}
+              aria-valuetext={`${speed}×`}
               className="mt-2 min-w-0 flex-1 **:data-[slot=slider-track]:h-1.5"
               markers={PLAYBACK_SPEED_MARKERS}
               max={PLAYBACK_SPEED_STEPS.length - 1}

@@ -267,9 +267,12 @@ describe("TimelinePanel", () => {
     expect(store.getState().playbackControls.playbackSpeed).toBe(2);
     expect(speed).toHaveAttribute("aria-pressed", "true");
 
-    screen.getByRole("slider", { name: "Playback speed" }).focus();
+    const slider = screen.getByRole("slider", { name: "Playback speed" });
+    slider.focus();
     await user.keyboard("{ArrowLeft}");
     expect(store.getState().playbackControls.playbackSpeed).toBe(1.75);
+    // Between markers the value reads as the multiplier, not the slider step.
+    expect(slider).toHaveAttribute("aria-valuetext", "1.75×");
     expect(screen.getByText("1.75×")).toBeInTheDocument();
   });
 
