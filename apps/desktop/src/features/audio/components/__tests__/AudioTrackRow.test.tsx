@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
   audioTrackGainChanged,
+  audioTrackMetadataChanged,
   audioTrackToggled,
   waveformReady,
   waveformsLoading,
@@ -56,15 +57,28 @@ function createAudioPlayback() {
   } satisfies AudioPlaybackAdapter;
 }
 
-function createStore() {
+function createStore(sourceLanguage: string | undefined = "eng") {
   const store = createAppStore();
+  const media = mediaWithAudio(firstSource.sourcePath);
+  media.audioStreams[0]!.language = sourceLanguage;
   store.dispatch(sourceSelected({ loadToken: 1, source: firstSource }));
-  store.dispatch(sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath) }));
+  store.dispatch(sourceReady({ loadToken: 1, media }));
   return store;
 }
 
-function renderRow({ showColorPreview = false } = {}) {
-  const store = createStore();
+function renderRow({
+  enabled = true,
+  showColorPreview = false,
+  sourceLanguage,
+  streamIndex = 2,
+}: {
+  enabled?: boolean;
+  showColorPreview?: boolean;
+  sourceLanguage?: string;
+  streamIndex?: number;
+} = {}) {
+  const store = createStore(sourceLanguage);
+  if (!enabled) store.dispatch(audioTrackToggled({ streamIndex }));
   const audioPlayback = createAudioPlayback();
 
   render(
@@ -73,7 +87,7 @@ function renderRow({ showColorPreview = false } = {}) {
         <AudioTransportContext.Provider value={audioPlayback}>
           <TooltipProvider>
             {showColorPreview && <PrimaryColorPreviewButton />}
-            <AudioTrackRow streamIndex={2} />
+            <AudioTrackRow streamIndex={streamIndex} />
           </TooltipProvider>
         </AudioTransportContext.Provider>
       </ThemeProvider>
@@ -431,5 +445,240 @@ describe("AudioTrackRow", () => {
 
     fireEvent.keyUp(gainSlider, { key: "End" });
     expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(12);
+  });
+
+  it("offers Enable, Default, and metadata editing in the actions menu", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+
+    expect(screen.getByRole("menuitemcheckbox", { name: "Enable" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByRole("menuitemcheckbox", { name: "Default" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByRole("menuitem", { name: /edit output metadata/i })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /effects/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitemcheckbox", { name: /audio activity/i }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Enable" }));
+
+    expect(store.getState().audio.tracks[0]?.enabled).toBe(false);
+    expect(screen.getByRole("menuitemcheckbox", { name: "Enable" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+  });
+
+  it("makes an enabled track the default from its actions menu", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow({ streamIndex: 4 });
+
+    await user.click(screen.getByRole("button", { name: /audio 2 actions/i }));
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Default" }));
+
+    expect(store.getState().audio.tracks.map((track) => track.metadata.isDefault)).toEqual([
+      false,
+      true,
+    ]);
+    expect(screen.getByText("#2 · AC3 · 5.1 · Default")).toBeInTheDocument();
+  });
+
+  it("explains why the default track action is disabled", async () => {
+    const user = userEvent.setup();
+    renderRow({ enabled: false });
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+
+    const defaultAction = screen.getByRole("menuitemcheckbox", { name: "Default" });
+    expect(defaultAction).toHaveAttribute("aria-disabled", "true");
+
+    const tooltipTrigger = defaultAction.parentElement;
+    expect(tooltipTrigger).toHaveAttribute("data-slot", "tooltip-trigger");
+    await user.hover(tooltipTrigger!);
+
+    await waitFor(() => {
+      const tooltip = screen.getByRole("tooltip");
+      expect(tooltip).toHaveTextContent("Enable this track first");
+      expect(tooltip).toHaveAttribute("data-side", "right");
+    });
+  });
+
+  it("exposes the same commands in the row context menu", async () => {
+    const user = userEvent.setup();
+    renderRow();
+
+    await user.pointer({ keys: "[MouseRight]", target: screen.getByText(/#1 ·/) });
+
+    expect(screen.getByRole("menuitemcheckbox", { name: "Enable" })).toBeInTheDocument();
+    const defaultAction = screen.getByRole("menuitemcheckbox", { name: "Default" });
+    expect(defaultAction).not.toHaveAttribute("aria-disabled", "true");
+    expect(defaultAction.parentElement).not.toHaveAttribute("data-slot", "tooltip-trigger");
+    expect(screen.queryByRole("menuitem", { name: /effects/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+
+    expect(await screen.findByRole("dialog", { name: "Output audio metadata" })).toBeVisible();
+    expect(await screen.findByRole("textbox", { name: "Track title" })).toHaveFocus();
+  });
+
+  it("uses the source title as the placeholder and inherits it when submitted empty", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow({ streamIndex: 4 });
+    expect(screen.getByText("Surround")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /audio 2 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    const titleInput = await screen.findByRole("textbox", { name: "Track title" });
+    expect(titleInput).toHaveValue("");
+    expect(titleInput).toHaveAttribute("placeholder", "Surround");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(screen.getByText("Surround")).toBeInTheDocument();
+    expect(
+      store.getState().audio.tracks.find((track) => track.streamIndex === 4)?.metadata.title,
+    ).toBeUndefined();
+  });
+
+  it("names the track after a saved title and restores its source fallback when cleared", async () => {
+    const user = userEvent.setup();
+    renderRow();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.type(
+      await screen.findByRole("textbox", { name: "Track title" }),
+      "Custom track title",
+    );
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /mute.*custom track title/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    const titleInput = await screen.findByRole("textbox", { name: "Track title" });
+    expect(titleInput).toHaveValue("Custom track title");
+    await user.clear(titleInput);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(screen.getByRole("button", { name: "Mute (eng)" })).toBeInTheDocument();
+  });
+
+  it("closes the metadata dialog without saving from its footer Close button", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.type(await screen.findByRole("textbox", { name: "Track title" }), "Unsaved title");
+    await user.click(
+      within(document.querySelector('[data-slot="dialog-footer"]')!).getByRole("button", {
+        name: "Close",
+      }),
+    );
+
+    expect(screen.queryByRole("textbox", { name: "Track title" })).not.toBeInTheDocument();
+    expect(store.getState().audio.tracks[0]?.metadata.title).toBeUndefined();
+  });
+
+  it("preserves an untouched title while editing language and allows an explicit title reset", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    act(() => {
+      store.dispatch(
+        audioTrackMetadataChanged({ streamIndex: 2, title: "Custom title", language: "rus" }),
+      );
+    });
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await screen.findByRole("textbox", { name: "Track title" });
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]?.metadata).toEqual({
+      isDefault: true,
+      title: "Custom title",
+      language: "rus",
+    });
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.click(await screen.findByRole("button", { name: /use source language/i }));
+    expect(screen.getByRole("button", { name: "Language" })).toHaveTextContent("English");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]?.metadata).toMatchObject({
+      title: "Custom title",
+      language: undefined,
+    });
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    const titleInput = await screen.findByRole("textbox", { name: "Track title" });
+    await user.type(titleInput, "Temporary title");
+    await user.clear(titleInput);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]?.metadata.title).toBeUndefined();
+  });
+
+  it("selects and resets a language override using source metadata codes", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    const selector = await screen.findByRole("button", { name: "Language" });
+    expect(selector).toHaveTextContent("English");
+    await user.click(selector);
+    await user.click(screen.getByRole("option", { name: "Русский (Russian), ru" }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]?.metadata.language).toBe("rus");
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.click(await screen.findByRole("button", { name: /use source language/i }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]?.metadata.language).toBeUndefined();
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    await user.click(await screen.findByRole("button", { name: "Language" }));
+    await user.type(screen.getByRole("combobox", { name: /search languages/i }), "French");
+    await user.click(screen.getByRole("option", { name: "Français (French), fr" }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]?.metadata.language).toBe("fra");
+  });
+
+  it("clears a language override when the source language is unsupported", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow({ sourceLanguage: "qaa" });
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));
+    const selector = await screen.findByRole("button", { name: "Language" });
+    expect(selector).toHaveTextContent("Select a language");
+    expect(selector).not.toHaveTextContent("qaa");
+
+    await user.click(selector);
+    await user.click(screen.getByRole("option", { name: "Čeština (Czech), cs" }));
+    expect(screen.getByRole("button", { name: "Language" })).toHaveTextContent("Čeština");
+
+    await user.click(screen.getByRole("button", { name: /use source language/i }));
+    expect(screen.getByRole("button", { name: "Language" })).toHaveTextContent("Select a language");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(store.getState().audio.tracks[0]?.metadata.language).toBeUndefined();
   });
 });

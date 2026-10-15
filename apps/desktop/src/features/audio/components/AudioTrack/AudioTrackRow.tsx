@@ -2,6 +2,7 @@ import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
+import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
   Select,
@@ -11,9 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { AudioTrackMetadataDialog } from "../../dialogs/AudioTrackMetadataDialog";
 import { useAudioTrackController } from "../../hooks/useAudioTrackController";
 import { formatGain } from "../../lib/audio-level.utils";
 
+import { AudioTrackActions, AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
 import { AudioTrackGainControl } from "./components/AudioTrackGainControl";
 import { AudioTrackToggle } from "./components/AudioTrackToggle";
@@ -27,32 +30,41 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
   if (!track || !stream) return null;
 
   return (
-    <div
-      className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
-      data-slot="audio-track-row"
-    >
-      <div className="flex items-center gap-1">
-        <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
-          <HoverCardTrigger>
-            <AudioTrackToggle streamIndex={streamIndex} />
-          </HoverCardTrigger>
+    <AudioTrackMetadataDialog streamIndex={streamIndex}>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
+            data-slot="audio-track-row"
+          >
+            <div className="flex items-center gap-1">
+              <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
+                <HoverCardTrigger>
+                  <AudioTrackToggle streamIndex={streamIndex} />
+                </HoverCardTrigger>
 
-          <HoverCardContent align="center" className="max-w-42 p-0" side="right">
-            <AudioTrackGainControl
-              onLiveGainChange={setLiveGainDb}
+                <HoverCardContent align="center" className="max-w-42 p-0" side="right">
+                  <AudioTrackGainControl
+                    onLiveGainChange={setLiveGainDb}
+                    streamIndex={streamIndex}
+                    trackNumber={trackNumber}
+                  />
+                </HoverCardContent>
+              </HoverCard>
+
+              <AudioTrackDetails streamIndex={streamIndex} />
+              <AudioTrackActions streamIndex={streamIndex} />
+            </div>
+            <AudioTrackRowWaveform
+              gainDb={liveGainDb ?? track.processing.gainDb}
               streamIndex={streamIndex}
-              trackNumber={trackNumber}
             />
-          </HoverCardContent>
-        </HoverCard>
+          </div>
+        </ContextMenuTrigger>
 
-        <AudioTrackDetails streamIndex={streamIndex} />
-      </div>
-      <AudioTrackRowWaveform
-        gainDb={liveGainDb ?? track.processing.gainDb}
-        streamIndex={streamIndex}
-      />
-    </div>
+        <AudioTrackContextMenuContent streamIndex={streamIndex} />
+      </ContextMenu>
+    </AudioTrackMetadataDialog>
   );
 });
 
