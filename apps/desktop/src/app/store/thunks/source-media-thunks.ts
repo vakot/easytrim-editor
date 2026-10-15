@@ -16,7 +16,6 @@ import {
 import { getReplacementEditingInstance } from "@/app/store/lib/editing-instances";
 import {
   selectAudioTracks,
-  selectMergeAudio,
   waveformReady,
   waveformsFailed,
   waveformsLoading,
@@ -47,7 +46,6 @@ import {
   sourceChoiceFinished,
   sourceChoiceStarted,
 } from "@/app/store/slices/import-workflow-slice";
-import { selectMergeAudioEnabledDefault } from "@/app/store/slices/preferences-slice";
 import {
   importedThumbnailFailed,
   importedThumbnailLoading,
@@ -97,7 +95,6 @@ import type {
   SourcePickerMode,
 } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
-
 
 export type AppThunk<ReturnValue = void | Promise<unknown>> = (
   dispatch: AppDispatch,
@@ -152,7 +149,7 @@ const ingestSources =
     origin: DiagnosticOrigin = { type: "internal" },
     importOperation?: DiagnosticOperation,
   ): AppThunk =>
-  (dispatch, getState) => {
+  (dispatch) => {
     const result = normalizeSourceImportResult(input);
     const operation = importOperation ?? diagnostics.startOperation("source.import", { origin });
     operation.event("source.import.requested", {
@@ -166,14 +163,13 @@ const ingestSources =
       return;
     }
 
-    const mergeAudio = selectMergeAudioEnabledDefault(getState());
     const importedAtMicros = Date.now() * 1_000;
     const instances: EditingInstance[] = result.sources.map((source) => ({
       exportAttempts: [],
       id: crypto.randomUUID(),
       importedAtMicros,
       origin: "source-import",
-      snapshot: createDefaultEditorSnapshot(source, mergeAudio),
+      snapshot: createDefaultEditorSnapshot(source),
       sourceAvailability: "available",
     }));
 
@@ -526,7 +522,6 @@ async function prepareSelectedSource(
         sceneBoundariesMicros: snapshot.sceneBoundariesMicros,
         chapters: snapshot.chapters,
         audioTracks: snapshot.audio.tracks,
-        mergeAudio: snapshot.audio.mergeAudio,
       })
     : undefined;
 
@@ -569,7 +564,6 @@ async function prepareSelectedSource(
       rotation: 0,
       chapters: selectChapters(getState()),
       audioTracks: selectAudioTracks(getState()),
-      mergeAudio: selectMergeAudio(getState()),
     });
 
   operation.complete({ audioStreamCount: media.audioStreams.length });

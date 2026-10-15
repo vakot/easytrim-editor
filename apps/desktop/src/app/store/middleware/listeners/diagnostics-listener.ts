@@ -6,7 +6,6 @@ import {
   sourceSelected,
 } from "@/app/store/actions/source-actions";
 import {
-  audioMergeToggled,
   audioTrackGainChanged,
   audioTrackToggled,
   waveformDisplayFailed,
@@ -33,6 +32,7 @@ import {
   queuePaused,
   queueStarted,
 } from "@/app/store/slices/export-slice";
+import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import { previewFailed, previewLoading, previewReady } from "@/app/store/slices/preview-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { diagnostics } from "@/lib/diagnostics";
@@ -159,7 +159,8 @@ listenerMiddleware.startListening({
     }),
 });
 listenerMiddleware.startListening({
-  actionCreator: audioMergeToggled,
+  predicate: (action) =>
+    preferenceChanged.match(action) && action.payload.key === "mergeAudioEnabled",
   effect: () => diagnostics.event("audio.mix.changed", { origin: internalOrigin }),
 });
 

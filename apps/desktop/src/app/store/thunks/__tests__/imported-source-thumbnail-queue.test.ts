@@ -48,7 +48,7 @@ function createInstances(count: number): EditingInstance[] {
       exportAttempts: [],
       id: `instance-${index}`,
       origin: "source-import",
-      snapshot: createDefaultEditorSnapshot(source, false),
+      snapshot: createDefaultEditorSnapshot(source),
       sourceAvailability: "available",
     };
   });

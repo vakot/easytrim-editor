@@ -67,7 +67,7 @@ const state = {
     autoStartQueueEnabled: true,
     deleteSourceOnRenderFinish: false,
     layoutDensity: "default",
-    mergeAudioEnabledDefault: false,
+    mergeAudioEnabled: false,
     primaryColor: "#efbf04",
     sidebarLayout: { left: ["sources"], right: ["activity"] },
     stripMetadataOnExport: false,
@@ -276,7 +276,7 @@ describe("ApplicationCommandsProvider", () => {
     state.preferences.theme = "system";
     state.preferences.primaryColor = "#efbf04";
     state.preferences.uiScalePercent = 100;
-    state.preferences.mergeAudioEnabledDefault = false;
+    state.preferences.mergeAudioEnabled = false;
     state.export.availableQueueFinishActions = ["exit", "nothing"];
     state.export.queueFinishAction = "nothing";
   });
@@ -623,7 +623,7 @@ describe("ApplicationCommandsProvider", () => {
   });
 
   it("enables the Editing reset only when an Editing setting differs from its default", () => {
-    state.preferences.mergeAudioEnabledDefault = true;
+    state.preferences.mergeAudioEnabled = true;
     renderRuntime();
 
     expect(screen.getByRole("button", { name: "reset-editing-settings" })).toBeEnabled();
@@ -633,7 +633,7 @@ describe("ApplicationCommandsProvider", () => {
   });
 
   it("keeps the Queue reset disabled when only other sections differ from defaults", () => {
-    state.preferences.mergeAudioEnabledDefault = true;
+    state.preferences.mergeAudioEnabled = true;
     state.preferences.uiScalePercent = 125;
     state.preferences.theme = "dark";
     state.preferences.primaryColor = "#123456";

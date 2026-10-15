@@ -33,7 +33,7 @@ const CURRENT_KEY = "easytrim:workspace-recovery:current";
 const CANDIDATE_KEY = "easytrim:workspace-recovery:candidate";
 
 function instance(id: string, source: typeof firstSource) {
-  const snapshot = createDefaultEditorSnapshot(source, false);
+  const snapshot = createDefaultEditorSnapshot(source);
   return {
     exportAttempts: [],
     gifSettings: {
@@ -146,7 +146,7 @@ describe("restorePreviousWorkspaceRequested", () => {
   });
 
   it("preserves failed export errors and diagnostics through workspace recovery", async () => {
-    const snapshot = createDefaultEditorSnapshot(secondSource, false);
+    const snapshot = createDefaultEditorSnapshot(secondSource);
     const attempt = createExportAttempt({
       capturedAt: 1,
       id: "failed-export",

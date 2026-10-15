@@ -16,10 +16,10 @@ const source: EditingInstance = {
   exportAttempts: [],
   id: "thumbnail-source",
   origin: "source-import",
-  snapshot: createDefaultEditorSnapshot(
-    { displayName: "clip.mp4", sourcePath: "C:/Media/clip.mp4" },
-    false,
-  ),
+  snapshot: createDefaultEditorSnapshot({
+    displayName: "clip.mp4",
+    sourcePath: "C:/Media/clip.mp4",
+  }),
   sourceAvailability: "available",
 };
 

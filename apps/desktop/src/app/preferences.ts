@@ -17,7 +17,7 @@ interface Preferences {
   lastSeenChangelogVersion: string | null;
   layoutDensity: LayoutDensity;
   loopPlaybackEnabled: boolean;
-  mergeAudioEnabledDefault: boolean;
+  mergeAudioEnabled: boolean;
   playbackVolumePercent: number;
   primaryColor: PrimaryColor;
   segmentPlaybackEnabled: boolean;
@@ -37,7 +37,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   deleteSourceOnRenderFinish: false,
   loopPlaybackEnabled: true,
   segmentPlaybackEnabled: true,
-  mergeAudioEnabledDefault: false,
+  mergeAudioEnabled: false,
   stripMetadataOnExport: false,
   layoutDensity: DEFAULT_LAYOUT_DENSITY,
   theme: "system",

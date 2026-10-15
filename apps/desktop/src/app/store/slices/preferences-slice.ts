@@ -106,7 +106,7 @@ const preferencesSlice = createSlice({
       };
     },
     editingSettingsReset: (state) => {
-      state.mergeAudioEnabledDefault = DEFAULT_PREFERENCES.mergeAudioEnabledDefault;
+      state.mergeAudioEnabled = DEFAULT_PREFERENCES.mergeAudioEnabled;
       state.stripMetadataOnExport = DEFAULT_PREFERENCES.stripMetadataOnExport;
     },
     playbackSettingsReset: (state) => {
@@ -156,8 +156,8 @@ const selectPreferences = (state: RootState): Preferences => state.preferences;
 const selectPlaybackVolumePercent = (state: RootState): number =>
   selectPreferences(state).playbackVolumePercent;
 
-const selectMergeAudioEnabledDefault = (state: RootState): boolean =>
-  selectPreferences(state).mergeAudioEnabledDefault;
+const selectMergeAudioEnabled = (state: RootState): boolean =>
+  selectPreferences(state).mergeAudioEnabled;
 
 const selectStripMetadataOnExport = (state: RootState): boolean =>
   selectPreferences(state).stripMetadataOnExport;
@@ -223,7 +223,7 @@ export {
   selectLastSeenChangelogVersion,
   selectLayoutDensity,
   selectLoopPlaybackEnabled,
-  selectMergeAudioEnabledDefault,
+  selectMergeAudioEnabled,
   selectPlaybackVolumePercent,
   selectPreferences,
   selectPrimaryColor,

@@ -24,10 +24,7 @@ function instance(id: string, displayName: string): EditingInstance {
     exportAttempts: [],
     id,
     origin: "source-import",
-    snapshot: createDefaultEditorSnapshot(
-      { displayName, sourcePath: `C:/Media/${displayName}` },
-      false,
-    ),
+    snapshot: createDefaultEditorSnapshot({ displayName, sourcePath: `C:/Media/${displayName}` }),
     sourceAvailability: "available",
   };
 }

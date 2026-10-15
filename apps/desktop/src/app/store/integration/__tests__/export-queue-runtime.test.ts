@@ -75,7 +75,7 @@ import {
 } from "../export-queue-runtime";
 
 function createAttempt(id: string, sourcePath: string = firstSource.sourcePath) {
-  const snapshot = createDefaultEditorSnapshot({ displayName: `${id}.mp4`, sourcePath }, false);
+  const snapshot = createDefaultEditorSnapshot({ displayName: `${id}.mp4`, sourcePath });
   return createExportAttempt({
     capturedAt: 1,
     id,
@@ -93,7 +93,7 @@ function createAttempt(id: string, sourcePath: string = firstSource.sourcePath) 
 }
 
 function createGifAttempt(id: string, sourcePath: string = firstSource.sourcePath) {
-  const snapshot = createDefaultEditorSnapshot({ displayName: `${id}.gif`, sourcePath }, false);
+  const snapshot = createDefaultEditorSnapshot({ displayName: `${id}.gif`, sourcePath });
   return createExportAttempt({
     capturedAt: 1,
     id,
@@ -115,10 +115,10 @@ function createGifAttempt(id: string, sourcePath: string = firstSource.sourcePat
 }
 
 function createAudioAttempt(id: string, format: "m4a" | "mp3" | "wav") {
-  const snapshot = createDefaultEditorSnapshot(
-    { displayName: `${id}.${format}`, sourcePath: firstSource.sourcePath },
-    false,
-  );
+  const snapshot = createDefaultEditorSnapshot({
+    displayName: `${id}.${format}`,
+    sourcePath: firstSource.sourcePath,
+  });
 
   return createExportAttempt({
     capturedAt: 1,
@@ -145,7 +145,7 @@ function createInstance(id: string, sourcePath: string = firstSource.sourcePath)
     exportAttempts: [],
     id,
     origin: "source-import",
-    snapshot: createDefaultEditorSnapshot({ displayName: `${id}.mp4`, sourcePath }, false),
+    snapshot: createDefaultEditorSnapshot({ displayName: `${id}.mp4`, sourcePath }),
     sourceAvailability: "available",
   };
 }

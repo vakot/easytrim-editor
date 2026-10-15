@@ -6,20 +6,20 @@ import { DEFAULT_PREFERENCES } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   editingSettingsReset,
-  selectMergeAudioEnabledDefault,
+  selectMergeAudioEnabled,
   selectStripMetadataOnExport,
 } from "@/app/store/slices/preferences-slice";
 
 function useResetEditingSettingsCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const mergeAudioEnabledDefault = useAppSelector(selectMergeAudioEnabledDefault);
+  const mergeAudioEnabled = useAppSelector(selectMergeAudioEnabled);
   const stripMetadataOnExport = useAppSelector(selectStripMetadataOnExport);
   const label = t("common.actions.resetToDefault");
 
   return {
     enabled:
-      mergeAudioEnabledDefault !== DEFAULT_PREFERENCES.mergeAudioEnabledDefault ||
+      mergeAudioEnabled !== DEFAULT_PREFERENCES.mergeAudioEnabled ||
       stripMetadataOnExport !== DEFAULT_PREFERENCES.stripMetadataOnExport,
     icon: <RotateCcw aria-hidden="true" />,
     surfaces: ["dialog", "menu"] as const,

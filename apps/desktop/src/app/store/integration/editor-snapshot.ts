@@ -11,7 +11,7 @@ import { serializeAudioTrackSettings } from "@/domain/audio-processing";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeSourceKey, type SourceRef } from "@/domain/source";
 
-function createDefaultEditorSnapshot(source: SourceRef, mergeAudio: boolean): EditorSnapshot {
+function createDefaultEditorSnapshot(source: SourceRef): EditorSnapshot {
   return createEditorSnapshot({
     source,
     trim: { kind: "full-source" },
@@ -20,7 +20,6 @@ function createDefaultEditorSnapshot(source: SourceRef, mergeAudio: boolean): Ed
     flipVertical: false,
     rotation: 0,
     audioTracks: [],
-    mergeAudio,
   });
 }
 
@@ -44,7 +43,6 @@ function createEditorSnapshotFromState(state: RootState, source: SourceRef): Edi
     sceneBoundariesMicros,
     chapters: selectChapters(state),
     audioTracks: state.audio.tracks.map(serializeAudioTrackSettings),
-    mergeAudio: state.audio.mergeAudio,
   });
 }
 

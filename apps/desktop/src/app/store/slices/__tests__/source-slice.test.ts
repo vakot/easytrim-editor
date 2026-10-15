@@ -59,7 +59,6 @@ describe("source slice", () => {
           crop: null,
           audio: {
             tracks: [],
-            mergeAudio: false,
           },
         },
       }),

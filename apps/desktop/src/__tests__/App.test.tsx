@@ -272,7 +272,7 @@ describe("App", () => {
       source: selection,
       trim: { startMicros: 0, endMicros: media.durationMicros },
       crop: null,
-      audio: { tracks: [], mergeAudio: false },
+      audio: { tracks: [] },
     };
 
     const replacementMedia: MediaInfo = {
@@ -285,7 +285,7 @@ describe("App", () => {
       source: replacementSelection,
       trim: { startMicros: 1_000_000, endMicros: 20_000_000 },
       crop: null,
-      audio: { tracks: [], mergeAudio: false },
+      audio: { tracks: [] },
     };
 
     const firstItem = {
