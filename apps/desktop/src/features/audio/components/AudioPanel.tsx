@@ -69,7 +69,7 @@ function AudioPanel() {
       <Separator className="mx-3 mt-2 bg-foreground/10" />
 
       <ScrollArea className="min-h-0 flex-1 pr-3" data-testid="audio-tracks-scroll">
-        <div className="my-2 pl-3">
+        <div className="my-3 pl-3">
           <AudioTracks />
         </div>
       </ScrollArea>

@@ -95,7 +95,7 @@ function AudioTrackRowWaveform({
 
   return (
     <div
-      className="relative size-full h-12.5 min-w-0 overflow-hidden rounded-lg border border-border bg-muted/30 text-muted transition-opacity data-[enabled=false]:opacity-50"
+      className="relative size-full h-12.5 min-w-0 overflow-hidden rounded-sm border border-border bg-muted/30 text-muted transition-opacity first-of-type:rounded-t-lg last-of-type:rounded-b-lg data-[enabled=false]:opacity-50"
       data-enabled={track.enabled}
     >
       <AudioTrackWaveform displayMode={displayMode} gainDb={gainDb} stream={stream} track={track} />
