@@ -8,7 +8,7 @@ import {
   SquareArrowLeft,
   SquareArrowRight,
 } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { getShortcutAriaValue } from "@/app/commands/core/application-command.ut
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectVisibleAudioActivityMarkers } from "@/app/store/slices/audio-slice";
 import { selectChapters } from "@/app/store/slices/chapters-slice";
+import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import { selectVisibleSceneBoundariesMicros } from "@/app/store/slices/scene-detection-slice";
 import { selectSourceLoadToken, selectSourceMedia } from "@/app/store/slices/source-slice";
 import type { FrameRate } from "@/domain/media";
@@ -31,11 +32,18 @@ import {
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
+import {
+  type ChapterEditing,
+  ChapterEditingContext,
+  useChapterEditing,
+} from "../contexts/chapter-editing-context";
 import { usePublishTimelineSelection } from "../contexts/timeline-axis-context";
+import { ChapterDialog } from "../dialogs/ChapterDialog";
 import { useTimelineTrimEditing } from "../hooks/useTimelineTrimEditing";
 import { formatTimecode } from "../lib/timecode";
 
 import { percentOf, Timeline, type TimelineSnapTarget } from "./Timeline";
+import { EDITED_CHAPTER_SNAP_KEY } from "./TimelineChapterEditor";
 import { TimelineMarkers } from "./TimelineMarkers";
 import { TimelineShortcutTooltip } from "./TimelineShortcutTooltip";
 import { TimelineToolbar } from "./TimelineToolbar";
@@ -70,13 +78,65 @@ const PLAY_SHORTCUT = {
   modifier: "none",
 } as const satisfies ApplicationShortcut;
 
+/** The timeline panel, with the chapter whose position the timeline edits, if any. */
 function TimelinePanel() {
+  const chapters = useAppSelector(selectChapters);
+  const instanceId = useAppSelector(selectActiveInstanceId);
+  const loadToken = useAppSelector(selectSourceLoadToken);
+  // The edited chapter never outlives its source or itself.
+  const [editedChapter, setEditedChapter] = useState<{
+    chapterId: string;
+    instanceId: string | null;
+    loadToken: number;
+  } | null>(null);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const editedChapterId =
+    editedChapter?.instanceId === instanceId &&
+    editedChapter.loadToken === loadToken &&
+    chapters.some(({ id }) => id === editedChapter.chapterId)
+      ? editedChapter.chapterId
+      : null;
+
+  const chapterEditing = useMemo<ChapterEditing>(
+    () => ({
+      chapterId: editedChapterId,
+      edit: (chapterId) => {
+        setEditedChapter(chapterId === null ? null : { chapterId, instanceId, loadToken });
+        setDialogOpen(false);
+      },
+      openDialog: () => setDialogOpen(true),
+    }),
+    [editedChapterId, instanceId, loadToken],
+  );
+
+  useKeyboardShortcut(
+    (event) =>
+      editedChapterId !== null &&
+      event.key === "Escape" &&
+      !isApplicationInteractionBlocked() &&
+      !document.querySelector("[data-sidebar-drag-preview]"),
+    () => chapterEditing.edit(null),
+  );
+
+  return (
+    <ChapterEditingContext.Provider value={chapterEditing}>
+      <TimelinePanelContent />
+      {editedChapterId ? (
+        <ChapterDialog chapterId={editedChapterId} onOpenChange={setDialogOpen} open={dialogOpen} />
+      ) : null}
+    </ChapterEditingContext.Provider>
+  );
+}
+
+function TimelinePanelContent() {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
   const loadToken = useAppSelector(selectSourceLoadToken);
   const scenes = useAppSelector(selectVisibleSceneBoundariesMicros);
   const audioActivityMarkers = useAppSelector(selectVisibleAudioActivityMarkers);
   const chapters = useAppSelector(selectChapters);
+  const editedChapterId = useChapterEditing().chapterId;
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const { durationMicros, framesCount, getPositionMicros, seekTime, stepFrame } =
     useTimelinePlayback();
@@ -129,10 +189,13 @@ function TimelinePanel() {
     { key: "playhead", micros: getPositionMicros() },
     ...scenes.map((micros) => ({ key: "scene", micros })),
     ...audioActivityMarkers.map(({ micros }) => ({ key: "audio-activity", micros })),
-    ...chapters.flatMap((chapter) => [
-      { key: "chapter", micros: chapter.startMicros },
-      { key: "chapter", micros: chapter.endMicros },
-    ]),
+    ...chapters.flatMap((chapter) => {
+      const key = chapter.id === editedChapterId ? EDITED_CHAPTER_SNAP_KEY : "chapter";
+      return [
+        { key, micros: chapter.startMicros },
+        { key, micros: chapter.endMicros },
+      ];
+    }),
     ...(trim.enabled
       ? [
           { key: "trim-start", micros: trim.startMicros },

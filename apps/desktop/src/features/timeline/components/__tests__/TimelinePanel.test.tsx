@@ -10,6 +10,7 @@ import {
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
 } from "@/app/store/slices/audio-slice";
+import { chapterAdded } from "@/app/store/slices/chapters-slice";
 import {
   activeEditingInstanceChanged,
   editingInstancesAdded,
@@ -603,5 +604,123 @@ describe("Timeline trim editing", () => {
     renderPanel({ loaded: false });
 
     expect(screen.getByRole("button", { name: "Find scene changes" })).toBeDisabled();
+  });
+});
+
+describe("Timeline chapter editing", () => {
+  const intro = { endMicros: 3_000_000, id: "intro", startMicros: 1_000_000, title: "Intro" };
+
+  function renderWithChapter(options?: Parameters<typeof renderPanel>[0]) {
+    const store = renderPanel(options);
+    act(() => {
+      store.dispatch(chapterAdded(intro));
+    });
+    return store;
+  }
+
+  const chapter = (store: ReturnType<typeof renderPanel>) => store.getState().chapters.items[0];
+
+  it("adds a chapter over the selected segment and goes on to position it", async () => {
+    const store = renderPanel({ start: 1_000_000, end: 3_000_000 });
+
+    fireEvent.click(screen.getByRole("button", { name: "Add chapter" }));
+    const title = await screen.findByRole("textbox", { name: "Title" });
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+    fireEvent.change(title, { target: { value: "  Intro " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(store.getState().chapters.items).toEqual([
+      expect.objectContaining({ endMicros: 3_000_000, startMicros: 1_000_000, title: "Intro" }),
+    ]);
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("slider", { name: "Move Intro" })).toHaveStyle({
+      left: "20%",
+      width: "40%",
+    });
+    expect(screen.getByRole("button", { name: "Finish chapter editing" })).toBeInTheDocument();
+  });
+
+  it("edits the clicked chapter's position by real frames, leaving the trim alone", () => {
+    const store = renderWithChapter();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Intro" }));
+    expect(playback.seekTime).toHaveBeenCalledWith(1_000_000);
+
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Start of Intro" }), {
+      key: "ArrowRight",
+    });
+    expect(chapter(store)).toMatchObject({ startMicros: 1_016_667, endMicros: 3_000_000 });
+    fireEvent.keyDown(screen.getByRole("slider", { name: "End of Intro" }), { key: "End" });
+    expect(chapter(store)).toMatchObject({ startMicros: 1_016_667, endMicros: 5_000_000 });
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Move Intro" }), { key: "Home" });
+    expect(chapter(store)).toMatchObject({ startMicros: 0, endMicros: 3_983_333 });
+
+    expect(chapter(store)?.title).toBe("Intro");
+    expect(store.getState().trim.value).toMatchObject({ startMicros: 0, endMicros: 5_000_000 });
+  });
+
+  it("moves a dragged chapter when the drag ends, holding playback meanwhile", () => {
+    const store = renderWithChapter();
+    layOutTimeline();
+    fireEvent.click(screen.getByRole("button", { name: "Edit Intro" }));
+    const move = screen.getByRole("slider", { name: "Move Intro" });
+
+    fireEvent.pointerDown(move, { button: 0, clientX: 60, pointerId: 1 });
+    // 24 px of 240 px is 0.5 s.
+    fireEvent.pointerMove(move, { clientX: 84, pointerId: 1 });
+    expect(move).toHaveAttribute("aria-valuenow", "1500000");
+    expect(chapter(store)).toMatchObject({ startMicros: 1_000_000, endMicros: 3_000_000 });
+    fireEvent.pointerUp(move, { clientX: 84, pointerId: 1 });
+
+    expect(chapter(store)).toMatchObject({ startMicros: 1_500_000, endMicros: 3_500_000 });
+    expect(playback.holdPlayback).toHaveBeenCalledOnce();
+    expect(playback.releasePlayback).toHaveBeenCalledWith({ resume: true });
+  });
+
+  it("finishes editing with Escape or from the toolbar", () => {
+    renderWithChapter();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Intro" }));
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("slider", { name: "Move Intro" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Intro" }));
+    fireEvent.click(screen.getByRole("button", { name: "Finish chapter editing" }));
+    expect(screen.queryByRole("slider", { name: "Move Intro" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add chapter" })).toBeInTheDocument();
+  });
+
+  it("renames and deletes the edited chapter from its dialog", async () => {
+    const store = renderWithChapter();
+    fireEvent.click(screen.getByRole("button", { name: "Edit Intro" }));
+
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Move Intro" }), { key: "Enter" });
+    const title = await screen.findByRole("textbox", { name: "Title" });
+    expect(title).toHaveValue("Intro");
+    fireEvent.change(title, { target: { value: "Opening" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(chapter(store)).toEqual({ ...intro, title: "Opening" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    fireEvent.doubleClick(screen.getByRole("slider", { name: "Move Opening" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Delete Opening" }));
+    expect(store.getState().chapters.items).toEqual([]);
+    expect(screen.queryByRole("slider", { name: "Move Opening" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add chapter" })).toBeInTheDocument();
+  });
+
+  it("ends editing with the source", () => {
+    const store = renderWithChapter();
+    fireEvent.click(screen.getByRole("button", { name: "Edit Intro" }));
+
+    const sourceMedia = store.getState().source.media!;
+    act(() => {
+      store.dispatch(sourceSelected({ loadToken: 2, source: firstSource }));
+      store.dispatch(sourceReady({ loadToken: 2, media: sourceMedia }));
+      store.dispatch(chapterAdded(intro));
+    });
+
+    expect(screen.queryByRole("slider", { name: "Move Intro" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit Intro" })).toBeInTheDocument();
   });
 });

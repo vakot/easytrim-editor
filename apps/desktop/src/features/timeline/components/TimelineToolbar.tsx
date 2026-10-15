@@ -1,4 +1,4 @@
-import { BetweenVerticalStart, Clapperboard, Repeat } from "lucide-react";
+import { BetweenVerticalStart, BookmarkPlus, Check, Clapperboard, Repeat } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -19,9 +19,13 @@ import {
   selectSceneMarkersVisible,
 } from "@/app/store/slices/scene-detection-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
 import { detectActiveSourceScenes } from "@/app/store/thunks/scene-detection-thunks";
 import { localizeAppError } from "@/i18n/app-errors";
 import { cn } from "@/lib/class-names.utils";
+
+import { useChapterEditing } from "../contexts/chapter-editing-context";
+import { ChapterDialog, ChapterDialogTrigger } from "../dialogs/ChapterDialog";
 
 import { StereoAudioMeter } from "./StereoAudioMeter";
 
@@ -37,6 +41,7 @@ function TimelineToolbar() {
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
         <SceneDetectionTool />
+        <ChaptersTool />
       </div>
 
       <Card className="min-w-0 flex-1 gap-0 rounded-md border border-border bg-muted p-0 ring-0">
@@ -158,6 +163,52 @@ function SceneDetectionTool() {
         {ready || loading ? label : t("timeline.sceneMarkers.tooltips.findSceneChanges")}
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+/** Adds a chapter over the selected segment, or finishes editing a chapter on the timeline. */
+function ChaptersTool() {
+  const { t } = useTranslation();
+  const trim = useAppSelector(selectTrim);
+  const chapterEditing = useChapterEditing();
+
+  if (chapterEditing.chapterId) {
+    return (
+      <Tooltip preserveOnTrigger>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={t("timeline.chapters.actions.finishEditing")}
+            onClick={() => chapterEditing.edit(null)}
+            size="icon-sm"
+            type="button"
+          >
+            <Check />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t("timeline.chapters.actions.finishEditing")}</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <ChapterDialog>
+      <Tooltip preserveOnTrigger>
+        <TooltipTrigger asChild>
+          <ChapterDialogTrigger asChild>
+            <Button
+              aria-label={t("timeline.chapters.actions.addChapter")}
+              disabled={!trim}
+              size="icon-sm"
+              type="button"
+              variant="secondary"
+            >
+              <BookmarkPlus />
+            </Button>
+          </ChapterDialogTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{t("timeline.chapters.actions.addChapter")}</TooltipContent>
+      </Tooltip>
+    </ChapterDialog>
   );
 }
 
