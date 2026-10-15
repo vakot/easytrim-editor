@@ -1,6 +1,7 @@
 import type { FrameRate } from "@/domain/media";
 
 const MICROS_PER_SECOND = 1_000_000;
+const SLOT_TOLERANCE = 0.05;
 const FALLBACK_FRAME_RATE: FrameRate = { denominator: 1, numerator: 30 };
 
 /**
@@ -15,12 +16,20 @@ function formatTimecode(micros: number, frameRate: FrameRate | undefined) {
       : FALLBACK_FRAME_RATE;
 
   const time = Math.max(0, Math.round(Number.isFinite(micros) ? micros : 0));
-  const wholeSeconds = Math.floor(time / MICROS_PER_SECOND);
-  const fraction = time - wholeSeconds * MICROS_PER_SECOND;
-  // A tiny allowance keeps timestamps on a rate's rational grid from rounding down a slot.
-  const slot = Math.floor(
-    (fraction * rate.numerator) / (MICROS_PER_SECOND * rate.denominator) + 1e-6,
+  // Containers store timestamps rounded (MKV to whole milliseconds), so a frame start can sit a
+  // little below its exact slot. Allow 5% of a frame so it still lands in its own slot.
+  const totalSlots = Math.floor(
+    (time * rate.numerator) / (MICROS_PER_SECOND * rate.denominator) + SLOT_TOLERANCE,
   );
+
+  const slotsPerSecond = rate.numerator / rate.denominator;
+  let wholeSeconds = Math.floor(time / MICROS_PER_SECOND);
+  let slot = totalSlots - Math.ceil(wholeSeconds * slotsPerSecond - SLOT_TOLERANCE);
+  if (slot >= Math.ceil(slotsPerSecond - SLOT_TOLERANCE)) {
+    wholeSeconds += 1;
+    slot = 0;
+  }
+  slot = Math.max(0, slot);
 
   const hours = Math.floor(wholeSeconds / 3_600);
   const minutes = Math.floor((wholeSeconds % 3_600) / 60);

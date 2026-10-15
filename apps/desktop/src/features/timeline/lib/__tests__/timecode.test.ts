@@ -27,4 +27,20 @@ describe("formatTimecode", () => {
   it("falls back to 30 FPS without a frame rate", () => {
     expect(formatTimecode(1_500_000, undefined)).toBe("00:00:01:15f");
   });
+
+  it("labels consecutive millisecond-rounded frames with consecutive slots", () => {
+    // MKV stores 60 FPS frame starts rounded to whole milliseconds, some below the exact slot.
+    const labels = [];
+    for (let frame = 350; frame <= 362; frame += 1) {
+      const micros = Math.round((frame * 1_000) / 60) * 1_000;
+      labels.push(formatTimecode(micros, sixty));
+    }
+    expect(labels).toEqual(
+      Array.from({ length: 13 }, (_, index) => {
+        const frame = 350 + index;
+        const seconds = Math.floor(frame / 60);
+        return `00:00:${String(seconds).padStart(2, "0")}:${String(frame % 60).padStart(2, "0")}f`;
+      }),
+    );
+  });
 });
