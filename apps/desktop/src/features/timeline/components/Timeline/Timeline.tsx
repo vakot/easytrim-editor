@@ -293,6 +293,8 @@ function Handle({
           data-slot="timeline-handle-value"
           side="top"
           sideOffset={12}
+          // The anchor moves with the handle's `left`, which Radix does not observe on its own.
+          updatePositionStrategy="always"
         >
           {valueText}
         </TooltipContent>
