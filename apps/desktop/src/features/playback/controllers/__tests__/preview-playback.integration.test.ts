@@ -93,6 +93,7 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
     },
     video: {
       getCurrentTimeSeconds: () => currentTime,
+      getPresentedTimeSeconds: () => currentTime,
       isEnded: () => ended,
       isReady: readyState >= HTMLMediaElement.HAVE_CURRENT_DATA,
       isSeekPending: () => scheduler.isPending,

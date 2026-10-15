@@ -41,6 +41,7 @@ describe("Timeline frames", () => {
       const lastFrameStart = Math.round(
         ((count - 1) * 1_000_000 * rate.denominator) / rate.numerator,
       );
+
       frames.index = createNominalFrameIndex(duration, rate);
 
       controller.snapshot = {

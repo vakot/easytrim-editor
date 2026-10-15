@@ -1,4 +1,4 @@
-import { type FrameIndex, lastFrameBefore } from "@/domain/frame-index";
+import { createRealFrameIndex, type FrameIndex, lastFrameBefore } from "@/domain/frame-index";
 import type { PlaybackRange } from "@/domain/playback";
 import type { AudioPlaybackAdapter } from "@/features/audio";
 import type { PreviewVideoAdapter } from "@/features/preview";
@@ -11,7 +11,7 @@ interface PlaybackDriver {
 
 interface PlaybackOptions {
   /** The source's frames; stops rest on a range's last frame rather than on its end boundary. */
-  frameIndex?: FrameIndex;
+  frameIndex: FrameIndex;
   loop: boolean;
   segment: PlaybackRange | null;
 }
@@ -21,8 +21,7 @@ interface PlaybackSnapshot {
   positionMicros: number;
 }
 
-type PlaybackEndSource =
-  "ended_event" | "pause_event" | "playback_start" | "time_update" | "video_frame";
+type PlaybackEndSource = "ended_event" | "pause_event" | "time_update" | "video_frame";
 
 const MICROS_PER_SECOND = 1_000_000;
 
@@ -38,9 +37,15 @@ class PlaybackController {
   private mediaSessionId: number | null | undefined;
   private lifecycle: "paused" | "starting" | "playing" = "paused";
   private mediaStartRequested = false;
-  private options: PlaybackOptions = { loop: false, segment: null };
+  private options: PlaybackOptions = {
+    frameIndex: createRealFrameIndex([], 0),
+    loop: false,
+    segment: null,
+  };
   // Where the video was sought to show the paused position's frame, when that differs from it.
   private presentationMicros: number | null = null;
+  // When a segment's last frame first appeared, to hold it for its full duration before a loop.
+  private segmentLastFrameShownAt: number | null = null;
 
   constructor() {
     this.snapshot = this.createSnapshot(0, 0);
@@ -184,7 +189,7 @@ class PlaybackController {
   /**
    * `presentationMicros` is where the video element seeks to display the position's frame. Frame
    * seeks pass the frame's midpoint: browsers estimate frame spans from the nominal rate, so a
-   * seek to a millisecond-rounded frame start can land in the previous frame.
+   * seek to a frame's exact start can land in the previous frame.
    */
   seek = (positionMicros: number, presentationMicros = positionMicros) => {
     if (!this.driver || this.mediaSessionId === null || this.mediaSessionId === undefined) return;
@@ -202,6 +207,7 @@ class PlaybackController {
     this.driver.audio.pause();
     this.update(this.snapshot.durationMicros, nextPosition, true);
     this.presentationMicros = nextPresentation === nextPosition ? null : nextPresentation;
+    this.segmentLastFrameShownAt = null;
     this.driver.audio.seek(nextPosition / MICROS_PER_SECOND);
     this.driver.video.seek(nextPresentation / MICROS_PER_SECOND, false);
   };
@@ -245,9 +251,10 @@ class PlaybackController {
     this.transitionLifecycle("paused", false);
 
     driver?.video.pause();
+    // Settle on the frame on screen; the transport clock can already be in the next frame.
     const pausedVideoPosition = driver?.video.isSeekPending()
       ? null
-      : driver?.video.getCurrentTimeSeconds();
+      : driver?.video.getPresentedTimeSeconds();
 
     if (
       pausedVideoPosition !== null &&
@@ -268,7 +275,8 @@ class PlaybackController {
     else this.play();
   };
 
-  private publishMediaTime(seconds: number) {
+  /** Publishes the frame on screen, so the playhead changes exactly when the picture does. */
+  private publishPresentedTime(seconds: number) {
     if (this.driver?.video.isSeekPending()) return;
     this.setPosition(seconds * MICROS_PER_SECOND);
   }
@@ -284,11 +292,6 @@ class PlaybackController {
         driver.video.seek(seconds, false, resolve);
       });
       if (!this.isCurrentPlaybackStart(generation)) return;
-      // Starting inside the final frame leaves nothing to play; `play()` would rewind to 0.
-      if (driver.video.isEnded()) {
-        this.handleRangeEnd("playback_start");
-        return;
-      }
 
       this.mediaStartRequested = true;
       const presentationPosition = await driver.video.play();
@@ -343,16 +346,33 @@ class PlaybackController {
     return this.options.segment ?? { startMicros: 0, endMicros: this.snapshot.durationMicros };
   }
 
-  private reachedRangeEnd() {
-    const { endMicros } = this.playbackRange();
-    // The native clock leads the presented frame, so a range ending at EOF must wait for the
-    // media to end on its own; stopping on the clock would drop the final frames.
-    return (
-      endMicros < this.snapshot.durationMicros &&
-      this.lifecycle === "playing" &&
-      !this.driver?.video.isSeekPending() &&
-      this.snapshot.positionMicros >= endMicros
-    );
+  /**
+   * Decides a segment's end from the frames actually on screen, since the picture can run ahead of
+   * the transport clock. Without a loop, playback stops as soon as the segment's last frame is
+   * shown, so the frame after it never appears. With a loop, that frame is held for its full
+   * duration first. A range that ends with the media finishes when the media ends.
+   */
+  private reachedSegmentEnd(timestamp: number, refreshMilliseconds: number) {
+    const range = this.playbackRange();
+    if (
+      range.endMicros >= this.snapshot.durationMicros ||
+      this.lifecycle !== "playing" ||
+      this.driver?.video.isSeekPending()
+    ) {
+      return false;
+    }
+    const presentedMicros = this.snapshot.positionMicros;
+    if (presentedMicros >= range.endMicros) return true;
+    const lastFrame = this.lastFrameOf(range);
+    if (!lastFrame || presentedMicros < lastFrame.positionMicros) {
+      this.segmentLastFrameShownAt = null;
+      return false;
+    }
+    if (!this.options.loop) return true;
+
+    this.segmentLastFrameShownAt ??= timestamp;
+    const lastFrameMilliseconds = (range.endMicros - lastFrame.positionMicros) / 1000;
+    return timestamp + refreshMilliseconds >= this.segmentLastFrameShownAt + lastFrameMilliseconds;
   }
 
   private handleRangeEnd(source: PlaybackEndSource) {
@@ -375,8 +395,7 @@ class PlaybackController {
   }
 
   private lastFrameOf(range: PlaybackRange) {
-    const { frameIndex } = this.options;
-    return frameIndex ? lastFrameBefore(frameIndex, range.endMicros) : null;
+    return lastFrameBefore(this.options.frameIndex, range.endMicros);
   }
 
   private finishAtEndOfMedia(source: PlaybackEndSource) {
@@ -424,8 +443,11 @@ class PlaybackController {
   private startPlaybackClock() {
     if (this.playbackFrame) return;
     const generation = ++this.playbackClockGeneration;
-    const tick = (_timestamp: number, seconds: number) => {
+    let previousTimestamp: number | null = null;
+    const tick = (timestamp: number, presentedSeconds: number) => {
       if (generation !== this.playbackClockGeneration) return;
+      const refreshMilliseconds = previousTimestamp === null ? 0 : timestamp - previousTimestamp;
+      previousTimestamp = timestamp;
       this.playbackFrame = null;
       const driver = this.driver;
       if (!driver || this.mediaSessionId === null || this.mediaSessionId === undefined) return;
@@ -433,8 +455,8 @@ class PlaybackController {
         this.handleRangeEnd("video_frame");
         return;
       }
-      this.publishMediaTime(seconds);
-      if (this.reachedRangeEnd()) {
+      this.publishPresentedTime(presentedSeconds);
+      if (this.reachedSegmentEnd(timestamp, refreshMilliseconds)) {
         this.handleRangeEnd("video_frame");
         return;
       }
