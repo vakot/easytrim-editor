@@ -25,6 +25,7 @@ const preview = {
   requestPlaybackFrame: () => null,
   registerMediaObserver: () => noOperation,
   seekMedia: noOperation,
+  setPlaybackRate: noOperation,
   setVideoElement: (element: HTMLVideoElement | null) => {
     if (videoRef.current && videoRef.current !== element) videoRef.current.pause();
     videoRef.current = element;
@@ -55,6 +56,7 @@ function EditorRuntimeTestProvider({
           registerPlaybackErrorObserver: () => noOperation,
           seek: noOperation,
           setLiveTrackGain: noOperation,
+          setPlaybackRate: noOperation,
           startAlignedWithVideoAt: async (seconds: number) => seconds + 0.15,
         },
         video: {
@@ -67,6 +69,7 @@ function EditorRuntimeTestProvider({
           registerMediaObserver: () => noOperation,
           requestPlaybackFrame: () => null,
           seek: noOperation,
+          setPlaybackRate: noOperation,
         },
       },
       0,
@@ -85,6 +88,7 @@ function EditorRuntimeTestProvider({
     registerPlaybackErrorObserver: () => noOperation,
     seek: noOperation,
     setLiveTrackGain: noOperation,
+    setPlaybackRate: noOperation,
     startAlignedWithVideoAt: async (seconds: number) => seconds + 0.15,
   } satisfies AudioPlaybackAdapter;
 

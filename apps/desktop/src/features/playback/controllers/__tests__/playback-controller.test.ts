@@ -31,6 +31,7 @@ function createPlaybackDriver() {
       }),
       seek: vi.fn(),
       setLiveTrackGain: vi.fn(),
+      setPlaybackRate: vi.fn(),
       startAlignedWithVideoAt: vi.fn(async (seconds: number) => seconds + 0.15),
     },
     video: {
@@ -55,6 +56,7 @@ function createPlaybackDriver() {
         return { cancel: () => playbackFrameCallbacks.delete(frameId) };
       }),
       seek: vi.fn((_seconds, _approximate, onSettled) => onSettled?.()),
+      setPlaybackRate: vi.fn(),
     },
   };
 
@@ -183,6 +185,58 @@ describe("playback controller", () => {
     });
     expect(driver.video.pause).toHaveBeenCalled();
     expect(driver.audio.pause).toHaveBeenCalled();
+    controller.dispose();
+  });
+
+  it("applies the playback rate to both participants before a run starts", async () => {
+    const { driver } = createPlaybackDriver();
+    const controller = createPlaybackController(driver, 2_000_000);
+
+    controller.setPlaybackRate(2);
+    expect(driver.video.setPlaybackRate).not.toHaveBeenCalled();
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+    expect(driver.video.setPlaybackRate).toHaveBeenCalledWith(2);
+    expect(driver.audio.setPlaybackRate).toHaveBeenCalledWith(2);
+    expect(vi.mocked(driver.audio.setPlaybackRate).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(driver.audio.prepareAt).mock.invocationCallOrder[0]!,
+    );
+    controller.dispose();
+  });
+
+  it("restarts a running playback from its position at a new playback rate", async () => {
+    const playback = createPlaybackDriver();
+    const { driver } = playback;
+    const controller = createPlaybackController(driver, 4_000_000);
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    playback.playbackFrameCallback(0, 1.5);
+
+    controller.setPlaybackRate(0.5);
+
+    expect(driver.video.pause).toHaveBeenCalled();
+    expect(driver.audio.pause).toHaveBeenCalled();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    expect(driver.video.setPlaybackRate).toHaveBeenLastCalledWith(0.5);
+    expect(driver.audio.setPlaybackRate).toHaveBeenLastCalledWith(0.5);
+    expect(driver.audio.prepareAt).toHaveBeenLastCalledWith(1.5);
+    expect(driver.audio.startAlignedWithVideoAt).toHaveBeenLastCalledWith(1.5);
+    controller.dispose();
+  });
+
+  it("ignores an unchanged or invalid playback rate", async () => {
+    const { driver } = createPlaybackDriver();
+    const controller = createPlaybackController(driver, 2_000_000);
+    controller.play();
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+    controller.setPlaybackRate(1);
+    controller.setPlaybackRate(0);
+    controller.setPlaybackRate(Number.NaN);
+
+    expect(controller.isPlaying).toBe(true);
+    expect(driver.video.play).toHaveBeenCalledOnce();
     controller.dispose();
   });
 
@@ -753,6 +807,22 @@ describe("playback controller", () => {
       expect(controller.getSnapshot().positionMicros).toBe(1_033_333);
       // The video shows that frame through its midpoint.
       expect(playback.driver.video.seek).toHaveBeenLastCalledWith(1.05, false);
+      controller.dispose();
+    });
+
+    it("completes a pause waiting for a frame boundary when the playback rate changes", async () => {
+      const { controller, playback } = await startPlaying(10_000_000, {
+        loop: false,
+        segment: null,
+      });
+
+      playback.playbackFrameCallback(0, 1.012);
+      controller.togglePlayback();
+      controller.setPlaybackRate(2);
+
+      expect(controller.isPlaying).toBe(false);
+      expect(controller.getSnapshot().positionMicros).toBe(1_033_333);
+      expect(playback.driver.video.play).toHaveBeenCalledOnce();
       controller.dispose();
     });
 

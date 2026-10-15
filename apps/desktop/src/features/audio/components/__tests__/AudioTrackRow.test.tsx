@@ -56,6 +56,7 @@ function createAudioPlayback() {
     registerPlaybackErrorObserver: () => () => undefined,
     seek: () => undefined,
     setLiveTrackGain: vi.fn(),
+    setPlaybackRate: () => undefined,
     startAlignedWithVideoAt: async (seconds: number) => seconds,
   } satisfies AudioPlaybackAdapter;
 }

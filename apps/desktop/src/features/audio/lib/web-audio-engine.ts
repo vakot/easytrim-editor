@@ -84,6 +84,8 @@ class WebAudioEngine {
   private anchorPositionFrame = 0;
   private durationMicros = 0;
   private generation = 0;
+  /** Source seconds played per context second; the sources resample, so the pitch follows it. */
+  private playbackRate = 1;
   private isPlaying = false;
   private playbackRequested = false;
   private nextScheduledFrame = 0;
@@ -129,6 +131,15 @@ class WebAudioEngine {
     this.outputGain.gain.cancelScheduledValues(now);
     this.outputGain.gain.setValueAtTime(this.outputGain.gain.value, now);
     this.outputGain.gain.linearRampToValueAtTime(linearGain, now + 0.025);
+  }
+
+  /** Restarts a running playback from its current position at the new rate. */
+  setPlaybackRate(rate: number): void {
+    if (!Number.isFinite(rate) || rate <= 0 || rate === this.playbackRate) return;
+    const positionFrame = this.currentPositionFrame();
+    const resume = this.playbackRequested || this.isPlaying;
+    this.playbackRate = rate;
+    if (resume) this.seek(positionFrame / SAMPLE_RATE);
   }
 
   setTrackGain(streamIndex: number, gainDb: number): void {
@@ -292,7 +303,8 @@ class WebAudioEngine {
     if (!this.hasTracks) return videoPositionSeconds;
     const contextStart = this.context.currentTime + MIN_SCHEDULE_LEAD_SECONDS;
     const startFrame = this.secondsToFrame(
-      videoPositionSeconds + Math.max(0, contextStart - this.outputContextTime()),
+      videoPositionSeconds +
+        Math.max(0, contextStart - this.outputContextTime()) * this.playbackRate,
     );
 
     // If output latency consumes the remaining range, there are no audible samples
@@ -619,7 +631,8 @@ class WebAudioEngine {
 
     for (const range of batch) this.schedule(range, sharedStart);
     this.nextScheduledFrame = endFrame;
-    this.nextScheduledContextTime = sharedStart + (endFrame - startFrame) / SAMPLE_RATE;
+    this.nextScheduledContextTime =
+      sharedStart + this.framesToContextSeconds(endFrame - startFrame);
   }
 
   private schedulePreparedBatch(
@@ -654,7 +667,8 @@ class WebAudioEngine {
 
     for (const range of batch) this.schedule(range, sharedStart, startFrame);
     this.nextScheduledFrame = firstRange.endFrame;
-    this.nextScheduledContextTime = sharedStart + (firstRange.endFrame - startFrame) / SAMPLE_RATE;
+    this.nextScheduledContextTime =
+      sharedStart + this.framesToContextSeconds(firstRange.endFrame - startFrame);
   }
 
   private schedule(
@@ -672,6 +686,7 @@ class WebAudioEngine {
     const source = this.context.createBufferSource();
     const generation = this.generation;
     source.buffer = buffer;
+    source.playbackRate.value = this.playbackRate;
     source.connect(track.input);
     source.onended = () => {
       source.disconnect();
@@ -706,9 +721,10 @@ class WebAudioEngine {
       this.onEnded();
       return;
     }
+    // Faster playback consumes decoded audio sooner; keep the same real-time lead.
     const horizonFrame = Math.min(
       this.durationFrames,
-      this.currentPositionFrame() + MAX_BUFFER_AHEAD_FRAMES,
+      this.currentPositionFrame() + MAX_BUFFER_AHEAD_FRAMES * Math.max(1, this.playbackRate),
     );
 
     const startFrame = this.nextScheduledFrame;
@@ -797,7 +813,9 @@ class WebAudioEngine {
     if (!this.isPlaying) return Math.min(this.durationFrames, this.anchorPositionFrame);
 
     const elapsedFrames = Math.floor(
-      Math.max(0, this.outputContextTime() - this.anchorContextTime) * SAMPLE_RATE,
+      Math.max(0, this.outputContextTime() - this.anchorContextTime) *
+        SAMPLE_RATE *
+        this.playbackRate,
     );
 
     const scheduledFrames = Math.max(0, this.nextScheduledFrame - this.anchorPositionFrame);
@@ -807,6 +825,10 @@ class WebAudioEngine {
       this.durationFrames,
       this.anchorPositionFrame + Math.min(elapsedFrames, scheduledFrames),
     );
+  }
+
+  private framesToContextSeconds(frames: number): number {
+    return frames / (SAMPLE_RATE * this.playbackRate);
   }
 
   private secondsToFrame(seconds: number): number {

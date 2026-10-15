@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
@@ -248,6 +249,23 @@ describe("TimelinePanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
 
     expect(playback.togglePlayback).toHaveBeenCalledOnce();
+  });
+
+  it("changes the playback speed from its presets and slider", async () => {
+    const user = userEvent.setup();
+    const store = renderPanel();
+    const speed = screen.getByRole("button", { name: "Playback speed" });
+    expect(speed).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(speed);
+    await user.click(await screen.findByRole("button", { name: "2×" }));
+    expect(store.getState().playbackControls.playbackSpeed).toBe(2);
+    expect(speed).toHaveAttribute("aria-pressed", "true");
+
+    screen.getByRole("slider", { name: "Playback speed" }).focus();
+    await user.keyboard("{ArrowLeft}");
+    expect(store.getState().playbackControls.playbackSpeed).toBe(1.75);
+    expect(screen.getByText("1.75×")).toBeInTheDocument();
   });
 
   it("scrubs to the time under the pointer", () => {

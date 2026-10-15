@@ -43,6 +43,10 @@ class AudioPlaybackSession {
     this.engine.setOutputGain(linearGain);
   }
 
+  setPlaybackRate(rate: number) {
+    this.engine.setPlaybackRate(rate);
+  }
+
   setMono(mono: boolean) {
     this.engine.setMono(mono);
   }

@@ -25,6 +25,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   const sessionRef = useRef<AudioPlaybackSession | null>(null);
   const webAudioTracksRef = useRef<WebAudioTrack[]>([]);
   const playbackErrorObserverRef = useRef<(() => void) | null>(null);
+  const playbackRateRef = useRef(1);
 
   const enabledTracks = useMemo(() => audioTracks.filter((track) => track.enabled), [audioTracks]);
   const webAudioTracks: WebAudioTrack[] = useMemo(
@@ -71,6 +72,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
     if (!sourcePath || !media || typeof AudioContext === "undefined") return;
     const session = new AudioPlaybackSession(sourcePath);
     sessionRef.current = session;
+    session.setPlaybackRate(playbackRateRef.current);
     const unregisterPlaybackErrorObserver = session.registerPlaybackErrorObserver(() => {
       playbackErrorObserverRef.current?.();
     });
@@ -109,6 +111,11 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   const pause = useCallback(() => sessionRef.current?.pause(), []);
 
   const seek = useCallback((seconds: number) => sessionRef.current?.seek(seconds), []);
+
+  const setPlaybackRate = useCallback((rate: number) => {
+    playbackRateRef.current = rate;
+    sessionRef.current?.setPlaybackRate(rate);
+  }, []);
 
   const setLiveTrackGain = useCallback((streamIndex: number, gainDb: number | null) => {
     const committedGainDb = webAudioTracksRef.current.find(
@@ -170,6 +177,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       registerPlaybackErrorObserver,
       seek,
       setLiveTrackGain,
+      setPlaybackRate,
       startAlignedWithVideoAt,
     }),
     [
@@ -183,6 +191,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       registerPlaybackErrorObserver,
       seek,
       setLiveTrackGain,
+      setPlaybackRate,
       startAlignedWithVideoAt,
     ],
   );

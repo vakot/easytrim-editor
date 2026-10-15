@@ -65,6 +65,8 @@ class PlaybackController {
     loop: false,
     segment: null,
   };
+  /** Source seconds per second for both participants, applied whenever a run starts. */
+  private playbackRate = 1;
 
   attach = (mediaSessionId: number | null, driver: PlaybackDriver, durationMicros: number) => {
     const sessionChanged = this.mediaSessionId !== mediaSessionId;
@@ -105,6 +107,23 @@ class PlaybackController {
   setOptions = (options: PlaybackOptions) => {
     this.options = options;
     if (this.lifecycle === "playing") this.prefetchLoopStart();
+  };
+
+  /**
+   * Changes the speed of later runs. A running playback restarts from where it is so audio is
+   * aligned with the video again; a pause waiting for a frame boundary completes there instead.
+   */
+  setPlaybackRate = (rate: number) => {
+    if (!Number.isFinite(rate) || rate <= 0 || rate === this.playbackRate) return;
+    this.playbackRate = rate;
+    if (this.lifecycle === "paused") return;
+    if (this.pauseAtMicros !== null) {
+      const boundary = this.pauseAtMicros;
+      this.seekShowing(boundary, boundary);
+      return;
+    }
+    this.pause();
+    this.play();
   };
 
   getSnapshot = () => this.snapshot;
@@ -291,6 +310,8 @@ class PlaybackController {
     const driver = this.driver;
     if (!driver) return;
     try {
+      driver.video.setPlaybackRate(this.playbackRate);
+      driver.audio.setPlaybackRate(this.playbackRate);
       await driver.audio.prepareAt(seconds);
       if (!this.isCurrentStartup(generation)) return;
 

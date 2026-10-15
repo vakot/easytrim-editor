@@ -43,6 +43,7 @@ import { ChapterDialog } from "../dialogs/ChapterDialog";
 import { useTimelineTrimEditing } from "../hooks/useTimelineTrimEditing";
 import { formatTimecode } from "../lib/timecode";
 
+import { PlaybackSpeedControl } from "./PlaybackSpeedControl";
 import { percentOf, Timeline, type TimelineSnapTarget } from "./Timeline";
 import { EDITED_CHAPTER_SNAP_KEY } from "./TimelineChapterEditor";
 import { TimelineMarkers } from "./TimelineMarkers";
@@ -253,23 +254,29 @@ function TimelinePanelContent() {
       className="grid min-w-0 shrink-0 grid-rows-[auto_minmax(2rem,1fr)] gap-3 p-3"
     >
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-        <div className="min-w-0">
-          <h2
-            className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
-            id="timeline-title"
-          >
-            {t("timeline.segment.labels.selectedSegment")}
-          </h2>
-          <output
-            aria-label={t("preview.accessibility.currentTime")}
-            className="font-mono text-xs text-foreground tabular-nums"
-          >
-            {readout}
-            <span className="text-muted-foreground">
-              {" / "}
-              {timecode(durationMicros)}
-            </span>
-          </output>
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="w-(--editor-track-controls-width) min-w-0">
+            <h2
+              className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+              id="timeline-title"
+            >
+              {t("timeline.segment.labels.selectedSegment")}
+            </h2>
+            <output
+              aria-label={t("preview.accessibility.currentTime")}
+              className="font-mono text-xs text-foreground tabular-nums"
+            >
+              {readout}
+              <span className="text-muted-foreground">
+                {" / "}
+                {timecode(durationMicros)}
+              </span>
+            </output>
+          </div>
+
+          <div className="flex gap-1">
+            <PlaybackSpeedControl />
+          </div>
         </div>
 
         <div

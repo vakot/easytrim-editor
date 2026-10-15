@@ -15,6 +15,8 @@ interface AudioPlaybackAdapter {
   seek: (seconds: number) => void;
   /** Previews a track gain while it is adjusted; `null` restores the committed gain. */
   setLiveTrackGain: (streamIndex: number, gainDb: number | null) => void;
+  /** Source seconds per second; a running playback restarts from where it is. */
+  setPlaybackRate: (rate: number) => void;
   startAlignedWithVideoAt: (videoPositionSeconds: number) => Promise<number>;
 }
 
