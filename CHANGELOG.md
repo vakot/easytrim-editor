@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Added editable video chapters with timeline markers and trim-aware chapter export.
 - Export dialogs now support selecting a separate frame-aligned range without changing the Timeline selection.
 
+### Fixed
+
+- Audio waveforms now line up with the sound on the Timeline instead of drifting later through longer videos or when the audio starts after the video.
+
 ## [1.13.4]
 
 ### Added
