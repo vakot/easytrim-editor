@@ -29,6 +29,7 @@ import {
   usePlaybackPosition,
   useTimelinePlayback,
 } from "@/features/playback";
+import { cn } from "@/lib/class-names.utils";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
@@ -155,9 +156,6 @@ function TimelinePanelContent() {
     },
     [loadToken],
   );
-  // Half the selection length when its move started: the knob sits at its center.
-  const moveHalfLength = useRef(0);
-
   const timecode = (micros: number) => formatTimecode(micros, frameRate);
   const readout = usePlaybackPosition((position) => formatTimecode(position, frameRate));
   const atStart = usePlaybackPosition((position) => position <= 0);
@@ -178,11 +176,6 @@ function TimelinePanelContent() {
     publishSelection?.(selectionStartPercent, selectionEndPercent);
   }, [publishSelection, selectionEndPercent, selectionStartPercent]);
 
-  // Unrounded without a segment: the nominal axis may be a single microsecond.
-  const selectionCenterMicros = trim.enabled
-    ? Math.round((trim.startMicros + trim.endMicros) / 2)
-    : axisMicros / 2;
-
   const snapTargets = (): TimelineSnapTarget[] => [
     { key: "timeline-start", micros: 0 },
     { key: "timeline-end", micros: durationMicros },
@@ -196,7 +189,8 @@ function TimelinePanelContent() {
         { key, micros: chapter.endMicros },
       ];
     }),
-    ...(trim.enabled
+    // The trim handles are hidden while a chapter is edited, and so are their snap targets.
+    ...(trim.enabled && !editedChapterId
       ? [
           { key: "trim-start", micros: trim.startMicros },
           { key: "trim-end", micros: trim.endMicros },
@@ -430,66 +424,7 @@ function TimelinePanelContent() {
             startMicros={selection.startMicros}
           />
           <TimelinePlayhead disabled={empty} frameRate={frameRate} showValue={scrubbing} />
-          <Timeline.Handle
-            aria-label={t("timeline.segment.accessibility.trimStart")}
-            className="group z-20"
-            data-trim-handle="start"
-            disabled={!trim.enabled}
-            maxMicros={trim.maxStartMicros}
-            micros={selection.startMicros}
-            onDoubleClick={() => trim.change("start", 0)}
-            onDrag={(micros) => trim.change("start", micros)}
-            onDragEnd={trim.finish}
-            onDragStart={() => trim.begin("start")}
-            onEnd={() => trim.change("start", trim.maxStartMicros)}
-            onHome={() => trim.change("start", 0)}
-            onStep={(direction) => trim.step("start", direction)}
-            snapExclude={["trim-start", "trim-move"]}
-            valueText={timecode(trim.startMicros)}
-          >
-            <TrimGrip edge="start" />
-          </Timeline.Handle>
-          <Timeline.Handle
-            aria-label={t("timeline.segment.accessibility.trimEnd")}
-            className="group z-20"
-            data-trim-handle="end"
-            disabled={!trim.enabled}
-            micros={selection.endMicros}
-            minMicros={trim.minEndMicros}
-            onDoubleClick={() => trim.change("end", durationMicros)}
-            onDrag={(micros) => trim.change("end", micros)}
-            onDragEnd={trim.finish}
-            onDragStart={() => trim.begin("end")}
-            onEnd={() => trim.change("end", durationMicros)}
-            onHome={() => trim.change("end", trim.minEndMicros)}
-            onStep={(direction) => trim.step("end", direction)}
-            snapExclude={["trim-end", "trim-move"]}
-            valueText={timecode(trim.endMicros)}
-          >
-            <TrimGrip edge="end" />
-          </Timeline.Handle>
-          <Timeline.Handle
-            aria-label={t("timeline.segment.actions.moveSegment")}
-            className="group z-20"
-            data-trim-handle="move"
-            disabled={!trim.enabled}
-            micros={selectionCenterMicros}
-            onDrag={(center) => trim.change("move", center - moveHalfLength.current)}
-            onDragEnd={trim.finish}
-            onDragStart={() => {
-              moveHalfLength.current = (trim.endMicros - trim.startMicros) / 2;
-              trim.begin("move");
-            }}
-            onEnd={() => trim.change("move", durationMicros)}
-            onHome={() => trim.change("move", 0)}
-            onStep={(direction) => trim.step("move", direction)}
-            snapExclude={["trim-start", "trim-end", "trim-move"]}
-            valueText={`${timecode(trim.startMicros)} – ${timecode(trim.endMicros)}`}
-          >
-            <span className="absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-aria-disabled:cursor-default group-data-snap-active:ring-3 hover:bg-primary/90 group-aria-disabled:hover:bg-primary active:cursor-grabbing">
-              <GripHorizontal aria-hidden="true" className="size-4" />
-            </span>
-          </Timeline.Handle>
+          <TimelineTrimHandles frameRate={frameRate} selection={selection} trim={trim} />
         </Timeline.Root>
       </div>
     </section>
@@ -527,6 +462,99 @@ function TimelinePlayhead({
       <span className="absolute -inset-y-1 left-0 w-0.5 -translate-x-1/2 rounded-xs bg-white group-focus-visible:ring-3 group-focus-visible:ring-ring/50" />
       <span className="absolute -top-1 left-0 size-2 -translate-1/2 rounded-full bg-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:rounded-t-none" />
     </Timeline.Handle>
+  );
+}
+
+/**
+ * The trim selection's boundaries and its move knob. They give way to the chapter editor: while a
+ * chapter is edited they are hidden and disabled.
+ */
+function TimelineTrimHandles({
+  frameRate,
+  selection,
+  trim,
+}: {
+  frameRate?: FrameRate;
+  selection: { endMicros: number; startMicros: number };
+  trim: ReturnType<typeof useTimelineTrimEditing>;
+}) {
+  const { t } = useTranslation();
+  const { durationMicros } = useTimelinePlayback();
+  const editingChapter = useChapterEditing().chapterId !== null;
+  // Half the selection length when its move started: the knob sits at its center.
+  const moveHalfLength = useRef(0);
+
+  const timecode = (micros: number) => formatTimecode(micros, frameRate);
+  const disabled = !trim.enabled || editingChapter;
+  const className = cn("group z-20", editingChapter && "invisible");
+  // Unrounded without a segment: the nominal axis may be a single microsecond.
+  const selectionCenterMicros = trim.enabled
+    ? Math.round((trim.startMicros + trim.endMicros) / 2)
+    : (selection.startMicros + selection.endMicros) / 2;
+
+  return (
+    <>
+      <Timeline.Handle
+        aria-label={t("timeline.segment.accessibility.trimStart")}
+        className={className}
+        data-trim-handle="start"
+        disabled={disabled}
+        maxMicros={trim.maxStartMicros}
+        micros={selection.startMicros}
+        onDoubleClick={() => trim.change("start", 0)}
+        onDrag={(micros) => trim.change("start", micros)}
+        onDragEnd={trim.finish}
+        onDragStart={() => trim.begin("start")}
+        onEnd={() => trim.change("start", trim.maxStartMicros)}
+        onHome={() => trim.change("start", 0)}
+        onStep={(direction) => trim.step("start", direction)}
+        snapExclude={["trim-start", "trim-move"]}
+        valueText={timecode(trim.startMicros)}
+      >
+        <TrimGrip edge="start" />
+      </Timeline.Handle>
+      <Timeline.Handle
+        aria-label={t("timeline.segment.accessibility.trimEnd")}
+        className={className}
+        data-trim-handle="end"
+        disabled={disabled}
+        micros={selection.endMicros}
+        minMicros={trim.minEndMicros}
+        onDoubleClick={() => trim.change("end", durationMicros)}
+        onDrag={(micros) => trim.change("end", micros)}
+        onDragEnd={trim.finish}
+        onDragStart={() => trim.begin("end")}
+        onEnd={() => trim.change("end", durationMicros)}
+        onHome={() => trim.change("end", trim.minEndMicros)}
+        onStep={(direction) => trim.step("end", direction)}
+        snapExclude={["trim-end", "trim-move"]}
+        valueText={timecode(trim.endMicros)}
+      >
+        <TrimGrip edge="end" />
+      </Timeline.Handle>
+      <Timeline.Handle
+        aria-label={t("timeline.segment.actions.moveSegment")}
+        className={className}
+        data-trim-handle="move"
+        disabled={disabled}
+        micros={selectionCenterMicros}
+        onDrag={(center) => trim.change("move", center - moveHalfLength.current)}
+        onDragEnd={trim.finish}
+        onDragStart={() => {
+          moveHalfLength.current = (trim.endMicros - trim.startMicros) / 2;
+          trim.begin("move");
+        }}
+        onEnd={() => trim.change("move", durationMicros)}
+        onHome={() => trim.change("move", 0)}
+        onStep={(direction) => trim.step("move", direction)}
+        snapExclude={["trim-start", "trim-end", "trim-move"]}
+        valueText={`${timecode(trim.startMicros)} – ${timecode(trim.endMicros)}`}
+      >
+        <span className="absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-aria-disabled:cursor-default group-data-snap-active:ring-3 hover:bg-primary/90 group-aria-disabled:hover:bg-primary active:cursor-grabbing">
+          <GripHorizontal aria-hidden="true" className="size-4" />
+        </span>
+      </Timeline.Handle>
+    </>
   );
 }
 

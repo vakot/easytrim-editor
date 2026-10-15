@@ -680,6 +680,29 @@ describe("Timeline chapter editing", () => {
     expect(playback.releasePlayback).toHaveBeenCalledWith({ resume: true });
   });
 
+  it("hides the trim handles and their snap targets while a chapter is edited", () => {
+    const store = renderWithChapter({ end: 4_000_000, positionMicros: 0, start: 2_000_000 });
+    layOutTimeline();
+    fireEvent.click(screen.getByRole("button", { name: "Edit Intro" }));
+
+    for (const edge of ["start", "end", "move"]) {
+      const handle = document.querySelector(`[data-trim-handle="${edge}"]`);
+      expect(handle).toHaveClass("invisible");
+      expect(handle).toHaveAttribute("aria-disabled", "true");
+    }
+
+    // 193 px of 240 px is 4.0208 s, within snapping distance of the trim end at 192 px.
+    const end = screen.getByRole("slider", { name: "End of Intro" });
+    fireEvent.pointerDown(end, { button: 0, clientX: 144, pointerId: 1 });
+    fireEvent.pointerMove(end, { clientX: 193, pointerId: 1, shiftKey: true });
+    fireEvent.pointerUp(end, { clientX: 193, pointerId: 1 });
+    expect(chapter(store)?.endMicros).toBe(4_016_667);
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(document.querySelector('[data-trim-handle="start"]')).not.toHaveClass("invisible");
+    expect(screen.getByRole("slider", { name: "Trim start" })).not.toHaveAttribute("aria-disabled");
+  });
+
   it("finishes editing with Escape or from the toolbar", () => {
     renderWithChapter();
 
