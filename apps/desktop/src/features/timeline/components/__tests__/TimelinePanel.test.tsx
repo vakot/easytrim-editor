@@ -7,12 +7,16 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
+  audioTrackActivityAnalysisReady,
+  audioTrackActivityAnalysisStarted,
+} from "@/app/store/slices/audio-slice";
+import {
   activeEditingInstanceChanged,
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
-import { firstSource, media } from "@/test/source.fixtures";
+import { firstSource, media, mediaWithAudio } from "@/test/source.fixtures";
 
 import { TimelineAxisScope } from "../TimelineAxisScope";
 import { TimelinePanel } from "../TimelinePanel";
@@ -69,6 +73,7 @@ function renderPanel({
   loaded = true,
   positionMicros = 2_000_000,
   start = 0,
+  withAudio = false,
 } = {}) {
   const store = createAppStore();
   if (loaded) {
@@ -84,7 +89,7 @@ function renderPanel({
       ]),
     );
     store.dispatch(activeEditingInstanceChanged("first"));
-    const sourceMedia = media(firstSource.sourcePath);
+    const sourceMedia = (withAudio ? mediaWithAudio : media)(firstSource.sourcePath);
     sourceMedia.video.averageFrameRate = { numerator: 60, denominator: 1, displayValue: 60 };
     store.dispatch(sourceSelected({ loadToken: 1, source: firstSource }));
     store.dispatch(sourceReady({ loadToken: 1, media: sourceMedia }));
@@ -480,6 +485,29 @@ describe("Timeline trim editing", () => {
     fireEvent.pointerUp(start, { clientX: 100, pointerId: 1 });
     expect(start).not.toHaveAttribute("data-snap-active");
     expect(store.getState().trim.value?.startMicros).toBe(2_000_000);
+  });
+
+  it("snaps a Shift-dragged trim boundary to a detected audio activity marker", () => {
+    // The marker at 1.5 s is 72 px on a 240 px timeline; 70 px is within the snap distance.
+    const store = renderPanel({ positionMicros: 4_000_000, withAudio: true });
+    layOutTimeline();
+    act(() => {
+      store.dispatch(
+        audioTrackActivityAnalysisStarted({ operationId: "activity-2", streamIndex: 2 }),
+      );
+      store.dispatch(
+        audioTrackActivityAnalysisReady({
+          operationId: "activity-2",
+          result: [{ endMicros: 2_500_000, startMicros: 1_500_000 }],
+          streamIndex: 2,
+        }),
+      );
+    });
+    const start = screen.getByRole("slider", { name: "Trim start" });
+    fireEvent.pointerDown(start, { button: 0, clientX: 0, pointerId: 1 });
+    fireEvent.pointerMove(start, { clientX: 70, pointerId: 1, shiftKey: true });
+    fireEvent.pointerUp(start, { clientX: 70, pointerId: 1 });
+    expect(store.getState().trim.value?.startMicros).toBe(1_500_000);
   });
 
   it("keeps a Shift-dragged boundary on the timeline edge across pointer moves", () => {

@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
@@ -446,6 +446,23 @@ const EMPTY_AUDIO_TRACKS: AudioTrackState[] = [];
 const selectAudioTracks = (state: RootState): AudioTrackState[] =>
   state.audio.tracks.length > 0 ? state.audio.tracks : EMPTY_AUDIO_TRACKS;
 
+interface AudioActivityMarker {
+  micros: number;
+  streamIndex: number;
+}
+
+const selectVisibleAudioActivityMarkers = createSelector([selectAudioTracks], (tracks) =>
+  tracks.flatMap((track) =>
+    track.activityVisible && track.activityAnalysis.status === "ready"
+      ? track.activityAnalysis.value.flatMap((range): AudioActivityMarker[] => [
+          { micros: range.startMicros, streamIndex: track.streamIndex },
+          { micros: range.endMicros, streamIndex: track.streamIndex },
+        ])
+      : [],
+  ),
+);
+
+export type { AudioActivityMarker };
 export {
   audioReducer,
   audioTrackActivityAnalysisFailed,
@@ -462,6 +479,7 @@ export {
   audioTrackProcessingChanged,
   audioTrackToggled,
   selectAudioTracks,
+  selectVisibleAudioActivityMarkers,
   waveformDisplayFailed,
   waveformReady,
   waveformsFailed,

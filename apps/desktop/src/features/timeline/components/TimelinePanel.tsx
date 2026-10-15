@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectVisibleAudioActivityMarkers } from "@/app/store/slices/audio-slice";
 import { selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectVisibleSceneBoundariesMicros } from "@/app/store/slices/scene-detection-slice";
 import { selectSourceLoadToken, selectSourceMedia } from "@/app/store/slices/source-slice";
@@ -74,6 +75,7 @@ function TimelinePanel() {
   const media = useAppSelector(selectSourceMedia);
   const loadToken = useAppSelector(selectSourceLoadToken);
   const scenes = useAppSelector(selectVisibleSceneBoundariesMicros);
+  const audioActivityMarkers = useAppSelector(selectVisibleAudioActivityMarkers);
   const chapters = useAppSelector(selectChapters);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const { durationMicros, framesCount, getPositionMicros, seekTime, stepFrame } =
@@ -126,6 +128,7 @@ function TimelinePanel() {
     { key: "timeline-end", micros: durationMicros },
     { key: "playhead", micros: getPositionMicros() },
     ...scenes.map((micros) => ({ key: "scene", micros })),
+    ...audioActivityMarkers.map(({ micros }) => ({ key: "audio-activity", micros })),
     ...chapters.flatMap((chapter) => [
       { key: "chapter", micros: chapter.startMicros },
       { key: "chapter", micros: chapter.endMicros },
