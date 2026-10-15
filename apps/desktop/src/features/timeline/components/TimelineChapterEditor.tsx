@@ -89,9 +89,14 @@ function TimelineChapterEditor({ chapterId }: { chapterId: string }) {
         valueText={`${timecode(range.startMicros)} – ${timecode(range.endMicros)}`}
       >
         <span
-          className={`absolute inset-0 flex cursor-grab items-center overflow-hidden rounded-xs border border-primary bg-primary/35 px-1.5 text-[0.5625rem] leading-none font-medium text-foreground shadow-sm active:cursor-grabbing ${FOCUS_CLASS_NAME}`}
+          className={cn(
+            "absolute inset-0 mx-1 flex cursor-grab items-center overflow-hidden border-y border-primary bg-primary/35 shadow-sm active:cursor-grabbing",
+            FOCUS_CLASS_NAME,
+          )}
         >
-          <span className="truncate">{chapter.title}</span>
+          <span className="mx-1 truncate text-[0.5625rem] leading-none font-medium text-foreground">
+            {chapter.title}
+          </span>
         </span>
       </Timeline.Handle>
       <Timeline.Handle
@@ -109,7 +114,7 @@ function TimelineChapterEditor({ chapterId }: { chapterId: string }) {
         snapExclude={SNAP_EXCLUDE}
         valueText={timecode(range.startMicros)}
       >
-        <ChapterEdgeGrip />
+        <ChapterEdgeGrip className="rounded-l-xs" />
       </Timeline.Handle>
       <Timeline.Handle
         aria-label={t("timeline.chapters.accessibility.chapterEnd", { title: chapter.title })}
@@ -126,16 +131,20 @@ function TimelineChapterEditor({ chapterId }: { chapterId: string }) {
         snapExclude={SNAP_EXCLUDE}
         valueText={timecode(range.endMicros)}
       >
-        <ChapterEdgeGrip />
+        <ChapterEdgeGrip className="rounded-r-xs" />
       </Timeline.Handle>
     </>
   );
 }
 
-function ChapterEdgeGrip() {
+function ChapterEdgeGrip({ className }: { className?: string }) {
   return (
     <span
-      className={`absolute inset-y-0 left-0 w-2 -translate-x-1/2 cursor-ew-resize rounded-xs bg-primary shadow-sm hover:bg-primary/90 ${FOCUS_CLASS_NAME}`}
+      className={cn(
+        "absolute inset-y-0 left-0 w-2 -translate-x-1/2 cursor-ew-resize bg-primary shadow-sm after:absolute after:top-1/2 after:left-1/2 after:h-2 after:w-px after:-translate-1/2 after:rounded-full after:bg-muted after:content-[''] hover:bg-primary/90",
+        FOCUS_CLASS_NAME,
+        className,
+      )}
     />
   );
 }
