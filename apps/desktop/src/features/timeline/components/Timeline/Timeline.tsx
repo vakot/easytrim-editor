@@ -45,32 +45,42 @@ function Root({
 }: TimelineRootProps) {
   const layerRef = React.useRef<HTMLDivElement>(null);
   const scrubbing = React.useRef(false);
+  const [scrubSnapped, setScrubSnapped] = React.useState(false);
 
   const pointerMicros = React.useCallback(
     (event: React.PointerEvent, exclude: readonly string[] = []) => {
       const bounds = layerRef.current?.getBoundingClientRect();
-      if (!bounds) return 0;
+      if (!bounds) return { micros: 0, snapped: false };
       const micros = microsAtClientX(event.clientX, bounds.left, bounds.width, durationMicros);
-      if (!event.shiftKey) return micros;
-      return snapToTargets(
+      if (!event.shiftKey) return { micros, snapped: false };
+      const snapped = snapToTargets(
         micros,
         (snapTargets?.() ?? [])
           .filter((target) => !exclude.includes(target.key))
           .map((target) => target.micros),
         { durationMicros, thresholdPixels: SNAP_THRESHOLD_PIXELS, width: bounds.width },
       );
+
+      return { micros: snapped, snapped: snapped !== micros };
     },
     [durationMicros, snapTargets],
   );
 
   const context = React.useMemo(
-    () => ({ disabled, durationMicros, pointerMicros }),
-    [disabled, durationMicros, pointerMicros],
+    () => ({ disabled, durationMicros, pointerMicros, scrubSnapped }),
+    [disabled, durationMicros, pointerMicros, scrubSnapped],
   );
+
+  function scrubTo(event: React.PointerEvent) {
+    const { micros, snapped } = pointerMicros(event, SCRUB_EXCLUDES);
+    setScrubSnapped(snapped);
+    onScrub?.(micros);
+  }
 
   function endScrub(event: React.PointerEvent) {
     if (!scrubbing.current) return;
     scrubbing.current = false;
+    setScrubSnapped(false);
     event.currentTarget.releasePointerCapture?.(event.pointerId);
     onScrubEnd?.();
   }
@@ -88,10 +98,10 @@ function Root({
           scrubbing.current = true;
           event.currentTarget.setPointerCapture?.(event.pointerId);
           onScrubStart?.();
-          onScrub?.(pointerMicros(event, SCRUB_EXCLUDES));
+          scrubTo(event);
         }}
         onPointerMove={(event) => {
-          if (scrubbing.current) onScrub?.(pointerMicros(event, SCRUB_EXCLUDES));
+          if (scrubbing.current) scrubTo(event);
         }}
         onPointerUp={endScrub}
         {...props}
@@ -193,6 +203,8 @@ type HandleProps = Omit<React.ComponentProps<"span">, "onDrag" | "onDragEnd" | "
   onEnd?: () => void;
   onHome?: () => void;
   onStep?: (direction: -1 | 1) => void;
+  /** Marks the handle as the one a scrub moves, so it shows when the scrub snaps. */
+  scrubbed?: boolean;
   /** Shows the value label even when the handle itself is not dragged, e.g. while scrubbing. */
   showValue?: boolean;
   /** Snap targets this handle never snaps to while dragged: its own, and any moving with it. */
@@ -216,6 +228,7 @@ function Handle({
   onHome,
   onKeyDown,
   onStep,
+  scrubbed = false,
   showValue = false,
   snapExclude = [],
   style,
@@ -225,10 +238,13 @@ function Handle({
   const timeline = useTimeline();
   const inactive = disabled || timeline.disabled;
   const [dragging, setDragging] = React.useState(false);
+  const [dragSnapped, setDragSnapped] = React.useState(false);
+  const snapActive = (dragging && dragSnapped) || (scrubbed && timeline.scrubSnapped);
 
   function endDrag(event: React.PointerEvent<HTMLSpanElement>) {
     if (!dragging) return;
     setDragging(false);
+    setDragSnapped(false);
     event.currentTarget.releasePointerCapture?.(event.pointerId);
     onDragEnd?.();
   }
@@ -244,6 +260,7 @@ function Handle({
       className={cn("absolute inset-y-0 w-0 outline-none", className)}
       data-dragging={dragging ? "" : undefined}
       data-slot="timeline-handle"
+      data-snap-active={snapActive ? "" : undefined}
       onKeyDown={(event) => {
         onKeyDown?.(event);
         if (inactive || event.defaultPrevented) return;
@@ -271,10 +288,13 @@ function Handle({
         if (inactive || event.button !== 0 || event.isPrimary === false) return;
         event.currentTarget.setPointerCapture?.(event.pointerId);
         setDragging(true);
-        onDragStart?.(timeline.pointerMicros(event, snapExclude));
+        onDragStart?.(timeline.pointerMicros(event, snapExclude).micros);
       }}
       onPointerMove={(event) => {
-        if (dragging) onDrag?.(timeline.pointerMicros(event, snapExclude));
+        if (!dragging) return;
+        const { micros: next, snapped } = timeline.pointerMicros(event, snapExclude);
+        setDragSnapped(snapped);
+        onDrag?.(next);
       }}
       onPointerUp={endDrag}
       role="slider"
@@ -289,7 +309,7 @@ function Handle({
           <span aria-hidden="true" className="pointer-events-none absolute top-0 left-0 size-0" />
         </TooltipTrigger>
         <TooltipContent
-          className="font-mono tabular-nums"
+          className="font-mono"
           data-slot="timeline-handle-value"
           side="top"
           sideOffset={12}

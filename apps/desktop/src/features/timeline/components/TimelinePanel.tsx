@@ -381,7 +381,7 @@ function TimelinePanel() {
                 snapExclude={["trim-start", "trim-end", "trim-move"]}
                 valueText={`${timecode(trim.startMicros)} – ${timecode(trim.endMicros)}`}
               >
-                <span className="absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 hover:bg-primary/90 active:cursor-grabbing">
+                <span className="absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3 hover:bg-primary/90 active:cursor-grabbing">
                   <GripHorizontal aria-hidden="true" className="size-4" />
                 </span>
               </Timeline.Handle>
@@ -410,18 +410,19 @@ function TimelinePlayhead({
   return (
     <Timeline.Handle
       aria-label={t("timeline.accessibility.playheadPosition")}
-      className="pointer-events-none z-10"
+      className="group pointer-events-none z-10"
       data-slot="timeline-playhead"
       disabled={disabled}
       micros={position}
       onEnd={() => seekTime(durationMicros)}
       onHome={() => seekTime(0)}
       onStep={stepFrame}
+      scrubbed
       showValue={showValue}
       valueText={formatTimecode(position, frameRate)}
     >
       <span className="absolute -inset-y-1 left-0 w-0.5 -translate-x-1/2 rounded-xs bg-white" />
-      <span className="absolute -top-1 left-0 size-2 -translate-1/2 rounded-full bg-foreground" />
+      <span className="absolute -top-1 left-0 size-2 -translate-1/2 rounded-full bg-foreground group-data-snap-active:rounded-t-none" />
     </Timeline.Handle>
   );
 }
@@ -429,7 +430,7 @@ function TimelinePlayhead({
 function TrimGrip({ edge }: { edge: "start" | "end" }) {
   return (
     <span
-      className={`absolute -inset-y-1 left-0 flex w-4 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-xs bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 hover:bg-primary/90 ${edge === "start" ? "rounded-l-md" : "rounded-r-md"}`}
+      className={`absolute -inset-y-1 left-0 flex w-4 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-xs bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3 hover:bg-primary/90 ${edge === "start" ? "rounded-l-md" : "rounded-r-md"}`}
     >
       <GripVertical aria-hidden="true" className="size-4" />
     </span>

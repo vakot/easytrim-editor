@@ -356,7 +356,9 @@ describe("Timeline trim editing", () => {
     const start = screen.getByRole("slider", { name: "Trim start" });
     fireEvent.pointerDown(start, { button: 0, clientX: 0, pointerId: 1 });
     fireEvent.pointerMove(start, { clientX: 100, pointerId: 1, shiftKey: true });
+    expect(start).toHaveAttribute("data-snap-active");
     fireEvent.pointerUp(start, { clientX: 100, pointerId: 1 });
+    expect(start).not.toHaveAttribute("data-snap-active");
     expect(store.getState().trim.value?.startMicros).toBe(2_000_000);
   });
 
@@ -382,5 +384,10 @@ describe("Timeline trim editing", () => {
     // The knob sits at 2 s (96 px); the pointer is 4 px away.
     fireEvent.pointerDown(timeline, { button: 0, clientX: 100, pointerId: 1, shiftKey: true });
     expect(playback.seekTime).toHaveBeenLastCalledWith(2_000_000);
+    const playhead = screen.getByRole("slider", { name: "Playhead position" });
+    expect(playhead).toHaveAttribute("data-snap-active");
+    fireEvent.pointerMove(timeline, { clientX: 100, pointerId: 1 });
+    expect(playhead).not.toHaveAttribute("data-snap-active");
+    fireEvent.pointerUp(timeline, { clientX: 100, pointerId: 1 });
   });
 });
