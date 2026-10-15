@@ -7,9 +7,14 @@ import {
   audioTrackLoudnessAnalysisStarted,
   selectAudioTracks,
 } from "@/app/store/slices/audio-slice";
-import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
+import {
+  selectFrameIndex,
+  selectSourceMedia,
+  selectSourceSelection,
+} from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppThunk } from "@/app/store/thunks/source-media-thunks";
+import { alignAudioActivityRangesToFrames } from "@/domain/audio-activity";
 import {
   audioTrackLoudnessInputsKey,
   type AudioTrackProcessing,
@@ -138,7 +143,13 @@ function detectTrackActivity(streamIndex: number): AppThunk<Promise<void>> {
     try {
       const result = await detectAudioActivity(source.sourcePath, audioTrack, media.durationMicros);
       if (!isCurrentTrack(getState(), source.sourcePath, sourceLoadToken, audioTrack)) return;
-      dispatch(audioTrackActivityAnalysisReady({ operationId, result, streamIndex }));
+      dispatch(
+        audioTrackActivityAnalysisReady({
+          operationId,
+          result: alignAudioActivityRangesToFrames(result, selectFrameIndex(getState())),
+          streamIndex,
+        }),
+      );
     } catch (error: unknown) {
       dispatch(
         audioTrackActivityAnalysisFailed({

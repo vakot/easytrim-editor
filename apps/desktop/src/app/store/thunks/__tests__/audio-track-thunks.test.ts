@@ -45,7 +45,7 @@ describe("audio track operations", () => {
     const store = createStore();
     store.dispatch(audioTrackToggled({ streamIndex: 2 }));
     mocks.analyzeAudioLoudness.mockResolvedValue({ integratedLufs: -18, truePeakDb: -2 });
-    mocks.detectAudioActivity.mockResolvedValue([{ startMicros: 100, endMicros: 200 }]);
+    mocks.detectAudioActivity.mockResolvedValue([{ startMicros: 1_010_000, endMicros: 1_990_000 }]);
 
     await store.dispatch(analyzeTrackLoudness(2));
     await store.dispatch(detectTrackActivity(2));
@@ -58,7 +58,8 @@ describe("audio track operations", () => {
     });
     expect(track.activityAnalysis).toMatchObject({
       status: "ready",
-      value: [{ startMicros: 100 }],
+      // At 29.97 FPS the nearest frame boundaries are 1.001 s and 2.002 s.
+      value: [{ startMicros: 1_001_000, endMicros: 2_002_000 }],
     });
     expect(mocks.analyzeAudioLoudness).toHaveBeenCalledWith(
       expect.objectContaining({
