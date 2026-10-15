@@ -17,7 +17,12 @@ import { useSourceListData } from "../contexts/SourceListContext";
 
 const SOURCE_SEARCH_DEBOUNCE_MS = 250;
 
-function SourceListSearch() {
+interface SourceListSearchProps {
+  /** Focuses the field when it mounts; for dialogs, where the list is the thing being opened. */
+  autoFocus?: boolean;
+}
+
+function SourceListSearch({ autoFocus = false }: SourceListSearchProps) {
   const { t } = useTranslation();
   const { setSearch, sources } = useSourceListData();
   const [searchInternal, setSearchInternal] = useState("");
@@ -42,7 +47,7 @@ function SourceListSearch() {
 
       <InputGroupInput
         aria-label={t("common.search.sources")}
-        autoFocus
+        autoFocus={autoFocus}
         className="h-6"
         onChange={(event) => setSearchInternal(event.currentTarget.value)}
         placeholder={t("common.search.sourcesPlaceholder")}

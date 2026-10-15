@@ -44,8 +44,17 @@ pub fn generate_waveforms(
         .collect::<Result<Vec<_>, _>>()?;
     // Count samples and analyze activity first so every envelope column retains the same
     // sample boundaries as the former showwavespic pipeline.
-    let activity_args =
-        activity_arguments(&source.source.path, stream_indexes, processing_by_stream);
+    let duration_micros = source
+        .source
+        .media
+        .as_ref()
+        .map(|media| media.duration_micros);
+    let activity_args = activity_arguments(
+        &source.source.path,
+        stream_indexes,
+        processing_by_stream,
+        duration_micros,
+    );
     let activity_output = run_bounded_cancellable(
         OsStr::new("ffmpeg"),
         &activity_args,
@@ -114,7 +123,12 @@ pub fn generate_waveforms(
         let processing = processing_by_stream
             .get(stream_index)
             .expect("every waveform stream has processing settings");
-        let arguments = pcm_stream_arguments(&source.source.path, *stream_index, processing);
+        let arguments = pcm_stream_arguments(
+            &source.source.path,
+            *stream_index,
+            processing,
+            duration_micros,
+        );
         let output_path = artifacts[position]
             .as_ref()
             .expect("waveform artifact is present")
@@ -197,11 +211,29 @@ pub fn validate_waveform_request(
     Ok(())
 }
 
+/// Places the audio on the container timeline so a waveform column is the same time as the video
+/// axis column under it: silence fills the gap before the audio's first timestamp, and the audio
+/// is cut or padded to the picture's duration. Without it the envelope covers only the decoded
+/// samples, which start late and end early whenever the audio is offset or shorter than the video.
+fn timeline_alignment_prefix(duration_micros: Option<i64>) -> String {
+    match duration_micros {
+        Some(micros) if micros > 0 => {
+            let seconds = micros as f64 / 1_000_000.0;
+            format!(
+                "aresample=async=1:first_pts=0,atrim=end={seconds:.6},apad=whole_dur={seconds:.6},"
+            )
+        }
+        _ => String::new(),
+    }
+}
+
 fn activity_arguments(
     source_path: &Path,
     stream_indexes: &[u32],
     processing_by_stream: &std::collections::HashMap<u32, AudioTrackProcessing>,
+    duration_micros: Option<i64>,
 ) -> Vec<OsString> {
+    let alignment = timeline_alignment_prefix(duration_micros);
     let filters = stream_indexes
         .iter()
         .enumerate()
@@ -212,7 +244,7 @@ fn activity_arguments(
                     .expect("every waveform stream has processing settings"),
             );
             let effect_chain = if effects.is_empty() { String::new() } else { format!("{effects},") };
-            format!("[0:{stream_index}]{effect_chain}aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream{stream_index}[activity{index}]")
+            format!("[0:{stream_index}]{alignment}{effect_chain}aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream{stream_index}[activity{index}]")
         })
         .collect::<Vec<_>>()
         .join(";");
@@ -246,7 +278,9 @@ fn pcm_stream_arguments(
     source_path: &Path,
     stream_index: u32,
     processing: &AudioTrackProcessing,
+    duration_micros: Option<i64>,
 ) -> Vec<OsString> {
+    let alignment = timeline_alignment_prefix(duration_micros);
     let effects = waveform_signal_filter_chain(processing);
     let effect_chain = if effects.is_empty() {
         String::new()
@@ -263,7 +297,7 @@ fn pcm_stream_arguments(
         source_path.as_os_str().to_owned(),
         OsString::from("-filter_complex"),
         OsString::from(format!(
-            "[0:{stream_index}]{effect_chain}aformat=sample_fmts=s16:channel_layouts=stereo[pcm]"
+            "[0:{stream_index}]{alignment}{effect_chain}aformat=sample_fmts=s16:channel_layouts=stereo[pcm]"
         )),
         OsString::from("-map"),
         OsString::from("[pcm]"),
@@ -298,15 +332,15 @@ fn write_binned_pcm(
         ));
     }
 
-    let samples_per_column = sample_count / width;
-    let remainder = sample_count % width;
     let mut buffer = [0_u8; 16 * 1024];
     let mut envelope = Vec::with_capacity(width as usize * 4);
 
-    // Keep showwavespic's existing column boundaries: each column gets the integer
-    // quotient, then the remainder is assigned to the final column.
+    // Column `c` covers the samples from `c * n / width` up to `(c + 1) * n / width`, so a
+    // column's position across the envelope is its time across the audio. Giving the whole
+    // division remainder to one column would push every earlier column's audio later.
+    let column_start = |column: u64| column * sample_count / width;
     for column in 0..width {
-        let mut remaining = samples_per_column + u64::from(column == width - 1) * remainder;
+        let mut remaining = column_start(column + 1) - column_start(column);
         let total_samples = remaining;
         let mut square_sum = [0_u64; 2];
         let mut peak = [0_u32; 2];
@@ -586,7 +620,7 @@ mod tests {
         let processing_by_stream = [(2, empty_processing()), (4, empty_processing())]
             .into_iter()
             .collect();
-        let activity_args = activity_arguments(source_path, &[2, 4], &processing_by_stream);
+        let activity_args = activity_arguments(source_path, &[2, 4], &processing_by_stream, None);
         assert!(activity_args.windows(2).any(|pair| {
             pair == [
                 OsString::from("-i"),
@@ -606,11 +640,39 @@ mod tests {
             [OsString::from("[activity0]"), OsString::from("[activity1]")]
         );
 
-        let pcm_args = pcm_stream_arguments(source_path, 4, &empty_processing());
+        let pcm_args = pcm_stream_arguments(source_path, 4, &empty_processing(), None);
         assert!(pcm_args.iter().any(|argument| {
             argument == "[0:4]aformat=sample_fmts=s16:channel_layouts=stereo[pcm]"
         }));
         assert_eq!(pcm_args.last().unwrap(), "pipe:1");
+    }
+
+    #[test]
+    fn places_audio_on_the_container_timeline_before_effects_and_sampling() {
+        let source_path = Path::new("C:\\Videos\\source clip.mkv");
+        let processing = AudioTrackProcessing {
+            effects: vec![AudioTrackSignalEffect::HighPass {
+                cutoff_hz: 100.0,
+                stage: crate::media::export::AudioProcessingStage::Cleanup,
+            }],
+            ..empty_processing()
+        };
+        let processing_by_stream = [(4, processing.clone())].into_iter().collect();
+        let activity_args =
+            activity_arguments(source_path, &[4], &processing_by_stream, Some(4_166_667));
+        let pcm_args = pcm_stream_arguments(source_path, 4, &processing, Some(4_166_667));
+        let alignment = "aresample=async=1:first_pts=0,atrim=end=4.166667,apad=whole_dur=4.166667";
+
+        assert!(activity_args.iter().any(|argument| {
+            argument
+                .to_string_lossy()
+                .starts_with(&format!("[0:4]{alignment},highpass"))
+        }));
+        assert!(pcm_args.iter().any(|argument| {
+            argument
+                .to_string_lossy()
+                .starts_with(&format!("[0:4]{alignment},highpass"))
+        }));
     }
 
     #[test]
@@ -634,8 +696,8 @@ mod tests {
             ..empty_processing()
         };
         let processing_by_stream = [(4, processing.clone())].into_iter().collect();
-        let activity_args = activity_arguments(source_path, &[4], &processing_by_stream);
-        let pcm_args = pcm_stream_arguments(source_path, 4, &processing);
+        let activity_args = activity_arguments(source_path, &[4], &processing_by_stream, None);
+        let pcm_args = pcm_stream_arguments(source_path, 4, &processing, None);
 
         assert!(activity_args.iter().any(|argument| {
             argument == "[0:4]highpass=f=100.000,afftdn=nr=12:nf=-35,aformat=sample_fmts=s16:channel_layouts=mono,volumedetect@stream4[activity0]"
@@ -685,6 +747,35 @@ mod tests {
         assert_eq!(&output[..4], b"ETWF");
         assert_eq!(u16::from_le_bytes([output[4], output[5]]), 2);
         assert_eq!(&output[12..], [2, 1, 8, 6, 3, 3, 0, 0]);
+    }
+
+    #[test]
+    fn sample_binning_spreads_an_uneven_sample_count_across_columns() {
+        // Ten stereo frames into four columns: boundaries at 0, 2, 5, 7, 10. A single loud
+        // frame at index 5 belongs to the third column, where its time puts it.
+        let mut samples = [0_i16; 20];
+        samples[10] = i16::MAX;
+        let mut source = Cursor::new(
+            samples
+                .iter()
+                .flat_map(|sample| sample.to_le_bytes())
+                .collect::<Vec<_>>(),
+        );
+        let mut output = Vec::new();
+
+        write_binned_pcm(&mut source, &mut output, 10, 4).expect("samples are reduced");
+
+        let flags = u16::from_le_bytes([output[6], output[7]]);
+        let values = if flags == super::WAVEFORM_FLAG_RLE {
+            decode_rle(&output[12..], 16)
+        } else {
+            output[12..].to_vec()
+        };
+        let peaks = values
+            .chunks_exact(4)
+            .map(|column| column[0])
+            .collect::<Vec<_>>();
+        assert_eq!(peaks, [0, 0, 255, 0]);
     }
 
     #[test]

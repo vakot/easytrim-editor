@@ -51,6 +51,27 @@ describe("real frame index", () => {
   });
 });
 
+describe("real frame index with a late first picture", () => {
+  // 60 FPS video whose first picture is presented at 16.667 ms, after the container start.
+  const index = createRealFrameIndex([16_667, 33_333, 50_000], 66_667);
+
+  it("rests on 0 as frame 0, ahead of the real frames", () => {
+    expect(index.count).toBe(4);
+    expect(index.startOf(0)).toBe(0);
+    expect(index.startOf(1)).toBe(16_667);
+    expect(index.frameAt(0)).toBe(0);
+    expect(index.frameAt(16_667)).toBe(1);
+    expect(nearestBoundaryMicros(index, 3_000)).toBe(0);
+    expect(previousBoundaryMicros(index, 16_667)).toBe(0);
+  });
+
+  it("treats a first frame within rounding noise of 0 as starting at 0", () => {
+    const rounded = createRealFrameIndex([1, 16_667, 33_333], 50_000);
+    expect(rounded.count).toBe(3);
+    expect(rounded.startOf(0)).toBe(0);
+  });
+});
+
 describe("nominal frame index", () => {
   const fractionalRate = { denominator: 1_001, numerator: 30_000 };
 

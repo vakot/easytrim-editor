@@ -7,6 +7,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
+  audioTrackActivityAnalysisReady,
+  audioTrackActivityAnalysisStarted,
   audioTrackGainChanged,
   audioTrackMetadataChanged,
   audioTrackToggled,
@@ -22,6 +24,7 @@ import {
   type AudioPlaybackAdapter,
   AudioTransportContext,
 } from "../../contexts/audio-transport-context";
+import { audioTrackColor } from "../../lib/audio-track-color";
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
 import { AudioTrackGainControl } from "../AudioTrack/components/AudioTrackGainControl";
 
@@ -95,6 +98,21 @@ function renderRow({
   );
 
   return { audioPlayback, store };
+}
+
+function detectActivityRanges(store: ReturnType<typeof createStore>) {
+  act(() => {
+    store.dispatch(
+      audioTrackActivityAnalysisStarted({ operationId: "activity-2", streamIndex: 2 }),
+    );
+    store.dispatch(
+      audioTrackActivityAnalysisReady({
+        operationId: "activity-2",
+        result: [{ endMicros: 2_000_000, startMicros: 1_000_000 }],
+        streamIndex: 2,
+      }),
+    );
+  });
 }
 
 function renderGainControl({ enabled = true } = {}) {
@@ -476,8 +494,8 @@ describe("AudioTrackRow", () => {
     expect(screen.getByRole("menuitem", { name: /edit output metadata/i })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: /effects/i })).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("menuitemcheckbox", { name: /audio activity/i }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("menuitemcheckbox", { name: /analyze audio activity/i }),
+    ).not.toBeChecked();
 
     await user.click(screen.getByRole("menuitemcheckbox", { name: "Enable" }));
 
@@ -721,5 +739,43 @@ describe("AudioTrackRow", () => {
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(store.getState().audio.tracks[0]?.metadata.language).toBeUndefined();
+  });
+
+  it("draws detected activity ranges on the waveform in the track color", () => {
+    const { store } = renderRow();
+    detectActivityRanges(store);
+
+    const range = document.querySelector('[data-slot="audio-track-activity-range"]');
+    expect(range).toHaveStyle({
+      backgroundColor: audioTrackColor(2),
+      left: "20%",
+      right: "60%",
+    });
+  });
+
+  it("hides detected activity ranges from the actions menu", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    detectActivityRanges(store);
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    const showRanges = screen.getByRole("menuitemcheckbox", { name: /show detected ranges/i });
+    expect(showRanges).toBeChecked();
+
+    await user.click(showRanges);
+
+    expect(store.getState().audio.tracks[0]?.activityVisible).toBe(false);
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="audio-track-activity-range"]')).toBeNull(),
+    );
+  });
+
+  it("allows a muted track to run activity analysis", async () => {
+    const user = userEvent.setup();
+    renderRow({ enabled: false });
+
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+
+    expect(screen.getByRole("menuitemcheckbox", { name: /analyze audio activity/i })).toBeEnabled();
   });
 });

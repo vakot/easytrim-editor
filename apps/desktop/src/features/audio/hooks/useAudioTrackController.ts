@@ -2,18 +2,22 @@ import { useCallback } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
+  audioTrackActivityVisibilityToggled,
   audioTrackDefaultChanged,
   audioTrackMetadataChanged,
   audioTrackToggled,
   selectAudioTracks,
 } from "@/app/store/slices/audio-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { detectTrackActivity } from "@/app/store/thunks/audio-track-thunks";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import {
   type Language,
   languageCodeFromMetadata,
   metadataCodeFromLanguage,
 } from "@/domain/languages";
+
+import { audioTrackColor } from "../lib/audio-track-color";
 
 function useAudioTrackController(streamIndex: number) {
   const dispatch = useAppDispatch();
@@ -72,12 +76,24 @@ function useAudioTrackController(streamIndex: number) {
     [dispatch, stream, streamIndex, track],
   );
 
+  const toggleActivityVisibility = useCallback(() => {
+    dispatch(audioTrackActivityVisibilityToggled({ streamIndex }));
+  }, [dispatch, streamIndex]);
+
+  const detectActivity = useCallback(() => {
+    void dispatch(detectTrackActivity(streamIndex));
+  }, [dispatch, streamIndex]);
+
   return {
+    detectActivity,
+    durationMicros: media?.durationMicros ?? 0,
     isEnabled: track?.enabled ?? false,
     setDefault,
     setEnabled,
     stream,
+    toggleActivityVisibility,
     track,
+    trackColor: audioTrackColor(streamIndex),
     trackNumber,
     updateMetadata,
   };

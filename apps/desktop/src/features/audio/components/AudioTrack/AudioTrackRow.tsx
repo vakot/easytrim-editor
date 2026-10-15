@@ -1,3 +1,4 @@
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -88,10 +89,18 @@ function AudioTrackRowWaveform({
   streamIndex: number;
 }) {
   const { displayMode } = useAudioTrackDisplayMode();
-  const { stream, track, trackNumber } = useAudioTrackController(streamIndex);
+  const { durationMicros, stream, track, trackColor, trackNumber } =
+    useAudioTrackController(streamIndex);
+
+  const shouldReduceMotion = useReducedMotion() === true;
+
   if (!stream || !track) return null;
 
   const gainDb = liveGainDb ?? track.processing.gainDb;
+  const activityRanges =
+    track.activityVisible && track.activityAnalysis.status === "ready"
+      ? track.activityAnalysis.value
+      : [];
 
   return (
     <div
@@ -104,6 +113,29 @@ function AudioTrackRowWaveform({
         <AudioTrackDisplaySelect streamIndex={streamIndex} />
       </div>
 
+      {/* Ranges present when the row mounts appear without animating; later ones fade in and out. */}
+      <AnimatePresence initial={false}>
+        {durationMicros > 0 &&
+          activityRanges.map((range) => (
+            <motion.div
+              animate={{ opacity: ACTIVITY_RANGE_OPACITY, scaleY: 1 }}
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 z-1"
+              data-slot="audio-track-activity-range"
+              exit={{ opacity: 0, scaleY: 0 }}
+              initial={{ opacity: 0, scaleY: 0 }}
+              key={`${range.startMicros}-${range.endMicros}`}
+              style={{
+                backgroundColor: trackColor,
+                left: `${percentOfDuration(range.startMicros, durationMicros)}%`,
+                opacity: ACTIVITY_RANGE_OPACITY,
+                right: `${100 - percentOfDuration(range.endMicros, durationMicros)}%`,
+              }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.25, ease: "easeOut" }}
+            />
+          ))}
+      </AnimatePresence>
+
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 right-(--timeline-selection-end-inset) left-(--timeline-selection-start) border-x border-primary/70 bg-primary/5"
@@ -112,6 +144,12 @@ function AudioTrackRowWaveform({
       <AudioTrackGainIndicator gainDb={gainDb} trackNumber={trackNumber} />
     </div>
   );
+}
+
+const ACTIVITY_RANGE_OPACITY = 0.1;
+
+function percentOfDuration(micros: number, durationMicros: number) {
+  return (Math.max(0, Math.min(durationMicros, micros)) / durationMicros) * 100;
 }
 
 function AudioTrackDisplaySelect({ streamIndex }: { streamIndex: number }) {

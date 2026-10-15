@@ -5,6 +5,7 @@ export {
   useAudioPlaybackHasActiveOutput,
   useAudioPlaybackReady,
 } from "./contexts/audio-transport-context";
+export { audioTrackColor } from "./lib/audio-track-color";
 export {
   amplitudeToMeterLevel,
   meterZoneLevels,

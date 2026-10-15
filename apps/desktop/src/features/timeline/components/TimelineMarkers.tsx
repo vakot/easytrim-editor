@@ -1,10 +1,11 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectAudioTracks } from "@/app/store/slices/audio-slice";
+import { selectVisibleAudioActivityMarkers } from "@/app/store/slices/audio-slice";
 import { selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectVisibleSceneBoundariesMicros } from "@/app/store/slices/scene-detection-slice";
 import type { FrameRate } from "@/domain/media";
+import { audioTrackColor } from "@/features/audio";
 import { useTimelinePlayback } from "@/features/playback";
 
 import { formatTimecode } from "../lib/timecode";
@@ -14,6 +15,12 @@ import { Timeline } from "./Timeline";
 const RULER_FRACTIONS = [0, 0.25, 0.5, 0.75, 1] as const;
 
 const MotionMarker = motion.create(Timeline.Marker);
+
+const MARKER_ANIMATION = {
+  animate: { opacity: 1, scaleY: 1 },
+  exit: { opacity: 0, scaleY: 0 },
+  initial: { opacity: 0, scaleY: 0 },
+} as const;
 
 function TimelineMarkers({ frameRate }: { frameRate?: FrameRate }) {
   return (
@@ -42,26 +49,23 @@ function TimelineMarkersRuler({ frameRate }: { frameRate?: FrameRate }) {
 }
 
 function TimelineMarkersAudioActivity() {
-  const tracks = useAppSelector(selectAudioTracks);
+  const markers = useAppSelector(selectVisibleAudioActivityMarkers);
+  const shouldReduceMotion = useReducedMotion() === true;
 
-  return tracks
-    .filter((track) => track.activityVisible)
-    .map(
-      (track) =>
-        track.activityAnalysis.status === "ready" &&
-        track.activityAnalysis.value.flatMap((range, index) =>
-          [range.startMicros, range.endMicros].map((micros, edge) => (
-            <Timeline.Marker
-              className="inset-y-0 border-l bg-transparent"
-              key={`${track.streamIndex}-${index}-${edge}`}
-              micros={micros}
-              style={{
-                borderColor: `hsl(${((Math.abs(track.streamIndex) * 137.508) % 360).toFixed(1)} 72% 52%)`,
-              }}
-            />
-          )),
-        ),
-    );
+  return (
+    <AnimatePresence initial={false}>
+      {markers.map(({ micros, streamIndex }) => (
+        <MotionMarker
+          {...MARKER_ANIMATION}
+          className="inset-y-0 border-l bg-transparent"
+          key={`${streamIndex}-${micros}`}
+          micros={micros}
+          style={{ borderColor: audioTrackColor(streamIndex) }}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.25, ease: "easeOut" }}
+        />
+      ))}
+    </AnimatePresence>
+  );
 }
 
 function TimelineMarkersSceneActivity() {
@@ -73,10 +77,8 @@ function TimelineMarkersSceneActivity() {
     <AnimatePresence initial={false}>
       {scenes.map((micros) => (
         <MotionMarker
-          animate={{ opacity: 1, scaleY: 1 }}
+          {...MARKER_ANIMATION}
           className="inset-y-0 border-l-2 border-destructive/70 bg-transparent"
-          exit={{ opacity: 0, scaleY: 0 }}
-          initial={{ opacity: 0, scaleY: 0 }}
           key={micros}
           micros={micros}
           transition={{ duration: shouldReduceMotion ? 0 : 0.25, ease: "easeOut" }}

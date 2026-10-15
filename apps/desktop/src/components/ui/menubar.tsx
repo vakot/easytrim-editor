@@ -4,6 +4,7 @@ import { CheckIcon, ChevronRight } from "lucide-react";
 import { Menubar as MenubarPrimitive } from "radix-ui";
 import * as React from "react";
 
+import { keepMovedFocusOnClose } from "@/components/ui/close-auto-focus";
 import {
   gateKeepOpenHandler,
   menuClassNames,
@@ -59,6 +60,7 @@ function MenubarContent({
   align = "start",
   alignOffset = -4,
   className,
+  onCloseAutoFocus,
   sideOffset = 4,
   ...props
 }: React.ComponentProps<typeof MenubarPrimitive.Content>) {
@@ -73,6 +75,7 @@ function MenubarContent({
           className,
         )}
         data-slot="menubar-content"
+        onCloseAutoFocus={keepMovedFocusOnClose(onCloseAutoFocus)}
         sideOffset={sideOffset}
         {...props}
       />

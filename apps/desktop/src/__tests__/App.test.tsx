@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { preloadWorkspaceDialog } from "../app/layout/lib/workspace-view-loaders";
 import { editingInstanceActivated } from "../app/store/actions/editing-instance-actions";
 import { sourceCleared, sourceReady } from "../app/store/actions/source-actions";
 import { startSourceMediaRuntime } from "../app/store/integration/source-media-runtime";
@@ -199,6 +200,23 @@ describe("App", () => {
     expect(
       await screen.findByRole("button", { name: /Imported Sources.*arrow keys to move it/ }),
     ).toBeInTheDocument();
+  });
+
+  it("focuses source search when Imported Sources opens from the View menu", async () => {
+    // Hovering the menu item preloads the dialog, so its content mounts with the dialog.
+    await preloadWorkspaceDialog("sources");
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("button", { name: /Imported Sources.*arrow keys to move it/ });
+
+    getMenuTrigger("View").focus();
+    await user.keyboard("{Enter}");
+    await user.click(screen.getByRole("menuitem", { name: "Imported Sources" }));
+
+    const search = await screen.findByRole("searchbox", { name: "Search sources" });
+    // The closed menu hands focus back on the next tick; it must not take it from the dialog.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+    expect(search).toHaveFocus();
   });
 
   it("opens the existing Command Palette from the centered title-bar search button", async () => {
