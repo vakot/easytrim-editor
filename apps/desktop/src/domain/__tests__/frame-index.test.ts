@@ -4,8 +4,10 @@ import {
   createFrameIndex,
   createNominalFrameIndex,
   createRealFrameIndex,
-  framePresentationMicros,
-  lastFrameBefore,
+  nearestBoundaryMicros,
+  nextBoundaryMicros,
+  presentationMicrosAt,
+  previousBoundaryMicros,
 } from "../frame-index";
 import type { MediaInfo } from "../media";
 
@@ -29,17 +31,23 @@ describe("real frame index", () => {
     expect(index.frameAt(-1)).toBe(0);
   });
 
-  it("presents each frame from its midpoint and finds the last frame of a range", () => {
-    expect(framePresentationMicros(index, 3)).toBe(1_425_000);
-    expect(framePresentationMicros(index, 4)).toBe(1_458_500);
-    expect(lastFrameBefore(index, 1_467_000)).toEqual({
-      positionMicros: 1_450_000,
-      presentationMicros: 1_458_500,
-    });
-    expect(lastFrameBefore(index, 1_450_000)).toEqual({
-      positionMicros: 1_400_000,
-      presentationMicros: 1_425_000,
-    });
+  it("seeks each frame through its midpoint, including the last frame at the end", () => {
+    expect(presentationMicrosAt(index, 1_400_000)).toBe(1_425_000);
+    expect(presentationMicrosAt(index, 1_433_000)).toBe(1_425_000);
+    expect(presentationMicrosAt(index, 1_467_000)).toBe(1_458_500);
+  });
+
+  it("rests positions on frame boundaries, including the end of the last frame", () => {
+    expect(nearestBoundaryMicros(index, 1_420_000)).toBe(1_400_000);
+    expect(nearestBoundaryMicros(index, 1_430_000)).toBe(1_450_000);
+    expect(nearestBoundaryMicros(index, 1_466_000)).toBe(1_467_000);
+    expect(nextBoundaryMicros(index, 1_400_000)).toBe(1_450_000);
+    expect(nextBoundaryMicros(index, 1_450_000)).toBe(1_467_000);
+    expect(nextBoundaryMicros(index, 1_467_000)).toBe(1_467_000);
+    expect(previousBoundaryMicros(index, 1_467_000)).toBe(1_450_000);
+    expect(previousBoundaryMicros(index, 1_420_000)).toBe(1_400_000);
+    expect(previousBoundaryMicros(index, 1_400_000)).toBe(1_383_000);
+    expect(previousBoundaryMicros(index, 0)).toBe(0);
   });
 });
 
@@ -57,12 +65,12 @@ describe("nominal frame index", () => {
     expect(index.frameAt(index.endMicros)).toBe(299);
   });
 
-  it("presents a frame from its midpoint", () => {
+  it("seeks a frame through its midpoint", () => {
     const index = createNominalFrameIndex(6_122_000, { denominator: 1, numerator: 60 });
-    expect(framePresentationMicros(index, 365)).toBe(6_091_667);
-    expect(framePresentationMicros(index, 366)).toBe(6_111_000);
-    expect(framePresentationMicros(index, 0)).toBe(8_334);
-    expect(framePresentationMicros(createNominalFrameIndex(0, fractionalRate), 0)).toBe(0);
+    expect(presentationMicrosAt(index, index.startOf(365))).toBe(6_091_667);
+    expect(presentationMicrosAt(index, index.startOf(366))).toBe(6_111_000);
+    expect(presentationMicrosAt(index, 0)).toBe(8_334);
+    expect(presentationMicrosAt(createNominalFrameIndex(0, fractionalRate), 0)).toBe(0);
   });
 });
 

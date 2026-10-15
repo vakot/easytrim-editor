@@ -8,23 +8,31 @@ import {
   SquareArrowLeft,
   SquareArrowRight,
 } from "lucide-react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 
 import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectChapters } from "@/app/store/slices/chapters-slice";
+import { selectActiveSceneBoundariesMicros } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceLoadToken, selectSourceMedia } from "@/app/store/slices/source-slice";
-import { usePlaybackActions, usePlaybackIsPlaying, useTimelinePlayback } from "@/features/playback";
-import { cn } from "@/lib/class-names.utils";
+import type { FrameRate } from "@/domain/media";
+import {
+  usePlaybackActions,
+  usePlaybackIsPlaying,
+  usePlaybackPosition,
+  useTimelinePlayback,
+} from "@/features/playback";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
 import { useTimelineTrimEditing } from "../hooks/useTimelineTrimEditing";
-import { formatFrameTimecode } from "../lib/frame-time";
+import { formatTimecode } from "../lib/timecode";
 
+import { Timeline } from "./Timeline";
 import { TimelineMarkers } from "./TimelineMarkers";
 import { TimelineShortcutTooltip } from "./TimelineShortcutTooltip";
 import { TimelineToolbar } from "./TimelineToolbar";
@@ -63,22 +71,36 @@ function TimelinePanel() {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
   const loadToken = useAppSelector(selectSourceLoadToken);
+  const scenes = useAppSelector(selectActiveSceneBoundariesMicros);
+  const chapters = useAppSelector(selectChapters);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
-  const { currentFrame, framesCount, seekFrame } = useTimelinePlayback();
+  const { durationMicros, framesCount, getPositionMicros, seekTime, stepFrame } =
+    useTimelinePlayback();
 
   const trim = useTimelineTrimEditing();
-  // Every Timeline element shares one scale of real frames: 0 to the last frame.
-  const lastFrame = Math.max(0, framesCount - 1);
-  const length = trim.range.end - trim.range.start;
-  const percent = (frame: number) => `${lastFrame > 0 ? (frame / lastFrame) * 100 : 0}%`;
-
   const isPlaying = usePlaybackIsPlaying();
-  const { pause, togglePlayback } = usePlaybackActions();
+  const { togglePlayback } = usePlaybackActions();
+  const [scrubbing, setScrubbing] = useState(false);
+  const moveOffset = useRef(0);
+
+  const timecode = (micros: number) => formatTimecode(micros, frameRate);
+  const readout = usePlaybackPosition((position) => formatTimecode(position, frameRate));
+  const atStart = usePlaybackPosition((position) => position <= 0);
+  const atEnd = usePlaybackPosition((position) => position >= durationMicros);
+  const empty = framesCount === 0;
+
+  const snapTargets = [
+    0,
+    durationMicros,
+    ...scenes,
+    ...chapters.flatMap((chapter) => [chapter.startMicros, chapter.endMicros]),
+    ...(trim.enabled ? [trim.startMicros, trim.endMicros] : []),
+  ];
 
   useKeyboardShortcut(
     (event) => {
       if (
-        framesCount === 0 ||
+        empty ||
         isApplicationInteractionBlocked() ||
         document.querySelector("[data-sidebar-drag-preview]") ||
         event.altKey ||
@@ -99,13 +121,8 @@ function TimelinePanel() {
       );
     },
     (event) => {
-      if (event.code === "Space") {
-        togglePlayback();
-        return;
-      }
-
-      pause();
-      seekFrame(currentFrame + (event.key === "ArrowLeft" ? -1 : 1));
+      if (event.code === "Space") togglePlayback();
+      else stepFrame(event.key === "ArrowLeft" ? -1 : 1);
     },
   );
 
@@ -122,10 +139,10 @@ function TimelinePanel() {
       !(
         event.target instanceof Element &&
         event.target.closest('[role="slider"]') &&
-        !event.target.closest('[aria-labelledby="timeline-title"]')
+        !event.target.closest('[data-slot="timeline-playhead"]')
       ) &&
       (event.code === "KeyI" || event.code === "KeyO"),
-    (event) => trim.markFrame(event.code === "KeyI" ? "start" : "end", currentFrame),
+    (event) => trim.mark(event.code === "KeyI" ? "start" : "end", getPositionMicros()),
   );
 
   return (
@@ -145,10 +162,10 @@ function TimelinePanel() {
             aria-label={t("preview.accessibility.currentTime")}
             className="font-mono text-xs text-foreground tabular-nums"
           >
-            {formatFrameTimecode(currentFrame, frameRate)}
+            {readout}
             <span className="text-muted-foreground">
               {" / "}
-              {formatFrameTimecode(lastFrame, frameRate)}
+              {timecode(durationMicros)}
             </span>
           </output>
         </div>
@@ -166,7 +183,7 @@ function TimelinePanel() {
               aria-keyshortcuts={getShortcutAriaValue(SET_START_SHORTCUT)}
               aria-label={t("preview.segment.setStart")}
               disabled={!trim.enabled}
-              onClick={() => trim.markFrame("start", currentFrame)}
+              onClick={() => trim.mark("start", getPositionMicros())}
               size="icon-sm"
               type="button"
               variant="ghost"
@@ -175,18 +192,15 @@ function TimelinePanel() {
             </Button>
           </TimelineShortcutTooltip>
           <TimelineShortcutTooltip
-            disabled={currentFrame <= 0}
+            disabled={empty || atStart}
             shortcut={PREVIOUS_FRAME_SHORTCUT}
             tooltip={t("preview.frame.previousFrameTooltip")}
           >
             <Button
               aria-keyshortcuts={getShortcutAriaValue(PREVIOUS_FRAME_SHORTCUT)}
               aria-label={t("preview.frame.previous")}
-              disabled={currentFrame <= 0}
-              onClick={() => {
-                pause();
-                seekFrame(currentFrame - 1);
-              }}
+              disabled={empty || atStart}
+              onClick={() => stepFrame(-1)}
               size="icon-sm"
               type="button"
               variant="ghost"
@@ -195,7 +209,7 @@ function TimelinePanel() {
             </Button>
           </TimelineShortcutTooltip>
           <TimelineShortcutTooltip
-            disabled={framesCount === 0}
+            disabled={empty}
             shortcut={PLAY_SHORTCUT}
             tooltip={
               isPlaying ? t("preview.playback.pauseTooltip") : t("preview.playback.playTooltip")
@@ -205,7 +219,7 @@ function TimelinePanel() {
               aria-keyshortcuts={getShortcutAriaValue(PLAY_SHORTCUT)}
               aria-label={isPlaying ? t("preview.playback.pause") : t("preview.playback.play")}
               className="rounded-full"
-              disabled={framesCount === 0}
+              disabled={empty}
               onClick={togglePlayback}
               size="icon-lg"
               type="button"
@@ -214,18 +228,15 @@ function TimelinePanel() {
             </Button>
           </TimelineShortcutTooltip>
           <TimelineShortcutTooltip
-            disabled={currentFrame >= framesCount - 1}
+            disabled={empty || atEnd}
             shortcut={NEXT_FRAME_SHORTCUT}
             tooltip={t("preview.frame.nextFrameTooltip")}
           >
             <Button
               aria-keyshortcuts={getShortcutAriaValue(NEXT_FRAME_SHORTCUT)}
               aria-label={t("preview.frame.next")}
-              disabled={currentFrame >= framesCount - 1}
-              onClick={() => {
-                pause();
-                seekFrame(currentFrame + 1);
-              }}
+              disabled={empty || atEnd}
+              onClick={() => stepFrame(1)}
               size="icon-sm"
               type="button"
               variant="ghost"
@@ -242,7 +253,7 @@ function TimelinePanel() {
               aria-keyshortcuts={getShortcutAriaValue(SET_END_SHORTCUT)}
               aria-label={t("preview.segment.setEnd")}
               disabled={!trim.enabled}
-              onClick={() => trim.markFrame("end", currentFrame)}
+              onClick={() => trim.mark("end", getPositionMicros())}
               size="icon-sm"
               type="button"
               variant="ghost"
@@ -257,19 +268,16 @@ function TimelinePanel() {
           className="m-0 flex min-w-0 gap-5 justify-self-end"
         >
           <TimelineTimeValue
-            frame={trim.range.start}
-            frameRate={frameRate}
             label={t("timeline.segment.labels.start")}
+            value={timecode(trim.startMicros)}
           />
           <TimelineTimeValue
-            frame={trim.range.end}
-            frameRate={frameRate}
             label={t("timeline.segment.labels.end")}
+            value={timecode(trim.endMicros)}
           />
           <TimelineTimeValue
-            frame={length}
-            frameRate={frameRate}
             label={t("timeline.labels.duration")}
+            value={timecode(trim.endMicros - trim.startMicros)}
           />
         </dl>
       </div>
@@ -286,140 +294,142 @@ function TimelinePanel() {
           <TimelineToolbar />
         </div>
 
-        <Slider.Group className="relative isolate mt-5 h-13" key={loadToken} sharedScale>
-          <Slider.Root
-            aria-label={t("timeline.accessibility.playheadPosition")}
-            className="h-13"
-            disabled={framesCount === 0}
-            max={lastFrame > 0 ? lastFrame : 1}
-            min={0}
-            onValueChange={([frame]) => seekFrame(frame ?? 0)}
-            snap="shift"
-            step={1}
-            style={{ isolation: "auto" }}
-            value={[currentFrame]}
-          >
-            <TimelineMarkers frameRate={frameRate} lastFrame={lastFrame} />
-            <Slider.Track className="segment-markers h-13 rounded-md border bg-muted/30 text-muted" />
-            {trim.enabled && (
-              <div
-                className="pointer-events-none absolute -inset-y-px mx-2 border-y-2 border-primary bg-primary/10"
-                data-slot="timeline-selection"
-                style={{
-                  left: percent(trim.range.start),
-                  right: percent(lastFrame - trim.range.end),
-                }}
-              />
-            )}
-            <Slider.Preview
-              disabled={framesCount === 0}
-              label={(values) => formatFrameTimecode(values?.[0] ?? 0, frameRate)}
-            >
-              <Slider.Thumb
-                aria-label={t("timeline.accessibility.playheadPosition")}
-                className={cn(
-                  "pointer-events-none h-13 w-0 before:absolute before:-inset-y-1 before:left-0 before:w-0.5 before:-translate-x-1/2 before:rounded-xs before:bg-white before:content-[''] after:-top-1 after:left-1/2 after:size-2 after:-translate-1/2 after:rounded-full after:bg-foreground after:content-[''] focus-visible:after:border-ring focus-visible:after:ring-3 focus-visible:after:ring-ring/50 data-snap-active:after:rounded-t-none",
-                )}
-              />
-            </Slider.Preview>
-          </Slider.Root>
+        <Timeline.Root
+          aria-label={t("timeline.accessibility.playheadPosition")}
+          className="mt-5 h-13 data-disabled:opacity-50"
+          disabled={empty}
+          durationMicros={durationMicros}
+          key={loadToken}
+          onScrub={seekTime}
+          onScrubEnd={() => setScrubbing(false)}
+          onScrubStart={() => setScrubbing(true)}
+          snapTargets={snapTargets}
+        >
+          <Timeline.Track className="segment-markers rounded-md border bg-muted/30 text-muted" />
+          <TimelineMarkers frameRate={frameRate} />
+          {trim.enabled && (
+            <Timeline.Range
+              className="-inset-y-px border-y-2 border-primary bg-primary/10"
+              data-slot="timeline-selection"
+              endMicros={trim.endMicros}
+              startMicros={trim.startMicros}
+            />
+          )}
+          <TimelinePlayhead disabled={empty} frameRate={frameRate} showValue={scrubbing} />
           {trim.enabled && (
             <>
-              {(["start", "end", "move"] as const).map((handle) => {
-                const moving = handle === "move";
-                // The knob is a timeline frame so it can snap exactly with whole-frame thumbs.
-                const offset = moving ? Math.floor(length / 2) : 0;
-                const minimum = handle === "end" ? trim.bounds.minEnd : offset;
-                const maximum =
-                  handle === "start"
-                    ? trim.bounds.maxStart
-                    : moving
-                      ? trim.bounds.maxMove + offset
-                      : lastFrame;
-
-                const value = handle === "end" ? trim.range.end : trim.range.start;
-                const label = t(
-                  moving
-                    ? "timeline.segment.actions.moveSegment"
-                    : handle === "start"
-                      ? "timeline.segment.accessibility.trimStart"
-                      : "timeline.segment.accessibility.trimEnd",
-                );
-
-                return (
-                  <Slider.Root
-                    className="pointer-events-none absolute top-0 h-13 w-auto"
-                    data-trim-handle={handle}
-                    disabled={maximum <= minimum}
-                    key={handle}
-                    max={maximum > minimum ? maximum : minimum + 1}
-                    min={minimum}
-                    onDoubleClick={() => {
-                      if (!moving) trim.change(handle, handle === "start" ? 0 : lastFrame);
-                    }}
-                    onLostPointerCapture={trim.finish}
-                    onPointerCancelCapture={trim.finish}
-                    onPointerDownCapture={(event) => {
-                      if (maximum > minimum && event.button === 0 && event.isPrimary !== false)
-                        trim.begin(handle);
-                    }}
-                    onValueChange={([frame]) =>
-                      trim.change(handle, (frame ?? value + offset) - offset)
-                    }
-                    onValueCommit={trim.finish}
-                    snap="shift"
-                    snapTarget={moving ? !trim.dragging : trim.dragging !== "move"}
-                    step={1}
-                    style={{ left: percent(minimum), width: percent(maximum - minimum) }}
-                    value={[value + offset]}
-                  >
-                    <Slider.Thumb
-                      aria-label={label}
-                      aria-valuetext={formatFrameTimecode(value, frameRate)}
-                      className="group pointer-events-auto h-13 w-0 border-0 bg-transparent shadow-none hover:ring-0 focus-visible:ring-0 active:ring-0"
-                    >
-                      <span
-                        className={
-                          moving
-                            ? "absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3 hover:bg-primary/90 active:cursor-grabbing"
-                            : `absolute -inset-y-1 left-0 flex w-4 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-xs bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3 hover:bg-primary/90 ${handle === "start" ? "rounded-l-md" : "rounded-r-md"}`
-                        }
-                      >
-                        {moving ? (
-                          <GripHorizontal aria-hidden="true" className="size-4" />
-                        ) : (
-                          <GripVertical aria-hidden="true" className="size-4" />
-                        )}
-                      </span>
-                    </Slider.Thumb>
-                  </Slider.Root>
-                );
-              })}
+              <Timeline.Handle
+                aria-label={t("timeline.segment.accessibility.trimStart")}
+                className="group z-20"
+                data-trim-handle="start"
+                maxMicros={trim.maxStartMicros}
+                micros={trim.startMicros}
+                onDoubleClick={() => trim.change("start", 0)}
+                onDrag={(micros) => trim.change("start", micros)}
+                onDragEnd={trim.finish}
+                onDragStart={() => trim.begin("start")}
+                onEnd={() => trim.change("start", trim.maxStartMicros)}
+                onHome={() => trim.change("start", 0)}
+                onStep={(direction) => trim.step("start", direction)}
+                valueText={timecode(trim.startMicros)}
+              >
+                <TrimGrip edge="start" />
+              </Timeline.Handle>
+              <Timeline.Handle
+                aria-label={t("timeline.segment.accessibility.trimEnd")}
+                className="group z-20"
+                data-trim-handle="end"
+                micros={trim.endMicros}
+                minMicros={trim.minEndMicros}
+                onDoubleClick={() => trim.change("end", durationMicros)}
+                onDrag={(micros) => trim.change("end", micros)}
+                onDragEnd={trim.finish}
+                onDragStart={() => trim.begin("end")}
+                onEnd={() => trim.change("end", durationMicros)}
+                onHome={() => trim.change("end", trim.minEndMicros)}
+                onStep={(direction) => trim.step("end", direction)}
+                valueText={timecode(trim.endMicros)}
+              >
+                <TrimGrip edge="end" />
+              </Timeline.Handle>
+              <Timeline.Handle
+                aria-label={t("timeline.segment.actions.moveSegment")}
+                className="group z-20"
+                data-trim-handle="move"
+                micros={Math.round((trim.startMicros + trim.endMicros) / 2)}
+                onDrag={(micros) => trim.change("move", micros - moveOffset.current)}
+                onDragEnd={trim.finish}
+                onDragStart={(micros) => {
+                  moveOffset.current = micros - trim.startMicros;
+                  trim.begin("move");
+                }}
+                onEnd={() => trim.change("move", durationMicros)}
+                onHome={() => trim.change("move", 0)}
+                onStep={(direction) => trim.step("move", direction)}
+                valueText={`${timecode(trim.startMicros)} – ${timecode(trim.endMicros)}`}
+              >
+                <span className="absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 hover:bg-primary/90 active:cursor-grabbing">
+                  <GripHorizontal aria-hidden="true" className="size-4" />
+                </span>
+              </Timeline.Handle>
             </>
           )}
-        </Slider.Group>
+        </Timeline.Root>
       </div>
     </section>
   );
 }
 
-function TimelineTimeValue({
-  frame,
+/** The playhead follows the media clock while playing and rests on frame boundaries otherwise. */
+function TimelinePlayhead({
+  disabled,
   frameRate,
-  label,
+  showValue,
 }: {
-  frame: number;
-  frameRate?: { denominator: number; numerator: number };
-  label: string;
+  disabled: boolean;
+  frameRate?: FrameRate;
+  showValue: boolean;
 }) {
+  const { t } = useTranslation();
+  const position = usePlaybackPosition((micros) => micros);
+  const { durationMicros, seekTime, stepFrame } = useTimelinePlayback();
+
+  return (
+    <Timeline.Handle
+      aria-label={t("timeline.accessibility.playheadPosition")}
+      className="pointer-events-none z-10"
+      data-slot="timeline-playhead"
+      disabled={disabled}
+      micros={position}
+      onEnd={() => seekTime(durationMicros)}
+      onHome={() => seekTime(0)}
+      onStep={stepFrame}
+      showValue={showValue}
+      valueText={formatTimecode(position, frameRate)}
+    >
+      <span className="absolute -inset-y-1 left-0 w-0.5 -translate-x-1/2 rounded-xs bg-white" />
+      <span className="absolute -top-1 left-0 size-2 -translate-1/2 rounded-full bg-foreground" />
+    </Timeline.Handle>
+  );
+}
+
+function TrimGrip({ edge }: { edge: "start" | "end" }) {
+  return (
+    <span
+      className={`absolute -inset-y-1 left-0 flex w-4 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-xs bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 hover:bg-primary/90 ${edge === "start" ? "rounded-l-md" : "rounded-r-md"}`}
+    >
+      <GripVertical aria-hidden="true" className="size-4" />
+    </span>
+  );
+}
+
+function TimelineTimeValue({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid gap-px">
       <dt className="text-[0.625rem] font-bold tracking-wider text-muted-foreground uppercase">
         {label}
       </dt>
-      <dd className="m-0 font-mono text-xs whitespace-nowrap tabular-nums">
-        {formatFrameTimecode(frame, frameRate)}
-      </dd>
+      <dd className="m-0 font-mono text-xs whitespace-nowrap tabular-nums">{value}</dd>
     </div>
   );
 }

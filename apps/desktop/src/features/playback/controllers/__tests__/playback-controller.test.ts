@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createNominalFrameIndex, createRealFrameIndex } from "@/domain/frame-index";
+import { createNominalFrameIndex } from "@/domain/frame-index";
 
 import { PlaybackController, type PlaybackDriver } from "../playback-controller";
 
@@ -33,8 +33,6 @@ function createPlaybackDriver() {
     },
     video: {
       getCurrentTimeSeconds: vi.fn(() => 0),
-      // The fake presents whatever frame its clock is on.
-      getPresentedTimeSeconds: vi.fn(() => driver.video.getCurrentTimeSeconds()),
       isEnded: vi.fn(() => false),
       isReady: true,
       isSeekPending: vi.fn(() => false),
@@ -71,17 +69,17 @@ function createPlaybackDriver() {
     get playbackFrameCallback() {
       if (playbackFrameCallbacks.size === 0) throw new Error("Playback clock is not running.");
       const callbacks = [...playbackFrameCallbacks.entries()];
+      // A display refresh at `timestamp`, with the media clock at `seconds`.
       return (timestamp: number, seconds: number) => {
+        vi.mocked(driver.video.getCurrentTimeSeconds).mockReturnValue(seconds);
         for (const [frameId, callback] of callbacks) {
           playbackFrameCallbacks.delete(frameId);
-          callback(timestamp, seconds);
+          callback(timestamp);
         }
       };
     },
   };
 }
-
-const noFrames = createRealFrameIndex([], 0);
 
 function createDeferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -703,261 +701,182 @@ describe("playback controller", () => {
     });
   });
 
-  it("restarts at the start of the selected segment when looping", async () => {
-    const playback = createPlaybackDriver();
-    const controller = createPlaybackController(playback.driver, 10_000_000);
-    controller.setOptions({
-      frameIndex: noFrames,
-      loop: true,
-      segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
-    });
-    controller.play();
-    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-    expect(controller.getSnapshot().positionMicros).toBe(2_000_000);
-
-    vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(4.01);
-    playback.playbackFrameCallback(0, 4.01);
-
-    expect(controller.getSnapshot().positionMicros).toBe(2_000_000);
-    expect(playback.driver.video.seek).toHaveBeenCalledWith(2, false);
-    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-    controller.dispose();
-  });
-
-  it("stops at the end of the selected segment without looping", async () => {
-    const playback = createPlaybackDriver();
-    const controller = createPlaybackController(playback.driver, 10_000_000);
-    controller.setOptions({
-      frameIndex: noFrames,
-      loop: false,
-      segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
-    });
-    controller.play();
-    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-
-    vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(4.01);
-    playback.playbackFrameCallback(0, 4.01);
-
-    expect(controller.isPlaying).toBe(false);
-    expect(controller.getSnapshot().positionMicros).toBe(4_000_000);
-    controller.dispose();
-  });
-
-  it("loops the complete source when the media ends", async () => {
-    const playback = createPlaybackDriver();
-    const controller = createPlaybackController(playback.driver, 4_000_000);
-    controller.setOptions({ frameIndex: noFrames, loop: true, segment: null });
-    controller.play();
-    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-
-    vi.mocked(playback.driver.video.isEnded).mockReturnValueOnce(true);
-    playback.observer.onEnded();
-
-    expect(controller.getSnapshot().positionMicros).toBe(0);
-    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-    controller.dispose();
-  });
-
-  it("keeps playing after the pause event queued by the loop restart", async () => {
-    const playback = createPlaybackDriver();
-    const controller = createPlaybackController(playback.driver, 10_000_000);
-    controller.setOptions({
-      frameIndex: noFrames,
-      loop: true,
-      segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
-    });
-    controller.play();
-    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-
-    vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(4.01);
-    playback.playbackFrameCallback(0, 4.01);
-    playback.observer.onPause(true);
-
-    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-    expect(playback.driver.video.play).toHaveBeenCalledTimes(2);
-    controller.dispose();
-  });
-
-  it.each([false, true])(
-    "waits for the media to end before finishing a segment at the source end (loop %s)",
-    async (loop) => {
-      const playback = createPlaybackDriver();
-      const controller = createPlaybackController(playback.driver, 4_000_000);
-      controller.setOptions({
-        frameIndex: noFrames,
-        loop,
-        segment: { startMicros: 0, endMicros: 4_000_000 },
-      });
-      controller.play();
-      await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-
-      // The native clock reaches EOF before the final frames are presented.
-      playback.playbackFrameCallback(0, 4);
-
-      expect(controller.isPlaying).toBe(true);
-      expect(playback.driver.video.pause).not.toHaveBeenCalled();
-      controller.dispose();
-    },
-  );
-
-  it("seeks the video to the presentation time while keeping the frame position", async () => {
-    const playback = createPlaybackDriver();
-    const controller = createPlaybackController(playback.driver, 10_000_000);
-
-    controller.seek(6_083_333, 6_091_667);
-
-    expect(controller.getSnapshot().positionMicros).toBe(6_083_333);
-    expect(playback.driver.video.seek).toHaveBeenLastCalledWith(6.091667, false);
-    expect(playback.driver.audio.seek).toHaveBeenLastCalledWith(6.083333);
-
-    // Pausing a settled frame seek must not pull the position to the video's midpoint.
-    vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(6.091667);
-    controller.pause();
-    expect(controller.getSnapshot().positionMicros).toBe(6_083_333);
-
-    controller.play();
-    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-    expect(playback.driver.video.seek).toHaveBeenLastCalledWith(
-      6.091667,
-      false,
-      expect.any(Function),
-    );
-    controller.dispose();
-  });
-
-  it("keeps a paused seek into the final frame even though the browser reports ended", () => {
-    // Chromium reports `ended` for a paused element anywhere inside the last frame.
-    const playback = createPlaybackDriver();
-    const controller = createPlaybackController(playback.driver, 1_500_000);
-
-    controller.seek(1_466_667, 1_483_333);
-    vi.mocked(playback.driver.video.isEnded).mockReturnValue(true);
-    playback.observer.onTimeUpdate(1.483333);
-    playback.observer.onPause(true);
-    playback.observer.onEnded();
-
-    expect(controller.getSnapshot().positionMicros).toBe(1_466_667);
-    expect(controller.isPlaying).toBe(false);
-    controller.dispose();
-  });
-
-  it("prefetches the loop start audio while looping playback runs", async () => {
-    const playback = createPlaybackDriver();
-    const controller = createPlaybackController(playback.driver, 10_000_000);
-    controller.setOptions({ frameIndex: noFrames, loop: false, segment: null });
-    controller.play();
-    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-    await vi.waitFor(() =>
-      expect(playback.driver.audio.startAlignedWithVideoAt).toHaveBeenCalled(),
-    );
-    expect(playback.driver.audio.prefetchAt).not.toHaveBeenCalled();
-
-    controller.setOptions({
-      frameIndex: noFrames,
-      loop: true,
-      segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
-    });
-    expect(playback.driver.audio.prefetchAt).toHaveBeenLastCalledWith(2);
-    controller.dispose();
-  });
-
-  describe("on a frame grid", () => {
+  describe("on the source's frames", () => {
+    // 30 FPS frames: frame k starts at round(k * 33333.3) microseconds.
     const frameRate = { denominator: 1, numerator: 30, displayValue: 30 };
-    const frameIndex = (durationMicros: number) =>
-      createNominalFrameIndex(durationMicros, frameRate);
+    const frames = (durationMicros: number) => createNominalFrameIndex(durationMicros, frameRate);
 
-    it("rests a stopped segment on its last frame, not on the first frame after it", async () => {
+    async function startPlaying(
+      durationMicros: number,
+      options: Omit<Parameters<PlaybackController["setOptions"]>[0], "frameIndex">,
+    ) {
       const playback = createPlaybackDriver();
-      const controller = createPlaybackController(playback.driver, 10_000_000);
-      const segment = { startMicros: 2_000_000, endMicros: 4_000_000 };
-      controller.setOptions({ frameIndex: frameIndex(10_000_000), loop: false, segment });
+      const controller = createPlaybackController(playback.driver, durationMicros);
+      controller.setOptions({ frameIndex: frames(durationMicros), ...options });
       controller.play();
       await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+      return { controller, playback };
+    }
 
-      vi.mocked(playback.driver.video.getCurrentTimeSeconds).mockReturnValue(4.01);
-      playback.playbackFrameCallback(0, 4.01);
+    it("follows the media clock while playing, between frame boundaries", async () => {
+      const { controller, playback } = await startPlaying(10_000_000, {
+        loop: false,
+        segment: null,
+      });
+
+      playback.playbackFrameCallback(0, 1.012);
+      expect(controller.getSnapshot().positionMicros).toBe(1_012_000);
+      playback.playbackFrameCallback(7, 1.019);
+      expect(controller.getSnapshot().positionMicros).toBe(1_019_000);
+      controller.dispose();
+    });
+
+    it("pauses on the next frame boundary instead of stepping back", async () => {
+      const { controller, playback } = await startPlaying(10_000_000, {
+        loop: false,
+        segment: null,
+      });
+
+      playback.playbackFrameCallback(0, 1.012);
+
+      controller.togglePlayback();
+      expect(controller.isPlaying).toBe(true);
+      playback.playbackFrameCallback(7, 1.025);
+      expect(controller.isPlaying).toBe(true);
+      expect(controller.getSnapshot().positionMicros).toBe(1_025_000);
+
+      // Frame 31 starts at 1.033333 s: the clock reaches it, and the position rests there.
+      playback.playbackFrameCallback(14, 1.034);
+      expect(controller.isPlaying).toBe(false);
+      expect(controller.getSnapshot().positionMicros).toBe(1_033_333);
+      // The video shows that frame through its midpoint.
+      expect(playback.driver.video.seek).toHaveBeenLastCalledWith(1.05, false);
+      controller.dispose();
+    });
+
+    it("stops a segment on its end boundary, showing the segment's last frame", async () => {
+      const { controller, playback } = await startPlaying(10_000_000, {
+        loop: false,
+        segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
+      });
+
+      playback.playbackFrameCallback(0, 3.99);
+      expect(controller.isPlaying).toBe(true);
+      playback.playbackFrameCallback(7, 4.003);
 
       expect(controller.isPlaying).toBe(false);
-      // Frame 119 (3.966667 s) is the segment's last frame; frame 120 starts its end boundary.
-      expect(controller.getSnapshot().positionMicros).toBe(3_966_667);
+      expect(controller.getSnapshot().positionMicros).toBe(4_000_000);
+      // Frame 119 (3.966667 s) is the segment's last frame.
       expect(playback.driver.video.seek).toHaveBeenLastCalledWith(3.983334, false);
       controller.dispose();
     });
 
-    it("stops a segment as soon as its last frame is on screen, before the next appears", async () => {
-      const playback = createPlaybackDriver();
-      const controller = createPlaybackController(playback.driver, 10_000_000);
-      const segment = { startMicros: 2_000_000, endMicros: 4_000_000 };
-      controller.setOptions({ frameIndex: frameIndex(10_000_000), loop: false, segment });
-      controller.play();
+    it("wraps a looping segment at its end and keeps playing", async () => {
+      const { controller, playback } = await startPlaying(10_000_000, {
+        loop: true,
+        segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
+      });
+
+      playback.playbackFrameCallback(0, 4.003);
+      expect(controller.getSnapshot().positionMicros).toBe(2_000_000);
       await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-
-      playback.playbackFrameCallback(1_000, 3.933333);
-      expect(controller.isPlaying).toBe(true);
-
-      // Frame 119 (3.966667 s) is the segment's last frame: rest on it once it is presented.
-      playback.playbackFrameCallback(1_016.7, 3.966667);
-      expect(controller.isPlaying).toBe(false);
-      expect(controller.getSnapshot().positionMicros).toBe(3_966_667);
+      expect(playback.driver.audio.prepareAt).toHaveBeenLastCalledWith(2.016667);
       controller.dispose();
     });
 
-    it("holds a looping segment's last frame for its full duration before wrapping", async () => {
-      const playback = createPlaybackDriver();
-      const controller = createPlaybackController(playback.driver, 10_000_000);
-      const segment = { startMicros: 2_000_000, endMicros: 4_000_000 };
-      controller.setOptions({ frameIndex: frameIndex(10_000_000), loop: true, segment });
-      controller.play();
-      await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+    it("rests on the media's end boundary when the media ends", async () => {
+      const { controller, playback } = await startPlaying(2_000_000, {
+        loop: false,
+        segment: null,
+      });
 
-      // The 33.3 ms last frame appears at 1000 ms; refreshes come every 8 ms.
-      for (const timestamp of [1_000, 1_008, 1_016, 1_024]) {
-        playback.playbackFrameCallback(timestamp, 3.966667);
-        expect(controller.getSnapshot().positionMicros).toBe(3_966_667);
-        expect(controller.isPlaying).toBe(true);
-      }
-      // At 1032 ms the next refresh (1040 ms) would be past the frame's end: wrap now.
-      playback.playbackFrameCallback(1_032, 3.966667);
+      vi.mocked(playback.driver.video.isEnded).mockReturnValue(true);
+      playback.observer.onPause(true);
+      expect(controller.isPlaying).toBe(true);
+      playback.observer.onEnded();
+
+      expect(controller.isPlaying).toBe(false);
       expect(controller.getSnapshot().positionMicros).toBe(2_000_000);
       controller.dispose();
     });
 
-    it("rests finished playback on the final frame and restarts from the start on Play", async () => {
-      const playback = createPlaybackDriver();
-      const controller = createPlaybackController(playback.driver, 2_000_000);
-      controller.setOptions({ frameIndex: frameIndex(2_000_000), loop: false, segment: null });
-      let videoSeconds = 0;
-      vi.mocked(playback.driver.video.isEnded).mockImplementation(() => videoSeconds >= 2);
-      vi.mocked(playback.driver.video.seek).mockImplementation(
-        (seconds, _approximate, onSettled) => {
-          videoSeconds = seconds;
-          onSettled?.();
-        },
-      );
+    it("loops the complete source when the media ends", async () => {
+      const { controller, playback } = await startPlaying(2_000_000, {
+        loop: true,
+        segment: null,
+      });
 
-      controller.play();
-      await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-      videoSeconds = 2;
+      vi.mocked(playback.driver.video.isEnded).mockReturnValue(true);
       playback.observer.onEnded();
-      expect(controller.isPlaying).toBe(false);
-      expect(controller.getSnapshot().positionMicros).toBe(1_966_667);
+      vi.mocked(playback.driver.video.isEnded).mockReturnValue(false);
 
-      controller.play();
+      expect(controller.getSnapshot().positionMicros).toBe(0);
       await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
-      expect(playback.driver.video.seek).toHaveBeenCalledWith(0, false, expect.any(Function));
       controller.dispose();
     });
 
-    it("restarts from the range start when Play is pressed on the range's last frame", async () => {
+    it("keeps playing after the pause event queued by the loop restart", async () => {
+      const { controller, playback } = await startPlaying(10_000_000, {
+        loop: true,
+        segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
+      });
+
+      playback.playbackFrameCallback(0, 4.003);
+      playback.observer.onPause(true);
+
+      await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+      expect(playback.driver.video.play).toHaveBeenCalledTimes(2);
+      controller.dispose();
+    });
+
+    it("ignores the ended state of a paused video", () => {
       const playback = createPlaybackDriver();
       const controller = createPlaybackController(playback.driver, 2_000_000);
-      controller.setOptions({ frameIndex: frameIndex(2_000_000), loop: false, segment: null });
-      controller.seek(1_966_667, 1_983_334);
+      controller.setOptions({ frameIndex: frames(2_000_000), loop: false, segment: null });
+      controller.seek(1_966_667);
+
+      vi.mocked(playback.driver.video.isEnded).mockReturnValue(true);
+      playback.observer.onPause(true);
+      playback.observer.onEnded();
+
+      expect(controller.getSnapshot().positionMicros).toBe(1_966_667);
+      controller.dispose();
+    });
+
+    it("restarts from the range start when Play is pressed at its end", async () => {
+      const { controller, playback } = await startPlaying(2_000_000, {
+        loop: false,
+        segment: null,
+      });
+
+      vi.mocked(playback.driver.video.isEnded).mockReturnValue(true);
+      playback.observer.onEnded();
+      vi.mocked(playback.driver.video.isEnded).mockReturnValue(false);
+      expect(controller.getSnapshot().positionMicros).toBe(2_000_000);
 
       controller.play();
       await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+      expect(playback.driver.audio.prepareAt).toHaveBeenLastCalledWith(0.016667);
+      controller.dispose();
+    });
 
-      expect(playback.driver.audio.prepareAt).toHaveBeenLastCalledWith(0);
+    it("prefetches the loop start audio while looping playback runs", async () => {
+      const { controller, playback } = await startPlaying(10_000_000, {
+        loop: false,
+        segment: null,
+      });
+
+      await vi.waitFor(() =>
+        expect(playback.driver.audio.startAlignedWithVideoAt).toHaveBeenCalled(),
+      );
+      expect(playback.driver.audio.prefetchAt).not.toHaveBeenCalled();
+
+      controller.setOptions({
+        frameIndex: frames(10_000_000),
+        loop: true,
+        segment: { startMicros: 2_000_000, endMicros: 4_000_000 },
+      });
+      expect(playback.driver.audio.prefetchAt).toHaveBeenLastCalledWith(2);
       controller.dispose();
     });
   });
