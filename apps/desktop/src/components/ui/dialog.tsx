@@ -6,6 +6,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { keepMovedFocusOnClose } from "@/components/ui/close-auto-focus";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -83,6 +84,7 @@ function DialogContent({
   __scopeDialog,
   children,
   className,
+  onCloseAutoFocus,
   showCloseButton = true,
   ...props
 }: React.ComponentProps<typeof ScopedDialogContent> & {
@@ -100,6 +102,7 @@ function DialogContent({
           className,
         )}
         data-slot="dialog-content"
+        onCloseAutoFocus={keepMovedFocusOnClose(onCloseAutoFocus)}
         {...props}
       >
         {children}

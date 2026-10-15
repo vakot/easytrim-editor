@@ -4,6 +4,7 @@ import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import { ContextMenu as ContextMenuPrimitive } from "radix-ui";
 import * as React from "react";
 
+import { keepMovedFocusOnClose } from "@/components/ui/close-auto-focus";
 import {
   gateKeepOpenHandler,
   menuClassNames,
@@ -50,6 +51,7 @@ function ContextMenuRadioGroup({
 
 function ContextMenuContent({
   className,
+  onCloseAutoFocus,
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left";
@@ -63,6 +65,7 @@ function ContextMenuContent({
           className,
         )}
         data-slot="context-menu-content"
+        onCloseAutoFocus={keepMovedFocusOnClose(onCloseAutoFocus)}
         {...props}
       />
     </ContextMenuPrimitive.Portal>

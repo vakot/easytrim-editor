@@ -4,6 +4,7 @@ import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import * as React from "react";
 
+import { keepMovedFocusOnClose } from "@/components/ui/close-auto-focus";
 import {
   gateKeepOpenHandler,
   menuClassNames,
@@ -32,6 +33,7 @@ function DropdownMenuTrigger({
 function DropdownMenuContent({
   align = "start",
   className,
+  onCloseAutoFocus,
   sideOffset = 4,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
@@ -45,6 +47,7 @@ function DropdownMenuContent({
           className,
         )}
         data-slot="dropdown-menu-content"
+        onCloseAutoFocus={keepMovedFocusOnClose(onCloseAutoFocus)}
         sideOffset={sideOffset}
         {...props}
       />
