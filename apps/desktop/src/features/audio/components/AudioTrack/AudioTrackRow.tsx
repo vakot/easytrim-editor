@@ -93,6 +93,11 @@ function AudioTrackRowWaveform({
         />
       </div>
 
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 right-(--timeline-selection-end-inset) left-(--timeline-selection-start) -mx-px border-x border-primary/70 bg-primary/5"
+        data-slot="audio-track-selection"
+      />
       <AudioTrackGainIndicator gainDb={gainDb} trackNumber={trackNumber} />
     </div>
   );

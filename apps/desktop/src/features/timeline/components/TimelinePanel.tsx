@@ -8,7 +8,7 @@ import {
   SquareArrowLeft,
   SquareArrowRight,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -29,10 +29,11 @@ import {
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
+import { usePublishTimelineSelection } from "../contexts/timeline-axis-context";
 import { useTimelineTrimEditing } from "../hooks/useTimelineTrimEditing";
 import { formatTimecode } from "../lib/timecode";
 
-import { Timeline, type TimelineSnapTarget } from "./Timeline";
+import { percentOf, Timeline, type TimelineSnapTarget } from "./Timeline";
 import { TimelineMarkers } from "./TimelineMarkers";
 import { TimelineShortcutTooltip } from "./TimelineShortcutTooltip";
 import { TimelineToolbar } from "./TimelineToolbar";
@@ -95,6 +96,14 @@ function TimelinePanel() {
   const selection = trim.enabled
     ? { endMicros: trim.endMicros, startMicros: trim.startMicros }
     : { endMicros: axisMicros, startMicros: 0 };
+
+  const publishSelection = usePublishTimelineSelection();
+  const selectionStartPercent = percentOf(selection.startMicros, axisMicros);
+  const selectionEndPercent = percentOf(selection.endMicros, axisMicros);
+  // Views aligned with the timeline follow the drawn selection, including an uncommitted drag.
+  useLayoutEffect(() => {
+    publishSelection?.(selectionStartPercent, selectionEndPercent);
+  }, [publishSelection, selectionEndPercent, selectionStartPercent]);
 
   // Unrounded without a segment: the nominal axis may be a single microsecond.
   const selectionCenterMicros = trim.enabled

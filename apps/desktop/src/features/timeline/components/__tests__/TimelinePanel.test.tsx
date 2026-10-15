@@ -9,6 +9,7 @@ import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
 import { firstSource, media } from "@/test/source.fixtures";
 
+import { TimelineAxisScope } from "../TimelineAxisScope";
 import { TimelinePanel } from "../TimelinePanel";
 
 const playback = vi.hoisted(() => ({
@@ -47,6 +48,7 @@ vi.mock("@/features/audio", async (importOriginal) => ({
 
 /** A 5 s, 60 FPS source: frame boundaries every 16.667 ms. */
 function renderPanel({
+  axisScope = false,
   end = 5_000_000,
   isPlaying = false,
   loaded = true,
@@ -80,11 +82,15 @@ function renderPanel({
   ]) {
     mock.mockClear();
   }
+  const panel = (
+    <TooltipProvider>
+      <TimelinePanel />
+    </TooltipProvider>
+  );
+
   render(
     <Provider store={store}>
-      <TooltipProvider>
-        <TimelinePanel />
-      </TooltipProvider>
+      {axisScope ? <TimelineAxisScope>{panel}</TimelineAxisScope> : panel}
     </Provider>,
   );
   return store;
@@ -321,6 +327,23 @@ describe("Timeline trim editing", () => {
     expect(playback.pause).toHaveBeenCalledOnce();
     expect(playback.play).toHaveBeenCalledOnce();
     expect(playback.seekTime).not.toHaveBeenCalled();
+  });
+
+  it("publishes the drawn selection to aligned views, following an uncommitted drag", () => {
+    const store = renderPanel({ axisScope: true, end: 4_000_000, start: 1_000_000 });
+    layOutTimeline();
+    const scope = document.querySelector<HTMLElement>('[data-slot="timeline-axis-scope"]')!;
+    expect(scope.style.getPropertyValue("--timeline-selection-start")).toBe("20%");
+    expect(scope.style.getPropertyValue("--timeline-selection-end-inset")).toBe("20%");
+
+    const start = screen.getByRole("slider", { name: "Trim start" });
+    fireEvent.pointerDown(start, { button: 0, clientX: 48, pointerId: 1 });
+    // 120 px of 240 px is 2.5 s, exactly frame boundary 150.
+    fireEvent.pointerMove(start, { clientX: 120, pointerId: 1 });
+
+    expect(store.getState().trim.value?.startMicros).toBe(1_000_000);
+    expect(scope.style.getPropertyValue("--timeline-selection-start")).toBe("50%");
+    fireEvent.pointerUp(start, { clientX: 120, pointerId: 1 });
   });
 
   it("drags the whole selection from where it was grabbed", () => {

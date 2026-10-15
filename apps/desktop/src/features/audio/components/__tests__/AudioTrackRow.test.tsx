@@ -215,6 +215,18 @@ describe("AudioTrackRow", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Preparing waveform…");
   });
 
+  it("overlays the timeline selection on the waveform from the shared axis", () => {
+    renderRow();
+
+    const selection = document.querySelector('[data-slot="audio-track-selection"]');
+    expect(selection).toHaveAttribute("aria-hidden", "true");
+    expect(selection).toHaveClass(
+      "pointer-events-none",
+      "left-(--timeline-selection-start)",
+      "right-(--timeline-selection-end-inset)",
+    );
+  });
+
   it("draws the waveform in the live PrimaryColor preview", async () => {
     const { strokeStyle } = mockCanvas();
     vi.stubGlobal(

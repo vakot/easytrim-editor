@@ -18,7 +18,7 @@ import { LazyAudioPanel } from "@/features/audio/audio-panel.loader";
 import { ExportActions } from "@/features/export";
 import { Preview } from "@/features/preview";
 import { SourceBreadcrumb } from "@/features/source";
-import { TimelinePanel, TimelinePlayheadScope } from "@/features/timeline";
+import { TimelineAxisScope, TimelinePanel } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 
 import { useSidebarVisibility } from "../hooks/useSidebarVisibility";
@@ -122,7 +122,7 @@ function AppLayoutMain() {
             )}
             layoutRegion="workspace-timeline"
           >
-            <TimelinePlayheadScope>
+            <TimelineAxisScope>
               <TimelinePanel />
               {/* Retain the lazy subtree while replacement source metadata is loading. */}
               {audioStreamsCount > 0 && isTimelinePanelExpanded ? (
@@ -130,7 +130,7 @@ function AppLayoutMain() {
                   <LazyAudioPanel />
                 </Suspense>
               ) : null}
-            </TimelinePlayheadScope>
+            </TimelineAxisScope>
           </AppLayoutPanel>
         </ResizablePanel>
       </ResizablePanelGroup>
