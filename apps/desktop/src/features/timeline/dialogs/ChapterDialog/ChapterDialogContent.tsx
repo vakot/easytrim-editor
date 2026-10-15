@@ -19,8 +19,6 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import { FrameRangeInput, type FrameRangeInputValue } from "@/components/frame-range-input";
 import { createTrimFrameAdapter } from "@/domain/trim-frames";
 
-import { useChapterEditing } from "../../contexts/chapter-editing-context";
-
 import { useChapterDialogScope } from "./hooks/useChapterDialogScope";
 
 interface ChapterDialogContentProps {
@@ -35,7 +33,6 @@ function ChapterDialogContent({ chapterId, onClose }: ChapterDialogContentProps)
   const chapter = useAppSelector(selectChapters).find(({ id }) => id === chapterId);
   const trim = useAppSelector(selectTrim);
   const frameIndex = useAppSelector(selectFrameIndex);
-  const chapterEditing = useChapterEditing();
   // The Timeline's frames, so the same frame numbers address the same real frames.
   const adapter = createTrimFrameAdapter(frameIndex);
 
@@ -73,10 +70,9 @@ function ChapterDialogContent({ chapterId, onClose }: ChapterDialogContentProps)
         if (chapter) {
           dispatch(chapterUpdated({ ...chapter, endMicros, startMicros, title: trimmedTitle }));
         } else {
-          const id = crypto.randomUUID();
-          dispatch(chapterAdded({ endMicros, id, startMicros, title: trimmedTitle }));
-          // A new chapter goes straight to the timeline to be positioned.
-          chapterEditing.edit(id);
+          dispatch(
+            chapterAdded({ endMicros, id: crypto.randomUUID(), startMicros, title: trimmedTitle }),
+          );
         }
 
         onClose();

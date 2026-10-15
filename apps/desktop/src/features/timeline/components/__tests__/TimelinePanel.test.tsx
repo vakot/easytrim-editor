@@ -620,9 +620,18 @@ describe("Timeline chapter editing", () => {
 
   const chapter = (store: ReturnType<typeof renderPanel>) => store.getState().chapters.items[0];
 
-  it("adds a chapter over the selected segment and goes on to position it", async () => {
+  /** Opens the chapter list and, from it, the dialog adding a chapter. */
+  async function openAddChapterDialog() {
+    fireEvent.click(screen.getByRole("button", { name: "Manage chapters" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add chapter" }));
+    return screen.findByRole("textbox", { name: "Title" });
+  }
+
+  it("lists chapters and adds one over the selected segment", async () => {
     const store = renderPanel({ start: 1_000_000, end: 3_000_000 });
 
+    fireEvent.click(screen.getByRole("button", { name: "Manage chapters" }));
+    expect(await screen.findByText("No chapters yet")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Add chapter" }));
     const title = await screen.findByRole("textbox", { name: "Title" });
     // The selection's frames: 1 s is frame 60, and its last frame ends at 3 s.
@@ -635,12 +644,29 @@ describe("Timeline chapter editing", () => {
     expect(store.getState().chapters.items).toEqual([
       expect.objectContaining({ endMicros: 3_000_000, startMicros: 1_000_000, title: "Intro" }),
     ]);
-    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    expect(screen.getByRole("slider", { name: "Move Intro" })).toHaveStyle({
-      left: "20%",
-      width: "40%",
+    // Back in the list, which now shows the chapter.
+    expect(await screen.findByText("00:00:01:00f – 00:00:03:00f")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit Intro" })).toBeInTheDocument();
+    expect(screen.queryByText("No chapters yet")).not.toBeInTheDocument();
+  });
+
+  it("renames, re-ranges and deletes chapters from the list", async () => {
+    const store = renderWithChapter();
+    fireEvent.click(screen.getByRole("button", { name: "Manage chapters" }));
+
+    fireEvent.click(await screen.findByRole("button", { name: "Edit Intro" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "Title" }), {
+      target: { value: "Opening" },
     });
-    expect(screen.getByRole("button", { name: "Finish chapter editing" })).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("spinbutton", { name: "End" }), {
+      target: { value: "239" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(chapter(store)).toEqual({ ...intro, endMicros: 4_000_000, title: "Opening" });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Delete Opening" }));
+    expect(store.getState().chapters.items).toEqual([]);
+    expect(await screen.findByText("No chapters yet")).toBeInTheDocument();
   });
 
   it("edits the clicked chapter's position by real frames, leaving the trim alone", () => {
@@ -713,16 +739,13 @@ describe("Timeline chapter editing", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edit Intro" }));
     fireEvent.click(screen.getByRole("button", { name: "Finish chapter editing" }));
     expect(screen.queryByRole("slider", { name: "Move Intro" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Add chapter" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Manage chapters" })).toBeInTheDocument();
   });
 
   it("adds a chapter over typed frames", async () => {
     const store = renderPanel();
 
-    fireEvent.click(screen.getByRole("button", { name: "Add chapter" }));
-    fireEvent.change(await screen.findByRole("textbox", { name: "Title" }), {
-      target: { value: "Credits" },
-    });
+    fireEvent.change(await openAddChapterDialog(), { target: { value: "Credits" } });
     fireEvent.change(screen.getByRole("spinbutton", { name: "Start" }), {
       target: { value: "240" },
     });
@@ -794,7 +817,7 @@ describe("Timeline chapter editing", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Delete Opening" }));
     expect(store.getState().chapters.items).toEqual([]);
     expect(screen.queryByRole("slider", { name: "Move Opening" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Add chapter" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Manage chapters" })).toBeInTheDocument();
   });
 
   it("ends editing with the source", () => {

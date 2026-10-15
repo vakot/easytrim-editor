@@ -19,13 +19,12 @@ import {
   selectSceneMarkersVisible,
 } from "@/app/store/slices/scene-detection-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
 import { detectActiveSourceScenes } from "@/app/store/thunks/scene-detection-thunks";
 import { localizeAppError } from "@/i18n/app-errors";
 import { cn } from "@/lib/class-names.utils";
 
 import { useChapterEditing } from "../contexts/chapter-editing-context";
-import { ChapterDialog, ChapterDialogTrigger } from "../dialogs/ChapterDialog";
+import { ChapterManagerDialog, ChapterManagerDialogTrigger } from "../dialogs/ChapterManagerDialog";
 
 import { StereoAudioMeter } from "./StereoAudioMeter";
 
@@ -166,10 +165,9 @@ function SceneDetectionTool() {
   );
 }
 
-/** Adds a chapter over the selected segment, or finishes editing a chapter on the timeline. */
+/** Opens the chapter list, or finishes editing a chapter on the timeline. */
 function ChaptersTool() {
   const { t } = useTranslation();
-  const trim = useAppSelector(selectTrim);
   const chapterEditing = useChapterEditing();
 
   if (chapterEditing.chapterId) {
@@ -191,24 +189,23 @@ function ChaptersTool() {
   }
 
   return (
-    <ChapterDialog>
+    <ChapterManagerDialog>
       <Tooltip preserveOnTrigger>
         <TooltipTrigger asChild>
-          <ChapterDialogTrigger asChild>
+          <ChapterManagerDialogTrigger asChild>
             <Button
-              aria-label={t("timeline.chapters.actions.addChapter")}
-              disabled={!trim}
+              aria-label={t("timeline.chapters.actions.manageChapters")}
               size="icon-sm"
               type="button"
               variant="secondary"
             >
               <BookmarkPlus />
             </Button>
-          </ChapterDialogTrigger>
+          </ChapterManagerDialogTrigger>
         </TooltipTrigger>
-        <TooltipContent>{t("timeline.chapters.actions.addChapter")}</TooltipContent>
+        <TooltipContent>{t("timeline.chapters.tooltips.manageChapters")}</TooltipContent>
       </Tooltip>
-    </ChapterDialog>
+    </ChapterManagerDialog>
   );
 }
 
