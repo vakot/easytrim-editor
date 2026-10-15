@@ -6,7 +6,6 @@ import type { AppError, MediaInfo } from "@/lib/tauri/media.types";
 
 const sourceSelected = createAction<{
   loadToken?: number;
-  mergeAudio?: boolean;
   source: SourceRef;
 }>("source/selected");
 

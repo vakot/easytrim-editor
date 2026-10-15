@@ -40,7 +40,7 @@ function ExportActionsQueuePulseStory() {
   const queueExampleExport = () => {
     const attemptNumber = nextAttemptNumber;
     const attemptId = `story-attempt-${attemptNumber}`;
-    const snapshot = createDefaultEditorSnapshot(firstSource, false);
+    const snapshot = createDefaultEditorSnapshot(firstSource);
     const attempt = createExportAttempt({
       capturedAt: Date.now(),
       id: attemptId,

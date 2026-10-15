@@ -37,7 +37,7 @@ import {
   selectSourceSearchEntries,
 } from "../editing-instances-slice";
 
-const baseSnapshot = createDefaultEditorSnapshot(firstSource, false);
+const baseSnapshot = createDefaultEditorSnapshot(firstSource);
 
 function instance(id: string, snapshot = baseSnapshot): EditingInstance {
   return {
@@ -72,14 +72,11 @@ function attempt(id: string, snapshot = baseSnapshot, capturedAt = 10) {
 
 describe("editing instances slice", () => {
   it("keeps filesystem metadata in the lightweight source entry and caches duration separately", () => {
-    const snapshot = createDefaultEditorSnapshot(
-      {
-        ...firstSource,
-        fileSizeBytes: 12_345,
-        updatedAtMicros: 1_700_000_000_000_000,
-      },
-      false,
-    );
+    const snapshot = createDefaultEditorSnapshot({
+      ...firstSource,
+      fileSizeBytes: 12_345,
+      updatedAtMicros: 1_700_000_000_000_000,
+    });
 
     let state = editingInstancesReducer(
       undefined,
@@ -115,7 +112,6 @@ describe("editing instances slice", () => {
     const trimmedSnapshot = createEditorSnapshot({
       audioTracks: initial.snapshot.audio.tracks,
       crop: initial.snapshot.crop,
-      mergeAudio: initial.snapshot.audio.mergeAudio,
       source: initial.snapshot.source,
       trim: { endMicros: 3_000_000, startMicros: 1_000_000 },
     });
@@ -422,7 +418,6 @@ describe("editing instances slice", () => {
     const editedSnapshot = createEditorSnapshot({
       audioTracks: baseSnapshot.audio.tracks,
       crop: baseSnapshot.crop,
-      mergeAudio: baseSnapshot.audio.mergeAudio,
       source: baseSnapshot.source,
       trim: { endMicros: 3_000_000, startMicros: 1_000_000 },
     });

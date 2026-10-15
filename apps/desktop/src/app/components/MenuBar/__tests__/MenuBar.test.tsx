@@ -62,7 +62,7 @@ const menuState = vi.hoisted(() => ({
     lastSeenChangelogVersion: "1.10.4",
     loopPlaybackEnabled: true,
     segmentPlaybackEnabled: true,
-    mergeAudioEnabledDefault: false,
+    mergeAudioEnabled: false,
     stripMetadataOnExport: false,
     theme: "system",
     primaryColor: "#efbf04",
@@ -139,6 +139,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
         capabilities: { status: "checking" },
       },
       crop: menuState.crop,
+      sceneDetection: { markersVisible: true, operation: null },
       trim: { value: null },
       export: {
         queue: menuState.export.queue,
@@ -257,8 +258,7 @@ describe("MenuBarTest", () => {
         setPreference(payload.key, payload.enabled);
       }
       if (action.type === "preferences/editingSettingsReset") {
-        menuState.preferences.mergeAudioEnabledDefault =
-          DEFAULT_PREFERENCES.mergeAudioEnabledDefault;
+        menuState.preferences.mergeAudioEnabled = DEFAULT_PREFERENCES.mergeAudioEnabled;
       }
       if (action.type === "queue/settingsReset") {
         menuState.export.queueFinishAction = "nothing";
@@ -676,7 +676,7 @@ describe("MenuBarTest", () => {
     const mergeSwitch = screen.getByRole("switch", { name: "Merge audio" });
     expect(mergeSwitch).not.toBeChecked();
     await user.click(mergeSwitch);
-    expect(menuState.preferences.mergeAudioEnabledDefault).toBe(true);
+    expect(menuState.preferences.mergeAudioEnabled).toBe(true);
     expect(mergeSwitch).toBeChecked();
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

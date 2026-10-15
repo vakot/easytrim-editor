@@ -11,7 +11,7 @@ import {
   setExportQueueExecutionEnabled,
 } from "@/app/store/integration/export-queue-runtime";
 import { outputDefaults } from "@/app/store/lib/export-defaults";
-import { selectAudioTracks, selectMergeAudio } from "@/app/store/slices/audio-slice";
+import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectChapters } from "@/app/store/slices/chapters-slice";
 import {
   selectCrop,
@@ -47,6 +47,7 @@ import {
   selectQueueEdit,
 } from "@/app/store/slices/export-slice";
 import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
+import { selectMergeAudioEnabled } from "@/app/store/slices/preferences-slice";
 import {
   selectSourceMedia,
   selectSourceReady,
@@ -604,7 +605,6 @@ function getCurrentExportSnapshot(state: ExportState, trimOf: ExportTrimSelector
     rotation: selectRotationDegrees(state),
     chapters: selectChapters(state),
     audioTracks: selectAudioTracks(state).map(serializeAudioTrackSettings),
-    mergeAudio: selectMergeAudio(state),
   });
 }
 
@@ -661,7 +661,7 @@ function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportR
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: exportAudioTracks(state),
     audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
-    mergeAudio: selectMergeAudio(state),
+    mergeAudio: selectMergeAudioEnabled(state),
     stripMetadata: state.preferences.stripMetadataOnExport,
     rotationDegrees: transform.rotationDegrees,
     chapters: selectChapters(state),
@@ -680,7 +680,7 @@ function getAudioRequest(
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: exportAudioTracks(state),
     audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
-    mergeAudio: selectMergeAudio(state),
+    mergeAudio: selectMergeAudioEnabled(state),
     stripMetadata: state.preferences.stripMetadataOnExport,
     format,
   };
@@ -700,7 +700,7 @@ function getOptimizedRequest(
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: exportAudioTracks(state),
     audioMetadata: selectedAudioMetadata(selectAudioTracks(state)),
-    mergeAudio: selectMergeAudio(state),
+    mergeAudio: selectMergeAudioEnabled(state),
     stripMetadata: state.preferences.stripMetadataOnExport,
     rotationDegrees: transform.rotationDegrees,
     chapters: selectChapters(state),

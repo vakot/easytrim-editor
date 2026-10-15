@@ -110,7 +110,7 @@ beforeEach(() => {
 function setup(sourceMedia = media(firstSource.sourcePath)) {
   const store = createAppStore();
   store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
-  const snapshot = createDefaultEditorSnapshot(firstSource, false);
+  const snapshot = createDefaultEditorSnapshot(firstSource);
   snapshot.trim = { startMicros: 100_000, endMicros: 2_000_000 };
   store.dispatch(
     editingInstancesAdded([
@@ -446,7 +446,7 @@ describe("export snapshot restoration", () => {
     const exportPromise = store.dispatch(startFastExportRequested());
     await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(1));
 
-    const nextSnapshot = createDefaultEditorSnapshot(secondSource, false);
+    const nextSnapshot = createDefaultEditorSnapshot(secondSource);
     nextSnapshot.trim = { startMicros: 0, endMicros: 1_500_000 };
     const nextMedia = mediaWithAudio(secondSource.sourcePath);
     store.dispatch(

@@ -45,13 +45,10 @@ const baseSource: EditingInstance = {
   exportAttempts: [],
   id: "source-1",
   origin: "source-import",
-  snapshot: createDefaultEditorSnapshot(
-    {
-      displayName: "travel-highlights.mp4",
-      sourcePath: "C:/Media/2026/travel-highlights.mp4",
-    },
-    false,
-  ),
+  snapshot: createDefaultEditorSnapshot({
+    displayName: "travel-highlights.mp4",
+    sourcePath: "C:/Media/2026/travel-highlights.mp4",
+  }),
   sourceAvailability: "available",
 };
 

@@ -32,7 +32,7 @@ describe("ExportQueueItemProgressBar", () => {
 });
 
 function renderProgressBar(metrics: Partial<ExportAttempt["metrics"]>) {
-  const snapshot = createDefaultEditorSnapshot(firstSource, false);
+  const snapshot = createDefaultEditorSnapshot(firstSource);
   const attempt = createExportAttempt({
     capturedAt: 1,
     id: "gif-export",

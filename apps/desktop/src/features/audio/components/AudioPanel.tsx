@@ -8,12 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  audioMergeToggled,
-  selectAudioTracks,
-  selectMergeAudio,
-} from "@/app/store/slices/audio-slice";
-import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import { selectAudioTracks } from "@/app/store/slices/audio-slice";
+import { preferenceChanged, selectMergeAudioEnabled } from "@/app/store/slices/preferences-slice";
 import { diagnostics } from "@/lib/diagnostics";
 
 import { audioOutputSummary } from "../lib/audio-level.utils";
@@ -22,7 +18,7 @@ import { AudioTracks } from "./AudioTracks";
 
 function AudioPanel() {
   const audioTracks = useAppSelector(selectAudioTracks);
-  const mergeAudio = useAppSelector(selectMergeAudio);
+  const mergeAudio = useAppSelector(selectMergeAudioEnabled);
   const dispatch = useAppDispatch();
   const enabledCount = audioTracks.filter((track) => track.enabled).length;
   const outputSummary = audioOutputSummary(enabledCount, mergeAudio, t);
@@ -52,8 +48,7 @@ function AudioPanel() {
                     type: "button",
                     id: "merge-audio",
                   });
-                  dispatch(audioMergeToggled());
-                  dispatch(commitActiveEditingInstanceDraft());
+                  dispatch(preferenceChanged({ key: "mergeAudioEnabled", enabled: !mergeAudio }));
                 }}
               />
               <Label className="text-xs text-muted-foreground" htmlFor="merge-audio">
@@ -69,7 +64,7 @@ function AudioPanel() {
       <Separator className="mx-3 mt-2 bg-foreground/10" />
 
       <ScrollArea className="min-h-0 flex-1 pr-3" data-testid="audio-tracks-scroll">
-        <div className="my-2 pl-3">
+        <div className="my-3 pl-3">
           <AudioTracks />
         </div>
       </ScrollArea>

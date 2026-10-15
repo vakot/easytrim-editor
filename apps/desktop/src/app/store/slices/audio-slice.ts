@@ -17,11 +17,7 @@ import {
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeMetadataLanguageCode } from "@/domain/languages";
 import type { AudioActivityRange, LoudnessAnalysis } from "@/domain/media";
-import type {
-  AppError,
-  MediaInfo,
-  WaveformResult,
-} from "@/lib/tauri/media.types";
+import type { AppError, MediaInfo, WaveformResult } from "@/lib/tauri/media.types";
 
 import type { RootState } from "../store";
 
@@ -45,13 +41,11 @@ interface AudioTrackState extends AudioTrackSettings {
 }
 
 interface AudioState {
-  mergeAudio: boolean;
   tracks: AudioTrackState[];
 }
 
 export const initialAudioState: AudioState = {
   tracks: [],
-  mergeAudio: false,
 };
 
 const audioSlice = createSlice({
@@ -283,9 +277,6 @@ const audioSlice = createSlice({
         track.activityAnalysis = { ...action.payload, status: "failed" };
       }
     },
-    audioMergeToggled: (state) => {
-      state.mergeAudio = !state.mergeAudio;
-    },
     waveformsLoading: (
       state,
       action: PayloadAction<{
@@ -348,24 +339,18 @@ const audioSlice = createSlice({
           track.loudnessAnalysis = { status: "idle" };
         }
       })
-      .addCase(sourceSelected, (state, action) => {
+      .addCase(sourceSelected, (state) => {
         state.tracks = [];
-        state.mergeAudio = action.payload.mergeAudio ?? false;
       })
       .addCase(editingInstanceActivated, (state, action) => {
         const { media, snapshot } = action.payload;
         state.tracks = media ? createAudioTracks(media, snapshot) : [];
-        state.mergeAudio = snapshot.audio.mergeAudio;
       })
       .addCase(sourceCleared, (state) => {
         state.tracks = [];
-        state.mergeAudio = false;
       })
       .addCase(sourceReady, (state, action) => {
         state.tracks = createAudioTracks(action.payload.media, action.payload.snapshot);
-        if (action.payload.snapshot) {
-          state.mergeAudio = action.payload.snapshot.audio.mergeAudio;
-        }
       });
   },
 });
@@ -435,7 +420,6 @@ function updateWaveformTracks(
 }
 
 const {
-  audioMergeToggled,
   audioTrackActivityAnalysisFailed,
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
@@ -462,10 +446,7 @@ const EMPTY_AUDIO_TRACKS: AudioTrackState[] = [];
 const selectAudioTracks = (state: RootState): AudioTrackState[] =>
   state.audio.tracks.length > 0 ? state.audio.tracks : EMPTY_AUDIO_TRACKS;
 
-const selectMergeAudio = (state: RootState): boolean => state.audio.mergeAudio;
-
 export {
-  audioMergeToggled,
   audioReducer,
   audioTrackActivityAnalysisFailed,
   audioTrackActivityAnalysisReady,
@@ -481,7 +462,6 @@ export {
   audioTrackProcessingChanged,
   audioTrackToggled,
   selectAudioTracks,
-  selectMergeAudio,
   waveformDisplayFailed,
   waveformReady,
   waveformsFailed,

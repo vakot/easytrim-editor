@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
-  audioMergeToggled,
   audioTrackGainChanged,
   audioTrackLoudnessNormalizationChanged,
 } from "@/app/store/slices/audio-slice";
@@ -49,7 +48,7 @@ function instance(id: string, source = firstSource) {
       resolution: { height: 360, width: 640 },
     },
     origin: "source-import" as const,
-    snapshot: createDefaultEditorSnapshot(source, false),
+    snapshot: createDefaultEditorSnapshot(source),
     sourceAvailability: "available" as const,
   };
 }
@@ -68,7 +67,6 @@ describe("workspace recovery contract", () => {
     const secondSnapshot = {
       ...second.snapshot,
       audio: {
-        mergeAudio: false,
         tracks: [{ enabled: true, metadata: {}, streamIndex: 2, processing: { gainDb: -2.5 } }],
       },
     };
@@ -109,7 +107,6 @@ describe("workspace recovery contract", () => {
     );
     store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -4 }));
     store.dispatch(audioTrackLoudnessNormalizationChanged({ preset: "broadcast", streamIndex: 2 }));
-    store.dispatch(audioMergeToggled());
     store.dispatch(exportArgumentsChanged("-crf 18"));
 
     const completedAttempt = {
@@ -203,7 +200,6 @@ describe("workspace recovery contract", () => {
     expect(backup.activeInstanceId).toBe("second");
     expect(backup.instances[1]?.snapshot).toMatchObject({
       audio: {
-        mergeAudio: true,
         tracks: [
           {
             enabled: true,

@@ -18,7 +18,6 @@ function isSnapshot(value: unknown): boolean {
   if (
     typeof value.source.sourcePath !== "string" ||
     typeof value.source.displayName !== "string" ||
-    typeof value.audio.mergeAudio !== "boolean" ||
     !Array.isArray(value.audio.tracks) ||
     !(
       value.crop === null ||

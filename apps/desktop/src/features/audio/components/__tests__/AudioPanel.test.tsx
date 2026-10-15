@@ -73,7 +73,7 @@ describe("AudioPanel", () => {
 
     await user.click(screen.getByRole("checkbox", { name: "Merge selected tracks" }));
 
-    expect(store.getState().audio.mergeAudio).toBe(true);
+    expect(store.getState().preferences.mergeAudioEnabled).toBe(true);
     expect(screen.getByText("2 selected tracks are merged into one track")).toBeInTheDocument();
   });
 

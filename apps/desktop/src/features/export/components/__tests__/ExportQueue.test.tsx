@@ -28,7 +28,7 @@ import {
 } from "../ExportQueue";
 
 function createSource(): EditingInstance {
-  const snapshot = createDefaultEditorSnapshot(firstSource, false);
+  const snapshot = createDefaultEditorSnapshot(firstSource);
   return {
     exportAttempts: [],
     id: "source-1",

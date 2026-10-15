@@ -909,17 +909,17 @@ export const en = {
     },
     navigationLabel: "Settings pages",
     preferences: {
-      description: "Choose the default behavior for new editing sessions",
+      description: "Choose how playback, editing, and the export queue behave",
       editing: {
         mergeAudio: {
-          commandLabel: "Merge audio by default",
-          description: "Merge enabled audio tracks for new exports by default",
+          commandLabel: "Merge audio",
+          description: "Merge enabled audio tracks into one track on export",
           label: "Merge audio",
         },
         reset: "Reset editing settings",
         stripMetadata: {
-          commandLabel: "Strip metadata and chapters from exports",
-          description: "Remove source container metadata and chapters from new exports by default",
+          commandLabel: "Strip metadata",
+          description: "Remove source container metadata and chapters from exports",
           label: "Strip metadata",
         },
         title: "Editing",

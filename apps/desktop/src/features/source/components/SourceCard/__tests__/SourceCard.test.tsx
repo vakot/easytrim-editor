@@ -30,10 +30,10 @@ function createSource(
     exportAttempts: [],
     id: "source-1",
     origin: "source-import",
-    snapshot: createDefaultEditorSnapshot(
-      { displayName: "holiday.mp4", sourcePath: "C:/Media/holiday.mp4" },
-      false,
-    ),
+    snapshot: createDefaultEditorSnapshot({
+      displayName: "holiday.mp4",
+      sourcePath: "C:/Media/holiday.mp4",
+    }),
     sourceAvailability,
   };
 }

@@ -95,7 +95,7 @@ function AudioTrackRowWaveform({
 
   return (
     <div
-      className="relative size-full h-12.5 min-w-0 overflow-hidden rounded-lg border border-border bg-muted/30 text-muted transition-opacity data-[enabled=false]:opacity-50"
+      className="relative size-full h-12.5 min-w-0 overflow-hidden rounded-sm border border-border bg-muted/30 text-muted transition-opacity first-of-type:rounded-t-lg last-of-type:rounded-b-lg data-[enabled=false]:opacity-50"
       data-enabled={track.enabled}
     >
       <AudioTrackWaveform displayMode={displayMode} gainDb={gainDb} stream={stream} track={track} />
@@ -106,7 +106,7 @@ function AudioTrackRowWaveform({
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 right-(--timeline-selection-end-inset) left-(--timeline-selection-start) -mx-px border-x border-primary/70 bg-primary/5"
+        className="pointer-events-none absolute inset-y-0 right-(--timeline-selection-end-inset) left-(--timeline-selection-start) border-x border-primary/70 bg-primary/5"
         data-slot="audio-track-selection"
       />
       <AudioTrackGainIndicator gainDb={gainDb} trackNumber={trackNumber} />

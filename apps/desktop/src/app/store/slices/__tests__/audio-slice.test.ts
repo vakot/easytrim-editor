@@ -6,7 +6,6 @@ import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import {
-  audioMergeToggled,
   audioReducer,
   audioTrackActivityAnalysisStarted,
   audioTrackDefaultChanged,
@@ -35,11 +34,9 @@ describe("audio slice", () => {
     const adjusted = audioReducer(ready, audioTrackGainChanged({ streamIndex: 2, gainDb: -3.5 }));
     const muted = audioReducer(adjusted, audioTrackToggled({ streamIndex: 2 }));
     const unmuted = audioReducer(muted, audioTrackToggled({ streamIndex: 2 }));
-    const merged = audioReducer(unmuted, audioMergeToggled());
 
     expect(selectAudioTracks({ audio: ready } as never)).toHaveLength(2);
     expect(unmuted.tracks[0]).toMatchObject({ enabled: true, processing: { gainDb: -3.5 } });
-    expect(merged.mergeAudio).toBe(true);
     expect(ready.tracks[0]?.processing.gainDb).toBe(0);
   });
 
@@ -98,7 +95,6 @@ describe("audio slice", () => {
           processing: { gainDb: 0 },
         },
       ],
-      mergeAudio: false,
     });
 
     const restored = audioReducer(
@@ -246,5 +242,4 @@ describe("audio slice", () => {
 
     expect(changed.tracks[0]?.waveform).toMatchObject({ status: "ready", url: "media://waveform" });
   });
-
 });

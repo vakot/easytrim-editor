@@ -146,7 +146,7 @@ describe("source queue controls", () => {
 
   it("focuses source search with Ctrl+F and shows its shortcut hint", () => {
     const store = createAppStore();
-    const snapshot = createDefaultEditorSnapshot(firstSource, false);
+    const snapshot = createDefaultEditorSnapshot(firstSource);
     store.dispatch(
       editingInstancesAdded([
         {
@@ -179,7 +179,7 @@ describe("source queue controls", () => {
 
   it("leaves the browser find shortcut available while search is focused", () => {
     const store = createAppStore();
-    const snapshot = createDefaultEditorSnapshot(firstSource, false);
+    const snapshot = createDefaultEditorSnapshot(firstSource);
     store.dispatch(
       editingInstancesAdded([
         {
@@ -213,7 +213,7 @@ describe("source queue controls", () => {
   it("clears the search with the Lucide clear action", async () => {
     const user = userEvent.setup();
     const store = createAppStore();
-    const snapshot = createDefaultEditorSnapshot(firstSource, false);
+    const snapshot = createDefaultEditorSnapshot(firstSource);
     store.dispatch(
       editingInstancesAdded([
         {
@@ -253,7 +253,7 @@ describe("source queue controls", () => {
         [firstSource, secondSource].map((source, index) => ({
           id: `source-${index}`,
           origin: "source-import" as const,
-          snapshot: createDefaultEditorSnapshot(source, false),
+          snapshot: createDefaultEditorSnapshot(source),
           sourceAvailability: "available" as const,
           exportAttempts: [],
         })),
@@ -298,7 +298,7 @@ describe("source queue controls", () => {
         sources.map((source, index) => ({
           id: `source-${index}`,
           origin: "source-import" as const,
-          snapshot: createDefaultEditorSnapshot(source, false),
+          snapshot: createDefaultEditorSnapshot(source),
           sourceAvailability: "available" as const,
           exportAttempts: [],
         })),
@@ -334,7 +334,7 @@ describe("source queue controls", () => {
         [firstSource, secondSource].map((source, index) => ({
           id: `source-${index}`,
           origin: "source-import" as const,
-          snapshot: createDefaultEditorSnapshot(source, false),
+          snapshot: createDefaultEditorSnapshot(source),
           sourceAvailability: "available" as const,
           exportAttempts: [],
         })),
@@ -370,7 +370,7 @@ describe("source queue controls", () => {
         [firstSource, secondSource].map((source, index) => ({
           id: `source-${index}`,
           origin: "source-import" as const,
-          snapshot: createDefaultEditorSnapshot(source, false),
+          snapshot: createDefaultEditorSnapshot(source),
           sourceAvailability: "available" as const,
           exportAttempts: [],
         })),
@@ -409,7 +409,7 @@ describe("source queue controls", () => {
         sources.map((source, index) => ({
           id: `source-${index}`,
           origin: "source-import" as const,
-          snapshot: createDefaultEditorSnapshot(source, false),
+          snapshot: createDefaultEditorSnapshot(source),
           sourceAvailability: "available" as const,
           exportAttempts: [],
         })),

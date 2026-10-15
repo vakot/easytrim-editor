@@ -30,13 +30,10 @@ function createStorySource(): EditingInstance {
     exportAttempts: [],
     id: "story-source",
     origin: "source-import",
-    snapshot: createDefaultEditorSnapshot(
-      {
-        displayName: "travel-highlights.mp4",
-        sourcePath: firstSource.sourcePath,
-      },
-      false,
-    ),
+    snapshot: createDefaultEditorSnapshot({
+      displayName: "travel-highlights.mp4",
+      sourcePath: firstSource.sourcePath,
+    }),
     sourceAvailability: "available",
   };
 }

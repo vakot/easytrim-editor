@@ -249,7 +249,7 @@ describe("Redux Persist store integration", () => {
   it("resets only Editing settings while preserving Queue, Layout, and Appearance", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
-    store.dispatch(preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }));
+    store.dispatch(preferenceChanged({ key: "mergeAudioEnabled", enabled: true }));
     store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
     store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
@@ -296,7 +296,7 @@ describe("Redux Persist store integration", () => {
     store.dispatch(themePreferenceChanged("dark"));
     store.dispatch(primaryColorChanged("#123456"));
     store.dispatch(activityFeedViewChanged("branch"));
-    store.dispatch(preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }));
+    store.dispatch(preferenceChanged({ key: "mergeAudioEnabled", enabled: true }));
     store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(layoutDensityChanged("compact"));
     store.dispatch(uiScaleIncreased());
@@ -310,7 +310,7 @@ describe("Redux Persist store integration", () => {
       layoutDensity: "compact",
       theme: "dark",
       primaryColor: "#123456",
-      mergeAudioEnabledDefault: true,
+      mergeAudioEnabled: true,
       stripMetadataOnExport: true,
       uiScalePercent: 125,
     });
@@ -321,7 +321,7 @@ describe("Redux Persist store integration", () => {
       layoutDensity: "compact",
       theme: "dark",
       primaryColor: "#123456",
-      mergeAudioEnabledDefault: true,
+      mergeAudioEnabled: true,
       stripMetadataOnExport: true,
       uiScalePercent: 125,
     });
@@ -413,7 +413,7 @@ describe("Redux Persist store integration", () => {
     const first = await createPersistedTestStore(firstStorage);
     const second = await createPersistedTestStore(secondStorage);
 
-    first.store.dispatch(preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: true }));
+    first.store.dispatch(preferenceChanged({ key: "mergeAudioEnabled", enabled: true }));
     await first.persistor.flush();
 
     expect(second.store.getState().preferences).toEqual(DEFAULT_PREFERENCES);

@@ -3,15 +3,12 @@ import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  preferenceChanged,
-  selectMergeAudioEnabledDefault,
-} from "@/app/store/slices/preferences-slice";
+import { preferenceChanged, selectMergeAudioEnabled } from "@/app/store/slices/preferences-slice";
 
 function useAudioPreferenceCommands() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const checked = useAppSelector(selectMergeAudioEnabledDefault);
+  const checked = useAppSelector(selectMergeAudioEnabled);
   const label = t("settings.preferences.editing.mergeAudio.commandLabel");
   return [
     {
@@ -19,7 +16,7 @@ function useAudioPreferenceCommands() {
       enabled: true,
       icon: <Merge aria-hidden="true" />,
       run() {
-        dispatch(preferenceChanged({ key: "mergeAudioEnabledDefault", enabled: !checked }));
+        dispatch(preferenceChanged({ key: "mergeAudioEnabled", enabled: !checked }));
       },
       id: "preference-merge-audio" as const,
       label,

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
-import { audioMergeToggled } from "@/app/store/slices/audio-slice";
 import { cropChanged } from "@/app/store/slices/crop-slice";
 import { editingInstancesAdded } from "@/app/store/slices/editing-instances-slice";
 import { previewReady } from "@/app/store/slices/preview-slice";
@@ -32,7 +31,6 @@ describe("source-bound lifecycle", () => {
         resolution: { width: 1536, height: 1080 },
       }),
     );
-    store.dispatch(audioMergeToggled());
     store.dispatch(
       previewReady({
         preview: { mediaToken: 1, kind: "source", url: "media://first" },
@@ -45,7 +43,7 @@ describe("source-bound lifecycle", () => {
     expect(state.source.source).toEqual(secondSource);
     expect(state.trim.value).toBeNull();
     expect(state.crop.value).toEqual({ x: 0, y: 0, width: 1, height: 1 });
-    expect(state.audio).toMatchObject({ tracks: [], mergeAudio: false });
+    expect(state.audio).toMatchObject({ tracks: [] });
     expect(state.preview.value).toEqual({ status: "loading", kind: "source" });
   });
 
@@ -57,7 +55,7 @@ describe("source-bound lifecycle", () => {
 
     expect(store.getState().source.source).toBeNull();
     expect(store.getState().trim.value).toBeNull();
-    expect(store.getState().audio).toMatchObject({ tracks: [], mergeAudio: false });
+    expect(store.getState().audio).toMatchObject({ tracks: [] });
     expect(store.getState().preview.value).toEqual({ status: "idle" });
   });
 
@@ -82,7 +80,7 @@ describe("source-bound lifecycle", () => {
           exportAttempts: [],
           id: `batch-${index + 1}`,
           origin: "source-import" as const,
-          snapshot: createDefaultEditorSnapshot(source, false),
+          snapshot: createDefaultEditorSnapshot(source),
           sourceAvailability: "available" as const,
         })),
       ),

@@ -9,7 +9,6 @@ type EditorSnapshotTrim = { kind: "full-source" } | { endMicros: number; startMi
 
 interface EditorSnapshot {
   audio: {
-    mergeAudio: boolean;
     tracks: AudioTrackSettings[];
   };
   chapters?: EditorChapter[];
@@ -28,7 +27,6 @@ function createEditorSnapshot(input: {
   crop: CropRect | null;
   flipHorizontal?: boolean;
   flipVertical?: boolean;
-  mergeAudio: boolean;
   rotation?: RotationDegrees;
   sceneBoundariesMicros?: number[];
   source: SourceRef;
@@ -49,7 +47,6 @@ function createEditorSnapshot(input: {
       : { sceneBoundariesMicros: [...input.sceneBoundariesMicros] }),
     audio: {
       tracks: input.audioTracks.map(serializeAudioTrackSettings),
-      mergeAudio: input.mergeAudio,
     },
   };
 }

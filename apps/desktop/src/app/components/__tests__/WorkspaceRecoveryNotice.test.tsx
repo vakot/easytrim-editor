@@ -25,7 +25,7 @@ function instance(id: string) {
     exportAttempts: [],
     id,
     origin: "source-import" as const,
-    snapshot: createDefaultEditorSnapshot(firstSource, false),
+    snapshot: createDefaultEditorSnapshot(firstSource),
     sourceAvailability: "available" as const,
   };
 }

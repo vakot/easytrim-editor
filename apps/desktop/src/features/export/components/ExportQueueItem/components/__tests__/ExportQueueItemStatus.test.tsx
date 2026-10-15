@@ -14,7 +14,7 @@ import { ExportQueueItemStatus } from "../ExportQueueItemStatus";
 
 describe("ExportQueueItemStatus", () => {
   it("shows a failed attempt's localized error and diagnostics when keyboard focused", async () => {
-    const snapshot = createDefaultEditorSnapshot(firstSource, false);
+    const snapshot = createDefaultEditorSnapshot(firstSource);
     const attempt = createExportAttempt({
       capturedAt: 1,
       id: "failed-export",

@@ -40,7 +40,7 @@ function createAttempt(route: ExportRoute): ExportAttempt {
     },
     request,
     route,
-    snapshot: createDefaultEditorSnapshot(source, false),
+    snapshot: createDefaultEditorSnapshot(source),
   });
 
   attempt.metrics = { ...attempt.metrics, fileSizeBytes: 2_000, fps: 30 };

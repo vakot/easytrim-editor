@@ -178,7 +178,7 @@ describe("ExportActions", () => {
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     const stripMetadata = screen.getByRole("checkbox", {
-      name: "Strip metadata and chapters from exports",
+      name: "Strip metadata",
     });
 
     expect(stripMetadata).not.toBeChecked();
@@ -193,7 +193,7 @@ describe("ExportActions", () => {
 
   it("enables Start queue when queued work exists", async () => {
     const store = createAppStore();
-    const snapshot = createDefaultEditorSnapshot(firstSource, false);
+    const snapshot = createDefaultEditorSnapshot(firstSource);
     const attempt = createExportAttempt({
       capturedAt: 1,
       id: "attempt-1",

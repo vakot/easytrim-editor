@@ -103,6 +103,7 @@ const preferencesTransform = createTransform(
         ([key]) =>
           key !== "editorSourceCollapsibleState" &&
           key !== "snapPlaybackEnabledDefault" &&
+          key !== "mergeAudioEnabledDefault" &&
           key !== "loopPlaybackEnabledDefault" &&
           key !== "segmentPlaybackEnabledDefault" &&
           key !== "customPrimaryColor",

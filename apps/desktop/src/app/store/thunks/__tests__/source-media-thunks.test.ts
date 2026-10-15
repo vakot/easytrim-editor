@@ -49,12 +49,12 @@ describe("source import workflow", () => {
 
     store.dispatch(ingestSources([firstSource]));
     expect(selectActiveEditingInstance(store.getState())?.snapshot).toEqual(
-      createDefaultEditorSnapshot(firstSource, false),
+      createDefaultEditorSnapshot(firstSource),
     );
 
     store.dispatch(ingestSources([secondSource]));
     expect(selectActiveEditingInstance(store.getState())?.snapshot).toEqual(
-      createDefaultEditorSnapshot(secondSource, false),
+      createDefaultEditorSnapshot(secondSource),
     );
   });
 
