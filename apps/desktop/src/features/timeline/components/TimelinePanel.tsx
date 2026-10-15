@@ -430,8 +430,8 @@ function TimelinePlayhead({
       showValue={showValue}
       valueText={formatTimecode(position, frameRate)}
     >
-      <span className="absolute -inset-y-1 left-0 w-0.5 -translate-x-1/2 rounded-xs bg-white" />
-      <span className="absolute -top-1 left-0 size-2 -translate-1/2 rounded-full bg-foreground group-data-snap-active:rounded-t-none" />
+      <span className="absolute -inset-y-1 left-0 w-0.5 -translate-x-1/2 rounded-xs bg-white group-focus-visible:ring-3 group-focus-visible:ring-ring/50" />
+      <span className="absolute -top-1 left-0 size-2 -translate-1/2 rounded-full bg-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:rounded-t-none" />
     </Timeline.Handle>
   );
 }
