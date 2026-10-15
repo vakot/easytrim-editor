@@ -22,6 +22,7 @@ import { exportReducer } from "@/app/store/slices/export-slice";
 import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 import { previewReducer } from "@/app/store/slices/preview-slice";
+import { sceneDetectionReducer } from "@/app/store/slices/scene-detection-slice";
 import { sourceReducer } from "@/app/store/slices/source-slice";
 import { trimReducer } from "@/app/store/slices/trim-slice";
 
@@ -35,6 +36,7 @@ const combinedReducer = combineReducers({
   importWorkflow: importWorkflowReducer,
   preferences: preferencesReducer,
   preview: previewReducer,
+  sceneDetection: sceneDetectionReducer,
   source: sourceReducer,
   trim: trimReducer,
 });
