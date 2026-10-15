@@ -48,7 +48,7 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <div
-              className="group/audio-track-row grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
+              className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
               data-slot="audio-track-row"
             >
               <div className="flex items-center gap-1">
@@ -95,7 +95,7 @@ function AudioTrackRowWaveform({
 
   return (
     <div
-      className="relative size-full h-12.5 min-w-0 overflow-hidden rounded-sm border border-border bg-muted/30 text-muted transition-opacity group-first/audio-track-row:rounded-t-lg group-last/audio-track-row:rounded-b-lg data-[enabled=false]:opacity-50"
+      className="relative size-full h-12.5 min-w-0 overflow-hidden rounded-sm border border-border bg-muted/30 text-muted transition-opacity first-of-type:rounded-t-lg last-of-type:rounded-b-lg data-[enabled=false]:opacity-50"
       data-enabled={track.enabled}
     >
       <AudioTrackWaveform displayMode={displayMode} gainDb={gainDb} stream={stream} track={track} />
