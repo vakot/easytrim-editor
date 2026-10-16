@@ -9,6 +9,9 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
+  audioFilterPreviewChanged,
+  audioFilterPreviewEnded,
+  audioFilterPreviewStarted,
   audioTrackFiltersApplied,
   audioTrackToggled,
   audioTrackVolumeChanged,
@@ -97,5 +100,93 @@ describe("automatic loudness measurement", () => {
       endMicros: 4_000_000,
       startMicros: 0,
     });
+  });
+});
+
+describe("draft preview measurement", () => {
+  const gain = (id: string, gainDb: number): AudioFilter => ({
+    enabled: true,
+    gainDb,
+    id,
+    type: "gain",
+  });
+
+  function preview(store: ReturnType<typeof createStore>, filters: AudioFilter[]) {
+    store.dispatch(audioFilterPreviewChanged({ filters, id: "preview" }));
+  }
+
+  it("measures the latest draft once rapid upstream edits settle", async () => {
+    const store = createStore();
+    store.dispatch(audioFilterPreviewStarted({ id: "preview", streamIndex: 2 }));
+    for (const gainDb of [1, 2, 3, 4]) {
+      preview(store, [gain("pre", gainDb), normalization]);
+      await vi.advanceTimersByTimeAsync(100);
+    }
+    expect(mocks.analyzeAudioLoudness).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(300);
+
+    expect(mocks.analyzeAudioLoudness).toHaveBeenCalledOnce();
+    expect(mocks.analyzeAudioLoudness.mock.calls[0]?.[0].audioTrack.filters).toEqual([
+      gain("pre", 4),
+      normalization,
+    ]);
+    expect(store.getState().audio.filterPreview?.loudnessAnalysis.status).toBe("ready");
+    expect(store.getState().audio.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
+  });
+
+  it("reuses measurements for target and downstream edits and the committed measurement", async () => {
+    const store = createStore();
+    store.dispatch(audioTrackFiltersApplied({ filters: [normalization], streamIndex: 2 }));
+    await vi.advanceTimersByTimeAsync(300);
+    expect(mocks.analyzeAudioLoudness).toHaveBeenCalledOnce();
+
+    store.dispatch(audioFilterPreviewStarted({ id: "preview", streamIndex: 2 }));
+    preview(store, [{ ...normalization, targetLufs: -23 }, gain("post", 6)]);
+    await vi.advanceTimersByTimeAsync(300);
+    preview(store, [gain("pre", -3), normalization]);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(mocks.analyzeAudioLoudness).toHaveBeenCalledTimes(2);
+
+    // Returning to the committed inputs adopts the committed measurement again.
+    preview(store, [normalization, gain("post", 3)]);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(mocks.analyzeAudioLoudness).toHaveBeenCalledTimes(2);
+    expect(store.getState().audio.filterPreview?.loudnessAnalysis).toMatchObject({
+      status: "ready",
+    });
+  });
+
+  it("stops a superseded draft measurement and measures dependent instances in one request", async () => {
+    const store = createStore();
+    const signals: AbortSignal[] = [];
+    mocks.analyzeAudioLoudness.mockImplementation(
+      (_request: unknown, signal: AbortSignal) =>
+        new Promise((resolve, reject) => {
+          signals.push(signal);
+          signal.addEventListener("abort", () => reject(new DOMException("", "AbortError")));
+          setTimeout(() => resolve([{ filterId: "norm", integratedLufs: -20 }]), 1_000);
+        }),
+    );
+    store.dispatch(audioFilterPreviewStarted({ id: "preview", streamIndex: 2 }));
+    preview(store, [gain("pre", 3), normalization]);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(signals).toHaveLength(1);
+
+    const second = { ...normalization, id: "second" };
+    preview(store, [gain("pre", 6), normalization, gain("between", -2), second]);
+    expect(signals[0]?.aborted).toBe(true);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(mocks.analyzeAudioLoudness.mock.calls[1]?.[0].audioTrack.filters).toEqual([
+      gain("pre", 6),
+      normalization,
+      gain("between", -2),
+      second,
+    ]);
+
+    store.dispatch(audioFilterPreviewEnded({ id: "preview" }));
+    expect(signals[1]?.aborted).toBe(true);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(store.getState().audio.filterPreview).toBeNull();
+    expect(store.getState().audio.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
   });
 });

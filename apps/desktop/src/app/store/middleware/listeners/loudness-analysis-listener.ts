@@ -1,15 +1,22 @@
 import { isAnyOf } from "@reduxjs/toolkit";
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
-import { sourceReady } from "@/app/store/actions/source-actions";
+import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
+  audioFilterPreviewChanged,
+  audioFilterPreviewEnded,
+  audioFilterPreviewStarted,
   audioTrackFiltersApplied,
   audioTrackToggled,
   selectAudioTracks,
 } from "@/app/store/slices/audio-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import type { AppDispatch } from "@/app/store/store";
-import { analyzeTrackLoudness } from "@/app/store/thunks/audio-track-thunks";
+import {
+  analyzeFilterPreviewLoudness,
+  analyzeTrackLoudness,
+  releaseUnawaitedPreviewLoudnessAnalyses,
+} from "@/app/store/thunks/audio-track-thunks";
 import { audioFiltersRequireLoudnessAnalysis } from "@/domain/audio-processing";
 
 import { listenerMiddleware } from "../listener-middleware";
@@ -44,4 +51,31 @@ listenerMiddleware.startListening({
       }
     }
   },
+});
+
+/*
+ * A previewed draft is measured as soon as its loudness inputs settle, so normalized audio is
+ * ready to audition without Apply. A measurement of inputs the draft has moved away from stops
+ * right away unless the committed chain waits for it; the native cache keeps every completed
+ * measurement, so returning to earlier inputs does not measure them again.
+ */
+listenerMiddleware.startListening({
+  matcher: isAnyOf(audioFilterPreviewStarted, audioFilterPreviewChanged, trimChanged),
+  effect: async (_action, { cancelActiveListeners, delay, dispatch, getState }) => {
+    releaseUnawaitedPreviewLoudnessAnalyses(getState());
+    cancelActiveListeners();
+    await delay(ANALYSIS_DEBOUNCE_MS);
+    void (dispatch as AppDispatch)(analyzeFilterPreviewLoudness());
+  },
+});
+
+listenerMiddleware.startListening({
+  matcher: isAnyOf(
+    audioFilterPreviewEnded,
+    audioTrackFiltersApplied,
+    editingInstanceActivated,
+    sourceCleared,
+    sourceSelected,
+  ),
+  effect: (_action, { getState }) => releaseUnawaitedPreviewLoudnessAnalyses(getState()),
 });

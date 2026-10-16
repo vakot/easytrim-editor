@@ -16,12 +16,20 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
+  audioFilterPreviewChanged,
+  audioFilterPreviewEnded,
+  audioFilterPreviewStarted,
   audioTrackFiltersApplied,
   audioTrackToggled,
   audioTrackVolumeChanged,
 } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
-import { analyzeTrackLoudness, detectTrackActivity } from "@/app/store/thunks/audio-track-thunks";
+import {
+  analyzeFilterPreviewLoudness,
+  analyzeTrackLoudness,
+  detectTrackActivity,
+  releaseUnawaitedPreviewLoudnessAnalyses,
+} from "@/app/store/thunks/audio-track-thunks";
 import type { AudioFilter } from "@/domain/audio-processing";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
@@ -140,16 +148,73 @@ describe("audio track operations", () => {
     expect(store.getState().audio.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
   });
 
-  it("analyzes a draft chain without applying the draft", async () => {
+  it("measures a previewed draft without changing the committed chain", async () => {
     const store = createStore([]);
     const draft = [highPass, normalization];
     mocks.analyzeAudioLoudness.mockResolvedValue([measurement]);
+    store.dispatch(audioFilterPreviewStarted({ id: "preview", streamIndex: 2 }));
+    store.dispatch(audioFilterPreviewChanged({ filters: draft, id: "preview" }));
 
-    await store.dispatch(analyzeTrackLoudness(2, draft));
+    await store.dispatch(analyzeFilterPreviewLoudness());
 
     expect(mocks.analyzeAudioLoudness).toHaveBeenCalledWith(
       expect.objectContaining({ audioTrack: { filters: draft, streamIndex: 2 } }),
+      expect.any(AbortSignal),
     );
-    expect(store.getState().audio.tracks[0]?.processing).toEqual({ filters: [], volume: 1 });
+    expect(store.getState().audio.filterPreview?.loudnessAnalysis).toMatchObject({
+      status: "ready",
+      value: [measurement],
+    });
+    const track = store.getState().audio.tracks[0]!;
+    expect(track.processing).toEqual({ filters: [], volume: 1 });
+    expect(track.loudnessAnalysis).toEqual({ status: "idle" });
+  });
+
+  it("keeps a draft measurement that Apply committed, and the committed analysis waits for it", async () => {
+    const store = createStore([]);
+    let finishAnalysis!: (value: unknown) => void;
+    mocks.analyzeAudioLoudness.mockReturnValue(
+      new Promise((resolve) => {
+        finishAnalysis = resolve;
+      }),
+    );
+    store.dispatch(audioFilterPreviewStarted({ id: "preview", streamIndex: 2 }));
+    store.dispatch(audioFilterPreviewChanged({ filters: [normalization], id: "preview" }));
+    const measuring = store.dispatch(analyzeFilterPreviewLoudness());
+
+    store.dispatch(audioTrackFiltersApplied({ filters: [normalization], streamIndex: 2 }));
+    expect(store.getState().audio.filterPreview).toBeNull();
+    releaseUnawaitedPreviewLoudnessAnalyses(store.getState());
+    const committedAnalysis = store.dispatch(analyzeTrackLoudness(2));
+    finishAnalysis([measurement]);
+    await Promise.all([measuring, committedAnalysis]);
+
+    expect(mocks.analyzeAudioLoudness).toHaveBeenCalledOnce();
+    expect(mocks.analyzeAudioLoudness.mock.calls[0]?.[1]?.aborted).toBe(false);
+    expect(store.getState().audio.tracks[0]?.loudnessAnalysis).toMatchObject({
+      status: "ready",
+      value: [measurement],
+    });
+  });
+
+  it("stops a draft measurement once nothing waits for it", async () => {
+    const store = createStore([]);
+    mocks.analyzeAudioLoudness.mockImplementation(
+      (_request: unknown, signal: AbortSignal) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(new DOMException("", "AbortError")));
+        }),
+    );
+    store.dispatch(audioFilterPreviewStarted({ id: "preview", streamIndex: 2 }));
+    store.dispatch(audioFilterPreviewChanged({ filters: [normalization], id: "preview" }));
+    const measuring = store.dispatch(analyzeFilterPreviewLoudness());
+
+    store.dispatch(audioFilterPreviewEnded({ id: "preview" }));
+    releaseUnawaitedPreviewLoudnessAnalyses(store.getState());
+    await measuring;
+
+    const signal = mocks.analyzeAudioLoudness.mock.calls[0]?.[1] as AbortSignal;
+    expect(signal.aborted).toBe(true);
+    expect(store.getState().audio.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
   });
 });
