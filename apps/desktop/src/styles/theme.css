@@ -195,3 +195,17 @@
     }
   }
 }
+
+@theme {
+  --animate-splash-bounce: splash-bounce 1s ease-in-out infinite;
+  @keyframes splash-bounce {
+    0%,
+    100% {
+      transform: translateY(0) scale(1);
+    }
+
+    50% {
+      transform: translateY(-2px) scale(1.035);
+    }
+  }
+}

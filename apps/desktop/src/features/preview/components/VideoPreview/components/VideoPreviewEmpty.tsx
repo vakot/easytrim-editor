@@ -13,6 +13,7 @@ import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.
 import { SupportLink } from "@/app/components/SupportLink";
 import { cn } from "@/lib/class-names.utils";
 
+import { PreviewSplash } from "./PreviewSplash";
 import styles from "./VideoPreviewEmpty.module.css";
 
 type Shortcut = {
@@ -76,12 +77,15 @@ function VideoPreviewEmpty() {
       )}
     >
       <div className="grid w-72 max-w-full justify-items-center gap-10">
-        <img
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none aspect-square w-full opacity-30 grayscale invert-100 dark:opacity-20 dark:invert-0"
-          src="/logo-symbol.svg"
-        />
+        <div className="relative">
+          <img
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none aspect-square w-full opacity-30 grayscale invert-100 dark:opacity-20 dark:invert-0"
+            src="/logo-symbol.svg"
+          />
+          <PreviewSplash />
+        </div>
 
         <div className="grid w-full justify-items-center gap-4">
           <div
