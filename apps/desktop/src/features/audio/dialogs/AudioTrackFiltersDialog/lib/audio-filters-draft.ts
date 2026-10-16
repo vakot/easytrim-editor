@@ -74,6 +74,12 @@ function audioFiltersDraftReducer(
   }
 }
 
+/** Whether an instance is new or differs from how the dialog opened; reordering alone is not a change. */
+function isAudioFilterChanged(draft: AudioFiltersDraft, filter: AudioFilter): boolean {
+  const initial = draft.initialFilters.find(({ id }) => id === filter.id);
+  return !initial || !sameAudioFilters([initial], [filter]);
+}
+
 function isAudioFiltersDraftDirty(draft: AudioFiltersDraft): boolean {
   return !sameAudioFilters(draft.initialFilters, draft.filters);
 }
@@ -86,6 +92,7 @@ export type { AudioFiltersDraft, AudioFiltersDraftAction };
 export {
   audioFiltersDraftReducer,
   createAudioFiltersDraft,
+  isAudioFilterChanged,
   isAudioFiltersDraftDirty,
   isAudioFiltersDraftValid,
 };

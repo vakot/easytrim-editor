@@ -34,6 +34,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { LibraryNavigation, LibraryNavigationItem } from "@/components/library";
+import { Ping } from "@/components/ping";
 import {
   areAudioFiltersValid,
   AUDIO_FILTER_TYPES,
@@ -44,6 +45,7 @@ import { cn } from "@/lib/class-names.utils";
 
 import { useAudioFiltersDraft } from "../contexts/audio-filters-draft-context";
 import { audioFilterLabel } from "../lib/audio-filter-label";
+import { isAudioFilterChanged } from "../lib/audio-filters-draft";
 
 /** Names each instance by its type, numbering repeated types in chain order. */
 function audioFilterNames(filters: readonly AudioFilter[], t: TFunction): string[] {
@@ -172,11 +174,13 @@ function AudioFilterListItem({
     transition: { idle: true },
   });
 
+  const { draft } = useAudioFiltersDraft();
   const valid = areAudioFiltersValid([filter]);
+  const changed = isAudioFilterChanged(draft, filter);
 
   return (
     <div
-      className="flex items-center gap-0.5 data-[dragging=true]:opacity-50"
+      className="relative flex items-center gap-0.5 data-[dragging=true]:opacity-50"
       data-dragging={isDragSource}
       data-slot="audio-filter-list-item"
       ref={ref}
@@ -189,6 +193,9 @@ function AudioFilterListItem({
       >
         <GripVertical className="size-4" />
       </span>
+
+      {changed ? <Ping /> : null}
+
       <LibraryNavigationItem className="min-w-0 flex-1" value={filter.id}>
         <span className={cn("min-w-0 truncate", !filter.enabled && "text-muted-foreground")}>
           {name}

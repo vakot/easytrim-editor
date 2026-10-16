@@ -5,6 +5,7 @@ import type { AudioFilter } from "@/domain/audio-processing";
 import {
   audioFiltersDraftReducer,
   createAudioFiltersDraft,
+  isAudioFilterChanged,
   isAudioFiltersDraftDirty,
   isAudioFiltersDraftValid,
 } from "../audio-filters-draft";
@@ -13,6 +14,24 @@ const gain = (id: string, gainDb = 0): AudioFilter => ({ enabled: true, gainDb, 
 const ids = (filters: readonly AudioFilter[]) => filters.map(({ id }) => id);
 
 describe("audio filters draft", () => {
+  it("marks only new or edited instances as changed, not reordered ones", () => {
+    let draft = createAudioFiltersDraft([gain("a"), gain("b")]);
+    const changed = () => draft.filters.filter((filter) => isAudioFilterChanged(draft, filter));
+    expect(changed()).toEqual([]);
+
+    draft = audioFiltersDraftReducer(draft, { id: "b", toIndex: 0, type: "moved" });
+    expect(changed()).toEqual([]);
+
+    draft = audioFiltersDraftReducer(draft, { filter: gain("a", 3), type: "updated" });
+    expect(ids(changed())).toEqual(["a"]);
+
+    draft = audioFiltersDraftReducer(draft, { filter: gain("a"), type: "updated" });
+    expect(changed()).toEqual([]);
+
+    draft = audioFiltersDraftReducer(draft, { filterType: "gain", id: "c", type: "added" });
+    expect(ids(changed())).toEqual(["c"]);
+  });
+
   it("starts from a copy of the committed chain with the first instance selected", () => {
     const committed = [gain("a"), gain("b")];
     const draft = createAudioFiltersDraft(committed);
