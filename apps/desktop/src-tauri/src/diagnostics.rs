@@ -16,7 +16,10 @@ use serde_json::{Map, Value, json};
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 use uuid::Uuid;
 
-use crate::error::{AppError, AppErrorMessageId};
+use crate::{
+    error::{AppError, AppErrorMessageId},
+    persistence::write_json_atomic,
+};
 
 const LOG_RETENTION: usize = 8;
 const MAX_LOG_BYTES: u64 = 5 * 1024 * 1024;
@@ -996,54 +999,6 @@ fn retain_files(parent: &Path, keep_sessions: usize) -> std::io::Result<()> {
         }
     }
     Ok(())
-}
-
-fn write_json_atomic(path: &Path, value: &impl Serialize) -> std::io::Result<()> {
-    let temporary = path.with_extension("tmp");
-    let bytes = serde_json::to_vec_pretty(value).map_err(std::io::Error::other)?;
-    {
-        let mut file = File::create(&temporary)?;
-        file.write_all(&bytes)?;
-        file.sync_all()?;
-    }
-    replace_file(&temporary, path)
-}
-
-#[cfg(not(target_os = "windows"))]
-fn replace_file(source: &Path, destination: &Path) -> std::io::Result<()> {
-    fs::rename(source, destination)
-}
-
-#[cfg(target_os = "windows")]
-fn replace_file(source: &Path, destination: &Path) -> std::io::Result<()> {
-    use std::os::windows::ffi::OsStrExt;
-
-    use windows_sys::Win32::Storage::FileSystem::{
-        MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH, MoveFileExW,
-    };
-
-    let source = source
-        .as_os_str()
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect::<Vec<_>>();
-    let destination = destination
-        .as_os_str()
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect::<Vec<_>>();
-    let result = unsafe {
-        MoveFileExW(
-            source.as_ptr(),
-            destination.as_ptr(),
-            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH,
-        )
-    };
-    if result == 0 {
-        Err(std::io::Error::last_os_error())
-    } else {
-        Ok(())
-    }
 }
 
 fn log_path(logs_dir: &Path, session_id: &str, segment: u8) -> PathBuf {

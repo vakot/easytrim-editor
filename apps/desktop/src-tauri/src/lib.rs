@@ -4,6 +4,7 @@ mod diagnostics;
 mod domain;
 mod error;
 mod media;
+mod persistence;
 mod process;
 mod state;
 
@@ -30,8 +31,9 @@ pub fn run() {
 
     let app = builder
         .setup(|app| {
+            let app_data_dir = app.path().app_data_dir()?;
             let diagnostics = diagnostics::DiagnosticsState::initialize(
-                app.path().app_data_dir()?,
+                app_data_dir.clone(),
                 app.package_info().version.to_string(),
             )
             .map_err(|error| {
@@ -45,7 +47,13 @@ pub fn run() {
                     watchdog.check_heartbeat();
                 }
             });
+            let (statistics, statistics_issue) =
+                application::statistics::StatisticsStore::open(&app_data_dir);
+            if let Some(issue) = statistics_issue {
+                commands::statistics::record_statistics_load_issue(&diagnostics, &issue);
+            }
             app.manage(diagnostics);
+            app.manage(Arc::new(statistics));
             Ok(())
         })
         .register_asynchronous_uri_scheme_protocol(
@@ -114,7 +122,8 @@ pub fn run() {
             commands::source::import_dropped_sources,
             commands::source::activate_source_path,
             commands::source::delete_source_file,
-            commands::source::restore_source_file
+            commands::source::restore_source_file,
+            commands::statistics::get_usage_statistics
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

@@ -43,7 +43,7 @@ function AppActivityDialogContent({ __scopeDialog }: { __scopeDialog?: DialogSco
         </DialogDescription>
       </DialogHeader>
 
-      <ActivityFeedContent className="-mx-2 px-2" fadeColor="var(--popover)">
+      <ActivityFeedContent className="-mx-2 px-2">
         <ActivityFeedList className="py-2" />
       </ActivityFeedContent>
 

@@ -18,6 +18,7 @@ import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppDiagnosticsRecoveryDialog } from "@/app/dialogs/AppDiagnosticsRecoveryDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
 import { AppShutdownGuardDialog } from "@/app/dialogs/AppShutdownGuardDialog";
+import { AppStatisticsDialog } from "@/app/dialogs/AppStatisticsDialog";
 import { AppLayout } from "@/app/layout";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
@@ -70,6 +71,7 @@ function EasyTrimEditorApp() {
                         <AppCommandPaletteDialog />
                         <AppChangelogDialog />
                         <AppChaptersDialog />
+                        <AppStatisticsDialog />
 
                         <Toaster />
                         <ActivityToasts />

@@ -3,6 +3,7 @@ import "./listeners/diagnostics-listener";
 import "./listeners/editing-instance-sync-listener";
 import "./listeners/loudness-analysis-listener";
 import "./listeners/thumbnail-lifecycle-listener";
+import "./listeners/usage-statistics-listener";
 
 import { exportPresetPersistenceMiddleware } from "./export-preset-persistence-middleware";
 import { listenerMiddleware } from "./listener-middleware";

@@ -8,6 +8,7 @@ import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
 import { AppChaptersDialog } from "@/app/dialogs/AppChaptersDialog";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
+import { AppStatisticsDialog } from "@/app/dialogs/AppStatisticsDialog";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked, isEditableTarget } from "@/lib/hotkeys.utils";
 
@@ -16,6 +17,7 @@ const dialogPreloaders: Record<AppDialogId, () => Promise<unknown>> = {
   chapters: AppChaptersDialog.preload,
   "command-palette": AppCommandPaletteDialog.preload,
   settings: AppSettingsDialog.preload,
+  statistics: AppStatisticsDialog.preload,
 };
 
 function AppDialogsProvider({ children }: { children: ReactNode }) {

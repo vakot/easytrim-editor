@@ -1128,6 +1128,67 @@ export const en = {
     },
     title: "Imported Sources",
   },
+  statistics: {
+    description: "Your export activity across all sessions",
+    empty: "Statistics begin accumulating after your first successful export",
+    metrics: {
+      audioExports: {
+        description: "Audio-only exports to M4A, MP3, or WAV",
+        label: "Audio Exports",
+      },
+      completedExports: {
+        description: "Successful exports of every kind",
+        label: "Completed Exports",
+      },
+      firstExport: {
+        label: "First Export",
+      },
+      gifExports: {
+        description: "Animated GIFs rendered from a segment",
+        label: "GIF Exports",
+      },
+      lastExport: {
+        label: "Last Export",
+      },
+      losslessCuts: {
+        description: "Fast Exports that copy the video without re-encoding",
+        label: "Lossless Cuts",
+      },
+      optimizedExports: {
+        description: "Optimized Exports that re-encode the video",
+        label: "Optimized Exports",
+      },
+      outputData: {
+        description: "Total size of the exported files",
+        label: "Output Data Generated",
+      },
+      processingTime: {
+        description: "Time spent rendering, excluding time waiting in the queue",
+        label: "Processing Time",
+      },
+      sourceData: {
+        description: "Combined size of the source file behind each export",
+        label: "Source Data Processed",
+      },
+      storageSaved: {
+        grew: "Exports are larger than their sources",
+        label: "Storage Saved",
+        saved: "Exports are smaller than their sources",
+        unchanged: "Exports match the size of their sources",
+      },
+    },
+    notYet: "Not yet",
+    open: "Statistics",
+    privacy: "Statistics are generated locally on this device and are never shared or sent anywhere",
+    sections: {
+      activity: "Activity",
+      breakdown: "Export Breakdown",
+      data: "Data Processing",
+      overview: "Overview",
+    },
+    title: "Statistics",
+    unavailable: "Statistics could not be loaded",
+  },
   support: {
     changelog: {
       categories: {
