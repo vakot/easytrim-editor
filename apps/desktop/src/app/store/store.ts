@@ -26,6 +26,7 @@ import { previewReducer } from "@/app/store/slices/preview-slice";
 import { sceneDetectionReducer } from "@/app/store/slices/scene-detection-slice";
 import { sourceReducer } from "@/app/store/slices/source-slice";
 import { trimReducer } from "@/app/store/slices/trim-slice";
+import { usageStatisticsReducer } from "@/app/store/slices/usage-statistics-slice";
 
 const combinedReducer = combineReducers({
   audio: audioReducer,
@@ -41,6 +42,7 @@ const combinedReducer = combineReducers({
   sceneDetection: sceneDetectionReducer,
   source: sourceReducer,
   trim: trimReducer,
+  usageStatistics: usageStatisticsReducer,
 });
 
 export type RootState = ReturnType<typeof combinedReducer>;
