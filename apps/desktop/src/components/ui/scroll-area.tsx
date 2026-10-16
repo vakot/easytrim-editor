@@ -5,120 +5,40 @@ import * as React from "react";
 
 import { cn } from "@/lib/class-names.utils";
 
-import styles from "./scroll-area.module.css";
-
 type ScrollAreaOrientation = "horizontal" | "vertical";
-
-const SCROLL_END_TOLERANCE_PX = 2;
 
 function ScrollArea({
   children,
   className,
-  fadeColor,
   orientation = "vertical",
   scrollbarClassName,
-  style,
-  viewportRef: viewportRefProp,
+  viewportRef,
   ...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
-  fadeColor?: string;
   orientation?: ScrollAreaOrientation;
   scrollbarClassName?: string;
   viewportRef?: (element: HTMLDivElement | null) => void;
 }) {
-  const viewportRef = React.useRef<HTMLDivElement>(null);
-
-  const [scrollState, setScrollState] = React.useState({
-    canScrollDown: false,
-    canScrollUp: false,
-  });
-
-  const updateScrollState = React.useCallback(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    const nextScrollState =
-      orientation === "horizontal"
-        ? {
-            canScrollDown:
-              viewport.scrollWidth - viewport.clientWidth - viewport.scrollLeft >
-              SCROLL_END_TOLERANCE_PX,
-            canScrollUp: viewport.scrollLeft > SCROLL_END_TOLERANCE_PX,
-          }
-        : {
-            canScrollDown:
-              viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop >
-              SCROLL_END_TOLERANCE_PX,
-            canScrollUp: viewport.scrollTop > SCROLL_END_TOLERANCE_PX,
-          };
-
-    setScrollState((currentScrollState) => {
-      if (
-        currentScrollState.canScrollDown === nextScrollState.canScrollDown &&
-        currentScrollState.canScrollUp === nextScrollState.canScrollUp
-      ) {
-        return currentScrollState;
-      }
-
-      return nextScrollState;
-    });
-  }, [orientation]);
-
-  const setViewportRef = React.useCallback(
-    (element: HTMLDivElement | null) => {
-      viewportRef.current = element;
-      viewportRefProp?.(element);
-    },
-    [viewportRefProp],
-  );
-
-  React.useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    updateScrollState();
-
-    const resizeObserver = new ResizeObserver(updateScrollState);
-    resizeObserver.observe(viewport);
-
-    const content = viewport.firstElementChild;
-    if (content) resizeObserver.observe(content);
-
-    const mutationObserver = new MutationObserver(updateScrollState);
-    mutationObserver.observe(viewport, { childList: true, subtree: true });
-
-    return () => {
-      resizeObserver.disconnect();
-      mutationObserver.disconnect();
-    };
-  }, [updateScrollState]);
-
   return (
     <ScrollAreaPrimitive.Root
       className={cn(
-        "relative overflow-hidden before:top-0 after:bottom-0",
-        styles.scrollFade,
+        "relative overflow-hidden",
         orientation === "horizontal" ? "min-w-0" : "min-h-0",
-        orientation === "horizontal" && styles.horizontal,
-        scrollState.canScrollUp && styles.canScrollUp,
-        scrollState.canScrollDown && styles.canScrollDown,
         className,
       )}
       data-slot="scroll-area"
       {...props}
-      style={{
-        ...style,
-        ...(fadeColor ? { "--scroll-area-fade-color": fadeColor } : {}),
-      }}
     >
+      {/* The viewport is the scroller, so it carries the scroll-driven edge fade. */}
       <ScrollAreaPrimitive.Viewport
         className={cn(
           "scroll-area-viewport size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[0.1875rem] focus-visible:ring-ring/50 focus-visible:outline-[0.0625rem] [&>div]:block!",
-          orientation === "horizontal" ? "overflow-x-auto overflow-y-hidden" : "overflow-x-hidden",
+          orientation === "horizontal"
+            ? "scroll-fade-x overflow-x-auto overflow-y-hidden"
+            : "scroll-fade-y overflow-x-hidden",
         )}
         data-slot="scroll-area-viewport"
-        onScroll={updateScrollState}
-        ref={setViewportRef}
+        ref={viewportRef}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>

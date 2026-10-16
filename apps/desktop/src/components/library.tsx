@@ -29,7 +29,7 @@ function LibraryNavigation({
       )}
       {...props}
     >
-      <ScrollArea className="size-full min-h-0 min-w-0" fadeColor="var(--popover)">
+      <ScrollArea className="size-full min-h-0 min-w-0">
         <div className="p-4">{children}</div>
       </ScrollArea>
     </TabsList>
@@ -71,7 +71,7 @@ function LibraryNavigationItemIndicator({ children, side }: React.ComponentProps
 
 function LibraryContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <ScrollArea className="h-full min-h-0 min-w-0 flex-1" fadeColor="var(--popover)">
+    <ScrollArea className="h-full min-h-0 min-w-0 flex-1">
       <div className={cn("p-4", className)} {...props} />
     </ScrollArea>
   );

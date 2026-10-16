@@ -41,7 +41,7 @@ function AppChangelogDialogContent({
         <DialogDescription __scopeDialog={__scopeDialog}>{description}</DialogDescription>
       </DialogHeader>
 
-      <ScrollArea className="-mx-4 min-h-0 px-4" fadeColor="var(--popover)">
+      <ScrollArea className="-mx-4 min-h-0 px-4">
         <ChangelogList releases={releases} />
       </ScrollArea>
 

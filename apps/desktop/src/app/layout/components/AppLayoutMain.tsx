@@ -86,7 +86,6 @@ function AppLayoutMain() {
             <div className="flex min-w-0 items-center justify-between p-1">
               <ScrollArea
                 className="min-w-0 flex-1"
-                fadeColor="var(--preview-surface)"
                 orientation="horizontal"
                 scrollbarClassName="data-horizontal:h-0.75 data-horizontal:border-t-0 data-horizontal:p-0"
               >
