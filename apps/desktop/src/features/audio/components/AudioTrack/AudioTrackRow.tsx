@@ -37,7 +37,7 @@ import {
 
 const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex: number }) {
   const { stream, track, trackNumber } = useAudioTrackController(streamIndex);
-  // The volume being adjusted, previewed on the waveform before it is committed.
+  // The volume being adjusted, shown in the track volume indicator before it is committed.
   const [liveVolume, setLiveVolume] = useState<number | null>(null);
   const [displayMode, setDisplayMode] = useState<WaveformDisplayMode>("peak");
   const displayModeContext = useMemo(() => ({ displayMode, setDisplayMode }), [displayMode]);

@@ -179,6 +179,7 @@ function mockCanvas({ height = 50, width = 32 } = {}) {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
     beginPath: vi.fn(),
     clearRect: vi.fn(),
+    drawImage: vi.fn(),
     lineTo,
     moveTo,
     set lineWidth(_value: number) {},
@@ -265,7 +266,7 @@ describe("AudioTrackRow", () => {
     await waitFor(() => expect(strokeStyle).toHaveBeenCalledWith("rgb(18 52 86)"));
   });
 
-  it("scales the waveform and its volume badge with Track Volume", async () => {
+  it("scales the processed waveform display and volume badge with Track Volume", async () => {
     const { getMaxHeight, lineTo } = mockCanvas();
     vi.stubGlobal(
       "fetch",
@@ -444,7 +445,7 @@ describe("AudioTrackRow", () => {
     });
   });
 
-  it("previews volume adjustments in playback and on the waveform", async () => {
+  it("previews volume adjustments in playback and the waveform display", async () => {
     const { getMaxHeight, lineTo } = mockCanvas();
     vi.stubGlobal(
       "fetch",

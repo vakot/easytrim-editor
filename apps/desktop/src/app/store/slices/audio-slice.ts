@@ -267,12 +267,19 @@ const audioSlice = createSlice({
     waveformReady: (state, action: PayloadAction<WaveformResult>) => {
       applyWaveformResult(state, action.payload);
     },
-    waveformDisplayFailed: (state, action: PayloadAction<{ streamIndex: number }>) => {
+    waveformDisplayFailed: (
+      state,
+      action: PayloadAction<{ jobId: string; streamIndex: number; url: string }>,
+    ) => {
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
 
-      if (track?.waveform.status === "ready") {
+      if (
+        track?.waveform.status === "ready" &&
+        track.waveform.jobId === action.payload.jobId &&
+        track.waveform.url === action.payload.url
+      ) {
         track.waveform = {
           status: "failed",
           jobId: track.waveform.jobId,
