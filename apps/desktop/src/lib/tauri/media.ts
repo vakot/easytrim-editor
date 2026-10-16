@@ -382,12 +382,17 @@ async function releaseImportedSourceThumbnail(mediaToken: number): Promise<void>
   }
 }
 
+/**
+ * Renders one chunk of a track's processed audio. A `preview` chunk auditions a draft chain: the
+ * native cache keeps its audio only until the preview is released or the chain is committed.
+ */
 async function decodeAudioPlaybackChunk(
   sourcePath: string,
   track: AudioChainSelection,
   startMicros: number,
   durationMicros: number,
   signal: AbortSignal,
+  { preview = false }: { preview?: boolean } = {},
 ): Promise<PlaybackPcmChunk> {
   const operationId = crypto.randomUUID();
   const cancel = () => void cancelOperation(operationId);
@@ -400,6 +405,7 @@ async function decodeAudioPlaybackChunk(
       await invoke<unknown>("decode_audio_playback_chunk", {
         durationMicros,
         operationId,
+        preview,
         sourcePath,
         startMicros,
         track,

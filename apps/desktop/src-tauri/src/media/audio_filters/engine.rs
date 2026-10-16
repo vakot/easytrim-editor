@@ -53,10 +53,15 @@ impl Default for EngineConfig {
     }
 }
 
-/// What a render is for. It decides which earlier revisions a request supersedes.
+/// What a render is for. It decides which earlier revisions a request supersedes and how long its
+/// samples are kept.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RenderPurpose {
+    /// Playback of the committed chain.
     Playback,
+    /// Playback of a draft chain being auditioned before it is committed. Its samples and
+    /// sessions are temporary until the chain is used as committed audio or the preview ends.
+    PlaybackPreview,
     /// A waveform pass over the committed chain.
     Waveform,
 }
@@ -64,9 +69,13 @@ pub enum RenderPurpose {
 impl RenderPurpose {
     fn lane(self) -> RenderLane {
         match self {
-            Self::Playback => RenderLane::Playback,
+            Self::Playback | Self::PlaybackPreview => RenderLane::Playback,
             Self::Waveform => RenderLane::Waveform,
         }
+    }
+
+    fn is_preview(self) -> bool {
+        self == Self::PlaybackPreview
     }
 }
 
@@ -120,6 +129,8 @@ struct RenderScope {
 struct ScopeState {
     key: RenderKey,
     generation: u64,
+    /// Whether the current revision auditions a draft chain.
+    preview: bool,
 }
 
 /// Everything a request needs to render and commit gaps: what to render and which revision of
@@ -137,6 +148,8 @@ struct RenderTarget<'a> {
 struct SessionSlot {
     key: RenderKey,
     scope: RenderScope,
+    /// Started for a draft chain that has not been requested as committed audio since.
+    preview: bool,
     session: Arc<Mutex<RenderSession>>,
     terminator: ChildTerminator,
     /// The session's cursor, readable without waiting for a request that is using the session.
@@ -231,7 +244,7 @@ impl AudioProcessingEngine {
             stream_index: key.stream_index,
             lane: request.purpose.lane(),
         };
-        let generation = self.begin(scope, &key)?;
+        let generation = self.begin(scope, &key, request.purpose.is_preview())?;
         let range_bytes = (request.range.end - request.range.start)
             * u64::from(request.channels)
             * size_of::<f32>() as u64;
@@ -322,9 +335,43 @@ impl AudioProcessingEngine {
         self.measurements.remove_source(load_token);
     }
 
+    /// Ends the playback preview of one stream. The sessions and cached audio of auditioned draft
+    /// chains are released, and a request still rendering one fails as superseded. `keep` is the
+    /// chain playback continues with, for example the draft that was just applied: it becomes
+    /// committed audio instead of being released.
+    pub fn release_preview(&self, load_token: u64, stream_index: u32, keep: Option<&RenderKey>) {
+        let Ok(mut state) = self.state.lock() else {
+            return;
+        };
+        if let Some(keep) = keep {
+            promote(&mut state, keep);
+        }
+        state.sessions.retain(|slot| {
+            let released = slot.preview
+                && slot.key.load_token == load_token
+                && slot.key.stream_index == stream_index;
+            if released {
+                slot.terminate();
+            }
+            !released
+        });
+        state.cache.remove_preview(load_token, stream_index);
+        let playback = RenderScope {
+            load_token,
+            stream_index,
+            lane: RenderLane::Playback,
+        };
+        if let Some(current) = state.scopes.get_mut(&playback)
+            && current.preview
+        {
+            current.generation += 1;
+        }
+    }
+
     /// Registers the request's key as the scope's current revision. A different key supersedes
-    /// the scope's previous revision and stops its sessions; other scopes are unaffected.
-    fn begin(&self, scope: RenderScope, key: &RenderKey) -> Result<u64, AppError> {
+    /// the scope's previous revision and stops its sessions; other scopes are unaffected. Committed
+    /// use of a key promotes its preview sessions and audio.
+    fn begin(&self, scope: RenderScope, key: &RenderKey, preview: bool) -> Result<u64, AppError> {
         let mut state = self.lock()?;
         let idle_timeout = self.config.session_idle_timeout;
         state.sessions.retain(|slot| {
@@ -334,10 +381,17 @@ impl AudioProcessingEngine {
             }
             keep
         });
+        if !preview {
+            promote(&mut state, key);
+        }
         let generation = match state.scopes.get_mut(&scope) {
-            Some(current) if current.key == *key => current.generation,
+            Some(current) if current.key == *key => {
+                current.preview &= preview;
+                current.generation
+            }
             Some(current) => {
                 current.key = key.clone();
+                current.preview = preview;
                 current.generation += 1;
                 current.generation
             }
@@ -347,6 +401,7 @@ impl AudioProcessingEngine {
                     ScopeState {
                         key: key.clone(),
                         generation: 0,
+                        preview,
                     },
                 );
                 0
@@ -505,9 +560,14 @@ impl AudioProcessingEngine {
             state.sessions.remove(oldest).terminate();
         }
         let cursor = Arc::new(AtomicU64::new(seek_frame));
+        let preview = state
+            .scopes
+            .get(scope)
+            .is_some_and(|current| current.key == *key && current.preview);
         let slot = SessionSlot {
             key: key.clone(),
             scope: *scope,
+            preview,
             terminator: session.terminator(),
             session: Arc::new(Mutex::new(session)),
             cursor: Arc::clone(&cursor),
@@ -531,17 +591,18 @@ impl AudioProcessingEngine {
         let path = self.lock()?.cache.reserve_file().map_err(cache_error)?;
         write_segment_file(&path, samples).map_err(cache_error)?;
         let mut state = self.lock()?;
-        if state
+        let Some(preview) = state
             .scopes
             .get(&target.scope)
-            .is_none_or(|current| current.generation != target.generation)
-        {
+            .filter(|current| current.generation == target.generation)
+            .map(|current| current.preview)
+        else {
             let _ = std::fs::remove_file(&path);
             return Err(superseded());
-        }
+        };
         state
             .cache
-            .commit(&target.key, start, frames, quality, path)
+            .commit(&target.key, start, frames, quality, path, preview)
             .map_err(cache_error)
     }
 
@@ -597,6 +658,21 @@ impl Drop for AudioProcessingEngine {
                 slot.terminate();
             }
         }
+    }
+}
+
+/// Keeps a key's sessions and audio as committed audio.
+fn promote(state: &mut EngineState, key: &RenderKey) {
+    state.cache.promote(key);
+    for slot in state.sessions.iter_mut().filter(|slot| slot.key == *key) {
+        slot.preview = false;
+    }
+    for current in state
+        .scopes
+        .values_mut()
+        .filter(|current| current.key == *key)
+    {
+        current.preview = false;
     }
 }
 
@@ -719,6 +795,17 @@ mod tests {
         start: u64,
         end: u64,
     ) -> Result<(Vec<f32>, PcmQuality), AppError> {
+        render_for(engine, source, chain, start, end, RenderPurpose::Playback)
+    }
+
+    fn render_for(
+        engine: &AudioProcessingEngine,
+        source: &ActiveSource,
+        chain: &CompiledChain,
+        start: u64,
+        end: u64,
+        purpose: RenderPurpose,
+    ) -> Result<(Vec<f32>, PcmQuality), AppError> {
         engine.render(
             &RenderRequest {
                 source,
@@ -728,10 +815,34 @@ mod tests {
                 start,
                 frames: end - start,
                 channels: 2,
-                purpose: RenderPurpose::Playback,
+                purpose,
             },
             &|| false,
         )
+    }
+
+    fn key_of(source: &ActiveSource, chain: &CompiledChain) -> RenderKey {
+        RenderKey {
+            load_token: source.load_token,
+            stream_index: 0,
+            graph: chain.canonical_graph(),
+            range: RANGE,
+            channels: 2,
+        }
+    }
+
+    fn cached_frames(engine: &AudioProcessingEngine, key: &RenderKey) -> u64 {
+        engine
+            .lock()
+            .unwrap()
+            .cache
+            .plan(key, RANGE.start, RANGE.end)
+            .into_iter()
+            .map(|part| match part {
+                CoveragePart::Cached { start, end, .. } => end - start,
+                CoveragePart::Missing { .. } => 0,
+            })
+            .sum()
     }
 
     fn slice(samples: &[f32], start: u64, end: u64) -> &[f32] {
@@ -1055,6 +1166,65 @@ mod tests {
 
         let samples = waveform.join().unwrap().unwrap();
         assert!(samples == reference);
+    }
+
+    #[test]
+    fn ending_a_preview_releases_draft_audio_but_keeps_committed_and_applied_chains() {
+        let (_fixture, source) = program();
+        let engine = AudioProcessingEngine::new(EngineConfig::default());
+        let chain = |gain_db: f64| compile_chain(&[gain("g", gain_db)], &[]).unwrap();
+        let (committed, abandoned, applied) = (chain(-3.0), chain(3.0), chain(6.0));
+
+        render(&engine, &source, &committed, 0, 48_000).unwrap();
+        render_for(
+            &engine,
+            &source,
+            &abandoned,
+            0,
+            48_000,
+            RenderPurpose::PlaybackPreview,
+        )
+        .unwrap();
+        // Auditioning the committed chain does not make its audio temporary.
+        render_for(
+            &engine,
+            &source,
+            &committed,
+            0,
+            96_000,
+            RenderPurpose::PlaybackPreview,
+        )
+        .unwrap();
+        engine.release_preview(source.load_token, 0, None);
+        assert_eq!(cached_frames(&engine, &key_of(&source, &abandoned)), 0);
+        assert_eq!(cached_frames(&engine, &key_of(&source, &committed)), 96_000);
+        assert!(
+            engine
+                .lock()
+                .unwrap()
+                .sessions
+                .iter()
+                .all(|slot| !slot.preview)
+        );
+
+        render_for(
+            &engine,
+            &source,
+            &applied,
+            0,
+            48_000,
+            RenderPurpose::PlaybackPreview,
+        )
+        .unwrap();
+        engine.release_preview(source.load_token, 0, Some(&key_of(&source, &applied)));
+        assert_eq!(cached_frames(&engine, &key_of(&source, &applied)), 48_000);
+        let state = engine.lock().unwrap();
+        assert_eq!(
+            state.sessions.len(),
+            1,
+            "playback continues the applied chain"
+        );
+        assert!(state.sessions[0].key == key_of(&source, &applied) && !state.sessions[0].preview);
     }
 
     #[test]

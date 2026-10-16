@@ -67,6 +67,9 @@ struct Segment {
 struct KeySegments {
     canonical: BTreeMap<u64, Segment>,
     provisional: BTreeMap<u64, Segment>,
+    /// Rendered only to audition a draft chain; promoted once the chain is used as committed
+    /// audio.
+    preview: bool,
 }
 
 impl KeySegments {
@@ -76,6 +79,17 @@ impl KeySegments {
             PcmQuality::Provisional => &mut self.provisional,
         }
     }
+
+    fn segments(&self) -> impl Iterator<Item = (PcmQuality, u64, &Segment)> {
+        self.canonical
+            .iter()
+            .map(|(start, segment)| (PcmQuality::Canonical, *start, segment))
+            .chain(
+                self.provisional
+                    .iter()
+                    .map(|(start, segment)| (PcmQuality::Provisional, *start, segment)),
+            )
+    }
 }
 
 /// Session-scoped processed PCM on disk, addressed by exact frame indexes.
@@ -83,11 +97,13 @@ impl KeySegments {
 /// Segments are raw interleaved little-endian f32 files. A segment is indexed only after its file
 /// was completely written and renamed into place, so partial writes are never visible. Canonical
 /// segments are preferred over provisional ones, and replace the provisional segments they cover.
-/// Storage is bounded; the least recently used segments are evicted first.
+/// Storage is bounded; the least recently used segments are evicted first. Preview audio of draft
+/// chains has its own smaller budget and is evicted before committed audio.
 #[derive(Debug)]
 pub struct PcmCache {
     directory: Option<PathBuf>,
     limit_bytes: u64,
+    preview_limit_bytes: u64,
     used_bytes: u64,
     clock: u64,
     next_file_id: u64,
@@ -99,6 +115,7 @@ impl PcmCache {
         Self {
             directory: None,
             limit_bytes,
+            preview_limit_bytes: limit_bytes / 8,
             used_bytes: 0,
             clock: 0,
             next_file_id: 0,
@@ -109,6 +126,29 @@ impl PcmCache {
     #[cfg(test)]
     pub fn used_bytes(&self) -> u64 {
         self.used_bytes
+    }
+
+    fn preview_bytes(&self) -> u64 {
+        self.entries
+            .values()
+            .filter(|segments| segments.preview)
+            .flat_map(KeySegments::segments)
+            .map(|(_, _, segment)| segment.bytes)
+            .sum()
+    }
+
+    /// Keeps a key's audio as committed audio, for example when an auditioned chain is applied.
+    pub fn promote(&mut self, key: &RenderKey) {
+        if let Some(segments) = self.entries.get_mut(key) {
+            segments.preview = false;
+        }
+    }
+
+    /// Drops the preview audio of one stream that was never promoted.
+    pub fn remove_preview(&mut self, load_token: u64, stream_index: u32) {
+        self.remove_keys(|key, segments| {
+            segments.preview && key.load_token == load_token && key.stream_index == stream_index
+        });
     }
 
     /// Splits `[start, end)` into cached runs and gaps, preferring canonical samples.
@@ -175,6 +215,7 @@ impl PcmCache {
     }
 
     /// Indexes a completely written segment file and evicts older segments beyond the limit.
+    /// `preview` marks a new key as preview audio; committed audio of a key promotes it.
     pub fn commit(
         &mut self,
         key: &RenderKey,
@@ -182,6 +223,7 @@ impl PcmCache {
         frames: u64,
         quality: PcmQuality,
         path: PathBuf,
+        preview: bool,
     ) -> io::Result<()> {
         debug_assert!(frames > 0 && frames <= MAX_SEGMENT_FRAMES);
         let bytes = fs::metadata(&path)?.len();
@@ -199,7 +241,14 @@ impl PcmCache {
             bytes,
             last_used: self.clock,
         };
-        let segments = self.entries.entry(key.clone()).or_default();
+        let segments = self
+            .entries
+            .entry(key.clone())
+            .or_insert_with(|| KeySegments {
+                preview,
+                ..KeySegments::default()
+            });
+        segments.preview &= preview;
         if quality == PcmQuality::Canonical {
             let end = start + frames;
             let covered = segments
@@ -235,11 +284,15 @@ impl PcmCache {
 
     /// Drops every segment of a source activation, for example when it is replaced.
     pub fn remove_source(&mut self, load_token: u64) {
+        self.remove_keys(|key, _| key.load_token == load_token);
+    }
+
+    fn remove_keys(&mut self, mut matches: impl FnMut(&RenderKey, &KeySegments) -> bool) {
         let keys = self
             .entries
-            .keys()
-            .filter(|key| key.load_token == load_token)
-            .cloned()
+            .iter()
+            .filter(|(key, segments)| matches(key, segments))
+            .map(|(key, _)| key.clone())
             .collect::<Vec<_>>();
         for key in keys {
             if let Some(segments) = self.entries.remove(&key) {
@@ -255,31 +308,37 @@ impl PcmCache {
         }
     }
 
+    /// Evicts least recently used segments until both budgets hold. Preview audio goes first, so
+    /// auditioning drafts never evicts committed audio while preview audio remains.
     fn evict_over_limit(
         &mut self,
         kept_key: &RenderKey,
         kept_start: u64,
         kept_quality: PcmQuality,
     ) {
-        while self.used_bytes > self.limit_bytes {
-            let oldest = self
-                .entries
-                .iter()
-                .flat_map(|(key, segments)| {
-                    segments
-                        .canonical
-                        .iter()
-                        .map(move |(start, segment)| (key, PcmQuality::Canonical, *start, segment))
-                        .chain(segments.provisional.iter().map(move |(start, segment)| {
-                            (key, PcmQuality::Provisional, *start, segment)
-                        }))
-                })
-                .filter(|(key, quality, start, _)| {
-                    !(*key == kept_key && *quality == kept_quality && *start == kept_start)
-                })
-                .min_by_key(|(_, _, _, segment)| segment.last_used)
-                .map(|(key, quality, start, _)| (key.clone(), quality, start));
-            let Some((key, quality, start)) = oldest else {
+        loop {
+            let over_limit = self.used_bytes > self.limit_bytes;
+            if !over_limit && self.preview_bytes() <= self.preview_limit_bytes {
+                return;
+            }
+            let oldest = |preview_only: bool| {
+                self.entries
+                    .iter()
+                    .filter(|(_, segments)| !preview_only || segments.preview)
+                    .flat_map(|(key, segments)| {
+                        segments
+                            .segments()
+                            .map(move |(quality, start, segment)| (key, quality, start, segment))
+                    })
+                    .filter(|(key, quality, start, _)| {
+                        !(*key == kept_key && *quality == kept_quality && *start == kept_start)
+                    })
+                    .min_by_key(|(_, _, _, segment)| segment.last_used)
+                    .map(|(key, quality, start, _)| (key.clone(), quality, start))
+            };
+            let Some((key, quality, start)) =
+                oldest(true).or_else(|| if over_limit { oldest(false) } else { None })
+            else {
                 return;
             };
             if let Some(segments) = self.entries.get_mut(&key) {
@@ -392,12 +451,25 @@ mod tests {
     }
 
     fn store(cache: &mut PcmCache, key: &RenderKey, start: u64, frames: u64, quality: PcmQuality) {
+        store_audio(cache, key, start, frames, quality, false);
+    }
+
+    fn store_audio(
+        cache: &mut PcmCache,
+        key: &RenderKey,
+        start: u64,
+        frames: u64,
+        quality: PcmQuality,
+        preview: bool,
+    ) {
         let path = cache.reserve_file().unwrap();
         let samples = (0..frames * 2)
             .map(|index| (start * 2 + index) as f32)
             .collect::<Vec<_>>();
         write_segment_file(&path, &samples).unwrap();
-        cache.commit(key, start, frames, quality, path).unwrap();
+        cache
+            .commit(key, start, frames, quality, path, preview)
+            .unwrap();
     }
 
     fn summary(parts: &[CoveragePart]) -> Vec<(u64, u64, Option<PcmQuality>)> {
@@ -499,6 +571,67 @@ mod tests {
     }
 
     #[test]
+    fn preview_audio_has_its_own_budget_and_is_evicted_before_committed_audio() {
+        let segment_bytes = 1_000 * 2 * 4;
+        let mut cache = PcmCache::new(16 * segment_bytes);
+        let committed = key("committed");
+        store(&mut cache, &committed, 0, 1_000, PcmQuality::Canonical);
+        for (index, graph) in ["draft-a", "draft-b", "draft-c"].into_iter().enumerate() {
+            store_audio(
+                &mut cache,
+                &key(graph),
+                index as u64 * 1_000,
+                1_000,
+                PcmQuality::Provisional,
+                true,
+            );
+        }
+
+        // Two segments fit the preview budget; the oldest draft went first, committed audio stayed.
+        assert_eq!(cache.used_bytes(), 3 * segment_bytes);
+        assert_eq!(
+            summary(&cache.plan(&key("draft-a"), 0, 1_000)),
+            [(0, 1_000, None)]
+        );
+        assert_eq!(
+            summary(&cache.plan(&committed, 0, 1_000)),
+            [(0, 1_000, Some(PcmQuality::Canonical))]
+        );
+
+        // Committed use of a draft key promotes it out of the preview budget.
+        store_audio(
+            &mut cache,
+            &key("draft-c"),
+            3_000,
+            1_000,
+            PcmQuality::Provisional,
+            false,
+        );
+        cache.promote(&key("draft-b"));
+        store_audio(
+            &mut cache,
+            &key("draft-d"),
+            0,
+            1_000,
+            PcmQuality::Provisional,
+            true,
+        );
+        cache.remove_preview(7, 1);
+        assert_eq!(cache.used_bytes(), 4 * segment_bytes);
+        assert_eq!(
+            summary(&cache.plan(&key("draft-d"), 0, 1_000)),
+            [(0, 1_000, None)]
+        );
+        assert_eq!(
+            summary(&cache.plan(&key("draft-c"), 2_000, 4_000)),
+            [
+                (2_000, 3_000, Some(PcmQuality::Provisional)),
+                (3_000, 4_000, Some(PcmQuality::Provisional)),
+            ]
+        );
+    }
+
+    #[test]
     fn rejects_incomplete_segment_files_and_releases_sources() {
         let mut cache = PcmCache::new(u64::MAX);
         let key = key("a");
@@ -506,7 +639,7 @@ mod tests {
         write_segment_file(&path, &[0.0; 3]).unwrap();
         assert!(
             cache
-                .commit(&key, 0, 2, PcmQuality::Canonical, path.clone())
+                .commit(&key, 0, 2, PcmQuality::Canonical, path.clone(), false)
                 .is_err()
         );
         assert!(!path.exists());
