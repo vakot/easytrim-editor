@@ -67,6 +67,9 @@ pub struct UnlockedAchievement {
 pub struct AchievementRecords {
     pub unlocked_achievements: BTreeMap<String, UnlockedAchievement>,
     pub discovered_splash_message_ids: BTreeSet<String>,
+    /// Unix epoch milliseconds when the collection was last viewed. Achievements unlocked later
+    /// are new to the user; `None` means the collection was never viewed.
+    pub viewed_at_millis: Option<i64>,
 }
 
 impl AchievementRecords {
@@ -91,6 +94,19 @@ impl AchievementRecords {
             unlocked.push(achievement.as_str().to_owned());
         }
         unlocked
+    }
+
+    /// Marks the collection as viewed at `now_millis`; returns whether that moved the mark. The mark
+    /// never moves back, so a late or repeated request cannot make seen achievements new again.
+    pub fn mark_viewed(&mut self, now_millis: i64) -> bool {
+        if self
+            .viewed_at_millis
+            .is_some_and(|viewed| viewed >= now_millis)
+        {
+            return false;
+        }
+        self.viewed_at_millis = Some(now_millis);
+        true
     }
 
     /// Records a displayed splash message; returns whether it was not discovered before.
@@ -257,6 +273,18 @@ mod tests {
         assert!(!records.discover_splash_message(&identifier("rainbow-mode")));
         assert!(records.discover_splash_message(&identifier("chosen-frame")));
         assert_eq!(records.discovered_splash_message_ids.len(), 2);
+    }
+
+    #[test]
+    fn the_viewed_mark_only_moves_forward() {
+        let mut records = AchievementRecords::default();
+
+        assert!(records.mark_viewed(2_000));
+        assert!(!records.mark_viewed(1_000));
+        assert!(!records.mark_viewed(2_000));
+        assert_eq!(records.viewed_at_millis, Some(2_000));
+        assert!(records.mark_viewed(3_000));
+        assert_eq!(records.viewed_at_millis, Some(3_000));
     }
 
     #[test]

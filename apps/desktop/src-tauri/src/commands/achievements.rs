@@ -73,6 +73,21 @@ pub fn record_splash_message_discovery(
     Ok(records)
 }
 
+#[tauri::command]
+pub fn mark_achievements_viewed(
+    achievements: State<'_, Arc<AchievementStore>>,
+    diagnostics: State<'_, Arc<DiagnosticsState>>,
+) -> AchievementRecords {
+    let AchievementUpdate {
+        value: records,
+        write_result,
+    } = achievements.mark_viewed();
+    if let Err(error) = write_result {
+        record_achievements_write_failure(&diagnostics, &error);
+    }
+    records
+}
+
 pub fn record_achievements_load_issue(diagnostics: &DiagnosticsState, issue: &DocumentLoadIssue) {
     let (event, reason) = match issue {
         DocumentLoadIssue::Quarantined { reason } => ("achievements.load.quarantined", reason),

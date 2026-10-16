@@ -132,7 +132,8 @@ pub fn run() {
             commands::statistics::get_usage_statistics,
             commands::achievements::get_achievement_records,
             commands::achievements::unlock_achievements,
-            commands::achievements::record_splash_message_discovery
+            commands::achievements::record_splash_message_discovery,
+            commands::achievements::mark_achievements_viewed
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

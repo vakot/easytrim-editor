@@ -103,6 +103,20 @@ impl AchievementStore {
         }
     }
 
+    /// Marks the collection as viewed now, so only later unlocks count as new.
+    pub fn mark_viewed(&self) -> AchievementUpdate<AchievementRecords> {
+        let mut state = self.lock();
+        let write_result = if state.records.mark_viewed(unix_millis_now()) {
+            self.persist(&state)
+        } else {
+            Ok(())
+        };
+        AchievementUpdate {
+            value: state.records.clone(),
+            write_result,
+        }
+    }
+
     fn persist(&self, state: &StoreState) -> io::Result<()> {
         if !state.persistent {
             return Ok(());
@@ -174,6 +188,24 @@ mod tests {
         assert_eq!(issue, None);
         assert_eq!(reopened.snapshot(), store.snapshot());
         assert_eq!(achievement_files(&root), [ACHIEVEMENTS_FILE_NAME]);
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
+    fn persists_the_viewed_mark_across_reopening() {
+        let root = temporary_root("viewed");
+        let (store, _) = AchievementStore::open(&root);
+        assert_eq!(store.snapshot().viewed_at_millis, None);
+
+        let update = store.mark_viewed();
+        update.write_result.expect("viewed mark persisted");
+        let viewed_at = update
+            .value
+            .viewed_at_millis
+            .expect("collection marked viewed");
+
+        let (reopened, _) = AchievementStore::open(&root);
+        assert_eq!(reopened.snapshot().viewed_at_millis, Some(viewed_at));
         fs::remove_dir_all(root).expect("temporary root removed");
     }
 
