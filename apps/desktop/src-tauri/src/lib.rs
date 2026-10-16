@@ -4,6 +4,7 @@ mod diagnostics;
 mod domain;
 mod error;
 mod media;
+mod persistence;
 mod process;
 mod state;
 
