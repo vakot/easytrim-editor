@@ -203,6 +203,7 @@ describe("WebAudioEngine", () => {
       3_463_063,
       536_937,
       expect.any(AbortSignal),
+      false,
     );
     expect(onError).not.toHaveBeenCalled();
     const firstStart = sources[0]!.start.mock.calls[0]![0] as number;
@@ -334,8 +335,16 @@ describe("WebAudioEngine", () => {
       1_000_000,
       1_000_000,
       expect.any(AbortSignal),
+      false,
     );
-    expect(decode).toHaveBeenNthCalledWith(2, selection(2), 0, 2_000_000, expect.any(AbortSignal));
+    expect(decode).toHaveBeenNthCalledWith(
+      2,
+      selection(2),
+      0,
+      2_000_000,
+      expect.any(AbortSignal),
+      false,
+    );
     expect(sources[0]?.start).toHaveBeenCalledWith(expect.any(Number), 0);
     expect(sources[1]?.start).toHaveBeenCalledWith(expect.any(Number), 0);
     const delayedTrack = buffers[0]!;
@@ -425,6 +434,7 @@ describe("WebAudioEngine", () => {
         1_000_000,
         2_000_000,
         expect.any(AbortSignal),
+        false,
       ),
     );
     rejectSupersededBatch?.(new Error("Superseded PCM batch failed."));
@@ -568,6 +578,7 @@ describe("WebAudioEngine", () => {
       0,
       expect.any(Number),
       expect.any(AbortSignal),
+      false,
     );
     engine.close();
   });
@@ -593,7 +604,7 @@ describe("WebAudioEngine", () => {
     decode.mockClear();
     await engine.prepareAt(0);
 
-    expect(decode).toHaveBeenCalledWith(processed, 0, 2_000_000, expect.any(AbortSignal));
+    expect(decode).toHaveBeenCalledWith(processed, 0, 2_000_000, expect.any(AbortSignal), false);
     engine.close();
   });
 
@@ -626,6 +637,7 @@ describe("WebAudioEngine", () => {
         positionMicros,
         durationMicros - positionMicros,
         expect.any(AbortSignal),
+        false,
       );
       expect(sources[0]?.start).toHaveBeenCalledWith(
         5.005,
@@ -826,7 +838,8 @@ describe("WebAudioEngine", () => {
       },
     ]);
 
-    expect(firstSource.stop).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(firstSource.stop).toHaveBeenCalledOnce());
+    expect(decode.mock.calls[decodeCount]![0].filters[0]).toMatchObject({ reductionDb: 20 });
     engine.close();
   });
 
@@ -953,5 +966,274 @@ describe("WebAudioEngine", () => {
     expect(startsByRange[1]?.[0]).toBe((startsByRange[0]?.[0] ?? 0) + 2);
     engine.close();
     vi.useRealTimers();
+  });
+});
+
+describe("WebAudioEngine processing changes", () => {
+  const gainChain = (gainDb: number): AudioChainSelection => ({
+    filters: [{ enabled: true, gainDb, id: "g", type: "gain" }],
+    streamIndex: 1,
+  });
+
+  function voiceOf(source: { connect: ReturnType<typeof vi.fn> }) {
+    return source.connect.mock.calls[0]![0] as ReturnType<typeof node>;
+  }
+
+  it("switches running playback to new processing at one sample with a crossfade", async () => {
+    const { context, setCurrentTime, sources } = createContext();
+    const onError = vi.fn();
+    const decode = vi.fn(
+      async (_selection: AudioChainSelection, _start: number, duration: number) => chunk(duration),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), onError);
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ selection: gainChain(0), streamIndex: 1, volume: 1 }]);
+    await engine.startAt(0);
+    await vi.waitFor(() => expect(sources).toHaveLength(2));
+    const previous = sources.slice();
+
+    setCurrentTime(5.5);
+    engine.setTracks([{ selection: gainChain(6), streamIndex: 1, volume: 1 }]);
+    await vi.waitFor(() => expect(sources.length).toBeGreaterThan(2));
+
+    // Rendering starts just ahead of the playhead; the previous audio is not stopped before it.
+    expect(decode).toHaveBeenCalledWith(
+      gainChain(6),
+      545_000,
+      2_000_000,
+      expect.any(AbortSignal),
+      false,
+    );
+    const replacement = sources[2]!;
+    const [switchTime, offset] = replacement.start.mock.calls[0] as [number, number];
+    expect(switchTime).toBeCloseTo(5.55, 6);
+    expect(offset).toBe(0);
+    for (const source of previous) {
+      expect(source.stop).toHaveBeenCalledWith(switchTime + 0.03);
+    }
+    expect(voiceOf(previous[0]!).gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0,
+      switchTime + 0.03,
+    );
+    expect(voiceOf(replacement).gain.setValueAtTime).toHaveBeenCalledWith(0, switchTime);
+    expect(voiceOf(replacement).gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      1,
+      switchTime + 0.03,
+    );
+
+    // The timeline keeps its mapping, so audio stays aligned with the video clock.
+    setCurrentTime(6.005);
+    expect(engine.currentTimeSeconds).toBeCloseTo(1, 4);
+    expect(onError).not.toHaveBeenCalled();
+    engine.close();
+  });
+
+  it("finishes a running switch and then renders only the latest of several rapid changes", async () => {
+    const { context, sources } = createContext();
+    const pending: Array<{ gainDb: number; resolve: () => void }> = [];
+    const decode = vi.fn((selection: AudioChainSelection, _start: number, duration: number) => {
+      const gainDb = (selection.filters[0] as { gainDb: number }).gainDb;
+      if (gainDb === 0) return Promise.resolve(chunk(duration));
+      return new Promise<ReturnType<typeof chunk>>((resolve) => {
+        pending.push({ gainDb, resolve: () => resolve(chunk(duration)) });
+      });
+    });
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ selection: gainChain(0), streamIndex: 1, volume: 1 }]);
+    await engine.startAt(0);
+
+    engine.setTracks([{ selection: gainChain(3), streamIndex: 1, volume: 1 }]);
+    engine.setTracks([{ selection: gainChain(6), streamIndex: 1, volume: 1 }]);
+    engine.setTracks([{ selection: gainChain(9), streamIndex: 1, volume: 1 }]);
+    await vi.waitFor(() => expect(pending).toHaveLength(1));
+    const scheduledBeforeSwitch = sources.length;
+    pending[0]!.resolve();
+
+    await vi.waitFor(() => expect(pending).toHaveLength(2));
+    expect(sources.length).toBe(scheduledBeforeSwitch + 1);
+    expect(pending.map(({ gainDb }) => gainDb)).toEqual([3, 9]);
+    engine.close();
+  });
+
+  it("keeps earlier preview audio when a draft cannot be rendered", async () => {
+    const { context, sources } = createContext();
+    const onError = vi.fn();
+    const statuses: Array<[number | undefined, string]> = [];
+    const decode = vi.fn(
+      async (selection: AudioChainSelection, _start: number, duration: number) => {
+        if ((selection.filters[0] as { gainDb: number }).gainDb === 24) {
+          throw new Error("FFmpeg could not render the draft.");
+        }
+        return chunk(duration);
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), onError, (_stream, tag, status) =>
+      statuses.push([tag, status]),
+    );
+
+    engine.setDuration(8_000_000);
+    engine.setTracks([
+      { preview: true, selection: gainChain(3), streamIndex: 1, tag: 1, volume: 1 },
+    ]);
+    await engine.startAt(0);
+
+    engine.setTracks([
+      { preview: true, selection: gainChain(24), streamIndex: 1, tag: 2, volume: 1 },
+    ]);
+    await vi.waitFor(() => expect(statuses.at(-1)).toEqual([2, "failed"]));
+    await vi.waitFor(() => expect(sources.length).toBeGreaterThan(1));
+
+    expect(statuses).toContainEqual([2, "updating"]);
+    expect(decode).toHaveBeenLastCalledWith(
+      gainChain(3),
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(AbortSignal),
+      true,
+    );
+    expect(onError).not.toHaveBeenCalled();
+
+    engine.setTracks([
+      { preview: true, selection: gainChain(6), streamIndex: 1, tag: 3, volume: 1 },
+    ]);
+    await vi.waitFor(() => expect(statuses.at(-1)).toEqual([3, "ready"]));
+    engine.close();
+  });
+
+  it("stops playback when committed processing cannot be rendered", async () => {
+    const { context } = createContext();
+    const onError = vi.fn();
+    const decode = vi.fn(
+      async (selection: AudioChainSelection, _start: number, duration: number) => {
+        if ((selection.filters[0] as { gainDb: number }).gainDb === 24) {
+          throw new Error("FFmpeg could not render the chain.");
+        }
+        return chunk(duration);
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), onError);
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ selection: gainChain(3), streamIndex: 1, volume: 1 }]);
+    await engine.startAt(0);
+
+    engine.setTracks([{ selection: gainChain(24), streamIndex: 1, volume: 1 }]);
+    await vi.waitFor(() => expect(onError).toHaveBeenCalledOnce());
+    engine.close();
+  });
+
+  it("prepares a start again when the processing changes during its preparation", async () => {
+    const { context } = createContext();
+    let releaseFirst: (() => void) | undefined;
+    const decode = vi.fn((selection: AudioChainSelection, _start: number, duration: number) => {
+      if ((selection.filters[0] as { gainDb: number }).gainDb === 0) {
+        return new Promise<ReturnType<typeof chunk>>((resolve) => {
+          releaseFirst = () => resolve(chunk(duration));
+        });
+      }
+      return Promise.resolve(chunk(duration));
+    });
+
+    const statuses: string[] = [];
+    const engine = new WebAudioEngine(context, decode, vi.fn(), vi.fn(), (_stream, _tag, status) =>
+      statuses.push(status),
+    );
+
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ selection: gainChain(0), streamIndex: 1, volume: 1 }]);
+
+    const preparing = engine.prepareAt(1);
+    await vi.waitFor(() => expect(releaseFirst).toBeDefined());
+    engine.setTracks([{ selection: gainChain(6), streamIndex: 1, volume: 1 }]);
+    releaseFirst?.();
+
+    await expect(preparing).resolves.toBeUndefined();
+    expect(decode).toHaveBeenLastCalledWith(
+      gainChain(6),
+      1_000_000,
+      2_000_000,
+      expect.any(AbortSignal),
+      false,
+    );
+    expect(statuses).toContain("preparing");
+    expect(statuses.at(-1)).toBe("ready");
+    await engine.startPreparedAt(1);
+    engine.close();
+  });
+
+  it("starts with the new processing when it changes while a start is decoding", async () => {
+    const { context, sources } = createContext();
+    let releaseFirst: (() => void) | undefined;
+    const decode = vi.fn((selection: AudioChainSelection, _start: number, duration: number) => {
+      if ((selection.filters[0] as { gainDb: number }).gainDb === 0) {
+        return new Promise<ReturnType<typeof chunk>>((resolve) => {
+          releaseFirst = () => resolve(chunk(duration));
+        });
+      }
+      return Promise.resolve(chunk(duration));
+    });
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ selection: gainChain(0), streamIndex: 1, volume: 1 }]);
+
+    void engine.startAt(2);
+    await vi.waitFor(() => expect(releaseFirst).toBeDefined());
+    engine.setTracks([{ selection: gainChain(6), streamIndex: 1, volume: 1 }]);
+    releaseFirst?.();
+
+    await vi.waitFor(() => expect(sources).toHaveLength(2));
+    expect(sources[0]!.buffer).toBeDefined();
+    expect(decode).toHaveBeenCalledWith(
+      gainChain(6),
+      2_000_000,
+      2_000_000,
+      expect.any(AbortSignal),
+      false,
+    );
+    expect(engine.currentTimeSeconds).toBeGreaterThanOrEqual(2);
+    engine.close();
+  });
+
+  it("adopts changed processing while paused and abandons a switch on pause", async () => {
+    const { context, sources } = createContext();
+    let releaseSwitch: (() => void) | undefined;
+    const decode = vi.fn((selection: AudioChainSelection, _start: number, duration: number) => {
+      if ((selection.filters[0] as { gainDb: number }).gainDb === 9) {
+        return new Promise<ReturnType<typeof chunk>>((resolve) => {
+          releaseSwitch = () => resolve(chunk(duration));
+        });
+      }
+      return Promise.resolve(chunk(duration));
+    });
+
+    const statuses: Array<[number | undefined, string]> = [];
+    const engine = new WebAudioEngine(context, decode, vi.fn(), vi.fn(), (_stream, tag, status) =>
+      statuses.push([tag, status]),
+    );
+
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ selection: gainChain(0), streamIndex: 1, tag: 1, volume: 1 }]);
+    engine.setTracks([{ selection: gainChain(3), streamIndex: 1, tag: 2, volume: 1 }]);
+    expect(statuses.at(-1)).toEqual([2, "ready"]);
+    expect(decode).not.toHaveBeenCalled();
+
+    await engine.startAt(0);
+    engine.setTracks([{ selection: gainChain(9), streamIndex: 1, tag: 3, volume: 1 }]);
+    await vi.waitFor(() => expect(releaseSwitch).toBeDefined());
+    expect(statuses.at(-1)).toEqual([3, "updating"]);
+    const scheduled = sources.length;
+
+    engine.pause();
+    expect(statuses.at(-1)).toEqual([3, "ready"]);
+    releaseSwitch?.();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(sources).toHaveLength(scheduled);
+    engine.close();
   });
 });

@@ -12,8 +12,10 @@ class AudioPlaybackSession {
     this.context = new AudioContext();
     this.engine = new WebAudioEngine(
       this.context,
-      (selection, startMicros, chunkDurationMicros, signal) =>
-        decodeAudioPlaybackChunk(sourcePath, selection, startMicros, chunkDurationMicros, signal),
+      (selection, startMicros, chunkDurationMicros, signal, preview) =>
+        decodeAudioPlaybackChunk(sourcePath, selection, startMicros, chunkDurationMicros, signal, {
+          preview,
+        }),
       () => undefined,
       () => this.playbackErrorObserver?.(),
     );
