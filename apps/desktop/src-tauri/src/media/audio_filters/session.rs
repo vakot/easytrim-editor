@@ -57,6 +57,25 @@ impl RenderSession {
         self.child.terminator()
     }
 
+    /// Adds where the render stood and how its FFmpeg process ended to a failure, keeping the
+    /// error kind. A cancelled read stays plain: it is not a failure.
+    fn failure(&self, error: io::Error) -> io::Error {
+        if error.kind() == io::ErrorKind::Interrupted {
+            return error;
+        }
+        io::Error::new(
+            error.kind(),
+            format!(
+                "{error} at frame {} of {} (stream {}, rendering from frame {}); {}",
+                self.cursor,
+                self.key.range.end,
+                self.key.stream_index,
+                self.committed_from,
+                self.child.end_report()
+            ),
+        )
+    }
+
     /// Reads exactly `frames` frames from the cursor, failing if the render ends early.
     pub fn read_frames(
         &mut self,
@@ -68,16 +87,19 @@ impl RenderSession {
         let mut remaining = frames;
         while remaining > 0 {
             let block = remaining.min(READ_BLOCK_FRAMES);
-            let bytes = self.child.read_exact_cancellable(
-                (block * channels * 4) as usize,
-                OUTPUT_IDLE_TIMEOUT,
-                &mut is_cancelled,
-            )?;
+            let bytes = self
+                .child
+                .read_exact_cancellable(
+                    (block * channels * 4) as usize,
+                    OUTPUT_IDLE_TIMEOUT,
+                    &mut is_cancelled,
+                )
+                .map_err(|error| self.failure(error))?;
             if bytes.len() as u64 != block * channels * 4 {
-                return Err(io::Error::new(
+                return Err(self.failure(io::Error::new(
                     io::ErrorKind::UnexpectedEof,
                     "the processed audio render ended before its range end",
-                ));
+                )));
             }
             samples.extend(
                 bytes
@@ -91,8 +113,13 @@ impl RenderSession {
     }
 }
 
-/// Renders `[seek_frame, range.end)` of the key continuously. Input stops exactly at the range end,
-/// as an export of the range would, and a stream shorter than the range is padded with silence.
+/// Renders `[seek_frame, range.end)` of the key continuously. The range end is bounded by sample
+/// count: `apad` pads a stream shorter than the range with silence and `atrim` stops the render
+/// exactly there, which also ends FFmpeg without reading the rest of the input.
+///
+/// There is deliberately no `-t`. A duration limit cuts by timestamp, so it drops real samples
+/// when a filter shifts its output timestamps (dynamic loudness normalization) or when `aresample`
+/// fills a timestamp gap and stretches the timeline, and the render would end before its range.
 fn session_arguments(source_path: &Path, key: &RenderKey, seek_frame: u64) -> Vec<OsString> {
     let length = key.range.end - seek_frame;
     vec![
@@ -104,8 +131,6 @@ fn session_arguments(source_path: &Path, key: &RenderKey, seek_frame: u64) -> Ve
         OsString::from(frames_to_seconds(seek_frame)),
         OsString::from("-i"),
         source_path.as_os_str().to_owned(),
-        OsString::from("-t"),
-        OsString::from(frames_to_seconds(length)),
         OsString::from("-filter_complex"),
         OsString::from(format!(
             "[0:{}]{},apad=whole_len={length},atrim=end_sample={length}[processed]",
@@ -159,7 +184,11 @@ mod tests {
         let arguments = session_arguments(Path::new("C:\\Videos\\a b.mkv"), &key, 96_000);
         let pairs = arguments.windows(2).collect::<Vec<_>>();
         assert!(pairs.contains(&[OsString::from("-ss"), OsString::from("2.000000")].as_slice()));
-        assert!(pairs.contains(&[OsString::from("-t"), OsString::from("3.000000")].as_slice()));
+        assert!(
+            !arguments.contains(&OsString::from("-t"))
+                && !arguments.contains(&OsString::from("-to")),
+            "a duration limit cuts real samples by timestamp; the graph bounds the range by count"
+        );
         assert!(pairs.contains(
             &[
                 OsString::from("-filter_complex"),

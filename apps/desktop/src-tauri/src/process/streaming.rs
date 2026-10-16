@@ -16,11 +16,16 @@ const READ_BLOCK_BYTES: usize = 64 * 1024;
 // Bounded read-ahead: the child blocks on a full pipe until its output is consumed.
 const READ_AHEAD_BLOCKS: usize = 4;
 const POLL_INTERVAL: Duration = Duration::from_millis(50);
+/// How much of the child's final diagnostics is kept for failure reports.
+const STDERR_TAIL_BYTES: usize = 2 * 1024;
+const EXIT_REPORT_WAIT: Duration = Duration::from_millis(500);
 
 /// A long-lived child whose stdout is consumed incrementally, so one process can serve many
 /// consecutive reads. Dropping it terminates the child and joins its reader threads.
 pub struct StreamingChild {
     child: Arc<Mutex<Child>>,
+    /// The last bytes the child wrote to stderr, for failure reports.
+    stderr_tail: Arc<Mutex<Vec<u8>>>,
     blocks: Receiver<io::Result<Vec<u8>>>,
     pending: Vec<u8>,
     ended: bool,
@@ -44,8 +49,8 @@ impl ChildTerminator {
 }
 
 impl StreamingChild {
-    /// Starts the child. Its stderr is drained and discarded so diagnostics can never fill the
-    /// pipe and stall the output.
+    /// Starts the child. Its stderr is drained, keeping only a bounded tail, so diagnostics can
+    /// never fill the pipe and stall the output.
     pub fn spawn(executable: &OsStr, arguments: &[OsString]) -> io::Result<Self> {
         let executable_path = resolve_executable(executable)?;
         media_debug(format_args!(
@@ -72,12 +77,15 @@ impl StreamingChild {
             .ok_or_else(|| io::Error::other("child stderr was not captured"))?;
         let (sender, blocks) = sync_channel(READ_AHEAD_BLOCKS);
         let stdout_reader = thread::spawn(move || forward_blocks(stdout, &sender));
-        let stderr_reader = thread::spawn(move || {
-            let _ = io::copy(&mut { stderr }, &mut io::sink());
-        });
+        let stderr_tail = Arc::new(Mutex::new(Vec::new()));
+        let stderr_reader = {
+            let tail = Arc::clone(&stderr_tail);
+            thread::spawn(move || keep_tail(stderr, &tail))
+        };
 
         Ok(Self {
             child: Arc::new(Mutex::new(child)),
+            stderr_tail,
             blocks,
             pending: Vec::new(),
             ended: false,
@@ -89,6 +97,35 @@ impl StreamingChild {
     pub fn terminator(&self) -> ChildTerminator {
         ChildTerminator {
             child: Arc::clone(&self.child),
+        }
+    }
+
+    /// Describes how the child stands now for a failure report: its exit status, or that it is
+    /// still running, and the tail of its stderr. It waits briefly for a child whose output
+    /// ended to exit, so the status is usually known.
+    pub fn end_report(&self) -> String {
+        let deadline = Instant::now() + EXIT_REPORT_WAIT;
+        let status = loop {
+            let status = self
+                .child
+                .lock()
+                .ok()
+                .and_then(|mut child| child.try_wait().ok().flatten());
+            if status.is_some() || !self.ended || Instant::now() >= deadline {
+                break status;
+            }
+            thread::sleep(Duration::from_millis(10));
+        };
+        let status = status.map_or_else(|| "still running".to_owned(), |status| status.to_string());
+        let tail = self
+            .stderr_tail
+            .lock()
+            .map(|tail| String::from_utf8_lossy(&tail).trim().to_owned())
+            .unwrap_or_default();
+        if tail.is_empty() {
+            format!("child {status}, no stderr")
+        } else {
+            format!("child {status}, stderr: {tail}")
         }
     }
 
@@ -144,6 +181,22 @@ impl Drop for StreamingChild {
         if let Some(reader) = self.stderr_reader.take() {
             let _ = reader.join();
         }
+    }
+}
+
+/// Drains `stream`, keeping its last [`STDERR_TAIL_BYTES`] bytes.
+fn keep_tail(mut stream: impl Read, tail: &Mutex<Vec<u8>>) {
+    let mut buffer = [0_u8; 4096];
+    while let Ok(read) = stream.read(&mut buffer) {
+        if read == 0 {
+            return;
+        }
+        let Ok(mut tail) = tail.lock() else {
+            return;
+        };
+        tail.extend_from_slice(&buffer[..read]);
+        let excess = tail.len().saturating_sub(STDERR_TAIL_BYTES);
+        tail.drain(..excess);
     }
 }
 
@@ -213,6 +266,31 @@ mod tests {
         assert_eq!(first.len(), 1_000);
         assert_eq!(second.len(), 95_000);
         assert!(tail.is_empty());
+    }
+
+    #[test]
+    fn reports_the_exit_status_and_stderr_of_a_child_whose_output_ended() {
+        let mut child = StreamingChild::spawn(
+            OsStr::new("ffmpeg"),
+            &[
+                OsString::from("-hide_banner"),
+                OsString::from("-nostdin"),
+                OsString::from("-i"),
+                OsString::from("this-input-does-not-exist.wav"),
+                OsString::from("-f"),
+                OsString::from("s16le"),
+                OsString::from("pipe:1"),
+            ],
+        )
+        .expect("FFmpeg starts");
+        let output = child
+            .read_exact_cancellable(1_000, Duration::from_secs(10), || false)
+            .unwrap();
+        assert!(output.is_empty());
+
+        let report = child.end_report();
+        assert!(!report.contains("still running"), "{report}");
+        assert!(report.contains("this-input-does-not-exist.wav"), "{report}");
     }
 
     #[test]

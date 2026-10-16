@@ -149,8 +149,16 @@ processing only after every other kind; while every session is in use, none is s
 
 Positions are exact frame indexes on the 48 kHz source timeline. Seek points lie on a 125 µs grid
 (six frames), where the seek time and the first output frame agree exactly; the canonical input
-stage pads a late stream start; input stops exactly at the range end, as an export does, and a
-short stream is padded with silence.
+stage pads a late stream start. The range end is bounded by sample count in the graph (`apad` pads
+a short stream with silence, `atrim` stops the render and so FFmpeg), never by an FFmpeg duration
+limit. `-t` cuts by timestamp: it dropped the last samples of a range when dynamic Loudness
+Normalization shifted its output timestamps, or when `aresample` filled a timestamp gap, and the
+session then ended before its range.
+
+A failed render reports the operation that asked for it: a waveform pass fails as a waveform error
+and a playback chunk as a playback error, so one never surfaces as the other. The diagnostics name
+the purpose, the frame the session had reached, the stream, how the FFmpeg process ended (exit
+status), and the tail of its stderr. Set `EASYTRIM_MEDIA_DEBUG=1` to also print them.
 
 ### Processed PCM cache
 

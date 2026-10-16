@@ -10,7 +10,7 @@ use std::{
 
 use crate::{
     error::{AppError, AppErrorMessageId},
-    process::ChildTerminator,
+    process::{ChildTerminator, media_debug},
     state::ActiveSource,
 };
 
@@ -522,7 +522,7 @@ impl AudioProcessingEngine {
                 let warmup = (session.committed_from - position).min(MAX_SEGMENT_FRAMES);
                 let read = session.read_frames(warmup, cancelled);
                 cursor.store(session.cursor, Ordering::Release);
-                read.map_err(|error| self.render_error(error, scope, generation, session_handle))?;
+                read.map_err(|error| self.render_error(error, target, session_handle))?;
                 continue;
             }
             // Segments end at the gap start and end so requested frames are never split.
@@ -530,8 +530,7 @@ impl AudioProcessingEngine {
             let frames = (boundary - position).min(MAX_SEGMENT_FRAMES);
             let read = session.read_frames(frames, cancelled);
             cursor.store(session.cursor, Ordering::Release);
-            let samples =
-                read.map_err(|error| self.render_error(error, scope, generation, session_handle))?;
+            let samples = read.map_err(|error| self.render_error(error, target, session_handle))?;
             if *retain {
                 self.store_segment(target, position, frames, session.quality, &samples)?;
             } else {
@@ -607,7 +606,7 @@ impl AudioProcessingEngine {
             committed_from,
             quality,
         )
-        .map_err(start_error)?;
+        .map_err(|error| start_error(request.purpose, &error))?;
 
         if state.sessions.len() >= self.config.max_sessions
             && let Some(evicted) = evictable_session(&state)
@@ -667,11 +666,13 @@ impl AudioProcessingEngine {
     fn render_error(
         &self,
         error: io::Error,
-        scope: RenderScope,
-        generation: u64,
+        target: &RenderTarget<'_>,
         session: &Arc<Mutex<RenderSession>>,
     ) -> AppError {
-        if self.ensure_current(scope, generation).is_err() {
+        if self
+            .ensure_current(target.scope, target.generation)
+            .is_err()
+        {
             return superseded();
         }
         if error.kind() == io::ErrorKind::Interrupted {
@@ -688,16 +689,13 @@ impl AudioProcessingEngine {
                 !failed
             });
         }
-        match error.kind() {
-            io::ErrorKind::TimedOut => AppError::preview_failed(
-                AppErrorMessageId::MediaAudioPlaybackAudioDecodingTookTooLong,
-                None::<String>,
-            ),
-            _ => AppError::preview_failed(
-                AppErrorMessageId::MediaAudioFfmpegCouldNotDecodePlaybackAudio,
-                Some(error.to_string()),
-            ),
-        }
+        let playback_message = match error.kind() {
+            io::ErrorKind::TimedOut => {
+                AppErrorMessageId::MediaAudioPlaybackAudioDecodingTookTooLong
+            }
+            _ => AppErrorMessageId::MediaAudioFfmpegCouldNotDecodePlaybackAudio,
+        };
+        render_failure(target.request.purpose, playback_message, &error)
     }
 
     fn lock(&self) -> Result<MutexGuard<'_, EngineState>, AppError> {
@@ -778,16 +776,38 @@ fn session_unavailable() -> AppError {
     AppError::internal("A processed audio session is unavailable.")
 }
 
-fn start_error(error: io::Error) -> AppError {
+fn start_error(purpose: RenderPurpose, error: &io::Error) -> AppError {
     match error.kind() {
         io::ErrorKind::NotFound => AppError::preview_failed(
             AppErrorMessageId::MediaAudioFfmpegIsRequiredForPlayback,
             None::<String>,
         ),
-        _ => AppError::preview_failed(
+        _ => render_failure(
+            purpose,
             AppErrorMessageId::MediaAudioFfmpegCouldNotDecodePlaybackAudio,
-            Some(error.to_string()),
+            error,
         ),
+    }
+}
+
+/// The failure of a render, reported as the operation that asked for it: a waveform pass never
+/// surfaces a playback error. The diagnostics name the operation and carry the underlying error,
+/// including how the FFmpeg process ended.
+fn render_failure(
+    purpose: RenderPurpose,
+    playback_message: AppErrorMessageId,
+    error: &io::Error,
+) -> AppError {
+    let diagnostics = format!("{purpose:?} render failed: {error}");
+    media_debug(&diagnostics);
+    match purpose {
+        RenderPurpose::Waveform => AppError::waveform_failed(
+            AppErrorMessageId::MediaWaveformFfmpegCouldNotGenerateTheAudioWaveform,
+            Some(diagnostics),
+        ),
+        RenderPurpose::Playback | RenderPurpose::PlaybackPreview => {
+            AppError::preview_failed(playback_message, Some(diagnostics))
+        }
     }
 }
 
@@ -813,7 +833,7 @@ mod tests {
         error::{AppError, AppErrorMessageId},
         media::audio_filters::{
             compiler::{CompiledChain, compile_chain},
-            model::{AudioFilter, fixtures::*},
+            model::{AudioFilter, AudioLoudnessAnalysis, FilterMeasurement, fixtures::*},
             pcm_cache::{CoveragePart, FrameRange, PcmQuality, RenderKey},
             test_fixtures::{
                 FixtureFile, PROGRAM_MATERIAL, decode_f32_stereo, fixture_source, generate_fixture,
@@ -1398,6 +1418,165 @@ mod tests {
 
         let samples = waveform.join().unwrap().unwrap();
         assert!(samples == reference);
+    }
+
+    /// The reported chain: dynamic loudness normalization runs between stateful filters.
+    fn dynamic_normalization_chain() -> CompiledChain {
+        compile_chain(
+            &[
+                noise_reduction("nr"),
+                gain("g", 10.0),
+                limiter("lim", -1.0),
+                normalization("norm", -16.0),
+                high_pass("hp", 80.0),
+            ],
+            &[FilterMeasurement {
+                filter_id: "norm".to_owned(),
+                analysis: AudioLoudnessAnalysis {
+                    input_lra: Some(6.8),
+                    input_threshold: Some(-33.29),
+                    integrated_lufs: Some(-22.04),
+                    true_peak_db: Some(-1.0),
+                },
+            }],
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn a_waveform_pass_renders_a_dynamic_normalization_chain_to_the_range_end_beside_playback() {
+        // A compressed source of an uneven length whose range ends mid-block, like imported video.
+        let material = PROGRAM_MATERIAL
+            .replace(":s=48000:d=8:", ":s=44100:d=7.123:")
+            .replace("*if(lt(t,3),0.2,if(lt(t,5),1,0.4))", "*0.1");
+        let fixture = generate_fixture("engine-compressed", &material, "m4a", "aac");
+        let source = fixture_source(fixture.path(), 7_123_000);
+        let range = FrameRange {
+            start: 0,
+            end: 341_904,
+        };
+        let chain = dynamic_normalization_chain();
+        let reference = decode_f32_stereo(&[
+            OsString::from("-i"),
+            source.path.as_os_str().to_owned(),
+            OsString::from("-filter_complex"),
+            OsString::from(format!(
+                "[0:0]{},apad=whole_len={},atrim=end_sample={}[out]",
+                chain.canonical_graph(),
+                range.end,
+                range.end
+            )),
+            OsString::from("-map"),
+            OsString::from("[out]"),
+        ]);
+        assert_eq!(reference.len() as u64, range.end * 2);
+        let engine = Arc::new(AudioProcessingEngine::new(EngineConfig::default()));
+        let request = |chain, start, frames, purpose| RenderRequest {
+            source: &source,
+            stream_index: 0,
+            chain,
+            range,
+            start,
+            frames,
+            channels: 2,
+            purpose,
+            replacement: false,
+        };
+
+        let draft = compile_chain(&[gain("g", 4.0)], &[]).unwrap();
+        let (waveform, playback_errors) = thread::scope(|scope| {
+            // Playback seeks around, auditions a draft, and plays the end of the source meanwhile.
+            let playback = scope.spawn(|| {
+                let mut errors = Vec::new();
+                for round in 0..3 {
+                    for (chain, start, frames, purpose) in [
+                        (&chain, 100_000, 96_000, RenderPurpose::Playback),
+                        (&draft, 120_000, 48_000, RenderPurpose::PlaybackPreview),
+                        (&chain, 245_904, 96_000, RenderPurpose::Playback),
+                    ] {
+                        let start = start + round * 1_000;
+                        let frames = frames.min(range.end - start);
+                        if let Err(error) =
+                            engine.render(&request(chain, start, frames, purpose), &|| false)
+                        {
+                            errors.push(error);
+                        }
+                    }
+                }
+                errors
+            });
+            let mut samples = Vec::new();
+            for start in (range.start..range.end).step_by(48_000) {
+                let frames = (range.end - start).min(48_000);
+                samples.extend(
+                    engine
+                        .render_canonical(
+                            &request(&chain, start, frames, RenderPurpose::Waveform),
+                            &|| false,
+                        )
+                        .unwrap(),
+                );
+            }
+            (samples, playback.join().unwrap())
+        });
+        assert!(playback_errors.is_empty(), "{playback_errors:?}");
+        assert!(
+            waveform == reference,
+            "the waveform pass diverged from one continuous render"
+        );
+    }
+
+    #[test]
+    fn a_failed_render_reports_its_operation_and_how_ffmpeg_ended() {
+        let (fixture, source) = program();
+        let chain = stateful_chain();
+        let engine = AudioProcessingEngine::new(EngineConfig::default());
+        let missing = source
+            .path
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        drop(fixture);
+
+        let request = |purpose| RenderRequest {
+            source: &source,
+            stream_index: 0,
+            chain: &chain,
+            range: RANGE,
+            start: 0,
+            frames: 48_000,
+            channels: 2,
+            purpose,
+            replacement: false,
+        };
+        let playback = engine
+            .render(&request(RenderPurpose::Playback), &|| false)
+            .unwrap_err();
+        assert_eq!(playback.code, "preview_failed");
+        assert_eq!(
+            playback.message_id,
+            AppErrorMessageId::MediaAudioFfmpegCouldNotDecodePlaybackAudio
+        );
+
+        // A waveform pass is not a playback chunk, whatever else is playing.
+        let waveform = engine
+            .render_canonical(&request(RenderPurpose::Waveform), &|| false)
+            .unwrap_err();
+        assert_eq!(waveform.code, "waveform_failed");
+        assert_eq!(
+            waveform.message_id,
+            AppErrorMessageId::MediaWaveformFfmpegCouldNotGenerateTheAudioWaveform
+        );
+        let diagnostics = waveform.diagnostics.unwrap();
+        for expected in [
+            "Waveform render failed",
+            "frame 0 of 384000",
+            "stream 0",
+            &missing,
+        ] {
+            assert!(diagnostics.contains(expected), "{expected}: {diagnostics}");
+        }
     }
 
     #[test]
