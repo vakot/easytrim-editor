@@ -19,7 +19,10 @@ const preloadAudioTrackFilters = preloadOnIntent(() =>
   LazyAudioTrackFiltersDialogContent.preload(),
 );
 
-/** The Audio Filters Library of one track. Its draft lives only while the dialog is open. */
+/**
+ * The Audio Filters Library of one track. Its draft lives only while the dialog is open, and
+ * playback auditions it meanwhile, so the playback shortcuts stay available.
+ */
 function AudioTrackFiltersDialog({
   children,
   streamIndex,
@@ -37,6 +40,7 @@ function AudioTrackFiltersDialog({
       <DialogContent
         {...dialogScope}
         className="h-full max-h-[min(85dvh,36rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
+        data-playback-shortcuts=""
       >
         <Suspense fallback={null}>
           <LazyAudioTrackFiltersDialogContent
