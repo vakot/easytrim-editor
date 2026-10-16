@@ -169,7 +169,7 @@ const scenarios: Record<ScenarioName, ActivityToastScenario> = {
 const meta = {
   component: Toaster,
   parameters: { layout: "fullscreen" },
-  title: "Features/Activity Toasts",
+  title: "Features/Activity/Activity Toasts",
 } satisfies Meta<typeof Toaster>;
 
 export default meta;

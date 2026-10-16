@@ -45,7 +45,7 @@ const meta = {
     <MediaToolsStatusStory presentation={presentation} state={state} />
   ),
   tags: ["autodocs"],
-  title: "Media/Media Tools Status",
+  title: "Features/Media/Media Tools Status",
 } satisfies Meta<MediaToolsStatusStoryArgs>;
 
 export default meta;
