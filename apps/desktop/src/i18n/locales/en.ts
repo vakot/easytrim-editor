@@ -73,9 +73,9 @@ export const en = {
       completed: "Completed",
       nextTier: "Next: {{tier}}",
       tierLocked: "{{tier}}, {{target}}, locked",
+      tiersLabel: "Tiers",
       tierUnlocked: "{{tier}}, {{target}}, unlocked {{date}}",
       tierUnlockedOn: "{{tier}} unlocked {{date}}",
-      tiersLabel: "Tiers",
     },
     status: {
       locked: "Locked",
