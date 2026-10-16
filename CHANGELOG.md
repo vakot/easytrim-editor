@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - Audio waveforms now line up with the sound on the Timeline instead of drifting later through longer videos or when the audio starts after the video.
 - The playback speed slider now shows the speed multiplier while dragging instead of an internal step number.
 - Noise reduction no longer delays the processed audio by 25 ms or cuts off its last 25 ms.
+- Work recovered after a crash is no longer lost if EasyTrim crashes again before you reopen a source or make changes.
 
 ## [1.13.4]
 

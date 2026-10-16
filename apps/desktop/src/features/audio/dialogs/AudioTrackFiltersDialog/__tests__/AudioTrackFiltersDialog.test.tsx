@@ -44,8 +44,14 @@ function renderDialog() {
 }
 
 async function addFilter(user: ReturnType<typeof userEvent.setup>, name: string) {
-  await user.click(screen.getByRole("button", { name: "Add filter" }));
+  await user.click(await screen.findByRole("button", { name: "Add filter" }));
   await user.click(await screen.findByRole("menuitem", { name }));
+}
+
+async function removeSelectedFilter(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "Remove filter" }));
+  const confirmation = await screen.findByRole("alertdialog");
+  await user.click(within(confirmation).getByRole("button", { name: "Remove filter" }));
 }
 
 function tabNames() {
@@ -89,7 +95,7 @@ describe("AudioTrackFiltersDialog", () => {
     // Reopening starts from the committed chain; unchanged instances keep their identity.
     await user.click(screen.getByRole("button", { name: "Open filters" }));
     await user.click(await screen.findByRole("tab", { name: "Limiter" }));
-    await user.click(screen.getByRole("button", { name: "Remove filter" }));
+    await removeSelectedFilter(user);
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(committedFilters()).toEqual(applied.slice(0, 2));
   });
@@ -106,7 +112,7 @@ describe("AudioTrackFiltersDialog", () => {
     await user.click(screen.getByRole("button", { name: "Open filters" }));
     await addFilter(user, "Noise reduction");
     await user.click(screen.getByRole("tab", { name: "High-pass filter" }));
-    await user.click(screen.getByRole("button", { name: "Remove filter" }));
+    await removeSelectedFilter(user);
     expect(tabNames()).toEqual(["Noise reduction"]);
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));

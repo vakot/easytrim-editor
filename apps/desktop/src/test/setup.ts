@@ -8,7 +8,7 @@ Object.defineProperty(HTMLMediaElement.prototype, "readyState", {
 });
 import "@/i18n/config";
 
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
 
 class ResizeObserverMock implements ResizeObserver {
@@ -38,6 +38,26 @@ Object.defineProperty(window, "PointerEvent", {
 Element.prototype.hasPointerCapture = () => true;
 Element.prototype.setPointerCapture = () => undefined;
 Element.prototype.releasePointerCapture = () => undefined;
+
+// JSDOM has no matchMedia; report that no media query matches unless a test stubs it.
+window.matchMedia ??= (query: string): MediaQueryList => ({
+  addEventListener: () => undefined,
+  addListener: () => undefined,
+  dispatchEvent: () => false,
+  matches: false,
+  media: query,
+  onchange: null,
+  removeEventListener: () => undefined,
+  removeListener: () => undefined,
+});
+
+// JSDOM has no Web Animations API; drag-and-drop measurement asks for running animations.
+for (const target of [document, Element.prototype]) {
+  Object.defineProperty(target, "getAnimations", { configurable: true, value: () => [] });
+}
 Element.prototype.scrollIntoView = () => undefined;
+
+// Lazily loaded UI can take longer than the 1s default while the full suite runs in parallel.
+configure({ asyncUtilTimeout: 4000 });
 
 afterEach(cleanup);

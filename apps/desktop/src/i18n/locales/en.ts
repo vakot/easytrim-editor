@@ -127,21 +127,6 @@ export const en = {
       retry: "Retry analysis",
       showRanges: "Show detected ranges",
     },
-    effects: {
-      appliedSummaryLabel: "Applied effects: {{summary}}",
-      dialog: {
-        applyNotice: "Changes stay unapplied until you choose Apply",
-        description: "Effects are applied in the fixed order shown in the list",
-        title: "{{title}} — Effects",
-      },
-      open: "Effects",
-      stages: {
-        cleanup: "Cleanup",
-        dynamics: "Dynamics",
-        level: "Level",
-        protection: "Protection",
-      },
-    },
     errors: {
       audio: {
         analyzeTrackLoudnessToPrepareAudioPlayback: "Analyze track loudness to prepare audio playback",
@@ -241,7 +226,6 @@ export const en = {
         voice: "Voice (80 Hz)",
         wind: "Wind (120 Hz)",
       },
-      summary: "High-pass ({{cutoff}} Hz)",
     },
     limiter: {
       attackLabel: "Attack",
@@ -253,11 +237,6 @@ export const en = {
         peakProtection: "Peak protection",
       },
       releaseLabel: "Release",
-      summary: "Limiter ({{ceiling}} dB)",
-    },
-    loudness: {
-      analyze: "Analyze loudness",
-      analyzing: "Analyzing loudness…",
     },
     noiseReduction: {
       description: "Reduce background noise on this audio track",
@@ -265,30 +244,21 @@ export const en = {
       noiseFloorLabel: "Noise floor",
       reductionLabel: "Reduction amount",
       strength: {
-        label: "Noise reduction strength",
         light: "Light",
         medium: "Medium",
         strong: "Strong",
       },
-      summary: "Noise reduction - {{preset}}",
     },
     normalization: {
       description: "Normalize this track to a consistent target loudness",
       label: "Loudness normalization",
-      levelSummary: "{{target}} LUFS · {{peak}} dBTP",
       loudnessRangeLabel: "Loudness range",
-      manualGainUnavailable: "Manual Gain is unavailable while automatic normalization is applied",
-      maxTruePeakLabel: "Maximum true peak (dBTP)",
       preset: {
         broadcast: "Broadcast",
-        custom: "Custom",
-        label: "Preset",
         streaming: "Streaming",
         webVideo: "Web Video",
       },
-      summary: "Normalized - {{preset}}",
       targetLabel: "Target loudness",
-      targetLufsLabel: "Target loudness (LUFS)",
       truePeakLabel: "Maximum true peak",
     },
     output: {
@@ -305,7 +275,6 @@ export const en = {
     },
     tracks: {
       actionsLabel: "Audio {{number}} actions",
-      advanced: "Advanced",
       channels_one: "{{count}} channel",
       channels_other: "{{count}} channels",
       defaultName: "Audio {{number}}",
@@ -335,7 +304,6 @@ export const en = {
       },
       mute: "Mute",
       muteWithTitle: "Mute ({{title}})",
-      preparingPreview: "Preparing preview with these track settings…",
       title: "Audio tracks",
       unknownLayout: "unknown layout",
       unmute: "Unmute",
@@ -384,7 +352,6 @@ export const en = {
       layoutActivityFeedView: "Layout / Activity Feed View",
       layoutDensity: "Layout / Density",
       layoutPanelsVisibility: "Layout / Panels visibility",
-      markers: "Markers",
       markersScene: "Markers / Scene",
       preferences: "Preferences",
       preferencesAudio: "Preferences / Audio",
@@ -763,12 +730,7 @@ export const en = {
       opening: "Opening preview…",
       preparing: "Preparing compatible preview…",
     },
-    markers: {
-      next: "Next marker",
-      previous: "Previous marker",
-    },
     playback: {
-      failed: "Playback could not start",
       loopDisabledTooltip: "Stop when playback reaches its end",
       loopEnabledTooltip: "Restart when playback reaches its end",
       loopPlayback: "Loop playback",
@@ -787,9 +749,7 @@ export const en = {
       segmentDisabledTooltip: "Play the complete timeline",
       segmentEnabledTooltip: "Constrain playback to the selected segment",
       setEnd: "Set segment end",
-      setEndUnavailable: "The segment cannot end at the start of the source",
       setStart: "Set segment start",
-      setStartUnavailable: "The segment cannot start at the end of the source",
     },
     shortcuts: {
       markInOut: "Mark In / Mark Out",
@@ -1207,9 +1167,6 @@ export const en = {
   timeline: {
     accessibility: {
       playheadPosition: "Playhead position",
-      seconds: "{{value}} seconds",
-      startsAt: "Starts at {{time}}",
-      track: "Video trim timeline",
     },
     audioMeter: {
       accessibility: {
@@ -1235,15 +1192,11 @@ export const en = {
       empty: "No chapters yet",
       fields: {
         end: "End",
-        endSeconds: "End (seconds)",
         range: "Range",
         start: "Start",
-        startSeconds: "Start (seconds)",
         title: "Title",
       },
-      markerLabel: "{{title}} · {{range}}",
       status: {
-        invalid: "Enter a title and a valid chapter range.",
         invalidRange: "Enter whole frames between 0 and {{frames}}, at least {{minimum}} frames apart.",
       },
       title: "Chapters",

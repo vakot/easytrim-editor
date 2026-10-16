@@ -200,8 +200,6 @@ function localizeAppError(error: AppError, t: TFunction): string {
       return t("audio.activityDetection.errors.ffmpegIsRequiredToAnalyzeAudioActivity");
     case "media.audioActivity.inspectTheVideoBeforeDetectingAudioActivity":
       return t("audio.activityDetection.errors.inspectVideoBeforeDetectingAudioActivity");
-    case "media.audioPreviewStreamIndexesMustBeUnique":
-      return t("audio.errors.audioPreviewStreamIndexesMustBeUnique");
     case "media.audioStreamMetadataIsUnavailableForWaveformGeneration":
       return t("audio.errors.audioStreamMetadataIsUnavailableForWaveformGeneration");
     case "media.inspectTheVideoBeforeDetectingAudioActivity":
