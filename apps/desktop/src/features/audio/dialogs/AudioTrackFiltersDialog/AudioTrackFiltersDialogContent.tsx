@@ -14,7 +14,9 @@ import { audioTrackDisplayName } from "../../lib/audio-track-name.utils";
 
 import { AudioFilterList } from "./components/AudioFilterList";
 import { AudioFilterPage } from "./components/AudioFilterPage";
+import { AudioFilterPreviewStatus } from "./components/AudioFilterPreviewStatus";
 import { AudioFiltersDraftContext } from "./contexts/audio-filters-draft-context";
+import { useAudioFilterPreview } from "./hooks/useAudioFilterPreview";
 import { useAudioTrackFiltersDialogScope } from "./hooks/useAudioTrackFiltersDialogScope";
 import {
   audioFiltersDraftReducer,
@@ -29,8 +31,9 @@ interface AudioTrackFiltersDialogContentProps {
 }
 
 /**
- * Edits a draft initialized from the committed chain. Cancel discards it; Apply commits the whole
- * validated chain at once, keeping the identity of every unchanged instance.
+ * Edits a draft initialized from the committed chain. Playback auditions the latest valid draft
+ * while the dialog is open. Cancel discards it; Apply commits the whole validated chain at once,
+ * keeping the identity of every unchanged instance.
  */
 function AudioTrackFiltersDialogContent({
   onClose,
@@ -46,6 +49,7 @@ function AudioTrackFiltersDialogContent({
   );
 
   const draftContext = useMemo(() => ({ dispatch, draft }), [draft]);
+  useAudioFilterPreview(streamIndex, draft);
 
   if (!track || !stream) return null;
 
@@ -93,13 +97,13 @@ function AudioTrackFiltersDialogContent({
       </Library>
 
       <DialogFooter className="m-0! items-center rounded-none sm:justify-between">
-        <p
-          className="min-w-0 flex-1 text-xs text-muted-foreground data-[invalid=true]:text-destructive"
-          data-invalid={!valid}
-          role={valid ? undefined : "alert"}
-        >
-          {valid ? t("audio.filters.dialog.applyNotice") : t("audio.filters.dialog.invalid")}
-        </p>
+        {valid ? (
+          <AudioFilterPreviewStatus />
+        ) : (
+          <p className="min-w-0 flex-1 text-xs text-destructive" role="alert">
+            {t("audio.filters.dialog.invalid")}
+          </p>
+        )}
         <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
           <Button onClick={onClose} type="button" variant="outline">
             {t("common.actions.cancel")}

@@ -197,7 +197,6 @@ export const en = {
         remove: "Remove filter",
       },
       dialog: {
-        applyNotice: "Changes stay unapplied until you choose Apply",
         description: "Filters process this track from top to bottom; their order decides how they interact",
         emptyPage: "Add a filter to configure it here",
         invalid: "Fix the highlighted values before applying",
@@ -213,6 +212,13 @@ export const en = {
       preset: {
         custom: "Custom",
         label: "Preset",
+      },
+      preview: {
+        active: "Live preview active. Apply to save.",
+        analyzing: "Analyzing loudness…",
+        preparing: "Preparing audio…",
+        unavailable: "Preview unavailable. Apply to save.",
+        updating: "Updating preview…",
       },
       removeConfirmation: {
         description: "Remove {{name}} from this track's filter chain?",
