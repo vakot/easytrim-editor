@@ -23,8 +23,8 @@
     #ff4545
   );
   background-clip: text;
-  background-size: 300% 100%;
-  animation: splash-rainbow 5s linear infinite;
+  filter: hue-rotate(0deg);
+  animation: splash-hue-rotate 5s linear infinite;
   -webkit-background-clip: text;
 }
 
@@ -37,24 +37,72 @@
 }
 
 .chosenFrame {
+  color: transparent;
+  background: linear-gradient(
+    105deg,
+    color-mix(in srgb, var(--primary) 65%, #704000),
+    var(--primary) 28%,
+    #fff1b0 39%,
+    #fffbea 42%,
+    #ffcf60 47%,
+    var(--primary) 65%,
+    color-mix(in srgb, var(--primary) 65%, #704000)
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: splash-golden-shimmer 12s ease-in-out infinite;
+}
+
+.chosenFrame svg {
   color: var(--primary);
-  text-shadow:
-    0 0 5px color-mix(in srgb, var(--primary) 95%, transparent),
-    0 0 13px color-mix(in srgb, var(--primary) 65%, transparent),
-    0 0 25px color-mix(in srgb, var(--primary) 35%, transparent);
-  animation: splash-chosen-breathe 3.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--primary) 60%, transparent));
 }
 
 .frameNotFound {
   position: relative;
   color: #ff4b55;
   text-shadow: 0 0 7px rgb(255 49 61 / 45%);
-  animation: splash-error-flicker 5s linear infinite;
+  animation: splash-error-flicker 8.7s steps(1, end) infinite;
 }
 
-@keyframes splash-rainbow {
+.frameNotFound :global(.glitch-text) {
+  position: relative;
+  display: inline-block;
+}
+
+.frameNotFound :global(.glitch-text)::before,
+.frameNotFound :global(.glitch-text)::after {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: #ff354f;
+  content: attr(data-text);
+  opacity: 0;
+  pointer-events: none;
+  text-shadow: 1px 0 #27d8f2;
+  white-space: nowrap;
+}
+
+.frameNotFound :global(.glitch-text)::before {
+  clip-path: inset(0 0 66.666% 0);
+  animation: splash-error-ghost-top 8.7s steps(1, end) infinite;
+}
+
+.frameNotFound :global(.glitch-text)::after {
+  clip-path: inset(66.666% 0 0 0);
+  color: #27d8f2;
+  text-shadow: -1px 0 #ff354f;
+  animation: splash-error-ghost-bottom 8.7s steps(1, end) infinite;
+}
+
+@keyframes splash-hue-rotate {
+  from {
+    filter: hue-rotate(0deg);
+  }
+
   to {
-    background-position: 100% 0;
+    filter: hue-rotate(360deg);
   }
 }
 
@@ -85,48 +133,291 @@
   }
 }
 
-@keyframes splash-chosen-breathe {
+@keyframes splash-golden-shimmer {
   0%,
-  100% {
-    filter: brightness(0.94);
-    text-shadow:
-      0 0 5px color-mix(in srgb, var(--primary) 95%, transparent),
-      0 0 13px color-mix(in srgb, var(--primary) 65%, transparent),
-      0 0 25px color-mix(in srgb, var(--primary) 35%, transparent);
+  12% {
+    background-position: 100% 0;
   }
 
-  50% {
-    filter: brightness(1.18);
-    text-shadow:
-      0 0 7px color-mix(in srgb, var(--primary) 100%, transparent),
-      0 0 18px color-mix(in srgb, var(--primary) 78%, transparent),
-      0 0 34px color-mix(in srgb, var(--primary) 48%, transparent);
+  65%,
+  100% {
+    background-position: 0% 0;
   }
 }
 
 @keyframes splash-error-flicker {
+  /* Normal signal */
   0%,
-  82%,
-  84%,
-  86%,
+  12%,
+  21%,
+  39%,
+  49%,
+  67%,
+  76%,
   100% {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate(0, 0);
+    filter: brightness(1);
     text-shadow: 0 0 7px rgb(255 49 61 / 45%);
   }
 
-  83% {
-    opacity: 0.72;
-    transform: translateX(1px);
+  /* Horror flicker: unstable power */
+  12.5%,
+  14.3%,
+  17.8% {
+    opacity: 0.08;
+    filter: brightness(0.3);
+    text-shadow: none;
+  }
+
+  13.2%,
+  16.1% {
+    opacity: 0.75;
+    filter: brightness(1.35);
+    text-shadow: 0 0 13px rgb(255 49 61 / 70%);
+  }
+
+  15.1% {
+    opacity: 0.25;
+    filter: brightness(0.6);
+    text-shadow: none;
+  }
+
+  18.4% {
+    opacity: 0.95;
+    filter: brightness(1.6);
+    text-shadow: 0 0 18px rgb(255 49 61 / 90%);
+  }
+
+  19.2% {
+    opacity: 0.4;
+    filter: brightness(0.8);
+    text-shadow: 0 0 3px rgb(255 49 61 / 30%);
+  }
+
+  /* Signal glitch: left/up */
+  39.4% {
+    opacity: 0.9;
+    transform: translate(-3px, -1px) skewX(-4deg);
+    text-shadow:
+      -5px 1px #ff354f,
+      5px -1px #27d8f2;
+  }
+
+  40.1% {
+    opacity: 0.75;
+    transform: translate(-6px, -2px) skewX(-7deg);
+    text-shadow:
+      -7px 2px #ff354f,
+      7px -2px #27d8f2;
+  }
+
+  /* Signal glitch: snap right/down */
+  40.8% {
+    opacity: 1;
+    transform: translate(5px, 2px) skewX(5deg);
+    text-shadow:
+      5px -2px #ff354f,
+      -5px 2px #27d8f2;
+  }
+
+  41.5% {
+    opacity: 0.35;
+    transform: translate(2px, -1px);
     text-shadow:
       -3px 0 #ff354f,
+      4px 1px #27d8f2;
+  }
+
+  42.2% {
+    opacity: 0.9;
+    transform: translate(-2px, 1px);
+    text-shadow:
+      3px 0 #ff354f,
+      -3px 0 #27d8f2;
+  }
+
+  43% {
+    opacity: 0.1;
+    transform: translate(0, 0);
+    text-shadow: none;
+  }
+
+  43.7% {
+    opacity: 1;
+    text-shadow: 0 0 15px rgb(255 49 61 / 85%);
+  }
+
+  /* Short secondary glitch */
+  48% {
+    opacity: 0.8;
+    transform: translate(2px, -2px);
+    text-shadow:
+      4px 1px #ff354f,
+      -4px -1px #27d8f2;
+  }
+
+  48.5% {
+    opacity: 1;
+    transform: translate(-2px, 1px);
+    text-shadow:
+      -2px 0 #ff354f,
       3px 0 #27d8f2;
   }
 
-  85% {
+  /* Voltage spike */
+  67.5% {
+    opacity: 1;
+    filter: brightness(2);
+    text-shadow:
+      0 0 7px #ff354f,
+      0 0 20px rgb(255 49 61 / 95%),
+      0 0 35px rgb(255 49 61 / 65%);
+  }
+
+  68.2% {
+    opacity: 0.5;
+    filter: brightness(0.7);
+    text-shadow: 0 0 3px rgb(255 49 61 / 30%);
+  }
+
+  68.8% {
+    opacity: 1;
+    filter: brightness(1.7);
+    text-shadow:
+      0 0 12px rgb(255 49 61 / 90%),
+      0 0 25px rgb(255 49 61 / 50%);
+  }
+
+  69.5% {
+    opacity: 0.85;
+    filter: brightness(0.9);
+    text-shadow: 0 0 5px rgb(255 49 61 / 40%);
+  }
+
+  /* Final weak flicker */
+  74% {
+    opacity: 0.15;
+    text-shadow: none;
+  }
+
+  74.6% {
+    opacity: 1;
+    filter: brightness(1.2);
+  }
+
+  75.1% {
+    opacity: 0.55;
+    filter: brightness(0.8);
+  }
+
+  75.6% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+@keyframes splash-error-ghost-top {
+  0%,
+  39%,
+  43.7%,
+  47.9%,
+  49%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+
+  39.4% {
+    opacity: 0.7;
+    transform: translate3d(-5px, -1px, 0);
+  }
+
+  40.1% {
     opacity: 0.9;
-    transform: translateX(-1px);
-    text-shadow: 0 0 12px rgb(255 49 61 / 80%);
+    transform: translate3d(3px, 1px, 0);
+  }
+
+  40.8% {
+    opacity: 0.65;
+    transform: translate3d(-2px, 0, 0);
+  }
+
+  41.5% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+
+  42.2% {
+    opacity: 0.75;
+    transform: translate3d(4px, -1px, 0);
+  }
+
+  43% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+
+  48% {
+    opacity: 0.7;
+    transform: translate3d(-3px, -1px, 0);
+  }
+
+  48.5% {
+    opacity: 0.4;
+    transform: translate3d(2px, 0, 0);
+  }
+}
+
+@keyframes splash-error-ghost-bottom {
+  0%,
+  39%,
+  43.7%,
+  47.9%,
+  49%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+
+  39.4% {
+    opacity: 0.55;
+    transform: translate3d(4px, 2px, 0);
+  }
+
+  40.1% {
+    opacity: 0.8;
+    transform: translate3d(-3px, 1px, 0);
+  }
+
+  40.8% {
+    opacity: 0.65;
+    transform: translate3d(6px, -1px, 0);
+  }
+
+  41.5% {
+    opacity: 0.75;
+    transform: translate3d(-2px, 2px, 0);
+  }
+
+  42.2% {
+    opacity: 0.8;
+    transform: translate3d(3px, 1px, 0);
+  }
+
+  43% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+
+  48% {
+    opacity: 0.45;
+    transform: translate3d(5px, 1px, 0);
+  }
+
+  48.5% {
+    opacity: 0.75;
+    transform: translate3d(-4px, -1px, 0);
   }
 }
 
@@ -138,7 +429,17 @@
     animation: none;
   }
 
+  .frameNotFound :global(.glitch-text)::before,
+  .frameNotFound :global(.glitch-text)::after {
+    animation: none;
+    opacity: 0;
+  }
+
   .rainbow {
+    filter: hue-rotate(0deg);
+  }
+
+  .chosenFrame {
     background-position: 50% 0;
   }
 }

@@ -1,3 +1,4 @@
+import { Crown } from "lucide-react";
 import type { ReactNode } from "react";
 import { createElement } from "react";
 
@@ -107,12 +108,29 @@ const splashMessagesLegendary = [
     className: "chosen-frame",
     id: "chosen-frame",
     rarity: "legendary",
+    render: () =>
+      createElement(
+        "span",
+        { className: "inline-flex items-center gap-2 font-bold" },
+        createElement(Crown, { className: "size-[1em]", "aria-hidden": true }),
+        "THE CHOSEN FRAME",
+      ),
     text: "THE CHOSEN FRAME",
   },
   {
     className: "frame-not-found",
     id: "frame-not-found",
     rarity: "legendary",
+    render: () =>
+      createElement(
+        "span",
+        {
+          "aria-hidden": true,
+          className: "glitch-text",
+          "data-text": "404: FRAME NOT FOUND",
+        },
+        "404: FRAME NOT FOUND",
+      ),
     text: "404: FRAME NOT FOUND",
   },
 ] satisfies SplashMessageDefinition<"legendary">[];
