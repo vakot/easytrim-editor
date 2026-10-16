@@ -76,9 +76,10 @@ impl CompiledChain {
     }
 }
 
-/// Compiles filters strictly in array order. Every loudness normalization instance must have a
-/// measurement of the signal that reaches it; a missing measurement is an error rather than an
-/// implicit reorder or skip.
+/// Compiles filters strictly in array order. Disabled instances are validated but produce no stage,
+/// so they never reach FFmpeg or any processed-audio identity. Every enabled loudness normalization
+/// instance must have a measurement of the signal that reaches it; a missing measurement is an
+/// error rather than an implicit reorder or skip.
 pub fn compile_chain(
     filters: &[AudioFilter],
     measurements: &[FilterMeasurement],
@@ -87,6 +88,7 @@ pub fn compile_chain(
     validate_measurements(filters, measurements)?;
     let stages = filters
         .iter()
+        .filter(|filter| filter.enabled)
         .map(|filter| {
             let measurement = measurements
                 .iter()
@@ -289,6 +291,32 @@ mod tests {
         let mut reversed_graphs = graphs(&reversed, &[]);
         reversed_graphs.reverse();
         assert_eq!(reversed_graphs, graphs(&forward, &[]));
+    }
+
+    #[test]
+    fn disabled_filters_keep_their_place_but_never_reach_ffmpeg() {
+        let with_disabled = [
+            disabled(high_pass("hp", 80.0)),
+            gain("g", 6.0),
+            disabled(normalization("norm", -16.0)),
+            disabled(limiter("lim", -1.0)),
+        ];
+        // A disabled normalization needs no measurement.
+        let chain = compile_chain(&with_disabled, &[]).unwrap();
+        assert_eq!(
+            chain.canonical_graph(),
+            compile_chain(&[gain("g", 6.0)], &[])
+                .unwrap()
+                .canonical_graph()
+        );
+        assert!(
+            compile_chain(&[disabled(gain("g", 6.0))], &[])
+                .unwrap()
+                .processing_graph()
+                .is_none()
+        );
+        // Disabled instances are still validated, so they can be enabled again unchanged.
+        assert!(compile_chain(&[disabled(gain("g", 30.0))], &[]).is_err());
     }
 
     #[test]

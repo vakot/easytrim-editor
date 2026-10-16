@@ -97,7 +97,7 @@ pub fn analyze_chain_loudness(
 
     let mut measurements: Vec<FilterMeasurement> = Vec::new();
     for (index, filter) in filters.iter().enumerate() {
-        if !filter.kind.requires_global_analysis() {
+        if !filter.requires_global_analysis() {
             continue;
         }
         let upstream = compile_chain(&filters[..index], &measurements)?;
@@ -440,6 +440,32 @@ mod tests {
             &cache,
         );
         assert!(released.is_err(), "a released source keeps no measurements");
+    }
+
+    #[test]
+    fn disabled_filters_are_neither_measured_nor_part_of_a_measurement_identity() {
+        let fixture = generate_fixture("analysis-disabled", PROGRAM_MATERIAL, "wav", "pcm_s16le");
+        let cache = MeasurementCache::default();
+        let measured = analyze_cached(
+            fixture.path(),
+            vec![gain("pre", -3.0), normalization("norm", -16.0)],
+            &cache,
+        );
+        let source = fixture.path().to_owned();
+        drop(fixture);
+
+        // The source is gone: the request succeeds only if it reuses the cached measurement.
+        let with_disabled = analyze_cached(
+            &source,
+            vec![
+                disabled(gain("boost", 12.0)),
+                gain("pre", -3.0),
+                disabled(normalization("off", -30.0)),
+                normalization("norm", -16.0),
+            ],
+            &cache,
+        );
+        assert_eq!(with_disabled, measured);
     }
 
     #[test]

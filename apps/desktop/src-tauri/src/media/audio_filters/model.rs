@@ -8,14 +8,29 @@ pub const MAX_AUDIO_FILTERS: usize = 32;
 pub const MAX_TRACK_VOLUME: f64 = 5.0;
 const MAX_FILTER_ID_LENGTH: usize = 64;
 
-/// One active instance in a track's ordered filter chain. The chain array order is the execution
-/// order; there is no implicit stage sorting.
+/// One instance in a track's ordered filter chain. The chain array order is the execution order;
+/// there is no implicit stage sorting.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioFilter {
     pub id: String,
+    /// A disabled instance keeps its position and parameters but is never compiled, measured, or
+    /// rendered. Chains saved before the toggle existed have every instance enabled.
+    #[serde(default = "enabled_by_default")]
+    pub enabled: bool,
     #[serde(flatten)]
     pub kind: AudioFilterKind,
+}
+
+impl AudioFilter {
+    /// Whether this instance takes part in processing and needs a global-analysis measurement.
+    pub(crate) fn requires_global_analysis(&self) -> bool {
+        self.enabled && self.kind.requires_global_analysis()
+    }
+}
+
+fn enabled_by_default() -> bool {
+    true
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -152,7 +167,7 @@ impl AudioTrackSelection {
     }
 
     pub(crate) fn needs_processing(&self) -> bool {
-        !self.chain.filters.is_empty() || self.volume != 1.0
+        self.chain.filters.iter().any(|filter| filter.enabled) || self.volume != 1.0
     }
 }
 
@@ -175,7 +190,7 @@ pub(crate) fn validate_filter_chain(filters: &[AudioFilter]) -> Result<(), AppEr
     Ok(())
 }
 
-/// Validates that measurements belong to normalization instances in the chain. Missing
+/// Validates that measurements belong to enabled normalization instances in the chain. Missing
 /// measurements are reported by the compiler, which knows whether the consumer requires them.
 pub(crate) fn validate_measurements(
     filters: &[AudioFilter],
@@ -183,9 +198,9 @@ pub(crate) fn validate_measurements(
 ) -> Result<(), AppError> {
     let mut measured = HashSet::with_capacity(measurements.len());
     for measurement in measurements {
-        let belongs_to_normalization = filters.iter().any(|filter| {
-            filter.id == measurement.filter_id && filter.kind.requires_global_analysis()
-        });
+        let belongs_to_normalization = filters
+            .iter()
+            .any(|filter| filter.id == measurement.filter_id && filter.requires_global_analysis());
         if !belongs_to_normalization
             || !measured.insert(measurement.filter_id.as_str())
             || !measurement.analysis.is_finite()
@@ -228,7 +243,15 @@ pub(crate) mod fixtures {
     pub fn filter(id: &str, kind: AudioFilterKind) -> AudioFilter {
         AudioFilter {
             id: id.to_owned(),
+            enabled: true,
             kind,
+        }
+    }
+
+    pub fn disabled(filter: AudioFilter) -> AudioFilter {
+        AudioFilter {
+            enabled: false,
+            ..filter
         }
     }
 
@@ -320,6 +343,36 @@ mod tests {
     }
 
     #[test]
+    fn filters_are_enabled_unless_explicitly_disabled() {
+        let selection: AudioTrackSelection = serde_json::from_value(json!({
+            "streamIndex": 0,
+            "volume": 1,
+            "filters": [
+                { "id": "saved", "type": "gain", "gainDb": 6 },
+                { "id": "off", "type": "gain", "gainDb": 6, "enabled": false }
+            ]
+        }))
+        .unwrap();
+
+        assert!(selection.chain.filters[0].enabled);
+        assert!(!selection.chain.filters[1].enabled);
+        assert!(selection.needs_processing());
+
+        let bypassed = AudioTrackSelection {
+            chain: AudioChainSelection {
+                stream_index: 0,
+                filters: vec![disabled(gain("g", 6.0)), disabled(limiter("lim", -3.0))],
+                loudness_measurements: vec![],
+            },
+            volume: 1.0,
+        };
+        assert!(
+            !bypassed.needs_processing(),
+            "a fully disabled chain keeps the stream eligible for copying"
+        );
+    }
+
+    #[test]
     fn rejects_unknown_filter_types() {
         let result = serde_json::from_value::<AudioChainSelection>(json!({
             "streamIndex": 0,
@@ -361,6 +414,10 @@ mod tests {
         assert!(validate_measurements(&chain, &[measurement("g")]).is_err());
         assert!(validate_measurements(&chain, &[measurement("n"), measurement("n")]).is_err());
         assert!(validate_measurements(&chain, &[measurement("missing")]).is_err());
+
+        let bypassed = [gain("g", 0.0), disabled(normalization("n", -16.0))];
+        assert!(validate_measurements(&bypassed, &[]).is_ok());
+        assert!(validate_measurements(&bypassed, &[measurement("n")]).is_err());
     }
 
     #[test]
