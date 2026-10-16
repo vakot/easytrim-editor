@@ -19,6 +19,7 @@ function DesignTokenCanvas({ children, primaryColor, theme }: DesignTokenCanvasP
     const root = document.documentElement;
     const preset =
       PRIMARY_COLOR_PRESETS.find((color) => color.id === primaryColor) ?? PRIMARY_COLOR_PRESETS[0];
+
     const palette = primaryColorPalette(preset.color);
 
     root.classList.toggle("light", theme === "light");

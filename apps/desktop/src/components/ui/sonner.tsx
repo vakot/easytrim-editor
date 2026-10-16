@@ -21,6 +21,7 @@ function Toaster({ ...props }: ToasterProps) {
   const [theme, setTheme] = useState<ToasterProps["theme"]>(() =>
     document.documentElement.dataset.theme === "dark" ? "dark" : "light",
   );
+
   const [uiScale, setUiScale] = useState(1);
 
   const [exportDropdownOffset, setExportDropdownOffset] = useState(0);
@@ -34,6 +35,7 @@ function Toaster({ ...props }: ToasterProps) {
       const rootFontSize = Number.parseFloat(getComputedStyle(root).fontSize);
       setUiScale(Number.isFinite(rootFontSize) ? rootFontSize / 16 : 1);
     };
+
     const observer = new MutationObserver(updateRootSettings);
 
     updateRootSettings();
