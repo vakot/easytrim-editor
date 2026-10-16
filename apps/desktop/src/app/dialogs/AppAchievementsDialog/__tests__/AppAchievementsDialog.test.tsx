@@ -165,8 +165,15 @@ describe("AppAchievementsDialog", () => {
     expect(precision).toHaveAttribute("data-state", "completed");
     expect(precision).toHaveAttribute("data-tier", "gold");
     expect(within(precision).getByText("Completed")).toBeVisible();
-    expect(within(precision).getByText("All tiers unlocked")).toBeVisible();
-    expect(within(precision).queryByRole("progressbar")).toBeNull();
+    expect(within(precision).getByText("Gold unlocked Oct 12, 2026")).toBeVisible();
+    expect(within(precision).queryByText("All tiers unlocked")).toBeNull();
+    expect(within(precision).queryByText(/^Next:/)).toBeNull();
+    // The real total is shown against the Gold threshold, with the bar full.
+    expect(within(precision).getByText("Total")).toBeVisible();
+    expect(within(precision).getByText("64 / 50")).toBeVisible();
+    const bar = within(precision).getByRole("progressbar", { name: "Lossless Precision progress" });
+    expect(bar).toHaveAttribute("aria-valuenow", "100");
+    expect(bar).toHaveAttribute("aria-valuetext", "64 of 50");
   });
 
   it("conceals a secret achievement until it is unlocked", async () => {

@@ -209,22 +209,31 @@ describe("series progress", () => {
     expect(progress.tiers.map((tier) => tier.unlockedAt)).toEqual([1_000, 2_000, null]);
   });
 
-  it("is complete with no further progress after Gold", () => {
-    const progress = getSeriesProgress(series("export-mastery"), {
-      records: {
-        ...emptyAchievementRecords,
-        unlockedAchievements: {
-          "export-mastery-bronze": 1,
-          "export-mastery-gold": 3,
-          "export-mastery-silver": 2,
-        },
+  it("shows the real total against the Gold threshold after Gold", () => {
+    const records = {
+      ...emptyAchievementRecords,
+      unlockedAchievements: {
+        "export-mastery-bronze": 1,
+        "export-mastery-gold": 3,
+        "export-mastery-silver": 2,
       },
-      statistics: { ...emptyUsageStatistics, optimizedExports: 250 },
-    });
+    };
 
-    expect(progress.current?.tier).toBe("gold");
-    expect(progress.next).toBeNull();
-    expect(progress.progress).toBeNull();
+    const progress = (optimizedExports: number) =>
+      getSeriesProgress(series("export-mastery"), {
+        records,
+        statistics: { ...emptyUsageStatistics, optimizedExports },
+      });
+
+    expect(progress(250)).toMatchObject({
+      current: { tier: "gold" },
+      next: null,
+      progress: { current: 250, target: 100 },
+    });
+    expect(progress(100).progress).toEqual({ current: 100, target: 100 });
+    expect(
+      getSeriesProgress(series("export-mastery"), { records, statistics: null }).progress,
+    ).toBeNull();
   });
 
   it("treats a partly unlocked series as both unlocked and locked for filtering", () => {

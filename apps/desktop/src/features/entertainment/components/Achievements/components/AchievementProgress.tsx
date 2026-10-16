@@ -6,7 +6,7 @@ import { achievementMetricUnits } from "../../../lib/achievements.utils";
 import type { AchievementMetric } from "../../../types/achievements.types";
 import { formatAchievementValue } from "../lib/achievements-format.utils";
 
-/** A progress bar with its current and target values in the metric's unit. */
+/** A progress bar with its current and target values in the metric's unit. The bar stops at full. */
 function AchievementProgress({
   label,
   metric,
@@ -35,7 +35,7 @@ function AchievementProgress({
       <Progress
         aria-label={t("achievements.itemProgress.label", { title })}
         aria-valuetext={t("achievements.itemProgress.value", { current, target })}
-        value={(progress.current / progress.target) * 100}
+        value={Math.min(100, (progress.current / progress.target) * 100)}
       />
     </div>
   );

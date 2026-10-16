@@ -71,8 +71,12 @@ achievements, which is the total in the dialog header and the Statistics dialog.
 
 A series card reflects its highest unlocked tier: its border, a subtle background tint, and the
 primary icon take that tier's color, and a badge names the tier. A locked series stays neutral with
-a `Locked` badge. The card shows progress toward the next tier and, after Gold, a completed state
-instead.
+a `Locked` badge. Before Gold the card shows `Next: <tier>` with progress toward that tier.
+After Gold the badge reads `Completed` and the date Gold was unlocked stays on the card, while the
+progress becomes `Total`: the real tracked value against the Gold threshold, such as `64 / 50`. The
+value keeps growing past the threshold, so a completed card keeps reflecting long-term use, and the
+bar stays full. The total is read from usage statistics like all progress, so it is not shown while
+statistics are unavailable.
 
 Below it, one chip per tier shows a `Medal` icon and the tier's threshold, such as `100 MB`, `1 GB`,
 and `10 GB`. Every chip keeps its own tier color, so lower tiers stay bronze or silver once a higher

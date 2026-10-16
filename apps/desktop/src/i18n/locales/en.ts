@@ -71,7 +71,6 @@ export const en = {
       title: "???",
     },
     series: {
-      allTiersUnlocked: "All tiers unlocked",
       completed: "Completed",
       nextTier: "Next: {{tier}}",
       tierLocked: "{{tier}}, {{target}}, locked",
@@ -79,6 +78,7 @@ export const en = {
       tierUnlocked: "{{tier}}, {{target}}, unlocked {{date}}",
       tierUnlockedNew: "{{tier}}, new",
       tierUnlockedOn: "{{tier}} unlocked {{date}}",
+      total: "Total",
     },
     status: {
       locked: "Locked",

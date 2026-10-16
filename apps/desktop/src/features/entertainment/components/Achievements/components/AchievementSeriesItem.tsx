@@ -92,15 +92,13 @@ function AchievementSeriesItem({ series }: { series: AchievementSeriesDefinition
         </div>
         <ItemDescription className="text-xs">{series.description(t)}</ItemDescription>
 
-        {completed ? (
-          <p className="text-xs text-muted-foreground">
-            {t("achievements.series.allTiersUnlocked")}
-          </p>
-        ) : progress && next ? (
+        {progress ? (
           <AchievementProgress
-            label={t("achievements.series.nextTier", {
-              tier: getAchievementTierLabel(next.tier, t),
-            })}
+            label={
+              next
+                ? t("achievements.series.nextTier", { tier: getAchievementTierLabel(next.tier, t) })
+                : t("achievements.series.total")
+            }
             metric={series.metric}
             progress={progress}
             title={title}

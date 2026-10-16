@@ -144,6 +144,19 @@ function getProgressToward(
   return { current: Math.min(value, target), target };
 }
 
+/**
+ * The tracked metric against a target without capping it, so a completed series can show the real
+ * total, or null while it cannot be measured.
+ */
+function getTotalToward(
+  metric: AchievementMetric,
+  target: number,
+  sources: AchievementSources,
+): { current: number; target: number } | null {
+  const value = readAchievementMetric(metric, sources);
+  return value === null ? null : { current: value, target };
+}
+
 function getStandaloneAchievementProgress(
   definition: StandaloneAchievementDefinition,
   sources: AchievementSources,
@@ -169,7 +182,8 @@ function getSeriesTiers(
 
 /**
  * The highest unlocked tier, the first tier still locked, and progress toward it. Unlocks come from
- * the records, so a tier counts only once it was actually unlocked.
+ * the records, so a tier counts only once it was actually unlocked. After Gold there is no next
+ * tier, and `progress` is the real total against the Gold threshold, which may exceed it.
  */
 function getSeriesProgress(series: AchievementSeriesDefinition, sources: AchievementSources) {
   const tiers = getSeriesTiers(series, sources.records);
@@ -179,7 +193,9 @@ function getSeriesProgress(series: AchievementSeriesDefinition, sources: Achieve
   return {
     current: unlocked.at(-1) ?? null,
     next,
-    progress: next ? getProgressToward(series.metric, next.target, sources) : null,
+    progress: next
+      ? getProgressToward(series.metric, next.target, sources)
+      : getTotalToward(series.metric, series.thresholds.gold, sources),
     tiers,
   };
 }
