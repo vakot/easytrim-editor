@@ -8,10 +8,7 @@ use std::{
     },
 };
 
-use crate::media::{
-    export::{AudioTrackCacheKey, AudioTrackProcessing},
-    probe::MediaInfo,
-};
+use crate::media::{audio_filters::compiler::CompiledChain, probe::MediaInfo};
 use crate::{
     domain::source::{ValidatedSource, validate_source},
     error::{AppError, AppErrorMessageId},
@@ -131,7 +128,7 @@ pub struct WaveformSource {
 struct WaveformRecord {
     width: u32,
     has_signal: Option<bool>,
-    processing: AudioTrackProcessing,
+    chain: CompiledChain,
     artifact: WaveformArtifact,
 }
 
@@ -153,8 +150,11 @@ struct ActiveSourceRecord {
     waveform_job: Option<WaveformJobRecord>,
     waveforms: HashMap<u32, WaveformRecord>,
     scene_boundaries_micros: Option<Vec<u64>>,
-    silence_ranges: HashMap<AudioTrackCacheKey, Vec<(u64, u64)>>,
+    silence_ranges: HashMap<ActivityCacheKey, Vec<(u64, u64)>>,
 }
+
+/// Activity results depend on the stream and the exact compiled chain, including measurements.
+pub type ActivityCacheKey = (u32, String);
 
 #[derive(Debug, Default)]
 struct SessionState {
@@ -494,7 +494,7 @@ impl AppState {
         stream_index: u32,
         width: u32,
         has_signal: Option<bool>,
-        processing: AudioTrackProcessing,
+        chain: CompiledChain,
         artifact: WaveformArtifact,
     ) -> Result<(), AppError> {
         let previous_waveform = {
@@ -511,7 +511,7 @@ impl AppState {
                 WaveformRecord {
                     width,
                     has_signal,
-                    processing,
+                    chain,
                     artifact,
                 },
             )
@@ -525,14 +525,14 @@ impl AppState {
         load_token: u64,
         stream_index: u32,
         width: u32,
-        processing: &AudioTrackProcessing,
+        chain: &CompiledChain,
     ) -> Result<Option<Option<bool>>, AppError> {
         let session = self.lock_session()?;
         let source = active_source(&session, load_token)?;
         Ok(source
             .waveforms
             .get(&stream_index)
-            .filter(|waveform| waveform.width == width && waveform.processing == *processing)
+            .filter(|waveform| waveform.width == width && waveform.chain == *chain)
             .map(|waveform| waveform.has_signal))
     }
 
@@ -576,19 +576,19 @@ impl AppState {
     pub fn cached_silence_ranges(
         &self,
         load_token: u64,
-        track: AudioTrackCacheKey,
+        track: &ActivityCacheKey,
     ) -> Result<Option<Vec<(u64, u64)>>, AppError> {
         let session = self.lock_session()?;
         Ok(active_source(&session, load_token)?
             .silence_ranges
-            .get(&track)
+            .get(track)
             .cloned())
     }
 
     pub fn install_silence_ranges(
         &self,
         load_token: u64,
-        track: AudioTrackCacheKey,
+        track: &ActivityCacheKey,
         ranges: Vec<(u64, u64)>,
     ) -> Result<(), AppError> {
         let mut session = self.lock_session()?;
@@ -596,7 +596,7 @@ impl AppState {
         if source.cancellation.load(Ordering::Acquire) {
             return Err(AppError::source_replaced());
         }
-        source.silence_ranges.insert(track, ranges);
+        source.silence_ranges.insert(track.clone(), ranges);
         Ok(())
     }
 

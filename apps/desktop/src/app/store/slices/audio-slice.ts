@@ -4,15 +4,16 @@ import { editingInstanceActivated } from "@/app/store/actions/editing-instance-a
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import {
-  audioTrackActivityProcessingChanged,
-  type AudioTrackProcessing,
+  areAudioFiltersValid,
+  type AudioFilter,
   type AudioTrackSettings,
   cloneAudioTrackProcessing,
-  DEFAULT_AUDIO_TRACK_PROCESSING,
-  getAudioTrackPreLevelEffects,
+  createDefaultAudioTrackProcessing,
+  isTrackVolumeValid,
   normalizeAudioTrackDefaults,
-  sameAudioTrackLoudnessInputs,
-  sameAudioTrackProcessing,
+  sameAudioFilters,
+  sameLoudnessInputs,
+  waveformShapeFilters,
 } from "@/domain/audio-processing";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeMetadataLanguageCode } from "@/domain/languages";
@@ -36,6 +37,7 @@ type AudioTrackAnalysis<T> =
 interface AudioTrackState extends AudioTrackSettings {
   activityAnalysis: AudioTrackAnalysis<AudioActivityRange[]>;
   activityVisible: boolean;
+  /** Measurements for every loudness normalization instance, in chain order. */
   loudnessAnalysis: AudioTrackAnalysis<LoudnessAnalysis>;
   waveform: WaveformState;
 }
@@ -88,74 +90,50 @@ const audioSlice = createSlice({
       track.metadata.language = normalizeMetadataLanguageCode(action.payload.language);
       track.metadata.title = action.payload.title || undefined;
     },
-    audioTrackGainChanged: (
+    /**
+     * Track Volume is a post-filter multiplier. It leaves filter processing, loudness
+     * measurements, activity ranges, and waveforms untouched.
+     */
+    audioTrackVolumeChanged: (
       state,
-      action: PayloadAction<{ gainDb: number; streamIndex: number }>,
+      action: PayloadAction<{ streamIndex: number; volume: number }>,
     ) => {
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
 
-      if (!track) return;
-      if (track.processing.gainDb === action.payload.gainDb) return;
-      track.processing.gainDb = action.payload.gainDb;
-      if (track.processing.loudnessNormalization === undefined) {
-        track.activityAnalysis = { status: "idle" };
-      }
+      if (!track || !isTrackVolumeValid(action.payload.volume)) return;
+      track.processing.volume = action.payload.volume;
     },
-    audioTrackProcessingChanged: (
+    /** Commits a complete, validated filter chain atomically. Invalid chains change nothing. */
+    audioTrackFiltersApplied: (
       state,
-      action: PayloadAction<{ processing: AudioTrackProcessing; streamIndex: number }>,
+      action: PayloadAction<{ filters: AudioFilter[]; streamIndex: number }>,
     ) => {
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
 
-      if (!track || sameAudioTrackProcessing(track.processing, action.payload.processing)) return;
-      const activityChanged = audioTrackActivityProcessingChanged(
-        track.processing,
-        action.payload.processing,
+      const { filters } = action.payload;
+
+      if (
+        !track ||
+        !areAudioFiltersValid(filters) ||
+        sameAudioFilters(track.processing.filters, filters)
+      ) {
+        return;
+      }
+
+      const loudnessInputsChanged = !sameLoudnessInputs(track.processing.filters, filters);
+      const waveformInputsChanged = !sameAudioFilters(
+        waveformShapeFilters(track.processing.filters),
+        waveformShapeFilters(filters),
       );
 
-      const loudnessInputsChanged = !sameAudioTrackLoudnessInputs(
-        track.processing,
-        action.payload.processing,
-      );
-
-      const waveformInputsChanged =
-        JSON.stringify(getAudioTrackPreLevelEffects(track.processing)) !==
-        JSON.stringify(getAudioTrackPreLevelEffects(action.payload.processing));
-
-      track.processing = cloneAudioTrackProcessing(action.payload.processing);
+      track.processing.filters = filters.map((filter) => ({ ...filter }));
       if (waveformInputsChanged) track.waveform = { status: "idle" };
       if (loudnessInputsChanged) track.loudnessAnalysis = { status: "idle" };
-      if (activityChanged) track.activityAnalysis = { status: "idle" };
-    },
-    audioTrackLoudnessNormalizationChanged: (
-      state,
-      action: PayloadAction<{
-        preset: AudioTrackProcessing["loudnessNormalization"] | null;
-        streamIndex: number;
-      }>,
-    ) => {
-      const track = state.tracks.find(
-        (candidate) => candidate.streamIndex === action.payload.streamIndex,
-      );
-
-      const processing = track
-        ? cloneAudioTrackProcessing({
-            gainDb: track.processing.gainDb,
-            ...(action.payload.preset === null
-              ? {}
-              : { loudnessNormalization: action.payload.preset }),
-          })
-        : null;
-
-      if (!track || processing === null || sameAudioTrackProcessing(track.processing, processing))
-        return;
-      const activityChanged = audioTrackActivityProcessingChanged(track.processing, processing);
-      track.processing = processing;
-      if (activityChanged) track.activityAnalysis = { status: "idle" };
+      track.activityAnalysis = { status: "idle" };
     },
     audioTrackActivityVisibilityToggled: (
       state,
@@ -379,8 +357,8 @@ function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTr
         title: saved?.metadata.title || undefined,
       },
       processing: saved?.processing
-        ? { ...saved.processing }
-        : { ...DEFAULT_AUDIO_TRACK_PROCESSING },
+        ? cloneAudioTrackProcessing(saved.processing)
+        : createDefaultAudioTrackProcessing(),
       waveform: { status: "idle" },
       loudnessAnalysis: { status: "idle" },
       activityAnalysis: { status: "idle" },
@@ -425,14 +403,13 @@ const {
   audioTrackActivityAnalysisStarted,
   audioTrackActivityVisibilityToggled,
   audioTrackDefaultChanged,
-  audioTrackGainChanged,
+  audioTrackFiltersApplied,
   audioTrackLoudnessAnalysisFailed,
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
-  audioTrackLoudnessNormalizationChanged,
   audioTrackMetadataChanged,
-  audioTrackProcessingChanged,
   audioTrackToggled,
+  audioTrackVolumeChanged,
   waveformDisplayFailed,
   waveformReady,
   waveformsFailed,
@@ -470,14 +447,13 @@ export {
   audioTrackActivityAnalysisStarted,
   audioTrackActivityVisibilityToggled,
   audioTrackDefaultChanged,
-  audioTrackGainChanged,
+  audioTrackFiltersApplied,
   audioTrackLoudnessAnalysisFailed,
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
-  audioTrackLoudnessNormalizationChanged,
   audioTrackMetadataChanged,
-  audioTrackProcessingChanged,
   audioTrackToggled,
+  audioTrackVolumeChanged,
   selectAudioTracks,
   selectVisibleAudioActivityMarkers,
   waveformDisplayFailed,

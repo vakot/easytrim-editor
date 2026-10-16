@@ -15,8 +15,8 @@ interface AudioPlaybackAdapter {
   seek: (seconds: number) => void;
   /** Previews the playback volume while it is adjusted; `null` restores the committed volume. */
   setLiveOutputVolume: (volumePercent: number | null) => void;
-  /** Previews a track gain while it is adjusted; `null` restores the committed gain. */
-  setLiveTrackGain: (streamIndex: number, gainDb: number | null) => void;
+  /** Previews a Track Volume while it is adjusted; `null` restores the committed volume. */
+  setLiveTrackVolume: (streamIndex: number, volume: number | null) => void;
   /** Source seconds per second; a running playback restarts from where it is. */
   setPlaybackRate: (rate: number) => void;
   startAlignedWithVideoAt: (videoPositionSeconds: number) => Promise<number>;

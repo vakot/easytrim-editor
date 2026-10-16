@@ -2,11 +2,12 @@ use crate::{
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
     error::{AppError, AppErrorMessageId},
     media::{
-        audio::{PlaybackPcmChunk, decode_playback_chunk},
-        export::{
-            AudioTrackCacheKey, AudioTrackProcessing, AudioTrackSelection,
-            validate_audio_track_selections,
+        audio::decode_playback_chunk,
+        audio_filters::{
+            compiler::compile_chain,
+            model::{AudioChainSelection, AudioFilter},
         },
+        export::validate_audio_stream,
         probe::{MediaInfo, inspect_media_cancellable as probe_media},
         proxy::generate_preview,
         scene_detection::detect_scene_boundaries,
@@ -18,7 +19,7 @@ use crate::{
 };
 use serde::Serialize;
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Manager, State, ipc::Response};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -148,7 +149,7 @@ pub async fn detect_scenes(
 #[tauri::command]
 pub async fn detect_silence(
     source_path: String,
-    track: AudioTrackSelection,
+    track: AudioChainSelection,
     state: State<'_, AppState>,
 ) -> Result<Vec<SilenceRange>, AppError> {
     let source = state.resolve_source_by_path(&source_path)?;
@@ -157,9 +158,12 @@ pub async fn detect_silence(
             AppErrorMessageId::MediaInspectTheVideoBeforeDetectingAudioActivity,
         )
     })?;
-    validate_audio_track_selections(media, std::slice::from_ref(&track))?;
-    let cache_key = AudioTrackCacheKey::from(&track);
-    if let Some(ranges) = state.cached_silence_ranges(source.load_token, cache_key)? {
+    validate_audio_stream(media, track.stream_index)?;
+    let cache_key = (
+        track.stream_index,
+        compile_chain(&track.filters, &track.loudness_measurements)?.canonical_graph(),
+    );
+    if let Some(ranges) = state.cached_silence_ranges(source.load_token, &cache_key)? {
         return Ok(ranges
             .into_iter()
             .map(|(start_micros, end_micros)| SilenceRange {
@@ -182,7 +186,7 @@ pub async fn detect_silence(
     .map_err(|_| AppError::internal("Silence detection stopped unexpectedly."))??;
     state.install_silence_ranges(
         load_token,
-        cache_key,
+        &cache_key,
         ranges
             .iter()
             .map(|range| (range.start_micros, range.end_micros))
@@ -247,11 +251,11 @@ fn record_ffprobe_event(
 pub async fn decode_audio_playback_chunk(
     operation_id: String,
     source_path: String,
-    track: AudioTrackSelection,
+    track: AudioChainSelection,
     start_micros: u64,
     duration_micros: u64,
     state: State<'_, AppState>,
-) -> Result<PlaybackPcmChunk, AppError> {
+) -> Result<Response, AppError> {
     let source = state.resolve_source_by_path(&source_path)?;
     let cancellation = state.register_operation(&operation_id)?;
     let result = tauri::async_runtime::spawn_blocking(move || {
@@ -260,7 +264,7 @@ pub async fn decode_audio_playback_chunk(
     .await
     .map_err(|_| AppError::internal("Audio playback chunk decoding stopped unexpectedly."));
     state.finish_operation(&operation_id)?;
-    result?
+    result?.map(Response::new)
 }
 
 #[tauri::command]
@@ -269,7 +273,7 @@ pub async fn prepare_waveforms(
     job_id: String,
     stream_indexes: Vec<u32>,
     width: u32,
-    processing_by_stream: HashMap<u32, AudioTrackProcessing>,
+    filters_by_stream: HashMap<u32, Vec<AudioFilter>>,
     state: State<'_, AppState>,
 ) -> Result<Vec<WaveformResult>, AppError> {
     if stream_indexes.is_empty() || stream_indexes.len() > 32 {
@@ -288,7 +292,7 @@ pub async fn prepare_waveforms(
 
     let waveform_source = state.begin_waveform_job(&source_path, job_id.clone())?;
     let media_token = waveform_source.source.load_token;
-    if processing_by_stream
+    if filters_by_stream
         .keys()
         .any(|stream_index| !stream_indexes.contains(stream_index))
     {
@@ -296,36 +300,24 @@ pub async fn prepare_waveforms(
             AppErrorMessageId::MediaWaveformProcessingSettingsMustMatchTheSelectedAudioStreams,
         ));
     }
-    let processing_by_stream = stream_indexes
-        .iter()
-        .map(|stream_index| {
-            (
-                *stream_index,
-                processing_by_stream
-                    .get(stream_index)
-                    .cloned()
-                    .unwrap_or(AudioTrackProcessing {
-                        gain_db: 0.0,
-                        loudness_normalization: None,
-                        effects: Vec::new(),
-                    }),
-            )
-        })
-        .collect::<HashMap<_, _>>();
-    let validation_tracks = stream_indexes
-        .iter()
-        .map(|stream_index| AudioTrackSelection {
-            loudness_analysis: None,
-            stream_index: *stream_index,
-            processing: processing_by_stream[stream_index].clone(),
-        })
-        .collect::<Vec<_>>();
     let media = waveform_source.source.media.as_ref().ok_or_else(|| {
         AppError::invalid_request(
             AppErrorMessageId::MediaAudioStreamMetadataIsUnavailableForWaveformGeneration,
         )
     })?;
-    validate_audio_track_selections(media, &validation_tracks)?;
+    // Waveforms show the source shape after any leading shaping filters; measurements are never
+    // available here, so a normalization instance is rejected by the compiler.
+    let chain_by_stream = stream_indexes
+        .iter()
+        .map(|stream_index| {
+            validate_audio_stream(media, *stream_index)?;
+            let filters = filters_by_stream
+                .get(stream_index)
+                .map(Vec::as_slice)
+                .unwrap_or_default();
+            Ok((*stream_index, compile_chain(filters, &[])?))
+        })
+        .collect::<Result<HashMap<_, _>, AppError>>()?;
     for stream_index in &stream_indexes {
         validate_waveform_request(
             &waveform_source.source.audio_stream_indexes,
@@ -337,9 +329,9 @@ pub async fn prepare_waveforms(
     let mut results = Vec::with_capacity(stream_indexes.len());
     let mut pending_stream_indexes = Vec::new();
     for stream_index in &stream_indexes {
-        let processing = &processing_by_stream[stream_index];
+        let chain = &chain_by_stream[stream_index];
         if let Some(has_signal) =
-            state.waveform_activity_if_ready(media_token, *stream_index, width, processing)?
+            state.waveform_activity_if_ready(media_token, *stream_index, width, chain)?
         {
             results.push(ready_waveform(
                 media_token,
@@ -358,13 +350,13 @@ pub async fn prepare_waveforms(
         return Ok(results);
     }
 
-    let processing_for_generation = processing_by_stream.clone();
+    let chain_for_generation = chain_by_stream.clone();
     let generated = tauri::async_runtime::spawn_blocking(move || {
         generate_waveforms(
             &waveform_source,
             &pending_stream_indexes,
             width,
-            &processing_for_generation,
+            &chain_for_generation,
         )
     })
     .await
@@ -379,7 +371,7 @@ pub async fn prepare_waveforms(
                     stream_index,
                     width,
                     has_signal,
-                    processing_by_stream[&stream_index].clone(),
+                    chain_by_stream[&stream_index].clone(),
                     artifact,
                 )?;
                 results.push(ready_waveform(

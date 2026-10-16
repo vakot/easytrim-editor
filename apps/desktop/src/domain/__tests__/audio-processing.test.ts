@@ -1,26 +1,37 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS,
-  audioTrackActivityProcessingChanged,
-  audioTrackLevelMode,
+  areAudioFiltersValid,
+  type AudioFilter,
   audioTrackLoudnessInputsKey,
-  audioTrackNormalizationGainDb,
-  audioTrackPlaybackFfmpegProcessing,
-  audioTrackPlaybackRuntimeGainDb,
-  type AudioTrackProcessing,
-  effectiveAudioTrackGainDb,
-  getAudioTrackLiveHighPassEffects,
-  getAudioTrackSignalEffect,
-  getAudioTrackSignalEffects,
-  loudnessNormalizationTargets,
+  clampTrackVolume,
   normalizeAudioTrackDefaults,
-  parseAudioTrackSignalEffects,
-  removeAudioTrackSignalEffect,
-  sameAudioTrackLoudnessInputs,
+  parseAudioTrackProcessing,
+  sameAudioFilters,
+  sameLoudnessInputs,
   serializeAudioTrackSettings,
-  setAudioTrackSignalEffect,
+  waveformShapeFilters,
 } from "../audio-processing";
+
+const highPass = (id: string, cutoffHz = 80): AudioFilter => ({ cutoffHz, id, type: "highPass" });
+const gain = (id: string, gainDb: number): AudioFilter => ({ gainDb, id, type: "gain" });
+const normalization = (id: string, targetLufs = -16): AudioFilter => ({
+  id,
+  loudnessRangeLu: 11,
+  maxTruePeakDb: -1.5,
+  targetLufs,
+  type: "loudnessNormalization",
+});
+
+const limiter = (id: string, ceilingDb = -1): AudioFilter => ({
+  attackMs: 5,
+  ceilingDb,
+  id,
+  releaseMs: 50,
+  type: "limiter",
+});
+
+const trim = { endMicros: 4_000_000, startMicros: 1_000_000 };
 
 describe("audio track metadata", () => {
   it("serializes output metadata under metadata and normalizes its language code", () => {
@@ -28,361 +39,107 @@ describe("audio track metadata", () => {
       serializeAudioTrackSettings({
         enabled: true,
         metadata: { isDefault: true, language: "ru", title: "Commentary" },
-        processing: { gainDb: -2 },
+        processing: { filters: [gain("g", -2)], volume: 0.5 },
         streamIndex: 4,
       }),
     ).toEqual({
       enabled: true,
       metadata: { isDefault: true, language: "rus", title: "Commentary" },
-      processing: { gainDb: -2 },
+      processing: { filters: [gain("g", -2)], volume: 0.5 },
       streamIndex: 4,
     });
   });
 
   it("keeps the default flag under metadata while normalizing disabled tracks", () => {
+    const processing = { filters: [], volume: 1 };
     expect(
       normalizeAudioTrackDefaults([
-        {
-          enabled: false,
-          metadata: { isDefault: true, title: "Disabled" },
-          processing: { gainDb: 0 },
-          streamIndex: 2,
-        },
-        {
-          enabled: true,
-          metadata: { isDefault: false, language: "rus" },
-          processing: { gainDb: 0 },
-          streamIndex: 4,
-        },
-      ]),
-    ).toEqual([
-      {
-        enabled: false,
-        metadata: { isDefault: false, title: "Disabled" },
-        processing: { gainDb: 0 },
-        streamIndex: 2,
-      },
-      {
-        enabled: true,
-        metadata: { isDefault: true, language: "rus" },
-        processing: { gainDb: 0 },
-        streamIndex: 4,
-      },
-    ]);
+        { enabled: false, metadata: { isDefault: true }, processing, streamIndex: 2 },
+        { enabled: true, metadata: { isDefault: false }, processing, streamIndex: 4 },
+      ]).map((track) => track.metadata.isDefault),
+    ).toEqual([false, true]);
   });
 });
 
-describe("audio track level policy", () => {
-  it("uses normalization instead of manual gain while preserving the stored gain", () => {
-    const processing = { gainDb: -2.5, loudnessNormalization: "streaming" as const };
-
-    expect(audioTrackLevelMode(processing)).toBe("normalized");
-    expect(effectiveAudioTrackGainDb(processing)).toBe(0);
-    expect(processing.gainDb).toBe(-2.5);
-    expect(effectiveAudioTrackGainDb({ gainDb: processing.gainDb })).toBe(-2.5);
-  });
-
-  it("keeps high-pass and gain live while decoding complex effects through FFmpeg", () => {
-    const limited = {
-      gainDb: 6,
-      effects: [
-        { cutoffHz: 80, stage: "cleanup", type: "highPass" },
-        { preset: "medium", stage: "cleanup", type: "noiseReduction" },
-        { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
-      ],
-    } satisfies AudioTrackProcessing;
-
-    const linear = { gainDb: 6 };
-
-    expect(audioTrackPlaybackFfmpegProcessing(limited)).toEqual({
-      ...limited,
-      effects: [
-        { preset: "medium", stage: "cleanup", type: "noiseReduction" },
-        { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
-      ],
-      gainDb: 0,
-    });
-    expect(getAudioTrackLiveHighPassEffects(limited)).toEqual([
-      { cutoffHz: 80, stage: "cleanup", type: "highPass" },
-    ]);
-    expect(audioTrackPlaybackRuntimeGainDb(limited)).toBe(6);
-    expect(audioTrackPlaybackRuntimeGainDb(limited, 8)).toBe(8);
-    const normalized = { ...limited, loudnessNormalization: "streaming" as const };
-    expect(audioTrackPlaybackFfmpegProcessing(normalized)).toEqual({
-      ...normalized,
-      effects: [
-        { preset: "medium", stage: "cleanup", type: "noiseReduction" },
-        { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
-      ],
-      gainDb: 0,
-    });
-    expect(audioTrackPlaybackFfmpegProcessing(linear)).toEqual({ gainDb: 0 });
-    expect(audioTrackPlaybackRuntimeGainDb(linear)).toBe(6);
-  });
-
-  it("treats normalization targets as analysis independent and reports its level targets", () => {
-    expect(loudnessNormalizationTargets("streaming")).toEqual({
-      maxTruePeakDb: -1.5,
-      targetLufs: -16,
-    });
+describe("ordered filter chain validation", () => {
+  it("validates identifiers and every parameter range", () => {
+    expect(areAudioFiltersValid([gain("a", 0), gain("b", 24)])).toBe(true);
+    expect(areAudioFiltersValid([gain("a", 0), gain("a", 1)])).toBe(false);
+    expect(areAudioFiltersValid([gain("bad id", 0)])).toBe(false);
+    expect(areAudioFiltersValid([gain("a", 25)])).toBe(false);
+    expect(areAudioFiltersValid([highPass("hp", 5)])).toBe(false);
     expect(
-      audioTrackActivityProcessingChanged(
-        { gainDb: -5, loudnessNormalization: "streaming" },
-        { gainDb: 7, loudnessNormalization: "streaming" },
-      ),
+      areAudioFiltersValid([{ ...limiter("lim"), releaseMs: Number.NaN } as AudioFilter]),
     ).toBe(false);
   });
 
-  it("keys loudness analysis by trim and track processing effects", () => {
-    const trim = { startMicros: 1_000_000, endMicros: 8_000_000 };
-    const processing = { gainDb: -4, loudnessNormalization: "streaming" as const };
-    const initial = audioTrackLoudnessInputsKey("source-a", 2, trim, processing);
-    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, processing)).toBe(initial);
-    expect(
-      audioTrackLoudnessInputsKey("source-a", 2, { ...trim, startMicros: 2_000_000 }, processing),
-    ).not.toBe(initial);
-    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, { ...processing, gainDb: 2 })).toBe(
-      initial,
+  it("compares chains independently of object key order", () => {
+    const reordered = { type: "gain", gainDb: 3, id: "a" } as AudioFilter;
+    expect(sameAudioFilters([gain("a", 3)], [reordered])).toBe(true);
+    expect(sameAudioFilters([gain("a", 3), highPass("hp")], [highPass("hp"), gain("a", 3)])).toBe(
+      false,
     );
-    expect(
-      audioTrackLoudnessInputsKey("source-a", 2, trim, {
-        ...processing,
-        loudnessNormalization: { mode: "custom", targetLufs: -18, maxTruePeakDb: -2 },
-      }),
-    ).toBe(initial);
-    const upstreamProcessing = {
-      ...processing,
-      effects: [{ type: "highPass" as const, stage: "cleanup" as const, cutoffHz: 100 }],
-    };
+  });
+});
 
-    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, upstreamProcessing)).not.toBe(initial);
-    expect(sameAudioTrackLoudnessInputs(processing, upstreamProcessing)).toBe(false);
-    const finalProtectionProcessing = {
-      ...processing,
-      effects: [{ type: "highPass" as const, stage: "finalProtection" as const, cutoffHz: 120 }],
-    };
-
-    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, finalProtectionProcessing)).toBe(
-      initial,
-    );
-    expect(sameAudioTrackLoudnessInputs(processing, finalProtectionProcessing)).toBe(true);
-    expect(audioTrackActivityProcessingChanged(processing, finalProtectionProcessing)).toBe(true);
-    const limitedProcessing = {
-      ...processing,
-      effects: [{ type: "limiter" as const, stage: "finalProtection" as const, ceilingDb: -1 }],
-    };
-
-    expect(audioTrackLoudnessInputsKey("source-a", 2, trim, limitedProcessing)).toBe(initial);
-    expect(sameAudioTrackLoudnessInputs(processing, limitedProcessing)).toBe(true);
-    expect(audioTrackActivityProcessingChanged(processing, limitedProcessing)).toBe(true);
-    expect(audioTrackLoudnessInputsKey("source-b", 2, trim, processing)).not.toBe(initial);
-    expect(sameAudioTrackLoudnessInputs(processing, { ...processing, gainDb: 2 })).toBe(true);
-    expect(sameAudioTrackLoudnessInputs(processing, upstreamProcessing)).toBe(false);
+describe("loudness measurement identity", () => {
+  it("is null without a normalization instance", () => {
+    expect(audioTrackLoudnessInputsKey("source", 1, trim, [gain("a", 3)])).toBeNull();
   });
 
-  it("keys loudness analysis differently for each noise-reduction preset", () => {
-    const trim = { startMicros: 0, endMicros: 4_000_000 };
-    const keyForPreset = (preset: "light" | "medium" | "strong") =>
-      audioTrackLoudnessInputsKey("source-a", 2, trim, {
-        gainDb: 0,
-        effects: [{ preset, stage: "cleanup", type: "noiseReduction" }],
-      });
-
-    expect(keyForPreset("light")).not.toBe(keyForPreset("medium"));
-    expect(keyForPreset("medium")).not.toBe(keyForPreset("strong"));
+  it("changes with upstream filters, order, and range but not downstream processing", () => {
+    const base = [highPass("hp"), normalization("norm")];
+    const key = audioTrackLoudnessInputsKey("source", 1, trim, base);
+    expect(
+      audioTrackLoudnessInputsKey("source", 1, trim, [...base, gain("post", 6), limiter("lim")]),
+    ).toBe(key);
+    expect(
+      audioTrackLoudnessInputsKey("source", 1, trim, [highPass("hp"), normalization("norm", -23)]),
+    ).toBe(key);
+    expect(
+      audioTrackLoudnessInputsKey("source", 1, trim, [highPass("hp", 100), normalization("norm")]),
+    ).not.toBe(key);
+    expect(
+      audioTrackLoudnessInputsKey("source", 1, trim, [normalization("norm"), highPass("hp")]),
+    ).not.toBe(key);
+    expect(
+      audioTrackLoudnessInputsKey("source", 1, { ...trim, endMicros: 5_000_000 }, base),
+    ).not.toBe(key);
   });
 
-  it("keeps same-stage signal effects in canonical order as effects are added and updated", () => {
-    const highPass = { cutoffHz: 120, stage: "cleanup", type: "highPass" } as const;
-    const noiseReduction = {
-      preset: "medium",
-      stage: "cleanup",
-      type: "noiseReduction",
-    } as const;
-
-    const highPassThenNoiseReduction = setAudioTrackSignalEffect(
-      setAudioTrackSignalEffect({ gainDb: 0 }, highPass),
-      noiseReduction,
-    );
-
-    const noiseReductionThenHighPass = setAudioTrackSignalEffect(
-      setAudioTrackSignalEffect({ gainDb: 0 }, noiseReduction),
-      highPass,
-    );
-
-    expect(getAudioTrackSignalEffects(highPassThenNoiseReduction)).toEqual([
-      highPass,
-      noiseReduction,
-    ]);
-    expect(getAudioTrackSignalEffects(noiseReductionThenHighPass)).toEqual(
-      getAudioTrackSignalEffects(highPassThenNoiseReduction),
-    );
+  it("includes earlier normalization targets when a later instance depends on them", () => {
+    const chain = [normalization("first", -20), gain("g", 3), normalization("second")];
     expect(
-      getAudioTrackSignalEffect(
-        setAudioTrackSignalEffect(highPassThenNoiseReduction, {
-          ...noiseReduction,
-          preset: "strong",
-        }),
-        "noiseReduction",
-      )?.preset,
-    ).toBe("strong");
-    expect(
-      getAudioTrackSignalEffects(
-        setAudioTrackSignalEffect(highPassThenNoiseReduction, {
-          ...noiseReduction,
-          preset: "strong",
-        }),
-      )[0],
-    ).toEqual(highPass);
-    const duplicateNoiseReduction = setAudioTrackSignalEffect(
-      {
-        gainDb: 0,
-        effects: [
-          { ...noiseReduction, preset: "light" },
-          { ...noiseReduction, preset: "medium" },
-          highPass,
-        ],
-      },
-      { ...noiseReduction, preset: "strong" },
-    );
-
-    expect(
-      getAudioTrackSignalEffects(duplicateNoiseReduction).filter(
-        (effect) => effect.type === "noiseReduction",
-      ),
-    ).toEqual([{ ...noiseReduction, preset: "strong" }]);
-  });
-
-  it("edits and disables only the cleanup high-pass across every preset", () => {
-    const processing = setAudioTrackSignalEffect(
-      setAudioTrackSignalEffect(
-        { gainDb: -2 },
-        {
-          preset: "medium",
-          stage: "cleanup",
-          type: "noiseReduction",
-        },
-      ),
-      { cutoffHz: 60, stage: "dynamics", type: "highPass" },
-    );
-
-    const withFinalProtectionHighPass = setAudioTrackSignalEffect(processing, {
-      cutoffHz: 120,
-      stage: "finalProtection",
-      type: "highPass",
-    });
-
-    let currentProcessing = setAudioTrackSignalEffect(withFinalProtectionHighPass, {
-      cutoffHz: 60,
-      stage: "cleanup",
-      type: "highPass",
-    });
-
-    for (const cutoffHz of AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS) {
-      currentProcessing = setAudioTrackSignalEffect(currentProcessing, {
-        cutoffHz,
-        stage: "cleanup",
-        type: "highPass",
-      });
-
-      const updated = currentProcessing;
-      const effects = getAudioTrackSignalEffects(updated);
-
-      expect(getAudioTrackSignalEffect(updated, "highPass", "cleanup")).toEqual({
-        cutoffHz,
-        stage: "cleanup",
-        type: "highPass",
-      });
-      expect(getAudioTrackSignalEffect(updated, "highPass", "dynamics")).toEqual({
-        cutoffHz: 60,
-        stage: "dynamics",
-        type: "highPass",
-      });
-      expect(getAudioTrackSignalEffect(updated, "highPass", "finalProtection")).toEqual({
-        cutoffHz: 120,
-        stage: "finalProtection",
-        type: "highPass",
-      });
-      expect(effects.map(({ stage, type }) => `${stage}:${type}`)).toEqual([
-        "cleanup:highPass",
-        "cleanup:noiseReduction",
-        "dynamics:highPass",
-        "finalProtection:highPass",
-      ]);
-      expect(
-        effects.filter(({ stage, type }) => type === "highPass" && stage === "cleanup"),
-      ).toHaveLength(1);
-    }
-
-    const off = removeAudioTrackSignalEffect(currentProcessing, "highPass", "cleanup");
-
-    expect(getAudioTrackSignalEffect(off, "highPass", "cleanup")).toBeUndefined();
-    expect(getAudioTrackSignalEffects(off)).toEqual([
-      { preset: "medium", stage: "cleanup", type: "noiseReduction" },
-      { cutoffHz: 60, stage: "dynamics", type: "highPass" },
-      { cutoffHz: 120, stage: "finalProtection", type: "highPass" },
-    ]);
-  });
-
-  it("rejects invalid signal-effect stages and high-pass cutoffs in the shared parser", () => {
-    expect(
-      parseAudioTrackSignalEffects([{ cutoffHz: 80, stage: "levelPolicy", type: "highPass" }]),
-    ).toBeUndefined();
-    expect(
-      parseAudioTrackSignalEffects([{ cutoffHz: 20_001, stage: "cleanup", type: "highPass" }]),
-    ).toBeUndefined();
-    expect(
-      parseAudioTrackSignalEffects([{ cutoffHz: Number.NaN, stage: "cleanup", type: "highPass" }]),
-    ).toBeUndefined();
-    expect(
-      parseAudioTrackSignalEffects([{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }]),
-    ).toEqual([{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }]);
-    expect(
-      parseAudioTrackSignalEffects([{ ceilingDb: -25, stage: "finalProtection", type: "limiter" }]),
-    ).toBeUndefined();
-  });
-
-  it("allows one high-pass effect per stage and rejects duplicates within a stage", () => {
-    expect(
-      parseAudioTrackSignalEffects([
-        { cutoffHz: 60, stage: "cleanup", type: "highPass" },
-        { cutoffHz: 80, stage: "cleanup", type: "highPass" },
+      sameLoudnessInputs(chain, [
+        normalization("first", -14),
+        gain("g", 3),
+        normalization("second"),
       ]),
-    ).toBeUndefined();
-
-    expect(
-      parseAudioTrackSignalEffects([
-        { cutoffHz: 60, stage: "cleanup", type: "highPass" },
-        { cutoffHz: 80, stage: "dynamics", type: "highPass" },
-        { cutoffHz: 100, stage: "finalProtection", type: "highPass" },
-      ]),
-    ).toEqual([
-      { cutoffHz: 60, stage: "cleanup", type: "highPass" },
-      { cutoffHz: 80, stage: "dynamics", type: "highPass" },
-      { cutoffHz: 100, stage: "finalProtection", type: "highPass" },
-    ]);
+    ).toBe(false);
+    expect(sameLoudnessInputs(chain, [...chain, limiter("lim")])).toBe(true);
   });
+});
 
-  it("removes a signal effect without disturbing other processing", () => {
+describe("waveform shape", () => {
+  it("uses only the leading shaping filters", () => {
     expect(
-      removeAudioTrackSignalEffect(
-        {
-          gainDb: -3,
-          effects: [{ preset: "light", stage: "cleanup", type: "noiseReduction" }],
-          loudnessNormalization: "streaming",
-        },
-        "noiseReduction",
+      waveformShapeFilters([highPass("hp"), gain("g", 6), highPass("late", 200)]).map(
+        ({ id }) => id,
       ),
-    ).toEqual({ gainDb: -3, loudnessNormalization: "streaming" });
+    ).toEqual(["hp"]);
+    expect(waveformShapeFilters([gain("g", 6), highPass("hp")])).toEqual([]);
   });
+});
 
-  it("normalizes from one cached pre-level measurement while respecting true peak", () => {
-    expect(
-      audioTrackNormalizationGainDb("streaming", { integratedLufs: -20, truePeakDb: -5 }),
-    ).toBe(3.5);
-    expect(
-      audioTrackNormalizationGainDb("streaming", { integratedLufs: -10, truePeakDb: -3 }),
-    ).toBe(-6);
-    expect(audioTrackNormalizationGainDb("streaming", {})).toBe(0);
+describe("track volume", () => {
+  it("parses only the current model and bounds Track Volume to 0-500%", () => {
+    expect(parseAudioTrackProcessing({ filters: [gain("g", 3)], volume: 3.5 })).toEqual({
+      filters: [gain("g", 3)],
+      volume: 3.5,
+    });
+    expect(parseAudioTrackProcessing({ filters: [], volume: 5.5 })).toBeUndefined();
+    expect(parseAudioTrackProcessing({ gainDb: 0 })).toBeUndefined();
+    expect(clampTrackVolume(7)).toBe(5);
+    expect(clampTrackVolume(-1)).toBe(0);
   });
 });

@@ -2,10 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
-import {
-  audioTrackGainChanged,
-  audioTrackLoudnessNormalizationChanged,
-} from "@/app/store/slices/audio-slice";
+import { audioTrackFiltersApplied, audioTrackVolumeChanged } from "@/app/store/slices/audio-slice";
 import { cropChanged, flipToggled, rotationChanged } from "@/app/store/slices/crop-slice";
 import {
   activeEditingInstanceChanged,
@@ -27,6 +24,14 @@ import {
 } from "../workspace-recovery";
 
 const CURRENT_KEY = "easytrim:workspace-recovery:current";
+const broadcastNormalization = {
+  id: "norm",
+  loudnessRangeLu: 11,
+  maxTruePeakDb: -2,
+  targetLufs: -23,
+  type: "loudnessNormalization" as const,
+};
+
 const CANDIDATE_KEY = "easytrim:workspace-recovery:candidate";
 
 function instance(id: string, source = firstSource) {
@@ -67,7 +72,14 @@ describe("workspace recovery contract", () => {
     const secondSnapshot = {
       ...second.snapshot,
       audio: {
-        tracks: [{ enabled: true, metadata: {}, streamIndex: 2, processing: { gainDb: -2.5 } }],
+        tracks: [
+          {
+            enabled: true,
+            metadata: {},
+            streamIndex: 2,
+            processing: { filters: [], volume: 0.75 },
+          },
+        ],
       },
     };
 
@@ -105,8 +117,8 @@ describe("workspace recovery contract", () => {
         },
       }),
     );
-    store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -4 }));
-    store.dispatch(audioTrackLoudnessNormalizationChanged({ preset: "broadcast", streamIndex: 2 }));
+    store.dispatch(audioTrackVolumeChanged({ streamIndex: 2, volume: 2.5 }));
+    store.dispatch(audioTrackFiltersApplied({ filters: [broadcastNormalization], streamIndex: 2 }));
     store.dispatch(exportArgumentsChanged("-crf 18"));
 
     const completedAttempt = {
@@ -205,9 +217,9 @@ describe("workspace recovery contract", () => {
             enabled: true,
             metadata: {},
             streamIndex: 2,
-            processing: { gainDb: -4, loudnessNormalization: "broadcast" },
+            processing: { filters: [broadcastNormalization], volume: 2.5 },
           },
-          { enabled: true, streamIndex: 4, processing: { gainDb: 0 } },
+          { enabled: true, streamIndex: 4, processing: { filters: [], volume: 1 } },
         ],
       },
       crop: { height: 0.7, width: 0.8, x: 0, y: 0.1 },
@@ -280,49 +292,86 @@ describe("workspace recovery contract", () => {
     expect(localStorage.getItem(CANDIDATE_KEY)).toBe(JSON.stringify(oldBackup));
   });
 
-  it("recovers workspaces with shared signal effects, including high-pass processing", () => {
+  it("migrates stage-based processing in recovered snapshots and stored export requests", () => {
     const store = createAppStore();
     store.dispatch(editingInstancesAdded([instance("filtered-track")]));
     const backup = createWorkspaceRecoveryBackup(store.getState(), {
       sessionId: "crashed-session",
     });
 
-    const recoveredInstance = backup.instances[0]!;
-    recoveredInstance.snapshot = {
-      ...recoveredInstance.snapshot,
-      audio: {
-        ...recoveredInstance.snapshot.audio,
-        tracks: [
-          {
-            enabled: true,
-            metadata: {},
-            streamIndex: 2,
-            processing: {
-              gainDb: 0,
-              effects: [
-                { cutoffHz: 80, stage: "cleanup", type: "highPass" },
-                { preset: "medium", stage: "cleanup", type: "noiseReduction" },
-                { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
-              ],
-            },
-          },
-        ],
-      },
+    const legacyProcessing = {
+      gainDb: 0,
+      effects: [
+        { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+        { preset: "medium", stage: "cleanup", type: "noiseReduction" },
+        { cutoffHz: 80, stage: "cleanup", type: "highPass" },
+      ],
     };
-    localStorage.setItem(CURRENT_KEY, JSON.stringify(backup));
+
+    const legacyBackup = JSON.parse(JSON.stringify(backup));
+    legacyBackup.instances[0].snapshot.audio.tracks = [
+      { enabled: true, metadata: {}, streamIndex: 2, processing: legacyProcessing },
+    ];
+    legacyBackup.instances[0].exportAttempts = [
+      {
+        ...createExportAttempt({
+          capturedAt: 1,
+          id: "legacy-attempt",
+          output: { displayName: "a.mp4", displayPath: "C:/a.mp4", outputId: "out" },
+          request: {
+            audioTracks: [],
+            mergeAudio: false,
+            rotationDegrees: 0,
+            sourcePath: firstSource.sourcePath,
+            trim: { endMicros: 5_000_000, startMicros: 0 },
+          },
+          route: "fast",
+          snapshot: backup.instances[0]!.snapshot,
+        }),
+        request: {
+          audioTracks: [
+            {
+              loudnessAnalysis: { integratedLufs: -20 },
+              processing: { gainDb: 3, loudnessNormalization: "streaming" },
+              streamIndex: 2,
+            },
+          ],
+          mergeAudio: false,
+          rotationDegrees: 0,
+          sourcePath: firstSource.sourcePath,
+          trim: { endMicros: 5_000_000, startMicros: 0 },
+        },
+      },
+    ];
+    localStorage.setItem(CURRENT_KEY, JSON.stringify(legacyBackup));
 
     initializeWorkspaceRecovery(store, "new-session", true);
 
-    expect(
-      getWorkspaceRecoveryCandidate()?.instances[0]?.snapshot.audio.tracks[0]?.processing,
-    ).toEqual({
-      gainDb: 0,
-      effects: [
-        { cutoffHz: 80, stage: "cleanup", type: "highPass" },
-        { preset: "medium", stage: "cleanup", type: "noiseReduction" },
-        { ceilingDb: -1, stage: "finalProtection", type: "limiter" },
+    const recovered = getWorkspaceRecoveryCandidate()?.instances[0];
+    expect(recovered?.snapshot.audio.tracks[0]?.processing).toEqual({
+      filters: [
+        { cutoffHz: 80, id: "legacy-1", type: "highPass" },
+        { id: "legacy-2", noiseFloorDb: -35, reductionDb: 12, type: "noiseReduction" },
+        { attackMs: 5, ceilingDb: -1, id: "legacy-3", releaseMs: 50, type: "limiter" },
       ],
+      volume: 1,
     });
+    expect(recovered?.exportAttempts[0]?.request.audioTracks).toEqual([
+      {
+        filters: [
+          {
+            id: "legacy-1",
+            loudnessRangeLu: 11,
+            maxTruePeakDb: -1.5,
+            targetLufs: -16,
+            type: "loudnessNormalization",
+          },
+        ],
+        loudnessMeasurements: [{ filterId: "legacy-1", integratedLufs: -20 }],
+        streamIndex: 2,
+        volume: 1,
+      },
+    ]);
   });
 
   it("migrates root-level metadata from recovered snapshots and queued export snapshots", () => {
@@ -336,7 +385,7 @@ describe("workspace recovery contract", () => {
           {
             enabled: true,
             metadata: { isDefault: true, language: "rus", title: "Commentary" },
-            processing: { gainDb: 0 },
+            processing: { filters: [], volume: 1 },
             streamIndex: 2,
           },
         ],

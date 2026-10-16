@@ -129,7 +129,7 @@ function createAudioAttempt(id: string, format: "m4a" | "mp3" | "wav") {
       outputId: id,
     },
     request: {
-      audioTracks: [{ processing: { gainDb: 0 }, streamIndex: 1 }],
+      audioTracks: [{ filters: [], streamIndex: 1, volume: 1 }],
       format,
       mergeAudio: false,
       sourcePath: firstSource.sourcePath,

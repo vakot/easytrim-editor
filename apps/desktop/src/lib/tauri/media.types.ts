@@ -49,10 +49,11 @@ interface ThumbnailDescriptor {
   url: string;
 }
 
+/** Interleaved processed stereo float PCM at 48 kHz. */
 interface PlaybackPcmChunk {
-  channels: number;
-  sampleRate: number;
-  samples: number[];
+  channels: 2;
+  sampleRate: 48_000;
+  samples: Float32Array;
 }
 
 interface SilenceRange {

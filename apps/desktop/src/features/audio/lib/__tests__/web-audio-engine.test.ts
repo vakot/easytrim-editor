@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { AudioTrackSelection } from "@/domain/audio-processing";
+import type { AudioChainSelection } from "@/domain/audio-processing";
 
 import { WebAudioEngine } from "../web-audio-engine";
 
@@ -106,8 +106,8 @@ function createContext() {
   };
 }
 
-function selection(streamIndex: number): AudioTrackSelection {
-  return { processing: { gainDb: 0 }, streamIndex };
+function selection(streamIndex: number): AudioChainSelection {
+  return { filters: [], streamIndex };
 }
 
 function chunk(durationMicros = 2_000_000) {
@@ -115,7 +115,7 @@ function chunk(durationMicros = 2_000_000) {
   return {
     channels: 2,
     sampleRate: 48_000,
-    samples: Array.from({ length: frameCount * 2 }, () => 100),
+    samples: new Float32Array(frameCount * 2).fill(0.25),
   };
 }
 
@@ -139,9 +139,7 @@ describe("WebAudioEngine", () => {
     );
 
     engine.setDuration(8_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
     await engine.startAt(0);
     const oldCompletion = sources[0]!.onended;
     engine.pause();
@@ -160,7 +158,7 @@ describe("WebAudioEngine", () => {
       const { context, setCurrentTime, sources } = createContext();
       const onError = vi.fn();
       let finishDecode: (() => void) | undefined;
-      const decode = vi.fn(async (_track: AudioTrackSelection, start: number, duration: number) => {
+      const decode = vi.fn(async (_track: AudioChainSelection, start: number, duration: number) => {
         if (start === 2_000_000)
           await new Promise<void>((resolve) => {
             finishDecode = resolve;
@@ -170,9 +168,7 @@ describe("WebAudioEngine", () => {
 
       const engine = new WebAudioEngine(context, decode, vi.fn(), onError);
       engine.setDuration(4_000_000);
-      engine.setTracks([
-        { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-      ]);
+      engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
       await engine.startAt(0);
       await vi.waitFor(() => expect(finishDecode).toBeDefined());
       setCurrentTime(7.1);
@@ -190,16 +186,14 @@ describe("WebAudioEngine", () => {
   it("keeps a fractional-sample resume's final decode within the native media range", async () => {
     const { context, sources } = createContext();
     const onError = vi.fn();
-    const decode = vi.fn(async (_track: AudioTrackSelection, start: number, duration: number) => {
+    const decode = vi.fn(async (_track: AudioChainSelection, start: number, duration: number) => {
       if (start + duration > 4_000_000) throw new Error("Native export range is invalid.");
       return chunk(duration);
     });
 
     const engine = new WebAudioEngine(context, decode, vi.fn(), onError);
     engine.setDuration(4_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
 
     await engine.startAt(1.463062);
     await vi.waitFor(() => expect(sources).toHaveLength(2));
@@ -225,15 +219,13 @@ describe("WebAudioEngine", () => {
       contextTime: outputTime,
       performanceTime: outputPerformanceTime,
     });
-    const decode = vi.fn(async (_track: AudioTrackSelection, _start: number, duration: number) =>
+    const decode = vi.fn(async (_track: AudioChainSelection, _start: number, duration: number) =>
       chunk(duration),
     );
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(4_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
     await engine.prepareAt(1);
     await expect(engine.startAlignedWithVideoAt(1)).resolves.toBeCloseTo(1.055, 5);
     expect(sources[0]?.start).toHaveBeenCalledWith(5.005, 0.055);
@@ -259,15 +251,13 @@ describe("WebAudioEngine", () => {
       contextTime: outputTime,
       performanceTime: outputPerformanceTime,
     });
-    const decode = vi.fn(async (_track: AudioTrackSelection, _start: number, duration: number) =>
+    const decode = vi.fn(async (_track: AudioChainSelection, _start: number, duration: number) =>
       chunk(duration),
     );
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(4_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
     engine.setPlaybackRate(2);
     await engine.prepareAt(1);
     // The output latency covers twice as much source time.
@@ -294,15 +284,13 @@ describe("WebAudioEngine", () => {
     "does not schedule past EOF when output lead exceeds the remaining range ($duration)",
     async ({ duration, position }) => {
       const { context, sources } = createContext();
-      const decode = vi.fn(async (_track: AudioTrackSelection, _start: number, length: number) =>
+      const decode = vi.fn(async (_track: AudioChainSelection, _start: number, length: number) =>
         chunk(length),
       );
 
       const engine = new WebAudioEngine(context, decode, vi.fn());
       engine.setDuration(duration);
-      engine.setTracks([
-        { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-      ]);
+      engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
       await engine.prepareAt(position / 1_000_000);
       await expect(engine.startAlignedWithVideoAt(position / 1_000_000)).resolves.toBe(
         duration / 1_000_000,
@@ -315,7 +303,7 @@ describe("WebAudioEngine", () => {
   it("pads leading gaps and a short valid stream end into the shared sample range", async () => {
     const { buffers, context, sources } = createContext();
     const decode = vi.fn(
-      async (track: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+      async (track: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         track.streamIndex === 1 ? chunk(750_000) : chunk(durationMicros),
     );
 
@@ -324,16 +312,14 @@ describe("WebAudioEngine", () => {
     engine.setTracks([
       {
         durationMicros: 1_000_000,
-        gainDb: 0,
-        liveHighPassEffects: [],
+        volume: 1,
         selection: selection(1),
         startTimeMicros: 1_000_000,
         streamIndex: 1,
       },
       {
         durationMicros: 2_000_000,
-        gainDb: 0,
-        liveHighPassEffects: [],
+        volume: 1,
         selection: selection(2),
         startTimeMicros: 0,
         streamIndex: 2,
@@ -354,7 +340,7 @@ describe("WebAudioEngine", () => {
     expect(sources[1]?.start).toHaveBeenCalledWith(expect.any(Number), 0);
     const delayedTrack = buffers[0]!;
     expect(delayedTrack.channels[0]![0]).toBe(0);
-    expect(delayedTrack.channels[0]![48_000]).toBeCloseTo(100 / 32768);
+    expect(delayedTrack.channels[0]![48_000]).toBe(0.25);
     expect(delayedTrack.channels[0]![1_800 * 48]).toBe(0);
 
     engine.close();
@@ -367,8 +353,7 @@ describe("WebAudioEngine", () => {
     engine.setTracks([
       {
         durationMicros: 4_000_000,
-        gainDb: 0,
-        liveHighPassEffects: [],
+        volume: 1,
         selection: selection(1),
         startTimeMicros: 0,
         streamIndex: 1,
@@ -386,7 +371,7 @@ describe("WebAudioEngine", () => {
     const onPlaybackError = vi.fn();
     let rejectNextBatch: ((error: Error) => void) | undefined;
     const decode = vi.fn(
-      async (_selection: AudioTrackSelection, startMicros: number, durationMicros: number) => {
+      async (_selection: AudioChainSelection, startMicros: number, durationMicros: number) => {
         if (startMicros > 0) {
           return new Promise<ReturnType<typeof chunk>>((_resolve, reject) => {
             rejectNextBatch = reject;
@@ -398,9 +383,7 @@ describe("WebAudioEngine", () => {
 
     const engine = new WebAudioEngine(context, decode, vi.fn(), onPlaybackError);
     engine.setDuration(8_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
 
     await engine.startAt(0);
 
@@ -419,7 +402,7 @@ describe("WebAudioEngine", () => {
     const onPlaybackError = vi.fn();
     let rejectSupersededBatch: ((error: Error) => void) | undefined;
     const decode = vi.fn(
-      (_selection: AudioTrackSelection, startMicros: number, durationMicros: number) => {
+      (_selection: AudioChainSelection, startMicros: number, durationMicros: number) => {
         if (startMicros === 2_000_000) {
           return new Promise<ReturnType<typeof chunk>>((_resolve, reject) => {
             rejectSupersededBatch = reject;
@@ -431,9 +414,7 @@ describe("WebAudioEngine", () => {
 
     const engine = new WebAudioEngine(context, decode, vi.fn(), onPlaybackError);
     engine.setDuration(8_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
 
     await engine.startAt(0);
     await vi.waitFor(() => expect(rejectSupersededBatch).toBeDefined());
@@ -460,7 +441,7 @@ describe("WebAudioEngine", () => {
     const onPlaybackError = vi.fn();
     let rejectPendingBatch: ((error: Error) => void) | undefined;
     const decode = vi.fn(
-      (_selection: AudioTrackSelection, startMicros: number, durationMicros: number) => {
+      (_selection: AudioChainSelection, startMicros: number, durationMicros: number) => {
         if (startMicros === 2_000_000) {
           return new Promise<ReturnType<typeof chunk>>((_resolve, reject) => {
             rejectPendingBatch = reject;
@@ -472,9 +453,7 @@ describe("WebAudioEngine", () => {
 
     const engine = new WebAudioEngine(context, decode, vi.fn(), onPlaybackError);
     engine.setDuration(8_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
 
     await engine.startAt(0);
     await vi.waitFor(() => expect(rejectPendingBatch).toBeDefined());
@@ -487,38 +466,24 @@ describe("WebAudioEngine", () => {
   });
 
   it("schedules every active track against the same AudioContext time", async () => {
-    const { context, filters, sources } = createContext();
+    const { context, sources } = createContext();
     const decode = vi.fn(
-      async (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+      async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         chunk(durationMicros),
     );
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(4_000_000);
     const tracks = [1, 2, 3, 4].map((streamIndex) => ({
-      gainDb: streamIndex,
-      liveHighPassEffects: [
-        { cutoffHz: 80 + streamIndex, stage: "cleanup" as const, type: "highPass" as const },
-      ],
       selection: {
-        processing: {
-          effects: [
-            {
-              preset: "medium" as const,
-              stage: "cleanup" as const,
-              type: "noiseReduction" as const,
-            },
-            {
-              ceilingDb: -1,
-              stage: "finalProtection" as const,
-              type: "limiter" as const,
-            },
-          ],
-          gainDb: 0,
-        },
+        filters: [
+          { cutoffHz: 80 + streamIndex, id: "hp", type: "highPass" as const },
+          { id: "nr", noiseFloorDb: -35, reductionDb: 12, type: "noiseReduction" as const },
+        ],
         streamIndex,
       },
       streamIndex,
+      volume: streamIndex / 2,
     }));
 
     engine.setTracks(tracks);
@@ -526,10 +491,8 @@ describe("WebAudioEngine", () => {
     await engine.startAt(1.25);
 
     expect(decode).toHaveBeenCalledTimes(8);
-    expect(context.createBiquadFilter).toHaveBeenCalledTimes(12);
-    expect(
-      filters.filter((filter) => filter.frequency.setTargetAtTime.mock.calls.at(-1)?.[0] > 0),
-    ).toHaveLength(4);
+    // Every filter is rendered natively; WebAudio only applies Track Volume.
+    expect(context.createBiquadFilter).not.toHaveBeenCalled();
     expect(sources.length).toBeGreaterThanOrEqual(4);
     expect(sources.map((source) => source.start.mock.calls[0]?.[0])).toEqual([
       sources[0]?.start.mock.calls[0]?.[0],
@@ -545,15 +508,13 @@ describe("WebAudioEngine", () => {
   it("starts a prepared audio range at the synchronized position without decoding again", async () => {
     const { context, sources } = createContext();
     const decode = vi.fn(
-      async (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+      async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         chunk(durationMicros),
     );
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(4_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
 
     await engine.prepareAt(1);
     await expect(engine.startPreparedAt(3)).rejects.toThrow(
@@ -571,15 +532,15 @@ describe("WebAudioEngine", () => {
   it("restarts a loop from its prefetched chunk without decoding again", async () => {
     const { context, sources } = createContext();
     const decode = vi.fn(
-      async (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+      async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         chunk(durationMicros),
     );
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(4_000_000);
     engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(2), streamIndex: 2 },
+      { selection: selection(1), streamIndex: 1, volume: 1 },
+      { selection: selection(2), streamIndex: 2, volume: 1 },
     ]);
 
     // Playback near the loop end is unaffected by decoding the loop start.
@@ -608,21 +569,17 @@ describe("WebAudioEngine", () => {
   it("discards a prefetched chunk when baked track processing changes", async () => {
     const { context } = createContext();
     const decode = vi.fn(
-      async (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+      async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         chunk(durationMicros),
     );
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(4_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
     await engine.prefetchAt(0);
 
-    const processed = { processing: { gainDb: 3 }, streamIndex: 1 };
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: processed, streamIndex: 1 },
-    ]);
+    const processed = { filters: [{ gainDb: 3, id: "g", type: "gain" as const }], streamIndex: 1 };
+    engine.setTracks([{ selection: processed, streamIndex: 1, volume: 1 }]);
     decode.mockClear();
     await engine.prepareAt(0);
 
@@ -638,15 +595,13 @@ describe("WebAudioEngine", () => {
     async ({ durationMicros, positionMicros }) => {
       const { context, sources } = createContext();
       const decode = vi.fn(
-        async (_selection: AudioTrackSelection, _startMicros: number, rangeMicros: number) =>
+        async (_selection: AudioChainSelection, _startMicros: number, rangeMicros: number) =>
           chunk(rangeMicros),
       );
 
       const engine = new WebAudioEngine(context, decode, vi.fn());
       engine.setDuration(durationMicros);
-      engine.setTracks([
-        { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-      ]);
+      engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
 
       await engine.prepareAt(positionMicros / 1_000_000);
       const audioStartPosition = await engine.startAlignedWithVideoAt(positionMicros / 1_000_000);
@@ -675,7 +630,7 @@ describe("WebAudioEngine", () => {
     const { context, sources } = createContext();
     let resolveChunk: ((value: ReturnType<typeof chunk>) => void) | undefined;
     const decode = vi.fn(
-      (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+      (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         new Promise<ReturnType<typeof chunk>>((resolve) => {
           resolveChunk = () => resolve(chunk(durationMicros));
         }),
@@ -683,9 +638,7 @@ describe("WebAudioEngine", () => {
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(4_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(2), streamIndex: 2 },
-    ]);
+    engine.setTracks([{ selection: selection(2), streamIndex: 2, volume: 1 }]);
 
     const starting = engine.startAt(0);
     await Promise.resolve();
@@ -701,7 +654,7 @@ describe("WebAudioEngine", () => {
     const { context, setCurrentTime } = createContext();
     let resolveChunk: (() => void) | undefined;
     const decode = vi.fn(
-      (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+      (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         new Promise<ReturnType<typeof chunk>>((resolve) => {
           resolveChunk = () => resolve(chunk(durationMicros));
         }),
@@ -709,9 +662,7 @@ describe("WebAudioEngine", () => {
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(8_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
 
     const starting = engine.startAt(1);
     await Promise.resolve();
@@ -741,7 +692,7 @@ describe("WebAudioEngine", () => {
     const { context, setCurrentTime, sources } = createContext();
     let resolveSeekChunk: (() => void) | undefined;
     const decode = vi.fn(
-      (_selection: AudioTrackSelection, startMicros: number, durationMicros: number) => {
+      (_selection: AudioChainSelection, startMicros: number, durationMicros: number) => {
         if (startMicros >= 3_000_000) {
           return new Promise<ReturnType<typeof chunk>>((resolve) => {
             resolveSeekChunk = () => resolve(chunk(durationMicros));
@@ -753,9 +704,7 @@ describe("WebAudioEngine", () => {
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(8_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
     await engine.startAt(0);
     const sourceCountBeforeSeek = sources.length;
 
@@ -781,7 +730,7 @@ describe("WebAudioEngine", () => {
     }> = [];
 
     const decode = vi.fn(
-      (_selection: AudioTrackSelection, startMicros: number, durationMicros: number) => {
+      (_selection: AudioChainSelection, startMicros: number, durationMicros: number) => {
         if (startMicros === 0) return Promise.resolve(chunk(durationMicros));
 
         return new Promise<ReturnType<typeof chunk>>((resolve) => {
@@ -796,9 +745,7 @@ describe("WebAudioEngine", () => {
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(8_000_000);
-    engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(1), streamIndex: 1 },
-    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
     await engine.startAt(0);
 
     engine.seek(1.2);
@@ -821,67 +768,43 @@ describe("WebAudioEngine", () => {
     engine.close();
   });
 
-  it("updates live processing without transport restart and reprimes for baked changes", async () => {
-    const { context, filters, sources } = createContext();
+  it("ramps Track Volume without re-rendering and reprimes only for filter changes", async () => {
+    const { context, gains, sources } = createContext();
     const decode = vi.fn(
-      async (_selection: AudioTrackSelection, _startMicros: number, durationMicros: number) =>
+      async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         chunk(durationMicros),
     );
 
     const engine = new WebAudioEngine(context, decode, vi.fn());
     engine.setDuration(8_000_000);
 
-    const selectionWithNoiseReduction = {
-      processing: {
-        effects: [
-          { preset: "light" as const, stage: "cleanup" as const, type: "noiseReduction" as const },
-        ],
-        gainDb: 0,
-      },
+    const lightNoiseReduction = {
+      filters: [{ id: "nr", noiseFloorDb: -40, reductionDb: 6, type: "noiseReduction" as const }],
       streamIndex: 1,
     };
 
-    engine.setTracks([
-      {
-        gainDb: 0,
-        liveHighPassEffects: [],
-        selection: selectionWithNoiseReduction,
-        streamIndex: 1,
-      },
-    ]);
+    engine.setTracks([{ selection: lightNoiseReduction, streamIndex: 1, volume: 1 }]);
+    const trackGain = gains.at(-1)!;
     await engine.startAt(0);
     const firstSource = sources[0]!;
+    const decodeCount = decode.mock.calls.length;
 
-    engine.setTracks([
-      {
-        gainDb: -3,
-        liveHighPassEffects: [{ cutoffHz: 120, stage: "cleanup", type: "highPass" }],
-        selection: selectionWithNoiseReduction,
-        streamIndex: 1,
-      },
-    ]);
+    engine.setTracks([{ selection: lightNoiseReduction, streamIndex: 1, volume: 3.5 }]);
+    engine.setTrackVolume(1, 0.5);
 
     expect(firstSource.stop).not.toHaveBeenCalled();
-    expect(filters[0]?.frequency.setTargetAtTime).toHaveBeenLastCalledWith(120, 5, 0.015);
+    expect(decode).toHaveBeenCalledTimes(decodeCount);
+    expect(trackGain.gain.setTargetAtTime).toHaveBeenCalledWith(3.5, 5, 0.015);
+    expect(trackGain.gain.setTargetAtTime).toHaveBeenLastCalledWith(0.5, 5, 0.015);
 
     engine.setTracks([
       {
-        gainDb: -3,
-        liveHighPassEffects: [{ cutoffHz: 120, stage: "cleanup", type: "highPass" }],
         selection: {
-          ...selectionWithNoiseReduction,
-          processing: {
-            effects: [
-              {
-                preset: "strong" as const,
-                stage: "cleanup" as const,
-                type: "noiseReduction" as const,
-              },
-            ],
-            gainDb: 0,
-          },
+          ...lightNoiseReduction,
+          filters: [{ ...lightNoiseReduction.filters[0]!, reductionDb: 20 }],
         },
         streamIndex: 1,
+        volume: 3.5,
       },
     ]);
 
@@ -893,7 +816,7 @@ describe("WebAudioEngine", () => {
     const { context } = createContext();
     const decodedStreamIndexes: number[] = [];
     const decode = vi.fn(
-      async (track: AudioTrackSelection, _startMicros: number, durationMicros: number) => {
+      async (track: AudioChainSelection, _startMicros: number, durationMicros: number) => {
         decodedStreamIndexes.push(track.streamIndex);
         return chunk(durationMicros);
       },
@@ -903,8 +826,7 @@ describe("WebAudioEngine", () => {
     engine.setDuration(8_000_000);
     engine.setTracks(
       [1, 2].map((streamIndex) => ({
-        gainDb: 0,
-        liveHighPassEffects: [],
+        volume: 1,
         selection: selection(streamIndex),
         streamIndex,
       })),
@@ -912,8 +834,8 @@ describe("WebAudioEngine", () => {
     await engine.startAt(1);
 
     engine.setTracks([
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(2), streamIndex: 2 },
-      { gainDb: 0, liveHighPassEffects: [], selection: selection(3), streamIndex: 3 },
+      { selection: selection(2), streamIndex: 2, volume: 1 },
+      { selection: selection(3), streamIndex: 3, volume: 1 },
     ]);
     await Promise.resolve();
     await Promise.resolve();
@@ -933,9 +855,7 @@ describe("WebAudioEngine", () => {
     );
 
     engine.setDuration(2_000_000);
-    engine.setTracks([
-      { gainDb: -6, liveHighPassEffects: [], selection: selection(4), streamIndex: 4 },
-    ]);
+    engine.setTracks([{ selection: selection(4), streamIndex: 4, volume: 0.501 }]);
     const trackGain = gains.at(-1)!;
 
     engine.setOutputGain(0.5);
@@ -952,7 +872,7 @@ describe("WebAudioEngine", () => {
     let resolveDelayedChunk: (() => void) | undefined;
     const decodedRanges: Array<{ startMicros: number; streamIndex: number }> = [];
     const decode = vi.fn(
-      (track: AudioTrackSelection, startMicros: number, durationMicros: number) => {
+      (track: AudioChainSelection, startMicros: number, durationMicros: number) => {
         decodedRanges.push({ startMicros, streamIndex: track.streamIndex });
         if (startMicros === 2_000_000 && track.streamIndex === 2) {
           return new Promise<ReturnType<typeof chunk>>((resolve) => {
@@ -967,8 +887,7 @@ describe("WebAudioEngine", () => {
     engine.setDuration(8_000_000);
     engine.setTracks(
       [1, 2].map((streamIndex) => ({
-        gainDb: 0,
-        liveHighPassEffects: [],
+        volume: 1,
         selection: selection(streamIndex),
         streamIndex,
       })),

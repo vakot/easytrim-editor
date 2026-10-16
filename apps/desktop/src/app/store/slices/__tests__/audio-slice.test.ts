@@ -9,11 +9,11 @@ import {
   audioReducer,
   audioTrackActivityAnalysisStarted,
   audioTrackDefaultChanged,
-  audioTrackGainChanged,
+  audioTrackFiltersApplied,
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
-  audioTrackProcessingChanged,
   audioTrackToggled,
+  audioTrackVolumeChanged,
   initialAudioState,
   selectAudioTracks,
   waveformReady,
@@ -31,13 +31,13 @@ function readyAudio() {
 describe("audio slice", () => {
   it("initializes tracks and keeps audio configuration source-bound", () => {
     const ready = readyAudio();
-    const adjusted = audioReducer(ready, audioTrackGainChanged({ streamIndex: 2, gainDb: -3.5 }));
+    const adjusted = audioReducer(ready, audioTrackVolumeChanged({ streamIndex: 2, volume: 3.5 }));
     const muted = audioReducer(adjusted, audioTrackToggled({ streamIndex: 2 }));
     const unmuted = audioReducer(muted, audioTrackToggled({ streamIndex: 2 }));
 
     expect(selectAudioTracks({ audio: ready } as never)).toHaveLength(2);
-    expect(unmuted.tracks[0]).toMatchObject({ enabled: true, processing: { gainDb: -3.5 } });
-    expect(ready.tracks[0]?.processing.gainDb).toBe(0);
+    expect(unmuted.tracks[0]).toMatchObject({ enabled: true, processing: { volume: 3.5 } });
+    expect(ready.tracks[0]?.processing).toEqual({ filters: [], volume: 1 });
   });
 
   it("keeps only the current waveform job and auto-mutes default silent tracks", () => {
@@ -75,7 +75,7 @@ describe("audio slice", () => {
     );
 
     expect(stale).toEqual(loading);
-    expect(current.tracks[0]).toMatchObject({ enabled: false, processing: { gainDb: 0 } });
+    expect(current.tracks[0]).toMatchObject({ enabled: false, processing: { volume: 1 } });
     expect(current.tracks[0]?.metadata.isDefault).toBe(false);
     expect(current.tracks[0]?.waveform).toMatchObject({ status: "ready", url: "media://current" });
     expect(current.tracks[1]?.metadata.isDefault).toBe(true);
@@ -87,12 +87,12 @@ describe("audio slice", () => {
       trim: { kind: "full-source" },
       crop: null,
       audioTracks: [
-        { enabled: false, streamIndex: 2, metadata: {}, processing: { gainDb: 0 } },
+        { enabled: false, streamIndex: 2, metadata: {}, processing: { filters: [], volume: 1 } },
         {
           enabled: true,
           streamIndex: 4,
           metadata: { language: "ru" },
-          processing: { gainDb: 0 },
+          processing: { filters: [], volume: 1 },
         },
       ],
     });
@@ -124,8 +124,23 @@ describe("audio slice", () => {
     ]);
   });
 
-  it("keeps loudness analysis independent from manual gain and clears trim-bound results", () => {
+  it("keeps analyses when only Track Volume changes and clears trim-bound results", () => {
     let state = readyAudio();
+    state = audioReducer(
+      state,
+      audioTrackFiltersApplied({
+        filters: [
+          {
+            id: "norm",
+            loudnessRangeLu: 11,
+            maxTruePeakDb: -1.5,
+            targetLufs: -16,
+            type: "loudnessNormalization",
+          },
+        ],
+        streamIndex: 2,
+      }),
+    );
     state = audioReducer(
       state,
       audioTrackLoudnessAnalysisStarted({
@@ -139,7 +154,7 @@ describe("audio slice", () => {
       audioTrackLoudnessAnalysisReady({
         cacheKey: "analysis-2",
         operationId: "loudness-2",
-        result: { integratedLufs: -18, truePeakDb: -4 },
+        result: [{ filterId: "norm", integratedLufs: -18, truePeakDb: -4 }],
         streamIndex: 2,
       }),
     );
@@ -147,99 +162,124 @@ describe("audio slice", () => {
       state,
       audioTrackActivityAnalysisStarted({ operationId: "activity-2", streamIndex: 2 }),
     );
-    state = audioReducer(
-      state,
-      audioTrackLoudnessAnalysisStarted({
-        cacheKey: "analysis-4",
-        operationId: "loudness-4",
-        streamIndex: 4,
-      }),
-    );
-    state = audioReducer(
-      state,
-      audioTrackActivityAnalysisStarted({ operationId: "activity-4", streamIndex: 4 }),
-    );
 
-    const adjusted = audioReducer(state, audioTrackGainChanged({ streamIndex: 2, gainDb: -2 }));
+    const adjusted = audioReducer(state, audioTrackVolumeChanged({ streamIndex: 2, volume: 0.5 }));
     expect(adjusted.tracks[0]).toMatchObject({
-      activityAnalysis: { status: "idle" },
+      activityAnalysis: { operationId: "activity-2", status: "loading" },
       loudnessAnalysis: { cacheKey: "analysis-2", status: "ready" },
+      processing: { volume: 0.5 },
     });
-    expect(adjusted.tracks[1]).toMatchObject({
-      activityAnalysis: { operationId: "activity-4", status: "loading" },
-      loudnessAnalysis: { operationId: "loudness-4", status: "loading" },
-    });
-
-    const normalized = audioReducer(
-      adjusted,
-      audioTrackProcessingChanged({
-        streamIndex: 2,
-        processing: { gainDb: -2, loudnessNormalization: "broadcast" },
-      }),
-    );
-
-    expect(normalized.tracks[0]?.loudnessAnalysis).toMatchObject({
-      cacheKey: "analysis-2",
-      status: "ready",
-    });
-
-    const processingWithUpstreamEffect = {
-      ...normalized.tracks[0]!.processing,
-      effects: [{ cutoffHz: 100, stage: "cleanup" as const, type: "highPass" as const }],
-    };
-
-    const upstreamChanged = audioReducer(
-      normalized,
-      audioTrackProcessingChanged({
-        streamIndex: 2,
-        processing: processingWithUpstreamEffect,
-      }),
-    );
-
-    expect(upstreamChanged.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
 
     const trimmed = audioReducer(
-      upstreamChanged,
+      adjusted,
       trimChanged({
         trim: { endMicros: 4_000_000, sourceDurationMicros: 5_000_000, startMicros: 0 },
       }),
     );
 
-    expect(trimmed.tracks.map(({ loudnessAnalysis }) => loudnessAnalysis.status)).toEqual([
-      "idle",
-      "idle",
-    ]);
-    expect(trimmed.tracks[1]?.activityAnalysis).toMatchObject({ status: "loading" });
+    expect(trimmed.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
   });
 
-  it("keeps a cached source-shape waveform when Limiter changes", () => {
+  it("ignores Track Volume outside 0-500%", () => {
+    const state = readyAudio();
+    expect(audioReducer(state, audioTrackVolumeChanged({ streamIndex: 2, volume: 5.01 }))).toBe(
+      state,
+    );
+  });
+
+  it("invalidates only the analyses whose inputs an applied chain changes", () => {
+    const normalization = {
+      id: "norm",
+      loudnessRangeLu: 11,
+      maxTruePeakDb: -1.5,
+      targetLufs: -16,
+      type: "loudnessNormalization" as const,
+    };
+
     let state = audioReducer(
       readyAudio(),
-      waveformsLoading({ jobId: "waveform-1", streamIndexes: [2], width: 800 }),
+      audioTrackFiltersApplied({
+        filters: [{ cutoffHz: 80, id: "hp", type: "highPass" }, normalization],
+        streamIndex: 2,
+      }),
     );
 
     state = audioReducer(
       state,
+      waveformsLoading({ jobId: "waveform-1", streamIndexes: [2], width: 800 }),
+    );
+    state = audioReducer(
+      state,
       waveformReady({
         jobId: "waveform-1",
-        streamIndex: 2,
         status: "ready",
+        streamIndex: 2,
         url: "media://waveform",
         width: 800,
       }),
     );
-
-    const changed = audioReducer(
+    state = audioReducer(
       state,
-      audioTrackProcessingChanged({
+      audioTrackLoudnessAnalysisStarted({ cacheKey: "k", operationId: "o", streamIndex: 2 }),
+    );
+    state = audioReducer(
+      state,
+      audioTrackLoudnessAnalysisReady({
+        cacheKey: "k",
+        operationId: "o",
+        result: [],
         streamIndex: 2,
-        processing: {
-          gainDb: 0,
-          effects: [{ ceilingDb: -1, stage: "finalProtection", type: "limiter" }],
-        },
       }),
     );
 
-    expect(changed.tracks[0]?.waveform).toMatchObject({ status: "ready", url: "media://waveform" });
+    const downstream = audioReducer(
+      state,
+      audioTrackFiltersApplied({
+        filters: [
+          { cutoffHz: 80, id: "hp", type: "highPass" },
+          { ...normalization, targetLufs: -23 },
+          { attackMs: 5, ceilingDb: -1, id: "lim", releaseMs: 50, type: "limiter" },
+        ],
+        streamIndex: 2,
+      }),
+    );
+
+    expect(downstream.tracks[0]?.loudnessAnalysis).toMatchObject({ status: "ready" });
+    expect(downstream.tracks[0]?.waveform).toMatchObject({ status: "ready" });
+    expect(downstream.tracks[0]?.activityAnalysis).toEqual({ status: "idle" });
+
+    const upstream = audioReducer(
+      downstream,
+      audioTrackFiltersApplied({
+        filters: [{ cutoffHz: 100, id: "hp", type: "highPass" }, normalization],
+        streamIndex: 2,
+      }),
+    );
+
+    expect(upstream.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
+    expect(upstream.tracks[0]?.waveform).toEqual({ status: "idle" });
+  });
+
+  it("rejects an invalid chain atomically", () => {
+    const state = audioReducer(
+      readyAudio(),
+      audioTrackFiltersApplied({
+        filters: [{ gainDb: 3, id: "keep", type: "gain" }],
+        streamIndex: 2,
+      }),
+    );
+
+    const rejected = audioReducer(
+      state,
+      audioTrackFiltersApplied({
+        filters: [
+          { gainDb: 3, id: "dup", type: "gain" },
+          { gainDb: 99, id: "dup", type: "gain" },
+        ],
+        streamIndex: 2,
+      }),
+    );
+
+    expect(rejected).toBe(state);
   });
 });

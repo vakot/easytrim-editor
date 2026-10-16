@@ -1,50 +1,95 @@
 import { normalizeMetadataLanguageCode } from "./languages";
 
-type LoudnessPreset = "webVideo" | "streaming" | "broadcast";
-const AUDIO_PROCESSING_STAGES = ["cleanup", "dynamics", "levelPolicy", "finalProtection"] as const;
-const AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS = [60, 80, 100, 120] as const;
-// Keep in sync with AudioTrackSignalEffect ordering in media/export.rs.
-const AUDIO_TRACK_SIGNAL_EFFECT_ORDER = ["highPass", "noiseReduction", "limiter"] as const;
-const AUDIO_TRACK_EFFECT_SUMMARY_ORDER = [
-  "cleanupHighPass",
+// Keep types, parameters, and ranges in sync with media/audio_filters/model.rs.
+const AUDIO_FILTER_TYPES = [
+  "highPass",
   "noiseReduction",
-  "loudnessNormalization",
   "limiter",
+  "loudnessNormalization",
+  "gain",
 ] as const;
 
-const SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS = ["noiseReduction", "limiter"] as const;
-type AudioProcessingStage = (typeof AUDIO_PROCESSING_STAGES)[number];
-type AudioTrackSignalEffect =
-  | {
-      cutoffHz: number;
-      stage: AudioProcessingStage;
-      type: "highPass";
-    }
-  | {
-      preset: NoiseReductionPreset;
-      stage: "cleanup";
-      type: "noiseReduction";
-    }
-  | {
-      ceilingDb: number;
-      stage: "finalProtection";
-      type: "limiter";
-    };
-type AudioTrackHighPass = Extract<AudioTrackSignalEffect, { type: "highPass" }>;
-type NoiseReductionPreset = "light" | "medium" | "strong";
+type AudioFilterType = (typeof AUDIO_FILTER_TYPES)[number];
 
-interface CustomLoudnessNormalization {
-  maxTruePeakDb: number;
-  mode: "custom";
-  targetLufs: number;
+interface HighPassFilter {
+  cutoffHz: number;
+  id: string;
+  type: "highPass";
 }
 
-type LoudnessNormalization = LoudnessPreset | CustomLoudnessNormalization;
+interface NoiseReductionFilter {
+  id: string;
+  noiseFloorDb: number;
+  reductionDb: number;
+  type: "noiseReduction";
+}
+
+interface LimiterFilter {
+  attackMs: number;
+  ceilingDb: number;
+  id: string;
+  releaseMs: number;
+  type: "limiter";
+}
+
+interface LoudnessNormalizationFilter {
+  id: string;
+  loudnessRangeLu: number;
+  maxTruePeakDb: number;
+  targetLufs: number;
+  type: "loudnessNormalization";
+}
+
+interface GainFilter {
+  gainDb: number;
+  id: string;
+  type: "gain";
+}
+
+/** One active instance in a track's ordered chain; array order is execution order. */
+type AudioFilter =
+  GainFilter | HighPassFilter | LimiterFilter | LoudnessNormalizationFilter | NoiseReductionFilter;
+
+type AudioFilterOfType<T extends AudioFilterType> = Extract<AudioFilter, { type: T }>;
+type AudioFilterParameters<T extends AudioFilterType> = Omit<AudioFilterOfType<T>, "id" | "type">;
+
+interface AudioParameterRange {
+  max: number;
+  min: number;
+}
+
+const AUDIO_FILTER_PARAMETER_RANGES = {
+  highPass: { cutoffHz: { min: 10, max: 20_000 } },
+  noiseReduction: {
+    reductionDb: { min: 0.01, max: 97 },
+    noiseFloorDb: { min: -80, max: -20 },
+  },
+  limiter: {
+    ceilingDb: { min: -24, max: 0 },
+    attackMs: { min: 0.1, max: 80 },
+    releaseMs: { min: 1, max: 8_000 },
+  },
+  loudnessNormalization: {
+    targetLufs: { min: -36, max: -5 },
+    maxTruePeakDb: { min: -9, max: 0 },
+    loudnessRangeLu: { min: 1, max: 50 },
+  },
+  gain: { gainDb: { min: -60, max: 24 } },
+} as const satisfies {
+  [T in AudioFilterType]: Record<keyof AudioFilterParameters<T>, AudioParameterRange>;
+};
+
+const MAX_AUDIO_FILTERS = 32;
+const MAX_AUDIO_FILTER_ID_LENGTH = 64;
+
+/** Track Volume is a linear amplitude multiplier applied after the filter chain. */
+const DEFAULT_TRACK_VOLUME = 1;
+const MAX_TRACK_VOLUME = 5;
+const TRACK_VOLUME_SLIDER_MAX = 2;
 
 interface AudioTrackProcessing {
-  effects?: AudioTrackSignalEffect[];
-  gainDb: number;
-  loudnessNormalization?: LoudnessNormalization;
+  filters: AudioFilter[];
+  volume: number;
 }
 
 interface AudioTrackMetadata {
@@ -60,12 +105,6 @@ interface AudioTrackSettings {
   streamIndex: number;
 }
 
-interface AudioTrackSelection {
-  loudnessAnalysis?: AudioLoudnessAnalysis;
-  processing: AudioTrackProcessing;
-  streamIndex: number;
-}
-
 interface AudioLoudnessAnalysis {
   inputLra?: number;
   inputThreshold?: number;
@@ -73,289 +112,197 @@ interface AudioLoudnessAnalysis {
   truePeakDb?: number;
 }
 
-const DEFAULT_AUDIO_TRACK_PROCESSING: AudioTrackProcessing = { gainDb: 0 };
-const DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB = -1;
-
-function audioTrackLevelMode(processing: AudioTrackProcessing): "manual" | "normalized" {
-  return processing.loudnessNormalization === undefined ? "manual" : "normalized";
+/** The loudness of the exact signal that reaches one normalization instance. */
+interface AudioFilterMeasurement extends AudioLoudnessAnalysis {
+  filterId: string;
 }
 
-function effectiveAudioTrackGainDb(processing: AudioTrackProcessing): number {
-  return audioTrackLevelMode(processing) === "manual" ? processing.gainDb : 0;
+/** A track's filter chain without Track Volume, as analysis, activity, and playback need it. */
+interface AudioChainSelection {
+  filters: AudioFilter[];
+  loudnessMeasurements?: AudioFilterMeasurement[];
+  streamIndex: number;
 }
 
-function audioTrackPlaybackFfmpegProcessing(
-  processing: AudioTrackProcessing,
-): AudioTrackProcessing {
-  // Web Audio owns high-pass and gain live; FFmpeg keeps noise reduction, normalization, and
-  // limiting aligned with export.
-  return {
-    ...processing,
-    gainDb: 0,
-    ...(processing.effects
-      ? { effects: processing.effects.filter((effect) => effect.type !== "highPass") }
-      : {}),
-  };
+/** An exported track: its filter chain followed by Track Volume. */
+interface AudioTrackSelection extends AudioChainSelection {
+  volume: number;
 }
 
-function getAudioTrackLiveHighPassEffects(processing: AudioTrackProcessing): AudioTrackHighPass[] {
-  return getAudioTrackSignalEffects(processing).filter(
-    (effect): effect is AudioTrackHighPass => effect.type === "highPass",
+function createDefaultAudioTrackProcessing(): AudioTrackProcessing {
+  return { filters: [], volume: DEFAULT_TRACK_VOLUME };
+}
+
+function audioFilterParameterNames<T extends AudioFilterType>(
+  type: T,
+): (keyof AudioFilterParameters<T>)[] {
+  return Object.keys(AUDIO_FILTER_PARAMETER_RANGES[type]) as (keyof AudioFilterParameters<T>)[];
+}
+
+function audioFilterParameterRange<T extends AudioFilterType>(
+  type: T,
+  parameter: keyof AudioFilterParameters<T>,
+): AudioParameterRange {
+  return (AUDIO_FILTER_PARAMETER_RANGES[type] as Record<string, AudioParameterRange>)[
+    parameter as string
+  ]!;
+}
+
+function isAudioFilterParameterValid<T extends AudioFilterType>(
+  type: T,
+  parameter: keyof AudioFilterParameters<T>,
+  value: number,
+): boolean {
+  const range = audioFilterParameterRange(type, parameter);
+  return Number.isFinite(value) && value >= range.min && value <= range.max;
+}
+
+function audioFilterParameterValue(filter: AudioFilter, parameter: PropertyKey): number {
+  return (filter as unknown as Record<PropertyKey, number>)[parameter]!;
+}
+
+function isAudioFilterValid(filter: AudioFilter): boolean {
+  return audioFilterParameterNames(filter.type).every((parameter) =>
+    isAudioFilterParameterValid(
+      filter.type,
+      parameter,
+      audioFilterParameterValue(filter, parameter),
+    ),
   );
 }
 
-function audioTrackPlaybackRuntimeGainDb(
-  processing: AudioTrackProcessing,
-  liveGainDb = processing.gainDb,
-): number {
-  return processing.loudnessNormalization !== undefined ? 0 : liveGainDb;
+function isValidAudioFilterId(id: string): boolean {
+  return id.length > 0 && id.length <= MAX_AUDIO_FILTER_ID_LENGTH && /^[A-Za-z0-9_-]+$/.test(id);
 }
 
-function audioTrackNormalizationGainDb(
-  normalization: LoudnessNormalization,
-  analysis: AudioLoudnessAnalysis,
-): number {
-  // Presentation-only waveform estimate. Preview/export use FFmpeg loudnorm.
-  if (analysis.integratedLufs === undefined) return 0;
-  const { maxTruePeakDb, targetLufs } = loudnessNormalizationTargets(normalization);
-  const targetGainDb = targetLufs - analysis.integratedLufs;
-  return analysis.truePeakDb === undefined
-    ? targetGainDb
-    : Math.min(targetGainDb, maxTruePeakDb - analysis.truePeakDb);
+/** Mirrors the native chain validation so an invalid draft is never committed. */
+function areAudioFiltersValid(filters: readonly AudioFilter[]): boolean {
+  if (filters.length > MAX_AUDIO_FILTERS) return false;
+  const ids = new Set<string>();
+  for (const filter of filters) {
+    if (!isValidAudioFilterId(filter.id) || ids.has(filter.id) || !isAudioFilterValid(filter)) {
+      return false;
+    }
+    ids.add(filter.id);
+  }
+  return true;
 }
 
-function audioTrackActivityProcessingChanged(
-  left: AudioTrackProcessing,
-  right: AudioTrackProcessing,
-): boolean {
-  if (
-    JSON.stringify(getAudioTrackSignalEffects(left)) !==
-    JSON.stringify(getAudioTrackSignalEffects(right))
-  ) {
-    return true;
+function isTrackVolumeValid(volume: number): boolean {
+  return Number.isFinite(volume) && volume >= 0 && volume <= MAX_TRACK_VOLUME;
+}
+
+function clampTrackVolume(volume: number): number {
+  return Math.max(0, Math.min(MAX_TRACK_VOLUME, volume));
+}
+
+/** Parses a persisted chain strictly; any unknown type or invalid value rejects the chain. */
+function parseAudioFilters(value: unknown): AudioFilter[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const filters: AudioFilter[] = [];
+  for (const candidate of value) {
+    if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate)) {
+      return undefined;
+    }
+    const record = candidate as Record<string, unknown>;
+    const type = record.type;
+    if (typeof record.id !== "string" || !isAudioFilterType(type)) return undefined;
+    const filter: Record<string, unknown> = { id: record.id, type };
+    for (const parameter of audioFilterParameterNames(type)) {
+      const parameterValue = record[parameter as string];
+      if (typeof parameterValue !== "number") return undefined;
+      filter[parameter as string] = parameterValue;
+    }
+    filters.push(filter as unknown as AudioFilter);
   }
-  if (left.loudnessNormalization !== undefined || right.loudnessNormalization !== undefined) {
-    return !sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization);
+  return areAudioFiltersValid(filters) ? filters : undefined;
+}
+
+function parseAudioTrackProcessing(value: unknown): AudioTrackProcessing | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
+  const record = value as Record<string, unknown>;
+  const filters = parseAudioFilters(record.filters);
+  if (!filters || typeof record.volume !== "number" || !isTrackVolumeValid(record.volume)) {
+    return undefined;
   }
-  return left.gainDb !== right.gainDb;
+  return { filters, volume: record.volume };
+}
+
+function isAudioFilterType(value: unknown): value is AudioFilterType {
+  return (AUDIO_FILTER_TYPES as readonly unknown[]).includes(value);
+}
+
+function requiresLoudnessAnalysis(filter: AudioFilter): filter is LoudnessNormalizationFilter {
+  return filter.type === "loudnessNormalization";
+}
+
+function audioFiltersRequireLoudnessAnalysis(filters: readonly AudioFilter[]): boolean {
+  return filters.some(requiresLoudnessAnalysis);
+}
+
+/** A stable serialization independent of object key order. */
+function audioFilterKey(filter: AudioFilter): unknown[] {
+  return [
+    filter.type,
+    filter.id,
+    ...audioFilterParameterNames(filter.type).map((parameter) =>
+      audioFilterParameterValue(filter, parameter),
+    ),
+  ];
+}
+
+function sameAudioFilters(left: readonly AudioFilter[], right: readonly AudioFilter[]): boolean {
+  return JSON.stringify(left.map(audioFilterKey)) === JSON.stringify(right.map(audioFilterKey));
+}
+
+/**
+ * Identifies the measurements a chain needs: everything up to the last normalization instance.
+ * That instance's own targets do not affect any measurement, so only its identity is included.
+ * Downstream filters never affect it.
+ */
+function loudnessInputFilters(filters: readonly AudioFilter[]): unknown[] | null {
+  let lastIndex = filters.length - 1;
+  while (lastIndex >= 0 && !requiresLoudnessAnalysis(filters[lastIndex]!)) lastIndex -= 1;
+  if (lastIndex === -1) return null;
+  return filters
+    .slice(0, lastIndex + 1)
+    .map((filter, index) =>
+      index === lastIndex ? [filter.type, filter.id] : audioFilterKey(filter),
+    );
 }
 
 function audioTrackLoudnessInputsKey(
   sourceKey: string,
   streamIndex: number,
   trim: { endMicros: number; startMicros: number },
-  processing: AudioTrackProcessing,
-): string {
-  const effects = getAudioTrackPreLevelEffects(processing);
-  return JSON.stringify([sourceKey, streamIndex, trim.startMicros, trim.endMicros, effects]);
+  filters: readonly AudioFilter[],
+): string | null {
+  const inputs = loudnessInputFilters(filters);
+  return inputs === null
+    ? null
+    : JSON.stringify([sourceKey, streamIndex, trim.startMicros, trim.endMicros, inputs]);
 }
 
-function sameAudioTrackLoudnessInputs(
-  left: AudioTrackProcessing,
-  right: AudioTrackProcessing,
-): boolean {
-  return (
-    JSON.stringify(getAudioTrackPreLevelEffects(left)) ===
-    JSON.stringify(getAudioTrackPreLevelEffects(right))
-  );
+function sameLoudnessInputs(left: readonly AudioFilter[], right: readonly AudioFilter[]): boolean {
+  return JSON.stringify(loudnessInputFilters(left)) === JSON.stringify(loudnessInputFilters(right));
 }
 
-function getAudioTrackPreLevelEffects(processing: AudioTrackProcessing): AudioTrackSignalEffect[] {
-  return getAudioTrackSignalEffects(processing).filter(
-    (effect) => effect.stage === "cleanup" || effect.stage === "dynamics",
-  );
-}
-
-function getAudioTrackSignalEffect<T extends AudioTrackSignalEffect["type"]>(
-  processing: AudioTrackProcessing,
-  type: T,
-  stage?: AudioProcessingStage,
-): Extract<AudioTrackSignalEffect, { type: T }> | undefined {
-  return getAudioTrackSignalEffects(processing).find(
-    (effect): effect is Extract<AudioTrackSignalEffect, { type: T }> =>
-      effect.type === type && (stage === undefined || effect.stage === stage),
-  );
-}
-
-function setAudioTrackSignalEffect(
-  processing: AudioTrackProcessing,
-  nextEffect: AudioTrackSignalEffect,
-): AudioTrackProcessing {
-  const isSingleton = (SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS as readonly string[]).includes(
-    nextEffect.type,
+/**
+ * Waveforms show the source after the chain's leading shaping filters. Everything from the first
+ * level-dependent filter onward is excluded until waveforms are generated from processed PCM.
+ */
+function waveformShapeFilters(filters: readonly AudioFilter[]): AudioFilter[] {
+  const shapeEnd = filters.findIndex(
+    (filter) => filter.type !== "highPass" && filter.type !== "noiseReduction",
   );
 
-  const effects = getAudioTrackSignalEffects(processing).filter(
-    (effect) =>
-      effect.type !== nextEffect.type || (!isSingleton && effect.stage !== nextEffect.stage),
-  );
-
-  effects.push(nextEffect);
-
-  return { ...processing, effects: getAudioTrackSignalEffects({ ...processing, effects }) };
-}
-
-function removeAudioTrackSignalEffect(
-  processing: AudioTrackProcessing,
-  type: AudioTrackSignalEffect["type"],
-  stage?: AudioProcessingStage,
-): AudioTrackProcessing {
-  const effects = getAudioTrackSignalEffects(processing).filter(
-    (effect) => effect.type !== type || (stage !== undefined && effect.stage !== stage),
-  );
-
-  const nextProcessing = { ...processing };
-  if (effects.length === 0) delete nextProcessing.effects;
-  else nextProcessing.effects = effects;
-  return nextProcessing;
-}
-
-function getAudioTrackSignalEffects(processing: AudioTrackProcessing): AudioTrackSignalEffect[] {
-  return [...(processing.effects ?? [])].sort(compareAudioTrackSignalEffects);
-}
-
-function compareAudioTrackSignalEffects(
-  left: AudioTrackSignalEffect,
-  right: AudioTrackSignalEffect,
-): number {
-  const stageDifference =
-    AUDIO_PROCESSING_STAGES.indexOf(left.stage) - AUDIO_PROCESSING_STAGES.indexOf(right.stage);
-
-  if (stageDifference !== 0) return stageDifference;
-
-  const typeDifference =
-    AUDIO_TRACK_SIGNAL_EFFECT_ORDER.indexOf(left.type) -
-    AUDIO_TRACK_SIGNAL_EFFECT_ORDER.indexOf(right.type);
-
-  if (typeDifference !== 0) return typeDifference;
-
-  if (left.type === "highPass" && right.type === "highPass") {
-    return left.cutoffHz - right.cutoffHz;
-  }
-  if (left.type === "noiseReduction" && right.type === "noiseReduction") {
-    return (
-      ["light", "medium", "strong"].indexOf(left.preset) -
-      ["light", "medium", "strong"].indexOf(right.preset)
-    );
-  }
-  if (left.type === "limiter" && right.type === "limiter") {
-    return left.ceilingDb - right.ceilingDb;
-  }
-  return 0;
-}
-
-function parseAudioTrackSignalEffects(value: unknown): AudioTrackSignalEffect[] | undefined {
-  if (value === undefined) return undefined;
-  if (!Array.isArray(value)) return undefined;
-
-  const effects: AudioTrackSignalEffect[] = [];
-  const highPassStages = new Set<AudioProcessingStage>();
-  for (const valueEffect of value) {
-    if (typeof valueEffect !== "object" || valueEffect === null || Array.isArray(valueEffect)) {
-      return undefined;
-    }
-    const effect = valueEffect as Record<string, unknown>;
-    if (effect.type === "highPass") {
-      if (
-        (effect.stage !== "cleanup" &&
-          effect.stage !== "dynamics" &&
-          effect.stage !== "finalProtection") ||
-        typeof effect.cutoffHz !== "number" ||
-        !Number.isFinite(effect.cutoffHz) ||
-        effect.cutoffHz < 10 ||
-        effect.cutoffHz > 20_000 ||
-        highPassStages.has(effect.stage as AudioProcessingStage)
-      )
-        return undefined;
-      highPassStages.add(effect.stage as AudioProcessingStage);
-      effects.push({ cutoffHz: effect.cutoffHz, stage: effect.stage, type: "highPass" });
-    } else if (effect.type === "noiseReduction") {
-      if (
-        effect.stage !== "cleanup" ||
-        (effect.preset !== "light" && effect.preset !== "medium" && effect.preset !== "strong")
-      )
-        return undefined;
-      effects.push({ preset: effect.preset, stage: "cleanup", type: "noiseReduction" });
-    } else if (effect.type === "limiter") {
-      if (
-        effect.stage !== "finalProtection" ||
-        typeof effect.ceilingDb !== "number" ||
-        !Number.isFinite(effect.ceilingDb) ||
-        effect.ceilingDb < -24 ||
-        effect.ceilingDb > 0
-      )
-        return undefined;
-      effects.push({ ceilingDb: effect.ceilingDb, stage: "finalProtection", type: "limiter" });
-    } else {
-      return undefined;
-    }
-  }
-  if (
-    SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS.some(
-      (type) => effects.filter((effect) => effect.type === type).length > 1,
-    )
-  ) {
-    return undefined;
-  }
-  return getAudioTrackSignalEffects({ gainDb: 0, effects });
-}
-
-function loudnessNormalizationTargets(normalization: LoudnessNormalization): {
-  maxTruePeakDb: number;
-  targetLufs: number;
-} {
-  if (typeof normalization === "object") {
-    return {
-      maxTruePeakDb: normalization.maxTruePeakDb,
-      targetLufs: normalization.targetLufs,
-    };
-  }
-  const targets = {
-    webVideo: { maxTruePeakDb: -1, targetLufs: -14 },
-    streaming: { maxTruePeakDb: -1.5, targetLufs: -16 },
-    broadcast: { maxTruePeakDb: -2, targetLufs: -23 },
-  } satisfies Record<LoudnessPreset, { maxTruePeakDb: number; targetLufs: number }>;
-
-  return targets[normalization];
-}
-
-function sameAudioTrackProcessing(
-  left: AudioTrackProcessing,
-  right: AudioTrackProcessing,
-): boolean {
-  return (
-    left.gainDb === right.gainDb &&
-    sameLoudnessNormalization(left.loudnessNormalization, right.loudnessNormalization) &&
-    JSON.stringify(getAudioTrackSignalEffects(left)) ===
-      JSON.stringify(getAudioTrackSignalEffects(right))
-  );
-}
-
-function sameLoudnessNormalization(
-  left: LoudnessNormalization | undefined,
-  right: LoudnessNormalization | undefined,
-): boolean {
-  if (left === right) return true;
-  if (typeof left !== "object" || left === null || typeof right !== "object" || right === null) {
-    return false;
-  }
-  return left.targetLufs === right.targetLufs && left.maxTruePeakDb === right.maxTruePeakDb;
+  return filters.slice(0, shapeEnd === -1 ? filters.length : shapeEnd);
 }
 
 function cloneAudioTrackProcessing(processing: AudioTrackProcessing): AudioTrackProcessing {
   return {
-    gainDb: processing.gainDb,
-    ...(processing.effects === undefined
-      ? {}
-      : { effects: getAudioTrackSignalEffects(processing).map((effect) => ({ ...effect })) }),
-    ...(processing.loudnessNormalization === undefined
-      ? {}
-      : {
-          loudnessNormalization:
-            typeof processing.loudnessNormalization === "string"
-              ? processing.loudnessNormalization
-              : { ...processing.loudnessNormalization },
-        }),
+    filters: processing.filters.map((filter) => ({ ...filter })),
+    volume: processing.volume,
   };
 }
 
@@ -390,54 +337,43 @@ function normalizeAudioTrackDefaults<T extends AudioTrackSettings>(tracks: T[]):
   }));
 }
 
-const DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION: CustomLoudnessNormalization = {
-  mode: "custom",
-  targetLufs: -16,
-  maxTruePeakDb: -1.5,
-};
-
 export type {
+  AudioChainSelection,
+  AudioFilter,
+  AudioFilterMeasurement,
+  AudioFilterOfType,
+  AudioFilterParameters,
+  AudioFilterType,
   AudioLoudnessAnalysis,
-  AudioProcessingStage,
-  AudioTrackHighPass,
+  AudioParameterRange,
   AudioTrackMetadata,
   AudioTrackProcessing,
   AudioTrackSelection,
   AudioTrackSettings,
-  AudioTrackSignalEffect,
-  CustomLoudnessNormalization,
-  LoudnessNormalization,
-  LoudnessPreset,
-  NoiseReductionPreset,
+  LoudnessNormalizationFilter,
 };
 export {
-  AUDIO_PROCESSING_STAGES,
-  AUDIO_TRACK_EFFECT_SUMMARY_ORDER,
-  AUDIO_TRACK_HIGH_PASS_CUTOFF_PRESETS,
-  AUDIO_TRACK_SIGNAL_EFFECT_ORDER,
-  audioTrackActivityProcessingChanged,
-  audioTrackLevelMode,
+  areAudioFiltersValid,
+  AUDIO_FILTER_TYPES,
+  audioFilterParameterNames,
+  audioFilterParameterRange,
+  audioFilterParameterValue,
+  audioFiltersRequireLoudnessAnalysis,
   audioTrackLoudnessInputsKey,
-  audioTrackNormalizationGainDb,
-  audioTrackPlaybackFfmpegProcessing,
-  audioTrackPlaybackRuntimeGainDb,
+  clampTrackVolume,
   cloneAudioTrackProcessing,
-  DEFAULT_AUDIO_TRACK_LIMITER_CEILING_DB,
-  DEFAULT_AUDIO_TRACK_PROCESSING,
-  DEFAULT_CUSTOM_LOUDNESS_NORMALIZATION,
-  effectiveAudioTrackGainDb,
-  getAudioTrackLiveHighPassEffects,
-  getAudioTrackPreLevelEffects,
-  getAudioTrackSignalEffect,
-  getAudioTrackSignalEffects,
-  loudnessNormalizationTargets,
+  createDefaultAudioTrackProcessing,
+  DEFAULT_TRACK_VOLUME,
+  isAudioFilterParameterValid,
+  isTrackVolumeValid,
+  MAX_AUDIO_FILTERS,
+  MAX_TRACK_VOLUME,
   normalizeAudioTrackDefaults,
-  parseAudioTrackSignalEffects,
-  removeAudioTrackSignalEffect,
-  sameAudioTrackLoudnessInputs,
-  sameAudioTrackProcessing,
-  sameLoudnessNormalization,
+  parseAudioFilters,
+  parseAudioTrackProcessing,
+  sameAudioFilters,
+  sameLoudnessInputs,
   serializeAudioTrackSettings,
-  setAudioTrackSignalEffect,
-  SINGLETON_AUDIO_TRACK_SIGNAL_EFFECTS,
+  TRACK_VOLUME_SLIDER_MAX,
+  waveformShapeFilters,
 };

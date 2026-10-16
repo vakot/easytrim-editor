@@ -91,7 +91,7 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
       registerPlaybackErrorObserver: () => () => undefined,
       seek: vi.fn(),
       setLiveOutputVolume: vi.fn(),
-      setLiveTrackGain: vi.fn(),
+      setLiveTrackVolume: vi.fn(),
       setPlaybackRate: vi.fn(),
       startAlignedWithVideoAt: vi.fn(async (seconds: number) => seconds),
     },

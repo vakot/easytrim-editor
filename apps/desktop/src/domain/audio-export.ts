@@ -9,7 +9,7 @@ function selectedAudioTracks(tracks: readonly AudioTrackSettings[]): AudioTrackS
   return tracks
     .filter((track) => track.enabled)
     .map(({ processing, streamIndex }) => ({
-      processing: cloneAudioTrackProcessing(processing),
+      ...cloneAudioTrackProcessing(processing),
       streamIndex,
     }));
 }

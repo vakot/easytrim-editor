@@ -9,13 +9,11 @@ function formatChannels(stream: AudioStream, t: TFunction): string {
     : t("audio.tracks.channels", { count: stream.channels });
 }
 
-function formatGain(gainDb: number, language: string): string {
-  const value = new Intl.NumberFormat(language, {
-    maximumFractionDigits: 1,
-    minimumFractionDigits: 1,
-  }).format(gainDb);
-
-  return `${value.replace(/-/g, "−")} dB`;
+/** Formats a linear Track Volume multiplier as a percentage. */
+function formatTrackVolume(volume: number, language: string): string {
+  return new Intl.NumberFormat(language, { maximumFractionDigits: 1, style: "percent" }).format(
+    volume,
+  );
 }
 
 function audioOutputSummary(enabledCount: number, mergeAudio: boolean, t: TFunction): string {
@@ -27,4 +25,4 @@ function audioOutputSummary(enabledCount: number, mergeAudio: boolean, t: TFunct
   return t("audio.output.separate", { count: enabledCount });
 }
 
-export { audioOutputSummary, formatChannels, formatGain };
+export { audioOutputSummary, formatChannels, formatTrackVolume };

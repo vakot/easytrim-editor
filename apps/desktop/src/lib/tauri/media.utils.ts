@@ -204,13 +204,16 @@ function parseExportPlan(value: unknown): ExportPlan {
 }
 
 function parseLoudnessAnalysis(value: unknown): LoudnessAnalysis {
-  const result = requireRecord(value, "loudness analysis");
-  return {
-    integratedLufs: optionalFiniteNumber(result.integratedLufs, "integrated loudness"),
-    truePeakDb: optionalFiniteNumber(result.truePeakDb, "true peak"),
-    inputLra: optionalFiniteNumber(result.inputLra, "input loudness range"),
-    inputThreshold: optionalFiniteNumber(result.inputThreshold, "input loudness threshold"),
-  };
+  return requireArray(value, "loudness analysis").map((measurement) => {
+    const result = requireRecord(measurement, "loudness measurement");
+    return {
+      filterId: requireString(result.filterId, "measured filter ID"),
+      integratedLufs: optionalFiniteNumber(result.integratedLufs, "integrated loudness"),
+      truePeakDb: optionalFiniteNumber(result.truePeakDb, "true peak"),
+      inputLra: optionalFiniteNumber(result.inputLra, "input loudness range"),
+      inputThreshold: optionalFiniteNumber(result.inputThreshold, "input loudness threshold"),
+    };
+  });
 }
 
 function parseMediaCapabilities(value: unknown): MediaCapabilities {
@@ -290,19 +293,13 @@ function parseBinaryCapabilityErrorId(value: unknown): BinaryCapabilityErrorId |
 }
 
 function parsePlaybackPcmChunk(value: unknown): PlaybackPcmChunk {
-  const chunk = requireRecord(value, "playback PCM chunk");
-  const channels = requireInteger(chunk.channels, "playback channel count");
-  const sampleRate = requirePositiveInteger(chunk.sampleRate, "playback sample rate");
-  const samples = requireArray(chunk.samples, "playback PCM samples").map((sample) => {
-    const parsed = requireInteger(sample, "playback PCM sample");
-    if (parsed < -32768 || parsed > 32767) throw invalidResponse("playback PCM sample");
-    return parsed;
-  });
-
-  if (channels !== 2 || samples.length % channels !== 0) {
+  // The native command returns raw little-endian f32 stereo frames.
+  if (!(value instanceof ArrayBuffer) || value.byteLength % (2 * 4) !== 0) {
     throw invalidResponse("playback PCM chunk");
   }
-  return { channels, sampleRate, samples };
+  const samples = new Float32Array(value);
+  if (!samples.every(Number.isFinite)) throw invalidResponse("playback PCM sample");
+  return { channels: 2, sampleRate: 48_000, samples };
 }
 
 function parseWaveformResult(value: unknown): WaveformResult {

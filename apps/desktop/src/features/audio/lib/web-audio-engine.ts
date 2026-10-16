@@ -1,10 +1,9 @@
-import type { AudioTrackHighPass, AudioTrackSelection } from "@/domain/audio-processing";
+import type { AudioChainSelection } from "@/domain/audio-processing";
 
 import {
   connectAudioTrackRuntime,
   connectPlaybackAudioGraph,
   disconnectAudioTrackRuntime,
-  updateAudioTrackHighPass,
 } from "./audio-playback-graph";
 import { disconnectStereoAudioMeterNodes, type StereoAudioMeterNodes } from "./stereo-audio-meter";
 
@@ -17,20 +16,21 @@ const CHANNELS = 2;
 interface PcmChunk {
   channels: number;
   sampleRate: number;
-  samples: number[];
+  samples: Float32Array;
 }
 
 interface WebAudioTrack {
   durationMicros?: number;
-  gainDb: number;
-  liveHighPassEffects: AudioTrackHighPass[];
-  selection: AudioTrackSelection;
+  /** The processed chain; FFmpeg renders every filter so playback matches export. */
+  selection: AudioChainSelection;
   startTimeMicros?: number;
   streamIndex: number;
+  /** Post-filter Track Volume, applied by the track's GainNode. */
+  volume: number;
 }
 
 type DecodeChunk = (
-  selection: AudioTrackSelection,
+  selection: AudioChainSelection,
   startMicros: number,
   durationMicros: number,
   signal: AbortSignal,
@@ -64,12 +64,10 @@ interface ScheduledTrack {
   durationFrame: number;
   gain: GainNode;
   generation: number;
-  highPassFilters: ReturnType<typeof connectAudioTrackRuntime>["highPassFilters"];
   input: GainNode;
-  liveHighPassKey: string;
   nodes: Set<AudioBufferSourceNode>;
   scheduledThroughFrame: number;
-  selection: AudioTrackSelection;
+  selection: AudioChainSelection;
   selectionKey: string;
   startFrame: number;
   streamIndex: number;
@@ -142,10 +140,11 @@ class WebAudioEngine {
     if (resume) this.seek(positionFrame / SAMPLE_RATE);
   }
 
-  setTrackGain(streamIndex: number, gainDb: number): void {
+  /** Ramps Track Volume smoothly; it never changes the decoded, processed PCM. */
+  setTrackVolume(streamIndex: number, volume: number): void {
     const track = this.tracks.get(streamIndex);
     if (!track) return;
-    track.gain.gain.setTargetAtTime(10 ** (gainDb / 20), this.context.currentTime, 0.015);
+    track.gain.gain.setTargetAtTime(volume, this.context.currentTime, 0.015);
   }
 
   setMono(mono: boolean): void {
@@ -165,7 +164,6 @@ class WebAudioEngine {
     let processingChanged = false;
     for (const track of tracks) {
       const key = JSON.stringify(track.selection);
-      const liveHighPassKey = JSON.stringify(track.liveHighPassEffects);
       const current = this.tracks.get(track.streamIndex);
       const startFrame = Math.max(
         0,
@@ -197,14 +195,10 @@ class WebAudioEngine {
         current.durationFrame = durationFrame;
       }
 
-      const scheduled = current ?? this.createTrack(track, key, liveHighPassKey);
+      const scheduled = current ?? this.createTrack(track, key);
       const now = this.context.currentTime;
-      if (current && scheduled.liveHighPassKey !== liveHighPassKey) {
-        scheduled.liveHighPassKey = liveHighPassKey;
-        updateAudioTrackHighPass(this.context, scheduled, track.liveHighPassEffects);
-      }
       scheduled.gain.gain.cancelScheduledValues(now);
-      scheduled.gain.gain.setTargetAtTime(10 ** (track.gainDb / 20), now, 0.015);
+      scheduled.gain.gain.setTargetAtTime(track.volume, now, 0.015);
     }
 
     if (membershipChanged || processingChanged) this.discardPrefetch();
@@ -439,11 +433,7 @@ class WebAudioEngine {
     return Math.max(0, Math.round((this.durationMicros * SAMPLE_RATE) / 1_000_000));
   }
 
-  private createTrack(
-    track: WebAudioTrack,
-    selectionKey: string,
-    liveHighPassKey: string,
-  ): ScheduledTrack {
+  private createTrack(track: WebAudioTrack, selectionKey: string): ScheduledTrack {
     const runtime = connectAudioTrackRuntime(this.context, this.audioMix);
     const scheduled: ScheduledTrack = {
       abortController: null,
@@ -459,8 +449,6 @@ class WebAudioEngine {
             ),
       generation: this.generation,
       gain: runtime.gain,
-      highPassFilters: runtime.highPassFilters,
-      liveHighPassKey,
       input: runtime.input,
       nodes: new Set(),
       scheduledThroughFrame: this.anchorPositionFrame,
@@ -470,7 +458,6 @@ class WebAudioEngine {
       streamIndex: track.streamIndex,
     };
 
-    updateAudioTrackHighPass(this.context, scheduled, track.liveHighPassEffects);
     this.tracks.set(track.streamIndex, scheduled);
     return scheduled;
   }
@@ -539,7 +526,7 @@ class WebAudioEngine {
             this.frameToMicros(decodeEndFrame) - this.frameToMicros(decodeStartFrame),
             signal,
           )
-        : { channels: CHANNELS, sampleRate: SAMPLE_RATE, samples: [] };
+        : { channels: CHANNELS, sampleRate: SAMPLE_RATE, samples: new Float32Array() };
 
     const decodedFrameCount = chunk.samples.length / chunk.channels;
     if (
@@ -557,8 +544,8 @@ class WebAudioEngine {
     const right = buffer.getChannelData(1);
     const destinationStartFrame = decodeStartFrame - startFrame;
     for (let frame = 0; frame < decodedFrameCount; frame += 1) {
-      left[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels]! / 32768;
-      right[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels + 1]! / 32768;
+      left[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels]!;
+      right[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels + 1]!;
     }
     return buffer;
   }

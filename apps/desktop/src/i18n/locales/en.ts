@@ -246,7 +246,6 @@ export const en = {
       channels_one: "{{count}} channel",
       channels_other: "{{count}} channels",
       defaultName: "Audio {{number}}",
-      gainLabel: "Audio {{number}} gain in decibels",
       metadata: {
         actions: {
           edit: "Edit output metadata",
@@ -278,6 +277,7 @@ export const en = {
       unknownLayout: "unknown layout",
       unmute: "Unmute",
       unmuteWithTitle: "Unmute ({{title}})",
+      volumeLabel: "Audio {{number}} volume",
     },
     waveform: {
       displayMode: {

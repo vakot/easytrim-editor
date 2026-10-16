@@ -1,4 +1,8 @@
-import { parseAudioTrackSignalEffects } from "@/domain/audio-processing";
+import { parseAudioTrackProcessing } from "@/domain/audio-processing";
+import {
+  migrateAudioTrackProcessing,
+  migrateAudioTrackSelection,
+} from "@/domain/legacy-audio-processing";
 
 import type { WorkspaceRecoveryBackup } from "./workspace-recovery.types";
 
@@ -49,15 +53,12 @@ function isSnapshot(value: unknown): boolean {
         (track.metadata.isDefault === undefined || typeof track.metadata.isDefault === "boolean") &&
         (track.metadata.language === undefined || typeof track.metadata.language === "string") &&
         (track.metadata.title === undefined || typeof track.metadata.title === "string") &&
-        isRecord(track.processing) &&
-        isFiniteNumber(track.processing.gainDb) &&
-        isValidAudioTrackEffects(track.processing.effects) &&
-        isValidLoudnessNormalization(track.processing.loudnessNormalization),
+        parseAudioTrackProcessing(track.processing) !== undefined,
     )
   );
 }
 
-function migrateSnapshotAudioMetadata(snapshot: unknown): unknown {
+function migrateSnapshotAudio(snapshot: unknown): unknown {
   if (!isRecord(snapshot) || !isRecord(snapshot.audio) || !Array.isArray(snapshot.audio.tracks)) {
     return snapshot;
   }
@@ -72,9 +73,11 @@ function migrateSnapshotAudioMetadata(snapshot: unknown): unknown {
         }
 
         const { isDefault, language, metadata, title, ...settings } = track;
+        const processing = migrateAudioTrackProcessing(settings.processing)?.processing;
 
         return {
           ...settings,
+          ...(processing ? { processing } : {}),
           metadata: {
             ...(isDefault === undefined ? {} : { isDefault }),
             ...(language === undefined ? {} : { language }),
@@ -87,7 +90,7 @@ function migrateSnapshotAudioMetadata(snapshot: unknown): unknown {
   };
 }
 
-function migrateBackupAudioMetadata(value: unknown): unknown {
+function migrateBackupAudio(value: unknown): unknown {
   if (!isRecord(value) || !Array.isArray(value.instances)) return value;
 
   return {
@@ -97,14 +100,15 @@ function migrateBackupAudioMetadata(value: unknown): unknown {
 
       return {
         ...instance,
-        snapshot: migrateSnapshotAudioMetadata(instance.snapshot),
+        snapshot: migrateSnapshotAudio(instance.snapshot),
         ...(Array.isArray(instance.exportAttempts)
           ? {
               exportAttempts: instance.exportAttempts.map((attempt) => {
                 if (!isRecord(attempt)) return attempt;
                 return {
                   ...attempt,
-                  snapshot: migrateSnapshotAudioMetadata(attempt.snapshot),
+                  request: migrateRequestAudioTracks(attempt.request),
+                  snapshot: migrateSnapshotAudio(attempt.snapshot),
                 };
               }),
             }
@@ -114,22 +118,13 @@ function migrateBackupAudioMetadata(value: unknown): unknown {
   };
 }
 
-function isValidAudioTrackEffects(value: unknown): boolean {
-  return value === undefined || parseAudioTrackSignalEffects(value) !== undefined;
-}
-
-function isValidLoudnessNormalization(value: unknown): boolean {
-  if (value === undefined) return true;
-  if (value === "webVideo" || value === "streaming" || value === "broadcast") return true;
-  if (!isRecord(value) || value.mode !== "custom") return false;
-  return (
-    isFiniteNumber(value.targetLufs) &&
-    value.targetLufs >= -36 &&
-    value.targetLufs <= -5 &&
-    isFiniteNumber(value.maxTruePeakDb) &&
-    value.maxTruePeakDb >= -9 &&
-    value.maxTruePeakDb <= 0
-  );
+/** Stored export requests are replayed natively, so their audio tracks are migrated as well. */
+function migrateRequestAudioTracks(request: unknown): unknown {
+  if (!isRecord(request) || !Array.isArray(request.audioTracks)) return request;
+  return {
+    ...request,
+    audioTracks: request.audioTracks.map((track) => migrateAudioTrackSelection(track) ?? track),
+  };
 }
 
 function isExportAttempt(value: unknown): boolean {
@@ -232,7 +227,7 @@ function readBackup(key: string): WorkspaceRecoveryBackup | null {
   try {
     const serialized = localStorage.getItem(key);
     if (!serialized) return null;
-    const value: unknown = migrateBackupAudioMetadata(JSON.parse(serialized));
+    const value: unknown = migrateBackupAudio(JSON.parse(serialized));
     return isBackup(value) ? value : null;
   } catch {
     return null;

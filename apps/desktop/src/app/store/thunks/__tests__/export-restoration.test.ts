@@ -10,9 +10,9 @@ import {
 } from "@/app/store/integration/export-queue-runtime";
 import {
   audioTrackDefaultChanged,
-  audioTrackGainChanged,
+  audioTrackFiltersApplied,
   audioTrackMetadataChanged,
-  audioTrackProcessingChanged,
+  audioTrackVolumeChanged,
   selectAudioTracks,
 } from "@/app/store/slices/audio-slice";
 import {
@@ -27,6 +27,7 @@ import {
 import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
+import type { AudioFilter } from "@/domain/audio-processing";
 import { createExportAttempt } from "@/domain/editing-instance";
 import { firstSource, media, mediaWithAudio, secondSource } from "@/test/source.fixtures";
 
@@ -143,6 +144,20 @@ function createDeferred<T>() {
   });
 
   return { promise, resolve };
+}
+
+function normalizationFilter(id: string, targetLufs: number): AudioFilter {
+  return {
+    id,
+    loudnessRangeLu: 11,
+    maxTruePeakDb: -1.5,
+    targetLufs,
+    type: "loudnessNormalization",
+  };
+}
+
+function measured(filterId: string, integratedLufs: number, truePeakDb: number) {
+  return [{ filterId, integratedLufs, truePeakDb }];
 }
 
 describe("audio-only export", () => {
@@ -279,13 +294,13 @@ describe("export snapshot restoration", () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
     store.dispatch(preferenceChanged({ key: "stripMetadataOnExport", enabled: true }));
     store.dispatch(
-      audioTrackProcessingChanged({
+      audioTrackFiltersApplied({
+        filters: [normalizationFilter("norm-2", -16)],
         streamIndex: 2,
-        processing: { gainDb: -4, loudnessNormalization: "streaming" },
       }),
     );
 
-    let finishAnalysis!: (value: { integratedLufs: number; truePeakDb: number }) => void;
+    let finishAnalysis!: (value: unknown) => void;
     native.analyzeAudioLoudness.mockReturnValue(
       new Promise((resolve) => {
         finishAnalysis = resolve;
@@ -294,8 +309,8 @@ describe("export snapshot restoration", () => {
 
     store.dispatch(startOptimizedExportRequested());
     await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledOnce());
-    store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -2 }));
-    finishAnalysis({ integratedLufs: -18, truePeakDb: -2 });
+    store.dispatch(audioTrackVolumeChanged({ streamIndex: 2, volume: 0.8 }));
+    finishAnalysis(measured("norm-2", -18, -2));
 
     await vi.waitFor(() => {
       const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
@@ -304,45 +319,44 @@ describe("export snapshot restoration", () => {
       expect("stripMetadata" in (attempt?.request ?? {})).toBe(true);
       if (attempt?.route !== "optimized") return;
       if (!("stripMetadata" in attempt.request)) return;
-      expect(attempt?.request.audioTracks[0]?.processing.gainDb).toBe(-2);
+      expect(attempt?.request.audioTracks[0]?.volume).toBe(0.8);
       expect(attempt?.request.stripMetadata).toBe(true);
-      expect(attempt?.snapshot.audio.tracks[0]?.processing.gainDb).toBe(-2);
-      expect(attempt?.request.audioTracks[0]?.loudnessAnalysis).toMatchObject({
-        integratedLufs: -18,
-        truePeakDb: -2,
-      });
+      expect(attempt?.snapshot.audio.tracks[0]?.processing.volume).toBe(0.8);
+      expect(attempt?.request.audioTracks[0]?.loudnessMeasurements).toEqual(
+        measured("norm-2", -18, -2),
+      );
     });
   });
 
   it("analyzes a newly normalized track before building the final export", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
-    const analysisA = createDeferred<{ integratedLufs: number; truePeakDb: number }>();
-    const analysisB = createDeferred<{ integratedLufs: number; truePeakDb: number }>();
+    const analysisA = createDeferred<unknown>();
+    const analysisB = createDeferred<unknown>();
     native.analyzeAudioLoudness
       .mockReturnValueOnce(analysisA.promise)
       .mockReturnValueOnce(analysisB.promise);
 
     store.dispatch(
-      audioTrackProcessingChanged({
+      audioTrackFiltersApplied({
+        filters: [normalizationFilter("norm-2", -16)],
         streamIndex: 2,
-        processing: { gainDb: 0, loudnessNormalization: "streaming" },
       }),
     );
     store.dispatch(startOptimizedExportRequested());
     await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(1));
 
     store.dispatch(
-      audioTrackProcessingChanged({
+      audioTrackFiltersApplied({
+        filters: [normalizationFilter("norm-4", -23)],
         streamIndex: 4,
-        processing: { gainDb: 0, loudnessNormalization: "broadcast" },
       }),
     );
-    analysisA.resolve({ integratedLufs: -18, truePeakDb: -2 });
+    analysisA.resolve(measured("norm-2", -18, -2));
     await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(2));
     expect(native.analyzeAudioLoudness.mock.calls[1]?.[0]).toMatchObject({
       audioTrack: { streamIndex: 4 },
     });
-    analysisB.resolve({ integratedLufs: -22, truePeakDb: -3 });
+    analysisB.resolve(measured("norm-4", -22, -3));
 
     await vi.waitFor(() => {
       const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
@@ -351,11 +365,11 @@ describe("export snapshot restoration", () => {
         expect.arrayContaining([
           expect.objectContaining({
             streamIndex: 2,
-            loudnessAnalysis: { integratedLufs: -18, truePeakDb: -2 },
+            loudnessMeasurements: measured("norm-2", -18, -2),
           }),
           expect.objectContaining({
             streamIndex: 4,
-            loudnessAnalysis: { integratedLufs: -22, truePeakDb: -3 },
+            loudnessMeasurements: measured("norm-4", -22, -3),
           }),
         ]),
       );
@@ -363,11 +377,11 @@ describe("export snapshot restoration", () => {
         expect.arrayContaining([
           expect.objectContaining({
             streamIndex: 2,
-            processing: { gainDb: 0, loudnessNormalization: "streaming" },
+            processing: { filters: [normalizationFilter("norm-2", -16)], volume: 1 },
           }),
           expect.objectContaining({
             streamIndex: 4,
-            processing: { gainDb: 0, loudnessNormalization: "broadcast" },
+            processing: { filters: [normalizationFilter("norm-4", -23)], volume: 1 },
           }),
         ]),
       );
@@ -376,14 +390,14 @@ describe("export snapshot restoration", () => {
 
   it("re-analyzes when the committed trim changes during loudness analysis", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
-    const firstAnalysis = createDeferred<{ integratedLufs: number; truePeakDb: number }>();
+    const firstAnalysis = createDeferred<unknown>();
     native.analyzeAudioLoudness
       .mockReturnValueOnce(firstAnalysis.promise)
-      .mockResolvedValueOnce({ integratedLufs: -20, truePeakDb: -4 });
+      .mockResolvedValueOnce(measured("norm-2", -20, -4));
     store.dispatch(
-      audioTrackProcessingChanged({
+      audioTrackFiltersApplied({
+        filters: [normalizationFilter("norm-2", -16)],
         streamIndex: 2,
-        processing: { gainDb: 0, loudnessNormalization: "streaming" },
       }),
     );
     store.dispatch(startOptimizedExportRequested());
@@ -393,7 +407,7 @@ describe("export snapshot restoration", () => {
         trim: { startMicros: 300_000, endMicros: 1_700_000, sourceDurationMicros: 5_000_000 },
       }),
     );
-    firstAnalysis.resolve({ integratedLufs: -18, truePeakDb: -2 });
+    firstAnalysis.resolve(measured("norm-2", -18, -2));
 
     await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(2));
     expect(native.analyzeAudioLoudness.mock.calls[1]?.[0].trim).toEqual({
@@ -404,29 +418,28 @@ describe("export snapshot restoration", () => {
       const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
       expect(attempt?.state.status).toBe("queued");
       expect(attempt?.request.trim).toEqual({ startMicros: 300_000, endMicros: 1_700_000 });
-      expect(attempt?.request.audioTracks[0]?.loudnessAnalysis).toMatchObject({
-        integratedLufs: -20,
-        truePeakDb: -4,
-      });
+      expect(attempt?.request.audioTracks[0]?.loudnessMeasurements).toEqual(
+        measured("norm-2", -20, -4),
+      );
       expect(attempt?.snapshot.trim).toEqual(attempt?.request.trim);
     });
   });
 
   it("abandons export when the source changes during loudness analysis", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
-    const pendingAnalysis = createDeferred<{ integratedLufs: number; truePeakDb: number }>();
+    const pendingAnalysis = createDeferred<unknown>();
     native.analyzeAudioLoudness.mockReturnValue(pendingAnalysis.promise);
     store.dispatch(
-      audioTrackProcessingChanged({
+      audioTrackFiltersApplied({
+        filters: [normalizationFilter("norm-2", -16)],
         streamIndex: 2,
-        processing: { gainDb: 0, loudnessNormalization: "streaming" },
       }),
     );
     const exportPromise = store.dispatch(startFastExportRequested());
     await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(1));
 
     store.dispatch(sourceSelected({ source: secondSource, loadToken: 2 }));
-    pendingAnalysis.resolve({ integratedLufs: -18, truePeakDb: -2 });
+    pendingAnalysis.resolve(measured("norm-2", -18, -2));
     await exportPromise;
 
     expect(native.chooseOutputPath).not.toHaveBeenCalled();
@@ -435,12 +448,12 @@ describe("export snapshot restoration", () => {
 
   it("abandons export when the active editing instance changes during loudness analysis", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
-    const pendingAnalysis = createDeferred<{ integratedLufs: number; truePeakDb: number }>();
+    const pendingAnalysis = createDeferred<unknown>();
     native.analyzeAudioLoudness.mockReturnValue(pendingAnalysis.promise);
     store.dispatch(
-      audioTrackProcessingChanged({
+      audioTrackFiltersApplied({
+        filters: [normalizationFilter("norm-2", -16)],
         streamIndex: 2,
-        processing: { gainDb: 0, loudnessNormalization: "streaming" },
       }),
     );
     const exportPromise = store.dispatch(startFastExportRequested());
@@ -470,7 +483,7 @@ describe("export snapshot restoration", () => {
       }),
     );
     store.dispatch(sourceReady({ media: nextMedia, loadToken: 2, snapshot: nextSnapshot }));
-    pendingAnalysis.resolve({ integratedLufs: -18, truePeakDb: -2 });
+    pendingAnalysis.resolve(measured("norm-2", -18, -2));
     await exportPromise;
 
     expect(native.chooseOutputPath).not.toHaveBeenCalled();
@@ -481,19 +494,24 @@ describe("export snapshot restoration", () => {
 
   it("keeps queued per-track processing immutable and restores it with the export", async () => {
     const { snapshot, store } = setup(mediaWithAudio(firstSource.sourcePath));
-    const processing = { gainDb: -4.5, loudnessNormalization: "streaming" as const };
+    const processing = { filters: [normalizationFilter("norm", -16)], volume: 0.6 };
     const audioTracks = [
       {
         enabled: true,
         metadata: { isDefault: true, language: "rus", title: "Custom title" },
-        processing: { ...processing },
+        processing: { ...processing, filters: [...processing.filters] },
         streamIndex: 2,
       },
     ];
 
     const queuedSnapshot = {
       ...snapshot,
-      audio: { ...snapshot.audio, tracks: [{ ...audioTracks[0]!, processing: { ...processing } }] },
+      audio: {
+        ...snapshot.audio,
+        tracks: [
+          { ...audioTracks[0]!, processing: { ...processing, filters: [...processing.filters] } },
+        ],
+      },
     };
 
     const attempt = createExportAttempt({
@@ -503,7 +521,8 @@ describe("export snapshot restoration", () => {
       request: {
         arguments: "-preset slow",
         audioTracks: audioTracks.map(({ processing: value, streamIndex }) => ({
-          processing: { ...value },
+          ...value,
+          filters: value.filters.map((filter) => ({ ...filter })),
           streamIndex,
         })),
         audioMetadata: [
@@ -519,9 +538,9 @@ describe("export snapshot restoration", () => {
       snapshot: queuedSnapshot,
     });
 
-    audioTracks[0]!.processing.gainDb = 8;
-    queuedSnapshot.audio.tracks[0]!.processing.gainDb = 8;
-    expect(attempt.request.audioTracks[0]?.processing.gainDb).toBe(-4.5);
+    audioTracks[0]!.processing.volume = 4;
+    queuedSnapshot.audio.tracks[0]!.processing.volume = 4;
+    expect(attempt.request.audioTracks[0]?.volume).toBe(0.6);
     expect(attempt.snapshot.audio.tracks[0]).toMatchObject({
       metadata: { isDefault: true, language: "rus", title: "Custom title" },
       processing,

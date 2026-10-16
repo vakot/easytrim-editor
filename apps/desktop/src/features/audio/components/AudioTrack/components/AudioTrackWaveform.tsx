@@ -15,17 +15,21 @@ import type { WaveformDisplayMode } from "../../../lib/waveform-display-mode";
 
 interface AudioTrackWaveformProps {
   displayMode: WaveformDisplayMode;
-  gainDb: number;
   stream: AudioStream;
   track: AudioTrackState;
+  /** Track Volume, shown by scaling the cached waveform. */
+  volume: number;
 }
+
+// Silence the display at -80 dB so a muted track animates to a flat line.
+const MIN_DISPLAY_VOLUME = 1e-4;
 
 type WaveformWithStatus<Status extends AudioTrackState["waveform"]["status"]> = Extract<
   AudioTrackState["waveform"],
   { status: Status }
 >;
 
-function AudioTrackWaveform({ displayMode, gainDb, stream, track }: AudioTrackWaveformProps) {
+function AudioTrackWaveform({ displayMode, stream, track, volume }: AudioTrackWaveformProps) {
   switch (track.waveform.status) {
     case "idle":
     case "loading":
@@ -34,7 +38,7 @@ function AudioTrackWaveform({ displayMode, gainDb, stream, track }: AudioTrackWa
       return (
         <AudioTrackWaveformCanvas
           displayMode={displayMode}
-          gainDb={gainDb}
+          gainDb={20 * Math.log10(Math.max(volume, MIN_DISPLAY_VOLUME))}
           key={track.waveform.url}
           stream={stream}
           waveform={track.waveform}

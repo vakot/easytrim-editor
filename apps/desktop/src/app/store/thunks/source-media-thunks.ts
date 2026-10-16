@@ -64,8 +64,7 @@ import {
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
-import type { AudioTrackProcessing } from "@/domain/audio-processing";
-import { getAudioTrackPreLevelEffects } from "@/domain/audio-processing";
+import { waveformShapeFilters } from "@/domain/audio-processing";
 import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import { gifSettingsWithDefaults } from "@/domain/gif-export";
@@ -1145,18 +1144,11 @@ const prepareSourceWaveforms =
         selectAudioTracks(getState()).map((track) => [track.streamIndex, track]),
       );
 
-      const processingByStream = Object.fromEntries(
-        streamIndexes.map((streamIndex) => {
-          const processing = tracksByStream.get(streamIndex)?.processing;
-          const waveformProcessing: AudioTrackProcessing = {
-            gainDb: 0,
-            ...(processing && getAudioTrackPreLevelEffects(processing).length > 0
-              ? { effects: getAudioTrackPreLevelEffects(processing) }
-              : {}),
-          };
-
-          return [streamIndex, waveformProcessing];
-        }),
+      const filtersByStream = Object.fromEntries(
+        streamIndexes.map((streamIndex) => [
+          streamIndex,
+          waveformShapeFilters(tracksByStream.get(streamIndex)?.processing.filters ?? []),
+        ]),
       );
 
       const results = await prepareWaveforms(
@@ -1164,7 +1156,7 @@ const prepareSourceWaveforms =
         jobId,
         streamIndexes,
         width,
-        processingByStream,
+        filtersByStream,
       );
 
       if (isCurrentSource(getState(), sourcePath, loadToken)) {
