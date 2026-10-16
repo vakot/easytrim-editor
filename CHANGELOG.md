@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Export dialogs now support selecting a separate frame-aligned range without changing the Timeline selection.
 - Added a workspace toolbar with quick access to Imported Sources, Export Queue, Activity Feed, Chapters, and Settings.
 - Added a view selector to the Activity Feed dialog.
+- Added a Statistics dialog, opened from the workspace toolbar, that tracks your completed exports, processing time, data processed, and storage saved across sessions. Statistics are kept only on this device.
 - Audio filter changes play live while the Audio filters dialog is open, before you apply them, including loudness normalization, with a status line that shows when the preview is ready. Space and the arrow keys control playback while the dialog is open, and applying or changing filters during playback no longer interrupts the audio.
 
 ### Changed
