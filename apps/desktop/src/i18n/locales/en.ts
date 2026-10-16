@@ -1,4 +1,60 @@
 export const en = {
+  achievements: {
+    items: {
+      audioSpecialist: {
+        description: "Complete 10 audio-only exports",
+        title: "Audio Specialist",
+      },
+      dataCruncher: {
+        description: "Process 100 GB of source data",
+        title: "Data Cruncher",
+      },
+      exportLegend: {
+        description: "Complete 1,000 exports",
+        title: "Export Legend",
+      },
+      exportVeteran: {
+        description: "Complete 100 exports",
+        title: "Export Veteran",
+      },
+      firstExport: {
+        description: "Complete your first export",
+        title: "First Export",
+      },
+      firstLosslessCut: {
+        description: "Complete your first lossless Fast Export",
+        title: "First Lossless Cut",
+      },
+      gettingStarted: {
+        description: "Complete 10 exports",
+        title: "Getting Started",
+      },
+      gifMaker: {
+        description: "Export your first GIF",
+        title: "GIF Maker",
+      },
+      losslessLegend: {
+        description: "Complete 100 lossless Fast Exports",
+        title: "Lossless Legend",
+      },
+      oneHourLater: {
+        description: "Spend 1 hour processing exports",
+        title: "One Hour Later",
+      },
+      storageSaver: {
+        description: "Save 10 GB of storage across your exports",
+        title: "Storage Saver",
+      },
+      theChosenOne: {
+        description: "Encounter every legendary splash message",
+        title: "The Chosen One",
+      },
+      workingOvertime: {
+        description: "Spend 24 hours processing exports",
+        title: "Working Overtime",
+      },
+    },
+  },
   activity: {
     description: "Review recent imports, exports, and workspace changes across sessions",
     empty: {
