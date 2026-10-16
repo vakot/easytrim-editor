@@ -1,8 +1,12 @@
 import { AutoScroller } from "@dnd-kit/dom";
 import { DragDropProvider, useDragDropManager } from "@dnd-kit/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Card } from "@/components/ui/card";
+
+import { useUiScaleFeedback } from "@/app/contexts/ui-scale-feedback-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
 import { AppLayoutFooter } from "@/app/layout/components/AppLayoutFooter";
 import { AppLayoutHeader } from "@/app/layout/components/AppLayoutHeader";
@@ -17,6 +21,7 @@ import { selectUiScalePercent } from "@/app/store/slices/preferences-slice";
 
 function AppLayout() {
   const uiScalePercent = useAppSelector(selectUiScalePercent);
+  const { scalePercent } = useUiScaleFeedback();
   const [viewHosts] = useState(createSidebarViewHosts);
   const drag = useSidebarDragAndDrop();
   const beginDockPlacement = drag.beginDockPlacement;
@@ -59,6 +64,9 @@ function AppLayout() {
           {drag.keyboardDragAnnouncement}
         </div>
         {drag.isDockPlacementMode ? <DockPlacementFeedback /> : null}
+        <AnimatePresence>
+          {scalePercent !== null ? <UiScaleFeedback scalePercent={scalePercent} /> : null}
+        </AnimatePresence>
         <AppLayoutHeader />
 
         <AppLayoutWorkspace
@@ -81,6 +89,27 @@ function AppLayout() {
         {WorkspaceDialog ? <WorkspaceDialog onOpenChange={handleDialogOpenChange} open /> : null}
       </main>
     </DragDropProvider>
+  );
+}
+
+function UiScaleFeedback({ scalePercent }: { scalePercent: number }) {
+  const reduceMotion = useReducedMotion() === true;
+
+  return (
+    <motion.div
+      animate={{ opacity: 1, scale: 1 }}
+      aria-atomic="true"
+      aria-live="polite"
+      className="pointer-events-none fixed inset-0 z-90 grid place-items-center"
+      exit={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      role="status"
+      transition={{ duration: reduceMotion ? 0 : 0.16 }}
+    >
+      <Card className="h-auto px-4 py-2 text-xl font-medium tabular-nums shadow-md" size="sm">
+        {scalePercent}%
+      </Card>
+    </motion.div>
   );
 }
 

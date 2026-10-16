@@ -21,6 +21,7 @@ import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommands
 import { AppUpdatesProvider } from "@/app/providers/AppUpdatesProvider";
 import { EditorRuntimeProviders } from "@/app/providers/EditorRuntimeProviders";
 import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
+import { UiScaleFeedbackProvider } from "@/app/providers/UiScaleFeedbackProvider";
 import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectDropListenerError } from "@/app/store/slices/import-workflow-slice";
@@ -54,34 +55,36 @@ function EasyTrimEditorApp() {
               <EditorRuntimeProviders>
                 <ResizablePanelContextProvider>
                   <AppDialogsProvider>
-                    <ApplicationCommandsProvider>
-                      <ExportDialog>
-                        <AppLayout />
-                      </ExportDialog>
-                      <AppSettingsDialog />
-                      <AppCommandPaletteDialog />
-                      <AppChangelogDialog />
+                    <UiScaleFeedbackProvider>
+                      <ApplicationCommandsProvider>
+                        <ExportDialog>
+                          <AppLayout />
+                        </ExportDialog>
+                        <AppSettingsDialog />
+                        <AppCommandPaletteDialog />
+                        <AppChangelogDialog />
 
-                      <Toaster />
-                      <ActivityToasts />
-                      <AppDiagnosticsRecoveryDialog />
-                      <WorkspaceRecoveryNotice />
-                      <SourceDropOverlay />
-                      <NativeDialogOverlay />
+                        <Toaster />
+                        <ActivityToasts />
+                        <AppDiagnosticsRecoveryDialog />
+                        <WorkspaceRecoveryNotice />
+                        <SourceDropOverlay />
+                        <NativeDialogOverlay />
 
-                      {dropListenerError ? (
-                        <Alert
-                          className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
-                          variant="destructive"
-                        >
-                          <AlertDescription>
-                            {t("app.dragUnavailable", {
-                              message: localizeAppError(dropListenerError, t),
-                            })}
-                          </AlertDescription>
-                        </Alert>
-                      ) : null}
-                    </ApplicationCommandsProvider>
+                        {dropListenerError ? (
+                          <Alert
+                            className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+                            variant="destructive"
+                          >
+                            <AlertDescription>
+                              {t("app.dragUnavailable", {
+                                message: localizeAppError(dropListenerError, t),
+                              })}
+                            </AlertDescription>
+                          </Alert>
+                        ) : null}
+                      </ApplicationCommandsProvider>
+                    </UiScaleFeedbackProvider>
                   </AppDialogsProvider>
                 </ResizablePanelContextProvider>
               </EditorRuntimeProviders>
