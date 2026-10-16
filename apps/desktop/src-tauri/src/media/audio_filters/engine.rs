@@ -610,14 +610,9 @@ impl AudioProcessingEngine {
         .map_err(start_error)?;
 
         if state.sessions.len() >= self.config.max_sessions
-            && let Some(oldest) = state
-                .sessions
-                .iter()
-                .enumerate()
-                .min_by_key(|(_, slot)| slot.last_used)
-                .map(|(index, _)| index)
+            && let Some(evicted) = evictable_session(&state)
         {
-            state.sessions.remove(oldest).terminate();
+            state.sessions.remove(evicted).terminate();
         }
         let cursor = Arc::new(AtomicU64::new(seek_frame));
         let preview = state.scopes.get(scope).is_some_and(|current| {
@@ -720,6 +715,26 @@ impl Drop for AudioProcessingEngine {
             }
         }
     }
+}
+
+/// The session to stop when the limit is reached: never one a request is rendering with, and one
+/// rendering audible processing only after every other kind, least recently used first. When
+/// every session is in use, none is stopped and the limit is exceeded until one is idle.
+fn evictable_session(state: &EngineState) -> Option<usize> {
+    state
+        .sessions
+        .iter()
+        .enumerate()
+        .filter(|(_, slot)| Arc::strong_count(&slot.session) == 1)
+        .min_by_key(|(_, slot)| {
+            let audible = state
+                .scopes
+                .get(&slot.scope)
+                .and_then(|current| current.audible.as_ref())
+                .is_some_and(|revision| revision.key == slot.key);
+            (audible, slot.last_used)
+        })
+        .map(|(index, _)| index)
 }
 
 /// Keeps a key's sessions and audio as committed audio.
@@ -1296,6 +1311,43 @@ mod tests {
                 .iter()
                 .all(|slot| slot.key.graph == newest.canonical_graph())
         );
+    }
+
+    #[test]
+    fn the_session_limit_never_stops_a_session_a_request_is_rendering_with() {
+        let (_fixture, source) = program();
+        let engine = Arc::new(AudioProcessingEngine::new(EngineConfig {
+            max_sessions: 2,
+            ..EngineConfig::default()
+        }));
+        let audible = vec![gain("g", -3.0)];
+        let (in_flight, resume) = paused_render(&engine, &source, audible, false);
+
+        let waveform_chain = compile_chain(&[gain("g", 1.0)], &[]).unwrap();
+        engine
+            .render_canonical(
+                &RenderRequest {
+                    source: &source,
+                    stream_index: 0,
+                    chain: &waveform_chain,
+                    range: RANGE,
+                    start: 0,
+                    frames: 48_000,
+                    channels: 2,
+                    purpose: RenderPurpose::Waveform,
+                    replacement: false,
+                },
+                &|| false,
+            )
+            .unwrap();
+        // A third session exceeds the limit; the idle waveform session goes, not the busy one.
+        let replacement = compile_chain(&[gain("g", 6.0)], &[]).unwrap();
+        render_replacement(&engine, &source, &replacement, 96_000, 144_000).unwrap();
+        let sessions = engine.lock().unwrap().sessions.len();
+        resume.send(()).unwrap();
+
+        assert!(in_flight.join().unwrap().is_ok());
+        assert_eq!(sessions, 2);
     }
 
     #[test]
