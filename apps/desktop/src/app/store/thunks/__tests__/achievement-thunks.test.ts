@@ -43,14 +43,14 @@ describe("achievement thunks", () => {
     expect(selectAchievementRecords(store.getState())).toEqual(records);
   });
 
-  it("unlocks nothing when there is nothing to unlock or the native call fails", async () => {
+  it("unlocks nothing when there is nothing to unlock and reports a native failure", async () => {
     const store = createStore();
 
     await expect(store.dispatch(unlockAchievements([]))).resolves.toEqual([]);
     expect(mocks.unlockAchievements).not.toHaveBeenCalled();
 
     mocks.unlockAchievements.mockRejectedValue({ code: "internal" });
-    await expect(store.dispatch(unlockAchievements(["first-export"]))).resolves.toEqual([]);
+    await expect(store.dispatch(unlockAchievements(["first-export"]))).resolves.toBeNull();
   });
 
   it("records a new splash message discovery but skips one already discovered", async () => {

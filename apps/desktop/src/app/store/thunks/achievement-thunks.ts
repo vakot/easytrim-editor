@@ -28,10 +28,10 @@ const loadAchievementRecords = (): AppThunk<Promise<void>> => async (dispatch) =
 /**
  * Unlocks achievements natively and resolves with the ones this call newly unlocked. The native
  * store ignores achievements that are already unlocked, so repeated or concurrent requests never
- * report the same unlock twice. A failure unlocks nothing and resolves with no achievements.
+ * report the same unlock twice. Resolves with null when the native store could not be reached.
  */
 const unlockAchievements =
-  (achievementIds: readonly string[]): AppThunk<Promise<string[]>> =>
+  (achievementIds: readonly string[]): AppThunk<Promise<string[] | null>> =>
   async (dispatch) => {
     if (achievementIds.length === 0) return [];
     try {
@@ -39,7 +39,7 @@ const unlockAchievements =
       dispatch(achievementRecordsUpdated({ records }));
       return unlockedAchievementIds;
     } catch {
-      return [];
+      return null;
     }
   };
 

@@ -54,6 +54,11 @@ export const en = {
         title: "Working Overtime",
       },
     },
+    notification: {
+      unlocked: "Achievement unlocked",
+      unlockedMany_one: "{{count}} achievement unlocked",
+      unlockedMany_other: "{{count}} achievements unlocked",
+    },
   },
   activity: {
     description: "Review recent imports, exports, and workspace changes across sessions",
