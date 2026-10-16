@@ -25,7 +25,7 @@ const meta = {
   component: ExportActions,
   parameters: { layout: "centered" },
   tags: ["autodocs"],
-  title: "Features/Export Actions",
+  title: "Features/Export/Export Actions",
 } satisfies Meta<typeof ExportActions>;
 
 export default meta;

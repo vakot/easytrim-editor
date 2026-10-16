@@ -1,0 +1,390 @@
+.enchantment {
+  font-family: ui-monospace, monospace;
+  font-variant-ligatures: none;
+  text-align: center;
+}
+
+.enchantment [data-enchantment-text] {
+  display: inline-block;
+  min-width: 13ch;
+}
+
+.rainbow {
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    #ff4545,
+    #ffb341,
+    #f4e94e,
+    #62d66b,
+    #45c9e8,
+    #7772f5,
+    #d35be8,
+    #ff4545
+  );
+  background-clip: text;
+  filter: hue-rotate(0deg);
+  animation: splash-hue-rotate 5s linear infinite;
+  -webkit-background-clip: text;
+}
+
+.corruptedSignal {
+  color: #f3f4f6;
+  text-shadow:
+    -2px 0 #ff354f,
+    2px 0 #27d8f2;
+  animation: splash-signal-glitch 6s steps(1, end) infinite;
+}
+
+.chosenFrame {
+  color: transparent;
+  background: linear-gradient(
+    105deg,
+    color-mix(in srgb, var(--primary) 65%, #704000),
+    var(--primary) 28%,
+    #fff1b0 39%,
+    #fffbea 42%,
+    #ffcf60 47%,
+    var(--primary) 65%,
+    color-mix(in srgb, var(--primary) 65%, #704000)
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: splash-golden-shimmer 4s linear infinite;
+}
+
+.chosenFrame svg {
+  color: var(--primary);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--primary) 60%, transparent));
+}
+
+.frameNotFound {
+  position: relative;
+  color: #ff4b55;
+  text-shadow: 0 0 7px rgb(255 49 61 / 45%);
+  animation: splash-error-flicker 8.7s steps(1, end) infinite;
+}
+
+@keyframes splash-hue-rotate {
+  from {
+    filter: hue-rotate(0deg);
+  }
+
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes splash-signal-glitch {
+  /* Normal signal */
+  0%,
+  28%,
+  35%,
+  69%,
+  73%,
+  100% {
+    opacity: 1;
+    transform: translate(0, 0);
+    text-shadow:
+      -2px 0 #ff354f,
+      2px 0 #27d8f2;
+  }
+
+  /* Primary glitch: left/up */
+  28.5% {
+    opacity: 0.9;
+    transform: translate(-3px, -1px) skewX(-4deg);
+    text-shadow:
+      -5px 1px #ff354f,
+      5px -1px #27d8f2;
+  }
+
+  29.2% {
+    opacity: 0.75;
+    transform: translate(-6px, -2px) skewX(-7deg);
+    text-shadow:
+      -7px 2px #ff354f,
+      7px -2px #27d8f2;
+  }
+
+  /* Snap right/down */
+  30% {
+    opacity: 1;
+    transform: translate(5px, 2px) skewX(5deg);
+    text-shadow:
+      5px -2px #ff354f,
+      -5px 2px #27d8f2;
+  }
+
+  30.7% {
+    opacity: 0.5;
+    transform: translate(2px, -1px);
+    text-shadow:
+      -3px 0 #ff354f,
+      4px 1px #27d8f2;
+  }
+
+  31.5% {
+    opacity: 0.9;
+    transform: translate(-2px, 1px);
+    text-shadow:
+      3px 0 #ff354f,
+      -3px 0 #27d8f2;
+  }
+
+  /* Brief signal loss */
+  32.2% {
+    opacity: 0.15;
+    transform: translate(0, 0);
+    text-shadow: none;
+  }
+
+  32.8% {
+    opacity: 1;
+    transform: translate(3px, -1px);
+    text-shadow:
+      -4px 0 #ff354f,
+      4px 0 #27d8f2;
+  }
+
+  33.5% {
+    opacity: 0.8;
+    transform: translate(-1px, 1px);
+    text-shadow:
+      -2px 0 #ff354f,
+      3px 0 #27d8f2;
+  }
+
+  /* Secondary glitch: short burst */
+  69.5% {
+    opacity: 0.8;
+    transform: translate(3px, -2px) skewX(3deg);
+    text-shadow:
+      4px 1px #ff354f,
+      -4px -1px #27d8f2;
+  }
+
+  70.2% {
+    opacity: 1;
+    transform: translate(-4px, 1px) skewX(-3deg);
+    text-shadow:
+      -5px 0 #ff354f,
+      5px 1px #27d8f2;
+  }
+
+  70.9% {
+    opacity: 0.45;
+    transform: translate(1px, 2px);
+    text-shadow:
+      2px -1px #ff354f,
+      -3px 1px #27d8f2;
+  }
+
+  71.5% {
+    opacity: 1;
+    transform: translate(-2px, 0);
+    text-shadow:
+      -3px 0 #ff354f,
+      3px 0 #27d8f2;
+  }
+}
+
+@keyframes splash-golden-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: 0% 0;
+  }
+}
+
+@keyframes splash-error-flicker {
+  /* Normal signal */
+  0%,
+  12%,
+  21%,
+  39%,
+  49%,
+  67%,
+  76%,
+  100% {
+    opacity: 1;
+    transform: translate(0, 0);
+    filter: brightness(1);
+    text-shadow: 0 0 7px rgb(255 49 61 / 45%);
+  }
+
+  /* Horror flicker: unstable power */
+  12.5%,
+  14.3%,
+  17.8% {
+    opacity: 0.08;
+    filter: brightness(0.3);
+    text-shadow: none;
+  }
+
+  13.2%,
+  16.1% {
+    opacity: 0.75;
+    filter: brightness(1.35);
+    text-shadow: 0 0 13px rgb(255 49 61 / 70%);
+  }
+
+  15.1% {
+    opacity: 0.25;
+    filter: brightness(0.6);
+    text-shadow: none;
+  }
+
+  18.4% {
+    opacity: 0.95;
+    filter: brightness(1.6);
+    text-shadow: 0 0 18px rgb(255 49 61 / 90%);
+  }
+
+  19.2% {
+    opacity: 0.4;
+    filter: brightness(0.8);
+    text-shadow: 0 0 3px rgb(255 49 61 / 30%);
+  }
+
+  /* Signal glitch: left/up */
+  39.4% {
+    opacity: 0.9;
+    transform: translate(-3px, -1px) skewX(-4deg);
+    text-shadow:
+      -5px 1px #ff354f,
+      5px -1px #27d8f2;
+  }
+
+  40.1% {
+    opacity: 0.75;
+    transform: translate(-6px, -2px) skewX(-7deg);
+    text-shadow:
+      -7px 2px #ff354f,
+      7px -2px #27d8f2;
+  }
+
+  /* Signal glitch: snap right/down */
+  40.8% {
+    opacity: 1;
+    transform: translate(5px, 2px) skewX(5deg);
+    text-shadow:
+      5px -2px #ff354f,
+      -5px 2px #27d8f2;
+  }
+
+  41.5% {
+    opacity: 0.35;
+    transform: translate(2px, -1px);
+    text-shadow:
+      -3px 0 #ff354f,
+      4px 1px #27d8f2;
+  }
+
+  42.2% {
+    opacity: 0.9;
+    transform: translate(-2px, 1px);
+    text-shadow:
+      3px 0 #ff354f,
+      -3px 0 #27d8f2;
+  }
+
+  43% {
+    opacity: 0.1;
+    transform: translate(0, 0);
+    text-shadow: none;
+  }
+
+  43.7% {
+    opacity: 1;
+    text-shadow: 0 0 15px rgb(255 49 61 / 85%);
+  }
+
+  /* Short secondary glitch */
+  48% {
+    opacity: 0.8;
+    transform: translate(2px, -2px);
+    text-shadow:
+      4px 1px #ff354f,
+      -4px -1px #27d8f2;
+  }
+
+  48.5% {
+    opacity: 1;
+    transform: translate(-2px, 1px);
+    text-shadow:
+      -2px 0 #ff354f,
+      3px 0 #27d8f2;
+  }
+
+  /* Voltage spike */
+  67.5% {
+    opacity: 1;
+    filter: brightness(2);
+    text-shadow:
+      0 0 7px #ff354f,
+      0 0 20px rgb(255 49 61 / 95%),
+      0 0 35px rgb(255 49 61 / 65%);
+  }
+
+  68.2% {
+    opacity: 0.5;
+    filter: brightness(0.7);
+    text-shadow: 0 0 3px rgb(255 49 61 / 30%);
+  }
+
+  68.8% {
+    opacity: 1;
+    filter: brightness(1.7);
+    text-shadow:
+      0 0 12px rgb(255 49 61 / 90%),
+      0 0 25px rgb(255 49 61 / 50%);
+  }
+
+  69.5% {
+    opacity: 0.85;
+    filter: brightness(0.9);
+    text-shadow: 0 0 5px rgb(255 49 61 / 40%);
+  }
+
+  /* Final weak flicker */
+  74% {
+    opacity: 0.15;
+    text-shadow: none;
+  }
+
+  74.6% {
+    opacity: 1;
+    filter: brightness(1.2);
+  }
+
+  75.1% {
+    opacity: 0.55;
+    filter: brightness(0.8);
+  }
+
+  75.6% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rainbow,
+  .corruptedSignal,
+  .chosenFrame,
+  .frameNotFound {
+    animation: none;
+  }
+
+  .rainbow {
+    filter: hue-rotate(0deg);
+  }
+
+  .chosenFrame {
+    background-position: 50% 0;
+  }
+}

@@ -8,9 +8,10 @@ import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 import { Spinner } from "@/components/ui/spinner";
 
-const appTopOffset = 90;
-const sonnerDefaultOffset = 24;
+const appTopOffset = "5.625rem";
+const sonnerDefaultOffset = "1.5rem";
 const exportDropdownToastGap = 8;
+const sonnerDefaultGap = 14;
 
 const exportDropdownSelector = '[data-export-actions-dropdown][data-state="open"]';
 const toasterSelector = "[data-sonner-toaster]";
@@ -21,16 +22,24 @@ function Toaster({ ...props }: ToasterProps) {
     document.documentElement.dataset.theme === "dark" ? "dark" : "light",
   );
 
+  const [uiScale, setUiScale] = useState(1);
+
   const [exportDropdownOffset, setExportDropdownOffset] = useState(0);
   const appliedOffset = useRef(0);
+  const toastTopOffset = `calc(${appTopOffset} + ${sonnerDefaultOffset} + ${exportDropdownOffset}px)`;
 
   useEffect(() => {
     const root = document.documentElement;
-    const observer = new MutationObserver(() => {
+    const updateRootSettings = () => {
       setTheme(root.dataset.theme === "dark" ? "dark" : "light");
-    });
+      const rootFontSize = Number.parseFloat(getComputedStyle(root).fontSize);
+      setUiScale(Number.isFinite(rootFontSize) ? rootFontSize / 16 : 1);
+    };
 
-    observer.observe(root, { attributeFilter: ["data-theme"], attributes: true });
+    const observer = new MutationObserver(updateRootSettings);
+
+    updateRootSettings();
+    observer.observe(root, { attributeFilter: ["data-theme", "style"], attributes: true });
     return () => observer.disconnect();
   }, []);
 
@@ -81,7 +90,7 @@ function Toaster({ ...props }: ToasterProps) {
         if (overlapsVertically) {
           requiredOffset = Math.max(
             requiredOffset,
-            dropdownBounds.bottom + exportDropdownToastGap - defaultToastTop,
+            dropdownBounds.bottom + exportDropdownToastGap * uiScale - defaultToastTop,
           );
         }
       }
@@ -145,11 +154,12 @@ function Toaster({ ...props }: ToasterProps) {
       document.removeEventListener("transitionend", onToastTransitionEnd, true);
       window.removeEventListener("resize", scheduleMeasure);
     };
-  }, []);
+  }, [uiScale]);
 
   return (
     <Sonner
       className="toaster group"
+      gap={sonnerDefaultGap * uiScale}
       icons={{
         success: <CircleCheckIcon className="size-4" />,
         info: <InfoIcon className="size-4" />,
@@ -157,11 +167,16 @@ function Toaster({ ...props }: ToasterProps) {
         error: <OctagonXIcon className="size-4" />,
         loading: <Spinner aria-hidden="true" className="size-4" />,
       }}
-      mobileOffset={{ top: appTopOffset + sonnerDefaultOffset + exportDropdownOffset }}
-      offset={{ top: appTopOffset + sonnerDefaultOffset + exportDropdownOffset }}
+      mobileOffset={{ left: "1rem", right: "1rem", top: toastTopOffset }}
+      offset={{ right: "2rem", top: toastTopOffset }}
       position="top-right"
       style={
         {
+          "--width": "22.25rem",
+          "--toast-icon-margin-start": "-0.1875rem",
+          "--toast-icon-margin-end": "0.25rem",
+          "--toast-svg-margin-start": "-0.0625rem",
+          "--toast-svg-margin-end": "0rem",
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",

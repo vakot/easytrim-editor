@@ -703,6 +703,7 @@ export const en = {
       tooltip: "Right-click to open the preview menu",
     },
     crop: {
+      apply: "Apply",
       aspectRatioPresets: "Crop aspect ratio presets",
       bottom: "Resize crop from bottom",
       bottomLeft: "Resize crop from bottom left",

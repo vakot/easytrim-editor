@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added randomly selected empty-preview splash messages, including easter eggs :)
+- Added an Apply button to commit crop tool changes.
+- Added an on-screen preview when changing UI scale with keyboard shortcuts.
 - Added editable video chapters with a chapter list, frame-accurate ranges, moving and resizing directly on the Timeline, and trim-aware chapter export.
 - Export dialogs now support selecting a separate frame-aligned range without changing the Timeline selection.
 

@@ -53,7 +53,7 @@ const meta = {
   component: ExportQueue,
   parameters: { layout: "centered" },
   tags: ["autodocs"],
-  title: "Features/Export Queue",
+  title: "Features/Export/Export Queue",
 } satisfies Meta<typeof ExportQueue>;
 
 export default meta;

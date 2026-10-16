@@ -36,7 +36,7 @@ const meta = {
     ),
   ],
   parameters: { layout: "centered" },
-  title: "Features/Activity Feed/Grouped Entry",
+  title: "Features/Activity/Activity Feed/Grouped Entry",
 } satisfies Meta<typeof ActivityFeedGroupedEntry>;
 
 export default meta;

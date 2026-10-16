@@ -22,7 +22,7 @@ const meta = {
     ),
   ],
   parameters: { layout: "centered" },
-  title: "Features/Activity Feed",
+  title: "Features/Activity/Activity Feed",
 } satisfies Meta<typeof ActivityFeedStory>;
 
 export default meta;

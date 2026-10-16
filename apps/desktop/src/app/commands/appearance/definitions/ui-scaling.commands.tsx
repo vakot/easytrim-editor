@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 
 import type { ApplicationCommandDefinition } from "@/app/commands/core/application-command.types";
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
+import { useUiScaleFeedback } from "@/app/contexts/ui-scale-feedback-context";
 import {
   DEFAULT_UI_SCALE_PERCENT,
   MAX_UI_SCALE_PERCENT,
   MIN_UI_SCALE_PERCENT,
+  UI_SCALE_STEP_PERCENT,
 } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -19,6 +21,7 @@ import {
 function useUiScalingCommands() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const { showScale } = useUiScaleFeedback();
   const uiScalePercent = useAppSelector(selectUiScalePercent);
   const zoomInLabel = t("layout.zoomIn");
   const zoomOutLabel = t("layout.zoomOut");
@@ -29,8 +32,11 @@ function useUiScalingCommands() {
       enabled: uiScalePercent < MAX_UI_SCALE_PERCENT,
       icon: <ZoomIn aria-hidden="true" />,
       shortcut: { code: "Equal", key: "=", modifier: "control" },
-      run() {
+      run({ surface }) {
         dispatch(uiScaleIncreased());
+        if (surface === "hotkey") {
+          showScale(Math.min(MAX_UI_SCALE_PERCENT, uiScalePercent + UI_SCALE_STEP_PERCENT));
+        }
       },
       id: "ui-scale-zoom-in" as const,
       label: zoomInLabel,
@@ -42,8 +48,11 @@ function useUiScalingCommands() {
       enabled: uiScalePercent > MIN_UI_SCALE_PERCENT,
       icon: <ZoomOut aria-hidden="true" />,
       shortcut: { code: "Minus", key: "-", modifier: "control" },
-      run() {
+      run({ surface }) {
         dispatch(uiScaleDecreased());
+        if (surface === "hotkey") {
+          showScale(Math.max(MIN_UI_SCALE_PERCENT, uiScalePercent - UI_SCALE_STEP_PERCENT));
+        }
       },
       id: "ui-scale-zoom-out" as const,
       label: zoomOutLabel,
@@ -55,8 +64,9 @@ function useUiScalingCommands() {
       enabled: uiScalePercent !== DEFAULT_UI_SCALE_PERCENT,
       icon: <RotateCcw aria-hidden="true" />,
       shortcut: { code: "Digit0", key: "0", modifier: "control" },
-      run() {
+      run({ surface }) {
         dispatch(uiScalingReset());
+        if (surface === "hotkey") showScale(DEFAULT_UI_SCALE_PERCENT);
       },
       id: "ui-scale-reset" as const,
       label: resetLabel,

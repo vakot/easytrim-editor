@@ -11,6 +11,7 @@ import {
 } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { SupportLink } from "@/app/components/SupportLink";
+import { SplashMessages } from "@/features/entertainment";
 import { cn } from "@/lib/class-names.utils";
 
 import styles from "./VideoPreviewEmpty.module.css";
@@ -76,12 +77,15 @@ function VideoPreviewEmpty() {
       )}
     >
       <div className="grid w-72 max-w-full justify-items-center gap-10">
-        <img
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none aspect-square w-full opacity-30 grayscale invert-100 dark:opacity-20 dark:invert-0"
-          src="/logo-symbol.svg"
-        />
+        <div className="relative">
+          <img
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none aspect-square w-full opacity-30 grayscale invert-100 dark:opacity-20 dark:invert-0"
+            src="/logo-symbol.svg"
+          />
+          <SplashMessages />
+        </div>
 
         <div className="grid w-full justify-items-center gap-4">
           <div

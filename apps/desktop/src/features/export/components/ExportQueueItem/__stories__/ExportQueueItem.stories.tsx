@@ -33,7 +33,7 @@ const meta = {
   args: { attemptId: "story-queued", children: null, instanceId: "story-source" },
   parameters: { layout: "centered" },
   tags: ["autodocs"],
-  title: "Features/Export Queue Item",
+  title: "Features/Export/Export Queue Item",
 } satisfies Meta<typeof ExportQueueItem>;
 
 export default meta;
