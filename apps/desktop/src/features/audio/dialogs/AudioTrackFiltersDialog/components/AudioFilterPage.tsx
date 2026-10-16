@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 
 import {
   AUDIO_FILTER_PRESETS,
@@ -33,7 +32,7 @@ function AudioFilterPage({ filter }: { filter: AudioFilter }) {
   const descriptor = audioFilterDescriptor(filter.type);
 
   return (
-    <div className="grid gap-4" data-slot="audio-filter-page">
+    <div className="grid gap-3" data-slot="audio-filter-page">
       <div className="border-b pb-3">
         <h3 className="font-semibold">{descriptor.label(t)}</h3>
         <p className="mt-1 text-sm text-muted-foreground">{descriptor.description(t)}</p>
@@ -41,19 +40,11 @@ function AudioFilterPage({ filter }: { filter: AudioFilter }) {
 
       <AudioFilterPresetSelect filter={filter} />
 
-      <div className="flex items-center gap-3">
-        <h4 className="flex shrink-0 items-center gap-1 text-sm font-medium text-muted-foreground">
-          <Settings aria-hidden="true" className="size-4" />
-          {t("audio.tracks.advanced")}
-        </h4>
-        <Separator className="flex-1" />
-      </div>
-
-      <div className="grid gap-4">
+      <section className="grid gap-3">
         {descriptor.fields.map((field) => (
           <AudioFilterParameterField field={field} filter={filter} key={field.parameter} />
         ))}
-      </div>
+      </section>
     </div>
   );
 }
@@ -75,7 +66,7 @@ function AudioFilterPresetSelect({ filter }: { filter: AudioFilter }) {
   const selected = matchingAudioFilterPreset(filter) ?? CUSTOM_PRESET;
 
   return (
-    <div className="grid gap-2">
+    <section className="grid gap-2 border-b pb-3">
       <Label htmlFor={id}>{t("audio.filters.preset.label")}</Label>
       <Select
         onValueChange={(presetId) => {
@@ -89,8 +80,11 @@ function AudioFilterPresetSelect({ filter }: { filter: AudioFilter }) {
         }}
         value={selected}
       >
-        <SelectTrigger className="w-full max-w-xs" id={id}>
-          <SelectValue />
+        <SelectTrigger className="w-full" id={id} variant="primary">
+          <span className="flex items-center gap-1.5">
+            <Settings aria-hidden="true" className="text-primary-foreground" />
+            <SelectValue />
+          </span>
         </SelectTrigger>
         <SelectContent>
           {presets.map((preset) => (
@@ -105,7 +99,7 @@ function AudioFilterPresetSelect({ filter }: { filter: AudioFilter }) {
           ) : null}
         </SelectContent>
       </Select>
-    </div>
+    </section>
   );
 }
 

@@ -1,12 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-  InputGroupText,
-} from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 
@@ -52,7 +47,7 @@ function AudioFilterParameterField({
     dispatch({ filter: { ...filter, [field.parameter]: next } as AudioFilter, type: "updated" });
 
   return (
-    <div className="grid gap-2" data-slot="audio-filter-parameter">
+    <div className="grid" data-slot="audio-filter-parameter">
       <Label htmlFor={id}>{label}</Label>
       <div className="flex items-center gap-3">
         <Slider
@@ -86,9 +81,7 @@ function AudioFilterParameterField({
             }}
             value={text ?? formatValue(value)}
           />
-          <InputGroupAddon align="inline-end">
-            <InputGroupText>{field.unit}</InputGroupText>
-          </InputGroupAddon>
+          <InputGroupAddon align="inline-end">{field.unit}</InputGroupAddon>
         </InputGroup>
       </div>
       {valid ? null : (
