@@ -135,33 +135,10 @@ export const ru = {
       retry: "Повторить поиск",
       showRanges: "Показать участки со звуком",
     },
-    effects: {
-      appliedSummaryLabel: "Применённые эффекты: {{summary}}",
-      dialog: {
-        applyNotice: "Изменения не будут применены, пока вы не нажмёте «Применить»",
-        description: "Эффекты применяются в фиксированном порядке из списка",
-        title: "{{title}} — эффекты",
-      },
-      open: "Эффекты",
-      stages: {
-        cleanup: "Очистка",
-        dynamics: "Динамика",
-        level: "Уровень",
-        protection: "Защита",
-      },
-    },
     errors: {
       audio: {
         analyzeTrackLoudnessToPrepareAudioPlayback: "Проанализируйте громкость дорожки, чтобы подготовить аудио к воспроизведению",
-        audioPreviewsRequireInspectedSourceMedia: "Для предпросмотра аудио сначала нужно проанализировать исходный файл",
-        ffmpegCouldNotPrepareAudioPreview: "Не удалось подготовить предпросмотр аудио с помощью FFmpeg",
-        ffmpegIsRequiredToPrepareAudioPreview: "Для подготовки предпросмотра аудио требуется FFmpeg",
-        preparingAudioPreviewTookTooLong: "Подготовка предпросмотра аудио заняла слишком много времени",
-        selectedAudioStreamsCouldNotBePreparedForPreview: "Не удалось подготовить выбранные аудиопотоки для предпросмотра",
-        temporaryAudioPreviewDirectoryCouldNotBeCreated: "Не удалось создать временную папку для предпросмотра аудио",
-        uniqueTemporaryAudioPreviewDirectoryCouldNotBeCreated: "Не удалось создать отдельную временную папку для предпросмотра аудио",
       },
-      audioPreviewStreamIndexesMustBeUnique: "Индексы аудиопотоков предпросмотра должны быть уникальными",
       audioStreamMetadataIsUnavailableForWaveformGeneration: "Метаданные аудиопотока недоступны для создания формы волны",
       loudness: {
         ffmpegCouldNotAnalyzeAudioLoudness: "Не удалось измерить громкость аудио с помощью FFmpeg",
@@ -201,44 +178,29 @@ export const ru = {
       cutoffLabel: "Частота среза",
       description: "Уменьшите низкочастотный гул в этой дорожке",
       label: "Фильтр высоких частот",
-      summary: "Фильтр высоких частот ({{cutoff}} Гц)",
     },
     limiter: {
       ceilingLabel: "Предел пикового уровня",
       description: "Ограничивать пики этой дорожки",
       label: "Лимитер",
-      summary: "Лимитер ({{ceiling}} дБ)",
-    },
-    loudness: {
-      analyze: "Анализировать громкость",
-      analyzing: "Анализ громкости…",
     },
     noiseReduction: {
       description: "Уменьшает фоновый шум в этой аудиодорожке",
       label: "Шумоподавление",
       strength: {
-        label: "Сила шумоподавления",
         light: "Слабое",
         medium: "Среднее",
         strong: "Сильное",
       },
-      summary: "Шумоподавление: {{preset}}",
     },
     normalization: {
       description: "Нормализовать дорожку до целевого уровня громкости",
       label: "Нормализация громкости",
-      levelSummary: "{{target}} LUFS · {{peak}} dBTP",
-      manualGainUnavailable: "Ручное усиление недоступно при автоматической нормализации",
-      maxTruePeakLabel: "Максимальный истинный пик (dBTP)",
       preset: {
         broadcast: "Вещание",
-        custom: "Своя настройка",
-        label: "Пресет",
         streaming: "Стриминг",
         webVideo: "Веб-видео",
       },
-      summary: "Нормализовано — {{preset}}",
-      targetLufsLabel: "Целевая громкость (LUFS)",
     },
     output: {
       merge: {
@@ -258,7 +220,6 @@ export const ru = {
     },
     tracks: {
       actionsLabel: "Действия аудиодорожки {{number}}",
-      advanced: "Дополнительно",
       channels_few: "{{count}} канала",
       channels_many: "{{count}} каналов",
       channels_one: "{{count}} канал",
@@ -290,7 +251,6 @@ export const ru = {
       },
       mute: "Выключить звук",
       muteWithTitle: "Выключить звук ({{title}})",
-      preparingPreview: "Подготовка предпросмотра с этими настройками дорожки…",
       title: "Аудиодорожки",
       unknownLayout: "неизвестная конфигурация каналов",
       unmute: "Включить звук",
@@ -337,7 +297,6 @@ export const ru = {
       layoutActivityFeedView: "Компоновка / Вид ленты активности",
       layoutDensity: "Компоновка / Плотность интерфейса",
       layoutPanelsVisibility: "Компоновка / Видимость панелей",
-      markers: "Маркеры",
       markersScene: "Маркеры / Сцена",
       preferences: "Параметры",
       preferencesAudio: "Параметры / Аудио",
@@ -710,12 +669,7 @@ export const ru = {
       opening: "Открытие предпросмотра…",
       preparing: "Подготовка совместимого предпросмотра…",
     },
-    markers: {
-      next: "Следующий маркер",
-      previous: "Предыдущий маркер",
-    },
     playback: {
-      failed: "Не удалось начать воспроизведение",
       loopDisabledTooltip: "Остановиться в конце воспроизведения",
       loopEnabledTooltip: "Начать заново после окончания",
       loopPlayback: "Повторять воспроизведение",
@@ -734,9 +688,7 @@ export const ru = {
       segmentDisabledTooltip: "Воспроизводить всю временную шкалу",
       segmentEnabledTooltip: "Ограничить воспроизведение выбранным сегментом",
       setEnd: "Установить конец сегмента",
-      setEndUnavailable: "Сегмент не может заканчиваться в начале источника",
       setStart: "Установить начало сегмента",
-      setStartUnavailable: "Сегмент не может начинаться в конце источника",
     },
     shortcuts: {
       markInOut: "Начало / Конец",
@@ -1171,9 +1123,6 @@ export const ru = {
   timeline: {
     accessibility: {
       playheadPosition: "Позиция воспроизведения",
-      seconds: "{{value}} с",
-      startsAt: "Начинается в {{time}}",
-      track: "Временная шкала обрезки видео",
     },
     audioMeter: {
       accessibility: {
@@ -1191,9 +1140,7 @@ export const ru = {
       },
       description: "Главы следуют таймлайну источника и оберзаются к выбранному сегменту по время экспорта.",
       empty: "Глав пока нет",
-      fields: { endSeconds: "Конец (секунды)", startSeconds: "Начала (секунды)", title: "Название" },
-      markerLabel: "{{title}} · {{range}}",
-      status: { invalid: "Введите название и правильные границы." },
+      fields: { title: "Название" },
       title: "Главы",
       tooltips: { manageChapters: "Управление главами" },
     },
