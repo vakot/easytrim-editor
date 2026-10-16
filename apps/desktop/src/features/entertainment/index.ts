@@ -1,2 +1,6 @@
 export { SplashMessages } from "./components/SplashMessages";
-export { UsageStatisticsDashboard } from "./components/UsageStatisticsDashboard";
+export {
+  UsageStatistics,
+  UsageStatisticsContent,
+  UsageStatisticsDashboard,
+} from "./components/UsageStatistics";
