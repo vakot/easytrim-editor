@@ -223,6 +223,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
 
   const isReady = playback.ready && sourcePath !== null && media !== null;
   const hasActiveOutput = enabledTracks.length > 0 && typeof AudioContext !== "undefined";
+  const mutesPreviewVideo = typeof AudioContext !== "undefined" || enabledTracks.length === 0;
 
   return useMemo<AudioPlaybackAdapter>(
     () => ({
@@ -230,6 +231,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       getMeter,
       hasActiveOutput,
       isReady,
+      mutesPreviewVideo,
       pause,
       prefetchAt,
       prepareAt,
@@ -245,6 +247,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       getMeter,
       hasActiveOutput,
       isReady,
+      mutesPreviewVideo,
       pause,
       prefetchAt,
       prepareAt,

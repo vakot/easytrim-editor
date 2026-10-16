@@ -49,6 +49,7 @@ function createAudioPlayback() {
     getCurrentTimeSeconds: () => null,
     getMeter: () => null,
     hasActiveOutput: true,
+    mutesPreviewVideo: true,
     isReady: true,
     pause: () => undefined,
     prefetchAt: () => undefined,

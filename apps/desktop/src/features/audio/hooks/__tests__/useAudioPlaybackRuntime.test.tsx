@@ -45,6 +45,7 @@ import {
   audioFilterPreviewEnded,
   audioFilterPreviewStarted,
   audioTrackFiltersApplied,
+  audioTrackToggled,
   selectAudioFilterPreviewStatus,
 } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
@@ -133,6 +134,30 @@ describe("useAudioPlaybackRuntime", () => {
       filters: [gain(6)],
       streamIndex: 2,
     });
+  });
+
+  it("keeps the preview video silent when every track is muted", () => {
+    const { hook, store } = renderRuntime();
+    expect(hook.result.current).toMatchObject({ hasActiveOutput: true, mutesPreviewVideo: true });
+
+    act(() => {
+      store.dispatch(audioTrackToggled({ streamIndex: 2 }));
+      store.dispatch(audioTrackToggled({ streamIndex: 4 }));
+    });
+    // No Web Audio output remains, yet the video must not fall back to its own sound.
+    expect(hook.result.current).toMatchObject({ hasActiveOutput: false, mutesPreviewVideo: true });
+  });
+
+  it("lets the video play its own sound only without Web Audio and with an enabled track", () => {
+    vi.stubGlobal("AudioContext", undefined);
+    const { hook, store } = renderRuntime();
+    expect(hook.result.current.mutesPreviewVideo).toBe(false);
+
+    act(() => {
+      store.dispatch(audioTrackToggled({ streamIndex: 2 }));
+      store.dispatch(audioTrackToggled({ streamIndex: 4 }));
+    });
+    expect(hook.result.current.mutesPreviewVideo).toBe(true);
   });
 
   it("reports a preview ready when there is no audio output to render it", () => {

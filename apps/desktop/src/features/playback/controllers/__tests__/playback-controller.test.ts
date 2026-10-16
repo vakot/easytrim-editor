@@ -19,6 +19,7 @@ function createPlaybackDriver() {
       getCurrentTimeSeconds: vi.fn(() => null),
       getMeter: () => null,
       hasActiveOutput: true,
+      mutesPreviewVideo: true,
       isReady: true,
       pause: vi.fn(),
       prefetchAt: vi.fn(),
