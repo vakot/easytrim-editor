@@ -1,10 +1,11 @@
 import { AutoScroller } from "@dnd-kit/dom";
 import { DragDropProvider, useDragDropManager } from "@dnd-kit/react";
+import { Search } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 import { useUiScaleFeedback } from "@/app/contexts/ui-scale-feedback-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
@@ -106,8 +107,11 @@ function UiScaleFeedback({ scalePercent }: { scalePercent: number }) {
       role="status"
       transition={{ duration: reduceMotion ? 0 : 0.16 }}
     >
-      <Card className="h-auto px-4 py-2 text-xl font-medium tabular-nums shadow-md" size="sm">
-        {scalePercent}%
+      <Card className="h-auto p-2 text-xl font-medium tabular-nums shadow-md" size="sm">
+        <CardContent className="flex items-center gap-2 p-0">
+          <Search aria-hidden="true" className="size-5 text-muted-foreground" />
+          {scalePercent}%
+        </CardContent>
       </Card>
     </motion.div>
   );
