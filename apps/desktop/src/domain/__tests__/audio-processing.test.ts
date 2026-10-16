@@ -17,7 +17,6 @@ import {
   sameAudioFilters,
   sameLoudnessInputs,
   serializeAudioTrackSettings,
-  waveformShapeFilters,
 } from "../audio-processing";
 
 const highPass = (id: string, cutoffHz = 80): AudioFilter => ({ cutoffHz, id, type: "highPass" });
@@ -163,17 +162,6 @@ describe("loudness measurement identity", () => {
       ]),
     ).toBe(false);
     expect(sameLoudnessInputs(chain, [...chain, limiter("lim")])).toBe(true);
-  });
-});
-
-describe("waveform shape", () => {
-  it("uses only the leading shaping filters", () => {
-    expect(
-      waveformShapeFilters([highPass("hp"), gain("g", 6), highPass("late", 200)]).map(
-        ({ id }) => id,
-      ),
-    ).toEqual(["hp"]);
-    expect(waveformShapeFilters([gain("g", 6), highPass("hp")])).toEqual([]);
   });
 });
 

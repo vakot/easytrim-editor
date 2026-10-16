@@ -430,6 +430,7 @@ async function prepareWaveforms(
   streamIndexes: number[],
   width: number,
   filtersByStream: Record<number, AudioFilter[]> = {},
+  measurementsByStream: Record<number, LoudnessAnalysis> = {},
 ): Promise<WaveformResult[]> {
   try {
     return parseWaveformResults(
@@ -439,6 +440,7 @@ async function prepareWaveforms(
         streamIndexes,
         width,
         filtersByStream,
+        measurementsByStream,
       }),
     );
   } catch (error: unknown) {

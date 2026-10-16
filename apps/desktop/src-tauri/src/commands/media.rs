@@ -5,7 +5,7 @@ use crate::{
         audio::decode_playback_chunk,
         audio_filters::{
             compiler::compile_chain,
-            model::{AudioChainSelection, AudioFilter},
+            model::{AudioChainSelection, AudioFilter, FilterMeasurement},
         },
         export::validate_audio_stream,
         probe::{MediaInfo, inspect_media_cancellable as probe_media},
@@ -282,6 +282,7 @@ pub async fn prepare_waveforms(
     stream_indexes: Vec<u32>,
     width: u32,
     filters_by_stream: HashMap<u32, Vec<AudioFilter>>,
+    measurements_by_stream: HashMap<u32, Vec<FilterMeasurement>>,
     state: State<'_, AppState>,
 ) -> Result<Vec<WaveformResult>, AppError> {
     if stream_indexes.is_empty() || stream_indexes.len() > 32 {
@@ -302,6 +303,7 @@ pub async fn prepare_waveforms(
     let media_token = waveform_source.source.load_token;
     if filters_by_stream
         .keys()
+        .chain(measurements_by_stream.keys())
         .any(|stream_index| !stream_indexes.contains(stream_index))
     {
         return Err(AppError::invalid_request(
@@ -313,8 +315,8 @@ pub async fn prepare_waveforms(
             AppErrorMessageId::MediaAudioStreamMetadataIsUnavailableForWaveformGeneration,
         )
     })?;
-    // Waveforms show the source shape after any leading shaping filters; measurements are never
-    // available here, so a normalization instance is rejected by the compiler.
+    // Global analysis is resolved before requesting a waveform, just as for playback.
+    // The compiler rejects missing measurements instead of silently skipping a stage.
     let chain_by_stream = stream_indexes
         .iter()
         .map(|stream_index| {
@@ -323,7 +325,11 @@ pub async fn prepare_waveforms(
                 .get(stream_index)
                 .map(Vec::as_slice)
                 .unwrap_or_default();
-            Ok((*stream_index, compile_chain(filters, &[])?))
+            let measurements = measurements_by_stream
+                .get(stream_index)
+                .map(Vec::as_slice)
+                .unwrap_or_default();
+            Ok((*stream_index, compile_chain(filters, measurements)?))
         })
         .collect::<Result<HashMap<_, _>, AppError>>()?;
     for stream_index in &stream_indexes {
@@ -359,8 +365,10 @@ pub async fn prepare_waveforms(
     }
 
     let chain_for_generation = chain_by_stream.clone();
+    let engine = state.audio_engine();
     let generated = tauri::async_runtime::spawn_blocking(move || {
         generate_waveforms(
+            &engine,
             &waveform_source,
             &pending_stream_indexes,
             width,

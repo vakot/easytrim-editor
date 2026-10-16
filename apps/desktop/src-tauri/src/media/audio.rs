@@ -10,6 +10,7 @@ use crate::{
             pcm_cache::FrameRange,
         },
         export::validate_audio_stream,
+        probe::MediaInfo,
     },
     state::ActiveSource,
 };
@@ -49,10 +50,7 @@ pub fn decode_playback_chunk(
         return Err(invalid_range());
     }
 
-    let range = FrameRange {
-        start: 0,
-        end: micros_to_frames(media_duration),
-    };
+    let range = processed_timeline_range(media);
     let start = micros_to_frames(start_micros);
     let end = micros_to_frames(end_micros).min(range.end);
     if end <= start {
@@ -74,6 +72,16 @@ pub fn decode_playback_chunk(
         .iter()
         .flat_map(|sample| sample.to_le_bytes())
         .collect())
+}
+
+/// The continuous range every consumer of a stream's processed audio renders: the whole source
+/// timeline at the canonical rate. Sharing it keeps playback and waveforms on one render key, so
+/// they reuse each other's cached samples instead of superseding each other.
+pub fn processed_timeline_range(media: &MediaInfo) -> FrameRange {
+    FrameRange {
+        start: 0,
+        end: micros_to_frames(u64::try_from(media.duration_micros).unwrap_or_default()),
+    }
 }
 
 fn invalid_range() -> AppError {

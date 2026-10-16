@@ -160,8 +160,17 @@ The engine is the future authoritative processed signal. In this version:
   FFmpeg pass over the export range, which is the canonical definition; it does not read the PCM
   cache yet.
 - **Activity detection** analyzes the compiled chain output without Track Volume.
-- **Waveforms** show the source after the chain's leading High-pass and Noise reduction filters,
-  scaled visually by Track Volume. Waveforms from processed PCM are a follow-up.
+- **Waveforms** reduce canonical stereo PCM from the engine, rendered with the complete committed
+  chain over the same whole-timeline range as playback, so both share one render key and its
+  cached segments. Normalization measurements are resolved first, exactly as for playback. The
+  envelope is the signal before Track Volume, which only scales the canvas, so a volume change never
+  regenerates it; any filter, parameter, or order change does, and so does a trim change when the
+  chain contains normalization. A silent processed waveform does not disable its track; only a
+  silent stream without filters does.
+- A waveform pass rejects provisional cached segments and renders those frames continuously from
+  the origin. When the stream's whole range would take more than half of the cache, the pass reuses
+  cached segments but streams the frames it renders without caching them, so it never evicts the
+  segments playback is using.
 
 ## Migration of the stage-based model
 

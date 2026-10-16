@@ -6,6 +6,7 @@ import { trimChanged } from "@/app/store/slices/trim-slice";
 import {
   areAudioFiltersValid,
   type AudioFilter,
+  audioFiltersRequireLoudnessAnalysis,
   type AudioTrackSettings,
   cloneAudioTrackProcessing,
   createDefaultAudioTrackProcessing,
@@ -13,7 +14,6 @@ import {
   normalizeAudioTrackDefaults,
   sameAudioFilters,
   sameLoudnessInputs,
-  waveformShapeFilters,
 } from "@/domain/audio-processing";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeMetadataLanguageCode } from "@/domain/languages";
@@ -125,13 +125,8 @@ const audioSlice = createSlice({
       }
 
       const loudnessInputsChanged = !sameLoudnessInputs(track.processing.filters, filters);
-      const waveformInputsChanged = !sameAudioFilters(
-        waveformShapeFilters(track.processing.filters),
-        waveformShapeFilters(filters),
-      );
-
       track.processing.filters = filters.map((filter) => ({ ...filter }));
-      if (waveformInputsChanged) track.waveform = { status: "idle" };
+      track.waveform = { status: "idle" };
       if (loudnessInputsChanged) track.loudnessAnalysis = { status: "idle" };
       track.activityAnalysis = { status: "idle" };
     },
@@ -315,6 +310,9 @@ const audioSlice = createSlice({
       .addCase(trimChanged, (state) => {
         for (const track of state.tracks) {
           track.loudnessAnalysis = { status: "idle" };
+          if (audioFiltersRequireLoudnessAnalysis(track.processing.filters)) {
+            track.waveform = { status: "idle" };
+          }
         }
       })
       .addCase(sourceSelected, (state) => {
@@ -373,8 +371,13 @@ function applyWaveformResult(state: AudioState, result: WaveformResult) {
   const track = state.tracks.find((candidate) => candidate.streamIndex === result.streamIndex);
   if (!track || track.waveform.status !== "loading" || track.waveform.jobId !== result.jobId)
     return;
+  // Waveforms describe processed audio. Only a silent unprocessed stream disables its track, so
+  // filters that make a track quiet never change whether it is mixed.
   const disabledSilentTrack =
-    result.status === "ready" && result.hasSignal === false && track.enabled;
+    result.status === "ready" &&
+    result.hasSignal === false &&
+    track.enabled &&
+    track.processing.filters.length === 0;
 
   if (disabledSilentTrack) {
     track.enabled = false;

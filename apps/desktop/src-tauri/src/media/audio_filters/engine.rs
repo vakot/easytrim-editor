@@ -97,6 +97,9 @@ struct ScopeState {
 /// Everything a request needs to render and commit gaps: what to render and which revision of
 /// its scope it belongs to.
 struct RenderTarget<'a> {
+    canonical_only: bool,
+    /// Whether rendered segments are committed to the cache or only returned to the caller.
+    retain: bool,
     request: &'a RenderRequest<'a>,
     key: RenderKey,
     scope: RenderScope,
@@ -158,7 +161,35 @@ impl AudioProcessingEngine {
         request: &RenderRequest<'_>,
         is_cancelled: &dyn Fn() -> bool,
     ) -> Result<(Vec<f32>, PcmQuality), AppError> {
+        self.render_with_quality(request, is_cancelled, false)
+    }
+
+    /// Renders continuous, authoritative samples, replacing provisional seek-cache coverage.
+    ///
+    /// A pass over a range larger than half the cache reuses cached segments but does not commit
+    /// the frames it renders: retaining them would evict everything else, including the segments
+    /// playback is using, without leaving the range cached.
+    pub fn render_canonical(
+        &self,
+        request: &RenderRequest<'_>,
+        is_cancelled: &dyn Fn() -> bool,
+    ) -> Result<Vec<f32>, AppError> {
+        self.render_with_quality(request, is_cancelled, true)
+            .map(|(samples, _)| samples)
+    }
+
+    fn render_with_quality(
+        &self,
+        request: &RenderRequest<'_>,
+        is_cancelled: &dyn Fn() -> bool,
+        canonical_only: bool,
+    ) -> Result<(Vec<f32>, PcmQuality), AppError> {
         validate_request(request)?;
+        if is_cancelled() || request.source.cancellation.load(Ordering::Acquire) {
+            return Err(AppError::cancelled(
+                AppErrorMessageId::MediaAudioProcessedAudioRenderWasCancelled,
+            ));
+        }
         let key = RenderKey {
             load_token: request.source.load_token,
             stream_index: request.stream_index,
@@ -171,7 +202,12 @@ impl AudioProcessingEngine {
             stream_index: key.stream_index,
         };
         let generation = self.begin(scope, &key)?;
+        let range_bytes = (request.range.end - request.range.start)
+            * u64::from(request.channels)
+            * size_of::<f32>() as u64;
         let target = RenderTarget {
+            canonical_only,
+            retain: !canonical_only || range_bytes <= self.config.cache_limit_bytes / 2,
             request,
             key,
             scope,
@@ -184,6 +220,11 @@ impl AudioProcessingEngine {
         let mut position = request.start;
 
         while position < end {
+            if is_cancelled() || request.source.cancellation.load(Ordering::Acquire) {
+                return Err(AppError::cancelled(
+                    AppErrorMessageId::MediaAudioProcessedAudioRenderWasCancelled,
+                ));
+            }
             let part = self
                 .lock()?
                 .cache
@@ -201,13 +242,14 @@ impl AudioProcessingEngine {
                 } => {
                     let offset = (start - request.start) as usize * channels;
                     let length = (part_end - start) as usize * channels;
-                    if read_segment_frames(
-                        &path,
-                        start - segment_start,
-                        request.channels,
-                        &mut output[offset..offset + length],
-                    )
-                    .is_ok()
+                    if !(canonical_only && cached_quality == PcmQuality::Provisional)
+                        && read_segment_frames(
+                            &path,
+                            start - segment_start,
+                            request.channels,
+                            &mut output[offset..offset + length],
+                        )
+                        .is_ok()
                     {
                         if cached_quality == PcmQuality::Provisional {
                             quality = PcmQuality::Provisional;
@@ -311,18 +353,20 @@ impl AudioProcessingEngine {
         is_cancelled: &dyn Fn() -> bool,
     ) -> Result<PcmQuality, AppError> {
         let RenderTarget {
+            canonical_only,
+            retain,
             request,
             key,
             scope,
             generation,
         } = target;
         let (scope, generation) = (*scope, *generation);
-        let mut slot = self.session_for(request, key, start, false)?;
+        let mut slot = self.session_for(request, key, start, false, *canonical_only)?;
         let mut session = slot.0.lock().map_err(|_| session_unavailable())?;
         if session.cursor > start {
             // Another request advanced the session past this gap without caching it.
             drop(session);
-            slot = self.session_for(request, key, start, true)?;
+            slot = self.session_for(request, key, start, true, *canonical_only)?;
             session = slot.0.lock().map_err(|_| session_unavailable())?;
         }
         let (session_handle, cursor) = &slot;
@@ -345,7 +389,11 @@ impl AudioProcessingEngine {
             cursor.store(session.cursor, Ordering::Release);
             let samples =
                 read.map_err(|error| self.render_error(error, scope, generation, session_handle))?;
-            self.store_segment(target, position, frames, session.quality, &samples)?;
+            if *retain {
+                self.store_segment(target, position, frames, session.quality, &samples)?;
+            } else {
+                self.ensure_current(scope, generation)?;
+            }
 
             let copy_start = position.max(start);
             let copy_end = (position + frames).min(end);
@@ -370,15 +418,17 @@ impl AudioProcessingEngine {
         key: &RenderKey,
         start: u64,
         force_new: bool,
+        canonical_only: bool,
     ) -> Result<(Arc<Mutex<RenderSession>>, Arc<AtomicU64>), AppError> {
         let mut state = self.lock()?;
         if !force_new
             && let Some(slot) = state.sessions.iter_mut().find(|slot| {
                 let cursor = slot.cursor.load(Ordering::Acquire);
                 slot.key == *key
+                    && (!canonical_only || slot.committed_from == key.range.start)
                     && slot.committed_from <= start
                     && cursor <= start
-                    && start - cursor <= self.config.continuation_window_frames
+                    && (canonical_only || start - cursor <= self.config.continuation_window_frames)
             })
         {
             slot.last_used = Instant::now();
@@ -386,15 +436,15 @@ impl AudioProcessingEngine {
         }
 
         let origin = key.range.start;
-        let (seek_frame, committed_from) = if start - origin <= self.config.canonical_catchup_frames
-        {
-            (origin, origin)
-        } else {
-            let preroll = request.chain.strategy().provisional_preroll_frames();
-            let seek = start.saturating_sub(preroll).max(origin);
-            let seek = origin + (seek - origin) / SEEK_GRID_FRAMES * SEEK_GRID_FRAMES;
-            (seek, if seek == origin { origin } else { start })
-        };
+        let (seek_frame, committed_from) =
+            if canonical_only || start - origin <= self.config.canonical_catchup_frames {
+                (origin, origin)
+            } else {
+                let preroll = request.chain.strategy().provisional_preroll_frames();
+                let seek = start.saturating_sub(preroll).max(origin);
+                let seek = origin + (seek - origin) / SEEK_GRID_FRAMES * SEEK_GRID_FRAMES;
+                (seek, if seek == origin { origin } else { start })
+            };
         let quality = if seek_frame == origin {
             PcmQuality::Canonical
         } else {
@@ -575,7 +625,7 @@ mod tests {
         media::audio_filters::{
             compiler::{CompiledChain, compile_chain},
             model::{AudioFilter, fixtures::*},
-            pcm_cache::{FrameRange, PcmQuality},
+            pcm_cache::{CoveragePart, FrameRange, PcmQuality, RenderKey},
             test_fixtures::{
                 FixtureFile, PROGRAM_MATERIAL, decode_f32_stereo, fixture_source, generate_fixture,
                 max_difference,
@@ -721,6 +771,94 @@ mod tests {
     }
 
     #[test]
+    fn canonical_consumer_replaces_provisional_seek_samples() {
+        let (_file, source) = program();
+        let chain = stateful_chain();
+        let engine = AudioProcessingEngine::new(EngineConfig {
+            canonical_catchup_frames: 0,
+            continuation_window_frames: 0,
+            ..EngineConfig::default()
+        });
+        let (_, quality) = render(&engine, &source, &chain, 300_000, 340_000).unwrap();
+        assert_eq!(quality, PcmQuality::Provisional);
+        let canonical = engine
+            .render_canonical(
+                &RenderRequest {
+                    source: &source,
+                    stream_index: 0,
+                    chain: &chain,
+                    range: RANGE,
+                    start: 300_000,
+                    frames: 40_000,
+                    channels: 2,
+                },
+                &|| false,
+            )
+            .unwrap();
+        let reference = continuous_reference(&source, &chain);
+        assert_eq!(canonical, slice(&reference, 300_000, 340_000));
+        let (cached, quality) = render(&engine, &source, &chain, 300_000, 340_000).unwrap();
+        assert_eq!(quality, PcmQuality::Canonical);
+        assert_eq!(cached, canonical);
+    }
+
+    #[test]
+    fn canonical_passes_over_large_ranges_stream_without_evicting_playback_segments() {
+        let (_file, source) = program();
+        let chain = stateful_chain();
+        let reference = continuous_reference(&source, &chain);
+        // The 8 s stereo range is 3 MB of float PCM, more than half of this cache.
+        let engine = AudioProcessingEngine::new(EngineConfig {
+            cache_limit_bytes: 4 * 1024 * 1024,
+            ..EngineConfig::default()
+        });
+        let (played, _) = render(&engine, &source, &chain, 96_000, 144_000).unwrap();
+
+        let mut canonical = Vec::new();
+        for start in (RANGE.start..RANGE.end).step_by(96_000) {
+            canonical.extend(
+                engine
+                    .render_canonical(
+                        &RenderRequest {
+                            source: &source,
+                            stream_index: 0,
+                            chain: &chain,
+                            range: RANGE,
+                            start,
+                            frames: 96_000,
+                            channels: 2,
+                        },
+                        &|| false,
+                    )
+                    .unwrap(),
+            );
+        }
+        assert!(canonical == reference);
+        assert!(played == slice(&reference, 96_000, 144_000));
+
+        let key = RenderKey {
+            load_token: source.load_token,
+            stream_index: 0,
+            graph: chain.canonical_graph(),
+            range: RANGE,
+            channels: 2,
+        };
+        // Playback caught up from the origin, so only its [0, 144 000) render is cached.
+        let cached_frames: u64 = engine
+            .lock()
+            .unwrap()
+            .cache
+            .plan(&key, RANGE.start, RANGE.end)
+            .into_iter()
+            .map(|part| match part {
+                CoveragePart::Cached { start, end, .. } => end - start,
+                CoveragePart::Missing { .. } => 0,
+            })
+            .sum();
+        assert_eq!(cached_frames, 144_000);
+    }
+
+    #[test]
     fn cached_ranges_are_served_without_rendering_and_released_with_the_source() {
         let (fixture, source) = program();
         let chain = stateful_chain();
@@ -803,7 +941,11 @@ mod tests {
                         channels: 2,
                     },
                     &|| {
-                        if !waited.swap(true, Ordering::AcqRel) {
+                        // Preflight cancellation can run before a revision is registered. Pause
+                        // only after a session exists to exercise an actually in-flight render.
+                        if !engine.lock().unwrap().sessions.is_empty()
+                            && !waited.swap(true, Ordering::AcqRel)
+                        {
                             started_sender.send(()).unwrap();
                             let _ = resumed.lock().unwrap().recv();
                         }

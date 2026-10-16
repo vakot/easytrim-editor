@@ -646,6 +646,7 @@ describe("media IPC adapter", () => {
       streamIndexes: [2, 4],
       width: 1280,
       filtersByStream: {},
+      measurementsByStream: {},
     });
   });
 

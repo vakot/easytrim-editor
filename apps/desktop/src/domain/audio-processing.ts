@@ -374,18 +374,6 @@ function sameLoudnessInputs(left: readonly AudioFilter[], right: readonly AudioF
   return JSON.stringify(loudnessInputFilters(left)) === JSON.stringify(loudnessInputFilters(right));
 }
 
-/**
- * Waveforms show the source after the chain's leading shaping filters. Everything from the first
- * level-dependent filter onward is excluded until waveforms are generated from processed PCM.
- */
-function waveformShapeFilters(filters: readonly AudioFilter[]): AudioFilter[] {
-  const shapeEnd = filters.findIndex(
-    (filter) => filter.type !== "highPass" && filter.type !== "noiseReduction",
-  );
-
-  return filters.slice(0, shapeEnd === -1 ? filters.length : shapeEnd);
-}
-
 function matchingAudioFilterPreset(filter: AudioFilter): string | undefined {
   const presets = AUDIO_FILTER_PRESETS[filter.type] as readonly AudioFilterPreset<
     typeof filter.type
@@ -482,5 +470,4 @@ export {
   sameLoudnessInputs,
   serializeAudioTrackSettings,
   TRACK_VOLUME_SLIDER_MAX,
-  waveformShapeFilters,
 };

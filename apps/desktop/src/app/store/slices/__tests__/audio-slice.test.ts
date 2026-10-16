@@ -81,6 +81,36 @@ describe("audio slice", () => {
     expect(current.tracks[1]?.metadata.isDefault).toBe(true);
   });
 
+  it("keeps a track enabled when its filters make the processed waveform silent", () => {
+    const filtered = audioReducer(
+      readyAudio(),
+      audioTrackFiltersApplied({
+        streamIndex: 2,
+        filters: [{ id: "g", type: "gain", gainDb: -60 }],
+      }),
+    );
+
+    const loading = audioReducer(
+      filtered,
+      waveformsLoading({ jobId: "waveform-1", width: 1200, streamIndexes: [2] }),
+    );
+
+    const silent = audioReducer(
+      loading,
+      waveformReady({
+        status: "ready",
+        jobId: "waveform-1",
+        streamIndex: 2,
+        width: 1200,
+        hasSignal: false,
+        url: "media://silent",
+      }),
+    );
+
+    expect(silent.tracks[0]).toMatchObject({ enabled: true, metadata: { isDefault: true } });
+    expect(silent.tracks[0]?.waveform).toMatchObject({ status: "ready", url: "media://silent" });
+  });
+
   it("restores one enabled default when an older snapshot disables the source default", () => {
     const snapshot = createEditorSnapshot({
       source: firstSource,
@@ -245,7 +275,7 @@ describe("audio slice", () => {
     );
 
     expect(downstream.tracks[0]?.loudnessAnalysis).toMatchObject({ status: "ready" });
-    expect(downstream.tracks[0]?.waveform).toMatchObject({ status: "ready" });
+    expect(downstream.tracks[0]?.waveform).toEqual({ status: "idle" });
     expect(downstream.tracks[0]?.activityAnalysis).toEqual({ status: "idle" });
 
     const upstream = audioReducer(
@@ -281,5 +311,57 @@ describe("audio slice", () => {
     );
 
     expect(rejected).toBe(state);
+  });
+  it("invalidates every committed filter change, but preserves pre-volume waveforms", () => {
+    const a = { id: "gain", type: "gain" as const, gainDb: 6 };
+    const b = { id: "hp", type: "highPass" as const, cutoffHz: 100 };
+    let state = audioReducer(
+      readyAudio(),
+      audioTrackFiltersApplied({ streamIndex: 2, filters: [a, b] }),
+    );
+
+    state = audioReducer(
+      state,
+      waveformsLoading({ jobId: "current", streamIndexes: [2], width: 128 }),
+    );
+    state = audioReducer(
+      state,
+      waveformReady({
+        jobId: "current",
+        streamIndex: 2,
+        width: 128,
+        status: "ready",
+        url: "media://processed",
+      }),
+    );
+    expect(
+      audioReducer(state, audioTrackVolumeChanged({ streamIndex: 2, volume: 0 })).tracks[0]
+        ?.waveform,
+    ).toBe(state.tracks[0]?.waveform);
+    for (const filters of [
+      [b, a],
+      [a],
+      [a, b, { ...a, id: "extra" }],
+      [{ ...a, gainDb: -3 }, b],
+      [a, { ...b, cutoffHz: 400 }],
+    ]) {
+      const changed = audioReducer(state, audioTrackFiltersApplied({ streamIndex: 2, filters }));
+      expect(changed.tracks[0]?.waveform).toEqual({ status: "idle" });
+      const stale = audioReducer(
+        changed,
+        waveformReady({
+          jobId: "current",
+          streamIndex: 2,
+          width: 128,
+          status: "ready",
+          url: "media://stale",
+        }),
+      );
+
+      expect(stale.tracks[0]?.waveform).toEqual({ status: "idle" });
+    }
+    expect(audioReducer(state, audioTrackFiltersApplied({ streamIndex: 2, filters: [a, b] }))).toBe(
+      state,
+    );
   });
 });
