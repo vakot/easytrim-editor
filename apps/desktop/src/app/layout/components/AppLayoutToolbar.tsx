@@ -15,6 +15,7 @@ function AppLayoutToolbar() {
         <AppLayoutTool commandId="open-workspace-view-sources" />
         <AppLayoutTool commandId="open-workspace-view-exportQueue" />
         <AppLayoutTool commandId="open-workspace-view-activity" />
+        <AppLayoutTool commandId="open-chapters" />
       </section>
 
       <Separator className="bg-muted" />

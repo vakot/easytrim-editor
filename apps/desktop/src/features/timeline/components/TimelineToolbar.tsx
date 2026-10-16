@@ -1,4 +1,4 @@
-import { BetweenVerticalStart, BookmarkPlus, Clapperboard, Repeat, Save } from "lucide-react";
+import { BetweenVerticalStart, Clapperboard, Repeat, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
+import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   preferenceChanged,
@@ -24,7 +26,6 @@ import { localizeAppError } from "@/i18n/app-errors";
 import { cn } from "@/lib/class-names.utils";
 
 import { useChapterEditing } from "../contexts/chapter-editing-context";
-import { ChapterManagerDialog, ChapterManagerDialogTrigger } from "../dialogs/ChapterManagerDialog";
 
 import { StereoAudioMeter } from "./StereoAudioMeter";
 
@@ -169,6 +170,8 @@ function SceneDetectionTool() {
 function ChaptersTool() {
   const { t } = useTranslation();
   const chapterEditing = useChapterEditing();
+  const command = useApplicationCommand("open-chapters");
+  const { executeCommand } = useApplicationCommands();
 
   if (chapterEditing.chapterId) {
     return (
@@ -194,23 +197,23 @@ function ChaptersTool() {
   }
 
   return (
-    <ChapterManagerDialog>
-      <Tooltip preserveOnTrigger>
-        <TooltipTrigger asChild>
-          <ChapterManagerDialogTrigger asChild>
-            <Button
-              aria-label={t("timeline.chapters.actions.manageChapters")}
-              size="icon-sm"
-              type="button"
-              variant="secondary"
-            >
-              <BookmarkPlus />
-            </Button>
-          </ChapterManagerDialogTrigger>
-        </TooltipTrigger>
-        <TooltipContent>{t("timeline.chapters.tooltips.manageChapters")}</TooltipContent>
-      </Tooltip>
-    </ChapterManagerDialog>
+    <Tooltip preserveOnTrigger>
+      <TooltipTrigger asChild>
+        <Button
+          aria-label={command.label}
+          disabled={!command.enabled || command.pending}
+          onClick={() => void executeCommand(command.id, "button")}
+          onFocus={command.preload}
+          onPointerEnter={command.preload}
+          size="icon-sm"
+          type="button"
+          variant="secondary"
+        >
+          <ApplicationCommandIcon command={command} />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{t("timeline.chapters.tooltips.manageChapters")}</TooltipContent>
+    </Tooltip>
   );
 }
 

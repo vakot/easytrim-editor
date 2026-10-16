@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 const commands = vi.hoisted(
   () =>
     ({
+      "open-chapters": { label: "Manage chapters" },
       "open-settings": { label: "Settings" },
       "open-workspace-view-activity": { label: "Activity Feed" },
       "open-workspace-view-exportQueue": { label: "Export Queue" },
@@ -49,6 +50,7 @@ describe("AppLayoutToolbar", () => {
     ["Sources", "open-workspace-view-sources"],
     ["Export Queue", "open-workspace-view-exportQueue"],
     ["Activity Feed", "open-workspace-view-activity"],
+    ["Manage chapters", "open-chapters"],
     ["Settings", "open-settings"],
   ])("runs the %s command from the sidebar surface", (name, commandId) => {
     renderToolbar();

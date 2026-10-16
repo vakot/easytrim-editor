@@ -2,29 +2,33 @@ import { BookmarkPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import type { DialogScope } from "@/components/ui/dialog";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-import { ChapterDialog, ChapterDialogTrigger } from "../ChapterDialog";
+import {
+  ChapterDialog,
+  ChapterDialogTrigger,
+  ChaptersContent,
+  ChaptersList,
+} from "@/features/timeline";
 
-import { ChaptersContent, ChaptersList } from "./components/Chapters";
-import { useChapterManagerDialogScope } from "./hooks/useChapterManagerDialogScope";
-
-function ChapterManagerDialogContent() {
+function AppChaptersDialogContent({ __scopeDialog }: { __scopeDialog?: DialogScope }) {
   const { t } = useTranslation();
-  const dialogScope = useChapterManagerDialogScope(undefined);
 
   return (
     <>
       <DialogHeader className="-mx-4 border-b px-4 pb-4">
-        <DialogTitle {...dialogScope}>{t("timeline.chapters.title")}</DialogTitle>
-        <DialogDescription {...dialogScope}>{t("timeline.chapters.description")}</DialogDescription>
+        <DialogTitle __scopeDialog={__scopeDialog}>{t("timeline.chapters.title")}</DialogTitle>
+        <DialogDescription __scopeDialog={__scopeDialog}>
+          {t("timeline.chapters.description")}
+        </DialogDescription>
       </DialogHeader>
 
       <ChaptersContent className="-mx-2 px-2">
         <ChaptersList className="py-2" />
       </ChaptersContent>
 
-      <DialogFooter {...dialogScope}>
+      <DialogFooter __scopeDialog={__scopeDialog}>
         <ChapterDialog>
           <ChapterDialogTrigger asChild>
             <Button type="button">
@@ -37,4 +41,4 @@ function ChapterManagerDialogContent() {
   );
 }
 
-export { ChapterManagerDialogContent };
+export { AppChaptersDialogContent };

@@ -13,6 +13,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { WorkspaceRecoveryNotice } from "@/app/components/WorkspaceRecoveryNotice";
 import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
+import { AppChaptersDialog } from "@/app/dialogs/AppChaptersDialog";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppDiagnosticsRecoveryDialog } from "@/app/dialogs/AppDiagnosticsRecoveryDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
@@ -68,6 +69,7 @@ function EasyTrimEditorApp() {
                         <AppSettingsDialog />
                         <AppCommandPaletteDialog />
                         <AppChangelogDialog />
+                        <AppChaptersDialog />
 
                         <Toaster />
                         <ActivityToasts />
