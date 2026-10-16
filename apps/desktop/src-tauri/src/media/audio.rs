@@ -5,7 +5,7 @@ use crate::{
     media::{
         audio_filters::{
             compiler::{CANONICAL_SAMPLE_RATE, compile_chain},
-            engine::{AudioProcessingEngine, RenderRequest},
+            engine::{AudioProcessingEngine, RenderPurpose, RenderRequest},
             model::AudioChainSelection,
             pcm_cache::FrameRange,
         },
@@ -65,6 +65,7 @@ pub fn decode_playback_chunk(
             start,
             frames: end - start,
             channels: PLAYBACK_PCM_CHANNELS,
+            purpose: RenderPurpose::Playback,
         },
         &|| operation_cancellation.load(Ordering::Acquire),
     )?;

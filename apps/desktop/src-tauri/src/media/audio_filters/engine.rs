@@ -53,6 +53,31 @@ impl Default for EngineConfig {
     }
 }
 
+/// What a render is for. It decides which earlier revisions a request supersedes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RenderPurpose {
+    Playback,
+    /// A waveform pass over the committed chain.
+    Waveform,
+}
+
+impl RenderPurpose {
+    fn lane(self) -> RenderLane {
+        match self {
+            Self::Playback => RenderLane::Playback,
+            Self::Waveform => RenderLane::Waveform,
+        }
+    }
+}
+
+/// Consumers that render a stream independently. Playback auditions draft chains while a waveform
+/// pass of the committed chain runs, so neither may stop the other.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+enum RenderLane {
+    Playback,
+    Waveform,
+}
+
 /// A range of processed audio to produce for one consumer of a source stream.
 pub struct RenderRequest<'a> {
     pub source: &'a ActiveSource,
@@ -63,14 +88,16 @@ pub struct RenderRequest<'a> {
     pub start: u64,
     pub frames: u64,
     pub channels: u16,
+    pub purpose: RenderPurpose,
 }
 
 /// The demand-driven renderer for processed track audio.
 ///
 /// It serves requested frame ranges from the disk cache and renders only the missing parts,
-/// through persistent FFmpeg sessions that keep stateful filters continuous. Each source stream is
-/// one scope: a request for a different chain supersedes the previous one, terminating its
-/// sessions and rejecting its results, so stale revisions never reach the cache or the caller.
+/// through persistent FFmpeg sessions that keep stateful filters continuous. Each consumer of a
+/// source stream is one scope: a request for a different chain supersedes the scope's previous
+/// one, terminating its sessions and rejecting its results, so stale revisions never reach the
+/// cache or the caller. Scopes share cached samples but never sessions or revisions.
 pub struct AudioProcessingEngine {
     config: EngineConfig,
     state: Mutex<EngineState>,
@@ -87,6 +114,7 @@ struct EngineState {
 struct RenderScope {
     load_token: u64,
     stream_index: u32,
+    lane: RenderLane,
 }
 
 struct ScopeState {
@@ -108,6 +136,7 @@ struct RenderTarget<'a> {
 
 struct SessionSlot {
     key: RenderKey,
+    scope: RenderScope,
     session: Arc<Mutex<RenderSession>>,
     terminator: ChildTerminator,
     /// The session's cursor, readable without waiting for a request that is using the session.
@@ -200,6 +229,7 @@ impl AudioProcessingEngine {
         let scope = RenderScope {
             load_token: key.load_token,
             stream_index: key.stream_index,
+            lane: request.purpose.lane(),
         };
         let generation = self.begin(scope, &key)?;
         let range_bytes = (request.range.end - request.range.start)
@@ -293,7 +323,7 @@ impl AudioProcessingEngine {
     }
 
     /// Registers the request's key as the scope's current revision. A different key supersedes
-    /// the previous revision and stops its sessions.
+    /// the scope's previous revision and stops its sessions; other scopes are unaffected.
     fn begin(&self, scope: RenderScope, key: &RenderKey) -> Result<u64, AppError> {
         let mut state = self.lock()?;
         let idle_timeout = self.config.session_idle_timeout;
@@ -323,9 +353,7 @@ impl AudioProcessingEngine {
             }
         };
         state.sessions.retain(|slot| {
-            let superseded = slot.key.load_token == scope.load_token
-                && slot.key.stream_index == scope.stream_index
-                && slot.key != *key;
+            let superseded = slot.scope == scope && slot.key != *key;
             if superseded {
                 slot.terminate();
             }
@@ -353,20 +381,20 @@ impl AudioProcessingEngine {
         is_cancelled: &dyn Fn() -> bool,
     ) -> Result<PcmQuality, AppError> {
         let RenderTarget {
-            canonical_only,
             retain,
             request,
             key,
             scope,
             generation,
+            ..
         } = target;
         let (scope, generation) = (*scope, *generation);
-        let mut slot = self.session_for(request, key, start, false, *canonical_only)?;
+        let mut slot = self.session_for(target, start, false)?;
         let mut session = slot.0.lock().map_err(|_| session_unavailable())?;
         if session.cursor > start {
             // Another request advanced the session past this gap without caching it.
             drop(session);
-            slot = self.session_for(request, key, start, true, *canonical_only)?;
+            slot = self.session_for(target, start, true)?;
             session = slot.0.lock().map_err(|_| session_unavailable())?;
         }
         let (session_handle, cursor) = &slot;
@@ -409,22 +437,29 @@ impl AudioProcessingEngine {
     }
 
     /// Chooses the session that will render a gap starting at `start`: a running session of the
-    /// key that is shortly behind it, or a new one. A new session renders from the range origin
-    /// when that is close enough, which makes it canonical; otherwise it seeks with the chain's
-    /// warm-up and its output stays provisional.
+    /// scope and key that is shortly behind it, or a new one. A new session renders from the range
+    /// origin when that is close enough, which makes it canonical; otherwise it seeks with the
+    /// chain's warm-up and its output stays provisional.
     fn session_for(
         &self,
-        request: &RenderRequest<'_>,
-        key: &RenderKey,
+        target: &RenderTarget<'_>,
         start: u64,
         force_new: bool,
-        canonical_only: bool,
     ) -> Result<(Arc<Mutex<RenderSession>>, Arc<AtomicU64>), AppError> {
+        let RenderTarget {
+            canonical_only,
+            request,
+            key,
+            scope,
+            ..
+        } = target;
+        let canonical_only = *canonical_only;
         let mut state = self.lock()?;
         if !force_new
             && let Some(slot) = state.sessions.iter_mut().find(|slot| {
                 let cursor = slot.cursor.load(Ordering::Acquire);
-                slot.key == *key
+                slot.scope == *scope
+                    && slot.key == *key
                     && (!canonical_only || slot.committed_from == key.range.start)
                     && slot.committed_from <= start
                     && cursor <= start
@@ -472,6 +507,7 @@ impl AudioProcessingEngine {
         let cursor = Arc::new(AtomicU64::new(seek_frame));
         let slot = SessionSlot {
             key: key.clone(),
+            scope: *scope,
             terminator: session.terminator(),
             session: Arc::new(Mutex::new(session)),
             cursor: Arc::clone(&cursor),
@@ -619,7 +655,7 @@ mod tests {
         time::Duration,
     };
 
-    use super::{AudioProcessingEngine, EngineConfig, RenderRequest};
+    use super::{AudioProcessingEngine, EngineConfig, RenderPurpose, RenderRequest};
     use crate::{
         error::{AppError, AppErrorMessageId},
         media::audio_filters::{
@@ -692,6 +728,7 @@ mod tests {
                 start,
                 frames: end - start,
                 channels: 2,
+                purpose: RenderPurpose::Playback,
             },
             &|| false,
         )
@@ -791,6 +828,7 @@ mod tests {
                     start: 300_000,
                     frames: 40_000,
                     channels: 2,
+                    purpose: RenderPurpose::Waveform,
                 },
                 &|| false,
             )
@@ -827,6 +865,7 @@ mod tests {
                             start,
                             frames: 96_000,
                             channels: 2,
+                            purpose: RenderPurpose::Waveform,
                         },
                         &|| false,
                     )
@@ -939,6 +978,7 @@ mod tests {
                         start: 0,
                         frames: 384_000,
                         channels: 2,
+                        purpose: RenderPurpose::Playback,
                     },
                     &|| {
                         // Preflight cancellation can run before a revision is registered. Pause
@@ -969,6 +1009,55 @@ mod tests {
     }
 
     #[test]
+    fn playback_of_another_chain_does_not_supersede_a_waveform_pass() {
+        let (_fixture, source) = program();
+        let chain = stateful_chain();
+        let reference = continuous_reference(&source, &chain);
+        let engine = Arc::new(AudioProcessingEngine::new(EngineConfig::default()));
+        let (started_sender, started) = mpsc::channel();
+        let (resume, resumed) = mpsc::channel::<()>();
+        let resumed = Mutex::new(resumed);
+        let waited = AtomicBool::new(false);
+
+        let waveform = {
+            let engine = Arc::clone(&engine);
+            let source = source.clone();
+            thread::spawn(move || {
+                let chain = stateful_chain();
+                engine.render_canonical(
+                    &RenderRequest {
+                        source: &source,
+                        stream_index: 0,
+                        chain: &chain,
+                        range: RANGE,
+                        start: 0,
+                        frames: 384_000,
+                        channels: 2,
+                        purpose: RenderPurpose::Waveform,
+                    },
+                    &|| {
+                        if !engine.lock().unwrap().sessions.is_empty()
+                            && !waited.swap(true, Ordering::AcqRel)
+                        {
+                            started_sender.send(()).unwrap();
+                            let _ = resumed.lock().unwrap().recv();
+                        }
+                        false
+                    },
+                )
+            })
+        };
+
+        started.recv().unwrap();
+        let auditioned = compile_chain(&[gain("g", 3.0)], &[]).unwrap();
+        render(&engine, &source, &auditioned, 0, 48_000).unwrap();
+        resume.send(()).unwrap();
+
+        let samples = waveform.join().unwrap().unwrap();
+        assert!(samples == reference);
+    }
+
+    #[test]
     fn cancellation_stops_a_render_and_keeps_the_engine_usable() {
         let (_fixture, source) = program();
         let chain = stateful_chain();
@@ -985,6 +1074,7 @@ mod tests {
                     start: 0,
                     frames: 384_000,
                     channels: 2,
+                    purpose: RenderPurpose::Playback,
                 },
                 &|| true,
             )
@@ -1051,6 +1141,7 @@ mod tests {
                         start,
                         frames,
                         channels: 2,
+                        purpose: RenderPurpose::Playback,
                     },
                     &|| false,
                 )
