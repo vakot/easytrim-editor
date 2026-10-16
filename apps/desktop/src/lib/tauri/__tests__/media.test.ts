@@ -130,7 +130,10 @@ describe("media IPC adapter", () => {
     const controller = new AbortController();
     // Peaks above full scale survive so Track Volume can still attenuate them.
     mocks.invoke.mockResolvedValueOnce(new Float32Array([1.5, -1, 0.25, -0.25]).buffer);
-    const track = { filters: [{ gainDb: 6, id: "g", type: "gain" as const }], streamIndex: 2 };
+    const track = {
+      filters: [{ enabled: true, gainDb: 6, id: "g", type: "gain" as const }],
+      streamIndex: 2,
+    };
 
     const chunk = await decodeAudioPlaybackChunk(
       "C:/Media/clip.mp4",
@@ -170,7 +173,10 @@ describe("media IPC adapter", () => {
   });
 
   it("converts detected silence to activity ranges for one track", async () => {
-    const track = { filters: [{ gainDb: -3, id: "g", type: "gain" as const }], streamIndex: 2 };
+    const track = {
+      filters: [{ enabled: true, gainDb: -3, id: "g", type: "gain" as const }],
+      streamIndex: 2,
+    };
 
     mocks.invoke.mockResolvedValueOnce([{ startMicros: 1_000_000, endMicros: 2_500_000 }]);
 
@@ -198,6 +204,7 @@ describe("media IPC adapter", () => {
       { filterId: "second", integratedLufs: -14, truePeakDb: -2 },
     ]);
     const normalization = (id: string) => ({
+      enabled: true,
       id,
       loudnessRangeLu: 11,
       maxTruePeakDb: -1,

@@ -1,7 +1,15 @@
 import { DragDropProvider } from "@dnd-kit/react";
 import { isSortable, useSortable } from "@dnd-kit/react/sortable";
 import type { TFunction } from "i18next";
-import { ArrowDown, ArrowUp, CircleAlert, GripVertical, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CircleAlert,
+  GripVertical,
+  Plus,
+  PowerOff,
+  Trash2,
+} from "lucide-react";
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -32,6 +40,7 @@ import {
   type AudioFilter,
   MAX_AUDIO_FILTERS,
 } from "@/domain/audio-processing";
+import { cn } from "@/lib/class-names.utils";
 
 import { useAudioFiltersDraft } from "../contexts/audio-filters-draft-context";
 import { audioFilterDescriptor } from "../lib/audio-filter-fields";
@@ -181,11 +190,20 @@ function AudioFilterListItem({
         <GripVertical className="size-4" />
       </span>
       <LibraryNavigationItem className="min-w-0 flex-1" value={filter.id}>
-        <span className="min-w-0 truncate">{name}</span>
+        <span className={cn("min-w-0 truncate", !filter.enabled && "text-muted-foreground")}>
+          {name}
+        </span>
+        {filter.enabled ? null : (
+          <PowerOff
+            aria-label={t("audio.filters.disabledFilter")}
+            className="ml-auto text-muted-foreground"
+            role="img"
+          />
+        )}
         {valid ? null : (
           <CircleAlert
             aria-label={t("audio.filters.invalidFilter")}
-            className="ml-auto text-destructive"
+            className={cn("text-destructive", filter.enabled && "ml-auto")}
             role="img"
           />
         )}

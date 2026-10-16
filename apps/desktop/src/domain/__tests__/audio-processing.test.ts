@@ -4,6 +4,7 @@ import {
   areAudioFiltersValid,
   AUDIO_FILTER_PRESETS,
   type AudioFilter,
+  audioFiltersRequireLoudnessAnalysis,
   audioTrackLoudnessInputsKey,
   clampTrackVolume,
   createAudioFilter,
@@ -19,9 +20,22 @@ import {
   serializeAudioTrackSettings,
 } from "../audio-processing";
 
-const highPass = (id: string, cutoffHz = 80): AudioFilter => ({ cutoffHz, id, type: "highPass" });
-const gain = (id: string, gainDb: number): AudioFilter => ({ gainDb, id, type: "gain" });
+const highPass = (id: string, cutoffHz = 80): AudioFilter => ({
+  enabled: true,
+  cutoffHz,
+  id,
+  type: "highPass",
+});
+
+const gain = (id: string, gainDb: number): AudioFilter => ({
+  enabled: true,
+  gainDb,
+  id,
+  type: "gain",
+});
+
 const normalization = (id: string, targetLufs = -16): AudioFilter => ({
+  enabled: true,
   id,
   loudnessRangeLu: 11,
   maxTruePeakDb: -1.5,
@@ -30,6 +44,7 @@ const normalization = (id: string, targetLufs = -16): AudioFilter => ({
 });
 
 const limiter = (id: string, ceilingDb = -1): AudioFilter => ({
+  enabled: true,
   attackMs: 5,
   ceilingDb,
   id,
@@ -90,6 +105,7 @@ describe("ordered filter chain editing", () => {
 
   it("creates new instances with default explicit parameters", () => {
     expect(createAudioFilter("noiseReduction", "nr")).toEqual({
+      enabled: true,
       id: "nr",
       noiseFloorDb: -35,
       reductionDb: 12,
@@ -109,7 +125,7 @@ describe("ordered filter chain editing", () => {
   });
 
   it("compares chains independently of object key order", () => {
-    const reordered = { type: "gain", gainDb: 3, id: "a" } as AudioFilter;
+    const reordered = { enabled: true, type: "gain", gainDb: 3, id: "a" } as AudioFilter;
     expect(sameAudioFilters([gain("a", 3)], [reordered])).toBe(true);
     expect(sameAudioFilters([gain("a", 3), highPass("hp")], [highPass("hp"), gain("a", 3)])).toBe(
       false,
@@ -152,6 +168,29 @@ describe("loudness measurement identity", () => {
     ).not.toBe(key);
   });
 
+  it("ignores disabled filters, which are never measured or processed", () => {
+    const base = [highPass("hp"), normalization("norm")];
+    const key = audioTrackLoudnessInputsKey("source", 1, trim, base);
+    const bypassed = (filter: AudioFilter): AudioFilter => ({ ...filter, enabled: false });
+
+    expect(
+      audioTrackLoudnessInputsKey("source", 1, trim, [
+        bypassed(gain("pre", 12)),
+        highPass("hp"),
+        normalization("norm"),
+        bypassed(normalization("late")),
+      ]),
+    ).toBe(key);
+    expect(
+      audioTrackLoudnessInputsKey("source", 1, trim, [
+        highPass("hp"),
+        bypassed(normalization("norm")),
+      ]),
+    ).toBeNull();
+    expect(audioFiltersRequireLoudnessAnalysis([bypassed(normalization("norm"))])).toBe(false);
+    expect(sameAudioFilters(base, [highPass("hp"), bypassed(normalization("norm"))])).toBe(false);
+  });
+
   it("includes earlier normalization targets when a later instance depends on them", () => {
     const chain = [normalization("first", -20), gain("g", 3), normalization("second")];
     expect(
@@ -175,5 +214,20 @@ describe("track volume", () => {
     expect(parseAudioTrackProcessing({ gainDb: 0 })).toBeUndefined();
     expect(clampTrackVolume(7)).toBe(5);
     expect(clampTrackVolume(-1)).toBe(0);
+  });
+
+  it("restores the enabled state and enables filters saved before it existed", () => {
+    expect(
+      parseAudioTrackProcessing({
+        filters: [
+          { gainDb: 3, id: "saved", type: "gain" },
+          { ...gain("off", 3), enabled: false },
+        ],
+        volume: 1,
+      })?.filters.map(({ enabled }) => enabled),
+    ).toEqual([true, false]);
+    expect(
+      parseAudioTrackProcessing({ filters: [{ ...gain("g", 3), enabled: "no" }], volume: 1 }),
+    ).toBeUndefined();
   });
 });

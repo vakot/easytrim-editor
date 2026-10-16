@@ -42,7 +42,7 @@ const LEGACY_GAIN_RANGE = { min: -60, max: 24 } as const;
 type LegacyStage = (typeof LEGACY_STAGES)[number];
 type UnidentifiedFilter = AudioFilter extends infer F
   ? F extends AudioFilter
-    ? Omit<F, "id">
+    ? Omit<F, "enabled" | "id">
     : never
   : never;
 
@@ -97,7 +97,12 @@ function migrateAudioTrackProcessing(value: unknown): MigratedAudioTrackProcessi
   }
   chain.push(...finalProtection.map((effect) => effect.filter), ...trailing);
 
-  const filters = chain.map((filter, index) => ({ ...filter, id: `legacy-${index + 1}` }));
+  const filters = chain.map((filter, index) => ({
+    ...filter,
+    enabled: true,
+    id: `legacy-${index + 1}`,
+  }));
+
   const parsedFilters = parseAudioFilters(filters);
   if (!parsedFilters) return undefined;
   const normalizationFilterId = parsedFilters.find(

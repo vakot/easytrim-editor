@@ -148,6 +148,7 @@ function createDeferred<T>() {
 
 function normalizationFilter(id: string, targetLufs: number): AudioFilter {
   return {
+    enabled: true,
     id,
     loudnessRangeLu: 11,
     maxTruePeakDb: -1.5,

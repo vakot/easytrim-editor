@@ -25,6 +25,7 @@ import {
 
 const CURRENT_KEY = "easytrim:workspace-recovery:current";
 const broadcastNormalization = {
+  enabled: true,
   id: "norm",
   loudnessRangeLu: 11,
   maxTruePeakDb: -2,
@@ -350,9 +351,22 @@ describe("workspace recovery contract", () => {
     const recovered = getWorkspaceRecoveryCandidate()?.instances[0];
     expect(recovered?.snapshot.audio.tracks[0]?.processing).toEqual({
       filters: [
-        { cutoffHz: 80, id: "legacy-1", type: "highPass" },
-        { id: "legacy-2", noiseFloorDb: -35, reductionDb: 12, type: "noiseReduction" },
-        { attackMs: 5, ceilingDb: -1, id: "legacy-3", releaseMs: 50, type: "limiter" },
+        { enabled: true, cutoffHz: 80, id: "legacy-1", type: "highPass" },
+        {
+          enabled: true,
+          id: "legacy-2",
+          noiseFloorDb: -35,
+          reductionDb: 12,
+          type: "noiseReduction",
+        },
+        {
+          enabled: true,
+          attackMs: 5,
+          ceilingDb: -1,
+          id: "legacy-3",
+          releaseMs: 50,
+          type: "limiter",
+        },
       ],
       volume: 1,
     });
@@ -360,6 +374,7 @@ describe("workspace recovery contract", () => {
       {
         filters: [
           {
+            enabled: true,
             id: "legacy-1",
             loudnessRangeLu: 11,
             maxTruePeakDb: -1.5,

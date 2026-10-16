@@ -86,7 +86,7 @@ describe("audio slice", () => {
       readyAudio(),
       audioTrackFiltersApplied({
         streamIndex: 2,
-        filters: [{ id: "g", type: "gain", gainDb: -60 }],
+        filters: [{ enabled: true, id: "g", type: "gain", gainDb: -60 }],
       }),
     );
 
@@ -161,6 +161,7 @@ describe("audio slice", () => {
       audioTrackFiltersApplied({
         filters: [
           {
+            enabled: true,
             id: "norm",
             loudnessRangeLu: 11,
             maxTruePeakDb: -1.5,
@@ -219,6 +220,7 @@ describe("audio slice", () => {
 
   it("invalidates only the analyses whose inputs an applied chain changes", () => {
     const normalization = {
+      enabled: true,
       id: "norm",
       loudnessRangeLu: 11,
       maxTruePeakDb: -1.5,
@@ -229,7 +231,7 @@ describe("audio slice", () => {
     let state = audioReducer(
       readyAudio(),
       audioTrackFiltersApplied({
-        filters: [{ cutoffHz: 80, id: "hp", type: "highPass" }, normalization],
+        filters: [{ enabled: true, cutoffHz: 80, id: "hp", type: "highPass" }, normalization],
         streamIndex: 2,
       }),
     );
@@ -266,9 +268,9 @@ describe("audio slice", () => {
       state,
       audioTrackFiltersApplied({
         filters: [
-          { cutoffHz: 80, id: "hp", type: "highPass" },
+          { enabled: true, cutoffHz: 80, id: "hp", type: "highPass" },
           { ...normalization, targetLufs: -23 },
-          { attackMs: 5, ceilingDb: -1, id: "lim", releaseMs: 50, type: "limiter" },
+          { enabled: true, attackMs: 5, ceilingDb: -1, id: "lim", releaseMs: 50, type: "limiter" },
         ],
         streamIndex: 2,
       }),
@@ -281,7 +283,7 @@ describe("audio slice", () => {
     const upstream = audioReducer(
       downstream,
       audioTrackFiltersApplied({
-        filters: [{ cutoffHz: 100, id: "hp", type: "highPass" }, normalization],
+        filters: [{ enabled: true, cutoffHz: 100, id: "hp", type: "highPass" }, normalization],
         streamIndex: 2,
       }),
     );
@@ -294,7 +296,7 @@ describe("audio slice", () => {
     const state = audioReducer(
       readyAudio(),
       audioTrackFiltersApplied({
-        filters: [{ gainDb: 3, id: "keep", type: "gain" }],
+        filters: [{ enabled: true, gainDb: 3, id: "keep", type: "gain" }],
         streamIndex: 2,
       }),
     );
@@ -303,8 +305,8 @@ describe("audio slice", () => {
       state,
       audioTrackFiltersApplied({
         filters: [
-          { gainDb: 3, id: "dup", type: "gain" },
-          { gainDb: 99, id: "dup", type: "gain" },
+          { enabled: true, gainDb: 3, id: "dup", type: "gain" },
+          { enabled: true, gainDb: 99, id: "dup", type: "gain" },
         ],
         streamIndex: 2,
       }),
@@ -313,8 +315,8 @@ describe("audio slice", () => {
     expect(rejected).toBe(state);
   });
   it("invalidates every committed filter change, but preserves pre-volume waveforms", () => {
-    const a = { id: "gain", type: "gain" as const, gainDb: 6 };
-    const b = { id: "hp", type: "highPass" as const, cutoffHz: 100 };
+    const a = { enabled: true, id: "gain", type: "gain" as const, gainDb: 6 };
+    const b = { enabled: true, id: "hp", type: "highPass" as const, cutoffHz: 100 };
     let state = audioReducer(
       readyAudio(),
       audioTrackFiltersApplied({ streamIndex: 2, filters: [a, b] }),

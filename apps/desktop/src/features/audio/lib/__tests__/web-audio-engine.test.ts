@@ -477,8 +477,14 @@ describe("WebAudioEngine", () => {
     const tracks = [1, 2, 3, 4].map((streamIndex) => ({
       selection: {
         filters: [
-          { cutoffHz: 80 + streamIndex, id: "hp", type: "highPass" as const },
-          { id: "nr", noiseFloorDb: -35, reductionDb: 12, type: "noiseReduction" as const },
+          { enabled: true, cutoffHz: 80 + streamIndex, id: "hp", type: "highPass" as const },
+          {
+            enabled: true,
+            id: "nr",
+            noiseFloorDb: -35,
+            reductionDb: 12,
+            type: "noiseReduction" as const,
+          },
         ],
         streamIndex,
       },
@@ -578,7 +584,11 @@ describe("WebAudioEngine", () => {
     engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
     await engine.prefetchAt(0);
 
-    const processed = { filters: [{ gainDb: 3, id: "g", type: "gain" as const }], streamIndex: 1 };
+    const processed = {
+      filters: [{ enabled: true, gainDb: 3, id: "g", type: "gain" as const }],
+      streamIndex: 1,
+    };
+
     engine.setTracks([{ selection: processed, streamIndex: 1, volume: 1 }]);
     decode.mockClear();
     await engine.prepareAt(0);
@@ -779,7 +789,15 @@ describe("WebAudioEngine", () => {
     engine.setDuration(8_000_000);
 
     const lightNoiseReduction = {
-      filters: [{ id: "nr", noiseFloorDb: -40, reductionDb: 6, type: "noiseReduction" as const }],
+      filters: [
+        {
+          enabled: true,
+          id: "nr",
+          noiseFloorDb: -40,
+          reductionDb: 6,
+          type: "noiseReduction" as const,
+        },
+      ],
       streamIndex: 1,
     };
 

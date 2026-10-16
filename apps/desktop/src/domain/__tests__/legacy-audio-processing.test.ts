@@ -7,7 +7,11 @@ import {
 
 describe("legacy stage-based processing migration", () => {
   it("keeps the current model unchanged", () => {
-    const processing = { filters: [{ gainDb: 3, id: "g", type: "gain" }], volume: 2 };
+    const processing = {
+      filters: [{ enabled: true, gainDb: 3, id: "g", type: "gain" }],
+      volume: 2,
+    };
+
     expect(migrateAudioTrackProcessing(processing)).toEqual({ processing });
   });
 
@@ -25,7 +29,7 @@ describe("legacy stage-based processing migration", () => {
     const migrated = migrateAudioTrackProcessing({ gainDb: 18 })!.processing;
     expect(migrated.volume).toBe(5);
     expect(migrated.filters).toHaveLength(1);
-    expect(migrated.filters[0]).toMatchObject({ type: "gain" });
+    expect(migrated.filters[0]).toMatchObject({ enabled: true, type: "gain" });
     const totalDb =
       20 * Math.log10(migrated.volume) + (migrated.filters[0] as { gainDb: number }).gainDb;
 
@@ -66,13 +70,14 @@ describe("legacy stage-based processing migration", () => {
     expect(migrated.processing.volume).toBe(1);
     expect(migrated.processing.filters).toEqual([
       {
+        enabled: true,
         id: "legacy-1",
         loudnessRangeLu: 11,
         maxTruePeakDb: -2,
         targetLufs: -23,
         type: "loudnessNormalization",
       },
-      { attackMs: 5, ceilingDb: -1, id: "legacy-2", releaseMs: 50, type: "limiter" },
+      { enabled: true, attackMs: 5, ceilingDb: -1, id: "legacy-2", releaseMs: 50, type: "limiter" },
     ]);
     expect(migrated.normalizationFilterId).toBe("legacy-1");
   });
@@ -100,6 +105,7 @@ describe("legacy stage-based processing migration", () => {
     ).toEqual({
       filters: [
         {
+          enabled: true,
           id: "legacy-1",
           loudnessRangeLu: 11,
           maxTruePeakDb: -1.5,

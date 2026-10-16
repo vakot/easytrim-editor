@@ -11,47 +11,52 @@ const AUDIO_FILTER_TYPES = [
 
 type AudioFilterType = (typeof AUDIO_FILTER_TYPES)[number];
 
-interface HighPassFilter {
-  cutoffHz: number;
+/** What every instance has besides its type and parameters. */
+interface BaseAudioFilter {
+  /** A disabled instance keeps its position and parameters but is never processed. */
+  enabled: boolean;
   id: string;
+}
+
+interface HighPassFilter extends BaseAudioFilter {
+  cutoffHz: number;
   type: "highPass";
 }
 
-interface NoiseReductionFilter {
-  id: string;
+interface NoiseReductionFilter extends BaseAudioFilter {
   noiseFloorDb: number;
   reductionDb: number;
   type: "noiseReduction";
 }
 
-interface LimiterFilter {
+interface LimiterFilter extends BaseAudioFilter {
   attackMs: number;
   ceilingDb: number;
-  id: string;
   releaseMs: number;
   type: "limiter";
 }
 
-interface LoudnessNormalizationFilter {
-  id: string;
+interface LoudnessNormalizationFilter extends BaseAudioFilter {
   loudnessRangeLu: number;
   maxTruePeakDb: number;
   targetLufs: number;
   type: "loudnessNormalization";
 }
 
-interface GainFilter {
+interface GainFilter extends BaseAudioFilter {
   gainDb: number;
-  id: string;
   type: "gain";
 }
 
-/** One active instance in a track's ordered chain; array order is execution order. */
+/** One instance in a track's ordered chain; array order is execution order. */
 type AudioFilter =
   GainFilter | HighPassFilter | LimiterFilter | LoudnessNormalizationFilter | NoiseReductionFilter;
 
 type AudioFilterOfType<T extends AudioFilterType> = Extract<AudioFilter, { type: T }>;
-type AudioFilterParameters<T extends AudioFilterType> = Omit<AudioFilterOfType<T>, "id" | "type">;
+type AudioFilterParameters<T extends AudioFilterType> = Omit<
+  AudioFilterOfType<T>,
+  keyof BaseAudioFilter | "type"
+>;
 
 interface AudioParameterRange {
   max: number;
@@ -184,7 +189,17 @@ function createDefaultAudioTrackProcessing(): AudioTrackProcessing {
 }
 
 function createAudioFilter<T extends AudioFilterType>(type: T, id: string): AudioFilterOfType<T> {
-  return { id, type, ...DEFAULT_AUDIO_FILTER_PARAMETERS[type] } as unknown as AudioFilterOfType<T>;
+  return {
+    enabled: true,
+    id,
+    type,
+    ...DEFAULT_AUDIO_FILTER_PARAMETERS[type],
+  } as unknown as AudioFilterOfType<T>;
+}
+
+/** The instances that are processed, in execution order. */
+function activeAudioFilters(filters: readonly AudioFilter[]): AudioFilter[] {
+  return filters.filter((filter) => filter.enabled);
 }
 
 /** Inserts after `afterId`, or appends when no anchor is given or found. */
@@ -283,7 +298,10 @@ function clampTrackVolume(volume: number): number {
   return Math.max(0, Math.min(MAX_TRACK_VOLUME, volume));
 }
 
-/** Parses a persisted chain strictly; any unknown type or invalid value rejects the chain. */
+/**
+ * Parses a persisted chain strictly; any unknown type or invalid value rejects the chain. Chains
+ * saved before filters could be disabled have every instance enabled.
+ */
 function parseAudioFilters(value: unknown): AudioFilter[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const filters: AudioFilter[] = [];
@@ -293,8 +311,11 @@ function parseAudioFilters(value: unknown): AudioFilter[] | undefined {
     }
     const record = candidate as Record<string, unknown>;
     const type = record.type;
-    if (typeof record.id !== "string" || !isAudioFilterType(type)) return undefined;
-    const filter: Record<string, unknown> = { id: record.id, type };
+    const enabled = record.enabled ?? true;
+    if (typeof record.id !== "string" || !isAudioFilterType(type) || typeof enabled !== "boolean") {
+      return undefined;
+    }
+    const filter: Record<string, unknown> = { enabled, id: record.id, type };
     for (const parameter of audioFilterParameterNames(type)) {
       const parameterValue = record[parameter as string];
       if (typeof parameterValue !== "number") return undefined;
@@ -320,7 +341,7 @@ function isAudioFilterType(value: unknown): value is AudioFilterType {
 }
 
 function requiresLoudnessAnalysis(filter: AudioFilter): filter is LoudnessNormalizationFilter {
-  return filter.type === "loudnessNormalization";
+  return filter.enabled && filter.type === "loudnessNormalization";
 }
 
 function audioFiltersRequireLoudnessAnalysis(filters: readonly AudioFilter[]): boolean {
@@ -332,6 +353,7 @@ function audioFilterKey(filter: AudioFilter): unknown[] {
   return [
     filter.type,
     filter.id,
+    filter.enabled,
     ...audioFilterParameterNames(filter.type).map((parameter) =>
       audioFilterParameterValue(filter, parameter),
     ),
@@ -343,11 +365,12 @@ function sameAudioFilters(left: readonly AudioFilter[], right: readonly AudioFil
 }
 
 /**
- * Identifies the measurements a chain needs: everything up to the last normalization instance.
- * That instance's own targets do not affect any measurement, so only its identity is included.
- * Downstream filters never affect it.
+ * Identifies the measurements a chain needs: every enabled filter up to the last enabled
+ * normalization instance. That instance's own targets do not affect any measurement, so only its
+ * identity is included. Downstream and disabled filters never affect it.
  */
-function loudnessInputFilters(filters: readonly AudioFilter[]): unknown[] | null {
+function loudnessInputFilters(allFilters: readonly AudioFilter[]): unknown[] | null {
+  const filters = activeAudioFilters(allFilters);
   let lastIndex = filters.length - 1;
   while (lastIndex >= 0 && !requiresLoudnessAnalysis(filters[lastIndex]!)) lastIndex -= 1;
   if (lastIndex === -1) return null;
@@ -441,6 +464,7 @@ export type {
   LoudnessNormalizationFilter,
 };
 export {
+  activeAudioFilters,
   areAudioFiltersValid,
   AUDIO_FILTER_PRESETS,
   AUDIO_FILTER_TYPES,

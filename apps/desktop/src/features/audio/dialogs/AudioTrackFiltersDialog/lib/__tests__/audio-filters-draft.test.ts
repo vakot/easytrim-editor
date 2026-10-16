@@ -9,7 +9,7 @@ import {
   isAudioFiltersDraftValid,
 } from "../audio-filters-draft";
 
-const gain = (id: string, gainDb = 0): AudioFilter => ({ gainDb, id, type: "gain" });
+const gain = (id: string, gainDb = 0): AudioFilter => ({ enabled: true, gainDb, id, type: "gain" });
 const ids = (filters: readonly AudioFilter[]) => filters.map(({ id }) => id);
 
 describe("audio filters draft", () => {
@@ -35,7 +35,11 @@ describe("audio filters draft", () => {
       type: "added",
     });
     expect(ids(draft.filters)).toEqual(["a", "b", "n", "c"]);
-    expect(draft.filters[2]).toMatchObject({ targetLufs: -16, type: "loudnessNormalization" });
+    expect(draft.filters[2]).toMatchObject({
+      enabled: true,
+      targetLufs: -16,
+      type: "loudnessNormalization",
+    });
     expect(isAudioFiltersDraftDirty(draft)).toBe(true);
   });
 

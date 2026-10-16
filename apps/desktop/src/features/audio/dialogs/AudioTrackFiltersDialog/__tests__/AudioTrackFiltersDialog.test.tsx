@@ -94,7 +94,7 @@ describe("AudioTrackFiltersDialog", () => {
     const { committedFilters, store } = renderDialog();
     store.dispatch(
       audioTrackFiltersApplied({
-        filters: [{ cutoffHz: 80, id: "hp", type: "highPass" }],
+        filters: [{ enabled: true, cutoffHz: 80, id: "hp", type: "highPass" }],
         streamIndex: 2,
       }),
     );
@@ -106,7 +106,9 @@ describe("AudioTrackFiltersDialog", () => {
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
-    expect(committedFilters()).toEqual([{ cutoffHz: 80, id: "hp", type: "highPass" }]);
+    expect(committedFilters()).toEqual([
+      { enabled: true, cutoffHz: 80, id: "hp", type: "highPass" },
+    ]);
     await user.click(screen.getByRole("button", { name: "Open filters" }));
     expect(await screen.findByRole("tab", { name: "High-pass filter" })).toBeVisible();
     expect(tabNames()).toEqual(["High-pass filter"]);
@@ -135,7 +137,7 @@ describe("AudioTrackFiltersDialog", () => {
     expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(committedFilters()).toEqual([
-      expect.objectContaining({ cutoffHz: 50, type: "highPass" }),
+      expect.objectContaining({ enabled: true, cutoffHz: 50, type: "highPass" }),
     ]);
   });
 
@@ -160,11 +162,44 @@ describe("AudioTrackFiltersDialog", () => {
     await user.click(screen.getByRole("button", { name: "Apply" }));
     const [filter] = committedFilters();
     expect(filter).toEqual({
+      enabled: true,
       id: expect.any(String),
       noiseFloorDb: -30,
       reductionDb: 21,
       type: "noiseReduction",
     });
+  });
+
+  it("disables a filter in place and commits its enabled state with the chain", async () => {
+    const user = userEvent.setup();
+    const { committedFilters } = renderDialog();
+    await user.click(screen.getByRole("button", { name: "Open filters" }));
+    await addFilter(user, "Gain");
+    await addFilter(user, "Limiter");
+
+    await user.click(screen.getByRole("tab", { name: "Gain" }));
+    const toggle = screen.getByRole("switch", { name: "Filter enabled" });
+    expect(toggle).toBeChecked();
+    await user.click(toggle);
+
+    expect(toggle).not.toBeChecked();
+    expect(
+      within(screen.getByRole("tab", { name: /^Gain/ })).getByRole("img", {
+        name: "This filter is disabled and does not process audio",
+      }),
+    ).toBeVisible();
+    expect(tabNames()).toEqual(["Gain", "Limiter"]);
+    expect(committedFilters()).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    expect(committedFilters().map(({ enabled, type }) => ({ enabled, type }))).toEqual([
+      { enabled: false, type: "gain" },
+      { enabled: true, type: "limiter" },
+    ]);
+
+    await user.click(screen.getByRole("button", { name: "Open filters" }));
+    await user.click(await screen.findByRole("tab", { name: /^Gain/ }));
+    expect(screen.getByRole("switch", { name: "Filter enabled" })).not.toBeChecked();
   });
 
   it("disables actions that do not apply to the current selection", async () => {

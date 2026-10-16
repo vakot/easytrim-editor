@@ -79,15 +79,16 @@ describe("source import workflow", () => {
 });
 
 const normalizedChain: AudioFilter[] = [
-  { id: "gain", type: "gain", gainDb: 6 },
+  { enabled: true, id: "gain", type: "gain", gainDb: 6 },
   {
+    enabled: true,
     id: "norm",
     type: "loudnessNormalization",
     targetLufs: -16,
     maxTruePeakDb: -1.5,
     loudnessRangeLu: 11,
   },
-  { id: "late", type: "highPass", cutoffHz: 200 },
+  { enabled: true, id: "late", type: "highPass", cutoffHz: 200 },
 ];
 
 const measurement = { filterId: "norm", integratedLufs: -20, truePeakDb: -4 };

@@ -18,8 +18,17 @@ ranges; Rust validates every request again.
 
 ## Filters
 
-A filter is an active instance with a stable `id`, a `type`, and explicit parameters. Presence in
-the chain is the only enable state. Every type may appear more than once.
+A filter is an instance with a stable `id`, an `enabled` flag, a `type`, and explicit parameters.
+Every type may appear more than once.
+
+A disabled instance keeps its position and parameters, and is saved with the chain in snapshots
+and export requests, but it is never processed. The compiler validates it and then emits no stage
+for it, so it never reaches FFmpeg and does not change any processed-audio identity: a disabled
+filter leaves measurements, cached PCM, and waveforms keyed exactly as if it were absent. A disabled
+normalization instance is not measured, and a chain whose filters are all disabled is unprocessed,
+so an export can still stream-copy it. Toggling a filter is a chain edit like any other: it is
+drafted in the Audio Filters dialog and committed on Apply. Chains saved before the flag existed
+load with every instance enabled.
 
 | Type                    | Parameters (valid range)                                             | FFmpeg stage                                   |
 | ----------------------- | -------------------------------------------------------------------- | ---------------------------------------------- |

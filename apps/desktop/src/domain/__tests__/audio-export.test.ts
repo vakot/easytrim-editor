@@ -5,9 +5,9 @@ import { selectedAudioMetadata, selectedAudioTracks } from "../audio-export";
 describe("selectedAudioTracks", () => {
   it("exports each enabled track's ordered chain and Track Volume", () => {
     const filters = [
-      { gainDb: 6, id: "pre", type: "gain" as const },
-      { cutoffHz: 120, id: "hp", type: "highPass" as const },
-      { gainDb: -3, id: "post", type: "gain" as const },
+      { enabled: true, gainDb: 6, id: "pre", type: "gain" as const },
+      { enabled: true, cutoffHz: 120, id: "hp", type: "highPass" as const },
+      { enabled: true, gainDb: -3, id: "post", type: "gain" as const },
     ];
 
     expect(

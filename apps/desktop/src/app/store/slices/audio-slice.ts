@@ -4,6 +4,7 @@ import { editingInstanceActivated } from "@/app/store/actions/editing-instance-a
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import {
+  activeAudioFilters,
   areAudioFiltersValid,
   type AudioFilter,
   audioFiltersRequireLoudnessAnalysis,
@@ -384,7 +385,7 @@ function applyWaveformResult(state: AudioState, result: WaveformResult) {
     result.status === "ready" &&
     result.hasSignal === false &&
     track.enabled &&
-    track.processing.filters.length === 0;
+    activeAudioFilters(track.processing.filters).length === 0;
 
   if (disabledSilentTrack) {
     track.enabled = false;

@@ -166,7 +166,7 @@ describe("waveform replacement", () => {
       store.dispatch(
         audioTrackFiltersApplied({
           streamIndex: 2,
-          filters: [{ id: "g", type: "gain", gainDb: 3 }],
+          filters: [{ enabled: true, id: "g", type: "gain", gainDb: 3 }],
         }),
       ),
     );

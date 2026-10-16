@@ -26,6 +26,7 @@ import type { AudioFilter } from "@/domain/audio-processing";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 const normalization: AudioFilter = {
+  enabled: true,
   id: "norm",
   loudnessRangeLu: 11,
   maxTruePeakDb: -1.5,
@@ -33,7 +34,7 @@ const normalization: AudioFilter = {
   type: "loudnessNormalization",
 };
 
-const highPass: AudioFilter = { cutoffHz: 100, id: "hp", type: "highPass" };
+const highPass: AudioFilter = { enabled: true, cutoffHz: 100, id: "hp", type: "highPass" };
 const measurement = { filterId: "norm", integratedLufs: -18, truePeakDb: -2 };
 
 function createStore(filters: AudioFilter[] = [normalization]) {
@@ -107,7 +108,7 @@ describe("audio track operations", () => {
     store.dispatch(audioTrackVolumeChanged({ streamIndex: 2, volume: 0.5 }));
     store.dispatch(
       audioTrackFiltersApplied({
-        filters: [normalization, { gainDb: -3, id: "post", type: "gain" }],
+        filters: [normalization, { enabled: true, gainDb: -3, id: "post", type: "gain" }],
         streamIndex: 2,
       }),
     );

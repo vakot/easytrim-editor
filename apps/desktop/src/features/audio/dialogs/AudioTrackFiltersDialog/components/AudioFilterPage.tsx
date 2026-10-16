@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 import {
   AUDIO_FILTER_PRESETS,
@@ -26,16 +27,30 @@ import { AudioFilterParameterField } from "./AudioFilterParameterField";
 
 const CUSTOM_PRESET = "custom";
 
-/** Name, description, presets, and the explicit parameters of one filter instance. */
+/**
+ * Name, description, enabled state, presets, and the explicit parameters of one filter instance.
+ * A disabled instance stays editable so it can be prepared before it is enabled.
+ */
 function AudioFilterPage({ filter }: { filter: AudioFilter }) {
   const { t } = useTranslation();
+  const { dispatch } = useAudioFiltersDraft();
   const descriptor = audioFilterDescriptor(filter.type);
 
   return (
     <div className="grid gap-3" data-slot="audio-filter-page">
-      <div className="border-b pb-3">
-        <h3 className="font-semibold">{descriptor.label(t)}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{descriptor.description(t)}</p>
+      <div className="flex items-center justify-between gap-3 border-b pb-3">
+        <div>
+          <h3 className="font-semibold">{descriptor.label(t)}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{descriptor.description(t)}</p>
+        </div>
+
+        <Switch
+          aria-label={t("audio.filters.enabled")}
+          checked={filter.enabled}
+          onCheckedChange={(enabled) =>
+            dispatch({ filter: { ...filter, enabled }, type: "updated" })
+          }
+        />
       </div>
 
       <AudioFilterPresetSelect filter={filter} />

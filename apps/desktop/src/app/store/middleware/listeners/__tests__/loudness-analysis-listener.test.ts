@@ -19,6 +19,7 @@ import type { AudioFilter } from "@/domain/audio-processing";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 const normalization: AudioFilter = {
+  enabled: true,
   id: "norm",
   loudnessRangeLu: 11,
   maxTruePeakDb: -1.5,
@@ -66,7 +67,7 @@ describe("automatic loudness measurement", () => {
     const store = createStore();
     store.dispatch(
       audioTrackFiltersApplied({
-        filters: [{ cutoffHz: 80, id: "hp", type: "highPass" }],
+        filters: [{ enabled: true, cutoffHz: 80, id: "hp", type: "highPass" }],
         streamIndex: 4,
       }),
     );

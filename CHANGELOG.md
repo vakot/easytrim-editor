@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Preview audio pitch now follows the playback speed instead of staying at the original pitch.
-- Replaced the audio effects library with Audio filters: filters run in the order shown, can be reordered by dragging or with the arrow buttons, can be added more than once, and combine freely, including Gain with loudness normalization. Presets fill in editable parameters.
+- Replaced the audio effects library with Audio filters: filters run in the order shown, can be reordered by dragging or with the arrow buttons, can be added more than once, and combine freely, including Gain with loudness normalization. Presets fill in editable parameters, and each filter can be switched off without losing its place or settings.
 - Track gain is now a Track Volume percentage applied after the track's filters, from 0–200% on the slider or up to 500% when typed. Existing gain settings are converted.
 
 ### Fixed
