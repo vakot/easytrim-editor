@@ -116,6 +116,7 @@ function CropViewport() {
   const {
     aspectRatioPreset,
     clearDrag,
+    close,
     isDragging,
     isEditing,
     open,
@@ -377,6 +378,18 @@ function CropViewport() {
                       </Button>
                     ))}
                   </ButtonGroup>
+
+                  <Button
+                    aria-label={t("preview.crop.apply")}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      close();
+                    }}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    size="sm"
+                  >
+                    {t("preview.crop.apply")}
+                  </Button>
 
                   <Button
                     aria-label={t("preview.crop.resetToDefault")}
