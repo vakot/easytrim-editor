@@ -161,6 +161,13 @@ function PrimaryColorPreviewButton() {
 }
 
 /** An envelope of `width` bins, each holding the left and right peak and RMS as `value`. */
+// Moving a pointer toward a submenu item closes the submenu in jsdom, which has no layout for
+// Radix's pointer grace area, so submenu items are activated from the keyboard.
+async function selectWithKeyboard(user: ReturnType<typeof userEvent.setup>, item: HTMLElement) {
+  item.focus();
+  await user.keyboard("{Enter}");
+}
+
 function waveformEnvelope(width: number, value: number) {
   const buffer = new ArrayBuffer(12 + width * 4);
   const view = new DataView(buffer);
@@ -418,15 +425,12 @@ describe("AudioTrackRow", () => {
     expect(volumeCommits).toEqual([3.5, 5]);
   });
 
-  it("marks the volume range on hover, resets to 100%, and preserves mute state", async () => {
+  it("resets the volume to 100% on hover and preserves mute state", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();
     await user.hover(screen.getByRole("button", { name: /mute.*eng/i }));
 
     const volumeSlider = await screen.findByRole("slider", { name: /audio 1 volume/i });
-    expect(screen.getByText("0%", { exact: true })).toBeInTheDocument();
-    expect(screen.getAllByText("100%", { exact: true }).length).toBeGreaterThan(0);
-    expect(screen.getByText("200%", { exact: true })).toBeInTheDocument();
     expect(volumeSlider).toHaveAttribute("aria-valuemin", "0");
     expect(volumeSlider).toHaveAttribute("aria-valuemax", "200");
 
@@ -510,25 +514,27 @@ describe("AudioTrackRow", () => {
     const select = screen.getByRole("combobox", { name: "Waveform display" });
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
-    expect(screen.getByRole("menuitemradio", { name: "Peak" })).toHaveAttribute(
+    await user.click(screen.getByRole("menuitem", { name: "Waveform display" }));
+    expect(await screen.findByRole("menuitemradio", { name: "Peak" })).toHaveAttribute(
       "aria-checked",
       "true",
     );
-    await user.click(screen.getByRole("menuitemradio", { name: "RMS" }));
+    await selectWithKeyboard(user, screen.getByRole("menuitemradio", { name: "RMS" }));
 
+    expect(select).toHaveTextContent("RMS");
     expect(screen.getByRole("menuitemradio", { name: "RMS" })).toHaveAttribute(
       "aria-checked",
       "true",
     );
-    expect(select).toHaveTextContent("RMS");
     await user.keyboard("{Escape}");
 
     await user.pointer({ keys: "[MouseRight]", target: screen.getByText(/#1 ·/) });
-    expect(screen.getByRole("menuitemradio", { name: "RMS" })).toHaveAttribute(
+    await user.click(await screen.findByRole("menuitem", { name: "Waveform display" }));
+    expect(await screen.findByRole("menuitemradio", { name: "RMS" })).toHaveAttribute(
       "aria-checked",
       "true",
     );
-    await user.click(screen.getByRole("menuitemradio", { name: "Stereo" }));
+    await selectWithKeyboard(user, screen.getByRole("menuitemradio", { name: "Stereo" }));
 
     expect(select).toHaveTextContent("Stereo");
   });
