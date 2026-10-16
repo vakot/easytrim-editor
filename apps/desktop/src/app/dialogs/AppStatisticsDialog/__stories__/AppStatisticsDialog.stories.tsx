@@ -22,9 +22,9 @@ import { emptyUsageStatistics } from "@/test/usage-statistics.fixtures";
 const storyAchievementRecords = {
   discoveredSplashMessageIds: [],
   unlockedAchievements: {
-    "export-veteran": Date.UTC(2026, 3, 2, 12),
-    "first-export": Date.UTC(2026, 0, 15, 12),
-    "getting-started": Date.UTC(2026, 0, 28, 12),
+    "export-mastery-gold": Date.UTC(2026, 3, 2, 12),
+    "export-mastery-bronze": Date.UTC(2026, 0, 15, 12),
+    "export-mastery-silver": Date.UTC(2026, 0, 28, 12),
   },
 };
 

@@ -1,133 +1,96 @@
 import type { TFunction } from "i18next";
 import {
-  Coffee,
   Crown,
-  Footprints,
-  Gem,
   HardDrive,
   Headphones,
   Hourglass,
   ImagePlay,
-  Medal,
-  PartyPopper,
   PiggyBank,
   Rocket,
   Scissors,
 } from "lucide-react";
 
-import type { AchievementCategory, AchievementDefinition } from "../types/achievements.types";
+import type {
+  AchievementCategory,
+  AchievementCollectionEntry,
+  AchievementTier,
+} from "../types/achievements.types";
 
 import { splashMessagesLegendary } from "./splash-messages.consts";
 
-const HOUR_MILLIS = 3_600_000;
+const MINUTE_MILLIS = 60_000;
+const MEGABYTE = 1_024 ** 2;
 const GIGABYTE = 1_024 ** 3;
 
 /** The category order of the collection. */
 const achievementCategories = [
   "export-milestones",
-  "export-specialization",
   "processing-milestones",
   "secret-discoveries",
 ] as const satisfies readonly AchievementCategory[];
 
-const achievementDefinitions = [
+/** Tiers in ascending order. */
+const achievementTiers = ["bronze", "silver", "gold"] as const satisfies readonly AchievementTier[];
+
+const achievementCollection = [
   {
     category: "export-milestones",
-    description: (t: TFunction) => t("achievements.items.firstExport.description"),
-    icon: PartyPopper,
-    id: "first-export",
-    metric: "completedExports",
-    target: 1,
-    title: (t: TFunction) => t("achievements.items.firstExport.title"),
-  },
-  {
-    category: "export-milestones",
-    description: (t: TFunction) => t("achievements.items.gettingStarted.description"),
-    icon: Footprints,
-    id: "getting-started",
-    metric: "completedExports",
-    target: 10,
-    title: (t: TFunction) => t("achievements.items.gettingStarted.title"),
-  },
-  {
-    category: "export-milestones",
-    description: (t: TFunction) => t("achievements.items.exportVeteran.description"),
-    icon: Medal,
-    id: "export-veteran",
-    metric: "completedExports",
-    target: 100,
-    title: (t: TFunction) => t("achievements.items.exportVeteran.title"),
-  },
-  {
-    category: "export-milestones",
-    description: (t: TFunction) => t("achievements.items.exportLegend.description"),
+    description: (t: TFunction) => t("achievements.items.exportMastery.description"),
     icon: Rocket,
-    id: "export-legend",
+    id: "export-mastery",
+    kind: "series",
     metric: "completedExports",
-    target: 1_000,
-    title: (t: TFunction) => t("achievements.items.exportLegend.title"),
+    thresholds: { bronze: 1, silver: 10, gold: 100 },
+    title: (t: TFunction) => t("achievements.items.exportMastery.title"),
   },
   {
-    category: "export-specialization",
-    description: (t: TFunction) => t("achievements.items.firstLosslessCut.description"),
+    category: "export-milestones",
+    description: (t: TFunction) => t("achievements.items.losslessPrecision.description"),
     icon: Scissors,
-    id: "first-lossless-cut",
+    id: "lossless-precision",
+    kind: "series",
     metric: "losslessExports",
-    target: 1,
-    title: (t: TFunction) => t("achievements.items.firstLosslessCut.title"),
+    thresholds: { bronze: 1, silver: 10, gold: 50 },
+    title: (t: TFunction) => t("achievements.items.losslessPrecision.title"),
   },
   {
-    category: "export-specialization",
-    description: (t: TFunction) => t("achievements.items.losslessLegend.description"),
-    icon: Gem,
-    id: "lossless-legend",
-    metric: "losslessExports",
-    target: 100,
-    title: (t: TFunction) => t("achievements.items.losslessLegend.title"),
-  },
-  {
-    category: "export-specialization",
-    description: (t: TFunction) => t("achievements.items.gifMaker.description"),
+    category: "export-milestones",
+    description: (t: TFunction) => t("achievements.items.gifCreator.description"),
     icon: ImagePlay,
-    id: "gif-maker",
+    id: "gif-creator",
+    kind: "series",
     metric: "gifExports",
-    target: 1,
-    title: (t: TFunction) => t("achievements.items.gifMaker.title"),
+    thresholds: { bronze: 1, silver: 5, gold: 25 },
+    title: (t: TFunction) => t("achievements.items.gifCreator.title"),
   },
   {
-    category: "export-specialization",
+    category: "export-milestones",
     description: (t: TFunction) => t("achievements.items.audioSpecialist.description"),
     icon: Headphones,
     id: "audio-specialist",
+    kind: "series",
     metric: "audioExports",
-    target: 10,
+    thresholds: { bronze: 1, silver: 5, gold: 25 },
     title: (t: TFunction) => t("achievements.items.audioSpecialist.title"),
   },
   {
     category: "processing-milestones",
-    description: (t: TFunction) => t("achievements.items.oneHourLater.description"),
+    description: (t: TFunction) => t("achievements.items.timeWellSpent.description"),
     icon: Hourglass,
-    id: "one-hour-later",
+    id: "time-well-spent",
+    kind: "series",
     metric: "processingMillis",
-    target: HOUR_MILLIS,
-    title: (t: TFunction) => t("achievements.items.oneHourLater.title"),
-  },
-  {
-    category: "processing-milestones",
-    description: (t: TFunction) => t("achievements.items.workingOvertime.description"),
-    icon: Coffee,
-    id: "working-overtime",
-    metric: "processingMillis",
-    target: 24 * HOUR_MILLIS,
-    title: (t: TFunction) => t("achievements.items.workingOvertime.title"),
+    thresholds: { bronze: MINUTE_MILLIS, silver: 10 * MINUTE_MILLIS, gold: 60 * MINUTE_MILLIS },
+    title: (t: TFunction) => t("achievements.items.timeWellSpent.title"),
   },
   {
     category: "processing-milestones",
     description: (t: TFunction) => t("achievements.items.dataCruncher.description"),
     icon: HardDrive,
     id: "data-cruncher",
+    kind: "series",
     metric: "sourceBytes",
-    target: 100 * GIGABYTE,
+    thresholds: { bronze: GIGABYTE, silver: 10 * GIGABYTE, gold: 100 * GIGABYTE },
     title: (t: TFunction) => t("achievements.items.dataCruncher.title"),
   },
   {
@@ -135,8 +98,9 @@ const achievementDefinitions = [
     description: (t: TFunction) => t("achievements.items.storageSaver.description"),
     icon: PiggyBank,
     id: "storage-saver",
+    kind: "series",
     metric: "storageSavedBytes",
-    target: 10 * GIGABYTE,
+    thresholds: { bronze: 100 * MEGABYTE, silver: GIGABYTE, gold: 10 * GIGABYTE },
     title: (t: TFunction) => t("achievements.items.storageSaver.title"),
   },
   {
@@ -144,11 +108,12 @@ const achievementDefinitions = [
     description: (t: TFunction) => t("achievements.items.theChosenOne.description"),
     icon: Crown,
     id: "the-chosen-one",
+    kind: "standalone",
     metric: "legendarySplashMessages",
     secret: true,
     target: splashMessagesLegendary.length,
     title: (t: TFunction) => t("achievements.items.theChosenOne.title"),
   },
-] as const satisfies readonly AchievementDefinition[];
+] as const satisfies readonly AchievementCollectionEntry[];
 
-export { achievementCategories, achievementDefinitions };
+export { achievementCategories, achievementCollection, achievementTiers };

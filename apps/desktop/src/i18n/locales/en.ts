@@ -2,7 +2,6 @@ export const en = {
   achievements: {
     categories: {
       exportMilestones: "Export Milestones",
-      exportSpecialization: "Export Specialization",
       processingMilestones: "Processing Milestones",
       secretDiscoveries: "Secret Discoveries",
     },
@@ -23,59 +22,41 @@ export const en = {
     },
     items: {
       audioSpecialist: {
-        description: "Complete 10 audio-only exports",
+        description: "Complete audio-only exports",
         title: "Audio Specialist",
       },
       dataCruncher: {
-        description: "Process 100 GB of source data",
+        description: "Process source data through your exports",
         title: "Data Cruncher",
       },
-      exportLegend: {
-        description: "Complete 1,000 exports",
-        title: "Export Legend",
+      exportMastery: {
+        description: "Complete exports of any kind",
+        title: "Export Mastery",
       },
-      exportVeteran: {
-        description: "Complete 100 exports",
-        title: "Export Veteran",
+      gifCreator: {
+        description: "Export animated GIFs",
+        title: "GIF Creator",
       },
-      firstExport: {
-        description: "Complete your first export",
-        title: "First Export",
-      },
-      firstLosslessCut: {
-        description: "Complete your first lossless Fast Export",
-        title: "First Lossless Cut",
-      },
-      gettingStarted: {
-        description: "Complete 10 exports",
-        title: "Getting Started",
-      },
-      gifMaker: {
-        description: "Export your first GIF",
-        title: "GIF Maker",
-      },
-      losslessLegend: {
-        description: "Complete 100 lossless Fast Exports",
-        title: "Lossless Legend",
-      },
-      oneHourLater: {
-        description: "Spend 1 hour processing exports",
-        title: "One Hour Later",
+      losslessPrecision: {
+        description: "Cut without re-encoding using Fast Export",
+        title: "Lossless Precision",
       },
       storageSaver: {
-        description: "Save 10 GB of storage across your exports",
+        description: "Save storage by exporting files smaller than their sources",
         title: "Storage Saver",
       },
       theChosenOne: {
         description: "Encounter every legendary splash message",
         title: "The Chosen One",
       },
-      workingOvertime: {
-        description: "Spend 24 hours processing exports",
-        title: "Working Overtime",
+      timeWellSpent: {
+        description: "Spend time processing exports",
+        title: "Time Well Spent",
       },
     },
     notification: {
+      seriesTier: "{{series}} {{tier}}",
+      tierUnlocked: "{{tier}} tier unlocked",
       unlocked: "Achievement unlocked",
       unlockedMany_one: "{{count}} achievement unlocked",
       unlockedMany_other: "{{count}} achievements unlocked",
@@ -87,11 +68,25 @@ export const en = {
       description: "A secret achievement. Keep exploring to reveal it",
       title: "???",
     },
+    series: {
+      allTiersUnlocked: "All tiers unlocked",
+      completed: "Completed",
+      nextTier: "Next: {{tier}}",
+      tierLocked: "{{tier}}, {{target}}, locked",
+      tierUnlocked: "{{tier}}, {{target}}, unlocked {{date}}",
+      tierUnlockedOn: "{{tier}} unlocked {{date}}",
+      tiersLabel: "Tiers",
+    },
     status: {
       locked: "Locked",
       unlocked: "Unlocked",
     },
     summary: "{{unlocked}} of {{total}} unlocked",
+    tiers: {
+      bronze: "Bronze",
+      gold: "Gold",
+      silver: "Silver",
+    },
     title: "Achievements",
     unavailable: "Achievements could not be loaded",
     unknownDate: "Unknown date",

@@ -29,10 +29,14 @@ const meta = {
     records: {
       discoveredSplashMessageIds: ["rainbow-mode"],
       unlockedAchievements: {
-        "first-export": Date.UTC(2026, 0, 15, 12),
-        "first-lossless-cut": Date.UTC(2026, 0, 15, 12),
-        "getting-started": Date.UTC(2026, 1, 3, 9),
-        "one-hour-later": Date.UTC(2026, 4, 9, 20),
+        "audio-specialist-bronze": Date.UTC(2026, 1, 20, 15),
+        "export-mastery-bronze": Date.UTC(2026, 0, 15, 12),
+        "export-mastery-silver": Date.UTC(2026, 1, 3, 9),
+        "lossless-precision-bronze": Date.UTC(2026, 0, 15, 12),
+        "lossless-precision-silver": Date.UTC(2026, 1, 9, 18),
+        "time-well-spent-bronze": Date.UTC(2026, 0, 15, 12),
+        "time-well-spent-gold": Date.UTC(2026, 4, 9, 20),
+        "time-well-spent-silver": Date.UTC(2026, 1, 3, 9),
       },
     },
     statistics: {

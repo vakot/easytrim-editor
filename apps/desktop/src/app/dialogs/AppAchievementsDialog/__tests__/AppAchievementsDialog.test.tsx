@@ -71,19 +71,27 @@ describe("AppAchievementsDialog", () => {
     vi.resetAllMocks();
   });
 
-  it("shows an empty collection with every achievement locked", async () => {
+  function cards(dialog: HTMLElement) {
+    return dialog.querySelectorAll("[data-slot='item'][role='listitem']");
+  }
+
+  it("shows one card per series with every tier locked", async () => {
     mocks.getAchievementRecords.mockResolvedValue(emptyAchievementRecords);
     mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
     renderDialog();
 
     const dialog = await openDialog();
 
-    expect(await within(dialog).findByText("0 of 13 unlocked")).toBeVisible();
+    expect(await within(dialog).findByText("0 of 22 unlocked")).toBeVisible();
     expect(
       within(dialog).getByRole("progressbar", { name: "Collection progress" }),
     ).toHaveAttribute("aria-valuenow", "0");
-    expect(within(dialog).getAllByRole("listitem")).toHaveLength(13);
-    expect(within(achievement(dialog, "First Export")).getByText("Locked")).toBeVisible();
+    expect(cards(dialog)).toHaveLength(8);
+    const mastery = achievement(dialog, "Export Mastery");
+    expect(mastery).toHaveAttribute("data-state", "locked");
+    expect(within(mastery).getByText("Locked")).toBeVisible();
+    expect(within(mastery).getByText("Next: Bronze")).toBeVisible();
+    expect(within(mastery).getByRole("listitem", { name: "Gold, 100, locked" })).toBeVisible();
     expect(
       within(dialog).getByText(
         "Achievements are tracked locally on this device and are never shared or sent anywhere",
@@ -91,33 +99,65 @@ describe("AppAchievementsDialog", () => {
     ).toBeVisible();
   });
 
-  it("presents unlock dates and progress toward locked achievements", async () => {
+  it("shows the highest tier, progress toward the next tier, and every tier's status", async () => {
     mocks.getAchievementRecords.mockResolvedValue({
       ...emptyAchievementRecords,
       unlockedAchievements: {
-        "export-veteran": unlockedAt,
-        "first-export": unlockedAt,
-        "getting-started": unlockedAt,
+        "export-mastery-bronze": Date.UTC(2026, 0, 15, 12),
+        "export-mastery-silver": unlockedAt,
+        "gif-creator-bronze": unlockedAt,
       },
     });
-    mocks.getUsageStatistics.mockResolvedValue({ ...emptyUsageStatistics, optimizedExports: 150 });
+    mocks.getUsageStatistics.mockResolvedValue({
+      ...emptyUsageStatistics,
+      gifExports: 2,
+      optimizedExports: 35,
+    });
     renderDialog();
 
     const dialog = await openDialog();
 
-    expect(await within(dialog).findByText("3 of 13 unlocked")).toBeVisible();
-    const veteran = achievement(dialog, "Export Veteran");
-    expect(veteran).toHaveAttribute("data-state", "unlocked");
-    expect(within(veteran).getByText("Unlocked")).toBeVisible();
-    expect(within(veteran).getByText("Unlocked Oct 12, 2026")).toBeVisible();
-    expect(within(veteran).queryByRole("progressbar")).toBeNull();
-
-    const legend = achievement(dialog, "Export Legend");
-    expect(legend).toHaveAttribute("data-state", "locked");
-    expect(within(legend).getByText("150 / 1,000")).toBeVisible();
+    expect(await within(dialog).findByText("3 of 22 unlocked")).toBeVisible();
+    const mastery = achievement(dialog, "Export Mastery");
+    expect(mastery).toHaveAttribute("data-tier", "silver");
+    expect(within(mastery).getByText("Silver")).toBeVisible();
+    expect(within(mastery).getByText("Next: Gold")).toBeVisible();
+    expect(within(mastery).getByText("37 / 100")).toBeVisible();
     expect(
-      within(legend).getByRole("progressbar", { name: "Export Legend progress" }),
-    ).toHaveAttribute("aria-valuetext", "150 of 1,000");
+      within(mastery).getByRole("progressbar", { name: "Export Mastery progress" }),
+    ).toHaveAttribute("aria-valuetext", "37 of 100");
+    expect(within(mastery).getByText("Silver unlocked Oct 12, 2026")).toBeVisible();
+    expect(
+      within(mastery).getByRole("listitem", { name: "Bronze, 1, unlocked Jan 15, 2026" }),
+    ).toHaveAttribute("data-state", "unlocked");
+    expect(within(mastery).getByRole("listitem", { name: "Gold, 100, locked" })).toHaveAttribute(
+      "data-state",
+      "locked",
+    );
+
+    expect(achievement(dialog, "GIF Creator")).toHaveAttribute("data-tier", "bronze");
+  });
+
+  it("marks a series complete after Gold", async () => {
+    mocks.getAchievementRecords.mockResolvedValue({
+      ...emptyAchievementRecords,
+      unlockedAchievements: {
+        "lossless-precision-bronze": unlockedAt,
+        "lossless-precision-gold": unlockedAt,
+        "lossless-precision-silver": unlockedAt,
+      },
+    });
+    mocks.getUsageStatistics.mockResolvedValue({ ...emptyUsageStatistics, losslessExports: 64 });
+    renderDialog();
+
+    const dialog = await openDialog();
+
+    const precision = achievement(dialog, "Lossless Precision");
+    expect(precision).toHaveAttribute("data-state", "completed");
+    expect(precision).toHaveAttribute("data-tier", "gold");
+    expect(within(precision).getByText("Completed")).toBeVisible();
+    expect(within(precision).getByText("All tiers unlocked")).toBeVisible();
+    expect(within(precision).queryByRole("progressbar")).toBeNull();
   });
 
   it("conceals a secret achievement until it is unlocked", async () => {
@@ -152,26 +192,33 @@ describe("AppAchievementsDialog", () => {
     const revealed = achievement(dialog, "The Chosen One");
     expect(within(revealed).getByText("Encounter every legendary splash message")).toBeVisible();
     expect(within(dialog).queryByText("???")).toBeNull();
-    expect(within(dialog).getByText("1 of 13 unlocked")).toBeVisible();
+    expect(within(dialog).getByText("1 of 22 unlocked")).toBeVisible();
   });
 
-  it("filters unlocked and locked achievements", async () => {
+  it("filters series with unlocked tiers and series with locked tiers", async () => {
     mocks.getAchievementRecords.mockResolvedValue({
       ...emptyAchievementRecords,
-      unlockedAchievements: { "gif-maker": unlockedAt },
+      unlockedAchievements: {
+        "audio-specialist-bronze": unlockedAt,
+        "audio-specialist-gold": unlockedAt,
+        "audio-specialist-silver": unlockedAt,
+        "gif-creator-bronze": unlockedAt,
+      },
     });
     mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
     renderDialog();
     const dialog = await openDialog();
-    await within(dialog).findByText("1 of 13 unlocked");
+    await within(dialog).findByText("4 of 22 unlocked");
 
     await userEvent.click(within(dialog).getByRole("tab", { name: "Unlocked" }));
-    expect(within(dialog).getAllByRole("listitem")).toHaveLength(1);
-    expect(within(dialog).getByText("GIF Maker")).toBeVisible();
+    expect(cards(dialog)).toHaveLength(2);
+    expect(within(dialog).getByText("GIF Creator")).toBeVisible();
+    expect(within(dialog).getByText("Audio Specialist")).toBeVisible();
 
     await userEvent.click(within(dialog).getByRole("tab", { name: "Locked" }));
-    expect(within(dialog).getAllByRole("listitem")).toHaveLength(12);
-    expect(within(dialog).queryByText("GIF Maker")).toBeNull();
+    expect(cards(dialog)).toHaveLength(7);
+    expect(within(dialog).getByText("GIF Creator")).toBeVisible();
+    expect(within(dialog).queryByText("Audio Specialist")).toBeNull();
   });
 
   it("explains an empty filter", async () => {
@@ -179,7 +226,7 @@ describe("AppAchievementsDialog", () => {
     mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
     renderDialog();
     const dialog = await openDialog();
-    await within(dialog).findByText("0 of 13 unlocked");
+    await within(dialog).findByText("0 of 22 unlocked");
 
     await userEvent.click(within(dialog).getByRole("tab", { name: "Unlocked" }));
 
@@ -199,6 +246,6 @@ describe("AppAchievementsDialog", () => {
 
     await userEvent.click(within(dialog).getByRole("button", { name: "Retry" }));
 
-    expect(await within(dialog).findByText("0 of 13 unlocked")).toBeVisible();
+    expect(await within(dialog).findByText("0 of 22 unlocked")).toBeVisible();
   });
 });

@@ -79,7 +79,7 @@ describe("AchievementTracker", () => {
     vi.resetAllMocks();
   });
 
-  it("unlocks achievements earned before this session without announcing them", async () => {
+  it("unlocks tiers earned before this session without announcing them", async () => {
     const nativeRecords = fakeNativeAchievements();
     mocks.getUsageStatistics.mockResolvedValue({ ...emptyUsageStatistics, optimizedExports: 150 });
     const store = renderTracker();
@@ -87,49 +87,79 @@ describe("AchievementTracker", () => {
     await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
 
     expect(Object.keys(nativeRecords().unlockedAchievements).sort()).toEqual([
-      "export-veteran",
-      "first-export",
-      "getting-started",
+      "export-mastery-bronze",
+      "export-mastery-gold",
+      "export-mastery-silver",
     ]);
     expect(mocks.toast).not.toHaveBeenCalled();
   });
 
-  it("keeps the original unlock time of achievements unlocked in an earlier session", async () => {
+  it("gives every tier its own unlock time and keeps earlier unlock times", async () => {
     const nativeRecords = fakeNativeAchievements({
       ...emptyAchievementRecords,
-      unlockedAchievements: { "first-export": 42 },
+      unlockedAchievements: { "export-mastery-bronze": 42 },
     });
 
-    mocks.getUsageStatistics.mockResolvedValue({ ...emptyUsageStatistics, gifExports: 12 });
+    mocks.getUsageStatistics.mockResolvedValue({ ...emptyUsageStatistics, gifExports: 1 });
     const store = renderTracker();
-
     await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
 
-    expect(nativeRecords().unlockedAchievements["first-export"]).toBe(42);
-    expect(nativeRecords().unlockedAchievements["getting-started"]).toBeGreaterThan(42);
-    expect(mocks.toast).not.toHaveBeenCalled();
+    completeExport(store, { ...emptyUsageStatistics, gifExports: 10 });
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledTimes(1));
+
+    const unlocked = nativeRecords().unlockedAchievements;
+    expect(unlocked["export-mastery-bronze"]).toBe(42);
+    expect(unlocked["gif-creator-bronze"]).toBeGreaterThan(42);
+    expect(unlocked["gif-creator-silver"]).toBeGreaterThan(unlocked["gif-creator-bronze"]!);
   });
 
-  it("announces an achievement unlocked by a new export", async () => {
+  it("announces a newly unlocked tier with its series and tier", async () => {
     fakeNativeAchievements();
-    const previous = { ...emptyUsageStatistics, optimizedExports: 1 };
+    const previous = { ...emptyUsageStatistics, gifExports: 4 };
     mocks.getUsageStatistics.mockResolvedValue(previous);
     const store = renderTracker();
     await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
 
-    completeExport(store, { ...previous, gifExports: 1 });
+    completeExport(store, { ...previous, gifExports: 5 });
 
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledTimes(1));
     expect(mocks.toast).toHaveBeenCalledWith(
-      "GIF Maker",
+      "GIF Creator",
       expect.objectContaining({
-        description: "Achievement unlocked",
-        id: "achievement-unlocked:gif-maker",
+        description: "Silver tier unlocked",
+        id: "achievement-unlocked:gif-creator-silver",
       }),
     );
   });
 
-  it("announces simultaneous unlocks with one toast and never repeats them", async () => {
+  it("announces several tiers of one series as its highest tier", async () => {
+    fakeNativeAchievements();
+    const previous = {
+      ...emptyUsageStatistics,
+      optimizedExports: 1,
+      outputBytes: 1_024,
+      sourceBytes: 1_024,
+    };
+
+    mocks.getUsageStatistics.mockResolvedValue(previous);
+    const store = renderTracker();
+    await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
+
+    // One large export can pass more than one threshold at once.
+    completeExport(store, {
+      ...previous,
+      outputBytes: 12 * 1_024 ** 3,
+      sourceBytes: 12 * 1_024 ** 3,
+    });
+
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledTimes(1));
+    expect(mocks.toast).toHaveBeenCalledWith(
+      "Data Cruncher",
+      expect.objectContaining({ description: "Silver tier unlocked" }),
+    );
+  });
+
+  it("announces unlocks across series with one summary toast and never repeats them", async () => {
     fakeNativeAchievements();
     mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
     const store = renderTracker();
@@ -143,7 +173,7 @@ describe("AchievementTracker", () => {
     expect(mocks.toast).toHaveBeenCalledTimes(1);
     expect(mocks.toast).toHaveBeenCalledWith(
       "2 achievements unlocked",
-      expect.objectContaining({ description: "First Export, GIF Maker" }),
+      expect.objectContaining({ description: "Export Mastery Bronze, GIF Creator Bronze" }),
     );
   });
 

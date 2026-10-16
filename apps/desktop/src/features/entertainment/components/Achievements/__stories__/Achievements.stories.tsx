@@ -20,28 +20,71 @@ import { emptyUsageStatistics } from "@/test/usage-statistics.fixtures";
 
 import { Achievements, AchievementsCollection, AchievementsSummary } from "../Achievements";
 
+const MINUTE = 60_000;
+const MEGABYTE = 1_024 ** 2;
 const GIGABYTE = 1_024 ** 3;
-const HOUR = 3_600_000;
 
-const partialStatistics: UsageStatistics = {
-  ...emptyUsageStatistics,
-  audioExports: 4,
-  gifExports: 2,
-  losslessExports: 37,
-  optimizedExports: 41,
-  outputBytes: 9 * GIGABYTE,
-  processingMillis: 5 * HOUR + 20 * 60_000,
-  sourceBytes: 64 * GIGABYTE,
-};
+const seriesIds = [
+  "audio-specialist",
+  "data-cruncher",
+  "export-mastery",
+  "gif-creator",
+  "lossless-precision",
+  "storage-saver",
+  "time-well-spent",
+];
 
-const partialRecords: AchievementRecords = {
-  discoveredSplashMessageIds: ["rainbow-mode", "chosen-frame"],
-  unlockedAchievements: {
-    "first-export": Date.UTC(2026, 0, 15, 12),
-    "first-lossless-cut": Date.UTC(2026, 0, 15, 12),
-    "getting-started": Date.UTC(2026, 1, 3, 9),
-    "gif-maker": Date.UTC(2026, 3, 22, 17),
-    "one-hour-later": Date.UTC(2026, 4, 9, 20),
+/** Unlocks every series up to and including `tier`. */
+function recordsUpTo(tier: "bronze" | "gold" | "silver"): AchievementRecords {
+  const tiers = ["bronze", "silver", "gold"].slice(
+    0,
+    ["bronze", "silver", "gold"].indexOf(tier) + 1,
+  );
+
+  return {
+    discoveredSplashMessageIds: ["rainbow-mode"],
+    unlockedAchievements: Object.fromEntries(
+      seriesIds.flatMap((id, index) =>
+        tiers.map((unlocked, tierIndex) => [
+          `${id}-${unlocked}`,
+          Date.UTC(2026, tierIndex * 3, 2 + index, 12),
+        ]),
+      ),
+    ),
+  };
+}
+
+/** Statistics that reach Bronze, Silver, or Gold of every series and progress beyond it. */
+const statisticsByTier: Record<"bronze" | "gold" | "silver", UsageStatistics> = {
+  bronze: {
+    ...emptyUsageStatistics,
+    audioExports: 3,
+    gifExports: 2,
+    losslessExports: 6,
+    optimizedExports: 1,
+    outputBytes: 2 * GIGABYTE,
+    processingMillis: 7 * MINUTE,
+    sourceBytes: 2.4 * GIGABYTE,
+  },
+  gold: {
+    ...emptyUsageStatistics,
+    audioExports: 31,
+    gifExports: 28,
+    losslessExports: 64,
+    optimizedExports: 60,
+    outputBytes: 120 * GIGABYTE,
+    processingMillis: 95 * MINUTE,
+    sourceBytes: 132 * GIGABYTE,
+  },
+  silver: {
+    ...emptyUsageStatistics,
+    audioExports: 12,
+    gifExports: 9,
+    losslessExports: 31,
+    optimizedExports: 12,
+    outputBytes: 18 * GIGABYTE,
+    processingMillis: 38 * MINUTE,
+    sourceBytes: 24 * GIGABYTE,
   },
 };
 
@@ -76,7 +119,32 @@ function AchievementsStory({
 }
 
 const meta = {
-  args: { records: partialRecords, statistics: partialStatistics, width: "40rem" },
+  args: {
+    records: {
+      discoveredSplashMessageIds: ["rainbow-mode", "chosen-frame"],
+      unlockedAchievements: {
+        "data-cruncher-bronze": Date.UTC(2026, 1, 3, 9),
+        "export-mastery-bronze": Date.UTC(2026, 0, 15, 12),
+        "export-mastery-silver": Date.UTC(2026, 1, 3, 9),
+        "gif-creator-bronze": Date.UTC(2026, 3, 22, 17),
+        "lossless-precision-bronze": Date.UTC(2026, 0, 15, 12),
+        "lossless-precision-gold": Date.UTC(2026, 8, 30, 20),
+        "lossless-precision-silver": Date.UTC(2026, 2, 1, 10),
+        "time-well-spent-bronze": Date.UTC(2026, 0, 15, 12),
+        "time-well-spent-silver": Date.UTC(2026, 4, 9, 20),
+      },
+    },
+    statistics: {
+      ...emptyUsageStatistics,
+      gifExports: 3,
+      losslessExports: 52,
+      optimizedExports: 16,
+      outputBytes: 3 * GIGABYTE,
+      processingMillis: 41 * MINUTE,
+      sourceBytes: 3 * GIGABYTE + 60 * MEGABYTE,
+    },
+    width: "40rem",
+  },
   component: AchievementsStory,
   parameters: { layout: "centered" },
   title: "Features/Entertainment/Achievements",
@@ -86,33 +154,34 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const PartiallyUnlocked: Story = {};
+/** Series at different tiers, including one completed at Gold. */
+export const Mixed: Story = {};
 
-export const Empty: Story = {
+export const Locked: Story = {
   args: { records: emptyAchievementRecords, statistics: emptyUsageStatistics },
 };
 
+export const Bronze: Story = {
+  args: { records: recordsUpTo("bronze"), statistics: statisticsByTier.bronze },
+};
+
+export const Silver: Story = {
+  args: { records: recordsUpTo("silver"), statistics: statisticsByTier.silver },
+};
+
+export const Gold: Story = {
+  args: { records: recordsUpTo("gold"), statistics: statisticsByTier.gold },
+};
+
 export const FullyUnlocked: Story = {
-  args: {
-    records: completeAchievementRecords,
-    statistics: {
-      ...partialStatistics,
-      audioExports: 12,
-      gifExports: 9,
-      losslessExports: 640,
-      optimizedExports: 480,
-      outputBytes: 120 * GIGABYTE,
-      processingMillis: 31 * HOUR,
-      sourceBytes: 412 * GIGABYTE,
-    },
-  },
+  args: { records: completeAchievementRecords, statistics: statisticsByTier.gold },
 };
 
 /** Four of the five legendary splash messages discovered: The Chosen One stays concealed. */
 export const SecretLocked: Story = {
   args: {
     records: {
-      ...partialRecords,
+      ...recordsUpTo("bronze"),
       discoveredSplashMessageIds: [
         "chosen-frame",
         "corrupted-signal",
@@ -120,6 +189,7 @@ export const SecretLocked: Story = {
         "rainbow-mode",
       ],
     },
+    statistics: statisticsByTier.bronze,
   },
 };
 
@@ -128,26 +198,11 @@ export const SecretUnlocked: Story = {
     records: {
       discoveredSplashMessageIds: completeAchievementRecords.discoveredSplashMessageIds,
       unlockedAchievements: {
-        ...partialRecords.unlockedAchievements,
+        ...recordsUpTo("bronze").unlockedAchievements,
         "the-chosen-one": Date.UTC(2026, 9, 16, 21),
       },
     },
-  },
-};
-
-/** Progress close to each target, covering every metric unit. */
-export const NearlyThere: Story = {
-  args: {
-    records: emptyAchievementRecords,
-    statistics: {
-      ...emptyUsageStatistics,
-      audioExports: 9,
-      losslessExports: 98,
-      optimizedExports: 890,
-      outputBytes: 140 * GIGABYTE,
-      processingMillis: 23 * HOUR + 45 * 60_000,
-      sourceBytes: 148 * GIGABYTE,
-    },
+    statistics: statisticsByTier.bronze,
   },
 };
 

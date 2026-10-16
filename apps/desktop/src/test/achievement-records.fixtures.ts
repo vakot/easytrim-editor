@@ -7,7 +7,17 @@ export const emptyAchievementRecords: AchievementRecords = {
 
 const unlockedAt = Date.UTC(2026, 9, 12, 18, 30);
 
-/** Every achievement of the initial collection, unlocked. */
+const seriesIds = [
+  "audio-specialist",
+  "data-cruncher",
+  "export-mastery",
+  "gif-creator",
+  "lossless-precision",
+  "storage-saver",
+  "time-well-spent",
+];
+
+/** Every tier of every series and every standalone achievement, unlocked. */
 export const completeAchievementRecords: AchievementRecords = {
   discoveredSplashMessageIds: [
     "chosen-frame",
@@ -18,19 +28,8 @@ export const completeAchievementRecords: AchievementRecords = {
   ],
   unlockedAchievements: Object.fromEntries(
     [
-      "audio-specialist",
-      "data-cruncher",
-      "export-legend",
-      "export-veteran",
-      "first-export",
-      "first-lossless-cut",
-      "getting-started",
-      "gif-maker",
-      "lossless-legend",
-      "one-hour-later",
-      "storage-saver",
+      ...seriesIds.flatMap((id) => [`${id}-bronze`, `${id}-silver`, `${id}-gold`]),
       "the-chosen-one",
-      "working-overtime",
     ].map((id) => [id, unlockedAt]),
   ),
 };

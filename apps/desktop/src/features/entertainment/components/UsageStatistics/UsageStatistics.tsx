@@ -32,8 +32,10 @@ import { getCompletedExports, getStorageSavedBytes } from "@/domain/usage-statis
 import { cn } from "@/lib/class-names.utils";
 import { formatRelativeTime } from "@/lib/date-time.utils";
 
-import { achievementDefinitions } from "../../consts/achievements.consts";
-import { countUnlockedAchievements } from "../../lib/achievements.utils";
+import {
+  countUnlockedAchievements,
+  totalUnlockableAchievements,
+} from "../../lib/achievements.utils";
 
 import { UsageStatisticsItem } from "./components/UsageStatisticsItem";
 import { UsageStatisticsLoading } from "./components/UsageStatisticsLoading";
@@ -112,7 +114,7 @@ function UsageStatisticsDashboard() {
             description={t("statistics.metrics.achievementsUnlocked.description")}
             icon={<Trophy />}
             label={t("statistics.metrics.achievementsUnlocked.label")}
-            value={`${formatStatisticCount(countUnlockedAchievements(achievementRecords), locale)} / ${formatStatisticCount(achievementDefinitions.length, locale)}`}
+            value={`${formatStatisticCount(countUnlockedAchievements(achievementRecords), locale)} / ${formatStatisticCount(totalUnlockableAchievements, locale)}`}
           />
         ) : null}
       </UsageStatisticsSection>

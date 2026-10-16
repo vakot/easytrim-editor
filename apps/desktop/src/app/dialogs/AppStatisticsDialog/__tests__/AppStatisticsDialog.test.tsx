@@ -155,7 +155,7 @@ describe("AppStatisticsDialog", () => {
     mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
     mocks.getAchievementRecords.mockResolvedValue({
       ...emptyAchievementRecords,
-      unlockedAchievements: { "first-export": 1, "retired-achievement": 2 },
+      unlockedAchievements: { "export-mastery-bronze": 1, "first-export": 2 },
     });
     const store = renderDialog();
 
@@ -163,17 +163,20 @@ describe("AppStatisticsDialog", () => {
     const achievements = await within(dialog).findByText("Achievements Unlocked");
     const item = achievements.closest("[data-slot='item']");
     if (!(item instanceof HTMLElement)) throw new Error("Achievements metric is not rendered.");
-    expect(within(item).getByText("1 / 13")).toBeVisible();
+    expect(within(item).getByText("1 / 22")).toBeVisible();
 
     act(() => {
       store.dispatch(
         achievementRecordsUpdated({
-          records: { ...emptyAchievementRecords, unlockedAchievements: { "gif-maker": 3 } },
+          records: {
+            ...emptyAchievementRecords,
+            unlockedAchievements: { "gif-creator-bronze": 3 },
+          },
         }),
       );
     });
 
-    expect(within(item).getByText("2 / 13")).toBeVisible();
+    expect(within(item).getByText("2 / 22")).toBeVisible();
   });
 
   it("offers a retry when statistics cannot be loaded", async () => {

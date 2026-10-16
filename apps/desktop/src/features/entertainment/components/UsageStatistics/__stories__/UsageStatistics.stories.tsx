@@ -20,7 +20,7 @@ import {
 
 const storyAchievementRecords = {
   discoveredSplashMessageIds: [],
-  unlockedAchievements: { "first-export": Date.UTC(2026, 0, 15, 12) },
+  unlockedAchievements: { "export-mastery-bronze": Date.UTC(2026, 0, 15, 12) },
 };
 
 function UsageStatisticsStory({ statistics }: { statistics: UsageStatisticsValue }) {

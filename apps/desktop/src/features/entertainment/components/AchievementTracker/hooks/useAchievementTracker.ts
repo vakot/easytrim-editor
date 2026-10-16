@@ -12,7 +12,10 @@ import { loadAchievementRecords, unlockAchievements } from "@/app/store/thunks/a
 import { loadUsageStatistics } from "@/app/store/thunks/usage-statistics-thunks";
 
 import { getEarnedAchievementIds } from "../../../lib/achievements.utils";
-import { showAchievementUnlockToast } from "../lib/achievement-toast.utils";
+import {
+  createAchievementAnnouncement,
+  showAchievementAnnouncement,
+} from "../lib/achievement-announcement.utils";
 
 /**
  * Unlocks achievements whenever the statistics or records they depend on change.
@@ -51,8 +54,12 @@ function useAchievementTracker() {
         const unlocked = await dispatch(unlockAchievements(earned));
         // A failed first evaluation stays retroactive, so its achievements stay unannounced.
         if (unlocked === null) return;
-        if (!initialized) dispatch(achievementsInitialized());
-        else if (unlocked.length > 0) showAchievementUnlockToast(unlocked, t);
+        if (!initialized) {
+          dispatch(achievementsInitialized());
+          return;
+        }
+        const announcement = createAchievementAnnouncement(unlocked, t);
+        if (announcement) showAchievementAnnouncement(announcement);
       });
   }, [dispatch, records, statistics, store, t]);
 }

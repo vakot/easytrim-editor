@@ -22,6 +22,9 @@
   --color-destructive: var(--destructive);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-achievement-bronze: var(--achievement-bronze);
+  --color-achievement-silver: var(--achievement-silver);
+  --color-achievement-gold: var(--achievement-gold);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -74,6 +77,9 @@
   --destructive: #c43f35;
   --success: #16845a;
   --warning: #9a6700;
+  --achievement-bronze: #9c5b26;
+  --achievement-silver: #66707c;
+  --achievement-gold: #9a7400;
   --border: #d5d2cb;
   --input: #c9c6bf;
   --ring: var(--primary-light);
@@ -117,6 +123,9 @@
   --destructive: #e3796c;
   --success: #5fd19a;
   --warning: #e4ae4e;
+  --achievement-bronze: #d9975c;
+  --achievement-silver: #c3cad3;
+  --achievement-gold: #ebc24a;
   --border: #303036;
   --input: #34343a;
   --ring: var(--primary-dark);
@@ -160,6 +169,9 @@
     --destructive: #e3796c;
     --success: #5fd19a;
     --warning: #e4ae4e;
+    --achievement-bronze: #d9975c;
+    --achievement-silver: #c3cad3;
+    --achievement-gold: #ebc24a;
     --border: #303036;
     --input: #34343a;
     --ring: var(--primary-dark);

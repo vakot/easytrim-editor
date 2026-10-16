@@ -18,13 +18,19 @@ import { loadUsageStatistics } from "@/app/store/thunks/usage-statistics-thunks"
 import type { AchievementRecords } from "@/domain/achievement-records";
 import { cn } from "@/lib/class-names.utils";
 
-import { achievementCategories, achievementDefinitions } from "../../consts/achievements.consts";
-import { countUnlockedAchievements, getAchievementUnlockedAt } from "../../lib/achievements.utils";
+import { achievementCategories, achievementCollection } from "../../consts/achievements.consts";
+import {
+  countUnlockedAchievements,
+  isEntryLocked,
+  isEntryUnlocked,
+  totalUnlockableAchievements,
+} from "../../lib/achievements.utils";
 import type { AchievementCategory } from "../../types/achievements.types";
 
-import { AchievementItem } from "./components/AchievementItem";
 import { AchievementsCategory } from "./components/AchievementsCategory";
+import { AchievementSeriesItem } from "./components/AchievementSeriesItem";
 import { AchievementsLoading } from "./components/AchievementsLoading";
+import { AchievementStandaloneItem } from "./components/AchievementStandaloneItem";
 import { AchievementsUnavailable } from "./components/AchievementsUnavailable";
 
 type AchievementsFilter = "all" | "locked" | "unlocked";
@@ -50,7 +56,7 @@ function AchievementsSummary({ className }: { className?: string }) {
   if (!records) return null;
 
   const locale = i18n.resolvedLanguage ?? i18n.language;
-  const total = achievementDefinitions.length;
+  const total = totalUnlockableAchievements;
   const unlocked = countUnlockedAchievements(records);
   const summary = t("achievements.summary", {
     total: new Intl.NumberFormat(locale).format(total),
@@ -114,10 +120,10 @@ function AchievementsList({
   records: AchievementRecords;
 }) {
   const { t } = useTranslation();
-  const visible = achievementDefinitions.filter((definition) => {
+  // A partly unlocked series appears under both filters: it has unlocked and locked tiers.
+  const visible = achievementCollection.filter((entry) => {
     if (filter === "all") return true;
-    const unlocked = getAchievementUnlockedAt(definition, records) !== null;
-    return filter === "unlocked" ? unlocked : !unlocked;
+    return filter === "unlocked" ? isEntryUnlocked(entry, records) : isEntryLocked(entry, records);
   });
 
   if (visible.length === 0) {
@@ -140,14 +146,18 @@ function AchievementsList({
   return (
     <div className="flex flex-col gap-5 pb-4">
       {achievementCategories.map((category) => {
-        const achievements = visible.filter((definition) => definition.category === category);
-        if (achievements.length === 0) return null;
+        const entries = visible.filter((entry) => entry.category === category);
+        if (entries.length === 0) return null;
 
         return (
           <AchievementsCategory key={category} title={achievementCategoryLabel(category, t)}>
-            {achievements.map((definition) => (
-              <AchievementItem achievementId={definition.id} key={definition.id} />
-            ))}
+            {entries.map((entry) =>
+              entry.kind === "series" ? (
+                <AchievementSeriesItem key={entry.id} series={entry} />
+              ) : (
+                <AchievementStandaloneItem definition={entry} key={entry.id} />
+              ),
+            )}
           </AchievementsCategory>
         );
       })}
@@ -170,8 +180,6 @@ function achievementCategoryLabel(category: AchievementCategory, t: TFunction): 
   switch (category) {
     case "export-milestones":
       return t("achievements.categories.exportMilestones");
-    case "export-specialization":
-      return t("achievements.categories.exportSpecialization");
     case "processing-milestones":
       return t("achievements.categories.processingMilestones");
     case "secret-discoveries":

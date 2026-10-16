@@ -1,3 +1,5 @@
+import type { TFunction } from "i18next";
+
 import type { AchievementRecords } from "@/domain/achievement-records";
 import {
   getCompletedExports,
@@ -5,9 +7,16 @@ import {
   type UsageStatistics,
 } from "@/domain/usage-statistics";
 
-import { achievementDefinitions } from "../consts/achievements.consts";
+import { achievementCollection, achievementTiers } from "../consts/achievements.consts";
 import { splashMessagesLegendary } from "../consts/splash-messages.consts";
-import type { AchievementDefinition, AchievementMetric } from "../types/achievements.types";
+import type {
+  AchievementCollectionEntry,
+  AchievementMetric,
+  AchievementSeriesDefinition,
+  AchievementTier,
+  StandaloneAchievementDefinition,
+  UnlockableAchievement,
+} from "../types/achievements.types";
 
 /** The data achievement progress is derived from; either part is null until it has loaded. */
 type AchievementSources = {
@@ -16,6 +25,13 @@ type AchievementSources = {
 };
 
 type AchievementMetricUnit = "bytes" | "count" | "duration";
+
+type AchievementTierStatus = {
+  id: string;
+  target: number;
+  tier: AchievementTier;
+  unlockedAt: number | null;
+};
 
 const achievementMetricUnits: Record<AchievementMetric, AchievementMetricUnit> = {
   audioExports: "count",
@@ -32,9 +48,30 @@ const legendarySplashMessageIds = new Set<string>(
   splashMessagesLegendary.map((message) => message.id),
 );
 
-const achievementDefinitionsById = new Map<string, AchievementDefinition>(
-  achievementDefinitions.map((definition) => [definition.id, definition]),
+function getTierAchievementId(seriesId: string, tier: AchievementTier): string {
+  return `${seriesId}-${tier}`;
+}
+
+/** Every independently unlockable achievement: each tier of each series and each standalone one. */
+const unlockableAchievements: readonly UnlockableAchievement[] = achievementCollection.flatMap(
+  (entry: AchievementCollectionEntry): UnlockableAchievement[] =>
+    entry.kind === "series"
+      ? achievementTiers.map((tier) => ({
+          entry,
+          id: getTierAchievementId(entry.id, tier),
+          metric: entry.metric,
+          target: entry.thresholds[tier],
+          tier,
+        }))
+      : [{ entry, id: entry.id, metric: entry.metric, target: entry.target, tier: null }],
 );
+
+const unlockableAchievementsById = new Map(
+  unlockableAchievements.map((achievement) => [achievement.id, achievement]),
+);
+
+/** The number of unlockable achievements, counting every tier. */
+const totalUnlockableAchievements = unlockableAchievements.length;
 
 /** Reads a metric, or null while the data it comes from is unavailable. */
 function readAchievementMetric(
@@ -65,21 +102,12 @@ function readAchievementMetric(
   }
 }
 
-/** Progress toward the target, capped at the target, or null while it cannot be measured. */
-function getAchievementProgress(
-  definition: AchievementDefinition,
-  sources: AchievementSources,
-): { current: number; target: number } | null {
-  const value = readAchievementMetric(definition.metric, sources);
-  if (value === null) return null;
-  return { current: Math.min(value, definition.target), target: definition.target };
+function getAchievementUnlockedAt(id: string, records: AchievementRecords | null): number | null {
+  return records?.unlockedAchievements[id] ?? null;
 }
 
-function getAchievementUnlockedAt(
-  definition: AchievementDefinition,
-  records: AchievementRecords | null,
-): number | null {
-  return records?.unlockedAchievements[definition.id] ?? null;
+function getUnlockableAchievement(id: string): UnlockableAchievement | undefined {
+  return unlockableAchievementsById.get(id);
 }
 
 /**
@@ -89,32 +117,112 @@ function getAchievementUnlockedAt(
 function getEarnedAchievementIds(sources: AchievementSources): string[] {
   const { records } = sources;
   if (!records) return [];
-  return achievementDefinitions
-    .filter((definition) => {
-      if (getAchievementUnlockedAt(definition, records) !== null) return false;
-      const value = readAchievementMetric(definition.metric, sources);
-      return value !== null && value >= definition.target;
+  return unlockableAchievements
+    .filter((achievement) => {
+      if (getAchievementUnlockedAt(achievement.id, records) !== null) return false;
+      const value = readAchievementMetric(achievement.metric, sources);
+      return value !== null && value >= achievement.target;
     })
-    .map((definition) => definition.id);
+    .map((achievement) => achievement.id);
 }
 
-/** Counts unlocked achievements of the current collection; unknown stored IDs are ignored. */
+/** Counts unlocked tiers and standalone achievements; unknown stored IDs are ignored. */
 function countUnlockedAchievements(records: AchievementRecords): number {
-  return achievementDefinitions.filter(
-    (definition) => getAchievementUnlockedAt(definition, records) !== null,
+  return unlockableAchievements.filter(
+    (achievement) => getAchievementUnlockedAt(achievement.id, records) !== null,
   ).length;
 }
 
-function getAchievementDefinition(id: string): AchievementDefinition | undefined {
-  return achievementDefinitionsById.get(id);
+/** Progress toward a target, capped at the target, or null while it cannot be measured. */
+function getProgressToward(
+  metric: AchievementMetric,
+  target: number,
+  sources: AchievementSources,
+): { current: number; target: number } | null {
+  const value = readAchievementMetric(metric, sources);
+  if (value === null) return null;
+  return { current: Math.min(value, target), target };
+}
+
+function getStandaloneAchievementProgress(
+  definition: StandaloneAchievementDefinition,
+  sources: AchievementSources,
+): { current: number; target: number } | null {
+  return getProgressToward(definition.metric, definition.target, sources);
+}
+
+/** Each tier of a series with its threshold and unlock time, from Bronze to Gold. */
+function getSeriesTiers(
+  series: AchievementSeriesDefinition,
+  records: AchievementRecords | null,
+): AchievementTierStatus[] {
+  return achievementTiers.map((tier) => {
+    const id = getTierAchievementId(series.id, tier);
+    return {
+      id,
+      target: series.thresholds[tier],
+      tier,
+      unlockedAt: getAchievementUnlockedAt(id, records),
+    };
+  });
+}
+
+/**
+ * The highest unlocked tier, the first tier still locked, and progress toward it. Unlocks come from
+ * the records, so a tier counts only once it was actually unlocked.
+ */
+function getSeriesProgress(series: AchievementSeriesDefinition, sources: AchievementSources) {
+  const tiers = getSeriesTiers(series, sources.records);
+  const unlocked = tiers.filter((tier) => tier.unlockedAt !== null);
+  const next = tiers.find((tier) => tier.unlockedAt === null) ?? null;
+
+  return {
+    current: unlocked.at(-1) ?? null,
+    next,
+    progress: next ? getProgressToward(series.metric, next.target, sources) : null,
+    tiers,
+  };
+}
+
+function isEntryUnlocked(entry: AchievementCollectionEntry, records: AchievementRecords): boolean {
+  return entry.kind === "series"
+    ? getSeriesTiers(entry, records).some((tier) => tier.unlockedAt !== null)
+    : getAchievementUnlockedAt(entry.id, records) !== null;
+}
+
+function isEntryLocked(entry: AchievementCollectionEntry, records: AchievementRecords): boolean {
+  return entry.kind === "series"
+    ? getSeriesTiers(entry, records).some((tier) => tier.unlockedAt === null)
+    : getAchievementUnlockedAt(entry.id, records) === null;
+}
+
+function getAchievementTierLabel(tier: AchievementTier, t: TFunction): string {
+  switch (tier) {
+    case "bronze":
+      return t("achievements.tiers.bronze");
+    case "gold":
+      return t("achievements.tiers.gold");
+    case "silver":
+      return t("achievements.tiers.silver");
+  }
+}
+
+function compareAchievementTiers(left: AchievementTier, right: AchievementTier): number {
+  return achievementTiers.indexOf(left) - achievementTiers.indexOf(right);
 }
 
 export {
   achievementMetricUnits,
+  compareAchievementTiers,
   countUnlockedAchievements,
-  getAchievementDefinition,
-  getAchievementProgress,
+  getAchievementTierLabel,
   getAchievementUnlockedAt,
   getEarnedAchievementIds,
+  getSeriesProgress,
+  getStandaloneAchievementProgress,
+  getUnlockableAchievement,
+  isEntryLocked,
+  isEntryUnlocked,
+  totalUnlockableAchievements,
 };
-export type { AchievementMetricUnit, AchievementSources };
+export type { AchievementMetricUnit, AchievementSources, AchievementTierStatus };
