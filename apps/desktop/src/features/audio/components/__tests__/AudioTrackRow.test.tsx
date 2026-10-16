@@ -9,10 +9,12 @@ import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions"
 import {
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
+  audioTrackFiltersApplied,
   audioTrackMetadataChanged,
   audioTrackToggled,
   audioTrackVolumeChanged,
   waveformReady,
+  waveformsFailed,
   waveformsLoading,
 } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
@@ -49,6 +51,7 @@ function createAudioPlayback() {
     getCurrentTimeSeconds: () => null,
     getMeter: () => null,
     hasActiveOutput: true,
+    mutesPreviewVideo: true,
     isReady: true,
     pause: () => undefined,
     prefetchAt: () => undefined,
@@ -772,5 +775,101 @@ describe("AudioTrackRow", () => {
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
 
     expect(screen.getByRole("menuitemcheckbox", { name: /analyze audio activity/i })).toBeEnabled();
+  });
+
+  describe("filters shortcut", () => {
+    const shortcut = () => screen.getByRole("button", { name: "Audio filters for track 1" });
+
+    it("is a plain icon button whose color only tells whether the chain has filters", () => {
+      const { store } = renderRow();
+      expect(shortcut().querySelector("svg")).toBeInTheDocument();
+      expect(shortcut()).toHaveClass("text-muted-foreground", "bg-transparent");
+      expect(shortcut()).not.toHaveClass("text-foreground");
+
+      act(() => {
+        store.dispatch(
+          audioTrackFiltersApplied({
+            streamIndex: 2,
+            filters: [
+              { enabled: true, id: "g", type: "gain", gainDb: 3 },
+              { enabled: false, id: "h", type: "highPass", cutoffHz: 80 },
+            ],
+          }),
+        );
+      });
+      expect(shortcut()).toHaveClass("text-foreground", "bg-transparent");
+      expect(shortcut()).not.toHaveClass("text-muted-foreground");
+      // No counts, names or badges: just the icon.
+      expect(shortcut()).toHaveTextContent("");
+      expect(shortcut().querySelector("[data-slot='badge']")).toBeNull();
+    });
+
+    it("shows its purpose in a tooltip and opens the existing Audio Filters dialog", async () => {
+      const user = userEvent.setup();
+      renderRow();
+
+      await user.hover(shortcut());
+      expect(await screen.findAllByText("Audio filters")).not.toHaveLength(0);
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      await user.click(shortcut());
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    });
+
+    it("is reachable and operable from the keyboard", async () => {
+      const user = userEvent.setup();
+      renderRow();
+
+      await user.tab();
+      await user.tab();
+      await user.tab();
+      while (document.activeElement !== shortcut()) {
+        await user.tab();
+        if (document.activeElement === document.body) break;
+      }
+      expect(shortcut()).toHaveFocus();
+      await user.keyboard("{Enter}");
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    });
+
+    it("stays available, outside the centered status, while the waveform is idle, generating, and failed", () => {
+      const { store } = renderRow();
+      expect(shortcut()).toBeInTheDocument();
+
+      act(() => {
+        store.dispatch(waveformsLoading({ jobId: "job", streamIndexes: [2], width: 2 }));
+      });
+      expect(screen.getByRole("status")).toBeInTheDocument();
+      expect(screen.getByRole("status")).not.toContainElement(shortcut());
+      expect(shortcut()).toBeInTheDocument();
+
+      act(() => {
+        store.dispatch(
+          waveformsFailed({
+            jobId: "job",
+            streamIndexes: [2],
+            width: 2,
+            error: {
+              code: "waveform_failed",
+              messageId: "media.waveform.previewCouldNotBeDisplayed",
+            },
+          }),
+        );
+      });
+      expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+      expect(shortcut()).toBeInTheDocument();
+    });
+
+    it("sits in the waveform's top-left corner, clear of the other corner controls", () => {
+      renderRow();
+      const corner = shortcut().parentElement!;
+      expect(corner).toHaveClass("absolute", "top-0", "left-0");
+      expect(corner.closest("[data-enabled]")).toContainElement(
+        screen.getByRole("combobox", { name: "Waveform display" }),
+      );
+      expect(corner).not.toContainElement(
+        document.querySelector("[data-slot='audio-track-volume-indicator']"),
+      );
+    });
   });
 });

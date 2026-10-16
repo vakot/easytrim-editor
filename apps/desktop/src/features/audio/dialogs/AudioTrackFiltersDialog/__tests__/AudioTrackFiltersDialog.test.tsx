@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
@@ -13,8 +13,10 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { audioTrackFiltersApplied } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
+import { analyzeAudioLoudness } from "@/lib/tauri/media";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
+import { AudioPlaybackProvider } from "../../../AudioPlaybackProvider";
 import { AudioTrackFiltersDialog, AudioTrackFiltersDialogTrigger } from "..";
 
 function renderDialog() {
@@ -24,18 +26,21 @@ function renderDialog() {
 
   render(
     <Provider store={store}>
-      <TooltipProvider>
-        <AudioTrackFiltersDialog streamIndex={2}>
-          <AudioTrackFiltersDialogTrigger asChild>
-            <button type="button">Open filters</button>
-          </AudioTrackFiltersDialogTrigger>
-        </AudioTrackFiltersDialog>
-      </TooltipProvider>
+      <AudioPlaybackProvider>
+        <TooltipProvider>
+          <AudioTrackFiltersDialog streamIndex={2}>
+            <AudioTrackFiltersDialogTrigger asChild>
+              <button type="button">Open filters</button>
+            </AudioTrackFiltersDialogTrigger>
+          </AudioTrackFiltersDialog>
+        </TooltipProvider>
+      </AudioPlaybackProvider>
     </Provider>,
   );
 
   const committedFilters = () => store.getState().audio.tracks[0]!.processing.filters;
-  return { committedFilters, store };
+  const previewedFilters = () => store.getState().audio.filterPreview?.filters;
+  return { committedFilters, previewedFilters, store };
 }
 
 async function addFilter(user: ReturnType<typeof userEvent.setup>, name: string) {
@@ -68,7 +73,7 @@ describe("AudioTrackFiltersDialog", () => {
     expect(tabNames()).toEqual(["Gain 1", "Gain 2", "Limiter"]);
 
     await user.click(screen.getByRole("tab", { name: "Gain 1" }));
-    const gainInput = screen.getByRole("textbox", { name: "Gain" });
+    const gainInput = await screen.findByRole("textbox", { name: "Gain" });
     await user.clear(gainInput);
     await user.type(gainInput, "6");
     expect(committedFilters()).toEqual([]);
@@ -120,7 +125,7 @@ describe("AudioTrackFiltersDialog", () => {
     await user.click(screen.getByRole("button", { name: "Open filters" }));
     await addFilter(user, "High-pass filter");
 
-    const cutoff = screen.getByRole("textbox", { name: "Cutoff frequency" });
+    const cutoff = await screen.findByRole("textbox", { name: "Cutoff frequency" });
     await user.clear(cutoff);
     await user.type(cutoff, "5");
 
@@ -147,7 +152,7 @@ describe("AudioTrackFiltersDialog", () => {
     await user.click(screen.getByRole("button", { name: "Open filters" }));
     await addFilter(user, "Noise reduction");
 
-    const preset = screen.getByRole("combobox", { name: "Preset" });
+    const preset = await screen.findByRole("combobox", { name: "Preset" });
     expect(preset).toHaveTextContent("Medium");
     await user.click(preset);
     await user.click(await screen.findByRole("option", { name: "Strong" }));
@@ -178,7 +183,7 @@ describe("AudioTrackFiltersDialog", () => {
     await addFilter(user, "Limiter");
 
     await user.click(screen.getByRole("tab", { name: "Gain" }));
-    const toggle = screen.getByRole("switch", { name: "Filter enabled" });
+    const toggle = await screen.findByRole("switch", { name: "Filter enabled" });
     expect(toggle).toBeChecked();
     await user.click(toggle);
 
@@ -200,6 +205,62 @@ describe("AudioTrackFiltersDialog", () => {
     await user.click(screen.getByRole("button", { name: "Open filters" }));
     await user.click(await screen.findByRole("tab", { name: /^Gain/ }));
     expect(screen.getByRole("switch", { name: "Filter enabled" })).not.toBeChecked();
+  });
+
+  it("auditions the latest valid draft without committing it and ends the preview on Cancel", async () => {
+    const user = userEvent.setup();
+    const { committedFilters, previewedFilters, store } = renderDialog();
+    await user.click(screen.getByRole("button", { name: "Open filters" }));
+    expect(previewedFilters()).toEqual([]);
+
+    await addFilter(user, "Gain");
+    const gainInput = await screen.findByRole("textbox", { name: "Gain" });
+    await user.clear(gainInput);
+    await user.type(gainInput, "-12");
+    await waitFor(() =>
+      expect(previewedFilters()).toEqual([expect.objectContaining({ gainDb: -12 })]),
+    );
+    expect(screen.getByText("Live preview active. Apply to save.")).toBeVisible();
+
+    // An invalid value keeps the last valid draft audible.
+    await user.type(gainInput, "0");
+    expect(screen.getByRole("alert")).toHaveTextContent("Fix the highlighted values");
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(previewedFilters()).toEqual([expect.objectContaining({ gainDb: -12 })]);
+    expect(committedFilters()).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(store.getState().audio.filterPreview).toBeNull();
+    expect(committedFilters()).toEqual([]);
+  });
+
+  it("measures a previewed normalization and commits its measurement with Apply", async () => {
+    let finishAnalysis!: (value: Awaited<ReturnType<typeof analyzeAudioLoudness>>) => void;
+    vi.mocked(analyzeAudioLoudness).mockClear();
+    vi.mocked(analyzeAudioLoudness).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishAnalysis = resolve;
+        }) as ReturnType<typeof analyzeAudioLoudness>,
+    );
+    const user = userEvent.setup();
+    const { store } = renderDialog();
+    await user.click(screen.getByRole("button", { name: "Open filters" }));
+    await addFilter(user, "Loudness normalization");
+
+    await waitFor(() => expect(analyzeAudioLoudness).toHaveBeenCalledOnce());
+    expect(await screen.findByText("Analyzing loudness…")).toBeVisible();
+    expect(store.getState().audio.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
+
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    expect(store.getState().audio.tracks[0]?.loudnessAnalysis.status).toBe("loading");
+    const [filter] = store.getState().audio.tracks[0]!.processing.filters;
+    finishAnalysis([{ filterId: filter!.id, integratedLufs: -20 }]);
+
+    await waitFor(() =>
+      expect(store.getState().audio.tracks[0]?.loudnessAnalysis.status).toBe("ready"),
+    );
+    expect(analyzeAudioLoudness).toHaveBeenCalledOnce();
   });
 
   it("disables actions that do not apply to the current selection", async () => {

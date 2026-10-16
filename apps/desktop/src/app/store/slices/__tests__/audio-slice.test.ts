@@ -6,6 +6,11 @@ import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import {
+  audioFilterPreviewChanged,
+  audioFilterPreviewEnded,
+  audioFilterPreviewLoudnessAnalysisStarted,
+  audioFilterPreviewPlaybackReported,
+  audioFilterPreviewStarted,
   audioReducer,
   audioTrackActivityAnalysisStarted,
   audioTrackDefaultChanged,
@@ -15,6 +20,7 @@ import {
   audioTrackToggled,
   audioTrackVolumeChanged,
   initialAudioState,
+  selectAudioFilterPreviewStatus,
   selectAudioTracks,
   waveformReady,
   waveformsLoading,
@@ -365,5 +371,176 @@ describe("audio slice", () => {
     expect(audioReducer(state, audioTrackFiltersApplied({ streamIndex: 2, filters: [a, b] }))).toBe(
       state,
     );
+  });
+});
+
+describe("audio filter preview", () => {
+  const normalization = {
+    enabled: true,
+    id: "norm",
+    loudnessRangeLu: 11,
+    maxTruePeakDb: -1.5,
+    targetLufs: -16,
+    type: "loudnessNormalization" as const,
+  };
+
+  const gain = { enabled: true, gainDb: 3, id: "g", type: "gain" as const };
+  const status = (audio: ReturnType<typeof readyAudio>) =>
+    selectAudioFilterPreviewStatus({ audio } as never);
+
+  it("tracks the whole pipeline of the latest draft and ignores stale reports", () => {
+    let audio = audioReducer(
+      readyAudio(),
+      audioFilterPreviewStarted({ id: "preview", streamIndex: 2 }),
+    );
+
+    expect(status(audio)).toBe("updating");
+    audio = audioReducer(
+      audio,
+      audioFilterPreviewPlaybackReported({ id: "preview", revision: 0, status: "ready" }),
+    );
+    expect(status(audio)).toBe("active");
+
+    audio = audioReducer(
+      audio,
+      audioFilterPreviewChanged({ filters: [gain, normalization], id: "preview" }),
+    );
+    expect(audio.filterPreview?.revision).toBe(1);
+    expect(status(audio)).toBe("analyzing");
+    audio = audioReducer(
+      audio,
+      audioFilterPreviewLoudnessAnalysisStarted({
+        cacheKey: "k",
+        id: "preview",
+        operationId: "op",
+      }),
+    );
+    audio = audioReducer(
+      audio,
+      audioTrackLoudnessAnalysisReady({
+        cacheKey: "k",
+        operationId: "op",
+        result: [],
+        streamIndex: 2,
+      }),
+    );
+    expect(audio.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
+    expect(status(audio)).toBe("updating");
+
+    for (const [playback, expected] of [
+      ["preparing", "preparing"],
+      ["updating", "updating"],
+      ["failed", "unavailable"],
+      ["ready", "active"],
+    ] as const) {
+      audio = audioReducer(
+        audio,
+        audioFilterPreviewPlaybackReported({ id: "preview", revision: 1, status: playback }),
+      );
+      expect(status(audio)).toBe(expected);
+    }
+    const stale = audioReducer(
+      audio,
+      audioFilterPreviewPlaybackReported({ id: "preview", revision: 0, status: "failed" }),
+    );
+
+    expect(stale).toBe(audio);
+
+    // Invalid and unchanged drafts are never published.
+    expect(
+      audioReducer(
+        audio,
+        audioFilterPreviewChanged({ filters: [{ ...gain, gainDb: 99 }], id: "preview" }),
+      ),
+    ).toBe(audio);
+    expect(
+      audioReducer(audio, audioFilterPreviewChanged({ filters: [gain, normalization], id: "old" })),
+    ).toBe(audio);
+  });
+
+  it("commits the draft with its measurement on Apply and discards it on Cancel", () => {
+    let audio = audioReducer(
+      readyAudio(),
+      audioFilterPreviewStarted({ id: "preview", streamIndex: 2 }),
+    );
+
+    audio = audioReducer(
+      audio,
+      audioFilterPreviewChanged({ filters: [normalization], id: "preview" }),
+    );
+    audio = audioReducer(
+      audio,
+      audioFilterPreviewLoudnessAnalysisStarted({
+        cacheKey: "k",
+        id: "preview",
+        operationId: "op",
+      }),
+    );
+    expect(audio.tracks[0]?.processing.filters).toEqual([]);
+
+    const cancelled = audioReducer(audio, audioFilterPreviewEnded({ id: "preview" }));
+    expect(cancelled.filterPreview).toBeNull();
+    expect(cancelled.tracks[0]).toEqual(audio.tracks[0]);
+
+    const applied = audioReducer(
+      audio,
+      audioTrackFiltersApplied({ filters: [normalization], streamIndex: 2 }),
+    );
+
+    expect(applied.filterPreview).toBeNull();
+    expect(applied.tracks[0]?.loudnessAnalysis).toEqual({
+      cacheKey: "k",
+      operationId: "op",
+      status: "loading",
+    });
+    // The measurement started for the draft completes the committed chain.
+    const measured = audioReducer(
+      applied,
+      audioTrackLoudnessAnalysisReady({
+        cacheKey: "k",
+        operationId: "op",
+        result: [],
+        streamIndex: 2,
+      }),
+    );
+
+    expect(measured.tracks[0]?.loudnessAnalysis.status).toBe("ready");
+
+    // A draft that changed the loudness inputs after the measurement started is measured again.
+    const changedBeforeApply = audioReducer(
+      audio,
+      audioTrackFiltersApplied({ filters: [gain, normalization], streamIndex: 2 }),
+    );
+
+    expect(changedBeforeApply.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
+  });
+
+  it("ends with the source and drops draft measurements when the trim changes", () => {
+    let audio = audioReducer(
+      readyAudio(),
+      audioFilterPreviewStarted({ id: "preview", streamIndex: 2 }),
+    );
+
+    audio = audioReducer(
+      audio,
+      audioFilterPreviewChanged({ filters: [normalization], id: "preview" }),
+    );
+    audio = audioReducer(
+      audio,
+      audioFilterPreviewLoudnessAnalysisStarted({
+        cacheKey: "k",
+        id: "preview",
+        operationId: "op",
+      }),
+    );
+    const trimmed = audioReducer(
+      audio,
+      trimChanged({
+        trim: { endMicros: 3_000_000, sourceDurationMicros: 5_000_000, startMicros: 0 },
+      }),
+    );
+
+    expect(trimmed.filterPreview?.loudnessAnalysis).toEqual({ status: "idle" });
+    expect(audioReducer(audio, sourceSelected({ source: firstSource })).filterPreview).toBeNull();
   });
 });

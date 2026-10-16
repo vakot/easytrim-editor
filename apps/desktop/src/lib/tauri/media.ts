@@ -382,12 +382,19 @@ async function releaseImportedSourceThumbnail(mediaToken: number): Promise<void>
   }
 }
 
+/**
+ * Renders one chunk of a track's processed audio. A `preview` chunk auditions a draft chain: the
+ * native cache keeps its audio only until the preview is released or the chain is committed. A
+ * `replacement` chunk renders processing that will replace the audible processing without
+ * stopping it, so playback continues until it switches.
+ */
 async function decodeAudioPlaybackChunk(
   sourcePath: string,
   track: AudioChainSelection,
   startMicros: number,
   durationMicros: number,
   signal: AbortSignal,
+  { preview = false, replacement = false }: { preview?: boolean; replacement?: boolean } = {},
 ): Promise<PlaybackPcmChunk> {
   const operationId = crypto.randomUUID();
   const cancel = () => void cancelOperation(operationId);
@@ -400,6 +407,7 @@ async function decodeAudioPlaybackChunk(
       await invoke<unknown>("decode_audio_playback_chunk", {
         durationMicros,
         operationId,
+        role: { preview, replacement },
         sourcePath,
         startMicros,
         track,
@@ -409,6 +417,28 @@ async function decodeAudioPlaybackChunk(
     throw normalizeAppError(error);
   } finally {
     signal.removeEventListener("abort", cancel);
+  }
+}
+
+/**
+ * Ends the playback preview of a stream: the native audio and render sessions of auditioned
+ * drafts are released. `kept` is the chain playback continues with; its audio is kept.
+ */
+async function releaseAudioPlaybackPreview(
+  sourcePath: string,
+  streamIndex: number,
+  kept?: AudioChainSelection,
+): Promise<void> {
+  try {
+    await invoke("release_audio_playback_preview", {
+      keep: kept
+        ? { filters: kept.filters, loudnessMeasurements: kept.loudnessMeasurements ?? [] }
+        : null,
+      sourcePath,
+      streamIndex,
+    });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
   }
 }
 
@@ -533,6 +563,7 @@ export {
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
+  releaseAudioPlaybackPreview,
   releaseExportSource,
   releaseImportedSourceThumbnail,
   renderGif,

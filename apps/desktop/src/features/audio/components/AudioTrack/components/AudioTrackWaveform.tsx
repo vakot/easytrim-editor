@@ -1,20 +1,16 @@
-import { LoaderCircle } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { type AudioTrackState, waveformDisplayFailed } from "@/app/store/slices/audio-slice";
 import { selectSourceLoadToken } from "@/app/store/slices/source-slice";
 import { usePrimaryColor } from "@/app/theme/useTheme";
-import { localizeAppError } from "@/i18n/app-errors";
+import { cn } from "@/lib/class-names.utils";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
-import { useWaveformPrepare } from "../../../hooks/useWaveformPreparation";
 import type { WaveformDisplayMode } from "../../../lib/waveform-display-mode";
+
+import { AudioTrackWaveformStatus } from "./AudioTrackWaveformStatus";
 
 interface AudioTrackWaveformProps {
   displayMode: WaveformDisplayMode;
@@ -22,11 +18,6 @@ interface AudioTrackWaveformProps {
   track: AudioTrackState;
   volume: number;
 }
-
-type WaveformWithStatus<Status extends AudioTrackState["waveform"]["status"]> = Extract<
-  AudioTrackState["waveform"],
-  { status: Status }
->;
 
 function AudioTrackWaveform({ displayMode, stream, track, volume }: AudioTrackWaveformProps) {
   const loadToken = useAppSelector(selectSourceLoadToken);
@@ -38,29 +29,6 @@ function AudioTrackWaveform({ displayMode, stream, track, volume }: AudioTrackWa
       volume={volume}
       waveform={track.waveform}
     />
-  );
-}
-
-function AudioTrackWaveformLoading({ hasEnvelope }: { hasEnvelope: boolean }) {
-  const { t } = useTranslation();
-
-  return (
-    <span
-      className={
-        hasEnvelope
-          ? "pointer-events-none absolute top-1 left-1 z-3 flex items-center gap-1 rounded bg-background/70 px-1.5 py-0.5 text-[10px] text-muted-foreground"
-          : "pointer-events-none absolute inset-0 grid place-items-center text-xs text-muted-foreground"
-      }
-      role="status"
-    >
-      {hasEnvelope && (
-        <LoaderCircle
-          aria-hidden="true"
-          className="size-3 animate-spin motion-reduce:animate-none"
-        />
-      )}
-      {t("audio.waveform.preparing")}
-    </span>
   );
 }
 
@@ -306,17 +274,29 @@ function AudioTrackWaveformCanvas({
     (waveform.status === "ready" &&
       (loaded?.jobId !== waveform.jobId || loaded.url !== waveform.url));
 
+  const hasEnvelope = loaded !== null;
+  // After a failed regeneration the drawn envelope belongs to earlier processing. It stays as a
+  // fallback but must not look like the waveform of the processing that was just applied.
+  const outdated = hasEnvelope && waveform.status === "failed";
+
   return (
     <>
-      <canvas aria-hidden="true" className="size-full opacity-80" ref={canvasRef} />
-      {loading && <AudioTrackWaveformLoading hasEnvelope={loaded !== null} />}
-      {waveform.status === "failed" && (
-        <AudioTrackWaveformError
-          hasEnvelope={loaded !== null}
-          stream={stream}
-          waveform={waveform}
-        />
-      )}
+      <canvas
+        aria-hidden="true"
+        className={cn(
+          "size-full opacity-80 transition-[opacity,filter] duration-200 motion-reduce:transition-none",
+          outdated && "opacity-25 grayscale",
+        )}
+        data-outdated={outdated}
+        ref={canvasRef}
+      />
+      <AudioTrackWaveformStatus
+        hasEnvelope={hasEnvelope}
+        loading={loading}
+        reducedMotion={reducedMotion}
+        streamIndex={stream.streamIndex}
+        waveform={waveform}
+      />
     </>
   );
 }
@@ -436,41 +416,6 @@ function decodeRle(payload: Uint8Array, width: number): Uint8Array {
 
   if (outputPosition !== width) throw new Error("Waveform envelope is incomplete.");
   return amplitudes;
-}
-
-function AudioTrackWaveformError({
-  hasEnvelope,
-  stream,
-  waveform,
-}: {
-  hasEnvelope: boolean;
-  stream: AudioStream;
-  waveform: WaveformWithStatus<"failed">;
-}) {
-  const { t } = useTranslation();
-
-  const prepare = useWaveformPrepare(stream.streamIndex, waveform);
-
-  return (
-    <div
-      className={
-        hasEnvelope
-          ? "absolute bottom-1 left-1 z-3 flex items-center gap-1 rounded bg-background/80 px-1.5 text-[10px] text-muted-foreground"
-          : "absolute inset-0 flex items-center justify-center gap-2 text-xs text-muted-foreground"
-      }
-    >
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span>{t("audio.waveform.unavailable")}</span>
-        </TooltipTrigger>
-        <TooltipContent>{localizeAppError(waveform.error, t)}</TooltipContent>
-      </Tooltip>
-
-      <Button onClick={prepare} size="xs" type="button" variant="ghost">
-        {t("common.actions.retry")}
-      </Button>
-    </div>
-  );
 }
 
 export { AudioTrackWaveform };

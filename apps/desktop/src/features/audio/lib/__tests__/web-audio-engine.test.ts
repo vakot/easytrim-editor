@@ -1,110 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { AudioChainSelection } from "@/domain/audio-processing";
+import { type audioNode, createFakeAudioContext } from "@/test/audio-context.fixtures";
 
 import { WebAudioEngine } from "../web-audio-engine";
-
-function parameter(value = 1) {
-  return {
-    cancelScheduledValues: vi.fn(),
-    linearRampToValueAtTime: vi.fn(),
-    setTargetAtTime: vi.fn(),
-    setValueAtTime: vi.fn(),
-    value,
-  };
-}
-
-function node() {
-  return {
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-    gain: parameter(),
-  };
-}
-
-function createContext() {
-  const sources: Array<
-    ReturnType<typeof node> & {
-      buffer: AudioBuffer | null;
-      onended: (() => void) | null;
-      playbackRate: ReturnType<typeof parameter>;
-      start: ReturnType<typeof vi.fn>;
-      stop: ReturnType<typeof vi.fn>;
-    }
-  > = [];
-
-  const gains: ReturnType<typeof node>[] = [];
-  const buffers: Array<{ channels: Float32Array[]; duration: number }> = [];
-  const filters: Array<{
-    connect: ReturnType<typeof vi.fn>;
-    disconnect: ReturnType<typeof vi.fn>;
-    frequency: ReturnType<typeof parameter>;
-    Q: ReturnType<typeof parameter>;
-    type: BiquadFilterType;
-  }> = [];
-
-  let currentTime = 5;
-  const context = {
-    destination: node(),
-    close: vi.fn(async () => undefined),
-    createAnalyser: vi.fn(() => ({ ...node(), fftSize: 2048, getFloatTimeDomainData: vi.fn() })),
-    createBiquadFilter: vi.fn(() => {
-      const filter = {
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-        frequency: parameter(0),
-        Q: parameter(Math.SQRT1_2),
-        type: "highpass" as BiquadFilterType,
-      };
-
-      filters.push(filter);
-      return filter;
-    }),
-    createBuffer: vi.fn((channelCount: number, frames: number, sampleRate: number) => {
-      const audioBuffer = {
-        channels: Array.from({ length: channelCount }, () => new Float32Array(frames)),
-        duration: frames / sampleRate,
-        getChannelData: (channel: number) => audioBuffer.channels[channel]!,
-      };
-
-      buffers.push(audioBuffer);
-      return audioBuffer;
-    }),
-    createBufferSource: vi.fn(() => {
-      const source = {
-        ...node(),
-        buffer: null as AudioBuffer | null,
-        onended: null as (() => void) | null,
-        playbackRate: parameter(),
-        start: vi.fn(),
-        stop: vi.fn(),
-      };
-
-      sources.push(source);
-      return source;
-    }),
-    createChannelSplitter: vi.fn(() => ({ ...node(), channelCount: 2 })),
-    createGain: vi.fn(() => {
-      const gain = node();
-      gains.push(gain);
-      return gain;
-    }),
-    resume: vi.fn(async () => undefined),
-  } as unknown as AudioContext;
-
-  Object.defineProperty(context, "currentTime", { get: () => currentTime });
-
-  return {
-    buffers,
-    context,
-    gains,
-    filters,
-    sources,
-    setCurrentTime: (nextTime: number) => {
-      currentTime = nextTime;
-    },
-  };
-}
 
 function selection(streamIndex: number): AudioChainSelection {
   return { filters: [], streamIndex };
@@ -126,7 +25,7 @@ afterEach(() => {
 
 describe("WebAudioEngine", () => {
   it("ignores a queued source completion from an earlier playback generation", async () => {
-    const { context, sources } = createContext();
+    const { context, sources } = createFakeAudioContext();
     const onError = vi.fn();
     const engine = new WebAudioEngine(
       context,
@@ -155,7 +54,7 @@ describe("WebAudioEngine", () => {
   it.each(["source ended", "late decode"])(
     "reports an underrun to Playback without shifting the audio timeline (%s)",
     async (notification) => {
-      const { context, setCurrentTime, sources } = createContext();
+      const { context, setCurrentTime, sources } = createFakeAudioContext();
       const onError = vi.fn();
       let finishDecode: (() => void) | undefined;
       const decode = vi.fn(async (_track: AudioChainSelection, start: number, duration: number) => {
@@ -184,7 +83,7 @@ describe("WebAudioEngine", () => {
   );
 
   it("keeps a fractional-sample resume's final decode within the native media range", async () => {
-    const { context, sources } = createContext();
+    const { context, sources } = createFakeAudioContext();
     const onError = vi.fn();
     const decode = vi.fn(async (_track: AudioChainSelection, start: number, duration: number) => {
       if (start + duration > 4_000_000) throw new Error("Native export range is invalid.");
@@ -203,6 +102,7 @@ describe("WebAudioEngine", () => {
       3_463_063,
       536_937,
       expect.any(AbortSignal),
+      { preview: false, replacement: false },
     );
     expect(onError).not.toHaveBeenCalled();
     const firstStart = sources[0]!.start.mock.calls[0]![0] as number;
@@ -211,7 +111,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("aligns scheduling to audible output and does not advance from the render-ahead clock", async () => {
-    const { context, setCurrentTime, sources } = createContext();
+    const { context, setCurrentTime, sources } = createFakeAudioContext();
     let outputTime = 4.95;
     let outputPerformanceTime = 1_000;
     vi.spyOn(performance, "now").mockImplementation(() => outputPerformanceTime);
@@ -243,7 +143,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("plays sources and advances its clock at the playback rate", async () => {
-    const { context, setCurrentTime, sources } = createContext();
+    const { context, setCurrentTime, sources } = createFakeAudioContext();
     let outputTime = 4.95;
     let outputPerformanceTime = 1_000;
     vi.spyOn(performance, "now").mockImplementation(() => outputPerformanceTime);
@@ -283,7 +183,7 @@ describe("WebAudioEngine", () => {
   ])(
     "does not schedule past EOF when output lead exceeds the remaining range ($duration)",
     async ({ duration, position }) => {
-      const { context, sources } = createContext();
+      const { context, sources } = createFakeAudioContext();
       const decode = vi.fn(async (_track: AudioChainSelection, _start: number, length: number) =>
         chunk(length),
       );
@@ -301,7 +201,7 @@ describe("WebAudioEngine", () => {
   );
 
   it("pads leading gaps and a short valid stream end into the shared sample range", async () => {
-    const { buffers, context, sources } = createContext();
+    const { buffers, context, sources } = createFakeAudioContext();
     const decode = vi.fn(
       async (track: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         track.streamIndex === 1 ? chunk(750_000) : chunk(durationMicros),
@@ -334,8 +234,12 @@ describe("WebAudioEngine", () => {
       1_000_000,
       1_000_000,
       expect.any(AbortSignal),
+      { preview: false, replacement: false },
     );
-    expect(decode).toHaveBeenNthCalledWith(2, selection(2), 0, 2_000_000, expect.any(AbortSignal));
+    expect(decode).toHaveBeenNthCalledWith(2, selection(2), 0, 2_000_000, expect.any(AbortSignal), {
+      preview: false,
+      replacement: false,
+    });
     expect(sources[0]?.start).toHaveBeenCalledWith(expect.any(Number), 0);
     expect(sources[1]?.start).toHaveBeenCalledWith(expect.any(Number), 0);
     const delayedTrack = buffers[0]!;
@@ -347,7 +251,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("keeps short decodes inside a declared stream range as explicit errors", async () => {
-    const { context } = createContext();
+    const { context } = createFakeAudioContext();
     const engine = new WebAudioEngine(context, async () => chunk(1_000_000), vi.fn());
     engine.setDuration(4_000_000);
     engine.setTracks([
@@ -367,7 +271,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("reports a subsequent decode failure after successful audio startup", async () => {
-    const { context, sources } = createContext();
+    const { context, sources } = createFakeAudioContext();
     const onPlaybackError = vi.fn();
     let rejectNextBatch: ((error: Error) => void) | undefined;
     const decode = vi.fn(
@@ -398,7 +302,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("ignores a subsequent batch failure after a seek supersedes its generation", async () => {
-    const { context } = createContext();
+    const { context } = createFakeAudioContext();
     const onPlaybackError = vi.fn();
     let rejectSupersededBatch: ((error: Error) => void) | undefined;
     const decode = vi.fn(
@@ -425,6 +329,7 @@ describe("WebAudioEngine", () => {
         1_000_000,
         2_000_000,
         expect.any(AbortSignal),
+        { preview: false, replacement: false },
       ),
     );
     rejectSupersededBatch?.(new Error("Superseded PCM batch failed."));
@@ -437,7 +342,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("ignores a pending batch failure after the audio session is disposed", async () => {
-    const { context } = createContext();
+    const { context } = createFakeAudioContext();
     const onPlaybackError = vi.fn();
     let rejectPendingBatch: ((error: Error) => void) | undefined;
     const decode = vi.fn(
@@ -466,7 +371,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("schedules every active track against the same AudioContext time", async () => {
-    const { context, sources } = createContext();
+    const { context, sources } = createFakeAudioContext();
     const decode = vi.fn(
       async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         chunk(durationMicros),
@@ -512,7 +417,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("starts a prepared audio range at the synchronized position without decoding again", async () => {
-    const { context, sources } = createContext();
+    const { context, sources } = createFakeAudioContext();
     const decode = vi.fn(
       async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         chunk(durationMicros),
@@ -536,7 +441,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("restarts a loop from its prefetched chunk without decoding again", async () => {
-    const { context, sources } = createContext();
+    const { context, sources } = createFakeAudioContext();
     const decode = vi.fn(
       async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         chunk(durationMicros),
@@ -568,12 +473,13 @@ describe("WebAudioEngine", () => {
       0,
       expect.any(Number),
       expect.any(AbortSignal),
+      { preview: false, replacement: false },
     );
     engine.close();
   });
 
   it("discards a prefetched chunk when baked track processing changes", async () => {
-    const { context } = createContext();
+    const { context } = createFakeAudioContext();
     const decode = vi.fn(
       async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         chunk(durationMicros),
@@ -593,7 +499,10 @@ describe("WebAudioEngine", () => {
     decode.mockClear();
     await engine.prepareAt(0);
 
-    expect(decode).toHaveBeenCalledWith(processed, 0, 2_000_000, expect.any(AbortSignal));
+    expect(decode).toHaveBeenCalledWith(processed, 0, 2_000_000, expect.any(AbortSignal), {
+      preview: false,
+      replacement: false,
+    });
     engine.close();
   });
 
@@ -603,7 +512,7 @@ describe("WebAudioEngine", () => {
   ])(
     "schedules only the remaining valid range for a $durationMicros microsecond media range",
     async ({ durationMicros, positionMicros }) => {
-      const { context, sources } = createContext();
+      const { context, sources } = createFakeAudioContext();
       const decode = vi.fn(
         async (_selection: AudioChainSelection, _startMicros: number, rangeMicros: number) =>
           chunk(rangeMicros),
@@ -626,6 +535,7 @@ describe("WebAudioEngine", () => {
         positionMicros,
         durationMicros - positionMicros,
         expect.any(AbortSignal),
+        { preview: false, replacement: false },
       );
       expect(sources[0]?.start).toHaveBeenCalledWith(
         5.005,
@@ -637,7 +547,7 @@ describe("WebAudioEngine", () => {
   );
 
   it("discards an in-flight chunk when a seek invalidates its generation", async () => {
-    const { context, sources } = createContext();
+    const { context, sources } = createFakeAudioContext();
     let resolveChunk: ((value: ReturnType<typeof chunk>) => void) | undefined;
     const decode = vi.fn(
       (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
@@ -661,7 +571,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("holds the clock during delayed startup and keeps a paused position stable on resume", async () => {
-    const { context, setCurrentTime } = createContext();
+    const { context, setCurrentTime } = createFakeAudioContext();
     let resolveChunk: (() => void) | undefined;
     const decode = vi.fn(
       (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
@@ -699,7 +609,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("keeps the requested seek position stable while replacement audio buffers", async () => {
-    const { context, setCurrentTime, sources } = createContext();
+    const { context, setCurrentTime, sources } = createFakeAudioContext();
     let resolveSeekChunk: (() => void) | undefined;
     const decode = vi.fn(
       (_selection: AudioChainSelection, startMicros: number, durationMicros: number) => {
@@ -732,7 +642,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("continues playback from the last rapid seek while audio replacement is pending", async () => {
-    const { context, setCurrentTime, sources } = createContext();
+    const { context, setCurrentTime, sources } = createFakeAudioContext();
     const pendingDecodes: Array<{
       durationMicros: number;
       resolve: () => void;
@@ -779,7 +689,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("ramps Track Volume without re-rendering and reprimes only for filter changes", async () => {
-    const { context, gains, sources } = createContext();
+    const { context, gains, sources } = createFakeAudioContext();
     const decode = vi.fn(
       async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
         chunk(durationMicros),
@@ -826,12 +736,13 @@ describe("WebAudioEngine", () => {
       },
     ]);
 
-    expect(firstSource.stop).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(firstSource.stop).toHaveBeenCalledOnce());
+    expect(decode.mock.calls[decodeCount]![0].filters[0]).toMatchObject({ reductionDb: 20 });
     engine.close();
   });
 
   it("keeps retained tracks schedulable when tracks are removed or added during playback", async () => {
-    const { context } = createContext();
+    const { context } = createFakeAudioContext();
     const decodedStreamIndexes: number[] = [];
     const decode = vi.fn(
       async (track: AudioChainSelection, _startMicros: number, durationMicros: number) => {
@@ -865,7 +776,7 @@ describe("WebAudioEngine", () => {
   });
 
   it("removes track nodes and keeps output gain on the shared master graph", async () => {
-    const { context, gains } = createContext();
+    const { context, gains } = createFakeAudioContext();
     const engine = new WebAudioEngine(
       context,
       async (_selection, _startMicros, durationMicros) => chunk(durationMicros),
@@ -886,7 +797,7 @@ describe("WebAudioEngine", () => {
 
   it("keeps multitrack sample ranges consecutive when delayed decoding finishes before the boundary", async () => {
     vi.useFakeTimers();
-    const { context, setCurrentTime, sources } = createContext();
+    const { context, setCurrentTime, sources } = createFakeAudioContext();
     let resolveDelayedChunk: (() => void) | undefined;
     const decodedRanges: Array<{ startMicros: number; streamIndex: number }> = [];
     const decode = vi.fn(
@@ -953,5 +864,406 @@ describe("WebAudioEngine", () => {
     expect(startsByRange[1]?.[0]).toBe((startsByRange[0]?.[0] ?? 0) + 2);
     engine.close();
     vi.useRealTimers();
+  });
+});
+
+describe("WebAudioEngine processing changes", () => {
+  const gainChain = (gainDb: number): AudioChainSelection => ({
+    filters: [{ enabled: true, gainDb, id: "g", type: "gain" }],
+    streamIndex: 1,
+  });
+
+  const gainOf = (selection: AudioChainSelection) =>
+    (selection.filters[0] as { gainDb: number }).gainDb;
+
+  const audible = { preview: false, replacement: false };
+  const replacement = { preview: false, replacement: true };
+
+  /** A chunk whose samples identify the processing that rendered it. */
+  function markedChunk(gainDb: number, durationMicros: number) {
+    const result = chunk(durationMicros);
+    result.samples.fill(0.5 + gainDb / 100);
+    return result;
+  }
+
+  function gainPlayedBy(source: { buffer: AudioBuffer | null }) {
+    const marker = (source.buffer as unknown as { channels: Float32Array[] }).channels[0]![0]!;
+    return Math.round((marker - 0.5) * 100);
+  }
+
+  function voiceOf(source: { connect: ReturnType<typeof vi.fn> }) {
+    return source.connect.mock.calls[0]![0] as ReturnType<typeof audioNode>;
+  }
+
+  it("switches running playback to new processing at one sample with a crossfade", async () => {
+    const { context, setCurrentTime, sources } = createFakeAudioContext();
+    const onError = vi.fn();
+    const decode = vi.fn(async (selection: AudioChainSelection, _start: number, duration: number) =>
+      markedChunk(gainOf(selection), duration),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), onError);
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ selection: gainChain(0), streamIndex: 1, volume: 1 }]);
+    await engine.startAt(0);
+    await vi.waitFor(() => expect(sources).toHaveLength(2));
+    const previous = sources.slice();
+
+    setCurrentTime(5.5);
+    engine.setTracks([{ selection: gainChain(6), streamIndex: 1, volume: 1 }]);
+    await vi.waitFor(() => expect(sources.some((source) => gainPlayedBy(source) === 6)).toBe(true));
+
+    // The replacement renders just ahead of the playhead without stopping the audible processing.
+    expect(decode).toHaveBeenCalledWith(
+      gainChain(6),
+      545_000,
+      2_000_000,
+      expect.any(AbortSignal),
+      replacement,
+    );
+    const switched = sources.find((source) => gainPlayedBy(source) === 6)!;
+    const [switchTime, offset] = switched.start.mock.calls[0] as [number, number];
+    expect(switchTime).toBeCloseTo(5.55, 6);
+    expect(offset).toBe(0);
+    for (const source of previous) {
+      expect(source.stop).toHaveBeenCalledWith(switchTime + 0.03);
+    }
+    // The previous voice fades out from wherever its own fade-in may still be.
+    expect(voiceOf(previous[0]!).gain.cancelAndHoldAtTime).toHaveBeenCalledWith(switchTime);
+    expect(voiceOf(previous[0]!).gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0,
+      switchTime + 0.03,
+    );
+    expect(voiceOf(switched).gain.setValueAtTime).toHaveBeenCalledWith(0, switchTime);
+    expect(voiceOf(switched).gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      1,
+      switchTime + 0.03,
+    );
+
+    // The timeline keeps its mapping, so audio stays aligned with the video clock.
+    setCurrentTime(6.005);
+    expect(engine.currentTimeSeconds).toBeCloseTo(1, 4);
+    expect(onError).not.toHaveBeenCalled();
+    engine.close();
+  });
+
+  it("keeps the audible processing playing while a slow replacement renders and switches only to the latest", async () => {
+    vi.useFakeTimers();
+    const { context, setCurrentTime, sources } = createFakeAudioContext();
+    const onError = vi.fn();
+    const replacements = new Map<number, { resolve: () => void; signal: AbortSignal }>();
+    const decode = vi.fn(
+      (
+        selection: AudioChainSelection,
+        _start: number,
+        duration: number,
+        signal: AbortSignal,
+        role: { replacement: boolean },
+      ) => {
+        const gainDb = gainOf(selection);
+        if (!role.replacement) return Promise.resolve(markedChunk(gainDb, duration));
+        return new Promise<ReturnType<typeof chunk>>((resolve) => {
+          replacements.set(gainDb, {
+            resolve: () => resolve(markedChunk(gainDb, duration)),
+            signal,
+          });
+        });
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), onError);
+    engine.setDuration(20_000_000);
+    engine.setTracks([{ selection: gainChain(0), streamIndex: 1, volume: 1 }]);
+    await engine.startAt(0);
+    await vi.advanceTimersByTimeAsync(0);
+    const scheduledThroughSeconds = () =>
+      Math.max(...sources.map((source) => (source.start.mock.calls[0]![0] as number) - 5.005)) + 2;
+
+    expect(scheduledThroughSeconds()).toBeCloseTo(4, 6);
+
+    engine.setTracks([{ selection: gainChain(6), streamIndex: 1, volume: 1 }]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(replacements.has(6)).toBe(true);
+
+    // The replacement takes longer than all the audio that was scheduled when it started.
+    for (let second = 1; second <= 6; second += 1) {
+      setCurrentTime(5 + second);
+      await vi.advanceTimersByTimeAsync(200);
+    }
+    expect(engine.currentTimeSeconds).toBeCloseTo(5.995, 3);
+    expect(scheduledThroughSeconds()).toBeGreaterThan(8);
+    expect(sources.every((source) => gainPlayedBy(source) === 0)).toBe(true);
+    const starts = sources.map((source) => source.start.mock.calls[0]![0] as number);
+    expect(starts).toEqual(starts.map((_, index) => 5.005 + index * 2));
+    expect(decode).toHaveBeenCalledWith(
+      gainChain(0),
+      8_000_000,
+      2_000_000,
+      expect.any(AbortSignal),
+      audible,
+    );
+    expect(onError).not.toHaveBeenCalled();
+
+    // A newer change replaces the slow one, which is never switched to even when it completes.
+    engine.setTracks([{ selection: gainChain(9), streamIndex: 1, volume: 1 }]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(replacements.get(6)!.signal.aborted).toBe(true);
+    replacements.get(6)!.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(sources.some((source) => gainPlayedBy(source) === 6)).toBe(false);
+
+    replacements.get(9)!.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    const switched = sources.find((source) => gainPlayedBy(source) === 9)!;
+    expect(switched.start).toHaveBeenCalledWith(expect.closeTo(11.05, 4), 0);
+    expect(
+      sources.filter((source) => gainPlayedBy(source) === 0).at(-1)!.stop,
+    ).toHaveBeenCalledWith(expect.closeTo(11.08, 4));
+    await vi.advanceTimersByTimeAsync(200);
+    expect(decode).toHaveBeenLastCalledWith(
+      gainChain(9),
+      expect.closeTo(8_045_000, -2),
+      2_000_000,
+      expect.any(AbortSignal),
+      audible,
+    );
+    expect(onError).not.toHaveBeenCalled();
+    engine.close();
+  });
+
+  it("keeps earlier preview audio when a draft cannot be rendered", async () => {
+    const { context, sources } = createFakeAudioContext();
+    const onError = vi.fn();
+    const statuses: Array<[number | undefined, string]> = [];
+    const decode = vi.fn(
+      async (selection: AudioChainSelection, _start: number, duration: number) => {
+        if (gainOf(selection) === 24) throw new Error("FFmpeg could not render the draft.");
+        return markedChunk(gainOf(selection), duration);
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), onError, (_stream, tag, status) =>
+      statuses.push([tag, status]),
+    );
+
+    engine.setDuration(8_000_000);
+    engine.setTracks([
+      { preview: true, selection: gainChain(3), streamIndex: 1, tag: 1, volume: 1 },
+    ]);
+    await engine.startAt(0);
+
+    engine.setTracks([
+      { preview: true, selection: gainChain(24), streamIndex: 1, tag: 2, volume: 1 },
+    ]);
+    await vi.waitFor(() => expect(statuses.at(-1)).toEqual([2, "failed"]));
+
+    expect(statuses).toContainEqual([2, "updating"]);
+    expect(decode).toHaveBeenCalledWith(
+      gainChain(24),
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(AbortSignal),
+      { preview: true, replacement: true },
+    );
+    expect(sources.every((source) => gainPlayedBy(source) === 3)).toBe(true);
+    expect(sources.every((source) => source.stop.mock.calls.length === 0)).toBe(true);
+    expect(onError).not.toHaveBeenCalled();
+
+    engine.setTracks([
+      { preview: true, selection: gainChain(6), streamIndex: 1, tag: 3, volume: 1 },
+    ]);
+    await vi.waitFor(() => expect(statuses.at(-1)).toEqual([3, "ready"]));
+    expect(sources.some((source) => gainPlayedBy(source) === 6)).toBe(true);
+    engine.close();
+  });
+
+  it("keeps playing the audible processing when its replacement cannot be rendered", async () => {
+    vi.useFakeTimers();
+    const { context, setCurrentTime, sources } = createFakeAudioContext();
+    const onError = vi.fn();
+    const statuses: string[] = [];
+    const decode = vi.fn(
+      async (selection: AudioChainSelection, _start: number, duration: number) => {
+        if (gainOf(selection) === 24) throw new Error("FFmpeg could not render the chain.");
+        return markedChunk(gainOf(selection), duration);
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), onError, (_stream, _tag, status) =>
+      statuses.push(status),
+    );
+
+    engine.setDuration(20_000_000);
+    engine.setTracks([{ selection: gainChain(3), streamIndex: 1, volume: 1 }]);
+    await engine.startAt(0);
+
+    engine.setTracks([{ selection: gainChain(24), streamIndex: 1, volume: 1 }]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(statuses.at(-1)).toBe("failed");
+    for (let second = 1; second <= 8; second += 1) {
+      setCurrentTime(5 + second);
+      await vi.advanceTimersByTimeAsync(200);
+    }
+
+    expect(onError).not.toHaveBeenCalled();
+    expect(sources.length).toBeGreaterThan(4);
+    expect(sources.every((source) => gainPlayedBy(source) === 3)).toBe(true);
+    expect(decode).toHaveBeenLastCalledWith(
+      gainChain(3),
+      expect.any(Number),
+      2_000_000,
+      expect.any(AbortSignal),
+      audible,
+    );
+    engine.close();
+  });
+
+  it("requests a restart of changed processing as a replacement while playing", async () => {
+    const { context } = createFakeAudioContext();
+    let releaseReplacement: (() => void) | undefined;
+    const decode = vi.fn(
+      (
+        selection: AudioChainSelection,
+        _start: number,
+        duration: number,
+        _signal: AbortSignal,
+        role: { replacement: boolean },
+      ) =>
+        role.replacement && gainOf(selection) === 6 && !releaseReplacement
+          ? new Promise<ReturnType<typeof chunk>>((resolve) => {
+              releaseReplacement = () => resolve(markedChunk(6, duration));
+            })
+          : Promise.resolve(markedChunk(gainOf(selection), duration)),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(20_000_000);
+    engine.setTracks([{ selection: gainChain(0), streamIndex: 1, volume: 1 }]);
+    await engine.startAt(0);
+    engine.setTracks([{ selection: gainChain(6), streamIndex: 1, volume: 1 }]);
+    await vi.waitFor(() => expect(releaseReplacement).toBeDefined());
+
+    // A loop restart is prefetched with the new processing, which is not audible yet.
+    await engine.prefetchAt(10);
+    expect(decode).toHaveBeenLastCalledWith(
+      gainChain(6),
+      10_000_000,
+      2_000_000,
+      expect.any(AbortSignal),
+      replacement,
+    );
+    releaseReplacement?.();
+    engine.close();
+  });
+
+  it("prepares a start again when the processing changes during its preparation", async () => {
+    const { context } = createFakeAudioContext();
+    let releaseFirst: (() => void) | undefined;
+    const decode = vi.fn((selection: AudioChainSelection, _start: number, duration: number) => {
+      if ((selection.filters[0] as { gainDb: number }).gainDb === 0) {
+        return new Promise<ReturnType<typeof chunk>>((resolve) => {
+          releaseFirst = () => resolve(chunk(duration));
+        });
+      }
+      return Promise.resolve(chunk(duration));
+    });
+
+    const statuses: string[] = [];
+    const engine = new WebAudioEngine(context, decode, vi.fn(), vi.fn(), (_stream, _tag, status) =>
+      statuses.push(status),
+    );
+
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ selection: gainChain(0), streamIndex: 1, volume: 1 }]);
+
+    const preparing = engine.prepareAt(1);
+    await vi.waitFor(() => expect(releaseFirst).toBeDefined());
+    engine.setTracks([{ selection: gainChain(6), streamIndex: 1, volume: 1 }]);
+    releaseFirst?.();
+
+    await expect(preparing).resolves.toBeUndefined();
+    expect(decode).toHaveBeenLastCalledWith(
+      gainChain(6),
+      1_000_000,
+      2_000_000,
+      expect.any(AbortSignal),
+      { preview: false, replacement: false },
+    );
+    expect(statuses).toContain("preparing");
+    expect(statuses.at(-1)).toBe("ready");
+    await engine.startPreparedAt(1);
+    engine.close();
+  });
+
+  it("starts with the new processing when it changes while a start is decoding", async () => {
+    const { context, sources } = createFakeAudioContext();
+    let releaseFirst: (() => void) | undefined;
+    const decode = vi.fn((selection: AudioChainSelection, _start: number, duration: number) => {
+      if ((selection.filters[0] as { gainDb: number }).gainDb === 0) {
+        return new Promise<ReturnType<typeof chunk>>((resolve) => {
+          releaseFirst = () => resolve(chunk(duration));
+        });
+      }
+      return Promise.resolve(chunk(duration));
+    });
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ selection: gainChain(0), streamIndex: 1, volume: 1 }]);
+
+    void engine.startAt(2);
+    await vi.waitFor(() => expect(releaseFirst).toBeDefined());
+    engine.setTracks([{ selection: gainChain(6), streamIndex: 1, volume: 1 }]);
+    releaseFirst?.();
+
+    await vi.waitFor(() => expect(sources).toHaveLength(2));
+    expect(sources[0]!.buffer).toBeDefined();
+    expect(decode).toHaveBeenCalledWith(
+      gainChain(6),
+      2_000_000,
+      2_000_000,
+      expect.any(AbortSignal),
+      { preview: false, replacement: false },
+    );
+    expect(engine.currentTimeSeconds).toBeGreaterThanOrEqual(2);
+    engine.close();
+  });
+
+  it("adopts changed processing while paused and abandons a switch on pause", async () => {
+    const { context, sources } = createFakeAudioContext();
+    let releaseSwitch: (() => void) | undefined;
+    const decode = vi.fn((selection: AudioChainSelection, _start: number, duration: number) => {
+      if ((selection.filters[0] as { gainDb: number }).gainDb === 9) {
+        return new Promise<ReturnType<typeof chunk>>((resolve) => {
+          releaseSwitch = () => resolve(chunk(duration));
+        });
+      }
+      return Promise.resolve(chunk(duration));
+    });
+
+    const statuses: Array<[number | undefined, string]> = [];
+    const engine = new WebAudioEngine(context, decode, vi.fn(), vi.fn(), (_stream, tag, status) =>
+      statuses.push([tag, status]),
+    );
+
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ selection: gainChain(0), streamIndex: 1, tag: 1, volume: 1 }]);
+    engine.setTracks([{ selection: gainChain(3), streamIndex: 1, tag: 2, volume: 1 }]);
+    expect(statuses.at(-1)).toEqual([2, "ready"]);
+    expect(decode).not.toHaveBeenCalled();
+
+    await engine.startAt(0);
+    engine.setTracks([{ selection: gainChain(9), streamIndex: 1, tag: 3, volume: 1 }]);
+    await vi.waitFor(() => expect(releaseSwitch).toBeDefined());
+    expect(statuses.at(-1)).toEqual([3, "updating"]);
+    const scheduled = sources.length;
+
+    engine.pause();
+    expect(statuses.at(-1)).toEqual([3, "ready"]);
+    releaseSwitch?.();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(sources).toHaveLength(scheduled);
+    engine.close();
   });
 });

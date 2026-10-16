@@ -1973,6 +1973,115 @@ mod tests {
         );
     }
 
+    /// The exported length of a processed track trimmed to the end of its source, in frames.
+    fn exported_frames(
+        filters: Vec<AudioFilter>,
+        measurements: Vec<FilterMeasurement>,
+    ) -> Vec<i64> {
+        let ffmpeg = which::which("ffmpeg").expect("FFmpeg is required for this integration test");
+        let ffprobe =
+            which::which("ffprobe").expect("FFprobe is required for this integration test");
+        let directory =
+            std::env::temp_dir().join(format!("easytrim-audio-tail-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&directory).expect("temporary directory should be created");
+        // A compressed source of an uneven length, like imported video.
+        let source_path = directory.join("source.m4a");
+        let source = Command::new(&ffmpeg)
+            .args(["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i"])
+            .arg(
+                "aevalsrc=exprs='0.95*between(mod(t,1.25),0.5,0.502)+(0.02*sin(2*PI*220*t)+0.01*sin(2*PI*3100*t))*if(lt(mod(t,20),8),0.2,1)':s=44100:d=7.123:c=stereo",
+            )
+            .args(["-c:a", "aac", "-y"])
+            .arg(&source_path)
+            .output()
+            .expect("ffmpeg should launch");
+        assert!(
+            source.status.success(),
+            "{}",
+            String::from_utf8_lossy(&source.stderr)
+        );
+
+        let mut info = media();
+        info.duration_micros = 7_123_000;
+        info.audio_streams.truncate(1);
+        info.audio_streams[0].stream_index = 0;
+        let mut frames = Vec::new();
+        for start_micros in [0, 2_500_000] {
+            let request = AudioExportRequest {
+                trim: TrimSelection {
+                    start_micros,
+                    end_micros: 7_123_000,
+                },
+                audio_tracks: vec![processed_track(
+                    0,
+                    filters.clone(),
+                    measurements.clone(),
+                    1.0,
+                )],
+                ..audio_request(AudioExportFormat::Wav, false)
+            };
+            let output_path = directory.join(format!("out-{start_micros}.wav"));
+            let arguments =
+                build_audio_arguments(&info, &request, &source_path, &output_path).unwrap();
+            let exported = Command::new(&ffmpeg)
+                .args(["-loglevel", "error"])
+                .args(&arguments)
+                .output()
+                .expect("ffmpeg should launch");
+            assert!(
+                exported.status.success(),
+                "{}",
+                String::from_utf8_lossy(&exported.stderr)
+            );
+            let probe = Command::new(&ffprobe)
+                .args([
+                    "-v",
+                    "error",
+                    "-show_entries",
+                    "stream=duration_ts",
+                    "-of",
+                    "csv=p=0",
+                ])
+                .arg(&output_path)
+                .output()
+                .expect("ffprobe should launch");
+            frames.push(
+                String::from_utf8_lossy(&probe.stdout)
+                    .trim()
+                    .parse::<i64>()
+                    .expect("the export reports its length"),
+            );
+        }
+        let _ = std::fs::remove_dir_all(directory);
+        frames
+    }
+
+    #[test]
+    fn processed_audio_trimmed_to_the_end_of_the_source_keeps_its_last_samples() {
+        let dynamic = FilterMeasurement {
+            filter_id: "norm".to_owned(),
+            analysis: AudioLoudnessAnalysis {
+                input_lra: Some(6.8),
+                input_threshold: Some(-33.29),
+                integrated_lufs: Some(-22.04),
+                true_peak_db: Some(-1.0),
+            },
+        };
+        // Dynamic loudness normalization shifts its output timestamps; an output duration limit
+        // used to cut real samples off the end of the export.
+        let frames = exported_frames(
+            vec![
+                noise_reduction("nr"),
+                gain("g", 10.0),
+                limiter("lim", -1.0),
+                normalization("norm", -16.0),
+                high_pass("hp", 80.0),
+            ],
+            vec![dynamic],
+        );
+        assert_eq!(frames, [341_904, 341_904 - 120_000]);
+    }
+
     #[test]
     fn ffmpeg_preserves_unrelated_dispositions_for_copy_and_processed_audio() {
         let ffmpeg = which::which("ffmpeg").expect("FFmpeg is required for this integration test");

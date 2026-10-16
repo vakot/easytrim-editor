@@ -12,6 +12,12 @@ const PCM_CHUNK_FRAMES = SAMPLE_RATE * 2;
 const MAX_BUFFER_AHEAD_FRAMES = SAMPLE_RATE * 4;
 const MIN_SCHEDULE_LEAD_SECONDS = 0.005;
 const CHANNELS = 2;
+/** How far ahead of the scheduling clock a processing change starts rendering its new chain. */
+const PROCESSING_CHANGE_LEAD_SECONDS = 0.05;
+/** A processing change switches only with this much new audio left, so the pump can follow. */
+const PROCESSING_CHANGE_MIN_FRAMES = SAMPLE_RATE / 4;
+/** Linear crossfade between the old and new processing; both carry the same source signal. */
+const PROCESSING_CROSSFADE_SECONDS = 0.03;
 
 interface PcmChunk {
   channels: number;
@@ -21,12 +27,39 @@ interface PcmChunk {
 
 interface WebAudioTrack {
   durationMicros?: number;
+  /** Whether `selection` auditions a draft chain; its native audio stays temporary. */
+  preview?: boolean;
   /** The processed chain; FFmpeg renders every filter so playback matches export. */
   selection: AudioChainSelection;
   startTimeMicros?: number;
   streamIndex: number;
+  /** An opaque label passed back with this track's render status. */
+  tag?: number;
   /** Post-filter Track Volume, applied by the track's GainNode. */
   volume: number;
+}
+
+/**
+ * Whether a track's requested processing is audible. `preparing` renders it for a start or seek,
+ * `updating` renders it to replace different processing that keeps playing meanwhile, and
+ * `failed` keeps the earlier preview audio. `ready` also covers a paused track whose processing
+ * is rendered when playback starts.
+ */
+type TrackRenderStatus = "failed" | "preparing" | "ready" | "updating";
+
+type TrackRenderStatusObserver = (
+  streamIndex: number,
+  tag: number | undefined,
+  status: TrackRenderStatus,
+) => void;
+
+/**
+ * `preview` audio auditions a draft chain. A `replacement` renders processing that will replace
+ * the audible processing, which keeps rendering until playback switches.
+ */
+interface DecodeRole {
+  preview: boolean;
+  replacement: boolean;
 }
 
 type DecodeChunk = (
@@ -34,7 +67,20 @@ type DecodeChunk = (
   startMicros: number,
   durationMicros: number,
   signal: AbortSignal,
+  role: DecodeRole,
 ) => Promise<PcmChunk>;
+
+/** A running processing change and the renders of its replacement processing. */
+interface ProcessingChange {
+  controllers: Set<AbortController>;
+}
+
+/** One processed chain of a track, as requested from the native renderer. */
+interface TrackRender {
+  key: string;
+  preview: boolean;
+  selection: AudioChainSelection;
+}
 
 interface SampleRange {
   endFrame: number;
@@ -43,7 +89,18 @@ interface SampleRange {
 
 interface DecodedSampleRange extends SampleRange {
   buffer: AudioBuffer;
+  render: TrackRender;
   track: ScheduledTrack;
+}
+
+/** A preview chain failed to render, and earlier audio of its track can stand in for it. */
+class PreviewRenderFailure extends Error {}
+
+/** The sources of one processing run of a track, faded as a unit when the processing changes. */
+interface TrackVoice {
+  gain: GainNode;
+  retired: boolean;
+  sources: Set<AudioBufferSourceNode>;
 }
 
 interface PreparedAudioBatch {
@@ -54,23 +111,32 @@ interface PreparedAudioBatch {
 /** A decoded start chunk kept outside the playback generations, e.g. a loop's restart point. */
 interface PrefetchedAudioChunk {
   endFrame: number;
-  ranges: { buffer: AudioBuffer; key: string; track: ScheduledTrack }[];
+  ranges: { buffer: AudioBuffer; key: string; render: TrackRender; track: ScheduledTrack }[];
   startFrame: number;
 }
 
 interface ScheduledTrack {
   abortController: AbortController | null;
+  /** The processing whose audio was last decoded for playback. */
+  audible: TrackRender | null;
   cursorFrame: number;
   durationFrame: number;
+  /** A preview selection whose rendering failed; earlier audio stands in until it changes. */
+  failedKey: string | null;
   gain: GainNode;
   generation: number;
   input: GainNode;
   nodes: Set<AudioBufferSourceNode>;
+  preview: boolean;
+  retiredVoices: Set<TrackVoice>;
   scheduledThroughFrame: number;
   selection: AudioChainSelection;
   selectionKey: string;
   startFrame: number;
+  status: TrackRenderStatus;
   streamIndex: number;
+  tag: number | undefined;
+  voice: TrackVoice;
 }
 
 class WebAudioEngine {
@@ -93,12 +159,19 @@ class WebAudioEngine {
   private preparedBatch: PreparedAudioBatch | null = null;
   private prefetched: PrefetchedAudioChunk | null = null;
   private prefetchRequest: { controller: AbortController; startFrame: number } | null = null;
+  /** The last prefetched restart point, prefetched again once changed processing is audible. */
+  private prefetchSeconds: number | null = null;
+  /** A preparation that restarts with the new processing when it changes meanwhile. */
+  private preparation: object | null = null;
+  /** The running processing change, while its replacement processing renders. */
+  private processingChange: ProcessingChange | null = null;
 
   constructor(
     private readonly context: AudioContext,
     private readonly decodeChunk: DecodeChunk,
     private readonly onEnded: () => void,
     private readonly onPlaybackError: () => void = () => undefined,
+    private readonly onTrackStatus: TrackRenderStatusObserver = () => undefined,
   ) {
     this.audioMix = context.createGain();
     const graph = connectPlaybackAudioGraph(context, this.audioMix);
@@ -162,6 +235,8 @@ class WebAudioEngine {
     }
 
     let processingChanged = false;
+    let rangeChanged = false;
+    const statusChanged: ScheduledTrack[] = [];
     for (const track of tracks) {
       const key = JSON.stringify(track.selection);
       const current = this.tracks.get(track.streamIndex);
@@ -184,13 +259,26 @@ class WebAudioEngine {
         processingChanged = true;
         current.selection = track.selection;
         current.selectionKey = key;
+        if (current.failedKey !== key) current.failedKey = null;
+        statusChanged.push(current);
+      }
+      if (current && current.tag !== track.tag) {
+        current.tag = track.tag;
+        statusChanged.push(current);
+      }
+      if (current) {
+        current.preview = track.preview ?? false;
+        // Applying an auditioned draft keeps its audio playing as committed audio.
+        if (current.audible?.key === key && current.audible.preview !== current.preview) {
+          current.audible = { ...current.audible, preview: current.preview };
+        }
       }
 
       if (
         current &&
         (current.startFrame !== startFrame || current.durationFrame !== durationFrame)
       ) {
-        processingChanged = true;
+        rangeChanged = true;
         current.startFrame = startFrame;
         current.durationFrame = durationFrame;
       }
@@ -201,14 +289,23 @@ class WebAudioEngine {
       scheduled.gain.gain.setTargetAtTime(track.volume, now, 0.015);
     }
 
-    if (membershipChanged || processingChanged) this.discardPrefetch();
-    if (this.isPlaying && this.hasTracks && (membershipChanged || processingChanged)) {
+    if (membershipChanged || rangeChanged || processingChanged) this.discardPrefetch();
+    if (this.isPlaying && this.hasTracks && (membershipChanged || rangeChanged)) {
       this.preparedBatch = null;
       this.seek(playbackPositionFrame / SAMPLE_RATE);
+    } else if (this.isPlaying && this.hasTracks && processingChanged) {
+      this.changeProcessing();
     } else if (this.isPlaying && this.hasTracks) {
       this.requestPump();
+    } else if (
+      this.playbackRequested &&
+      this.hasTracks &&
+      (membershipChanged || rangeChanged || processingChanged)
+    ) {
+      // A start is still decoding the previous processing; start again with the new one.
+      this.seek(this.anchorPositionFrame / SAMPLE_RATE);
     } else {
-      if (membershipChanged || processingChanged) {
+      if (membershipChanged || rangeChanged || processingChanged) {
         this.generation += 1;
         this.batchInFlight = false;
         this.preparedBatch = null;
@@ -221,11 +318,14 @@ class WebAudioEngine {
       }
       this.cancelPump();
     }
+    for (const track of statusChanged) this.reportStatus(track, this.pendingStatus(track), true);
   }
 
   async startAt(seconds: number, contextStart?: number): Promise<void> {
     if (!this.hasTracks || this.durationFrames <= 0) return;
     this.playbackRequested = true;
+    this.preparation = null;
+    this.cancelProcessingChange();
     const startFrame = this.secondsToFrame(seconds);
     const prepared = this.preparedBatch;
     const canUsePreparedBatch =
@@ -248,6 +348,7 @@ class WebAudioEngine {
       track.scheduledThroughFrame = startFrame;
       if (!canUsePreparedBatch) track.cursorFrame = startFrame;
     }
+    this.refreshStatuses();
 
     try {
       if (!canUsePreparedBatch) await this.context.resume();
@@ -255,7 +356,7 @@ class WebAudioEngine {
 
       const firstBatch = canUsePreparedBatch
         ? prepared.batch
-        : await this.decodeBatch(generation, startFrame, this.nextChunkEndFrame(startFrame));
+        : await this.decodeStartBatch(generation, startFrame);
 
       if (generation !== this.generation) return;
 
@@ -272,7 +373,10 @@ class WebAudioEngine {
       this.batchInFlight = false;
       this.requestPump();
     } finally {
-      if (generation === this.generation) this.batchInFlight = false;
+      if (generation === this.generation) {
+        this.batchInFlight = false;
+        this.refreshStatuses();
+      }
     }
   }
 
@@ -315,39 +419,57 @@ class WebAudioEngine {
     return audioStartPosition;
   }
 
+  /**
+   * Decodes the first chunk at `seconds` for a start that is aligned later. When the processing
+   * changes meanwhile, the chunk is prepared again with the new processing instead of failing.
+   */
   async prepareAt(seconds: number): Promise<void> {
     if (!this.hasTracks || this.durationFrames <= 0) return;
+    const preparation = {};
+    this.preparation = preparation;
     this.playbackRequested = false;
-    this.generation += 1;
-    const generation = this.generation;
-    this.isPlaying = false;
-    this.batchInFlight = true;
-    this.preparedBatch = null;
-    this.cancelPump();
-    this.stopSources();
+    this.cancelProcessingChange();
     const startFrame = this.secondsToFrame(seconds);
-    this.anchorPositionFrame = startFrame;
-    this.nextScheduledFrame = startFrame;
-    for (const track of this.tracks.values()) {
-      track.generation = generation;
-      track.cursorFrame = startFrame;
-      track.scheduledThroughFrame = startFrame;
-    }
+    for (;;) {
+      this.generation += 1;
+      const generation = this.generation;
+      this.isPlaying = false;
+      this.batchInFlight = true;
+      this.preparedBatch = null;
+      this.cancelPump();
+      this.stopSources();
+      this.anchorPositionFrame = startFrame;
+      this.nextScheduledFrame = startFrame;
+      for (const track of this.tracks.values()) {
+        track.generation = generation;
+        track.cursorFrame = startFrame;
+        track.scheduledThroughFrame = startFrame;
+      }
+      this.refreshStatuses();
 
-    try {
-      await this.context.resume();
-      if (generation !== this.generation) {
+      try {
+        await this.context.resume();
+        if (generation === this.generation) {
+          const batch =
+            this.prefetchedBatch(startFrame) ??
+            (await this.decodeStartBatch(generation, startFrame));
+
+          if (generation === this.generation) {
+            if (batch.length === 0 && this.hasTracks) throw new Error("Audio preparation failed.");
+            if (batch.length > 0) this.preparedBatch = { batch, generation };
+            return;
+          }
+        }
+      } finally {
+        if (generation === this.generation) {
+          this.batchInFlight = false;
+          if (this.preparation === preparation) this.preparation = null;
+          this.refreshStatuses();
+        }
+      }
+      if (this.preparation !== preparation || !this.hasTracks) {
         throw new Error("Audio preparation was interrupted.");
       }
-      const batch =
-        this.prefetchedBatch(startFrame) ??
-        (await this.decodeBatch(generation, startFrame, this.nextChunkEndFrame(startFrame)));
-
-      if (generation !== this.generation) throw new Error("Audio preparation was interrupted.");
-      if (batch.length === 0 && this.hasTracks) throw new Error("Audio preparation failed.");
-      if (batch.length > 0) this.preparedBatch = { batch, generation };
-    } finally {
-      if (generation === this.generation) this.batchInFlight = false;
     }
   }
 
@@ -357,6 +479,7 @@ class WebAudioEngine {
    */
   async prefetchAt(seconds: number): Promise<void> {
     if (!this.hasTracks || this.durationFrames <= 0) return;
+    this.prefetchSeconds = seconds;
     const startFrame = this.secondsToFrame(seconds);
     if (this.prefetchedRanges(startFrame) || this.prefetchRequest?.startFrame === startFrame)
       return;
@@ -369,11 +492,21 @@ class WebAudioEngine {
     try {
       const tracks = [...this.tracks.values()];
       const ranges = await Promise.all(
-        tracks.map(async (track) => ({
-          buffer: await this.decodeBuffer(track, startFrame, endFrame, request.controller.signal),
-          key: this.prefetchKey(track),
-          track,
-        })),
+        tracks.map(async (track) => {
+          const render = this.renderOf(track);
+          return {
+            buffer: await this.decodeBuffer(
+              track,
+              render,
+              startFrame,
+              endFrame,
+              request.controller.signal,
+            ),
+            key: this.prefetchKey(track),
+            render,
+            track,
+          };
+        }),
       );
 
       if (this.prefetchRequest === request) this.prefetched = { endFrame, ranges, startFrame };
@@ -391,8 +524,11 @@ class WebAudioEngine {
     this.generation += 1;
     this.preparedBatch = null;
     this.batchInFlight = false;
+    this.preparation = null;
+    this.cancelProcessingChange();
     this.cancelPump();
     this.stopSources();
+    this.refreshStatuses();
   }
 
   seek(seconds: number): void {
@@ -402,6 +538,8 @@ class WebAudioEngine {
     this.nextScheduledFrame = positionFrame;
     this.generation += 1;
     this.batchInFlight = false;
+    this.preparation = null;
+    this.cancelProcessingChange();
     this.cancelPump();
     this.stopSources();
     for (const track of this.tracks.values()) {
@@ -417,11 +555,14 @@ class WebAudioEngine {
         this.pause();
         this.onPlaybackError();
       });
+    } else {
+      this.refreshStatuses();
     }
   }
 
   close(): void {
     this.discardPrefetch();
+    this.prefetchSeconds = null;
     this.pause();
     for (const [streamIndex, track] of this.tracks) this.removeTrack(streamIndex, track);
     disconnectStereoAudioMeterNodes(this.audioMeter);
@@ -434,9 +575,12 @@ class WebAudioEngine {
   }
 
   private createTrack(track: WebAudioTrack, selectionKey: string): ScheduledTrack {
+    const voice = this.context.createGain();
     const runtime = connectAudioTrackRuntime(this.context, this.audioMix);
+    voice.connect(runtime.input);
     const scheduled: ScheduledTrack = {
       abortController: null,
+      audible: null,
       cursorFrame: this.anchorPositionFrame,
       durationFrame:
         track.durationMicros === undefined
@@ -447,19 +591,243 @@ class WebAudioEngine {
                 (((track.startTimeMicros ?? 0) + track.durationMicros) * SAMPLE_RATE) / 1_000_000,
               ),
             ),
+      failedKey: null,
       generation: this.generation,
       gain: runtime.gain,
       input: runtime.input,
       nodes: new Set(),
+      preview: track.preview ?? false,
+      retiredVoices: new Set(),
       scheduledThroughFrame: this.anchorPositionFrame,
       selectionKey,
       selection: track.selection,
       startFrame: Math.max(0, Math.round(((track.startTimeMicros ?? 0) * SAMPLE_RATE) / 1_000_000)),
+      status: "ready",
       streamIndex: track.streamIndex,
+      tag: track.tag,
+      voice: { gain: voice, retired: false, sources: new Set() },
     };
 
     this.tracks.set(track.streamIndex, scheduled);
+    this.onTrackStatus(scheduled.streamIndex, scheduled.tag, scheduled.status);
     return scheduled;
+  }
+
+  /**
+   * The processing to render for a track: the requested one, unless it is a preview that failed
+   * to render and earlier audio of the track can stand in for it.
+   */
+  private renderOf(track: ScheduledTrack): TrackRender {
+    if (track.failedKey === track.selectionKey && track.preview && track.audible) {
+      return { ...track.audible, preview: track.preview };
+    }
+    return { key: track.selectionKey, preview: track.preview, selection: track.selection };
+  }
+
+  private pendingStatus(track: ScheduledTrack): TrackRenderStatus {
+    if (track.failedKey === track.selectionKey) return "failed";
+    if (track.audible?.key === track.selectionKey) return "ready";
+    if (this.processingChange !== null) return "updating";
+    if (this.preparation !== null || (this.playbackRequested && !this.isPlaying)) {
+      return "preparing";
+    }
+    return "ready";
+  }
+
+  private reportStatus(track: ScheduledTrack, status: TrackRenderStatus, force = false): void {
+    if (!force && track.status === status) return;
+    track.status = status;
+    this.onTrackStatus(track.streamIndex, track.tag, status);
+  }
+
+  private refreshStatuses(): void {
+    for (const track of this.tracks.values()) this.reportStatus(track, this.pendingStatus(track));
+  }
+
+  /**
+   * Replaces changed processing during playback without a gap. The audible processing keeps
+   * rendering and playing while the replacement renders from just ahead of the playhead, however
+   * long that takes; then every track switches at one sample position with a short crossfade. The
+   * timeline mapping never changes, so audio stays aligned with the video. A newer change replaces
+   * a running one, so playback only ever switches to the latest processing. A replacement that
+   * cannot be rendered is only reported: the audible processing keeps playing.
+   */
+  private changeProcessing(): void {
+    this.cancelProcessingChange();
+    const change: ProcessingChange = { controllers: new Set() };
+    this.processingChange = change;
+    this.preparedBatch = null;
+    this.refreshStatuses();
+    void this.runProcessingChange(change);
+  }
+
+  private async runProcessingChange(change: ProcessingChange): Promise<void> {
+    let switched = false;
+    try {
+      switched = await this.renderProcessingChange(change);
+    } catch {
+      // The failure is recorded on its track and reported through its render status.
+    }
+    if (this.processingChange !== change) return;
+    this.processingChange = null;
+    this.refreshStatuses();
+    if (switched && this.prefetchSeconds !== null) void this.prefetchAt(this.prefetchSeconds);
+  }
+
+  /** Renders the replacement ahead of the playhead and switches to it; false if nothing changed. */
+  private async renderProcessingChange(change: ProcessingChange): Promise<boolean> {
+    for (;;) {
+      // The replacement may be the audible processing again, e.g. an undone edit or a fallback.
+      if (
+        [...this.tracks.values()].every((track) => track.audible?.key === this.renderOf(track).key)
+      ) {
+        return false;
+      }
+      const startFrame = this.frameAtContextTime(
+        this.context.currentTime + PROCESSING_CHANGE_LEAD_SECONDS,
+      );
+
+      // The scheduled audio already reaches the end of the range; nothing is left to replace.
+      if (startFrame >= this.durationFrames) return false;
+      const endFrame = this.nextChunkEndFrame(startFrame);
+      const batch = await this.decodeReplacement(change, startFrame, endFrame);
+      if (this.processingChange !== change) return false;
+      const switchFrame = Math.max(
+        startFrame,
+        this.frameAtContextTime(this.context.currentTime + MIN_SCHEDULE_LEAD_SECONDS),
+      );
+
+      if (switchFrame >= endFrame && endFrame >= this.durationFrames) return false;
+      if (
+        switchFrame <= endFrame - PROCESSING_CHANGE_MIN_FRAMES ||
+        endFrame >= this.durationFrames
+      ) {
+        this.switchProcessing(batch, switchFrame);
+        return true;
+      }
+      // Rendering took longer than the audio it produced; render again from the playhead.
+    }
+  }
+
+  /** Renders the replacement processing of every track without stopping the audible processing. */
+  private decodeReplacement(
+    change: ProcessingChange,
+    startFrame: number,
+    endFrame: number,
+  ): Promise<DecodedSampleRange[]> {
+    return Promise.all(
+      [...this.tracks.values()].map(async (track) => {
+        const controller = new AbortController();
+        change.controllers.add(controller);
+        const render = this.renderOf(track);
+        try {
+          const buffer = await this.decodeBuffer(
+            track,
+            render,
+            startFrame,
+            endFrame,
+            controller.signal,
+          );
+
+          if (track.failedKey === render.key) track.failedKey = null;
+          return { buffer, endFrame, render, startFrame, track };
+        } catch (error) {
+          if (controller.signal.aborted || this.processingChange !== change) throw error;
+          throw this.renderFailure(track, render, error);
+        } finally {
+          change.controllers.delete(controller);
+        }
+      }),
+    );
+  }
+
+  /**
+   * Records that the requested processing of a track failed to render. A preview the track's
+   * earlier audio can replace becomes a `PreviewRenderFailure`; any other failure is returned
+   * unchanged.
+   */
+  private renderFailure(track: ScheduledTrack, render: TrackRender, error: unknown): unknown {
+    if (render.key !== track.selectionKey) return error;
+    track.failedKey = render.key;
+    return render.preview && track.audible && track.audible.key !== render.key
+      ? new PreviewRenderFailure()
+      : error;
+  }
+
+  /**
+   * How a render is requested. During playback, only the audible processing is requested as
+   * audible; any other processing, such as a replacement or a prefetched restart, is a
+   * replacement, so it never takes the native renderer away from the audio that is playing.
+   */
+  private roleOf(track: ScheduledTrack, render: TrackRender): DecodeRole {
+    return {
+      preview: render.preview,
+      replacement: this.isPlaying && track.audible !== null && track.audible.key !== render.key,
+    };
+  }
+
+  /**
+   * Starts the replacement at `switchFrame`, fades the audible processing out there, and lets the
+   * pump continue with the replacement after its first chunk.
+   */
+  private switchProcessing(batch: DecodedSampleRange[], switchFrame: number): void {
+    this.generation += 1;
+    const generation = this.generation;
+    this.cancelPump();
+    this.batchInFlight = false;
+    const switchTime = this.contextTimeAtFrame(switchFrame);
+    const { endFrame } = batch[0]!;
+    for (const range of batch) {
+      const { track } = range;
+      // A chunk the pump is decoding for the previous processing is no longer needed.
+      track.abortController?.abort();
+      track.abortController = null;
+      track.generation = generation;
+      track.cursorFrame = endFrame;
+      const previous = track.voice;
+      previous.retired = true;
+      // A voice may still be fading in from a switch moments ago; fade out from where it is.
+      if (typeof previous.gain.gain.cancelAndHoldAtTime === "function") {
+        previous.gain.gain.cancelAndHoldAtTime(switchTime);
+      } else {
+        previous.gain.gain.cancelScheduledValues(switchTime);
+        previous.gain.gain.setValueAtTime(1, switchTime);
+      }
+      previous.gain.gain.linearRampToValueAtTime(0, switchTime + PROCESSING_CROSSFADE_SECONDS);
+      for (const source of previous.sources) {
+        try {
+          source.stop(switchTime + PROCESSING_CROSSFADE_SECONDS);
+        } catch {
+          // A source may already have ended.
+        }
+      }
+      if (previous.sources.size === 0) previous.gain.disconnect();
+      else track.retiredVoices.add(previous);
+
+      const voice = this.context.createGain();
+      voice.connect(track.input);
+      voice.gain.setValueAtTime(0, switchTime);
+      voice.gain.linearRampToValueAtTime(1, switchTime + PROCESSING_CROSSFADE_SECONDS);
+      track.voice = { gain: voice, retired: false, sources: new Set() };
+      track.scheduledThroughFrame = switchFrame;
+      this.schedule(range, switchTime, switchFrame);
+    }
+    this.nextScheduledFrame = endFrame;
+    this.nextScheduledContextTime =
+      switchTime + this.framesToContextSeconds(endFrame - switchFrame);
+    this.requestPump();
+  }
+
+  /** The source frame the running playback reaches at a context time. */
+  private frameAtContextTime(contextTime: number): number {
+    return (
+      this.anchorPositionFrame +
+      Math.ceil((contextTime - this.anchorContextTime) * SAMPLE_RATE * this.playbackRate)
+    );
+  }
+
+  private contextTimeAtFrame(frame: number): number {
+    return this.anchorContextTime + this.framesToContextSeconds(frame - this.anchorPositionFrame);
   }
 
   private async decodeBatch(
@@ -489,8 +857,17 @@ class WebAudioEngine {
     if (track.abortController || track.cursorFrame !== startFrame) return null;
     const controller = new AbortController();
     track.abortController = controller;
+    // A running playback continues its audible processing; only a start or a switch changes it.
+    const render = this.isPlaying && track.audible ? track.audible : this.renderOf(track);
     try {
-      const buffer = await this.decodeBuffer(track, startFrame, endFrame, controller.signal);
+      const buffer = await this.decodeBuffer(
+        track,
+        render,
+        startFrame,
+        endFrame,
+        controller.signal,
+      );
+
       if (
         controller.signal.aborted ||
         generation !== this.generation ||
@@ -500,17 +877,39 @@ class WebAudioEngine {
         return null;
       }
       track.cursorFrame = endFrame;
-      return { buffer, endFrame, startFrame, track };
+      if (track.failedKey === render.key) track.failedKey = null;
+      return { buffer, endFrame, render, startFrame, track };
     } catch (error) {
       if (controller.signal.aborted || generation !== this.generation) return null;
-      throw error;
+      throw this.renderFailure(track, render, error);
     } finally {
       if (track.abortController === controller) track.abortController = null;
     }
   }
 
+  /** Decodes a start chunk, replacing a failed preview with the track's earlier audio once. */
+  private async decodeStartBatch(
+    generation: number,
+    startFrame: number,
+  ): Promise<DecodedSampleRange[]> {
+    const endFrame = this.nextChunkEndFrame(startFrame);
+    try {
+      return await this.decodeBatch(generation, startFrame, endFrame);
+    } catch (error) {
+      if (!(error instanceof PreviewRenderFailure) || generation !== this.generation) throw error;
+      for (const track of this.tracks.values()) {
+        track.abortController?.abort();
+        track.abortController = null;
+        track.cursorFrame = startFrame;
+      }
+      this.refreshStatuses();
+      return this.decodeBatch(generation, startFrame, endFrame);
+    }
+  }
+
   private async decodeBuffer(
     track: ScheduledTrack,
+    render: TrackRender,
     startFrame: number,
     endFrame: number,
     signal: AbortSignal,
@@ -521,10 +920,11 @@ class WebAudioEngine {
     const chunk =
       decodeFrameCount > 0
         ? await this.decodeChunk(
-            track.selection,
+            render.selection,
             this.frameToMicros(decodeStartFrame),
             this.frameToMicros(decodeEndFrame) - this.frameToMicros(decodeStartFrame),
             signal,
+            this.roleOf(track, render),
           )
         : { channels: CHANNELS, sampleRate: SAMPLE_RATE, samples: new Float32Array() };
 
@@ -552,7 +952,7 @@ class WebAudioEngine {
 
   /** Everything a decoded chunk depends on; a change makes a prefetched chunk stale. */
   private prefetchKey(track: ScheduledTrack): string {
-    return `${track.selectionKey}|${track.startFrame}|${track.durationFrame}`;
+    return `${this.renderOf(track).key}|${track.startFrame}|${track.durationFrame}`;
   }
 
   private prefetchedRanges(startFrame: number): PrefetchedAudioChunk["ranges"] | null {
@@ -578,7 +978,13 @@ class WebAudioEngine {
     if (!ranges) return null;
     const endFrame = this.nextChunkEndFrame(startFrame);
     for (const { track } of ranges) track.cursorFrame = endFrame;
-    return ranges.map(({ buffer, track }) => ({ buffer, endFrame, startFrame, track }));
+    return ranges.map(({ buffer, render, track }) => ({
+      buffer,
+      endFrame,
+      render,
+      startFrame,
+      track,
+    }));
   }
 
   private discardPrefetch(): void {
@@ -672,12 +1078,18 @@ class WebAudioEngine {
     }
     const source = this.context.createBufferSource();
     const generation = this.generation;
+    const voice = track.voice;
     source.buffer = buffer;
     source.playbackRate.value = this.playbackRate;
-    source.connect(track.input);
+    source.connect(voice.gain);
     source.onended = () => {
       source.disconnect();
       track.nodes.delete(source);
+      voice.sources.delete(source);
+      if (voice.retired && voice.sources.size === 0) {
+        voice.gain.disconnect();
+        track.retiredVoices.delete(voice);
+      }
       if (generation !== this.generation) return;
       if (this.currentPositionFrame() >= this.durationFrames && this.isPlaying) {
         this.pause();
@@ -693,7 +1105,9 @@ class WebAudioEngine {
     };
     source.start(contextStart, (scheduledStartFrame - range.startFrame) / SAMPLE_RATE);
     track.nodes.add(source);
+    voice.sources.add(source);
     track.scheduledThroughFrame = endFrame;
+    track.audible = range.render;
   }
 
   private requestPump(): void {
@@ -735,6 +1149,7 @@ class WebAudioEngine {
         return;
       }
     } catch {
+      // The audible processing itself failed to render, so nothing can keep playing.
       if (generation !== this.generation) return;
       this.pause();
       this.onPlaybackError();
@@ -756,23 +1171,11 @@ class WebAudioEngine {
   }
 
   private stopSources(): void {
-    for (const track of this.tracks.values()) {
-      track.abortController?.abort();
-      track.abortController = null;
-      for (const source of track.nodes) {
-        source.onended = null;
-        try {
-          source.stop();
-        } catch {
-          // A source may already have ended between the scheduled check and stop.
-        }
-        source.disconnect();
-      }
-      track.nodes.clear();
-    }
+    for (const track of this.tracks.values()) this.stopTrackSources(track);
   }
 
-  private invalidateTrack(track: ScheduledTrack, positionFrame: number): void {
+  /** Stops a track's sources, ends any processing crossfade, and leaves one silent voice. */
+  private stopTrackSources(track: ScheduledTrack): void {
     track.abortController?.abort();
     track.abortController = null;
     for (const source of track.nodes) {
@@ -785,6 +1188,15 @@ class WebAudioEngine {
       source.disconnect();
     }
     track.nodes.clear();
+    for (const voice of track.retiredVoices) voice.gain.disconnect();
+    track.retiredVoices.clear();
+    track.voice.sources.clear();
+    track.voice.gain.gain.cancelScheduledValues(0);
+    track.voice.gain.gain.value = 1;
+  }
+
+  private invalidateTrack(track: ScheduledTrack, positionFrame: number): void {
+    this.stopTrackSources(track);
     track.generation = this.generation;
     track.cursorFrame = positionFrame;
     track.scheduledThroughFrame = positionFrame;
@@ -792,8 +1204,14 @@ class WebAudioEngine {
 
   private removeTrack(streamIndex: number, track: ScheduledTrack): void {
     this.invalidateTrack(track, this.currentPositionFrame());
+    track.voice.gain.disconnect();
     disconnectAudioTrackRuntime(track);
     this.tracks.delete(streamIndex);
+  }
+
+  private cancelProcessingChange(): void {
+    for (const controller of this.processingChange?.controllers ?? []) controller.abort();
+    this.processingChange = null;
   }
 
   private currentPositionFrame(): number {
@@ -849,4 +1267,4 @@ class WebAudioEngine {
 }
 
 export { WebAudioEngine };
-export type { DecodeChunk, PcmChunk, WebAudioTrack };
+export type { DecodeChunk, PcmChunk, TrackRenderStatus, TrackRenderStatusObserver, WebAudioTrack };

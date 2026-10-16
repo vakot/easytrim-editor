@@ -12,7 +12,7 @@ use crate::{
         audio::processed_timeline_range,
         audio_filters::{
             compiler::CompiledChain,
-            engine::{AudioProcessingEngine, RenderRequest},
+            engine::{AudioProcessingEngine, RenderPurpose, RenderRequest},
         },
     },
     state::{WaveformArtifact, WaveformSource},
@@ -76,6 +76,8 @@ pub fn generate_waveforms(
                         start,
                         frames: count,
                         channels: 2,
+                        purpose: RenderPurpose::Waveform,
+                        replacement: false,
                     },
                     &|| waveform_cancelled(source),
                 )?;

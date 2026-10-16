@@ -1,4 +1,5 @@
 import {
+  audioFilterPreviewLoudnessAnalysisStarted,
   audioTrackActivityAnalysisFailed,
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
@@ -6,6 +7,7 @@ import {
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
   type AudioTrackState,
+  selectAudioFilterPreview,
   selectAudioTracks,
 } from "@/app/store/slices/audio-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
@@ -13,7 +15,6 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppThunk } from "@/app/store/thunks/source-media-thunks";
 import {
   type AudioChainSelection,
-  type AudioFilter,
   audioTrackLoudnessInputsKey,
   sameAudioFilters,
 } from "@/domain/audio-processing";
@@ -21,15 +22,14 @@ import { analyzeAudioLoudness, detectAudioActivity } from "@/lib/tauri/media";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 
 const activeLoudnessAnalysisJobs = new Map<string, Promise<void>>();
+/** Draft measurements by operation, stopped once neither a draft nor a track waits for them. */
+const previewLoudnessAnalyses = new Map<string, AbortController>();
 
 /**
  * Measures every loudness normalization instance of a chain. Native code measures each instance
  * on the signal that reaches it, in order, so one request covers dependent instances.
  */
-function analyzeTrackLoudness(
-  streamIndex: number,
-  filtersOverride?: AudioFilter[],
-): AppThunk<Promise<void>> {
+function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
     const state = getState();
     const source = selectSourceSelection(state);
@@ -37,7 +37,7 @@ function analyzeTrackLoudness(
     const track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
     if (!source || !trim || !track) return;
 
-    const filters = filtersOverride ?? track.processing.filters;
+    const filters = track.processing.filters;
     const cacheKey = audioTrackLoudnessInputsKey(source.sourcePath, streamIndex, trim, filters);
     if (cacheKey === null) return;
 
@@ -74,12 +74,12 @@ function analyzeTrackLoudness(
         });
 
         if (
-          !isCurrentAnalysisTrack(
+          !isAwaitedAnalysis(
             getState(),
             source.sourcePath,
             sourceLoadToken,
             streamIndex,
-            cacheKey,
+            operationId,
           )
         )
           return;
@@ -213,23 +213,125 @@ function isCurrentTrack(
   return loudnessCacheKey !== null && hasCurrentMeasurements(currentTrack, loudnessCacheKey);
 }
 
-function isCurrentAnalysisTrack(
+/** Whether the committed chain or its preview still waits for a measurement operation. */
+function isAwaitedAnalysis(
   state: ReturnType<Parameters<AppThunk>[1]>,
   sourcePath: string,
   sourceLoadToken: number,
   streamIndex: number,
-  cacheKey: string,
+  operationId: string,
 ): boolean {
   return (
     state.source.loadToken === sourceLoadToken &&
     selectSourceSelection(state)?.sourcePath === sourcePath &&
-    selectAudioTracks(state).some(
-      (track) =>
-        track.streamIndex === streamIndex &&
-        track.loudnessAnalysis.status === "loading" &&
-        track.loudnessAnalysis.cacheKey === cacheKey,
-    )
+    awaitsAnalysis(state, operationId, streamIndex)
   );
 }
 
-export { analyzeTrackLoudness, audioChainSelection, detectTrackActivity };
+function awaitsAnalysis(
+  state: ReturnType<Parameters<AppThunk>[1]>,
+  operationId: string,
+  streamIndex?: number,
+): boolean {
+  const preview = selectAudioFilterPreview(state);
+  return [...selectAudioTracks(state), ...(preview ? [preview] : [])].some(
+    (holder) =>
+      (streamIndex === undefined || holder.streamIndex === streamIndex) &&
+      holder.loudnessAnalysis.status === "loading" &&
+      holder.loudnessAnalysis.operationId === operationId,
+  );
+}
+
+/**
+ * Measures the normalization instances of the previewed draft chain. The job is shared with the
+ * committed chain under the same inputs, so applying the draft waits for it instead of measuring
+ * again. It is cancelled once neither the draft nor the track waits for it.
+ */
+function analyzeFilterPreviewLoudness(): AppThunk<Promise<void>> {
+  return async (dispatch, getState) => {
+    const state = getState();
+    const preview = selectAudioFilterPreview(state);
+    const source = selectSourceSelection(state);
+    const trim = selectTrim(state);
+    if (!preview || !source || !trim || preview.loudnessAnalysis.status !== "idle") return;
+    const cacheKey = audioTrackLoudnessInputsKey(
+      source.sourcePath,
+      preview.streamIndex,
+      trim,
+      preview.filters,
+    );
+
+    if (cacheKey === null) return;
+
+    const { streamIndex } = preview;
+    const operationId = crypto.randomUUID();
+    const sourceLoadToken = state.source.loadToken;
+    const controller = new AbortController();
+    const jobKey = `${source.sourcePath}:${sourceLoadToken}:${cacheKey}`;
+    previewLoudnessAnalyses.set(operationId, controller);
+    dispatch(audioFilterPreviewLoudnessAnalysisStarted({ cacheKey, id: preview.id, operationId }));
+    const job = (async () => {
+      try {
+        const result = await analyzeAudioLoudness(
+          {
+            audioTrack: {
+              filters: preview.filters.map((filter) => ({ ...filter })),
+              streamIndex,
+            },
+            sourcePath: source.sourcePath,
+            trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
+          },
+          controller.signal,
+        );
+
+        if (
+          isAwaitedAnalysis(
+            getState(),
+            source.sourcePath,
+            sourceLoadToken,
+            streamIndex,
+            operationId,
+          )
+        ) {
+          dispatch(audioTrackLoudnessAnalysisReady({ cacheKey, operationId, result, streamIndex }));
+        }
+      } catch (error: unknown) {
+        if (controller.signal.aborted) return;
+        dispatch(
+          audioTrackLoudnessAnalysisFailed({
+            cacheKey,
+            error: normalizeAppError(error),
+            operationId,
+            streamIndex,
+          }),
+        );
+      } finally {
+        previewLoudnessAnalyses.delete(operationId);
+      }
+    })();
+
+    activeLoudnessAnalysisJobs.set(jobKey, job);
+    try {
+      await job;
+    } finally {
+      if (activeLoudnessAnalysisJobs.get(jobKey) === job) activeLoudnessAnalysisJobs.delete(jobKey);
+    }
+  };
+}
+
+/** Stops draft measurements that neither a draft nor a committed track waits for anymore. */
+function releaseUnawaitedPreviewLoudnessAnalyses(state: ReturnType<Parameters<AppThunk>[1]>) {
+  for (const [operationId, controller] of previewLoudnessAnalyses) {
+    if (awaitsAnalysis(state, operationId)) continue;
+    controller.abort();
+    previewLoudnessAnalyses.delete(operationId);
+  }
+}
+
+export {
+  analyzeFilterPreviewLoudness,
+  analyzeTrackLoudness,
+  audioChainSelection,
+  detectTrackActivity,
+  releaseUnawaitedPreviewLoudnessAnalyses,
+};

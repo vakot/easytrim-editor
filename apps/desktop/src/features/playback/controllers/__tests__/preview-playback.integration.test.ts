@@ -84,6 +84,7 @@ function createNativePreviewHarness(durationMicros = 2_000_000, hasAudioOutput =
       getCurrentTimeSeconds: () => audioPosition,
       getMeter: () => null,
       hasActiveOutput: hasAudioOutput,
+      mutesPreviewVideo: hasAudioOutput,
       isReady: true,
       pause: vi.fn(),
       prefetchAt: vi.fn(),

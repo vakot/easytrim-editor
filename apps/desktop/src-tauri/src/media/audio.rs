@@ -1,13 +1,15 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use serde::Deserialize;
+
 use crate::{
     error::{AppError, AppErrorMessageId},
     media::{
         audio_filters::{
             compiler::{CANONICAL_SAMPLE_RATE, compile_chain},
-            engine::{AudioProcessingEngine, RenderRequest},
-            model::AudioChainSelection,
-            pcm_cache::FrameRange,
+            engine::{AudioProcessingEngine, RenderPurpose, RenderRequest},
+            model::{AudioChainSelection, AudioFilter, FilterMeasurement},
+            pcm_cache::{FrameRange, RenderKey},
         },
         export::validate_audio_stream,
         probe::MediaInfo,
@@ -17,6 +19,29 @@ use crate::{
 
 const PLAYBACK_PCM_CHANNELS: u16 = 2;
 const PLAYBACK_PCM_MAX_CHUNK_MICROS: u64 = 2_000_000;
+
+/// The chain playback of a stream continues with after its preview ends.
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct KeptPlaybackChain {
+    pub filters: Vec<AudioFilter>,
+    #[serde(default)]
+    pub loudness_measurements: Vec<FilterMeasurement>,
+}
+
+/// How a playback chunk relates to the processing that is playing.
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PlaybackChunkRole {
+    /// The chunk auditions a draft chain; its audio stays temporary until the chain is used as
+    /// committed playback audio or the preview is released.
+    #[serde(default)]
+    pub preview: bool,
+    /// The chunk renders processing that will replace the audible processing. It does not
+    /// supersede the audible processing, which keeps rendering until playback switches.
+    #[serde(default)]
+    pub replacement: bool,
+}
 
 /// Serves one playback chunk of processed audio as interleaved little-endian f32 stereo at 48 kHz.
 ///
@@ -30,13 +55,10 @@ pub fn decode_playback_chunk(
     track: &AudioChainSelection,
     start_micros: u64,
     duration_micros: u64,
+    role: PlaybackChunkRole,
     operation_cancellation: &AtomicBool,
 ) -> Result<Vec<u8>, AppError> {
-    let media = source.media.as_ref().ok_or_else(|| {
-        AppError::invalid_request(
-            AppErrorMessageId::MediaAudioPlaybackChunkRequiresInspectedSourceMedia,
-        )
-    })?;
+    let media = playback_media(source)?;
     validate_audio_stream(media, track.stream_index)?;
     let chain = compile_chain(&track.filters, &track.loudness_measurements)?;
     let end_micros = start_micros
@@ -65,6 +87,12 @@ pub fn decode_playback_chunk(
             start,
             frames: end - start,
             channels: PLAYBACK_PCM_CHANNELS,
+            purpose: if role.preview {
+                RenderPurpose::PlaybackPreview
+            } else {
+                RenderPurpose::Playback
+            },
+            replacement: role.replacement,
         },
         &|| operation_cancellation.load(Ordering::Acquire),
     )?;
@@ -72,6 +100,41 @@ pub fn decode_playback_chunk(
         .iter()
         .flat_map(|sample| sample.to_le_bytes())
         .collect())
+}
+
+/// Ends the playback preview of one stream, releasing the sessions and audio of every auditioned
+/// draft chain. `keep` is the chain playback continues with; its preview audio becomes committed
+/// playback audio, so applying a draft does not render it again.
+pub fn release_playback_preview(
+    engine: &AudioProcessingEngine,
+    source: &ActiveSource,
+    stream_index: u32,
+    keep: Option<&KeptPlaybackChain>,
+) -> Result<(), AppError> {
+    let media = playback_media(source)?;
+    validate_audio_stream(media, stream_index)?;
+    let keep = keep
+        .map(|kept| {
+            let chain = compile_chain(&kept.filters, &kept.loudness_measurements)?;
+            Ok::<_, AppError>(RenderKey {
+                load_token: source.load_token,
+                stream_index,
+                graph: chain.canonical_graph(),
+                range: processed_timeline_range(media),
+                channels: PLAYBACK_PCM_CHANNELS,
+            })
+        })
+        .transpose()?;
+    engine.release_preview(source.load_token, stream_index, keep.as_ref());
+    Ok(())
+}
+
+fn playback_media(source: &ActiveSource) -> Result<&MediaInfo, AppError> {
+    source.media.as_ref().ok_or_else(|| {
+        AppError::invalid_request(
+            AppErrorMessageId::MediaAudioPlaybackChunkRequiresInspectedSourceMedia,
+        )
+    })
 }
 
 /// The continuous range every consumer of a stream's processed audio renders: the whole source

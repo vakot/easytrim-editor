@@ -134,16 +134,33 @@ reads everything the cache already holds and renders only the gaps:
    canonical at the cost of rendering the frames before the request.
 3. Otherwise, a provisional session seeks before the gap by the strategy's preroll.
 
-Each source stream is one scope. A request for a different key supersedes the previous revision:
-its sessions are terminated, its pending segments are rejected, and its callers receive
-`media.audio.processingChangedBeforeAudioWasReady`. Cancellation (`cancel_operation` or source
-replacement) stops a request without discarding a consistent session. Sessions are limited to four
-and end after 60 idle seconds.
+Each consumer of a source stream is one scope: playback (committed or previewed chains) and
+waveform passes render independently, so auditioning a draft never stops a waveform pass. A scope
+has an audible revision and, while playback changes processing, a replacement revision. A request
+for a different key supersedes its scope's previous revision of the same kind: that revision's
+sessions are terminated, its pending segments are rejected, and its callers receive
+`media.audio.processingChangedBeforeAudioWasReady`. A replacement therefore never stops the audible
+processing; requesting the replacement as audible processing completes the switch and releases the
+previous audible revision. Scopes share cached segments but never sessions.
+Cancellation (`cancel_operation` or source replacement) stops a request without discarding a
+consistent session. Sessions are limited to four and end after 60 idle seconds. Reaching the limit
+stops the least recently used session that no request is rendering with, and one rendering audible
+processing only after every other kind; while every session is in use, none is stopped.
 
 Positions are exact frame indexes on the 48 kHz source timeline. Seek points lie on a 125 µs grid
 (six frames), where the seek time and the first output frame agree exactly; the canonical input
-stage pads a late stream start; input stops exactly at the range end, as an export does, and a
-short stream is padded with silence.
+stage pads a late stream start. The range end is bounded by sample count in the graph (`apad` pads
+a short stream with silence, `atrim` stops the render and so FFmpeg), never by an FFmpeg duration
+limit. `-t` cuts by timestamp: it dropped the last samples of a range when `aresample` filled a
+timestamp gap, and the session then ended before its range. Dynamic Loudness Normalization
+(`loudnorm`) emits non-contiguous output timestamps for the same reason, so its compiled stage ends
+with `asetpts=NB_CONSUMED_SAMPLES/SR/TB`. This also keeps an export's output duration limit from
+cutting the last ~77 ms of a trim that reaches the end of its source.
+
+A failed render reports the operation that asked for it: a waveform pass fails as a waveform error
+and a playback chunk as a playback error, so one never surfaces as the other. The diagnostics name
+the purpose, the frame the session had reached, the stream, how the FFmpeg process ended (exit
+status), and the tail of its stderr. Set `EASYTRIM_MEDIA_DEBUG=1` to also print them.
 
 ### Processed PCM cache
 
@@ -181,6 +198,65 @@ The engine is the future authoritative processed signal. In this version:
   cached segments but streams the frames it renders without caching them, so it never evicts the
   segments playback is using.
 
+## Live preview
+
+While the Audio Filters dialog is open, playback renders its draft chain for that track, so edits
+are heard without Apply. The committed chain does not change until Apply: snapshots, exports,
+analysis, activity detection, and waveforms ignore the preview, and waveforms regenerate only after
+Apply. Track Volume stays independent of the preview.
+
+- **Publishing.** The dialog publishes the latest valid draft as the track's `filterPreview` in the
+  `audio` slice once edits pause for 120 ms, and at least every 300 ms during continuous edits such
+  as a slider drag. An invalid draft keeps the last valid one audible. Cancel, closing, and source
+  changes end the preview; Apply commits the complete draft, including changes not yet published.
+- **Rendering.** The preview is an ordinary chain for the same compiler and engine. Playback
+  requests it as `PlaybackPreview`, in the playback scope, so a newer draft supersedes the previous
+  draft's sessions and never the waveform scope.
+- **Switching without a gap.** When the processing changes during playback, the audible processing
+  keeps rendering and playing, however long the replacement takes, while the new chain renders as a
+  replacement from 50 ms ahead of the playhead. Every track then switches at one sample position
+  with a 30 ms linear crossfade; both sides carry the same source signal, and playback continues
+  with the new chain after the replacement's first chunk. The timeline mapping is unchanged, so
+  audio stays aligned with the video. A newer change replaces a running one, so playback only
+  switches to the latest processing, and a replacement equal to the audible processing, such as an
+  undone edit, renders nothing. Only a start or seek claims audible ownership: while playback
+  runs, it keeps requesting exactly the processing it plays, and any other request, including the
+  prefetched restart of a loop, is a replacement. A start or seek that is still decoding starts
+  again with the new chain. The same switch applies when Apply changes a chain during playback.
+- **Loudness normalization.** A draft is measured 300 ms after its loudness inputs (the enabled
+  filters up to the last normalization) settle. Edits downstream of the last normalization or of a
+  normalization's own targets reuse the measurement. A draft whose inputs match the committed chain
+  reuses its measurement, and the native measurement cache returns every completed measurement
+  immediately. A measurement of inputs the draft has moved away from is cancelled unless the
+  committed chain waits for it. Apply adopts the draft's measurement, or its running job, so
+  applying never measures again. While a draft is measured, playback keeps the audio it is
+  playing, the previous draft or the committed chain, and switches once the measurement arrives.
+- **Failures.** A replacement that cannot be rendered never stops playback: the audible processing
+  keeps playing and the track reports the failure. For a draft, as for one that cannot be measured,
+  the dialog shows the preview as unavailable, and Apply still commits it. A committed chain that
+  cannot be rendered when playback starts stops it, as before.
+- **Temporary data.** Preview renders are temporary. Their cached audio has its own budget (one
+  eighth of the cache) and is evicted before committed audio. When a stream stops auditioning
+  drafts and its audible processing is no longer a draft (immediately when paused, after the switch
+  when the committed chain is audible), playback calls `release_audio_playback_preview`: the sessions and audio of auditioned
+  drafts are released, and a request still rendering one fails as superseded. The chain playback
+  continues with, for example the applied draft, is kept and becomes committed audio, so it is not
+  rendered again.
+
+The dialog footer shows the readiness of the whole pipeline for the latest published draft:
+measuring (`Analyzing loudness…`), rendering for a start (`Preparing audio…`) or to replace audible
+audio (`Updating preview…`), ready (`Live preview active. Apply to save.`), or failed
+(`Preview unavailable. Apply to save.`). A status is shown only after it has lasted 200 ms, and
+shown progress stays at least 600 ms, so rapid edits do not flicker. A cancelled or superseded
+request leaves no progress behind: pausing ends a running switch, and a draft playback does not
+render reads as ready. Space and the arrow keys keep controlling playback while the dialog is
+open, unless a control inside it is focused that uses those keys.
+
+Measured on a two-minute AAC source (Ryzen 7 9850X3D, FFmpeg 9.0.1), a draft switch at 60 s renders
+its first two seconds in about 30–40 ms for Gain, High-pass, Limiter, or Noise reduction, and in
+0.2–0.7 s when dynamic loudness normalization needs its ten-second warm-up. Each normalization
+instance measures the whole selection once, about 1.5 s for two minutes of audio.
+
 ## Migration of the stage-based model
 
 Snapshots and stored export requests saved with the previous model
@@ -216,6 +292,12 @@ Deliberate differences from the previous processing:
   trim origins snapped to it.
 - Playback renders stereo. The channel count is part of the cache key so other layouts can be
   rendered without conflicts.
+- A draft switch far from the start of the source renders provisionally, like a seek, so the
+  audio after the switch can differ slightly from an export until playback continues past it.
+- The Audio Filters dialog is modal: while it is open, playback is controlled only with Space and
+  the arrow keys; the timeline cannot be clicked.
+- A switch replaces the audio of every track at one sample position, so unchanged tracks are read
+  again from the cache.
 
 ## Verification
 
@@ -224,7 +306,13 @@ order, repeated instances, Gain/normalization coexistence, linear versus dynamic
 latency compensation, capability classification, dependency-ordered and cached analysis, cache
 partial coverage, precedence, isolation, eviction, and atomic writes, bit-exact equality of chunked
 canonical renders with one continuous render for a stateful chain, session continuation,
-provisional flagging, revision supersede, cancellation, and absolute positions across timestamp
-gaps. Fixtures are generated with silence, transients, sustained tones, and loudness steps.
-Frontend tests cover the domain model, legacy migration, recovery, Track Volume, playback wiring,
-automatic measurement, and the Audio Filters dialog's draft isolation and Apply/Cancel.
+provisional flagging, revision supersede, independent playback and waveform scopes, preview audio
+budgets, promotion and release, audible processing that keeps rendering beside its replacement,
+cancellation, and absolute positions across timestamp gaps.
+Fixtures are generated with silence, transients, sustained tones, and loudness steps. Frontend tests
+cover the domain model, legacy migration, recovery, Track Volume, playback wiring, automatic
+measurement, the Audio Filters dialog's draft isolation and Apply/Cancel, and live preview:
+sample-aligned crossfaded switches, continuous audible playback while a slow replacement renders, an integration test that holds a draft's loudness analysis and replacement render past all buffered audio while the loop restart is prefetched, switching only to the latest change, preview failures, changes during start
+and preparation, draft measurement reuse, invalidation, cancellation and adoption on Apply, kept
+audio while a draft is measured, native preview release, status reporting, and the playback
+shortcuts while the dialog is open.

@@ -43,13 +43,13 @@ import {
 import { cn } from "@/lib/class-names.utils";
 
 import { useAudioFiltersDraft } from "../contexts/audio-filters-draft-context";
-import { audioFilterDescriptor } from "../lib/audio-filter-fields";
+import { audioFilterLabel } from "../lib/audio-filter-label";
 
 /** Names each instance by its type, numbering repeated types in chain order. */
 function audioFilterNames(filters: readonly AudioFilter[], t: TFunction): string[] {
   const seen = new Map<AudioFilter["type"], number>();
   return filters.map((filter) => {
-    const name = audioFilterDescriptor(filter.type).label(t);
+    const name = audioFilterLabel(filter.type, t);
     const total = filters.filter((candidate) => candidate.type === filter.type).length;
     const number = (seen.get(filter.type) ?? 0) + 1;
     seen.set(filter.type, number);
@@ -240,7 +240,7 @@ function AudioFilterAddMenu({ disabled }: { disabled: boolean }) {
             key={filterType}
             onSelect={() => dispatch({ filterType, id: crypto.randomUUID(), type: "added" })}
           >
-            {audioFilterDescriptor(filterType).label(t)}
+            {audioFilterLabel(filterType, t)}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

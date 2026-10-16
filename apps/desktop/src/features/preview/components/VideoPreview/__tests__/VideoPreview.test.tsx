@@ -65,7 +65,7 @@ vi.mock("@/features/playback", () => ({
   }),
 }));
 vi.mock("@/features/audio", () => ({
-  useAudioPlaybackHasActiveOutput: () => true,
+  useAudioPlaybackMutesPreviewVideo: () => true,
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({

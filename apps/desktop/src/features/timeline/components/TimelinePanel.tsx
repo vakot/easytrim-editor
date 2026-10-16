@@ -31,7 +31,7 @@ import {
 } from "@/features/playback";
 import { cn } from "@/lib/class-names.utils";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
-import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
+import { isApplicationInteractionBlocked, isPlaybackShortcutBlocked } from "@/lib/hotkeys.utils";
 
 import {
   type ChapterEditing,
@@ -205,7 +205,7 @@ function TimelinePanelContent() {
     (event) => {
       if (
         empty ||
-        isApplicationInteractionBlocked() ||
+        isPlaybackShortcutBlocked(event.target) ||
         document.querySelector("[data-sidebar-drag-preview]") ||
         event.altKey ||
         event.ctrlKey ||

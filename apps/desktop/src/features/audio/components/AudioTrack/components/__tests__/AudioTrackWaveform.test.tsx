@@ -97,6 +97,7 @@ beforeEach(() => {
     "ResizeObserver",
     class {
       observe() {}
+      unobserve() {}
       disconnect() {}
     },
   );
@@ -106,9 +107,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function Harness() {
-  const track = useAppSelector((state) => state.audio.tracks[0]);
-  const stream = useAppSelector((state) => state.source.media?.audioStreams[0]);
+function Harness({ position = 0 }: { position?: number }) {
+  const track = useAppSelector((state) => state.audio.tracks[position]);
+  const stream = useAppSelector((state) => state.source.media?.audioStreams[position]);
   return track && stream ? (
     <AudioTrackWaveform
       displayMode="peak"
@@ -118,7 +119,7 @@ function Harness() {
     />
   ) : null;
 }
-function setup() {
+function setup(position = 0) {
   const store = createAppStore();
   store.dispatch(sourceSelected({ source: firstSource, loadToken: 1 }));
   store.dispatch(sourceReady({ media: mediaWithAudio(firstSource.sourcePath), loadToken: 1 }));
@@ -126,7 +127,7 @@ function setup() {
     <Provider store={store}>
       <ThemeProvider>
         <TooltipProvider>
-          <Harness />
+          <Harness position={position} />
         </TooltipProvider>
       </ThemeProvider>
     </Provider>,
@@ -303,5 +304,295 @@ describe("waveform replacement", () => {
     expect(screen.getByRole("status")).toBeInTheDocument();
     unmount();
     expect(frames.size).toBe(0);
+  });
+
+  describe("states", () => {
+    const failure = {
+      code: "waveform_failed",
+      messageId: "media.waveform.previewCouldNotBeDisplayed",
+    } as const;
+
+    const fail = (store: ReturnType<typeof setup>["store"], jobId: string) =>
+      act(() => {
+        store.dispatch(waveformsFailed({ jobId, streamIndexes: [2], width: 2, error: failure }));
+      });
+
+    const apply = (store: ReturnType<typeof setup>["store"]) =>
+      act(() => {
+        store.dispatch(
+          audioTrackFiltersApplied({
+            streamIndex: 2,
+            filters: [{ enabled: true, id: "g", type: "gain", gainDb: 3 }],
+          }),
+        );
+        store.dispatch(waveformsLoading({ jobId: "next", streamIndexes: [2], width: 2 }));
+      });
+
+    it("shows a ready waveform without any overlay", async () => {
+      const { canvas } = await initialWaveform();
+      expect(canvas).toHaveAttribute("data-outdated", "false");
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("waveform-shimmer")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    });
+
+    it("keeps the previous waveform under a shimmer and a centered status while generating", async () => {
+      const { canvas, store } = await initialWaveform();
+      apply(store);
+
+      expect(document.querySelector("canvas")).toBe(canvas);
+      expect(canvas).toHaveAttribute("data-outdated", "false");
+      const status = screen.getByRole("status");
+      expect(status).toHaveTextContent("Preparing waveform…");
+      expect(status).toHaveClass("inset-0", "place-items-center", "pointer-events-none");
+      expect(status).not.toHaveClass("top-1", "left-1");
+      const shimmer = screen.getByTestId("waveform-shimmer");
+      expect(shimmer).toHaveClass("pointer-events-none");
+      expect(shimmer.firstElementChild).toHaveClass("animate-waveform-shimmer");
+    });
+
+    it("uses a static tint instead of motion when reduced motion is requested", async () => {
+      mocks.reducedMotion = true;
+      const { store } = await initialWaveform();
+      apply(store);
+
+      const shimmer = screen.getByTestId("waveform-shimmer");
+      expect(shimmer).toHaveClass("bg-foreground/5");
+      expect(shimmer.firstElementChild).toBeNull();
+    });
+
+    it("presents the initial generation exactly like a regeneration", async () => {
+      vi.stubGlobal("fetch", vi.fn());
+      const initial = setup();
+      act(() => {
+        initial.store.dispatch(waveformsLoading({ jobId: "first", streamIndexes: [2], width: 2 }));
+      });
+      const initialStatus = screen.getByRole("status");
+      const initialShimmer = screen.getByTestId("waveform-shimmer");
+      expect(initialStatus).toHaveClass("inset-0", "place-items-center", "pointer-events-none");
+      expect(initialStatus.querySelector("svg")).toBeInTheDocument();
+      const initialMarkup = [initialStatus.outerHTML, initialShimmer.outerHTML];
+      initial.unmount();
+
+      const regeneration = await initialWaveform();
+      apply(regeneration.store);
+      expect([
+        screen.getByRole("status").outerHTML,
+        screen.getByTestId("waveform-shimmer").outerHTML,
+      ]).toEqual(initialMarkup);
+    });
+
+    it("shows a skeleton under the status only during the first load", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(response(64)));
+      const initial = setup();
+      // Nothing was requested yet: the track is idle and has no waveform.
+      expect(screen.getByTestId("waveform-skeleton")).toHaveAttribute("aria-hidden", "true");
+      expect(screen.getByTestId("waveform-skeleton")).toHaveClass("pointer-events-none");
+      expect(screen.getByTestId("waveform-skeleton").children.length).toBeGreaterThan(8);
+
+      act(() => {
+        initial.store.dispatch(waveformsLoading({ jobId: "first", streamIndexes: [2], width: 2 }));
+      });
+      expect(screen.getByTestId("waveform-skeleton")).toBeInTheDocument();
+      expect(screen.getByRole("status")).toBeInTheDocument();
+      expect(screen.getByTestId("waveform-shimmer")).toBeInTheDocument();
+
+      initial.ready("first");
+      await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+      expect(screen.queryByTestId("waveform-skeleton")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("waveform-shimmer")).not.toBeInTheDocument();
+    });
+
+    it("gives each track its own stable skeleton", () => {
+      vi.stubGlobal("fetch", vi.fn());
+      const heights = (position: number) => {
+        const view = setup(position);
+        const bars = [...screen.getByTestId("waveform-skeleton").children].map(
+          (bar) => (bar as HTMLElement).style.height,
+        );
+
+        view.unmount();
+        return bars;
+      };
+
+      const first = heights(0);
+      const second = heights(1);
+      expect(first.length).toBeGreaterThan(8);
+      expect(heights(0)).toEqual(first);
+      expect(second).not.toEqual(first);
+      // Varied, and always within the waveform area.
+      expect(new Set(first).size).toBeGreaterThan(10);
+      expect(
+        first.every((height) => parseInt(height, 10) >= 14 && parseInt(height, 10) <= 84),
+      ).toBe(true);
+    });
+
+    it("keeps the skeleton out of a regeneration and out of a failed first load", async () => {
+      const { store } = await initialWaveform();
+      apply(store);
+      expect(screen.queryByTestId("waveform-skeleton")).not.toBeInTheDocument();
+      fail(store, "next");
+      expect(screen.queryByTestId("waveform-skeleton")).not.toBeInTheDocument();
+
+      vi.stubGlobal("fetch", vi.fn());
+      const first = setup();
+      act(() => {
+        first.store.dispatch(waveformsLoading({ jobId: "first", streamIndexes: [2], width: 2 }));
+      });
+      expect(screen.getAllByTestId("waveform-skeleton")).toHaveLength(1);
+      fail(first.store, "first");
+      expect(screen.getAllByText("Waveform unavailable")).toHaveLength(1);
+      expect(screen.queryByTestId("waveform-skeleton")).not.toBeInTheDocument();
+    });
+
+    it("uses the static tint for an initial generation when reduced motion is requested", () => {
+      mocks.reducedMotion = true;
+      vi.stubGlobal("fetch", vi.fn());
+      setup();
+      const shimmer = screen.getByTestId("waveform-shimmer");
+      expect(shimmer).toHaveClass("bg-foreground/5");
+      expect(shimmer.firstElementChild).toBeNull();
+    });
+
+    it("presents a failed initial generation like a failed regeneration, without a waveform beneath", async () => {
+      vi.stubGlobal("fetch", vi.fn());
+      const initial = setup();
+      act(() => {
+        initial.store.dispatch(waveformsLoading({ jobId: "first", streamIndexes: [2], width: 2 }));
+      });
+      fail(initial.store, "first");
+      const overlay = document.querySelector("[data-slot='audio-track-waveform-status']")!;
+      expect(overlay).toHaveTextContent("Waveform unavailable");
+      expect(document.querySelector("canvas")).toHaveAttribute("data-outdated", "false");
+      expect(screen.queryByTestId("waveform-shimmer")).not.toBeInTheDocument();
+      const initialMarkup = overlay.outerHTML;
+      initial.unmount();
+
+      const regeneration = await initialWaveform();
+      apply(regeneration.store);
+      fail(regeneration.store, "next");
+      const regenerationOverlay = document.querySelector(
+        "[data-slot='audio-track-waveform-status']",
+      )!;
+
+      expect(regenerationOverlay).toHaveTextContent("Waveform outdated");
+      // Only the wording differs: layout, icon, tooltip trigger, and Retry are identical.
+      expect(
+        regenerationOverlay.outerHTML.replace("Waveform outdated", "Waveform unavailable"),
+      ).toBe(initialMarkup);
+    });
+
+    it("keeps the centered status clear of the corner controls", () => {
+      vi.stubGlobal("fetch", vi.fn());
+      setup();
+      expect(screen.getByRole("status")).toHaveClass("px-12");
+    });
+
+    it("dims the previous waveform and offers a centered retry when regeneration fails", async () => {
+      const { canvas, store } = await initialWaveform();
+      apply(store);
+      fail(store, "next");
+
+      expect(canvas).toHaveAttribute("data-outdated", "true");
+      expect(canvas).toHaveClass("opacity-25", "grayscale");
+      expect(canvas).not.toHaveClass("opacity-80");
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("waveform-shimmer")).not.toBeInTheDocument();
+      expect(screen.getByText("Waveform outdated")).toBeInTheDocument();
+      expect(screen.queryByText("Waveform unavailable")).not.toBeInTheDocument();
+      // Only the status itself takes pointer input; the rest of the waveform stays interactive.
+      const retry = screen.getByRole("button", { name: "Retry" });
+      expect(retry.parentElement?.parentElement).toHaveClass(
+        "pointer-events-none",
+        "inset-0",
+        "place-items-center",
+      );
+      expect(retry.parentElement).toHaveClass("pointer-events-auto");
+
+      fireEvent.focus(screen.getByText("Waveform outdated"));
+      expect(
+        (await screen.findAllByText("The waveform preview could not be displayed")).length,
+      ).toBeGreaterThan(0);
+    });
+
+    it("shows an unavailable state with retry when there is no waveform to fall back to", () => {
+      vi.stubGlobal("fetch", vi.fn());
+      const { store } = setup();
+      act(() => {
+        store.dispatch(waveformsLoading({ jobId: "first", streamIndexes: [2], width: 2 }));
+      });
+      fail(store, "first");
+
+      expect(screen.getByText("Waveform unavailable")).toBeInTheDocument();
+      expect(screen.queryByText("Waveform outdated")).not.toBeInTheDocument();
+      expect(document.querySelector("canvas")).toHaveAttribute("data-outdated", "false");
+      expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    });
+
+    it("clears every loading and stale treatment after a successful regeneration", async () => {
+      const { canvas, fetchMock, ready, store } = await initialWaveform();
+      apply(store);
+      fail(store, "next");
+      fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+      fetchMock.mockResolvedValueOnce(response(192));
+      ready("retry");
+      await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+
+      expect(canvas).toHaveAttribute("data-outdated", "false");
+      expect(canvas).toHaveClass("opacity-80");
+      expect(screen.queryByTestId("waveform-shimmer")).not.toBeInTheDocument();
+      expect(screen.queryByText("Waveform outdated")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    });
+
+    it("keeps a newer loading state when an older job fails or completes late", async () => {
+      const { fetchMock, store } = await initialWaveform();
+      apply(store);
+      act(() => {
+        store.dispatch(waveformsLoading({ jobId: "newest", streamIndexes: [2], width: 2 }));
+      });
+
+      fail(store, "next");
+      act(() => {
+        store.dispatch(
+          waveformReady({
+            jobId: "next",
+            streamIndex: 2,
+            status: "ready",
+            width: 2,
+            url: "media://next",
+          }),
+        );
+      });
+      expect(screen.getByRole("status")).toBeInTheDocument();
+      expect(screen.getByTestId("waveform-shimmer")).toBeInTheDocument();
+      expect(screen.queryByText("Waveform outdated")).not.toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(store.getState().audio.tracks[0]?.waveform).toMatchObject({
+        status: "loading",
+        jobId: "newest",
+      });
+    });
+
+    it("keeps the failure when an older job completes after it", async () => {
+      const { canvas, fetchMock, store } = await initialWaveform();
+      apply(store);
+      fail(store, "next");
+      act(() => {
+        store.dispatch(
+          waveformReady({
+            jobId: "older",
+            streamIndex: 2,
+            status: "ready",
+            width: 2,
+            url: "media://older",
+          }),
+        );
+      });
+
+      expect(canvas).toHaveAttribute("data-outdated", "true");
+      expect(screen.getByText("Waveform outdated")).toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
   });
 });

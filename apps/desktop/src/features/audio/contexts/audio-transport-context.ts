@@ -8,6 +8,11 @@ interface AudioPlaybackAdapter {
   getMeter: () => StereoAudioMeterNodes | null;
   hasActiveOutput: boolean;
   isReady: boolean;
+  /**
+   * Whether the preview video's own audio stays silent: Web Audio renders every track, and with
+   * no enabled track nothing may be heard. Only without Web Audio does the video play its sound.
+   */
+  mutesPreviewVideo: boolean;
   pause: () => void;
   prefetchAt: (seconds: number) => void;
   prepareAt: (seconds: number) => Promise<void>;
@@ -34,14 +39,14 @@ function useAudioPlaybackReady(): boolean {
   return useAudioPlaybackAdapter().isReady;
 }
 
-function useAudioPlaybackHasActiveOutput(): boolean {
-  return useAudioPlaybackAdapter().hasActiveOutput;
+function useAudioPlaybackMutesPreviewVideo(): boolean {
+  return useAudioPlaybackAdapter().mutesPreviewVideo;
 }
 
 export {
   AudioTransportContext,
   useAudioPlaybackAdapter,
-  useAudioPlaybackHasActiveOutput,
+  useAudioPlaybackMutesPreviewVideo,
   useAudioPlaybackReady,
 };
 export type { AudioPlaybackAdapter };
