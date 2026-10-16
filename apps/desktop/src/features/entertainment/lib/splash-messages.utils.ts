@@ -20,8 +20,6 @@ const splashMessagesByRarity: Record<SplashRarity, SplashMessageDefinition[]> = 
   legendary: splashMessagesLegendary,
 };
 
-const splashMessages = Object.values(splashMessagesByRarity).flat();
-
 let lastSplashMessageId: string | null = null;
 
 function chooseSplashMessage(): SplashMessageDefinition {
@@ -48,5 +46,4 @@ function chooseSplashMessage(): SplashMessageDefinition {
   return message;
 }
 
-export { chooseSplashMessage, splashMessages };
-export type { SplashMessageDefinition };
+export { chooseSplashMessage };

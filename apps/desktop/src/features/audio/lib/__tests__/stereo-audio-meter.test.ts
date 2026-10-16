@@ -4,7 +4,6 @@ import {
   amplitudeToMeterLevel,
   createStereoAudioMeterNodes,
   disconnectStereoAudioMeterNodes,
-  isMonoAudioMix,
   meterZoneLevels,
   peakAmplitude,
   smoothMeterLevel,
@@ -19,14 +18,6 @@ describe("stereo audio meter", () => {
     expect(amplitudeToMeterLevel(1)).toBe(1);
     expect(amplitudeToMeterLevel(2)).toBe(1);
     expect(amplitudeToMeterLevel(Number.NaN)).toBe(0);
-  });
-
-  it("only mirrors known mono mixes", () => {
-    expect(isMonoAudioMix([])).toBe(false);
-    expect(isMonoAudioMix([1])).toBe(true);
-    expect(isMonoAudioMix([1, 1])).toBe(true);
-    expect(isMonoAudioMix([1, 2])).toBe(false);
-    expect(isMonoAudioMix([undefined])).toBe(false);
   });
 
   it("tracks peaks immediately and smoothly decays them toward silence", () => {

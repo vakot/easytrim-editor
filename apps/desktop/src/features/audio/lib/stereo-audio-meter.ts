@@ -48,10 +48,6 @@ function disconnectStereoAudioMeterNodes(meter: StereoAudioMeterNodes | null): v
   meter.right.disconnect();
 }
 
-function isMonoAudioMix(channelCounts: readonly (number | undefined)[]): boolean {
-  return channelCounts.length > 0 && channelCounts.every((channelCount) => channelCount === 1);
-}
-
 function peakAmplitude(samples: Float32Array): number {
   let peak = 0;
   for (const sample of samples) peak = Math.max(peak, Math.abs(sample));
@@ -112,7 +108,6 @@ export {
   amplitudeToMeterLevel,
   createStereoAudioMeterNodes,
   disconnectStereoAudioMeterNodes,
-  isMonoAudioMix,
   meterZoneLevels,
   peakAmplitude,
   smoothMeterLevel,
