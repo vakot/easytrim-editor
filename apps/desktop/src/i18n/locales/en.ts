@@ -351,6 +351,7 @@ export const en = {
         stereoDescription: "left and right activity",
         stereoShort: "Stereo",
       },
+      outdated: "Waveform outdated",
       preparing: "Preparing waveform…",
       unavailable: "Waveform unavailable",
     },

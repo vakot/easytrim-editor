@@ -1,4 +1,4 @@
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, TriangleAlert } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,6 +11,7 @@ import { type AudioTrackState, waveformDisplayFailed } from "@/app/store/slices/
 import { selectSourceLoadToken } from "@/app/store/slices/source-slice";
 import { usePrimaryColor } from "@/app/theme/useTheme";
 import { localizeAppError } from "@/i18n/app-errors";
+import { cn } from "@/lib/class-names.utils";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
 import { useWaveformPrepare } from "../../../hooks/useWaveformPreparation";
@@ -41,25 +42,48 @@ function AudioTrackWaveform({ displayMode, stream, track, volume }: AudioTrackWa
   );
 }
 
+/** Status overlays are centered in the waveform and let pointer input through to the timeline. */
+const STATUS_OVERLAY_CLASS_NAME =
+  "pointer-events-none absolute inset-0 z-3 grid place-items-center px-2 text-xs text-muted-foreground";
+
+const STATUS_PILL_CLASS_NAME =
+  "flex max-w-full items-center gap-1.5 rounded-full border border-border bg-background/85 px-2.5 py-0.5 text-[11px] shadow-sm";
+
 function AudioTrackWaveformLoading({ hasEnvelope }: { hasEnvelope: boolean }) {
   const { t } = useTranslation();
 
   return (
+    <span className={STATUS_OVERLAY_CLASS_NAME} role="status">
+      <span className={cn("flex items-center gap-1.5", hasEnvelope && STATUS_PILL_CLASS_NAME)}>
+        {hasEnvelope && (
+          <LoaderCircle
+            aria-hidden="true"
+            className="size-3 animate-spin motion-reduce:animate-none"
+          />
+        )}
+        <span className="truncate">{t("audio.waveform.preparing")}</span>
+      </span>
+    </span>
+  );
+}
+
+/**
+ * Marks the previous waveform as being replaced. With reduced motion it is a static tint
+ * instead of a moving highlight.
+ */
+function AudioTrackWaveformShimmer({ reducedMotion }: { reducedMotion: boolean }) {
+  return (
     <span
-      className={
-        hasEnvelope
-          ? "pointer-events-none absolute top-1 left-1 z-3 flex items-center gap-1 rounded bg-background/70 px-1.5 py-0.5 text-[10px] text-muted-foreground"
-          : "pointer-events-none absolute inset-0 grid place-items-center text-xs text-muted-foreground"
-      }
-      role="status"
-    >
-      {hasEnvelope && (
-        <LoaderCircle
-          aria-hidden="true"
-          className="size-3 animate-spin motion-reduce:animate-none"
-        />
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none absolute inset-0 z-2 overflow-hidden",
+        reducedMotion && "bg-foreground/5",
       )}
-      {t("audio.waveform.preparing")}
+      data-testid="waveform-shimmer"
+    >
+      {!reducedMotion && (
+        <span className="absolute inset-y-0 left-0 w-1/3 animate-waveform-shimmer bg-linear-to-r from-transparent via-foreground/10 to-transparent" />
+      )}
     </span>
   );
 }
@@ -306,16 +330,26 @@ function AudioTrackWaveformCanvas({
     (waveform.status === "ready" &&
       (loaded?.jobId !== waveform.jobId || loaded.url !== waveform.url));
 
+  const hasEnvelope = loaded !== null;
+  // After a failed regeneration the drawn envelope belongs to earlier processing. It stays as a
+  // fallback but must not look like the waveform of the processing that was just applied.
+  const outdated = hasEnvelope && waveform.status === "failed";
+
   return (
     <>
-      <canvas aria-hidden="true" className="size-full opacity-80" ref={canvasRef} />
-      {loading && <AudioTrackWaveformLoading hasEnvelope={loaded !== null} />}
+      <canvas
+        aria-hidden="true"
+        className={cn(
+          "size-full opacity-80 transition-[opacity,filter] duration-200 motion-reduce:transition-none",
+          outdated && "opacity-25 grayscale",
+        )}
+        data-outdated={outdated}
+        ref={canvasRef}
+      />
+      {loading && hasEnvelope && <AudioTrackWaveformShimmer reducedMotion={reducedMotion} />}
+      {loading && <AudioTrackWaveformLoading hasEnvelope={hasEnvelope} />}
       {waveform.status === "failed" && (
-        <AudioTrackWaveformError
-          hasEnvelope={loaded !== null}
-          stream={stream}
-          waveform={waveform}
-        />
+        <AudioTrackWaveformError hasEnvelope={hasEnvelope} stream={stream} waveform={waveform} />
       )}
     </>
   );
@@ -452,23 +486,27 @@ function AudioTrackWaveformError({
   const prepare = useWaveformPrepare(stream.streamIndex, waveform);
 
   return (
-    <div
-      className={
-        hasEnvelope
-          ? "absolute bottom-1 left-1 z-3 flex items-center gap-1 rounded bg-background/80 px-1.5 text-[10px] text-muted-foreground"
-          : "absolute inset-0 flex items-center justify-center gap-2 text-xs text-muted-foreground"
-      }
-    >
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span>{t("audio.waveform.unavailable")}</span>
-        </TooltipTrigger>
-        <TooltipContent>{localizeAppError(waveform.error, t)}</TooltipContent>
-      </Tooltip>
+    <div className={STATUS_OVERLAY_CLASS_NAME}>
+      <div
+        className={cn(
+          "pointer-events-auto flex items-center gap-1",
+          hasEnvelope && STATUS_PILL_CLASS_NAME,
+        )}
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="flex items-center gap-1 truncate" tabIndex={0}>
+              {hasEnvelope && <TriangleAlert aria-hidden="true" className="size-3 shrink-0" />}
+              {hasEnvelope ? t("audio.waveform.outdated") : t("audio.waveform.unavailable")}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{localizeAppError(waveform.error, t)}</TooltipContent>
+        </Tooltip>
 
-      <Button onClick={prepare} size="xs" type="button" variant="ghost">
-        {t("common.actions.retry")}
-      </Button>
+        <Button onClick={prepare} size="xs" type="button" variant="ghost">
+          {t("common.actions.retry")}
+        </Button>
+      </div>
     </div>
   );
 }
