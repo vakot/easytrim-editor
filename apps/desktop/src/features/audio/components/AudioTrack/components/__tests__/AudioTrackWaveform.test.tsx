@@ -107,9 +107,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function Harness() {
-  const track = useAppSelector((state) => state.audio.tracks[0]);
-  const stream = useAppSelector((state) => state.source.media?.audioStreams[0]);
+function Harness({ position = 0 }: { position?: number }) {
+  const track = useAppSelector((state) => state.audio.tracks[position]);
+  const stream = useAppSelector((state) => state.source.media?.audioStreams[position]);
   return track && stream ? (
     <AudioTrackWaveform
       displayMode="peak"
@@ -119,7 +119,7 @@ function Harness() {
     />
   ) : null;
 }
-function setup() {
+function setup(position = 0) {
   const store = createAppStore();
   store.dispatch(sourceSelected({ source: firstSource, loadToken: 1 }));
   store.dispatch(sourceReady({ media: mediaWithAudio(firstSource.sourcePath), loadToken: 1 }));
@@ -127,7 +127,7 @@ function setup() {
     <Provider store={store}>
       <ThemeProvider>
         <TooltipProvider>
-          <Harness />
+          <Harness position={position} />
         </TooltipProvider>
       </ThemeProvider>
     </Provider>,
@@ -380,6 +380,69 @@ describe("waveform replacement", () => {
         screen.getByRole("status").outerHTML,
         screen.getByTestId("waveform-shimmer").outerHTML,
       ]).toEqual(initialMarkup);
+    });
+
+    it("shows a skeleton under the status only during the first load", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(response(64)));
+      const initial = setup();
+      // Nothing was requested yet: the track is idle and has no waveform.
+      expect(screen.getByTestId("waveform-skeleton")).toHaveAttribute("aria-hidden", "true");
+      expect(screen.getByTestId("waveform-skeleton")).toHaveClass("pointer-events-none");
+      expect(screen.getByTestId("waveform-skeleton").children.length).toBeGreaterThan(8);
+
+      act(() => {
+        initial.store.dispatch(waveformsLoading({ jobId: "first", streamIndexes: [2], width: 2 }));
+      });
+      expect(screen.getByTestId("waveform-skeleton")).toBeInTheDocument();
+      expect(screen.getByRole("status")).toBeInTheDocument();
+      expect(screen.getByTestId("waveform-shimmer")).toBeInTheDocument();
+
+      initial.ready("first");
+      await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+      expect(screen.queryByTestId("waveform-skeleton")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("waveform-shimmer")).not.toBeInTheDocument();
+    });
+
+    it("gives each track its own stable skeleton", () => {
+      vi.stubGlobal("fetch", vi.fn());
+      const heights = (position: number) => {
+        const view = setup(position);
+        const bars = [...screen.getByTestId("waveform-skeleton").children].map(
+          (bar) => (bar as HTMLElement).style.height,
+        );
+
+        view.unmount();
+        return bars;
+      };
+
+      const first = heights(0);
+      const second = heights(1);
+      expect(first.length).toBeGreaterThan(8);
+      expect(heights(0)).toEqual(first);
+      expect(second).not.toEqual(first);
+      // Varied, and always within the waveform area.
+      expect(new Set(first).size).toBeGreaterThan(10);
+      expect(
+        first.every((height) => parseInt(height, 10) >= 14 && parseInt(height, 10) <= 84),
+      ).toBe(true);
+    });
+
+    it("keeps the skeleton out of a regeneration and out of a failed first load", async () => {
+      const { store } = await initialWaveform();
+      apply(store);
+      expect(screen.queryByTestId("waveform-skeleton")).not.toBeInTheDocument();
+      fail(store, "next");
+      expect(screen.queryByTestId("waveform-skeleton")).not.toBeInTheDocument();
+
+      vi.stubGlobal("fetch", vi.fn());
+      const first = setup();
+      act(() => {
+        first.store.dispatch(waveformsLoading({ jobId: "first", streamIndexes: [2], width: 2 }));
+      });
+      expect(screen.getAllByTestId("waveform-skeleton")).toHaveLength(1);
+      fail(first.store, "first");
+      expect(screen.getAllByText("Waveform unavailable")).toHaveLength(1);
+      expect(screen.queryByTestId("waveform-skeleton")).not.toBeInTheDocument();
     });
 
     it("uses the static tint for an initial generation when reduced motion is requested", () => {

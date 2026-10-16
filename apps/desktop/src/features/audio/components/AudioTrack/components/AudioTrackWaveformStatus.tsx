@@ -1,5 +1,5 @@
 import { LoaderCircle, TriangleAlert } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ function AudioTrackWaveformStatus({
   if (loading) {
     return (
       <>
+        {!hasEnvelope && <AudioTrackWaveformSkeleton seed={(streamIndex + 1) * 0x9e3779b1} />}
         <AudioTrackWaveformShimmer reducedMotion={reducedMotion} />
         <AudioTrackWaveformLoading />
       </>
@@ -137,6 +138,59 @@ function AudioTrackWaveformFailure({
         {t("common.actions.retry")}
       </Button>
     </AudioTrackWaveformOverlay>
+  );
+}
+
+const SKELETON_BAR_COUNT = 256;
+
+/** A small seeded generator, so a placeholder is stable for its seed without any state. */
+function mulberry32(seed: number) {
+  let state = seed >>> 0;
+
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let mixed = Math.imul(state ^ (state >>> 15), state | 1);
+    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4_294_967_296;
+  };
+}
+
+/**
+ * Uneven bar heights (percent): a slow swell with a seeded phase and pace, broken up by seeded
+ * per-bar variation, so tracks differ a little while each one always looks the same.
+ */
+function skeletonBarHeights(seed: number): number[] {
+  const random = mulberry32(seed);
+  const phase = random() * Math.PI * 2;
+  const pace = 0.12 + random() * 0.2;
+
+  return Array.from({ length: SKELETON_BAR_COUNT }, (_, index) =>
+    Math.round(14 + 70 * Math.abs(Math.sin(index * pace + phase)) * (0.35 + 0.65 * random())),
+  );
+}
+
+/**
+ * Stands in for the waveform until the first one exists. It is static, so reduced motion needs
+ * no variant; the shimmer above it carries the activity.
+ */
+function AudioTrackWaveformSkeleton({ seed }: { seed: number }) {
+  const heights = useMemo(() => skeletonBarHeights(seed), [seed]);
+
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-1 z-1 flex items-center gap-0.5 overflow-hidden"
+      data-testid="waveform-skeleton"
+    >
+      {heights.map((height, index) => (
+        // The bars never reorder, so the index is their identity.
+        <span
+          className="min-w-px flex-1 rounded-full bg-muted-foreground/20"
+          key={index}
+          style={{ height: `${height}%` }}
+        />
+      ))}
+    </div>
   );
 }
 
