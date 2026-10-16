@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { emptyAchievementRecords } from "@/test/achievement-records.fixtures";
+import {
+  completeAchievementRecords,
+  completeAchievementStatistics,
+  emptyAchievementRecords,
+  partiallyUnlockedAchievementScenario,
+} from "@/test/achievement-records.fixtures";
 import { emptyUsageStatistics } from "@/test/usage-statistics.fixtures";
 
 import { achievementCollection } from "../../consts/achievements.consts";
@@ -566,5 +571,96 @@ describe("catalog evolution", () => {
       }),
     ).not.toContain("storage-saver-bronze");
     expect(records.unlockedAchievements["storage-saver-bronze"]).toBe(9_000);
+  });
+});
+
+describe("tier threshold boundaries", () => {
+  const tiers = ["bronze", "silver", "gold"] as const;
+  const seriesEntries = achievementCollection.flatMap((entry) =>
+    entry.kind === "series" ? [series(entry.id)] : [],
+  );
+
+  /** Statistics whose only non-empty value is the given metric. */
+  function statisticsFor(series: AchievementSeriesDefinition, value: number) {
+    switch (series.metric) {
+      case "audioExports":
+      case "gifExports":
+      case "losslessExports":
+      case "processingMillis":
+      case "sourceBytes":
+        return { ...emptyUsageStatistics, [series.metric]: value };
+      case "completedExports":
+        return { ...emptyUsageStatistics, optimizedExports: value };
+      case "storageSavedBytes":
+        return { ...emptyUsageStatistics, sourceBytes: value };
+    }
+  }
+
+  const cases = seriesEntries.flatMap((entry) =>
+    tiers.map((tier) => ({ id: `${entry.id}-${tier}`, entry, threshold: entry.thresholds[tier] })),
+  );
+
+  it.each(cases)(
+    "unlocks $id exactly at its threshold of $threshold",
+    ({ entry, id, threshold }) => {
+      const earnedAt = (value: number) =>
+        getEarnedAchievementIds({
+          records: emptyAchievementRecords,
+          statistics: statisticsFor(entry, value),
+        });
+
+      expect(earnedAt(threshold - 1)).not.toContain(id);
+      expect(earnedAt(threshold)).toContain(id);
+      expect(earnedAt(threshold + 1)).toContain(id);
+    },
+  );
+
+  it.each(seriesEntries.map((entry) => [entry.id, entry] as const))(
+    "shows the highest tier whose threshold is reached on %s once it is recorded",
+    (_id, entry) => {
+      for (const tier of tiers) {
+        for (const delta of [-1, 0, 1]) {
+          const statistics = statisticsFor(entry, entry.thresholds[tier] + delta);
+          const earned = getEarnedAchievementIds({ records: emptyAchievementRecords, statistics });
+          const records = unlockedRecords(earned);
+          const reached = tiers.filter(
+            (candidate) => entry.thresholds[candidate] <= entry.thresholds[tier] + delta,
+          );
+
+          expect(getSeriesProgress(entry, { records, statistics }).current?.tier ?? null).toBe(
+            reached.at(-1) ?? null,
+          );
+        }
+      }
+    },
+  );
+
+  it("takes the unlock state from the records, not from the metric", () => {
+    const entry = series("export-mastery");
+    const statistics = statisticsFor(entry, entry.thresholds.silver);
+
+    expect(
+      getSeriesProgress(entry, { records: emptyAchievementRecords, statistics }).current,
+    ).toBeNull();
+  });
+});
+
+describe("shared fixtures", () => {
+  it("agree with the evaluation: the partial scenario has nothing left to earn", () => {
+    expect(getEarnedAchievementIds(partiallyUnlockedAchievementScenario)).toEqual([]);
+  });
+
+  it("agree with the evaluation: the complete records are what the complete statistics earn", () => {
+    const earned = getEarnedAchievementIds({
+      records: {
+        ...emptyAchievementRecords,
+        discoveredSplashMessageIds: completeAchievementRecords.discoveredSplashMessageIds,
+      },
+      statistics: completeAchievementStatistics,
+    });
+
+    expect([...earned].sort()).toEqual(
+      Object.keys(completeAchievementRecords.unlockedAchievements).sort(),
+    );
   });
 });

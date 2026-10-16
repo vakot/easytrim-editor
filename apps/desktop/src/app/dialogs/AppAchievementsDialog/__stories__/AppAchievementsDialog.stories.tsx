@@ -20,36 +20,14 @@ import type { AchievementRecords } from "@/domain/achievement-records";
 import type { UsageStatistics } from "@/domain/usage-statistics";
 import {
   completeAchievementRecords,
+  completeAchievementStatistics,
   emptyAchievementRecords,
+  partiallyUnlockedAchievementScenario,
 } from "@/test/achievement-records.fixtures";
 import { emptyUsageStatistics } from "@/test/usage-statistics.fixtures";
 
 const meta = {
-  args: {
-    records: {
-      discoveredSplashMessageIds: ["rainbow-mode"],
-      unlockedAchievements: {
-        "audio-specialist-bronze": Date.UTC(2026, 1, 20, 15),
-        "export-mastery-bronze": Date.UTC(2026, 0, 15, 12),
-        "export-mastery-silver": Date.UTC(2026, 1, 3, 9),
-        "lossless-precision-bronze": Date.UTC(2026, 0, 15, 12),
-        "lossless-precision-silver": Date.UTC(2026, 1, 9, 18),
-        "time-well-spent-bronze": Date.UTC(2026, 0, 15, 12),
-        "time-well-spent-gold": Date.UTC(2026, 4, 9, 20),
-        "time-well-spent-silver": Date.UTC(2026, 1, 3, 9),
-      },
-      viewedAtMillis: Date.UTC(2026, 1, 1),
-    },
-    statistics: {
-      ...emptyUsageStatistics,
-      audioExports: 3,
-      losslessExports: 37,
-      optimizedExports: 41,
-      outputBytes: 9 * 1_024 ** 3,
-      processingMillis: 5 * 3_600_000,
-      sourceBytes: 64 * 1_024 ** 3,
-    },
-  },
+  args: partiallyUnlockedAchievementScenario,
   component: AppAchievementsDialogStory,
   parameters: { layout: "fullscreen" },
   title: "App/Achievements Dialog",
@@ -105,5 +83,5 @@ export const Empty: Story = {
 };
 
 export const FullyUnlocked: Story = {
-  args: { records: completeAchievementRecords },
+  args: { records: completeAchievementRecords, statistics: completeAchievementStatistics },
 };

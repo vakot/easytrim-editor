@@ -14,54 +14,29 @@ import type { AchievementRecords } from "@/domain/achievement-records";
 import type { UsageStatistics } from "@/domain/usage-statistics";
 import {
   completeAchievementRecords,
+  completeAchievementStatistics,
   emptyAchievementRecords,
+  partiallyUnlockedAchievementScenario,
 } from "@/test/achievement-records.fixtures";
 import { emptyUsageStatistics } from "@/test/usage-statistics.fixtures";
 
 import { Achievements, AchievementsCollection, AchievementsSummary } from "../Achievements";
 
+import { deriveAchievementRecords } from "./achievement-story.utils";
+
 const MINUTE = 60_000;
-const MEGABYTE = 1_024 ** 2;
 const GIGABYTE = 1_024 ** 3;
 
-const seriesIds = [
-  "audio-specialist",
-  "data-cruncher",
-  "export-mastery",
-  "gif-creator",
-  "lossless-precision",
-  "storage-saver",
-  "time-well-spent",
-];
-
-/** Unlocks every series up to and including `tier`. */
-function recordsUpTo(tier: "bronze" | "gold" | "silver"): AchievementRecords {
-  const tiers = ["bronze", "silver", "gold"].slice(
-    0,
-    ["bronze", "silver", "gold"].indexOf(tier) + 1,
-  );
-
-  return {
-    discoveredSplashMessageIds: ["rainbow-mode"],
-    unlockedAchievements: Object.fromEntries(
-      seriesIds.flatMap((id, index) =>
-        tiers.map((unlocked, tierIndex) => [
-          `${id}-${unlocked}`,
-          Date.UTC(2026, tierIndex * 3, 2 + index, 12),
-        ]),
-      ),
-    ),
-    viewedAtMillis: Date.UTC(2026, 9, 1),
-  };
-}
-
-/** Statistics that reach Bronze, Silver, or Gold of every series and progress beyond it. */
+/**
+ * Statistics that put every series in Bronze, Silver, or Gold without reaching the next tier. The
+ * records of each story are derived from them, so every reached threshold is unlocked.
+ */
 const statisticsByTier: Record<"bronze" | "gold" | "silver", UsageStatistics> = {
   bronze: {
     ...emptyUsageStatistics,
-    audioExports: 3,
+    audioExports: 2,
     gifExports: 2,
-    losslessExports: 6,
+    losslessExports: 3,
     optimizedExports: 1,
     outputBytes: 2 * GIGABYTE,
     processingMillis: 7 * MINUTE,
@@ -121,31 +96,7 @@ function AchievementsStory({
 
 const meta = {
   args: {
-    records: {
-      discoveredSplashMessageIds: ["rainbow-mode", "chosen-frame"],
-      unlockedAchievements: {
-        "data-cruncher-bronze": Date.UTC(2026, 1, 3, 9),
-        "export-mastery-bronze": Date.UTC(2026, 0, 15, 12),
-        "export-mastery-silver": Date.UTC(2026, 1, 3, 9),
-        "gif-creator-bronze": Date.UTC(2026, 3, 22, 17),
-        "lossless-precision-bronze": Date.UTC(2026, 0, 15, 12),
-        "lossless-precision-gold": Date.UTC(2026, 8, 30, 20),
-        "lossless-precision-silver": Date.UTC(2026, 2, 1, 10),
-        "time-well-spent-bronze": Date.UTC(2026, 0, 15, 12),
-        "time-well-spent-silver": Date.UTC(2026, 4, 9, 20),
-      },
-      // Viewed in April: the later unlocks are marked new.
-      viewedAtMillis: Date.UTC(2026, 3, 1),
-    },
-    statistics: {
-      ...emptyUsageStatistics,
-      gifExports: 3,
-      losslessExports: 52,
-      optimizedExports: 16,
-      outputBytes: 3 * GIGABYTE,
-      processingMillis: 41 * MINUTE,
-      sourceBytes: 3 * GIGABYTE + 60 * MEGABYTE,
-    },
+    ...partiallyUnlockedAchievementScenario,
     width: "40rem",
   },
   component: AchievementsStory,
@@ -165,63 +116,62 @@ export const Locked: Story = {
 };
 
 export const Bronze: Story = {
-  args: { records: recordsUpTo("bronze"), statistics: statisticsByTier.bronze },
+  args: {
+    records: deriveAchievementRecords(statisticsByTier.bronze),
+    statistics: statisticsByTier.bronze,
+  },
 };
 
 export const Silver: Story = {
-  args: { records: recordsUpTo("silver"), statistics: statisticsByTier.silver },
+  args: {
+    records: deriveAchievementRecords(statisticsByTier.silver),
+    statistics: statisticsByTier.silver,
+  },
 };
 
 export const Gold: Story = {
-  args: { records: recordsUpTo("gold"), statistics: statisticsByTier.gold },
+  args: {
+    records: deriveAchievementRecords(statisticsByTier.gold),
+    statistics: statisticsByTier.gold,
+  },
 };
 
 export const FullyUnlocked: Story = {
-  args: { records: completeAchievementRecords, statistics: statisticsByTier.gold },
+  args: { records: completeAchievementRecords, statistics: completeAchievementStatistics },
 };
 
 /** Four of the five legendary splash messages discovered: The Chosen One stays concealed. */
 export const SecretLocked: Story = {
   args: {
-    records: {
-      ...recordsUpTo("bronze"),
+    records: deriveAchievementRecords(statisticsByTier.bronze, {
       discoveredSplashMessageIds: [
         "chosen-frame",
         "corrupted-signal",
         "enchantment-table",
         "rainbow-mode",
       ],
-    },
+    }),
     statistics: statisticsByTier.bronze,
   },
 };
 
 export const SecretUnlocked: Story = {
   args: {
-    records: {
+    records: deriveAchievementRecords(statisticsByTier.bronze, {
       discoveredSplashMessageIds: completeAchievementRecords.discoveredSplashMessageIds,
-      unlockedAchievements: {
-        ...recordsUpTo("bronze").unlockedAchievements,
-        "the-chosen-one": Date.UTC(2026, 9, 16, 21),
-      },
-      viewedAtMillis: Date.UTC(2026, 9, 1),
-    },
+    }),
     statistics: statisticsByTier.bronze,
   },
 };
 
-/** Bronze and Silver collected, so those collectors are revealed while Gold stays concealed. */
+/** Bronze and Silver collected, so those collectors are revealed and new while Gold stays concealed. */
 export const CollectorsUnlocked: Story = {
   args: {
-    records: {
-      ...recordsUpTo("silver"),
-      unlockedAchievements: {
-        ...recordsUpTo("silver").unlockedAchievements,
-        "bronze-collector": Date.UTC(2026, 9, 2, 12),
-        "silver-collector": Date.UTC(2026, 9, 14, 12),
-      },
+    records: deriveAchievementRecords(statisticsByTier.silver, {
+      unlockedAt: (id, index) =>
+        id.endsWith("-collector") ? Date.UTC(2026, 9, 14, 12) : Date.UTC(2026, 0, 2 + index, 12),
       viewedAtMillis: Date.UTC(2026, 9, 10),
-    },
+    }),
     statistics: statisticsByTier.silver,
   },
 };
