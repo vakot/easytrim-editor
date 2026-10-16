@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Scroll fades at the edges of lists and panels now stay crisp and correctly sized at every UI scale.
 - Audio waveforms now line up with the sound on the Timeline instead of drifting later through longer videos or when the audio starts after the video.
 - The playback speed slider now shows the speed multiplier while dragging instead of an internal step number.
 - Noise reduction no longer delays the processed audio by 25 ms or cuts off its last 25 ms.
