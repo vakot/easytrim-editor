@@ -58,4 +58,7 @@ change as security-sensitive.
 Avoid full source/output paths in production logs and user-facing diagnostics unless needed to
 identify a failure. Redact private paths from custom arguments and never log secrets or sensitive
 environment data. Active editing/session state, queue entries, and media caches remain in memory;
-the explicit Redux Persist allow-list currently covers panel layout and preferences only.
+the explicit Redux Persist allow-list currently covers panel layout and preferences only. Native
+code additionally persists aggregate usage statistics (counts, byte totals, durations, and
+timestamps; no paths or file names) in the application data directory, as described in
+[usage statistics](usage-statistics.md).
