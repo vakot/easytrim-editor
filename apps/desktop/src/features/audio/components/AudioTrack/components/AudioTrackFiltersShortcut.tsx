@@ -1,3 +1,4 @@
+import { SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -37,9 +38,7 @@ function AudioTrackFiltersShortcut({ streamIndex }: { streamIndex: number }) {
             type="button"
             variant="ghost"
           >
-            <span aria-hidden="true" className="text-[11px] font-semibold tracking-tight">
-              FX
-            </span>
+            <SlidersHorizontal aria-hidden="true" />
           </Button>
         </AudioTrackFiltersDialogTrigger>
       </TooltipTrigger>

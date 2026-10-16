@@ -185,7 +185,7 @@ function AudioTrackWaveformSkeleton({ seed }: { seed: number }) {
       {heights.map((height, index) => (
         // The bars never reorder, so the index is their identity.
         <span
-          className="min-w-px flex-1 rounded-full bg-muted-foreground/20"
+          className="min-w-px flex-1 rounded-full bg-primary/10"
           key={index}
           style={{ height: `${height}%` }}
         />

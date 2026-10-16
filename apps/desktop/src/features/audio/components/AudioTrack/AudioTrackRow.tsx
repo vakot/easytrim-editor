@@ -147,7 +147,7 @@ function AudioTrackRowWaveform({
       />
       <AudioTrackVolumeIndicator trackNumber={trackNumber} volume={volume} />
 
-      <div className="absolute right-0.5 bottom-0.5 z-4">
+      <div className="absolute top-0 left-0 z-4">
         <AudioTrackFiltersShortcut streamIndex={streamIndex} />
       </div>
     </div>

@@ -780,9 +780,9 @@ describe("AudioTrackRow", () => {
   describe("filters shortcut", () => {
     const shortcut = () => screen.getByRole("button", { name: "Audio filters for track 1" });
 
-    it("is a plain FX button whose color only tells whether the chain has filters", () => {
+    it("is a plain icon button whose color only tells whether the chain has filters", () => {
       const { store } = renderRow();
-      expect(shortcut()).toHaveTextContent(/^FX$/);
+      expect(shortcut().querySelector("svg")).toBeInTheDocument();
       expect(shortcut()).toHaveClass("text-muted-foreground", "bg-transparent");
       expect(shortcut()).not.toHaveClass("text-foreground");
 
@@ -799,8 +799,8 @@ describe("AudioTrackRow", () => {
       });
       expect(shortcut()).toHaveClass("text-foreground", "bg-transparent");
       expect(shortcut()).not.toHaveClass("text-muted-foreground");
-      // No counts, names or badges.
-      expect(shortcut()).toHaveTextContent(/^FX$/);
+      // No counts, names or badges: just the icon.
+      expect(shortcut()).toHaveTextContent("");
       expect(shortcut().querySelector("[data-slot='badge']")).toBeNull();
     });
 
@@ -860,10 +860,10 @@ describe("AudioTrackRow", () => {
       expect(shortcut()).toBeInTheDocument();
     });
 
-    it("sits in the waveform's bottom-right corner, clear of the other corner controls", () => {
+    it("sits in the waveform's top-left corner, clear of the other corner controls", () => {
       renderRow();
       const corner = shortcut().parentElement!;
-      expect(corner).toHaveClass("absolute", "right-0.5", "bottom-0.5");
+      expect(corner).toHaveClass("absolute", "top-0", "left-0");
       expect(corner.closest("[data-enabled]")).toContainElement(
         screen.getByRole("combobox", { name: "Waveform display" }),
       );
