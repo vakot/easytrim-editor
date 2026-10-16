@@ -361,11 +361,68 @@ describe("waveform replacement", () => {
       expect(shimmer.firstElementChild).toBeNull();
     });
 
-    it("has no shimmer before any waveform exists and centers the status", () => {
+    it("presents the initial generation exactly like a regeneration", async () => {
+      vi.stubGlobal("fetch", vi.fn());
+      const initial = setup();
+      act(() => {
+        initial.store.dispatch(waveformsLoading({ jobId: "first", streamIndexes: [2], width: 2 }));
+      });
+      const initialStatus = screen.getByRole("status");
+      const initialShimmer = screen.getByTestId("waveform-shimmer");
+      expect(initialStatus).toHaveClass("inset-0", "place-items-center", "pointer-events-none");
+      expect(initialStatus.querySelector("svg")).toBeInTheDocument();
+      const initialMarkup = [initialStatus.outerHTML, initialShimmer.outerHTML];
+      initial.unmount();
+
+      const regeneration = await initialWaveform();
+      apply(regeneration.store);
+      expect([
+        screen.getByRole("status").outerHTML,
+        screen.getByTestId("waveform-shimmer").outerHTML,
+      ]).toEqual(initialMarkup);
+    });
+
+    it("uses the static tint for an initial generation when reduced motion is requested", () => {
+      mocks.reducedMotion = true;
       vi.stubGlobal("fetch", vi.fn());
       setup();
-      expect(screen.getByRole("status")).toHaveClass("inset-0", "place-items-center");
+      const shimmer = screen.getByTestId("waveform-shimmer");
+      expect(shimmer).toHaveClass("bg-foreground/5");
+      expect(shimmer.firstElementChild).toBeNull();
+    });
+
+    it("presents a failed initial generation like a failed regeneration, without a waveform beneath", async () => {
+      vi.stubGlobal("fetch", vi.fn());
+      const initial = setup();
+      act(() => {
+        initial.store.dispatch(waveformsLoading({ jobId: "first", streamIndexes: [2], width: 2 }));
+      });
+      fail(initial.store, "first");
+      const overlay = document.querySelector("[data-slot='audio-track-waveform-status']")!;
+      expect(overlay).toHaveTextContent("Waveform unavailable");
+      expect(document.querySelector("canvas")).toHaveAttribute("data-outdated", "false");
       expect(screen.queryByTestId("waveform-shimmer")).not.toBeInTheDocument();
+      const initialMarkup = overlay.outerHTML;
+      initial.unmount();
+
+      const regeneration = await initialWaveform();
+      apply(regeneration.store);
+      fail(regeneration.store, "next");
+      const regenerationOverlay = document.querySelector(
+        "[data-slot='audio-track-waveform-status']",
+      )!;
+
+      expect(regenerationOverlay).toHaveTextContent("Waveform outdated");
+      // Only the wording differs: layout, icon, tooltip trigger, and Retry are identical.
+      expect(
+        regenerationOverlay.outerHTML.replace("Waveform outdated", "Waveform unavailable"),
+      ).toBe(initialMarkup);
+    });
+
+    it("keeps the centered status clear of the corner controls", () => {
+      vi.stubGlobal("fetch", vi.fn());
+      setup();
+      expect(screen.getByRole("status")).toHaveClass("px-12");
     });
 
     it("dims the previous waveform and offers a centered retry when regeneration fails", async () => {

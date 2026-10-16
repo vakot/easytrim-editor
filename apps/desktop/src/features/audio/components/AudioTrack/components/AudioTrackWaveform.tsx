@@ -1,21 +1,16 @@
-import { LoaderCircle, TriangleAlert } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { type AudioTrackState, waveformDisplayFailed } from "@/app/store/slices/audio-slice";
 import { selectSourceLoadToken } from "@/app/store/slices/source-slice";
 import { usePrimaryColor } from "@/app/theme/useTheme";
-import { localizeAppError } from "@/i18n/app-errors";
 import { cn } from "@/lib/class-names.utils";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
-import { useWaveformPrepare } from "../../../hooks/useWaveformPreparation";
 import type { WaveformDisplayMode } from "../../../lib/waveform-display-mode";
+
+import { AudioTrackWaveformStatus } from "./AudioTrackWaveformStatus";
 
 interface AudioTrackWaveformProps {
   displayMode: WaveformDisplayMode;
@@ -23,11 +18,6 @@ interface AudioTrackWaveformProps {
   track: AudioTrackState;
   volume: number;
 }
-
-type WaveformWithStatus<Status extends AudioTrackState["waveform"]["status"]> = Extract<
-  AudioTrackState["waveform"],
-  { status: Status }
->;
 
 function AudioTrackWaveform({ displayMode, stream, track, volume }: AudioTrackWaveformProps) {
   const loadToken = useAppSelector(selectSourceLoadToken);
@@ -39,52 +29,6 @@ function AudioTrackWaveform({ displayMode, stream, track, volume }: AudioTrackWa
       volume={volume}
       waveform={track.waveform}
     />
-  );
-}
-
-/** Status overlays are centered in the waveform and let pointer input through to the timeline. */
-const STATUS_OVERLAY_CLASS_NAME =
-  "pointer-events-none absolute inset-0 z-3 grid place-items-center px-2 text-xs text-muted-foreground";
-
-const STATUS_PILL_CLASS_NAME =
-  "flex max-w-full items-center gap-1.5 rounded-full border border-border bg-background/85 px-2.5 py-0.5 text-[11px] shadow-sm";
-
-function AudioTrackWaveformLoading({ hasEnvelope }: { hasEnvelope: boolean }) {
-  const { t } = useTranslation();
-
-  return (
-    <span className={STATUS_OVERLAY_CLASS_NAME} role="status">
-      <span className={cn("flex items-center gap-1.5", hasEnvelope && STATUS_PILL_CLASS_NAME)}>
-        {hasEnvelope && (
-          <LoaderCircle
-            aria-hidden="true"
-            className="size-3 animate-spin motion-reduce:animate-none"
-          />
-        )}
-        <span className="truncate">{t("audio.waveform.preparing")}</span>
-      </span>
-    </span>
-  );
-}
-
-/**
- * Marks the previous waveform as being replaced. With reduced motion it is a static tint
- * instead of a moving highlight.
- */
-function AudioTrackWaveformShimmer({ reducedMotion }: { reducedMotion: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "pointer-events-none absolute inset-0 z-2 overflow-hidden",
-        reducedMotion && "bg-foreground/5",
-      )}
-      data-testid="waveform-shimmer"
-    >
-      {!reducedMotion && (
-        <span className="absolute inset-y-0 left-0 w-1/3 animate-waveform-shimmer bg-linear-to-r from-transparent via-foreground/10 to-transparent" />
-      )}
-    </span>
   );
 }
 
@@ -346,11 +290,13 @@ function AudioTrackWaveformCanvas({
         data-outdated={outdated}
         ref={canvasRef}
       />
-      {loading && hasEnvelope && <AudioTrackWaveformShimmer reducedMotion={reducedMotion} />}
-      {loading && <AudioTrackWaveformLoading hasEnvelope={hasEnvelope} />}
-      {waveform.status === "failed" && (
-        <AudioTrackWaveformError hasEnvelope={hasEnvelope} stream={stream} waveform={waveform} />
-      )}
+      <AudioTrackWaveformStatus
+        hasEnvelope={hasEnvelope}
+        loading={loading}
+        reducedMotion={reducedMotion}
+        streamIndex={stream.streamIndex}
+        waveform={waveform}
+      />
     </>
   );
 }
@@ -470,45 +416,6 @@ function decodeRle(payload: Uint8Array, width: number): Uint8Array {
 
   if (outputPosition !== width) throw new Error("Waveform envelope is incomplete.");
   return amplitudes;
-}
-
-function AudioTrackWaveformError({
-  hasEnvelope,
-  stream,
-  waveform,
-}: {
-  hasEnvelope: boolean;
-  stream: AudioStream;
-  waveform: WaveformWithStatus<"failed">;
-}) {
-  const { t } = useTranslation();
-
-  const prepare = useWaveformPrepare(stream.streamIndex, waveform);
-
-  return (
-    <div className={STATUS_OVERLAY_CLASS_NAME}>
-      <div
-        className={cn(
-          "pointer-events-auto flex items-center gap-1",
-          hasEnvelope && STATUS_PILL_CLASS_NAME,
-        )}
-      >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="flex items-center gap-1 truncate" tabIndex={0}>
-              {hasEnvelope && <TriangleAlert aria-hidden="true" className="size-3 shrink-0" />}
-              {hasEnvelope ? t("audio.waveform.outdated") : t("audio.waveform.unavailable")}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>{localizeAppError(waveform.error, t)}</TooltipContent>
-        </Tooltip>
-
-        <Button onClick={prepare} size="xs" type="button" variant="ghost">
-          {t("common.actions.retry")}
-        </Button>
-      </div>
-    </div>
-  );
 }
 
 export { AudioTrackWaveform };
