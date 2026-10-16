@@ -27,6 +27,7 @@ import {
 
 import { AudioTrackActions, AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
+import { AudioTrackFiltersShortcut } from "./components/AudioTrackFiltersShortcut";
 import { AudioTrackToggle } from "./components/AudioTrackToggle";
 import { AudioTrackVolumeControl } from "./components/AudioTrackVolumeControl";
 import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
@@ -145,6 +146,10 @@ function AudioTrackRowWaveform({
         data-slot="audio-track-selection"
       />
       <AudioTrackVolumeIndicator trackNumber={trackNumber} volume={volume} />
+
+      <div className="absolute right-0.5 bottom-0.5 z-4">
+        <AudioTrackFiltersShortcut streamIndex={streamIndex} />
+      </div>
     </div>
   );
 }

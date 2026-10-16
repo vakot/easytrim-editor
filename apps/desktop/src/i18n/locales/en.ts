@@ -194,6 +194,7 @@ export const en = {
         moveDown: "Move filter down",
         moveUp: "Move filter up",
         open: "Audio filters",
+        openForTrack: "Audio filters for track {{number}}",
         remove: "Remove filter",
       },
       dialog: {
