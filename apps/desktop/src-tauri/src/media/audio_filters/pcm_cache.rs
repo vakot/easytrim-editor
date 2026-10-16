@@ -3,6 +3,7 @@ use std::{
     fs::{self, File},
     io::{self, BufWriter, Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
+    sync::atomic::{AtomicU64, Ordering},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -419,15 +420,26 @@ fn next_start(class: &BTreeMap<u64, Segment>, position: u64) -> Option<u64> {
     class.range(position + 1..).next().map(|(start, _)| *start)
 }
 
+/// Creates a directory no other cache uses. A timestamp alone can repeat for caches created at the
+/// same moment, which would share and delete each other's segment files.
 fn create_cache_directory() -> io::Result<PathBuf> {
+    static NEXT_DIRECTORY: AtomicU64 = AtomicU64::new(0);
     let unique = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
         .unwrap_or_default();
-    let directory =
-        std::env::temp_dir().join(format!("easytrim-pcm-{}-{unique}", std::process::id()));
-    fs::create_dir(&directory)?;
-    Ok(directory)
+    loop {
+        let directory = std::env::temp_dir().join(format!(
+            "easytrim-pcm-{}-{unique}-{}",
+            std::process::id(),
+            NEXT_DIRECTORY.fetch_add(1, Ordering::Relaxed)
+        ));
+        match fs::create_dir(&directory) {
+            Ok(()) => return Ok(directory),
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(error),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -629,6 +641,33 @@ mod tests {
                 (3_000, 4_000, Some(PcmQuality::Provisional)),
             ]
         );
+    }
+
+    #[test]
+    fn caches_created_at_the_same_moment_never_share_a_directory() {
+        use std::sync::{Arc, Barrier};
+
+        let start = Arc::new(Barrier::new(16));
+        let creators = (0..16)
+            .map(|_| {
+                let start = Arc::clone(&start);
+                std::thread::spawn(move || {
+                    let mut cache = PcmCache::new(u64::MAX);
+                    start.wait();
+                    let path = cache.reserve_file().unwrap();
+                    (path.parent().unwrap().to_owned(), cache)
+                })
+            })
+            .collect::<Vec<_>>();
+        let created = creators
+            .into_iter()
+            .map(|creator| creator.join().unwrap())
+            .collect::<Vec<_>>();
+        let directories = created
+            .iter()
+            .map(|(directory, _)| directory)
+            .collect::<std::collections::HashSet<_>>();
+        assert_eq!(directories.len(), 16);
     }
 
     #[test]
