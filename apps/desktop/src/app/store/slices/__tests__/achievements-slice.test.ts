@@ -16,6 +16,7 @@ function reduce(...actions: Parameters<typeof achievementsReducer>[1][]) {
 const loaded = {
   discoveredSplashMessageIds: ["rainbow-mode"],
   unlockedAchievements: { "first-export": 1_000 },
+  viewedAtMillis: null,
 };
 
 describe("achievements slice", () => {
@@ -51,6 +52,7 @@ describe("achievements slice", () => {
     const newer = {
       discoveredSplashMessageIds: ["chosen-frame", "rainbow-mode"],
       unlockedAchievements: { "first-export": 1_000, "gif-maker": 2_000 },
+      viewedAtMillis: 1_500,
     };
 
     const state = reduce(
@@ -59,6 +61,7 @@ describe("achievements slice", () => {
         records: {
           discoveredSplashMessageIds: ["rainbow-mode"],
           unlockedAchievements: { "first-export": 9_999 },
+          viewedAtMillis: 500,
         },
         requestId: "stale",
       }),

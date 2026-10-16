@@ -7,15 +7,15 @@ and achievements never change what the editor can do.
 
 ## Ownership
 
-| Concern                    | Owner                                                                       |
-| -------------------------- | --------------------------------------------------------------------------- |
-| Definitions                | `features/entertainment/consts/achievements.consts.ts` (the registry)       |
-| Evaluation and progress    | `features/entertainment/lib/achievements.utils.ts` (pure functions)         |
-| Export-related progress    | Usage statistics; achievements keep no counters of their own                |
-| Unlocks and discoveries    | native `AchievementStore`, persisted in the application data directory      |
-| Frontend state             | `achievements` slice: a runtime mirror of the native records                |
-| Unlocking and announcement | `AchievementTracker`, mounted once by the application                       |
-| Presentation               | Achievements dialog, the Statistics dialog metric, and unlock notifications |
+| Concern                           | Owner                                                                       |
+| --------------------------------- | --------------------------------------------------------------------------- |
+| Definitions                       | `features/entertainment/consts/achievements.consts.ts` (the registry)       |
+| Evaluation and progress           | `features/entertainment/lib/achievements.utils.ts` (pure functions)         |
+| Export-related progress           | Usage statistics; achievements keep no counters of their own                |
+| Unlocks, discoveries, viewed mark | native `AchievementStore`, persisted in the application data directory      |
+| Frontend state                    | `achievements` slice: a runtime mirror of the native records                |
+| Unlocking and announcement        | `AchievementTracker`, mounted once by the application                       |
+| Presentation                      | Achievements dialog, the Statistics dialog metric, and unlock notifications |
 
 The frontend owns the catalog: identifiers, localized copy, icons, categories, metrics, targets,
 and secrecy. Rust stores only identifiers and unlock times, validating each identifier as bounded
@@ -87,6 +87,25 @@ Bronze, Silver, and Gold use the theme tokens `--achievement-bronze`, `--achieve
 least one unlocked tier, and the Locked filter shows cards with at least one locked tier, so a
 partly unlocked series appears under both.
 
+## New achievements
+
+Achievements unlocked since the user last looked at the collection are marked with a `Ping`: on the
+Achievements tool of the workspace toolbar, and in the collection on the card and the tier chip of
+each new unlock. Unlocks that happen silently at startup count as new too, so a returning user sees
+which earned achievements they have not looked at yet.
+
+Native records keep one value for this, `viewedAtMillis`, set by `mark_achievements_viewed`. The
+mark only moves forward and is written only when it moves, so a late or repeated request cannot make
+seen achievements new again. An achievement is new when it is unlocked and its unlock time is after
+the mark, or when the collection was never viewed.
+
+The Achievements view captures the mark when it opens and keeps it for as long as it stays open, so
+new unlocks stay marked while the user looks at them; it marks the collection viewed when it
+closes, which clears the toolbar ping. Nothing is marked before the records load. The toolbar knows
+nothing about achievements: the command exposes an optional `attention` description, which the
+toolbar shows as a ping and adds to the button's accessible name. Pings pause their animation when
+reduced motion is preferred, and each new card announces "New" to screen readers.
+
 ## Unlocking
 
 `AchievementTracker` loads the records and statistics when the application starts and evaluates
@@ -145,7 +164,8 @@ The document is `<app data>/achievements/achievements.json`:
   "unlockedAchievements": {
     "export-mastery-bronze": { "unlockedAtMillis": 1760000000000 }
   },
-  "discoveredSplashMessageIds": ["rainbow-mode"]
+  "discoveredSplashMessageIds": ["rainbow-mode"],
+  "viewedAtMillis": 1760000500000
 }
 ```
 

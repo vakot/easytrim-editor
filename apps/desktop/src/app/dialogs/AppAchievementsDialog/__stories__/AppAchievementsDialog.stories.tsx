@@ -38,6 +38,7 @@ const meta = {
         "time-well-spent-gold": Date.UTC(2026, 4, 9, 20),
         "time-well-spent-silver": Date.UTC(2026, 1, 3, 9),
       },
+      viewedAtMillis: Date.UTC(2026, 1, 1),
     },
     statistics: {
       ...emptyUsageStatistics,

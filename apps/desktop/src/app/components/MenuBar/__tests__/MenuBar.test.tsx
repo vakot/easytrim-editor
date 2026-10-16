@@ -128,6 +128,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
   }),
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({
+      achievements: { records: null },
       audio: { tracks: [] },
       preferences: menuState.preferences,
       importWorkflow: menuState.importWorkflow,

@@ -24,7 +24,7 @@ function createStore() {
   });
 }
 
-const empty = { discoveredSplashMessageIds: [], unlockedAchievements: {} };
+const empty = { discoveredSplashMessageIds: [], unlockedAchievements: {}, viewedAtMillis: null };
 
 describe("achievement thunks", () => {
   beforeEach(() => vi.resetAllMocks());

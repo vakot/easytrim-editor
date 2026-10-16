@@ -7,6 +7,7 @@ import {
 } from "@/app/store/slices/achievements-slice";
 import {
   getAchievementRecords,
+  markAchievementsViewed as markNativeAchievementsViewed,
   recordSplashMessageDiscovery,
   unlockAchievements as unlockNativeAchievements,
 } from "@/lib/tauri/achievements";
@@ -58,4 +59,23 @@ const discoverSplashMessage =
     }
   };
 
-export { discoverSplashMessage, loadAchievementRecords, unlockAchievements };
+/**
+ * Marks the collection as viewed, which clears what counts as new. Nothing is marked while the
+ * records have not loaded, because the collection could not have been shown.
+ */
+const markAchievementsViewed = (): AppThunk<Promise<void>> => async (dispatch, getState) => {
+  if (!selectAchievementRecords(getState())) return;
+  try {
+    const records = await markNativeAchievementsViewed();
+    dispatch(achievementRecordsUpdated({ records }));
+  } catch {
+    // The achievements stay new until the collection is viewed again.
+  }
+};
+
+export {
+  discoverSplashMessage,
+  loadAchievementRecords,
+  markAchievementsViewed,
+  unlockAchievements,
+};

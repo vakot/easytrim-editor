@@ -10,3 +10,4 @@ export {
   UsageStatisticsContent,
   UsageStatisticsDashboard,
 } from "./components/UsageStatistics";
+export { useHasNewAchievements } from "./hooks/useHasNewAchievements";

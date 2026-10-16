@@ -54,6 +54,8 @@ export const en = {
         title: "Time Well Spent",
       },
     },
+    new: "New",
+    newAchievements: "New achievements",
     notification: {
       seriesTier: "{{series}} {{tier}}",
       tierUnlocked: "{{tier}} tier unlocked",
@@ -75,6 +77,7 @@ export const en = {
       tierLocked: "{{tier}}, {{target}}, locked",
       tiersLabel: "Tiers",
       tierUnlocked: "{{tier}}, {{target}}, unlocked {{date}}",
+      tierUnlockedNew: "{{tier}}, new",
       tierUnlockedOn: "{{tier}} unlocked {{date}}",
     },
     status: {

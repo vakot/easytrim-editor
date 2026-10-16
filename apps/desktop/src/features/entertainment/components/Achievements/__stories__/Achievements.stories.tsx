@@ -51,6 +51,7 @@ function recordsUpTo(tier: "bronze" | "gold" | "silver"): AchievementRecords {
         ]),
       ),
     ),
+    viewedAtMillis: Date.UTC(2026, 9, 1),
   };
 }
 
@@ -133,6 +134,8 @@ const meta = {
         "time-well-spent-bronze": Date.UTC(2026, 0, 15, 12),
         "time-well-spent-silver": Date.UTC(2026, 4, 9, 20),
       },
+      // Viewed in April: the later unlocks are marked new.
+      viewedAtMillis: Date.UTC(2026, 3, 1),
     },
     statistics: {
       ...emptyUsageStatistics,
@@ -154,7 +157,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** Series at different tiers, including one completed at Gold. */
+/** Series at different tiers, one completed at Gold, with unlocks since the last view marked new. */
 export const Mixed: Story = {};
 
 export const Locked: Story = {
@@ -201,6 +204,7 @@ export const SecretUnlocked: Story = {
         ...recordsUpTo("bronze").unlockedAchievements,
         "the-chosen-one": Date.UTC(2026, 9, 16, 21),
       },
+      viewedAtMillis: Date.UTC(2026, 9, 1),
     },
     statistics: statisticsByTier.bronze,
   },

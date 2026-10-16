@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,10 +6,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getAchievementRecords: vi.fn(),
   getUsageStatistics: vi.fn(),
+  markAchievementsViewed: vi.fn(),
 }));
 
 vi.mock("@/lib/tauri/achievements", () => ({
   getAchievementRecords: mocks.getAchievementRecords,
+  markAchievementsViewed: mocks.markAchievementsViewed,
   recordSplashMessageDiscovery: vi.fn(),
   unlockAchievements: vi.fn(),
 }));
@@ -107,6 +109,7 @@ describe("AppAchievementsDialog", () => {
         "export-mastery-silver": unlockedAt,
         "gif-creator-bronze": unlockedAt,
       },
+      viewedAtMillis: Date.UTC(2026, 11, 1, 12),
     });
     mocks.getUsageStatistics.mockResolvedValue({
       ...emptyUsageStatistics,
@@ -237,6 +240,44 @@ describe("AppAchievementsDialog", () => {
     await userEvent.click(within(dialog).getByRole("tab", { name: "Unlocked" }));
 
     expect(within(dialog).getByText("No achievements unlocked yet")).toBeVisible();
+  });
+
+  it("marks achievements unlocked since the last view as new until the dialog closes", async () => {
+    const viewedAt = Date.UTC(2026, 9, 1, 12);
+    const records = {
+      ...emptyAchievementRecords,
+      unlockedAchievements: {
+        "export-mastery-bronze": Date.UTC(2026, 8, 30, 12),
+        "export-mastery-silver": Date.UTC(2026, 9, 2, 12),
+        "gif-creator-bronze": Date.UTC(2026, 8, 30, 12),
+      },
+      viewedAtMillis: viewedAt,
+    };
+
+    mocks.getAchievementRecords.mockResolvedValue(records);
+    mocks.getUsageStatistics.mockResolvedValue({ ...emptyUsageStatistics, optimizedExports: 12 });
+    mocks.markAchievementsViewed.mockResolvedValue({ ...records, viewedAtMillis: viewedAt + 10 });
+    renderDialog();
+
+    const dialog = await openDialog();
+    const mastery = await waitFor(() => achievement(dialog, "Export Mastery"));
+
+    expect(mastery.querySelectorAll("[data-slot='achievement-new']")).toHaveLength(2);
+    expect(within(mastery).getByText("New")).toBeInTheDocument();
+    expect(
+      within(mastery).getByRole("listitem", { name: "Silver, 10, unlocked Oct 2, 2026, new" }),
+    ).toBeVisible();
+    expect(
+      within(mastery).getByRole("listitem", { name: "Bronze, 1, unlocked Sep 30, 2026" }),
+    ).toBeVisible();
+    expect(
+      achievement(dialog, "GIF Creator").querySelector("[data-slot='achievement-new']"),
+    ).toBeNull();
+    expect(mocks.markAchievementsViewed).not.toHaveBeenCalled();
+
+    await userEvent.keyboard("{Escape}");
+
+    await waitFor(() => expect(mocks.markAchievementsViewed).toHaveBeenCalledTimes(1));
   });
 
   it("offers a retry when achievements cannot be loaded", async () => {

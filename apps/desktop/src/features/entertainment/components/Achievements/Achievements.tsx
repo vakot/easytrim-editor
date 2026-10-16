@@ -13,7 +13,10 @@ import {
   selectAchievementRecords,
   selectAchievementRecordsStatus,
 } from "@/app/store/slices/achievements-slice";
-import { loadAchievementRecords } from "@/app/store/thunks/achievement-thunks";
+import {
+  loadAchievementRecords,
+  markAchievementsViewed,
+} from "@/app/store/thunks/achievement-thunks";
 import { loadUsageStatistics } from "@/app/store/thunks/usage-statistics-thunks";
 import type { AchievementRecords } from "@/domain/achievement-records";
 import { cn } from "@/lib/class-names.utils";
@@ -32,21 +35,33 @@ import { AchievementSeriesItem } from "./components/AchievementSeriesItem";
 import { AchievementsLoading } from "./components/AchievementsLoading";
 import { AchievementStandaloneItem } from "./components/AchievementStandaloneItem";
 import { AchievementsUnavailable } from "./components/AchievementsUnavailable";
+import { AchievementsViewContext } from "./contexts/AchievementsViewContext";
 
 type AchievementsFilter = "all" | "locked" | "unlocked";
 
 const achievementsFilters = ["all", "unlocked", "locked"] as const satisfies AchievementsFilter[];
 
-/** Refreshes the records and statistics whenever it mounts, so every opening shows current progress. */
+/**
+ * A view of the collection. It refreshes the records and statistics when it mounts, so every
+ * opening shows current progress, and marks the collection viewed when it unmounts. Achievements
+ * unlocked since the previous view stay marked new for as long as this view is open.
+ */
 function Achievements({ children }: { children?: React.ReactNode }) {
   const dispatch = useAppDispatch();
+  const records = useAppSelector(selectAchievementRecords);
+  const [view, setView] = useState<{ viewedAtMillis: number | null } | null>(null);
+  // Capture the mark the first time the records are available, before this view can move it.
+  if (records && !view) setView({ viewedAtMillis: records.viewedAtMillis });
 
   useEffect(() => {
     void dispatch(loadAchievementRecords());
     void dispatch(loadUsageStatistics());
+    return () => void dispatch(markAchievementsViewed());
   }, [dispatch]);
 
-  return children;
+  return (
+    <AchievementsViewContext.Provider value={view}>{children}</AchievementsViewContext.Provider>
+  );
 }
 
 /** Unlocked count out of the whole collection, with an overall progress bar. */

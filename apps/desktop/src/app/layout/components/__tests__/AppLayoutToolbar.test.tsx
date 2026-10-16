@@ -13,12 +13,14 @@ const mocks = vi.hoisted(() => ({
 const commands = vi.hoisted(
   () =>
     ({
+      "open-achievements": { attention: "New achievements", label: "Achievements" },
       "open-chapters": { label: "Manage chapters" },
       "open-settings": { label: "Settings" },
+      "open-statistics": { label: "Statistics" },
       "open-workspace-view-activity": { label: "Activity Feed" },
       "open-workspace-view-exportQueue": { label: "Export Queue" },
       "open-workspace-view-sources": { label: "Sources" },
-    }) as Record<string, { label: string }>,
+    }) as Record<string, { attention?: string; label: string }>,
 );
 
 vi.mock("@/app/hooks/useApplicationCommands", () => ({
@@ -58,6 +60,19 @@ describe("AppLayoutToolbar", () => {
     fireEvent.click(screen.getByRole("button", { name }));
 
     expect(mocks.executeCommand).toHaveBeenCalledWith(commandId, "sidebar");
+  });
+
+  it("marks a command that asks for attention with a ping and announces why", () => {
+    renderToolbar();
+
+    const achievements = screen.getByRole("button", { name: "Achievements, New achievements" });
+    expect(achievements.querySelector("[data-slot='attention']")).not.toBeNull();
+
+    fireEvent.click(achievements);
+    expect(mocks.executeCommand).toHaveBeenCalledWith("open-achievements", "sidebar");
+    expect(
+      screen.getByRole("button", { name: "Statistics" }).querySelector("[data-slot='attention']"),
+    ).toBeNull();
   });
 
   it("renders each command icon and preloads on intent", () => {

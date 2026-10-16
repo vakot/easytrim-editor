@@ -26,6 +26,7 @@ const storyAchievementRecords = {
     "export-mastery-bronze": Date.UTC(2026, 0, 15, 12),
     "export-mastery-silver": Date.UTC(2026, 0, 28, 12),
   },
+  viewedAtMillis: null,
 };
 
 const meta = {

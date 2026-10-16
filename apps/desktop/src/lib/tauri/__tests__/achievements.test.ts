@@ -6,6 +6,7 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
 
 import {
   getAchievementRecords,
+  markAchievementsViewed,
   recordSplashMessageDiscovery,
   unlockAchievements,
 } from "../achievements";
@@ -15,11 +16,13 @@ const nativeRecords = {
   unlockedAchievements: {
     "first-export": { unlockedAtMillis: 1_700_000_000_000 },
   },
+  viewedAtMillis: null,
 };
 
 const records = {
   discoveredSplashMessageIds: ["chosen-frame", "rainbow-mode"],
   unlockedAchievements: { "first-export": 1_700_000_000_000 },
+  viewedAtMillis: null,
 };
 
 describe("achievements IPC adapter", () => {
@@ -56,6 +59,25 @@ describe("achievements IPC adapter", () => {
     });
   });
 
+  it("marks the collection viewed and reads the viewed mark", async () => {
+    mocks.invoke.mockResolvedValue({ ...nativeRecords, viewedAtMillis: 1_700_000_100_000 });
+
+    await expect(markAchievementsViewed()).resolves.toEqual({
+      ...records,
+      viewedAtMillis: 1_700_000_100_000,
+    });
+    expect(mocks.invoke).toHaveBeenCalledWith("mark_achievements_viewed");
+  });
+
+  it("treats a missing viewed mark as never viewed", async () => {
+    mocks.invoke.mockResolvedValue({
+      discoveredSplashMessageIds: nativeRecords.discoveredSplashMessageIds,
+      unlockedAchievements: nativeRecords.unlockedAchievements,
+    });
+
+    await expect(getAchievementRecords()).resolves.toMatchObject({ viewedAtMillis: null });
+  });
+
   it.each([
     ["a missing response", null],
     ["missing discoveries", { unlockedAchievements: {} }],
@@ -64,6 +86,7 @@ describe("achievements IPC adapter", () => {
       { ...nativeRecords, unlockedAchievements: { "first-export": { unlockedAtMillis: "now" } } },
     ],
     ["an empty discovery identifier", { ...nativeRecords, discoveredSplashMessageIds: [""] }],
+    ["a non-numeric viewed mark", { ...nativeRecords, viewedAtMillis: "today" }],
   ])("rejects %s", async (_label, value) => {
     mocks.invoke.mockResolvedValue(value);
 

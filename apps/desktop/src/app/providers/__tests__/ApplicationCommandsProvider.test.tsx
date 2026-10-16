@@ -42,6 +42,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 const state = {
+  achievements: { records: null },
   audio: { tracks: [] as { enabled: boolean }[] },
   crop: {
     flipHorizontal: false,

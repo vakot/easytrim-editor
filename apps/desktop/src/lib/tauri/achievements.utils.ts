@@ -19,6 +19,10 @@ function parseAchievementRecords(value: unknown): AchievementRecords {
         requireTimestamp(requireRecord(unlock, "unlock").unlockedAtMillis),
       ]),
     ),
+    viewedAtMillis:
+      records.viewedAtMillis === null || records.viewedAtMillis === undefined
+        ? null
+        : requireTimestamp(records.viewedAtMillis),
   };
 }
 

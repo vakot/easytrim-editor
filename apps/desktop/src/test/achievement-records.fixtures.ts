@@ -3,6 +3,7 @@ import type { AchievementRecords } from "@/domain/achievement-records";
 export const emptyAchievementRecords: AchievementRecords = {
   discoveredSplashMessageIds: [],
   unlockedAchievements: {},
+  viewedAtMillis: null,
 };
 
 const unlockedAt = Date.UTC(2026, 9, 12, 18, 30);
@@ -32,4 +33,5 @@ export const completeAchievementRecords: AchievementRecords = {
       "the-chosen-one",
     ].map((id) => [id, unlockedAt]),
   ),
+  viewedAtMillis: null,
 };

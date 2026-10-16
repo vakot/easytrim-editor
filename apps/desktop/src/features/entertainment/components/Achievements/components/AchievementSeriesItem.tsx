@@ -16,10 +16,14 @@ import {
   type AchievementTierStatus,
   getAchievementTierLabel,
   getSeriesProgress,
+  isAchievementNew,
+  isEntryNew,
 } from "../../../lib/achievements.utils";
 import type { AchievementSeriesDefinition } from "../../../types/achievements.types";
+import { useAchievementsViewedAt } from "../contexts/AchievementsViewContext";
 import { formatAchievementValue } from "../lib/achievements-format.utils";
 
+import { AchievementNewPing } from "./AchievementNewPing";
 import { AchievementProgress } from "./AchievementProgress";
 
 /** One card for a milestone series: its highest tier, progress to the next, and every tier. */
@@ -27,10 +31,12 @@ function AchievementSeriesItem({ series }: { series: AchievementSeriesDefinition
   const { i18n, t } = useTranslation();
   const records = useAppSelector(selectAchievementRecords);
   const statistics = useAppSelector(selectUsageStatistics);
+  const viewedAt = useAchievementsViewedAt();
 
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const { current, next, progress, tiers } = getSeriesProgress(series, { records, statistics });
   const completed = next === null;
+  const isNew = isEntryNew(series, records, viewedAt);
   const title = series.title(t);
   const Icon = series.icon;
   const unknownDate = t("achievements.unknownDate");
@@ -50,7 +56,7 @@ function AchievementSeriesItem({ series }: { series: AchievementSeriesDefinition
       <ItemMedia
         aria-hidden="true"
         className={cn(
-          "size-11 rounded-lg [&_svg:not([class*='size-'])]:size-5",
+          "relative size-11 rounded-lg [&_svg:not([class*='size-'])]:size-5",
           current
             ? cn("ring-1", achievementTierClassNames[current.tier].medallion)
             : "bg-muted text-muted-foreground",
@@ -58,12 +64,14 @@ function AchievementSeriesItem({ series }: { series: AchievementSeriesDefinition
         variant="icon"
       >
         <Icon />
+        {isNew ? <AchievementNewPing /> : null}
       </ItemMedia>
       <ItemContent className="min-w-0 gap-1">
         <div className="flex items-start justify-between gap-2">
           <ItemTitle className={cn("min-w-0 wrap-break-word", !current && "text-muted-foreground")}>
             {title}
           </ItemTitle>
+          {isNew ? <span className="sr-only">{t("achievements.new")}</span> : null}
           {current ? (
             <Badge
               className={achievementTierClassNames[current.tier].badge}
@@ -102,6 +110,7 @@ function AchievementSeriesItem({ series }: { series: AchievementSeriesDefinition
         <ul aria-label={t("achievements.series.tiersLabel")} className="flex flex-wrap gap-1 pt-1">
           {tiers.map((tier) => (
             <AchievementTierIndicator
+              isNew={isAchievementNew(tier.id, records, viewedAt)}
               key={tier.tier}
               label={tierIndicatorLabel(tier)}
               tier={tier}
@@ -134,22 +143,29 @@ function AchievementSeriesItem({ series }: { series: AchievementSeriesDefinition
       locale,
     );
 
-    return tier.unlockedAt === null
-      ? t("achievements.series.tierLocked", { target, tier: tierLabel })
-      : t("achievements.series.tierUnlocked", {
-          date: formatDateOnly(tier.unlockedAt, locale, unknownDate),
-          target,
-          tier: tierLabel,
-        });
+    if (tier.unlockedAt === null) {
+      return t("achievements.series.tierLocked", { target, tier: tierLabel });
+    }
+    const unlocked = t("achievements.series.tierUnlocked", {
+      date: formatDateOnly(tier.unlockedAt, locale, unknownDate),
+      target,
+      tier: tierLabel,
+    });
+
+    return isAchievementNew(tier.id, records, viewedAt)
+      ? t("achievements.series.tierUnlockedNew", { tier: unlocked })
+      : unlocked;
   }
 }
 
 /** A tier chip: the medal in its tier color and the threshold that unlocks it. */
 function AchievementTierIndicator({
+  isNew,
   label,
   tier,
   value,
 }: {
+  isNew: boolean;
   label: string;
   tier: AchievementTierStatus;
   value: string;
@@ -160,7 +176,7 @@ function AchievementTierIndicator({
     <li
       aria-label={label}
       className={cn(
-        "inline-flex h-5 items-center gap-1 rounded-4xl border px-1.5 text-[0.625rem] font-medium tabular-nums",
+        "relative inline-flex h-5 items-center gap-1 rounded-4xl border px-1.5 text-[0.625rem] font-medium tabular-nums",
         unlocked
           ? achievementTierClassNames[tier.tier].chip
           : achievementTierClassNames[tier.tier].chipLocked,
@@ -170,6 +186,7 @@ function AchievementTierIndicator({
     >
       <Medal aria-hidden="true" className="size-3" />
       <span aria-hidden="true">{value}</span>
+      {isNew ? <AchievementNewPing className="top-0 right-0.5 size-1.5 before:size-1.5" /> : null}
     </li>
   );
 }

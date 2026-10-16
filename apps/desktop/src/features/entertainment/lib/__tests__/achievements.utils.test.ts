@@ -14,7 +14,10 @@ import {
   getEarnedAchievementIds,
   getSeriesProgress,
   getStandaloneAchievementProgress,
+  hasNewAchievements,
+  isAchievementNew,
   isEntryLocked,
+  isEntryNew,
   isEntryUnlocked,
   totalUnlockableAchievements,
 } from "../achievements.utils";
@@ -233,6 +236,40 @@ describe("series progress", () => {
     expect(isEntryUnlocked(series("audio-specialist"), records)).toBe(true);
     expect(isEntryLocked(series("audio-specialist"), records)).toBe(true);
     expect(isEntryUnlocked(series("gif-creator"), records)).toBe(false);
+  });
+});
+
+describe("new achievements", () => {
+  const records = {
+    ...emptyAchievementRecords,
+    unlockedAchievements: { "export-mastery-bronze": 1_000, "export-mastery-silver": 3_000 },
+    viewedAtMillis: 2_000,
+  };
+
+  it("treats achievements unlocked after the last view as new", () => {
+    expect(isAchievementNew("export-mastery-bronze", records, 2_000)).toBe(false);
+    expect(isAchievementNew("export-mastery-silver", records, 2_000)).toBe(true);
+    expect(isAchievementNew("export-mastery-gold", records, 2_000)).toBe(false);
+    expect(isEntryNew(series("export-mastery"), records, 2_000)).toBe(true);
+    expect(isEntryNew(series("export-mastery"), records, 3_000)).toBe(false);
+  });
+
+  it("treats every unlock as new before the collection was ever viewed", () => {
+    expect(isAchievementNew("export-mastery-bronze", records, null)).toBe(true);
+    expect(hasNewAchievements({ ...records, viewedAtMillis: null })).toBe(true);
+  });
+
+  it("reports new achievements from the stored viewed mark, ignoring unknown IDs", () => {
+    expect(hasNewAchievements(records)).toBe(true);
+    expect(hasNewAchievements({ ...records, viewedAtMillis: 3_000 })).toBe(false);
+    expect(
+      hasNewAchievements({
+        ...emptyAchievementRecords,
+        unlockedAchievements: { "retired-achievement": 5_000 },
+        viewedAtMillis: 1_000,
+      }),
+    ).toBe(false);
+    expect(hasNewAchievements(null)).toBe(false);
   });
 });
 

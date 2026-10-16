@@ -37,4 +37,18 @@ async function recordSplashMessageDiscovery(messageId: string): Promise<Achievem
   }
 }
 
-export { getAchievementRecords, recordSplashMessageDiscovery, unlockAchievements };
+/** Marks the collection as viewed now, so only achievements unlocked later count as new. */
+async function markAchievementsViewed(): Promise<AchievementRecords> {
+  try {
+    return parseAchievementRecords(await invoke<unknown>("mark_achievements_viewed"));
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+export {
+  getAchievementRecords,
+  markAchievementsViewed,
+  recordSplashMessageDiscovery,
+  unlockAchievements,
+};

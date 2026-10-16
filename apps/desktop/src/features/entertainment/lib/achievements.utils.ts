@@ -196,6 +196,40 @@ function isEntryLocked(entry: AchievementCollectionEntry, records: AchievementRe
     : getAchievementUnlockedAt(entry.id, records) === null;
 }
 
+/**
+ * Whether an achievement was unlocked after `viewedAtMillis`, when the collection was viewed; a
+ * collection that was never viewed makes every unlocked achievement new.
+ */
+function isAchievementNew(
+  id: string,
+  records: AchievementRecords | null,
+  viewedAtMillis: number | null,
+): boolean {
+  const unlockedAt = getAchievementUnlockedAt(id, records);
+  if (unlockedAt === null) return false;
+  return viewedAtMillis === null || unlockedAt > viewedAtMillis;
+}
+
+/** Whether any tier or standalone achievement of the collection is new. */
+function hasNewAchievements(records: AchievementRecords | null): boolean {
+  const viewedAt = records?.viewedAtMillis ?? null;
+  return unlockableAchievements.some((achievement) =>
+    isAchievementNew(achievement.id, records, viewedAt),
+  );
+}
+
+function isEntryNew(
+  entry: AchievementCollectionEntry,
+  records: AchievementRecords | null,
+  viewedAtMillis: number | null,
+): boolean {
+  return entry.kind === "series"
+    ? getSeriesTiers(entry, records).some((tier) =>
+        isAchievementNew(tier.id, records, viewedAtMillis),
+      )
+    : isAchievementNew(entry.id, records, viewedAtMillis);
+}
+
 function getAchievementTierLabel(tier: AchievementTier, t: TFunction): string {
   switch (tier) {
     case "bronze":
@@ -221,7 +255,10 @@ export {
   getSeriesProgress,
   getStandaloneAchievementProgress,
   getUnlockableAchievement,
+  hasNewAchievements,
+  isAchievementNew,
   isEntryLocked,
+  isEntryNew,
   isEntryUnlocked,
   totalUnlockableAchievements,
 };

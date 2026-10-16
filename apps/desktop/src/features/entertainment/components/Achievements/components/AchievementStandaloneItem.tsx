@@ -13,9 +13,12 @@ import { formatDateOnly } from "@/lib/date-time.utils";
 import {
   getAchievementUnlockedAt,
   getStandaloneAchievementProgress,
+  isAchievementNew,
 } from "../../../lib/achievements.utils";
 import type { StandaloneAchievementDefinition } from "../../../types/achievements.types";
+import { useAchievementsViewedAt } from "../contexts/AchievementsViewContext";
 
+import { AchievementNewPing } from "./AchievementNewPing";
 import { AchievementProgress } from "./AchievementProgress";
 
 function AchievementStandaloneItem({
@@ -26,10 +29,12 @@ function AchievementStandaloneItem({
   const { i18n, t } = useTranslation();
   const records = useAppSelector(selectAchievementRecords);
   const statistics = useAppSelector(selectUsageStatistics);
+  const viewedAt = useAchievementsViewedAt();
 
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const unlockedAt = getAchievementUnlockedAt(definition.id, records);
   const unlocked = unlockedAt !== null;
+  const isNew = isAchievementNew(definition.id, records, viewedAt);
   // A locked secret reveals nothing about itself, not even how close it is.
   const concealed = definition.secret === true && !unlocked;
   const progress =
@@ -51,12 +56,13 @@ function AchievementStandaloneItem({
       <ItemMedia
         aria-hidden="true"
         className={cn(
-          "size-11 rounded-lg [&_svg:not([class*='size-'])]:size-5",
+          "relative size-11 rounded-lg [&_svg:not([class*='size-'])]:size-5",
           unlocked ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
         )}
         variant="icon"
       >
         <Icon />
+        {isNew ? <AchievementNewPing /> : null}
       </ItemMedia>
       <ItemContent className="min-w-0 gap-1">
         <div className="flex items-start justify-between gap-2">
@@ -65,6 +71,7 @@ function AchievementStandaloneItem({
           >
             {title}
           </ItemTitle>
+          {isNew ? <span className="sr-only">{t("achievements.new")}</span> : null}
           <Badge size="xs" variant={unlocked ? "success" : "outline"}>
             {unlocked ? <Check aria-hidden="true" /> : <Lock aria-hidden="true" />}
             {unlocked ? t("achievements.status.unlocked") : t("achievements.status.locked")}
