@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added animated, randomly selected splash messages to the empty preview.
 - Added editable video chapters with a chapter list, frame-accurate ranges, moving and resizing directly on the Timeline, and trim-aware chapter export.
 - Export dialogs now support selecting a separate frame-aligned range without changing the Timeline selection.
 
