@@ -208,10 +208,27 @@ there and stories cannot record discoveries or unlock anything.
 ## Secret achievements
 
 Until unlocked, a secret achievement shows `???`, a lock icon, and a generic description, with no
-title, unlock condition, or progress. After unlocking it shows its title, description, and unlock
-date, and its card and icon take a restrained gradient through the Bronze, Silver, and Gold theme
-colors, which distinguishes it from the tier-colored series cards. A secret's title appears in
-notifications only once it is unlocked.
+title, unlock condition, or progress, inside a faint thin gradient ring. After unlocking it shows
+its title, description, and unlock date, framed by an iridescent gradient border with a soft glow
+and a gradient-stroked icon. The palette is the `--achievement-secret-*` theme tokens, apart from
+the Bronze, Silver, and Gold progression. A secret's title appears in notifications only once it is
+unlocked.
+
+### Styling
+
+The treatment is CSS in `AchievementSecret.module.css`, driven by data attributes
+(`data-secret-variant`, `-state`, `-animated`, `-icon`) and the `--secret-thickness` and
+`--secret-glow` custom properties that `getAchievementSecretCardProps` sets from an
+`AchievementSecretStyle`. The border is a masked ring over the card's own border, so the card
+content and shadcn `Item` styling are untouched. Motion only translates or rotates a pre-painted
+layer, never repainting, and `prefers-reduced-motion` leaves the static gradient.
+
+Four variants are implemented and still under evaluation, with no final choice yet:
+`static-iridescent` (the provisional default), `animated-gradient`, `rotating-highlight`, and
+`prismatic-holographic`. Storybook's "Achievement Secret Styles" stories render the real cards for
+every card state with controls for the variant, animation, glow, and border thickness, and an
+"All variants" comparison beside the tiered cards. `AchievementSecretStyleContext` overrides the
+style for them; the application uses `defaultAchievementSecretStyle`.
 
 ## Persistence
 
