@@ -21,16 +21,19 @@ values live in `domain/usage-statistics.ts`.
 
 | Metric                | Rule                                                                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Completed Exports     | Regular Exports + Lossless Cuts.                                                                                               |
-| Regular Exports       | Successful Optimized, GIF, and audio exports (re-encoded output).                                                              |
+| Completed Exports     | Optimized Exports + Lossless Cuts + GIF Exports + Audio Exports.                                                               |
+| Optimized Exports     | Successful Optimized Exports, which re-encode the video.                                                                       |
 | Lossless Cuts         | Successful Fast Exports, which always stream-copy the video; audio may still be re-encoded when tracks are merged or filtered. |
+| GIF Exports           | Successful GIF exports.                                                                                                        |
+| Audio Exports         | Successful audio-only exports.                                                                                                 |
 | Processing Time       | Wall-clock run time of the FFmpeg process; queue waiting happens before the native command starts.                             |
 | Source Data Processed | Source file size read when the export starts, counted once per completed export.                                               |
 | Output Data Generated | Verified output file size read from filesystem metadata after FFmpeg exits.                                                    |
 | Storage Saved         | Source Data Processed − Output Data Generated; negative when outputs are larger.                                               |
 | First / Last Export   | Completion times (Unix milliseconds) of the earliest and latest recorded exports.                                              |
 
-Every export has exactly one source and one output, so these rules need no multi-file weighting.
+Each export route has its own count, so the route counts never overlap. Every export has exactly one
+source and one output, so these rules need no multi-file weighting.
 A source exported three times contributes its size three times.
 Sizes and durations are measured, never estimated from media metadata. Existing queue history is
 not backfilled because its sizes and completion cannot be verified after the fact.
@@ -50,8 +53,10 @@ The document is `<app data>/statistics/usage-statistics.json`:
 ```json
 {
   "version": 1,
-  "regularExports": 0,
+  "optimizedExports": 0,
   "losslessExports": 0,
+  "gifExports": 0,
+  "audioExports": 0,
   "processingMillis": 0,
   "sourceBytes": 0,
   "outputBytes": 0,
