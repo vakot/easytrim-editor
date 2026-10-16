@@ -9,6 +9,7 @@ import {
   editingInstanceExportAttemptQueued,
   editingInstanceGifSettingsChanged,
   editingInstancesAdded,
+  editingInstancesClosed,
 } from "@/app/store/slices/editing-instances-slice";
 import { exportArgumentsChanged } from "@/app/store/slices/export-presets-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
@@ -291,6 +292,66 @@ describe("workspace recovery contract", () => {
     dismissWorkspaceRecoveryNotice();
     expect(getWorkspaceRecoveryCandidate()).toEqual(candidate);
     expect(localStorage.getItem(CANDIDATE_KEY)).toBe(JSON.stringify(oldBackup));
+  });
+
+  it("keeps the recovery data across consecutive crashes while the session has no work", () => {
+    const crashedStore = createAppStore();
+    crashedStore.dispatch(editingInstancesAdded([instance("first")]));
+    const oldBackup = createWorkspaceRecoveryBackup(crashedStore.getState(), {
+      sessionId: "crashed-session",
+    });
+
+    localStorage.setItem(CURRENT_KEY, JSON.stringify(oldBackup));
+
+    for (const sessionId of ["second-session", "third-session", "fourth-session"]) {
+      const idleStore = createAppStore();
+      initializeWorkspaceRecovery(idleStore, sessionId, true);
+
+      expect(getWorkspaceRecoveryCandidate()?.sessionId).toBe("crashed-session");
+      expect(localStorage.getItem(CANDIDATE_KEY)).toBe(JSON.stringify(oldBackup));
+      expect(localStorage.getItem(CURRENT_KEY)).toBe(JSON.stringify(oldBackup));
+    }
+  });
+
+  it("supersedes the previous recovery data once a new session produces work", () => {
+    const crashedStore = createAppStore();
+    crashedStore.dispatch(editingInstancesAdded([instance("first")]));
+    localStorage.setItem(
+      CURRENT_KEY,
+      JSON.stringify(
+        createWorkspaceRecoveryBackup(crashedStore.getState(), { sessionId: "crashed-session" }),
+      ),
+    );
+
+    const resumedStore = createAppStore();
+    initializeWorkspaceRecovery(resumedStore, "resumed-session", true);
+    resumedStore.dispatch(editingInstancesAdded([instance("new", secondSource)]));
+
+    initializeWorkspaceRecovery(createAppStore(), "next-session", true);
+
+    expect(getWorkspaceRecoveryCandidate()?.sessionId).toBe("resumed-session");
+    expect(getWorkspaceRecoveryCandidate()?.instances.map(({ id }) => id)).toEqual(["new"]);
+  });
+
+  it("does not resurrect old recovery data after the resumed workspace is emptied", () => {
+    const crashedStore = createAppStore();
+    crashedStore.dispatch(editingInstancesAdded([instance("first")]));
+    localStorage.setItem(
+      CURRENT_KEY,
+      JSON.stringify(
+        createWorkspaceRecoveryBackup(crashedStore.getState(), { sessionId: "crashed-session" }),
+      ),
+    );
+
+    const resumedStore = createAppStore();
+    initializeWorkspaceRecovery(resumedStore, "resumed-session", true);
+    resumedStore.dispatch(editingInstancesAdded([instance("first")]));
+    resumedStore.dispatch(editingInstancesClosed(["first"]));
+
+    initializeWorkspaceRecovery(createAppStore(), "next-session", true);
+
+    expect(getWorkspaceRecoveryCandidate()).toBeNull();
+    expect(localStorage.getItem(CANDIDATE_KEY)).toBeNull();
   });
 
   it("migrates stage-based processing in recovered snapshots and stored export requests", () => {

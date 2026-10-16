@@ -152,6 +152,11 @@ function initializeWorkspaceRecovery(
 
   let previousBackup: WorkspaceRecoveryBackup | null = null;
   const save = () => {
+    // Until this session has work of its own, the stored current backup still belongs to the
+    // previous crashed session. Overwriting it with an empty workspace would discard it if the
+    // app crashes again before the user resumes.
+    if (!previousBackup && selectEditingInstances(store.getState()).length === 0) return;
+
     const backup = createWorkspaceRecoveryBackup(store.getState(), {
       createdAt: previousBackup?.createdAt,
       id: previousBackup?.id,
