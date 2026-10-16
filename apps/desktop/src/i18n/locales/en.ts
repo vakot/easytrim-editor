@@ -1118,7 +1118,6 @@ export const en = {
       results_other: "{{count}} results",
       shortcutLabel: "Source search keyboard shortcut: {{shortcut}}",
     },
-    shortcutTooltip: "{{label}} ({{shortcut}})",
     status: {
       deleted: "Deleted",
       missing: "Missing",

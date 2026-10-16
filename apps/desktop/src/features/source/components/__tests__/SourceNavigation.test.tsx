@@ -46,7 +46,12 @@ describe("SourceNavigation", () => {
     expect(nextButton).not.toBeDisabled();
 
     await user.hover(nextButton);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Next source (Alt+RightArrow)");
+    const tooltip = await screen.findByRole("tooltip");
+    expect(tooltip).toHaveTextContent("Next source");
+    const keys = tooltip.querySelectorAll('[data-slot="kbd"]');
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toHaveTextContent("Alt");
+    expect(keys[1]?.querySelector("svg")).toBeInTheDocument();
 
     await user.click(nextButton);
     expect(commandRuntime.executeCommand).toHaveBeenCalledWith("next-source", "button");

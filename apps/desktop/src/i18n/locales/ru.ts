@@ -1074,7 +1074,6 @@ export const ru = {
       results_other: "{{count}} результата",
       shortcutLabel: "Сочетание клавиш для поиска источников: {{shortcut}}",
     },
-    shortcutTooltip: "{{label}} ({{shortcut}})",
     status: {
       deleted: "Удалено",
       missing: "Отсутствует",
