@@ -25,7 +25,7 @@ function PreviewSplash({
       )}
       data-keyboard-shortcut-ignore
       onClick={() => {
-        if (!fixedMessage) setRandomMessage(chooseSplashMessage(message.id));
+        if (!fixedMessage) setRandomMessage(chooseSplashMessage());
       }}
       onKeyDown={(event) => event.stopPropagation()}
       type="button"
