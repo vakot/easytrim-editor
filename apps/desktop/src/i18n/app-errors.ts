@@ -106,6 +106,8 @@ function localizeAppError(error: AppError, t: TFunction): string {
       return t("audio.errors.waveform.previewCouldNotBeDisplayed");
     case "export.interruptedWhenEasyTrimClosedUnexpectedly":
       return t("export.errors.interruptedWhenEasyTrimClosedUnexpectedly");
+    case "achievements.identifierIsInvalid":
+      return t("app.errors.achievements.identifierIsInvalid");
     case "diagnostics.diagnosticEventNameIsInvalid":
       return t("app.errors.diagnostics.diagnosticEventNameIsInvalid");
     case "diagnostics.diagnosticLevelIsInvalid":

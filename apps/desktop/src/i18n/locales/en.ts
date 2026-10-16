@@ -47,6 +47,9 @@ export const en = {
     },
     dragUnavailable: "Drag and drop is unavailable: {{message}}",
     errors: {
+      achievements: {
+        identifierIsInvalid: "The achievement identifier is invalid",
+      },
       diagnostics: {
         diagnosticEventNameIsInvalid: "The diagnostic event name is invalid",
         diagnosticLevelIsInvalid: "The diagnostic level is invalid",
