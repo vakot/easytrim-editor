@@ -39,6 +39,18 @@ Element.prototype.hasPointerCapture = () => true;
 Element.prototype.setPointerCapture = () => undefined;
 Element.prototype.releasePointerCapture = () => undefined;
 
+// JSDOM has no matchMedia; report that no media query matches unless a test stubs it.
+window.matchMedia ??= (query: string): MediaQueryList => ({
+  addEventListener: () => undefined,
+  addListener: () => undefined,
+  dispatchEvent: () => false,
+  matches: false,
+  media: query,
+  onchange: null,
+  removeEventListener: () => undefined,
+  removeListener: () => undefined,
+});
+
 // JSDOM has no Web Animations API; drag-and-drop measurement asks for running animations.
 for (const target of [document, Element.prototype]) {
   Object.defineProperty(target, "getAnimations", { configurable: true, value: () => [] });
