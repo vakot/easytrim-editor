@@ -30,13 +30,23 @@ The collection mixes two kinds of entries, each shown as one card:
 - **Milestone series** have a `title`, `description`, Lucide `icon`, `category`, `metric`, and
   Bronze, Silver, and Gold `thresholds`. Each tier is an independently unlockable achievement with
   its own identifier, `<series id>-<tier>` such as `export-mastery-silver`, and its own unlock time.
-- **Standalone achievements** have a single `target` and an optional `secret` flag. The secret
-  The Chosen One is the only one today.
+- **Standalone achievements** have a `condition` and an optional `secret` flag. The secrets are The
+  Chosen One and the three collectors.
 
-Titles and descriptions are functions that call `t` with literal keys. An achievement unlocks once
-its metric reaches its threshold or target. Adding a series or achievement needs only a registry
-entry and its English copy; the dialog, statistics metric, and notifications pick it up. Never
-rename or reuse an existing identifier: it is the persisted key of the unlock.
+Titles and descriptions are functions that call `t` with literal keys. Adding a series or
+achievement needs only a registry entry and its English copy; the dialog, statistics metric, and
+notifications pick it up.
+
+### Conditions
+
+An achievement unlocks when its condition holds. Conditions are declarative, and each reads only
+data that persists, so evaluating one never depends on what else the registry contains:
+
+| Condition    | Holds when                                                                     | Used by                           |
+| ------------ | ------------------------------------------------------------------------------ | --------------------------------- |
+| `metric`     | a usage statistics metric reaches a target; series tiers are metric conditions | every series tier                 |
+| `discovery`  | every one of a list of unique events was discovered                            | The Chosen One (legendary splash) |
+| `collection` | every one of a list of other achievements is unlocked                          | the three collectors              |
 
 | Series             | Metric              | Bronze | Silver | Gold   |
 | ------------------ | ------------------- | ------ | ------ | ------ |
@@ -48,24 +58,66 @@ rename or reuse an existing identifier: it is the persisted key of the unlock.
 | Data Cruncher      | `sourceBytes`       | 1 GB   | 10 GB  | 100 GB |
 | Storage Saver      | `storageSavedBytes` | 100 MB | 1 GB   | 10 GB  |
 
-| Metric                    | Source                                                           | Unit     |
-| ------------------------- | ---------------------------------------------------------------- | -------- |
-| `completedExports`        | all export routes in usage statistics                            | count    |
-| `losslessExports`         | Fast Exports (Lossless Cuts)                                     | count    |
-| `gifExports`              | GIF exports                                                      | count    |
-| `audioExports`            | audio-only exports                                               | count    |
-| `processingMillis`        | FFmpeg processing time                                           | duration |
-| `sourceBytes`             | Source Data Processed                                            | bytes    |
-| `storageSavedBytes`       | Storage Saved, never below zero                                  | bytes    |
-| `legendarySplashMessages` | distinct discovered IDs that are legendary in the splash catalog | count    |
+| Metric              | Source                                | Unit     |
+| ------------------- | ------------------------------------- | -------- |
+| `completedExports`  | all export routes in usage statistics | count    |
+| `losslessExports`   | Fast Exports (Lossless Cuts)          | count    |
+| `gifExports`        | GIF exports                           | count    |
+| `audioExports`      | audio-only exports                    | count    |
+| `processingMillis`  | FFmpeg processing time                | duration |
+| `sourceBytes`       | Source Data Processed                 | bytes    |
+| `storageSavedBytes` | Storage Saved, never below zero       | bytes    |
 
 Byte thresholds use binary units (1 GB = 1024³ bytes), matching how the dialogs format sizes. The
-Chosen One's target is the number of legendary splash messages, so it follows the splash catalog
-instead of duplicating its list. Thresholds are meant to be reached through normal use; the
-collection has no XP, levels, or grind-only milestones.
+Chosen One requires every legendary splash message, taken from the splash catalog instead of
+duplicating its list. Thresholds are meant to be reached through normal use; the collection has no
+XP, levels, or grind-only milestones.
 
-The collection counts every tier and standalone achievement: seven series and The Chosen One make 22
-achievements, which is the total in the dialog header and the Statistics dialog.
+The collection counts every tier and standalone achievement: seven series, The Chosen One, and the
+three collectors make 25 achievements, which is the total in the dialog header and the Statistics
+dialog.
+
+### Collectors
+
+Bronze Collector, Silver Collector, and Gold Collector are secret standalone achievements. Each
+requires the Bronze, Silver, or Gold tier of **all seven original series** and nothing else, so a
+collector does not need the lower tiers and never requires any collector, itself included. Their
+requirements are explicit literal identifier lists in the registry, never derived from the tiers
+the registry currently contains. A series added later therefore cannot change what a collector
+asks for or lock a collector that was already earned.
+
+A collector is earned in the same evaluation as the tier that completes it. Evaluation repeats until
+nothing more can be earned, treating achievements found earlier in the pass as unlocked, and sends
+everything it found to the native store in one call. A collector therefore unlocks without another
+export, a restart, or reopening the dialog, and retroactively when all its tiers were unlocked
+before the collector existed. They announce like any other unlock, as a summary together with the
+tier that completed them.
+
+## Catalog evolution
+
+The registry changes over time while the saved records keep their meaning. These rules keep both
+compatible:
+
+1. **Identifiers are permanent.** Never reuse an identifier for an unrelated achievement.
+2. **Presentation is free.** Renaming, retitling, or restyling an achievement never changes its
+   identifier, and needs no migration because none of it is persisted.
+3. **New achievements are evaluated retroactively** against all stored history, such as usage
+   statistics, discovered splash messages, and existing unlocks, the first time they ship.
+4. **Lowering a threshold** can unlock the achievement retroactively.
+5. **Raising a threshold never revokes.** Unlocks are stored, not recomputed, so an achievement
+   stays unlocked and keeps its timestamp even when its threshold would no longer be met.
+6. **Removed achievements keep their records.** Retiring an achievement only drops it from the
+   active catalog, the dialog, and the unlocked count. Its unlock stays in the native records and
+   still counts toward collections that list it.
+7. **A changed persisted identifier needs an explicit migration** in the native records decoder,
+   like the version 2 mapping below, with a version bump.
+8. **Collector requirements stay fixed** when series are added. A larger set deserves a new
+   collector with its own identifier, not an edited list.
+
+Unlocked achievements and their original timestamps are immutable: the native store only inserts
+new unlocks. Changing a threshold, presentation, or the set of series does not change the persisted
+document shape, so none of it bumps the records version; only an incompatible identifier or shape
+change does.
 
 ## Collection cards
 
@@ -156,7 +208,10 @@ there and stories cannot record discoveries or unlock anything.
 ## Secret achievements
 
 Until unlocked, a secret achievement shows `???`, a lock icon, and a generic description, with no
-unlock condition or progress. After unlocking it shows like any other achievement.
+title, unlock condition, or progress. After unlocking it shows its title, description, and unlock
+date, and its card and icon take a restrained gradient through the Bronze, Silver, and Gold theme
+colors, which distinguishes it from the tier-colored series cards. A secret's title appears in
+notifications only once it is unlocked.
 
 ## Persistence
 
