@@ -1128,6 +1128,58 @@ export const en = {
     },
     title: "Imported Sources",
   },
+  statistics: {
+    description: "Your export activity across sessions, kept only on this device",
+    empty: "Statistics begin accumulating after your first successful export",
+    metrics: {
+      completedExports: {
+        description: "Successful exports of every kind",
+        label: "Completed Exports",
+      },
+      firstExport: {
+        label: "First Export",
+      },
+      lastExport: {
+        label: "Last Export",
+      },
+      losslessCuts: {
+        description: "Fast Exports that copy the video without re-encoding",
+        label: "Lossless Cuts",
+      },
+      outputData: {
+        description: "Total size of the exported files",
+        label: "Output Data Generated",
+      },
+      processingTime: {
+        description: "Time spent rendering, excluding time waiting in the queue",
+        label: "Processing Time",
+      },
+      regularExports: {
+        description: "Optimized, GIF, and audio exports that re-encode media",
+        label: "Regular Exports",
+      },
+      sourceData: {
+        description: "Combined size of the source file behind each export",
+        label: "Source Data Processed",
+      },
+      storageSaved: {
+        grew: "Exports are larger than their sources",
+        label: "Storage Saved",
+        saved: "Exports are smaller than their sources",
+        unchanged: "Exports match the size of their sources",
+      },
+    },
+    notYet: "Not yet",
+    open: "Statistics",
+    sections: {
+      activity: "Activity",
+      breakdown: "Export Breakdown",
+      data: "Data Processing",
+      overview: "Overview",
+    },
+    title: "Statistics",
+    unavailable: "Statistics could not be loaded",
+  },
   support: {
     changelog: {
       categories: {

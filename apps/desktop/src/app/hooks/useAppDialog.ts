@@ -51,10 +51,15 @@ function useSettingsDialog() {
   return useAppDialog("settings");
 }
 
+function useStatisticsDialog() {
+  return useAppDialog("statistics");
+}
+
 export {
   useAppDialog,
   useChangelogDialog,
   useChaptersDialog,
   useCommandPaletteDialog,
   useSettingsDialog,
+  useStatisticsDialog,
 };

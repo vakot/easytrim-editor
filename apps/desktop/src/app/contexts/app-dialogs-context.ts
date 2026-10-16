@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-type AppDialogId = "changelog" | "chapters" | "command-palette" | "settings";
+type AppDialogId = "changelog" | "chapters" | "command-palette" | "settings" | "statistics";
 
 interface AppDialogOpenOptions {
   manual?: boolean;

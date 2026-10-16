@@ -6,12 +6,14 @@ import { useCheckForUpdatesCommand } from "./definitions/check-for-updates.comma
 import { useOpenChangelogCommand } from "./definitions/open-changelog.command";
 import { useOpenProjectPageCommand } from "./definitions/open-project-page.command";
 import { useOpenReleasePageCommand } from "./definitions/open-release-page.command";
+import { useOpenStatisticsCommand } from "./definitions/open-statistics.command";
 import { useShowLogsCommand } from "./definitions/show-logs.command";
 import { useSupportProjectCommand } from "./definitions/support-project.command";
 
 function useHelpCommandGroups() {
   const { t } = useTranslation();
   const openChangelog = useOpenChangelogCommand();
+  const openStatistics = useOpenStatisticsCommand();
   const checkForUpdates = useCheckForUpdatesCommand();
   const openProjectPage = useOpenProjectPageCommand();
   const showLogs = useShowLogsCommand();
@@ -20,6 +22,7 @@ function useHelpCommandGroups() {
   return [
     defineApplicationCommandGroup("help", t("commands.sections.help"), [
       openChangelog,
+      openStatistics,
       checkForUpdates,
       openProjectPage,
       showLogs,
