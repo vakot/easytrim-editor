@@ -5,7 +5,7 @@ use std::{
     path::PathBuf,
     process::Command,
     sync::{Arc, atomic::Ordering},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use serde::Serialize;
@@ -14,7 +14,10 @@ use tauri::{AppHandle, State, ipc::Channel};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::{
+    application::statistics::{StatisticsStore, unix_millis_now},
+    commands::statistics::record_statistics_write_failure,
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
+    domain::statistics::{CompletedExport, ExportKind},
     error::{AppError, AppErrorMessageId},
     media::audio_filters::{
         analysis::{LoudnessAnalysisRequest, analyze_chain_loudness},
@@ -77,6 +80,11 @@ pub struct ExportResult {
 struct ExportDiagnosticContext {
     parent_operation_id: Option<String>,
     snapshot_id: Option<String>,
+}
+
+struct ExportStatistics {
+    kind: ExportKind,
+    store: Arc<StatisticsStore>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -292,6 +300,7 @@ pub fn resolve_output_selection(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn export_fast(
     request: FastExportRequest,
     output_id: String,
@@ -300,6 +309,7 @@ pub async fn export_fast(
     diagnostic_snapshot_id: Option<String>,
     state: State<'_, AppState>,
     diagnostics: State<'_, Arc<DiagnosticsState>>,
+    statistics: State<'_, Arc<StatisticsStore>>,
 ) -> Result<ExportResult, AppError> {
     // The queue retains the source across retries and explicitly releases it after terminal work.
     async {
@@ -338,6 +348,10 @@ pub async fn export_fast(
                 parent_operation_id: diagnostic_parent_operation_id,
                 snapshot_id: diagnostic_snapshot_id,
             },
+            ExportStatistics {
+                kind: ExportKind::Lossless,
+                store: Arc::clone(&statistics),
+            },
         )
         .await
     }
@@ -345,6 +359,7 @@ pub async fn export_fast(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn render_optimized(
     request: OptimizedExportRequest,
     output_id: String,
@@ -353,6 +368,7 @@ pub async fn render_optimized(
     diagnostic_snapshot_id: Option<String>,
     state: State<'_, AppState>,
     diagnostics: State<'_, Arc<DiagnosticsState>>,
+    statistics: State<'_, Arc<StatisticsStore>>,
 ) -> Result<ExportResult, AppError> {
     // The queue retains the source across retries and explicitly releases it after terminal work.
     async {
@@ -391,6 +407,10 @@ pub async fn render_optimized(
                 parent_operation_id: diagnostic_parent_operation_id,
                 snapshot_id: diagnostic_snapshot_id,
             },
+            ExportStatistics {
+                kind: ExportKind::Regular,
+                store: Arc::clone(&statistics),
+            },
         )
         .await
     }
@@ -398,6 +418,7 @@ pub async fn render_optimized(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn render_gif(
     request: GifExportRequest,
     output_id: String,
@@ -406,6 +427,7 @@ pub async fn render_gif(
     diagnostic_snapshot_id: Option<String>,
     state: State<'_, AppState>,
     diagnostics: State<'_, Arc<DiagnosticsState>>,
+    statistics: State<'_, Arc<StatisticsStore>>,
 ) -> Result<ExportResult, AppError> {
     async {
         let source = state.resolve_export_source(&request.source_path)?;
@@ -428,6 +450,10 @@ pub async fn render_gif(
                 parent_operation_id: diagnostic_parent_operation_id,
                 snapshot_id: diagnostic_snapshot_id,
             },
+            ExportStatistics {
+                kind: ExportKind::Regular,
+                store: Arc::clone(&statistics),
+            },
         )
         .await
     }
@@ -435,6 +461,7 @@ pub async fn render_gif(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn render_audio(
     request: AudioExportRequest,
     output_id: String,
@@ -443,6 +470,7 @@ pub async fn render_audio(
     diagnostic_snapshot_id: Option<String>,
     state: State<'_, AppState>,
     diagnostics: State<'_, Arc<DiagnosticsState>>,
+    statistics: State<'_, Arc<StatisticsStore>>,
 ) -> Result<ExportResult, AppError> {
     async {
         let source = state.resolve_export_source(&request.source_path)?;
@@ -478,6 +506,10 @@ pub async fn render_audio(
             ExportDiagnosticContext {
                 parent_operation_id: diagnostic_parent_operation_id,
                 snapshot_id: diagnostic_snapshot_id,
+            },
+            ExportStatistics {
+                kind: ExportKind::Regular,
+                store: Arc::clone(&statistics),
             },
         )
         .await
@@ -587,6 +619,7 @@ async fn run_export(
     initial_phase: ExportPhase,
     on_progress: Channel<ExportProgress>,
     diagnostic: ExportDiagnosticContext,
+    statistics: ExportStatistics,
 ) -> Result<ExportResult, AppError> {
     let ExportDiagnosticContext {
         parent_operation_id: diagnostic_parent_operation_id,
@@ -618,8 +651,11 @@ async fn run_export(
         total_size: None,
         phase: initial_phase,
     });
+    // Read before rendering: a successful export may delete its source once the queue is done.
+    let source_bytes = fs::metadata(&source_path).map_or(0, |metadata| metadata.len());
     let cancellation_for_check = cancellation.clone();
     let operation_for_task = operation_id.clone();
+    let processing_started_at = Instant::now();
     let task_result = tauri::async_runtime::spawn_blocking(move || {
         let mut progress_values = HashMap::new();
         let mut phase = initial_phase;
@@ -676,6 +712,8 @@ async fn run_export(
         })
     })
     .await;
+    let processing_millis =
+        u64::try_from(processing_started_at.elapsed().as_millis()).unwrap_or(u64::MAX);
     match &task_result {
         Ok(Ok(process)) => record_ffmpeg_process_exit(
             &diagnostics,
@@ -800,6 +838,17 @@ async fn run_export(
         return Err(AppError::render_failed(
             AppErrorMessageId::ExportRenderedOutputIsEmpty,
         ));
+    }
+    // The single success point of a native export: retries, requeues, and duplicate frontend
+    // completion events never reach it twice for the same operation.
+    if let Err(error) = statistics.store.record(&CompletedExport {
+        kind: statistics.kind,
+        processing_millis,
+        source_bytes,
+        output_bytes: output_size,
+        completed_at_millis: unix_millis_now(),
+    }) {
+        record_statistics_write_failure(&diagnostics, &error);
     }
     record_ffmpeg_event(
         &diagnostics,

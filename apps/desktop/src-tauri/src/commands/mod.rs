@@ -5,3 +5,4 @@ pub mod frame;
 pub mod media;
 pub mod queue;
 pub mod source;
+pub mod statistics;

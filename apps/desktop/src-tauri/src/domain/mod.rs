@@ -1,4 +1,5 @@
 pub mod source;
+pub mod statistics;
 
 use serde::{Deserialize, Serialize};
 
