@@ -86,41 +86,39 @@ Audio is repositioned after the final video seek, not on every pointer update. S
 disposes the scheduler and pending interaction frames. Media range reads run on a blocking worker,
 not the window thread, and each GET body is capped at 4 MiB.
 
-Waveform generation analyzes activity and counts decoded samples in one pass, then streams each
-selected audio track through a bounded-memory pixel-bucket reducer. It stores a versioned `ETWF`
-envelope with one 8-bit square-root-scaled average-absolute amplitude per image column. A small
-run-length encoding is used only when it reduces the artifact size. Source state owns each temporary
-envelope, so replacing a source or regenerating a stream releases the old artifact. This still
-decodes audio a second time for each selected track. Background media work can still take minutes.
-Audio extraction and incompatible-source proxy encoding remain full-source operations. Original
-codec, keyframe spacing, disk speed, and WebView support still limit seek latency; this is not a
-guarantee of instantaneous decoding for every video.
+Waveform generation consumes canonical stereo float PCM from `AudioProcessingEngine`, using the
+complete committed filter chain before Track Volume. It resolves Loudness Normalization
+measurements over the selected trim range before rendering; the envelope still covers the full
+source timeline, including silence before delayed streams and after shorter streams. Filter edits
+invalidate the waveform, and trim edits invalidate it when the chain includes normalization.
+Track Volume affects playback mixing and scales the canvas display without regenerating the envelope.
 
-The activity/sample-count pass remains separate from envelope aggregation. The exact decoded sample
-count is needed before assigning the existing integer sample ranges to streaming bins. Combining
-the passes would require retaining full decoded PCM before binning or changing that alignment; the
-current measurements do not justify either tradeoff.
+The reducer processes bounded PCM blocks and stores a versioned `ETWF` envelope with 8-bit peak
+and RMS values for each stereo channel and column. Peaks and RMS are calculated in float before
+quantization. The renderer shares its bounded disk cache with playback, but replaces provisional
+seek samples with canonical continuous-render samples before using them in a waveform. A stream
+whose processed range exceeds half of the cache is streamed into the reducer without being cached,
+so regenerating it never evicts playback segments. Source replacement cancels work and releases
+temporary envelopes and PCM cache entries. Background media work can still take minutes. Audio
+extraction and incompatible-source proxy encoding remain full-source operations. Original codec,
+keyframe spacing, disk speed, and WebView support still limit seek latency; this is not a guarantee
+of instantaneous decoding for every video.
 
-Run the opt-in FFmpeg fixture comparison and size/timing sample (one stream for three seconds plus
-six alternating sound/silence streams for two minutes) with:
+While a waveform regenerates, the track keeps drawing the previous envelope under a small loading
+overlay. The replacement crossfades in over 250 ms once it has been fetched and decoded, or switches
+at once with reduced motion; a failed regeneration keeps the previous envelope and offers a retry.
+
+Run the FFmpeg-backed waveform fixtures and cache regressions with:
 
 ```sh
-cargo test -p easytrim-editor-desktop envelopes_match_legacy -- --ignored --nocapture
+cargo test -p easytrim-editor-desktop media::waveform::tests
+cargo test -p easytrim-editor-desktop canonical_
 ```
 
-The fixture compares every envelope column's expected square-root height with a decoded legacy
-`showwavespic` PNG and prints envelope generation time, legacy PNG-render time, and aggregate
-artifact sizes. It does not measure peak process memory or WebView Canvas/Gain latency; those require
-profiling the packaged app on the target hardware. Use short and long representative local sources
-with one and several audio streams when collecting release performance numbers.
-
-One Windows run on this synthetic fixture measured 54.5 ms to prepare a three-second, one-stream
-envelope (1,292 bytes) and 28.2 ms for its legacy PNG render (532 bytes). The two-minute, six-stream
-fixture took 1.11 s for envelope preparation; its envelopes totaled 192 bytes versus 3,135 bytes
-for PNG references. These synthetic patterns do not represent arbitrary audio. The PNG timing is
-the standalone full-rate reference render stage, not an end-to-end measurement of the former
-multi-pass pipeline. Canvas draw and live Gain timing plus peak memory remain unmeasured on the
-packaged WebView.
+These fixtures cover complete ordered chains, dependent normalization stages measured over a trim,
+delayed audio, bounded envelope encoding, replacement of provisional playback PCM, and uncached
+streaming of large ranges. They do not measure peak memory, long-source performance, or packaged
+WebView rendering latency.
 
 Also test a real long source in the desktop app: drag rapidly in both directions, release while
 playing, step frames, loop a trimmed segment, change audio tracks, and replace the source during a

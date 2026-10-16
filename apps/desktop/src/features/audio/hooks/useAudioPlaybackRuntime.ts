@@ -6,10 +6,8 @@ import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-sli
 import { selectPlaybackVolumePercent } from "@/app/store/slices/preferences-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 import {
-  audioTrackPlaybackFfmpegProcessing,
-  type AudioTrackSelection,
-  effectiveAudioTrackGainDb,
-  getAudioTrackLiveHighPassEffects,
+  type AudioChainSelection,
+  audioFiltersRequireLoudnessAnalysis,
 } from "@/domain/audio-processing";
 
 import type { AudioPlaybackAdapter } from "../contexts/audio-transport-context";
@@ -36,33 +34,25 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
           (candidate) => candidate.streamIndex === track.streamIndex,
         );
 
-        const loudnessAnalysis =
-          track.processing.loudnessNormalization !== undefined &&
-          track.loudnessAnalysis.status === "ready"
-            ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
-            : {};
+        const requiresMeasurements = audioFiltersRequireLoudnessAnalysis(track.processing.filters);
+        if (requiresMeasurements && track.loudnessAnalysis.status !== "ready") return [];
 
-        if (
-          track.processing.loudnessNormalization !== undefined &&
-          track.loudnessAnalysis.status !== "ready"
-        ) {
-          return [];
-        }
-
-        const selection: AudioTrackSelection = {
-          ...loudnessAnalysis,
-          processing: audioTrackPlaybackFfmpegProcessing(track.processing),
+        // Track Volume stays out of the selection so changing it never re-renders PCM.
+        const selection: AudioChainSelection = {
+          filters: track.processing.filters,
+          ...(requiresMeasurements && track.loudnessAnalysis.status === "ready"
+            ? { loudnessMeasurements: track.loudnessAnalysis.value }
+            : {}),
           streamIndex: track.streamIndex,
         };
 
         return [
           {
-            gainDb: effectiveAudioTrackGainDb(track.processing),
-            liveHighPassEffects: getAudioTrackLiveHighPassEffects(track.processing),
             selection,
             startTimeMicros: stream?.startTimeMicros ?? 0,
             durationMicros: stream?.durationMicros,
             streamIndex: track.streamIndex,
+            volume: track.processing.volume,
           },
         ];
       }),
@@ -123,13 +113,13 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
     sessionRef.current?.setPlaybackRate(rate);
   }, []);
 
-  const setLiveTrackGain = useCallback((streamIndex: number, gainDb: number | null) => {
-    const committedGainDb = webAudioTracksRef.current.find(
+  const setLiveTrackVolume = useCallback((streamIndex: number, volume: number | null) => {
+    const committedVolume = webAudioTracksRef.current.find(
       (track) => track.streamIndex === streamIndex,
-    )?.gainDb;
+    )?.volume;
 
-    const nextGainDb = gainDb ?? committedGainDb;
-    if (nextGainDb !== undefined) sessionRef.current?.setTrackGain(streamIndex, nextGainDb);
+    const nextVolume = volume ?? committedVolume;
+    if (nextVolume !== undefined) sessionRef.current?.setTrackVolume(streamIndex, nextVolume);
   }, []);
 
   const prepareAt = useCallback(
@@ -164,7 +154,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
 
   const requiresLoudnessAnalysis = enabledTracks.some(
     (track) =>
-      track.processing.loudnessNormalization !== undefined &&
+      audioFiltersRequireLoudnessAnalysis(track.processing.filters) &&
       track.loudnessAnalysis.status !== "ready",
   );
 
@@ -183,7 +173,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       registerPlaybackErrorObserver,
       seek,
       setLiveOutputVolume,
-      setLiveTrackGain,
+      setLiveTrackVolume,
       setPlaybackRate,
       startAlignedWithVideoAt,
     }),
@@ -198,7 +188,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
       registerPlaybackErrorObserver,
       seek,
       setLiveOutputVolume,
-      setLiveTrackGain,
+      setLiveTrackVolume,
       setPlaybackRate,
       startAlignedWithVideoAt,
     ],

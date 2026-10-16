@@ -16,6 +16,10 @@ use tauri_plugin_dialog::DialogExt;
 use crate::{
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
     error::{AppError, AppErrorMessageId},
+    media::audio_filters::{
+        analysis::{LoudnessAnalysisRequest, analyze_chain_loudness},
+        model::FilterMeasurement,
+    },
     media::export::{
         AudioExportRequest, FastExportRequest, GifExportRequest, OptimizedExportRequest,
         build_audio_arguments, build_fast_arguments_with_chapters, build_gif_arguments,
@@ -23,7 +27,6 @@ use crate::{
         fast_export_output_extensions, gif_command_preview, optimized_command_preview,
         output_supports_chapters,
     },
-    media::loudness::{LoudnessAnalysis, LoudnessAnalysisRequest, analyze_loudness},
     media::probe::MediaInfo,
     process::{ProcessOutput, run_progress_cancellable},
     state::AppState,
@@ -95,7 +98,7 @@ pub async fn analyze_audio_loudness(
     operation_id: String,
     source_path: String,
     state: State<'_, AppState>,
-) -> Result<LoudnessAnalysis, AppError> {
+) -> Result<Vec<FilterMeasurement>, AppError> {
     let cancellation = state.operation_cancellation(&operation_id)?;
     let source = match state.resolve_source_by_path(&source_path) {
         Ok(source) => source,
@@ -104,8 +107,9 @@ pub async fn analyze_audio_loudness(
             return Err(error);
         }
     };
+    let engine = state.audio_engine();
     let result = tauri::async_runtime::spawn_blocking(move || {
-        analyze_loudness(&source, &request, &cancellation)
+        analyze_chain_loudness(&source, &request, &cancellation, engine.measurements())
     })
     .await
     .map_err(|_| AppError::internal("Loudness analysis stopped unexpectedly."));

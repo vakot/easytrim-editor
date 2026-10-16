@@ -6,8 +6,9 @@ import {
   sourceSelected,
 } from "@/app/store/actions/source-actions";
 import {
-  audioTrackGainChanged,
+  audioTrackFiltersApplied,
   audioTrackToggled,
+  audioTrackVolumeChanged,
   waveformDisplayFailed,
   waveformReady,
   waveformsFailed,
@@ -148,12 +149,23 @@ listenerMiddleware.startListening({
     }),
 });
 listenerMiddleware.startListening({
-  actionCreator: audioTrackGainChanged,
+  actionCreator: audioTrackVolumeChanged,
   effect: (action) =>
     diagnostics.event("audio.track.changed", {
       data: {
         streamIndex: action.payload.streamIndex,
-        gainDb: action.payload.gainDb,
+        volume: action.payload.volume,
+      },
+      origin: internalOrigin,
+    }),
+});
+listenerMiddleware.startListening({
+  actionCreator: audioTrackFiltersApplied,
+  effect: (action) =>
+    diagnostics.event("audio.track.filters.applied", {
+      data: {
+        filterTypes: action.payload.filters.map((filter) => filter.type),
+        streamIndex: action.payload.streamIndex,
       },
       origin: internalOrigin,
     }),

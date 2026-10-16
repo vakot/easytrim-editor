@@ -264,7 +264,6 @@ export const ru = {
       channels_one: "{{count}} канал",
       channels_other: "{{count}} канала",
       defaultName: "Аудио {{number}}",
-      gainLabel: "Усиление аудиодорожки {{number}} в децибелах",
       metadata: {
         actions: {
           edit: "Изменить метаданные",

@@ -126,36 +126,57 @@ describe("media IPC adapter", () => {
     });
   });
 
-  it("decodes a bounded PCM playback chunk through the native command", async () => {
+  it("decodes a bounded float PCM playback chunk through the native command", async () => {
     const controller = new AbortController();
-    mocks.invoke.mockResolvedValueOnce({
-      channels: 2,
-      sampleRate: 48_000,
-      samples: [1, -1, 2, -2],
-    });
+    // Peaks above full scale survive so Track Volume can still attenuate them.
+    mocks.invoke.mockResolvedValueOnce(new Float32Array([1.5, -1, 0.25, -0.25]).buffer);
+    const track = {
+      filters: [{ enabled: true, gainDb: 6, id: "g", type: "gain" as const }],
+      streamIndex: 2,
+    };
 
-    await expect(
-      decodeAudioPlaybackChunk(
-        "C:/Media/clip.mp4",
-        { streamIndex: 2, processing: { gainDb: 0 } },
-        1_000_000,
-        2_000_000,
-        controller.signal,
-      ),
-    ).resolves.toEqual({ channels: 2, sampleRate: 48_000, samples: [1, -1, 2, -2] });
+    const chunk = await decodeAudioPlaybackChunk(
+      "C:/Media/clip.mp4",
+      track,
+      1_000_000,
+      2_000_000,
+      controller.signal,
+    );
+
+    expect(chunk).toMatchObject({ channels: 2, sampleRate: 48_000 });
+    expect(Array.from(chunk.samples)).toEqual([1.5, -1, 0.25, -0.25]);
     expect(mocks.invoke).toHaveBeenCalledWith(
       "decode_audio_playback_chunk",
       expect.objectContaining({
         durationMicros: 2_000_000,
         sourcePath: "C:/Media/clip.mp4",
         startMicros: 1_000_000,
-        track: { streamIndex: 2, processing: { gainDb: 0 } },
+        track,
       }),
     );
   });
 
+  it("rejects playback chunks that are not whole float stereo frames", async () => {
+    mocks.invoke.mockResolvedValueOnce(new Float32Array([1, 2, 3]).buffer);
+    await expect(
+      decodeAudioPlaybackChunk(
+        "C:/Media/clip.mp4",
+        { filters: [], streamIndex: 2 },
+        0,
+        2_000_000,
+        new AbortController().signal,
+      ),
+    ).rejects.toEqual({
+      code: "internal",
+      diagnostics: "The native application returned an invalid playback PCM chunk.",
+    });
+  });
+
   it("converts detected silence to activity ranges for one track", async () => {
-    const track = { streamIndex: 2, processing: { gainDb: -3 } };
+    const track = {
+      filters: [{ enabled: true, gainDb: -3, id: "g", type: "gain" as const }],
+      streamIndex: 2,
+    };
 
     mocks.invoke.mockResolvedValueOnce([{ startMicros: 1_000_000, endMicros: 2_500_000 }]);
 
@@ -173,31 +194,46 @@ describe("media IPC adapter", () => {
     mocks.invoke.mockResolvedValueOnce([{ startMicros: 0, endMicros: 5_000_000 }]);
 
     await expect(
-      detectAudioActivity(
-        "C:/Media/clip.mp4",
-        { streamIndex: 2, processing: { gainDb: 0 } },
-        5_000_000,
-      ),
+      detectAudioActivity("C:/Media/clip.mp4", { filters: [], streamIndex: 2 }, 5_000_000),
     ).resolves.toEqual([]);
   });
 
   it("analyzes the requested segment and parses unavailable measurements", async () => {
-    mocks.invoke
-      .mockResolvedValueOnce("operation-1")
-      .mockResolvedValueOnce({ integratedLufs: -18.4, truePeakDb: null });
+    mocks.invoke.mockResolvedValueOnce("operation-1").mockResolvedValueOnce([
+      { filterId: "first", integratedLufs: -18.4, truePeakDb: null },
+      { filterId: "second", integratedLufs: -14, truePeakDb: -2 },
+    ]);
+    const normalization = (id: string) => ({
+      enabled: true,
+      id,
+      loudnessRangeLu: 11,
+      maxTruePeakDb: -1,
+      targetLufs: -14,
+      type: "loudnessNormalization" as const,
+    });
+
     const request = {
       sourcePath: "C:/Media/clip.mp4",
       trim: { startMicros: 1_000_000, endMicros: 4_000_000 },
-      audioTrack: {
-        streamIndex: 2,
-        processing: { gainDb: -2, loudnessNormalization: "webVideo" as const },
-      },
+      audioTrack: { filters: [normalization("first"), normalization("second")], streamIndex: 2 },
     };
 
-    await expect(analyzeAudioLoudness(request)).resolves.toEqual({
-      integratedLufs: -18.4,
-      truePeakDb: undefined,
-    });
+    await expect(analyzeAudioLoudness(request)).resolves.toEqual([
+      {
+        filterId: "first",
+        inputLra: undefined,
+        inputThreshold: undefined,
+        integratedLufs: -18.4,
+        truePeakDb: undefined,
+      },
+      {
+        filterId: "second",
+        inputLra: undefined,
+        inputThreshold: undefined,
+        integratedLufs: -14,
+        truePeakDb: -2,
+      },
+    ]);
     expect(mocks.invoke).toHaveBeenNthCalledWith(1, "begin_loudness_analysis");
     expect(mocks.invoke).toHaveBeenCalledWith("analyze_audio_loudness", {
       operationId: "operation-1",
@@ -224,7 +260,7 @@ describe("media IPC adapter", () => {
     const request = {
       sourcePath: "C:/Media/clip.mp4",
       trim: { startMicros: 0, endMicros: 1_000_000 },
-      audioTrack: { streamIndex: 2, processing: { gainDb: 0 } },
+      audioTrack: { filters: [], streamIndex: 2 },
     };
 
     const analysis = analyzeAudioLoudness(request, controller.signal);
@@ -235,8 +271,8 @@ describe("media IPC adapter", () => {
         operationId: "operation-2",
       }),
     );
-    completeAnalysis?.({ integratedLufs: -16, truePeakDb: -1 });
-    await expect(analysis).resolves.toEqual({ integratedLufs: -16, truePeakDb: -1 });
+    completeAnalysis?.([]);
+    await expect(analysis).resolves.toEqual([]);
   });
 
   it("saves captured PNG bytes through the native save dialog", async () => {
@@ -616,7 +652,8 @@ describe("media IPC adapter", () => {
       jobId: "waveform-7",
       streamIndexes: [2, 4],
       width: 1280,
-      processingByStream: {},
+      filtersByStream: {},
+      measurementsByStream: {},
     });
   });
 

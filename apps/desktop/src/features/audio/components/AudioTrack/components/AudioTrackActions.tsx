@@ -1,4 +1,4 @@
-import { ChevronRight, MoreVertical, Pencil } from "lucide-react";
+import { AudioLines, ChevronRight, MoreVertical, Pencil, SlidersHorizontal } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -9,10 +9,12 @@ import {
   ContextMenuGroup,
   ContextMenuIcon,
   ContextMenuItem,
-  ContextMenuLabel,
   ContextMenuRadioGroup,
   ContextMenuRadioItem,
   ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 import {
   DropdownMenu,
@@ -21,15 +23,18 @@ import {
   DropdownMenuGroup,
   DropdownMenuIcon,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Slot } from "@/components/ui/slot";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { AudioTrackFiltersDialogTrigger } from "../../../dialogs/AudioTrackFiltersDialog";
 import { AudioTrackMetadataDialogTrigger } from "../../../dialogs/AudioTrackMetadataDialog";
 import { useAudioTrackController } from "../../../hooks/useAudioTrackController";
 import {
@@ -103,17 +108,41 @@ function AudioTrackDropdownMenuContent({ streamIndex }: AudioTrackActionsProps) 
 
       <DropdownMenuSeparator />
 
+      <AudioTrackFiltersDialogTrigger asChild>
+        <DropdownMenuItem inset>
+          <DropdownMenuIcon side="left">
+            <SlidersHorizontal />
+          </DropdownMenuIcon>
+          {t("audio.filters.actions.open")}
+          <DropdownMenuIcon side="right">
+            <ChevronRight />
+          </DropdownMenuIcon>
+        </DropdownMenuItem>
+      </AudioTrackFiltersDialogTrigger>
+
+      <DropdownMenuSeparator />
+
       <DropdownMenuGroup>
-        <DropdownMenuLabel>{t("audio.waveform.displayMode.label")}</DropdownMenuLabel>
-        <AudioTrackDisplayModeMenuRadioGroup>
-          <DropdownMenuRadioGroup>
-            {WAVEFORM_DISPLAY_MODES.map((mode) => (
-              <DropdownMenuRadioItem inset keepOpen key={mode} value={mode}>
-                {waveformDisplayModeLabel(mode, t)}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </AudioTrackDisplayModeMenuRadioGroup>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger inset>
+            <DropdownMenuIcon>
+              <AudioLines aria-hidden="true" />
+            </DropdownMenuIcon>
+            {t("audio.waveform.displayMode.label")}
+          </DropdownMenuSubTrigger>
+
+          <DropdownMenuSubContent>
+            <AudioTrackDisplayModeMenuRadioGroup>
+              <DropdownMenuRadioGroup>
+                {WAVEFORM_DISPLAY_MODES.map((mode) => (
+                  <DropdownMenuRadioItem inset keepOpen key={mode} value={mode}>
+                    {waveformDisplayModeLabel(mode, t)}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </AudioTrackDisplayModeMenuRadioGroup>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
       </DropdownMenuGroup>
     </DropdownMenuContent>
   );
@@ -158,17 +187,41 @@ function AudioTrackContextMenuContent({ streamIndex }: AudioTrackActionsProps) {
 
       <ContextMenuSeparator />
 
+      <AudioTrackFiltersDialogTrigger asChild>
+        <ContextMenuItem inset>
+          <ContextMenuIcon side="left">
+            <SlidersHorizontal />
+          </ContextMenuIcon>
+          {t("audio.filters.actions.open")}
+          <ContextMenuIcon side="right">
+            <ChevronRight />
+          </ContextMenuIcon>
+        </ContextMenuItem>
+      </AudioTrackFiltersDialogTrigger>
+
+      <ContextMenuSeparator />
+
       <ContextMenuGroup>
-        <ContextMenuLabel>{t("audio.waveform.displayMode.label")}</ContextMenuLabel>
-        <AudioTrackDisplayModeMenuRadioGroup>
-          <ContextMenuRadioGroup>
-            {WAVEFORM_DISPLAY_MODES.map((mode) => (
-              <ContextMenuRadioItem inset keepOpen key={mode} value={mode}>
-                {waveformDisplayModeLabel(mode, t)}
-              </ContextMenuRadioItem>
-            ))}
-          </ContextMenuRadioGroup>
-        </AudioTrackDisplayModeMenuRadioGroup>
+        <ContextMenuSub>
+          <ContextMenuSubTrigger inset>
+            <ContextMenuIcon>
+              <AudioLines aria-hidden="true" />
+            </ContextMenuIcon>
+            {t("audio.waveform.displayMode.label")}
+          </ContextMenuSubTrigger>
+
+          <ContextMenuSubContent>
+            <AudioTrackDisplayModeMenuRadioGroup>
+              <ContextMenuRadioGroup>
+                {WAVEFORM_DISPLAY_MODES.map((mode) => (
+                  <ContextMenuRadioItem inset keepOpen key={mode} value={mode}>
+                    {waveformDisplayModeLabel(mode, t)}
+                  </ContextMenuRadioItem>
+                ))}
+              </ContextMenuRadioGroup>
+            </AudioTrackDisplayModeMenuRadioGroup>
+          </ContextMenuSubContent>
+        </ContextMenuSub>
       </ContextMenuGroup>
     </ContextMenuContent>
   );

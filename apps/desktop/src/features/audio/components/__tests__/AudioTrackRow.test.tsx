@@ -9,9 +9,9 @@ import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions"
 import {
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
-  audioTrackGainChanged,
   audioTrackMetadataChanged,
   audioTrackToggled,
+  audioTrackVolumeChanged,
   waveformReady,
   waveformsLoading,
 } from "@/app/store/slices/audio-slice";
@@ -26,7 +26,7 @@ import {
 } from "../../contexts/audio-transport-context";
 import { audioTrackColor } from "../../lib/audio-track-color";
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
-import { AudioTrackGainControl } from "../AudioTrack/components/AudioTrackGainControl";
+import { AudioTrackVolumeControl } from "../AudioTrack/components/AudioTrackVolumeControl";
 
 const { prepareSourceWaveforms } = vi.hoisted(() => ({ prepareSourceWaveforms: vi.fn() }));
 
@@ -56,7 +56,7 @@ function createAudioPlayback() {
     registerPlaybackErrorObserver: () => () => undefined,
     seek: () => undefined,
     setLiveOutputVolume: () => undefined,
-    setLiveTrackGain: vi.fn(),
+    setLiveTrackVolume: vi.fn(),
     setPlaybackRate: () => undefined,
     startAlignedWithVideoAt: async (seconds: number) => seconds,
   } satisfies AudioPlaybackAdapter;
@@ -117,18 +117,16 @@ function detectActivityRanges(store: ReturnType<typeof createStore>) {
   });
 }
 
-function renderGainControl({ enabled = true } = {}) {
+function renderVolumeControl({ enabled = true, volume = 1 } = {}) {
   const store = createStore();
-  if (!enabled) {
-    store.dispatch(audioTrackToggled({ streamIndex: 2 }));
-    store.dispatch(audioTrackGainChanged({ streamIndex: 2, gainDb: -6 }));
-  }
+  if (!enabled) store.dispatch(audioTrackToggled({ streamIndex: 2 }));
+  if (volume !== 1) store.dispatch(audioTrackVolumeChanged({ streamIndex: 2, volume }));
 
   const audioPlayback = createAudioPlayback();
-  const gainCommits: number[] = [];
+  const volumeCommits: number[] = [];
   const dispatch = store.dispatch;
   store.dispatch = ((action: Parameters<typeof dispatch>[0]) => {
-    if (audioTrackGainChanged.match(action)) gainCommits.push(action.payload.gainDb);
+    if (audioTrackVolumeChanged.match(action)) volumeCommits.push(action.payload.volume);
     return dispatch(action);
   }) as typeof store.dispatch;
 
@@ -136,8 +134,8 @@ function renderGainControl({ enabled = true } = {}) {
     <Provider store={store}>
       <AudioTransportContext.Provider value={audioPlayback}>
         <TooltipProvider>
-          <AudioTrackGainControl
-            onLiveGainChange={() => undefined}
+          <AudioTrackVolumeControl
+            onLiveVolumeChange={() => undefined}
             streamIndex={2}
             trackNumber={1}
           />
@@ -146,7 +144,7 @@ function renderGainControl({ enabled = true } = {}) {
     </Provider>,
   );
 
-  return { gainCommits, setLiveTrackGain: audioPlayback.setLiveTrackGain, store };
+  return { setLiveTrackVolume: audioPlayback.setLiveTrackVolume, store, volumeCommits };
 }
 
 function PrimaryColorPreviewButton() {
@@ -181,6 +179,7 @@ function mockCanvas({ height = 50, width = 32 } = {}) {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
     beginPath: vi.fn(),
     clearRect: vi.fn(),
+    drawImage: vi.fn(),
     lineTo,
     moveTo,
     set lineWidth(_value: number) {},
@@ -267,7 +266,7 @@ describe("AudioTrackRow", () => {
     await waitFor(() => expect(strokeStyle).toHaveBeenCalledWith("rgb(18 52 86)"));
   });
 
-  it("scales the waveform and its gain badge with the track gain", async () => {
+  it("scales the processed waveform display and volume badge with Track Volume", async () => {
     const { getMaxHeight, lineTo } = mockCanvas();
     vi.stubGlobal(
       "fetch",
@@ -279,11 +278,11 @@ describe("AudioTrackRow", () => {
     await waitFor(() => expect(lineTo).toHaveBeenCalled());
     const initialHeight = getMaxHeight();
 
-    expect(screen.getByLabelText("Audio 1 gain in decibels")).toHaveTextContent("0.0 dB");
+    expect(screen.getByLabelText("Audio 1 volume")).toHaveTextContent("100%");
 
-    act(() => store.dispatch(audioTrackGainChanged({ gainDb: 6, streamIndex: 2 })));
+    act(() => store.dispatch(audioTrackVolumeChanged({ streamIndex: 2, volume: 2 })));
 
-    expect(screen.getByLabelText("Audio 1 gain in decibels")).toHaveTextContent("6.0 dB");
+    expect(screen.getByLabelText("Audio 1 volume")).toHaveTextContent("200%");
     await waitFor(() => expect(getMaxHeight()).toBeGreaterThan(initialHeight));
 
     const drawnLineCount = lineTo.mock.calls.length;
@@ -323,136 +322,130 @@ describe("AudioTrackRow", () => {
     expect(prepareSourceWaveforms).toHaveBeenCalledWith(firstSource.sourcePath, [2], 4096);
   });
 
-  it("double-click resets an adjusted gain with one final commit", () => {
-    const { gainCommits, store } = renderGainControl();
-    const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
+  it("double-click resets an adjusted volume to 100% with one final commit", () => {
+    const { store, volumeCommits } = renderVolumeControl();
+    const volumeSlider = screen.getByRole("slider", { name: /audio 1 volume/i });
 
-    fireEvent.keyDown(gainSlider, { key: "ArrowLeft" });
-    fireEvent.keyUp(gainSlider, { key: "ArrowLeft" });
-    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(-0.5);
+    fireEvent.keyDown(volumeSlider, { key: "ArrowLeft" });
+    fireEvent.keyUp(volumeSlider, { key: "ArrowLeft" });
+    expect(store.getState().audio.tracks[0]?.processing.volume).toBe(0.99);
 
-    fireEvent.doubleClick(gainSlider);
+    fireEvent.doubleClick(volumeSlider);
 
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: true,
-      processing: { gainDb: 0 },
+      processing: { filters: [], volume: 1 },
     });
-    expect(gainCommits).toEqual([-0.5, 0]);
+    expect(volumeCommits).toEqual([0.99, 1]);
   });
 
-  it("double-click resets Gain on a muted track without unmuting it", () => {
-    const { gainCommits, store } = renderGainControl({ enabled: false });
-    const gainSlider = screen.getByRole("slider", { name: /audio 1 gain/i });
+  it("double-click resets volume on a muted track without unmuting it", () => {
+    const { store, volumeCommits } = renderVolumeControl({ enabled: false, volume: 0.5 });
+    const volumeSlider = screen.getByRole("slider", { name: /audio 1 volume/i });
 
-    fireEvent.doubleClick(gainSlider);
+    fireEvent.doubleClick(volumeSlider);
 
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: false,
-      processing: { gainDb: 0 },
+      processing: { filters: [], volume: 1 },
     });
-    expect(gainCommits).toEqual([0]);
+    expect(volumeCommits).toEqual([1]);
 
-    gainSlider.focus();
-    fireEvent.keyDown(gainSlider, { key: "ArrowLeft" });
-    fireEvent.keyUp(gainSlider, { key: "ArrowLeft" });
+    volumeSlider.focus();
+    fireEvent.keyDown(volumeSlider, { key: "ArrowLeft" });
+    fireEvent.keyUp(volumeSlider, { key: "ArrowLeft" });
 
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: false,
-      processing: { gainDb: -0.5 },
+      processing: { volume: 0.99 },
     });
-    expect(gainCommits).toEqual([0, -0.5]);
+    expect(volumeCommits).toEqual([1, 0.99]);
   });
 
-  it("cancels manual Gain edits on Escape and restores the committed playback gain", async () => {
+  it("cancels manual volume edits on Escape and restores the committed playback volume", async () => {
     const user = userEvent.setup();
-    const { gainCommits, setLiveTrackGain, store } = renderGainControl();
+    const { setLiveTrackVolume, store, volumeCommits } = renderVolumeControl();
 
-    await user.click(screen.getByRole("button", { name: /0 dB/i }));
-    const gainInput = screen.getByRole("spinbutton", { name: /audio 1 gain/i });
-    await user.clear(gainInput);
-    await user.type(gainInput, "-10");
-    expect(setLiveTrackGain).toHaveBeenLastCalledWith(2, -10);
+    await user.click(screen.getByRole("button", { name: "100%" }));
+    const volumeInput = screen.getByRole("spinbutton", { name: /audio 1 volume/i });
+    await user.clear(volumeInput);
+    await user.type(volumeInput, "40");
+    expect(setLiveTrackVolume).toHaveBeenLastCalledWith(2, 0.4);
 
     await user.keyboard("{Escape}");
 
-    expect(screen.queryByRole("spinbutton", { name: /audio 1 gain/i })).not.toBeInTheDocument();
-    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0);
-    expect(gainCommits).toEqual([]);
-    expect(setLiveTrackGain).toHaveBeenLastCalledWith(2, null);
+    expect(screen.queryByRole("spinbutton", { name: /audio 1 volume/i })).not.toBeInTheDocument();
+    expect(store.getState().audio.tracks[0]?.processing.volume).toBe(1);
+    expect(volumeCommits).toEqual([]);
+    expect(setLiveTrackVolume).toHaveBeenLastCalledWith(2, null);
   });
 
-  it("clamps live Gain previews and commits while keeping the typed value visible", async () => {
+  it("accepts manual volume up to 500% without the slider clamping it", async () => {
     const user = userEvent.setup();
-    const { gainCommits, setLiveTrackGain, store } = renderGainControl();
+    const { setLiveTrackVolume, store, volumeCommits } = renderVolumeControl();
 
-    await user.click(screen.getByRole("button", { name: /0 dB/i }));
-    const gainInput = screen.getByRole("spinbutton", { name: /audio 1 gain/i });
-    await user.clear(gainInput);
-    await user.type(gainInput, "100");
+    await user.click(screen.getByRole("button", { name: "100%" }));
+    const volumeInput = screen.getByRole("spinbutton", { name: /audio 1 volume/i });
+    expect(volumeInput).toHaveAttribute("aria-valuemin", "0");
+    expect(volumeInput).toHaveAttribute("aria-valuemax", "500");
+    await user.clear(volumeInput);
+    await user.type(volumeInput, "350");
+    expect(setLiveTrackVolume).toHaveBeenLastCalledWith(2, 3.5);
+    fireEvent.blur(volumeInput);
 
-    expect(gainInput).toHaveValue("100");
-    expect(setLiveTrackGain).toHaveBeenLastCalledWith(2, 24);
-    expect(gainInput).toHaveAttribute("aria-valuemin", "-60");
-    expect(gainInput).toHaveAttribute("aria-valuemax", "24");
-    expect(gainInput).toHaveAttribute("aria-valuenow", "24");
-    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(0);
+    expect(store.getState().audio.tracks[0]?.processing.volume).toBe(3.5);
+    const volumeSlider = screen.getByRole("slider", { name: /audio 1 volume/i });
+    // The slider tops out at 200% while the label and stored value keep 350%.
+    expect(volumeSlider).toHaveAttribute("aria-valuenow", "200");
+    expect(screen.getByRole("button", { name: "350%" })).toBeInTheDocument();
 
-    fireEvent.blur(gainInput);
+    fireEvent.pointerDown(volumeSlider);
+    fireEvent.pointerUp(volumeSlider);
+    expect(store.getState().audio.tracks[0]?.processing.volume).toBe(3.5);
 
-    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(24);
-    expect(gainCommits).toEqual([24]);
+    await user.click(screen.getByRole("button", { name: "350%" }));
+    const clampedInput = screen.getByRole("spinbutton", { name: /audio 1 volume/i });
+    await user.clear(clampedInput);
+    await user.type(clampedInput, "900");
+    expect(clampedInput).toHaveValue("900");
+    expect(setLiveTrackVolume).toHaveBeenLastCalledWith(2, 5);
+    fireEvent.blur(clampedInput);
 
-    await user.click(screen.getByRole("button", { name: /24\.0 dB/i }));
-    const lowerGainInput = screen.getByRole("spinbutton", { name: /audio 1 gain/i });
-    await user.clear(lowerGainInput);
-    expect(lowerGainInput).toHaveValue("");
-    expect(setLiveTrackGain).toHaveBeenLastCalledWith(2, 24);
-
-    await user.type(lowerGainInput, "-");
-    expect(lowerGainInput).toHaveValue("-");
-    expect(setLiveTrackGain).toHaveBeenLastCalledWith(2, 24);
-    await user.clear(lowerGainInput);
-    await user.paste("-100");
-    expect(lowerGainInput).toHaveValue("-100");
-    expect(setLiveTrackGain).toHaveBeenLastCalledWith(2, -60);
-    fireEvent.blur(lowerGainInput);
-
-    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(-60);
-    expect(gainCommits).toEqual([24, -60]);
+    expect(store.getState().audio.tracks[0]?.processing.volume).toBe(5);
+    expect(volumeCommits).toEqual([3.5, 5]);
   });
 
-  it("marks the Gain range on hover, resets to unity, and preserves mute state", async () => {
+  it("marks the volume range on hover, resets to 100%, and preserves mute state", async () => {
     const user = userEvent.setup();
     const { store } = renderRow();
     await user.hover(screen.getByRole("button", { name: /mute.*eng/i }));
 
-    const gainSlider = await screen.findByRole("slider", { name: /audio 1 gain/i });
-    expect(screen.getByText("-24", { exact: true })).toBeInTheDocument();
-    expect(screen.getByText("0", { exact: true })).toBeInTheDocument();
-    expect(screen.getByText("12", { exact: true })).toBeInTheDocument();
-    expect(gainSlider).toHaveAttribute("aria-valuemin", "-24");
-    expect(gainSlider).toHaveAttribute("aria-valuemax", "12");
+    const volumeSlider = await screen.findByRole("slider", { name: /audio 1 volume/i });
+    expect(screen.getByText("0%", { exact: true })).toBeInTheDocument();
+    expect(screen.getAllByText("100%", { exact: true }).length).toBeGreaterThan(0);
+    expect(screen.getByText("200%", { exact: true })).toBeInTheDocument();
+    expect(volumeSlider).toHaveAttribute("aria-valuemin", "0");
+    expect(volumeSlider).toHaveAttribute("aria-valuemax", "200");
 
-    gainSlider.focus();
-    fireEvent.keyDown(gainSlider, { key: "Home" });
-    fireEvent.keyUp(gainSlider, { key: "Home" });
-    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(-24);
-    expect(screen.getAllByText("−24.0 dB")).toHaveLength(2);
+    volumeSlider.focus();
+    fireEvent.keyDown(volumeSlider, { key: "Home" });
+    fireEvent.keyUp(volumeSlider, { key: "Home" });
+    expect(store.getState().audio.tracks[0]?.processing.volume).toBe(0);
 
-    fireEvent.doubleClick(gainSlider);
+    fireEvent.doubleClick(volumeSlider);
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: true,
-      processing: { gainDb: 0 },
+      processing: { filters: [], volume: 1 },
     });
 
     await user.click(screen.getByRole("button", { name: /mute.*eng/i }));
     expect(store.getState().audio.tracks[0]).toMatchObject({
       enabled: false,
-      processing: { gainDb: 0 },
+      processing: { filters: [], volume: 1 },
     });
   });
 
-  it("previews gain adjustments in playback and on the waveform", async () => {
+  it("previews volume adjustments in playback and the waveform display", async () => {
     const { getMaxHeight, lineTo } = mockCanvas();
     vi.stubGlobal(
       "fetch",
@@ -465,18 +458,18 @@ describe("AudioTrackRow", () => {
     const initialHeight = getMaxHeight();
 
     await userEvent.setup().hover(screen.getByRole("button", { name: /mute.*eng/i }));
-    const gainSlider = await screen.findByRole("slider", { name: /audio 1 gain/i });
-    gainSlider.focus();
-    fireEvent.keyDown(gainSlider, { key: "End" });
+    const volumeSlider = await screen.findByRole("slider", { name: /audio 1 volume/i });
+    volumeSlider.focus();
+    fireEvent.keyDown(volumeSlider, { key: "End" });
 
-    expect(audioPlayback.setLiveTrackGain).toHaveBeenLastCalledWith(2, 12);
-    expect(document.querySelector('[data-slot="audio-track-gain-indicator"]')).toHaveTextContent(
-      "12.0 dB",
+    expect(audioPlayback.setLiveTrackVolume).toHaveBeenLastCalledWith(2, 2);
+    expect(document.querySelector('[data-slot="audio-track-volume-indicator"]')).toHaveTextContent(
+      "200%",
     );
     await waitFor(() => expect(getMaxHeight()).toBeGreaterThan(initialHeight));
 
-    fireEvent.keyUp(gainSlider, { key: "End" });
-    expect(store.getState().audio.tracks[0]?.processing.gainDb).toBe(12);
+    fireEvent.keyUp(volumeSlider, { key: "End" });
+    expect(store.getState().audio.tracks[0]?.processing.volume).toBe(2);
   });
 
   it("offers Enable, Default, and metadata editing in the actions menu", async () => {
@@ -494,7 +487,7 @@ describe("AudioTrackRow", () => {
       "true",
     );
     expect(screen.getByRole("menuitem", { name: /edit output metadata/i })).toBeInTheDocument();
-    expect(screen.queryByRole("menuitem", { name: /effects/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /audio filters/i })).toBeInTheDocument();
     expect(
       screen.getByRole("menuitemcheckbox", { name: /analyze audio activity/i }),
     ).not.toBeChecked();
@@ -581,7 +574,7 @@ describe("AudioTrackRow", () => {
     const defaultAction = screen.getByRole("menuitemcheckbox", { name: "Default" });
     expect(defaultAction).not.toHaveAttribute("aria-disabled", "true");
     expect(defaultAction.parentElement).not.toHaveAttribute("data-slot", "tooltip-trigger");
-    expect(screen.queryByRole("menuitem", { name: /effects/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /audio filters/i })).toBeInTheDocument();
     expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));

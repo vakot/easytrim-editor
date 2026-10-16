@@ -51,8 +51,8 @@ class AudioPlaybackSession {
     this.engine.setMono(mono);
   }
 
-  setTrackGain(streamIndex: number, gainDb: number) {
-    this.engine.setTrackGain(streamIndex, gainDb);
+  setTrackVolume(streamIndex: number, volume: number) {
+    this.engine.setTrackVolume(streamIndex, volume);
   }
 
   pause() {

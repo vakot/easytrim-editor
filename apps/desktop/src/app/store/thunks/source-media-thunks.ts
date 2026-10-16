@@ -63,13 +63,14 @@ import {
   selectHasSource,
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
-import type { AudioTrackProcessing } from "@/domain/audio-processing";
-import { getAudioTrackPreLevelEffects } from "@/domain/audio-processing";
+import { analyzeTrackLoudness, audioChainSelection } from "@/app/store/thunks/audio-track-thunks";
+import { type AudioFilter, audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
 import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import { gifSettingsWithDefaults } from "@/domain/gif-export";
-import type { GifExportRequest } from "@/domain/media";
+import type { GifExportRequest, LoudnessAnalysis } from "@/domain/media";
 import type { SourceRef } from "@/domain/source";
 import { normalizeSourceKey } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
@@ -1133,38 +1134,91 @@ const prepareSourceWaveforms =
       return null;
     }
 
+    // Native waveform jobs are source-wide. A newer request takes ownership of every pending
+    // stream so an older analysis completion cannot cancel newer work or strand loading rows.
+    const pendingStreams = [
+      ...new Set([
+        ...streamIndexes,
+        ...selectAudioTracks(getState())
+          .filter((track) => track.waveform.status === "loading")
+          .map((track) => track.streamIndex),
+      ]),
+    ];
+
     const jobId = `waveform-${++waveformJobSequence}`;
     const operation = diagnostics.startOperation("waveform.generate", {
-      data: { streamCount: streamIndexes.length, width },
+      data: { streamCount: pendingStreams.length, width },
       origin: { type: "internal" },
     });
 
-    dispatch(waveformsLoading({ jobId, width, streamIndexes }));
+    dispatch(waveformsLoading({ jobId, width, streamIndexes: pendingStreams }));
     try {
-      const tracksByStream = new Map(
-        selectAudioTracks(getState()).map((track) => [track.streamIndex, track]),
+      // Share the playback analysis job, including dependent normalization instances. Disabled
+      // tracks also need measurements because their waveforms remain visible.
+      await Promise.all(
+        pendingStreams.map((streamIndex) => dispatch(analyzeTrackLoudness(streamIndex))),
       );
+      if (!isCurrentSource(getState(), sourcePath, loadToken)) {
+        operation.cancel({ reason: "source_replaced" });
+        return null;
+      }
+      const state = getState();
+      const trim = selectTrim(state);
+      if (!trim) {
+        operation.cancel({ reason: "source_replaced" });
+        return null;
+      }
+      const filtersByStream: Record<number, AudioFilter[]> = {};
+      const measurementsByStream: Record<number, LoudnessAnalysis> = {};
+      const currentStreams: number[] = [];
+      for (const track of selectAudioTracks(state)) {
+        if (track.waveform.status !== "loading" || track.waveform.jobId !== jobId) continue;
+        const cacheKey = audioTrackLoudnessInputsKey(
+          sourcePath,
+          track.streamIndex,
+          trim,
+          track.processing.filters,
+        );
 
-      const processingByStream = Object.fromEntries(
-        streamIndexes.map((streamIndex) => {
-          const processing = tracksByStream.get(streamIndex)?.processing;
-          const waveformProcessing: AudioTrackProcessing = {
-            gainDb: 0,
-            ...(processing && getAudioTrackPreLevelEffects(processing).length > 0
-              ? { effects: getAudioTrackPreLevelEffects(processing) }
-              : {}),
-          };
-
-          return [streamIndex, waveformProcessing];
-        }),
-      );
-
+        // Without current measurements the chain cannot be compiled. The previous waveform stays
+        // visible with a retry, as for any failed regeneration.
+        if (
+          cacheKey !== null &&
+          (track.loudnessAnalysis.status !== "ready" ||
+            track.loudnessAnalysis.cacheKey !== cacheKey)
+        ) {
+          dispatch(
+            waveformsFailed({
+              jobId,
+              width,
+              streamIndexes: [track.streamIndex],
+              error:
+                track.loudnessAnalysis.status === "failed"
+                  ? track.loudnessAnalysis.error
+                  : {
+                      code: "cancelled",
+                      messageId: "media.waveform.waveformGenerationWasReplaced",
+                    },
+            }),
+          );
+          continue;
+        }
+        const selection = audioChainSelection(track, cacheKey);
+        currentStreams.push(track.streamIndex);
+        filtersByStream[track.streamIndex] = selection.filters;
+        measurementsByStream[track.streamIndex] = selection.loudnessMeasurements ?? [];
+      }
+      if (currentStreams.length === 0) {
+        operation.cancel({ reason: "waveform_inputs_changed_or_unavailable" });
+        return null;
+      }
       const results = await prepareWaveforms(
         sourcePath,
         jobId,
-        streamIndexes,
+        currentStreams,
         width,
-        processingByStream,
+        filtersByStream,
+        measurementsByStream,
       );
 
       if (isCurrentSource(getState(), sourcePath, loadToken)) {
@@ -1180,7 +1234,7 @@ const prepareSourceWaveforms =
           waveformsFailed({
             jobId,
             width,
-            streamIndexes,
+            streamIndexes: pendingStreams,
             error: normalizeAppError(error),
           }),
         );

@@ -10,7 +10,13 @@ use serde::Serialize;
 
 use crate::{
     error::{AppError, AppErrorMessageId},
-    media::export::{AudioTrackSelection, audio_filter_graph, validate_audio_track_selections},
+    media::{
+        audio_filters::{
+            compiler::{CompiledChain, compile_chain},
+            model::AudioChainSelection,
+        },
+        export::validate_audio_stream,
+    },
     process::{ProcessOutput, run_bounded_cancellable},
     state::ActiveSource,
 };
@@ -29,9 +35,11 @@ pub struct SilenceRange {
     pub end_micros: u64,
 }
 
+/// Detects activity in the filter chain output. Track Volume balances the mix after processing and
+/// does not move the detected ranges.
 pub fn detect_silence_ranges(
     source: &ActiveSource,
-    track: &AudioTrackSelection,
+    track: &AudioChainSelection,
     duration_micros: u64,
 ) -> Result<Vec<SilenceRange>, AppError> {
     let media = source.media.as_ref().ok_or_else(|| {
@@ -39,9 +47,10 @@ pub fn detect_silence_ranges(
             AppErrorMessageId::MediaAudioActivityInspectTheVideoBeforeDetectingAudioActivity,
         )
     })?;
-    validate_audio_track_selections(media, std::slice::from_ref(track))?;
+    validate_audio_stream(media, track.stream_index)?;
+    let chain = compile_chain(&track.filters, &track.loudness_measurements)?;
 
-    let arguments = silence_detection_arguments(&source.path, track);
+    let arguments = silence_detection_arguments(&source.path, track.stream_index, &chain);
     let output = run_bounded_cancellable(
         OsStr::new("ffmpeg"),
         &arguments,
@@ -68,10 +77,14 @@ pub fn detect_silence_ranges(
     parse_silence_ranges(&output.stderr, duration_micros)
 }
 
-fn silence_detection_arguments(source_path: &Path, track: &AudioTrackSelection) -> Vec<OsString> {
+fn silence_detection_arguments(
+    source_path: &Path,
+    stream_index: u32,
+    chain: &CompiledChain,
+) -> Vec<OsString> {
     let filter_complex = format!(
-        "{};[audio0]aformat=channel_layouts=mono,silencedetect=noise={SILENCE_THRESHOLD_DB}dB:d={MIN_SILENCE_SECONDS}[silenceout]",
-        audio_filter_graph(std::slice::from_ref(track), false)
+        "[0:{stream_index}]{},aformat=channel_layouts=mono,silencedetect=noise={SILENCE_THRESHOLD_DB}dB:d={MIN_SILENCE_SECONDS}[silenceout]",
+        chain.canonical_graph()
     );
     vec![
         OsString::from("-hide_banner"),
@@ -224,41 +237,36 @@ mod tests {
     }
 
     #[test]
-    fn activity_uses_the_shared_per_track_processing_chain() {
-        use crate::media::export::{
-            AudioTrackProcessing, AudioTrackSelection, LoudnessNormalization, LoudnessPreset,
+    fn activity_uses_the_shared_compiled_chain_without_track_volume() {
+        use crate::media::audio_filters::{
+            compiler::compile_chain,
+            model::{AudioLoudnessAnalysis, FilterMeasurement, fixtures::*},
         };
 
-        let track = AudioTrackSelection {
-            loudness_analysis: Some(crate::media::export::AudioLoudnessAnalysis {
-                input_lra: Some(5.0),
-                input_threshold: Some(-30.0),
-                integrated_lufs: Some(-20.0),
-                true_peak_db: Some(-5.0),
-            }),
-            stream_index: 2,
-            processing: AudioTrackProcessing {
-                gain_db: -3.0,
-                loudness_normalization: Some(LoudnessNormalization::Preset(
-                    LoudnessPreset::Streaming,
-                )),
-                effects: Vec::new(),
-            },
-        };
-        let args = silence_detection_arguments(Path::new("input.mp4"), &track);
-        let args = args
-            .iter()
-            .map(|arg| arg.to_string_lossy())
-            .collect::<Vec<_>>();
+        let chain = compile_chain(
+            &[gain("g", -3.0), normalization("norm", -16.0)],
+            &[FilterMeasurement {
+                filter_id: "norm".to_owned(),
+                analysis: AudioLoudnessAnalysis {
+                    input_lra: Some(5.0),
+                    input_threshold: Some(-30.0),
+                    integrated_lufs: Some(-20.0),
+                    true_peak_db: Some(-9.0),
+                },
+            }],
+        )
+        .unwrap();
+        let args = silence_detection_arguments(Path::new("input.mp4"), 2, &chain);
         let filter = args
             .windows(2)
             .find(|pair| pair[0] == "-filter_complex")
             .expect("filter complex argument exists")[1]
-            .to_string();
+            .to_string_lossy()
+            .into_owned();
 
-        assert!(filter.contains("[0:2]loudnorm=I=-16.000:TP=-1.500:LRA=11"));
-        assert!(filter.contains("aresample=48000[audio0]"));
-        assert!(!filter.contains("volume="));
-        assert!(filter.contains("[audio0]aformat=channel_layouts=mono,silencedetect"));
+        assert_eq!(
+            filter,
+            "[0:2]aresample=48000:async=1:first_pts=0,volume=-3dB:precision=double,volume=4dB:precision=double,aformat=channel_layouts=mono,silencedetect=noise=-50dB:d=0.25[silenceout]"
+        );
     }
 }

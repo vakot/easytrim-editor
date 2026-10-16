@@ -1,554 +1,93 @@
-use std::{
-    ffi::{OsStr, OsString},
-    io,
-    path::Path,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-    time::Duration,
-};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::{
     error::{AppError, AppErrorMessageId},
-    media::export::{AudioTrackSelection, audio_filter_graph, validate_audio_track_selections},
-    process::{ProcessOutput, run_bounded_cancellable},
+    media::{
+        audio_filters::{
+            compiler::{CANONICAL_SAMPLE_RATE, compile_chain},
+            engine::{AudioProcessingEngine, RenderRequest},
+            model::AudioChainSelection,
+            pcm_cache::FrameRange,
+        },
+        export::validate_audio_stream,
+        probe::MediaInfo,
+    },
     state::ActiveSource,
 };
 
-const STDERR_LIMIT: usize = 128 * 1024;
-pub const PLAYBACK_PCM_SAMPLE_RATE: u32 = 48_000;
-pub const PLAYBACK_PCM_MAX_CHUNK_MICROS: u64 = 2_000_000;
-const PLAYBACK_PCM_FILTER_PREROLL_MICROS: u64 = 2_000_000;
-const PLAYBACK_PCM_MAX_OUTPUT_BYTES: usize =
-    PLAYBACK_PCM_SAMPLE_RATE as usize * 2 * std::mem::size_of::<i16>() * 2;
+const PLAYBACK_PCM_CHANNELS: u16 = 2;
+const PLAYBACK_PCM_MAX_CHUNK_MICROS: u64 = 2_000_000;
 
-#[derive(Clone, Debug, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PlaybackPcmChunk {
-    pub channels: u16,
-    pub sample_rate: u32,
-    pub samples: Vec<i16>,
-}
-
+/// Serves one playback chunk of processed audio as interleaved little-endian f32 stereo at 48 kHz.
+///
+/// This is the compatibility boundary between the WebAudio playback runtime and the processed
+/// audio renderer: playback renders the whole source timeline as one continuous range, so chunks
+/// requested in order continue one render session and stateful filters never restart at a chunk
+/// boundary. Float samples keep peaks above full scale so Track Volume can still attenuate them.
 pub fn decode_playback_chunk(
+    engine: &AudioProcessingEngine,
     source: &ActiveSource,
-    track: &AudioTrackSelection,
+    track: &AudioChainSelection,
     start_micros: u64,
     duration_micros: u64,
-    operation_cancellation: Arc<AtomicBool>,
-) -> Result<PlaybackPcmChunk, AppError> {
+    operation_cancellation: &AtomicBool,
+) -> Result<Vec<u8>, AppError> {
     let media = source.media.as_ref().ok_or_else(|| {
         AppError::invalid_request(
             AppErrorMessageId::MediaAudioPlaybackChunkRequiresInspectedSourceMedia,
         )
     })?;
-    validate_audio_track_selections(media, std::slice::from_ref(track))?;
-    let end_micros = start_micros.checked_add(duration_micros).ok_or_else(|| {
-        AppError::invalid_request(AppErrorMessageId::ExportSelectedExportRangeIsInvalid)
-    })?;
+    validate_audio_stream(media, track.stream_index)?;
+    let chain = compile_chain(&track.filters, &track.loudness_measurements)?;
+    let end_micros = start_micros
+        .checked_add(duration_micros)
+        .ok_or_else(invalid_range)?;
     let media_duration = u64::try_from(media.duration_micros).unwrap_or_default();
     if duration_micros == 0
         || duration_micros > PLAYBACK_PCM_MAX_CHUNK_MICROS
         || end_micros > media_duration
     {
-        return Err(AppError::invalid_request(
-            AppErrorMessageId::ExportSelectedExportRangeIsInvalid,
-        ));
+        return Err(invalid_range());
     }
 
-    let arguments = playback_chunk_arguments(&source.path, track, start_micros, duration_micros);
-    let output = run_bounded_cancellable(
-        OsStr::new("ffmpeg"),
-        &arguments,
-        Duration::from_secs(30),
-        PLAYBACK_PCM_MAX_OUTPUT_BYTES,
-        STDERR_LIMIT,
-        || {
-            source.cancellation.load(Ordering::Acquire)
-                || operation_cancellation.load(Ordering::Acquire)
+    let range = processed_timeline_range(media);
+    let start = micros_to_frames(start_micros);
+    let end = micros_to_frames(end_micros).min(range.end);
+    if end <= start {
+        return Err(invalid_range());
+    }
+    let (samples, _quality) = engine.render(
+        &RenderRequest {
+            source,
+            stream_index: track.stream_index,
+            chain: &chain,
+            range,
+            start,
+            frames: end - start,
+            channels: PLAYBACK_PCM_CHANNELS,
         },
-    )
-    .map_err(process_error)?;
-
-    let expected_output_bytes = micros_to_frames(duration_micros) as usize * 4;
-    if !output.status.success()
-        || output.stdout_truncated
-        || output.stdout.len() > expected_output_bytes
-        || output.stdout.len() % 4 != 0
-    {
-        return Err(AppError::preview_failed(
-            AppErrorMessageId::MediaAudioFfmpegCouldNotDecodePlaybackAudio,
-            diagnostics(&output, &source.path),
-        ));
-    }
-
-    let samples = output
-        .stdout
-        .chunks_exact(2)
-        .map(|sample| i16::from_le_bytes([sample[0], sample[1]]))
-        .collect();
-    Ok(PlaybackPcmChunk {
-        channels: 2,
-        sample_rate: PLAYBACK_PCM_SAMPLE_RATE,
-        samples,
-    })
+        &|| operation_cancellation.load(Ordering::Acquire),
+    )?;
+    Ok(samples
+        .iter()
+        .flat_map(|sample| sample.to_le_bytes())
+        .collect())
 }
 
-fn playback_chunk_arguments(
-    source_path: &Path,
-    track: &AudioTrackSelection,
-    start_micros: u64,
-    duration_micros: u64,
-) -> Vec<OsString> {
-    let selection = std::slice::from_ref(track);
-    let seek_micros = start_micros.saturating_sub(PLAYBACK_PCM_FILTER_PREROLL_MICROS);
-    let filter_preroll_frames = micros_to_frames(start_micros - seek_micros);
-    let requested_frames = micros_to_frames(duration_micros);
-    let filter_graph = format!(
-        "{};[audio0]aresample={PLAYBACK_PCM_SAMPLE_RATE}:async=1:first_pts=0,apad=whole_len={},atrim=start_sample={filter_preroll_frames}:end_sample={},asetpts=PTS-STARTPTS[audio_chunk]",
-        audio_filter_graph(selection, false),
-        filter_preroll_frames + requested_frames,
-        filter_preroll_frames + requested_frames,
-    );
-    vec![
-        OsString::from("-hide_banner"),
-        OsString::from("-nostdin"),
-        OsString::from("-ss"),
-        OsString::from(format_seconds(seek_micros)),
-        OsString::from("-i"),
-        source_path.as_os_str().to_owned(),
-        OsString::from("-t"),
-        OsString::from(format_seconds(start_micros - seek_micros + duration_micros)),
-        OsString::from("-filter_complex"),
-        OsString::from(filter_graph),
-        OsString::from("-map"),
-        OsString::from("[audio_chunk]"),
-        OsString::from("-vn"),
-        OsString::from("-sn"),
-        OsString::from("-dn"),
-        OsString::from("-f"),
-        OsString::from("s16le"),
-        OsString::from("-acodec"),
-        OsString::from("pcm_s16le"),
-        OsString::from("-ar"),
-        OsString::from(PLAYBACK_PCM_SAMPLE_RATE.to_string()),
-        OsString::from("-ac"),
-        OsString::from("2"),
-        OsString::from("pipe:1"),
-    ]
+/// The continuous range every consumer of a stream's processed audio renders: the whole source
+/// timeline at the canonical rate. Sharing it keeps playback and waveforms on one render key, so
+/// they reuse each other's cached samples instead of superseding each other.
+pub fn processed_timeline_range(media: &MediaInfo) -> FrameRange {
+    FrameRange {
+        start: 0,
+        end: micros_to_frames(u64::try_from(media.duration_micros).unwrap_or_default()),
+    }
+}
+
+fn invalid_range() -> AppError {
+    AppError::invalid_request(AppErrorMessageId::ExportSelectedExportRangeIsInvalid)
 }
 
 fn micros_to_frames(micros: u64) -> u64 {
-    ((u128::from(micros) * u128::from(PLAYBACK_PCM_SAMPLE_RATE) + 500_000) / 1_000_000) as u64
-}
-
-fn format_seconds(micros: u64) -> String {
-    format!("{}.{:06}", micros / 1_000_000, micros % 1_000_000)
-}
-
-fn process_error(error: io::Error) -> AppError {
-    match error.kind() {
-        io::ErrorKind::Interrupted => AppError::source_replaced(),
-        io::ErrorKind::NotFound => AppError::preview_failed(
-            AppErrorMessageId::MediaAudioFfmpegIsRequiredForPlayback,
-            None::<String>,
-        ),
-        io::ErrorKind::TimedOut => AppError::preview_failed(
-            AppErrorMessageId::MediaAudioPlaybackAudioDecodingTookTooLong,
-            None::<String>,
-        ),
-        _ => AppError::preview_failed(
-            AppErrorMessageId::MediaAudioFfmpegCouldNotDecodePlaybackAudio,
-            None::<String>,
-        ),
-    }
-}
-
-fn diagnostics(output: &ProcessOutput, source_path: &Path) -> Option<String> {
-    let value = String::from_utf8_lossy(&output.stderr)
-        .replace(source_path.to_string_lossy().as_ref(), "<source>");
-    let value = value.trim();
-    (!value.is_empty()).then(|| value.to_owned())
-}
-
-#[cfg(test)]
-mod tests {
-    use std::{
-        ffi::{OsStr, OsString},
-        path::Path,
-        time::{Duration, SystemTime, UNIX_EPOCH},
-    };
-
-    use crate::{
-        media::export::{
-            AudioProcessingStage, AudioTrackProcessing, AudioTrackSelection,
-            AudioTrackSignalEffect, NoiseReductionPreset, audio_filter_graph,
-        },
-        process::run_bounded_cancellable,
-    };
-
-    use super::{
-        PLAYBACK_PCM_MAX_OUTPUT_BYTES, PLAYBACK_PCM_SAMPLE_RATE, playback_chunk_arguments,
-    };
-
-    const STDERR_LIMIT: usize = 128 * 1024;
-
-    #[test]
-    fn builds_bounded_pcm_chunk_arguments_without_shell_interpolation() {
-        let track = AudioTrackSelection {
-            loudness_analysis: None,
-            stream_index: 4,
-            processing: AudioTrackProcessing {
-                gain_db: 0.0,
-                loudness_normalization: None,
-                effects: Vec::new(),
-            },
-        };
-        let arguments = playback_chunk_arguments(
-            Path::new("C:\\Videos\\source clip.mkv"),
-            &track,
-            1_250_000,
-            2_000_000,
-        );
-
-        assert_eq!(arguments[2], OsString::from("-ss"));
-        assert_eq!(arguments[3], OsString::from("0.000000"));
-        assert!(
-            arguments
-                .windows(2)
-                .any(|pair| pair == [OsString::from("-t"), OsString::from("3.250000")])
-        );
-        assert!(arguments.windows(2).any(|pair| {
-            pair[0] == OsString::from("-filter_complex")
-                && pair[1]
-                    .to_string_lossy()
-                    .contains("apad=whole_len=156000,atrim=start_sample=60000:end_sample=156000")
-        }));
-        assert!(
-            arguments
-                .windows(2)
-                .any(|pair| pair == [OsString::from("-map"), OsString::from("[audio_chunk]")])
-        );
-        assert!(arguments.windows(2).any(|pair| pair
-            == [
-                OsString::from("-ar"),
-                OsString::from(PLAYBACK_PCM_SAMPLE_RATE.to_string())
-            ]));
-        assert_eq!(arguments.last(), Some(&OsString::from("pipe:1")));
-    }
-
-    #[test]
-    fn timestamp_gaps_preserve_positions_across_independently_decoded_chunks() {
-        let unique_id = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("system time is valid")
-            .as_nanos();
-        let source_path = std::env::temp_dir().join(format!(
-            "easytrim-playback-timestamp-gap-{}-{unique_id}.nut",
-            std::process::id()
-        ));
-        let generate = run_bounded_cancellable(
-            OsStr::new("ffmpeg"),
-            &[
-                OsString::from("-hide_banner"),
-                OsString::from("-nostdin"),
-                OsString::from("-f"),
-                OsString::from("lavfi"),
-                OsString::from("-i"),
-                OsString::from(
-                    "aevalsrc=0.31*sin(2*PI*440*t)+0.22*sin(2*PI*733*t)+0.1*sin(2*PI*1103*t):s=48000:d=8",
-                ),
-                OsString::from("-af"),
-                OsString::from(r"asetpts=PTS+48000+gte(N\,144384)*256"),
-                OsString::from("-c:a"),
-                OsString::from("pcm_s16le"),
-                OsString::from("-y"),
-                source_path.as_os_str().to_owned(),
-            ],
-            Duration::from_secs(30),
-            16 * 1024,
-            STDERR_LIMIT,
-            || false,
-        )
-        .expect("FFmpeg creates the playback fixture");
-        assert!(
-            generate.status.success(),
-            "{}",
-            String::from_utf8_lossy(&generate.stderr)
-        );
-
-        let probe = run_bounded_cancellable(
-            OsStr::new("ffprobe"),
-            &[
-                OsString::from("-v"),
-                OsString::from("error"),
-                OsString::from("-select_streams"),
-                OsString::from("a:0"),
-                OsString::from("-show_entries"),
-                OsString::from("stream=start_time"),
-                OsString::from("-of"),
-                OsString::from("csv=p=0"),
-                source_path.as_os_str().to_owned(),
-            ],
-            Duration::from_secs(30),
-            16 * 1024,
-            STDERR_LIMIT,
-            || false,
-        )
-        .expect("FFprobe inspects the playback fixture timestamps");
-        assert!(probe.status.success());
-        assert_eq!(String::from_utf8_lossy(&probe.stdout).trim(), "1.000000");
-
-        let packet_probe = run_bounded_cancellable(
-            OsStr::new("ffprobe"),
-            &[
-                OsString::from("-v"),
-                OsString::from("error"),
-                OsString::from("-select_streams"),
-                OsString::from("a:0"),
-                OsString::from("-show_entries"),
-                OsString::from("packet=pts,duration"),
-                OsString::from("-of"),
-                OsString::from("csv=p=0"),
-                source_path.as_os_str().to_owned(),
-            ],
-            Duration::from_secs(30),
-            16 * 1024,
-            STDERR_LIMIT,
-            || false,
-        )
-        .expect("FFprobe inspects the playback fixture packet boundaries");
-        assert!(packet_probe.status.success());
-        let packets = String::from_utf8_lossy(&packet_probe.stdout)
-            .lines()
-            .filter_map(|line| {
-                let (pts, duration) = line.split_once(',')?;
-                Some((pts.parse::<i64>().ok()?, duration.parse::<i64>().ok()?))
-            })
-            .collect::<Vec<_>>();
-        assert!(
-            packets
-                .windows(2)
-                .any(|pair| { pair[1].0 > pair[0].0 + pair[0].1 })
-        );
-
-        let track = AudioTrackSelection {
-            loudness_analysis: None,
-            stream_index: 0,
-            processing: AudioTrackProcessing {
-                gain_db: 0.0,
-                loudness_normalization: None,
-                effects: Vec::new(),
-            },
-        };
-        let expected_frames = 6 * PLAYBACK_PCM_SAMPLE_RATE as usize;
-        let reference = run_pcm(&[
-            OsString::from("-hide_banner"),
-            OsString::from("-nostdin"),
-            OsString::from("-i"),
-            source_path.as_os_str().to_owned(),
-            OsString::from("-filter_complex"),
-            OsString::from(format!(
-                "[0:a:0]aresample={PLAYBACK_PCM_SAMPLE_RATE}:async=1:first_pts=0,apad=whole_len={expected_frames},atrim=end_sample={expected_frames},asetpts=PTS-STARTPTS[reference]"
-            )),
-            OsString::from("-map"),
-            OsString::from("[reference]"),
-        ]);
-        assert_eq!(reference.len(), expected_frames * 2);
-        assert_eq!(reference[0], 0);
-        assert_ne!(reference[2], 0);
-
-        let mut decoded_chunks = Vec::new();
-        for start_micros in [0, 2_000_000, 4_000_000] {
-            let output = run_bounded_cancellable(
-                OsStr::new("ffmpeg"),
-                &playback_chunk_arguments(&source_path, &track, start_micros, 2_000_000),
-                Duration::from_secs(30),
-                PLAYBACK_PCM_MAX_OUTPUT_BYTES,
-                STDERR_LIMIT,
-                || false,
-            )
-            .expect("FFmpeg independently decodes a playback chunk across a timestamp gap");
-
-            assert!(
-                output.status.success(),
-                "{}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-            assert_eq!(
-                output.stdout.len(),
-                2 * PLAYBACK_PCM_SAMPLE_RATE as usize * 2 * 2
-            );
-            decoded_chunks.extend(
-                output
-                    .stdout
-                    .chunks_exact(2)
-                    .map(|sample| i16::from_le_bytes([sample[0], sample[1]])),
-            );
-        }
-
-        assert_eq!(reference.len(), decoded_chunks.len());
-        let max_difference = reference
-            .iter()
-            .zip(&decoded_chunks)
-            .map(|(reference, chunk)| i32::from(*reference).abs_diff(i32::from(*chunk)))
-            .max()
-            .unwrap_or_default();
-        assert!(
-            max_difference < 2,
-            "timestamp-normalized chunks diverged from the absolute-position reference by {max_difference} samples"
-        );
-
-        let _ = std::fs::remove_file(source_path);
-    }
-
-    #[test]
-    fn independently_decoded_filtered_pcm_chunks_keep_sample_boundaries() {
-        let unique_id = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("system time is valid")
-            .as_nanos();
-        let source_path = std::env::temp_dir().join(format!(
-            "easytrim-playback-audio-{}-{unique_id}.wav",
-            std::process::id()
-        ));
-        let generate = run_bounded_cancellable(
-            OsStr::new("ffmpeg"),
-            &[
-                OsString::from("-hide_banner"),
-                OsString::from("-nostdin"),
-                OsString::from("-f"),
-                OsString::from("lavfi"),
-                OsString::from("-i"),
-                OsString::from("aevalsrc=0.3*sin(2*PI*440*t)+0.04*sin(2*PI*7000*t):s=48000:d=6"),
-                OsString::from("-c:a"),
-                OsString::from("pcm_s16le"),
-                OsString::from("-y"),
-                source_path.as_os_str().to_owned(),
-            ],
-            Duration::from_secs(30),
-            16 * 1024,
-            STDERR_LIMIT,
-            || false,
-        )
-        .expect("FFmpeg creates the playback fixture");
-        assert!(
-            generate.status.success(),
-            "{}",
-            String::from_utf8_lossy(&generate.stderr)
-        );
-
-        let track = AudioTrackSelection {
-            loudness_analysis: None,
-            stream_index: 0,
-            processing: AudioTrackProcessing {
-                gain_db: 0.0,
-                loudness_normalization: None,
-                effects: vec![
-                    AudioTrackSignalEffect::HighPass {
-                        cutoff_hz: 100.0,
-                        stage: AudioProcessingStage::Cleanup,
-                    },
-                    AudioTrackSignalEffect::NoiseReduction {
-                        preset: NoiseReductionPreset::Medium,
-                        stage: AudioProcessingStage::Cleanup,
-                    },
-                ],
-            },
-        };
-        let full = run_pcm(&[
-            OsString::from("-hide_banner"),
-            OsString::from("-nostdin"),
-            OsString::from("-i"),
-            source_path.as_os_str().to_owned(),
-            OsString::from("-filter_complex"),
-            OsString::from(audio_filter_graph(std::slice::from_ref(&track), false)),
-            OsString::from("-map"),
-            OsString::from("[audio0]"),
-        ]);
-        let mut decoded_chunks = Vec::new();
-        for start_micros in [0, 2_000_000, 4_000_000] {
-            let output = run_bounded_cancellable(
-                OsStr::new("ffmpeg"),
-                &playback_chunk_arguments(&source_path, &track, start_micros, 2_000_000),
-                Duration::from_secs(30),
-                PLAYBACK_PCM_MAX_OUTPUT_BYTES,
-                STDERR_LIMIT,
-                || false,
-            )
-            .expect("FFmpeg independently decodes a playback chunk");
-            assert!(
-                output.status.success(),
-                "{}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-            assert_eq!(
-                output.stdout.len(),
-                2 * PLAYBACK_PCM_SAMPLE_RATE as usize * 2 * 2
-            );
-            decoded_chunks.extend(
-                output
-                    .stdout
-                    .chunks_exact(2)
-                    .map(|sample| i16::from_le_bytes([sample[0], sample[1]])),
-            );
-        }
-
-        assert_eq!(full.len(), decoded_chunks.len());
-        for boundary_frame in [2, 4].map(|seconds| seconds * PLAYBACK_PCM_SAMPLE_RATE as usize) {
-            let boundary_sample = boundary_frame * 2;
-            let window_start = boundary_sample - 256;
-            let window_end = boundary_sample + 256;
-            let max_difference = full[window_start..window_end]
-                .iter()
-                .zip(&decoded_chunks[window_start..window_end])
-                .map(|(reference, chunked)| i32::from(*reference).abs_diff(i32::from(*chunked)))
-                .max()
-                .unwrap_or_default();
-            assert!(
-                max_difference < 128,
-                "filtered PCM diverged by {max_difference} samples at {boundary_frame}"
-            );
-        }
-
-        let _ = std::fs::remove_file(source_path);
-    }
-
-    fn run_pcm(input_arguments: &[OsString]) -> Vec<i16> {
-        let mut arguments = input_arguments.to_vec();
-        arguments.extend([
-            OsString::from("-vn"),
-            OsString::from("-sn"),
-            OsString::from("-dn"),
-            OsString::from("-f"),
-            OsString::from("s16le"),
-            OsString::from("-acodec"),
-            OsString::from("pcm_s16le"),
-            OsString::from("-ar"),
-            OsString::from(PLAYBACK_PCM_SAMPLE_RATE.to_string()),
-            OsString::from("-ac"),
-            OsString::from("2"),
-            OsString::from("pipe:1"),
-        ]);
-        let output = run_bounded_cancellable(
-            OsStr::new("ffmpeg"),
-            &arguments,
-            Duration::from_secs(30),
-            16 * 1024 * 1024,
-            STDERR_LIMIT,
-            || false,
-        )
-        .expect("FFmpeg decodes the reference PCM");
-        assert!(
-            output.status.success(),
-            "{}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-        output
-            .stdout
-            .chunks_exact(2)
-            .map(|sample| i16::from_le_bytes([sample[0], sample[1]]))
-            .collect()
-    }
+    ((u128::from(micros) * u128::from(CANONICAL_SAMPLE_RATE) + 500_000) / 1_000_000) as u64
 }

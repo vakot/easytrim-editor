@@ -13,9 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { AudioTrackFiltersDialog } from "../../dialogs/AudioTrackFiltersDialog";
 import { AudioTrackMetadataDialog } from "../../dialogs/AudioTrackMetadataDialog";
 import { useAudioTrackController } from "../../hooks/useAudioTrackController";
-import { formatGain } from "../../lib/audio-level.utils";
+import { formatTrackVolume } from "../../lib/audio-level.utils";
 import {
   isWaveformDisplayMode,
   WAVEFORM_DISPLAY_MODES,
@@ -26,8 +27,8 @@ import {
 
 import { AudioTrackActions, AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
-import { AudioTrackGainControl } from "./components/AudioTrackGainControl";
 import { AudioTrackToggle } from "./components/AudioTrackToggle";
+import { AudioTrackVolumeControl } from "./components/AudioTrackVolumeControl";
 import { AudioTrackWaveform } from "./components/AudioTrackWaveform";
 import {
   AudioTrackDisplayModeContext,
@@ -36,8 +37,8 @@ import {
 
 const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex: number }) {
   const { stream, track, trackNumber } = useAudioTrackController(streamIndex);
-  // The gain being adjusted, previewed on the waveform before it is committed.
-  const [liveGainDb, setLiveGainDb] = useState<number | null>(null);
+  // The volume being adjusted, shown in the track volume indicator before it is committed.
+  const [liveVolume, setLiveVolume] = useState<number | null>(null);
   const [displayMode, setDisplayMode] = useState<WaveformDisplayMode>("peak");
   const displayModeContext = useMemo(() => ({ displayMode, setDisplayMode }), [displayMode]);
 
@@ -46,46 +47,48 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
   return (
     <AudioTrackDisplayModeContext.Provider value={displayModeContext}>
       <AudioTrackMetadataDialog streamIndex={streamIndex}>
-        <ContextMenu>
-          <ContextMenuTrigger asChild>
-            <div
-              className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
-              data-slot="audio-track-row"
-            >
-              <div className="flex items-center gap-1">
-                <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
-                  <HoverCardTrigger>
-                    <AudioTrackToggle streamIndex={streamIndex} />
-                  </HoverCardTrigger>
+        <AudioTrackFiltersDialog streamIndex={streamIndex}>
+          <ContextMenu>
+            <ContextMenuTrigger asChild>
+              <div
+                className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
+                data-slot="audio-track-row"
+              >
+                <div className="flex items-center gap-1">
+                  <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
+                    <HoverCardTrigger>
+                      <AudioTrackToggle streamIndex={streamIndex} />
+                    </HoverCardTrigger>
 
-                  <HoverCardContent align="center" className="max-w-42 p-0" side="right">
-                    <AudioTrackGainControl
-                      onLiveGainChange={setLiveGainDb}
-                      streamIndex={streamIndex}
-                      trackNumber={trackNumber}
-                    />
-                  </HoverCardContent>
-                </HoverCard>
+                    <HoverCardContent align="center" className="max-w-42 p-0" side="right">
+                      <AudioTrackVolumeControl
+                        onLiveVolumeChange={setLiveVolume}
+                        streamIndex={streamIndex}
+                        trackNumber={trackNumber}
+                      />
+                    </HoverCardContent>
+                  </HoverCard>
 
-                <AudioTrackDetails streamIndex={streamIndex} />
-                <AudioTrackActions streamIndex={streamIndex} />
+                  <AudioTrackDetails streamIndex={streamIndex} />
+                  <AudioTrackActions streamIndex={streamIndex} />
+                </div>
+                <AudioTrackRowWaveform liveVolume={liveVolume} streamIndex={streamIndex} />
               </div>
-              <AudioTrackRowWaveform liveGainDb={liveGainDb} streamIndex={streamIndex} />
-            </div>
-          </ContextMenuTrigger>
+            </ContextMenuTrigger>
 
-          <AudioTrackContextMenuContent streamIndex={streamIndex} />
-        </ContextMenu>
+            <AudioTrackContextMenuContent streamIndex={streamIndex} />
+          </ContextMenu>
+        </AudioTrackFiltersDialog>
       </AudioTrackMetadataDialog>
     </AudioTrackDisplayModeContext.Provider>
   );
 });
 
 function AudioTrackRowWaveform({
-  liveGainDb,
+  liveVolume,
   streamIndex,
 }: {
-  liveGainDb: number | null;
+  liveVolume: number | null;
   streamIndex: number;
 }) {
   const { displayMode } = useAudioTrackDisplayMode();
@@ -96,7 +99,7 @@ function AudioTrackRowWaveform({
 
   if (!stream || !track) return null;
 
-  const gainDb = liveGainDb ?? track.processing.gainDb;
+  const volume = liveVolume ?? track.processing.volume;
   const activityRanges =
     track.activityVisible && track.activityAnalysis.status === "ready"
       ? track.activityAnalysis.value
@@ -107,7 +110,7 @@ function AudioTrackRowWaveform({
       className="relative size-full h-12.5 min-w-0 overflow-hidden rounded-sm border border-border bg-muted/30 text-muted transition-opacity first-of-type:rounded-t-lg last-of-type:rounded-b-lg data-[enabled=false]:opacity-50"
       data-enabled={track.enabled}
     >
-      <AudioTrackWaveform displayMode={displayMode} gainDb={gainDb} stream={stream} track={track} />
+      <AudioTrackWaveform displayMode={displayMode} stream={stream} track={track} volume={volume} />
 
       <div className="absolute top-1 right-1 z-4">
         <AudioTrackDisplaySelect streamIndex={streamIndex} />
@@ -141,7 +144,7 @@ function AudioTrackRowWaveform({
         className="pointer-events-none absolute inset-y-0 right-(--timeline-selection-end-inset) left-(--timeline-selection-start) border-x border-primary/70 bg-primary/5"
         data-slot="audio-track-selection"
       />
-      <AudioTrackGainIndicator gainDb={gainDb} trackNumber={trackNumber} />
+      <AudioTrackVolumeIndicator trackNumber={trackNumber} volume={volume} />
     </div>
   );
 }
@@ -190,18 +193,24 @@ function AudioTrackDisplaySelect({ streamIndex }: { streamIndex: number }) {
   );
 }
 
-function AudioTrackGainIndicator({ gainDb, trackNumber }: { gainDb: number; trackNumber: number }) {
+function AudioTrackVolumeIndicator({
+  trackNumber,
+  volume,
+}: {
+  trackNumber: number;
+  volume: number;
+}) {
   const { i18n, t } = useTranslation();
 
   return (
     <Badge
-      aria-label={t("audio.tracks.gainLabel", { number: trackNumber })}
+      aria-label={t("audio.tracks.volumeLabel", { number: trackNumber })}
       className="absolute bottom-1 left-1 z-3 max-w-[calc(100%-0.5rem)] gap-1.5 bg-background/25 backdrop-blur-xs"
-      data-slot="audio-track-gain-indicator"
+      data-slot="audio-track-volume-indicator"
       size="xs"
       variant="outline"
     >
-      {formatGain(gainDb, i18n.language)}
+      {formatTrackVolume(volume, i18n.language)}
     </Badge>
   );
 }

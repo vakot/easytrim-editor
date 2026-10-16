@@ -149,6 +149,8 @@ export const en = {
         ffmpegIsRequiredForPlayback: "FFmpeg is required for audio playback",
         playbackAudioDecodingTookTooLong: "Decoding an audio playback chunk took too long",
         playbackChunkRequiresInspectedSourceMedia: "Inspected source media is required for audio playback",
+        processedAudioRenderWasCancelled: "Processing audio for playback was cancelled",
+        processingChangedBeforeAudioWasReady: "The audio filters changed before the processed audio was ready",
       },
       audioStreamMetadataIsUnavailableForWaveformGeneration: "Audio stream metadata is unavailable for waveform generation",
       loudness: {
@@ -185,16 +187,65 @@ export const en = {
       waveformProcessingSettingsMustMatchTheSelectedAudioStreams: "Waveform processing settings must match the selected audio streams",
       waveformStreamIndexesMustBeUnique: "Waveform stream indexes must be unique",
     },
+    filters: {
+      actions: {
+        add: "Add filter",
+        label: "Filter chain actions",
+        moveDown: "Move filter down",
+        moveUp: "Move filter up",
+        open: "Audio filters",
+        remove: "Remove filter",
+      },
+      dialog: {
+        applyNotice: "Changes stay unapplied until you choose Apply",
+        description: "Filters process this track from top to bottom; their order decides how they interact",
+        emptyPage: "Add a filter to configure it here",
+        invalid: "Fix the highlighted values before applying",
+        title: "{{title}} — Audio filters",
+      },
+      disabledFilter: "This filter is disabled and does not process audio",
+      empty: "No filters yet. Add one to process this track.",
+      enabled: "Filter enabled",
+      instanceName: "{{name}} {{number}}",
+      invalidFilter: "This filter has an invalid value",
+      listLabel: "Filter chain",
+      parameterRange: "Enter a value from {{min}} to {{max}} {{unit}}",
+      preset: {
+        custom: "Custom",
+        label: "Preset",
+      },
+      removeConfirmation: {
+        description: "Remove {{name}} from this track's filter chain?",
+        title: "Remove filter?",
+      },
+    },
+    gain: {
+      description: "Raise or lower the level at this point in the chain",
+      gainLabel: "Gain",
+      label: "Gain",
+    },
     highPass: {
       cutoffLabel: "Cutoff frequency",
       description: "Reduce low-frequency rumble on this track",
       label: "High-pass filter",
+      preset: {
+        dialogue: "Dialogue (100 Hz)",
+        rumble: "Rumble (60 Hz)",
+        voice: "Voice (80 Hz)",
+        wind: "Wind (120 Hz)",
+      },
       summary: "High-pass ({{cutoff}} Hz)",
     },
     limiter: {
+      attackLabel: "Attack",
       ceilingLabel: "Output ceiling",
       description: "Reduce peaks on this track",
       label: "Limiter",
+      preset: {
+        broadcastSafety: "Broadcast safety",
+        peakProtection: "Peak protection",
+      },
+      releaseLabel: "Release",
       summary: "Limiter ({{ceiling}} dB)",
     },
     loudness: {
@@ -204,6 +255,8 @@ export const en = {
     noiseReduction: {
       description: "Reduce background noise on this audio track",
       label: "Noise reduction",
+      noiseFloorLabel: "Noise floor",
+      reductionLabel: "Reduction amount",
       strength: {
         label: "Noise reduction strength",
         light: "Light",
@@ -216,6 +269,7 @@ export const en = {
       description: "Normalize this track to a consistent target loudness",
       label: "Loudness normalization",
       levelSummary: "{{target}} LUFS · {{peak}} dBTP",
+      loudnessRangeLabel: "Loudness range",
       manualGainUnavailable: "Manual Gain is unavailable while automatic normalization is applied",
       maxTruePeakLabel: "Maximum true peak (dBTP)",
       preset: {
@@ -226,7 +280,9 @@ export const en = {
         webVideo: "Web Video",
       },
       summary: "Normalized - {{preset}}",
+      targetLabel: "Target loudness",
       targetLufsLabel: "Target loudness (LUFS)",
+      truePeakLabel: "Maximum true peak",
     },
     output: {
       merge: {
@@ -246,7 +302,6 @@ export const en = {
       channels_one: "{{count}} channel",
       channels_other: "{{count}} channels",
       defaultName: "Audio {{number}}",
-      gainLabel: "Audio {{number}} gain in decibels",
       metadata: {
         actions: {
           edit: "Edit output metadata",
@@ -278,6 +333,7 @@ export const en = {
       unknownLayout: "unknown layout",
       unmute: "Unmute",
       unmuteWithTitle: "Unmute ({{title}})",
+      volumeLabel: "Audio {{number}} volume",
     },
     waveform: {
       displayMode: {

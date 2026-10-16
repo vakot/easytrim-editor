@@ -57,6 +57,7 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import { selectedAudioMetadata, selectedAudioTracks } from "@/domain/audio-export";
 import {
   audioTrackLoudnessInputsKey,
+  type AudioTrackSelection,
   serializeAudioTrackSettings,
 } from "@/domain/audio-processing";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
@@ -87,7 +88,7 @@ import type {
 } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 
-import { analyzeTrackLoudness } from "./audio-track-thunks";
+import { analyzeTrackLoudness, audioChainSelection } from "./audio-track-thunks";
 import type { AppThunk } from "./source-media-thunks";
 import {
   activateEditingInstanceRequested,
@@ -753,26 +754,45 @@ function exportTransform(state: ReturnType<Parameters<AppThunk>[1]>) {
 }
 
 // Loudness is measured on the timeline selection so exports apply the same gain as playback.
-function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
+function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>): AudioTrackSelection[] {
   const trim = selectTrim(state);
   const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
   const tracks = selectAudioTracks(state);
   return selectedAudioTracks(tracks).map((selection) => {
     const track = tracks.find((candidate) => candidate.streamIndex === selection.streamIndex);
-    if (!track) return selection;
-    const cacheKey = trim
-      ? audioTrackLoudnessInputsKey(sourcePath, selection.streamIndex, trim, selection.processing)
-      : null;
+    if (!track || !trim) return selection;
+    const loudnessCacheKey = audioTrackLoudnessInputsKey(
+      sourcePath,
+      selection.streamIndex,
+      trim,
+      selection.filters,
+    );
 
-    return {
-      ...selection,
-      ...(selection.processing.loudnessNormalization !== undefined &&
-      cacheKey &&
-      track.loudnessAnalysis.status === "ready" &&
-      track.loudnessAnalysis.cacheKey === cacheKey
-        ? { loudnessAnalysis: { ...track.loudnessAnalysis.value } }
-        : {}),
-    };
+    return { ...audioChainSelection(track, loudnessCacheKey), volume: selection.volume };
+  });
+}
+
+/** Tracks whose chain needs measurements that are not ready for the current inputs. */
+function tracksMissingLoudnessAnalysis(state: ReturnType<Parameters<AppThunk>[1]>) {
+  const trim = selectTrim(state);
+  const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
+  if (!trim) return [];
+  return selectAudioTracks(state).flatMap((track) => {
+    if (!track.enabled) return [];
+    const cacheKey = audioTrackLoudnessInputsKey(
+      sourcePath,
+      track.streamIndex,
+      trim,
+      track.processing.filters,
+    );
+
+    if (
+      cacheKey === null ||
+      (track.loudnessAnalysis.status === "ready" && track.loudnessAnalysis.cacheKey === cacheKey)
+    ) {
+      return [];
+    }
+    return [{ cacheKey, track }];
   });
 }
 
@@ -783,113 +803,41 @@ async function ensureLoudnessAnalysis(
 ): Promise<LoudnessAnalysisResult> {
   const maxPasses = 8;
   for (let pass = 0; pass < maxPasses; pass += 1) {
-    let state = getState();
+    const state = getState();
     if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
-    const trim = selectTrim(state);
-    if (!trim) return { status: "failed" };
-    const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
+    if (!selectTrim(state)) return { status: "failed" };
 
-    const missing = selectAudioTracks(state).filter((track) => {
-      if (!track.enabled || track.processing.loudnessNormalization === undefined) return false;
-      const cacheKey = audioTrackLoudnessInputsKey(
-        sourcePath,
-        track.streamIndex,
-        trim,
-        track.processing,
-      );
-
-      return (
-        track.loudnessAnalysis.status !== "ready" || track.loudnessAnalysis.cacheKey !== cacheKey
-      );
-    });
-
+    const missing = tracksMissingLoudnessAnalysis(state);
     if (missing.length === 0) return { state, status: "ready" };
 
-    for (const pendingTrack of missing) {
-      state = getState();
-      if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
-      const currentTrim = selectTrim(state);
-      const currentTrack = selectAudioTracks(state).find(
-        (track) => track.streamIndex === pendingTrack.streamIndex,
-      );
-
+    for (const { cacheKey, track } of missing) {
       if (
-        !currentTrim ||
-        !currentTrack?.enabled ||
-        currentTrack.processing.loudnessNormalization === undefined
-      ) {
-        continue;
-      }
-      const cacheKey = audioTrackLoudnessInputsKey(
-        selectSourceSelection(state)?.sourcePath ?? "",
-        currentTrack.streamIndex,
-        currentTrim,
-        currentTrack.processing,
-      );
-
-      if (
-        currentTrack.loudnessAnalysis.status === "ready" &&
-        currentTrack.loudnessAnalysis.cacheKey === cacheKey
-      ) {
-        continue;
-      }
-      if (
-        currentTrack.loudnessAnalysis.status === "failed" &&
-        currentTrack.loudnessAnalysis.cacheKey === cacheKey
+        track.loudnessAnalysis.status === "failed" &&
+        track.loudnessAnalysis.cacheKey === cacheKey
       ) {
         return { status: "failed" };
       }
-
-      await dispatch(analyzeTrackLoudness(currentTrack.streamIndex));
-      state = getState();
-      if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
-      const afterTrim = selectTrim(state);
-      const afterTrack = selectAudioTracks(state).find(
-        (track) => track.streamIndex === pendingTrack.streamIndex,
-      );
-
-      if (
-        !afterTrim ||
-        !afterTrack?.enabled ||
-        afterTrack.processing.loudnessNormalization === undefined
-      )
-        continue;
-      const afterCacheKey = audioTrackLoudnessInputsKey(
-        selectSourceSelection(state)?.sourcePath ?? "",
-        afterTrack.streamIndex,
-        afterTrim,
-        afterTrack.processing,
-      );
-
-      if (
-        afterTrack.loudnessAnalysis.status === "failed" &&
-        afterTrack.loudnessAnalysis.cacheKey === afterCacheKey
-      ) {
-        return { status: "failed" };
+      await dispatch(analyzeTrackLoudness(track.streamIndex));
+      const afterState = getState();
+      if (!isLoudnessAnalysisContextCurrent(afterState, context)) {
+        return { status: "context-changed" };
       }
+      const failed = tracksMissingLoudnessAnalysis(afterState).some(
+        (pending) =>
+          pending.track.streamIndex === track.streamIndex &&
+          pending.track.loudnessAnalysis.status === "failed" &&
+          pending.track.loudnessAnalysis.cacheKey === pending.cacheKey,
+      );
+
+      if (failed) return { status: "failed" };
     }
   }
 
   const state = getState();
   if (!isLoudnessAnalysisContextCurrent(state, context)) return { status: "context-changed" };
-  const trim = selectTrim(state);
-  if (!trim) return { status: "failed" };
-  const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
-  const allAnalysesReady = selectAudioTracks(state).every((track) => {
-    if (!track.enabled || track.processing.loudnessNormalization === undefined) return true;
-    const cacheKey = audioTrackLoudnessInputsKey(
-      sourcePath,
-      track.streamIndex,
-      trim,
-      track.processing,
-    );
-
-    return (
-      track.loudnessAnalysis.status === "ready" && track.loudnessAnalysis.cacheKey === cacheKey
-    );
-  });
-
-  return allAnalysesReady ? { state, status: "ready" } : { status: "failed" };
+  return tracksMissingLoudnessAnalysis(state).length === 0
+    ? { state, status: "ready" }
+    : { status: "failed" };
 }
 
 type LoudnessAnalysisResult =

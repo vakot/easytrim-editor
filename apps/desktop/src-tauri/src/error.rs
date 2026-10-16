@@ -20,10 +20,6 @@ pub enum AppErrorMessageId {
     MediaWaveformWidthOutOfRange,
     #[serde(rename = "media.waveform.streamDoesNotBelongToSource")]
     MediaWaveformStreamDoesNotBelongToSource,
-    #[serde(rename = "media.waveform.analysisFailed")]
-    MediaWaveformAnalysisFailed,
-    #[serde(rename = "media.waveform.sampleCountUnavailable")]
-    MediaWaveformSampleCountUnavailable,
     #[serde(rename = "media.waveform.tooFewSamples")]
     MediaWaveformTooFewSamples,
     #[serde(rename = "media.waveform.sampleReductionFailed")]
@@ -130,6 +126,10 @@ pub enum AppErrorMessageId {
     MediaAudioFfmpegIsRequiredForPlayback,
     #[serde(rename = "media.audio.playbackAudioDecodingTookTooLong")]
     MediaAudioPlaybackAudioDecodingTookTooLong,
+    #[serde(rename = "media.audio.processedAudioRenderWasCancelled")]
+    MediaAudioProcessedAudioRenderWasCancelled,
+    #[serde(rename = "media.audio.processingChangedBeforeAudioWasReady")]
+    MediaAudioProcessingChangedBeforeAudioWasReady,
     #[serde(rename = "media.audioStreamMetadataIsUnavailableForWaveformGeneration")]
     MediaAudioStreamMetadataIsUnavailableForWaveformGeneration,
     #[serde(rename = "media.inspectTheVideoBeforeDetectingAudioActivity")]
@@ -218,10 +218,6 @@ pub enum AppErrorMessageId {
     MediaThumbnailThumbnailCouldNotBeSavedTemporarily,
     #[serde(rename = "media.thumbnail.uniqueTemporaryThumbnailDirectoryCouldNotBeCreated")]
     MediaThumbnailUniqueTemporaryThumbnailDirectoryCouldNotBeCreated,
-    #[serde(rename = "media.waveform.ffmpegCouldNotGenerateTheAudioWaveform")]
-    MediaWaveformFfmpegCouldNotGenerateTheAudioWaveform,
-    #[serde(rename = "media.waveform.ffmpegIsRequiredToGenerateAudioWaveforms")]
-    MediaWaveformFfmpegIsRequiredToGenerateAudioWaveforms,
     #[serde(rename = "media.waveformProcessingSettingsMustMatchTheSelectedAudioStreams")]
     MediaWaveformProcessingSettingsMustMatchTheSelectedAudioStreams,
     #[serde(rename = "media.waveformStreamIndexesMustBeUnique")]
@@ -232,8 +228,6 @@ pub enum AppErrorMessageId {
     MediaWaveformUniqueTemporaryWaveformDirectoryCouldNotBeCreated,
     #[serde(rename = "media.waveform.waveformGenerationWasReplaced")]
     MediaWaveformWaveformGenerationWasReplaced,
-    #[serde(rename = "media.waveform.waveformGenerationTookTooLong")]
-    MediaWaveformWaveformGenerationTookTooLong,
     #[serde(rename = "queue.selectedSystemActionWasRejectedByTheSystem")]
     QueueSelectedSystemActionWasRejectedByTheSystem,
     #[serde(rename = "queue.selectedSystemActionCouldNotBeStarted")]

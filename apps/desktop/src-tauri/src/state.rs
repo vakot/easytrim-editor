@@ -9,7 +9,7 @@ use std::{
 };
 
 use crate::media::{
-    export::{AudioTrackCacheKey, AudioTrackProcessing},
+    audio_filters::{compiler::CompiledChain, engine::AudioProcessingEngine},
     probe::MediaInfo,
 };
 use crate::{
@@ -34,7 +34,8 @@ pub fn cleanup_stale_media_artifacts() {
         let is_easytrim_artifact = name.starts_with("easytrim-preview-")
             || name.starts_with("easytrim-thumbnail-")
             || name.starts_with("easytrim-waveform-")
-            || name.starts_with("easytrim-chapters-");
+            || name.starts_with("easytrim-chapters-")
+            || name.starts_with("easytrim-pcm-");
         if !is_easytrim_artifact || !entry.file_type().is_ok_and(|file_type| file_type.is_dir()) {
             continue;
         }
@@ -131,7 +132,7 @@ pub struct WaveformSource {
 struct WaveformRecord {
     width: u32,
     has_signal: Option<bool>,
-    processing: AudioTrackProcessing,
+    chain: CompiledChain,
     artifact: WaveformArtifact,
 }
 
@@ -153,8 +154,11 @@ struct ActiveSourceRecord {
     waveform_job: Option<WaveformJobRecord>,
     waveforms: HashMap<u32, WaveformRecord>,
     scene_boundaries_micros: Option<Vec<u64>>,
-    silence_ranges: HashMap<AudioTrackCacheKey, Vec<(u64, u64)>>,
+    silence_ranges: HashMap<ActivityCacheKey, Vec<(u64, u64)>>,
 }
+
+/// Activity results depend on the stream and the exact compiled chain, including measurements.
+pub type ActivityCacheKey = (u32, String);
 
 #[derive(Debug, Default)]
 struct SessionState {
@@ -173,6 +177,7 @@ pub struct AppState {
     operations: Mutex<HashMap<String, Arc<AtomicBool>>>,
     export_sources: Mutex<HashMap<PathBuf, RetainedExportSource>>,
     imported_thumbnail_artifacts: Mutex<HashMap<u64, ImportedThumbnailArtifact>>,
+    audio_engine: Arc<AudioProcessingEngine>,
 }
 
 #[derive(Clone, Debug)]
@@ -182,6 +187,11 @@ struct RetainedExportSource {
 }
 
 impl AppState {
+    /// The processed audio renderer, shared with blocking work that outlives a command borrow.
+    pub fn audio_engine(&self) -> Arc<AudioProcessingEngine> {
+        Arc::clone(&self.audio_engine)
+    }
+
     pub fn begin_source_replacement(&self) -> Result<u64, AppError> {
         let generation = self.next_generation.fetch_add(1, Ordering::Relaxed) + 1;
         let mut session = self.lock_session()?;
@@ -191,6 +201,7 @@ impl AppState {
 
         if let Some(previous_source) = previous_source {
             previous_source.cancellation.store(true, Ordering::Release);
+            self.audio_engine.release_source(previous_source.load_token);
         }
         // Export operations own their resolved input path and output path after they
         // start. They must outlive the active editing source, so replacing the source
@@ -494,7 +505,7 @@ impl AppState {
         stream_index: u32,
         width: u32,
         has_signal: Option<bool>,
-        processing: AudioTrackProcessing,
+        chain: CompiledChain,
         artifact: WaveformArtifact,
     ) -> Result<(), AppError> {
         let previous_waveform = {
@@ -511,7 +522,7 @@ impl AppState {
                 WaveformRecord {
                     width,
                     has_signal,
-                    processing,
+                    chain,
                     artifact,
                 },
             )
@@ -525,14 +536,14 @@ impl AppState {
         load_token: u64,
         stream_index: u32,
         width: u32,
-        processing: &AudioTrackProcessing,
+        chain: &CompiledChain,
     ) -> Result<Option<Option<bool>>, AppError> {
         let session = self.lock_session()?;
         let source = active_source(&session, load_token)?;
         Ok(source
             .waveforms
             .get(&stream_index)
-            .filter(|waveform| waveform.width == width && waveform.processing == *processing)
+            .filter(|waveform| waveform.width == width && waveform.chain == *chain)
             .map(|waveform| waveform.has_signal))
     }
 
@@ -576,19 +587,19 @@ impl AppState {
     pub fn cached_silence_ranges(
         &self,
         load_token: u64,
-        track: AudioTrackCacheKey,
+        track: &ActivityCacheKey,
     ) -> Result<Option<Vec<(u64, u64)>>, AppError> {
         let session = self.lock_session()?;
         Ok(active_source(&session, load_token)?
             .silence_ranges
-            .get(&track)
+            .get(track)
             .cloned())
     }
 
     pub fn install_silence_ranges(
         &self,
         load_token: u64,
-        track: AudioTrackCacheKey,
+        track: &ActivityCacheKey,
         ranges: Vec<(u64, u64)>,
     ) -> Result<(), AppError> {
         let mut session = self.lock_session()?;
@@ -596,7 +607,7 @@ impl AppState {
         if source.cancellation.load(Ordering::Acquire) {
             return Err(AppError::source_replaced());
         }
-        source.silence_ranges.insert(track, ranges);
+        source.silence_ranges.insert(track.clone(), ranges);
         Ok(())
     }
 

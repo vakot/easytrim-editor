@@ -1,6 +1,11 @@
-import type { AudioLoudnessAnalysis, AudioTrackSelection } from "./audio-processing";
+import type {
+  AudioChainSelection,
+  AudioFilterMeasurement,
+  AudioTrackSelection,
+} from "./audio-processing";
 
-type LoudnessAnalysis = AudioLoudnessAnalysis;
+/** One measurement per loudness normalization instance, in chain order. */
+type LoudnessAnalysis = AudioFilterMeasurement[];
 
 interface AppError {
   code: string;
@@ -100,7 +105,7 @@ interface GifExportRequest {
 }
 
 interface LoudnessAnalysisRequest {
-  audioTrack: AudioTrackSelection;
+  audioTrack: AudioChainSelection;
   sourcePath: string;
   trim: TrimSelection;
 }
