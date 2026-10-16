@@ -1,14 +1,27 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { type SplashMessageDefinition, splashMessages } from "../../../../lib/splash-messages";
-import { PreviewSplash } from "../PreviewSplash";
+import {
+  splashMessagesCommon,
+  splashMessagesLegendary,
+  splashMessagesRare,
+  splashMessagesUncommon,
+} from "../../consts/splash-messages.consts";
+import type { SplashMessageDefinition } from "../../types/splash-messages.types";
+import { SplashMessages } from "../SplashMessages";
+
+const splashMessages: SplashMessageDefinition[] = [
+  ...splashMessagesCommon,
+  ...splashMessagesUncommon,
+  ...splashMessagesRare,
+  ...splashMessagesLegendary,
+];
 
 const meta = {
-  component: PreviewSplash,
+  component: SplashMessages,
   parameters: { layout: "fullscreen" },
   tags: ["autodocs"],
-  title: "Features/Preview/Preview Splash",
-} satisfies Meta<typeof PreviewSplash>;
+  title: "Features/Entertainment/Splash Messages",
+} satisfies Meta<typeof SplashMessages>;
 
 export default meta;
 
@@ -26,7 +39,7 @@ function SplashMessagesColumn({ messages }: { messages: SplashMessageDefinition[
   return (
     <section className="relative m-12 grid justify-items-center gap-8">
       {messages.map((message) => (
-        <PreviewSplash className="static! translate-none" key={message.id} message={message} />
+        <SplashMessages className="static! translate-none" key={message.id} message={message} />
       ))}
     </section>
   );
@@ -61,7 +74,7 @@ export const Legendary: Story = {
 function RandomSplashStory() {
   return (
     <div className="relative m-12 flex h-48 items-center justify-center">
-      <PreviewSplash className="static! translate-none" />
+      <SplashMessages className="static! translate-none" />
     </div>
   );
 }

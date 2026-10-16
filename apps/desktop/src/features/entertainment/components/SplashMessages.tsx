@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/class-names.utils";
 
-import { chooseSplashMessage, type SplashMessageDefinition } from "../../../lib/splash-messages";
+import { chooseSplashMessage } from "../lib/splash-messages.utils";
+import type { SplashMessageDefinition } from "../types/splash-messages.types";
 
-import styles from "./PreviewSplash.module.css";
+import styles from "./SplashMessages.module.css";
 
 const splashMessageClasses: Record<string, string> = {
   "chosen-frame": styles.chosenFrame!,
@@ -16,7 +17,7 @@ const splashMessageClasses: Record<string, string> = {
 
 const enchantmentGlyphs = Array.from("ᔑʖᓵ↸ᒷ⎓⊣⍑╎⋮ꖌꖎᒲリ𝙹!¡ᑑ∷ᓭℸ⚍⍊∴ ̇/||");
 
-function PreviewSplash({
+function SplashMessages({
   className,
   message: fixedMessage,
 }: {
@@ -97,4 +98,4 @@ function PreviewSplash({
   );
 }
 
-export { PreviewSplash };
+export { SplashMessages };

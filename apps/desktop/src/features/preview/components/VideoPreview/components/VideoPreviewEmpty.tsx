@@ -11,9 +11,9 @@ import {
 } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { SupportLink } from "@/app/components/SupportLink";
+import { SplashMessages } from "@/features/entertainment";
 import { cn } from "@/lib/class-names.utils";
 
-import { PreviewSplash } from "./PreviewSplash";
 import styles from "./VideoPreviewEmpty.module.css";
 
 type Shortcut = {
@@ -84,7 +84,7 @@ function VideoPreviewEmpty() {
             className="pointer-events-none aspect-square w-full opacity-30 grayscale invert-100 dark:opacity-20 dark:invert-0"
             src="/logo-symbol.svg"
           />
-          <PreviewSplash />
+          <SplashMessages />
         </div>
 
         <div className="grid w-full justify-items-center gap-4">
