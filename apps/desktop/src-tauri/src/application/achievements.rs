@@ -192,6 +192,54 @@ mod tests {
     }
 
     #[test]
+    fn retired_achievements_keep_their_history_across_updates_and_restarts() {
+        let root = temporary_root("retired");
+        fs::create_dir_all(root.join("achievements")).expect("achievements directory created");
+        fs::write(
+            root.join("achievements").join(ACHIEVEMENTS_FILE_NAME),
+            br#"{"version":2,"unlockedAchievements":{"retired-achievement":{"unlockedAtMillis":77}}}"#,
+        )
+        .expect("records written");
+
+        let (store, issue) = AchievementStore::open(&root);
+        assert_eq!(issue, None);
+        store
+            .unlock(&[identifier("gold-collector")])
+            .write_result
+            .expect("unlock persisted");
+
+        let records = AchievementStore::open(&root).0.snapshot();
+        assert_eq!(
+            records.unlocked_achievements["retired-achievement"].unlocked_at_millis,
+            77
+        );
+        assert!(records.unlocked_achievements.contains_key("gold-collector"));
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
+    fn unlocking_an_already_unlocked_achievement_does_not_write_again() {
+        let root = temporary_root("repeat-write");
+        let (store, _) = AchievementStore::open(&root);
+        store
+            .unlock(&[identifier("bronze-collector")])
+            .write_result
+            .expect("unlock persisted");
+        // A directory at the temporary path makes every write fail, so only skipped writes pass.
+        fs::create_dir(root.join("achievements").join("achievements.tmp"))
+            .expect("blocking directory created");
+
+        let update = store.unlock(&[
+            identifier("bronze-collector"),
+            identifier("bronze-collector"),
+        ]);
+
+        assert!(update.write_result.is_ok());
+        assert!(update.value.1.is_empty());
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
     fn persists_the_viewed_mark_across_reopening() {
         let root = temporary_root("viewed");
         let (store, _) = AchievementStore::open(&root);
