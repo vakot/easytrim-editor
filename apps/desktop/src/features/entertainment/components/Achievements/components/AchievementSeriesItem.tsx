@@ -1,4 +1,4 @@
-import { Check, CircleCheckBig, Lock } from "lucide-react";
+import { CircleCheckBig, Lock, Medal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +37,10 @@ function AchievementSeriesItem({ series }: { series: AchievementSeriesDefinition
 
   return (
     <Item
-      className={cn("items-start", !current && "bg-muted/40")}
+      className={cn(
+        "items-start",
+        current ? achievementTierClassNames[current.tier].card : "bg-muted/40",
+      )}
       data-state={completed ? "completed" : current ? "unlocked" : "locked"}
       data-tier={current?.tier}
       role="listitem"
@@ -101,7 +104,6 @@ function AchievementSeriesItem({ series }: { series: AchievementSeriesDefinition
             <AchievementTierIndicator
               key={tier.tier}
               label={tierIndicatorLabel(tier)}
-              name={getAchievementTierLabel(tier.tier, t)}
               tier={tier}
               value={formatAchievementValue(
                 tier.target,
@@ -142,14 +144,13 @@ function AchievementSeriesItem({ series }: { series: AchievementSeriesDefinition
   }
 }
 
+/** A tier chip: the medal in its tier color and the threshold that unlocks it. */
 function AchievementTierIndicator({
   label,
-  name,
   tier,
   value,
 }: {
   label: string;
-  name: string;
   tier: AchievementTierStatus;
   value: string;
 }) {
@@ -161,20 +162,14 @@ function AchievementTierIndicator({
       className={cn(
         "inline-flex h-5 items-center gap-1 rounded-4xl border px-1.5 text-[0.625rem] font-medium tabular-nums",
         unlocked
-          ? achievementTierClassNames[tier.tier].badge
-          : "border-dashed text-muted-foreground",
+          ? achievementTierClassNames[tier.tier].chip
+          : achievementTierClassNames[tier.tier].chipLocked,
       )}
       data-state={unlocked ? "unlocked" : "locked"}
       data-tier={tier.tier}
     >
-      {unlocked ? (
-        <Check aria-hidden="true" className="size-2.5" />
-      ) : (
-        <Lock aria-hidden="true" className="size-2.5" />
-      )}
-      <span aria-hidden="true">
-        {name} {value}
-      </span>
+      <Medal aria-hidden="true" className="size-3" />
+      <span aria-hidden="true">{value}</span>
     </li>
   );
 }

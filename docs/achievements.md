@@ -69,13 +69,23 @@ achievements, which is the total in the dialog header and the Statistics dialog.
 
 ## Collection cards
 
-A series card shows its highest unlocked tier, with the icon and badge in that tier's color, progress
-toward the next tier, and one indicator per tier with its threshold and unlock state. After Gold the
-card shows a completed state instead of progress. Bronze, Silver, and Gold use the theme tokens
-`--achievement-bronze`, `--achievement-silver`, and `--achievement-gold`, defined for light and dark
-themes, and each indicator names its tier so tiers are not told apart by color alone. The Unlocked
-filter shows cards with at least one unlocked tier, and the Locked filter shows cards with at least
-one locked tier, so a partly unlocked series appears under both.
+A series card reflects its highest unlocked tier: its border, a subtle background tint, and the
+primary icon take that tier's color, and a badge names the tier. A locked series stays neutral with
+a `Locked` badge. The card shows progress toward the next tier and, after Gold, a completed state
+instead.
+
+Below it, one chip per tier shows a `Medal` icon and the tier's threshold, such as `100 MB`, `1 GB`,
+and `10 GB`. Every chip keeps its own tier color, so lower tiers stay bronze or silver once a higher
+tier is reached. An unlocked chip shows its full color with a matching solid border; a locked chip
+dims its medal on a neutral dashed border. Progression does not rely on color alone: chips are
+always ordered Bronze, Silver, Gold, locked and unlocked chips differ in border style, the badge and
+"Next" label name tiers in text, and each chip's accessible label states its tier, threshold, and
+unlock date.
+
+Bronze, Silver, and Gold use the theme tokens `--achievement-bronze`, `--achievement-silver`, and
+`--achievement-gold`, defined for light and dark themes. The Unlocked filter shows cards with at
+least one unlocked tier, and the Locked filter shows cards with at least one locked tier, so a
+partly unlocked series appears under both.
 
 ## Unlocking
 

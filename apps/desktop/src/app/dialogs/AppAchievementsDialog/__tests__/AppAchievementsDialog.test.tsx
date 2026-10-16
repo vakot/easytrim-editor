@@ -134,6 +134,12 @@ describe("AppAchievementsDialog", () => {
       "data-state",
       "locked",
     );
+    // Chips show the medal and the threshold only; the tier name is in the accessible label.
+    expect(
+      within(mastery)
+        .getAllByRole("listitem")
+        .map((chip) => chip.textContent),
+    ).toEqual(["1", "10", "100"]);
 
     expect(achievement(dialog, "GIF Creator")).toHaveAttribute("data-tier", "bronze");
   });
