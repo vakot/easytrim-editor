@@ -193,10 +193,10 @@ afterEach(() => {
 });
 
 describe("App", () => {
-  it("keeps the editor visible without deprecated queue widgets", async () => {
+  it("keeps the editor visible with the Export Queue only in the workspace toolbar", async () => {
     render(<App />);
     expect(screen.getByRole("banner", { name: "Window title bar" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Export Queue" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Export Queue" })).toHaveLength(1);
     expect(
       await screen.findByRole("button", { name: /Imported Sources.*arrow keys to move it/ }),
     ).toBeInTheDocument();
