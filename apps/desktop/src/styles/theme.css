@@ -80,6 +80,11 @@
   --achievement-bronze: #9c5b26;
   --achievement-silver: #66707c;
   --achievement-gold: #9a7400;
+  --achievement-secret-violet: #7048d8;
+  --achievement-secret-azure: #1f7fc4;
+  --achievement-secret-mint: #12875f;
+  --achievement-secret-amber: #b87908;
+  --achievement-secret-rose: #c53a73;
   --border: #d5d2cb;
   --input: #c9c6bf;
   --ring: var(--primary-light);
@@ -126,6 +131,11 @@
   --achievement-bronze: #d9975c;
   --achievement-silver: #c3cad3;
   --achievement-gold: #ebc24a;
+  --achievement-secret-violet: #a78bfa;
+  --achievement-secret-azure: #5ab8f5;
+  --achievement-secret-mint: #5fd9b0;
+  --achievement-secret-amber: #f0c25a;
+  --achievement-secret-rose: #f472a8;
   --border: #303036;
   --input: #34343a;
   --ring: var(--primary-dark);
@@ -172,6 +182,11 @@
     --achievement-bronze: #d9975c;
     --achievement-silver: #c3cad3;
     --achievement-gold: #ebc24a;
+    --achievement-secret-violet: #a78bfa;
+    --achievement-secret-azure: #5ab8f5;
+    --achievement-secret-mint: #5fd9b0;
+    --achievement-secret-amber: #f0c25a;
+    --achievement-secret-rose: #f472a8;
     --border: #303036;
     --input: #34343a;
     --ring: var(--primary-dark);

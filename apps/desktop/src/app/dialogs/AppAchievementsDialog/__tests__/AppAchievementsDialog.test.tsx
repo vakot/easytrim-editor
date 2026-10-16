@@ -214,7 +214,7 @@ describe("AppAchievementsDialog", () => {
     expect(within(dialog).getByText("1 of 25 unlocked")).toBeVisible();
   });
 
-  it("reveals a collector with the secret gradient only once it is unlocked", async () => {
+  it("reveals a collector with the secret treatment only once it is unlocked", async () => {
     mocks.getAchievementRecords.mockResolvedValue({
       ...emptyAchievementRecords,
       unlockedAchievements: { "bronze-collector": unlockedAt },
@@ -228,13 +228,16 @@ describe("AppAchievementsDialog", () => {
     expect(
       within(revealed).getByText("Unlock the Bronze tier of all seven original milestone series"),
     ).toBeVisible();
-    expect(revealed).toHaveClass("bg-linear-to-br");
+    expect(revealed).toHaveAttribute("data-secret-state", "unlocked");
     expect(revealed).toHaveAttribute("data-state", "unlocked");
     expect(within(dialog).queryByText("Silver Collector")).toBeNull();
     expect(within(dialog).queryByText("Gold Collector")).toBeNull();
     expect(within(dialog).getAllByText("???")).toHaveLength(3);
     for (const concealed of within(dialog).getAllByText("???")) {
-      expect(concealed.closest("[data-slot='item']")).not.toHaveClass("bg-linear-to-br");
+      expect(concealed.closest("[data-slot='item']")).toHaveAttribute(
+        "data-secret-state",
+        "locked",
+      );
       expect(concealed.closest("[data-slot='item']")).toHaveAttribute("data-state", "locked");
     }
   });

@@ -1,4 +1,5 @@
 import { Check, Lock, LockKeyhole } from "lucide-react";
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -10,17 +11,20 @@ import { selectUsageStatistics } from "@/app/store/slices/usage-statistics-slice
 import { cn } from "@/lib/class-names.utils";
 import { formatDateOnly } from "@/lib/date-time.utils";
 
-import { achievementSecretClassNames } from "../../../consts/achievement-tier-styles.consts";
 import {
   getAchievementUnlockedAt,
   getStandaloneAchievementProgress,
   isAchievementNew,
 } from "../../../lib/achievements.utils";
 import type { StandaloneAchievementDefinition } from "../../../types/achievements.types";
+import { useAchievementSecretStyle } from "../contexts/AchievementSecretStyleContext";
 import { useAchievementsViewedAt } from "../contexts/AchievementsViewContext";
+import { achievementSecretClassNames } from "../lib/achievement-secret-class-names";
+import { getAchievementSecretCardProps } from "../lib/achievement-secret-style.utils";
 
 import { AchievementNewPing } from "./AchievementNewPing";
 import { AchievementProgress } from "./AchievementProgress";
+import { AchievementSecretFrame } from "./AchievementSecretFrame";
 
 function AchievementStandaloneItem({
   definition,
@@ -31,6 +35,8 @@ function AchievementStandaloneItem({
   const records = useAppSelector(selectAchievementRecords);
   const statistics = useAppSelector(selectUsageStatistics);
   const viewedAt = useAchievementsViewedAt();
+  const secretStyle = useAchievementSecretStyle();
+  const gradientId = `achievement-secret-${useId().replace(/\W/g, "")}`;
 
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const unlockedAt = getAchievementUnlockedAt(definition.id, records);
@@ -45,7 +51,7 @@ function AchievementStandaloneItem({
       : getStandaloneAchievementProgress(definition, { records, statistics });
 
   const progress = measured && measured.target > 1 ? measured : null;
-  const revealedSecret = unlocked && definition.secret === true;
+  const secret = definition.secret === true;
 
   const Icon = concealed ? LockKeyhole : definition.icon;
   const title = concealed ? t("achievements.secret.title") : definition.title(t);
@@ -55,20 +61,24 @@ function AchievementStandaloneItem({
       className={cn(
         "items-start",
         !unlocked && "bg-muted/40",
-        revealedSecret && achievementSecretClassNames.card,
+        secret && achievementSecretClassNames.card,
       )}
-      data-secret={definition.secret ? "true" : undefined}
+      data-secret={secret ? "true" : undefined}
       data-state={unlocked ? "unlocked" : "locked"}
       role="listitem"
       size="sm"
       variant="outline"
+      {...(secret ? getAchievementSecretCardProps(secretStyle, { gradientId, unlocked }) : {})}
     >
+      {secret ? (
+        <AchievementSecretFrame gradientId={gradientId} variant={secretStyle.variant} />
+      ) : null}
       <ItemMedia
         aria-hidden="true"
         className={cn(
           "relative size-11 rounded-lg [&_svg:not([class*='size-'])]:size-5",
           unlocked ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
-          revealedSecret && cn("ring-1", achievementSecretClassNames.medallion),
+          secret && achievementSecretClassNames.medallion,
         )}
         variant="icon"
       >
