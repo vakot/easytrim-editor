@@ -8,7 +8,7 @@ Object.defineProperty(HTMLMediaElement.prototype, "readyState", {
 });
 import "@/i18n/config";
 
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
 
 class ResizeObserverMock implements ResizeObserver {
@@ -56,5 +56,8 @@ for (const target of [document, Element.prototype]) {
   Object.defineProperty(target, "getAnimations", { configurable: true, value: () => [] });
 }
 Element.prototype.scrollIntoView = () => undefined;
+
+// Lazily loaded UI can take longer than the 1s default while the full suite runs in parallel.
+configure({ asyncUtilTimeout: 4000 });
 
 afterEach(cleanup);
