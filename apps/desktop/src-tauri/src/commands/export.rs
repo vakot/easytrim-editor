@@ -408,7 +408,7 @@ pub async fn render_optimized(
                 snapshot_id: diagnostic_snapshot_id,
             },
             ExportStatistics {
-                kind: ExportKind::Regular,
+                kind: ExportKind::Optimized,
                 store: Arc::clone(&statistics),
             },
         )
@@ -451,7 +451,7 @@ pub async fn render_gif(
                 snapshot_id: diagnostic_snapshot_id,
             },
             ExportStatistics {
-                kind: ExportKind::Regular,
+                kind: ExportKind::Gif,
                 store: Arc::clone(&statistics),
             },
         )
@@ -508,7 +508,7 @@ pub async fn render_audio(
                 snapshot_id: diagnostic_snapshot_id,
             },
             ExportStatistics {
-                kind: ExportKind::Regular,
+                kind: ExportKind::Audio,
                 store: Arc::clone(&statistics),
             },
         )

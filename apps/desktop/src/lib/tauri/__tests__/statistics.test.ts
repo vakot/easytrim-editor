@@ -7,12 +7,14 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
 import { getUsageStatistics } from "../statistics";
 
 const nativeStatistics = {
+  audioExports: 4,
   firstExportAtMillis: 1_700_000_000_000,
+  gifExports: 5,
   lastExportAtMillis: 1_700_000_500_000,
   losslessExports: 2,
   outputBytes: 1_024,
   processingMillis: 3_500,
-  regularExports: 1,
+  optimizedExports: 1,
   sourceBytes: 4_096,
 };
 
@@ -41,7 +43,7 @@ describe("usage statistics IPC adapter", () => {
 
   it.each([
     ["a missing response", null],
-    ["a negative count", { ...nativeStatistics, regularExports: -1 }],
+    ["a negative count", { ...nativeStatistics, optimizedExports: -1 }],
     ["a fractional size", { ...nativeStatistics, sourceBytes: 1.5 }],
     ["a non-numeric timestamp", { ...nativeStatistics, lastExportAtMillis: "yesterday" }],
   ])("rejects %s", async (_label, value) => {

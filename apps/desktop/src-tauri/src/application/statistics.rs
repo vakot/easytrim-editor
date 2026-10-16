@@ -182,7 +182,7 @@ mod tests {
             .record(&completed(ExportKind::Lossless))
             .expect("first export persisted");
         store
-            .record(&completed(ExportKind::Regular))
+            .record(&completed(ExportKind::Optimized))
             .expect("second export persisted");
 
         let (reopened, issue) = StatisticsStore::open(&root);
@@ -190,7 +190,7 @@ mod tests {
         let statistics = reopened.snapshot();
         assert_eq!(statistics, store.snapshot());
         assert_eq!(statistics.lossless_exports, 1);
-        assert_eq!(statistics.regular_exports, 1);
+        assert_eq!(statistics.optimized_exports, 1);
         assert_eq!(statistics.source_bytes, 4_000);
         assert_eq!(statistics_files(&root), [STATISTICS_FILE_NAME]);
         fs::remove_dir_all(root).expect("temporary root removed");
@@ -206,7 +206,7 @@ mod tests {
                 thread::spawn(move || {
                     for _ in 0..5 {
                         store
-                            .record(&completed(ExportKind::Regular))
+                            .record(&completed(ExportKind::Optimized))
                             .expect("export persisted");
                     }
                 })
@@ -216,9 +216,9 @@ mod tests {
             worker.join().expect("worker finished");
         }
 
-        assert_eq!(store.snapshot().regular_exports, 40);
+        assert_eq!(store.snapshot().optimized_exports, 40);
         assert_eq!(
-            StatisticsStore::open(&root).0.snapshot().regular_exports,
+            StatisticsStore::open(&root).0.snapshot().optimized_exports,
             40
         );
         fs::remove_dir_all(root).expect("temporary root removed");
@@ -245,7 +245,7 @@ mod tests {
         assert!(files[0].ends_with(".invalid.json"));
 
         store
-            .record(&completed(ExportKind::Regular))
+            .record(&completed(ExportKind::Optimized))
             .expect("fresh statistics persisted");
         assert_eq!(statistics_files(&root).len(), 2);
         fs::remove_dir_all(root).expect("temporary root removed");
@@ -257,7 +257,7 @@ mod tests {
         fs::create_dir_all(root.join("statistics")).expect("statistics directory created");
         fs::write(
             root.join("statistics").join(STATISTICS_FILE_NAME),
-            br#"{"version":99,"regularExports":7}"#,
+            br#"{"version":99,"optimizedExports":7}"#,
         )
         .expect("newer file written");
 
@@ -271,7 +271,7 @@ mod tests {
         let files = statistics_files(&root);
         assert!(files[0].ends_with(".unsupported-version.json"));
         let preserved = fs::read(root.join("statistics").join(&files[0])).expect("preserved");
-        assert_eq!(preserved, br#"{"version":99,"regularExports":7}"#);
+        assert_eq!(preserved, br#"{"version":99,"optimizedExports":7}"#);
         fs::remove_dir_all(root).expect("temporary root removed");
     }
 

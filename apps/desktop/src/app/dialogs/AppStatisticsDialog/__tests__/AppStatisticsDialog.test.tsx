@@ -56,12 +56,14 @@ function metric(dialog: HTMLElement, label: string) {
 }
 
 const recorded: UsageStatistics = {
+  audioExports: 7,
   firstExportAtMillis: Date.UTC(2026, 0, 15, 12),
+  gifExports: 2,
   lastExportAtMillis: Date.UTC(2026, 2, 1, 12),
   losslessExports: 3,
   outputBytes: 3 * 1_024 * 1_024,
   processingMillis: 3_723_000,
-  regularExports: 1_200,
+  optimizedExports: 1_200,
   sourceBytes: 2 * 1_024 * 1_024,
 };
 
@@ -95,9 +97,11 @@ describe("AppStatisticsDialog", () => {
 
     const dialog = await openDialog();
 
-    expect(await within(metric(dialog, "Completed Exports")).findByText("1,203")).toBeVisible();
-    expect(within(metric(dialog, "Regular Exports")).getByText("1,200")).toBeVisible();
+    expect(await within(metric(dialog, "Completed Exports")).findByText("1,212")).toBeVisible();
+    expect(within(metric(dialog, "Optimized Exports")).getByText("1,200")).toBeVisible();
     expect(within(metric(dialog, "Lossless Cuts")).getByText("3")).toBeVisible();
+    expect(within(metric(dialog, "GIF Exports")).getByText("2")).toBeVisible();
+    expect(within(metric(dialog, "Audio Exports")).getByText("7")).toBeVisible();
     expect(within(metric(dialog, "Processing Time")).getByText("1:02:03")).toBeVisible();
     expect(within(metric(dialog, "Source Data Processed")).getByText("2.0 MB")).toBeVisible();
     expect(within(metric(dialog, "Output Data Generated")).getByText("3.0 MB")).toBeVisible();

@@ -1132,12 +1132,20 @@ export const en = {
     description: "Your export activity across sessions, kept only on this device",
     empty: "Statistics begin accumulating after your first successful export",
     metrics: {
+      audioExports: {
+        description: "Audio-only exports to M4A, MP3, or WAV",
+        label: "Audio Exports",
+      },
       completedExports: {
         description: "Successful exports of every kind",
         label: "Completed Exports",
       },
       firstExport: {
         label: "First Export",
+      },
+      gifExports: {
+        description: "Animated GIFs rendered from a segment",
+        label: "GIF Exports",
       },
       lastExport: {
         label: "Last Export",
@@ -1146,6 +1154,10 @@ export const en = {
         description: "Fast Exports that copy the video without re-encoding",
         label: "Lossless Cuts",
       },
+      optimizedExports: {
+        description: "Optimized Exports that re-encode the video",
+        label: "Optimized Exports",
+      },
       outputData: {
         description: "Total size of the exported files",
         label: "Output Data Generated",
@@ -1153,10 +1165,6 @@ export const en = {
       processingTime: {
         description: "Time spent rendering, excluding time waiting in the queue",
         label: "Processing Time",
-      },
-      regularExports: {
-        description: "Optimized, GIF, and audio exports that re-encode media",
-        label: "Regular Exports",
       },
       sourceData: {
         description: "Combined size of the source file behind each export",

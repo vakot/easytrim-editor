@@ -7,12 +7,14 @@ function parseUsageStatistics(value: unknown): UsageStatistics {
   const statistics = value as Record<string, unknown>;
 
   return {
+    audioExports: requireCount(statistics.audioExports, "audio exports"),
     firstExportAtMillis: optionalTimestamp(statistics.firstExportAtMillis, "first export time"),
+    gifExports: requireCount(statistics.gifExports, "GIF exports"),
     lastExportAtMillis: optionalTimestamp(statistics.lastExportAtMillis, "last export time"),
     losslessExports: requireCount(statistics.losslessExports, "lossless exports"),
     outputBytes: requireCount(statistics.outputBytes, "output bytes"),
     processingMillis: requireCount(statistics.processingMillis, "processing time"),
-    regularExports: requireCount(statistics.regularExports, "regular exports"),
+    optimizedExports: requireCount(statistics.optimizedExports, "optimized exports"),
     sourceBytes: requireCount(statistics.sourceBytes, "source bytes"),
   };
 }

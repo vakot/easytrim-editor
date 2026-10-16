@@ -50,7 +50,7 @@ describe("usage statistics refresh", () => {
   });
 
   it("only reads native totals, so duplicated completions cannot change the counts", async () => {
-    const statistics = { ...emptyUsageStatistics, regularExports: 1 };
+    const statistics = { ...emptyUsageStatistics, optimizedExports: 1 };
     mocks.getUsageStatistics.mockResolvedValue(statistics);
     const store = createStore();
 

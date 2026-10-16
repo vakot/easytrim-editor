@@ -1,10 +1,12 @@
 import {
+  AudioLines,
   CalendarClock,
   CalendarPlus,
   CircleCheckBig,
   Clapperboard,
   FileInput,
   FileOutput,
+  ImagePlay,
   Info,
   PiggyBank,
   Scissors,
@@ -142,16 +144,28 @@ function StatisticsDashboard({ statistics }: { statistics: UsageStatistics }) {
 
       <StatisticsSection title={t("statistics.sections.breakdown")}>
         <StatisticItem
-          description={t("statistics.metrics.regularExports.description")}
+          description={t("statistics.metrics.optimizedExports.description")}
           icon={<Clapperboard />}
-          label={t("statistics.metrics.regularExports.label")}
-          value={formatStatisticCount(statistics.regularExports, locale)}
+          label={t("statistics.metrics.optimizedExports.label")}
+          value={formatStatisticCount(statistics.optimizedExports, locale)}
         />
         <StatisticItem
           description={t("statistics.metrics.losslessCuts.description")}
           icon={<Scissors />}
           label={t("statistics.metrics.losslessCuts.label")}
           value={formatStatisticCount(statistics.losslessExports, locale)}
+        />
+        <StatisticItem
+          description={t("statistics.metrics.gifExports.description")}
+          icon={<ImagePlay />}
+          label={t("statistics.metrics.gifExports.label")}
+          value={formatStatisticCount(statistics.gifExports, locale)}
+        />
+        <StatisticItem
+          description={t("statistics.metrics.audioExports.description")}
+          icon={<AudioLines />}
+          label={t("statistics.metrics.audioExports.label")}
+          value={formatStatisticCount(statistics.audioExports, locale)}
         />
       </StatisticsSection>
 

@@ -5,13 +5,17 @@ use serde_json::Value;
 /// [`decode_usage_statistics`] whenever the stored shape changes incompatibly.
 pub const USAGE_STATISTICS_VERSION: u64 = 1;
 
-/// How a completed export was produced, for the regular/lossless breakdown.
+/// The export route of a completed export, for the per-route breakdown.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ExportKind {
-    /// Re-encoded output: Optimized, GIF, and audio exports.
-    Regular,
+    /// Optimized Export, which re-encodes the video.
+    Optimized,
     /// Fast Export, which always stream-copies the video.
     Lossless,
+    /// GIF export.
+    Gif,
+    /// Audio-only export.
+    Audio,
 }
 
 /// One successful export operation, measured by the native export command.
@@ -33,8 +37,10 @@ pub struct CompletedExport {
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct UsageStatistics {
-    pub regular_exports: u64,
+    pub optimized_exports: u64,
     pub lossless_exports: u64,
+    pub gif_exports: u64,
+    pub audio_exports: u64,
     pub processing_millis: u64,
     pub source_bytes: u64,
     pub output_bytes: u64,
@@ -44,12 +50,13 @@ pub struct UsageStatistics {
 
 impl UsageStatistics {
     pub fn record(&mut self, export: &CompletedExport) {
-        match export.kind {
-            ExportKind::Regular => self.regular_exports = self.regular_exports.saturating_add(1),
-            ExportKind::Lossless => {
-                self.lossless_exports = self.lossless_exports.saturating_add(1);
-            }
-        }
+        let count = match export.kind {
+            ExportKind::Optimized => &mut self.optimized_exports,
+            ExportKind::Lossless => &mut self.lossless_exports,
+            ExportKind::Gif => &mut self.gif_exports,
+            ExportKind::Audio => &mut self.audio_exports,
+        };
+        *count = count.saturating_add(1);
         self.processing_millis = self
             .processing_millis
             .saturating_add(export.processing_millis);
@@ -128,20 +135,24 @@ mod tests {
     fn records_each_completed_export_into_the_totals() {
         let mut statistics = UsageStatistics::default();
         statistics.record(&export(ExportKind::Lossless, 2_000));
-        statistics.record(&export(ExportKind::Regular, 3_000));
+        statistics.record(&export(ExportKind::Optimized, 3_000));
+        statistics.record(&export(ExportKind::Gif, 2_500));
+        statistics.record(&export(ExportKind::Audio, 2_500));
         statistics.record(&CompletedExport {
             output_bytes: 5_000,
-            ..export(ExportKind::Regular, 1_000)
+            ..export(ExportKind::Optimized, 1_000)
         });
 
         assert_eq!(
             statistics,
             UsageStatistics {
-                regular_exports: 2,
+                optimized_exports: 2,
                 lossless_exports: 1,
-                processing_millis: 4_500,
-                source_bytes: 3_000,
-                output_bytes: 5_800,
+                gif_exports: 1,
+                audio_exports: 1,
+                processing_millis: 7_500,
+                source_bytes: 5_000,
+                output_bytes: 6_600,
                 first_export_at_millis: Some(1_000),
                 last_export_at_millis: Some(3_000),
             }
@@ -154,14 +165,14 @@ mod tests {
             source_bytes: u64::MAX - 1,
             ..UsageStatistics::default()
         };
-        statistics.record(&export(ExportKind::Regular, 1));
+        statistics.record(&export(ExportKind::Optimized, 1));
         assert_eq!(statistics.source_bytes, u64::MAX);
     }
 
     #[test]
     fn round_trips_the_current_document_version() {
         let statistics = UsageStatistics {
-            regular_exports: 3,
+            optimized_exports: 3,
             first_export_at_millis: Some(10),
             ..UsageStatistics::default()
         };
@@ -170,7 +181,7 @@ mod tests {
         let document: Value = serde_json::from_slice(&bytes).expect("document is JSON");
 
         assert_eq!(document["version"], USAGE_STATISTICS_VERSION);
-        assert_eq!(document["regularExports"], 3);
+        assert_eq!(document["optimizedExports"], 3);
         assert_eq!(decode_usage_statistics(&bytes), Ok(statistics));
     }
 
@@ -194,11 +205,11 @@ mod tests {
             Err(StatisticsDecodeError::Invalid)
         );
         assert_eq!(
-            decode_usage_statistics(br#"{"regularExports":1}"#),
+            decode_usage_statistics(br#"{"optimizedExports":1}"#),
             Err(StatisticsDecodeError::Invalid)
         );
         assert_eq!(
-            decode_usage_statistics(br#"{"version":1,"regularExports":-1}"#),
+            decode_usage_statistics(br#"{"version":1,"optimizedExports":-1}"#),
             Err(StatisticsDecodeError::Invalid)
         );
         assert_eq!(

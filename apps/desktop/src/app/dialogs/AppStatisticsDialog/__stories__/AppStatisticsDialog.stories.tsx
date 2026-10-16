@@ -21,12 +21,14 @@ import { emptyUsageStatistics } from "@/test/usage-statistics.fixtures";
 const meta = {
   args: {
     statistics: {
+      audioExports: 24,
       firstExportAtMillis: Date.UTC(2026, 0, 15, 12),
+      gifExports: 17,
       lastExportAtMillis: Date.UTC(2026, 9, 12, 18, 30),
       losslessExports: 312,
       outputBytes: 61 * 1_024 ** 3,
       processingMillis: 41 * 3_600_000 + 17 * 60_000,
-      regularExports: 128,
+      optimizedExports: 128,
       sourceBytes: 412 * 1_024 ** 3,
     },
   },
@@ -78,12 +80,14 @@ export const Empty: Story = { args: { statistics: emptyUsageStatistics } };
 export const LargerOutputs: Story = {
   args: {
     statistics: {
+      audioExports: 0,
       firstExportAtMillis: Date.UTC(2026, 9, 1, 9),
+      gifExports: 2,
       lastExportAtMillis: Date.UTC(2026, 9, 2, 9),
       losslessExports: 0,
       outputBytes: 2_400 * 1_024 ** 2,
       processingMillis: 840_000,
-      regularExports: 6,
+      optimizedExports: 6,
       sourceBytes: 900 * 1_024 ** 2,
     },
   },

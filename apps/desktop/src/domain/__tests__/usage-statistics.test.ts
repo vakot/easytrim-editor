@@ -4,11 +4,17 @@ import { getCompletedExports, getStorageSavedBytes } from "@/domain/usage-statis
 import { emptyUsageStatistics } from "@/test/usage-statistics.fixtures";
 
 describe("usage statistics", () => {
-  it("counts regular exports and lossless cuts as completed exports", () => {
+  it("counts every export route as completed exports", () => {
     expect(getCompletedExports(emptyUsageStatistics)).toBe(0);
     expect(
-      getCompletedExports({ ...emptyUsageStatistics, losslessExports: 2, regularExports: 3 }),
-    ).toBe(5);
+      getCompletedExports({
+        ...emptyUsageStatistics,
+        audioExports: 4,
+        gifExports: 1,
+        losslessExports: 2,
+        optimizedExports: 3,
+      }),
+    ).toBe(10);
   });
 
   it("reports storage saved as a signed difference", () => {

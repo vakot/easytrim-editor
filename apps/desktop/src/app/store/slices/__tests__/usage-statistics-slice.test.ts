@@ -8,7 +8,7 @@ import {
 } from "@/app/store/slices/usage-statistics-slice";
 import { emptyUsageStatistics } from "@/test/usage-statistics.fixtures";
 
-const loaded = { ...emptyUsageStatistics, regularExports: 3 };
+const loaded = { ...emptyUsageStatistics, optimizedExports: 3 };
 
 function reduce(...actions: Parameters<typeof usageStatisticsReducer>[1][]) {
   return actions.reduce(
