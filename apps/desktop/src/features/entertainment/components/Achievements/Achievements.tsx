@@ -195,6 +195,8 @@ function achievementCategoryLabel(category: AchievementCategory, t: TFunction): 
   switch (category) {
     case "export-milestones":
       return t("achievements.categories.exportMilestones");
+    case "getting-started":
+      return t("achievements.categories.gettingStarted");
     case "processing-milestones":
       return t("achievements.categories.processingMilestones");
     case "secret-discoveries":

@@ -151,15 +151,16 @@ class PlaybackController {
     this.seekShowing(positionMicros, positionMicros);
   };
 
-  play = () => {
+  play = (): boolean => {
     const driver = this.driver;
-    if (!driver || !this.hasSession() || this.lifecycle !== "paused" || this.holds > 0) return;
+    if (!driver || !this.hasSession() || this.lifecycle !== "paused" || this.holds > 0)
+      return false;
     if (
       !driver.video.isReady ||
       (driver.audio.hasActiveOutput && !driver.audio.isReady) ||
       this.snapshot.durationMicros <= 0
     ) {
-      return;
+      return false;
     }
     if (this.snapshot.positionMicros >= this.snapshot.durationMicros) {
       this.seek(this.options.segment?.startMicros ?? 0);
@@ -171,6 +172,7 @@ class PlaybackController {
     this.transitionLifecycle("starting");
     this.mediaStartRequested = false;
     void this.startPlayback(generation, this.videoSecondsFor(this.snapshot.positionMicros));
+    return true;
   };
 
   /** Stops right away where the media clock is. */
@@ -213,14 +215,17 @@ class PlaybackController {
   };
 
   /** Pauses when the clock reaches the next frame boundary, so the playhead never moves back. */
-  togglePlayback = () => {
+  togglePlayback = (): boolean => {
     if (this.lifecycle === "paused") {
-      this.play();
+      return this.play();
     } else if (this.lifecycle === "starting" || this.options.frameIndex.count === 0) {
       this.pause();
+      return true;
     } else if (this.pauseAtMicros === null) {
       this.pauseAtMicros = nextBoundaryMicros(this.options.frameIndex, this.clockMicros());
+      return true;
     }
+    return false;
   };
 
   private registerVideoObserver(video: PreviewVideoAdapter) {

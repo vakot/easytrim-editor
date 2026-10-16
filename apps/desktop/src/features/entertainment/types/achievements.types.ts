@@ -1,7 +1,8 @@
 import type { TFunction } from "i18next";
 import type { LucideIcon } from "lucide-react";
 
-type AchievementCategory = "export-milestones" | "processing-milestones" | "secret-discoveries";
+type AchievementCategory =
+  "export-milestones" | "getting-started" | "processing-milestones" | "secret-discoveries";
 
 /** A measurable quantity that achievement progress is read from usage statistics. */
 type AchievementMetric =
@@ -24,6 +25,16 @@ type AchievementCondition =
   | { kind: "metric"; metric: AchievementMetric; target: number }
   /** Every one of these unique events was discovered, such as legendary splash messages. */
   | { ids: readonly string[]; kind: "discovery" }
+  /** A successful semantic interaction, persisted as an unlock when it occurs. */
+  | {
+      event:
+        | "export-queued"
+        | "media-adjustment"
+        | "meaningful-trim"
+        | "non-default-crop"
+        | "timeline-shortcut";
+      kind: "event";
+    }
   /**
    * Every one of these achievements is unlocked. The list is explicit and fixed: it is never
    * derived from the registry, so adding achievements cannot change what it requires. Retired
@@ -81,29 +92,11 @@ type UnlockableAchievement =
       tier: null;
     };
 
-/** How an unlocked secret achievement is framed; the variants are alternatives under evaluation. */
-type AchievementSecretVariant =
-  "animated-gradient" | "prismatic-holographic" | "rotating-highlight" | "static-iridescent";
-
-type AchievementSecretStyle = {
-  /** Plays the variant's motion; reduced-motion preferences turn it off regardless. */
-  animated: boolean;
-  /** Glow strength from 0 (none) to 1. */
-  glow: number;
-  /** Strokes the icon with the variant's gradient instead of a single color. */
-  iridescentIcon: boolean;
-  /** Border thickness in CSS pixels. */
-  thickness: number;
-  variant: AchievementSecretVariant;
-};
-
 export type {
   AchievementCategory,
   AchievementCollectionEntry,
   AchievementCondition,
   AchievementMetric,
-  AchievementSecretStyle,
-  AchievementSecretVariant,
   AchievementSeriesDefinition,
   AchievementTier,
   StandaloneAchievementDefinition,

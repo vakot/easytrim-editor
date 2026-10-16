@@ -49,18 +49,19 @@ function useTimelineRangeEditing(value: TrimRange | null, onCommit: (range: Trim
     return boundary >= index.endMicros ? index.count : index.frameAt(boundary);
   };
 
-  function commit(next: TrimFrames) {
+  function commit(next: TrimFrames): boolean {
     const state = store.getState();
     if (
       !value ||
       selectActiveInstanceId(state) !== instanceId ||
       selectSourceLoadToken(state) !== loadToken
     )
-      return;
+      return false;
     const nextValue = adapter.toTrim(next);
     if (nextValue.startMicros === value.startMicros && nextValue.endMicros === value.endMicros)
-      return;
+      return false;
     onCommit(nextValue);
+    return true;
   }
 
   function begin(handle: TrimHandle) {
@@ -111,13 +112,14 @@ function useTimelineRangeEditing(value: TrimRange | null, onCommit: (range: Trim
   }
 
   /** In starts the range at the frame on screen; Out ends it after that frame. */
-  function mark(handle: "start" | "end", positionMicros: number) {
-    if (!value || index.count === 0) return;
+  function mark(handle: "start" | "end", positionMicros: number): boolean {
+    if (!value || index.count === 0) return false;
     const frame = index.frameAt(positionMicros);
     const base = { ...range };
     if (handle === "start" && frame > base.end) base.end = adapter.lastFrame;
     if (handle === "end" && frame < base.start) base.start = 0;
-    commit(adapter.edit(base, handle, frame));
+    const next = adapter.edit(base, handle, frame);
+    return next.start !== range.start || next.end !== range.end ? commit(next) : false;
   }
 
   const bounds = adapter.bounds(range);

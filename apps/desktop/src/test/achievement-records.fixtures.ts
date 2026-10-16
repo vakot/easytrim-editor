@@ -32,6 +32,12 @@ export const completeAchievementRecords: AchievementRecords = {
   unlockedAchievements: Object.fromEntries(
     [
       ...seriesIds.flatMap((id) => [`${id}-bronze`, `${id}-silver`, `${id}-gold`]),
+      "first-contact",
+      "cut-to-the-chase",
+      "frame-by-frame",
+      "fine-tuning",
+      "queued-up",
+      "shortcut-taken",
       "the-chosen-one",
       "bronze-collector",
       "silver-collector",
@@ -53,6 +59,7 @@ export const partiallyUnlockedAchievementScenario: {
   records: {
     discoveredSplashMessageIds: ["rainbow-mode", "chosen-frame"],
     unlockedAchievements: {
+      "first-contact": Date.UTC(2026, 0, 15, 12),
       "data-cruncher-bronze": Date.UTC(2026, 1, 3, 9),
       "export-mastery-bronze": Date.UTC(2026, 0, 15, 12),
       "export-mastery-silver": Date.UTC(2026, 1, 3, 9),

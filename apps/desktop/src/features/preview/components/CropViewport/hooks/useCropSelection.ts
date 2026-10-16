@@ -26,13 +26,14 @@ import {
 } from "../../../lib/crop-geometry.utils";
 import { snapCropToGuides, snapResizeCropToGuides } from "../../../lib/crop-snapping.utils";
 
-const SNAP_REACH_PX = 12;
+const SNAP_REACH_REM = 0.75;
 
 interface DragState {
   crop: CropRect;
   flipHorizontal: boolean;
   flipVertical: boolean;
   handle: CropHandle;
+  snapReachPx: number;
   sourceHeight: number;
   sourceWidth: number;
   startX: number;
@@ -136,6 +137,11 @@ function useCropSelection(
     const sourceWidth = sourceFrameBounds?.width ?? sourceFrame?.width ?? 0;
     const sourceHeight = sourceFrameBounds?.height ?? sourceFrame?.height ?? 0;
     if (sourceWidth <= 0 || sourceHeight <= 0) return;
+
+    const rootFontSizePx = Number.parseFloat(
+      window.getComputedStyle(document.documentElement).fontSize,
+    );
+
     event.currentTarget.setPointerCapture(event.pointerId);
     setDrag({
       crop,
@@ -144,6 +150,7 @@ function useCropSelection(
       sourceHeight,
       sourceWidth,
       handle,
+      snapReachPx: SNAP_REACH_REM * (Number.isFinite(rootFontSizePx) ? rootFontSizePx : 16),
       startX: event.clientX,
       startY: event.clientY,
     });
@@ -174,8 +181,8 @@ function useCropSelection(
           : resizeCropToAspectRatio(drag.crop, drag.handle, deltaX, deltaY, ratio);
 
     const snapThresholds = {
-      x: SNAP_REACH_PX / drag.sourceWidth,
-      y: SNAP_REACH_PX / drag.sourceHeight,
+      x: drag.snapReachPx / drag.sourceWidth,
+      y: drag.snapReachPx / drag.sourceHeight,
     };
 
     const snappedCrop = event.shiftKey

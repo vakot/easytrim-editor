@@ -2,6 +2,7 @@ export const en = {
   achievements: {
     categories: {
       exportMilestones: "Export Milestones",
+      gettingStarted: "Getting Started",
       processingMilestones: "Processing Milestones",
       secretDiscoveries: "Secret Discoveries",
     },
@@ -29,6 +30,10 @@ export const en = {
         description: "Unlock the Bronze tier of all seven original milestone series",
         title: "Bronze Collector",
       },
+      cutToTheChase: {
+        description: "Use Trim to make a meaningful selection",
+        title: "Cut to the Chase",
+      },
       dataCruncher: {
         description: "Process source data through your exports",
         title: "Data Cruncher",
@@ -36,6 +41,18 @@ export const en = {
       exportMastery: {
         description: "Complete exports of any kind",
         title: "Export Mastery",
+      },
+      fineTuning: {
+        description: "Apply an audio filter or another media adjustment",
+        title: "Fine Tuning",
+      },
+      firstContact: {
+        description: "Import a media file for the first time",
+        title: "First Contact",
+      },
+      frameByFrame: {
+        description: "Crop the frame to a new size",
+        title: "Frame by Frame",
       },
       gifCreator: {
         description: "Export animated GIFs",
@@ -48,6 +65,14 @@ export const en = {
       losslessPrecision: {
         description: "Cut without re-encoding using Fast Export",
         title: "Lossless Precision",
+      },
+      queuedUp: {
+        description: "Add an export to the Export Queue",
+        title: "Queued Up",
+      },
+      shortcutTaken: {
+        description: "Use a timeline keyboard shortcut that changes your edit",
+        title: "Shortcut Taken",
       },
       silverCollector: {
         description: "Unlock the Silver tier of all seven original milestone series",

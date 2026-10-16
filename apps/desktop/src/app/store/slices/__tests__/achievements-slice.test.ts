@@ -22,6 +22,7 @@ const loaded = {
 describe("achievements slice", () => {
   it("starts uninitialized without records", () => {
     expect(reduce()).toEqual({
+      announcementQueue: [],
       initialized: false,
       records: null,
       requestId: null,

@@ -1,4 +1,5 @@
 import {
+  achievementAnnouncementQueued,
   achievementRecordsLoaded,
   achievementRecordsLoadFailed,
   achievementRecordsRequested,
@@ -32,12 +33,18 @@ const loadAchievementRecords = (): AppThunk<Promise<void>> => async (dispatch) =
  * report the same unlock twice. Resolves with null when the native store could not be reached.
  */
 const unlockAchievements =
-  (achievementIds: readonly string[]): AppThunk<Promise<string[] | null>> =>
+  (
+    achievementIds: readonly string[],
+    options: { announce?: boolean } = {},
+  ): AppThunk<Promise<string[] | null>> =>
   async (dispatch) => {
     if (achievementIds.length === 0) return [];
     try {
       const { records, unlockedAchievementIds } = await unlockNativeAchievements(achievementIds);
       dispatch(achievementRecordsUpdated({ records }));
+      if (options.announce && unlockedAchievementIds.length > 0) {
+        dispatch(achievementAnnouncementQueued({ ids: unlockedAchievementIds }));
+      }
       return unlockedAchievementIds;
     } catch {
       return null;

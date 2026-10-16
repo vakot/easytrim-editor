@@ -163,7 +163,7 @@ describe("AppStatisticsDialog", () => {
     const achievements = await within(dialog).findByText("Achievements Unlocked");
     const item = achievements.closest("[data-slot='item']");
     if (!(item instanceof HTMLElement)) throw new Error("Achievements metric is not rendered.");
-    expect(within(item).getByText("1 / 25")).toBeVisible();
+    expect(within(item).getByText("1 / 31")).toBeVisible();
 
     act(() => {
       store.dispatch(
@@ -176,7 +176,7 @@ describe("AppStatisticsDialog", () => {
       );
     });
 
-    expect(within(item).getByText("2 / 25")).toBeVisible();
+    expect(within(item).getByText("2 / 31")).toBeVisible();
   });
 
   it("offers a retry when statistics cannot be loaded", async () => {

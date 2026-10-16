@@ -105,6 +105,25 @@ function createPlaybackController(driver: PlaybackDriver, durationMicros: number
 }
 
 describe("playback controller", () => {
+  it("reports whether a playback toggle changed or scheduled playback state", async () => {
+    const { driver } = createPlaybackDriver();
+    const controller = new PlaybackController();
+    controller.attach(1, driver, 2_000_000);
+
+    expect(controller.togglePlayback()).toBe(true);
+    await vi.waitFor(() => expect(controller.isPlaying).toBe(true));
+
+    controller.dispose();
+
+    const unavailable = createPlaybackDriver();
+    unavailable.driver.video.isReady = false;
+    const inactiveController = new PlaybackController();
+    inactiveController.attach(1, unavailable.driver, 2_000_000);
+    expect(inactiveController.togglePlayback()).toBe(false);
+    expect(inactiveController.isPlaying).toBe(false);
+    inactiveController.dispose();
+  });
+
   it("aligns audio to the startup presentation anchor instead of transient native currentTime", async () => {
     const playback = createPlaybackDriver();
     vi.mocked(playback.driver.video.play).mockImplementation(async () => {

@@ -105,6 +105,12 @@ Tailwind class ordering belongs to Prettier's Tailwind plugin; ESLint owns the c
 correctness checks. Keep CSS-module selectors, runtime/DOM hook classes, and other intentional
 non-Tailwind names when they express a real boundary.
 
+UI dimensions must use rem units or scalable Tailwind theme utilities because the application
+scales the root font size. Avoid fixed `px` values for spacing, sizing, typography, borders, shadows,
+and effects. Keep physical pixels only for intentional hairlines or operations whose meaning is
+intrinsically pixel-based, and document the exception next to the value. Run `pnpm check:ui-units` to
+catch numeric pixel literals in desktop frontend source.
+
 The repository's `pnpm format`, `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, and `pnpm knip`
 scripts are the source of truth for formatting, linting, types, and production dead-code analysis.
 Do not add test-only production exports or disable serializability/lint checks to hide a warning.

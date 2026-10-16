@@ -3,7 +3,9 @@ import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector, useAppStore } from "@/app/store/redux-hooks";
 import {
+  achievementAnnouncementsCleared,
   achievementsInitialized,
+  selectAchievementAnnouncementQueue,
   selectAchievementRecords,
   selectAchievementsInitialized,
 } from "@/app/store/slices/achievements-slice";
@@ -29,6 +31,8 @@ function useAchievementTracker() {
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const records = useAppSelector(selectAchievementRecords);
+  const announcementQueue = useAppSelector(selectAchievementAnnouncementQueue);
+  const initialized = useAppSelector(selectAchievementsInitialized);
   const statistics = useAppSelector(selectUsageStatistics);
   const evaluations = useRef(Promise.resolve());
 
@@ -62,6 +66,13 @@ function useAchievementTracker() {
         if (announcement) showAchievementAnnouncement(announcement);
       });
   }, [dispatch, records, statistics, store, t]);
+
+  useEffect(() => {
+    if (!initialized || announcementQueue.length === 0) return;
+    const announcement = createAchievementAnnouncement(announcementQueue, t);
+    if (announcement) showAchievementAnnouncement(announcement);
+    dispatch(achievementAnnouncementsCleared());
+  }, [announcementQueue, dispatch, initialized, t]);
 }
 
 export { useAchievementTracker };

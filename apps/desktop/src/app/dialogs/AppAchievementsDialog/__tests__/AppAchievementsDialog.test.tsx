@@ -84,11 +84,11 @@ describe("AppAchievementsDialog", () => {
 
     const dialog = await openDialog();
 
-    expect(await within(dialog).findByText("0 of 25 unlocked")).toBeVisible();
+    expect(await within(dialog).findByText("0 of 31 unlocked")).toBeVisible();
     expect(
       within(dialog).getByRole("progressbar", { name: "Collection progress" }),
     ).toHaveAttribute("aria-valuenow", "0");
-    expect(cards(dialog)).toHaveLength(11);
+    expect(cards(dialog)).toHaveLength(17);
     const mastery = achievement(dialog, "Export Mastery");
     expect(mastery).toHaveAttribute("data-state", "locked");
     expect(within(mastery).getByText("Locked")).toBeVisible();
@@ -120,7 +120,7 @@ describe("AppAchievementsDialog", () => {
 
     const dialog = await openDialog();
 
-    expect(await within(dialog).findByText("3 of 25 unlocked")).toBeVisible();
+    expect(await within(dialog).findByText("3 of 31 unlocked")).toBeVisible();
     const mastery = achievement(dialog, "Export Mastery");
     expect(mastery).toHaveAttribute("data-tier", "silver");
     expect(within(mastery).getByText("Silver")).toBeVisible();
@@ -211,7 +211,7 @@ describe("AppAchievementsDialog", () => {
     const revealed = achievement(dialog, "The Chosen One");
     expect(within(revealed).getByText("Encounter every legendary splash message")).toBeVisible();
     expect(within(dialog).getAllByText("???")).toHaveLength(3);
-    expect(within(dialog).getByText("1 of 25 unlocked")).toBeVisible();
+    expect(within(dialog).getByText("1 of 31 unlocked")).toBeVisible();
   });
 
   it("reveals a collector with the secret treatment only once it is unlocked", async () => {
@@ -255,7 +255,7 @@ describe("AppAchievementsDialog", () => {
     mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
     renderDialog();
     const dialog = await openDialog();
-    await within(dialog).findByText("4 of 25 unlocked");
+    await within(dialog).findByText("4 of 31 unlocked");
 
     await userEvent.click(within(dialog).getByRole("tab", { name: "Unlocked" }));
     expect(cards(dialog)).toHaveLength(2);
@@ -263,7 +263,7 @@ describe("AppAchievementsDialog", () => {
     expect(within(dialog).getByText("Audio Specialist")).toBeVisible();
 
     await userEvent.click(within(dialog).getByRole("tab", { name: "Locked" }));
-    expect(cards(dialog)).toHaveLength(10);
+    expect(cards(dialog)).toHaveLength(16);
     expect(within(dialog).getByText("GIF Creator")).toBeVisible();
     expect(within(dialog).queryByText("Audio Specialist")).toBeNull();
   });
@@ -273,7 +273,7 @@ describe("AppAchievementsDialog", () => {
     mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
     renderDialog();
     const dialog = await openDialog();
-    await within(dialog).findByText("0 of 25 unlocked");
+    await within(dialog).findByText("0 of 31 unlocked");
 
     await userEvent.click(within(dialog).getByRole("tab", { name: "Unlocked" }));
 
@@ -331,6 +331,6 @@ describe("AppAchievementsDialog", () => {
 
     await userEvent.click(within(dialog).getByRole("button", { name: "Retry" }));
 
-    expect(await within(dialog).findByText("0 of 25 unlocked")).toBeVisible();
+    expect(await within(dialog).findByText("0 of 31 unlocked")).toBeVisible();
   });
 });

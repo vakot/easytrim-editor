@@ -1,5 +1,5 @@
 import { Check, Lock, LockKeyhole } from "lucide-react";
-import { useId } from "react";
+import { type CSSProperties, useId } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -17,14 +17,11 @@ import {
   isAchievementNew,
 } from "../../../lib/achievements.utils";
 import type { StandaloneAchievementDefinition } from "../../../types/achievements.types";
-import { useAchievementSecretStyle } from "../contexts/AchievementSecretStyleContext";
 import { useAchievementsViewedAt } from "../contexts/AchievementsViewContext";
-import { achievementSecretClassNames } from "../lib/achievement-secret-class-names";
-import { getAchievementSecretCardProps } from "../lib/achievement-secret-style.utils";
 
 import { AchievementNewPing } from "./AchievementNewPing";
 import { AchievementProgress } from "./AchievementProgress";
-import { AchievementSecretFrame } from "./AchievementSecretFrame";
+import styles from "./AchievementSecret.module.css";
 
 function AchievementStandaloneItem({
   definition,
@@ -35,7 +32,6 @@ function AchievementStandaloneItem({
   const records = useAppSelector(selectAchievementRecords);
   const statistics = useAppSelector(selectUsageStatistics);
   const viewedAt = useAchievementsViewedAt();
-  const secretStyle = useAchievementSecretStyle();
   const gradientId = `achievement-secret-${useId().replace(/\W/g, "")}`;
 
   const locale = i18n.resolvedLanguage ?? i18n.language;
@@ -58,27 +54,42 @@ function AchievementStandaloneItem({
 
   return (
     <Item
-      className={cn(
-        "items-start",
-        !unlocked && "bg-muted/40",
-        secret && achievementSecretClassNames.card,
-      )}
+      className={cn("items-start", !unlocked && "bg-muted/40", secret && styles.card)}
       data-secret={secret ? "true" : undefined}
+      data-secret-state={secret ? (unlocked ? "unlocked" : "locked") : undefined}
       data-state={unlocked ? "unlocked" : "locked"}
       role="listitem"
       size="sm"
+      style={
+        secret ? ({ "--secret-icon-stroke": `url(#${gradientId})` } as CSSProperties) : undefined
+      }
       variant="outline"
-      {...(secret ? getAchievementSecretCardProps(secretStyle, { gradientId, unlocked }) : {})}
     >
       {secret ? (
-        <AchievementSecretFrame gradientId={gradientId} variant={secretStyle.variant} />
+        <svg aria-hidden="true" className={styles.gradientDefs} focusable="false">
+          <defs>
+            <linearGradient
+              gradientUnits="userSpaceOnUse"
+              id={gradientId}
+              x1="2"
+              x2="22"
+              y1="2"
+              y2="22"
+            >
+              <stop offset="0" style={{ stopColor: "var(--achievement-secret-violet)" }} />
+              <stop offset="0.35" style={{ stopColor: "var(--achievement-secret-azure)" }} />
+              <stop offset="0.65" style={{ stopColor: "var(--achievement-secret-amber)" }} />
+              <stop offset="1" style={{ stopColor: "var(--achievement-secret-rose)" }} />
+            </linearGradient>
+          </defs>
+        </svg>
       ) : null}
       <ItemMedia
         aria-hidden="true"
         className={cn(
           "relative size-11 rounded-lg [&_svg:not([class*='size-'])]:size-5",
           unlocked ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
-          secret && achievementSecretClassNames.medallion,
+          secret && styles.medallion,
         )}
         variant="icon"
       >

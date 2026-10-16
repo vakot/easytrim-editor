@@ -192,6 +192,39 @@ mod tests {
     }
 
     #[test]
+    fn persists_getting_started_unlocks_across_reopening() {
+        let root = temporary_root("getting-started");
+        let (store, issue) = AchievementStore::open(&root);
+        assert_eq!(issue, None);
+        let ids = [
+            "first-contact",
+            "cut-to-the-chase",
+            "frame-by-frame",
+            "fine-tuning",
+            "queued-up",
+            "shortcut-taken",
+        ]
+        .map(identifier);
+
+        let update = store.unlock(&ids);
+        update.write_result.expect("onboarding unlocks persisted");
+        assert_eq!(update.value.1.len(), ids.len());
+
+        let reopened = AchievementStore::open(&root).0.snapshot();
+        for id in [
+            "first-contact",
+            "cut-to-the-chase",
+            "frame-by-frame",
+            "fine-tuning",
+            "queued-up",
+            "shortcut-taken",
+        ] {
+            assert!(reopened.unlocked_achievements.contains_key(id));
+        }
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
     fn retired_achievements_keep_their_history_across_updates_and_restarts() {
         let root = temporary_root("retired");
         fs::create_dir_all(root.join("achievements")).expect("achievements directory created");

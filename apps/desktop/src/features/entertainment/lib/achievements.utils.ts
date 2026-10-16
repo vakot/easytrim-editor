@@ -125,6 +125,8 @@ function isConditionMet(
   unlockedIds: ReadonlySet<string>,
 ): boolean {
   switch (condition.kind) {
+    case "event":
+      return false;
     case "collection":
       return condition.requires.length > 0 && condition.requires.every((id) => unlockedIds.has(id));
     case "discovery": {
@@ -211,6 +213,8 @@ function getStandaloneAchievementProgress(
 ): (AchievementProgressValue & { unit: AchievementMetricUnit }) | null {
   const { condition } = definition;
   switch (condition.kind) {
+    case "event":
+      return null;
     case "metric": {
       const progress = getProgressToward(condition.metric, condition.target, sources);
       return progress && { ...progress, unit: achievementMetricUnits[condition.metric] };

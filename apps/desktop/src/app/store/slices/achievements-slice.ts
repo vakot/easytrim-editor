@@ -7,6 +7,8 @@ type AchievementRecordsStatus = "failed" | "idle" | "loading" | "ready";
 
 /** Runtime mirror of the natively persisted achievement records; the native store is the source of truth. */
 type AchievementsState = {
+  /** Newly unlocked interactive achievements waiting for the tracker to announce them. */
+  announcementQueue: string[];
   /**
    * Whether achievements already earned by the stored progress were unlocked for this session.
    * Until then unlocks are retroactive and must not be announced, and discoveries wait for it.
@@ -20,6 +22,7 @@ type AchievementsState = {
 const initialState: AchievementsState = {
   initialized: false,
   records: null,
+  announcementQueue: [],
   requestId: null,
   status: "idle",
 };
@@ -50,6 +53,14 @@ const achievementsSlice = createSlice({
     achievementRecordsUpdated: (state, action: PayloadAction<{ records: AchievementRecords }>) => {
       state.records = mergeAchievementRecords(state.records, action.payload.records);
     },
+    achievementAnnouncementQueued: (state, action: PayloadAction<{ ids: string[] }>) => {
+      for (const id of action.payload.ids) {
+        if (!state.announcementQueue.includes(id)) state.announcementQueue.push(id);
+      }
+    },
+    achievementAnnouncementsCleared: (state) => {
+      state.announcementQueue = [];
+    },
     achievementsInitialized: (state) => {
       state.initialized = true;
     },
@@ -57,6 +68,8 @@ const achievementsSlice = createSlice({
 });
 
 const {
+  achievementAnnouncementQueued,
+  achievementAnnouncementsCleared,
   achievementRecordsLoaded,
   achievementRecordsLoadFailed,
   achievementRecordsRequested,
@@ -72,15 +85,21 @@ const selectAchievementRecords = (state: RootState): AchievementRecords | null =
 const selectAchievementRecordsStatus = (state: RootState): AchievementRecordsStatus =>
   state.achievements.status;
 
+const selectAchievementAnnouncementQueue = (state: RootState): string[] =>
+  state.achievements.announcementQueue;
+
 const selectAchievementsInitialized = (state: RootState): boolean => state.achievements.initialized;
 
 export {
+  achievementAnnouncementQueued,
+  achievementAnnouncementsCleared,
   achievementRecordsLoaded,
   achievementRecordsLoadFailed,
   achievementRecordsRequested,
   achievementRecordsUpdated,
   achievementsInitialized,
   achievementsReducer,
+  selectAchievementAnnouncementQueue,
   selectAchievementRecords,
   selectAchievementRecordsStatus,
   selectAchievementsInitialized,
