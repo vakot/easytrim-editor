@@ -204,7 +204,7 @@ describe("WebAudioEngine", () => {
       3_463_063,
       536_937,
       expect.any(AbortSignal),
-      false,
+      { preview: false, replacement: false },
     );
     expect(onError).not.toHaveBeenCalled();
     const firstStart = sources[0]!.start.mock.calls[0]![0] as number;
@@ -336,16 +336,12 @@ describe("WebAudioEngine", () => {
       1_000_000,
       1_000_000,
       expect.any(AbortSignal),
-      false,
+      { preview: false, replacement: false },
     );
-    expect(decode).toHaveBeenNthCalledWith(
-      2,
-      selection(2),
-      0,
-      2_000_000,
-      expect.any(AbortSignal),
-      false,
-    );
+    expect(decode).toHaveBeenNthCalledWith(2, selection(2), 0, 2_000_000, expect.any(AbortSignal), {
+      preview: false,
+      replacement: false,
+    });
     expect(sources[0]?.start).toHaveBeenCalledWith(expect.any(Number), 0);
     expect(sources[1]?.start).toHaveBeenCalledWith(expect.any(Number), 0);
     const delayedTrack = buffers[0]!;
@@ -435,7 +431,7 @@ describe("WebAudioEngine", () => {
         1_000_000,
         2_000_000,
         expect.any(AbortSignal),
-        false,
+        { preview: false, replacement: false },
       ),
     );
     rejectSupersededBatch?.(new Error("Superseded PCM batch failed."));
@@ -579,7 +575,7 @@ describe("WebAudioEngine", () => {
       0,
       expect.any(Number),
       expect.any(AbortSignal),
-      false,
+      { preview: false, replacement: false },
     );
     engine.close();
   });
@@ -605,7 +601,10 @@ describe("WebAudioEngine", () => {
     decode.mockClear();
     await engine.prepareAt(0);
 
-    expect(decode).toHaveBeenCalledWith(processed, 0, 2_000_000, expect.any(AbortSignal), false);
+    expect(decode).toHaveBeenCalledWith(processed, 0, 2_000_000, expect.any(AbortSignal), {
+      preview: false,
+      replacement: false,
+    });
     engine.close();
   });
 
@@ -638,7 +637,7 @@ describe("WebAudioEngine", () => {
         positionMicros,
         durationMicros - positionMicros,
         expect.any(AbortSignal),
-        false,
+        { preview: false, replacement: false },
       );
       expect(sources[0]?.start).toHaveBeenCalledWith(
         5.005,
@@ -976,6 +975,24 @@ describe("WebAudioEngine processing changes", () => {
     streamIndex: 1,
   });
 
+  const gainOf = (selection: AudioChainSelection) =>
+    (selection.filters[0] as { gainDb: number }).gainDb;
+
+  const audible = { preview: false, replacement: false };
+  const replacement = { preview: false, replacement: true };
+
+  /** A chunk whose samples identify the processing that rendered it. */
+  function markedChunk(gainDb: number, durationMicros: number) {
+    const result = chunk(durationMicros);
+    result.samples.fill(0.5 + gainDb / 100);
+    return result;
+  }
+
+  function gainPlayedBy(source: { buffer: AudioBuffer | null }) {
+    const marker = (source.buffer as unknown as { channels: Float32Array[] }).channels[0]![0]!;
+    return Math.round((marker - 0.5) * 100);
+  }
+
   function voiceOf(source: { connect: ReturnType<typeof vi.fn> }) {
     return source.connect.mock.calls[0]![0] as ReturnType<typeof node>;
   }
@@ -983,8 +1000,8 @@ describe("WebAudioEngine processing changes", () => {
   it("switches running playback to new processing at one sample with a crossfade", async () => {
     const { context, setCurrentTime, sources } = createContext();
     const onError = vi.fn();
-    const decode = vi.fn(
-      async (_selection: AudioChainSelection, _start: number, duration: number) => chunk(duration),
+    const decode = vi.fn(async (selection: AudioChainSelection, _start: number, duration: number) =>
+      markedChunk(gainOf(selection), duration),
     );
 
     const engine = new WebAudioEngine(context, decode, vi.fn(), onError);
@@ -996,18 +1013,18 @@ describe("WebAudioEngine processing changes", () => {
 
     setCurrentTime(5.5);
     engine.setTracks([{ selection: gainChain(6), streamIndex: 1, volume: 1 }]);
-    await vi.waitFor(() => expect(sources.length).toBeGreaterThan(2));
+    await vi.waitFor(() => expect(sources.some((source) => gainPlayedBy(source) === 6)).toBe(true));
 
-    // Rendering starts just ahead of the playhead; the previous audio is not stopped before it.
+    // The replacement renders just ahead of the playhead without stopping the audible processing.
     expect(decode).toHaveBeenCalledWith(
       gainChain(6),
       545_000,
       2_000_000,
       expect.any(AbortSignal),
-      false,
+      replacement,
     );
-    const replacement = sources[2]!;
-    const [switchTime, offset] = replacement.start.mock.calls[0] as [number, number];
+    const switched = sources.find((source) => gainPlayedBy(source) === 6)!;
+    const [switchTime, offset] = switched.start.mock.calls[0] as [number, number];
     expect(switchTime).toBeCloseTo(5.55, 6);
     expect(offset).toBe(0);
     for (const source of previous) {
@@ -1019,8 +1036,8 @@ describe("WebAudioEngine processing changes", () => {
       0,
       switchTime + 0.03,
     );
-    expect(voiceOf(replacement).gain.setValueAtTime).toHaveBeenCalledWith(0, switchTime);
-    expect(voiceOf(replacement).gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+    expect(voiceOf(switched).gain.setValueAtTime).toHaveBeenCalledWith(0, switchTime);
+    expect(voiceOf(switched).gain.linearRampToValueAtTime).toHaveBeenCalledWith(
       1,
       switchTime + 0.03,
     );
@@ -1032,32 +1049,87 @@ describe("WebAudioEngine processing changes", () => {
     engine.close();
   });
 
-  it("finishes a running switch and then renders only the latest of several rapid changes", async () => {
-    const { context, sources } = createContext();
-    const pending: Array<{ gainDb: number; resolve: () => void }> = [];
-    const decode = vi.fn((selection: AudioChainSelection, _start: number, duration: number) => {
-      const gainDb = (selection.filters[0] as { gainDb: number }).gainDb;
-      if (gainDb === 0) return Promise.resolve(chunk(duration));
-      return new Promise<ReturnType<typeof chunk>>((resolve) => {
-        pending.push({ gainDb, resolve: () => resolve(chunk(duration)) });
-      });
-    });
+  it("keeps the audible processing playing while a slow replacement renders and switches only to the latest", async () => {
+    vi.useFakeTimers();
+    const { context, setCurrentTime, sources } = createContext();
+    const onError = vi.fn();
+    const replacements = new Map<number, { resolve: () => void; signal: AbortSignal }>();
+    const decode = vi.fn(
+      (
+        selection: AudioChainSelection,
+        _start: number,
+        duration: number,
+        signal: AbortSignal,
+        role: { replacement: boolean },
+      ) => {
+        const gainDb = gainOf(selection);
+        if (!role.replacement) return Promise.resolve(markedChunk(gainDb, duration));
+        return new Promise<ReturnType<typeof chunk>>((resolve) => {
+          replacements.set(gainDb, {
+            resolve: () => resolve(markedChunk(gainDb, duration)),
+            signal,
+          });
+        });
+      },
+    );
 
-    const engine = new WebAudioEngine(context, decode, vi.fn());
-    engine.setDuration(8_000_000);
+    const engine = new WebAudioEngine(context, decode, vi.fn(), onError);
+    engine.setDuration(20_000_000);
     engine.setTracks([{ selection: gainChain(0), streamIndex: 1, volume: 1 }]);
     await engine.startAt(0);
+    await vi.advanceTimersByTimeAsync(0);
+    const scheduledThroughSeconds = () =>
+      Math.max(...sources.map((source) => (source.start.mock.calls[0]![0] as number) - 5.005)) + 2;
 
-    engine.setTracks([{ selection: gainChain(3), streamIndex: 1, volume: 1 }]);
+    expect(scheduledThroughSeconds()).toBeCloseTo(4, 6);
+
     engine.setTracks([{ selection: gainChain(6), streamIndex: 1, volume: 1 }]);
-    engine.setTracks([{ selection: gainChain(9), streamIndex: 1, volume: 1 }]);
-    await vi.waitFor(() => expect(pending).toHaveLength(1));
-    const scheduledBeforeSwitch = sources.length;
-    pending[0]!.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(replacements.has(6)).toBe(true);
 
-    await vi.waitFor(() => expect(pending).toHaveLength(2));
-    expect(sources.length).toBe(scheduledBeforeSwitch + 1);
-    expect(pending.map(({ gainDb }) => gainDb)).toEqual([3, 9]);
+    // The replacement takes longer than all the audio that was scheduled when it started.
+    for (let second = 1; second <= 6; second += 1) {
+      setCurrentTime(5 + second);
+      await vi.advanceTimersByTimeAsync(200);
+    }
+    expect(engine.currentTimeSeconds).toBeCloseTo(5.995, 3);
+    expect(scheduledThroughSeconds()).toBeGreaterThan(8);
+    expect(sources.every((source) => gainPlayedBy(source) === 0)).toBe(true);
+    const starts = sources.map((source) => source.start.mock.calls[0]![0] as number);
+    expect(starts).toEqual(starts.map((_, index) => 5.005 + index * 2));
+    expect(decode).toHaveBeenCalledWith(
+      gainChain(0),
+      8_000_000,
+      2_000_000,
+      expect.any(AbortSignal),
+      audible,
+    );
+    expect(onError).not.toHaveBeenCalled();
+
+    // A newer change replaces the slow one, which is never switched to even when it completes.
+    engine.setTracks([{ selection: gainChain(9), streamIndex: 1, volume: 1 }]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(replacements.get(6)!.signal.aborted).toBe(true);
+    replacements.get(6)!.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(sources.some((source) => gainPlayedBy(source) === 6)).toBe(false);
+
+    replacements.get(9)!.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    const switched = sources.find((source) => gainPlayedBy(source) === 9)!;
+    expect(switched.start).toHaveBeenCalledWith(expect.closeTo(11.05, 4), 0);
+    expect(
+      sources.filter((source) => gainPlayedBy(source) === 0).at(-1)!.stop,
+    ).toHaveBeenCalledWith(expect.closeTo(11.08, 4));
+    await vi.advanceTimersByTimeAsync(200);
+    expect(decode).toHaveBeenLastCalledWith(
+      gainChain(9),
+      expect.closeTo(8_045_000, -2),
+      2_000_000,
+      expect.any(AbortSignal),
+      audible,
+    );
+    expect(onError).not.toHaveBeenCalled();
     engine.close();
   });
 
@@ -1067,10 +1139,8 @@ describe("WebAudioEngine processing changes", () => {
     const statuses: Array<[number | undefined, string]> = [];
     const decode = vi.fn(
       async (selection: AudioChainSelection, _start: number, duration: number) => {
-        if ((selection.filters[0] as { gainDb: number }).gainDb === 24) {
-          throw new Error("FFmpeg could not render the draft.");
-        }
-        return chunk(duration);
+        if (gainOf(selection) === 24) throw new Error("FFmpeg could not render the draft.");
+        return markedChunk(gainOf(selection), duration);
       },
     );
 
@@ -1088,22 +1158,24 @@ describe("WebAudioEngine processing changes", () => {
       { preview: true, selection: gainChain(24), streamIndex: 1, tag: 2, volume: 1 },
     ]);
     await vi.waitFor(() => expect(statuses.at(-1)).toEqual([2, "failed"]));
-    await vi.waitFor(() => expect(sources.length).toBeGreaterThan(1));
 
     expect(statuses).toContainEqual([2, "updating"]);
-    expect(decode).toHaveBeenLastCalledWith(
-      gainChain(3),
+    expect(decode).toHaveBeenCalledWith(
+      gainChain(24),
       expect.any(Number),
       expect.any(Number),
       expect.any(AbortSignal),
-      true,
+      { preview: true, replacement: true },
     );
+    expect(sources.every((source) => gainPlayedBy(source) === 3)).toBe(true);
+    expect(sources.every((source) => source.stop.mock.calls.length === 0)).toBe(true);
     expect(onError).not.toHaveBeenCalled();
 
     engine.setTracks([
       { preview: true, selection: gainChain(6), streamIndex: 1, tag: 3, volume: 1 },
     ]);
     await vi.waitFor(() => expect(statuses.at(-1)).toEqual([3, "ready"]));
+    expect(sources.some((source) => gainPlayedBy(source) === 6)).toBe(true);
     engine.close();
   });
 
@@ -1160,7 +1232,7 @@ describe("WebAudioEngine processing changes", () => {
       1_000_000,
       2_000_000,
       expect.any(AbortSignal),
-      false,
+      { preview: false, replacement: false },
     );
     expect(statuses).toContain("preparing");
     expect(statuses.at(-1)).toBe("ready");
@@ -1196,7 +1268,7 @@ describe("WebAudioEngine processing changes", () => {
       2_000_000,
       2_000_000,
       expect.any(AbortSignal),
-      false,
+      { preview: false, replacement: false },
     );
     expect(engine.currentTimeSeconds).toBeGreaterThanOrEqual(2);
     engine.close();

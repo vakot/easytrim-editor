@@ -106,6 +106,12 @@ describe("useAudioPlaybackRuntime", () => {
       store.dispatch(audioFilterPreviewEnded({ id: "preview" }));
     });
     expect(lastTracks().find((track) => track.streamIndex === 2)).not.toHaveProperty("preview");
+
+    // The draft keeps playing until the committed processing replaces it.
+    act(() => session.onTrackStatus(2, undefined, "updating"));
+    expect(mocks.releaseAudioPlaybackPreview).not.toHaveBeenCalled();
+    act(() => session.onTrackStatus(2, undefined, "ready"));
+    expect(mocks.releaseAudioPlaybackPreview).toHaveBeenCalledOnce();
     expect(mocks.releaseAudioPlaybackPreview).toHaveBeenCalledWith(firstSource.sourcePath, 2, {
       filters: [],
       streamIndex: 2,
@@ -121,6 +127,7 @@ describe("useAudioPlaybackRuntime", () => {
     act(() => {
       store.dispatch(audioTrackFiltersApplied({ filters: [gain(6)], streamIndex: 2 }));
     });
+    act(() => mocks.sessions.at(-1)!.onTrackStatus(2, undefined, "ready"));
     expect(mocks.releaseAudioPlaybackPreview).toHaveBeenCalledOnce();
     expect(mocks.releaseAudioPlaybackPreview).toHaveBeenCalledWith(firstSource.sourcePath, 2, {
       filters: [gain(6)],

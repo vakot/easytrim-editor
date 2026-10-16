@@ -51,6 +51,12 @@ function useResolvedAudioPlaybackTracks(
   return playback;
 }
 
+/** Releases a stream's native preview, keeping the processing it now plays. */
+function releasePreview(sourcePath: string, streamIndex: number, tracks: WebAudioTrack[]) {
+  const kept = tracks.find((track) => track.streamIndex === streamIndex)?.selection;
+  void releaseAudioPlaybackPreview(sourcePath, streamIndex, kept).catch(() => undefined);
+}
+
 function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
@@ -63,6 +69,8 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   const webAudioTracksRef = useRef<WebAudioTrack[]>([]);
   /** Streams playing preview audio, whose native preview is released once they stop. */
   const previewStreamsRef = useRef(new Set<number>());
+  /** Streams that stopped auditioning drafts but may still play preview audio until they switch. */
+  const releasingStreamsRef = useRef(new Set<number>());
   const previewRef = useRef(preview);
   const playbackErrorObserverRef = useRef<(() => void) | null>(null);
   const playbackRateRef = useRef(1);
@@ -75,6 +83,14 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   useEffect(() => {
     if (!sourcePath || !media || typeof AudioContext === "undefined") return;
     const session = new AudioPlaybackSession(sourcePath, (streamIndex, revision, status) => {
+      // Preview audio keeps playing until the committed processing replaces it; release it then.
+      if (
+        revision === undefined &&
+        status !== "updating" &&
+        releasingStreamsRef.current.delete(streamIndex)
+      ) {
+        releasePreview(sourcePath, streamIndex, webAudioTracksRef.current);
+      }
       const current = previewRef.current;
       if (current?.streamIndex !== streamIndex || revision === undefined) return;
       dispatch(audioFilterPreviewPlaybackReported({ id: current.id, revision, status }));
@@ -82,6 +98,7 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
 
     sessionRef.current = session;
     previewStreamsRef.current = new Set();
+    releasingStreamsRef.current = new Set();
     session.setPlaybackRate(playbackRateRef.current);
     const unregisterPlaybackErrorObserver = session.registerPlaybackErrorObserver(() => {
       playbackErrorObserverRef.current?.();
@@ -98,6 +115,23 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
     webAudioTracksRef.current = webAudioTracks;
     previewRef.current = preview;
     const session = sessionRef.current;
+
+    // Native preview audio and sessions are released once a stream stops auditioning drafts and
+    // its audible processing is no longer a draft; the processing it continues with is kept, so an
+    // applied draft is not rendered again.
+    const previewStreams = new Set(
+      webAudioTracks.filter((track) => track.preview).map((track) => track.streamIndex),
+    );
+
+    for (const streamIndex of previewStreamsRef.current) {
+      if (previewStreams.has(streamIndex)) continue;
+      const playing = webAudioTracks.some((track) => track.streamIndex === streamIndex);
+      if (session && playing) releasingStreamsRef.current.add(streamIndex);
+      else if (sourcePath) releasePreview(sourcePath, streamIndex, webAudioTracks);
+    }
+    for (const streamIndex of previewStreams) releasingStreamsRef.current.delete(streamIndex);
+    previewStreamsRef.current = previewStreams;
+
     if (session) {
       session.setDuration(media?.durationMicros ?? 0);
       session.setTracks(webAudioTracks);
@@ -116,20 +150,6 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
         }),
       );
     }
-
-    // Native preview audio and sessions are released once the stream stops auditioning drafts;
-    // the processing it continues with is kept, so an applied draft is not rendered again.
-    if (!sourcePath) return;
-    const previewStreams = new Set(
-      webAudioTracks.filter((track) => track.preview).map((track) => track.streamIndex),
-    );
-
-    for (const streamIndex of previewStreamsRef.current) {
-      if (previewStreams.has(streamIndex)) continue;
-      const kept = webAudioTracks.find((track) => track.streamIndex === streamIndex)?.selection;
-      void releaseAudioPlaybackPreview(sourcePath, streamIndex, kept).catch(() => undefined);
-    }
-    previewStreamsRef.current = previewStreams;
   }, [activeInstanceId, dispatch, media, playback, preview, sourcePath, webAudioTracks]);
 
   useEffect(() => {

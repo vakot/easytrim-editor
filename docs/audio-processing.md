@@ -135,10 +135,13 @@ reads everything the cache already holds and renders only the gaps:
 3. Otherwise, a provisional session seeks before the gap by the strategy's preroll.
 
 Each consumer of a source stream is one scope: playback (committed or previewed chains) and
-waveform passes render independently, so auditioning a draft never stops a waveform pass. A request
-for a different key supersedes its scope's previous revision: that revision's sessions are
-terminated, its pending segments are rejected, and its callers receive
-`media.audio.processingChangedBeforeAudioWasReady`. Scopes share cached segments but never sessions.
+waveform passes render independently, so auditioning a draft never stops a waveform pass. A scope
+has an audible revision and, while playback changes processing, a replacement revision. A request
+for a different key supersedes its scope's previous revision of the same kind: that revision's
+sessions are terminated, its pending segments are rejected, and its callers receive
+`media.audio.processingChangedBeforeAudioWasReady`. A replacement therefore never stops the audible
+processing; requesting the replacement as audible processing completes the switch and releases the
+previous audible revision. Scopes share cached segments but never sessions.
 Cancellation (`cancel_operation` or source replacement) stops a request without discarding a
 consistent session. Sessions are limited to four and end after 60 idle seconds.
 
@@ -197,12 +200,14 @@ Apply. Track Volume stays independent of the preview.
 - **Rendering.** The preview is an ordinary chain for the same compiler and engine. Playback
   requests it as `PlaybackPreview`, in the playback scope, so a newer draft supersedes the previous
   draft's sessions and never the waveform scope.
-- **Switching without a gap.** When the processing changes during playback, the already scheduled
-  audio keeps playing while the new chain renders from 50 ms ahead of the playhead. Every track then
-  switches at one sample position with a 30 ms linear crossfade; both sides carry the same source
-  signal. The timeline mapping is unchanged, so audio stays aligned with the video. A change that
-  arrives while a switch renders waits for it, so continuous edits are heard as fast as they can be
-  rendered and never restart each other. A start or seek that is still decoding starts again with
+- **Switching without a gap.** When the processing changes during playback, the audible processing
+  keeps rendering and playing, however long the replacement takes, while the new chain renders as a
+  replacement from 50 ms ahead of the playhead. Every track then switches at one sample position
+  with a 30 ms linear crossfade; both sides carry the same source signal, and playback continues
+  with the new chain after the replacement's first chunk. The timeline mapping is unchanged, so
+  audio stays aligned with the video. A newer change replaces a running one, so playback only
+  switches to the latest processing, and a replacement equal to the audible processing, such as an
+  undone edit, renders nothing. A start or seek that is still decoding starts again with
   the new chain. The same switch applies when Apply changes a chain during playback.
 - **Loudness normalization.** A draft is measured 300 ms after its loudness inputs (the enabled
   filters up to the last normalization) settle. Edits downstream of the last normalization or of a
@@ -217,7 +222,8 @@ Apply. Track Volume stays independent of the preview.
   be rendered stops playback, as before.
 - **Temporary data.** Preview renders are temporary. Their cached audio has its own budget (one
   eighth of the cache) and is evicted before committed audio. When a stream stops auditioning
-  drafts, playback calls `release_audio_playback_preview`: the sessions and audio of auditioned
+  drafts and its audible processing is no longer a draft (immediately when paused, after the switch
+  when playing), playback calls `release_audio_playback_preview`: the sessions and audio of auditioned
   drafts are released, and a request still rendering one fails as superseded. The chain playback
   continues with, for example the applied draft, is kept and becomes committed audio, so it is not
   rendered again.
@@ -286,11 +292,12 @@ latency compensation, capability classification, dependency-ordered and cached a
 partial coverage, precedence, isolation, eviction, and atomic writes, bit-exact equality of chunked
 canonical renders with one continuous render for a stateful chain, session continuation,
 provisional flagging, revision supersede, independent playback and waveform scopes, preview audio
-budgets, promotion and release, cancellation, and absolute positions across timestamp gaps.
+budgets, promotion and release, audible processing that keeps rendering beside its replacement,
+cancellation, and absolute positions across timestamp gaps.
 Fixtures are generated with silence, transients, sustained tones, and loudness steps. Frontend tests
 cover the domain model, legacy migration, recovery, Track Volume, playback wiring, automatic
 measurement, the Audio Filters dialog's draft isolation and Apply/Cancel, and live preview:
-sample-aligned crossfaded switches, coalesced rapid changes, preview failures, changes during start
+sample-aligned crossfaded switches, continuous audible playback while a slow replacement renders, switching only to the latest change, preview failures, changes during start
 and preparation, draft measurement reuse, invalidation, cancellation and adoption on Apply, kept
 audio while a draft is measured, native preview release, status reporting, and the playback
 shortcuts while the dialog is open.

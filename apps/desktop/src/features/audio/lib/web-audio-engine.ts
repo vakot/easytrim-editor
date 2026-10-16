@@ -53,13 +53,27 @@ type TrackRenderStatusObserver = (
   status: TrackRenderStatus,
 ) => void;
 
+/**
+ * `preview` audio auditions a draft chain. A `replacement` renders processing that will replace
+ * the audible processing, which keeps rendering until playback switches.
+ */
+interface DecodeRole {
+  preview: boolean;
+  replacement: boolean;
+}
+
 type DecodeChunk = (
   selection: AudioChainSelection,
   startMicros: number,
   durationMicros: number,
   signal: AbortSignal,
-  preview: boolean,
+  role: DecodeRole,
 ) => Promise<PcmChunk>;
+
+/** A running processing change and the renders of its replacement processing. */
+interface ProcessingChange {
+  controllers: Set<AbortController>;
+}
 
 /** One processed chain of a track, as requested from the native renderer. */
 interface TrackRender {
@@ -149,9 +163,8 @@ class WebAudioEngine {
   private prefetchSeconds: number | null = null;
   /** A preparation that restarts with the new processing when it changes meanwhile. */
   private preparation: object | null = null;
-  /** The generation of the running processing change, if one is rendering. */
-  private processingChange: number | null = null;
-  private processingChangePending = false;
+  /** The running processing change, while its replacement processing renders. */
+  private processingChange: ProcessingChange | null = null;
 
   constructor(
     private readonly context: AudioContext,
@@ -626,66 +639,55 @@ class WebAudioEngine {
   }
 
   /**
-   * Replaces changed processing during playback without a gap: what is scheduled keeps playing
-   * while the new processing renders from just ahead of the playhead, then every track switches at
-   * one sample position with a short crossfade. The timeline mapping never changes, so audio
-   * stays aligned with the video. A change during a running switch waits for it, so continuous
-   * edits are heard at the rate they can be rendered instead of restarting each other.
+   * Replaces changed processing during playback without a gap. The audible processing keeps
+   * rendering and playing while the replacement renders from just ahead of the playhead, however
+   * long that takes; then every track switches at one sample position with a short crossfade. The
+   * timeline mapping never changes, so audio stays aligned with the video. A newer change replaces
+   * a running one, so playback only ever switches to the latest processing.
    */
-  private changeProcessing(): void {
-    if (this.processingChange !== null) {
-      this.processingChangePending = true;
-      return;
-    }
-    void this.runProcessingChange();
+  private changeProcessing(retryingFailedPreview = false): void {
+    this.cancelProcessingChange();
+    const change: ProcessingChange = { controllers: new Set() };
+    this.processingChange = change;
+    this.preparedBatch = null;
+    this.refreshStatuses();
+    void this.runProcessingChange(change, retryingFailedPreview);
   }
 
-  private async runProcessingChange(retryingFailedPreview = false): Promise<void> {
-    this.generation += 1;
-    const generation = this.generation;
-    this.processingChange = generation;
-    this.processingChangePending = false;
-    this.preparedBatch = null;
-    this.batchInFlight = true;
-    this.cancelPump();
-    for (const track of this.tracks.values()) {
-      track.abortController?.abort();
-      track.abortController = null;
-      track.generation = generation;
-    }
-    this.refreshStatuses();
-
+  private async runProcessingChange(
+    change: ProcessingChange,
+    retryingFailedPreview: boolean,
+  ): Promise<void> {
     let switched: boolean;
     try {
-      switched = await this.renderProcessingChange(generation);
+      switched = await this.renderProcessingChange(change);
     } catch (error) {
-      if (generation !== this.generation) return;
-      this.processingChange = null;
+      if (this.processingChange !== change) return;
+      this.cancelProcessingChange();
       if (error instanceof PreviewRenderFailure && !retryingFailedPreview) {
         // The failed preview's earlier audio replaces it; anything else stops playback.
-        void this.runProcessingChange(true);
+        this.changeProcessing(true);
       } else {
         this.pause();
         this.onPlaybackError();
       }
       return;
     }
-    if (generation !== this.generation) return;
-
+    if (this.processingChange !== change) return;
     this.processingChange = null;
-    this.batchInFlight = false;
     this.refreshStatuses();
-    if (this.processingChangePending) {
-      this.changeProcessing();
-      return;
-    }
     if (switched && this.prefetchSeconds !== null) void this.prefetchAt(this.prefetchSeconds);
-    this.requestPump();
   }
 
-  /** Renders the new processing ahead of the playhead and switches to it; false at the end. */
-  private async renderProcessingChange(generation: number): Promise<boolean> {
+  /** Renders the replacement ahead of the playhead and switches to it; false if nothing changed. */
+  private async renderProcessingChange(change: ProcessingChange): Promise<boolean> {
     for (;;) {
+      // The replacement may be the audible processing again, e.g. an undone edit or a fallback.
+      if (
+        [...this.tracks.values()].every((track) => track.audible?.key === this.renderOf(track).key)
+      ) {
+        return false;
+      }
       const startFrame = this.frameAtContextTime(
         this.context.currentTime + PROCESSING_CHANGE_LEAD_SECONDS,
       );
@@ -693,9 +695,8 @@ class WebAudioEngine {
       // The scheduled audio already reaches the end of the range; nothing is left to replace.
       if (startFrame >= this.durationFrames) return false;
       const endFrame = this.nextChunkEndFrame(startFrame);
-      for (const track of this.tracks.values()) track.cursorFrame = startFrame;
-      const batch = await this.decodeBatch(generation, startFrame, endFrame);
-      if (generation !== this.generation) return false;
+      const batch = await this.decodeReplacement(change, startFrame, endFrame);
+      if (this.processingChange !== change) return false;
       const switchFrame = Math.max(
         startFrame,
         this.frameAtContextTime(this.context.currentTime + MIN_SCHEDULE_LEAD_SECONDS),
@@ -713,12 +714,67 @@ class WebAudioEngine {
     }
   }
 
-  /** Starts the new processing at `switchFrame` and fades the previous processing out there. */
+  /** Renders the replacement processing of every track without stopping the audible processing. */
+  private decodeReplacement(
+    change: ProcessingChange,
+    startFrame: number,
+    endFrame: number,
+  ): Promise<DecodedSampleRange[]> {
+    return Promise.all(
+      [...this.tracks.values()].map(async (track) => {
+        const controller = new AbortController();
+        change.controllers.add(controller);
+        const render = this.renderOf(track);
+        try {
+          const buffer = await this.decodeBuffer(
+            track,
+            render,
+            startFrame,
+            endFrame,
+            controller.signal,
+            true,
+          );
+
+          if (track.failedKey === render.key) track.failedKey = null;
+          return { buffer, endFrame, render, startFrame, track };
+        } catch (error) {
+          if (controller.signal.aborted || this.processingChange !== change) throw error;
+          throw this.renderFailure(track, render, error);
+        } finally {
+          change.controllers.delete(controller);
+        }
+      }),
+    );
+  }
+
+  /**
+   * Records a failed render. A preview the track's earlier audio can replace becomes a
+   * `PreviewRenderFailure`; any other failure is returned unchanged.
+   */
+  private renderFailure(track: ScheduledTrack, render: TrackRender, error: unknown): unknown {
+    if (!render.preview || render.key !== track.selectionKey) return error;
+    track.failedKey = render.key;
+    return track.audible && track.audible.key !== render.key ? new PreviewRenderFailure() : error;
+  }
+
+  /**
+   * Starts the replacement at `switchFrame`, fades the audible processing out there, and lets the
+   * pump continue with the replacement after its first chunk.
+   */
   private switchProcessing(batch: DecodedSampleRange[], switchFrame: number): void {
+    this.generation += 1;
+    const generation = this.generation;
+    this.cancelPump();
+    this.batchInFlight = false;
     const switchTime = this.contextTimeAtFrame(switchFrame);
     const { endFrame } = batch[0]!;
     for (const range of batch) {
       const { track } = range;
+      // A chunk the pump is decoding for the previous processing is no longer needed.
+      track.abortController?.abort();
+      track.abortController = null;
+      track.generation = generation;
+      track.cursorFrame = endFrame;
       const previous = track.voice;
       previous.retired = true;
       // A voice may still be fading in from a switch moments ago; fade out from where it is.
@@ -750,6 +806,7 @@ class WebAudioEngine {
     this.nextScheduledFrame = endFrame;
     this.nextScheduledContextTime =
       switchTime + this.framesToContextSeconds(endFrame - switchFrame);
+    this.requestPump();
   }
 
   /** The source frame the running playback reaches at a context time. */
@@ -791,7 +848,8 @@ class WebAudioEngine {
     if (track.abortController || track.cursorFrame !== startFrame) return null;
     const controller = new AbortController();
     track.abortController = controller;
-    const render = this.renderOf(track);
+    // While processing changes, the audible processing continues until playback switches.
+    const render = this.processingChange && track.audible ? track.audible : this.renderOf(track);
     try {
       const buffer = await this.decodeBuffer(
         track,
@@ -814,12 +872,7 @@ class WebAudioEngine {
       return { buffer, endFrame, render, startFrame, track };
     } catch (error) {
       if (controller.signal.aborted || generation !== this.generation) return null;
-      if (render.preview && render.key === track.selectionKey) {
-        track.failedKey = render.key;
-        // Earlier audio of the track can replace a draft that cannot be rendered.
-        if (track.audible && track.audible.key !== render.key) throw new PreviewRenderFailure();
-      }
-      throw error;
+      throw this.renderFailure(track, render, error);
     } finally {
       if (track.abortController === controller) track.abortController = null;
     }
@@ -851,6 +904,7 @@ class WebAudioEngine {
     startFrame: number,
     endFrame: number,
     signal: AbortSignal,
+    replacement = false,
   ): Promise<AudioBuffer> {
     const decodeStartFrame = Math.max(startFrame, track.startFrame);
     const decodeEndFrame = Math.min(endFrame, track.durationFrame);
@@ -862,7 +916,7 @@ class WebAudioEngine {
             this.frameToMicros(decodeStartFrame),
             this.frameToMicros(decodeEndFrame) - this.frameToMicros(decodeStartFrame),
             signal,
-            render.preview,
+            { preview: render.preview, replacement },
           )
         : { channels: CHANNELS, sampleRate: SAMPLE_RATE, samples: new Float32Array() };
 
@@ -1151,8 +1205,8 @@ class WebAudioEngine {
   }
 
   private cancelProcessingChange(): void {
+    for (const controller of this.processingChange?.controllers ?? []) controller.abort();
     this.processingChange = null;
-    this.processingChangePending = false;
   }
 
   private currentPositionFrame(): number {
