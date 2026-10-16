@@ -28,6 +28,17 @@ pub fn record_statistics_write_failure(diagnostics: &DiagnosticsState, error: &s
     record_statistics_event(diagnostics, "statistics.write.failed", &error.to_string());
 }
 
+pub fn record_statistics_source_size_unavailable(
+    diagnostics: &DiagnosticsState,
+    error_kind: std::io::ErrorKind,
+) {
+    record_statistics_event(
+        diagnostics,
+        "statistics.source-size.unavailable",
+        &format!("{error_kind:?}"),
+    );
+}
+
 fn record_statistics_event(diagnostics: &DiagnosticsState, event: &str, reason: &str) {
     let _ = diagnostics.record(DiagnosticEventInput {
         category: "statistics".to_owned(),

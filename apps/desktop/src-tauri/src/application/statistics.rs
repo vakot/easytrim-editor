@@ -135,7 +135,7 @@ mod tests {
     use uuid::Uuid;
 
     use super::*;
-    use crate::domain::statistics::ExportKind;
+    use crate::domain::statistics::{ExportDataSizes, ExportKind};
 
     fn temporary_root(name: &str) -> PathBuf {
         let root = std::env::temp_dir().join(format!(
@@ -150,8 +150,10 @@ mod tests {
         CompletedExport {
             kind,
             processing_millis: 250,
-            source_bytes: 2_000,
-            output_bytes: 500,
+            data: Some(ExportDataSizes {
+                source_bytes: 2_000,
+                output_bytes: 500,
+            }),
             completed_at_millis: 1_700_000_000_000,
         }
     }

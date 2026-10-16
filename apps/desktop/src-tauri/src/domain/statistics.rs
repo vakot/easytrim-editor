@@ -18,16 +18,25 @@ pub enum ExportKind {
     Audio,
 }
 
+/// Measured file sizes of one export. The two are only ever recorded together, so
+/// `source_bytes - output_bytes` stays meaningful across the cumulative totals.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ExportDataSizes {
+    /// Size of the export's source file. Each export counts its whole source once.
+    pub source_bytes: u64,
+    /// Size of the verified output file.
+    pub output_bytes: u64,
+}
+
 /// One successful export operation, measured by the native export command.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CompletedExport {
     pub kind: ExportKind,
     /// Wall-clock time the FFmpeg process ran; queue waiting is never part of it.
     pub processing_millis: u64,
-    /// Size of the export's source file. Each export counts its whole source once.
-    pub source_bytes: u64,
-    /// Size of the verified output file.
-    pub output_bytes: u64,
+    /// `None` when the source file could not be measured: the export is still counted, but it
+    /// contributes to neither byte total rather than recording a guessed or zero size.
+    pub data: Option<ExportDataSizes>,
     /// Unix epoch milliseconds when the export completed.
     pub completed_at_millis: i64,
 }
@@ -60,8 +69,10 @@ impl UsageStatistics {
         self.processing_millis = self
             .processing_millis
             .saturating_add(export.processing_millis);
-        self.source_bytes = self.source_bytes.saturating_add(export.source_bytes);
-        self.output_bytes = self.output_bytes.saturating_add(export.output_bytes);
+        if let Some(data) = &export.data {
+            self.source_bytes = self.source_bytes.saturating_add(data.source_bytes);
+            self.output_bytes = self.output_bytes.saturating_add(data.output_bytes);
+        }
         let completed_at = export.completed_at_millis;
         self.first_export_at_millis = Some(
             self.first_export_at_millis
@@ -125,8 +136,10 @@ mod tests {
         CompletedExport {
             kind,
             processing_millis: 1_500,
-            source_bytes: 1_000,
-            output_bytes: 400,
+            data: Some(ExportDataSizes {
+                source_bytes: 1_000,
+                output_bytes: 400,
+            }),
             completed_at_millis,
         }
     }
@@ -139,7 +152,10 @@ mod tests {
         statistics.record(&export(ExportKind::Gif, 2_500));
         statistics.record(&export(ExportKind::Audio, 2_500));
         statistics.record(&CompletedExport {
-            output_bytes: 5_000,
+            data: Some(ExportDataSizes {
+                source_bytes: 1_000,
+                output_bytes: 5_000,
+            }),
             ..export(ExportKind::Optimized, 1_000)
         });
 
@@ -157,6 +173,22 @@ mod tests {
                 last_export_at_millis: Some(3_000),
             }
         );
+    }
+
+    #[test]
+    fn unmeasured_source_counts_the_export_but_no_data() {
+        let mut statistics = UsageStatistics::default();
+        statistics.record(&export(ExportKind::Lossless, 1_000));
+        statistics.record(&CompletedExport {
+            data: None,
+            ..export(ExportKind::Lossless, 2_000)
+        });
+
+        assert_eq!(statistics.lossless_exports, 2);
+        assert_eq!(statistics.processing_millis, 3_000);
+        assert_eq!(statistics.source_bytes, 1_000);
+        assert_eq!(statistics.output_bytes, 400);
+        assert_eq!(statistics.last_export_at_millis, Some(2_000));
     }
 
     #[test]

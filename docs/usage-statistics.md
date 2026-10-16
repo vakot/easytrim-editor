@@ -35,6 +35,12 @@ values live in `domain/usage-statistics.ts`.
 Each export route has its own count, so the route counts never overlap. Every export has exactly one
 source and one output, so these rules need no multi-file weighting.
 A source exported three times contributes its size three times.
+If the source file cannot be measured (for example it was moved or became unreadable before the
+export started), the export still counts toward its route, Completed Exports, Processing Time, and
+the activity dates, but it adds to neither Source Data Processed nor Output Data Generated. Recording
+the output alone would inflate Storage Saved, and a zero source would deflate it, so both byte totals
+cover only exports where both sizes were measured. A `statistics.source-size.unavailable` diagnostic
+event (with the error kind, never a path) records each occurrence.
 Sizes and durations are measured, never estimated from media metadata. Existing queue history is
 not backfilled because its sizes and completion cannot be verified after the fact.
 

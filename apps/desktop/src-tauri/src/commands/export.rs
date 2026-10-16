@@ -15,9 +15,11 @@ use tauri_plugin_dialog::DialogExt;
 
 use crate::{
     application::statistics::{StatisticsStore, unix_millis_now},
-    commands::statistics::record_statistics_write_failure,
+    commands::statistics::{
+        record_statistics_source_size_unavailable, record_statistics_write_failure,
+    },
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
-    domain::statistics::{CompletedExport, ExportKind},
+    domain::statistics::{CompletedExport, ExportDataSizes, ExportKind},
     error::{AppError, AppErrorMessageId},
     media::audio_filters::{
         analysis::{LoudnessAnalysisRequest, analyze_chain_loudness},
@@ -652,7 +654,7 @@ async fn run_export(
         phase: initial_phase,
     });
     // Read before rendering: a successful export may delete its source once the queue is done.
-    let source_bytes = fs::metadata(&source_path).map_or(0, |metadata| metadata.len());
+    let source_bytes = measure_source_bytes(&source_path);
     let cancellation_for_check = cancellation.clone();
     let operation_for_task = operation_id.clone();
     let processing_started_at = Instant::now();
@@ -841,11 +843,20 @@ async fn run_export(
     }
     // The single success point of a native export: retries, requeues, and duplicate frontend
     // completion events never reach it twice for the same operation.
+    let data = match source_bytes {
+        Ok(source_bytes) => Some(ExportDataSizes {
+            source_bytes,
+            output_bytes: output_size,
+        }),
+        Err(error_kind) => {
+            record_statistics_source_size_unavailable(&diagnostics, error_kind);
+            None
+        }
+    };
     if let Err(error) = statistics.store.record(&CompletedExport {
         kind: statistics.kind,
         processing_millis,
-        source_bytes,
-        output_bytes: output_size,
+        data,
         completed_at_millis: unix_millis_now(),
     }) {
         record_statistics_write_failure(&diagnostics, &error);
@@ -1047,6 +1058,17 @@ fn redact_export_text(
         .replace(&output_path.to_string_lossy().to_string(), "<output>")
 }
 
+/// The source file's size, or why it is unavailable. A missing measurement must stay missing:
+/// substituting zero would permanently understate the cumulative source and saved totals.
+fn measure_source_bytes(path: &std::path::Path) -> Result<u64, std::io::ErrorKind> {
+    let metadata = fs::metadata(path).map_err(|error| error.kind())?;
+    if metadata.is_file() {
+        Ok(metadata.len())
+    } else {
+        Err(std::io::ErrorKind::InvalidInput)
+    }
+}
+
 fn remove_partial_output(path: &std::path::Path) {
     let _ = fs::remove_file(path);
 }
@@ -1071,7 +1093,10 @@ mod tests {
         time::{Duration, SystemTime, UNIX_EPOCH},
     };
 
-    use super::{ExportPhase, ffmpeg_arguments_data, next_export_phase, run_progress_cancellable};
+    use super::{
+        ExportPhase, ffmpeg_arguments_data, measure_source_bytes, next_export_phase,
+        run_progress_cancellable,
+    };
 
     #[test]
     fn export_phase_tracks_output_time_and_finishes_with_ffmpeg() {
@@ -1198,5 +1223,30 @@ mod tests {
         assert_eq!(arguments[1], "<value>");
         assert_eq!(arguments[3], "<value>");
         assert_eq!(arguments[2], "-spatial_aq");
+    }
+
+    #[test]
+    fn source_size_is_only_reported_for_measurable_files() {
+        let root = std::env::temp_dir().join(format!(
+            "easytrim-source-size-test-{}",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("clock after epoch")
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&root).expect("temporary root created");
+        let file = root.join("source.mp4");
+        std::fs::write(&file, [0_u8; 7]).expect("source written");
+
+        assert_eq!(measure_source_bytes(&file), Ok(7));
+        assert_eq!(
+            measure_source_bytes(&root.join("missing.mp4")),
+            Err(std::io::ErrorKind::NotFound)
+        );
+        assert_eq!(
+            measure_source_bytes(&root),
+            Err(std::io::ErrorKind::InvalidInput)
+        );
+        std::fs::remove_dir_all(root).expect("temporary root removed");
     }
 }
