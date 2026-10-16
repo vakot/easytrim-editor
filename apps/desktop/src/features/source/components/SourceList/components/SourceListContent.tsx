@@ -55,6 +55,7 @@ function SourceListEdgeSpacer() {
 
 const virtuosoComponents = {
   Header: SourceListEdgeSpacer,
+  Footer: SourceListEdgeSpacer,
   List: SourceListVirtualizedList,
   ScrollSeekPlaceholder: SourceListScrollSeekPlaceholder,
 };
