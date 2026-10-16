@@ -1,6 +1,10 @@
 import { decodeAudioPlaybackChunk } from "@/lib/tauri/media";
 
-import { WebAudioEngine, type WebAudioTrack } from "./web-audio-engine";
+import {
+  type TrackRenderStatusObserver,
+  WebAudioEngine,
+  type WebAudioTrack,
+} from "./web-audio-engine";
 
 class AudioPlaybackSession {
   private readonly context: AudioContext;
@@ -8,7 +12,8 @@ class AudioPlaybackSession {
   private closed = false;
   private playbackErrorObserver: (() => void) | null = null;
 
-  constructor(sourcePath: string) {
+  /** `onTrackStatus` reports whether each track's processing is audible, with its tag. */
+  constructor(sourcePath: string, onTrackStatus?: TrackRenderStatusObserver) {
     this.context = new AudioContext();
     this.engine = new WebAudioEngine(
       this.context,
@@ -18,6 +23,9 @@ class AudioPlaybackSession {
         }),
       () => undefined,
       () => this.playbackErrorObserver?.(),
+      (streamIndex, tag, status) => {
+        if (!this.closed) onTrackStatus?.(streamIndex, tag, status);
+      },
     );
   }
 

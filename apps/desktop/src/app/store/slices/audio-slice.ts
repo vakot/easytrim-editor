@@ -241,10 +241,15 @@ const audioSlice = createSlice({
       }>,
     ) => {
       const preview = state.filterPreview;
-      if (preview?.id !== action.payload.id || preview.revision !== action.payload.revision) {
+      const { revision, status } = action.payload;
+      if (
+        preview?.id !== action.payload.id ||
+        preview.revision !== revision ||
+        (preview.playback?.revision === revision && preview.playback.status === status)
+      ) {
         return;
       }
-      preview.playback = { revision: action.payload.revision, status: action.payload.status };
+      preview.playback = { revision, status };
     },
     audioTrackActivityVisibilityToggled: (
       state,

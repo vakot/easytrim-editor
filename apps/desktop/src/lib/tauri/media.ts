@@ -418,6 +418,28 @@ async function decodeAudioPlaybackChunk(
   }
 }
 
+/**
+ * Ends the playback preview of a stream: the native audio and render sessions of auditioned
+ * drafts are released. `kept` is the chain playback continues with; its audio is kept.
+ */
+async function releaseAudioPlaybackPreview(
+  sourcePath: string,
+  streamIndex: number,
+  kept?: AudioChainSelection,
+): Promise<void> {
+  try {
+    await invoke("release_audio_playback_preview", {
+      keep: kept
+        ? { filters: kept.filters, loudnessMeasurements: kept.loudnessMeasurements ?? [] }
+        : null,
+      sourcePath,
+      streamIndex,
+    });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 async function prepareProxyPreview(sourcePath: string): Promise<PreviewDescriptor> {
   try {
     return parsePreviewDescriptor(
@@ -539,6 +561,7 @@ export {
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
+  releaseAudioPlaybackPreview,
   releaseExportSource,
   releaseImportedSourceThumbnail,
   renderGif,

@@ -1203,4 +1203,4 @@ class WebAudioEngine {
 }
 
 export { WebAudioEngine };
-export type { DecodeChunk, PcmChunk, TrackRenderStatus, WebAudioTrack };
+export type { DecodeChunk, PcmChunk, TrackRenderStatus, TrackRenderStatusObserver, WebAudioTrack };
