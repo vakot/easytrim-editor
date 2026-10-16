@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { cn } from "@/lib/class-names.utils";
 
-import { chooseSplashMessage, type SplashMessageDefinition } from "./splash-messages";
+import { chooseSplashMessage, type SplashMessageDefinition } from "../../../lib/splash-messages";
 
 function PreviewSplash({
   className,
@@ -20,7 +20,7 @@ function PreviewSplash({
       aria-label={`${message.text} Click for another message`}
       className={cn(
         "absolute bottom-4 left-full -translate-1/2 -rotate-12 animate-splash-bounce font-semibold whitespace-nowrap text-primary motion-reduce:animate-none",
-        message.animationClassName,
+        message.className,
         className,
       )}
       data-keyboard-shortcut-ignore
