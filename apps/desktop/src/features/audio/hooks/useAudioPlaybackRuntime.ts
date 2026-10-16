@@ -83,10 +83,10 @@ function useAudioPlaybackRuntime(): AudioPlaybackAdapter {
   useEffect(() => {
     if (!sourcePath || !media || typeof AudioContext === "undefined") return;
     const session = new AudioPlaybackSession(sourcePath, (streamIndex, revision, status) => {
-      // Preview audio keeps playing until the committed processing replaces it; release it then.
+      // Preview audio keeps playing until the committed processing is audible; release it then.
       if (
         revision === undefined &&
-        status !== "updating" &&
+        status === "ready" &&
         releasingStreamsRef.current.delete(streamIndex)
       ) {
         releasePreview(sourcePath, streamIndex, webAudioTracksRef.current);

@@ -143,7 +143,9 @@ sessions are terminated, its pending segments are rejected, and its callers rece
 processing; requesting the replacement as audible processing completes the switch and releases the
 previous audible revision. Scopes share cached segments but never sessions.
 Cancellation (`cancel_operation` or source replacement) stops a request without discarding a
-consistent session. Sessions are limited to four and end after 60 idle seconds.
+consistent session. Sessions are limited to four and end after 60 idle seconds. Reaching the limit
+stops the least recently used session that no request is rendering with, and one rendering audible
+processing only after every other kind; while every session is in use, none is stopped.
 
 Positions are exact frame indexes on the 48 kHz source timeline. Seek points lie on a 125 µs grid
 (six frames), where the seek time and the first output frame agree exactly; the canonical input
@@ -207,8 +209,10 @@ Apply. Track Volume stays independent of the preview.
   with the new chain after the replacement's first chunk. The timeline mapping is unchanged, so
   audio stays aligned with the video. A newer change replaces a running one, so playback only
   switches to the latest processing, and a replacement equal to the audible processing, such as an
-  undone edit, renders nothing. A start or seek that is still decoding starts again with
-  the new chain. The same switch applies when Apply changes a chain during playback.
+  undone edit, renders nothing. Only a start or seek claims audible ownership: while playback
+  runs, it keeps requesting exactly the processing it plays, and any other request, including the
+  prefetched restart of a loop, is a replacement. A start or seek that is still decoding starts
+  again with the new chain. The same switch applies when Apply changes a chain during playback.
 - **Loudness normalization.** A draft is measured 300 ms after its loudness inputs (the enabled
   filters up to the last normalization) settle. Edits downstream of the last normalization or of a
   normalization's own targets reuse the measurement. A draft whose inputs match the committed chain
@@ -217,13 +221,14 @@ Apply. Track Volume stays independent of the preview.
   committed chain waits for it. Apply adopts the draft's measurement, or its running job, so
   applying never measures again. While a draft is measured, playback keeps the audio it is
   playing, the previous draft or the committed chain, and switches once the measurement arrives.
-- **Failures.** A draft that cannot be rendered or measured keeps the earlier audio playing, and the
-  dialog reports the preview as unavailable; Apply still commits it. A committed chain that cannot
-  be rendered stops playback, as before.
+- **Failures.** A replacement that cannot be rendered never stops playback: the audible processing
+  keeps playing and the track reports the failure. For a draft, as for one that cannot be measured,
+  the dialog shows the preview as unavailable, and Apply still commits it. A committed chain that
+  cannot be rendered when playback starts stops it, as before.
 - **Temporary data.** Preview renders are temporary. Their cached audio has its own budget (one
   eighth of the cache) and is evicted before committed audio. When a stream stops auditioning
   drafts and its audible processing is no longer a draft (immediately when paused, after the switch
-  when playing), playback calls `release_audio_playback_preview`: the sessions and audio of auditioned
+  when the committed chain is audible), playback calls `release_audio_playback_preview`: the sessions and audio of auditioned
   drafts are released, and a request still rendering one fails as superseded. The chain playback
   continues with, for example the applied draft, is kept and becomes committed audio, so it is not
   rendered again.
@@ -297,7 +302,7 @@ cancellation, and absolute positions across timestamp gaps.
 Fixtures are generated with silence, transients, sustained tones, and loudness steps. Frontend tests
 cover the domain model, legacy migration, recovery, Track Volume, playback wiring, automatic
 measurement, the Audio Filters dialog's draft isolation and Apply/Cancel, and live preview:
-sample-aligned crossfaded switches, continuous audible playback while a slow replacement renders, switching only to the latest change, preview failures, changes during start
+sample-aligned crossfaded switches, continuous audible playback while a slow replacement renders, an integration test that holds a draft's loudness analysis and replacement render past all buffered audio while the loop restart is prefetched, switching only to the latest change, preview failures, changes during start
 and preparation, draft measurement reuse, invalidation, cancellation and adoption on Apply, kept
 audio while a draft is measured, native preview release, status reporting, and the playback
 shortcuts while the dialog is open.
