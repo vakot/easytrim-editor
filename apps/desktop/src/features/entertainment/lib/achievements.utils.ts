@@ -8,9 +8,9 @@ import {
 } from "@/domain/usage-statistics";
 
 import { achievementCollection, achievementTiers } from "../consts/achievements.consts";
-import { splashMessagesLegendary } from "../consts/splash-messages.consts";
 import type {
   AchievementCollectionEntry,
+  AchievementCondition,
   AchievementMetric,
   AchievementSeriesDefinition,
   AchievementTier,
@@ -26,6 +26,8 @@ type AchievementSources = {
 
 type AchievementMetricUnit = "bytes" | "count" | "duration";
 
+type AchievementProgressValue = { current: number; target: number };
+
 type AchievementTierStatus = {
   id: string;
   target: number;
@@ -37,34 +39,33 @@ const achievementMetricUnits: Record<AchievementMetric, AchievementMetricUnit> =
   audioExports: "count",
   completedExports: "count",
   gifExports: "count",
-  legendarySplashMessages: "count",
   losslessExports: "count",
   processingMillis: "duration",
   sourceBytes: "bytes",
   storageSavedBytes: "bytes",
 };
 
-const legendarySplashMessageIds = new Set<string>(
-  splashMessagesLegendary.map((message) => message.id),
-);
-
 function getTierAchievementId(seriesId: string, tier: AchievementTier): string {
   return `${seriesId}-${tier}`;
 }
 
 /** Every independently unlockable achievement: each tier of each series and each standalone one. */
-const unlockableAchievements: readonly UnlockableAchievement[] = achievementCollection.flatMap(
-  (entry: AchievementCollectionEntry): UnlockableAchievement[] =>
+function listUnlockableAchievements(
+  collection: readonly AchievementCollectionEntry[],
+): UnlockableAchievement[] {
+  return collection.flatMap((entry): UnlockableAchievement[] =>
     entry.kind === "series"
       ? achievementTiers.map((tier) => ({
+          condition: { kind: "metric", metric: entry.metric, target: entry.thresholds[tier] },
           entry,
           id: getTierAchievementId(entry.id, tier),
-          metric: entry.metric,
-          target: entry.thresholds[tier],
           tier,
         }))
-      : [{ entry, id: entry.id, metric: entry.metric, target: entry.target, tier: null }],
-);
+      : [{ condition: entry.condition, entry, id: entry.id, tier: null }],
+  );
+}
+
+const unlockableAchievements = listUnlockableAchievements(achievementCollection);
 
 const unlockableAchievementsById = new Map(
   unlockableAchievements.map((achievement) => [achievement.id, achievement]),
@@ -73,16 +74,20 @@ const unlockableAchievementsById = new Map(
 /** The number of unlockable achievements, counting every tier. */
 const totalUnlockableAchievements = unlockableAchievements.length;
 
+/** The unlockable achievements of a catalog; the application's own catalog is listed once. */
+function resolveCatalog(
+  collection: readonly AchievementCollectionEntry[],
+): readonly UnlockableAchievement[] {
+  return collection === achievementCollection
+    ? unlockableAchievements
+    : listUnlockableAchievements(collection);
+}
+
 /** Reads a metric, or null while the data it comes from is unavailable. */
 function readAchievementMetric(
   metric: AchievementMetric,
-  { records, statistics }: AchievementSources,
+  statistics: UsageStatistics | null,
 ): number | null {
-  if (metric === "legendarySplashMessages") {
-    return records
-      ? records.discoveredSplashMessageIds.filter((id) => legendarySplashMessageIds.has(id)).length
-      : null;
-  }
   if (!statistics) return null;
   switch (metric) {
     case "audioExports":
@@ -111,24 +116,66 @@ function getUnlockableAchievement(id: string): UnlockableAchievement | undefined
 }
 
 /**
- * Achievements whose targets the current data reaches but that are not unlocked yet. Nothing is
- * earned before the records load, because only they tell which achievements are already unlocked.
+ * Whether a condition holds. Collections are checked against `unlockedIds`, which includes
+ * achievements unlocked earlier in the same evaluation, so unlocks can chain.
  */
-function getEarnedAchievementIds(sources: AchievementSources): string[] {
-  const { records } = sources;
-  if (!records) return [];
-  return unlockableAchievements
-    .filter((achievement) => {
-      if (getAchievementUnlockedAt(achievement.id, records) !== null) return false;
-      const value = readAchievementMetric(achievement.metric, sources);
-      return value !== null && value >= achievement.target;
-    })
-    .map((achievement) => achievement.id);
+function isConditionMet(
+  condition: AchievementCondition,
+  { records, statistics }: AchievementSources,
+  unlockedIds: ReadonlySet<string>,
+): boolean {
+  switch (condition.kind) {
+    case "collection":
+      return condition.requires.length > 0 && condition.requires.every((id) => unlockedIds.has(id));
+    case "discovery": {
+      const discovered = new Set(records?.discoveredSplashMessageIds);
+      return condition.ids.length > 0 && condition.ids.every((id) => discovered.has(id));
+    }
+    case "metric": {
+      const value = readAchievementMetric(condition.metric, statistics);
+      return value !== null && value >= condition.target;
+    }
+  }
 }
 
-/** Counts unlocked tiers and standalone achievements; unknown stored IDs are ignored. */
-function countUnlockedAchievements(records: AchievementRecords): number {
-  return unlockableAchievements.filter(
+/**
+ * Achievements whose conditions the current data meets but that are not unlocked yet, including
+ * ones that only become met because another achievement is earned in the same evaluation. The
+ * records decide what is already unlocked, retired achievements included, so nothing is earned
+ * before they load and an existing unlock is never earned again. Raising a threshold therefore
+ * never revokes anything, and lowering one earns the achievement retroactively.
+ */
+function getEarnedAchievementIds(
+  sources: AchievementSources,
+  collection: readonly AchievementCollectionEntry[] = achievementCollection,
+): string[] {
+  const { records } = sources;
+  if (!records) return [];
+  const candidates = resolveCatalog(collection);
+  const unlocked = new Set(Object.keys(records.unlockedAchievements));
+  const earned: string[] = [];
+
+  // Each pass can earn what a collection was waiting for, so repeat until nothing changes.
+  let progressed = true;
+  while (progressed) {
+    progressed = false;
+    for (const achievement of candidates) {
+      if (unlocked.has(achievement.id)) continue;
+      if (!isConditionMet(achievement.condition, sources, unlocked)) continue;
+      unlocked.add(achievement.id);
+      earned.push(achievement.id);
+      progressed = true;
+    }
+  }
+  return earned;
+}
+
+/** Counts unlocked tiers and standalone achievements; retired and unknown IDs are ignored. */
+function countUnlockedAchievements(
+  records: AchievementRecords,
+  collection: readonly AchievementCollectionEntry[] = achievementCollection,
+): number {
+  return resolveCatalog(collection).filter(
     (achievement) => getAchievementUnlockedAt(achievement.id, records) !== null,
   ).length;
 }
@@ -138,8 +185,8 @@ function getProgressToward(
   metric: AchievementMetric,
   target: number,
   sources: AchievementSources,
-): { current: number; target: number } | null {
-  const value = readAchievementMetric(metric, sources);
+): AchievementProgressValue | null {
+  const value = readAchievementMetric(metric, sources.statistics);
   if (value === null) return null;
   return { current: Math.min(value, target), target };
 }
@@ -152,16 +199,41 @@ function getTotalToward(
   metric: AchievementMetric,
   target: number,
   sources: AchievementSources,
-): { current: number; target: number } | null {
-  const value = readAchievementMetric(metric, sources);
+): AchievementProgressValue | null {
+  const value = readAchievementMetric(metric, sources.statistics);
   return value === null ? null : { current: value, target };
 }
 
+/** Progress toward a standalone achievement and the unit to show it in, or null if unmeasurable. */
 function getStandaloneAchievementProgress(
   definition: StandaloneAchievementDefinition,
   sources: AchievementSources,
-): { current: number; target: number } | null {
-  return getProgressToward(definition.metric, definition.target, sources);
+): (AchievementProgressValue & { unit: AchievementMetricUnit }) | null {
+  const { condition } = definition;
+  switch (condition.kind) {
+    case "metric": {
+      const progress = getProgressToward(condition.metric, condition.target, sources);
+      return progress && { ...progress, unit: achievementMetricUnits[condition.metric] };
+    }
+    case "discovery": {
+      if (!sources.records) return null;
+      const discovered = new Set(sources.records.discoveredSplashMessageIds);
+      return {
+        current: condition.ids.filter((id) => discovered.has(id)).length,
+        target: condition.ids.length,
+        unit: "count",
+      };
+    }
+    case "collection": {
+      if (!sources.records) return null;
+      const { unlockedAchievements } = sources.records;
+      return {
+        current: condition.requires.filter((id) => id in unlockedAchievements).length,
+        target: condition.requires.length,
+        unit: "count",
+      };
+    }
+  }
 }
 
 /** Each tier of a series with its threshold and unlock time, from Bronze to Gold. */
@@ -278,4 +350,9 @@ export {
   isEntryUnlocked,
   totalUnlockableAchievements,
 };
-export type { AchievementMetricUnit, AchievementSources, AchievementTierStatus };
+export type {
+  AchievementMetricUnit,
+  AchievementProgressValue,
+  AchievementSources,
+  AchievementTierStatus,
+};

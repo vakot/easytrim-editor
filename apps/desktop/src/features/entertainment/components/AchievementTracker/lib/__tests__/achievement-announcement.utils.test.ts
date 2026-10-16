@@ -65,6 +65,25 @@ describe("createAchievementAnnouncement", () => {
     });
   });
 
+  it("announces a collector as a standalone secret once it is unlocked", () => {
+    expect(createAchievementAnnouncement(["gold-collector"], t)).toMatchObject({
+      description: "Achievement unlocked",
+      tier: null,
+      title: "Gold Collector",
+    });
+  });
+
+  it("summarizes a final tier together with the collector it completes", () => {
+    expect(
+      createAchievementAnnouncement(["storage-saver-bronze", "bronze-collector"], t),
+    ).toMatchObject({
+      achievementIds: ["storage-saver-bronze", "bronze-collector"],
+      description: "Storage Saver Bronze, Bronze Collector",
+      tier: null,
+      title: "2 achievements unlocked",
+    });
+  });
+
   it("announces nothing for unknown achievements", () => {
     expect(createAchievementAnnouncement(["first-export"], t)).toBeNull();
     expect(createAchievementAnnouncement([], t)).toBeNull();

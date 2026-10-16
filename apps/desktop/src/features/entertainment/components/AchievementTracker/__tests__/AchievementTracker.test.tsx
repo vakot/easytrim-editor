@@ -190,4 +190,93 @@ describe("AchievementTracker", () => {
     await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
     expect(mocks.toast).not.toHaveBeenCalled();
   });
+
+  describe("collectors", () => {
+    const seriesIds = [
+      "export-mastery",
+      "lossless-precision",
+      "gif-creator",
+      "audio-specialist",
+      "time-well-spent",
+      "data-cruncher",
+      "storage-saver",
+    ];
+
+    const tierIds = (tier: string) => seriesIds.map((id) => `${id}-${tier}`);
+    const unlockedAt = (ids: string[]) => Object.fromEntries(ids.map((id) => [id, 500]));
+
+    it("unlocks a collector in the same evaluation as its final tier and announces both once", async () => {
+      const nativeRecords = fakeNativeAchievements({
+        ...emptyAchievementRecords,
+        unlockedAchievements: unlockedAt(tierIds("bronze").slice(0, -1)),
+      });
+
+      mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
+      const store = renderTracker();
+      await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
+      expect(mocks.unlockAchievements).not.toHaveBeenCalled();
+
+      // Storage Saver Bronze is the last original Bronze tier, and unlocking it completes the set.
+      completeExport(store, { ...emptyUsageStatistics, sourceBytes: 300 * 1_024 ** 2 });
+
+      await waitFor(() => expect(mocks.toast).toHaveBeenCalledTimes(1));
+      expect(mocks.unlockAchievements).toHaveBeenCalledTimes(1);
+      expect(mocks.unlockAchievements).toHaveBeenCalledWith([
+        "storage-saver-bronze",
+        "bronze-collector",
+      ]);
+      expect(mocks.toast).toHaveBeenCalledWith(
+        "2 achievements unlocked",
+        expect.objectContaining({ description: "Storage Saver Bronze, Bronze Collector" }),
+      );
+      expect(nativeRecords().unlockedAchievements["bronze-collector"]).toBeGreaterThan(500);
+      expect(nativeRecords().unlockedAchievements["silver-collector"]).toBeUndefined();
+    });
+
+    it("unlocks collectors from previously unlocked tiers silently at startup", async () => {
+      const nativeRecords = fakeNativeAchievements({
+        ...emptyAchievementRecords,
+        unlockedAchievements: unlockedAt([
+          ...tierIds("bronze"),
+          ...tierIds("silver"),
+          ...tierIds("gold"),
+        ]),
+      });
+
+      mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
+      const store = renderTracker();
+
+      await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
+
+      expect(mocks.unlockAchievements).toHaveBeenCalledTimes(1);
+      expect(mocks.unlockAchievements).toHaveBeenCalledWith([
+        "bronze-collector",
+        "silver-collector",
+        "gold-collector",
+      ]);
+      expect(Object.keys(nativeRecords().unlockedAchievements)).toHaveLength(24);
+      expect(mocks.toast).not.toHaveBeenCalled();
+    });
+
+    it("neither writes nor announces again when nothing new is earned", async () => {
+      fakeNativeAchievements({
+        ...emptyAchievementRecords,
+        unlockedAchievements: unlockedAt(tierIds("bronze").slice(0, -1)),
+      });
+      const unlockingStatistics = { ...emptyUsageStatistics, sourceBytes: 300 * 1_024 ** 2 };
+      mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
+      const store = renderTracker();
+      await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
+      completeExport(store, unlockingStatistics);
+      await waitFor(() => expect(mocks.toast).toHaveBeenCalledTimes(1));
+
+      completeExport(store, { ...unlockingStatistics });
+      await waitFor(() => expect(mocks.getUsageStatistics).toHaveBeenCalledTimes(3));
+      completeExport(store, { ...unlockingStatistics, sourceBytes: 400 * 1_024 ** 2 });
+      await waitFor(() => expect(mocks.getUsageStatistics).toHaveBeenCalledTimes(4));
+
+      expect(mocks.unlockAchievements).toHaveBeenCalledTimes(1);
+      expect(mocks.toast).toHaveBeenCalledTimes(1);
+    });
+  });
 });

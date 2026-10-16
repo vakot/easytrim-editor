@@ -43,4 +43,14 @@ const achievementTierClassNames = {
   },
 } as const satisfies Record<AchievementTier, AchievementTierClassNames>;
 
-export { achievementTierClassNames };
+/**
+ * The treatment of an unlocked secret achievement: a restrained gradient through all three tier
+ * colors on the card and its icon. A locked secret keeps the neutral locked styling.
+ */
+const achievementSecretClassNames = {
+  card: "border-achievement-gold/40 bg-linear-to-br from-achievement-bronze/10 via-achievement-silver/10 to-achievement-gold/15",
+  medallion:
+    "bg-linear-to-br from-achievement-bronze/25 via-achievement-silver/25 to-achievement-gold/30 text-achievement-gold ring-achievement-gold/30",
+} as const;
+
+export { achievementSecretClassNames, achievementTierClassNames };

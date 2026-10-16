@@ -84,11 +84,11 @@ describe("AppAchievementsDialog", () => {
 
     const dialog = await openDialog();
 
-    expect(await within(dialog).findByText("0 of 22 unlocked")).toBeVisible();
+    expect(await within(dialog).findByText("0 of 25 unlocked")).toBeVisible();
     expect(
       within(dialog).getByRole("progressbar", { name: "Collection progress" }),
     ).toHaveAttribute("aria-valuenow", "0");
-    expect(cards(dialog)).toHaveLength(8);
+    expect(cards(dialog)).toHaveLength(11);
     const mastery = achievement(dialog, "Export Mastery");
     expect(mastery).toHaveAttribute("data-state", "locked");
     expect(within(mastery).getByText("Locked")).toBeVisible();
@@ -120,7 +120,7 @@ describe("AppAchievementsDialog", () => {
 
     const dialog = await openDialog();
 
-    expect(await within(dialog).findByText("3 of 22 unlocked")).toBeVisible();
+    expect(await within(dialog).findByText("3 of 25 unlocked")).toBeVisible();
     const mastery = achievement(dialog, "Export Mastery");
     expect(mastery).toHaveAttribute("data-tier", "silver");
     expect(within(mastery).getByText("Silver")).toBeVisible();
@@ -186,7 +186,10 @@ describe("AppAchievementsDialog", () => {
 
     const dialog = await openDialog();
 
-    const secret = achievement(dialog, "???");
+    // The Chosen One and the three collectors are all concealed.
+    const concealed = within(dialog).getAllByText("???");
+    expect(concealed).toHaveLength(4);
+    const secret = concealed[0]!.closest("[data-slot='item']") as HTMLElement;
     expect(
       within(secret).getByText("A secret achievement. Keep exploring to reveal it"),
     ).toBeVisible();
@@ -207,8 +210,33 @@ describe("AppAchievementsDialog", () => {
 
     const revealed = achievement(dialog, "The Chosen One");
     expect(within(revealed).getByText("Encounter every legendary splash message")).toBeVisible();
-    expect(within(dialog).queryByText("???")).toBeNull();
-    expect(within(dialog).getByText("1 of 22 unlocked")).toBeVisible();
+    expect(within(dialog).getAllByText("???")).toHaveLength(3);
+    expect(within(dialog).getByText("1 of 25 unlocked")).toBeVisible();
+  });
+
+  it("reveals a collector with the secret gradient only once it is unlocked", async () => {
+    mocks.getAchievementRecords.mockResolvedValue({
+      ...emptyAchievementRecords,
+      unlockedAchievements: { "bronze-collector": unlockedAt },
+    });
+    mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
+    renderDialog();
+
+    const dialog = await openDialog();
+
+    const revealed = await waitFor(() => achievement(dialog, "Bronze Collector"));
+    expect(
+      within(revealed).getByText("Unlock the Bronze tier of all seven original milestone series"),
+    ).toBeVisible();
+    expect(revealed).toHaveClass("bg-linear-to-br");
+    expect(revealed).toHaveAttribute("data-state", "unlocked");
+    expect(within(dialog).queryByText("Silver Collector")).toBeNull();
+    expect(within(dialog).queryByText("Gold Collector")).toBeNull();
+    expect(within(dialog).getAllByText("???")).toHaveLength(3);
+    for (const concealed of within(dialog).getAllByText("???")) {
+      expect(concealed.closest("[data-slot='item']")).not.toHaveClass("bg-linear-to-br");
+      expect(concealed.closest("[data-slot='item']")).toHaveAttribute("data-state", "locked");
+    }
   });
 
   it("filters series with unlocked tiers and series with locked tiers", async () => {
@@ -224,7 +252,7 @@ describe("AppAchievementsDialog", () => {
     mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
     renderDialog();
     const dialog = await openDialog();
-    await within(dialog).findByText("4 of 22 unlocked");
+    await within(dialog).findByText("4 of 25 unlocked");
 
     await userEvent.click(within(dialog).getByRole("tab", { name: "Unlocked" }));
     expect(cards(dialog)).toHaveLength(2);
@@ -232,7 +260,7 @@ describe("AppAchievementsDialog", () => {
     expect(within(dialog).getByText("Audio Specialist")).toBeVisible();
 
     await userEvent.click(within(dialog).getByRole("tab", { name: "Locked" }));
-    expect(cards(dialog)).toHaveLength(7);
+    expect(cards(dialog)).toHaveLength(10);
     expect(within(dialog).getByText("GIF Creator")).toBeVisible();
     expect(within(dialog).queryByText("Audio Specialist")).toBeNull();
   });
@@ -242,7 +270,7 @@ describe("AppAchievementsDialog", () => {
     mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
     renderDialog();
     const dialog = await openDialog();
-    await within(dialog).findByText("0 of 22 unlocked");
+    await within(dialog).findByText("0 of 25 unlocked");
 
     await userEvent.click(within(dialog).getByRole("tab", { name: "Unlocked" }));
 
@@ -300,6 +328,6 @@ describe("AppAchievementsDialog", () => {
 
     await userEvent.click(within(dialog).getByRole("button", { name: "Retry" }));
 
-    expect(await within(dialog).findByText("0 of 22 unlocked")).toBeVisible();
+    expect(await within(dialog).findByText("0 of 25 unlocked")).toBeVisible();
   });
 });

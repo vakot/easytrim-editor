@@ -2,25 +2,23 @@ import { useTranslation } from "react-i18next";
 
 import { Progress } from "@/components/ui/progress";
 
-import { achievementMetricUnits } from "../../../lib/achievements.utils";
-import type { AchievementMetric } from "../../../types/achievements.types";
+import type { AchievementMetricUnit } from "../../../lib/achievements.utils";
 import { formatAchievementValue } from "../lib/achievements-format.utils";
 
 /** A progress bar with its current and target values in the metric's unit. The bar stops at full. */
 function AchievementProgress({
   label,
-  metric,
   progress,
   title,
+  unit,
 }: {
   label?: string;
-  metric: AchievementMetric;
   progress: { current: number; target: number };
   title: string;
+  unit: AchievementMetricUnit;
 }) {
   const { i18n, t } = useTranslation();
   const locale = i18n.resolvedLanguage ?? i18n.language;
-  const unit = achievementMetricUnits[metric];
   const current = formatAchievementValue(progress.current, unit, locale);
   const target = formatAchievementValue(progress.target, unit, locale);
 

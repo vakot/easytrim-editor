@@ -210,4 +210,20 @@ export const SecretUnlocked: Story = {
   },
 };
 
+/** Bronze and Silver collected, so those collectors are revealed while Gold stays concealed. */
+export const CollectorsUnlocked: Story = {
+  args: {
+    records: {
+      ...recordsUpTo("silver"),
+      unlockedAchievements: {
+        ...recordsUpTo("silver").unlockedAchievements,
+        "bronze-collector": Date.UTC(2026, 9, 2, 12),
+        "silver-collector": Date.UTC(2026, 9, 14, 12),
+      },
+      viewedAtMillis: Date.UTC(2026, 9, 10),
+    },
+    statistics: statisticsByTier.silver,
+  },
+};
+
 export const Narrow: Story = { args: { width: "20rem" } };

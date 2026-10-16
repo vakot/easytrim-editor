@@ -99,9 +99,9 @@ function AchievementSeriesItem({ series }: { series: AchievementSeriesDefinition
                 ? t("achievements.series.nextTier", { tier: getAchievementTierLabel(next.tier, t) })
                 : t("achievements.series.total")
             }
-            metric={series.metric}
             progress={progress}
             title={title}
+            unit={achievementMetricUnits[series.metric]}
           />
         ) : null}
 

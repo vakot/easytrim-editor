@@ -3,18 +3,33 @@ import type { LucideIcon } from "lucide-react";
 
 type AchievementCategory = "export-milestones" | "processing-milestones" | "secret-discoveries";
 
-/** A measurable quantity that achievement progress is read from. */
+/** A measurable quantity that achievement progress is read from usage statistics. */
 type AchievementMetric =
   | "audioExports"
   | "completedExports"
   | "gifExports"
-  | "legendarySplashMessages"
   | "losslessExports"
   | "processingMillis"
   | "sourceBytes"
   | "storageSavedBytes";
 
 type AchievementTier = "bronze" | "gold" | "silver";
+
+/**
+ * What unlocks an achievement. Conditions are declarative and only ever read data that persists, so
+ * evaluating one never depends on what else the registry currently contains.
+ */
+type AchievementCondition =
+  /** A usage statistics metric reaches a target. */
+  | { kind: "metric"; metric: AchievementMetric; target: number }
+  /** Every one of these unique events was discovered, such as legendary splash messages. */
+  | { ids: readonly string[]; kind: "discovery" }
+  /**
+   * Every one of these achievements is unlocked. The list is explicit and fixed: it is never
+   * derived from the registry, so adding achievements cannot change what it requires. Retired
+   * achievements still count, because their unlocks remain in the records.
+   */
+  | { kind: "collection"; requires: readonly string[] };
 
 type AchievementCopy = {
   description: (t: TFunction) => string;
@@ -39,14 +54,13 @@ type AchievementSeriesDefinition = AchievementCopy & {
 /** An achievement that unlocks once, outside any milestone series. */
 type StandaloneAchievementDefinition = AchievementCopy & {
   category: AchievementCategory;
+  condition: AchievementCondition;
   icon: LucideIcon;
-  /** Stable identifier persisted with the unlock; never rename an existing one. */
+  /** Stable identifier persisted with the unlock; never rename or reuse an existing one. */
   id: string;
   kind: "standalone";
-  metric: AchievementMetric;
   /** Hides the title, description, unlock condition, and progress until unlocked. */
   secret?: boolean;
-  target: number;
 };
 
 /** One card of the collection. */
@@ -55,23 +69,22 @@ type AchievementCollectionEntry = AchievementSeriesDefinition | StandaloneAchiev
 /** One independently unlockable achievement: a series tier or a standalone achievement. */
 type UnlockableAchievement =
   | {
+      condition: AchievementCondition;
       entry: AchievementSeriesDefinition;
       id: string;
-      metric: AchievementMetric;
-      target: number;
       tier: AchievementTier;
     }
   | {
+      condition: AchievementCondition;
       entry: StandaloneAchievementDefinition;
       id: string;
-      metric: AchievementMetric;
-      target: number;
       tier: null;
     };
 
 export type {
   AchievementCategory,
   AchievementCollectionEntry,
+  AchievementCondition,
   AchievementMetric,
   AchievementSeriesDefinition,
   AchievementTier,

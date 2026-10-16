@@ -25,6 +25,10 @@ export const en = {
         description: "Complete audio-only exports",
         title: "Audio Specialist",
       },
+      bronzeCollector: {
+        description: "Unlock the Bronze tier of all seven original milestone series",
+        title: "Bronze Collector",
+      },
       dataCruncher: {
         description: "Process source data through your exports",
         title: "Data Cruncher",
@@ -37,9 +41,17 @@ export const en = {
         description: "Export animated GIFs",
         title: "GIF Creator",
       },
+      goldCollector: {
+        description: "Unlock the Gold tier of all seven original milestone series",
+        title: "Gold Collector",
+      },
       losslessPrecision: {
         description: "Cut without re-encoding using Fast Export",
         title: "Lossless Precision",
+      },
+      silverCollector: {
+        description: "Unlock the Silver tier of all seven original milestone series",
+        title: "Silver Collector",
       },
       storageSaver: {
         description: "Save storage by exporting files smaller than their sources",

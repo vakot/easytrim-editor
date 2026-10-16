@@ -77,14 +77,14 @@ describe("achievement registry", () => {
   });
 
   it("counts three tiers per series plus each standalone achievement", () => {
-    expect(totalUnlockableAchievements).toBe(22);
+    expect(totalUnlockableAchievements).toBe(25);
   });
 
   it("requires every legendary splash message for the secret The Chosen One", () => {
     const chosenOne = standalone("the-chosen-one");
 
     expect(chosenOne.secret).toBe(true);
-    expect(chosenOne.target).toBe(legendaryIds.length);
+    expect(chosenOne.condition).toEqual({ ids: legendaryIds, kind: "discovery" });
   });
 });
 
@@ -171,7 +171,7 @@ describe("tier evaluation", () => {
         standalone("the-chosen-one"),
         sources([legendaryIds[0]!, "ffmpeg", "frame-perfect", "no-electron"]),
       ),
-    ).toEqual({ current: 1, target: legendaryIds.length });
+    ).toEqual({ current: 1, target: legendaryIds.length, unit: "count" });
     expect(getEarnedAchievementIds(sources(legendaryIds.slice(0, -1)))).toEqual([]);
     expect(getEarnedAchievementIds(sources(legendaryIds))).toEqual(["the-chosen-one"]);
   });
@@ -295,5 +295,276 @@ describe("unlocked count", () => {
         },
       }),
     ).toBe(3);
+  });
+});
+
+const originalSeriesIds = [
+  "export-mastery",
+  "lossless-precision",
+  "gif-creator",
+  "audio-specialist",
+  "time-well-spent",
+  "data-cruncher",
+  "storage-saver",
+] as const;
+
+const tierIdsOf = (tier: string) => originalSeriesIds.map((id) => `${id}-${tier}`);
+
+/** The literal prerequisites of each collector, fixed at release. */
+const collectorRequirements = {
+  "bronze-collector": tierIdsOf("bronze"),
+  "gold-collector": tierIdsOf("gold"),
+  "silver-collector": tierIdsOf("silver"),
+};
+
+function unlockedRecords(ids: readonly string[], unlockedAt = 1_000) {
+  return {
+    ...emptyAchievementRecords,
+    unlockedAchievements: Object.fromEntries(ids.map((id) => [id, unlockedAt])),
+  };
+}
+
+/** Statistics that reach every Gold tier of the original series. */
+const goldStatistics = {
+  ...emptyUsageStatistics,
+  audioExports: 25,
+  gifExports: 25,
+  losslessExports: 50,
+  optimizedExports: 100,
+  outputBytes: 10 * GIGABYTE,
+  processingMillis: 3_600_000,
+  sourceBytes: 120 * GIGABYTE,
+};
+
+describe("collector registry", () => {
+  it("defines three secret collectors that require the original tiers by explicit literal IDs", () => {
+    for (const [id, requires] of Object.entries(collectorRequirements)) {
+      const collector = standalone(id);
+
+      expect(collector.secret).toBe(true);
+      expect(collector.condition).toEqual({ kind: "collection", requires });
+      expect(requires).toHaveLength(7);
+    }
+  });
+
+  it("never lets a collector require itself, another collector, or an unknown achievement", () => {
+    const collectorIds = Object.keys(collectorRequirements);
+    const tierIds = new Set(
+      achievementCollection.flatMap((entry) =>
+        entry.kind === "series"
+          ? (["bronze", "silver", "gold"] as const).map((tier) => `${entry.id}-${tier}`)
+          : [],
+      ),
+    );
+
+    for (const entry of achievementCollection) {
+      if (entry.kind !== "standalone" || entry.condition.kind !== "collection") continue;
+      for (const required of entry.condition.requires) {
+        expect(required).not.toBe(entry.id);
+        expect(collectorIds).not.toContain(required);
+        expect(tierIds).toContain(required);
+      }
+    }
+  });
+
+  it("keeps collector and tier identifiers unique", () => {
+    const ids = achievementCollection.flatMap((entry) =>
+      entry.kind === "series"
+        ? [`${entry.id}-bronze`, `${entry.id}-silver`, `${entry.id}-gold`]
+        : [entry.id],
+    );
+
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("collector evaluation", () => {
+  it.each([
+    ["bronze-collector", "bronze"],
+    ["silver-collector", "silver"],
+    ["gold-collector", "gold"],
+  ])("unlocks %s once its final %s tier is unlocked", (collector, tier) => {
+    const tiers = tierIdsOf(tier);
+    const missingOne = unlockedRecords(tiers.slice(0, -1));
+
+    expect(getEarnedAchievementIds({ records: missingOne, statistics: null })).toEqual([]);
+    expect(getEarnedAchievementIds({ records: unlockedRecords(tiers), statistics: null })).toEqual([
+      collector,
+    ]);
+  });
+
+  it("resolves chained unlocks within one evaluation, tiers before their collector", () => {
+    const earned = getEarnedAchievementIds({
+      records: emptyAchievementRecords,
+      statistics: goldStatistics,
+    });
+
+    for (const [collector, requires] of Object.entries(collectorRequirements)) {
+      expect(earned).toContain(collector);
+      for (const required of requires) {
+        expect(earned).toContain(required);
+        expect(earned.indexOf(required)).toBeLessThan(earned.indexOf(collector));
+      }
+    }
+    expect(new Set(earned).size).toBe(earned.length);
+    expect(earned).toHaveLength(24);
+  });
+
+  it("earns the collector together with the final tier that completes it", () => {
+    const records = unlockedRecords(tierIdsOf("bronze").slice(0, -1));
+
+    expect(
+      getEarnedAchievementIds({
+        records,
+        statistics: {
+          ...emptyUsageStatistics,
+          outputBytes: 100 * MEGABYTE,
+          sourceBytes: 300 * MEGABYTE,
+        },
+      }),
+    ).toEqual(["storage-saver-bronze", "bronze-collector"]);
+  });
+
+  it("retroactively unlocks collectors from tiers unlocked before they existed", () => {
+    const records = unlockedRecords([...tierIdsOf("bronze"), ...tierIdsOf("silver")]);
+
+    expect(getEarnedAchievementIds({ records, statistics: null })).toEqual([
+      "bronze-collector",
+      "silver-collector",
+    ]);
+  });
+
+  it("does not unlock a collector twice or change its original unlock time", () => {
+    const records = unlockedRecords([...tierIdsOf("gold"), "gold-collector"], 42);
+
+    expect(getEarnedAchievementIds({ records, statistics: goldStatistics })).not.toContain(
+      "gold-collector",
+    );
+    expect(records.unlockedAchievements["gold-collector"]).toBe(42);
+  });
+
+  it("does not need lower tiers for a higher collector", () => {
+    expect(
+      getEarnedAchievementIds({ records: unlockedRecords(tierIdsOf("gold")), statistics: null }),
+    ).toEqual(["gold-collector"]);
+  });
+
+  it("reports collector progress as unlocked required achievements out of seven", () => {
+    expect(
+      getStandaloneAchievementProgress(standalone("silver-collector"), {
+        records: unlockedRecords(tierIdsOf("silver").slice(0, 3)),
+        statistics: null,
+      }),
+    ).toEqual({ current: 3, target: 7, unit: "count" });
+  });
+});
+
+describe("catalog evolution", () => {
+  const newSeries: AchievementSeriesDefinition = {
+    ...series("gif-creator"),
+    id: "brand-new-series",
+    thresholds: { bronze: 1, silver: 2, gold: 3 },
+  };
+
+  const withNewSeries = [...achievementCollection, newSeries];
+
+  function withGifThresholds(thresholds: AchievementSeriesDefinition["thresholds"]) {
+    return achievementCollection.map((entry) =>
+      entry.id === "gif-creator" && entry.kind === "series" ? { ...entry, thresholds } : entry,
+    );
+  }
+
+  it("leaves existing collectors unchanged when a new series is added", () => {
+    // Missing the new series' Bronze tier does not hold the collector back...
+    expect(
+      getEarnedAchievementIds(
+        { records: unlockedRecords(tierIdsOf("bronze")), statistics: null },
+        withNewSeries,
+      ),
+    ).toEqual(["bronze-collector"]);
+    // ...and unlocking it does not become a requirement.
+    expect(collectorRequirements["bronze-collector"]).not.toContain("brand-new-series-bronze");
+    expect(standalone("bronze-collector").condition).toEqual({
+      kind: "collection",
+      requires: tierIdsOf("bronze"),
+    });
+  });
+
+  it("evaluates a newly introduced series retroactively against historical statistics", () => {
+    const earned = getEarnedAchievementIds(
+      { records: emptyAchievementRecords, statistics: { ...emptyUsageStatistics, gifExports: 2 } },
+      withNewSeries,
+    );
+
+    expect(earned).toEqual(
+      expect.arrayContaining(["brand-new-series-bronze", "brand-new-series-silver"]),
+    );
+    expect(earned).not.toContain("brand-new-series-gold");
+  });
+
+  it("unlocks retroactively when a threshold is lowered", () => {
+    const sources = {
+      records: emptyAchievementRecords,
+      statistics: { ...emptyUsageStatistics, gifExports: 4 },
+    };
+
+    expect(getEarnedAchievementIds(sources)).not.toContain("gif-creator-silver");
+    expect(
+      getEarnedAchievementIds(sources, withGifThresholds({ bronze: 1, silver: 3, gold: 4 })),
+    ).toEqual(expect.arrayContaining(["gif-creator-silver", "gif-creator-gold"]));
+  });
+
+  it("never revokes unlocked achievements or changes their timestamps when a threshold is raised", () => {
+    const records = unlockedRecords(
+      ["gif-creator-bronze", "gif-creator-silver", "gif-creator-gold"],
+      7_000,
+    );
+
+    const snapshot = structuredClone(records);
+    const raised = withGifThresholds({ bronze: 100, silver: 500, gold: 1_000 });
+    const sources = { records, statistics: { ...emptyUsageStatistics, gifExports: 5 } };
+    const raisedSeries = raised.find(
+      (entry) => entry.id === "gif-creator",
+    ) as AchievementSeriesDefinition;
+
+    expect(
+      getEarnedAchievementIds(sources, raised).filter((id) => id.startsWith("gif-creator")),
+    ).toEqual([]);
+    expect(countUnlockedAchievements(records, raised)).toBe(3);
+    expect(getSeriesProgress(raisedSeries, sources).current).toMatchObject({
+      tier: "gold",
+      unlockedAt: 7_000,
+    });
+    expect(records).toEqual(snapshot);
+  });
+
+  it("keeps the history of retired achievements and still counts it toward collectors", () => {
+    const withoutStorageSaver = achievementCollection.filter(
+      (entry) => entry.id !== "storage-saver",
+    );
+
+    const records = unlockedRecords([...tierIdsOf("gold"), "retired-achievement"]);
+
+    // The retired series' unlocks remain in the records, so the collector is still earned.
+    expect(getEarnedAchievementIds({ records, statistics: null }, withoutStorageSaver)).toEqual([
+      "gold-collector",
+    ]);
+    // The active catalog forgets retired achievements for counting only.
+    expect(countUnlockedAchievements(records, withoutStorageSaver)).toBe(6);
+    expect(Object.keys(records.unlockedAchievements)).toEqual(
+      expect.arrayContaining(["retired-achievement", "storage-saver-gold"]),
+    );
+  });
+
+  it("keeps an unlock and its timestamp when the catalog is evaluated again", () => {
+    const records = unlockedRecords(["storage-saver-bronze"], 9_000);
+
+    expect(
+      getEarnedAchievementIds({
+        records,
+        statistics: { ...emptyUsageStatistics, outputBytes: 0, sourceBytes: 3 * GIGABYTE },
+      }),
+    ).not.toContain("storage-saver-bronze");
+    expect(records.unlockedAchievements["storage-saver-bronze"]).toBe(9_000);
   });
 });

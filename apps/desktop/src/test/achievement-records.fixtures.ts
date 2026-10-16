@@ -18,7 +18,7 @@ const seriesIds = [
   "time-well-spent",
 ];
 
-/** Every tier of every series and every standalone achievement, unlocked. */
+/** Every tier of every series and every standalone achievement, collectors included, unlocked. */
 export const completeAchievementRecords: AchievementRecords = {
   discoveredSplashMessageIds: [
     "chosen-frame",
@@ -31,6 +31,9 @@ export const completeAchievementRecords: AchievementRecords = {
     [
       ...seriesIds.flatMap((id) => [`${id}-bronze`, `${id}-silver`, `${id}-gold`]),
       "the-chosen-one",
+      "bronze-collector",
+      "silver-collector",
+      "gold-collector",
     ].map((id) => [id, unlockedAt]),
   ),
   viewedAtMillis: null,

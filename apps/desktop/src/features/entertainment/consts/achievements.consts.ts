@@ -1,13 +1,16 @@
 import type { TFunction } from "i18next";
 import {
+  Award,
   Crown,
   HardDrive,
   Headphones,
   Hourglass,
   ImagePlay,
+  Medal,
   PiggyBank,
   Rocket,
   Scissors,
+  Trophy,
 } from "lucide-react";
 
 import type {
@@ -22,6 +25,41 @@ const MINUTE_MILLIS = 60_000;
 const MEGABYTE = 1_024 ** 2;
 const GIGABYTE = 1_024 ** 3;
 
+/**
+ * The tiers of the seven original milestone series. A collector requires exactly these literal
+ * identifiers and nothing else, so series added later never change what a collector asks for.
+ * Never edit these lists after release; introduce a new collector for a larger set instead.
+ */
+const originalBronzeTierIds = [
+  "export-mastery-bronze",
+  "lossless-precision-bronze",
+  "gif-creator-bronze",
+  "audio-specialist-bronze",
+  "time-well-spent-bronze",
+  "data-cruncher-bronze",
+  "storage-saver-bronze",
+] as const;
+
+const originalSilverTierIds = [
+  "export-mastery-silver",
+  "lossless-precision-silver",
+  "gif-creator-silver",
+  "audio-specialist-silver",
+  "time-well-spent-silver",
+  "data-cruncher-silver",
+  "storage-saver-silver",
+] as const;
+
+const originalGoldTierIds = [
+  "export-mastery-gold",
+  "lossless-precision-gold",
+  "gif-creator-gold",
+  "audio-specialist-gold",
+  "time-well-spent-gold",
+  "data-cruncher-gold",
+  "storage-saver-gold",
+] as const;
+
 /** The category order of the collection. */
 const achievementCategories = [
   "export-milestones",
@@ -32,6 +70,20 @@ const achievementCategories = [
 /** Tiers in ascending order. */
 const achievementTiers = ["bronze", "silver", "gold"] as const satisfies readonly AchievementTier[];
 
+const legendarySplashMessageIds = splashMessagesLegendary.map((message) => message.id);
+
+/**
+ * The achievement catalog. Rules that keep it compatible with saved progress:
+ *
+ * - Identifiers are permanent: never rename, reuse, or repurpose one. Titles, descriptions, icons,
+ *   and styling may change freely because they are not persisted.
+ * - Thresholds may change without migration. Lowering one unlocks the achievement retroactively;
+ *   raising one never revokes an unlock, because unlocks are stored, not recomputed.
+ * - New achievements are evaluated against all stored history when they ship.
+ * - A removed achievement stays in the persisted records; only the active catalog forgets it.
+ * - Renaming a stored identifier needs an explicit migration in the native records decoder.
+ * - A collection condition lists its requirements explicitly and never grows with the registry.
+ */
 const achievementCollection = [
   {
     category: "export-milestones",
@@ -105,14 +157,43 @@ const achievementCollection = [
   },
   {
     category: "secret-discoveries",
+    condition: { ids: legendarySplashMessageIds, kind: "discovery" },
     description: (t: TFunction) => t("achievements.items.theChosenOne.description"),
     icon: Crown,
     id: "the-chosen-one",
     kind: "standalone",
-    metric: "legendarySplashMessages",
     secret: true,
-    target: splashMessagesLegendary.length,
     title: (t: TFunction) => t("achievements.items.theChosenOne.title"),
+  },
+  {
+    category: "secret-discoveries",
+    condition: { kind: "collection", requires: originalBronzeTierIds },
+    description: (t: TFunction) => t("achievements.items.bronzeCollector.description"),
+    icon: Medal,
+    id: "bronze-collector",
+    kind: "standalone",
+    secret: true,
+    title: (t: TFunction) => t("achievements.items.bronzeCollector.title"),
+  },
+  {
+    category: "secret-discoveries",
+    condition: { kind: "collection", requires: originalSilverTierIds },
+    description: (t: TFunction) => t("achievements.items.silverCollector.description"),
+    icon: Award,
+    id: "silver-collector",
+    kind: "standalone",
+    secret: true,
+    title: (t: TFunction) => t("achievements.items.silverCollector.title"),
+  },
+  {
+    category: "secret-discoveries",
+    condition: { kind: "collection", requires: originalGoldTierIds },
+    description: (t: TFunction) => t("achievements.items.goldCollector.description"),
+    icon: Trophy,
+    id: "gold-collector",
+    kind: "standalone",
+    secret: true,
+    title: (t: TFunction) => t("achievements.items.goldCollector.title"),
   },
 ] as const satisfies readonly AchievementCollectionEntry[];
 

@@ -10,6 +10,7 @@ import { selectUsageStatistics } from "@/app/store/slices/usage-statistics-slice
 import { cn } from "@/lib/class-names.utils";
 import { formatDateOnly } from "@/lib/date-time.utils";
 
+import { achievementSecretClassNames } from "../../../consts/achievement-tier-styles.consts";
 import {
   getAchievementUnlockedAt,
   getStandaloneAchievementProgress,
@@ -37,17 +38,26 @@ function AchievementStandaloneItem({
   const isNew = isAchievementNew(definition.id, records, viewedAt);
   // A locked secret reveals nothing about itself, not even how close it is.
   const concealed = definition.secret === true && !unlocked;
-  const progress =
-    unlocked || concealed || definition.target <= 1
+  // A single-step achievement has no progress worth showing.
+  const measured =
+    unlocked || concealed
       ? null
       : getStandaloneAchievementProgress(definition, { records, statistics });
+
+  const progress = measured && measured.target > 1 ? measured : null;
+  const revealedSecret = unlocked && definition.secret === true;
 
   const Icon = concealed ? LockKeyhole : definition.icon;
   const title = concealed ? t("achievements.secret.title") : definition.title(t);
 
   return (
     <Item
-      className={cn("items-start", !unlocked && "bg-muted/40")}
+      className={cn(
+        "items-start",
+        !unlocked && "bg-muted/40",
+        revealedSecret && achievementSecretClassNames.card,
+      )}
+      data-secret={definition.secret ? "true" : undefined}
       data-state={unlocked ? "unlocked" : "locked"}
       role="listitem"
       size="sm"
@@ -58,6 +68,7 @@ function AchievementStandaloneItem({
         className={cn(
           "relative size-11 rounded-lg [&_svg:not([class*='size-'])]:size-5",
           unlocked ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+          revealedSecret && cn("ring-1", achievementSecretClassNames.medallion),
         )}
         variant="icon"
       >
@@ -88,7 +99,7 @@ function AchievementStandaloneItem({
           </p>
         ) : null}
         {progress ? (
-          <AchievementProgress metric={definition.metric} progress={progress} title={title} />
+          <AchievementProgress progress={progress} title={title} unit={progress.unit} />
         ) : null}
       </ItemContent>
     </Item>
