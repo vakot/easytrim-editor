@@ -19,7 +19,7 @@ function PreviewSplash({
     <button
       aria-label={`${message.text} Click for another message`}
       className={cn(
-        "absolute bottom-4 left-full -translate-1/2 -rotate-12 animate-splash-bounce font-semibold whitespace-nowrap text-primary motion-reduce:animate-none",
+        "absolute bottom-4 left-full w-md -translate-1/2 -rotate-12 animate-splash-bounce font-semibold whitespace-nowrap text-primary text-shadow-2xs motion-reduce:animate-none",
         message.className,
         className,
       )}
