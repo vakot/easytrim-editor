@@ -29,21 +29,33 @@ pub struct KeptPlaybackChain {
     pub loudness_measurements: Vec<FilterMeasurement>,
 }
 
+/// How a playback chunk relates to the processing that is playing.
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PlaybackChunkRole {
+    /// The chunk auditions a draft chain; its audio stays temporary until the chain is used as
+    /// committed playback audio or the preview is released.
+    #[serde(default)]
+    pub preview: bool,
+    /// The chunk renders processing that will replace the audible processing. It does not
+    /// supersede the audible processing, which keeps rendering until playback switches.
+    #[serde(default)]
+    pub replacement: bool,
+}
+
 /// Serves one playback chunk of processed audio as interleaved little-endian f32 stereo at 48 kHz.
 ///
 /// This is the compatibility boundary between the WebAudio playback runtime and the processed
 /// audio renderer: playback renders the whole source timeline as one continuous range, so chunks
 /// requested in order continue one render session and stateful filters never restart at a chunk
 /// boundary. Float samples keep peaks above full scale so Track Volume can still attenuate them.
-/// A `preview` chunk auditions a draft chain; its audio stays temporary until the chain is used as
-/// committed playback audio or the preview is released.
 pub fn decode_playback_chunk(
     engine: &AudioProcessingEngine,
     source: &ActiveSource,
     track: &AudioChainSelection,
     start_micros: u64,
     duration_micros: u64,
-    preview: bool,
+    role: PlaybackChunkRole,
     operation_cancellation: &AtomicBool,
 ) -> Result<Vec<u8>, AppError> {
     let media = playback_media(source)?;
@@ -75,11 +87,12 @@ pub fn decode_playback_chunk(
             start,
             frames: end - start,
             channels: PLAYBACK_PCM_CHANNELS,
-            purpose: if preview {
+            purpose: if role.preview {
                 RenderPurpose::PlaybackPreview
             } else {
                 RenderPurpose::Playback
             },
+            replacement: role.replacement,
         },
         &|| operation_cancellation.load(Ordering::Acquire),
     )?;

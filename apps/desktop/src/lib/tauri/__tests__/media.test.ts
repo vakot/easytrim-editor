@@ -149,7 +149,7 @@ describe("media IPC adapter", () => {
       "decode_audio_playback_chunk",
       expect.objectContaining({
         durationMicros: 2_000_000,
-        preview: false,
+        role: { preview: false, replacement: false },
         sourcePath: "C:/Media/clip.mp4",
         startMicros: 1_000_000,
         track,
@@ -159,10 +159,11 @@ describe("media IPC adapter", () => {
     mocks.invoke.mockResolvedValueOnce(new Float32Array([0, 0]).buffer);
     await decodeAudioPlaybackChunk("C:/Media/clip.mp4", track, 0, 2_000_000, controller.signal, {
       preview: true,
+      replacement: true,
     });
     expect(mocks.invoke).toHaveBeenLastCalledWith(
       "decode_audio_playback_chunk",
-      expect.objectContaining({ preview: true }),
+      expect.objectContaining({ role: { preview: true, replacement: true } }),
     );
   });
 

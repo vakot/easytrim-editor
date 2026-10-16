@@ -2,7 +2,9 @@ use crate::{
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
     error::{AppError, AppErrorMessageId},
     media::{
-        audio::{KeptPlaybackChain, decode_playback_chunk, release_playback_preview},
+        audio::{
+            KeptPlaybackChain, PlaybackChunkRole, decode_playback_chunk, release_playback_preview,
+        },
         audio_filters::{
             compiler::compile_chain,
             model::{AudioChainSelection, AudioFilter, FilterMeasurement},
@@ -254,7 +256,7 @@ pub async fn decode_audio_playback_chunk(
     track: AudioChainSelection,
     start_micros: u64,
     duration_micros: u64,
-    preview: bool,
+    role: Option<PlaybackChunkRole>,
     state: State<'_, AppState>,
 ) -> Result<Response, AppError> {
     let source = state.resolve_source_by_path(&source_path)?;
@@ -267,7 +269,7 @@ pub async fn decode_audio_playback_chunk(
             &track,
             start_micros,
             duration_micros,
-            preview,
+            role.unwrap_or_default(),
             &cancellation,
         )
     })

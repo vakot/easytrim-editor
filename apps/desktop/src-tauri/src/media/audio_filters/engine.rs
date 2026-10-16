@@ -98,15 +98,20 @@ pub struct RenderRequest<'a> {
     pub frames: u64,
     pub channels: u16,
     pub purpose: RenderPurpose,
+    /// Renders processing that will replace the scope's audible processing. It supersedes only
+    /// an earlier replacement, so the audible processing keeps rendering until the switch.
+    pub replacement: bool,
 }
 
 /// The demand-driven renderer for processed track audio.
 ///
 /// It serves requested frame ranges from the disk cache and renders only the missing parts,
 /// through persistent FFmpeg sessions that keep stateful filters continuous. Each consumer of a
-/// source stream is one scope: a request for a different chain supersedes the scope's previous
-/// one, terminating its sessions and rejecting its results, so stale revisions never reach the
-/// cache or the caller. Scopes share cached samples but never sessions or revisions.
+/// source stream is one scope with an audible revision and, while processing changes, one
+/// replacement revision. A request for a different chain supersedes the scope's previous
+/// revision of its kind, terminating its sessions and rejecting its results, so stale revisions
+/// never reach the cache or the caller. Requesting the replacement as audible processing completes
+/// the switch. Scopes share cached samples but never sessions or revisions.
 pub struct AudioProcessingEngine {
     config: EngineConfig,
     state: Mutex<EngineState>,
@@ -126,11 +131,73 @@ struct RenderScope {
     lane: RenderLane,
 }
 
+#[derive(Default)]
 struct ScopeState {
+    /// The processing being played, or rendered for a waveform.
+    audible: Option<Revision>,
+    /// Processing rendering to replace the audible processing.
+    replacement: Option<Revision>,
+    next_generation: u64,
+}
+
+struct Revision {
     key: RenderKey,
     generation: u64,
-    /// Whether the current revision auditions a draft chain.
+    /// Whether the revision auditions a draft chain.
     preview: bool,
+}
+
+impl ScopeState {
+    fn revisions(&self) -> impl Iterator<Item = &Revision> {
+        self.audible.iter().chain(&self.replacement)
+    }
+
+    fn revisions_mut(&mut self) -> impl Iterator<Item = &mut Revision> {
+        self.audible.iter_mut().chain(&mut self.replacement)
+    }
+
+    fn live(&self, generation: u64) -> Option<&Revision> {
+        self.revisions()
+            .find(|revision| revision.generation == generation)
+    }
+
+    fn revision(&mut self, key: &RenderKey, preview: bool) -> Revision {
+        self.next_generation += 1;
+        Revision {
+            key: key.clone(),
+            generation: self.next_generation,
+            preview,
+        }
+    }
+
+    /// Registers a request's key and returns the generation of the revision it belongs to.
+    fn begin(&mut self, key: &RenderKey, preview: bool, replacement: bool) -> u64 {
+        let existing = self.revisions_mut().find(|revision| revision.key == *key);
+        if let Some(existing) = existing {
+            existing.preview &= preview;
+            let generation = existing.generation;
+            // Audible use of the replacement means playback switched to it.
+            if !replacement
+                && self
+                    .replacement
+                    .as_ref()
+                    .is_some_and(|revision| revision.generation == generation)
+            {
+                self.audible = self.replacement.take();
+            }
+            return generation;
+        }
+        let revision = self.revision(key, preview);
+        let generation = revision.generation;
+        if replacement {
+            self.replacement = Some(revision);
+        } else {
+            // New audible processing, such as a start with other processing, replaces both.
+            self.audible = Some(revision);
+            self.replacement = None;
+        }
+        generation
+    }
 }
 
 /// Everything a request needs to render and commit gaps: what to render and which revision of
@@ -244,7 +311,12 @@ impl AudioProcessingEngine {
             stream_index: key.stream_index,
             lane: request.purpose.lane(),
         };
-        let generation = self.begin(scope, &key, request.purpose.is_preview())?;
+        let generation = self.begin(
+            scope,
+            &key,
+            request.purpose.is_preview(),
+            request.replacement,
+        )?;
         let range_bytes = (request.range.end - request.range.start)
             * u64::from(request.channels)
             * size_of::<f32>() as u64;
@@ -361,17 +433,22 @@ impl AudioProcessingEngine {
             stream_index,
             lane: RenderLane::Playback,
         };
-        if let Some(current) = state.scopes.get_mut(&playback)
-            && current.preview
-        {
-            current.generation += 1;
+        if let Some(current) = state.scopes.get_mut(&playback) {
+            current.audible.take_if(|revision| revision.preview);
+            current.replacement.take_if(|revision| revision.preview);
         }
     }
 
-    /// Registers the request's key as the scope's current revision. A different key supersedes
-    /// the scope's previous revision and stops its sessions; other scopes are unaffected. Committed
-    /// use of a key promotes its preview sessions and audio.
-    fn begin(&self, scope: RenderScope, key: &RenderKey, preview: bool) -> Result<u64, AppError> {
+    /// Registers the request's key in its scope. A different key supersedes the scope's previous
+    /// revision of the same kind, audible or replacement, and stops its sessions; other scopes are
+    /// unaffected. Committed use of a key promotes its preview sessions and audio.
+    fn begin(
+        &self,
+        scope: RenderScope,
+        key: &RenderKey,
+        preview: bool,
+        replacement: bool,
+    ) -> Result<u64, AppError> {
         let mut state = self.lock()?;
         let idle_timeout = self.config.session_idle_timeout;
         state.sessions.retain(|slot| {
@@ -384,31 +461,14 @@ impl AudioProcessingEngine {
         if !preview {
             promote(&mut state, key);
         }
-        let generation = match state.scopes.get_mut(&scope) {
-            Some(current) if current.key == *key => {
-                current.preview &= preview;
-                current.generation
-            }
-            Some(current) => {
-                current.key = key.clone();
-                current.preview = preview;
-                current.generation += 1;
-                current.generation
-            }
-            None => {
-                state.scopes.insert(
-                    scope,
-                    ScopeState {
-                        key: key.clone(),
-                        generation: 0,
-                        preview,
-                    },
-                );
-                0
-            }
-        };
+        let current = state.scopes.entry(scope).or_default();
+        let generation = current.begin(key, preview, replacement);
+        let live = current
+            .revisions()
+            .map(|revision| revision.key.clone())
+            .collect::<Vec<_>>();
         state.sessions.retain(|slot| {
-            let superseded = slot.scope == scope && slot.key != *key;
+            let superseded = slot.scope == scope && !live.contains(&slot.key);
             if superseded {
                 slot.terminate();
             }
@@ -420,7 +480,7 @@ impl AudioProcessingEngine {
     fn ensure_current(&self, scope: RenderScope, generation: u64) -> Result<(), AppError> {
         let state = self.lock()?;
         match state.scopes.get(&scope) {
-            Some(current) if current.generation == generation => Ok(()),
+            Some(current) if current.live(generation).is_some() => Ok(()),
             _ => Err(superseded()),
         }
     }
@@ -560,10 +620,11 @@ impl AudioProcessingEngine {
             state.sessions.remove(oldest).terminate();
         }
         let cursor = Arc::new(AtomicU64::new(seek_frame));
-        let preview = state
-            .scopes
-            .get(scope)
-            .is_some_and(|current| current.key == *key && current.preview);
+        let preview = state.scopes.get(scope).is_some_and(|current| {
+            current
+                .revisions()
+                .any(|revision| revision.key == *key && revision.preview)
+        });
         let slot = SessionSlot {
             key: key.clone(),
             scope: *scope,
@@ -594,8 +655,8 @@ impl AudioProcessingEngine {
         let Some(preview) = state
             .scopes
             .get(&target.scope)
-            .filter(|current| current.generation == target.generation)
-            .map(|current| current.preview)
+            .and_then(|current| current.live(target.generation))
+            .map(|revision| revision.preview)
         else {
             let _ = std::fs::remove_file(&path);
             return Err(superseded());
@@ -667,12 +728,13 @@ fn promote(state: &mut EngineState, key: &RenderKey) {
     for slot in state.sessions.iter_mut().filter(|slot| slot.key == *key) {
         slot.preview = false;
     }
-    for current in state
+    for revision in state
         .scopes
         .values_mut()
-        .filter(|current| current.key == *key)
+        .flat_map(ScopeState::revisions_mut)
+        .filter(|revision| revision.key == *key)
     {
-        current.preview = false;
+        revision.preview = false;
     }
 }
 
@@ -816,6 +878,7 @@ mod tests {
                 frames: end - start,
                 channels: 2,
                 purpose,
+                replacement: false,
             },
             &|| false,
         )
@@ -940,6 +1003,7 @@ mod tests {
                     frames: 40_000,
                     channels: 2,
                     purpose: RenderPurpose::Waveform,
+                    replacement: false,
                 },
                 &|| false,
             )
@@ -977,6 +1041,7 @@ mod tests {
                             frames: 96_000,
                             channels: 2,
                             purpose: RenderPurpose::Waveform,
+                            replacement: false,
                         },
                         &|| false,
                     )
@@ -1090,6 +1155,7 @@ mod tests {
                         frames: 384_000,
                         channels: 2,
                         purpose: RenderPurpose::Playback,
+                        replacement: false,
                     },
                     &|| {
                         // Preflight cancellation can run before a revision is registered. Pause
@@ -1119,6 +1185,119 @@ mod tests {
         );
     }
 
+    type RenderResult = Result<(Vec<f32>, PcmQuality), AppError>;
+
+    /// Starts a playback render on another thread and holds it once its session renders.
+    fn paused_render(
+        engine: &Arc<AudioProcessingEngine>,
+        source: &ActiveSource,
+        filters: Vec<AudioFilter>,
+        replacement: bool,
+    ) -> (thread::JoinHandle<RenderResult>, mpsc::Sender<()>) {
+        let (started_sender, started) = mpsc::channel();
+        let (resume, resumed) = mpsc::channel::<()>();
+        let in_flight = {
+            let engine = Arc::clone(engine);
+            let source = source.clone();
+            thread::spawn(move || {
+                let chain = compile_chain(&filters, &[]).unwrap();
+                let graph = chain.canonical_graph();
+                let waited = AtomicBool::new(false);
+                engine.render(
+                    &RenderRequest {
+                        source: &source,
+                        stream_index: 0,
+                        chain: &chain,
+                        range: RANGE,
+                        start: 0,
+                        frames: 384_000,
+                        channels: 2,
+                        purpose: RenderPurpose::Playback,
+                        replacement,
+                    },
+                    &|| {
+                        if engine
+                            .lock()
+                            .unwrap()
+                            .sessions
+                            .iter()
+                            .any(|slot| slot.key.graph == graph)
+                            && !waited.swap(true, Ordering::AcqRel)
+                        {
+                            started_sender.send(()).unwrap();
+                            let _ = resumed.recv();
+                        }
+                        false
+                    },
+                )
+            })
+        };
+        started.recv().unwrap();
+        (in_flight, resume)
+    }
+
+    fn render_replacement(
+        engine: &AudioProcessingEngine,
+        source: &ActiveSource,
+        chain: &CompiledChain,
+        start: u64,
+        end: u64,
+    ) -> RenderResult {
+        engine.render(
+            &RenderRequest {
+                source,
+                stream_index: 0,
+                chain,
+                range: RANGE,
+                start,
+                frames: end - start,
+                channels: 2,
+                purpose: RenderPurpose::Playback,
+                replacement: true,
+            },
+            &|| false,
+        )
+    }
+
+    #[test]
+    fn audible_processing_keeps_rendering_while_its_replacement_renders() {
+        let (_fixture, source) = program();
+        let engine = Arc::new(AudioProcessingEngine::new(EngineConfig::default()));
+        let audible = vec![gain("g", -3.0)];
+
+        let (in_flight, resume) = paused_render(&engine, &source, audible.clone(), false);
+        let replacement = compile_chain(&[gain("g", 6.0)], &[]).unwrap();
+        render_replacement(&engine, &source, &replacement, 96_000, 144_000).unwrap();
+        resume.send(()).unwrap();
+        assert!(
+            in_flight.join().unwrap().is_ok(),
+            "a replacement must not stop the audible processing"
+        );
+
+        // A newer replacement supersedes only the earlier replacement.
+        let (stale, resume) = paused_render(&engine, &source, vec![gain("g", 9.0)], true);
+        let newest = compile_chain(&[gain("g", 12.0)], &[]).unwrap();
+        render_replacement(&engine, &source, &newest, 96_000, 144_000).unwrap();
+        resume.send(()).unwrap();
+        assert_eq!(
+            stale.join().unwrap().unwrap_err().message_id,
+            AppErrorMessageId::MediaAudioProcessingChangedBeforeAudioWasReady
+        );
+        let audible = compile_chain(&audible, &[]).unwrap();
+        render(&engine, &source, &audible, 144_000, 192_000).unwrap();
+
+        // Playing the replacement completes the switch and releases the previous processing.
+        render(&engine, &source, &newest, 192_000, 240_000).unwrap();
+        assert!(
+            engine
+                .lock()
+                .unwrap()
+                .sessions
+                .iter()
+                .all(|slot| slot.key.graph == newest.canonical_graph())
+        );
+    }
+
     #[test]
     fn playback_of_another_chain_does_not_supersede_a_waveform_pass() {
         let (_fixture, source) = program();
@@ -1145,6 +1324,7 @@ mod tests {
                         frames: 384_000,
                         channels: 2,
                         purpose: RenderPurpose::Waveform,
+                        replacement: false,
                     },
                     &|| {
                         if !engine.lock().unwrap().sessions.is_empty()
@@ -1245,6 +1425,7 @@ mod tests {
                     frames: 384_000,
                     channels: 2,
                     purpose: RenderPurpose::Playback,
+                    replacement: false,
                 },
                 &|| true,
             )
@@ -1312,6 +1493,7 @@ mod tests {
                         frames,
                         channels: 2,
                         purpose: RenderPurpose::Playback,
+                        replacement: false,
                     },
                     &|| false,
                 )

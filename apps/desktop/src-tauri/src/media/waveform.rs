@@ -77,6 +77,7 @@ pub fn generate_waveforms(
                         frames: count,
                         channels: 2,
                         purpose: RenderPurpose::Waveform,
+                        replacement: false,
                     },
                     &|| waveform_cancelled(source),
                 )?;
