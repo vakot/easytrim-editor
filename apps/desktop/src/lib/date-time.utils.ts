@@ -72,4 +72,4 @@ function formatDateOnly(ms: number, locale: string, unknownLabel: string): strin
     : new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
 }
 
-export { formatDateTime, formatRelativeTime, getRelativeTimeBucketKey };
+export { formatDateOnly, formatDateTime, formatRelativeTime, getRelativeTimeBucketKey };

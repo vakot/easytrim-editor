@@ -4,6 +4,7 @@ import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-comman
 import { isShortcutEvent } from "@/app/commands/core/application-command.utils";
 import type { AppDialogId, AppDialogOpenOptions } from "@/app/contexts/app-dialogs-context";
 import { AppDialogsContext } from "@/app/contexts/app-dialogs-context";
+import { AppAchievementsDialog } from "@/app/dialogs/AppAchievementsDialog";
 import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
 import { AppChaptersDialog } from "@/app/dialogs/AppChaptersDialog";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
@@ -13,6 +14,7 @@ import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked, isEditableTarget } from "@/lib/hotkeys.utils";
 
 const dialogPreloaders: Record<AppDialogId, () => Promise<unknown>> = {
+  achievements: AppAchievementsDialog.preload,
   changelog: AppChangelogDialog.preload,
   chapters: AppChaptersDialog.preload,
   "command-palette": AppCommandPaletteDialog.preload,

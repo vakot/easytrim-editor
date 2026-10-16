@@ -46,6 +46,14 @@ function MenuBarHelpContent() {
             <ApplicationCommandLabel />
           </MenubarItem>
         </ApplicationCommandMenuItem>
+        <ApplicationCommandMenuItem asChild commandId="open-achievements">
+          <MenubarItem inset>
+            <MenubarIcon>
+              <ApplicationCommandIcon />
+            </MenubarIcon>
+            <ApplicationCommandLabel />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
         <ApplicationCommandMenuItem asChild commandId="check-for-updates">
           <MenubarItem inset keepOpen>
             <MenubarIcon>

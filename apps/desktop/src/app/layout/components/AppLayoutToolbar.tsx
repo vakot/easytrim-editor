@@ -21,6 +21,7 @@ function AppLayoutToolbar() {
       <Separator className="bg-muted" />
 
       <section className="grid items-center gap-1.5">
+        <AppLayoutTool commandId="open-achievements" />
         <AppLayoutTool commandId="open-statistics" />
         <AppLayoutTool commandId="open-settings" />
       </section>

@@ -1,5 +1,26 @@
 export const en = {
   achievements: {
+    categories: {
+      exportMilestones: "Export Milestones",
+      exportSpecialization: "Export Specialization",
+      processingMilestones: "Processing Milestones",
+      secretDiscoveries: "Secret Discoveries",
+    },
+    description: "Milestones and discoveries collected across all sessions",
+    empty: {
+      locked: "Every achievement is unlocked",
+      unlocked: "No achievements unlocked yet",
+    },
+    filters: {
+      all: "All",
+      label: "Filter achievements",
+      locked: "Locked",
+      unlocked: "Unlocked",
+    },
+    itemProgress: {
+      label: "{{title}} progress",
+      value: "{{current}} of {{target}}",
+    },
     items: {
       audioSpecialist: {
         description: "Complete 10 audio-only exports",
@@ -59,6 +80,22 @@ export const en = {
       unlockedMany_one: "{{count}} achievement unlocked",
       unlockedMany_other: "{{count}} achievements unlocked",
     },
+    open: "Achievements",
+    privacy: "Achievements are tracked locally on this device and are never shared or sent anywhere",
+    progressLabel: "Collection progress",
+    secret: {
+      description: "A secret achievement. Keep exploring to reveal it",
+      title: "???",
+    },
+    status: {
+      locked: "Locked",
+      unlocked: "Unlocked",
+    },
+    summary: "{{unlocked}} of {{total}} unlocked",
+    title: "Achievements",
+    unavailable: "Achievements could not be loaded",
+    unknownDate: "Unknown date",
+    unlockedOn: "Unlocked {{date}}",
   },
   activity: {
     description: "Review recent imports, exports, and workspace changes across sessions",
