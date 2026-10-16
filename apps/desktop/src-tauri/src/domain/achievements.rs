@@ -5,9 +5,28 @@ use serde_json::Value;
 
 /// Schema version written to the achievements document. Bump it together with a migration arm in
 /// [`decode_achievement_records`] whenever the stored shape changes incompatibly.
-pub const ACHIEVEMENTS_VERSION: u64 = 1;
+pub const ACHIEVEMENTS_VERSION: u64 = 2;
 
 const MAX_IDENTIFIER_LENGTH: usize = 64;
+
+/// Version 1 stored standalone milestones; version 2 groups them into Bronze, Silver, and Gold tiers
+/// of milestone series. Each version 1 achievement equivalent to a tier keeps its unlock time under
+/// the tier's identifier. Retired achievements without an equivalent tier are dropped: progress
+/// comes from usage statistics, so the tiers they imply unlock again when next evaluated.
+const VERSION_1_ACHIEVEMENT_MIGRATIONS: &[(&str, Option<&str>)] = &[
+    ("first-export", Some("export-mastery-bronze")),
+    ("getting-started", Some("export-mastery-silver")),
+    ("export-veteran", Some("export-mastery-gold")),
+    ("export-legend", None),
+    ("first-lossless-cut", Some("lossless-precision-bronze")),
+    ("lossless-legend", None),
+    ("gif-maker", Some("gif-creator-bronze")),
+    ("audio-specialist", None),
+    ("one-hour-later", Some("time-well-spent-gold")),
+    ("working-overtime", None),
+    ("data-cruncher", Some("data-cruncher-gold")),
+    ("storage-saver", Some("storage-saver-gold")),
+];
 
 /// Upper bound for each recorded collection, so a misbehaving client cannot grow the document
 /// without limit. It is far above the size of the achievement and splash message catalogs.
@@ -83,6 +102,27 @@ impl AchievementRecords {
             .insert(message.as_str().to_owned())
     }
 
+    /// Renames version 1 achievement identifiers to their version 2 equivalents.
+    fn migrate_from_version_1(mut self) -> Self {
+        let unlocked = std::mem::take(&mut self.unlocked_achievements);
+        for (id, unlock) in unlocked {
+            let migrated = VERSION_1_ACHIEVEMENT_MIGRATIONS
+                .iter()
+                .find(|(previous, _)| *previous == id)
+                .map_or(Some(id.as_str()), |(_, current)| *current);
+            if let Some(migrated) = migrated {
+                self.unlocked_achievements
+                    .entry(migrated.to_owned())
+                    .and_modify(|existing| {
+                        existing.unlocked_at_millis =
+                            existing.unlocked_at_millis.min(unlock.unlocked_at_millis);
+                    })
+                    .or_insert(unlock);
+            }
+        }
+        self
+    }
+
     fn is_valid(&self) -> bool {
         self.unlocked_achievements.len() <= MAX_RECORDED_ENTRIES
             && self.discovered_splash_message_ids.len() <= MAX_RECORDED_ENTRIES
@@ -131,14 +171,19 @@ pub fn decode_achievement_records(
         .get("version")
         .and_then(Value::as_u64)
         .ok_or(AchievementsDecodeError::Invalid)?;
-    match version {
-        ACHIEVEMENTS_VERSION => serde_json::from_value::<StoredAchievementRecords>(document)
+    let records = match version {
+        1 | ACHIEVEMENTS_VERSION => serde_json::from_value::<StoredAchievementRecords>(document)
             .map(|stored| stored.records)
             .ok()
             .filter(AchievementRecords::is_valid)
-            .ok_or(AchievementsDecodeError::Invalid),
-        other => Err(AchievementsDecodeError::UnsupportedVersion(other)),
-    }
+            .ok_or(AchievementsDecodeError::Invalid)?,
+        other => return Err(AchievementsDecodeError::UnsupportedVersion(other)),
+    };
+    Ok(if version == 1 {
+        records.migrate_from_version_1()
+    } else {
+        records
+    })
 }
 
 #[cfg(test)]
@@ -247,9 +292,68 @@ mod tests {
     }
 
     #[test]
+    fn migrates_version_1_milestones_to_their_equivalent_tiers() {
+        let records = decode_achievement_records(
+            br#"{
+                "version": 1,
+                "unlockedAchievements": {
+                    "first-export": { "unlockedAtMillis": 100 },
+                    "getting-started": { "unlockedAtMillis": 200 },
+                    "export-veteran": { "unlockedAtMillis": 300 },
+                    "export-legend": { "unlockedAtMillis": 400 },
+                    "first-lossless-cut": { "unlockedAtMillis": 110 },
+                    "lossless-legend": { "unlockedAtMillis": 410 },
+                    "gif-maker": { "unlockedAtMillis": 120 },
+                    "audio-specialist": { "unlockedAtMillis": 420 },
+                    "one-hour-later": { "unlockedAtMillis": 130 },
+                    "working-overtime": { "unlockedAtMillis": 430 },
+                    "data-cruncher": { "unlockedAtMillis": 140 },
+                    "storage-saver": { "unlockedAtMillis": 150 },
+                    "the-chosen-one": { "unlockedAtMillis": 160 }
+                },
+                "discoveredSplashMessageIds": ["rainbow-mode"]
+            }"#,
+        )
+        .expect("version 1 document migrates");
+
+        let unlocked = records
+            .unlocked_achievements
+            .iter()
+            .map(|(id, unlock)| (id.as_str(), unlock.unlocked_at_millis))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            unlocked,
+            [
+                ("data-cruncher-gold", 140),
+                ("export-mastery-bronze", 100),
+                ("export-mastery-gold", 300),
+                ("export-mastery-silver", 200),
+                ("gif-creator-bronze", 120),
+                ("lossless-precision-bronze", 110),
+                ("storage-saver-gold", 150),
+                ("the-chosen-one", 160),
+                ("time-well-spent-gold", 130),
+            ]
+        );
+        assert_eq!(
+            records.discovered_splash_message_ids,
+            BTreeSet::from(["rainbow-mode".to_owned()])
+        );
+    }
+
+    #[test]
+    fn current_version_identifiers_are_not_migrated() {
+        let records = decode_achievement_records(
+            br#"{"version":2,"unlockedAchievements":{"storage-saver":{"unlockedAtMillis":1}}}"#,
+        )
+        .expect("current document decodes");
+        assert!(records.unlocked_achievements.contains_key("storage-saver"));
+    }
+
+    #[test]
     fn missing_fields_of_a_known_version_default_to_empty() {
         let records = decode_achievement_records(
-            br#"{"version":1,"discoveredSplashMessageIds":["rainbow-mode"]}"#,
+            br#"{"version":2,"discoveredSplashMessageIds":["rainbow-mode"]}"#,
         )
         .expect("partial document decodes");
         assert!(records.unlocked_achievements.is_empty());
@@ -265,8 +369,8 @@ mod tests {
             &b"not json"[..],
             br#"{"unlockedAchievements":{}}"#,
             br#"{"version":1,"unlockedAchievements":{"first-export":{"unlockedAtMillis":"soon"}}}"#,
-            br#"{"version":1,"unlockedAchievements":{"../escape":{"unlockedAtMillis":1}}}"#,
-            br#"{"version":1,"discoveredSplashMessageIds":["Not Valid"]}"#,
+            br#"{"version":2,"unlockedAchievements":{"../escape":{"unlockedAtMillis":1}}}"#,
+            br#"{"version":2,"discoveredSplashMessageIds":["Not Valid"]}"#,
         ] {
             assert_eq!(
                 decode_achievement_records(invalid),
