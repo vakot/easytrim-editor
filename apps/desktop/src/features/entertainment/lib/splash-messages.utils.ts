@@ -22,31 +22,28 @@ const splashMessagesByRarity: Record<SplashRarity, SplashMessageDefinition[]> = 
 
 const splashMessages = Object.values(splashMessagesByRarity).flat();
 
-const splashMessageHistory: string[] = [];
-const splashMessageHistoryLimit = 3;
+let lastSplashMessageId: string | null = null;
 
 function chooseSplashMessage(): SplashMessageDefinition {
-  const rarities = (Object.keys(splashRarityWeights) as SplashRarity[]).filter((rarity) =>
-    splashMessagesByRarity[rarity].some((message) => !splashMessageHistory.includes(message.id)),
-  );
+  const availableByRarity = Object.entries(splashMessagesByRarity).map(([rarity, messages]) => ({
+    rarity: rarity as SplashRarity,
+    messages: messages.filter((message) => message.id !== lastSplashMessageId),
+  }));
+
+  const availableRarities = availableByRarity.filter(({ messages }) => messages.length > 0);
 
   let selection =
-    Math.random() * rarities.reduce((total, rarity) => total + splashRarityWeights[rarity], 0);
+    Math.random() *
+    availableRarities.reduce((total, { rarity }) => total + splashRarityWeights[rarity], 0);
 
-  const rarity =
-    rarities.find((rarity) => (selection -= splashRarityWeights[rarity]) < 0) ?? rarities[0]!;
+  const selectedRarity =
+    availableRarities.find(({ rarity }) => (selection -= splashRarityWeights[rarity]) < 0) ??
+    availableRarities[0]!;
 
-  const messages = splashMessagesByRarity[rarity].filter(
-    (message) => !splashMessageHistory.includes(message.id),
-  );
+  const message =
+    selectedRarity.messages[Math.floor(Math.random() * selectedRarity.messages.length)]!;
 
-  const message = messages[Math.floor(Math.random() * messages.length)]!;
-
-  splashMessageHistory.push(message.id);
-
-  if (splashMessageHistory.length > splashMessageHistoryLimit) {
-    splashMessageHistory.shift();
-  }
+  lastSplashMessageId = message.id;
 
   return message;
 }
