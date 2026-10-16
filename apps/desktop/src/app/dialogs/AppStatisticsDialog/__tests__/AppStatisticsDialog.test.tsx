@@ -89,6 +89,11 @@ describe("AppStatisticsDialog", () => {
     expect(within(metric(dialog, "Storage Saved")).getByText("0 B")).toBeVisible();
     expect(within(metric(dialog, "First Export")).getByText("Not yet")).toBeVisible();
     expect(within(metric(dialog, "Last Export")).getByText("Not yet")).toBeVisible();
+    expect(
+      within(dialog).getByText(
+        "Statistics are generated locally on this device and are never shared or sent anywhere",
+      ),
+    ).toBeVisible();
   });
 
   it("presents recorded totals, including storage growth", async () => {

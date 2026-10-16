@@ -10,6 +10,7 @@ import {
   Info,
   PiggyBank,
   Scissors,
+  ShieldCheck,
   Timer,
 } from "lucide-react";
 import { type ReactNode, useEffect, useId } from "react";
@@ -98,7 +99,11 @@ function AppStatisticsDialogContent({ __scopeDialog }: { __scopeDialog?: DialogS
         )}
       </ScrollArea>
 
-      <DialogFooter __scopeDialog={__scopeDialog}>
+      <DialogFooter __scopeDialog={__scopeDialog} className="items-center sm:justify-between">
+        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+          <ShieldCheck aria-hidden="true" className="size-4 shrink-0" />
+          {t("statistics.privacy")}
+        </p>
         <DialogClose __scopeDialog={__scopeDialog} asChild>
           <Button type="button">{t("common.actions.close")}</Button>
         </DialogClose>

@@ -1129,7 +1129,7 @@ export const en = {
     title: "Imported Sources",
   },
   statistics: {
-    description: "Your export activity across sessions, kept only on this device",
+    description: "Your export activity across all sessions",
     empty: "Statistics begin accumulating after your first successful export",
     metrics: {
       audioExports: {
@@ -1179,6 +1179,7 @@ export const en = {
     },
     notYet: "Not yet",
     open: "Statistics",
+    privacy: "Statistics are generated locally on this device and are never shared or sent anywhere",
     sections: {
       activity: "Activity",
       breakdown: "Export Breakdown",
