@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - Added editable video chapters with a chapter list, frame-accurate ranges, moving and resizing directly on the Timeline, and trim-aware chapter export.
 - Export dialogs now support selecting a separate frame-aligned range without changing the Timeline selection.
+- Audio filter changes play live while the Audio filters dialog is open, before you apply them, including loudness normalization, with a status line that shows when the preview is ready. Space and the arrow keys control playback while the dialog is open, and applying or changing filters during playback no longer interrupts the audio.
 
 ### Changed
 
