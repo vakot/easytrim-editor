@@ -29,7 +29,7 @@ function LibraryNavigation({
       )}
       {...props}
     >
-      <ScrollArea className="h-full min-h-0 min-w-0" fadeColor="var(--popover)">
+      <ScrollArea className="size-full min-h-0 min-w-0" fadeColor="var(--popover)">
         <div className="p-4">{children}</div>
       </ScrollArea>
     </TabsList>

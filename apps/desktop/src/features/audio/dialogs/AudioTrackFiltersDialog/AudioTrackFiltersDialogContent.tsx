@@ -1,8 +1,10 @@
+import { SlidersHorizontal } from "lucide-react";
 import { useMemo, useReducer } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 
 import { Library, LibraryContent, LibraryPage } from "@/components/library";
@@ -78,7 +80,14 @@ function AudioTrackFiltersDialogContent({
               <AudioFilterPage filter={selected} key={selected.id} />
             </LibraryPage>
           ) : (
-            <p className="text-sm text-muted-foreground">{t("audio.filters.dialog.emptyPage")}</p>
+            <Empty className="h-full gap-2 border-0 p-4">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <SlidersHorizontal aria-hidden="true" />
+                </EmptyMedia>
+                <EmptyDescription>{t("audio.filters.dialog.emptyPage")}</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           )}
         </LibraryContent>
       </Library>

@@ -212,6 +212,10 @@ export const en = {
         custom: "Custom",
         label: "Preset",
       },
+      removeConfirmation: {
+        description: "Remove {{name}} from this track's filter chain?",
+        title: "Remove filter?",
+      },
     },
     gain: {
       description: "Raise or lower the level at this point in the chain",

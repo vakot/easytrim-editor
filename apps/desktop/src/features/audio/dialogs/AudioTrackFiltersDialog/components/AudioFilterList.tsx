@@ -2,9 +2,20 @@ import { DragDropProvider } from "@dnd-kit/react";
 import { isSortable, useSortable } from "@dnd-kit/react/sortable";
 import type { TFunction } from "i18next";
 import { ArrowDown, ArrowUp, CircleAlert, GripVertical, Plus, Trash2 } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -62,7 +73,7 @@ function AudioFilterList() {
             dispatch({ id: String(source.id), toIndex: source.index, type: "moved" });
           }}
         >
-          <LibraryNavigation aria-label={t("audio.filters.listLabel")} className="flex-1">
+          <LibraryNavigation aria-label={t("audio.filters.listLabel")} className="w-full flex-1">
             {draft.filters.map((filter, index) => (
               <AudioFilterListItem
                 filter={filter}
@@ -99,15 +110,38 @@ function AudioFilterList() {
           <ArrowDown />
         </AudioFilterListAction>
         <AudioFilterAddMenu disabled={draft.filters.length >= MAX_AUDIO_FILTERS} />
-        <AudioFilterListAction
-          disabled={selectedId === null}
-          label={t("audio.filters.actions.remove")}
-          onClick={() => {
-            if (selectedId) dispatch({ id: selectedId, type: "removed" });
-          }}
-        >
-          <Trash2 />
-        </AudioFilterListAction>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <AudioFilterListAction
+              disabled={selectedId === null}
+              label={t("audio.filters.actions.remove")}
+              variant="destructive"
+            >
+              <Trash2 />
+            </AudioFilterListAction>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("audio.filters.removeConfirmation.title")}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("audio.filters.removeConfirmation.description", {
+                  name: selectedIndex >= 0 ? names[selectedIndex] : "",
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (selectedId) dispatch({ id: selectedId, type: "removed" });
+                }}
+                variant="destructive"
+              >
+                {t("audio.filters.actions.remove")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
@@ -123,7 +157,12 @@ function AudioFilterListItem({
   name: string;
 }) {
   const { t } = useTranslation();
-  const { handleRef, isDragSource, ref } = useSortable({ id: filter.id, index });
+  const { handleRef, isDragSource, ref } = useSortable({
+    id: filter.id,
+    index,
+    transition: { idle: true },
+  });
+
   const valid = areAudioFiltersValid([filter]);
 
   return (
@@ -192,29 +231,15 @@ function AudioFilterAddMenu({ disabled }: { disabled: boolean }) {
 }
 
 function AudioFilterListAction({
-  children,
-  disabled,
   label,
-  onClick,
-}: {
-  children: ReactNode;
-  disabled: boolean;
+  ...props
+}: ComponentProps<typeof Button> & {
   label: string;
-  onClick: () => void;
 }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          aria-label={label}
-          disabled={disabled}
-          onClick={onClick}
-          size="icon-sm"
-          type="button"
-          variant="ghost"
-        >
-          {children}
-        </Button>
+        <Button aria-label={label} size="icon-sm" type="button" variant="ghost" {...props} />
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
