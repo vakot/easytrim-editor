@@ -1,9 +1,11 @@
+import { X } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Provider as ReduxProvider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,7 +26,10 @@ import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
 import { UiScaleFeedbackProvider } from "@/app/providers/UiScaleFeedbackProvider";
 import { WorkspaceViewsProvider } from "@/app/providers/WorkspaceViewsProvider";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectDropListenerError } from "@/app/store/slices/import-workflow-slice";
+import {
+  dropListenerErrorCleared,
+  selectDropListenerError,
+} from "@/app/store/slices/import-workflow-slice";
 import { persistor, store } from "@/app/store/store";
 import { loadQueueFinishActions } from "@/app/store/thunks/queue-finish-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
@@ -81,6 +86,17 @@ function EasyTrimEditorApp() {
                                 message: localizeAppError(dropListenerError, t),
                               })}
                             </AlertDescription>
+                            <AlertAction>
+                              <Button
+                                aria-label={t("app.actions.dismiss")}
+                                onClick={() => dispatch(dropListenerErrorCleared())}
+                                size="icon-sm"
+                                type="button"
+                                variant="ghost"
+                              >
+                                <X aria-hidden="true" />
+                              </Button>
+                            </AlertAction>
                           </Alert>
                         ) : null}
                       </ApplicationCommandsProvider>
