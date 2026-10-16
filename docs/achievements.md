@@ -25,11 +25,28 @@ the other's data: the slice only merges native snapshots, and statistics stay in
 
 ## Definitions
 
-Each registry entry declares an `id`, `title` and `description` (functions that call `t` with literal
-keys), a Lucide `icon`, a `category`, a `metric`, a `target`, and an optional `secret` flag. An
-achievement unlocks once its metric reaches its target. Adding one needs only a registry entry and
-its English copy; the dialog, statistics metric, and notifications pick it up. Never rename or
-reuse an existing `id`: it is the persisted key of the unlock.
+The collection mixes two kinds of entries, each shown as one card:
+
+- **Milestone series** have a `title`, `description`, Lucide `icon`, `category`, `metric`, and
+  Bronze, Silver, and Gold `thresholds`. Each tier is an independently unlockable achievement with
+  its own identifier, `<series id>-<tier>` such as `export-mastery-silver`, and its own unlock time.
+- **Standalone achievements** have a single `target` and an optional `secret` flag. The secret
+  The Chosen One is the only one today.
+
+Titles and descriptions are functions that call `t` with literal keys. An achievement unlocks once
+its metric reaches its threshold or target. Adding a series or achievement needs only a registry
+entry and its English copy; the dialog, statistics metric, and notifications pick it up. Never
+rename or reuse an existing identifier: it is the persisted key of the unlock.
+
+| Series             | Metric              | Bronze | Silver | Gold   |
+| ------------------ | ------------------- | ------ | ------ | ------ |
+| Export Mastery     | `completedExports`  | 1      | 10     | 100    |
+| Lossless Precision | `losslessExports`   | 1      | 10     | 50     |
+| GIF Creator        | `gifExports`        | 1      | 5      | 25     |
+| Audio Specialist   | `audioExports`      | 1      | 5      | 25     |
+| Time Well Spent    | `processingMillis`  | 1 min  | 10 min | 1 h    |
+| Data Cruncher      | `sourceBytes`       | 1 GB   | 10 GB  | 100 GB |
+| Storage Saver      | `storageSavedBytes` | 100 MB | 1 GB   | 10 GB  |
 
 | Metric                    | Source                                                           | Unit     |
 | ------------------------- | ---------------------------------------------------------------- | -------- |
@@ -42,9 +59,23 @@ reuse an existing `id`: it is the persisted key of the unlock.
 | `storageSavedBytes`       | Storage Saved, never below zero                                  | bytes    |
 | `legendarySplashMessages` | distinct discovered IDs that are legendary in the splash catalog | count    |
 
-Byte targets use binary units (1 GB = 1024³ bytes), matching how the dialogs format sizes. The
+Byte thresholds use binary units (1 GB = 1024³ bytes), matching how the dialogs format sizes. The
 Chosen One's target is the number of legendary splash messages, so it follows the splash catalog
-instead of duplicating its list.
+instead of duplicating its list. Thresholds are meant to be reached through normal use; the
+collection has no XP, levels, or grind-only milestones.
+
+The collection counts every tier and standalone achievement: seven series and The Chosen One make 22
+achievements, which is the total in the dialog header and the Statistics dialog.
+
+## Collection cards
+
+A series card shows its highest unlocked tier, with the icon and badge in that tier's color, progress
+toward the next tier, and one indicator per tier with its threshold and unlock state. After Gold the
+card shows a completed state instead of progress. Bronze, Silver, and Gold use the theme tokens
+`--achievement-bronze`, `--achievement-silver`, and `--achievement-gold`, defined for light and dark
+themes, and each indicator names its tier so tiers are not told apart by color alone. The Unlocked
+filter shows cards with at least one unlocked tier, and the Locked filter shows cards with at least
+one locked tier, so a partly unlocked series appears under both.
 
 ## Unlocking
 
@@ -59,15 +90,23 @@ which identifiers the call newly unlocked. Repeated, concurrent, or stale reques
 change an unlock time or report an unlock twice.
 
 **Retroactive unlocks.** The first successful evaluation of a session unlocks everything the stored
-progress already earned, such as the 1, 10, and 100 export milestones for a user with 150 exports.
+progress already earned, such as all three Export Mastery tiers for a user with 150 exports.
 These unlocks get the time they were recognized, never an invented historical time, and are not
 announced. If that first evaluation fails, it stays retroactive until one succeeds.
 
-**Notifications.** Later unlocks are announced through the existing toast infrastructure: one toast
-with the achievement's icon and title for a single unlock, or one summary toast for several unlocked
-together. Toasts never take focus, so they do not interrupt playback, exports, or editing, and the
-toaster disables its motion when reduced motion is preferred. A secret's title appears only in the
-toast of its own unlock.
+**Notifications.** Later unlocks are announced through the existing toast infrastructure, one
+announcement per evaluation. A newly unlocked tier names its series and tier, such as "GIF Creator:
+Silver tier unlocked", with the series icon in the tier's color. Several tiers of one series
+unlocked together, as when one large export passes two size thresholds, collapse to the highest
+tier. Unlocks across several series or standalone achievements become one summary toast. Toasts
+never take focus, so they do not interrupt playback, exports, or editing, and the toaster disables
+its motion when reduced motion is preferred. A secret's title appears only in the announcement of
+its own unlock.
+
+`createAchievementAnnouncement` builds the announcement (achievement IDs, title, description, icon,
+and tier) separately from `showAchievementAnnouncement`, which renders it as a toast. A custom
+presentation with its own visuals, particles, or sound can replace the renderer without changing
+how unlocks are batched.
 
 ## Legendary splash discoveries
 
@@ -92,9 +131,9 @@ The document is `<app data>/achievements/achievements.json`:
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "unlockedAchievements": {
-    "first-export": { "unlockedAtMillis": 1760000000000 }
+    "export-mastery-bronze": { "unlockedAtMillis": 1760000000000 }
   },
   "discoveredSplashMessageIds": ["rainbow-mode"]
 }
@@ -108,7 +147,25 @@ It follows the same conventions as [usage statistics](usage-statistics.md) and s
   discoveries cannot overwrite each other.
 - **No redundant writes:** an unlock or discovery that changes nothing is not written.
 - **Migration:** `decode_achievement_records` dispatches on `version`; fields missing from a known
-  version default to empty.
+  version default to empty. Version 1 stored standalone milestones. When version 2 grouped them into
+  series, each one equivalent to a tier kept its unlock time under the tier's identifier:
+
+  | Version 1            | Version 2                   |
+  | -------------------- | --------------------------- |
+  | `first-export`       | `export-mastery-bronze`     |
+  | `getting-started`    | `export-mastery-silver`     |
+  | `export-veteran`     | `export-mastery-gold`       |
+  | `first-lossless-cut` | `lossless-precision-bronze` |
+  | `gif-maker`          | `gif-creator-bronze`        |
+  | `one-hour-later`     | `time-well-spent-gold`      |
+  | `data-cruncher`      | `data-cruncher-gold`        |
+  | `storage-saver`      | `storage-saver-gold`        |
+
+  `export-legend`, `lossless-legend`, `audio-specialist`, and `working-overtime` have no equivalent
+  tier and are dropped. Their progress lives in usage statistics, so every tier they imply unlocks
+  again silently on the next evaluation, with the time it is recognized. The migrated document is
+  written as version 2 on the next change.
+
 - **Recovery:** an invalid document, including one with malformed identifiers or oversized
   collections, or one written by a newer version, is renamed aside to
   `achievements.<timestamp>.<reason>.json` and the collection restarts empty. If the file cannot be

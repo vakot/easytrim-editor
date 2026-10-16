@@ -14,7 +14,7 @@ All notable changes to this project will be documented in this file.
 - Added a workspace toolbar with quick access to Imported Sources, Export Queue, Activity Feed, Chapters, and Settings.
 - Added a view selector to the Activity Feed dialog.
 - Added a Statistics dialog, opened from the workspace toolbar, that tracks your completed exports, processing time, data processed, and storage saved across sessions. Statistics are kept only on this device.
-- Added Achievements: a collection of export milestones and secret discoveries, opened from the workspace toolbar, that shows your progress toward each one and announces new unlocks with a brief notification. Achievements you have already earned unlock automatically, the Statistics dialog shows how many you have unlocked, and everything is kept only on this device.
+- Added Achievements, opened from the workspace toolbar: Bronze, Silver, and Gold milestones for your exports, processing time, data processed, and storage saved, plus a secret discovery. Each card shows your current tier and progress toward the next, and new unlocks get a brief notification. Achievements you have already earned unlock automatically, and everything is kept only on this device.
 - Audio filter changes play live while the Audio filters dialog is open, before you apply them, including loudness normalization, with a status line that shows when the preview is ready. Space and the arrow keys control playback while the dialog is open, and applying or changing filters during playback no longer interrupts the audio.
 
 ### Changed
