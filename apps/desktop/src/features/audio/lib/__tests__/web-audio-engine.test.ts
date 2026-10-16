@@ -6,6 +6,7 @@ import { WebAudioEngine } from "../web-audio-engine";
 
 function parameter(value = 1) {
   return {
+    cancelAndHoldAtTime: vi.fn(),
     cancelScheduledValues: vi.fn(),
     linearRampToValueAtTime: vi.fn(),
     setTargetAtTime: vi.fn(),
@@ -1012,6 +1013,8 @@ describe("WebAudioEngine processing changes", () => {
     for (const source of previous) {
       expect(source.stop).toHaveBeenCalledWith(switchTime + 0.03);
     }
+    // The previous voice fades out from wherever its own fade-in may still be.
+    expect(voiceOf(previous[0]!).gain.cancelAndHoldAtTime).toHaveBeenCalledWith(switchTime);
     expect(voiceOf(previous[0]!).gain.linearRampToValueAtTime).toHaveBeenCalledWith(
       0,
       switchTime + 0.03,

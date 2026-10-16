@@ -721,8 +721,13 @@ class WebAudioEngine {
       const { track } = range;
       const previous = track.voice;
       previous.retired = true;
-      previous.gain.gain.cancelScheduledValues(switchTime);
-      previous.gain.gain.setValueAtTime(1, switchTime);
+      // A voice may still be fading in from a switch moments ago; fade out from where it is.
+      if (typeof previous.gain.gain.cancelAndHoldAtTime === "function") {
+        previous.gain.gain.cancelAndHoldAtTime(switchTime);
+      } else {
+        previous.gain.gain.cancelScheduledValues(switchTime);
+        previous.gain.gain.setValueAtTime(1, switchTime);
+      }
       previous.gain.gain.linearRampToValueAtTime(0, switchTime + PROCESSING_CROSSFADE_SECONDS);
       for (const source of previous.sources) {
         try {
