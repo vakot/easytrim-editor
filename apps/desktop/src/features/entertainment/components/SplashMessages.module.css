@@ -51,7 +51,7 @@
   background-size: 250% 100%;
   background-clip: text;
   -webkit-background-clip: text;
-  animation: splash-golden-shimmer 12s ease-in-out infinite;
+  animation: splash-golden-shimmer 4s linear infinite;
 }
 
 .chosenFrame svg {
@@ -66,36 +66,6 @@
   animation: splash-error-flicker 8.7s steps(1, end) infinite;
 }
 
-.frameNotFound :global(.glitch-text) {
-  position: relative;
-  display: inline-block;
-}
-
-.frameNotFound :global(.glitch-text)::before,
-.frameNotFound :global(.glitch-text)::after {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  color: #ff354f;
-  content: attr(data-text);
-  opacity: 0;
-  pointer-events: none;
-  text-shadow: 1px 0 #27d8f2;
-  white-space: nowrap;
-}
-
-.frameNotFound :global(.glitch-text)::before {
-  clip-path: inset(0 0 66.666% 0);
-  animation: splash-error-ghost-top 8.7s steps(1, end) infinite;
-}
-
-.frameNotFound :global(.glitch-text)::after {
-  clip-path: inset(66.666% 0 0 0);
-  color: #27d8f2;
-  text-shadow: -1px 0 #ff354f;
-  animation: splash-error-ghost-bottom 8.7s steps(1, end) infinite;
-}
-
 @keyframes splash-hue-rotate {
   from {
     filter: hue-rotate(0deg);
@@ -107,26 +77,113 @@
 }
 
 @keyframes splash-signal-glitch {
+  /* Normal signal */
   0%,
-  88%,
-  90%,
-  92%,
+  28%,
+  35%,
+  69%,
+  73%,
   100% {
-    transform: translateX(0);
+    opacity: 1;
+    transform: translate(0, 0);
     text-shadow:
       -2px 0 #ff354f,
       2px 0 #27d8f2;
   }
 
-  89% {
-    transform: translateX(-2px) skewX(-3deg);
+  /* Primary glitch: left/up */
+  28.5% {
+    opacity: 0.9;
+    transform: translate(-3px, -1px) skewX(-4deg);
+    text-shadow:
+      -5px 1px #ff354f,
+      5px -1px #27d8f2;
+  }
+
+  29.2% {
+    opacity: 0.75;
+    transform: translate(-6px, -2px) skewX(-7deg);
+    text-shadow:
+      -7px 2px #ff354f,
+      7px -2px #27d8f2;
+  }
+
+  /* Snap right/down */
+  30% {
+    opacity: 1;
+    transform: translate(5px, 2px) skewX(5deg);
+    text-shadow:
+      5px -2px #ff354f,
+      -5px 2px #27d8f2;
+  }
+
+  30.7% {
+    opacity: 0.5;
+    transform: translate(2px, -1px);
+    text-shadow:
+      -3px 0 #ff354f,
+      4px 1px #27d8f2;
+  }
+
+  31.5% {
+    opacity: 0.9;
+    transform: translate(-2px, 1px);
+    text-shadow:
+      3px 0 #ff354f,
+      -3px 0 #27d8f2;
+  }
+
+  /* Brief signal loss */
+  32.2% {
+    opacity: 0.15;
+    transform: translate(0, 0);
+    text-shadow: none;
+  }
+
+  32.8% {
+    opacity: 1;
+    transform: translate(3px, -1px);
     text-shadow:
       -4px 0 #ff354f,
       4px 0 #27d8f2;
   }
 
-  91% {
-    transform: translateX(2px) skewX(2deg);
+  33.5% {
+    opacity: 0.8;
+    transform: translate(-1px, 1px);
+    text-shadow:
+      -2px 0 #ff354f,
+      3px 0 #27d8f2;
+  }
+
+  /* Secondary glitch: short burst */
+  69.5% {
+    opacity: 0.8;
+    transform: translate(3px, -2px) skewX(3deg);
+    text-shadow:
+      4px 1px #ff354f,
+      -4px -1px #27d8f2;
+  }
+
+  70.2% {
+    opacity: 1;
+    transform: translate(-4px, 1px) skewX(-3deg);
+    text-shadow:
+      -5px 0 #ff354f,
+      5px 1px #27d8f2;
+  }
+
+  70.9% {
+    opacity: 0.45;
+    transform: translate(1px, 2px);
+    text-shadow:
+      2px -1px #ff354f,
+      -3px 1px #27d8f2;
+  }
+
+  71.5% {
+    opacity: 1;
+    transform: translate(-2px, 0);
     text-shadow:
       -3px 0 #ff354f,
       3px 0 #27d8f2;
@@ -134,13 +191,11 @@
 }
 
 @keyframes splash-golden-shimmer {
-  0%,
-  12% {
+  from {
     background-position: 100% 0;
   }
 
-  65%,
-  100% {
+  to {
     background-position: 0% 0;
   }
 }
@@ -317,122 +372,12 @@
   }
 }
 
-@keyframes splash-error-ghost-top {
-  0%,
-  39%,
-  43.7%,
-  47.9%,
-  49%,
-  100% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0);
-  }
-
-  39.4% {
-    opacity: 0.7;
-    transform: translate3d(-5px, -1px, 0);
-  }
-
-  40.1% {
-    opacity: 0.9;
-    transform: translate3d(3px, 1px, 0);
-  }
-
-  40.8% {
-    opacity: 0.65;
-    transform: translate3d(-2px, 0, 0);
-  }
-
-  41.5% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0);
-  }
-
-  42.2% {
-    opacity: 0.75;
-    transform: translate3d(4px, -1px, 0);
-  }
-
-  43% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0);
-  }
-
-  48% {
-    opacity: 0.7;
-    transform: translate3d(-3px, -1px, 0);
-  }
-
-  48.5% {
-    opacity: 0.4;
-    transform: translate3d(2px, 0, 0);
-  }
-}
-
-@keyframes splash-error-ghost-bottom {
-  0%,
-  39%,
-  43.7%,
-  47.9%,
-  49%,
-  100% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0);
-  }
-
-  39.4% {
-    opacity: 0.55;
-    transform: translate3d(4px, 2px, 0);
-  }
-
-  40.1% {
-    opacity: 0.8;
-    transform: translate3d(-3px, 1px, 0);
-  }
-
-  40.8% {
-    opacity: 0.65;
-    transform: translate3d(6px, -1px, 0);
-  }
-
-  41.5% {
-    opacity: 0.75;
-    transform: translate3d(-2px, 2px, 0);
-  }
-
-  42.2% {
-    opacity: 0.8;
-    transform: translate3d(3px, 1px, 0);
-  }
-
-  43% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0);
-  }
-
-  48% {
-    opacity: 0.45;
-    transform: translate3d(5px, 1px, 0);
-  }
-
-  48.5% {
-    opacity: 0.75;
-    transform: translate3d(-4px, -1px, 0);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .rainbow,
   .corruptedSignal,
   .chosenFrame,
   .frameNotFound {
     animation: none;
-  }
-
-  .frameNotFound :global(.glitch-text)::before,
-  .frameNotFound :global(.glitch-text)::after {
-    animation: none;
-    opacity: 0;
   }
 
   .rainbow {

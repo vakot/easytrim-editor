@@ -105,16 +105,6 @@ const splashMessagesLegendary = [
     className: "frame-not-found",
     id: "frame-not-found",
     rarity: "legendary",
-    render: () =>
-      createElement(
-        "span",
-        {
-          "aria-hidden": true,
-          className: "glitch-text",
-          "data-text": "404: FRAME NOT FOUND",
-        },
-        "404: FRAME NOT FOUND",
-      ),
     text: "404: FRAME NOT FOUND",
   },
 ] satisfies SplashMessageDefinition<"legendary">[];
