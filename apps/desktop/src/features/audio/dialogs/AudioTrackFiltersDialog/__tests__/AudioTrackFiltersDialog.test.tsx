@@ -73,7 +73,7 @@ describe("AudioTrackFiltersDialog", () => {
     expect(tabNames()).toEqual(["Gain 1", "Gain 2", "Limiter"]);
 
     await user.click(screen.getByRole("tab", { name: "Gain 1" }));
-    const gainInput = screen.getByRole("textbox", { name: "Gain" });
+    const gainInput = await screen.findByRole("textbox", { name: "Gain" });
     await user.clear(gainInput);
     await user.type(gainInput, "6");
     expect(committedFilters()).toEqual([]);
@@ -125,7 +125,7 @@ describe("AudioTrackFiltersDialog", () => {
     await user.click(screen.getByRole("button", { name: "Open filters" }));
     await addFilter(user, "High-pass filter");
 
-    const cutoff = screen.getByRole("textbox", { name: "Cutoff frequency" });
+    const cutoff = await screen.findByRole("textbox", { name: "Cutoff frequency" });
     await user.clear(cutoff);
     await user.type(cutoff, "5");
 
@@ -152,7 +152,7 @@ describe("AudioTrackFiltersDialog", () => {
     await user.click(screen.getByRole("button", { name: "Open filters" }));
     await addFilter(user, "Noise reduction");
 
-    const preset = screen.getByRole("combobox", { name: "Preset" });
+    const preset = await screen.findByRole("combobox", { name: "Preset" });
     expect(preset).toHaveTextContent("Medium");
     await user.click(preset);
     await user.click(await screen.findByRole("option", { name: "Strong" }));
@@ -183,7 +183,7 @@ describe("AudioTrackFiltersDialog", () => {
     await addFilter(user, "Limiter");
 
     await user.click(screen.getByRole("tab", { name: "Gain" }));
-    const toggle = screen.getByRole("switch", { name: "Filter enabled" });
+    const toggle = await screen.findByRole("switch", { name: "Filter enabled" });
     expect(toggle).toBeChecked();
     await user.click(toggle);
 
@@ -214,7 +214,7 @@ describe("AudioTrackFiltersDialog", () => {
     expect(previewedFilters()).toEqual([]);
 
     await addFilter(user, "Gain");
-    const gainInput = screen.getByRole("textbox", { name: "Gain" });
+    const gainInput = await screen.findByRole("textbox", { name: "Gain" });
     await user.clear(gainInput);
     await user.type(gainInput, "-12");
     await waitFor(() =>

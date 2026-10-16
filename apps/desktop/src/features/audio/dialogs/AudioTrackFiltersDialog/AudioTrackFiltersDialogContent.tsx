@@ -1,11 +1,12 @@
 import { SlidersHorizontal } from "lucide-react";
-import { useMemo, useReducer } from "react";
+import { Suspense, useMemo, useReducer } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
 
 import { Library, LibraryContent, LibraryPage } from "@/components/library";
 
@@ -81,7 +82,11 @@ function AudioTrackFiltersDialogContent({
         <LibraryContent>
           {selected ? (
             <LibraryPage value={selected.id}>
-              <AudioFilterPage filter={selected} key={selected.id} />
+              {/* Keyed per instance so the previous page unmounts instead of staying hidden while
+                  this one loads. Only this area waits; the list, footer, and preview keep running. */}
+              <Suspense fallback={<AudioFilterPageFallback />} key={selected.id}>
+                <AudioFilterPage filter={selected} />
+              </Suspense>
             </LibraryPage>
           ) : (
             <Empty className="h-full gap-2 border-0 p-4">
@@ -121,6 +126,14 @@ function AudioTrackFiltersDialogContent({
         </div>
       </DialogFooter>
     </AudioFiltersDraftContext.Provider>
+  );
+}
+
+function AudioFilterPageFallback() {
+  return (
+    <div aria-busy="true" className="grid h-24 place-items-center text-muted-foreground">
+      <Spinner />
+    </div>
   );
 }
 

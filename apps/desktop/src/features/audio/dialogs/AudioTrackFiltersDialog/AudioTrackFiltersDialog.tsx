@@ -1,10 +1,21 @@
-import { type ComponentProps, type ReactNode, Suspense, useCallback, useState } from "react";
+import {
+  type ComponentProps,
+  type ReactNode,
+  Suspense,
+  useCallback,
+  useContext,
+  useState,
+} from "react";
 
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
+import { useAppStore } from "@/app/store/redux-hooks";
+import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
+import { AudioFiltersPreloadContext } from "./contexts/audio-filters-preload-context";
 import { useAudioTrackFiltersDialogScope } from "./hooks/useAudioTrackFiltersDialogScope";
+import { preloadAudioFilterPage } from "./lib/audio-filter-pages";
 import type { AudioTrackFiltersDialogContent } from "./AudioTrackFiltersDialogContent";
 
 const LazyAudioTrackFiltersDialogContent = lazyWithPreload<
@@ -31,11 +42,25 @@ function AudioTrackFiltersDialog({
   streamIndex: number;
 }) {
   const dialogScope = useAudioTrackFiltersDialogScope(undefined);
+  const store = useAppStore();
   const [open, setOpen] = useState(false);
+
+  // The dialog opens on the first filter of the committed chain, so that page loads together with
+  // the dialog. The chain is read when the intent happens, so it needs no subscription.
+  const preload = useCallback(() => {
+    preloadAudioTrackFilters();
+    const firstFilter = selectAudioTracks(store.getState()).find(
+      (track) => track.streamIndex === streamIndex,
+    )?.processing.filters[0];
+
+    if (firstFilter) preloadAudioFilterPage(firstFilter.type);
+  }, [store, streamIndex]);
 
   return (
     <Dialog {...dialogScope} onOpenChange={setOpen} open={open}>
-      {children}
+      <AudioFiltersPreloadContext.Provider value={preload}>
+        {children}
+      </AudioFiltersPreloadContext.Provider>
 
       <DialogContent
         {...dialogScope}
@@ -59,7 +84,7 @@ function AudioTrackFiltersDialogTrigger({
   ...props
 }: ComponentProps<typeof DialogTrigger>) {
   const dialogScope = useAudioTrackFiltersDialogScope(undefined);
-  const preloadFilters = useCallback(() => preloadAudioTrackFilters(), []);
+  const preloadFilters = useContext(AudioFiltersPreloadContext);
 
   return (
     <DialogTrigger
