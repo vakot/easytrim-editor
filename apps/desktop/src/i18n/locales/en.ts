@@ -1233,6 +1233,10 @@ export const en = {
     description: "Your export activity across all sessions",
     empty: "Statistics begin accumulating after your first successful export",
     metrics: {
+      achievementsUnlocked: {
+        description: "Unlocked out of the whole achievement collection",
+        label: "Achievements Unlocked",
+      },
       audioExports: {
         description: "Audio-only exports to M4A, MP3, or WAV",
         label: "Audio Exports",

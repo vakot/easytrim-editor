@@ -3,16 +3,23 @@ import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ getUsageStatistics: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getAchievementRecords: vi.fn(), getUsageStatistics: vi.fn() }));
 
 vi.mock("@/lib/tauri/statistics", () => ({ getUsageStatistics: mocks.getUsageStatistics }));
+vi.mock("@/lib/tauri/achievements", () => ({
+  getAchievementRecords: mocks.getAchievementRecords,
+  recordSplashMessageDiscovery: vi.fn(),
+  unlockAchievements: vi.fn(),
+}));
 
 import { useStatisticsDialog } from "@/app/hooks/useAppDialog";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
+import { achievementRecordsUpdated } from "@/app/store/slices/achievements-slice";
 import { editingInstanceExportCompleted } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
 import type { UsageStatistics } from "@/domain/usage-statistics";
 import { i18n } from "@/i18n/config";
+import { emptyAchievementRecords } from "@/test/achievement-records.fixtures";
 import { emptyUsageStatistics } from "@/test/usage-statistics.fixtures";
 
 import { AppStatisticsDialog } from "../AppStatisticsDialog";
@@ -71,6 +78,8 @@ describe("AppStatisticsDialog", () => {
   beforeEach(async () => {
     await i18n.changeLanguage("en");
     mocks.getUsageStatistics.mockReset();
+    mocks.getAchievementRecords.mockReset();
+    mocks.getAchievementRecords.mockResolvedValue(emptyAchievementRecords);
   });
 
   it("shows zero values and explains when statistics start before the first export", async () => {
@@ -140,6 +149,31 @@ describe("AppStatisticsDialog", () => {
     });
 
     expect(await within(metric(dialog, "Lossless Cuts")).findByText("1")).toBeVisible();
+  });
+
+  it("counts unlocked achievements and updates when one unlocks", async () => {
+    mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
+    mocks.getAchievementRecords.mockResolvedValue({
+      ...emptyAchievementRecords,
+      unlockedAchievements: { "first-export": 1, "retired-achievement": 2 },
+    });
+    const store = renderDialog();
+
+    const dialog = await openDialog();
+    const achievements = await within(dialog).findByText("Achievements Unlocked");
+    const item = achievements.closest("[data-slot='item']");
+    if (!(item instanceof HTMLElement)) throw new Error("Achievements metric is not rendered.");
+    expect(within(item).getByText("1 / 13")).toBeVisible();
+
+    act(() => {
+      store.dispatch(
+        achievementRecordsUpdated({
+          records: { ...emptyAchievementRecords, unlockedAchievements: { "gif-maker": 3 } },
+        }),
+      );
+    });
+
+    expect(within(item).getByText("2 / 13")).toBeVisible();
   });
 
   it("offers a retry when statistics cannot be loaded", async () => {

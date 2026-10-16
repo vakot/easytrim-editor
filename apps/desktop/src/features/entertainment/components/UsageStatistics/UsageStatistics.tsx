@@ -11,6 +11,7 @@ import {
   PiggyBank,
   Scissors,
   Timer,
+  Trophy,
 } from "lucide-react";
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,15 +20,20 @@ import { Item, ItemContent, ItemDescription, ItemMedia } from "@/components/ui/i
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectAchievementRecords } from "@/app/store/slices/achievements-slice";
 import {
   selectUsageStatistics,
   selectUsageStatisticsStatus,
 } from "@/app/store/slices/usage-statistics-slice";
+import { loadAchievementRecords } from "@/app/store/thunks/achievement-thunks";
 import { loadUsageStatistics } from "@/app/store/thunks/usage-statistics-thunks";
 import { formatExportDuration } from "@/domain/export-metrics";
 import { getCompletedExports, getStorageSavedBytes } from "@/domain/usage-statistics";
 import { cn } from "@/lib/class-names.utils";
 import { formatRelativeTime } from "@/lib/date-time.utils";
+
+import { achievementDefinitions } from "../../consts/achievements.consts";
+import { countUnlockedAchievements } from "../../lib/achievements.utils";
 
 import { UsageStatisticsItem } from "./components/UsageStatisticsItem";
 import { UsageStatisticsLoading } from "./components/UsageStatisticsLoading";
@@ -39,12 +45,13 @@ import {
   formatStatisticDate,
 } from "./lib/usage-statistics-format.utils";
 
-/** Refreshes the native statistics whenever it mounts, so every opening shows current totals. */
+/** Refreshes the native statistics and achievement records on mount, so each opening is current. */
 function UsageStatistics({ children }: { children?: React.ReactNode }) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
     void dispatch(loadUsageStatistics());
+    void dispatch(loadAchievementRecords());
   }, [dispatch]);
 
   return children;
@@ -66,6 +73,7 @@ function UsageStatisticsContent({ className, ...props }: React.ComponentProps<ty
 function UsageStatisticsDashboard() {
   const { i18n, t } = useTranslation();
   const statistics = useAppSelector(selectUsageStatistics);
+  const achievementRecords = useAppSelector(selectAchievementRecords);
   const locale = i18n.resolvedLanguage ?? i18n.language;
   if (!statistics) return null;
 
@@ -99,6 +107,14 @@ function UsageStatisticsDashboard() {
           label={t("statistics.metrics.processingTime.label")}
           value={formatExportDuration(statistics.processingMillis)}
         />
+        {achievementRecords ? (
+          <UsageStatisticsItem
+            description={t("statistics.metrics.achievementsUnlocked.description")}
+            icon={<Trophy />}
+            label={t("statistics.metrics.achievementsUnlocked.label")}
+            value={`${formatStatisticCount(countUnlockedAchievements(achievementRecords), locale)} / ${formatStatisticCount(achievementDefinitions.length, locale)}`}
+          />
+        ) : null}
       </UsageStatisticsSection>
 
       <UsageStatisticsSection title={t("statistics.sections.breakdown")}>
