@@ -78,23 +78,26 @@ function SplashMessages({
   }, [message.id]);
 
   return (
-    <button
-      aria-label={`${message.text} Click for another message`}
-      className={cn(
-        "absolute bottom-4 left-full w-md -translate-1/2 -rotate-12 animate-splash-bounce font-semibold whitespace-nowrap text-primary text-shadow-2xs motion-reduce:animate-none",
-        message.className && splashMessageClasses[message.className],
-        className,
-      )}
-      data-keyboard-shortcut-ignore
-      onClick={() => {
-        if (!fixedMessage) setRandomMessage(chooseSplashMessage());
-      }}
-      onKeyDown={(event) => event.stopPropagation()}
-      ref={splashRef}
-      type="button"
-    >
-      {message.render ? message.render() : message.text}
-    </button>
+    <div className={cn("absolute bottom-4 left-full w-md -translate-1/2 -rotate-12", className)}>
+      <button
+        aria-label={`${message.text} Click for another message`}
+        className={cn(
+          "w-full animate-splash-bounce font-semibold whitespace-nowrap text-primary text-shadow-2xs motion-reduce:animate-none",
+          message.className && splashMessageClasses[message.className],
+        )}
+        data-keyboard-shortcut-ignore
+        onClick={(event) => {
+          // Keyboard-activated clicks have detail 0, so they retain focus for keyboard users.
+          if (event.detail > 0) event.currentTarget.blur();
+          if (!fixedMessage) setRandomMessage(chooseSplashMessage());
+        }}
+        onKeyDown={(event) => event.stopPropagation()}
+        ref={splashRef}
+        type="button"
+      >
+        {message.render ? message.render() : message.text}
+      </button>
+    </div>
   );
 }
 
