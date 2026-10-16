@@ -85,9 +85,8 @@ function AppLayoutMain() {
           >
             <div className="flex min-w-0 items-center justify-between p-1">
               <ScrollArea
-                className="min-w-0 flex-1"
+                className="min-w-0 flex-1 *:data-[slot=scroll-area-scrollbar]:h-0.75 *:data-[slot=scroll-area-scrollbar]:border-t-0 *:data-[slot=scroll-area-scrollbar]:p-0"
                 orientation="horizontal"
-                scrollbarClassName="data-horizontal:h-0.75 data-horizontal:border-t-0 data-horizontal:p-0"
               >
                 <SourceBreadcrumb className="h-full min-w-max px-2 py-1" />
               </ScrollArea>

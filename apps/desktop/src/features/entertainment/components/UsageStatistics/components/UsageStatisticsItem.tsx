@@ -18,7 +18,7 @@ function UsageStatisticsItem({
   valueClassName?: string;
 }) {
   return (
-    <Item role="listitem" size="sm" variant="outline">
+    <Item className="items-start" role="listitem" size="sm" variant="outline">
       <ItemMedia
         aria-hidden="true"
         className="rounded-md bg-muted p-2 text-muted-foreground"
