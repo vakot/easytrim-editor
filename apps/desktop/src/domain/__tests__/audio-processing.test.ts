@@ -2,11 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import {
   areAudioFiltersValid,
+  AUDIO_FILTER_PRESETS,
   type AudioFilter,
   audioTrackLoudnessInputsKey,
   clampTrackVolume,
+  createAudioFilter,
+  insertAudioFilter,
+  matchingAudioFilterPreset,
+  moveAudioFilter,
   normalizeAudioTrackDefaults,
   parseAudioTrackProcessing,
+  removeAudioFilter,
+  replaceAudioFilter,
   sameAudioFilters,
   sameLoudnessInputs,
   serializeAudioTrackSettings,
@@ -61,7 +68,36 @@ describe("audio track metadata", () => {
   });
 });
 
-describe("ordered filter chain validation", () => {
+describe("ordered filter chain editing", () => {
+  it("inserts after the selected instance and keeps repeated types as separate instances", () => {
+    const filters = insertAudioFilter([gain("a", 3), highPass("hp")], gain("b", -6), "a");
+    expect(filters.map(({ id }) => id)).toEqual(["a", "b", "hp"]);
+    expect(insertAudioFilter(filters, limiter("lim")).map(({ id }) => id)).toEqual([
+      "a",
+      "b",
+      "hp",
+      "lim",
+    ]);
+  });
+
+  it("moves, replaces, and removes instances by stable identity", () => {
+    const filters = [gain("a", 3), highPass("hp"), limiter("lim")];
+    const moved = moveAudioFilter(filters, "lim", 0);
+    expect(moved.map(({ id }) => id)).toEqual(["lim", "a", "hp"]);
+    expect(moveAudioFilter(moved, "lim", 99).map(({ id }) => id)).toEqual(["a", "hp", "lim"]);
+    expect(replaceAudioFilter(moved, gain("a", -12))[1]).toEqual(gain("a", -12));
+    expect(removeAudioFilter(moved, "hp").map(({ id }) => id)).toEqual(["lim", "a"]);
+  });
+
+  it("creates new instances with default explicit parameters", () => {
+    expect(createAudioFilter("noiseReduction", "nr")).toEqual({
+      id: "nr",
+      noiseFloorDb: -35,
+      reductionDb: 12,
+      type: "noiseReduction",
+    });
+  });
+
   it("validates identifiers and every parameter range", () => {
     expect(areAudioFiltersValid([gain("a", 0), gain("b", 24)])).toBe(true);
     expect(areAudioFiltersValid([gain("a", 0), gain("a", 1)])).toBe(false);
@@ -79,6 +115,16 @@ describe("ordered filter chain validation", () => {
     expect(sameAudioFilters([gain("a", 3), highPass("hp")], [highPass("hp"), gain("a", 3)])).toBe(
       false,
     );
+  });
+});
+
+describe("presets", () => {
+  it("match only explicit parameters and never become part of the filter", () => {
+    const preset = AUDIO_FILTER_PRESETS.noiseReduction.find(({ id }) => id === "strong")!;
+    const filter = { ...createAudioFilter("noiseReduction", "nr"), ...preset.parameters };
+    expect(filter).not.toHaveProperty("preset");
+    expect(matchingAudioFilterPreset(filter)).toBe("strong");
+    expect(matchingAudioFilterPreset({ ...filter, reductionDb: 21 })).toBeUndefined();
   });
 });
 

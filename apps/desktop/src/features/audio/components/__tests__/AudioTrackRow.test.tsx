@@ -486,7 +486,7 @@ describe("AudioTrackRow", () => {
       "true",
     );
     expect(screen.getByRole("menuitem", { name: /edit output metadata/i })).toBeInTheDocument();
-    expect(screen.queryByRole("menuitem", { name: /effects/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /audio filters/i })).toBeInTheDocument();
     expect(
       screen.getByRole("menuitemcheckbox", { name: /analyze audio activity/i }),
     ).not.toBeChecked();
@@ -573,7 +573,7 @@ describe("AudioTrackRow", () => {
     const defaultAction = screen.getByRole("menuitemcheckbox", { name: "Default" });
     expect(defaultAction).not.toHaveAttribute("aria-disabled", "true");
     expect(defaultAction.parentElement).not.toHaveAttribute("data-slot", "tooltip-trigger");
-    expect(screen.queryByRole("menuitem", { name: /effects/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /audio filters/i })).toBeInTheDocument();
     expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("menuitem", { name: /edit output metadata/i }));

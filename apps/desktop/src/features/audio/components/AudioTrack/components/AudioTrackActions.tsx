@@ -1,4 +1,4 @@
-import { ChevronRight, MoreVertical, Pencil } from "lucide-react";
+import { ChevronRight, MoreVertical, Pencil, SlidersHorizontal } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -30,6 +30,7 @@ import {
 import { Slot } from "@/components/ui/slot";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { AudioTrackFiltersDialogTrigger } from "../../../dialogs/AudioTrackFiltersDialog";
 import { AudioTrackMetadataDialogTrigger } from "../../../dialogs/AudioTrackMetadataDialog";
 import { useAudioTrackController } from "../../../hooks/useAudioTrackController";
 import {
@@ -101,6 +102,18 @@ function AudioTrackDropdownMenuContent({ streamIndex }: AudioTrackActionsProps) 
         </DropdownMenuItem>
       </AudioTrackMetadataDialogTrigger>
 
+      <AudioTrackFiltersDialogTrigger asChild>
+        <DropdownMenuItem inset>
+          <DropdownMenuIcon side="left">
+            <SlidersHorizontal />
+          </DropdownMenuIcon>
+          {t("audio.filters.actions.open")}
+          <DropdownMenuIcon side="right">
+            <ChevronRight />
+          </DropdownMenuIcon>
+        </DropdownMenuItem>
+      </AudioTrackFiltersDialogTrigger>
+
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
@@ -155,6 +168,18 @@ function AudioTrackContextMenuContent({ streamIndex }: AudioTrackActionsProps) {
           </ContextMenuIcon>
         </ContextMenuItem>
       </AudioTrackMetadataDialogTrigger>
+
+      <AudioTrackFiltersDialogTrigger asChild>
+        <ContextMenuItem inset>
+          <ContextMenuIcon side="left">
+            <SlidersHorizontal />
+          </ContextMenuIcon>
+          {t("audio.filters.actions.open")}
+          <ContextMenuIcon side="right">
+            <ChevronRight />
+          </ContextMenuIcon>
+        </ContextMenuItem>
+      </AudioTrackFiltersDialogTrigger>
 
       <ContextMenuSeparator />
 

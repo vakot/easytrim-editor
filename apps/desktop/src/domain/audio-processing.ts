@@ -79,6 +79,56 @@ const AUDIO_FILTER_PARAMETER_RANGES = {
   [T in AudioFilterType]: Record<keyof AudioFilterParameters<T>, AudioParameterRange>;
 };
 
+const DEFAULT_AUDIO_FILTER_PARAMETERS = {
+  highPass: { cutoffHz: 80 },
+  noiseReduction: { reductionDb: 12, noiseFloorDb: -35 },
+  limiter: { ceilingDb: -1, attackMs: 5, releaseMs: 50 },
+  loudnessNormalization: { targetLufs: -16, maxTruePeakDb: -1.5, loudnessRangeLu: 11 },
+  gain: { gainDb: 0 },
+} as const satisfies { [T in AudioFilterType]: AudioFilterParameters<T> };
+
+interface AudioFilterPreset<T extends AudioFilterType> {
+  id: string;
+  parameters: AudioFilterParameters<T>;
+}
+
+/**
+ * Frontend-only templates. Choosing one writes its explicit parameters into the filter; the
+ * processing model never stores a preset name.
+ */
+const AUDIO_FILTER_PRESETS: { [T in AudioFilterType]: readonly AudioFilterPreset<T>[] } = {
+  highPass: [
+    { id: "rumble", parameters: { cutoffHz: 60 } },
+    { id: "voice", parameters: { cutoffHz: 80 } },
+    { id: "dialogue", parameters: { cutoffHz: 100 } },
+    { id: "wind", parameters: { cutoffHz: 120 } },
+  ],
+  noiseReduction: [
+    { id: "light", parameters: { reductionDb: 6, noiseFloorDb: -40 } },
+    { id: "medium", parameters: { reductionDb: 12, noiseFloorDb: -35 } },
+    { id: "strong", parameters: { reductionDb: 20, noiseFloorDb: -30 } },
+  ],
+  limiter: [
+    { id: "peakProtection", parameters: { ceilingDb: -1, attackMs: 5, releaseMs: 50 } },
+    { id: "broadcastSafety", parameters: { ceilingDb: -2, attackMs: 5, releaseMs: 100 } },
+  ],
+  loudnessNormalization: [
+    {
+      id: "webVideo",
+      parameters: { targetLufs: -14, maxTruePeakDb: -1, loudnessRangeLu: 11 },
+    },
+    {
+      id: "streaming",
+      parameters: { targetLufs: -16, maxTruePeakDb: -1.5, loudnessRangeLu: 11 },
+    },
+    {
+      id: "broadcast",
+      parameters: { targetLufs: -23, maxTruePeakDb: -2, loudnessRangeLu: 11 },
+    },
+  ],
+  gain: [],
+};
+
 const MAX_AUDIO_FILTERS = 32;
 const MAX_AUDIO_FILTER_ID_LENGTH = 64;
 
@@ -131,6 +181,43 @@ interface AudioTrackSelection extends AudioChainSelection {
 
 function createDefaultAudioTrackProcessing(): AudioTrackProcessing {
   return { filters: [], volume: DEFAULT_TRACK_VOLUME };
+}
+
+function createAudioFilter<T extends AudioFilterType>(type: T, id: string): AudioFilterOfType<T> {
+  return { id, type, ...DEFAULT_AUDIO_FILTER_PARAMETERS[type] } as unknown as AudioFilterOfType<T>;
+}
+
+/** Inserts after `afterId`, or appends when no anchor is given or found. */
+function insertAudioFilter(
+  filters: readonly AudioFilter[],
+  filter: AudioFilter,
+  afterId?: string,
+): AudioFilter[] {
+  const anchorIndex = afterId === undefined ? -1 : filters.findIndex(({ id }) => id === afterId);
+  const insertIndex = anchorIndex === -1 ? filters.length : anchorIndex + 1;
+  return [...filters.slice(0, insertIndex), filter, ...filters.slice(insertIndex)];
+}
+
+function removeAudioFilter(filters: readonly AudioFilter[], id: string): AudioFilter[] {
+  return filters.filter((filter) => filter.id !== id);
+}
+
+function moveAudioFilter(
+  filters: readonly AudioFilter[],
+  id: string,
+  toIndex: number,
+): AudioFilter[] {
+  const fromIndex = filters.findIndex((filter) => filter.id === id);
+  if (fromIndex === -1) return [...filters];
+  const boundedIndex = Math.max(0, Math.min(filters.length - 1, toIndex));
+  const next = [...filters];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(boundedIndex, 0, moved!);
+  return next;
+}
+
+function replaceAudioFilter(filters: readonly AudioFilter[], filter: AudioFilter): AudioFilter[] {
+  return filters.map((candidate) => (candidate.id === filter.id ? filter : candidate));
 }
 
 function audioFilterParameterNames<T extends AudioFilterType>(
@@ -299,6 +386,18 @@ function waveformShapeFilters(filters: readonly AudioFilter[]): AudioFilter[] {
   return filters.slice(0, shapeEnd === -1 ? filters.length : shapeEnd);
 }
 
+function matchingAudioFilterPreset(filter: AudioFilter): string | undefined {
+  const presets = AUDIO_FILTER_PRESETS[filter.type] as readonly AudioFilterPreset<
+    typeof filter.type
+  >[];
+
+  return presets.find((preset) =>
+    Object.entries(preset.parameters).every(
+      ([parameter, value]) => audioFilterParameterValue(filter, parameter) === value,
+    ),
+  )?.id;
+}
+
 function cloneAudioTrackProcessing(processing: AudioTrackProcessing): AudioTrackProcessing {
   return {
     filters: processing.filters.map((filter) => ({ ...filter })),
@@ -343,6 +442,7 @@ export type {
   AudioFilterMeasurement,
   AudioFilterOfType,
   AudioFilterParameters,
+  AudioFilterPreset,
   AudioFilterType,
   AudioLoudnessAnalysis,
   AudioParameterRange,
@@ -354,6 +454,7 @@ export type {
 };
 export {
   areAudioFiltersValid,
+  AUDIO_FILTER_PRESETS,
   AUDIO_FILTER_TYPES,
   audioFilterParameterNames,
   audioFilterParameterRange,
@@ -362,15 +463,21 @@ export {
   audioTrackLoudnessInputsKey,
   clampTrackVolume,
   cloneAudioTrackProcessing,
+  createAudioFilter,
   createDefaultAudioTrackProcessing,
   DEFAULT_TRACK_VOLUME,
+  insertAudioFilter,
   isAudioFilterParameterValid,
   isTrackVolumeValid,
+  matchingAudioFilterPreset,
   MAX_AUDIO_FILTERS,
   MAX_TRACK_VOLUME,
+  moveAudioFilter,
   normalizeAudioTrackDefaults,
   parseAudioFilters,
   parseAudioTrackProcessing,
+  removeAudioFilter,
+  replaceAudioFilter,
   sameAudioFilters,
   sameLoudnessInputs,
   serializeAudioTrackSettings,

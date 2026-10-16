@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { AudioTrackFiltersDialog } from "../../dialogs/AudioTrackFiltersDialog";
 import { AudioTrackMetadataDialog } from "../../dialogs/AudioTrackMetadataDialog";
 import { useAudioTrackController } from "../../hooks/useAudioTrackController";
 import { formatTrackVolume } from "../../lib/audio-level.utils";
@@ -46,36 +47,38 @@ const AudioTrackRow = memo(function AudioTrackRow({ streamIndex }: { streamIndex
   return (
     <AudioTrackDisplayModeContext.Provider value={displayModeContext}>
       <AudioTrackMetadataDialog streamIndex={streamIndex}>
-        <ContextMenu>
-          <ContextMenuTrigger asChild>
-            <div
-              className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
-              data-slot="audio-track-row"
-            >
-              <div className="flex items-center gap-1">
-                <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
-                  <HoverCardTrigger>
-                    <AudioTrackToggle streamIndex={streamIndex} />
-                  </HoverCardTrigger>
+        <AudioTrackFiltersDialog streamIndex={streamIndex}>
+          <ContextMenu>
+            <ContextMenuTrigger asChild>
+              <div
+                className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) gap-3"
+                data-slot="audio-track-row"
+              >
+                <div className="flex items-center gap-1">
+                  <HoverCard closeDelay={100} openDelay={0} preserveOnTrigger>
+                    <HoverCardTrigger>
+                      <AudioTrackToggle streamIndex={streamIndex} />
+                    </HoverCardTrigger>
 
-                  <HoverCardContent align="center" className="max-w-42 p-0" side="right">
-                    <AudioTrackVolumeControl
-                      onLiveVolumeChange={setLiveVolume}
-                      streamIndex={streamIndex}
-                      trackNumber={trackNumber}
-                    />
-                  </HoverCardContent>
-                </HoverCard>
+                    <HoverCardContent align="center" className="max-w-42 p-0" side="right">
+                      <AudioTrackVolumeControl
+                        onLiveVolumeChange={setLiveVolume}
+                        streamIndex={streamIndex}
+                        trackNumber={trackNumber}
+                      />
+                    </HoverCardContent>
+                  </HoverCard>
 
-                <AudioTrackDetails streamIndex={streamIndex} />
-                <AudioTrackActions streamIndex={streamIndex} />
+                  <AudioTrackDetails streamIndex={streamIndex} />
+                  <AudioTrackActions streamIndex={streamIndex} />
+                </div>
+                <AudioTrackRowWaveform liveVolume={liveVolume} streamIndex={streamIndex} />
               </div>
-              <AudioTrackRowWaveform liveVolume={liveVolume} streamIndex={streamIndex} />
-            </div>
-          </ContextMenuTrigger>
+            </ContextMenuTrigger>
 
-          <AudioTrackContextMenuContent streamIndex={streamIndex} />
-        </ContextMenu>
+            <AudioTrackContextMenuContent streamIndex={streamIndex} />
+          </ContextMenu>
+        </AudioTrackFiltersDialog>
       </AudioTrackMetadataDialog>
     </AudioTrackDisplayModeContext.Provider>
   );

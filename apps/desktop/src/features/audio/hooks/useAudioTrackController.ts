@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   audioTrackActivityVisibilityToggled,
   audioTrackDefaultChanged,
+  audioTrackFiltersApplied,
   audioTrackMetadataChanged,
   audioTrackToggled,
   selectAudioTracks,
@@ -11,6 +12,11 @@ import {
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { detectTrackActivity } from "@/app/store/thunks/audio-track-thunks";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import {
+  areAudioFiltersValid,
+  type AudioFilter,
+  sameAudioFilters,
+} from "@/domain/audio-processing";
 import {
   type Language,
   languageCodeFromMetadata,
@@ -76,6 +82,22 @@ function useAudioTrackController(streamIndex: number) {
     [dispatch, stream, streamIndex, track],
   );
 
+  /** Commits a complete filter chain at once; an invalid chain changes nothing. */
+  const applyFilters = useCallback(
+    (filters: AudioFilter[]) => {
+      if (
+        !track ||
+        !areAudioFiltersValid(filters) ||
+        sameAudioFilters(track.processing.filters, filters)
+      ) {
+        return;
+      }
+      dispatch(audioTrackFiltersApplied({ filters, streamIndex }));
+      dispatch(commitActiveEditingInstanceDraft());
+    },
+    [dispatch, streamIndex, track],
+  );
+
   const toggleActivityVisibility = useCallback(() => {
     dispatch(audioTrackActivityVisibilityToggled({ streamIndex }));
   }, [dispatch, streamIndex]);
@@ -85,6 +107,7 @@ function useAudioTrackController(streamIndex: number) {
   }, [dispatch, streamIndex]);
 
   return {
+    applyFilters,
     detectActivity,
     durationMicros: media?.durationMicros ?? 0,
     isEnabled: track?.enabled ?? false,
