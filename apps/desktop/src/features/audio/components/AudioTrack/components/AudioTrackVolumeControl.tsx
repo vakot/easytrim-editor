@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Slider } from "@/components/ui/slider";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -76,28 +76,24 @@ function AudioTrackVolumeControl({
 
   if (!track) return null;
 
-  return (
-    <div className="p-2">
-      {editing ? (
-        <AudioTrackVolumeInput
-          cancelVolume={cancelVolume}
-          commitVolume={commitVolume}
-          setEditing={setEditing}
-          trackNumber={trackNumber}
-          updateVolume={updateVolume}
-          volume={volume}
-        />
-      ) : (
-        <AudioTrackVolumeSlider
-          cancelVolume={cancelVolume}
-          commitVolume={commitVolume}
-          setEditing={setEditing}
-          trackNumber={trackNumber}
-          updateVolume={updateVolume}
-          volume={volume}
-        />
-      )}
-    </div>
+  return editing ? (
+    <AudioTrackVolumeInput
+      cancelVolume={cancelVolume}
+      commitVolume={commitVolume}
+      setEditing={setEditing}
+      trackNumber={trackNumber}
+      updateVolume={updateVolume}
+      volume={volume}
+    />
+  ) : (
+    <AudioTrackVolumeSlider
+      cancelVolume={cancelVolume}
+      commitVolume={commitVolume}
+      setEditing={setEditing}
+      trackNumber={trackNumber}
+      updateVolume={updateVolume}
+      volume={volume}
+    />
   );
 }
 
@@ -119,15 +115,10 @@ function AudioTrackVolumeSlider({
   const { i18n, t } = useTranslation();
 
   return (
-    <div className="flex h-8 min-w-0 items-center gap-1.5 pt-2">
+    <div className="flex items-center gap-1 p-2.5">
       <Slider
         aria-label={t("audio.tracks.volumeLabel", { number: trackNumber })}
         aria-valuetext={formatTrackVolume(volume, i18n.language)}
-        markers={[
-          { label: "0%", value: 0 },
-          { label: "100%", value: 100 },
-          { label: "200%", value: SLIDER_MAX_PERCENT },
-        ]}
         max={SLIDER_MAX_PERCENT}
         min={0}
         onDoubleClick={() => commitVolume(DEFAULT_TRACK_VOLUME)}
@@ -150,7 +141,7 @@ function AudioTrackVolumeSlider({
         value={[Math.min(volume * 100, SLIDER_MAX_PERCENT)]}
       />
       <Button
-        className="h-auto w-[7ch] shrink-0 justify-end p-0 text-xs leading-none font-normal text-muted-foreground tabular-nums"
+        className="h-auto w-[5ch] shrink-0 justify-end p-0 text-right text-xs font-normal text-muted-foreground tabular-nums"
         onClick={() => setEditing(true)}
         size="sm"
         variant="link"
@@ -193,46 +184,49 @@ function AudioTrackVolumeInput({
   };
 
   return (
-    <Input
-      aria-label={t("audio.tracks.volumeLabel", { number: trackNumber })}
-      aria-valuemax={MAX_PERCENT}
-      aria-valuemin={0}
-      aria-valuenow={percent}
-      autoFocus
-      inputMode="decimal"
-      onBlur={commit}
-      onChange={(event) => {
-        const nextValue = event.target.value;
-        setValue(nextValue);
-        const parsed = parsePercent(nextValue);
-        if (parsed !== null) updateVolume(clampTrackVolume(parsed / 100));
-      }}
-      onFocus={(event) => event.target.select()}
-      onKeyDown={(event) => {
-        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-          event.preventDefault();
-          const currentPercent = parsePercent(value) ?? percent;
-          const direction = event.key === "ArrowUp" ? 1 : -1;
-          const nextVolume = clampTrackVolume((Math.round(currentPercent) + direction) / 100);
-          setValue(String(Math.round(nextVolume * 100)));
-          updateVolume(nextVolume);
-        }
+    <InputGroup>
+      <InputGroupInput
+        aria-label={t("audio.tracks.volumeLabel", { number: trackNumber })}
+        aria-valuemax={MAX_PERCENT}
+        aria-valuemin={0}
+        aria-valuenow={percent}
+        autoFocus
+        inputMode="decimal"
+        onBlur={commit}
+        onChange={(event) => {
+          const nextValue = event.target.value;
+          setValue(nextValue);
+          const parsed = parsePercent(nextValue);
+          if (parsed !== null) updateVolume(clampTrackVolume(parsed / 100));
+        }}
+        onFocus={(event) => event.target.select()}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+            event.preventDefault();
+            const currentPercent = parsePercent(value) ?? percent;
+            const direction = event.key === "ArrowUp" ? 1 : -1;
+            const nextVolume = clampTrackVolume((Math.round(currentPercent) + direction) / 100);
+            setValue(String(Math.round(nextVolume * 100)));
+            updateVolume(nextVolume);
+          }
 
-        if (event.key === "Enter") {
-          event.currentTarget.blur();
-        }
+          if (event.key === "Enter") {
+            event.currentTarget.blur();
+          }
 
-        if (event.key === "Escape") {
-          event.preventDefault();
-          setValue(String(initialPercent.current));
-          cancelVolume();
-          setEditing(false);
-        }
-      }}
-      role="spinbutton"
-      type="text"
-      value={value}
-    />
+          if (event.key === "Escape") {
+            event.preventDefault();
+            setValue(String(initialPercent.current));
+            cancelVolume();
+            setEditing(false);
+          }
+        }}
+        role="spinbutton"
+        type="text"
+        value={value}
+      />
+      <InputGroupAddon align="inline-start">%</InputGroupAddon>
+    </InputGroup>
   );
 }
 
