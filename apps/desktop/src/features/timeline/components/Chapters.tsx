@@ -13,8 +13,8 @@ import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import type { EditorChapter } from "@/domain/media";
 import { cn } from "@/lib/class-names.utils";
 
-import { formatTimecode } from "../../../lib/timecode";
-import { ChapterDialog, ChapterDialogTrigger } from "../../ChapterDialog";
+import { ChapterDialog, ChapterDialogTrigger } from "../dialogs/ChapterDialog";
+import { formatTimecode } from "../lib/timecode";
 
 function ChaptersContent({ className, ...props }: ComponentProps<typeof ScrollArea>) {
   const chapters = useAppSelector(selectChapters);

@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { defineApplicationCommandGroup } from "@/app/commands/core/application-command.utils";
 
+import { useOpenChaptersCommand } from "./definitions/chapters.command";
 import { useCopyFrameCommand } from "./definitions/copy-frame.command";
 import { useCropPreviewCommand } from "./definitions/crop.command";
 import { useFlipCommands } from "./definitions/flip.commands";
@@ -19,12 +20,12 @@ function usePreviewCommandGroups() {
   const flips = useFlipCommands();
   const reset = useResetTransformCommand();
   const scene = useSceneCommands();
+  const chapters = useOpenChaptersCommand();
   return [
-    defineApplicationCommandGroup(
-      "preview-markers-scene",
-      t("commands.sections.markersScene"),
-      scene,
-    ),
+    defineApplicationCommandGroup("preview-markers-scene", t("commands.sections.markersScene"), [
+      ...scene,
+      chapters,
+    ] as const),
     defineApplicationCommandGroup("preview-frame", t("commands.sections.previewFrame"), [
       saveFrame,
       copyFrame,

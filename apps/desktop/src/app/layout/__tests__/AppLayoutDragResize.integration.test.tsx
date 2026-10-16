@@ -62,6 +62,10 @@ vi.mock("@/app/layout/components/AppLayoutHeader", async () => {
   return { AppLayoutHeader: DragControls };
 });
 
+vi.mock("@/app/layout/components/AppLayoutToolbar", () => ({
+  AppLayoutToolbar: () => <aside />,
+}));
+
 vi.mock("@/app/layout/components/AppLayoutFooter", () => ({
   AppLayoutFooter: () => <footer />,
 }));

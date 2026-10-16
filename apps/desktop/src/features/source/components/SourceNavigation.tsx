@@ -1,11 +1,11 @@
 import type { ComponentProps } from "react";
-import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
+import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { cn } from "@/lib/class-names.utils";
 
@@ -35,11 +35,7 @@ function SourceNavigationButton({
 }: Omit<ComponentProps<typeof Button>, "aria-label" | "disabled"> & {
   command: NonNullable<ReturnType<typeof useApplicationCommand>>;
 }) {
-  const { t } = useTranslation();
   const shortcut = command.shortcut ? getShortcutAriaValue(command.shortcut) : undefined;
-  const tooltip = shortcut
-    ? t("source.shortcutTooltip", { label: command.label, shortcut })
-    : command.label;
 
   return (
     <Tooltip>
@@ -56,7 +52,11 @@ function SourceNavigationButton({
           <ApplicationCommandIcon command={command} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
+      {command.shortcut ? (
+        <ShortcutTooltipContent shortcut={command.shortcut} title={command.label} />
+      ) : (
+        <TooltipContent>{command.label}</TooltipContent>
+      )}
     </Tooltip>
   );
 }

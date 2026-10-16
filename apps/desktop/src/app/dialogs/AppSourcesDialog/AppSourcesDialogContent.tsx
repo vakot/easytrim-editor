@@ -1,7 +1,14 @@
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
 import type { DialogScope } from "@/components/ui/dialog";
-import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  DialogClose,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import {
   SourceList,
@@ -17,7 +24,7 @@ function AppSourcesDialogContent({ __scopeDialog }: { __scopeDialog?: DialogScop
     <SourceList>
       <DialogHeader className="-mx-4 border-b px-4 pb-4">
         <DialogTitle __scopeDialog={__scopeDialog}>{t("source.title")}</DialogTitle>
-        <DialogDescription __scopeDialog={__scopeDialog} className="sr-only">
+        <DialogDescription __scopeDialog={__scopeDialog}>
           {t("source.description")}
         </DialogDescription>
       </DialogHeader>
@@ -29,6 +36,12 @@ function AppSourcesDialogContent({ __scopeDialog }: { __scopeDialog?: DialogScop
         </div>
         <SourceListContent className="-mx-2 px-2" fadeColor="var(--popover)" />
       </div>
+
+      <DialogFooter __scopeDialog={__scopeDialog}>
+        <DialogClose __scopeDialog={__scopeDialog} asChild>
+          <Button variant="outline">{t("common.actions.close")}</Button>
+        </DialogClose>
+      </DialogFooter>
     </SourceList>
   );
 }

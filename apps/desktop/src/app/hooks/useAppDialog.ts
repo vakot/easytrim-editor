@@ -21,6 +21,10 @@ function useAppDialog(dialogId: AppDialogId) {
   return { closeDialog, isOpen: isDialogOpen(dialogId), openDialog, toggleDialog };
 }
 
+function useChaptersDialog() {
+  return useAppDialog("chapters");
+}
+
 function useCommandPaletteDialog() {
   return useAppDialog("command-palette");
 }
@@ -47,4 +51,10 @@ function useSettingsDialog() {
   return useAppDialog("settings");
 }
 
-export { useAppDialog, useChangelogDialog, useCommandPaletteDialog, useSettingsDialog };
+export {
+  useAppDialog,
+  useChangelogDialog,
+  useChaptersDialog,
+  useCommandPaletteDialog,
+  useSettingsDialog,
+};

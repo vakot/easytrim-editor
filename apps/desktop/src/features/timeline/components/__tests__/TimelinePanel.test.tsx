@@ -1,10 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { type ReactNode, useState } from "react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { AppDialogsContext } from "@/app/contexts/app-dialogs-context";
+import { AppChaptersDialog } from "@/app/dialogs/AppChaptersDialog";
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
@@ -72,6 +75,47 @@ vi.mock("@/features/audio", async (importOriginal) => ({
   }),
 }));
 
+vi.mock("@/app/hooks/useApplicationCommands", async () => {
+  const { useChaptersDialog } = await import("@/app/hooks/useAppDialog");
+  const { useAppSelector } = await import("@/app/store/redux-hooks");
+  const { selectSourceReady } = await import("@/app/store/slices/source-slice");
+
+  return {
+    useApplicationCommand: (id: string) => ({
+      enabled: useAppSelector(selectSourceReady),
+      icon: <svg aria-hidden="true" />,
+      id,
+      label: "Manage chapters",
+      pending: false,
+      preload: () => undefined,
+    }),
+    useApplicationCommands: () => {
+      const { openDialog } = useChaptersDialog();
+      return { executeCommand: async () => openDialog() };
+    },
+  };
+});
+
+/** Hosts the chapters dialog that the "open-chapters" command opens in the app. */
+function ChaptersDialogHost({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <AppDialogsContext.Provider
+      value={{
+        closeDialog: () => setOpen(false),
+        isManualOpen: () => false,
+        isOpen: (id) => id === "chapters" && open,
+        openDialog: () => setOpen(true),
+        toggleDialog: () => setOpen((current) => !current),
+      }}
+    >
+      {children}
+      <AppChaptersDialog />
+    </AppDialogsContext.Provider>
+  );
+}
+
 /** A 5 s, 60 FPS source: frame boundaries every 16.667 ms. */
 function renderPanel({
   axisScope = false,
@@ -126,7 +170,9 @@ function renderPanel({
   playback.holdPlayback.mockImplementation(() => playback.releasePlayback);
   const panel = (
     <TooltipProvider>
-      <TimelinePanel />
+      <ChaptersDialogHost>
+        <TimelinePanel />
+      </ChaptersDialogHost>
     </TooltipProvider>
   );
 

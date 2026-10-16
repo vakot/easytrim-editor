@@ -50,8 +50,8 @@ function useWorkspaceViewCommandGroups() {
       searchTerms: commandSearchTerms(`${label}|open|view|workspace|dialog|panel`),
       surfaces:
         view.id === "exportQueue"
-          ? (["button", "menu", "palette"] as const)
-          : (["menu", "palette"] as const),
+          ? (["button", "menu", "palette", "sidebar"] as const)
+          : (["menu", "palette", "sidebar"] as const),
       run() {
         openView(view.id);
       },

@@ -36,6 +36,10 @@ vi.mock("@/app/layout/components/AppLayoutHeader", async () => {
   };
 });
 
+vi.mock("@/app/layout/components/AppLayoutToolbar", () => ({
+  AppLayoutToolbar: () => <aside />,
+}));
+
 vi.mock("@/app/layout/components/AppLayoutFooter", () => ({
   AppLayoutFooter: () => <footer />,
 }));

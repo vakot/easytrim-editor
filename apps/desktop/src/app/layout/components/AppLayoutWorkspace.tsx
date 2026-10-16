@@ -5,6 +5,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { AppLayoutMain } from "@/app/layout/components/AppLayoutMain";
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";
 import { AppLayoutSidebar, SidebarEmptyDropTarget } from "@/app/layout/components/AppLayoutSidebar";
+import { AppLayoutToolbar } from "@/app/layout/components/AppLayoutToolbar";
 import type {
   SidebarDropPlacement,
   SidebarLayout,
@@ -40,105 +41,109 @@ function AppLayoutWorkspace({
   const rightSidebarPresence = useSidebarPresence("right", sidebarVisibility.hasRightSidebar);
 
   return (
-    <div className="relative min-h-0 min-w-0">
-      {/* Direct panel children are required for persisted layout to discover every panel ID. */}
-      <ResizablePanelGroup
-        className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
-        id="workspace"
-        onlySaveAfterUserInteractions
-        persisted
-      >
-        <ResizablePanel
-          className="ml-1.5 overflow-hidden!"
-          collapsedSize={0}
-          collapsible
-          defaultSize={sidebarVisibility.hasLeftSidebar ? "20.5rem" : "0px"}
-          disabled={!sidebarVisibility.hasLeftSidebar}
-          groupResizeBehavior="preserve-pixel-size"
-          id="workspace-left-sidebar"
-          maxSize="32rem"
-          minSize="20.5rem"
+    <div className="flex min-h-0 min-w-0">
+      <AppLayoutToolbar />
+
+      <div className="relative min-h-0 min-w-0 flex-1">
+        {/* Direct panel children are required for persisted layout to discover every panel ID. */}
+        <ResizablePanelGroup
+          className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
+          id="workspace"
+          onlySaveAfterUserInteractions
+          persisted
         >
+          <ResizablePanel
+            className="ml-1.5 overflow-hidden!"
+            collapsedSize={0}
+            collapsible
+            defaultSize={sidebarVisibility.hasLeftSidebar ? "20.5rem" : "0px"}
+            disabled={!sidebarVisibility.hasLeftSidebar}
+            groupResizeBehavior="preserve-pixel-size"
+            id="workspace-left-sidebar"
+            maxSize="32rem"
+            minSize="20.5rem"
+          >
+            {leftSidebarPresence.isMounted ? (
+              <WorkspaceSidebarContent
+                draggingViewId={dragPreviewViewId}
+                dropPlacement={dropPlacement}
+                side="left"
+                viewHosts={viewHosts}
+                views={sidebarLayout.left}
+              />
+            ) : null}
+          </ResizablePanel>
+
           {leftSidebarPresence.isMounted ? (
-            <WorkspaceSidebarContent
-              draggingViewId={dragPreviewViewId}
-              dropPlacement={dropPlacement}
-              side="left"
-              viewHosts={viewHosts}
-              views={sidebarLayout.left}
+            <AppLayoutSeparator
+              isClosing={leftSidebarPresence.isClosing}
+              isCollapsed={!sidebarVisibility.leftSidebarVisible}
+              isCompact={isCompact}
             />
           ) : null}
-        </ResizablePanel>
 
-        {leftSidebarPresence.isMounted ? (
-          <AppLayoutSeparator
-            isClosing={leftSidebarPresence.isClosing}
-            isCollapsed={!sidebarVisibility.leftSidebarVisible}
-            isCompact={isCompact}
-          />
-        ) : null}
+          <ResizablePanel
+            className={cn(
+              "overflow-hidden! transition-[margin] duration-200 ease-out motion-reduce:transition-none",
+              !sidebarVisibility.hasLeftSidebar && "ml-1.5",
+              !sidebarVisibility.hasRightSidebar && "mr-1.5",
+            )}
+            groupResizeBehavior="preserve-relative-size"
+            id="workspace-content"
+            minSize="50rem"
+          >
+            <div className="relative size-full min-h-0 min-w-0">
+              <AppLayoutMain />
+            </div>
+          </ResizablePanel>
 
-        <ResizablePanel
-          className={cn(
-            "overflow-hidden! transition-[margin] duration-200 ease-out motion-reduce:transition-none",
-            !sidebarVisibility.hasLeftSidebar && "ml-1.5",
-            !sidebarVisibility.hasRightSidebar && "mr-1.5",
-          )}
-          groupResizeBehavior="preserve-relative-size"
-          id="workspace-content"
-          minSize="50rem"
-        >
-          <div className="relative size-full min-h-0 min-w-0">
-            <AppLayoutMain />
-          </div>
-        </ResizablePanel>
-
-        {rightSidebarPresence.isMounted ? (
-          <AppLayoutSeparator
-            isClosing={rightSidebarPresence.isClosing}
-            isCollapsed={!sidebarVisibility.rightSidebarVisible}
-            isCompact={isCompact}
-          />
-        ) : null}
-
-        <ResizablePanel
-          className="mr-1.5 overflow-hidden!"
-          collapsedSize={0}
-          collapsible
-          defaultSize={sidebarVisibility.hasRightSidebar ? "20.5rem" : "0px"}
-          disabled={!sidebarVisibility.hasRightSidebar}
-          groupResizeBehavior="preserve-pixel-size"
-          id="workspace-right-sidebar"
-          maxSize="32rem"
-          minSize="20.5rem"
-        >
           {rightSidebarPresence.isMounted ? (
-            <WorkspaceSidebarContent
-              draggingViewId={dragPreviewViewId}
-              dropPlacement={dropPlacement}
-              side="right"
-              viewHosts={viewHosts}
-              views={sidebarLayout.right}
+            <AppLayoutSeparator
+              isClosing={rightSidebarPresence.isClosing}
+              isCollapsed={!sidebarVisibility.rightSidebarVisible}
+              isCompact={isCompact}
             />
           ) : null}
-        </ResizablePanel>
-      </ResizablePanelGroup>
 
-      {!sidebarVisibility.hasLeftSidebar ? (
-        <SidebarEmptyDropTarget
-          isActive={dropPlacement?.destination === "left"}
-          isDragging={isDraggingView}
-          side="left"
-        />
-      ) : null}
-      {!sidebarVisibility.hasRightSidebar ? (
-        <SidebarEmptyDropTarget
-          isActive={dropPlacement?.destination === "right"}
-          isDragging={isDraggingView}
-          side="right"
-        />
-      ) : null}
-      <SidebarDropSurface />
+          <ResizablePanel
+            className="mr-1.5 overflow-hidden!"
+            collapsedSize={0}
+            collapsible
+            defaultSize={sidebarVisibility.hasRightSidebar ? "20.5rem" : "0px"}
+            disabled={!sidebarVisibility.hasRightSidebar}
+            groupResizeBehavior="preserve-pixel-size"
+            id="workspace-right-sidebar"
+            maxSize="32rem"
+            minSize="20.5rem"
+          >
+            {rightSidebarPresence.isMounted ? (
+              <WorkspaceSidebarContent
+                draggingViewId={dragPreviewViewId}
+                dropPlacement={dropPlacement}
+                side="right"
+                viewHosts={viewHosts}
+                views={sidebarLayout.right}
+              />
+            ) : null}
+          </ResizablePanel>
+        </ResizablePanelGroup>
+
+        {!sidebarVisibility.hasLeftSidebar ? (
+          <SidebarEmptyDropTarget
+            isActive={dropPlacement?.destination === "left"}
+            isDragging={isDraggingView}
+            side="left"
+          />
+        ) : null}
+        {!sidebarVisibility.hasRightSidebar ? (
+          <SidebarEmptyDropTarget
+            isActive={dropPlacement?.destination === "right"}
+            isDragging={isDraggingView}
+            side="right"
+          />
+        ) : null}
+        <SidebarDropSurface />
+      </div>
     </div>
   );
 }
