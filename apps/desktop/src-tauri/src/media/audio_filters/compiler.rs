@@ -170,7 +170,8 @@ fn compile_filter(
 ///
 /// When loudnorm would select linear mode it applies one constant gain, which `volume` reproduces
 /// bit-exactly while keeping the stage stateless. Otherwise loudnorm runs in dynamic mode, which
-/// upsamples internally, so its output returns to the canonical rate.
+/// upsamples internally, so its output returns to the canonical rate and its timestamps are
+/// rebuilt from the sample count.
 fn normalization_graph(
     target_lufs: f64,
     max_true_peak_db: f64,
@@ -206,7 +207,11 @@ fn normalization_graph(
     if let Some(input_threshold) = analysis.input_threshold {
         graph.push_str(&format!(":measured_thresh={input_threshold}"));
     }
-    graph.push_str(&format!(":linear=false,aresample={CANONICAL_SAMPLE_RATE}"));
+    // loudnorm's output timestamps are not contiguous: an output duration limit (an export's
+    // trim) cut real samples off the end of a range. Timestamps follow the sample count again.
+    graph.push_str(&format!(
+        ":linear=false,aresample={CANONICAL_SAMPLE_RATE},asetpts=NB_CONSUMED_SAMPLES/SR/TB"
+    ));
     // Dynamic loudnorm's gain at any point depends on the whole history since its first sample.
     (graph, SignalMemory::Unbounded)
 }
@@ -384,7 +389,7 @@ mod tests {
         assert_eq!(
             graphs(&[normalization("norm", -16.0)], &[measurement]),
             [
-                "loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=-30:measured_TP=-2:measured_LRA=6:measured_thresh=-40:linear=false,aresample=48000"
+                "loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=-30:measured_TP=-2:measured_LRA=6:measured_thresh=-40:linear=false,aresample=48000,asetpts=NB_CONSUMED_SAMPLES/SR/TB"
             ]
         );
     }
