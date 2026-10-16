@@ -107,8 +107,9 @@ pub async fn analyze_audio_loudness(
             return Err(error);
         }
     };
+    let engine = state.audio_engine();
     let result = tauri::async_runtime::spawn_blocking(move || {
-        analyze_chain_loudness(&source, &request, &cancellation)
+        analyze_chain_loudness(&source, &request, &cancellation, engine.measurements())
     })
     .await
     .map_err(|_| AppError::internal("Loudness analysis stopped unexpectedly."));

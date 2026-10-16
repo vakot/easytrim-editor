@@ -130,6 +130,10 @@ pub enum AppErrorMessageId {
     MediaAudioFfmpegIsRequiredForPlayback,
     #[serde(rename = "media.audio.playbackAudioDecodingTookTooLong")]
     MediaAudioPlaybackAudioDecodingTookTooLong,
+    #[serde(rename = "media.audio.processedAudioRenderWasCancelled")]
+    MediaAudioProcessedAudioRenderWasCancelled,
+    #[serde(rename = "media.audio.processingChangedBeforeAudioWasReady")]
+    MediaAudioProcessingChangedBeforeAudioWasReady,
     #[serde(rename = "media.audioStreamMetadataIsUnavailableForWaveformGeneration")]
     MediaAudioStreamMetadataIsUnavailableForWaveformGeneration,
     #[serde(rename = "media.inspectTheVideoBeforeDetectingAudioActivity")]

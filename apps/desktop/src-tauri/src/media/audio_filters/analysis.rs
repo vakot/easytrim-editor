@@ -1,8 +1,12 @@
 use std::{
+    collections::HashMap,
     ffi::{OsStr, OsString},
     io,
     path::Path,
-    sync::atomic::{AtomicBool, Ordering},
+    sync::{
+        Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
     time::Duration,
 };
 
@@ -32,15 +36,54 @@ pub struct LoudnessAnalysisRequest {
     pub audio_track: AudioChainSelection,
 }
 
+/// Identifies a measurement by everything that shapes the signal reaching the measured instance:
+/// the source activation, stream, analysis range, and the compiled upstream chain (which includes
+/// earlier normalization instances resolved with their own measurements). The instance's own
+/// targets and every downstream filter are deliberately excluded.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+struct MeasurementKey {
+    load_token: u64,
+    stream_index: u32,
+    start_micros: i64,
+    end_micros: i64,
+    upstream_graph: String,
+}
+
+/// Global-analysis results, kept separately from processed PCM.
+#[derive(Debug, Default)]
+pub struct MeasurementCache {
+    entries: Mutex<HashMap<MeasurementKey, AudioLoudnessAnalysis>>,
+}
+
+impl MeasurementCache {
+    fn get(&self, key: &MeasurementKey) -> Option<AudioLoudnessAnalysis> {
+        self.entries.lock().ok()?.get(key).copied()
+    }
+
+    fn insert(&self, key: MeasurementKey, analysis: AudioLoudnessAnalysis) {
+        if let Ok(mut entries) = self.entries.lock() {
+            entries.insert(key, analysis);
+        }
+    }
+
+    pub fn remove_source(&self, load_token: u64) {
+        if let Ok(mut entries) = self.entries.lock() {
+            entries.retain(|key, _| key.load_token != load_token);
+        }
+    }
+}
+
 /// Measures every loudness normalization instance in chain order.
 ///
 /// Each instance is measured on the exact signal that reaches it: the source range processed by
 /// all preceding filters, including earlier normalization instances resolved with their own
-/// measurements. That dependency makes the passes sequential; no PCM is written.
+/// measurements. That dependency makes the passes sequential. Cached measurements are reused, and
+/// no PCM is written.
 pub fn analyze_chain_loudness(
     source: &ActiveSource,
     request: &LoudnessAnalysisRequest,
     operation_cancellation: &AtomicBool,
+    cache: &MeasurementCache,
 ) -> Result<Vec<FilterMeasurement>, AppError> {
     let media = source.media.as_ref().ok_or_else(|| {
         AppError::invalid_request(
@@ -58,13 +101,27 @@ pub fn analyze_chain_loudness(
             continue;
         }
         let upstream = compile_chain(&filters[..index], &measurements)?;
-        let analysis = measure(
-            source,
-            &request.trim,
-            request.audio_track.stream_index,
-            &upstream,
-            operation_cancellation,
-        )?;
+        let key = MeasurementKey {
+            load_token: source.load_token,
+            stream_index: request.audio_track.stream_index,
+            start_micros: request.trim.start_micros,
+            end_micros: request.trim.end_micros,
+            upstream_graph: upstream.canonical_graph(),
+        };
+        let analysis = match cache.get(&key) {
+            Some(analysis) => analysis,
+            None => {
+                let analysis = measure(
+                    source,
+                    &request.trim,
+                    request.audio_track.stream_index,
+                    &upstream,
+                    operation_cancellation,
+                )?;
+                cache.insert(key, analysis);
+                analysis
+            }
+        };
         measurements.push(FilterMeasurement {
             filter_id: filter.id.clone(),
             analysis,
@@ -224,7 +281,8 @@ mod tests {
     use std::{ffi::OsString, path::Path, sync::atomic::AtomicBool};
 
     use super::{
-        LoudnessAnalysisRequest, analysis_arguments, analyze_chain_loudness, parse_loudness,
+        LoudnessAnalysisRequest, MeasurementCache, analysis_arguments, analyze_chain_loudness,
+        parse_loudness,
     };
     use crate::media::{
         audio_filters::{
@@ -291,6 +349,14 @@ mod tests {
     }
 
     fn analyze(path: &Path, filters: Vec<AudioFilter>) -> Vec<FilterMeasurement> {
+        analyze_cached(path, filters, &MeasurementCache::default())
+    }
+
+    fn analyze_cached(
+        path: &Path,
+        filters: Vec<AudioFilter>,
+        cache: &MeasurementCache,
+    ) -> Vec<FilterMeasurement> {
         analyze_chain_loudness(
             &fixture_source(path, 8_000_000),
             &LoudnessAnalysisRequest {
@@ -305,8 +371,75 @@ mod tests {
                 },
             },
             &AtomicBool::new(false),
+            cache,
         )
         .expect("FFmpeg measures the fixture")
+    }
+
+    #[test]
+    fn reuses_measurements_for_downstream_changes_and_invalidates_upstream_changes() {
+        let fixture = generate_fixture("analysis-cache", PROGRAM_MATERIAL, "wav", "pcm_s16le");
+        let cache = MeasurementCache::default();
+        let measured = analyze_cached(
+            fixture.path(),
+            vec![gain("pre", -3.0), normalization("norm", -16.0)],
+            &cache,
+        );
+        let source = fixture.path().to_owned();
+        drop(fixture);
+        assert!(!source.exists());
+
+        // The source is gone: only cached measurements can satisfy these requests.
+        let downstream_changed = analyze_cached(
+            &source,
+            vec![
+                gain("pre", -3.0),
+                normalization("norm", -23.0),
+                limiter("lim", -1.0),
+            ],
+            &cache,
+        );
+        assert_eq!(downstream_changed, measured);
+
+        let upstream_changed = analyze_chain_loudness(
+            &fixture_source(&source, 8_000_000),
+            &LoudnessAnalysisRequest {
+                trim: TrimSelection {
+                    start_micros: 0,
+                    end_micros: 8_000_000,
+                },
+                audio_track: AudioChainSelection {
+                    stream_index: 0,
+                    filters: vec![gain("pre", -4.0), normalization("norm", -16.0)],
+                    loudness_measurements: Vec::new(),
+                },
+            },
+            &AtomicBool::new(false),
+            &cache,
+        );
+        assert!(
+            upstream_changed.is_err(),
+            "an upstream change must measure again"
+        );
+
+        cache.remove_source(1);
+        let released = analyze_chain_loudness(
+            &fixture_source(&source, 8_000_000),
+            &LoudnessAnalysisRequest {
+                trim: TrimSelection {
+                    start_micros: 0,
+                    end_micros: 8_000_000,
+                },
+                audio_track: AudioChainSelection {
+                    stream_index: 0,
+                    filters: vec![gain("pre", -3.0), normalization("norm", -16.0)],
+                    loudness_measurements: Vec::new(),
+                },
+            },
+            &AtomicBool::new(false),
+            &cache,
+        );
+        assert!(released.is_err(), "a released source keeps no measurements");
     }
 
     #[test]

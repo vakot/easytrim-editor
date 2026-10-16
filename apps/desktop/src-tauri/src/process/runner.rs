@@ -426,7 +426,7 @@ fn join_stream_reader<T>(reader: thread::JoinHandle<io::Result<T>>) -> io::Resul
         .map_err(|_| io::Error::other("child stdout processor stopped unexpectedly"))
 }
 
-fn resolve_executable(executable: &OsStr) -> io::Result<PathBuf> {
+pub(super) fn resolve_executable(executable: &OsStr) -> io::Result<PathBuf> {
     let executable_path = Path::new(executable);
     if executable_path.is_absolute() || executable_path.components().count() > 1 {
         return is_executable_file(executable_path)
@@ -510,14 +510,14 @@ fn terminate_child(child: &mut std::process::Child) -> io::Result<()> {
 }
 
 #[cfg(windows)]
-fn configure_process(command: &mut Command) {
+pub(super) fn configure_process(command: &mut Command) {
     use std::os::windows::process::CommandExt;
 
     command.creation_flags(CREATE_NO_WINDOW);
 }
 
 #[cfg(not(windows))]
-fn configure_process(_command: &mut Command) {}
+pub(super) fn configure_process(_command: &mut Command) {}
 
 #[cfg(test)]
 mod tests {

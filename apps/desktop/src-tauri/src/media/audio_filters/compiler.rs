@@ -1,5 +1,6 @@
 use crate::error::AppError;
 
+use super::capabilities::{ExecutionStrategy, SignalMemory, frames_for_seconds};
 use super::model::{
     AudioFilter, AudioFilterKind, AudioLoudnessAnalysis, FilterMeasurement, invalid_chain,
     validate_filter_chain, validate_measurements,
@@ -17,11 +18,13 @@ const CANONICAL_INPUT_STAGE: &str = "aresample=48000:async=1:first_pts=0";
 /// amount of trailing signal. The compiled stage pads the tail and removes the delay.
 const NOISE_REDUCTION_LATENCY_FRAMES: u64 = 1_200;
 
-/// The FFmpeg form of one filter instance, kept in chain order.
+/// The FFmpeg form of one filter instance, kept in chain order, with the signal memory that decides
+/// how ranges of it may be rendered.
 #[derive(Clone, Debug, PartialEq)]
 pub struct CompiledStage {
     pub filter_id: String,
     pub graph: String,
+    pub memory: SignalMemory,
 }
 
 /// A validated, measurement-resolved chain. It is the single filter implementation shared by
@@ -39,6 +42,11 @@ impl CompiledChain {
 
     pub fn is_empty(&self) -> bool {
         self.stages.is_empty()
+    }
+
+    /// The execution strategy required by the complete ordered chain.
+    pub fn strategy(&self) -> ExecutionStrategy {
+        ExecutionStrategy::for_stages(self.stages.iter().map(|stage| stage.memory))
     }
 
     /// The stages in execution order, expecting canonical-rate input.
@@ -84,9 +92,11 @@ pub fn compile_chain(
                 .iter()
                 .find(|measurement| measurement.filter_id == filter.id)
                 .map(|measurement| measurement.analysis);
+            let (graph, memory) = compile_filter(&filter.kind, measurement)?;
             Ok(CompiledStage {
                 filter_id: filter.id.clone(),
-                graph: compile_filter(&filter.kind, measurement)?,
+                graph,
+                memory,
             })
         })
         .collect::<Result<Vec<_>, AppError>>()?;
@@ -96,27 +106,51 @@ pub fn compile_chain(
 fn compile_filter(
     kind: &AudioFilterKind,
     measurement: Option<AudioLoudnessAnalysis>,
-) -> Result<String, AppError> {
+) -> Result<(String, SignalMemory), AppError> {
     Ok(match *kind {
-        AudioFilterKind::HighPass { cutoff_hz } => format!("highpass=f={cutoff_hz}"),
+        // A two-pole IIR filter: its impulse response decays below float precision after roughly
+        // four cycles of the cutoff frequency.
+        AudioFilterKind::HighPass { cutoff_hz } => (
+            format!("highpass=f={cutoff_hz}"),
+            SignalMemory::Decaying {
+                settle_frames: frames_for_seconds((4.0 / cutoff_hz).max(0.01)),
+            },
+        ),
+        // Overlapping FFT windows plus per-bin gain smoothing (adaptivity) carry state forward.
         AudioFilterKind::NoiseReduction {
             reduction_db,
             noise_floor_db,
-        } => format!(
-            "apad=pad_len={NOISE_REDUCTION_LATENCY_FRAMES},afftdn=nr={reduction_db}:nf={noise_floor_db},atrim=start_sample={NOISE_REDUCTION_LATENCY_FRAMES},asetpts=PTS-STARTPTS"
+        } => (
+            format!(
+                "apad=pad_len={NOISE_REDUCTION_LATENCY_FRAMES},afftdn=nr={reduction_db}:nf={noise_floor_db},atrim=start_sample={NOISE_REDUCTION_LATENCY_FRAMES},asetpts=PTS-STARTPTS"
+            ),
+            SignalMemory::Decaying {
+                settle_frames: frames_for_seconds(1.0),
+            },
         ),
         AudioFilterKind::Limiter {
             ceiling_db,
             attack_ms,
             release_ms,
         } => {
-            // A true limiter with look-ahead, compensated so its output stays sample-aligned.
+            // A true limiter with look-ahead, compensated so its output stays sample-aligned. Its
+            // gain envelope recovers over the release time, which is not a hard clip.
             let limit = 10.0_f64.powf(ceiling_db / 20.0);
-            format!(
-                "alimiter=limit={limit:.6}:attack={attack_ms}:release={release_ms}:level=0:latency=1"
+            (
+                format!(
+                    "alimiter=limit={limit:.6}:attack={attack_ms}:release={release_ms}:level=0:latency=1"
+                ),
+                SignalMemory::Decaying {
+                    settle_frames: frames_for_seconds(
+                        ((attack_ms + 10.0 * release_ms) / 1_000.0).max(0.1),
+                    ),
+                },
             )
         }
-        AudioFilterKind::Gain { gain_db } => format!("volume={gain_db}dB:precision=double"),
+        AudioFilterKind::Gain { gain_db } => (
+            format!("volume={gain_db}dB:precision=double"),
+            SignalMemory::Stateless,
+        ),
         AudioFilterKind::LoudnessNormalization {
             target_lufs,
             max_true_peak_db,
@@ -140,10 +174,10 @@ fn normalization_graph(
     max_true_peak_db: f64,
     loudness_range_lu: f64,
     analysis: AudioLoudnessAnalysis,
-) -> String {
+) -> (String, SignalMemory) {
     let Some(measured_i) = analysis.integrated_lufs else {
         // Silence has no measurable loudness; normalizing it would only amplify noise.
-        return "anull".to_owned();
+        return ("anull".to_owned(), SignalMemory::Stateless);
     };
     if let Some(gain_db) = linear_normalization_gain_db(
         target_lufs,
@@ -152,7 +186,10 @@ fn normalization_graph(
         measured_i,
         analysis,
     ) {
-        return format!("volume={gain_db}dB:precision=double");
+        return (
+            format!("volume={gain_db}dB:precision=double"),
+            SignalMemory::Stateless,
+        );
     }
 
     let mut graph = format!(
@@ -168,7 +205,8 @@ fn normalization_graph(
         graph.push_str(&format!(":measured_thresh={input_threshold}"));
     }
     graph.push_str(&format!(":linear=false,aresample={CANONICAL_SAMPLE_RATE}"));
-    graph
+    // Dynamic loudnorm's gain at any point depends on the whole history since its first sample.
+    (graph, SignalMemory::Unbounded)
 }
 
 /// Mirrors loudnorm's linear-mode eligibility so the compiled stage matches FFmpeg's choice.
@@ -200,6 +238,7 @@ mod tests {
     use std::ffi::OsString;
 
     use crate::media::audio_filters::{
+        capabilities::ExecutionStrategy,
         model::{AudioFilterKind, AudioLoudnessAnalysis, FilterMeasurement, fixtures::*},
         test_fixtures::{decode_f32_stereo, generate_fixture},
     };
@@ -403,6 +442,37 @@ mod tests {
                 "{filters:?} moved the click to frame {peak_frame}"
             );
         }
+    }
+
+    #[test]
+    fn classifies_the_execution_strategy_of_the_complete_chain() {
+        let linear = measured("norm", -20.0, -9.0, 6.0);
+        let dynamic = measured("norm", -30.0, -2.0, 6.0);
+        assert_eq!(
+            compile_chain(&[gain("g", 3.0), normalization("norm", -16.0)], &[linear])
+                .unwrap()
+                .strategy(),
+            ExecutionStrategy::RandomAccess
+        );
+        assert!(matches!(
+            compile_chain(&[normalization("norm", -16.0)], &[dynamic])
+                .unwrap()
+                .strategy(),
+            ExecutionStrategy::Sequential { .. }
+        ));
+        let limited = compile_chain(&[gain("g", 3.0), limiter("lim", -1.0)], &[]).unwrap();
+        assert_eq!(
+            limited.strategy(),
+            ExecutionStrategy::Sequential {
+                warmup_frames: 24_240
+            }
+        );
+        assert!(matches!(
+            compile_chain(&[high_pass("hp", 80.0), noise_reduction("nr")], &[])
+                .unwrap()
+                .strategy(),
+            ExecutionStrategy::Sequential { warmup_frames } if warmup_frames == 2_400 + 48_000
+        ));
     }
 
     #[test]

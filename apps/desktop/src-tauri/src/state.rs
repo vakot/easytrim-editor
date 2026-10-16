@@ -8,7 +8,10 @@ use std::{
     },
 };
 
-use crate::media::{audio_filters::compiler::CompiledChain, probe::MediaInfo};
+use crate::media::{
+    audio_filters::{compiler::CompiledChain, engine::AudioProcessingEngine},
+    probe::MediaInfo,
+};
 use crate::{
     domain::source::{ValidatedSource, validate_source},
     error::{AppError, AppErrorMessageId},
@@ -31,7 +34,8 @@ pub fn cleanup_stale_media_artifacts() {
         let is_easytrim_artifact = name.starts_with("easytrim-preview-")
             || name.starts_with("easytrim-thumbnail-")
             || name.starts_with("easytrim-waveform-")
-            || name.starts_with("easytrim-chapters-");
+            || name.starts_with("easytrim-chapters-")
+            || name.starts_with("easytrim-pcm-");
         if !is_easytrim_artifact || !entry.file_type().is_ok_and(|file_type| file_type.is_dir()) {
             continue;
         }
@@ -173,6 +177,7 @@ pub struct AppState {
     operations: Mutex<HashMap<String, Arc<AtomicBool>>>,
     export_sources: Mutex<HashMap<PathBuf, RetainedExportSource>>,
     imported_thumbnail_artifacts: Mutex<HashMap<u64, ImportedThumbnailArtifact>>,
+    audio_engine: Arc<AudioProcessingEngine>,
 }
 
 #[derive(Clone, Debug)]
@@ -182,6 +187,11 @@ struct RetainedExportSource {
 }
 
 impl AppState {
+    /// The processed audio renderer, shared with blocking work that outlives a command borrow.
+    pub fn audio_engine(&self) -> Arc<AudioProcessingEngine> {
+        Arc::clone(&self.audio_engine)
+    }
+
     pub fn begin_source_replacement(&self) -> Result<u64, AppError> {
         let generation = self.next_generation.fetch_add(1, Ordering::Relaxed) + 1;
         let mut session = self.lock_session()?;
@@ -191,6 +201,7 @@ impl AppState {
 
         if let Some(previous_source) = previous_source {
             previous_source.cancellation.store(true, Ordering::Release);
+            self.audio_engine.release_source(previous_source.load_token);
         }
         // Export operations own their resolved input path and output path after they
         // start. They must outlive the active editing source, so replacing the source

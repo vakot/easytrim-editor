@@ -149,6 +149,8 @@ export const en = {
         ffmpegIsRequiredForPlayback: "FFmpeg is required for audio playback",
         playbackAudioDecodingTookTooLong: "Decoding an audio playback chunk took too long",
         playbackChunkRequiresInspectedSourceMedia: "Inspected source media is required for audio playback",
+        processedAudioRenderWasCancelled: "Processing audio for playback was cancelled",
+        processingChangedBeforeAudioWasReady: "The audio filters changed before the processed audio was ready",
       },
       audioStreamMetadataIsUnavailableForWaveformGeneration: "Audio stream metadata is unavailable for waveform generation",
       loudness: {

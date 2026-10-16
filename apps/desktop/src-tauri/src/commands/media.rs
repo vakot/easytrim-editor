@@ -258,8 +258,16 @@ pub async fn decode_audio_playback_chunk(
 ) -> Result<Response, AppError> {
     let source = state.resolve_source_by_path(&source_path)?;
     let cancellation = state.register_operation(&operation_id)?;
+    let engine = state.audio_engine();
     let result = tauri::async_runtime::spawn_blocking(move || {
-        decode_playback_chunk(&source, &track, start_micros, duration_micros, cancellation)
+        decode_playback_chunk(
+            &engine,
+            &source,
+            &track,
+            start_micros,
+            duration_micros,
+            &cancellation,
+        )
     })
     .await
     .map_err(|_| AppError::internal("Audio playback chunk decoding stopped unexpectedly."));

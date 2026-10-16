@@ -182,6 +182,10 @@ function localizeAppError(error: AppError, t: TFunction): string {
       return t("audio.errors.audio.ffmpegIsRequiredForPlayback");
     case "media.audio.playbackAudioDecodingTookTooLong":
       return t("audio.errors.audio.playbackAudioDecodingTookTooLong");
+    case "media.audio.processedAudioRenderWasCancelled":
+      return t("audio.errors.audio.processedAudioRenderWasCancelled");
+    case "media.audio.processingChangedBeforeAudioWasReady":
+      return t("audio.errors.audio.processingChangedBeforeAudioWasReady");
     case "media.audioActivity.audioActivityAnalysisContainsTooManyRanges":
       return t("audio.activityDetection.errors.audioActivityAnalysisContainsTooManyRanges");
     case "media.audioActivity.audioActivityAnalysisOutputExceededItsSafetyLimit":
