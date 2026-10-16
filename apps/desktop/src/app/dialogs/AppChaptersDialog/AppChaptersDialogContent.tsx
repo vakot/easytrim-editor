@@ -24,7 +24,7 @@ function AppChaptersDialogContent({ __scopeDialog }: { __scopeDialog?: DialogSco
         </DialogDescription>
       </DialogHeader>
 
-      <ChaptersContent className="-mx-2 px-2">
+      <ChaptersContent className="-mx-2 **:data-[slot=scroll-area-viewport]:px-2">
         <ChaptersList className="py-2" />
       </ChaptersContent>
 

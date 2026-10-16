@@ -118,7 +118,7 @@ function AchievementsCollection({ className }: { className?: string }) {
 
       {achievementsFilters.map((value) => (
         <TabsContent className="flex min-h-0 flex-col" key={value} value={value}>
-          <ScrollArea className="-mx-2 min-h-0 flex-1 px-2">
+          <ScrollArea className="-mx-2 **:data-[slot=scroll-area-viewport]:px-2">
             <AchievementsList filter={value} records={records} />
           </ScrollArea>
         </TabsContent>

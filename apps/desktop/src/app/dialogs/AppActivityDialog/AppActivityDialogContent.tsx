@@ -42,8 +42,7 @@ function AppActivityDialogContent({ __scopeDialog }: { __scopeDialog?: DialogSco
           {t("activity.description")}
         </DialogDescription>
       </DialogHeader>
-
-      <ActivityFeedContent className="-mx-2 px-2">
+      <ActivityFeedContent className="-mx-2 **:data-[slot=scroll-area-viewport]:px-2">
         <ActivityFeedList className="py-2" />
       </ActivityFeedContent>
 

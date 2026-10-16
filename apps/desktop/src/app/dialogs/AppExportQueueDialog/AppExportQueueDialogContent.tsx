@@ -33,7 +33,7 @@ function AppExportQueueDialogContent({ __scopeDialog }: { __scopeDialog?: Dialog
         </DialogDescription>
       </DialogHeader>
 
-      <ExportQueueContent className="-mx-2 px-2">
+      <ExportQueueContent className="-mx-2 **:data-[slot=scroll-area-viewport]:px-2">
         <ExportQueueList className="py-2" />
       </ExportQueueContent>
 

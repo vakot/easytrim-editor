@@ -29,7 +29,7 @@ function AppStatisticsDialogContent({ __scopeDialog }: { __scopeDialog?: DialogS
         </DialogDescription>
       </DialogHeader>
 
-      <UsageStatisticsContent className="-mx-2 px-2">
+      <UsageStatisticsContent className="-mx-2 **:data-[slot=scroll-area-viewport]:px-2">
         <UsageStatisticsDashboard />
       </UsageStatisticsContent>
 
