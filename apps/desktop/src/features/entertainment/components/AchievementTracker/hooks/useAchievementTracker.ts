@@ -37,20 +37,23 @@ function useAchievementTracker() {
   useEffect(() => {
     if (!records || !statistics) return;
 
-    evaluations.current = evaluations.current.then(async () => {
-      const state = store.getState();
-      const initialized = selectAchievementsInitialized(state);
-      const earned = getEarnedAchievementIds({
-        records: selectAchievementRecords(state),
-        statistics: selectUsageStatistics(state),
-      });
+    // Catch before chaining, so one failed evaluation never stops all later ones.
+    evaluations.current = evaluations.current
+      .catch(() => undefined)
+      .then(async () => {
+        const state = store.getState();
+        const initialized = selectAchievementsInitialized(state);
+        const earned = getEarnedAchievementIds({
+          records: selectAchievementRecords(state),
+          statistics: selectUsageStatistics(state),
+        });
 
-      const unlocked = await dispatch(unlockAchievements(earned));
-      // A failed first evaluation stays retroactive, so its achievements stay unannounced.
-      if (unlocked === null) return;
-      if (!initialized) dispatch(achievementsInitialized());
-      else if (unlocked.length > 0) showAchievementUnlockToast(unlocked, t);
-    });
+        const unlocked = await dispatch(unlockAchievements(earned));
+        // A failed first evaluation stays retroactive, so its achievements stay unannounced.
+        if (unlocked === null) return;
+        if (!initialized) dispatch(achievementsInitialized());
+        else if (unlocked.length > 0) showAchievementUnlockToast(unlocked, t);
+      });
   }, [dispatch, records, statistics, store, t]);
 }
 
