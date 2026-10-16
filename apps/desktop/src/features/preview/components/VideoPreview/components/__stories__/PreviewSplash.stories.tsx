@@ -24,7 +24,7 @@ function SplashMessagesColumn({ messages }: { messages: SplashMessageDefinition[
   }
 
   return (
-    <section className="relative m-12 grid justify-items-center gap-2">
+    <section className="relative m-12 grid justify-items-center gap-8">
       {messages.map((message) => (
         <PreviewSplash className="static! translate-none" key={message.id} message={message} />
       ))}

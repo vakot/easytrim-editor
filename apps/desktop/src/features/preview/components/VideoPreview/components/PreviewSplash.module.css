@@ -1,0 +1,144 @@
+.enchantment {
+  font-family: ui-monospace, monospace;
+  font-variant-ligatures: none;
+  text-align: center;
+}
+
+.enchantment [data-enchantment-text] {
+  display: inline-block;
+  min-width: 13ch;
+}
+
+.rainbow {
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    #ff4545,
+    #ffb341,
+    #f4e94e,
+    #62d66b,
+    #45c9e8,
+    #7772f5,
+    #d35be8,
+    #ff4545
+  );
+  background-clip: text;
+  background-size: 300% 100%;
+  animation: splash-rainbow 5s linear infinite;
+  -webkit-background-clip: text;
+}
+
+.corruptedSignal {
+  color: #f3f4f6;
+  text-shadow:
+    -2px 0 #ff354f,
+    2px 0 #27d8f2;
+  animation: splash-signal-glitch 6s steps(1, end) infinite;
+}
+
+.chosenFrame {
+  color: var(--primary);
+  text-shadow:
+    0 0 5px color-mix(in srgb, var(--primary) 95%, transparent),
+    0 0 13px color-mix(in srgb, var(--primary) 65%, transparent),
+    0 0 25px color-mix(in srgb, var(--primary) 35%, transparent);
+  animation: splash-chosen-breathe 3.8s ease-in-out infinite;
+}
+
+.frameNotFound {
+  position: relative;
+  color: #ff4b55;
+  text-shadow: 0 0 7px rgb(255 49 61 / 45%);
+  animation: splash-error-flicker 5s linear infinite;
+}
+
+@keyframes splash-rainbow {
+  to {
+    background-position: 100% 0;
+  }
+}
+
+@keyframes splash-signal-glitch {
+  0%,
+  88%,
+  90%,
+  92%,
+  100% {
+    transform: translateX(0);
+    text-shadow:
+      -2px 0 #ff354f,
+      2px 0 #27d8f2;
+  }
+
+  89% {
+    transform: translateX(-2px) skewX(-3deg);
+    text-shadow:
+      -4px 0 #ff354f,
+      4px 0 #27d8f2;
+  }
+
+  91% {
+    transform: translateX(2px) skewX(2deg);
+    text-shadow:
+      -3px 0 #ff354f,
+      3px 0 #27d8f2;
+  }
+}
+
+@keyframes splash-chosen-breathe {
+  0%,
+  100% {
+    filter: brightness(0.94);
+    text-shadow:
+      0 0 5px color-mix(in srgb, var(--primary) 95%, transparent),
+      0 0 13px color-mix(in srgb, var(--primary) 65%, transparent),
+      0 0 25px color-mix(in srgb, var(--primary) 35%, transparent);
+  }
+
+  50% {
+    filter: brightness(1.18);
+    text-shadow:
+      0 0 7px color-mix(in srgb, var(--primary) 100%, transparent),
+      0 0 18px color-mix(in srgb, var(--primary) 78%, transparent),
+      0 0 34px color-mix(in srgb, var(--primary) 48%, transparent);
+  }
+}
+
+@keyframes splash-error-flicker {
+  0%,
+  82%,
+  84%,
+  86%,
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+    text-shadow: 0 0 7px rgb(255 49 61 / 45%);
+  }
+
+  83% {
+    opacity: 0.72;
+    transform: translateX(1px);
+    text-shadow:
+      -3px 0 #ff354f,
+      3px 0 #27d8f2;
+  }
+
+  85% {
+    opacity: 0.9;
+    transform: translateX(-1px);
+    text-shadow: 0 0 12px rgb(255 49 61 / 80%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rainbow,
+  .corruptedSignal,
+  .chosenFrame,
+  .frameNotFound {
+    animation: none;
+  }
+
+  .rainbow {
+    background-position: 50% 0;
+  }
+}
