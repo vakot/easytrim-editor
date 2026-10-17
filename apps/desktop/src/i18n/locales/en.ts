@@ -6,6 +6,7 @@ export const en = {
       processingMilestones: "Processing Milestones",
       secretDiscoveries: "Secret Discoveries",
     },
+    completedOn: "Completed {{date}}",
     description: "Milestones and discoveries collected across all sessions",
     empty: {
       locked: "Every achievement is unlocked",
@@ -118,6 +119,7 @@ export const en = {
       total: "Total",
     },
     status: {
+      completed: "Completed",
       locked: "Locked",
       unlocked: "Unlocked",
     },

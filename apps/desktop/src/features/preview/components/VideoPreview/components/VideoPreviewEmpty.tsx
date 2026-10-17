@@ -11,7 +11,7 @@ import {
 } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { SupportLink } from "@/app/components/SupportLink";
-import { SplashMessages } from "@/features/entertainment";
+import { AchievementsCategoryContent, SplashMessages } from "@/features/entertainment";
 import { cn } from "@/lib/class-names.utils";
 
 import styles from "./VideoPreviewEmpty.module.css";
@@ -76,37 +76,46 @@ function VideoPreviewEmpty() {
         "grid size-full min-h-0 place-items-center overflow-hidden px-6 py-8",
       )}
     >
-      <div className="grid w-72 max-w-full justify-items-center gap-10">
-        <div className="relative">
-          <img
-            alt=""
-            aria-hidden="true"
-            className="pointer-events-none aspect-square w-full opacity-30 grayscale invert-100 dark:opacity-20 dark:invert-0"
-            src="/logo-symbol.svg"
+      <div className="flex w-full min-w-0 items-center justify-center gap-12">
+        <div className={cn(styles.achievements, "w-104 min-w-0 flex-col")}>
+          <AchievementsCategoryContent
+            category="getting-started"
+            compact
+            presentation="onboarding"
           />
-          <SplashMessages />
         </div>
-
-        <div className="grid w-full justify-items-center gap-4">
-          <div
-            aria-label={t("preview.shortcuts.title")}
-            className={cn(
-              styles.hints,
-              "grid w-full gap-2 text-left text-sm text-muted-foreground",
-            )}
-            role="list"
-          >
-            {shortcuts.map((shortcut) => (
-              <VideoPreviewEmptyShortcut key={shortcut.id} shortcut={shortcut} />
-            ))}
-
-            <div className="-mx-2 grid gap-2 rounded-xl border border-dashed p-2">
-              <VideoPreviewEmptyShortcut shortcut={settings} />
-              <VideoPreviewEmptyShortcut shortcut={command} />
-            </div>
+        <div className="flex w-72 max-w-full shrink-0 flex-col items-center gap-10">
+          <div className="relative">
+            <img
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none aspect-square w-full opacity-30 grayscale invert-100 dark:opacity-20 dark:invert-0"
+              src="/logo-symbol.svg"
+            />
+            <SplashMessages />
           </div>
 
-          <SupportLink />
+          <div className="grid w-full justify-items-center gap-4">
+            <div
+              aria-label={t("preview.shortcuts.title")}
+              className={cn(
+                styles.hints,
+                "grid w-full gap-2 text-left text-sm text-muted-foreground",
+              )}
+              role="list"
+            >
+              {shortcuts.map((shortcut) => (
+                <VideoPreviewEmptyShortcut key={shortcut.id} shortcut={shortcut} />
+              ))}
+
+              <div className="-mx-2 grid gap-2 rounded-xl border border-dashed p-2">
+                <VideoPreviewEmptyShortcut shortcut={settings} />
+                <VideoPreviewEmptyShortcut shortcut={command} />
+              </div>
+            </div>
+
+            <SupportLink />
+          </div>
         </div>
       </div>
     </section>

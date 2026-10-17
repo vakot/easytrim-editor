@@ -1,5 +1,6 @@
 export {
   Achievements,
+  AchievementsCategoryContent,
   AchievementsCollection,
   AchievementsSummary,
 } from "./components/Achievements";

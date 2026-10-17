@@ -2,7 +2,17 @@ import { type ReactNode, useId } from "react";
 
 import { ItemGroup } from "@/components/ui/item";
 
-function AchievementsCategory({ children, title }: { children: ReactNode; title: string }) {
+import { cn } from "@/lib/class-names.utils";
+
+function AchievementsCategory({
+  children,
+  compact = false,
+  title,
+}: {
+  children: ReactNode;
+  compact?: boolean;
+  title: string;
+}) {
   const headingId = useId();
 
   return (
@@ -10,7 +20,12 @@ function AchievementsCategory({ children, title }: { children: ReactNode; title:
       <h3 className="text-xs font-medium text-muted-foreground" id={headingId}>
         {title}
       </h3>
-      <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))] gap-2">
+      <ItemGroup
+        className={cn(
+          "grid gap-2",
+          compact ? "grid-cols-1" : "grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))]",
+        )}
+      >
         {children}
       </ItemGroup>
     </section>
