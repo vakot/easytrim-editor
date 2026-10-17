@@ -13,7 +13,8 @@
         "scripts/generate-i18n-coverage.mjs!",
         "scripts/validate-i18n.mjs!",
         "scripts/release-local.mjs!",
-        "scripts/release-linux-docker.mjs!"
+        "scripts/release-linux-docker.mjs!",
+        "scripts/check-ui-pixel-units.mjs!"
       ],
       "project": ["scripts/**/*.mjs!"],
       "ignore": ["scripts/**/__tests__/**"]

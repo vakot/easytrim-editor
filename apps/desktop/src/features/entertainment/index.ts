@@ -4,8 +4,8 @@ export {
   AchievementsCollection,
   AchievementsSummary,
 } from "./components/Achievements";
-export { AchievementTracker } from "./components/AchievementTracker";
 export { AchievementToaster } from "./components/AchievementToaster";
+export { AchievementTracker } from "./components/AchievementTracker";
 export { SplashMessages } from "./components/SplashMessages";
 export {
   UsageStatistics,

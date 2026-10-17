@@ -49,8 +49,8 @@ const ANNOUNCEMENT_GAP_MS = 1_500;
 const ACHIEVEMENT_TOASTER_ID = "achievement-toasts";
 
 export {
-  achievementToastPresentation,
   ACHIEVEMENT_TOASTER_ID,
+  achievementToastPresentation,
   ANNOUNCEMENT_GAP_MS,
   secretRevealEnd,
   secretRevealTimeline,
