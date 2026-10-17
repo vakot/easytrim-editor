@@ -2,9 +2,9 @@ import { useReducedMotion } from "motion/react";
 import type { CSSProperties } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { Confetti } from "@/components/ui/confetti";
-import { TextReveal } from "@/components/ui/text-reveal";
 
+import { Confetti } from "@/components/confetti";
+import { TextReveal } from "@/components/text-reveal";
 import { cn } from "@/lib/class-names.utils";
 
 import { achievementTierClassNames } from "../consts/achievement-tier-styles.consts";

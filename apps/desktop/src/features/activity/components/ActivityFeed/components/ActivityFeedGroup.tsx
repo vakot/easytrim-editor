@@ -3,8 +3,8 @@ import { AnimatePresence } from "motion/react";
 import { useTranslation } from "react-i18next";
 
 import { Marker, MarkerContent } from "@/components/ui/marker";
-import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 
+import { RelativeTimestamp } from "@/components/relative-timestamp";
 import { cn } from "@/lib/class-names.utils";
 
 import {

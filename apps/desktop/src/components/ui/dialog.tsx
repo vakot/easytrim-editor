@@ -6,8 +6,8 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { keepMovedFocusOnClose } from "@/components/ui/close-auto-focus";
 
+import { keepMovedFocusOnClose } from "@/components/close-auto-focus";
 import { cn } from "@/lib/class-names.utils";
 
 const createDialogScope = DialogPrimitive.createDialogScope;

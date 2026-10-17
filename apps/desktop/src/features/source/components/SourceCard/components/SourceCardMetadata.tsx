@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 
-import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { RelativeTimestamp } from "@/components/relative-timestamp";
 import { cn } from "@/lib/class-names.utils";
 
 import { formatBytes } from "../../../lib/media-formatters.utils";

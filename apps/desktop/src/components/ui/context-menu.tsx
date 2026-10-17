@@ -4,7 +4,6 @@ import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import { ContextMenu as ContextMenuPrimitive } from "radix-ui";
 import * as React from "react";
 
-import { keepMovedFocusOnClose } from "@/components/ui/close-auto-focus";
 import {
   gateKeepOpenHandler,
   menuClassNames,
@@ -12,6 +11,7 @@ import {
   menuItemVariants,
 } from "@/components/ui/menu";
 
+import { keepMovedFocusOnClose } from "@/components/close-auto-focus";
 import { cn } from "@/lib/class-names.utils";
 
 function ContextMenu({ ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Root>) {

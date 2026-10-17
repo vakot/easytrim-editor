@@ -1,4 +1,4 @@
-import type { ConfettiIntensity } from "@/components/ui/confetti";
+import type { ConfettiIntensity } from "@/components/confetti";
 
 import type { AchievementSoundKind } from "../lib/achievement-sound";
 import type { AchievementToastVariant } from "../types/achievement-toast.types";
