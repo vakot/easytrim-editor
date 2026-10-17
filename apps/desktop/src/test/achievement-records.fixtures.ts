@@ -47,6 +47,16 @@ export const completeAchievementRecords: AchievementRecords = {
   viewedAtMillis: null,
 };
 
+/** All but the timeline shortcut Getting Started task have been completed. */
+export const almostCompleteGettingStartedRecords: AchievementRecords = {
+  ...completeAchievementRecords,
+  unlockedAchievements: Object.fromEntries(
+    Object.entries(completeAchievementRecords.unlockedAchievements).filter(
+      ([id]) => id !== "shortcut-taken",
+    ),
+  ),
+};
+
 /**
  * Statistics and records of a partially completed collection. The two agree: every tier whose
  * threshold the statistics reach is unlocked, which the achievements tests verify with the real

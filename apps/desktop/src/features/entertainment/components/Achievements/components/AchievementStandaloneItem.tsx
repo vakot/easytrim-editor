@@ -41,7 +41,8 @@ function AchievementStandaloneItem({
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const unlockedAt = getAchievementUnlockedAt(definition.id, records);
   const unlocked = unlockedAt !== null;
-  const isNew = isAchievementNew(definition.id, records, viewedAt);
+  const onboarding = presentation === "onboarding";
+  const isNew = !onboarding && isAchievementNew(definition.id, records, viewedAt);
   // A locked secret reveals nothing about itself, not even how close it is.
   const concealed = definition.secret === true && !unlocked;
   // A single-step achievement has no progress worth showing.
@@ -53,10 +54,10 @@ function AchievementStandaloneItem({
   const progress = measured && measured.target > 1 ? measured : null;
   const secret = definition.secret === true;
 
-  const onboarding = presentation === "onboarding";
-  const completedDate = unlocked
-    ? formatDateOnly(unlockedAt, locale, t("achievements.unknownDate"))
-    : "";
+  const completedDate =
+    unlocked && !onboarding
+      ? formatDateOnly(unlockedAt, locale, t("achievements.unknownDate"))
+      : "";
 
   const Icon = concealed ? LockKeyhole : definition.icon;
   const title = concealed ? t("achievements.secret.title") : definition.title(t);
@@ -139,11 +140,9 @@ function AchievementStandaloneItem({
         <ItemDescription className="text-xs">
           {concealed ? t("achievements.secret.description") : definition.description(t)}
         </ItemDescription>
-        {unlocked ? (
+        {unlocked && !onboarding ? (
           <p className="text-xs text-muted-foreground">
-            {onboarding
-              ? t("achievements.completedOn", { date: completedDate })
-              : t("achievements.unlockedOn", { date: completedDate })}
+            {t("achievements.unlockedOn", { date: completedDate })}
           </p>
         ) : null}
         {progress ? (
