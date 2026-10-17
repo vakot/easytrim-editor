@@ -271,7 +271,7 @@ export const SilverAchievement: Story = { args: { ids: [variantAchievements.silv
 /** Gold colors, a large burst, the standard chime, and an expressive entrance with a halo. */
 export const GoldAchievement: Story = { args: { ids: [variantAchievements.gold] } };
 
-/** Iridescent glow and shimmer, a celebration burst, the layered secret sound, and a glyph reveal. */
+/** Red diagonal TOP SECRET ribbon, iridescent glow and shimmer, and the glyph reveal. */
 export const SecretAchievement: Story = { args: { ids: [variantAchievements.secret] } };
 
 /** The secret toast on a phone-sized viewport; the toolbar's viewport menu tests other sizes. */

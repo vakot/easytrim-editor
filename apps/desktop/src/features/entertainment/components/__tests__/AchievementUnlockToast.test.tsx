@@ -174,6 +174,23 @@ describe("AchievementUnlockToast", () => {
   });
 
   describe("secret", () => {
+    it("shows a red diagonal TOP SECRET ribbon only for secret achievements", () => {
+      const secret = render(<AchievementUnlockToast announcement={announce(variants.secret)} />);
+      const ribbon = screen.getByText("TOP SECRET");
+
+      expect(ribbon).toHaveAttribute("data-slot", "achievement-secret-ribbon");
+      expect(ribbon).toHaveClass("absolute", "top-4", "-right-8", "rotate-45", "bg-red-700");
+      expect(ribbon).toHaveClass("text-white", "pointer-events-none", "select-none");
+      secret.unmount();
+
+      for (const variant of ["standard", "bronze", "silver", "gold"] as const) {
+        const other = render(<AchievementUnlockToast announcement={announce(variants[variant])} />);
+
+        expect(other.queryByText("TOP SECRET")).toBeNull();
+        other.unmount();
+      }
+    });
+
     it("reveals the title before the description from Galactic Glyphs", () => {
       const announcement = announce(variants.secret);
       const { container } = render(<AchievementUnlockToast announcement={announcement} />);
