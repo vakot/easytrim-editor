@@ -1,9 +1,8 @@
 import { useReducedMotion } from "motion/react";
 import type { CSSProperties } from "react";
 
-import { Badge } from "@/components/ui/badge";
-
 import { Confetti } from "@/components/confetti";
+import { Ribbon } from "@/components/ribbon";
 import { TextReveal } from "@/components/text-reveal";
 import { cn } from "@/lib/class-names.utils";
 
@@ -99,11 +98,6 @@ function AchievementUnlockToast({ announcement, reducedMotion }: AchievementUnlo
           <div className="grid min-w-0 flex-1 gap-1">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>{unlockedLabel}</span>
-              {tierStyles && tierLabel ? (
-                <Badge className={tierStyles.badge} size="xs" variant="outline">
-                  {tierLabel}
-                </Badge>
-              ) : null}
             </div>
 
             <p
@@ -145,14 +139,14 @@ function AchievementUnlockToast({ announcement, reducedMotion }: AchievementUnlo
         </div>
 
         {secret ? (
-          <span
-            className="pointer-events-none absolute top-4 -right-8 z-20 grid h-5 w-32 rotate-45 place-items-center bg-red-700 text-white shadow-sm select-none"
-            data-slot="achievement-secret-ribbon"
-          >
-            <span className="text-center text-[0.625rem] leading-none font-bold tracking-[0.12em] whitespace-nowrap">
-              TOP SECRET
-            </span>
-          </span>
+          <Ribbon className="bg-red-700 text-white" data-slot="achievement-secret-ribbon">
+            TOP SECRET
+          </Ribbon>
+        ) : null}
+        {tierStyles && tierLabel ? (
+          <Ribbon className={cn("border", tierStyles.badge)} data-slot="achievement-tier-ribbon">
+            {tierLabel}
+          </Ribbon>
         ) : null}
 
         {secret ? (

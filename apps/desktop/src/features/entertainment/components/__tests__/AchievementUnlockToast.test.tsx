@@ -98,13 +98,17 @@ describe("AchievementUnlockToast", () => {
       <AchievementUnlockToast announcement={announce(variants[variant])} />,
     );
 
-    expect(screen.getByText(label)).toBeInTheDocument();
+    const ribbon = container.querySelector<HTMLElement>("[data-slot='achievement-tier-ribbon']");
+
+    expect(ribbon).toBeInTheDocument();
+    expect(ribbon).toHaveTextContent(label);
+    expect(ribbon).toHaveClass("rotate-45", "flex", "items-center", "justify-center", "border");
     expect(toastRoot(container)).toHaveAttribute("data-variant", variant);
     expect(toastRoot(container)).toHaveClass(`border-achievement-${variant}/60`);
     expect(container.querySelector("[data-slot='achievement-unlock-toast-surface']")).toHaveClass(
       `bg-achievement-${variant}/15`,
     );
-    expect(screen.getByText(label)).toHaveClass(`text-achievement-${variant}`);
+    expect(ribbon).toHaveClass(`text-achievement-${variant}`);
   });
 
   it("keeps the default themed surface for a standard achievement", () => {
@@ -116,6 +120,7 @@ describe("AchievementUnlockToast", () => {
     expect(toastRoot(container)).toHaveClass("bg-popover");
     expect(toastRoot(container).className).not.toMatch(/achievement-/);
     expect(container.querySelector("[data-slot='achievement-unlock-toast-surface']")).toBeNull();
+    expect(container.querySelector("[data-slot='achievement-tier-ribbon']")).toBeNull();
   });
 
   it.each([
@@ -182,18 +187,24 @@ describe("AchievementUnlockToast", () => {
       const label = screen.getByText("TOP SECRET");
 
       expect(ribbon).toHaveClass(
-        "absolute",
-        "top-4",
-        "-right-8",
         "rotate-45",
-        "grid",
-        "place-items-center",
+        "flex",
+        "h-5",
+        "w-32",
+        "items-center",
+        "justify-center",
+        "px-3",
         "bg-red-700",
         "text-white",
-        "pointer-events-none",
-        "select-none",
+        "text-center",
       );
-      expect(label).toHaveClass("text-center");
+      expect(ribbon).toBe(label);
+      expect(ribbon.parentElement).toHaveClass(
+        "pointer-events-none",
+        "absolute",
+        "top-0",
+        "right-0",
+      );
       expect(secret.container.querySelector("[data-slot='achievement-unlock-title']")).toHaveClass(
         "pr-4",
       );
