@@ -1,5 +1,5 @@
 import { CircleCheck } from "lucide-react";
-import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -61,75 +61,59 @@ function VideoPreviewEmptyOnboarding() {
   const { t } = useTranslation();
   const hasIncompleteAchievements = useHasIncompleteAchievements("getting-started");
   const recordsLoaded = useAppSelector((state) => selectAchievementRecords(state) !== null);
-  const [confirmed, setConfirmed] = useState(
-    () => readStoredJson<unknown>(STORAGE_KEYS.onboardingCompleted) === true,
+  const [completion, setCompletion] = useState<"pending" | "celebrating" | "finished">(() =>
+    readStoredJson<unknown>(STORAGE_KEYS.onboardingCompleted) === true ? "finished" : "pending",
   );
 
   const reduceMotion = useReducedMotion() === true;
+  const celebrating = completion === "celebrating";
   const exitDelay = reduceMotion ? 0 : COMPLETION_EXIT_DELAY_SECONDS;
 
-  /* Reserve the card width plus its gap, then collapse both together on exit. */
+  if (!recordsLoaded || completion === "finished") return null;
+
+  /* Only manual confirmation starts the celebration and collapses the reserved card width. */
   return (
-    <AnimatePresence initial={false}>
-      {recordsLoaded && !confirmed ? (
-        <motion.div
-          animate={{ width: "29rem" }}
-          className={cn(styles.achievements, "min-w-0 shrink-0 overflow-hidden")}
-          exit={{
-            width: 0,
-            transition: {
-              delay: exitDelay,
-              duration: reduceMotion ? 0 : 1,
-              ease: [0.22, 1, 0.36, 1],
-            },
-          }}
-          initial={{ width: 0 }}
-          key="getting-started"
-          transition={{
-            duration: reduceMotion ? 0 : 1,
-            ease: [0.22, 1, 0.36, 1],
-          }}
-        >
-          <motion.div
-            animate={{ opacity: 1, x: 0 }}
-            className="relative w-104 shrink-0"
-            exit={{
-              opacity: 0,
-              x: reduceMotion ? 0 : "-0.75rem",
-              transition: { delay: exitDelay, duration: reduceMotion ? 0 : 0.16 },
+    <motion.div
+      animate={{ width: celebrating ? 0 : "29rem" }}
+      className={cn(styles.achievements, "min-w-0 shrink-0 overflow-hidden")}
+      initial={false}
+      onAnimationComplete={() => {
+        if (celebrating) setCompletion("finished");
+      }}
+      transition={{
+        delay: celebrating ? exitDelay : 0,
+        duration: reduceMotion ? 0 : 1,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+    >
+      <motion.div
+        animate={{ opacity: celebrating ? 0 : 1, x: celebrating && !reduceMotion ? "-0.75rem" : 0 }}
+        className="relative w-104 shrink-0"
+        initial={false}
+        transition={{ delay: celebrating ? exitDelay : 0, duration: reduceMotion ? 0 : 0.16 }}
+      >
+        <AchievementsCategoryContent category="getting-started" compact presentation="onboarding" />
+        {!hasIncompleteAchievements ? (
+          <Button
+            className="mt-3 w-full"
+            disabled={celebrating}
+            onClick={() => {
+              writeStoredJson(STORAGE_KEYS.onboardingCompleted, true);
+              setCompletion("celebrating");
             }}
-            initial={{ opacity: reduceMotion ? 1 : 0, x: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.16 }}
           >
-            <AchievementsCategoryContent
-              category="getting-started"
-              compact
-              presentation="onboarding"
-            />
-            {!hasIncompleteAchievements ? (
-              <Button
-                className="mt-3 w-full"
-                onClick={() => {
-                  writeStoredJson(STORAGE_KEYS.onboardingCompleted, true);
-                  setConfirmed(true);
-                }}
-              >
-                {t("achievements.onboarding.confirmCompletion")}
-              </Button>
-            ) : null}
-            <VideoPreviewEmptyOnboardingCompletion />
-          </motion.div>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
+            {t("achievements.onboarding.confirmCompletion")}
+          </Button>
+        ) : null}
+        {celebrating ? <VideoPreviewEmptyOnboardingCompletion /> : null}
+      </motion.div>
+    </motion.div>
   );
 }
 
 /** Completion celebration shown over the card while it waits out the exit delay. */
 function VideoPreviewEmptyOnboardingCompletion() {
-  const isPresent = useIsPresent();
   const { t } = useTranslation();
-  if (isPresent) return null;
 
   return (
     <div
@@ -177,7 +161,7 @@ function VideoPreviewEmptyContent() {
     {
       id: "previous-next-frame",
       label: t("preview.shortcuts.previousNextFrame"),
-      keys: ["←", "→"],
+      keys: ["в†ђ", "в†’"],
       separator: "/",
     },
     {

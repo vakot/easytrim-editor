@@ -1,5 +1,6 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { AnimatePresence, motion } from "motion/react";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -56,6 +57,30 @@ describe("VideoPreviewEmpty achievements", () => {
     expect(screen.queryByRole("button", { name: "Finish onboarding" })).not.toBeInTheDocument();
   });
 
+  it("does not celebrate when an ancestor exits without confirmation", () => {
+    const store = createAppStore();
+    store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
+    const content = (visible: boolean) => (
+      <Provider store={store}>
+        <AnimatePresence>
+          {visible ? (
+            <motion.div exit={{ opacity: 0 }} key="preview" transition={{ duration: 1 }}>
+              <VideoPreviewEmpty />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </Provider>
+    );
+
+    const view = render(content(true));
+    const category = screen.getByRole("region", { name: "Getting Started" });
+    expect(category.parentElement).toHaveStyle({ opacity: "1" });
+    view.rerender(content(false));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(view.container.querySelector("[data-slot='confetti']")).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBeNull();
+  });
+
   it("waits for confirmation with already-complete records and remembers it after remounting", async () => {
     const user = userEvent.setup();
     const store = createAppStore();
@@ -108,6 +133,12 @@ describe("VideoPreviewEmpty achievements", () => {
     expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBeNull();
     await userEvent.setup().click(screen.getByRole("button", { name: "Finish onboarding" }));
     expect(screen.getByRole("status")).toHaveTextContent("Completed");
+    const celebration = screen.getByRole("status");
+    expect(screen.getByRole("button", { name: "Finish onboarding" })).toBeDisabled();
+    act(() => {
+      store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
+    });
+    expect(screen.getByRole("status")).toBe(celebration);
     expect(screen.getByRole("status").querySelector("[data-slot='confetti']")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Getting Started" })).toBeInTheDocument();
     await waitFor(
