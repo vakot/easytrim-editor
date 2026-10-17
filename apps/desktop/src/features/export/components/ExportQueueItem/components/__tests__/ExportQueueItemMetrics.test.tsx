@@ -11,7 +11,10 @@ import { ExportQueueItemContext } from "../../contexts/ExportQueueItemContext";
 import { ExportQueueItemMetrics } from "../ExportQueueItemMetrics";
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    i18n: { language: "en", resolvedLanguage: "en" },
+    t: (key: string) => key,
+  }),
 }));
 
 describe("ExportQueueItemMetrics", () => {

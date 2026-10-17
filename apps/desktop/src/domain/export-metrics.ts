@@ -120,6 +120,31 @@ function formatExportFileSize(bytes: number): string {
   return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
+/** Output minus source, relative to source. A nonzero output with no source has no percentage. */
+function getFileSizeChangeRatio(sourceBytes: number, outputBytes: number): number | null {
+  if (
+    !Number.isFinite(sourceBytes) ||
+    !Number.isFinite(outputBytes) ||
+    sourceBytes < 0 ||
+    outputBytes < 0
+  ) {
+    return null;
+  }
+  if (sourceBytes === 0) return outputBytes === 0 ? 0 : null;
+  const ratio = (outputBytes - sourceBytes) / sourceBytes;
+  return Number.isFinite(ratio) ? ratio : null;
+}
+
+/** Unsigned magnitude; preserve the queue's whole-percent precision without displaying signed zero. */
+function formatFileSizeChangePercent(ratio: number | null, locale: string): string {
+  if (ratio === null || !Number.isFinite(ratio)) return "—";
+  const formatter = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 });
+  const magnitude = Math.abs(ratio);
+  return magnitude > 0 && magnitude < 0.005
+    ? `<${formatter.format(0.01)}`
+    : formatter.format(magnitude);
+}
+
 interface ExportMetricValues {
   bitrate?: string;
   currentFrame?: number;
@@ -253,7 +278,9 @@ export {
   estimateExportTime,
   formatExportDuration,
   formatExportFileSize,
+  formatFileSizeChangePercent,
   getExportMetricValues,
+  getFileSizeChangeRatio,
   parseFfmpegBitrate,
   parseFfmpegNumber,
   parseFfmpegSpeed,

@@ -1280,6 +1280,11 @@ export const en = {
         description: "Successful exports of every kind",
         label: "Completed Exports",
       },
+      dataReduction: {
+        description: "Output size change relative to total source data",
+        label: "Data Reduction",
+        unavailable: "Percentage unavailable without source data",
+      },
       firstExport: {
         label: "First Export",
       },

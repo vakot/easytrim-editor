@@ -98,6 +98,7 @@ describe("AppStatisticsDialog", () => {
     expect(within(metric(dialog, "Processing Time")).getByText("0:00")).toBeVisible();
     expect(within(metric(dialog, "Longest Export")).getByText("0:00")).toBeVisible();
     expect(within(metric(dialog, "Storage Saved")).getByText("0 B")).toBeVisible();
+    expect(within(metric(dialog, "Data Reduction")).getByText("0%")).toBeVisible();
     expect(within(metric(dialog, "First Export")).getByText("Not yet")).toBeVisible();
     expect(within(metric(dialog, "Last Export")).getByText("Not yet")).toBeVisible();
     expect(
@@ -130,7 +131,7 @@ describe("AppStatisticsDialog", () => {
     expect(within(metric(dialog, "Source Data Processed")).getByText("2.0 MB")).toBeVisible();
     expect(within(metric(dialog, "Output Data Generated")).getByText("3.0 MB")).toBeVisible();
     const storageSaved = metric(dialog, "Storage Saved");
-    expect(within(storageSaved).getByText("-1.0 MB")).toBeVisible();
+    expect(within(storageSaved).getByText("+1.0 MB")).toBeVisible();
     expect(within(storageSaved).getByText("Exports are larger than their sources")).toBeVisible();
     expect(within(metric(dialog, "First Export")).getByText(/Jan 15, 2026/)).toBeVisible();
     expect(
@@ -139,6 +140,41 @@ describe("AppStatisticsDialog", () => {
       ),
     ).toBeNull();
   });
+
+  it.each([
+    ["reduced", 2_048, 1_024, "-1.0 KB", "-50%", "text-green-500", "arrow-down"],
+    ["increased", 1_024, 2_048, "+1.0 KB", "+100%", "text-destructive", "arrow-up"],
+    ["unchanged", 1_024, 1_024, "0 B", "0%", "text-muted-foreground", null],
+    ["empty", 0, 0, "0 B", "0%", "text-muted-foreground", null],
+    ["no source", 0, 1_024, "+1.0 KB", "—", "text-destructive", "arrow-up"],
+    ["no output", 1_024, 0, "-1.0 KB", "-100%", "text-green-500", "arrow-down"],
+    ["small reduction", 10_000, 9_999, "-1 B", "-<1%", "text-green-500", "arrow-down"],
+    ["small increase", 10_000, 10_001, "+1 B", "+<1%", "text-destructive", "arrow-up"],
+  ])(
+    "keeps size and percentage direction consistent for %s data",
+    async (_case, sourceBytes, outputBytes, size, percentage, color, arrow) => {
+      mocks.getUsageStatistics.mockResolvedValue({ ...recorded, sourceBytes, outputBytes });
+      renderDialog();
+      const dialog = await openDialog();
+      const data = within(dialog).getByRole("region", { name: "Data Processing" });
+      expect(within(data).getAllByRole("listitem")).toHaveLength(4);
+      expect(within(data).getAllByRole("listitem")[3]).toBe(metric(dialog, "Data Reduction"));
+      for (const [label, text] of [
+        ["Storage Saved", size],
+        ["Data Reduction", percentage],
+      ] as const) {
+        const value = within(metric(dialog, label)).getByText(text).closest("p");
+        expect(value).toHaveClass(color);
+        expect(value?.querySelectorAll("svg")).toHaveLength(arrow ? 1 : 0);
+        if (arrow) expect(value?.querySelector("svg")).toHaveClass(`lucide-${arrow}`);
+      }
+      if (sourceBytes === 0 && outputBytes > 0) {
+        expect(
+          within(dialog).getByText("Percentage unavailable without source data"),
+        ).toBeVisible();
+      }
+    },
+  );
 
   it("shows the longest export in Russian", async () => {
     await i18n.changeLanguage("ru");
@@ -149,6 +185,13 @@ describe("AppStatisticsDialog", () => {
     const longest = metric(dialog, "Самый долгий экспорт");
     expect(within(longest).getByText("2:03")).toBeVisible();
     expect(within(longest).getByText("Максимальное время обработки одного экспорта")).toBeVisible();
+    const reduction = metric(dialog, "Сокращение объёма");
+    expect(
+      within(reduction).getByText("+50 %", { normalizer: (text) => text.replace(/\s/g, " ") }),
+    ).toBeVisible();
+    expect(
+      within(reduction).getByText("Изменение объёма экспорта относительно исходных данных"),
+    ).toBeVisible();
   });
 
   it("updates while open when an export completes", async () => {

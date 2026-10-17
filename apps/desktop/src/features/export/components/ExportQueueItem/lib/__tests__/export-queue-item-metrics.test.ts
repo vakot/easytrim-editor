@@ -125,6 +125,19 @@ describe("export queue item metrics", () => {
     ).toMatchObject({ id: "file-size-change", value: "+100% (1000 B)" });
   });
 
+  it.each([
+    [500, "-50% (500 B)", "text-green-500", "ArrowDown"],
+    [1_500, "+50% (500 B)", "text-destructive", "ArrowUp"],
+    [1_000, "0% (0 B)", "text-muted-foreground", undefined],
+    [999, "-<1% (1 B)", "text-green-500", "ArrowDown"],
+  ])("uses shared size-change presentation for %s output bytes", (output, value, color, icon) => {
+    const attempt = createAttempt("fast");
+    attempt.metrics.fileSizeBytes = output;
+    const metric = getFileSizeChange(attempt, { formatValue: (text) => text });
+    expect(metric).toMatchObject({ value, className: color });
+    expect(metric?.icon?.displayName).toBe(icon);
+  });
+
   it("does not show a numeric progress metric while GIF rendering is indeterminate", () => {
     const attempt = createAttempt("gif");
     attempt.metrics = { ...attempt.metrics, phase: "preparing", progressAvailable: false };

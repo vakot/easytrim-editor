@@ -14,7 +14,8 @@ import {
 import type { ExportQueueItemMetricConfig } from "../types";
 
 function ExportQueueItemMetrics() {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const locale = i18n.resolvedLanguage ?? i18n.language;
   const { attempt } = useExportQueueItem();
   const status = attempt.state.status;
 
@@ -41,12 +42,13 @@ function ExportQueueItemMetrics() {
         withTooltip(
           getFileSizeChange(attempt, {
             status,
+            locale,
             formatValue: (value) => t("queue.metrics.fileSizeChange", { value }),
           }),
           t("queue.metrics.fileSizeChangeTooltip"),
         ),
       ].filter((metric): metric is ExportQueueItemMetricConfig => metric !== null),
-    [attempt, status, t],
+    [attempt, locale, status, t],
   );
 
   if (!metrics.length) return null;
