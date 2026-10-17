@@ -119,7 +119,7 @@ function VideoPreviewEmptyOnboardingCompletion() {
   return (
     <motion.div
       animate={{ opacity: 1 }}
-      className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-lg bg-background/80 p-2 text-success"
+      className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-preview-surface/80 p-2 text-success"
       initial={{ opacity: reduceMotion ? 1 : 0 }}
       role="status"
       transition={{ duration: reduceMotion ? 0 : 0.16 }}
