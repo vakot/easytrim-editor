@@ -9,6 +9,10 @@ import {
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { cropChanged, cropResolutionFor, selectCrop } from "@/app/store/slices/crop-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import {
+  historyInteractionEnded,
+  historyInteractionStarted,
+} from "@/app/store/slices/workspace-history-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { FULL_CROP } from "@/domain/crop";
 import type { RotationDegrees } from "@/domain/rotation";
@@ -102,6 +106,7 @@ function useCropSelection(
 
   const close = useCallback(() => {
     dispatch(commitActiveEditingInstanceDraft());
+    dispatch(historyInteractionEnded());
     setDrag(null);
     setIsOpen(false);
   }, [dispatch]);
@@ -143,6 +148,13 @@ function useCropSelection(
     );
 
     event.currentTarget.setPointerCapture(event.pointerId);
+    dispatch(
+      historyInteractionStarted({
+        id: crypto.randomUUID(),
+        label: "Adjust crop",
+        timestamp: Date.now(),
+      }),
+    );
     setDrag({
       crop,
       flipHorizontal,
@@ -204,12 +216,14 @@ function useCropSelection(
   function finishDrag() {
     if (!drag) return;
     dispatch(commitActiveEditingInstanceDraft());
+    dispatch(historyInteractionEnded());
     setDrag(null);
   }
 
   const clearDrag = useCallback(() => {
+    dispatch(historyInteractionEnded());
     setDrag(null);
-  }, []);
+  }, [dispatch]);
 
   return {
     clearDrag,

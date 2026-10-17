@@ -52,6 +52,7 @@ function TimelineChapterEditor({ chapterId }: { chapterId: string }) {
     ({ endMicros, startMicros }) => {
       if (chapter) dispatch(chapterUpdated({ ...chapter, endMicros, startMicros }));
     },
+    "Adjust chapter",
   );
 
   if (!chapter || !range.enabled) return null;

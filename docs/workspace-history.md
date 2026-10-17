@@ -1,16 +1,38 @@
 # Workspace History foundation
 
-`apps/desktop/src/domain/workspace-history.ts` is the public, framework-independent API.
-It is an explicit Knip entry because this stage supplies a consumable API without connecting it
-to application behavior. There is no Activity Feed, diagnostic, Redux, UI, storage, or native dependency.
+`apps/desktop/src/domain/workspace-history.ts` is the public, framework-independent API. The app
+store integration lives in `apps/desktop/src/app/store/integration/workspace-history.ts`. The
+timeline is runtime-only Redux state and is excluded from persistence. There is no Activity Feed,
+diagnostic, History UI, storage, or native dependency.
+
+## Editor operations
+
+The editor's existing reducers remain the source of truth. One app listener observes committed
+edit actions for trim, crop, rotation, flips, audio track settings, and chapters. It compares
+canonical editor projections before and after each action, so analysis results, waveform URLs,
+playback, preview, and other runtime state never enter history. Audio entries are scoped to a
+stream and chapter entries to a chapter ID, keeping unrelated tracks and chapters out of a change.
+
+Trim drag and chapter-range drag share `useTimelineRangeEditing`; trim and crop drag start and end
+explicit operation groups at their existing pointer boundaries. Standalone keyboard trim steps and
+rotation commands with the same label coalesce when consecutive dispatches are within 500 ms.
+Audio volume already dispatches once on slider release, so it produces one operation at commit.
+
+`undoWorkspaceHistory`, `redoWorkspaceHistory`, and `applyHistoryPosition` preflight all state
+changes against the current target snapshots. They replay through the original trim, crop,
+transform, audio, and chapter actions. This retains trim-dependent audio analysis invalidation,
+filter waveform invalidation, transform resolution updates, and instance snapshot synchronization.
+Inactive instances receive snapshot updates directly, while their runtime caches remain unloaded.
+A mismatch rejects the requested transition without moving the cursor. These editor operations are
+synchronous; external operations remain unavailable until a future integration supplies
+transactional apply and rollback.
 
 ## Ownership and capture
 
 Create one `WorkspaceHistory` coordinator for the workspace, never one per Editing Instance.
 The coordinator owns the committed timeline and cursor; existing editor state remains authoritative.
-No existing readers, writers, effects, reset behavior, or Redux ownership change in this stage.
-Future application orchestration owns the coordinator's lifetime and publishes serializable
-`snapshot()` data to Redux; callbacks, pending transitions, and open groups stay outside Redux.
+The existing editor state remains canonical. The app store owns one workspace history timeline;
+the editor does not own per-instance history logs.
 
 Operation metadata is caller-supplied: use a stable unique ID, a descriptive label, and a finite
 Unix timestamp in milliseconds. Instance targets carry both an instance ID and source ID.

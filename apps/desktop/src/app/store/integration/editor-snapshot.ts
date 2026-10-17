@@ -10,6 +10,7 @@ import type { RootState } from "@/app/store/store";
 import { serializeAudioTrackSettings } from "@/domain/audio-processing";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeSourceKey, type SourceRef } from "@/domain/source";
+import type { HistoryValue } from "@/domain/workspace-history";
 
 function createDefaultEditorSnapshot(source: SourceRef): EditorSnapshot {
   return createEditorSnapshot({
@@ -46,4 +47,20 @@ function createEditorSnapshotFromState(state: RootState, source: SourceRef): Edi
   });
 }
 
-export { createDefaultEditorSnapshot, createEditorSnapshotFromState };
+function historyProjection(snapshot: EditorSnapshot): Record<string, HistoryValue> {
+  return {
+    crop: snapshot.crop,
+    flipHorizontal: snapshot.flipHorizontal ?? false,
+    flipVertical: snapshot.flipVertical ?? false,
+    rotation: snapshot.rotation ?? 0,
+    trim: snapshot.trim,
+    ...Object.fromEntries(
+      snapshot.audio.tracks.map((track) => [`audio:${track.streamIndex}`, track]),
+    ),
+    ...Object.fromEntries(
+      (snapshot.chapters ?? []).map((chapter) => [`chapter:${chapter.id}`, chapter]),
+    ),
+  } as Record<string, HistoryValue>;
+}
+
+export { createDefaultEditorSnapshot, createEditorSnapshotFromState, historyProjection };

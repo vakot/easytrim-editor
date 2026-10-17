@@ -28,6 +28,7 @@ import { sceneDetectionReducer } from "@/app/store/slices/scene-detection-slice"
 import { sourceReducer } from "@/app/store/slices/source-slice";
 import { trimReducer } from "@/app/store/slices/trim-slice";
 import { usageStatisticsReducer } from "@/app/store/slices/usage-statistics-slice";
+import { workspaceHistoryReducer } from "@/app/store/slices/workspace-history-slice";
 
 const combinedReducer = combineReducers({
   achievements: achievementsReducer,
@@ -45,6 +46,7 @@ const combinedReducer = combineReducers({
   source: sourceReducer,
   trim: trimReducer,
   usageStatistics: usageStatisticsReducer,
+  workspaceHistory: workspaceHistoryReducer,
 });
 
 export type RootState = ReturnType<typeof combinedReducer>;
