@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { achievementRecordsUpdated } from "@/app/store/slices/achievements-slice";
 import { createAppStore } from "@/app/store/store";
 import type { AchievementRecords } from "@/domain/achievement-records";
+import { STORAGE_KEYS } from "@/lib/storage.consts";
 import {
   almostCompleteGettingStartedRecords,
   completeAchievementRecords,
@@ -21,7 +22,14 @@ import { VideoPreviewEmpty } from "../VideoPreviewEmpty";
 function EmptyPreviewStory(props: Omit<ComponentProps<typeof EmptyPreviewSession>, "onReset">) {
   const [replay, setReplay] = useState(0);
   return (
-    <EmptyPreviewSession {...props} key={replay} onReset={() => setReplay((value) => value + 1)} />
+    <EmptyPreviewSession
+      {...props}
+      key={replay}
+      onReset={() => {
+        localStorage.removeItem(STORAGE_KEYS.onboardingCompleted);
+        setReplay((value) => value + 1);
+      }}
+    />
   );
 }
 
@@ -101,7 +109,7 @@ export const Scaling: Story = {
   argTypes: { scale: { control: { type: "select" }, options: [75, 100, 125, 150, 200] } },
 };
 
-/** Complete the remaining task to watch the panel exit; reset to replay. */
+/** Complete the remaining task, then confirm completion to watch the panel exit; reset to replay. */
 export const CompleteFinalTask: Story = {
   args: { interactiveCompletion: true, records: almostCompleteGettingStartedRecords },
 };

@@ -1,9 +1,11 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { achievementRecordsUpdated } from "@/app/store/slices/achievements-slice";
 import { createAppStore } from "@/app/store/store";
+import { STORAGE_KEYS } from "@/lib/storage.consts";
 import {
   almostCompleteGettingStartedRecords,
   completeAchievementRecords,
@@ -14,6 +16,7 @@ import {
 import { VideoPreviewEmpty } from "../VideoPreviewEmpty";
 
 describe("VideoPreviewEmpty achievements", () => {
+  beforeEach(() => localStorage.removeItem(STORAGE_KEYS.onboardingCompleted));
   it.each([
     ["locked", emptyAchievementRecords, 0],
     ["partially unlocked", partiallyUnlockedAchievementScenario.records, 1],
@@ -39,24 +42,46 @@ describe("VideoPreviewEmpty achievements", () => {
     expect(category.querySelector("[data-slot='achievement-new']")).toBeNull();
     expect(screen.getByRole("link", { name: /Ko-fi/i })).toBeInTheDocument();
     expect(screen.queryByText("Secret Discoveries")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirm completion" })).not.toBeInTheDocument();
   });
 
-  it.each([null, completeAchievementRecords])(
-    "hides onboarding until records load and after completion (%j)",
-    (records) => {
-      const store = createAppStore();
-      if (records) store.dispatch(achievementRecordsUpdated({ records }));
-      render(
-        <Provider store={store}>
-          <VideoPreviewEmpty />
-        </Provider>,
-      );
-      expect(screen.queryByRole("region", { name: "Getting Started" })).not.toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /Ko-fi/i })).toBeInTheDocument();
-    },
-  );
+  it("hides onboarding and confirmation until records load", () => {
+    const store = createAppStore();
+    render(
+      <Provider store={store}>
+        <VideoPreviewEmpty />
+      </Provider>,
+    );
+    expect(screen.queryByRole("region", { name: "Getting Started" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirm completion" })).not.toBeInTheDocument();
+  });
 
-  it("shows incomplete tasks after records arrive and exits only after the final unlock", async () => {
+  it("waits for confirmation with already-complete records and remembers it after remounting", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
+    const view = render(
+      <Provider store={store}>
+        <VideoPreviewEmpty />
+      </Provider>,
+    );
+
+    expect(screen.getByRole("region", { name: "Getting Started" })).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Confirm completion" }));
+    expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBe("true");
+    view.unmount();
+    render(
+      <Provider store={store}>
+        <VideoPreviewEmpty />
+      </Provider>,
+    );
+    expect(screen.queryByRole("region", { name: "Getting Started" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirm completion" })).not.toBeInTheDocument();
+  });
+
+  it("shows incomplete tasks after records arrive and exits only after manual confirmation", async () => {
     const store = createAppStore();
     render(
       <Provider store={store}>
@@ -79,6 +104,9 @@ describe("VideoPreviewEmpty achievements", () => {
     act(() => {
       store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
     });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBeNull();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Confirm completion" }));
     expect(screen.getByRole("status")).toHaveTextContent("Completed");
     expect(screen.getByRole("status").querySelector("[data-slot='confetti']")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Getting Started" })).toBeInTheDocument();

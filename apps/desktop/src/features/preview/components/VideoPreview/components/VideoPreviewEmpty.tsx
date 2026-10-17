@@ -1,8 +1,9 @@
 import { CircleCheck } from "lucide-react";
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
 
 import {
@@ -13,6 +14,8 @@ import {
 } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { SupportLink } from "@/app/components/SupportLink";
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectAchievementRecords } from "@/app/store/slices/achievements-slice";
 import { Confetti } from "@/components/confetti";
 import {
   AchievementsCategoryContent,
@@ -20,6 +23,8 @@ import {
   useHasIncompleteAchievements,
 } from "@/features/entertainment";
 import { cn } from "@/lib/class-names.utils";
+import { STORAGE_KEYS } from "@/lib/storage.consts";
+import { readStoredJson, writeStoredJson } from "@/lib/storage.utils";
 
 import styles from "./VideoPreviewEmpty.module.css";
 
@@ -53,14 +58,20 @@ function VideoPreviewEmpty() {
 }
 
 function VideoPreviewEmptyOnboarding() {
-  const showGettingStarted = useHasIncompleteAchievements("getting-started");
+  const { t } = useTranslation();
+  const hasIncompleteAchievements = useHasIncompleteAchievements("getting-started");
+  const recordsLoaded = useAppSelector((state) => selectAchievementRecords(state) !== null);
+  const [confirmed, setConfirmed] = useState(
+    () => readStoredJson<unknown>(STORAGE_KEYS.onboardingCompleted) === true,
+  );
+
   const reduceMotion = useReducedMotion() === true;
   const exitDelay = reduceMotion ? 0 : COMPLETION_EXIT_DELAY_SECONDS;
 
   /* Reserve the card width plus its gap, then collapse both together on exit. */
   return (
     <AnimatePresence initial={false}>
-      {showGettingStarted ? (
+      {recordsLoaded && !confirmed ? (
         <motion.div
           animate={{ width: "29rem" }}
           className={cn(styles.achievements, "min-w-0 shrink-0 overflow-hidden")}
@@ -95,6 +106,17 @@ function VideoPreviewEmptyOnboarding() {
               compact
               presentation="onboarding"
             />
+            {!hasIncompleteAchievements ? (
+              <Button
+                className="mt-3 w-full"
+                onClick={() => {
+                  writeStoredJson(STORAGE_KEYS.onboardingCompleted, true);
+                  setConfirmed(true);
+                }}
+              >
+                {t("achievements.onboarding.confirmCompletion")}
+              </Button>
+            ) : null}
             <VideoPreviewEmptyOnboardingCompletion />
           </motion.div>
         </motion.div>
