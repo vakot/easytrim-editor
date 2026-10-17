@@ -468,12 +468,12 @@ describe("MenuBarTest", () => {
 
     await user.click(getMenuTrigger("Settings"));
     await user.click(await screen.findByRole("tab", { name: "Preferences" }));
-    const deleteSourceItem = screen.getByRole("switch", { name: "Delete source" });
+    const deleteSourceItem = await screen.findByRole("switch", { name: "Delete source" });
     expect(deleteSourceItem).not.toBeChecked();
 
     await user.click(deleteSourceItem);
     expect(
-      screen.getByRole("heading", { name: "Delete source after export?" }),
+      await screen.findByRole("heading", { name: "Delete source after export?" }),
     ).toBeInTheDocument();
     expect(menuState.dispatch).not.toHaveBeenCalledWith(
       expect.objectContaining({
@@ -497,7 +497,7 @@ describe("MenuBarTest", () => {
 
     await user.click(getMenuTrigger("Settings"));
     await user.click(await screen.findByRole("tab", { name: "Preferences" }));
-    const deleteSourceItem = screen.getByRole("switch", { name: "Delete source" });
+    const deleteSourceItem = await screen.findByRole("switch", { name: "Delete source" });
     expect(deleteSourceItem).toBeChecked();
 
     await user.click(deleteSourceItem);
