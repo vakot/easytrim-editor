@@ -38,6 +38,11 @@ native process exits. Frontend HMR retains it. The separate `.dev.fresh` profile
 application storage, such as preferences and diagnostics, separate from persistent dev and preview.
 No persistent profile is erased.
 
+Getting Started confirmation is also session-scoped in fresh mode. Native startup supplies a new
+token for each launch; onboarding uses that token with sessionStorage, preserving confirmation
+through frontend remounts/reloads but ignoring it on the next fresh launch. Existing localStorage
+confirmation and unrelated preferences are untouched. Other profiles retain persistent confirmation.
+
 Launchers share `scripts/repository-profile.mjs`, preserve the environment, and select a native
 profile with `EASYTRIM_REPOSITORY_PROFILE`. Dev also sets `EASYTRIM_EPHEMERAL_PROGRESS` according to
 `--fresh`. Native profile selection runs before plugins or WebViews are created. It also detects

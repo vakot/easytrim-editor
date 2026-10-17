@@ -31,6 +31,11 @@ pub fn run() {
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init());
+    if let Some(session_id) = profile.ephemeral_session_id() {
+        builder = builder.append_invoke_initialization_script(format!(
+            "\n;Object.defineProperty(window, '__EASYTRIM_EPHEMERAL_SESSION_ID__', {{ value: '{session_id}' }});"
+        ));
+    }
 
     #[cfg(desktop)]
     {

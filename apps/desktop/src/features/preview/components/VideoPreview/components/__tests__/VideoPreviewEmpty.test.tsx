@@ -2,7 +2,7 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AnimatePresence, motion } from "motion/react";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { achievementRecordsUpdated } from "@/app/store/slices/achievements-slice";
 import { createAppStore } from "@/app/store/store";
@@ -18,6 +18,11 @@ import { VideoPreviewEmpty } from "../VideoPreviewEmpty";
 
 describe("VideoPreviewEmpty achievements", () => {
   beforeEach(() => localStorage.removeItem(STORAGE_KEYS.onboardingCompleted));
+  afterEach(() => {
+    delete (window as Window & { __EASYTRIM_EPHEMERAL_SESSION_ID__?: string })
+      .__EASYTRIM_EPHEMERAL_SESSION_ID__;
+    sessionStorage.removeItem(STORAGE_KEYS.onboardingCompleted);
+  });
   it.each([
     ["locked", emptyAchievementRecords, 0],
     ["partially unlocked", partiallyUnlockedAchievementScenario.records, 1],
@@ -111,6 +116,47 @@ describe("VideoPreviewEmpty achievements", () => {
     );
     expect(screen.queryByRole("region", { name: "Getting Started" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Finish onboarding" })).not.toBeInTheDocument();
+  });
+
+  it("shows Getting Started again on a new fresh launch without changing persistent confirmation", async () => {
+    const user = userEvent.setup();
+    const setSession = (value: string) =>
+      Object.defineProperty(window, "__EASYTRIM_EPHEMERAL_SESSION_ID__", {
+        configurable: true,
+        value,
+      });
+
+    localStorage.setItem(STORAGE_KEYS.onboardingCompleted, "true");
+    setSession("fresh-one");
+    const store = createAppStore();
+    store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
+    const view = render(
+      <Provider store={store}>
+        <VideoPreviewEmpty />
+      </Provider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Finish onboarding" }));
+    view.unmount();
+    const sameSession = render(
+      <Provider store={store}>
+        <VideoPreviewEmpty />
+      </Provider>,
+    );
+
+    expect(screen.queryByRole("region", { name: "Getting Started" })).not.toBeInTheDocument();
+    sameSession.unmount();
+    setSession("fresh-two");
+    const restartedStore = createAppStore();
+    restartedStore.dispatch(achievementRecordsUpdated({ records: emptyAchievementRecords }));
+    render(
+      <Provider store={restartedStore}>
+        <VideoPreviewEmpty />
+      </Provider>,
+    );
+    expect(screen.getByRole("region", { name: "Getting Started" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Finish onboarding" })).not.toBeInTheDocument();
+    expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBe("true");
   });
 
   it("shows incomplete tasks after records arrive and exits only after manual confirmation", async () => {

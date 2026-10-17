@@ -23,9 +23,8 @@ import {
   useHasIncompleteAchievements,
 } from "@/features/entertainment";
 import { cn } from "@/lib/class-names.utils";
-import { STORAGE_KEYS } from "@/lib/storage.consts";
-import { readStoredJson, writeStoredJson } from "@/lib/storage.utils";
 
+import { confirmOnboardingCompleted, isOnboardingCompleted } from "./onboarding-completion";
 import styles from "./VideoPreviewEmpty.module.css";
 
 type Shortcut = {
@@ -62,7 +61,7 @@ function VideoPreviewEmptyOnboarding() {
   const hasIncompleteAchievements = useHasIncompleteAchievements("getting-started");
   const recordsLoaded = useAppSelector((state) => selectAchievementRecords(state) !== null);
   const [completion, setCompletion] = useState<"pending" | "celebrating" | "finished">(() =>
-    readStoredJson<unknown>(STORAGE_KEYS.onboardingCompleted) === true ? "finished" : "pending",
+    isOnboardingCompleted() ? "finished" : "pending",
   );
 
   const reduceMotion = useReducedMotion() === true;
@@ -98,7 +97,7 @@ function VideoPreviewEmptyOnboarding() {
             className="mt-3 w-full"
             disabled={celebrating}
             onClick={() => {
-              writeStoredJson(STORAGE_KEYS.onboardingCompleted, true);
+              confirmOnboardingCompleted();
               setCompletion("celebrating");
             }}
           >

@@ -85,6 +85,12 @@ impl AppProfile {
         }
     }
 
+    /// Created once per native launch; reloads of its WebView keep the same token.
+    pub fn ephemeral_session_id(self) -> Option<String> {
+        (self.progress_persistence() == ProgressPersistence::Ephemeral)
+            .then(|| uuid::Uuid::new_v4().to_string())
+    }
+
     pub fn is_repository(self) -> bool {
         self != Self::Production
     }
@@ -187,6 +193,21 @@ mod tests {
         },
         state::cleanup_stale_media_artifacts,
     };
+
+    #[test]
+    fn only_fresh_launches_have_distinct_ephemeral_session_tokens() {
+        for profile in [
+            AppProfile::Production,
+            AppProfile::Development,
+            AppProfile::Preview,
+        ] {
+            assert_eq!(profile.ephemeral_session_id(), None);
+        }
+        let first = AppProfile::FreshDevelopment.ephemeral_session_id().unwrap();
+        let second = AppProfile::FreshDevelopment.ephemeral_session_id().unwrap();
+        assert_ne!(first, second);
+        assert!(uuid::Uuid::parse_str(&first).is_ok());
+    }
 
     #[test]
     fn repository_release_and_debug_binaries_cannot_use_production() {
