@@ -96,6 +96,9 @@ export const ru = {
     notification: {
       unlocked: "Достижение получено",
     },
+    onboarding: {
+      confirmCompletion: "Завершить знакомство",
+    },
     open: "Достижения",
     privacy: "Достижения хранятся только на этом устройстве и никуда не передаются",
     progressLabel: "Прогресс коллекции",
