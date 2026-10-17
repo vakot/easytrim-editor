@@ -1,4 +1,134 @@
 export const ru = {
+  achievements: {
+    categories: {
+      exportMilestones: "Достижения экспорта",
+      gettingStarted: "Первые шаги",
+      processingMilestones: "Достижения обработки",
+      secretDiscoveries: "Секретные достижения",
+    },
+    description: "Вехи и открытия за все сеансы",
+    empty: {
+      locked: "Все достижения получены",
+      unlocked: "Пока нет полученных достижений",
+    },
+    filters: {
+      all: "Все",
+      label: "Фильтр достижений",
+      locked: "Не получены",
+      unlocked: "Получены",
+    },
+    itemProgress: {
+      label: "Прогресс: {{title}}",
+      value: "{{current}} из {{target}}",
+    },
+    items: {
+      audioSpecialist: {
+        description: "Экспортируйте файлы только с аудио",
+        title: "Мастер звука",
+      },
+      bronzeCollector: {
+        description: "Получите бронзовый уровень во всех семи исходных сериях достижений",
+        title: "Коллекционер бронзы",
+      },
+      cutToTheChase: {
+        description: "Выделите фрагмент с помощью обрезки",
+        title: "Ближе к делу",
+      },
+      dataCruncher: {
+        description: "Обрабатывайте исходные данные при экспорте",
+        title: "Укротитель данных",
+      },
+      exportMastery: {
+        description: "Выполняйте экспорт любого типа",
+        title: "Мастер экспорта",
+      },
+      fineTuning: {
+        description: "Примените аудиофильтр или измените параметры медиа",
+        title: "Тонкая настройка",
+      },
+      firstContact: {
+        description: "Впервые импортируйте медиафайл",
+        title: "Первый контакт",
+      },
+      frameByFrame: {
+        description: "Выделите область кадра с помощью инструмента кадрирования",
+        title: "В новом кадре",
+      },
+      gifCreator: {
+        description: "Экспортируйте анимированные GIF",
+        title: "Создатель GIF",
+      },
+      goldCollector: {
+        description: "Получите золотой уровень во всех семи исходных сериях достижений",
+        title: "Коллекционер золота",
+      },
+      losslessPrecision: {
+        description: "Обрезайте без перекодирования с помощью быстрого экспорта",
+        title: "Точность без потерь",
+      },
+      queuedUp: {
+        description: "Добавьте задачу в очередь экспорта",
+        title: "В очередь",
+      },
+      shortcutTaken: {
+        description: "Выполните действие на таймлайне с помощью горячих клавиш",
+        title: "Кратчайший путь",
+      },
+      silverCollector: {
+        description: "Получите серебряный уровень во всех семи исходных сериях достижений",
+        title: "Коллекционер серебра",
+      },
+      storageSaver: {
+        description: "Экономьте место, экспортируя файлы меньшего размера, чем исходные",
+        title: "Экономия места",
+      },
+      theChosenOne: {
+        description: "Откройте все легендарные сообщения при запуске",
+        title: "Избранный",
+      },
+      timeWellSpent: {
+        description: "Накапливайте время обработки при экспорте",
+        title: "Время с пользой",
+      },
+    },
+    new: "Новое",
+    newAchievements: "Новые достижения",
+    notification: {
+      unlocked: "Достижение получено",
+    },
+    open: "Достижения",
+    privacy: "Достижения хранятся только на этом устройстве и никуда не передаются",
+    progressLabel: "Прогресс коллекции",
+    secret: {
+      description: "Секретное достижение. Продолжайте исследовать, чтобы его получить",
+      title: "???",
+    },
+    series: {
+      completed: "Завершено",
+      nextTier: "Следующий уровень: {{tier}}",
+      tierLocked: "{{tier}}, {{target}}, не получено",
+      tiersLabel: "Уровни",
+      tierUnlocked: "{{tier}}, цель: {{target}}, получено {{date}}",
+      tierUnlockedNew: "{{tier}}, новое",
+      tierUnlockedOn: "{{tier}} — получено {{date}}",
+      total: "Всего",
+    },
+    status: {
+      completed: "Завершено",
+      locked: "Не получено",
+      unlocked: "Получено",
+    },
+    summary: "Получено {{unlocked}} из {{total}}",
+    tiers: {
+      bronze: "Бронза",
+      gold: "Золото",
+      silver: "Серебро",
+    },
+    title: "Достижения",
+    unavailable: "Не удалось загрузить достижения",
+    unknownDate: "Дата неизвестна",
+    unlockedOn: "Получено {{date}}",
+  },
   activity: {
     description: "Просматривайте недавние импорты, экспорты и изменения рабочей области в разных сеансах",
     empty: {
@@ -49,6 +179,9 @@ export const ru = {
     },
     dragUnavailable: "Перетаскивание недоступно: {{message}}",
     errors: {
+      achievements: {
+        identifierIsInvalid: "Недопустимый идентификатор достижения",
+      },
       diagnostics: {
         diagnosticEventNameIsInvalid: "Недопустимое имя события диагностики",
         diagnosticLevelIsInvalid: "Недопустимый уровень диагностики",
@@ -1083,6 +1216,14 @@ export const ru = {
       accessibleLabel: "Миниатюра файла {{name}}",
     },
     title: "Импортированные источники",
+  },
+  statistics: {
+    metrics: {
+      achievementsUnlocked: {
+        description: "Получено из всей коллекции достижений",
+        label: "Получено достижений",
+      },
+    },
   },
   support: {
     changelog: {

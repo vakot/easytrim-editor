@@ -53,6 +53,28 @@ describe("secret achievement card styling", () => {
     );
   });
 
+  it("shows an unlocked secret in Russian", async () => {
+    await i18n.changeLanguage("ru");
+    renderCard(chosenOne, {
+      ...emptyAchievementRecords,
+      unlockedAchievements: { "the-chosen-one": 1_000 },
+    });
+
+    expect(screen.getByText("Избранный")).toBeInTheDocument();
+    expect(screen.getByText("Откройте все легендарные сообщения при запуске")).toBeInTheDocument();
+  });
+
+  it("conceals a locked secret with Russian explanatory text", async () => {
+    await i18n.changeLanguage("ru");
+    renderCard(chosenOne, emptyAchievementRecords);
+
+    expect(screen.getByText("???")).toBeInTheDocument();
+    expect(
+      screen.getByText("Тайное достижение. Исследуйте дальше, чтобы раскрыть его"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Избранный")).not.toBeInTheDocument();
+  });
+
   it("keeps a locked secret concealed", () => {
     const card = renderCard(chosenOne, emptyAchievementRecords);
 

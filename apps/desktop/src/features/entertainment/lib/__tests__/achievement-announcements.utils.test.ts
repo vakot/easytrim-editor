@@ -17,6 +17,30 @@ describe("createAchievementAnnouncements", () => {
     await i18n.changeLanguage("en");
   });
 
+  it("localizes regular, tiered, and secret celebrations in Russian", () => {
+    const announcements = createAchievementAnnouncements(
+      ["first-contact", "data-cruncher-bronze", "the-chosen-one"],
+      i18n.getFixedT("ru"),
+    );
+
+    expect(announcements).toMatchObject([
+      {
+        title: "Первый контакт",
+        description: "Впервые импортируйте медиафайл",
+        variant: "standard",
+      },
+      { title: "Укротитель данных", tierLabel: "Бронза", variant: "bronze" },
+      {
+        title: "Избранный",
+        description: "Откройте все легендарные сообщения при запуске",
+        variant: "secret",
+      },
+    ]);
+    expect(
+      announcements.every(({ unlockedLabel }) => unlockedLabel === "Достижение получено"),
+    ).toBe(true);
+  });
+
   it("announces a tier with its series copy and tier label", () => {
     expect(createAchievementAnnouncements(["data-cruncher-bronze"], t)).toEqual([
       {
