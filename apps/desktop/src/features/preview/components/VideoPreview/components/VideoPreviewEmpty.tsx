@@ -108,7 +108,7 @@ function VideoPreviewEmptyOnboardingCompletion() {
   const isPresent = useIsPresent();
   const { t } = useTranslation();
   if (isPresent) return null;
-  2;
+
   return (
     <div
       className="pointer-events-none absolute inset-0 flex animate-in flex-col items-center justify-center gap-3 rounded-lg bg-background/95 p-2 text-success fade-in-0"
