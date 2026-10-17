@@ -151,7 +151,7 @@ describe("AppStatisticsDialog", () => {
     ["small reduction", 10_000, 9_999, "-1 B", "-<1%", "text-green-500", "arrow-down"],
     ["small increase", 10_000, 10_001, "+1 B", "+<1%", "text-destructive", "arrow-up"],
   ])(
-    "keeps size and percentage direction consistent for %s data",
+    "presents size and percentage changes appropriately for %s data",
     async (_case, sourceBytes, outputBytes, size, percentage, color, arrow) => {
       mocks.getUsageStatistics.mockResolvedValue({ ...recorded, sourceBytes, outputBytes });
       renderDialog();
@@ -164,9 +164,12 @@ describe("AppStatisticsDialog", () => {
         ["Data Reduction", percentage],
       ] as const) {
         const value = within(metric(dialog, label)).getByText(text).closest("p");
-        expect(value).toHaveClass(color);
-        expect(value?.querySelectorAll("svg")).toHaveLength(arrow ? 1 : 0);
-        if (arrow) expect(value?.querySelector("svg")).toHaveClass(`lucide-${arrow}`);
+        const unavailable = label === "Data Reduction" && sourceBytes === 0 && outputBytes > 0;
+        const expectedArrow = unavailable ? null : arrow;
+        expect(value).toHaveClass(unavailable ? "text-muted-foreground" : color);
+        expect(value?.querySelectorAll("svg")).toHaveLength(expectedArrow ? 1 : 0);
+        if (expectedArrow)
+          expect(value?.querySelector("svg")).toHaveClass(`lucide-${expectedArrow}`);
       }
       if (sourceBytes === 0 && outputBytes > 0) {
         expect(

@@ -195,8 +195,8 @@ function UsageStatisticsDashboard() {
           icon={<Percent />}
           label={t("statistics.metrics.dataReduction.label")}
           value={`${ratio === null ? "" : sizeChange.sign}${percentage}`}
-          valueClassName={sizeChange.className}
-          valueIcon={sizeChange.icon}
+          valueClassName={ratio === null ? "text-muted-foreground" : sizeChange.className}
+          valueIcon={ratio === null ? undefined : sizeChange.icon}
         />
       </UsageStatisticsSection>
 
