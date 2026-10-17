@@ -97,7 +97,7 @@ export const en = {
       unlocked: "Achievement unlocked",
     },
     onboarding: {
-      confirmCompletion: "Confirm completion",
+      confirmCompletion: "Finish onboarding",
     },
     open: "Achievements",
     privacy: "Achievements are tracked locally on this device and are never shared or sent anywhere",

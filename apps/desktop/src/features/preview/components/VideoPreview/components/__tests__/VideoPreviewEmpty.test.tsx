@@ -42,7 +42,7 @@ describe("VideoPreviewEmpty achievements", () => {
     expect(category.querySelector("[data-slot='achievement-new']")).toBeNull();
     expect(screen.getByRole("link", { name: /Ko-fi/i })).toBeInTheDocument();
     expect(screen.queryByText("Secret Discoveries")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Confirm completion" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Finish onboarding" })).not.toBeInTheDocument();
   });
 
   it("hides onboarding and confirmation until records load", () => {
@@ -53,7 +53,7 @@ describe("VideoPreviewEmpty achievements", () => {
       </Provider>,
     );
     expect(screen.queryByRole("region", { name: "Getting Started" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Confirm completion" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Finish onboarding" })).not.toBeInTheDocument();
   });
 
   it("waits for confirmation with already-complete records and remembers it after remounting", async () => {
@@ -69,7 +69,7 @@ describe("VideoPreviewEmpty achievements", () => {
     expect(screen.getByRole("region", { name: "Getting Started" })).toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Confirm completion" }));
+    await user.click(screen.getByRole("button", { name: "Finish onboarding" }));
     expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBe("true");
     view.unmount();
     render(
@@ -78,7 +78,7 @@ describe("VideoPreviewEmpty achievements", () => {
       </Provider>,
     );
     expect(screen.queryByRole("region", { name: "Getting Started" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Confirm completion" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Finish onboarding" })).not.toBeInTheDocument();
   });
 
   it("shows incomplete tasks after records arrive and exits only after manual confirmation", async () => {
@@ -106,7 +106,7 @@ describe("VideoPreviewEmpty achievements", () => {
     });
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBeNull();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Confirm completion" }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Finish onboarding" }));
     expect(screen.getByRole("status")).toHaveTextContent("Completed");
     expect(screen.getByRole("status").querySelector("[data-slot='confetti']")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Getting Started" })).toBeInTheDocument();
