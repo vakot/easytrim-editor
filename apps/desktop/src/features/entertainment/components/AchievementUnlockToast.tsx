@@ -50,9 +50,10 @@ function AchievementUnlockToast({ announcement, reducedMotion }: AchievementUnlo
     <div className="relative isolate w-full">
       <Confetti
         active={!reduceMotion}
-        className="-inset-y-4 z-0 overflow-visible"
+        className="z-0 overflow-visible"
         delay={0.3}
         intensity={achievementToastPresentation[variant].confetti}
+        mode="border-outside"
       />
 
       <div

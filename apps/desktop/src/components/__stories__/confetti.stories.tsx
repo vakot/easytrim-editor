@@ -47,7 +47,9 @@ function Playground(props: ConfettiProps) {
       <div>
         <Button onClick={replay}>Replay</Button>
       </div>
-      <Stage {...props} active={active} className="h-72 w-full max-w-2xl" label="Press me" />
+      <div className={props.mode === "border-outside" ? "p-24" : undefined}>
+        <Stage {...props} active={active} className="h-72 w-full max-w-2xl" label="Press me" />
+      </div>
     </div>
   );
 }
@@ -98,8 +100,12 @@ function Containers() {
 }
 
 const meta = {
-  args: { active: true, duration: 1.6, intensity: "normal" },
+  args: { active: true, duration: 1.6, intensity: "normal", mode: "center" },
   argTypes: {
+    mode: {
+      control: { type: "inline-radio" },
+      options: ["center", "border-outside", "border-inside"],
+    },
     duration: { control: { max: 4, min: 0.4, step: 0.2, type: "range" } },
     intensity: { control: { type: "inline-radio" }, options: ["subtle", "normal", "celebration"] },
   },
@@ -113,8 +119,17 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Replay restarts the burst and the button under the layer stays clickable. No particles appear under prefers-reduced-motion. */
+/** Particles emit from all sides with counts proportional to edge length, consistent travel ranges throughout emission. Replay restarts emission and the button under the layer stays clickable. No particles appear under prefers-reduced-motion. */
 export const Default: Story = {};
+
+/** Particles start at the center and spread outward within the host. */
+export const Center: Story = { args: { mode: "center" } };
+
+/** Particles start along all four borders and move outside the host. */
+export const BorderOutside: Story = { args: { mode: "border-outside" } };
+
+/** Particles start along all four borders and fall inward, clipped to the host. */
+export const BorderInside: Story = { args: { mode: "border-inside" } };
 
 /** Subtle, normal and celebration side by side. */
 export const AllIntensities: Story = { render: () => <Intensities /> };
