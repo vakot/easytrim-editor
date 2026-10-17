@@ -17,7 +17,11 @@ import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
 import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
-import { useChangelogDialog, useSettingsDialog } from "@/app/hooks/useAppDialog";
+import {
+  useChangelogDialog,
+  useSettingsDialog,
+  useStatisticsDialog,
+} from "@/app/hooks/useAppDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
@@ -104,6 +108,11 @@ function getMenuTrigger(name: string) {
 function SettingsOpenIndicator() {
   const { isOpen } = useSettingsDialog();
   return isOpen ? <span data-testid="settings-open" /> : null;
+}
+
+function StatisticsOpenIndicator() {
+  const { isOpen } = useStatisticsDialog();
+  return isOpen ? <span data-testid="statistics-open" /> : null;
 }
 
 function OpenChangelogManuallyButton() {
@@ -315,6 +324,7 @@ describe("MenuBarTest", () => {
                         <WorkspaceDialogSelectionProbe />
                         <AppSettingsDialog />
                         <SettingsOpenIndicator />
+                        <StatisticsOpenIndicator />
                       </ThemeProvider>
                     </ApplicationCommandsProvider>
                   </WorkspaceViewsProvider>
@@ -580,6 +590,16 @@ describe("MenuBarTest", () => {
       ["https://ko-fi.com/vakot"],
       [`https://github.com/vakot/easytrim-editor/releases/tag/v${currentVersion}`],
     ]);
+  });
+
+  it("opens Statistics from the Help menu", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+    await user.click(getMenuTrigger("Help"));
+    const statistics = screen.getByRole("menuitem", { name: "Statistics" });
+    expect(statistics.querySelector("svg")).not.toBeNull();
+    await user.click(statistics);
+    expect(screen.getByTestId("statistics-open")).toBeInTheDocument();
   });
 
   it("shows visible feedback when no update is available", async () => {
