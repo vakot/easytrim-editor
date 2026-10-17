@@ -12,6 +12,7 @@ const target: Extract<HistoryTarget, { kind: "instance" }> = {
   sourceId: "file",
   instanceId: "a",
 };
+
 const metadata = (id: string) => ({ id, label: `Edit ${id}`, timestamp: 100 });
 function edit(id: string, instanceId = "a"): HistoryOperation {
   return {
@@ -22,6 +23,61 @@ function edit(id: string, instanceId = "a"): HistoryOperation {
   };
 }
 describe("WorkspaceHistory", () => {
+  it("replays atomic field values across instances without touching unrelated state", async () => {
+    const history = new WorkspaceHistory();
+    const state: Record<string, Record<string, unknown>> = {
+      a: { start: 1, end: 9, runtime: "untouched" },
+      b: { start: 2, end: 8 },
+    };
+
+    history.begin(metadata("combined"));
+    history.capture(target, { start: 0, end: 10 }, { start: 1, end: 9 });
+    history.capture({ ...target, instanceId: "b" }, { start: 0, end: 10 }, { start: 2, end: 8 });
+    history.end();
+    const apply = (plan: import("../workspace-history").HistoryTransition) => {
+      const next = structuredClone(state);
+      for (const step of plan.steps) {
+        if (step.operation.kind !== "state") return false;
+        for (const change of step.operation.changes) {
+          if (change.target.kind !== "instance") return false;
+          const fields = next[change.target.instanceId]!;
+          const expected = step.direction === "undo" ? change.after : change.before;
+          const replacement = step.direction === "undo" ? change.before : change.after;
+          if (
+            expected.present !== Object.hasOwn(fields, change.field) ||
+            (expected.present && fields[change.field] !== expected.value)
+          )
+            return false;
+          if (replacement.present) fields[change.field] = replacement.value;
+          else delete fields[change.field];
+        }
+      }
+      Object.assign(state, next);
+      return true;
+    };
+
+    expect(await history.undo(apply)).toBe(true);
+    expect(state).toEqual({
+      a: { start: 0, end: 10, runtime: "untouched" },
+      b: { start: 0, end: 10 },
+    });
+    const noOp: HistoryOperation = {
+      ...metadata("noop"),
+      kind: "state",
+      role: "edit",
+      changes: [],
+    };
+
+    expect(history.record(noOp)).toBe(false);
+    expect(await history.redo(apply)).toBe(true);
+    expect(state.a).toEqual({ start: 1, end: 9, runtime: "untouched" });
+    state.b!.start = 99;
+    const previous = structuredClone(state);
+    expect(await history.undo(apply)).toBe(false);
+    expect(state).toEqual(previous);
+    expect(history.snapshot().position).toBe(1);
+  });
+
   it("captures only changed fields, including absence, and ignores structural no-ops", () => {
     const changes = identifyHistoryChanges(
       target,
