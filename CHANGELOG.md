@@ -6,32 +6,30 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Added randomly selected empty-preview splash messages, including easter eggs :)
-- Added an Apply button to commit crop tool changes.
-- Added an on-screen preview when changing UI scale with keyboard shortcuts.
-- Added editable video chapters with a chapter list, frame-accurate ranges, moving and resizing directly on the Timeline, and trim-aware chapter export.
-- Export dialogs now support selecting a separate frame-aligned range without changing the Timeline selection.
-- Added a workspace toolbar with quick access to Imported Sources, Export Queue, Activity Feed, Chapters, and Settings.
-- Added a view selector to the Activity Feed dialog.
-- Added a Statistics dialog, opened from the workspace toolbar, that tracks your completed exports, processing time, data processed, and storage saved across sessions. Statistics are kept only on this device.
-- Added Achievements, opened from the workspace toolbar: Bronze, Silver, and Gold milestones for your exports, processing time, data processed, and storage saved, plus secret achievements to discover. Each card shows your current tier and progress toward the next, and newly earned achievements trigger individual, tiered notifications with confetti and sound. Achievements you have already earned unlock automatically, and everything is kept only on this device. All achievement content is available in English and Russian.
-- Added Getting Started tasks that track your first editing actions and appear beside the empty preview until completed, with a confetti celebration when finished. Getting Started content is available in English and Russian.
-- Audio filter changes play live while the Audio filters dialog is open, before you apply them, including loudness normalization, with a status line that shows when the preview is ready. Space and the arrow keys control playback while the dialog is open, and applying or changing filters during playback no longer interrupts the audio.
+- Added new splash messages and easter eggs.
+- Added an Apply button to the Crop tool.
+- Added a UI scale preview when using keyboard shortcuts.
+- Added video chapter editing and export support.
+- Added independent export range selection.
+- Added a workspace toolbar with quick access to key features and settings.
+- Added Activity Feed filtering.
+- Added Statistics to track export and processing history.
+- Added Achievements with progress tracking, unlock notifications, and secret discoveries.
+- Added Getting Started achievements for first-time editing actions aka Onboarding.
 
 ### Changed
 
-- Preview audio pitch now follows the playback speed instead of staying at the original pitch.
-- Replaced the audio effects library with Audio filters: filters run in the order shown, can be reordered by dragging or with the arrow buttons, can be added more than once, and combine freely, including Gain with loudness normalization. Presets fill in editable parameters, and each filter can be switched off without losing its place or settings.
-- Track gain is now a Track Volume percentage applied after the track's filters, from 0–200% on the slider or up to 500% when typed. Existing gain settings are converted.
+- Audio playback pitch now adjusts to playback speed.
+- Reworked Audio filters with customizable filter order, multiple instances, presets, and individual toggles with live audio filter previews.
+- Replaced track gain with Track Volume controls.
 
 ### Fixed
 
-- UI borders, focus rings, and decorative effects now scale consistently with UI Scaling.
-- Scroll fades at the edges of lists and panels now stay crisp and correctly sized at every UI scale.
-- Audio waveforms now line up with the sound on the Timeline instead of drifting later through longer videos or when the audio starts after the video.
-- The playback speed slider now shows the speed multiplier while dragging instead of an internal step number.
-- Noise reduction no longer delays the processed audio by 25 ms or cuts off its last 25 ms.
-- Work recovered after a crash is no longer lost if EasyTrim crashes again before you reopen a source or make changes.
+- Fixed UI scaling inconsistencies.
+- Fixed audio waveform synchronization on the Timeline.
+- Fixed the playback speed slider displaying incorrect values.
+- Fixed audio delays and truncation caused by noise reduction.
+- Fixed recovery data loss after consecutive crashes.
 
 ## [1.13.4]
 
