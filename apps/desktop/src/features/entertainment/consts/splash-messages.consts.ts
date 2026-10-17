@@ -63,7 +63,8 @@ const splashMessagesRare = [
   { id: "hello-world", text: "Hello, World!", rarity: "rare" },
   { id: "undefined-behavior", text: "Undefined behavior not included!", rarity: "rare" },
   { id: "secret-sauce", text: "The secret ingredient is FFmpeg.", rarity: "rare" },
-  { id: "forty-two", text: "The answer is 42 frames.", rarity: "rare" },
+  { id: "forty-two", text: "The answer is the 42nd frame.", rarity: "rare" },
+  { id: "fahrenheit-451", text: "It was a pleasure to trim... frame 451.", rarity: "rare" },
   { id: "one-does-not", text: "One does not simply cut on a keyframe.", rarity: "rare" },
   { id: "side-project", text: "Just a small side project...", rarity: "rare" },
 ] satisfies SplashMessageDefinition<"rare">[];
