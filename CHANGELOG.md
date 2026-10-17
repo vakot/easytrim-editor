@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.14.0]
+
 ### Added
 
 - Added new splash messages and easter eggs.
