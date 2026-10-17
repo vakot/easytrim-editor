@@ -10,7 +10,7 @@ use crate::{
         AchievementRecords, AchievementsDecodeError, RecordIdentifier, StoredAchievementRecords,
         decode_achievement_records,
     },
-    persistence::{DocumentLoadIssue, LoadedDocument, load_json_document, write_json_atomic},
+    persistence::{DocumentLoadIssue, LoadedDocument, ProgressPersistence, write_json_atomic},
 };
 
 const ACHIEVEMENTS_FILE_NAME: &str = "achievements.json";
@@ -22,7 +22,7 @@ pub struct AchievementUpdate<T> {
     pub write_result: io::Result<()>,
 }
 
-/// Application-wide achievement records, persisted in the application data directory.
+/// Application-wide achievement records, optionally persisted in the application data directory.
 ///
 /// The mutex serializes every update, including its file write, so concurrent unlocks and
 /// discoveries cannot overwrite each other or unlock an achievement twice.
@@ -39,13 +39,14 @@ struct StoreState {
 impl AchievementStore {
     /// Loads records from `<root>/achievements/`. Never fails: a missing file starts empty, and
     /// unusable files are reported through the returned issue.
-    pub fn open(root: &Path) -> (Self, Option<DocumentLoadIssue>) {
+    /// Ephemeral sessions start empty and never read or write the saved document.
+    pub fn open(root: &Path, mode: ProgressPersistence) -> (Self, Option<DocumentLoadIssue>) {
         let path = root.join("achievements").join(ACHIEVEMENTS_FILE_NAME);
         let LoadedDocument {
             value: records,
             persistent,
             issue,
-        } = load_json_document(&path, unix_millis_now(), |bytes| {
+        } = mode.load(&path, unix_millis_now(), |bytes| {
             decode_achievement_records(bytes).map_err(|error| match error {
                 AchievementsDecodeError::Invalid => "invalid",
                 AchievementsDecodeError::UnsupportedVersion(_) => "unsupported-version",
@@ -170,9 +171,69 @@ mod tests {
     }
 
     #[test]
+    fn ephemeral_unlocks_and_discoveries_disappear_on_restart_without_changing_saved_progress() {
+        let root = temporary_root("ephemeral");
+        let path = root.join("achievements").join(ACHIEVEMENTS_FILE_NAME);
+        let (saved, _) = AchievementStore::open(&root, ProgressPersistence::Persistent);
+        saved
+            .unlock(&[identifier("saved-achievement")])
+            .write_result
+            .unwrap();
+        let before = fs::read(&path).unwrap();
+        {
+            let (session, issue) = AchievementStore::open(&root, ProgressPersistence::Ephemeral);
+            assert_eq!(issue, None);
+            assert_eq!(session.snapshot(), AchievementRecords::default());
+            let update = session.unlock(&[identifier("first-contact")]);
+            update.write_result.unwrap();
+            assert_eq!(update.value.1, ["first-contact"]);
+            assert!(
+                session
+                    .snapshot()
+                    .unlocked_achievements
+                    .contains_key("first-contact")
+            );
+            assert!(
+                session
+                    .unlock(&[identifier("first-contact")])
+                    .value
+                    .1
+                    .is_empty()
+            );
+            session
+                .discover_splash_message(&identifier("rainbow-mode"))
+                .write_result
+                .unwrap();
+            session.mark_viewed().write_result.unwrap();
+            assert!(
+                session
+                    .snapshot()
+                    .discovered_splash_message_ids
+                    .contains("rainbow-mode")
+            );
+            assert!(session.snapshot().viewed_at_millis.is_some());
+        }
+        assert_eq!(fs::read(&path).unwrap(), before);
+        assert_eq!(achievement_files(&root), [ACHIEVEMENTS_FILE_NAME]);
+        let (restarted, _) = AchievementStore::open(&root, ProgressPersistence::Ephemeral);
+        assert_eq!(restarted.snapshot(), AchievementRecords::default());
+        assert_eq!(
+            restarted.unlock(&[identifier("first-contact")]).value.1,
+            ["first-contact"]
+        );
+        assert_eq!(
+            AchievementStore::open(&root, ProgressPersistence::Persistent)
+                .0
+                .snapshot(),
+            saved.snapshot()
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn persists_unlocks_and_discoveries_across_reopening() {
         let root = temporary_root("persist");
-        let (store, issue) = AchievementStore::open(&root);
+        let (store, issue) = AchievementStore::open(&root, ProgressPersistence::Persistent);
         assert_eq!(issue, None);
         assert_eq!(store.snapshot(), AchievementRecords::default());
 
@@ -184,7 +245,7 @@ mod tests {
             .write_result
             .expect("discovery persisted");
 
-        let (reopened, issue) = AchievementStore::open(&root);
+        let (reopened, issue) = AchievementStore::open(&root, ProgressPersistence::Persistent);
         assert_eq!(issue, None);
         assert_eq!(reopened.snapshot(), store.snapshot());
         assert_eq!(achievement_files(&root), [ACHIEVEMENTS_FILE_NAME]);
@@ -194,7 +255,7 @@ mod tests {
     #[test]
     fn persists_getting_started_unlocks_across_reopening() {
         let root = temporary_root("getting-started");
-        let (store, issue) = AchievementStore::open(&root);
+        let (store, issue) = AchievementStore::open(&root, ProgressPersistence::Persistent);
         assert_eq!(issue, None);
         let ids = [
             "first-contact",
@@ -210,7 +271,9 @@ mod tests {
         update.write_result.expect("onboarding unlocks persisted");
         assert_eq!(update.value.1.len(), ids.len());
 
-        let reopened = AchievementStore::open(&root).0.snapshot();
+        let reopened = AchievementStore::open(&root, ProgressPersistence::Persistent)
+            .0
+            .snapshot();
         for id in [
             "first-contact",
             "cut-to-the-chase",
@@ -234,14 +297,16 @@ mod tests {
         )
         .expect("records written");
 
-        let (store, issue) = AchievementStore::open(&root);
+        let (store, issue) = AchievementStore::open(&root, ProgressPersistence::Persistent);
         assert_eq!(issue, None);
         store
             .unlock(&[identifier("gold-collector")])
             .write_result
             .expect("unlock persisted");
 
-        let records = AchievementStore::open(&root).0.snapshot();
+        let records = AchievementStore::open(&root, ProgressPersistence::Persistent)
+            .0
+            .snapshot();
         assert_eq!(
             records.unlocked_achievements["retired-achievement"].unlocked_at_millis,
             77
@@ -253,7 +318,7 @@ mod tests {
     #[test]
     fn unlocking_an_already_unlocked_achievement_does_not_write_again() {
         let root = temporary_root("repeat-write");
-        let (store, _) = AchievementStore::open(&root);
+        let (store, _) = AchievementStore::open(&root, ProgressPersistence::Persistent);
         store
             .unlock(&[identifier("bronze-collector")])
             .write_result
@@ -275,7 +340,7 @@ mod tests {
     #[test]
     fn persists_the_viewed_mark_across_reopening() {
         let root = temporary_root("viewed");
-        let (store, _) = AchievementStore::open(&root);
+        let (store, _) = AchievementStore::open(&root, ProgressPersistence::Persistent);
         assert_eq!(store.snapshot().viewed_at_millis, None);
 
         let update = store.mark_viewed();
@@ -285,7 +350,7 @@ mod tests {
             .viewed_at_millis
             .expect("collection marked viewed");
 
-        let (reopened, _) = AchievementStore::open(&root);
+        let (reopened, _) = AchievementStore::open(&root, ProgressPersistence::Persistent);
         assert_eq!(reopened.snapshot().viewed_at_millis, Some(viewed_at));
         fs::remove_dir_all(root).expect("temporary root removed");
     }
@@ -293,11 +358,11 @@ mod tests {
     #[test]
     fn repeated_unlocks_after_restart_keep_the_original_time() {
         let root = temporary_root("repeat");
-        let (store, _) = AchievementStore::open(&root);
+        let (store, _) = AchievementStore::open(&root, ProgressPersistence::Persistent);
         let first = store.unlock(&[identifier("first-export")]).value.0;
         let unlocked_at = first.unlocked_achievements["first-export"].unlocked_at_millis;
 
-        let (reopened, _) = AchievementStore::open(&root);
+        let (reopened, _) = AchievementStore::open(&root, ProgressPersistence::Persistent);
         let (records, unlocked) = reopened.unlock(&[identifier("first-export")]).value;
         assert!(unlocked.is_empty());
         assert_eq!(
@@ -310,7 +375,7 @@ mod tests {
     #[test]
     fn unchanged_records_are_not_rewritten() {
         let root = temporary_root("unchanged");
-        let (store, _) = AchievementStore::open(&root);
+        let (store, _) = AchievementStore::open(&root, ProgressPersistence::Persistent);
         store
             .discover_splash_message(&identifier("rainbow-mode"))
             .write_result
@@ -338,7 +403,7 @@ mod tests {
     #[test]
     fn concurrent_unlocks_unlock_each_achievement_once() {
         let root = temporary_root("concurrent");
-        let store = Arc::new(AchievementStore::open(&root).0);
+        let store = Arc::new(AchievementStore::open(&root, ProgressPersistence::Persistent).0);
         let workers = (0..8)
             .map(|_| {
                 let store = Arc::clone(&store);
@@ -358,7 +423,7 @@ mod tests {
 
         assert_eq!(unlocked, ["first-export", "getting-started"]);
         assert_eq!(
-            AchievementStore::open(&root)
+            AchievementStore::open(&root, ProgressPersistence::Persistent)
                 .0
                 .snapshot()
                 .unlocked_achievements
@@ -378,7 +443,7 @@ mod tests {
         )
         .expect("corrupt file written");
 
-        let (store, issue) = AchievementStore::open(&root);
+        let (store, issue) = AchievementStore::open(&root, ProgressPersistence::Persistent);
         assert_eq!(
             issue,
             Some(DocumentLoadIssue::Quarantined { reason: "invalid" })
@@ -394,7 +459,7 @@ mod tests {
     #[test]
     fn keeps_updates_in_memory_when_the_file_cannot_be_written() {
         let root = temporary_root("write-failure");
-        let (store, _) = AchievementStore::open(&root);
+        let (store, _) = AchievementStore::open(&root, ProgressPersistence::Persistent);
         fs::create_dir(root.join("achievements").join("achievements.tmp"))
             .expect("blocking directory created");
 
@@ -415,7 +480,7 @@ mod tests {
             .write_result
             .expect("later write catches up");
         assert_eq!(
-            AchievementStore::open(&root)
+            AchievementStore::open(&root, ProgressPersistence::Persistent)
                 .0
                 .snapshot()
                 .unlocked_achievements

@@ -29,14 +29,17 @@ To test achievement unlocking from scratch, close any running development app an
 pnpm dev -- --fresh
 ```
 
-This clears the development application data before starting Tauri, including achievements,
-splash discoveries, and usage statistics that drive milestone unlocks. It also resets preferences
-stored in that profile. On Windows it clears the identifier directory under both `APPDATA` and
-`LOCALAPPDATA` (including WebView2 storage); on Linux it uses `XDG_DATA_HOME` or
-`~/.local/share`; on macOS it uses `~/Library/Application Support`. Cleanup requires absolute
-paths ending in the exact development identifier and rejects symbolic links/junctions in the
-target or its ancestors. Missing profiles are harmless; validation or cleanup errors stop startup.
-Existing environment variables and the normal Vite/HMR workflow are preserved.
+Fresh mode starts achievements, splash discoveries, and usage statistics empty and keeps all
+progress in native memory for the application lifetime. Achievements unlock and display normally,
+but progress is discarded on exit; another fresh launch starts empty again. Existing saved progress
+is neither loaded nor modified, and returning to `pnpm dev` restores the persistent development
+progress. No profile directories are deleted. Preferences and other application storage continue to
+use the development profile.
+
+The launcher sets `EASYTRIM_EPHEMERAL_PROGRESS=1` only for fresh sessions (and `0` otherwise).
+The native layer accepts this flag only in debug builds with the development identifier, keeping
+production behavior unchanged. Other environment variables and the normal Vite/HMR workflow are
+preserved. A native process restart creates a new session; frontend HMR retains the native state.
 
 Run focused launcher/profile tests with `node --test scripts/__tests__/dev-profile.test.mjs`.
 

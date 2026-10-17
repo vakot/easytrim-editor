@@ -10,12 +10,12 @@ use crate::{
         CompletedExport, StatisticsDecodeError, StoredUsageStatistics, UsageStatistics,
         decode_usage_statistics,
     },
-    persistence::{DocumentLoadIssue, LoadedDocument, load_json_document, write_json_atomic},
+    persistence::{DocumentLoadIssue, LoadedDocument, ProgressPersistence, write_json_atomic},
 };
 
 const STATISTICS_FILE_NAME: &str = "usage-statistics.json";
 
-/// Application-wide usage statistics, persisted in the application data directory.
+/// Application-wide usage statistics, optionally persisted in the application data directory.
 ///
 /// The mutex serializes every update, including its file write, so concurrent completions
 /// cannot overwrite each other's totals.
@@ -32,13 +32,14 @@ struct StoreState {
 impl StatisticsStore {
     /// Loads statistics from `<root>/statistics/`. Never fails: a missing file starts from zero,
     /// and unusable files are reported through the returned issue.
-    pub fn open(root: &Path) -> (Self, Option<DocumentLoadIssue>) {
+    /// Ephemeral sessions start empty and never read or write the saved document.
+    pub fn open(root: &Path, mode: ProgressPersistence) -> (Self, Option<DocumentLoadIssue>) {
         let path = root.join("statistics").join(STATISTICS_FILE_NAME);
         let LoadedDocument {
             value: statistics,
             persistent,
             issue,
-        } = load_json_document(&path, unix_millis_now(), |bytes| {
+        } = mode.load(&path, unix_millis_now(), |bytes| {
             decode_usage_statistics(bytes).map_err(|error| match error {
                 StatisticsDecodeError::Invalid => "invalid",
                 StatisticsDecodeError::UnsupportedVersion(_) => "unsupported-version",
@@ -126,9 +127,42 @@ mod tests {
     }
 
     #[test]
+    fn ephemeral_statistics_accumulate_then_disappear_without_changing_saved_progress() {
+        let root = temporary_root("ephemeral");
+        let path = root.join("statistics").join(STATISTICS_FILE_NAME);
+        let (saved, _) = StatisticsStore::open(&root, ProgressPersistence::Persistent);
+        saved.record(&completed(ExportKind::Lossless)).unwrap();
+        let before = fs::read(&path).unwrap();
+        {
+            let (session, issue) = StatisticsStore::open(&root, ProgressPersistence::Ephemeral);
+            assert_eq!(issue, None);
+            assert_eq!(session.snapshot(), UsageStatistics::default());
+            session.record(&completed(ExportKind::Optimized)).unwrap();
+            session.record(&completed(ExportKind::Optimized)).unwrap();
+            assert_eq!(session.snapshot().optimized_exports, 2);
+            assert_eq!(session.snapshot().lossless_exports, 0);
+        }
+        assert_eq!(fs::read(&path).unwrap(), before);
+        assert_eq!(statistics_files(&root), [STATISTICS_FILE_NAME]);
+        assert_eq!(
+            StatisticsStore::open(&root, ProgressPersistence::Ephemeral)
+                .0
+                .snapshot(),
+            UsageStatistics::default()
+        );
+        assert_eq!(
+            StatisticsStore::open(&root, ProgressPersistence::Persistent)
+                .0
+                .snapshot(),
+            saved.snapshot()
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn starts_empty_and_persists_across_reopening() {
         let root = temporary_root("persist");
-        let (store, issue) = StatisticsStore::open(&root);
+        let (store, issue) = StatisticsStore::open(&root, ProgressPersistence::Persistent);
         assert_eq!(issue, None);
         assert_eq!(store.snapshot(), UsageStatistics::default());
 
@@ -139,7 +173,7 @@ mod tests {
             .record(&completed(ExportKind::Optimized))
             .expect("second export persisted");
 
-        let (reopened, issue) = StatisticsStore::open(&root);
+        let (reopened, issue) = StatisticsStore::open(&root, ProgressPersistence::Persistent);
         assert_eq!(issue, None);
         let statistics = reopened.snapshot();
         assert_eq!(statistics, store.snapshot());
@@ -153,7 +187,7 @@ mod tests {
     #[test]
     fn concurrent_records_are_all_counted_and_persisted() {
         let root = temporary_root("concurrent");
-        let store = Arc::new(StatisticsStore::open(&root).0);
+        let store = Arc::new(StatisticsStore::open(&root, ProgressPersistence::Persistent).0);
         let workers = (0..8)
             .map(|_| {
                 let store = Arc::clone(&store);
@@ -172,7 +206,10 @@ mod tests {
 
         assert_eq!(store.snapshot().optimized_exports, 40);
         assert_eq!(
-            StatisticsStore::open(&root).0.snapshot().optimized_exports,
+            StatisticsStore::open(&root, ProgressPersistence::Persistent)
+                .0
+                .snapshot()
+                .optimized_exports,
             40
         );
         fs::remove_dir_all(root).expect("temporary root removed");
@@ -188,7 +225,7 @@ mod tests {
         )
         .expect("corrupt file written");
 
-        let (store, issue) = StatisticsStore::open(&root);
+        let (store, issue) = StatisticsStore::open(&root, ProgressPersistence::Persistent);
         assert_eq!(
             issue,
             Some(DocumentLoadIssue::Quarantined { reason: "invalid" })
@@ -215,7 +252,7 @@ mod tests {
         )
         .expect("newer file written");
 
-        let (_, issue) = StatisticsStore::open(&root);
+        let (_, issue) = StatisticsStore::open(&root, ProgressPersistence::Persistent);
         assert_eq!(
             issue,
             Some(DocumentLoadIssue::Quarantined {
@@ -232,7 +269,7 @@ mod tests {
     #[test]
     fn keeps_counting_in_memory_when_the_file_cannot_be_written() {
         let root = temporary_root("write-failure");
-        let (store, _) = StatisticsStore::open(&root);
+        let (store, _) = StatisticsStore::open(&root, ProgressPersistence::Persistent);
         fs::create_dir(root.join("statistics").join("usage-statistics.tmp"))
             .expect("blocking directory created");
 
@@ -245,7 +282,10 @@ mod tests {
             .record(&completed(ExportKind::Lossless))
             .expect("later write catches up");
         assert_eq!(
-            StatisticsStore::open(&root).0.snapshot().lossless_exports,
+            StatisticsStore::open(&root, ProgressPersistence::Persistent)
+                .0
+                .snapshot()
+                .lossless_exports,
             2
         );
         fs::remove_dir_all(root).expect("temporary root removed");

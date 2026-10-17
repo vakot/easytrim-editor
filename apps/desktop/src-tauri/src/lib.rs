@@ -32,6 +32,11 @@ pub fn run() {
     let app = builder
         .setup(|app| {
             let app_data_dir = app.path().app_data_dir()?;
+            let progress_persistence = persistence::ProgressPersistence::for_session(
+                cfg!(debug_assertions),
+                &app.config().identifier,
+                std::env::var("EASYTRIM_EPHEMERAL_PROGRESS").as_deref() == Ok("1"),
+            );
             let diagnostics = diagnostics::DiagnosticsState::initialize(
                 app_data_dir.clone(),
                 app.package_info().version.to_string(),
@@ -48,12 +53,15 @@ pub fn run() {
                 }
             });
             let (statistics, statistics_issue) =
-                application::statistics::StatisticsStore::open(&app_data_dir);
+                application::statistics::StatisticsStore::open(&app_data_dir, progress_persistence);
             if let Some(issue) = statistics_issue {
                 commands::statistics::record_statistics_load_issue(&diagnostics, &issue);
             }
             let (achievements, achievements_issue) =
-                application::achievements::AchievementStore::open(&app_data_dir);
+                application::achievements::AchievementStore::open(
+                    &app_data_dir,
+                    progress_persistence,
+                );
             if let Some(issue) = achievements_issue {
                 commands::achievements::record_achievements_load_issue(&diagnostics, &issue);
             }

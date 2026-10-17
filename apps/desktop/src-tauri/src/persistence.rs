@@ -6,6 +6,40 @@ use std::{
 
 use serde::Serialize;
 
+/// Chosen once at application startup and shared by both progress stores.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProgressPersistence {
+    Persistent,
+    Ephemeral,
+}
+
+impl ProgressPersistence {
+    pub fn for_session(debug: bool, identifier: &str, requested: bool) -> Self {
+        if debug && identifier == "com.vakot.easytrimeditor.dev" && requested {
+            Self::Ephemeral
+        } else {
+            Self::Persistent
+        }
+    }
+
+    pub fn load<T: Default>(
+        self,
+        path: &Path,
+        timestamp_millis: i64,
+        decode: impl FnOnce(&[u8]) -> Result<T, &'static str>,
+    ) -> LoadedDocument<T> {
+        match self {
+            Self::Persistent => load_json_document(path, timestamp_millis, decode),
+            // Do not even inspect the saved document: loading can migrate or quarantine it.
+            Self::Ephemeral => LoadedDocument {
+                value: T::default(),
+                persistent: false,
+                issue: None,
+            },
+        }
+    }
+}
+
 /// What happened to an existing document that could not be used at startup.
 #[derive(Debug, PartialEq, Eq)]
 pub enum DocumentLoadIssue {
@@ -128,5 +162,53 @@ fn replace_file(source: &Path, destination: &Path) -> std::io::Result<()> {
         Err(std::io::Error::last_os_error())
     } else {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod progress_tests {
+    use super::*;
+
+    #[test]
+    fn ephemeral_mode_requires_a_fresh_debug_development_session() {
+        assert_eq!(
+            ProgressPersistence::for_session(true, "com.vakot.easytrimeditor.dev", true),
+            ProgressPersistence::Ephemeral
+        );
+        for (debug, identifier, requested) in [
+            (true, "com.vakot.easytrimeditor.dev", false),
+            (true, "com.vakot.easytrimeditor", true),
+            (false, "com.vakot.easytrimeditor.dev", true),
+            (false, "com.vakot.easytrimeditor", true),
+            (true, "other.dev", true),
+        ] {
+            assert_eq!(
+                ProgressPersistence::for_session(debug, identifier, requested),
+                ProgressPersistence::Persistent
+            );
+        }
+    }
+
+    #[test]
+    fn ephemeral_loading_does_not_touch_the_filesystem_or_decode_saved_data() {
+        let root =
+            std::env::temp_dir().join(format!("easytrim-ephemeral-{}", uuid::Uuid::new_v4()));
+        let path = root.join("progress.json");
+        let load = || {
+            ProgressPersistence::Ephemeral.load::<Vec<String>>(&path, 0, |_| {
+                panic!("ephemeral sessions must not decode saved progress")
+            })
+        };
+        let document = load();
+        assert!(document.value.is_empty());
+        assert!(!document.persistent);
+        assert_eq!(document.issue, None);
+        assert!(!root.exists());
+        std::fs::create_dir(&root).unwrap();
+        std::fs::write(&path, b"corrupt saved data").unwrap();
+        load();
+        assert_eq!(std::fs::read(&path).unwrap(), b"corrupt saved data");
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
+        std::fs::remove_dir_all(root).unwrap();
     }
 }
