@@ -19,6 +19,27 @@ native executable for the current operating system with `pnpm build`; `pnpm prev
 production build in the Tauri application. Frontend-only alternatives are `pnpm build:web` and
 `pnpm preview:web` (the latter cannot access native FFmpeg or Tauri functionality).
 
+`pnpm dev` automatically applies `tauri.dev.conf.json`, using the separate application identifier
+`com.vakot.easytrimeditor.dev`. Its profile persists across development sessions, including HMR.
+Production retains `com.vakot.easytrimeditor`; production data is never migrated or cleared.
+
+To test achievement unlocking from scratch, close any running development app and run:
+
+```sh
+pnpm dev -- --fresh
+```
+
+This clears the development application data before starting Tauri, including achievements,
+splash discoveries, and usage statistics that drive milestone unlocks. It also resets preferences
+stored in that profile. On Windows it clears the identifier directory under both `APPDATA` and
+`LOCALAPPDATA` (including WebView2 storage); on Linux it uses `XDG_DATA_HOME` or
+`~/.local/share`; on macOS it uses `~/Library/Application Support`. Cleanup requires absolute
+paths ending in the exact development identifier and rejects symbolic links/junctions in the
+target or its ancestors. Missing profiles are harmless; validation or cleanup errors stop startup.
+Existing environment variables and the normal Vite/HMR workflow are preserved.
+
+Run focused launcher/profile tests with `node --test scripts/__tests__/dev-profile.test.mjs`.
+
 ## Checks
 
 Run the standard web and repository checks with:
