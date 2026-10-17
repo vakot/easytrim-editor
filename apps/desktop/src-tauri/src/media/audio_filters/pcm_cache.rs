@@ -429,7 +429,7 @@ fn create_cache_directory() -> io::Result<PathBuf> {
         .map(|duration| duration.as_nanos())
         .unwrap_or_default();
     loop {
-        let directory = std::env::temp_dir().join(format!(
+        let directory = crate::profile::temporary_directory().join(format!(
             "easytrim-pcm-{}-{unique}-{}",
             std::process::id(),
             NEXT_DIRECTORY.fetch_add(1, Ordering::Relaxed)

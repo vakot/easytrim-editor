@@ -1,8 +1,9 @@
 import { CircleCheck } from "lucide-react";
-import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
-import { Fragment } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
 
 import {
@@ -13,6 +14,8 @@ import {
 } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { SupportLink } from "@/app/components/SupportLink";
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectAchievementRecords } from "@/app/store/slices/achievements-slice";
 import { Confetti } from "@/components/confetti";
 import {
   AchievementsCategoryContent,
@@ -21,6 +24,7 @@ import {
 } from "@/features/entertainment";
 import { cn } from "@/lib/class-names.utils";
 
+import { confirmOnboardingCompleted, isOnboardingCompleted } from "./onboarding-completion";
 import styles from "./VideoPreviewEmpty.module.css";
 
 type Shortcut = {
@@ -53,71 +57,76 @@ function VideoPreviewEmpty() {
 }
 
 function VideoPreviewEmptyOnboarding() {
-  const showGettingStarted = useHasIncompleteAchievements("getting-started");
+  const { t } = useTranslation();
+  const hasIncompleteAchievements = useHasIncompleteAchievements("getting-started");
+  const recordsLoaded = useAppSelector((state) => selectAchievementRecords(state) !== null);
+  const [completion, setCompletion] = useState<"pending" | "celebrating" | "finished">(() =>
+    isOnboardingCompleted() ? "finished" : "pending",
+  );
+
   const reduceMotion = useReducedMotion() === true;
+  const celebrating = completion === "celebrating";
   const exitDelay = reduceMotion ? 0 : COMPLETION_EXIT_DELAY_SECONDS;
 
-  /* Reserve the card width plus its gap, then collapse both together on exit. */
+  if (!recordsLoaded || completion === "finished") return null;
+
+  /* Only manual confirmation starts the celebration and collapses the reserved card width. */
   return (
-    <AnimatePresence initial={false}>
-      {showGettingStarted ? (
-        <motion.div
-          animate={{ width: "29rem" }}
-          className={cn(styles.achievements, "min-w-0 shrink-0 overflow-hidden")}
-          exit={{
-            width: 0,
-            transition: {
-              delay: exitDelay,
-              duration: reduceMotion ? 0 : 1,
-              ease: [0.22, 1, 0.36, 1],
-            },
-          }}
-          initial={{ width: 0 }}
-          key="getting-started"
-          transition={{
-            duration: reduceMotion ? 0 : 1,
-            ease: [0.22, 1, 0.36, 1],
-          }}
-        >
-          <motion.div
-            animate={{ opacity: 1, x: 0 }}
-            className="relative w-104 shrink-0"
-            exit={{
-              opacity: 0,
-              x: reduceMotion ? 0 : "-0.75rem",
-              transition: { delay: exitDelay, duration: reduceMotion ? 0 : 0.16 },
+    <motion.div
+      animate={{ width: celebrating ? 0 : "29rem" }}
+      className={cn(styles.achievements, "min-w-0 shrink-0 overflow-hidden")}
+      initial={{ width: reduceMotion ? "29rem" : 0 }}
+      onAnimationComplete={() => {
+        if (celebrating) setCompletion("finished");
+      }}
+      transition={{
+        delay: celebrating ? exitDelay : 0,
+        duration: reduceMotion ? 0 : 1,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+    >
+      <motion.div
+        animate={{ opacity: celebrating ? 0 : 1, x: celebrating && !reduceMotion ? "-0.75rem" : 0 }}
+        className="relative w-104 shrink-0"
+        initial={{ opacity: reduceMotion ? 1 : 0, x: 0 }}
+        transition={{ delay: celebrating ? exitDelay : 0, duration: reduceMotion ? 0 : 0.16 }}
+      >
+        <AchievementsCategoryContent category="getting-started" compact presentation="onboarding" />
+        {!hasIncompleteAchievements ? (
+          <Button
+            className="mt-3 w-full"
+            disabled={celebrating}
+            onClick={() => {
+              confirmOnboardingCompleted();
+              setCompletion("celebrating");
             }}
-            initial={{ opacity: reduceMotion ? 1 : 0, x: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.16 }}
           >
-            <AchievementsCategoryContent
-              category="getting-started"
-              compact
-              presentation="onboarding"
-            />
-            <VideoPreviewEmptyOnboardingCompletion />
-          </motion.div>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
+            {t("achievements.onboarding.confirmCompletion")}
+          </Button>
+        ) : null}
+        {celebrating ? <VideoPreviewEmptyOnboardingCompletion /> : null}
+      </motion.div>
+    </motion.div>
   );
 }
 
 /** Completion celebration shown over the card while it waits out the exit delay. */
 function VideoPreviewEmptyOnboardingCompletion() {
-  const isPresent = useIsPresent();
   const { t } = useTranslation();
-  if (isPresent) return null;
+  const reduceMotion = useReducedMotion() === true;
 
   return (
-    <div
-      className="pointer-events-none absolute inset-0 flex animate-in flex-col items-center justify-center gap-3 rounded-lg bg-background/80 p-2 text-success fade-in-0"
+    <motion.div
+      animate={{ opacity: 1 }}
+      className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-preview-surface/80 p-2 text-success"
+      initial={{ opacity: reduceMotion ? 1 : 0 }}
       role="status"
+      transition={{ duration: reduceMotion ? 0 : 0.16 }}
     >
       <CircleCheck aria-hidden="true" className="size-10" />
       <span className="text-sm font-medium">{t("achievements.status.completed")}</span>
       <Confetti active intensity="celebration" mode="border-inside" />
-    </div>
+    </motion.div>
   );
 }
 

@@ -118,8 +118,8 @@ pub fn create_chapter_metadata_file(
         contents.push('\n');
     }
 
-    let directory =
-        std::env::temp_dir().join(format!("easytrim-chapters-{}", uuid::Uuid::new_v4()));
+    let directory = crate::profile::temporary_directory()
+        .join(format!("easytrim-chapters-{}", uuid::Uuid::new_v4()));
     fs::create_dir(&directory)
         .map_err(|_| AppError::internal("Chapter metadata could not be prepared."))?;
     let path = directory.join("chapters.ffmeta");

@@ -304,7 +304,7 @@ pub(super) fn create_artifact(extension: &str) -> Result<PreviewArtifact, AppErr
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_nanos();
-    let base_directory = std::env::temp_dir();
+    let base_directory = crate::profile::temporary_directory();
 
     for _ in 0..100 {
         let sequence = NEXT_DIRECTORY_ID.fetch_add(1, Ordering::Relaxed);

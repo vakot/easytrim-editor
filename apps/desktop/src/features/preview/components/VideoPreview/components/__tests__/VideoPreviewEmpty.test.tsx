@@ -1,9 +1,12 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { AnimatePresence, motion } from "motion/react";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { achievementRecordsUpdated } from "@/app/store/slices/achievements-slice";
 import { createAppStore } from "@/app/store/store";
+import { STORAGE_KEYS } from "@/lib/storage.consts";
 import {
   almostCompleteGettingStartedRecords,
   completeAchievementRecords,
@@ -14,6 +17,12 @@ import {
 import { VideoPreviewEmpty } from "../VideoPreviewEmpty";
 
 describe("VideoPreviewEmpty achievements", () => {
+  beforeEach(() => localStorage.removeItem(STORAGE_KEYS.onboardingCompleted));
+  afterEach(() => {
+    delete (window as Window & { __EASYTRIM_EPHEMERAL_SESSION_ID__?: string })
+      .__EASYTRIM_EPHEMERAL_SESSION_ID__;
+    sessionStorage.removeItem(STORAGE_KEYS.onboardingCompleted);
+  });
   it.each([
     ["locked", emptyAchievementRecords, 0],
     ["partially unlocked", partiallyUnlockedAchievementScenario.records, 1],
@@ -39,24 +48,118 @@ describe("VideoPreviewEmpty achievements", () => {
     expect(category.querySelector("[data-slot='achievement-new']")).toBeNull();
     expect(screen.getByRole("link", { name: /Ko-fi/i })).toBeInTheDocument();
     expect(screen.queryByText("Secret Discoveries")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Finish onboarding" })).not.toBeInTheDocument();
   });
 
-  it.each([null, completeAchievementRecords])(
-    "hides onboarding until records load and after completion (%j)",
-    (records) => {
-      const store = createAppStore();
-      if (records) store.dispatch(achievementRecordsUpdated({ records }));
-      render(
-        <Provider store={store}>
-          <VideoPreviewEmpty />
-        </Provider>,
-      );
-      expect(screen.queryByRole("region", { name: "Getting Started" })).not.toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /Ko-fi/i })).toBeInTheDocument();
-    },
-  );
+  it("hides onboarding and confirmation until records load", () => {
+    const store = createAppStore();
+    render(
+      <Provider store={store}>
+        <VideoPreviewEmpty />
+      </Provider>,
+    );
+    expect(screen.queryByRole("region", { name: "Getting Started" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Finish onboarding" })).not.toBeInTheDocument();
+  });
 
-  it("shows incomplete tasks after records arrive and exits only after the final unlock", async () => {
+  it("fades in once and does not celebrate when an ancestor exits without confirmation", async () => {
+    const store = createAppStore();
+    store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
+    const content = (visible: boolean) => (
+      <Provider store={store}>
+        <AnimatePresence>
+          {visible ? (
+            <motion.div exit={{ opacity: 0 }} key="preview" transition={{ duration: 1 }}>
+              <VideoPreviewEmpty />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </Provider>
+    );
+
+    const view = render(content(true));
+    const category = screen.getByRole("region", { name: "Getting Started" });
+    const card = category.parentElement;
+    expect(card).toHaveStyle({ opacity: "0" });
+    await waitFor(() => expect(card).toHaveStyle({ opacity: "1" }));
+    act(() => {
+      store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
+    });
+    expect(category.parentElement).toBe(card);
+    expect(card).toHaveStyle({ opacity: "1" });
+    view.rerender(content(false));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(view.container.querySelector("[data-slot='confetti']")).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBeNull();
+  });
+
+  it("waits for confirmation with already-complete records and remembers it after remounting", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
+    const view = render(
+      <Provider store={store}>
+        <VideoPreviewEmpty />
+      </Provider>,
+    );
+
+    expect(screen.getByRole("region", { name: "Getting Started" })).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Finish onboarding" }));
+    expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBe("true");
+    view.unmount();
+    render(
+      <Provider store={store}>
+        <VideoPreviewEmpty />
+      </Provider>,
+    );
+    expect(screen.queryByRole("region", { name: "Getting Started" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Finish onboarding" })).not.toBeInTheDocument();
+  });
+
+  it("shows Getting Started again on a new fresh launch without changing persistent confirmation", async () => {
+    const user = userEvent.setup();
+    const setSession = (value: string) =>
+      Object.defineProperty(window, "__EASYTRIM_EPHEMERAL_SESSION_ID__", {
+        configurable: true,
+        value,
+      });
+
+    localStorage.setItem(STORAGE_KEYS.onboardingCompleted, "true");
+    setSession("fresh-one");
+    const store = createAppStore();
+    store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
+    const view = render(
+      <Provider store={store}>
+        <VideoPreviewEmpty />
+      </Provider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Finish onboarding" }));
+    view.unmount();
+    const sameSession = render(
+      <Provider store={store}>
+        <VideoPreviewEmpty />
+      </Provider>,
+    );
+
+    expect(screen.queryByRole("region", { name: "Getting Started" })).not.toBeInTheDocument();
+    sameSession.unmount();
+    setSession("fresh-two");
+    const restartedStore = createAppStore();
+    restartedStore.dispatch(achievementRecordsUpdated({ records: emptyAchievementRecords }));
+    render(
+      <Provider store={restartedStore}>
+        <VideoPreviewEmpty />
+      </Provider>,
+    );
+    expect(screen.getByRole("region", { name: "Getting Started" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Finish onboarding" })).not.toBeInTheDocument();
+    expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBe("true");
+  });
+
+  it("shows incomplete tasks after records arrive and exits only after manual confirmation", async () => {
     const store = createAppStore();
     render(
       <Provider store={store}>
@@ -79,7 +182,18 @@ describe("VideoPreviewEmpty achievements", () => {
     act(() => {
       store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
     });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(localStorage.getItem(STORAGE_KEYS.onboardingCompleted)).toBeNull();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Finish onboarding" }));
     expect(screen.getByRole("status")).toHaveTextContent("Completed");
+    const celebration = screen.getByRole("status");
+    await waitFor(() => expect(celebration).toHaveStyle({ opacity: "1" }));
+    expect(screen.getByRole("button", { name: "Finish onboarding" })).toBeDisabled();
+    act(() => {
+      store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
+    });
+    expect(screen.getByRole("status")).toBe(celebration);
+    expect(celebration).toHaveStyle({ opacity: "1" });
     expect(screen.getByRole("status").querySelector("[data-slot='confetti']")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Getting Started" })).toBeInTheDocument();
     await waitFor(
