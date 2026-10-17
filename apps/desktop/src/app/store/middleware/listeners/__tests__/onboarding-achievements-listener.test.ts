@@ -29,7 +29,7 @@ import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
 import type { ExportAttempt } from "@/domain/editing-instance";
 import { emptyAchievementRecords } from "@/test/achievement-records.fixtures";
-import { firstSource, media, mediaWithAudio } from "@/test/source.fixtures";
+import { firstSource, media, mediaWithAudio, secondSource } from "@/test/source.fixtures";
 
 function createStore() {
   return createAppStore({
@@ -153,6 +153,22 @@ describe("onboarding achievement triggers", () => {
       "first-contact",
       "shortcut-taken",
     ]);
+  });
+
+  it("keeps First Contact locked when a stale sourceReady arrives after selecting another source", () => {
+    const store = createStore();
+    store.dispatch(sourceSelected({ loadToken: 1, source: firstSource }));
+    store.dispatch(sourceSelected({ loadToken: 2, source: secondSource }));
+
+    store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
+
+    expect(store.getState().source).toMatchObject({
+      loadToken: 2,
+      media: null,
+      status: "loading-source",
+    });
+    expect(native.unlockAchievements).not.toHaveBeenCalled();
+    expect(native.records.unlockedAchievements["first-contact"]).toBeUndefined();
   });
 
   it("skips repeated unlock requests and retains the original timestamp", async () => {

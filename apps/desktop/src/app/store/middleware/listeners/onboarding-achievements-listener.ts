@@ -32,7 +32,16 @@ function unlockOnboardingAchievement(
 
 listenerMiddleware.startListening({
   actionCreator: sourceReady,
-  effect: (_action, api) => {
+  effect: (action, api) => {
+    const source = api.getState().source;
+    if (
+      source.loadToken !== action.payload.loadToken ||
+      source.status !== "ready" ||
+      source.media === null
+    ) {
+      return;
+    }
+
     // sourceReady only follows successful source activation and inspection. A restored snapshot
     // also proves that the user imported a media file in an earlier session.
     unlockOnboardingAchievement("first-contact", api.dispatch as AppDispatch, api.getState);
