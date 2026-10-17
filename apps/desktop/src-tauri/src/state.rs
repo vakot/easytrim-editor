@@ -19,8 +19,13 @@ use crate::{
 
 const STALE_ARTIFACT_AGE: std::time::Duration = std::time::Duration::from_secs(60 * 60);
 
-pub fn cleanup_stale_media_artifacts() {
-    let Ok(entries) = fs::read_dir(std::env::temp_dir()) else {
+pub fn cleanup_stale_media_artifacts(root: &Path) {
+    if !fs::symlink_metadata(root)
+        .is_ok_and(|metadata| metadata.is_dir() && !metadata.file_type().is_symlink())
+    {
+        return;
+    }
+    let Ok(entries) = fs::read_dir(root) else {
         return;
     };
     let cutoff = std::time::SystemTime::now()

@@ -14,14 +14,6 @@ pub enum ProgressPersistence {
 }
 
 impl ProgressPersistence {
-    pub fn for_session(debug: bool, identifier: &str, requested: bool) -> Self {
-        if debug && identifier == "com.vakot.easytrimeditor.dev" && requested {
-            Self::Ephemeral
-        } else {
-            Self::Persistent
-        }
-    }
-
     pub fn load<T: Default>(
         self,
         path: &Path,
@@ -168,26 +160,6 @@ fn replace_file(source: &Path, destination: &Path) -> std::io::Result<()> {
 #[cfg(test)]
 mod progress_tests {
     use super::*;
-
-    #[test]
-    fn ephemeral_mode_requires_a_fresh_debug_development_session() {
-        assert_eq!(
-            ProgressPersistence::for_session(true, "com.vakot.easytrimeditor.dev", true),
-            ProgressPersistence::Ephemeral
-        );
-        for (debug, identifier, requested) in [
-            (true, "com.vakot.easytrimeditor.dev", false),
-            (true, "com.vakot.easytrimeditor", true),
-            (false, "com.vakot.easytrimeditor.dev", true),
-            (false, "com.vakot.easytrimeditor", true),
-            (true, "other.dev", true),
-        ] {
-            assert_eq!(
-                ProgressPersistence::for_session(debug, identifier, requested),
-                ProgressPersistence::Persistent
-            );
-        }
-    }
 
     #[test]
     fn ephemeral_loading_does_not_touch_the_filesystem_or_decode_saved_data() {

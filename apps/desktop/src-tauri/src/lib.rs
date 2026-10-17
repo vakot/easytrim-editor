@@ -6,6 +6,7 @@ mod error;
 mod media;
 mod persistence;
 mod process;
+mod profile;
 mod state;
 
 use std::sync::Arc;
@@ -15,7 +16,17 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    cleanup_stale_media_artifacts();
+    let mut context = tauri::generate_context!();
+    let profile = profile::AppProfile::detect(&context.config().identifier)
+        .expect("unable to select application profile");
+    profile
+        .validate_platform()
+        .expect("unable to isolate application WebView storage");
+    profile.configure(context.config_mut());
+    profile
+        .initialize_temporary_directory()
+        .expect("unable to isolate temporary media");
+    cleanup_stale_media_artifacts(&profile::temporary_directory());
     let media_reads = Arc::new(tauri::async_runtime::Mutex::new(()));
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -25,18 +36,17 @@ pub fn run() {
     {
         builder = builder
             .plugin(tauri_plugin_process::init())
-            .plugin(tauri_plugin_window_state::Builder::default().build())
-            .plugin(tauri_plugin_updater::Builder::new().build());
+            .plugin(tauri_plugin_window_state::Builder::default().build());
+        // Repository instances must never launch the production installer through the updater.
+        if !profile.is_repository() {
+            builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+        }
     }
 
     let app = builder
-        .setup(|app| {
+        .setup(move |app| {
             let app_data_dir = app.path().app_data_dir()?;
-            let progress_persistence = persistence::ProgressPersistence::for_session(
-                cfg!(debug_assertions),
-                &app.config().identifier,
-                std::env::var("EASYTRIM_EPHEMERAL_PROGRESS").as_deref() == Ok("1"),
-            );
+            let progress_persistence = profile.progress_persistence();
             let diagnostics = diagnostics::DiagnosticsState::initialize(
                 app_data_dir.clone(),
                 app.package_info().version.to_string(),
@@ -143,7 +153,7 @@ pub fn run() {
             commands::achievements::record_splash_message_discovery,
             commands::achievements::mark_achievements_viewed
         ])
-        .build(tauri::generate_context!())
+        .build(context)
         .expect("error while building tauri application");
     app.run(|_, event| {
         if matches!(event, tauri::RunEvent::Exit) {
