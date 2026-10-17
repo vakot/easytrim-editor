@@ -1246,6 +1246,10 @@ export const ru = {
       lastExport: {
         label: "Последний экспорт",
       },
+      longestExport: {
+        description: "Максимальное время обработки одного экспорта",
+        label: "Самый долгий экспорт",
+      },
       losslessCuts: {
         description: "Быстрый экспорт с копированием видео без перекодирования",
         label: "Обрезка без потерь",

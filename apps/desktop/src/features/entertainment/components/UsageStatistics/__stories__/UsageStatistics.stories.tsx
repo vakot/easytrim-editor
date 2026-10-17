@@ -54,6 +54,7 @@ const meta = {
       firstExportAtMillis: Date.UTC(2026, 0, 15, 12),
       gifExports: 17,
       lastExportAtMillis: Date.UTC(2026, 9, 12, 18, 30),
+      longestExportMillis: 17 * 60_000,
       losslessExports: 312,
       optimizedExports: 128,
       outputBytes: 61 * 1_024 ** 3,

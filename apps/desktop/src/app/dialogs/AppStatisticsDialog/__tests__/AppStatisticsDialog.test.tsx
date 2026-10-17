@@ -67,6 +67,7 @@ const recorded: UsageStatistics = {
   firstExportAtMillis: Date.UTC(2026, 0, 15, 12),
   gifExports: 2,
   lastExportAtMillis: Date.UTC(2026, 2, 1, 12),
+  longestExportMillis: 123_000,
   losslessExports: 3,
   outputBytes: 3 * 1_024 * 1_024,
   processingMillis: 3_723_000,
@@ -95,6 +96,7 @@ describe("AppStatisticsDialog", () => {
     ).toBeVisible();
     expect(within(metric(dialog, "Completed Exports")).getByText("0")).toBeVisible();
     expect(within(metric(dialog, "Processing Time")).getByText("0:00")).toBeVisible();
+    expect(within(metric(dialog, "Longest Export")).getByText("0:00")).toBeVisible();
     expect(within(metric(dialog, "Storage Saved")).getByText("0 B")).toBeVisible();
     expect(within(metric(dialog, "First Export")).getByText("Not yet")).toBeVisible();
     expect(within(metric(dialog, "Last Export")).getByText("Not yet")).toBeVisible();
@@ -117,6 +119,14 @@ describe("AppStatisticsDialog", () => {
     expect(within(metric(dialog, "GIF Exports")).getByText("2")).toBeVisible();
     expect(within(metric(dialog, "Audio Exports")).getByText("7")).toBeVisible();
     expect(within(metric(dialog, "Processing Time")).getByText("1:02:03")).toBeVisible();
+    expect(within(metric(dialog, "Longest Export")).getByText("2:03")).toBeVisible();
+    const overview = within(dialog).getByRole("region", { name: "Overview" });
+    expect(within(overview).getAllByRole("listitem")[3]).toBe(metric(dialog, "Longest Export"));
+    expect(
+      within(metric(dialog, "Longest Export")).getByText(
+        "Longest time spent processing a single export",
+      ),
+    ).toBeVisible();
     expect(within(metric(dialog, "Source Data Processed")).getByText("2.0 MB")).toBeVisible();
     expect(within(metric(dialog, "Output Data Generated")).getByText("3.0 MB")).toBeVisible();
     const storageSaved = metric(dialog, "Storage Saved");
@@ -130,13 +140,28 @@ describe("AppStatisticsDialog", () => {
     ).toBeNull();
   });
 
+  it("shows the longest export in Russian", async () => {
+    await i18n.changeLanguage("ru");
+    mocks.getUsageStatistics.mockResolvedValue(recorded);
+    renderDialog();
+    await userEvent.click(screen.getByRole("button", { name: "Open" }));
+    const dialog = await screen.findByRole("dialog", { name: "Статистика" });
+    const longest = metric(dialog, "Самый долгий экспорт");
+    expect(within(longest).getByText("2:03")).toBeVisible();
+    expect(within(longest).getByText("Максимальное время обработки одного экспорта")).toBeVisible();
+  });
+
   it("updates while open when an export completes", async () => {
     mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
     const store = renderDialog();
     const dialog = await openDialog();
     expect(await within(metric(dialog, "Lossless Cuts")).findByText("0")).toBeVisible();
 
-    mocks.getUsageStatistics.mockResolvedValue({ ...emptyUsageStatistics, losslessExports: 1 });
+    mocks.getUsageStatistics.mockResolvedValue({
+      ...emptyUsageStatistics,
+      longestExportMillis: 1_000,
+      losslessExports: 1,
+    });
     act(() => {
       store.dispatch(
         editingInstanceExportCompleted({
@@ -149,6 +174,7 @@ describe("AppStatisticsDialog", () => {
     });
 
     expect(await within(metric(dialog, "Lossless Cuts")).findByText("1")).toBeVisible();
+    expect(within(metric(dialog, "Longest Export")).getByText("0:01")).toBeVisible();
   });
 
   it("counts unlocked achievements and updates when one unlocks", async () => {

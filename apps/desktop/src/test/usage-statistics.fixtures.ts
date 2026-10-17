@@ -5,6 +5,7 @@ export const emptyUsageStatistics: UsageStatistics = {
   firstExportAtMillis: null,
   gifExports: 0,
   lastExportAtMillis: null,
+  longestExportMillis: 0,
   losslessExports: 0,
   outputBytes: 0,
   processingMillis: 0,

@@ -11,6 +11,7 @@ import {
   PiggyBank,
   Scissors,
   Timer,
+  TimerReset,
   Trophy,
 } from "lucide-react";
 import React, { useEffect } from "react";
@@ -117,6 +118,12 @@ function UsageStatisticsDashboard() {
             value={`${formatStatisticCount(countUnlockedAchievements(achievementRecords), locale)} / ${formatStatisticCount(totalUnlockableAchievements, locale)}`}
           />
         ) : null}
+        <UsageStatisticsItem
+          description={t("statistics.metrics.longestExport.description")}
+          icon={<TimerReset />}
+          label={t("statistics.metrics.longestExport.label")}
+          value={formatExportDuration(statistics.longestExportMillis)}
+        />
       </UsageStatisticsSection>
 
       <UsageStatisticsSection title={t("statistics.sections.breakdown")}>

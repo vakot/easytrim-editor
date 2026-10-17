@@ -1290,6 +1290,10 @@ export const en = {
       lastExport: {
         label: "Last Export",
       },
+      longestExport: {
+        description: "Longest time spent processing a single export",
+        label: "Longest Export",
+      },
       losslessCuts: {
         description: "Fast Exports that copy the video without re-encoding",
         label: "Lossless Cuts",

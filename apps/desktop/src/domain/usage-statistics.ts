@@ -7,6 +7,7 @@ interface UsageStatistics {
   firstExportAtMillis: number | null;
   gifExports: number;
   lastExportAtMillis: number | null;
+  longestExportMillis: number;
   losslessExports: number;
   optimizedExports: number;
   outputBytes: number;
