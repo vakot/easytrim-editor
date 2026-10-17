@@ -437,7 +437,7 @@ function TimelinePanelContent() {
           <TimelineMarkers frameRate={frameRate} />
           <Timeline.Range
             className={cn(
-              "-inset-y-px mx-2 border-y-[0.125rem] border-primary bg-primary/10",
+              "-inset-y-px mx-2 border-y-2 border-primary bg-primary/10",
               editedChapterId && "invisible",
             )}
             data-slot="timeline-selection"
@@ -480,8 +480,8 @@ function TimelinePlayhead({
       showValue={showValue}
       valueText={formatTimecode(position, frameRate)}
     >
-      <span className="absolute -inset-y-1 left-0 w-0.5 -translate-x-1/2 rounded-xs bg-white group-focus-visible:ring-[0.1875rem] group-focus-visible:ring-ring/50" />
-      <span className="absolute -top-1 left-0 size-2 -translate-1/2 rounded-full bg-foreground group-focus-visible:ring-[0.1875rem] group-focus-visible:ring-ring/50 group-data-snap-active:rounded-t-none" />
+      <span className="absolute -inset-y-1 left-0 w-0.5 -translate-x-1/2 rounded-xs bg-white group-focus-visible:ring-3 group-focus-visible:ring-ring/50" />
+      <span className="absolute -top-1 left-0 size-2 -translate-1/2 rounded-full bg-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:rounded-t-none" />
     </Timeline.Handle>
   );
 }
@@ -571,7 +571,7 @@ function TimelineTrimHandles({
         snapExclude={["trim-start", "trim-end", "trim-move"]}
         valueText={`${timecode(trim.startMicros)} – ${timecode(trim.endMicros)}`}
       >
-        <span className="absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-[0.1875rem] group-focus-visible:ring-ring/50 group-aria-disabled:cursor-default group-data-snap-active:ring-[0.1875rem] hover:bg-primary/90 group-aria-disabled:hover:bg-primary active:cursor-grabbing">
+        <span className="absolute top-1/2 left-0 flex size-7 -translate-1/2 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-aria-disabled:cursor-default group-data-snap-active:ring-3 hover:bg-primary/90 group-aria-disabled:hover:bg-primary active:cursor-grabbing">
           <GripHorizontal aria-hidden="true" className="size-4" />
         </span>
       </Timeline.Handle>
@@ -582,7 +582,7 @@ function TimelineTrimHandles({
 function TrimGrip({ edge }: { edge: "start" | "end" }) {
   return (
     <span
-      className={`absolute -inset-y-1 left-0 flex w-4 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-xs bg-primary text-primary-foreground group-focus-visible:ring-[0.1875rem] group-focus-visible:ring-ring/50 group-aria-disabled:cursor-default group-data-snap-active:ring-[0.1875rem] hover:bg-primary/90 group-aria-disabled:hover:bg-primary ${edge === "start" ? "rounded-l-md" : "rounded-r-md"}`}
+      className={`absolute -inset-y-1 left-0 flex w-4 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-xs bg-primary text-primary-foreground group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-aria-disabled:cursor-default group-data-snap-active:ring-3 hover:bg-primary/90 group-aria-disabled:hover:bg-primary ${edge === "start" ? "rounded-l-md" : "rounded-r-md"}`}
     >
       <GripVertical aria-hidden="true" className="size-4" />
     </span>

@@ -30,7 +30,7 @@ function ScrollArea({
       {/* The viewport is the scroller, so it carries the scroll-driven edge fade. */}
       <ScrollAreaPrimitive.Viewport
         className={cn(
-          "scroll-area-viewport size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[0.1875rem] focus-visible:ring-ring/50 focus-visible:outline-[0.0625rem] [&>div]:block!",
+          "scroll-area-viewport size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-[0.0625rem] [&>div]:block!",
           orientation === "horizontal"
             ? "scroll-fade-x overflow-x-auto overflow-y-hidden"
             : "scroll-fade-y overflow-x-hidden",

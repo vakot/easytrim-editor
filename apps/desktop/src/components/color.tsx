@@ -245,7 +245,7 @@ function ColorPickerSaturationValue({
       {...props}
       aria-label={ariaLabel}
       className={cn(
-        "relative isolate block h-48 w-full cursor-crosshair touch-none rounded-lg ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-[0.125rem] focus-visible:ring-ring",
+        "relative isolate block h-48 w-full cursor-crosshair touch-none rounded-lg ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
       data-slot="color-spectrum-field"
@@ -285,7 +285,7 @@ function ColorPickerSaturationValue({
     >
       <span
         aria-hidden="true"
-        className="absolute size-4 -translate-1/2 rounded-full border-[0.125rem] border-white shadow-md ring-1 ring-black/80"
+        className="absolute size-4 -translate-1/2 rounded-full border-2 border-white shadow-md ring-1 ring-black/80"
         data-slot="color-spectrum-marker"
         style={{
           left: `${positionFromSaturation(hsv.saturation) * 100}%`,
@@ -373,7 +373,7 @@ function ColorPickerHue({
       aria-valuemin={0}
       aria-valuenow={hsv.hue}
       className={cn(
-        "relative isolate block h-4 w-full touch-none rounded-full ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-[0.125rem] focus-visible:ring-ring",
+        "relative isolate block h-4 w-full touch-none rounded-full ring-1 ring-foreground/10 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
       data-slot="color-hue-slider"
@@ -411,7 +411,7 @@ function ColorPickerHue({
     >
       <span
         aria-hidden="true"
-        className="absolute top-1/2 size-5 -translate-1/2 rounded-full border-[0.125rem] border-white shadow-md ring-1 ring-black/80"
+        className="absolute top-1/2 size-5 -translate-1/2 rounded-full border-2 border-white shadow-md ring-1 ring-black/80"
         data-slot="color-hue-marker"
         style={{
           left: `${positionFromHue(hsv.hue) * 100}%`,
