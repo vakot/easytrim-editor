@@ -55,7 +55,7 @@ function toastOptions(index: number): ToastOptions {
   return mocks.toast.mock.calls[index]![1] as ToastOptions;
 }
 
-/** Plays out a toast's own closing, then the pause the queue leaves before the next one. */
+/** Dismisses one toast, then advances the queue by one appearance interval. */
 async function closeToast(index: number) {
   act(() => toastOptions(index).onAutoClose());
   await act(() => vi.advanceTimersByTimeAsync(ANNOUNCEMENT_GAP_MS));
@@ -239,11 +239,9 @@ describe("AchievementTracker", () => {
     act(() =>
       store.dispatch(achievementAnnouncementQueued({ ids: ["queued-up", "shortcut-taken"] })),
     );
-    await act(() => vi.advanceTimersByTimeAsync(ANNOUNCEMENT_GAP_MS * 5));
-    expect(announced()).toEqual(["standard:Fine Tuning"]);
-
-    await closeToast(0);
-    await closeToast(1);
+    await act(() => vi.advanceTimersByTimeAsync(ANNOUNCEMENT_GAP_MS));
+    expect(announced()).toEqual(["standard:Fine Tuning", "standard:Queued Up"]);
+    await act(() => vi.advanceTimersByTimeAsync(ANNOUNCEMENT_GAP_MS));
 
     expect(announced()).toEqual([
       "standard:Fine Tuning",
