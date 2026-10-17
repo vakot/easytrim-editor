@@ -184,6 +184,7 @@ describe("AchievementUnlockToast", () => {
       const ribbon = secret.container.querySelector<HTMLElement>(
         "[data-slot='achievement-secret-ribbon']",
       )!;
+
       const label = screen.getByText("TOP SECRET");
 
       expect(ribbon).toHaveClass(
