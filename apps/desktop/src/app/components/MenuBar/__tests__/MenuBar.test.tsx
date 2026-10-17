@@ -916,9 +916,6 @@ describe("MenuBarTest", () => {
 
     const viewButton = getMenuTrigger("View");
     await user.click(viewButton);
-    const appearanceItem = screen.getByRole("menuitem", { name: "Appearance" });
-    appearanceItem.focus();
-    await user.keyboard("{ArrowRight}");
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
     expect(themeItem).toHaveClass("min-w-48");
@@ -962,9 +959,6 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("View"));
-    const appearanceItem = screen.getByRole("menuitem", { name: "Appearance" });
-    appearanceItem.focus();
-    await user.keyboard("{ArrowRight}");
     const colorItem = screen.getByText("Color").closest<HTMLElement>('[role="menuitem"]');
     expect(colorItem).not.toBeNull();
     colorItem?.focus();
@@ -1071,14 +1065,11 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("View"));
-    const appearanceItem = screen.getByRole("menuitem", { name: "Appearance" });
-    appearanceItem.focus();
-    await user.keyboard("{ArrowRight}");
     const themeItem = screen.getByRole("menuitem", { name: "Theme" });
     const colorItem = screen.getByRole("menuitem", { name: /^Color/ });
 
     await user.hover(themeItem);
-    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(3));
+    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(2));
     const themeSubmenu = screen.getAllByRole("menu").at(-1);
     expect(themeSubmenu).toBeDefined();
     expect(
@@ -1086,15 +1077,15 @@ describe("MenuBarTest", () => {
     ).toBeInTheDocument();
 
     await user.hover(colorItem);
-    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(3));
+    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(2));
     const colorSubmenu = screen.getAllByRole("menu").at(-1);
     expect(colorSubmenu).toBeDefined();
     expect(
       within(colorSubmenu!).getByRole("menuitemradio", { name: /Amber#EFBF04/ }),
     ).toBeInTheDocument();
     expect(
-      within(colorSubmenu!).queryByRole("menuitem", { name: "System" }),
+      within(colorSubmenu!).queryByRole("menuitemradio", { name: "System" }),
     ).not.toBeInTheDocument();
-    expect(screen.getAllByRole("menu")).toHaveLength(3);
+    expect(screen.getAllByRole("menu")).toHaveLength(2);
   });
 });
