@@ -13,7 +13,7 @@
     "build": "pnpm changelog:prepare && pnpm --filter @easytrim-editor/desktop tauri build --no-bundle",
     "build:web": "pnpm changelog:prepare && pnpm --filter @easytrim-editor/desktop build",
     "build:analyze": "pnpm changelog:prepare && pnpm --filter @easytrim-editor/desktop build:analyze",
-    "preview": "node scripts/preview-production.mjs",
+    "preview": "pnpm changelog:prepare && node scripts/preview-production.mjs",
     "preview:web": "pnpm --filter @easytrim-editor/desktop preview",
     "storybook": "pnpm changelog:prepare && pnpm --filter @easytrim-editor/desktop storybook",
     "build:storybook": "pnpm changelog:prepare && pnpm --filter @easytrim-editor/desktop build:storybook",

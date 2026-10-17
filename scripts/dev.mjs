@@ -3,10 +3,10 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import {
-  developmentEnvironment,
   developmentIdentifier,
   parseDevArguments,
-} from "./dev-profile.mjs";
+  repositoryEnvironment,
+} from "./repository-profile.mjs";
 
 const configPath = fileURLToPath(
   new URL("../apps/desktop/src-tauri/tauri.dev.conf.json", import.meta.url),
@@ -40,7 +40,7 @@ const child = spawn(
     "src-tauri/tauri.dev.conf.json",
   ],
   {
-    env: developmentEnvironment(process.env, fresh),
+    env: repositoryEnvironment(process.env, "development", fresh),
     stdio: "inherit",
     windowsHide: false,
     shell: process.platform === "win32",

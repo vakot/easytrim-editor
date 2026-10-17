@@ -1,3 +1,4 @@
+import { getIdentifier } from "@tauri-apps/api/app";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check } from "@tauri-apps/plugin-updater";
 
@@ -10,6 +11,7 @@ const updaterEndpoint =
 
 async function checkForUpdates(): Promise<AvailableUpdate | null> {
   try {
+    if ((await getIdentifier()) !== "com.vakot.easytrimeditor") return null;
     const update = await check();
     if (!update) return null;
 

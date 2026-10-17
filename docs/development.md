@@ -14,34 +14,78 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-`pnpm dev` starts the desktop frontend in Vite development mode. Build the production frontend and
-native executable for the current operating system with `pnpm build`; `pnpm preview` previews that
-production build in the Tauri application. Frontend-only alternatives are `pnpm build:web` and
-`pnpm preview:web` (the latter cannot access native FFmpeg or Tauri functionality).
+`pnpm dev` starts the desktop app with Vite and HMR. `pnpm preview` builds and launches an
+isolated release-mode preview without creating an installer. It rebuilds before launch so an old
+production executable is never used as a fallback. Frontend-only alternatives are `pnpm build:web`
+and `pnpm preview:web` (the latter cannot access native FFmpeg or Tauri functionality).
 
-`pnpm dev` automatically applies `tauri.dev.conf.json`, using the separate application identifier
-`com.vakot.easytrimeditor.dev`. Its profile persists across development sessions, including HMR.
-Production retains `com.vakot.easytrimeditor`; production data is never migrated or cleared.
+| Launch                | Effective application identifier     | Achievement/statistics persistence        |
+| --------------------- | ------------------------------------ | ----------------------------------------- |
+| `pnpm dev`            | `com.vakot.easytrimeditor.dev`       | Persistent                                |
+| `pnpm dev -- --fresh` | `com.vakot.easytrimeditor.dev.fresh` | In memory for the native process lifetime |
+| `pnpm preview`        | `com.vakot.easytrimeditor.preview`   | Persistent                                |
+| Installed production  | `com.vakot.easytrimeditor`           | Unchanged                                 |
 
-To test achievement unlocking from scratch, close any running development app and run:
+Each mode has its own application data, configuration, cache, and WebView storage. You can run
+dev, fresh dev, preview, and installed production side by side. Reopening dev or preview keeps
+that profile's progress and other saved state. There is no migration or cleanup of installed
+production data. Repository instances cannot install production updates.
+
+Fresh mode starts achievements, splash discoveries, and usage statistics empty. Normal achievement
+evaluation, notifications, sounds, confetti, and UI updates continue through the existing native
+stores. These stores never load or write saved progress in fresh mode; progress disappears when the
+native process exits. Frontend HMR retains it. The separate `.dev.fresh` profile keeps its other
+application storage, such as preferences and diagnostics, separate from persistent dev and preview.
+No persistent profile is erased.
+
+Launchers share `scripts/repository-profile.mjs`, preserve the environment, and select a native
+profile with `EASYTRIM_REPOSITORY_PROFILE`. Dev also sets `EASYTRIM_EPHEMERAL_PROGRESS` according to
+`--fresh`. Native profile selection runs before plugins or WebViews are created. It also detects
+directly launched binaries inside the repository or their Cargo build output (including a custom
+`CARGO_TARGET_DIR`): debug binaries use dev, release binaries use preview. The production identifier
+and release packaging configuration remain unchanged; installed production bundles outside the
+repository/build tree continue to use the production profile. Build packaged production releases
+through the existing release commands below.
+
+### Storage audit
+
+Profile selection reuses the existing stores; storage keys and persisted document formats are
+unchanged. The relevant boundaries are:
+
+| Data/owner                                                                      | Isolation boundary                                                                                        |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Activity history, diagnostics logs/reports, heartbeat and crash-recovery marker | Native diagnostics under the selected Tauri `app_data_dir`                                                |
+| Achievements, splash discoveries, viewed markers, usage statistics              | Existing native stores under `app_data_dir`; no disk reads/writes for fresh progress                      |
+| Workspace Recovery and its export-queue snapshots                               | Existing `localStorage` keys in the selected WebView store                                                |
+| Preferences, Redux Persist, export presets, i18n preferences, panel layout      | Selected WebView store, including existing legacy local-storage readers                                   |
+| Window-state plugin                                                             | Selected identifier's `app_config_dir`                                                                    |
+| Thumbnail disk cache                                                            | Selected identifier's `app_cache_dir`                                                                     |
+| Proxy, thumbnail, waveform, PCM and chapter temporary artifacts                 | Repository-only temp root `easytrim-repository/<identifier>`; production retains its existing temp layout |
+| Updater                                                                         | Native plugin registered only for production; frontend checks skip repository identities                  |
+
+On Windows and Linux, Tauri uses the selected identifier for WebView local data as well as its
+native app-data/config/cache paths. On macOS, repository profiles additionally use distinct stable
+WKWebView data-store UUIDs because WKWebView ignores `data_directory`. **Repository desktop launches
+require macOS 14 or newer**; older versions stop before opening a WebView rather than silently
+using WebKit's shared default store. Installed production's supported behavior is unchanged.
+
+Repository temporary roots reject links/junctions before use. Stale cleanup scans only the selected
+root, ignores linked artifacts, and cannot match sibling profiles or production's old top-level
+artifacts. Individual runtime owners retain their normal cleanup behavior. The installed app's
+legacy top-level cleanup cannot match the `easytrim-repository` parent.
+
+Focused checks:
 
 ```sh
-pnpm dev -- --fresh
+node --test scripts/__tests__/repository-profile.test.mjs scripts/__tests__/preview-production.test.mjs
+cargo test -p easytrim-editor-desktop profile::tests
+cargo test -p easytrim-editor-desktop application::
 ```
 
-Fresh mode starts achievements, splash discoveries, and usage statistics empty and keeps all
-progress in native memory for the application lifetime. Achievements unlock and display normally,
-but progress is discarded on exit; another fresh launch starts empty again. Existing saved progress
-is neither loaded nor modified, and returning to `pnpm dev` restores the persistent development
-progress. No profile directories are deleted. Preferences and other application storage continue to
-use the development profile.
-
-The launcher sets `EASYTRIM_EPHEMERAL_PROGRESS=1` only for fresh sessions (and `0` otherwise).
-The native layer accepts this flag only in debug builds with the development identifier, keeping
-production behavior unchanged. Other environment variables and the normal Vite/HMR workflow are
-preserved. A native process restart creates a new session; frontend HMR retains the native state.
-
-Run focused launcher/profile tests with `node --test scripts/__tests__/dev-profile.test.mjs`.
+The profile tests cover separate native progress and diagnostic/recovery histories, reopening
+persistent stores, fresh-session restart behavior, unchanged production configuration and saved
+files, distinct WebView stores, and cleanup/link safety. Cross-platform WebView rendering and a
+simultaneous four-mode UI smoke test still require real desktop sessions on the target OS.
 
 ## Checks
 

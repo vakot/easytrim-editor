@@ -110,7 +110,11 @@ impl AppProfile {
     }
 
     pub fn initialize_temporary_directory(self) -> io::Result<()> {
-        let system_temp = fs::canonicalize(std::env::temp_dir())?;
+        let system_temp = if self.is_repository() {
+            fs::canonicalize(std::env::temp_dir())?
+        } else {
+            std::env::temp_dir()
+        };
         let directory = self.prepare_temporary_directory(&system_temp)?;
         TEMPORARY_DIRECTORY
             .set(directory)
@@ -226,6 +230,19 @@ mod tests {
     fn profile_configuration_separates_all_tauri_paths_and_webkit_stores() {
         let original: tauri::Config =
             serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+        for (source, profile) in [
+            (
+                include_str!("../tauri.dev.conf.json"),
+                AppProfile::Development,
+            ),
+            (
+                include_str!("../tauri.preview.conf.json"),
+                AppProfile::Preview,
+            ),
+        ] {
+            let overlay: serde_json::Value = serde_json::from_str(source).unwrap();
+            assert_eq!(overlay["identifier"], profile.identifier());
+        }
         let mut production = original.clone();
         AppProfile::Production.configure(&mut production);
         assert_eq!(
@@ -321,6 +338,49 @@ mod tests {
                 index as u64 + 1
             );
         }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn diagnostics_activity_and_crash_recovery_stay_in_their_own_profiles() {
+        use crate::diagnostics::DiagnosticsState;
+
+        let root = std::env::temp_dir().join(format!(
+            "easytrim-profile-diagnostics-test-{}",
+            uuid::Uuid::new_v4()
+        ));
+        let production_root = root.join(AppProfile::Production.identifier());
+        let production =
+            DiagnosticsState::initialize(production_root.clone(), "production".to_owned()).unwrap();
+        let marker = production_root.join("diagnostics/current-session.json");
+        let before = fs::read(&marker).unwrap();
+        let production_session = production.bootstrap().unwrap().session_id;
+        for profile in [
+            AppProfile::Development,
+            AppProfile::FreshDevelopment,
+            AppProfile::Preview,
+        ] {
+            let data = root.join(profile.identifier());
+            let state = DiagnosticsState::initialize(data.clone(), profile.identifier().to_owned())
+                .unwrap();
+            assert!(state.bootstrap().unwrap().recovery.is_none());
+            assert!(state.list_persisted_sessions().unwrap().is_empty());
+            assert!(
+                state
+                    .read_persisted_session_events(&production_session)
+                    .unwrap()
+                    .is_empty()
+            );
+            state.complete().unwrap();
+            drop(state);
+            let reopened =
+                DiagnosticsState::initialize(data, profile.identifier().to_owned()).unwrap();
+            assert_eq!(reopened.list_persisted_sessions().unwrap().len(), 1);
+            assert!(reopened.bootstrap().unwrap().recovery.is_none());
+            reopened.complete().unwrap();
+        }
+        assert_eq!(fs::read(marker).unwrap(), before);
+        drop(production);
         fs::remove_dir_all(root).unwrap();
     }
 

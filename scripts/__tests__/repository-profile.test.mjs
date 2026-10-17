@@ -3,10 +3,11 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
-  developmentEnvironment,
   developmentIdentifier,
   parseDevArguments,
-} from "../dev-profile.mjs";
+  previewIdentifier,
+  repositoryEnvironment,
+} from "../repository-profile.mjs";
 
 test("normal development persists; fresh accepts pnpm's optional separator", () => {
   assert.deepEqual(parseDevArguments([]), { fresh: false });
@@ -20,14 +21,33 @@ test("normal development persists; fresh accepts pnpm's optional separator", () 
 
 test("fresh selects native memory-only progress without changing the parent environment", () => {
   const env = { PATH: "tools", CUSTOM: "keep", EASYTRIM_EPHEMERAL_PROGRESS: "1" };
-  assert.deepEqual(developmentEnvironment(env, true), {
+  assert.deepEqual(repositoryEnvironment(env, "development", true), {
     ...env,
     EASYTRIM_MEDIA_DEBUG: "1",
     EASYTRIM_EPHEMERAL_PROGRESS: "1",
+    EASYTRIM_REPOSITORY_PROFILE: "development",
   });
-  assert.equal(developmentEnvironment(env, false).EASYTRIM_EPHEMERAL_PROGRESS, "0");
+  assert.equal(repositoryEnvironment(env, "development").EASYTRIM_EPHEMERAL_PROGRESS, "0");
   assert.equal(env.EASYTRIM_EPHEMERAL_PROGRESS, "1");
   assert.equal(env.EASYTRIM_MEDIA_DEBUG, undefined);
+});
+
+test("preview preserves the environment and clears inherited development flags", () => {
+  const env = {
+    CUSTOM: "keep",
+    EASYTRIM_MEDIA_DEBUG: "1",
+    EASYTRIM_EPHEMERAL_PROGRESS: "1",
+    EASYTRIM_REPOSITORY_PROFILE: "development",
+  };
+
+  assert.deepEqual(repositoryEnvironment(env, "preview"), {
+    CUSTOM: "keep",
+    EASYTRIM_REPOSITORY_PROFILE: "preview",
+    EASYTRIM_EPHEMERAL_PROGRESS: "0",
+  });
+  assert.equal(env.EASYTRIM_MEDIA_DEBUG, "1");
+  assert.throws(() => repositoryEnvironment(env, "production"), /Unknown/);
+  assert.throws(() => repositoryEnvironment(env, "preview", true), /Fresh/);
 });
 
 test("development config isolates the identifier without changing production", async () => {
@@ -37,5 +57,6 @@ test("development config isolates the identifier without changing production", a
     );
 
   assert.equal((await config("tauri.dev.conf.json")).identifier, developmentIdentifier);
+  assert.equal((await config("tauri.preview.conf.json")).identifier, previewIdentifier);
   assert.equal((await config("tauri.conf.json")).identifier, "com.vakot.easytrimeditor");
 });

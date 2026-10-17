@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   check: vi.fn(),
   downloadAndInstall: vi.fn(),
+  getIdentifier: vi.fn(),
   invoke: vi.fn(),
   relaunch: vi.fn(),
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
+vi.mock("@tauri-apps/api/app", () => ({ getIdentifier: mocks.getIdentifier }));
 vi.mock("@tauri-apps/plugin-process", () => ({ relaunch: mocks.relaunch }));
 vi.mock("@tauri-apps/plugin-updater", () => ({ check: mocks.check }));
 
@@ -24,9 +26,21 @@ describe("updates IPC adapter", () => {
       downloadAndInstall: mocks.downloadAndInstall,
       version: "2.0.0",
     });
+    mocks.getIdentifier.mockResolvedValue("com.vakot.easytrimeditor");
     mocks.downloadAndInstall.mockResolvedValue(undefined);
     mocks.invoke.mockResolvedValue(undefined);
     mocks.relaunch.mockResolvedValue(undefined);
+  });
+
+  it.each([
+    "com.vakot.easytrimeditor.dev",
+    "com.vakot.easytrimeditor.dev.fresh",
+    "com.vakot.easytrimeditor.preview",
+  ])("never checks or installs production updates from %s", async (identifier) => {
+    mocks.getIdentifier.mockResolvedValue(identifier);
+    expect(await checkForUpdates()).toBeNull();
+    expect(mocks.check).not.toHaveBeenCalled();
+    expect(mocks.downloadAndInstall).not.toHaveBeenCalled();
   });
 
   it("completes the diagnostics session before installing an update", async () => {
