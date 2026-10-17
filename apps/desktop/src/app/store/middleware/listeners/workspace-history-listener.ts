@@ -4,6 +4,7 @@ import {
   createEditorSnapshotFromState,
   historyProjection,
 } from "@/app/store/integration/editor-snapshot";
+import { recordInstanceLifecycle } from "@/app/store/integration/workspace-history-lifecycle";
 import {
   audioTrackDefaultChanged,
   audioTrackFiltersApplied,
@@ -13,8 +14,13 @@ import {
 } from "@/app/store/slices/audio-slice";
 import { chapterAdded, chapterDeleted, chapterUpdated } from "@/app/store/slices/chapters-slice";
 import { cropChanged, flipToggled, rotationChanged } from "@/app/store/slices/crop-slice";
+import {
+  editingInstanceDuplicated,
+  selectActiveInstanceId,
+} from "@/app/store/slices/editing-instances-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { historyChangesCaptured } from "@/app/store/slices/workspace-history-slice";
+import type { AppDispatch } from "@/app/store/store";
 import { identifyHistoryChanges } from "@/domain/workspace-history";
 
 import { listenerMiddleware } from "../listener-middleware";
@@ -84,6 +90,28 @@ listenerMiddleware.startListening({
           timestamp: Date.now(),
         },
       }),
+    );
+  },
+});
+
+listenerMiddleware.startListening({
+  actionCreator: editingInstanceDuplicated,
+  effect: (action, api) => {
+    if (api.getState().workspaceHistory.replaying) return;
+    const before = api.getOriginalState();
+    const activeId = selectActiveInstanceId(before);
+    recordInstanceLifecycle(
+      api.dispatch as AppDispatch,
+      "Duplicate editing instance",
+      [],
+      [
+        {
+          index: before.editingInstances.ids.length,
+          instance: action.payload,
+        },
+      ],
+      activeId,
+      activeId,
     );
   },
 });

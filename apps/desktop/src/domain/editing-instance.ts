@@ -84,7 +84,7 @@ interface ExportAttempt {
   state: ExportAttemptState;
 }
 
-interface EditingInstance {
+export interface EditingInstance {
   draftAvailable?: boolean;
   exportAttempts: ExportAttempt[];
   gifSettings?: ExportSettings;
@@ -139,7 +139,6 @@ function createExportAttempt(input: {
 export { createExportAttempt };
 
 export type {
-  EditingInstance,
   EditingInstanceListEntry,
   EditingInstanceSearchEntry,
   EditingInstancesState,

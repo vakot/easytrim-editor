@@ -29,7 +29,12 @@ const historyInteractionEnded = createAction("workspaceHistory/interactionEnded"
 const historyChangesCaptured = createAction<{
   changes: HistoryChange[];
   metadata: HistoryMetadata;
+  role?: "edit" | "navigation";
 }>("workspaceHistory/changesCaptured");
+
+const historyOperationRecorded = createAction<HistoryOperation>(
+  "workspaceHistory/operationRecorded",
+);
 
 const historyReplayStarted = createAction("workspaceHistory/replayStarted");
 const historyReplayFinished = createAction<{ position: number }>("workspaceHistory/replayFinished");
@@ -65,7 +70,7 @@ const workspaceHistorySlice = createSlice({
           const operation: HistoryOperation = {
             ...action.payload.metadata,
             kind: "state",
-            role: "edit",
+            role: action.payload.role ?? "edit",
             changes: action.payload.changes,
           };
 
@@ -115,6 +120,21 @@ const workspaceHistorySlice = createSlice({
           state.position = state.operations.length;
         }
       })
+      .addCase(historyOperationRecorded, (state, action) => {
+        if (state.replaying) return;
+        const operation = action.payload;
+        if (operation.kind === "state" && !operation.changes.length) return;
+        const operations = state.operations.slice(0, state.position);
+        if (state.interaction) {
+          const { changes, ...metadata } = state.interaction;
+          if (changes.length)
+            operations.push({ ...metadata, kind: "state", role: "edit", changes });
+          state.interaction = null;
+        }
+        operations.push(operation);
+        state.operations = operations;
+        state.position = state.operations.length;
+      })
       .addCase(historyInteractionEnded, (state) => {
         if (state.replaying || !state.interaction) return;
         const { changes, ...metadata } = state.interaction;
@@ -144,6 +164,7 @@ export {
   historyChangesCaptured,
   historyInteractionEnded,
   historyInteractionStarted,
+  historyOperationRecorded,
   historyReplayFinished,
   historyReplayStarted,
   selectWorkspaceHistory,

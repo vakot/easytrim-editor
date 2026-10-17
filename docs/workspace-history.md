@@ -23,9 +23,26 @@ changes against the current target snapshots. They replay through the original t
 transform, audio, and chapter actions. This retains trim-dependent audio analysis invalidation,
 filter waveform invalidation, transform resolution updates, and instance snapshot synchronization.
 Inactive instances receive snapshot updates directly, while their runtime caches remain unloaded.
-A mismatch rejects the requested transition without moving the cursor. These editor operations are
-synchronous; external operations remain unavailable until a future integration supplies
-transactional apply and rollback.
+A mismatch rejects the requested transition without moving the cursor. Editor state changes replay
+synchronously. Source and instance lifecycle transitions use the asynchronous external-operation
+adapter described below.
+
+## Source and Editing Instance lifecycle
+
+The application records one semantic operation after each successful import, duplicate, close,
+source-file delete, and source-file restore. Lifecycle records retain the affected Editing Instance
+IDs, ordering, source reference, and editor snapshot needed to reopen the same drafts. They omit
+media descriptors and export attempts; replay merges current runtime media and export state into
+instances that still exist. Multiple instances for one physical source remain distinct.
+
+Source switching creates a workspace-targeted `navigation` operation only after activation
+succeeds. Ordinary Undo/Redo skips navigation without switching the active source. Direct position
+navigation replays it. Importing, duplicating, closing, and reopening instances are meaningful
+external operations. Native file replay calls the existing trash/restore adapters and updates
+availability only after native success. Delete replay is rejected while a queued or running export
+or source reservation uses the file; instance removal is similarly rejected while its exports or
+reservations are active. Native failures leave availability and the history cursor unchanged.
+Automatic delete-after-export uses the same source-file history contract.
 
 ## Ownership and capture
 
@@ -76,7 +93,8 @@ middleware and cannot intercept unrelated application mutations.
 
 State operations have `edit` or `navigation` roles. Source switching can be represented with a
 workspace target and navigation role. Ordinary Undo/Redo seeks the next meaningful edit/external
-operation and includes any intervening navigation steps without requiring extra key presses.
+operation and ignores intervening navigation steps without requiring extra key presses. Direct
+history-position navigation applies navigation operations.
 Informational operations never invoke a replay handler and cannot reverse external effects.
 Direct navigation can select every position, including positions containing only information.
 Recording a nonempty operation at a past position replaces the future branch; no-op recording

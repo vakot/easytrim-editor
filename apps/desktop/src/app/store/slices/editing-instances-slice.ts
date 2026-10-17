@@ -174,6 +174,42 @@ const editingInstancesSlice = createSlice({
       state.entities[action.payload.id] = action.payload;
       addSourceListEntry(state, action.payload);
     },
+    editingInstancesLifecycleChanged: (
+      state,
+      action: PayloadAction<{
+        instances: Array<{ index: number; instance: EditingInstance }>;
+        removeIds: string[];
+      }>,
+    ) => {
+      const removeIds = new Set(action.payload.removeIds);
+      for (const id of removeIds) removeSourceListEntry(state, id);
+      state.ids = state.ids.filter((id) => !removeIds.has(id));
+      for (const id of removeIds) delete state.entities[id];
+
+      for (const { index, instance } of [...action.payload.instances].sort(
+        (left, right) => left.index - right.index,
+      )) {
+        const currentIndex = state.ids.indexOf(instance.id);
+        if (currentIndex >= 0) {
+          removeSourceListEntry(state, instance.id);
+          state.ids.splice(currentIndex, 1);
+        }
+        const insertionIndex = Math.max(0, Math.min(index, state.ids.length));
+        state.ids.splice(insertionIndex, 0, instance.id);
+        const current = state.entities[instance.id];
+        const restored = current
+          ? {
+              ...instance,
+              ...(current.media ? { media: current.media } : {}),
+              sourceAvailability: current.sourceAvailability,
+              exportAttempts: current.exportAttempts,
+            }
+          : instance;
+
+        state.entities[instance.id] = restored;
+        addSourceListEntry(state, restored);
+      }
+    },
     editingInstanceMediaUpdated: (
       state,
       action: PayloadAction<{ id: EditingInstanceId; media: MediaInfo }>,
@@ -645,6 +681,7 @@ const {
   editingInstancesAdded,
   editingInstanceSceneDetectionChanged,
   editingInstancesClosed,
+  editingInstancesLifecycleChanged,
   editingInstanceSnapshotUpdated,
   editingInstancesSourceAvailabilityChanged,
 } = editingInstancesSlice.actions;
@@ -827,6 +864,7 @@ export {
   editingInstancesAdded,
   editingInstanceSceneDetectionChanged,
   editingInstancesClosed,
+  editingInstancesLifecycleChanged,
   editingInstanceSnapshotUpdated,
   editingInstancesReducer,
   editingInstancesSourceAvailabilityChanged,

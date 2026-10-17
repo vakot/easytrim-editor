@@ -2,6 +2,7 @@ import {
   createEditorSnapshotFromState,
   historyProjection,
 } from "@/app/store/integration/editor-snapshot";
+import { hasActiveExportForSource } from "@/app/store/integration/export-queue-runtime";
 import {
   audioTrackDefaultChanged,
   audioTrackFiltersApplied,
@@ -24,8 +25,12 @@ import {
 import {
   editingInstanceGifSettingsChanged,
   editingInstanceOptimizedSettingsChanged,
+  editingInstancesLifecycleChanged,
   editingInstanceSnapshotUpdated,
+  editingInstancesSourceAvailabilityChanged,
   selectActiveInstanceId,
+  selectHasQueuedOrRenderingExportByInstanceId,
+  selectInstanceIdsBySourceKey,
 } from "@/app/store/slices/editing-instances-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import {
@@ -34,11 +39,19 @@ import {
   selectWorkspaceHistory,
 } from "@/app/store/slices/workspace-history-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
+import { navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
 import type { AudioTrackSettings } from "@/domain/audio-processing";
+import type { EditingInstance } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeSourceKey } from "@/domain/source";
 import { createFullTrimRange } from "@/domain/trim";
-import type { HistoryChange, HistorySlot, HistoryTarget } from "@/domain/workspace-history";
+import type {
+  HistoryChange,
+  HistoryOperation,
+  HistorySlot,
+  HistoryTarget,
+} from "@/domain/workspace-history";
+import { moveSourceToTrash, restoreSourceFromTrash } from "@/lib/tauri/media";
 
 type Dispatch = AppDispatch;
 function editorProjection(snapshot: EditorSnapshot) {
@@ -175,7 +188,7 @@ function restoreActiveField(
     }
   }
 }
-function applyHistoryPosition(position: number) {
+function applyHistoryPosition(position: number, includeNavigation = true) {
   return async (dispatch: Dispatch, getState: () => RootState): Promise<boolean> => {
     const state = getState();
     const history = selectWorkspaceHistory(state);
@@ -195,40 +208,106 @@ function applyHistoryPosition(position: number) {
 
     if (direction === "undo") ordered.reverse();
     const steps = ordered.flatMap((operation) =>
-      operation.kind === "state" ? [{ operation, direction }] : [],
+      operation.kind === "information" ? [] : [{ operation, direction }],
     );
 
-    if (ordered.some((operation) => operation.kind === "external")) return false;
-
-    const simulated = new Map<string, EditorSnapshot>();
+    const simulated = new Map<string, { snapshot: EditorSnapshot; sourceId: string }>();
+    for (const id of state.editingInstances.ids) {
+      const instance = state.editingInstances.entities[id];
+      const snapshot = instance && currentSnapshot(state, id);
+      if (instance && snapshot)
+        simulated.set(id, { snapshot, sourceId: instance.snapshot.source.sourcePath });
+    }
     for (const { direction: stepDirection, operation } of steps) {
-      for (const change of operation.changes) {
-        if (change.target.kind !== "instance") return false;
-        const instance = getState().editingInstances.entities[change.target.instanceId];
-        const current =
-          simulated.get(change.target.instanceId) ??
-          currentSnapshot(getState(), change.target.instanceId) ??
-          instance?.snapshot;
+      if (operation.kind === "external" && operation.type === "instances.lifecycle") {
+        const payload = operation.payload as unknown as {
+          after: Array<{
+            index: number;
+            instance: import("@/domain/editing-instance").EditingInstance;
+          }>;
+          before: Array<{
+            index: number;
+            instance: import("@/domain/editing-instance").EditingInstance;
+          }>;
+        };
 
+        const beforeIds = payload.before.map(({ instance }) => instance.id);
+        const afterIds = payload.after.map(({ instance }) => instance.id);
+        const desired = stepDirection === "undo" ? payload.before : payload.after;
+        for (const id of [...beforeIds, ...afterIds]) simulated.delete(id);
+        for (const { instance } of desired)
+          simulated.set(instance.id, {
+            snapshot: instance.snapshot,
+            sourceId: instance.snapshot.source.sourcePath,
+          });
+        continue;
+      }
+      if (operation.kind !== "state") continue;
+      if (!includeNavigation && operation.role === "navigation") continue;
+      for (const change of operation.changes) {
+        if (change.target.kind === "workspace" && change.field === "activeInstanceId") continue;
+        if (change.target.kind !== "instance") return false;
+        const current = simulated.get(change.target.instanceId);
         if (
-          !instance ||
-          normalizeSourceKey(instance.snapshot.source.sourcePath) !==
-            normalizeSourceKey(change.target.sourceId) ||
           !current ||
-          normalizeSourceKey(current.source.sourcePath) !==
+          normalizeSourceKey(current.sourceId) !== normalizeSourceKey(change.target.sourceId) ||
+          normalizeSourceKey(current.snapshot.source.sourcePath) !==
             normalizeSourceKey(change.target.sourceId)
         )
           return false;
-        const projection = editorProjection(current) as Record<string, unknown>;
+        const projection = editorProjection(current.snapshot) as Record<string, unknown>;
         const expected = valueOf(stepDirection === "undo" ? change.after : change.before);
-        if (!equal(projection[change.field], expected)) return false;
-        simulated.set(change.target.instanceId, applyChange(current, change, stepDirection));
+        const isFullSourceTrimBaseline =
+          change.field === "trim" &&
+          projection.trim !== null &&
+          typeof projection.trim === "object" &&
+          "kind" in projection.trim &&
+          projection.trim.kind === "full-source" &&
+          expected !== null &&
+          typeof expected === "object" &&
+          "startMicros" in expected &&
+          expected.startMicros === 0;
+
+        if (!equal(projection[change.field], expected) && !isFullSourceTrimBaseline) return false;
+        simulated.set(change.target.instanceId, {
+          ...current,
+          snapshot: applyChange(current.snapshot, change, stepDirection),
+        });
       }
     }
     dispatch(historyReplayStarted());
     try {
+      const appliedExternal: Array<{
+        direction: "undo" | "redo";
+        operation: Extract<HistoryOperation, { kind: "external" }>;
+      }> = [];
+
       for (const { direction: stepDirection, operation } of steps) {
+        if (operation.kind === "external") {
+          const applied = await applyExternalOperation(
+            dispatch,
+            getState,
+            operation,
+            stepDirection,
+          );
+
+          if (!applied) {
+            for (const previous of appliedExternal.reverse()) {
+              await applyExternalOperation(
+                dispatch,
+                getState,
+                previous.operation,
+                previous.direction === "undo" ? "redo" : "undo",
+              );
+            }
+            dispatch(historyReplayFinished({ position: history.position }));
+            return false;
+          }
+          appliedExternal.push({ direction: stepDirection, operation });
+          continue;
+        }
         if (operation.kind !== "state") continue;
+        if (!includeNavigation && operation.role === "navigation") continue;
         const orderedChanges = [...operation.changes].sort((a, b) => {
           const priority = (change: HistoryChange) =>
             change.field === "rotation" ? 0 : change.field === "crop" ? 1 : 2;
@@ -283,6 +362,18 @@ function applyHistoryPosition(position: number) {
             }
           }
         }
+        for (const change of operation.changes) {
+          if (change.target.kind !== "workspace" || change.field !== "activeInstanceId") continue;
+          const slot = stepDirection === "undo" ? change.before : change.after;
+          const id = slot.present && typeof slot.value === "string" ? slot.value : null;
+          if (id !== selectActiveInstanceId(getState())) {
+            const restored = await dispatch(navigateToEditingInstance(id));
+            if (!restored) {
+              dispatch(historyReplayFinished({ position: history.position }));
+              return false;
+            }
+          }
+        }
       }
       dispatch(historyReplayFinished({ position }));
       return true;
@@ -291,6 +382,98 @@ function applyHistoryPosition(position: number) {
       throw error;
     }
   };
+}
+
+async function applyExternalOperation(
+  dispatch: Dispatch,
+  getState: () => RootState,
+  operation: Extract<HistoryOperation, { kind: "external" }>,
+  direction: "undo" | "redo",
+): Promise<boolean> {
+  const payload = operation.payload as Record<string, unknown>;
+  if (operation.type === "source.availability") {
+    const sourcePath = payload.sourcePath;
+    if (typeof sourcePath !== "string") return false;
+    const desired = (direction === "undo" ? payload.before : payload.after) as
+      "available" | "deleted";
+
+    const state = getState();
+    const instanceIds =
+      selectInstanceIdsBySourceKey(state).get(normalizeSourceKey(sourcePath)) ?? [];
+
+    const expected = (direction === "undo" ? payload.after : payload.before) as
+      "available" | "deleted";
+
+    if (
+      instanceIds.some((id) => state.editingInstances.entities[id]?.sourceAvailability !== expected)
+    )
+      return false;
+
+    if (
+      desired === "deleted" &&
+      (hasActiveExportForSource(sourcePath, getState) ||
+        instanceIds.some((id) => selectHasQueuedOrRenderingExportByInstanceId(state, id)))
+    )
+      return false;
+    try {
+      if (desired === "deleted") await moveSourceToTrash(sourcePath);
+      else await restoreSourceFromTrash(sourcePath);
+    } catch {
+      return false;
+    }
+    dispatch(editingInstancesSourceAvailabilityChanged({ availability: desired, sourcePath }));
+    return true;
+  }
+  if (operation.type === "instances.lifecycle") {
+    const before = payload.before as Array<{ index: number; instance: EditingInstance }>;
+    const after = payload.after as Array<{ index: number; instance: EditingInstance }>;
+    const desired = direction === "undo" ? before : after;
+    const currentIds = new Set([...before, ...after].map(({ instance }) => instance.id));
+    const desiredIds = new Set(desired.map(({ instance }) => instance.id));
+    const removing = [...currentIds].filter(
+      (id) => !desiredIds.has(id) && getState().editingInstances.entities[id],
+    );
+
+    for (const id of removing) {
+      const instance = getState().editingInstances.entities[id];
+      if (
+        selectHasQueuedOrRenderingExportByInstanceId(getState(), id) ||
+        (instance && hasActiveExportForSource(instance.snapshot.source.sourcePath, getState))
+      )
+        return false;
+    }
+    const previous = [...before, ...after].flatMap(({ instance }) => {
+      const index = getState().editingInstances.ids.indexOf(instance.id);
+      const current = getState().editingInstances.entities[instance.id];
+      return index >= 0 && current ? [{ index, instance: structuredClone(current) }] : [];
+    });
+
+    const previousActiveId = selectActiveInstanceId(getState());
+    dispatch(editingInstancesLifecycleChanged({ instances: desired, removeIds: removing }));
+    const activeId = (direction === "undo" ? payload.beforeActiveId : payload.afterActiveId) as
+      string | null;
+
+    if (activeId !== selectActiveInstanceId(getState())) {
+      if (activeId && !getState().editingInstances.entities[activeId]) return false;
+      const restored = await dispatch(navigateToEditingInstance(activeId));
+      if (!restored) {
+        const currentIds = new Set([...before, ...after].map(({ instance }) => instance.id));
+        dispatch(
+          editingInstancesLifecycleChanged({
+            instances: previous,
+            removeIds: [...currentIds].filter(
+              (id) => !previous.some((item) => item.instance.id === id),
+            ),
+          }),
+        );
+        if (previousActiveId !== selectActiveInstanceId(getState()))
+          await dispatch(navigateToEditingInstance(previousActiveId));
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
 }
 function undoWorkspaceHistory() {
   return (dispatch: Dispatch, getState: () => RootState) => {
@@ -302,7 +485,7 @@ function undoWorkspaceHistory() {
         (operation.kind === "state" && operation.role === "edit") ||
         operation.kind === "external"
       )
-        return dispatch(applyHistoryPosition(index));
+        return dispatch(applyHistoryPosition(index, false));
     }
     return Promise.resolve(false);
   };
@@ -317,7 +500,7 @@ function redoWorkspaceHistory() {
         (operation.kind === "state" && operation.role === "edit") ||
         operation.kind === "external"
       )
-        return dispatch(applyHistoryPosition(index + 1));
+        return dispatch(applyHistoryPosition(index + 1, false));
     }
     return Promise.resolve(false);
   };
