@@ -114,16 +114,20 @@ function VideoPreviewEmptyOnboarding() {
 /** Completion celebration shown over the card while it waits out the exit delay. */
 function VideoPreviewEmptyOnboardingCompletion() {
   const { t } = useTranslation();
+  const reduceMotion = useReducedMotion() === true;
 
   return (
-    <div
-      className="pointer-events-none absolute inset-0 flex animate-in flex-col items-center justify-center gap-3 rounded-lg bg-background/80 p-2 text-success fade-in-0"
+    <motion.div
+      animate={{ opacity: 1 }}
+      className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-lg bg-background/80 p-2 text-success"
+      initial={{ opacity: reduceMotion ? 1 : 0 }}
       role="status"
+      transition={{ duration: reduceMotion ? 0 : 0.16 }}
     >
       <CircleCheck aria-hidden="true" className="size-10" />
       <span className="text-sm font-medium">{t("achievements.status.completed")}</span>
       <Confetti active intensity="celebration" mode="border-inside" />
-    </div>
+    </motion.div>
   );
 }
 

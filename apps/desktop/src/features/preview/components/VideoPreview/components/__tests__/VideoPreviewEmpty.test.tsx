@@ -134,11 +134,13 @@ describe("VideoPreviewEmpty achievements", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Finish onboarding" }));
     expect(screen.getByRole("status")).toHaveTextContent("Completed");
     const celebration = screen.getByRole("status");
+    await waitFor(() => expect(celebration).toHaveStyle({ opacity: "1" }));
     expect(screen.getByRole("button", { name: "Finish onboarding" })).toBeDisabled();
     act(() => {
       store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
     });
     expect(screen.getByRole("status")).toBe(celebration);
+    expect(celebration).toHaveStyle({ opacity: "1" });
     expect(screen.getByRole("status").querySelector("[data-slot='confetti']")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Getting Started" })).toBeInTheDocument();
     await waitFor(
