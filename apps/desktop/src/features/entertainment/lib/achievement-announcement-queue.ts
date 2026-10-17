@@ -41,10 +41,11 @@ type AchievementAnnouncementQueue = {
 const silentSound: AchievementSoundHandle = { stop: () => undefined };
 
 /**
- * Delivers achievement announcements one at a time, in order, each with its own toast, confetti,
- * and sound. The next announcement opens a fixed gap after the previous one closed, however it
- * closed, and a sound never outlives its toast, so celebrations never overlap. Presentation owns
- * how long a toast stays open; this only owns what comes next.
+ * Delivers achievement announcements in order, each with its own toast, confetti, and sound. They
+ * appear in sequence, each after a fixed gap from the previous one's appearance, so earlier toasts
+ * may stay open and stack under later ones. Only the newest announcement's sound plays: starting
+ * the next one cuts off the previous, so sounds never overlap. Presentation owns how long a toast
+ * stays open; this only owns when the next one appears.
  */
 function createAchievementAnnouncementQueue({
   gapMs = ANNOUNCEMENT_GAP_MS,
@@ -54,34 +55,34 @@ function createAchievementAnnouncementQueue({
 }: AchievementAnnouncementQueueOptions): AchievementAnnouncementQueue {
   const pending: AchievementAnnouncement[] = [];
   const known = new Set<string>();
-  let active: { close: () => void; sound: AchievementSoundHandle } | null = null;
+  const open = new Set<{ close: () => void; sound: AchievementSoundHandle }>();
+  let latestSound: AchievementSoundHandle | null = null;
   let gapTimer: ReturnType<typeof setTimeout> | null = null;
   let disposed = false;
 
   function advance() {
-    if (disposed || active || gapTimer !== null) return;
+    if (disposed || gapTimer !== null) return;
     const announcement = pending.shift();
     if (!announcement) return;
 
     const { reducedMotion, soundEnabled } = getSettings();
     const presentation = achievementToastPresentation[announcement.variant];
+    latestSound?.stop();
     const current = {
       close: () => undefined as void,
       sound: soundEnabled ? sound.play(presentation.sound) : silentSound,
     };
 
-    active = current;
+    latestSound = current.sound;
+    open.add(current);
 
     let closed = false;
     const onClosed = () => {
       if (closed || disposed) return;
       closed = true;
       current.sound.stop();
-      if (active === current) active = null;
-      gapTimer = setTimeout(() => {
-        gapTimer = null;
-        advance();
-      }, gapMs);
+      if (latestSound === current.sound) latestSound = null;
+      open.delete(current);
     };
 
     try {
@@ -98,6 +99,12 @@ function createAchievementAnnouncementQueue({
       // A toast that cannot be shown must not stall the announcements behind it.
       onClosed();
     }
+
+    // The next announcement is measured from this one's appearance, whether or not it is still open.
+    gapTimer = setTimeout(() => {
+      gapTimer = null;
+      advance();
+    }, gapMs);
   }
 
   return {
@@ -107,9 +114,11 @@ function createAchievementAnnouncementQueue({
       pending.length = 0;
       if (gapTimer !== null) clearTimeout(gapTimer);
       gapTimer = null;
-      active?.sound.stop();
-      active?.close();
-      active = null;
+      for (const current of [...open]) {
+        current.sound.stop();
+        current.close();
+      }
+      open.clear();
     },
     enqueue: (announcements) => {
       if (disposed) return;

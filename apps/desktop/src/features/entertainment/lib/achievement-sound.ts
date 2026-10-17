@@ -59,8 +59,8 @@ const standardCue: Cue = {
 const secretCue: Cue = {
   level: 0.09,
   voices: [
-    { at: 0, duration: 1.5, frequency: NOTE.C4, gain: 0.5, type: "sine" },
-    { at: 0, duration: 1.5, frequency: NOTE.G4, gain: 0.4, type: "sine" },
+    { at: 0, duration: 1.3, frequency: NOTE.C4, gain: 0.5, type: "sine" },
+    { at: 0, duration: 1.3, frequency: NOTE.G4, gain: 0.4, type: "sine" },
     ...[NOTE.C5, NOTE.E5, NOTE.G5, NOTE.B5, NOTE.E6].flatMap((frequency, index) => [
       { at: index * 0.09, duration: 0.7, frequency, gain: 0.8, type: "triangle" as const },
       {
@@ -71,9 +71,9 @@ const secretCue: Cue = {
         type: "sine" as const,
       },
     ]),
-    { at: 0.62, duration: 0.7, frequency: NOTE.C7, gain: 0.22, type: "sine" },
-    { at: 0.72, duration: 0.7, frequency: NOTE.E7, gain: 0.18, type: "sine" },
-    { at: 0.82, duration: 0.9, frequency: NOTE.G7, gain: 0.14, type: "sine" },
+    { at: 0.6, duration: 0.55, frequency: NOTE.C7, gain: 0.22, type: "sine" },
+    { at: 0.68, duration: 0.55, frequency: NOTE.E7, gain: 0.18, type: "sine" },
+    { at: 0.76, duration: 0.6, frequency: NOTE.G7, gain: 0.14, type: "sine" },
   ],
 };
 

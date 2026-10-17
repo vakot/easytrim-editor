@@ -200,16 +200,18 @@ definition: a series tier is `bronze`, `silver`, or `gold`, a secret standalone 
 | `secret`   | Iridescent border, glow, shimmer, glyph reveal | celebration | secret   |
 
 Tier colors come from `achievementTierClassNames` and the secret palette from the
-`--achievement-secret-*` tokens, so toasts and cards stay in step. The confetti is the shared
-`Confetti` component, clipped to the toast.
+`--achievement-secret-*` tokens, so toasts and cards stay in step. The shared `Confetti` component
+bursts behind the toast card, extending beyond its edges after the entrance fade has finished.
+Achievement toasts use a dedicated top-center host at a `2.25rem` offset, separate from the
+default top-right activity toasts.
 
-**Sequential delivery.** `createAchievementAnnouncementQueue` shows one announcement at a time. The
-next one opens `ANNOUNCEMENT_GAP_MS` (2 seconds) after the previous toast closed, however it closed:
-Sonner's own timer, a swipe, or a dismissal. Unlocks that arrive while one is playing join the end
-of the queue, an achievement is never announced twice, and a sound is stopped the moment its toast
-closes, so celebrations never overlap. The queue lives in the component that uses it
-(`useAchievementAnnouncementQueue`) and holds nothing that persists; unmounting dismisses the
-showing toast, stops its sound, and drops the rest. Retroactive unlocks never reach the queue.
+**Sequential delivery.** `createAchievementAnnouncementQueue` shows one announcement every 1.5
+seconds, measured from the previous toast's appearance. Earlier toasts stay open and stack while
+later ones appear. Unlocks that arrive while announcements are playing join the end of the queue,
+and an achievement is never announced twice. A sound stops when its toast closes or the next
+announcement appears, so sounds never overlap. The queue lives in the component that uses it
+(`useAchievementAnnouncementQueue`) and holds nothing that persists; unmounting dismisses all open
+toasts, stops their sounds, and drops the rest. Retroactive unlocks never reach the queue.
 
 **Lifetime.** Sonner owns each toast's timer, so hovering still pauses it. Standard and tier toasts
 stay for 4.5 to 5.5 seconds. A secret toast stays for its whole Galactic Glyphs reveal plus a hold,

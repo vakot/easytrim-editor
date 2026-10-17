@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 
 import { AchievementUnlockToast } from "../components/AchievementUnlockToast";
+import { ACHIEVEMENT_TOASTER_ID } from "../consts/achievement-toast.consts";
 import type { AchievementAnnouncement } from "../types/achievement-toast.types";
 
 import type { AchievementPresentation } from "./achievement-announcement-queue";
@@ -25,6 +26,7 @@ function presentAchievementToast(
       id,
       onAutoClose: onClosed,
       onDismiss: onClosed,
+      toasterId: ACHIEVEMENT_TOASTER_ID,
     },
   );
   return () => {

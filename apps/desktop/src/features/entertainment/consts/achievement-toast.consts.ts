@@ -44,7 +44,14 @@ const achievementToastPresentation = {
   standard: { confetti: "subtle", displayMs: 4_500, sound: "standard" },
 } as const satisfies Record<AchievementToastVariant, AchievementToastPresentation>;
 
-/** The pause between one announcement closing and the next one opening. */
-const ANNOUNCEMENT_GAP_MS = 2_000;
+/** How long after one announcement appears the next one appears. */
+const ANNOUNCEMENT_GAP_MS = 1_500;
+const ACHIEVEMENT_TOASTER_ID = "achievement-toasts";
 
-export { achievementToastPresentation, ANNOUNCEMENT_GAP_MS, secretRevealEnd, secretRevealTimeline };
+export {
+  achievementToastPresentation,
+  ACHIEVEMENT_TOASTER_ID,
+  ANNOUNCEMENT_GAP_MS,
+  secretRevealEnd,
+  secretRevealTimeline,
+};

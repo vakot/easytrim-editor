@@ -95,7 +95,7 @@ describe("createAchievementAnnouncementQueue", () => {
     expect(shown[0]?.presentation.displayMs).toBe(achievementToastPresentation.bronze.displayMs);
   });
 
-  it("delivers bronze, silver, and gold one by one with the gap between them", () => {
+  it("appears one at a time, each a gap after the previous one appeared", () => {
     const { events, queue, shown, sounds } = setup();
     queue.enqueue([
       announcement("bronze", "bronze"),
@@ -104,18 +104,16 @@ describe("createAchievementAnnouncementQueue", () => {
     ]);
     expect(shownIds(shown)).toEqual(["bronze"]);
 
-    shown[0]!.presentation.onClosed();
     vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS - 1);
     expect(shownIds(shown)).toEqual(["bronze"]);
     vi.advanceTimersByTime(1);
     expect(shownIds(shown)).toEqual(["bronze", "silver"]);
 
-    shown[1]!.presentation.onClosed();
     vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
     expect(shownIds(shown)).toEqual(["bronze", "silver", "gold"]);
 
     expect(sounds).toHaveLength(3);
-    // Each cue is silenced before the next one starts, so sounds never overlap.
+    // Each cue is cut off when the next one starts, so sounds never overlap.
     expect(events).toEqual([
       "play:standard",
       "show:bronze",
@@ -128,6 +126,29 @@ describe("createAchievementAnnouncementQueue", () => {
     ]);
   });
 
+  it("uses a gap of one and a half seconds", () => {
+    expect(ANNOUNCEMENT_GAP_MS).toBe(1_500);
+  });
+
+  it("keeps earlier toasts open while later ones appear, so they can stack", () => {
+    const { queue, shown } = setup();
+    queue.enqueue([announcement("a"), announcement("b"), announcement("c")]);
+
+    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS * 2);
+
+    expect(shownIds(shown)).toEqual(["a", "b", "c"]);
+    expect(shown.every((item) => item.close.mock.calls.length === 0)).toBe(true);
+  });
+
+  it("does not wait for a long secret toast to close before showing the next one", () => {
+    const { queue, shown } = setup();
+    queue.enqueue([announcement("secret", "secret"), announcement("next")]);
+
+    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
+
+    expect(shownIds(shown)).toEqual(["secret", "next"]);
+  });
+
   it("plays the secret cue only for secret announcements and keeps others on the standard cue", () => {
     const { queue, shown, sounds } = setup();
     const batch = (["standard", "bronze", "silver", "gold", "secret"] as const).map((variant) =>
@@ -135,13 +156,9 @@ describe("createAchievementAnnouncementQueue", () => {
     );
 
     queue.enqueue(batch);
+    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS * batch.length);
 
-    for (const item of batch) {
-      expect(shownIds(shown).at(-1)).toBe(item.achievementId);
-      shown.at(-1)!.presentation.onClosed();
-      vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
-    }
-
+    expect(shownIds(shown)).toEqual(batch.map((item) => item.achievementId));
     expect(sounds.map((sound) => sound.kind)).toEqual([
       "standard",
       "standard",
@@ -164,28 +181,22 @@ describe("createAchievementAnnouncementQueue", () => {
     expect(secret.displayMs).toBeGreaterThanOrEqual(6_000);
   });
 
-  it("accepts unlocks while another announcement is showing and keeps their order", () => {
+  it("accepts unlocks while others are showing and keeps their order", () => {
     const { queue, shown } = setup();
     queue.enqueue([announcement("a"), announcement("b")]);
     queue.enqueue([announcement("c")]);
-    vi.advanceTimersByTime(60_000);
     expect(shownIds(shown)).toEqual(["a"]);
 
-    shown[0]!.presentation.onClosed();
     vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
     queue.enqueue([announcement("d")]);
-    shown[1]!.presentation.onClosed();
-    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
-    shown[2]!.presentation.onClosed();
-    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
+    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS * 3);
 
     expect(shownIds(shown)).toEqual(["a", "b", "c", "d"]);
   });
 
-  it("makes an unlock arriving during the gap wait out the rest of it", () => {
+  it("makes a later unlock wait out the rest of the gap since the last appearance", () => {
     const { queue, shown } = setup();
     queue.enqueue([announcement("a")]);
-    shown[0]!.presentation.onClosed();
     vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS - 500);
 
     queue.enqueue([announcement("b")]);
@@ -195,10 +206,9 @@ describe("createAchievementAnnouncementQueue", () => {
     expect(shownIds(shown)).toEqual(["a", "b"]);
   });
 
-  it("starts immediately again once the gap has passed with nothing queued", () => {
+  it("shows an unlock at once when the gap has passed with nothing queued", () => {
     const { queue, shown } = setup();
     queue.enqueue([announcement("a")]);
-    shown[0]!.presentation.onClosed();
     vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS * 3);
 
     queue.enqueue([announcement("b")]);
@@ -211,29 +221,26 @@ describe("createAchievementAnnouncementQueue", () => {
 
     queue.enqueue([announcement("a"), announcement("a"), announcement("b")]);
     queue.enqueue([announcement("b")]);
-    shown[0]!.presentation.onClosed();
     vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
     queue.enqueue([announcement("a"), announcement("b")]);
-    shown[1]!.presentation.onClosed();
     vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS * 5);
     queue.enqueue([announcement("a")]);
 
     expect(shownIds(shown)).toEqual(["a", "b"]);
   });
 
-  it("advances after a manual dismissal and ignores a repeated close", () => {
+  it("does not let a dismissal change when the next toast appears", () => {
     const { events, queue, shown } = setup();
     queue.enqueue([announcement("a", "secret"), announcement("b")]);
 
     shown[0]!.presentation.onClosed();
     shown[0]!.presentation.onClosed();
-    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
+    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS - 1);
+    expect(shownIds(shown)).toEqual(["a"]);
+    vi.advanceTimersByTime(1);
 
     expect(shownIds(shown)).toEqual(["a", "b"]);
     expect(events.filter((event) => event === "silence:secret")).toHaveLength(1);
-
-    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS * 3);
-    expect(shownIds(shown)).toEqual(["a", "b"]);
   });
 
   it("silences a sound as soon as its toast is dismissed early", () => {
@@ -244,6 +251,17 @@ describe("createAchievementAnnouncementQueue", () => {
     shown[0]!.presentation.onClosed();
 
     expect(sounds[0]?.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("cuts off the previous sound when the next announcement starts", () => {
+    const { queue, sounds } = setup();
+    queue.enqueue([announcement("a", "secret"), announcement("b")]);
+    expect(sounds[0]?.stop).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
+
+    expect(sounds[0]?.stop).toHaveBeenCalledTimes(1);
+    expect(sounds[1]?.stop).not.toHaveBeenCalled();
   });
 
   it("skips the sound but still shows the toast when sound is off", () => {
@@ -261,7 +279,6 @@ describe("createAchievementAnnouncementQueue", () => {
     expect(sounds).toHaveLength(1);
 
     setSettings({ reducedMotion: true, soundEnabled: false });
-    shown[0]!.presentation.onClosed();
     vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
 
     expect(sounds).toHaveLength(1);
@@ -272,7 +289,6 @@ describe("createAchievementAnnouncementQueue", () => {
     const { queue, shown } = setup({ reducedMotion: true, soundEnabled: true });
 
     queue.enqueue([announcement("secret", "secret"), announcement("gold", "gold")]);
-    shown[0]!.presentation.onClosed();
     vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
 
     expect(shownIds(shown)).toEqual(["secret", "gold"]);
@@ -301,23 +317,24 @@ describe("createAchievementAnnouncementQueue", () => {
   });
 
   describe("dispose", () => {
-    it("closes what is showing, silences its sound, and drops everything pending", () => {
+    it("closes every open toast, silences the sound, and drops everything pending", () => {
       const { events, queue, shown, sounds } = setup();
-      queue.enqueue([announcement("a", "secret"), announcement("b")]);
+      queue.enqueue([announcement("a", "secret"), announcement("b"), announcement("c")]);
+      vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
 
       queue.dispose();
       vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS * 5);
 
       expect(shown[0]?.close).toHaveBeenCalledTimes(1);
-      expect(sounds[0]?.stop).toHaveBeenCalledTimes(1);
-      expect(shownIds(shown)).toEqual(["a"]);
+      expect(shown[1]?.close).toHaveBeenCalledTimes(1);
+      expect(sounds.every((sound) => sound.stop.mock.calls.length >= 1)).toBe(true);
+      expect(shownIds(shown)).toEqual(["a", "b"]);
       expect(events).toContain("close:a");
     });
 
     it("cancels the scheduled next announcement", () => {
       const { queue, shown } = setup();
       queue.enqueue([announcement("a"), announcement("b")]);
-      shown[0]!.presentation.onClosed();
 
       queue.dispose();
       vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS * 5);

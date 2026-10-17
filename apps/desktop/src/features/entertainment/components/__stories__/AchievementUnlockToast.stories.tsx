@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Toaster } from "@/components/ui/sonner";
 
 import { ANNOUNCEMENT_GAP_MS } from "../../consts/achievement-toast.consts";
 import { useAchievementAnnouncementQueue } from "../../hooks/useAchievementAnnouncementQueue";
 import { createAchievementAnnouncements } from "../../lib/achievement-announcements.utils";
+import { AchievementToaster } from "../AchievementToaster";
 import { AchievementUnlockToast } from "../AchievementUnlockToast";
 
 /** Real registry achievements, one per variant, so the stories use production copy and icons. */
@@ -199,7 +199,7 @@ function AchievementUnlockDemo({ arrivals, ids, note, timeline = false, ...setti
   return (
     <div className="flex min-h-screen w-full flex-col gap-4 bg-background p-8">
       <ThemeOverride theme={settings.theme} />
-      <Toaster />
+      <AchievementToaster />
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => replay(ids)}>Replay</Button>
         <Button onClick={() => replay(allVariants)} variant="outline">
@@ -285,11 +285,11 @@ export const SecretGlyphReveal: Story = {
   render: (args) => <GlyphRevealDemo {...args} />,
 };
 
-/** Standard, Bronze, Silver, Gold, and Secret, each with its own toast and sound, ~2s apart. */
+/** Standard, Bronze, Silver, Gold, and Secret, each with its own toast and sound, 1.5s apart. */
 export const SequentialUnlocks: Story = {
   args: {
     ids: allVariants,
-    note: `Plays in unlock order. Each toast opens about ${ANNOUNCEMENT_GAP_MS / 1000} seconds after the previous one closed, and a sound never overlaps the next.`,
+    note: `Plays in unlock order. Each toast appears about ${ANNOUNCEMENT_GAP_MS / 1000} seconds after the previous one appeared. Earlier toasts stay open and stack; sounds do not overlap.`,
     timeline: true,
   },
 };

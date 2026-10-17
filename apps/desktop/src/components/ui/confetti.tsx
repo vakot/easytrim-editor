@@ -12,6 +12,8 @@ type ConfettiProps = {
   active: boolean;
   /** Positions the layer. Defaults to filling the nearest positioned ancestor. */
   className?: string;
+  /** Wait before the burst starts, in seconds. */
+  delay?: number;
   /** Particle lifetime in seconds. */
   duration?: number;
   intensity?: ConfettiIntensity;
@@ -85,7 +87,7 @@ function createParticle(index: number, count: number, halfWidthRem: number, half
 }
 
 /** Starts one burst inside `host` and returns a cleanup that cancels and removes it. */
-function launchBurst(host: HTMLElement, count: number, duration: number) {
+function launchBurst(host: HTMLElement, count: number, duration: number, delay: number) {
   const { height, width } = host.getBoundingClientRect();
   const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
   const nodes: HTMLElement[] = [];
@@ -101,13 +103,35 @@ function launchBurst(host: HTMLElement, count: number, duration: number) {
     );
     node.style.width = `${particle.sizeRem * (particle.isCircle ? 1 : 0.6)}rem`;
     node.style.height = `${particle.sizeRem * (particle.isCircle ? 1 : 1.6)}rem`;
+    if (delay > 0) node.style.opacity = "0";
     host.append(node);
     nodes.push(node);
 
+    const particleDuration = duration * particle.lifetimeFraction;
+    const delayFraction = delay / (delay + particleDuration);
+    const opacity = delay > 0 ? [0, 0, ...particle.opacity] : particle.opacity;
+    const transform =
+      delay > 0
+        ? [particle.transform[0]!, particle.transform[0]!, ...particle.transform]
+        : particle.transform;
+
+    const times =
+      delay > 0
+        ? [
+            0,
+            Math.max(0, delayFraction - 0.001),
+            delayFraction,
+            ...Array.from(
+              { length: SAMPLES },
+              (_, step) => delayFraction + (1 - delayFraction) * ((step + 1) / SAMPLES),
+            ),
+          ]
+        : undefined;
+
     const controls = animate(
       node,
-      { opacity: particle.opacity, transform: particle.transform },
-      { duration: duration * particle.lifetimeFraction, ease: "linear" },
+      { opacity, transform },
+      { duration: delay + particleDuration, ease: "linear", times },
     );
 
     animations.push(controls);
@@ -128,6 +152,7 @@ function launchBurst(host: HTMLElement, count: number, duration: number) {
 function Confetti({
   active,
   className,
+  delay = 0,
   duration = DEFAULT_DURATION,
   intensity = "normal",
 }: ConfettiProps) {
@@ -137,8 +162,8 @@ function Confetti({
   useEffect(() => {
     const host = hostRef.current;
     if (!active || reduceMotion || !host) return;
-    return launchBurst(host, PARTICLE_COUNT[intensity], duration);
-  }, [active, duration, intensity, reduceMotion]);
+    return launchBurst(host, PARTICLE_COUNT[intensity], duration, delay);
+  }, [active, delay, duration, intensity, reduceMotion]);
 
   return (
     <div

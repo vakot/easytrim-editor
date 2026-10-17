@@ -27,6 +27,7 @@ describe("presentAchievementToast", () => {
       id: "achievement-unlocked:gold-collector",
       onAutoClose: onClosed,
       onDismiss: onClosed,
+      toasterId: "achievement-toasts",
     });
     const rendered = (sonner.custom.mock.calls[0]![0] as () => { props: unknown })();
     expect(rendered.props).toEqual({ announcement, reducedMotion: true });
