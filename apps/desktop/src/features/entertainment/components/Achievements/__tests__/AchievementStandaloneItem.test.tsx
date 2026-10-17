@@ -70,7 +70,7 @@ describe("secret achievement card styling", () => {
 
     expect(screen.getByText("???")).toBeInTheDocument();
     expect(
-      screen.getByText("Тайное достижение. Исследуйте дальше, чтобы раскрыть его"),
+      screen.getByText("Секретное достижение. Продолжайте исследовать, чтобы его получить"),
     ).toBeInTheDocument();
     expect(screen.queryByText("Избранный")).not.toBeInTheDocument();
   });
