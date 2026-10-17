@@ -69,7 +69,7 @@ function AchievementStandaloneItem({
       className={cn(
         "items-start",
         compact && "p-2",
-        !unlocked && "bg-muted/40",
+        onboarding ? "bg-card" : !unlocked && "bg-muted/40",
         secret && styles.card,
       )}
       data-secret={secret ? "true" : undefined}
