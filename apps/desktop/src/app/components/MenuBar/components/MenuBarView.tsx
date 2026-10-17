@@ -77,6 +77,7 @@ function MenuBarViewContent() {
     <>
       <MenubarGroup>
         <MenubarItem
+          inset
           onFocus={preloadCommandPaletteOnIntent}
           onPointerEnter={preloadCommandPaletteOnIntent}
           onSelect={() => openDialog()}
@@ -91,16 +92,10 @@ function MenuBarViewContent() {
       <MenubarSeparator />
 
       <MenubarGroup>
-        <MenubarSub>
-          <MenubarSubTrigger>{t("settings.appearance.title")}</MenubarSubTrigger>
-
-          <MenubarSubContent>
-            <MenuBarViewAppearance />
-          </MenubarSubContent>
-        </MenubarSub>
+        <MenuBarViewAppearance />
 
         <MenubarSub>
-          <MenubarSubTrigger>{t("settings.layout.title")}</MenubarSubTrigger>
+          <MenubarSubTrigger inset>{t("settings.layout.title")}</MenubarSubTrigger>
 
           <MenubarSubContent>
             <MenuBarViewLayout />
@@ -117,7 +112,7 @@ function MenuBarViewContent() {
             commandId={`open-workspace-view-${view.id}` as ApplicationCommandId}
             key={view.id}
           >
-            <MenubarItem>
+            <MenubarItem inset>
               <ApplicationCommandLabel />
             </MenubarItem>
           </ApplicationCommandMenuItem>
@@ -128,7 +123,7 @@ function MenuBarViewContent() {
 
       <MenubarGroup>
         <MenubarSub>
-          <MenubarSubTrigger>{t("layout.docks")}</MenubarSubTrigger>
+          <MenubarSubTrigger inset>{t("layout.docks")}</MenubarSubTrigger>
           <MenubarSubContent>
             <DockViewMenuItems />
           </MenubarSubContent>

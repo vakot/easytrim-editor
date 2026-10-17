@@ -17,7 +17,11 @@ import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
 import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
 import { AppCommandPaletteDialog } from "@/app/dialogs/AppCommandPaletteDialog";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
-import { useChangelogDialog, useSettingsDialog } from "@/app/hooks/useAppDialog";
+import {
+  useChangelogDialog,
+  useSettingsDialog,
+  useStatisticsDialog,
+} from "@/app/hooks/useAppDialog";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
@@ -104,6 +108,11 @@ function getMenuTrigger(name: string) {
 function SettingsOpenIndicator() {
   const { isOpen } = useSettingsDialog();
   return isOpen ? <span data-testid="settings-open" /> : null;
+}
+
+function StatisticsOpenIndicator() {
+  const { isOpen } = useStatisticsDialog();
+  return isOpen ? <span data-testid="statistics-open" /> : null;
 }
 
 function OpenChangelogManuallyButton() {
@@ -315,6 +324,7 @@ describe("MenuBarTest", () => {
                         <WorkspaceDialogSelectionProbe />
                         <AppSettingsDialog />
                         <SettingsOpenIndicator />
+                        <StatisticsOpenIndicator />
                       </ThemeProvider>
                     </ApplicationCommandsProvider>
                   </WorkspaceViewsProvider>
@@ -580,6 +590,16 @@ describe("MenuBarTest", () => {
       ["https://ko-fi.com/vakot"],
       [`https://github.com/vakot/easytrim-editor/releases/tag/v${currentVersion}`],
     ]);
+  });
+
+  it("opens Statistics from the Help menu", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+    await user.click(getMenuTrigger("Help"));
+    const statistics = screen.getByRole("menuitem", { name: "Statistics" });
+    expect(statistics.querySelector("svg")).not.toBeNull();
+    await user.click(statistics);
+    expect(screen.getByTestId("statistics-open")).toBeInTheDocument();
   });
 
   it("shows visible feedback when no update is available", async () => {
@@ -916,9 +936,6 @@ describe("MenuBarTest", () => {
 
     const viewButton = getMenuTrigger("View");
     await user.click(viewButton);
-    const appearanceItem = screen.getByRole("menuitem", { name: "Appearance" });
-    appearanceItem.focus();
-    await user.keyboard("{ArrowRight}");
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
     expect(themeItem).toHaveClass("min-w-48");
@@ -962,9 +979,6 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("View"));
-    const appearanceItem = screen.getByRole("menuitem", { name: "Appearance" });
-    appearanceItem.focus();
-    await user.keyboard("{ArrowRight}");
     const colorItem = screen.getByText("Color").closest<HTMLElement>('[role="menuitem"]');
     expect(colorItem).not.toBeNull();
     colorItem?.focus();
@@ -1071,14 +1085,11 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("View"));
-    const appearanceItem = screen.getByRole("menuitem", { name: "Appearance" });
-    appearanceItem.focus();
-    await user.keyboard("{ArrowRight}");
     const themeItem = screen.getByRole("menuitem", { name: "Theme" });
     const colorItem = screen.getByRole("menuitem", { name: /^Color/ });
 
     await user.hover(themeItem);
-    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(3));
+    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(2));
     const themeSubmenu = screen.getAllByRole("menu").at(-1);
     expect(themeSubmenu).toBeDefined();
     expect(
@@ -1086,15 +1097,15 @@ describe("MenuBarTest", () => {
     ).toBeInTheDocument();
 
     await user.hover(colorItem);
-    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(3));
+    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(2));
     const colorSubmenu = screen.getAllByRole("menu").at(-1);
     expect(colorSubmenu).toBeDefined();
     expect(
       within(colorSubmenu!).getByRole("menuitemradio", { name: /Amber#EFBF04/ }),
     ).toBeInTheDocument();
     expect(
-      within(colorSubmenu!).queryByRole("menuitem", { name: "System" }),
+      within(colorSubmenu!).queryByRole("menuitemradio", { name: "System" }),
     ).not.toBeInTheDocument();
-    expect(screen.getAllByRole("menu")).toHaveLength(3);
+    expect(screen.getAllByRole("menu")).toHaveLength(2);
   });
 });

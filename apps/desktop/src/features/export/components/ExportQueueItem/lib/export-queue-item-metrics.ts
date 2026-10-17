@@ -1,10 +1,11 @@
-import { ArrowDown, ArrowUp, Minus } from "lucide-react";
-
+import { getSizeChangePresentation } from "@/components/size-change.utils";
 import type { ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
 import {
   formatExportDuration,
   formatExportFileSize,
+  formatFileSizeChangePercent,
   getExportMetricValues,
+  getFileSizeChangeRatio,
 } from "@/domain/export-metrics";
 
 import type { ExportQueueItemMetricConfig } from "../types";
@@ -90,9 +91,11 @@ function getFileSizeChange(
   attempt: ExportAttempt,
   {
     formatValue,
+    locale = "en",
     status = attempt.state.status,
   }: {
     formatValue: (value: string) => string;
+    locale?: string;
     status?: ExportAttemptState["status"];
   },
 ): ExportQueueItemMetricConfig | null {
@@ -108,20 +111,20 @@ function getFileSizeChange(
     return null;
   }
 
-  const percentChange = Math.round(((outputSizeBytes - sourceSizeBytes) / sourceSizeBytes) * 100);
-  const direction = percentChange < 0 ? "down" : percentChange > 0 ? "up" : "same";
-  const sizeDifference = formatExportFileSize(Math.abs(outputSizeBytes - sourceSizeBytes));
-  const value = `${percentChange > 0 ? "+" : ""}${percentChange}% (${sizeDifference})`;
+  const difference = outputSizeBytes - sourceSizeBytes;
+  const { className, icon, sign } = getSizeChangePresentation(difference);
+  const percentage = formatFileSizeChangePercent(
+    getFileSizeChangeRatio(sourceSizeBytes, outputSizeBytes),
+    locale,
+  );
+
+  const sizeDifference = formatExportFileSize(Math.abs(difference));
+  const value = `${sign}${percentage} (${sizeDifference})`;
 
   return {
     ariaLabel: formatValue(value),
-    className:
-      direction === "down"
-        ? "text-green-500"
-        : direction === "up"
-          ? "text-destructive"
-          : "text-muted-foreground",
-    icon: direction === "down" ? ArrowDown : direction === "up" ? ArrowUp : Minus,
+    className,
+    icon,
     id: "file-size-change",
     value,
   };

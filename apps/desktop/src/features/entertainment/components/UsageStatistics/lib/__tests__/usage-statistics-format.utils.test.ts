@@ -1,21 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  formatSignedFileSize,
-  formatStatisticCount,
-  formatStatisticDate,
-} from "../usage-statistics-format.utils";
+import { formatStatisticCount, formatStatisticDate } from "../usage-statistics-format.utils";
 
 describe("usage statistics formatting", () => {
   it("groups large counts for the locale", () => {
     expect(formatStatisticCount(0, "en")).toBe("0");
     expect(formatStatisticCount(12_345, "en")).toBe("12,345");
-  });
-
-  it("keeps the sign of storage differences", () => {
-    expect(formatSignedFileSize(0)).toBe("0 B");
-    expect(formatSignedFileSize(1_536)).toBe("1.5 KB");
-    expect(formatSignedFileSize(-1_536)).toBe("-1.5 KB");
   });
 
   it("formats recorded dates and falls back to a placeholder", () => {

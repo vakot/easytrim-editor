@@ -170,7 +170,10 @@ mod tests {
             .record(&completed(ExportKind::Lossless))
             .expect("first export persisted");
         store
-            .record(&completed(ExportKind::Optimized))
+            .record(&CompletedExport {
+                processing_millis: 4_500,
+                ..completed(ExportKind::Optimized)
+            })
             .expect("second export persisted");
 
         let (reopened, issue) = StatisticsStore::open(&root, ProgressPersistence::Persistent);
@@ -180,8 +183,38 @@ mod tests {
         assert_eq!(statistics.lossless_exports, 1);
         assert_eq!(statistics.optimized_exports, 1);
         assert_eq!(statistics.source_bytes, 4_000);
+        assert_eq!(statistics.longest_export_millis, 4_500);
+        reopened.record(&completed(ExportKind::Audio)).unwrap();
+        assert_eq!(reopened.snapshot().longest_export_millis, 4_500);
         assert_eq!(statistics_files(&root), [STATISTICS_FILE_NAME]);
         fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
+    fn older_statistics_keep_totals_and_begin_tracking_longest_export() {
+        let root = temporary_root("legacy-longest");
+        let path = root.join("statistics").join(STATISTICS_FILE_NAME);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(
+            &path,
+            br#"{"version":1,"losslessExports":2,"processingMillis":9000,"sourceBytes":4000,"outputBytes":1000}"#,
+        )
+        .unwrap();
+
+        let (store, issue) = StatisticsStore::open(&root, ProgressPersistence::Persistent);
+        assert_eq!(issue, None);
+        assert_eq!(store.snapshot().lossless_exports, 2);
+        assert_eq!(store.snapshot().processing_millis, 9_000);
+        assert_eq!(store.snapshot().longest_export_millis, 0);
+        store.record(&completed(ExportKind::Gif)).unwrap();
+        let (reopened, issue) = StatisticsStore::open(&root, ProgressPersistence::Persistent);
+        assert_eq!(issue, None);
+        assert_eq!(reopened.snapshot(), store.snapshot());
+        assert_eq!(reopened.snapshot().longest_export_millis, 250);
+        assert_eq!(reopened.snapshot().processing_millis, 9_250);
+        assert_eq!(reopened.snapshot().source_bytes, 6_000);
+        assert_eq!(statistics_files(&root), [STATISTICS_FILE_NAME]);
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

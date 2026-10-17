@@ -8,9 +8,11 @@ import {
   FileOutput,
   ImagePlay,
   Info,
+  Percent,
   PiggyBank,
   Scissors,
   Timer,
+  TimerReset,
   Trophy,
 } from "lucide-react";
 import React, { useEffect } from "react";
@@ -27,7 +29,13 @@ import {
 } from "@/app/store/slices/usage-statistics-slice";
 import { loadAchievementRecords } from "@/app/store/thunks/achievement-thunks";
 import { loadUsageStatistics } from "@/app/store/thunks/usage-statistics-thunks";
-import { formatExportDuration } from "@/domain/export-metrics";
+import { getSizeChangePresentation } from "@/components/size-change.utils";
+import {
+  formatExportDuration,
+  formatExportFileSize,
+  formatFileSizeChangePercent,
+  getFileSizeChangeRatio,
+} from "@/domain/export-metrics";
 import { getCompletedExports, getStorageSavedBytes } from "@/domain/usage-statistics";
 import { cn } from "@/lib/class-names.utils";
 import { formatRelativeTime } from "@/lib/date-time.utils";
@@ -41,11 +49,7 @@ import { UsageStatisticsItem } from "./components/UsageStatisticsItem";
 import { UsageStatisticsLoading } from "./components/UsageStatisticsLoading";
 import { UsageStatisticsSection } from "./components/UsageStatisticsSection";
 import { UsageStatisticsUnavailable } from "./components/UsageStatisticsUnavailable";
-import {
-  formatSignedFileSize,
-  formatStatisticCount,
-  formatStatisticDate,
-} from "./lib/usage-statistics-format.utils";
+import { formatStatisticCount, formatStatisticDate } from "./lib/usage-statistics-format.utils";
 
 /** Refreshes the native statistics and achievement records on mount, so each opening is current. */
 function UsageStatistics({ children }: { children?: React.ReactNode }) {
@@ -81,6 +85,9 @@ function UsageStatisticsDashboard() {
 
   const completedExports = getCompletedExports(statistics);
   const storageSavedBytes = getStorageSavedBytes(statistics);
+  const sizeChange = getSizeChangePresentation(-storageSavedBytes);
+  const ratio = getFileSizeChangeRatio(statistics.sourceBytes, statistics.outputBytes);
+  const percentage = formatFileSizeChangePercent(ratio, locale);
   const notYet = t("statistics.notYet");
 
   return (
@@ -117,6 +124,12 @@ function UsageStatisticsDashboard() {
             value={`${formatStatisticCount(countUnlockedAchievements(achievementRecords), locale)} / ${formatStatisticCount(totalUnlockableAchievements, locale)}`}
           />
         ) : null}
+        <UsageStatisticsItem
+          description={t("statistics.metrics.longestExport.description")}
+          icon={<TimerReset />}
+          label={t("statistics.metrics.longestExport.label")}
+          value={formatExportDuration(statistics.longestExportMillis)}
+        />
       </UsageStatisticsSection>
 
       <UsageStatisticsSection title={t("statistics.sections.breakdown")}>
@@ -151,13 +164,13 @@ function UsageStatisticsDashboard() {
           description={t("statistics.metrics.sourceData.description")}
           icon={<FileInput />}
           label={t("statistics.metrics.sourceData.label")}
-          value={formatSignedFileSize(statistics.sourceBytes)}
+          value={formatExportFileSize(statistics.sourceBytes)}
         />
         <UsageStatisticsItem
           description={t("statistics.metrics.outputData.description")}
           icon={<FileOutput />}
           label={t("statistics.metrics.outputData.label")}
-          value={formatSignedFileSize(statistics.outputBytes)}
+          value={formatExportFileSize(statistics.outputBytes)}
         />
         <UsageStatisticsItem
           description={
@@ -169,8 +182,21 @@ function UsageStatisticsDashboard() {
           }
           icon={<PiggyBank />}
           label={t("statistics.metrics.storageSaved.label")}
-          value={formatSignedFileSize(storageSavedBytes)}
-          valueClassName={storageSavedBytes < 0 ? "text-destructive" : undefined}
+          value={`${sizeChange.sign}${formatExportFileSize(Math.abs(storageSavedBytes))}`}
+          valueClassName={sizeChange.className}
+          valueIcon={sizeChange.icon}
+        />
+        <UsageStatisticsItem
+          description={
+            ratio === null
+              ? t("statistics.metrics.dataReduction.unavailable")
+              : t("statistics.metrics.dataReduction.description")
+          }
+          icon={<Percent />}
+          label={t("statistics.metrics.dataReduction.label")}
+          value={`${ratio === null ? "" : sizeChange.sign}${percentage}`}
+          valueClassName={ratio === null ? "text-muted-foreground" : sizeChange.className}
+          valueIcon={ratio === null ? undefined : sizeChange.icon}
         />
       </UsageStatisticsSection>
 

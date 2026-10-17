@@ -46,6 +46,7 @@ function MenuBarHelpContent() {
             <ApplicationCommandLabel />
           </MenubarItem>
         </ApplicationCommandMenuItem>
+
         <ApplicationCommandMenuItem asChild commandId="open-achievements">
           <MenubarItem inset>
             <MenubarIcon>
@@ -54,15 +55,8 @@ function MenuBarHelpContent() {
             <ApplicationCommandLabel />
           </MenubarItem>
         </ApplicationCommandMenuItem>
-        <ApplicationCommandMenuItem asChild commandId="check-for-updates">
-          <MenubarItem inset keepOpen>
-            <MenubarIcon>
-              <ApplicationCommandIcon />
-            </MenubarIcon>
-            <ApplicationCommandLabel />
-          </MenubarItem>
-        </ApplicationCommandMenuItem>
-        <ApplicationCommandMenuItem asChild commandId="open-project-page">
+
+        <ApplicationCommandMenuItem asChild commandId="open-statistics">
           <MenubarItem inset>
             <MenubarIcon>
               <ApplicationCommandIcon />
@@ -71,7 +65,40 @@ function MenuBarHelpContent() {
           </MenubarItem>
         </ApplicationCommandMenuItem>
       </MenubarGroup>
+
       <MenubarSeparator />
+
+      <MenubarGroup>
+        <ApplicationCommandMenuItem asChild commandId="check-for-updates">
+          <MenubarItem inset keepOpen>
+            <MenubarIcon>
+              <ApplicationCommandIcon />
+            </MenubarIcon>
+            <ApplicationCommandLabel />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
+
+        <ApplicationCommandMenuItem asChild commandId="open-project-page">
+          <MenubarItem inset>
+            <MenubarIcon>
+              <ApplicationCommandIcon />
+            </MenubarIcon>
+            <ApplicationCommandLabel />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
+
+        <ApplicationCommandMenuItem asChild commandId="support-project">
+          <MenubarItem inset>
+            <MenubarIcon>
+              <ApplicationCommandIcon />
+            </MenubarIcon>
+            <ApplicationCommandLabel />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
+      </MenubarGroup>
+
+      <MenubarSeparator />
+
       <MenubarGroup>
         <ApplicationCommandMenuItem asChild commandId="show-logs">
           <MenubarItem inset>
@@ -82,18 +109,9 @@ function MenuBarHelpContent() {
           </MenubarItem>
         </ApplicationCommandMenuItem>
       </MenubarGroup>
+
       <MenubarSeparator />
-      <MenubarGroup>
-        <ApplicationCommandMenuItem asChild commandId="support-project">
-          <MenubarItem inset>
-            <MenubarIcon>
-              <ApplicationCommandIcon />
-            </MenubarIcon>
-            <ApplicationCommandLabel />
-          </MenubarItem>
-        </ApplicationCommandMenuItem>
-      </MenubarGroup>
-      <MenubarSeparator />
+
       <MenubarGroup>
         <ApplicationCommandMenuItem asChild commandId="open-release-page">
           <MenubarItem inset>

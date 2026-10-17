@@ -5,7 +5,9 @@ import {
   estimateExportTime,
   formatExportDuration,
   formatExportFileSize,
+  formatFileSizeChangePercent,
   getExportMetricValues,
+  getFileSizeChangeRatio,
   parseFfmpegBitrate,
   parseFfmpegSpeed,
 } from "../export-metrics";
@@ -193,3 +195,30 @@ function createAttempt(metrics: Record<string, number | string | undefined>) {
     state: { operationId: "operation-1", startedAt: 0, status: "rendering" },
   } as Parameters<typeof getExportMetricValues>[0];
 }
+
+describe("file size change", () => {
+  it.each([
+    [1_000, 400, -0.6],
+    [1_000, 1_500, 0.5],
+    [1_000, 1_000, 0],
+    [0, 0, 0],
+    [0, 100, null],
+    [100, 0, -1],
+    [-1, 0, null],
+    [1, -1, null],
+    [NaN, 100, null],
+    [100, Infinity, null],
+  ])("compares %s source bytes with %s output bytes", (source, output, expected) => {
+    expect(getFileSizeChangeRatio(source, output)).toBe(expected);
+  });
+
+  it("formats magnitudes with localized percentages and safe near-zero values", () => {
+    expect(formatFileSizeChangePercent(-0.125, "en")).toBe("13%");
+    expect(formatFileSizeChangePercent(0.125, "en")).toBe("13%");
+    expect(formatFileSizeChangePercent(-0.0001, "en")).toBe("<1%");
+    expect(formatFileSizeChangePercent(0, "en")).toBe("0%");
+    expect(formatFileSizeChangePercent(0.5, "ru")).toBe("50\u00a0%");
+    expect(formatFileSizeChangePercent(null, "en")).toBe("—");
+    expect(formatFileSizeChangePercent(Infinity, "en")).toBe("—");
+  });
+});

@@ -51,6 +51,8 @@ pub struct UsageStatistics {
     pub gif_exports: u64,
     pub audio_exports: u64,
     pub processing_millis: u64,
+    /// Longest successful processing duration; older documents start tracking from zero.
+    pub longest_export_millis: u64,
     pub source_bytes: u64,
     pub output_bytes: u64,
     pub first_export_at_millis: Option<i64>,
@@ -69,6 +71,7 @@ impl UsageStatistics {
         self.processing_millis = self
             .processing_millis
             .saturating_add(export.processing_millis);
+        self.longest_export_millis = self.longest_export_millis.max(export.processing_millis);
         if let Some(data) = &export.data {
             self.source_bytes = self.source_bytes.saturating_add(data.source_bytes);
             self.output_bytes = self.output_bytes.saturating_add(data.output_bytes);
@@ -167,12 +170,43 @@ mod tests {
                 gif_exports: 1,
                 audio_exports: 1,
                 processing_millis: 7_500,
+                longest_export_millis: 1_500,
                 source_bytes: 5_000,
                 output_bytes: 6_600,
                 first_export_at_millis: Some(1_000),
                 last_export_at_millis: Some(3_000),
             }
         );
+    }
+
+    #[test]
+    fn tracks_longest_processing_duration_across_all_export_types() {
+        let mut statistics = UsageStatistics::default();
+        assert_eq!(statistics.longest_export_millis, 0);
+        for (index, kind) in [
+            ExportKind::Lossless,
+            ExportKind::Optimized,
+            ExportKind::Gif,
+            ExportKind::Audio,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let duration = (index as u64 + 1) * 2_000;
+            statistics.record(&CompletedExport {
+                processing_millis: duration,
+                data: None,
+                ..export(kind, 1_000)
+            });
+            assert_eq!(statistics.longest_export_millis, duration);
+            for shorter_or_equal in [0, 500, duration] {
+                statistics.record(&CompletedExport {
+                    processing_millis: shorter_or_equal,
+                    ..export(kind, 2_000)
+                });
+                assert_eq!(statistics.longest_export_millis, duration);
+            }
+        }
     }
 
     #[test]
@@ -205,6 +239,7 @@ mod tests {
     fn round_trips_the_current_document_version() {
         let statistics = UsageStatistics {
             optimized_exports: 3,
+            longest_export_millis: 12_345,
             first_export_at_millis: Some(10),
             ..UsageStatistics::default()
         };
@@ -214,6 +249,7 @@ mod tests {
 
         assert_eq!(document["version"], USAGE_STATISTICS_VERSION);
         assert_eq!(document["optimizedExports"], 3);
+        assert_eq!(document["longestExportMillis"], 12_345);
         assert_eq!(decode_usage_statistics(&bytes), Ok(statistics));
     }
 
