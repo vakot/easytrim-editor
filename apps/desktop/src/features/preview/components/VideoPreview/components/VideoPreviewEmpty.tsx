@@ -31,7 +31,7 @@ type Shortcut = {
 };
 
 /** How long the completed card lingers before it collapses; the celebration plays in this window. */
-const COMPLETION_EXIT_DELAY_SECONDS = 0.9;
+const COMPLETION_EXIT_DELAY_SECONDS = 2;
 
 function VideoPreviewEmpty() {
   const { t } = useTranslation();
@@ -68,14 +68,14 @@ function VideoPreviewEmptyOnboarding() {
             width: 0,
             transition: {
               delay: exitDelay,
-              duration: reduceMotion ? 0 : 0.4,
+              duration: reduceMotion ? 0 : 1,
               ease: [0.22, 1, 0.36, 1],
             },
           }}
           initial={{ width: 0 }}
           key="getting-started"
           transition={{
-            duration: reduceMotion ? 0 : 0.4,
+            duration: reduceMotion ? 0 : 1,
             ease: [0.22, 1, 0.36, 1],
           }}
         >
@@ -108,10 +108,10 @@ function VideoPreviewEmptyOnboardingCompletion() {
   const isPresent = useIsPresent();
   const { t } = useTranslation();
   if (isPresent) return null;
-
+  2;
   return (
     <div
-      className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-lg bg-background/95 p-2 text-success"
+      className="pointer-events-none absolute inset-0 flex animate-in flex-col items-center justify-center gap-3 rounded-lg bg-background/95 p-2 text-success fade-in-0"
       role="status"
     >
       <CircleCheck aria-hidden="true" className="size-10" />
