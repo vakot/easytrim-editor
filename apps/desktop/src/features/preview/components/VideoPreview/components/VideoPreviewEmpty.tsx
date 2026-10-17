@@ -161,7 +161,7 @@ function VideoPreviewEmptyContent() {
     {
       id: "previous-next-frame",
       label: t("preview.shortcuts.previousNextFrame"),
-      keys: ["в†ђ", "в†’"],
+      keys: ["←", "→"],
       separator: "/",
     },
     {
