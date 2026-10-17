@@ -14,6 +14,12 @@ use std::sync::Arc;
 use state::{AppState, cleanup_stale_media_artifacts};
 use tauri::Manager;
 
+// Visibility belongs to startup, not the previous session. Keep every other plugin default.
+#[cfg(desktop)]
+const WINDOW_STATE_FLAGS: tauri_plugin_window_state::StateFlags =
+    tauri_plugin_window_state::StateFlags::all()
+        .difference(tauri_plugin_window_state::StateFlags::VISIBLE);
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut context = tauri::generate_context!();
@@ -39,9 +45,11 @@ pub fn run() {
 
     #[cfg(desktop)]
     {
-        builder = builder
-            .plugin(tauri_plugin_process::init())
-            .plugin(tauri_plugin_window_state::Builder::default().build());
+        builder = builder.plugin(tauri_plugin_process::init()).plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(WINDOW_STATE_FLAGS)
+                .build(),
+        );
         // Repository instances must never launch the production installer through the updater.
         if !profile.is_repository() {
             builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
@@ -83,6 +91,12 @@ pub fn run() {
             app.manage(diagnostics);
             app.manage(Arc::new(statistics));
             app.manage(Arc::new(achievements));
+            // Configured windows and their plugin state are restored before this setup hook.
+            // Keep the initial window hidden until restoration and native setup are complete.
+            let main_window = app
+                .get_webview_window("main")
+                .ok_or_else(|| std::io::Error::other("main application window was not created"))?;
+            main_window.show()?;
             Ok(())
         })
         .register_asynchronous_uri_scheme_protocol(
@@ -165,4 +179,24 @@ pub fn run() {
             diagnostics::complete_global_session();
         }
     });
+}
+
+#[cfg(all(test, desktop))]
+mod tests {
+    use super::WINDOW_STATE_FLAGS;
+    use tauri_plugin_window_state::StateFlags;
+
+    #[test]
+    fn startup_owns_visibility_without_disabling_other_window_state() {
+        assert!(!WINDOW_STATE_FLAGS.contains(StateFlags::VISIBLE));
+        for flag in [
+            StateFlags::POSITION,
+            StateFlags::SIZE,
+            StateFlags::MAXIMIZED,
+            StateFlags::FULLSCREEN,
+            StateFlags::DECORATIONS,
+        ] {
+            assert!(WINDOW_STATE_FLAGS.contains(flag));
+        }
+    }
 }
