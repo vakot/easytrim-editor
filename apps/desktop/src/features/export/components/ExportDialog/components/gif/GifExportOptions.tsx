@@ -67,7 +67,7 @@ function GifExportOptions() {
           }}
           value={settings.gifPreset}
         >
-          <SelectTrigger className="w-full" id="gif-preset">
+          <SelectTrigger className="w-full" id="gif-preset" variant="primary">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
