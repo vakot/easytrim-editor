@@ -4,7 +4,7 @@ export const ru = {
       exportMilestones: "Достижения экспорта",
       gettingStarted: "Первые шаги",
       processingMilestones: "Достижения обработки",
-      secretDiscoveries: "Тайные открытия",
+      secretDiscoveries: "Секретные достижения",
     },
     description: "Вехи и открытия за все сеансы",
     empty: {
@@ -100,7 +100,7 @@ export const ru = {
     privacy: "Достижения хранятся только на этом устройстве и никуда не передаются",
     progressLabel: "Прогресс коллекции",
     secret: {
-      description: "Тайное достижение. Исследуйте дальше, чтобы раскрыть его",
+      description: "Секретное достижение. Продолжайте исследовать, чтобы его получить",
       title: "???",
     },
     series: {
