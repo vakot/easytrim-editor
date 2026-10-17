@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Confetti } from "@/components/ui/confetti";
 import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
 
 import {
@@ -29,6 +30,9 @@ type Shortcut = {
   separator?: string;
 };
 
+/** How long the completed card lingers before it collapses; the celebration plays in this window. */
+const COMPLETION_EXIT_DELAY_SECONDS = 0.9;
+
 function VideoPreviewEmpty() {
   const { t } = useTranslation();
 
@@ -51,7 +55,7 @@ function VideoPreviewEmpty() {
 function VideoPreviewEmptyOnboarding() {
   const showGettingStarted = useHasIncompleteAchievements("getting-started");
   const reduceMotion = useReducedMotion() === true;
-  const exitDelay = reduceMotion ? 0 : 0.9;
+  const exitDelay = reduceMotion ? 0 : COMPLETION_EXIT_DELAY_SECONDS;
 
   /* Reserve the card width plus its gap, then collapse both together on exit. */
   return (
@@ -99,7 +103,7 @@ function VideoPreviewEmptyOnboarding() {
   );
 }
 
-/** Static completion placeholder for a future celebration animation during the exit delay. */
+/** Completion celebration shown over the card while it waits out the exit delay. */
 function VideoPreviewEmptyOnboardingCompletion() {
   const isPresent = useIsPresent();
   const { t } = useTranslation();
@@ -112,6 +116,7 @@ function VideoPreviewEmptyOnboardingCompletion() {
     >
       <CircleCheck aria-hidden="true" className="size-10" />
       <span className="text-sm font-medium">{t("achievements.status.completed")}</span>
+      <Confetti active duration={COMPLETION_EXIT_DELAY_SECONDS} intensity="celebration" />
     </div>
   );
 }

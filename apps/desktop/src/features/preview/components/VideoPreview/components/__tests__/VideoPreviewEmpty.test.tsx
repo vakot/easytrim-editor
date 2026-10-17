@@ -80,6 +80,7 @@ describe("VideoPreviewEmpty achievements", () => {
       store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
     });
     expect(screen.getByRole("status")).toHaveTextContent("Completed");
+    expect(screen.getByRole("status").querySelector("[data-slot='confetti']")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Getting Started" })).toBeInTheDocument();
     await waitFor(
       () =>
