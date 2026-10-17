@@ -176,11 +176,31 @@ describe("AchievementUnlockToast", () => {
   describe("secret", () => {
     it("shows a red diagonal TOP SECRET ribbon only for secret achievements", () => {
       const secret = render(<AchievementUnlockToast announcement={announce(variants.secret)} />);
-      const ribbon = screen.getByText("TOP SECRET");
+      const ribbon = secret.container.querySelector<HTMLElement>(
+        "[data-slot='achievement-secret-ribbon']",
+      )!;
+      const label = screen.getByText("TOP SECRET");
 
-      expect(ribbon).toHaveAttribute("data-slot", "achievement-secret-ribbon");
-      expect(ribbon).toHaveClass("absolute", "top-4", "-right-8", "rotate-45", "bg-red-700");
-      expect(ribbon).toHaveClass("text-white", "pointer-events-none", "select-none");
+      expect(ribbon).toHaveClass(
+        "absolute",
+        "top-4",
+        "-right-8",
+        "rotate-45",
+        "grid",
+        "place-items-center",
+        "bg-red-700",
+        "text-white",
+        "pointer-events-none",
+        "select-none",
+      );
+      expect(label).toHaveClass("text-center");
+      expect(secret.container.querySelector("[data-slot='achievement-unlock-title']")).toHaveClass(
+        "pr-4",
+      );
+      expect(
+        secret.container.querySelector("[data-slot='achievement-unlock-description']"),
+      ).not.toHaveClass("pr-4", "pr-8", "pr-12");
+      expect(secret.container.querySelector(".grid.min-w-0.flex-1")).not.toHaveClass("pr-12");
       secret.unmount();
 
       for (const variant of ["standard", "bronze", "silver", "gold"] as const) {
@@ -346,7 +366,7 @@ describe("AchievementUnlockToast", () => {
       (rootSize) => {
         document.documentElement.style.fontSize = rootSize;
         const { container } = render(
-          <AchievementUnlockToast announcement={announce(variants.gold)} />,
+          <AchievementUnlockToast announcement={announce(variants.secret)} />,
         );
 
         const everything = [...container.querySelectorAll<HTMLElement>("*")];

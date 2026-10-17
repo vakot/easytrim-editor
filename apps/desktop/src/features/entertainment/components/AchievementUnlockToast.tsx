@@ -96,7 +96,7 @@ function AchievementUnlockToast({ announcement, reducedMotion }: AchievementUnlo
             <Icon />
           </span>
 
-          <div className={cn("grid min-w-0 flex-1 gap-1", secret && "pr-12")}>
+          <div className="grid min-w-0 flex-1 gap-1">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>{unlockedLabel}</span>
               {tierStyles && tierLabel ? (
@@ -107,7 +107,7 @@ function AchievementUnlockToast({ announcement, reducedMotion }: AchievementUnlo
             </div>
 
             <p
-              className="text-sm font-semibold wrap-break-word"
+              className={cn("text-sm font-semibold wrap-break-word", secret && "pr-4")}
               data-slot="achievement-unlock-title"
             >
               {secret ? (
@@ -146,10 +146,12 @@ function AchievementUnlockToast({ announcement, reducedMotion }: AchievementUnlo
 
         {secret ? (
           <span
-            className="pointer-events-none absolute top-4 -right-8 z-20 flex h-5 w-32 rotate-45 items-center justify-center bg-red-700 text-[0.625rem] leading-none font-bold tracking-[0.12em] whitespace-nowrap text-white shadow-sm select-none"
+            className="pointer-events-none absolute top-4 -right-8 z-20 grid h-5 w-32 rotate-45 place-items-center bg-red-700 text-white shadow-sm select-none"
             data-slot="achievement-secret-ribbon"
           >
-            TOP SECRET
+            <span className="text-center text-[0.625rem] leading-none font-bold tracking-[0.12em] whitespace-nowrap">
+              TOP SECRET
+            </span>
           </span>
         ) : null}
 
