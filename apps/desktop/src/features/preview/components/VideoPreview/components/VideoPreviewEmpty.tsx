@@ -111,12 +111,12 @@ function VideoPreviewEmptyOnboardingCompletion() {
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 flex animate-in flex-col items-center justify-center gap-3 rounded-lg bg-background/95 p-2 text-success fade-in-0"
+      className="pointer-events-none absolute inset-0 flex animate-in flex-col items-center justify-center gap-3 rounded-lg bg-background/80 p-2 text-success fade-in-0"
       role="status"
     >
       <CircleCheck aria-hidden="true" className="size-10" />
       <span className="text-sm font-medium">{t("achievements.status.completed")}</span>
-      <Confetti active duration={COMPLETION_EXIT_DELAY_SECONDS} intensity="celebration" />
+      <Confetti active intensity="celebration" mode="border-inside" />
     </div>
   );
 }
