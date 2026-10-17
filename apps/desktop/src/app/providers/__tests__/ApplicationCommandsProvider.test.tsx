@@ -42,6 +42,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 const state = {
+  achievements: { records: null },
   audio: { tracks: [] as { enabled: boolean }[] },
   crop: {
     flipHorizontal: false,
@@ -288,7 +289,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(76);
+    ).toHaveLength(77);
     expect(
       screen
         .getAllByRole("button")

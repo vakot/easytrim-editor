@@ -14,7 +14,7 @@ use tauri::{AppHandle, State, ipc::Channel};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::{
-    application::statistics::{StatisticsStore, unix_millis_now},
+    application::{statistics::StatisticsStore, unix_millis_now},
     commands::statistics::{
         record_statistics_source_size_unavailable, record_statistics_write_failure,
     },

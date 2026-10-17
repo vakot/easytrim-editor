@@ -21,6 +21,10 @@ function useAppDialog(dialogId: AppDialogId) {
   return { closeDialog, isOpen: isDialogOpen(dialogId), openDialog, toggleDialog };
 }
 
+function useAchievementsDialog() {
+  return useAppDialog("achievements");
+}
+
 function useChaptersDialog() {
   return useAppDialog("chapters");
 }
@@ -56,6 +60,7 @@ function useStatisticsDialog() {
 }
 
 export {
+  useAchievementsDialog,
   useAppDialog,
   useChangelogDialog,
   useChaptersDialog,

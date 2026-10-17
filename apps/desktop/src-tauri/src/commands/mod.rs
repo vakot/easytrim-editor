@@ -1,3 +1,4 @@
+pub mod achievements;
 pub mod capabilities;
 pub mod diagnostics;
 pub mod export;

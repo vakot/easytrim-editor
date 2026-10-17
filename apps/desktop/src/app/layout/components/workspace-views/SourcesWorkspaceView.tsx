@@ -13,7 +13,7 @@ function SourcesWorkspaceView() {
           <SourceListSearch />
           <SourceListCloseAll />
         </div>
-        <SourceListContent className="-mx-2 px-2" />
+        <SourceListContent className="-mx-2 **:data-[slot=scroll-area-viewport]:px-2" />
       </div>
     </SourceList>
   );

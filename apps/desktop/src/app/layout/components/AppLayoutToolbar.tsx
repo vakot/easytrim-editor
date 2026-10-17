@@ -6,6 +6,7 @@ import type { ApplicationCommandId } from "@/app/commands";
 import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
 import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import { Ping } from "@/components/ping";
 import { cn } from "@/lib/class-names.utils";
 
 function AppLayoutToolbar() {
@@ -21,6 +22,7 @@ function AppLayoutToolbar() {
       <Separator className="bg-muted" />
 
       <section className="grid items-center gap-1.5">
+        <AppLayoutTool commandId="open-achievements" />
         <AppLayoutTool commandId="open-statistics" />
         <AppLayoutTool commandId="open-settings" />
       </section>
@@ -42,8 +44,8 @@ function AppLayoutTool({
     <Tooltip preserveOnTrigger>
       <TooltipTrigger asChild>
         <Button
-          aria-label={command.label}
-          className={cn("text-muted-foreground", className)}
+          aria-label={command.attention ? `${command.label}, ${command.attention}` : command.label}
+          className={cn("relative text-muted-foreground", className)}
           disabled={!command.enabled || command.pending}
           onClick={() => void executeCommand(command.id, "sidebar")}
           onFocus={command.preload}
@@ -53,6 +55,13 @@ function AppLayoutTool({
           variant="ghost"
         >
           <ApplicationCommandIcon command={command} />
+          {command.attention ? (
+            <Ping
+              aria-hidden="true"
+              className="top-1.5 right-1.5 size-2 before:size-2 motion-reduce:before:animate-none"
+              data-slot="attention"
+            />
+          ) : null}
         </Button>
       </TooltipTrigger>
 

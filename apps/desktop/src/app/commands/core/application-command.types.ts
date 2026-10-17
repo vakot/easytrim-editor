@@ -21,6 +21,8 @@ interface ApplicationCommandGroupMetadata {
 }
 
 interface ApplicationCommand<Id extends string = string> {
+  /** Why the command asks for attention, such as unseen content; surfaces may mark it. */
+  attention?: string;
   checked?: boolean;
   enabled: boolean;
   group: ApplicationCommandGroupMetadata;

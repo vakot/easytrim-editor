@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useMemo } from "react";
 import { Provider } from "react-redux";
 
+import { achievementRecordsLoaded } from "@/app/store/slices/achievements-slice";
 import {
   usageStatisticsLoaded,
   usageStatisticsRequested,
@@ -17,12 +18,21 @@ import {
   UsageStatisticsDashboard,
 } from "../UsageStatistics";
 
+const storyAchievementRecords = {
+  discoveredSplashMessageIds: [],
+  unlockedAchievements: { "export-mastery-bronze": Date.UTC(2026, 0, 15, 12) },
+  viewedAtMillis: null,
+};
+
 function UsageStatisticsStory({ statistics }: { statistics: UsageStatisticsValue }) {
   // Storybook has no native backend, so seed the store; a failed refresh keeps these totals.
   const store = useMemo(() => {
     const appStore = createAppStore();
     appStore.dispatch(usageStatisticsRequested({ requestId: "story" }));
     appStore.dispatch(usageStatisticsLoaded({ requestId: "story", statistics }));
+    appStore.dispatch(
+      achievementRecordsLoaded({ records: storyAchievementRecords, requestId: "story" }),
+    );
     return appStore;
   }, [statistics]);
 

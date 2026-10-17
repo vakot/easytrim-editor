@@ -52,8 +52,14 @@ pub fn run() {
             if let Some(issue) = statistics_issue {
                 commands::statistics::record_statistics_load_issue(&diagnostics, &issue);
             }
+            let (achievements, achievements_issue) =
+                application::achievements::AchievementStore::open(&app_data_dir);
+            if let Some(issue) = achievements_issue {
+                commands::achievements::record_achievements_load_issue(&diagnostics, &issue);
+            }
             app.manage(diagnostics);
             app.manage(Arc::new(statistics));
+            app.manage(Arc::new(achievements));
             Ok(())
         })
         .register_asynchronous_uri_scheme_protocol(
@@ -123,7 +129,11 @@ pub fn run() {
             commands::source::activate_source_path,
             commands::source::delete_source_file,
             commands::source::restore_source_file,
-            commands::statistics::get_usage_statistics
+            commands::statistics::get_usage_statistics,
+            commands::achievements::get_achievement_records,
+            commands::achievements::unlock_achievements,
+            commands::achievements::record_splash_message_discovery,
+            commands::achievements::mark_achievements_viewed
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

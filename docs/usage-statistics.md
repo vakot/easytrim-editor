@@ -2,7 +2,7 @@
 
 EasyTrim keeps cumulative, local-only statistics about successful exports and shows them in the
 Statistics dialog. Nothing is sent anywhere: there is no telemetry, account, or remote storage.
-The statistics are designed as the raw input for a future Achievements profile.
+They are also the source of export-related progress for [achievements](achievements.md).
 
 ## Ownership
 
@@ -12,8 +12,8 @@ after FFmpeg exited successfully, the operation was not cancelled, and the outpu
 as present and non-empty. Failed, cancelled, interrupted, and merely queued work never reaches it.
 
 The frontend never counts anything. `get_usage_statistics` returns the stored totals; the
-`usageStatistics` Redux slice is a runtime mirror that a listener refreshes after every
-`editingInstanceExportCompleted` action. Because the native command records before it reports
+`usageStatistics` Redux slice is a runtime mirror loaded at startup and refreshed by a listener after
+every `editingInstanceExportCompleted` action. Because the native command records before it reports
 success, the refresh observes the new totals. Formatting lives with the Statistics dialog; derived
 values live in `domain/usage-statistics.ts`.
 

@@ -4,9 +4,10 @@ use serde_json::{Map, Value};
 use tauri::State;
 
 use crate::{
-    application::statistics::{StatisticsLoadIssue, StatisticsStore},
+    application::statistics::StatisticsStore,
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
     domain::statistics::UsageStatistics,
+    persistence::DocumentLoadIssue,
 };
 
 #[tauri::command]
@@ -14,10 +15,10 @@ pub fn get_usage_statistics(statistics: State<'_, Arc<StatisticsStore>>) -> Usag
     statistics.snapshot()
 }
 
-pub fn record_statistics_load_issue(diagnostics: &DiagnosticsState, issue: &StatisticsLoadIssue) {
+pub fn record_statistics_load_issue(diagnostics: &DiagnosticsState, issue: &DocumentLoadIssue) {
     let (event, reason) = match issue {
-        StatisticsLoadIssue::Quarantined { reason } => ("statistics.load.quarantined", reason),
-        StatisticsLoadIssue::PersistenceDisabled { reason } => {
+        DocumentLoadIssue::Quarantined { reason } => ("statistics.load.quarantined", reason),
+        DocumentLoadIssue::PersistenceDisabled { reason } => {
             ("statistics.load.persistence-disabled", reason)
         }
     };

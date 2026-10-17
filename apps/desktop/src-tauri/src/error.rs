@@ -44,6 +44,8 @@ pub enum AppErrorMessageId {
     DiagnosticsDiagnosticReportIsUnavailable,
     #[serde(rename = "diagnostics.diagnosticSessionIdentifierIsInvalid")]
     DiagnosticsDiagnosticSessionIdentifierIsInvalid,
+    #[serde(rename = "achievements.identifierIsInvalid")]
+    AchievementsIdentifierIsInvalid,
     #[serde(rename = "export.audioStreamSelectionOrProcessingSettingIsInvalid")]
     ExportAudioStreamSelectionOrProcessingSettingIsInvalid,
     #[serde(rename = "export.audioTrackIsRequired")]

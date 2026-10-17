@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
+import { Provider } from "react-redux";
+
+import { createAppStore } from "@/app/store/store";
 
 import {
   splashMessagesCommon,
@@ -72,10 +76,16 @@ export const Legendary: Story = {
 };
 
 function RandomSplashStory() {
+  // Random messages track legendary discoveries through the store. Without the native backend the
+  // achievements never initialize, so a story can never record a discovery or unlock anything.
+  const [store] = useState(() => createAppStore());
+
   return (
-    <div className="relative m-12 flex h-48 items-center justify-center">
-      <SplashMessages className="static! translate-none" />
-    </div>
+    <Provider store={store}>
+      <div className="relative m-12 flex h-48 items-center justify-center">
+        <SplashMessages className="static! translate-none" />
+      </div>
+    </Provider>
   );
 }
 

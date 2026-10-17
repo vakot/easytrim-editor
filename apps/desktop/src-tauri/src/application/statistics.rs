@@ -1,30 +1,19 @@
 use std::{
-    fs, io,
+    io,
     path::{Path, PathBuf},
     sync::{Mutex, PoisonError},
 };
 
-use time::OffsetDateTime;
-
 use crate::{
+    application::unix_millis_now,
     domain::statistics::{
         CompletedExport, StatisticsDecodeError, StoredUsageStatistics, UsageStatistics,
         decode_usage_statistics,
     },
-    persistence::write_json_atomic,
+    persistence::{DocumentLoadIssue, LoadedDocument, load_json_document, write_json_atomic},
 };
 
 const STATISTICS_FILE_NAME: &str = "usage-statistics.json";
-
-/// What happened to an existing statistics file that could not be used at startup.
-#[derive(Debug, PartialEq, Eq)]
-pub enum StatisticsLoadIssue {
-    /// The file was renamed aside and statistics restarted from zero.
-    Quarantined { reason: &'static str },
-    /// The file could not be read or moved aside; it is left untouched and this session keeps
-    /// statistics in memory only, so it never overwrites data it could not interpret.
-    PersistenceDisabled { reason: &'static str },
-}
 
 /// Application-wide usage statistics, persisted in the application data directory.
 ///
@@ -43,10 +32,18 @@ struct StoreState {
 impl StatisticsStore {
     /// Loads statistics from `<root>/statistics/`. Never fails: a missing file starts from zero,
     /// and unusable files are reported through the returned issue.
-    pub fn open(root: &Path) -> (Self, Option<StatisticsLoadIssue>) {
-        let directory = root.join("statistics");
-        let path = directory.join(STATISTICS_FILE_NAME);
-        let (statistics, persistent, issue) = load(&directory, &path);
+    pub fn open(root: &Path) -> (Self, Option<DocumentLoadIssue>) {
+        let path = root.join("statistics").join(STATISTICS_FILE_NAME);
+        let LoadedDocument {
+            value: statistics,
+            persistent,
+            issue,
+        } = load_json_document(&path, unix_millis_now(), |bytes| {
+            decode_usage_statistics(bytes).map_err(|error| match error {
+                StatisticsDecodeError::Invalid => "invalid",
+                StatisticsDecodeError::UnsupportedVersion(_) => "unsupported-version",
+            })
+        });
         (
             Self {
                 path,
@@ -83,54 +80,9 @@ impl StatisticsStore {
     }
 }
 
-pub fn unix_millis_now() -> i64 {
-    let nanos = OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000;
-    i64::try_from(nanos).unwrap_or(i64::MAX)
-}
-
-fn load(directory: &Path, path: &Path) -> (UsageStatistics, bool, Option<StatisticsLoadIssue>) {
-    let _ = fs::create_dir_all(directory);
-    let reason = match fs::read(path) {
-        Ok(bytes) => match decode_usage_statistics(&bytes) {
-            Ok(statistics) => return (statistics, true, None),
-            Err(StatisticsDecodeError::Invalid) => "invalid",
-            Err(StatisticsDecodeError::UnsupportedVersion(_)) => "unsupported-version",
-        },
-        Err(error) if error.kind() == io::ErrorKind::NotFound => {
-            return (UsageStatistics::default(), true, None);
-        }
-        Err(_) => {
-            return (
-                UsageStatistics::default(),
-                false,
-                Some(StatisticsLoadIssue::PersistenceDisabled {
-                    reason: "unreadable",
-                }),
-            );
-        }
-    };
-    let quarantine = path.with_file_name(format!(
-        "usage-statistics.{}.{reason}.json",
-        unix_millis_now()
-    ));
-    if fs::rename(path, quarantine).is_ok() {
-        (
-            UsageStatistics::default(),
-            true,
-            Some(StatisticsLoadIssue::Quarantined { reason }),
-        )
-    } else {
-        (
-            UsageStatistics::default(),
-            false,
-            Some(StatisticsLoadIssue::PersistenceDisabled { reason }),
-        )
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use std::{sync::Arc, thread};
+    use std::{fs, sync::Arc, thread};
 
     use uuid::Uuid;
 
@@ -239,7 +191,7 @@ mod tests {
         let (store, issue) = StatisticsStore::open(&root);
         assert_eq!(
             issue,
-            Some(StatisticsLoadIssue::Quarantined { reason: "invalid" })
+            Some(DocumentLoadIssue::Quarantined { reason: "invalid" })
         );
         assert_eq!(store.snapshot(), UsageStatistics::default());
         let files = statistics_files(&root);
@@ -266,7 +218,7 @@ mod tests {
         let (_, issue) = StatisticsStore::open(&root);
         assert_eq!(
             issue,
-            Some(StatisticsLoadIssue::Quarantined {
+            Some(DocumentLoadIssue::Quarantined {
                 reason: "unsupported-version"
             })
         );

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { AppStatisticsDialog } from "@/app/dialogs/AppStatisticsDialog";
 import { useStatisticsDialog } from "@/app/hooks/useAppDialog";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
+import { achievementRecordsLoaded } from "@/app/store/slices/achievements-slice";
 import {
   usageStatisticsLoaded,
   usageStatisticsRequested,
@@ -17,6 +18,16 @@ import { createAppStore } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { UsageStatistics } from "@/domain/usage-statistics";
 import { emptyUsageStatistics } from "@/test/usage-statistics.fixtures";
+
+const storyAchievementRecords = {
+  discoveredSplashMessageIds: [],
+  unlockedAchievements: {
+    "export-mastery-gold": Date.UTC(2026, 3, 2, 12),
+    "export-mastery-bronze": Date.UTC(2026, 0, 15, 12),
+    "export-mastery-silver": Date.UTC(2026, 0, 28, 12),
+  },
+  viewedAtMillis: null,
+};
 
 const meta = {
   args: {
@@ -46,6 +57,9 @@ function AppStatisticsDialogStory({ statistics }: { statistics: UsageStatistics 
     const appStore = createAppStore();
     appStore.dispatch(usageStatisticsRequested({ requestId: "story" }));
     appStore.dispatch(usageStatisticsLoaded({ requestId: "story", statistics }));
+    appStore.dispatch(
+      achievementRecordsLoaded({ records: storyAchievementRecords, requestId: "story" }),
+    );
     return appStore;
   }, [statistics]);
 

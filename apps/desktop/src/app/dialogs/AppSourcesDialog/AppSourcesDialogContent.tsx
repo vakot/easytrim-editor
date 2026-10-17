@@ -34,7 +34,7 @@ function AppSourcesDialogContent({ __scopeDialog }: { __scopeDialog?: DialogScop
           <SourceListSearch autoFocus />
           <SourceListCloseAll />
         </div>
-        <SourceListContent className="-mx-2 px-2" />
+        <SourceListContent className="-mx-2 **:data-[slot=scroll-area-viewport]:px-2" />
       </div>
 
       <DialogFooter __scopeDialog={__scopeDialog}>

@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectAchievementsInitialized } from "@/app/store/slices/achievements-slice";
+import { discoverSplashMessage } from "@/app/store/thunks/achievement-thunks";
 import { cn } from "@/lib/class-names.utils";
 
 import { chooseSplashMessage } from "../lib/splash-messages.utils";
@@ -97,8 +100,44 @@ function SplashMessages({
       >
         {message.render ? message.render() : message.text}
       </button>
+
+      {fixedMessage ? null : <SplashMessageDiscovery message={message} target={splashRef} />}
     </div>
   );
+}
+
+/**
+ * Records a legendary message as discovered once it is actually on screen. Only randomly chosen
+ * messages count: a fixed `message`, as used by previews and stories, never renders this. Recording
+ * waits until the session's retroactive unlocks are done, so a discovery made right at startup is
+ * still announced instead of being unlocked silently with them.
+ */
+function SplashMessageDiscovery({
+  message,
+  target,
+}: {
+  message: SplashMessageDefinition;
+  target: RefObject<HTMLElement | null>;
+}) {
+  const dispatch = useAppDispatch();
+  const initialized = useAppSelector(selectAchievementsInitialized);
+  const discoverable = message.rarity === "legendary";
+
+  useEffect(() => {
+    const element = target.current;
+    if (!initialized || !discoverable || !element) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      void dispatch(discoverSplashMessage(message.id));
+    });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [discoverable, dispatch, initialized, message.id, target]);
+
+  return null;
 }
 
 export { SplashMessages };

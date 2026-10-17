@@ -13,6 +13,7 @@ import {
 import { sourceFailed, sourceReady } from "@/app/store/actions/source-actions";
 import { appMiddleware } from "@/app/store/middleware";
 import { createPersistedReducer, type PersistStorage, reduxStorage } from "@/app/store/persistence";
+import { achievementsReducer } from "@/app/store/slices/achievements-slice";
 import { audioReducer } from "@/app/store/slices/audio-slice";
 import { chaptersReducer } from "@/app/store/slices/chapters-slice";
 import { cropReducer } from "@/app/store/slices/crop-slice";
@@ -29,6 +30,7 @@ import { trimReducer } from "@/app/store/slices/trim-slice";
 import { usageStatisticsReducer } from "@/app/store/slices/usage-statistics-slice";
 
 const combinedReducer = combineReducers({
+  achievements: achievementsReducer,
   audio: audioReducer,
   chapters: chaptersReducer,
   crop: cropReducer,

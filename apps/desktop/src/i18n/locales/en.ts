@@ -1,4 +1,112 @@
 export const en = {
+  achievements: {
+    categories: {
+      exportMilestones: "Export Milestones",
+      processingMilestones: "Processing Milestones",
+      secretDiscoveries: "Secret Discoveries",
+    },
+    description: "Milestones and discoveries collected across all sessions",
+    empty: {
+      locked: "Every achievement is unlocked",
+      unlocked: "No achievements unlocked yet",
+    },
+    filters: {
+      all: "All",
+      label: "Filter achievements",
+      locked: "Locked",
+      unlocked: "Unlocked",
+    },
+    itemProgress: {
+      label: "{{title}} progress",
+      value: "{{current}} of {{target}}",
+    },
+    items: {
+      audioSpecialist: {
+        description: "Complete audio-only exports",
+        title: "Audio Specialist",
+      },
+      bronzeCollector: {
+        description: "Unlock the Bronze tier of all seven original milestone series",
+        title: "Bronze Collector",
+      },
+      dataCruncher: {
+        description: "Process source data through your exports",
+        title: "Data Cruncher",
+      },
+      exportMastery: {
+        description: "Complete exports of any kind",
+        title: "Export Mastery",
+      },
+      gifCreator: {
+        description: "Export animated GIFs",
+        title: "GIF Creator",
+      },
+      goldCollector: {
+        description: "Unlock the Gold tier of all seven original milestone series",
+        title: "Gold Collector",
+      },
+      losslessPrecision: {
+        description: "Cut without re-encoding using Fast Export",
+        title: "Lossless Precision",
+      },
+      silverCollector: {
+        description: "Unlock the Silver tier of all seven original milestone series",
+        title: "Silver Collector",
+      },
+      storageSaver: {
+        description: "Save storage by exporting files smaller than their sources",
+        title: "Storage Saver",
+      },
+      theChosenOne: {
+        description: "Encounter every legendary splash message",
+        title: "The Chosen One",
+      },
+      timeWellSpent: {
+        description: "Spend time processing exports",
+        title: "Time Well Spent",
+      },
+    },
+    new: "New",
+    newAchievements: "New achievements",
+    notification: {
+      seriesTier: "{{series}} {{tier}}",
+      tierUnlocked: "{{tier}} tier unlocked",
+      unlocked: "Achievement unlocked",
+      unlockedMany_one: "{{count}} achievement unlocked",
+      unlockedMany_other: "{{count}} achievements unlocked",
+    },
+    open: "Achievements",
+    privacy: "Achievements are tracked locally on this device and are never shared or sent anywhere",
+    progressLabel: "Collection progress",
+    secret: {
+      description: "A secret achievement. Keep exploring to reveal it",
+      title: "???",
+    },
+    series: {
+      completed: "Completed",
+      nextTier: "Next: {{tier}}",
+      tierLocked: "{{tier}}, {{target}}, locked",
+      tiersLabel: "Tiers",
+      tierUnlocked: "{{tier}}, {{target}}, unlocked {{date}}",
+      tierUnlockedNew: "{{tier}}, new",
+      tierUnlockedOn: "{{tier}} unlocked {{date}}",
+      total: "Total",
+    },
+    status: {
+      locked: "Locked",
+      unlocked: "Unlocked",
+    },
+    summary: "{{unlocked}} of {{total}} unlocked",
+    tiers: {
+      bronze: "Bronze",
+      gold: "Gold",
+      silver: "Silver",
+    },
+    title: "Achievements",
+    unavailable: "Achievements could not be loaded",
+    unknownDate: "Unknown date",
+    unlockedOn: "Unlocked {{date}}",
+  },
   activity: {
     description: "Review recent imports, exports, and workspace changes across sessions",
     empty: {
@@ -47,6 +155,9 @@ export const en = {
     },
     dragUnavailable: "Drag and drop is unavailable: {{message}}",
     errors: {
+      achievements: {
+        identifierIsInvalid: "The achievement identifier is invalid",
+      },
       diagnostics: {
         diagnosticEventNameIsInvalid: "The diagnostic event name is invalid",
         diagnosticLevelIsInvalid: "The diagnostic level is invalid",
@@ -1132,6 +1243,10 @@ export const en = {
     description: "Your export activity across all sessions",
     empty: "Statistics begin accumulating after your first successful export",
     metrics: {
+      achievementsUnlocked: {
+        description: "Unlocked out of the whole achievement collection",
+        label: "Achievements Unlocked",
+      },
       audioExports: {
         description: "Audio-only exports to M4A, MP3, or WAV",
         label: "Audio Exports",
