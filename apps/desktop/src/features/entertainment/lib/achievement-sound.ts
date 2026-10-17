@@ -88,58 +88,93 @@ const silentHandle: AchievementSoundHandle = { stop: () => undefined };
 /** Schedules every voice of a cue on `context` and returns the handle that tears it down. */
 function startCue(context: AudioContext, cue: Cue, onFinished: () => void): AchievementSoundHandle {
   const master = context.createGain();
-  master.gain.value = cue.level;
-  master.connect(context.destination);
+  const voices: { envelope: GainNode | null; oscillator: OscillatorNode }[] = [];
 
-  const start = context.currentTime;
-  const oscillators = cue.voices.map((voice) => {
-    const oscillator = context.createOscillator();
-    const envelope = context.createGain();
-    const at = start + voice.at;
-    const end = at + voice.duration;
+  try {
+    master.gain.value = cue.level;
+    master.connect(context.destination);
 
-    oscillator.type = voice.type;
-    oscillator.frequency.value = voice.frequency;
-    envelope.gain.setValueAtTime(SILENT_FLOOR, at);
-    envelope.gain.linearRampToValueAtTime(voice.gain, at + ATTACK_SECONDS);
-    envelope.gain.exponentialRampToValueAtTime(SILENT_FLOOR, end);
-    oscillator.connect(envelope);
-    envelope.connect(master);
-    oscillator.start(at);
-    oscillator.stop(end + STOP_PADDING_SECONDS);
-    return { envelope, oscillator };
-  });
+    const start = context.currentTime;
+    for (const voice of cue.voices) {
+      const oscillator = context.createOscillator();
+      const nodes: { envelope: GainNode | null; oscillator: OscillatorNode } = {
+        envelope: null,
+        oscillator,
+      };
 
-  let stopped = false;
-  const release = () => {
-    if (stopped) return;
-    stopped = true;
-    for (const { envelope, oscillator } of oscillators) {
-      oscillator.disconnect();
-      envelope.disconnect();
+      voices.push(nodes);
+
+      const envelope = context.createGain();
+      nodes.envelope = envelope;
+      const at = start + voice.at;
+      const end = at + voice.duration;
+
+      oscillator.type = voice.type;
+      oscillator.frequency.value = voice.frequency;
+      envelope.gain.setValueAtTime(SILENT_FLOOR, at);
+      envelope.gain.linearRampToValueAtTime(voice.gain, at + ATTACK_SECONDS);
+      envelope.gain.exponentialRampToValueAtTime(SILENT_FLOOR, end);
+      oscillator.connect(envelope);
+      envelope.connect(master);
+      oscillator.start(at);
+      oscillator.stop(end + STOP_PADDING_SECONDS);
     }
-    master.disconnect();
-    onFinished();
-  };
 
-  // The voices end at different times; the last one to end releases the whole cue.
-  const endTimes = cue.voices.map((voice) => voice.at + voice.duration);
-  const lastVoice = oscillators[endTimes.indexOf(Math.max(...endTimes))];
-  if (lastVoice) lastVoice.oscillator.onended = release;
-
-  return {
-    stop: () => {
+    let stopped = false;
+    const release = () => {
       if (stopped) return;
-      for (const { oscillator } of oscillators) {
-        try {
-          oscillator.stop();
-        } catch {
-          // A voice that already ended cannot be stopped again.
-        }
+      stopped = true;
+      for (const { envelope, oscillator } of voices) {
+        oscillator.disconnect();
+        envelope?.disconnect();
       }
-      release();
-    },
-  };
+      master.disconnect();
+      onFinished();
+    };
+
+    // The voices end at different times; the last one to end releases the whole cue.
+    const endTimes = cue.voices.map((voice) => voice.at + voice.duration);
+    const lastVoice = voices[endTimes.indexOf(Math.max(...endTimes))];
+    if (lastVoice) lastVoice.oscillator.onended = release;
+
+    return {
+      stop: () => {
+        if (stopped) return;
+        for (const { oscillator } of voices) {
+          try {
+            oscillator.stop();
+          } catch {
+            // A voice that already ended cannot be stopped again.
+          }
+        }
+        release();
+      },
+    };
+  } catch (error) {
+    for (const { envelope, oscillator } of voices) {
+      try {
+        oscillator.stop();
+      } catch {
+        // An oscillator may not have started before setup failed.
+      }
+      try {
+        oscillator.disconnect();
+      } catch {
+        // Keep releasing the remaining nodes if one cannot be disconnected.
+      }
+      try {
+        envelope?.disconnect();
+      } catch {
+        // Keep releasing the remaining nodes if one cannot be disconnected.
+      }
+    }
+    try {
+      master.disconnect();
+    } catch {
+      // Preserve the initialization error after attempting to release the full graph.
+    }
+    throw error;
+  }
 }
 
 /**

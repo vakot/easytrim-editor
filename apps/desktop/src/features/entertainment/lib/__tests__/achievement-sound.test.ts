@@ -172,6 +172,31 @@ describe("createAchievementSoundPlayer", () => {
     expect(() => createAchievementSoundPlayer(() => context).play("standard")).not.toThrow();
   });
 
+  it("cleans up earlier voices when a later voice fails to initialize", () => {
+    const { context, fake, gains, oscillators } = createFakeContext();
+    const createOscillator = fake.createOscillator.getMockImplementation()!;
+    let createCount = 0;
+    fake.createOscillator.mockImplementation(() => {
+      createCount += 1;
+      if (createCount === 3) throw new Error("later voice failed");
+      return createOscillator();
+    });
+
+    const player = createAchievementSoundPlayer(() => context);
+    expect(() => player.play("secret").stop()).not.toThrow();
+
+    expect(oscillators).toHaveLength(2);
+    expect(
+      oscillators.every((oscillator) =>
+        oscillator.stop.mock.calls.some(([when]) => when === undefined),
+      ),
+    ).toBe(true);
+    expect(oscillators.every((oscillator) => oscillator.disconnect.mock.calls.length === 1)).toBe(
+      true,
+    );
+    expect(gains.every((gain) => gain.disconnect.mock.calls.length === 1)).toBe(true);
+  });
+
   it("creates one context, reuses it, and closes it on dispose after stopping cues", () => {
     const first = createFakeContext();
     const second = createFakeContext();
