@@ -1,0 +1,193 @@
+/*
+ * Unlock toast motion. Entrances and accents grow with the variant, from a light fade for standard
+ * achievements to a bright iridescent highlight for secret ones. Colors come from the achievement
+ * tier and secret theme tokens only; every length is rem so the toast follows UI scaling.
+ */
+.toast {
+  --sheen-color: transparent;
+  --sheen-delay: 0.25s;
+  --sheen-duration: 0.9s;
+
+  animation: unlock-enter-light 0.3s ease-out both;
+}
+
+.toast[data-variant="bronze"] {
+  --sheen-color: var(--achievement-bronze);
+}
+
+.toast[data-variant="silver"] {
+  --sheen-color: var(--achievement-silver);
+
+  animation: unlock-enter-medium 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.toast[data-variant="gold"] {
+  --sheen-color: var(--achievement-gold);
+
+  animation:
+    unlock-enter-strong 0.65s cubic-bezier(0.22, 1.2, 0.36, 1) both,
+    unlock-gold-halo 1.4s ease-out 0.2s both;
+}
+
+.toast[data-variant="secret"] {
+  --sheen-color: color-mix(in srgb, white 75%, var(--achievement-secret-azure));
+
+  animation:
+    unlock-enter-strong 0.65s cubic-bezier(0.22, 1.2, 0.36, 1) both,
+    unlock-secret-highlight var(--highlight-duration, 0.9s) ease-out both;
+}
+
+/* Soft multicolored glow around the container, layered over the shared iridescent card. */
+.toast[data-variant="secret"][data-secret-state="unlocked"] {
+  --secret-glow: 1;
+
+  box-shadow:
+    0 0 0.5rem color-mix(in srgb, var(--achievement-secret-violet) 55%, transparent),
+    0 0 1.25rem color-mix(in srgb, var(--achievement-secret-azure) 35%, transparent),
+    0 0 2rem color-mix(in srgb, var(--achievement-secret-rose) 28%, transparent);
+}
+
+/* A bright band that sweeps across the toast once. */
+.sheen {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent,
+    color-mix(in srgb, var(--sheen-color) 55%, transparent) 50%,
+    transparent
+  );
+  transform: translateX(-130%) skewX(-18deg);
+  animation: unlock-sheen var(--sheen-duration) ease-in-out var(--sheen-delay) both;
+}
+
+.toast[data-variant="standard"] .sheen {
+  display: none;
+}
+
+/* A one-time accent on the medallion; its strength follows the variant. */
+.medallion {
+  animation: unlock-accent-subtle 0.9s ease-out 0.2s both;
+}
+
+.toast[data-variant="silver"] .medallion {
+  animation-name: unlock-accent-medium;
+}
+
+.toast[data-variant="gold"] .medallion,
+.toast[data-variant="secret"] .medallion {
+  animation-name: unlock-accent-strong;
+}
+
+.toast[data-variant="standard"] .medallion {
+  animation: none;
+}
+
+@keyframes unlock-enter-light {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes unlock-enter-medium {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes unlock-enter-strong {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.9);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1.03);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes unlock-gold-halo {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--achievement-gold) 60%, transparent);
+  }
+
+  to {
+    box-shadow: 0 0 0 0.75rem color-mix(in srgb, var(--achievement-gold) 0%, transparent);
+  }
+}
+
+@keyframes unlock-secret-highlight {
+  from {
+    filter: brightness(1.45) saturate(1.35);
+  }
+
+  to {
+    filter: none;
+  }
+}
+
+@keyframes unlock-sheen {
+  from {
+    transform: translateX(-130%) skewX(-18deg);
+  }
+
+  to {
+    transform: translateX(330%) skewX(-18deg);
+  }
+}
+
+@keyframes unlock-accent-subtle {
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes unlock-accent-medium {
+  50% {
+    transform: scale(1.14) rotate(-4deg);
+  }
+}
+
+@keyframes unlock-accent-strong {
+  40% {
+    transform: scale(1.22) rotate(-6deg);
+  }
+
+  70% {
+    transform: scale(0.96) rotate(3deg);
+  }
+}
+
+/* Nothing moves when motion is reduced, but the toast still appears and keeps its colors. */
+.toast[data-reduced-motion="true"],
+.toast[data-reduced-motion="true"] * {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast:not([data-reduced-motion="false"]),
+  .toast:not([data-reduced-motion="false"]) * {
+    animation: none !important;
+  }
+}

@@ -179,19 +179,58 @@ progress already earned, such as all three Export Mastery tiers for a user with 
 These unlocks get the time they were recognized, never an invented historical time, and are not
 announced. If that first evaluation fails, it stays retroactive until one succeeds.
 
-**Notifications.** Later unlocks are announced through the existing toast infrastructure, one
-announcement per evaluation. A newly unlocked tier names its series and tier, such as "GIF Creator:
-Silver tier unlocked", with the series icon in the tier's color. Several tiers of one series
-unlocked together, as when one large export passes two size thresholds, collapse to the highest
-tier. Unlocks across several series or standalone achievements become one summary toast. Toasts
-never take focus, so they do not interrupt playback, exports, or editing, and the toaster disables
-its motion when reduced motion is preferred. A secret's title appears only in the announcement of
-its own unlock.
+**Notifications.** Later unlocks are announced through Sonner, and every unlocked achievement gets
+its own toast, confetti burst, and sound. Nothing is grouped: each tier, collector, and standalone
+achievement is announced individually, in unlock order, even when one export unlocks several at
+once. The toast shows the icon, a caption, the title, the real description, and the tier badge for a
+series. Toasts never take focus, so they do not interrupt playback, exports, or editing. A secret's
+title appears only in the announcement of its own unlock.
 
-`createAchievementAnnouncement` builds the announcement (achievement IDs, title, description, icon,
-and tier) separately from `showAchievementAnnouncement`, which renders it as a toast. A custom
-presentation with its own visuals, particles, or sound can replace the renderer without changing
-how unlocks are batched.
+`createAchievementAnnouncements` builds one announcement per achievement (title, description, icon,
+tier, and presentation variant) separately from how it is shown. The variant comes from the
+definition: a series tier is `bronze`, `silver`, or `gold`, a secret standalone achievement is
+`secret`, and any other achievement is `standard`. A new achievement therefore needs no toast code.
+
+| Variant    | Surface                                        | Confetti    | Sound    |
+| ---------- | ---------------------------------------------- | ----------- | -------- |
+| `standard` | Default popover surface, light entrance        | subtle      | standard |
+| `bronze`   | Bronze tint and border, subtle icon accent     | subtle      | standard |
+| `silver`   | Silver tint and border, stronger entrance      | normal      | standard |
+| `gold`     | Gold tint and border, entrance with a halo     | celebration | standard |
+| `secret`   | Iridescent border, glow, shimmer, glyph reveal | celebration | secret   |
+
+Tier colors come from `achievementTierClassNames` and the secret palette from the
+`--achievement-secret-*` tokens, so toasts and cards stay in step. The confetti is the shared
+`Confetti` component, clipped to the toast.
+
+**Sequential delivery.** `createAchievementAnnouncementQueue` shows one announcement at a time. The
+next one opens `ANNOUNCEMENT_GAP_MS` (2 seconds) after the previous toast closed, however it closed:
+Sonner's own timer, a swipe, or a dismissal. Unlocks that arrive while one is playing join the end
+of the queue, an achievement is never announced twice, and a sound is stopped the moment its toast
+closes, so celebrations never overlap. The queue lives in the component that uses it
+(`useAchievementAnnouncementQueue`) and holds nothing that persists; unmounting dismisses the
+showing toast, stops its sound, and drops the rest. Retroactive unlocks never reach the queue.
+
+**Lifetime.** Sonner owns each toast's timer, so hovering still pauses it. Standard and tier toasts
+stay for 4.5 to 5.5 seconds. A secret toast stays for its whole Galactic Glyphs reveal plus a hold,
+so it is never dismissed mid-animation; the durations are in `achievement-toast.consts.ts`.
+
+**Secret reveal.** The title resolves from Galactic Glyphs into the real text first, then the
+description, with a bright iridescent highlight on entry and a shimmer once the text is complete.
+`TextReveal` keeps every character in its final layout slot, so nothing shifts, and writes straight
+to the DOM from one animation driver, so React never re-renders per frame. The real text is in the
+accessibility tree throughout.
+
+**Sound.** `createAchievementSoundPlayer` synthesizes two cues with the Web Audio API, so no audio
+files are bundled: a short chime for every ordinary achievement and a longer layered fanfare only
+for secret ones, tuned to a similar peak volume. The player owns its own audio context, separate
+from media preview playback, creates it on first use, and closes it on unmount. If audio is
+unavailable or blocked by autoplay policy, the cue is skipped and the toast still appears. There is
+no sound preference yet; the queue accepts a `soundEnabled` setting for when one exists.
+
+**Reduced motion.** With `prefers-reduced-motion`, the toast still appears with the same colors and
+text, but without confetti, the glyph reveal, or CSS animation, and a secret toast closes as fast as
+a standard one. The sound is not affected.
 
 ## Legendary splash discoveries
 
@@ -216,7 +255,7 @@ unlocked.
 
 ### Styling
 
-The treatment is CSS in `AchievementSecret.module.css`, driven by data attributes
+The treatment is CSS in `components/AchievementSecret.module.css`, driven by data attributes
 (`data-secret-variant`, `-state`, `-animated`, `-icon`) and the `--secret-thickness` and
 `--secret-glow` custom properties that `getAchievementSecretCardProps` sets from an
 `AchievementSecretStyle`. The border is a masked ring over the card's own border, so the card

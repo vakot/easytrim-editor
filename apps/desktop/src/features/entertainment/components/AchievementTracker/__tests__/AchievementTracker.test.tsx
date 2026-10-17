@@ -1,6 +1,6 @@
 import { act, render, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AchievementRecords } from "@/domain/achievement-records";
 import type { UsageStatistics } from "@/domain/usage-statistics";
@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getUsageStatistics: vi.fn(),
   recordSplashMessageDiscovery: vi.fn(),
   toast: vi.fn(),
+  toastDismiss: vi.fn(),
   unlockAchievements: vi.fn(),
 }));
 
@@ -19,7 +20,8 @@ vi.mock("@/lib/tauri/achievements", () => ({
   unlockAchievements: mocks.unlockAchievements,
 }));
 vi.mock("@/lib/tauri/statistics", () => ({ getUsageStatistics: mocks.getUsageStatistics }));
-vi.mock("sonner", () => ({ toast: mocks.toast }));
+vi.mock("sonner", () => ({ toast: { custom: mocks.toast, dismiss: mocks.toastDismiss } }));
+vi.mock("../../AchievementUnlockToast", () => ({ AchievementUnlockToast: () => null }));
 
 import { achievementAnnouncementQueued } from "@/app/store/slices/achievements-slice";
 import { editingInstanceExportCompleted } from "@/app/store/slices/editing-instances-slice";
@@ -28,7 +30,36 @@ import { i18n } from "@/i18n/config";
 import { emptyAchievementRecords } from "@/test/achievement-records.fixtures";
 import { emptyUsageStatistics } from "@/test/usage-statistics.fixtures";
 
+import { ANNOUNCEMENT_GAP_MS } from "../../../consts/achievement-toast.consts";
+import type { AchievementAnnouncement } from "../../../types/achievement-toast.types";
 import { AchievementTracker } from "../AchievementTracker";
+
+type ToastOptions = {
+  duration: number;
+  id: string;
+  onAutoClose: () => void;
+  onDismiss: () => void;
+};
+
+/** The announcement each shown toast was given, in the order the toasts were shown. */
+function announced() {
+  return mocks.toast.mock.calls.map(([renderToast]) => {
+    const { announcement } = (renderToast() as { props: { announcement: AchievementAnnouncement } })
+      .props;
+
+    return `${announcement.variant}:${announcement.title}`;
+  });
+}
+
+function toastOptions(index: number): ToastOptions {
+  return mocks.toast.mock.calls[index]![1] as ToastOptions;
+}
+
+/** Plays out a toast's own closing, then the pause the queue leaves before the next one. */
+async function closeToast(index: number) {
+  act(() => toastOptions(index).onAutoClose());
+  await act(() => vi.advanceTimersByTimeAsync(ANNOUNCEMENT_GAP_MS));
+}
 
 /** An in-memory stand-in for the native store: it unlocks each achievement only once. */
 function fakeNativeAchievements(initial: AchievementRecords = emptyAchievementRecords) {
@@ -45,19 +76,23 @@ function fakeNativeAchievements(initial: AchievementRecords = emptyAchievementRe
   return () => records;
 }
 
-function renderTracker() {
-  const store = createAppStore({
+function createStore() {
+  return createAppStore({
     getItem: async () => null,
     setItem: async () => undefined,
     removeItem: async () => undefined,
   });
+}
 
-  render(
+function renderTracker() {
+  const store = createStore();
+  const view = render(
     <Provider store={store}>
       <AchievementTracker />
     </Provider>,
   );
-  return store;
+
+  return Object.assign(store, { unmount: view.unmount });
 }
 
 function completeExport(store: ReturnType<typeof renderTracker>, statistics: UsageStatistics) {
@@ -78,6 +113,11 @@ describe("AchievementTracker", () => {
   beforeEach(async () => {
     await i18n.changeLanguage("en");
     vi.resetAllMocks();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("unlocks tiers earned before this session without announcing them", async () => {
@@ -86,6 +126,7 @@ describe("AchievementTracker", () => {
     const store = renderTracker();
 
     await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
+    await act(() => vi.advanceTimersByTimeAsync(ANNOUNCEMENT_GAP_MS * 3));
 
     expect(Object.keys(nativeRecords().unlockedAchievements).sort()).toEqual([
       "export-mastery-bronze",
@@ -104,10 +145,9 @@ describe("AchievementTracker", () => {
     act(() => store.dispatch(achievementAnnouncementQueued({ ids: ["fine-tuning"] })));
 
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledTimes(1));
-    expect(mocks.toast).toHaveBeenCalledWith(
-      "Fine Tuning",
-      expect.objectContaining({ description: "Achievement unlocked" }),
-    );
+    expect(announced()).toEqual(["standard:Fine Tuning"]);
+    expect(toastOptions(0)).toMatchObject({ id: "achievement-unlocked:fine-tuning" });
+    expect(store.getState().achievements.announcementQueue).toEqual([]);
   });
 
   it("gives every tier its own unlock time and keeps earlier unlock times", async () => {
@@ -139,16 +179,11 @@ describe("AchievementTracker", () => {
     completeExport(store, { ...previous, gifExports: 5 });
 
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledTimes(1));
-    expect(mocks.toast).toHaveBeenCalledWith(
-      "GIF Creator",
-      expect.objectContaining({
-        description: "Silver tier unlocked",
-        id: "achievement-unlocked:gif-creator-silver",
-      }),
-    );
+    expect(announced()).toEqual(["silver:GIF Creator"]);
+    expect(toastOptions(0)).toMatchObject({ id: "achievement-unlocked:gif-creator-silver" });
   });
 
-  it("announces several tiers of one series as its highest tier", async () => {
+  it("announces every tier one export unlocks on its own, one after another", async () => {
     fakeNativeAchievements();
     const previous = {
       ...emptyUsageStatistics,
@@ -169,13 +204,14 @@ describe("AchievementTracker", () => {
     });
 
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledTimes(1));
-    expect(mocks.toast).toHaveBeenCalledWith(
-      "Data Cruncher",
-      expect.objectContaining({ description: "Silver tier unlocked" }),
-    );
+    expect(announced()).toEqual(["bronze:Data Cruncher"]);
+
+    await closeToast(0);
+    expect(announced()).toEqual(["bronze:Data Cruncher", "silver:Data Cruncher"]);
+    expect(toastOptions(1).id).toBe("achievement-unlocked:data-cruncher-silver");
   });
 
-  it("announces unlocks across series with one summary toast and never repeats them", async () => {
+  it("keeps unlocks across series separate and never repeats them", async () => {
     fakeNativeAchievements();
     mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
     const store = renderTracker();
@@ -186,11 +222,49 @@ describe("AchievementTracker", () => {
     completeExport(store, { ...emptyUsageStatistics, gifExports: 1 });
     await waitFor(() => expect(mocks.getUsageStatistics).toHaveBeenCalledTimes(3));
 
-    expect(mocks.toast).toHaveBeenCalledTimes(1);
-    expect(mocks.toast).toHaveBeenCalledWith(
-      "2 achievements unlocked",
-      expect.objectContaining({ description: "Export Mastery Bronze, GIF Creator Bronze" }),
+    await closeToast(0);
+    await act(() => vi.advanceTimersByTimeAsync(ANNOUNCEMENT_GAP_MS * 5));
+
+    expect(announced()).toEqual(["bronze:Export Mastery", "bronze:GIF Creator"]);
+  });
+
+  it("queues unlocks that arrive while an announcement is showing", async () => {
+    fakeNativeAchievements();
+    mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
+    const store = renderTracker();
+    await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
+
+    act(() => store.dispatch(achievementAnnouncementQueued({ ids: ["fine-tuning"] })));
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledTimes(1));
+    act(() =>
+      store.dispatch(achievementAnnouncementQueued({ ids: ["queued-up", "shortcut-taken"] })),
     );
+    await act(() => vi.advanceTimersByTimeAsync(ANNOUNCEMENT_GAP_MS * 5));
+    expect(announced()).toEqual(["standard:Fine Tuning"]);
+
+    await closeToast(0);
+    await closeToast(1);
+
+    expect(announced()).toEqual([
+      "standard:Fine Tuning",
+      "standard:Queued Up",
+      "standard:Shortcut Taken",
+    ]);
+  });
+
+  it("dismisses the showing toast and stops announcing when it unmounts", async () => {
+    fakeNativeAchievements();
+    mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
+    const store = renderTracker();
+    await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
+    act(() => store.dispatch(achievementAnnouncementQueued({ ids: ["fine-tuning", "queued-up"] })));
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledTimes(1));
+
+    store.unmount();
+    await act(() => vi.advanceTimersByTimeAsync(ANNOUNCEMENT_GAP_MS * 5));
+
+    expect(mocks.toastDismiss).toHaveBeenCalledWith("achievement-unlocked:fine-tuning");
+    expect(mocks.toast).toHaveBeenCalledTimes(1);
   });
 
   it("does not announce retroactive unlocks after a failed first attempt", async () => {
@@ -221,7 +295,7 @@ describe("AchievementTracker", () => {
     const tierIds = (tier: string) => seriesIds.map((id) => `${id}-${tier}`);
     const unlockedAt = (ids: string[]) => Object.fromEntries(ids.map((id) => [id, 500]));
 
-    it("unlocks a collector in the same evaluation as its final tier and announces both once", async () => {
+    it("unlocks a collector in the same evaluation as its final tier and announces each once", async () => {
       const nativeRecords = fakeNativeAchievements({
         ...emptyAchievementRecords,
         unlockedAchievements: unlockedAt(tierIds("bronze").slice(0, -1)),
@@ -242,12 +316,16 @@ describe("AchievementTracker", () => {
         "first-contact",
         "bronze-collector",
       ]);
-      expect(mocks.toast).toHaveBeenCalledWith(
-        "3 achievements unlocked",
-        expect.objectContaining({
-          description: "Storage Saver Bronze, First Contact, Bronze Collector",
-        }),
-      );
+
+      await closeToast(0);
+      await closeToast(1);
+      await act(() => vi.advanceTimersByTimeAsync(ANNOUNCEMENT_GAP_MS * 5));
+
+      expect(announced()).toEqual([
+        "bronze:Storage Saver",
+        "standard:First Contact",
+        "secret:Bronze Collector",
+      ]);
       expect(nativeRecords().unlockedAchievements["bronze-collector"]).toBeGreaterThan(500);
       expect(nativeRecords().unlockedAchievements["silver-collector"]).toBeUndefined();
     });
@@ -266,6 +344,7 @@ describe("AchievementTracker", () => {
       const store = renderTracker();
 
       await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
+      await act(() => vi.advanceTimersByTimeAsync(ANNOUNCEMENT_GAP_MS * 3));
 
       expect(mocks.unlockAchievements).toHaveBeenCalledTimes(1);
       expect(mocks.unlockAchievements).toHaveBeenCalledWith([
@@ -293,9 +372,12 @@ describe("AchievementTracker", () => {
       await waitFor(() => expect(mocks.getUsageStatistics).toHaveBeenCalledTimes(3));
       completeExport(store, { ...unlockingStatistics, sourceBytes: 400 * 1_024 ** 2 });
       await waitFor(() => expect(mocks.getUsageStatistics).toHaveBeenCalledTimes(4));
+      await closeToast(0);
+      await closeToast(1);
+      await act(() => vi.advanceTimersByTimeAsync(ANNOUNCEMENT_GAP_MS * 5));
 
       expect(mocks.unlockAchievements).toHaveBeenCalledTimes(1);
-      expect(mocks.toast).toHaveBeenCalledTimes(1);
+      expect(mocks.toast).toHaveBeenCalledTimes(3);
     });
   });
 });

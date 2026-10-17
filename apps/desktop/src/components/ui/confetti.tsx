@@ -151,3 +151,4 @@ function Confetti({
 }
 
 export { Confetti };
+export type { ConfettiIntensity };

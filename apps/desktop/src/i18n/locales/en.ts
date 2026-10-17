@@ -94,11 +94,7 @@ export const en = {
     new: "New",
     newAchievements: "New achievements",
     notification: {
-      seriesTier: "{{series}} {{tier}}",
-      tierUnlocked: "{{tier}} tier unlocked",
       unlocked: "Achievement unlocked",
-      unlockedMany_one: "{{count}} achievement unlocked",
-      unlockedMany_other: "{{count}} achievements unlocked",
     },
     open: "Achievements",
     privacy: "Achievements are tracked locally on this device and are never shared or sent anywhere",
