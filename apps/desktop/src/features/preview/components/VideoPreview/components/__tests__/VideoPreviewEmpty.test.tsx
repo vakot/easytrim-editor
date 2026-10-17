@@ -57,7 +57,7 @@ describe("VideoPreviewEmpty achievements", () => {
     expect(screen.queryByRole("button", { name: "Finish onboarding" })).not.toBeInTheDocument();
   });
 
-  it("does not celebrate when an ancestor exits without confirmation", () => {
+  it("fades in once and does not celebrate when an ancestor exits without confirmation", async () => {
     const store = createAppStore();
     store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
     const content = (visible: boolean) => (
@@ -74,7 +74,14 @@ describe("VideoPreviewEmpty achievements", () => {
 
     const view = render(content(true));
     const category = screen.getByRole("region", { name: "Getting Started" });
-    expect(category.parentElement).toHaveStyle({ opacity: "1" });
+    const card = category.parentElement;
+    expect(card).toHaveStyle({ opacity: "0" });
+    await waitFor(() => expect(card).toHaveStyle({ opacity: "1" }));
+    act(() => {
+      store.dispatch(achievementRecordsUpdated({ records: completeAchievementRecords }));
+    });
+    expect(category.parentElement).toBe(card);
+    expect(card).toHaveStyle({ opacity: "1" });
     view.rerender(content(false));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(view.container.querySelector("[data-slot='confetti']")).toBeNull();

@@ -76,7 +76,7 @@ function VideoPreviewEmptyOnboarding() {
     <motion.div
       animate={{ width: celebrating ? 0 : "29rem" }}
       className={cn(styles.achievements, "min-w-0 shrink-0 overflow-hidden")}
-      initial={false}
+      initial={{ width: reduceMotion ? "29rem" : 0 }}
       onAnimationComplete={() => {
         if (celebrating) setCompletion("finished");
       }}
@@ -89,7 +89,7 @@ function VideoPreviewEmptyOnboarding() {
       <motion.div
         animate={{ opacity: celebrating ? 0 : 1, x: celebrating && !reduceMotion ? "-0.75rem" : 0 }}
         className="relative w-104 shrink-0"
-        initial={false}
+        initial={{ opacity: reduceMotion ? 1 : 0, x: 0 }}
         transition={{ delay: celebrating ? exitDelay : 0, duration: reduceMotion ? 0 : 0.16 }}
       >
         <AchievementsCategoryContent category="getting-started" compact presentation="onboarding" />
