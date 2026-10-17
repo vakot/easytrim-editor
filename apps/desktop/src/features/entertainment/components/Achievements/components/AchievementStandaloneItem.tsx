@@ -1,5 +1,5 @@
 import { Check, Lock, LockKeyhole } from "lucide-react";
-import { type CSSProperties, useId } from "react";
+import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,17 +11,19 @@ import { selectUsageStatistics } from "@/app/store/slices/usage-statistics-slice
 import { cn } from "@/lib/class-names.utils";
 import { formatDateOnly } from "@/lib/date-time.utils";
 
+import { useAchievementSecretGradientId } from "../../../hooks/useAchievementSecretGradientId";
 import {
   getAchievementUnlockedAt,
   getStandaloneAchievementProgress,
   isAchievementNew,
 } from "../../../lib/achievements.utils";
 import type { StandaloneAchievementDefinition } from "../../../types/achievements.types";
+import styles from "../../AchievementSecret.module.css";
+import { AchievementSecretGradient } from "../../AchievementSecretGradient";
 import { useAchievementsViewedAt } from "../contexts/AchievementsViewContext";
 
 import { AchievementNewPing } from "./AchievementNewPing";
 import { AchievementProgress } from "./AchievementProgress";
-import styles from "./AchievementSecret.module.css";
 
 function AchievementStandaloneItem({
   compact = false,
@@ -36,7 +38,7 @@ function AchievementStandaloneItem({
   const records = useAppSelector(selectAchievementRecords);
   const statistics = useAppSelector(selectUsageStatistics);
   const viewedAt = useAchievementsViewedAt();
-  const gradientId = `achievement-secret-${useId().replace(/\W/g, "")}`;
+  const gradientId = useAchievementSecretGradientId();
 
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const unlockedAt = getAchievementUnlockedAt(definition.id, records);
@@ -80,25 +82,7 @@ function AchievementStandaloneItem({
       }
       variant="outline"
     >
-      {secret ? (
-        <svg aria-hidden="true" className={styles.gradientDefs} focusable="false">
-          <defs>
-            <linearGradient
-              gradientUnits="userSpaceOnUse"
-              id={gradientId}
-              x1="2"
-              x2="22"
-              y1="2"
-              y2="22"
-            >
-              <stop offset="0" style={{ stopColor: "var(--achievement-secret-violet)" }} />
-              <stop offset="0.35" style={{ stopColor: "var(--achievement-secret-azure)" }} />
-              <stop offset="0.65" style={{ stopColor: "var(--achievement-secret-amber)" }} />
-              <stop offset="1" style={{ stopColor: "var(--achievement-secret-rose)" }} />
-            </linearGradient>
-          </defs>
-        </svg>
-      ) : null}
+      {secret ? <AchievementSecretGradient id={gradientId} /> : null}
       <ItemMedia
         aria-hidden="true"
         className={cn(

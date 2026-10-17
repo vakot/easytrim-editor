@@ -5,6 +5,7 @@ import { selectAchievementsInitialized } from "@/app/store/slices/achievements-s
 import { discoverSplashMessage } from "@/app/store/thunks/achievement-thunks";
 import { cn } from "@/lib/class-names.utils";
 
+import { galacticGlyphs } from "../consts/galactic-glyphs.consts";
 import { chooseSplashMessage } from "../lib/splash-messages.utils";
 import type { SplashMessageDefinition } from "../types/splash-messages.types";
 
@@ -17,8 +18,6 @@ const splashMessageClasses: Record<string, string> = {
   "frame-not-found": styles.frameNotFound!,
   rainbow: styles.rainbow!,
 };
-
-const enchantmentGlyphs = Array.from("ᔑʖᓵ↸ᒷ⎓⊣⍑╎⋮ꖌꖎᒲリ𝙹!¡ᑑ∷ᓭℸ⚍⍊∴ ̇/||");
 
 function SplashMessages({
   className,
@@ -58,7 +57,7 @@ function SplashMessages({
           const position = Math.floor(Math.random() * characters.length);
           if (characters[position] !== ".") {
             characters[position] =
-              enchantmentGlyphs[Math.floor(Math.random() * enchantmentGlyphs.length)]!;
+              galacticGlyphs[Math.floor(Math.random() * galacticGlyphs.length)]!;
           }
         }
 
