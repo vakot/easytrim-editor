@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   achievementToastPresentation,
   ANNOUNCEMENT_GAP_MS,
+  secretRevealEnd,
+  secretRevealTimeline,
 } from "../../consts/achievement-toast.consts";
 import type {
   AchievementAnnouncement,
@@ -76,6 +78,9 @@ function setup(
 const shownIds = (shown: { announcement: AchievementAnnouncement }[]) =>
   shown.map((item) => item.announcement.achievementId);
 
+const secretRevealDurationMs =
+  (secretRevealEnd + secretRevealTimeline.finalShimmerDuration) * 1_000;
+
 describe("createAchievementAnnouncementQueue", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -140,11 +145,14 @@ describe("createAchievementAnnouncementQueue", () => {
     expect(shown.every((item) => item.close.mock.calls.length === 0)).toBe(true);
   });
 
-  it("does not wait for a long secret toast to close before showing the next one", () => {
+  it("waits for a secret reveal and final shimmer before showing the next announcement", () => {
     const { queue, shown } = setup();
     queue.enqueue([announcement("secret", "secret"), announcement("next")]);
 
-    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
+    vi.advanceTimersByTime(secretRevealDurationMs - 1);
+    expect(shownIds(shown)).toEqual(["secret"]);
+
+    vi.advanceTimersByTime(1);
 
     expect(shownIds(shown)).toEqual(["secret", "next"]);
   });
@@ -235,7 +243,7 @@ describe("createAchievementAnnouncementQueue", () => {
 
     shown[0]!.presentation.onClosed();
     shown[0]!.presentation.onClosed();
-    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS - 1);
+    vi.advanceTimersByTime(secretRevealDurationMs - 1);
     expect(shownIds(shown)).toEqual(["a"]);
     vi.advanceTimersByTime(1);
 
@@ -258,7 +266,7 @@ describe("createAchievementAnnouncementQueue", () => {
     queue.enqueue([announcement("a", "secret"), announcement("b")]);
     expect(sounds[0]?.stop).not.toHaveBeenCalled();
 
-    vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
+    vi.advanceTimersByTime(secretRevealDurationMs);
 
     expect(sounds[0]?.stop).toHaveBeenCalledTimes(1);
     expect(sounds[1]?.stop).not.toHaveBeenCalled();
@@ -320,7 +328,7 @@ describe("createAchievementAnnouncementQueue", () => {
     it("closes every open toast, silences the sound, and drops everything pending", () => {
       const { events, queue, shown, sounds } = setup();
       queue.enqueue([announcement("a", "secret"), announcement("b"), announcement("c")]);
-      vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS);
+      vi.advanceTimersByTime(secretRevealDurationMs);
 
       queue.dispose();
       vi.advanceTimersByTime(ANNOUNCEMENT_GAP_MS * 5);

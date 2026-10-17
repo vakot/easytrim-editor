@@ -1,6 +1,8 @@
 import {
   achievementToastPresentation,
   ANNOUNCEMENT_GAP_MS,
+  secretRevealEnd,
+  secretRevealTimeline,
 } from "../consts/achievement-toast.consts";
 import type { AchievementAnnouncement } from "../types/achievement-toast.types";
 
@@ -42,10 +44,11 @@ const silentSound: AchievementSoundHandle = { stop: () => undefined };
 
 /**
  * Delivers achievement announcements in order, each with its own toast, confetti, and sound. They
- * appear in sequence, each after a fixed gap from the previous one's appearance, so earlier toasts
- * may stay open and stack under later ones. Only the newest announcement's sound plays: starting
- * the next one cuts off the previous, so sounds never overlap. Presentation owns how long a toast
- * stays open; this only owns when the next one appears.
+ * appear in sequence, with a fixed gap from the previous one's appearance except that a secret
+ * reveal and its final shimmer must finish first. Earlier toasts may stay open and stack under later
+ * ones. Only the newest announcement's sound plays: starting the next one cuts off the previous,
+ * so sounds never overlap. Presentation owns how long a toast stays open; this only owns when the
+ * next one appears.
  */
 function createAchievementAnnouncementQueue({
   gapMs = ANNOUNCEMENT_GAP_MS,
@@ -85,6 +88,7 @@ function createAchievementAnnouncementQueue({
       open.delete(current);
     };
 
+    let presented = false;
     try {
       current.close = present(announcement, {
         // Without the animated reveal a secret toast needs no longer than a standard one.
@@ -95,16 +99,26 @@ function createAchievementAnnouncementQueue({
         onClosed,
         reducedMotion,
       });
+      presented = true;
     } catch {
       // A toast that cannot be shown must not stall the announcements behind it.
       onClosed();
     }
 
-    // The next announcement is measured from this one's appearance, whether or not it is still open.
-    gapTimer = setTimeout(() => {
-      gapTimer = null;
-      advance();
-    }, gapMs);
+    const secretRevealMs =
+      presented && announcement.variant === "secret" && !reducedMotion
+        ? (secretRevealEnd + secretRevealTimeline.finalShimmerDuration) * 1_000
+        : gapMs;
+
+    // The next announcement is measured from this one's appearance. A secret toast stays in front
+    // until its text reveal and final shimmer complete; other variants keep the standard gap.
+    gapTimer = setTimeout(
+      () => {
+        gapTimer = null;
+        advance();
+      },
+      Math.max(gapMs, secretRevealMs),
+    );
   }
 
   return {
