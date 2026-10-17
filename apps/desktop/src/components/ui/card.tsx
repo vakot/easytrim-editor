@@ -6,7 +6,7 @@ import * as React from "react";
 import { cn } from "@/lib/class-names.utils";
 
 const cardVariants = cva(
-  "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl border border-transparent py-(--card-spacing) text-sm text-card-foreground ring-1 outline-none [--card-spacing:--spacing(4)] focus-visible:border-ring focus-visible:ring-[0.1875rem] focus-visible:ring-ring/50 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+  "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl border border-transparent py-(--card-spacing) text-sm text-card-foreground ring-1 outline-none [--card-spacing:--spacing(4)] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
   {
     variants: {
       variant: {
@@ -14,7 +14,7 @@ const cardVariants = cva(
         destructive: "bg-destructive/5 ring-destructive/45",
         success: "bg-success/5 ring-success/45",
         warning: "bg-warning/5 ring-warning/45",
-        active: "bg-primary/10 ring-[0.125rem] ring-primary/45",
+        active: "bg-primary/10 ring-2 ring-primary/45",
       },
       hoverable: {
         false: "",

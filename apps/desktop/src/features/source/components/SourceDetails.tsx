@@ -2,11 +2,11 @@ import type { ReactNode } from "react";
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 
-import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Separator } from "@/components/ui/separator";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
+import { RelativeTimestamp } from "@/components/relative-timestamp";
 
 import {
   formatBitrate,

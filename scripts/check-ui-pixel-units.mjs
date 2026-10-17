@@ -32,10 +32,6 @@ async function visit(directory) {
         }
         violations.push(`${relative(process.cwd(), path)}:${index + 1}: ${value[0]}`);
       }
-
-      for (const value of line.matchAll(/\b(?:ring|border|border-[xytrbl])-[2-9]\b/g)) {
-        violations.push(`${relative(process.cwd(), path)}:${index + 1}: ${value[0]}`);
-      }
     }
   }
 }

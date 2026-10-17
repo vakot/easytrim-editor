@@ -333,13 +333,8 @@ function getAchievementTierLabel(tier: AchievementTier, t: TFunction): string {
   }
 }
 
-function compareAchievementTiers(left: AchievementTier, right: AchievementTier): number {
-  return achievementTiers.indexOf(left) - achievementTiers.indexOf(right);
-}
-
 export {
   achievementMetricUnits,
-  compareAchievementTiers,
   countUnlockedAchievements,
   getAchievementTierLabel,
   getAchievementUnlockedAt,

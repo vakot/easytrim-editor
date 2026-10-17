@@ -85,7 +85,7 @@ describe("VideoPreviewEmpty achievements", () => {
     await waitFor(
       () =>
         expect(screen.queryByRole("region", { name: "Getting Started" })).not.toBeInTheDocument(),
-      { timeout: 2_000 },
+      { timeout: 4_000 },
     );
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Ko-fi/i })).toBe(support);

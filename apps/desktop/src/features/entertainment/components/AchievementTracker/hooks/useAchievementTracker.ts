@@ -13,18 +13,17 @@ import { selectUsageStatistics } from "@/app/store/slices/usage-statistics-slice
 import { loadAchievementRecords, unlockAchievements } from "@/app/store/thunks/achievement-thunks";
 import { loadUsageStatistics } from "@/app/store/thunks/usage-statistics-thunks";
 
+import { useAchievementAnnouncementQueue } from "../../../hooks/useAchievementAnnouncementQueue";
+import { createAchievementAnnouncements } from "../../../lib/achievement-announcements.utils";
 import { getEarnedAchievementIds } from "../../../lib/achievements.utils";
-import {
-  createAchievementAnnouncement,
-  showAchievementAnnouncement,
-} from "../lib/achievement-announcement.utils";
 
 /**
  * Unlocks achievements whenever the statistics or records they depend on change.
  *
  * The first evaluation of a session unlocks what the stored progress already earned without any
  * announcement, so a returning user is not greeted by a burst of retroactive toasts. Evaluations
- * run one after another against the latest store state, so none observes stale records.
+ * run one after another against the latest store state, so none observes stale records. Every
+ * newly unlocked achievement is announced on its own, one after another.
  */
 function useAchievementTracker() {
   const { t } = useTranslation();
@@ -35,6 +34,7 @@ function useAchievementTracker() {
   const initialized = useAppSelector(selectAchievementsInitialized);
   const statistics = useAppSelector(selectUsageStatistics);
   const evaluations = useRef(Promise.resolve());
+  const enqueueAnnouncements = useAchievementAnnouncementQueue();
 
   useEffect(() => {
     void dispatch(loadAchievementRecords());
@@ -62,17 +62,15 @@ function useAchievementTracker() {
           dispatch(achievementsInitialized());
           return;
         }
-        const announcement = createAchievementAnnouncement(unlocked, t);
-        if (announcement) showAchievementAnnouncement(announcement);
+        enqueueAnnouncements(createAchievementAnnouncements(unlocked, t));
       });
-  }, [dispatch, records, statistics, store, t]);
+  }, [dispatch, enqueueAnnouncements, records, statistics, store, t]);
 
   useEffect(() => {
     if (!initialized || announcementQueue.length === 0) return;
-    const announcement = createAchievementAnnouncement(announcementQueue, t);
-    if (announcement) showAchievementAnnouncement(announcement);
+    enqueueAnnouncements(createAchievementAnnouncements(announcementQueue, t));
     dispatch(achievementAnnouncementsCleared());
-  }, [announcementQueue, dispatch, initialized, t]);
+  }, [announcementQueue, dispatch, enqueueAnnouncements, initialized, t]);
 }
 
 export { useAchievementTracker };

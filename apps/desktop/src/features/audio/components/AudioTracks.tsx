@@ -31,7 +31,7 @@ function AudioPlayhead() {
     >
       <div className="relative col-start-2">
         <div
-          className="absolute inset-y-0 left-(--timeline-playhead-position) w-0 -translate-x-1/2 border-l-[0.125rem] border-dashed border-foreground/70"
+          className="absolute inset-y-0 left-(--timeline-playhead-position) w-0 -translate-x-1/2 border-l-2 border-dashed border-foreground/70"
           data-slot="audio-playhead"
         />
       </div>

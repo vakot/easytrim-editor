@@ -22,7 +22,7 @@ vi.mock("@/lib/tauri/achievements", () => ({
   unlockAchievements: mocks.unlockAchievements,
 }));
 vi.mock("@/lib/tauri/statistics", () => ({ getUsageStatistics: mocks.getUsageStatistics }));
-vi.mock("sonner", () => ({ toast: mocks.toast }));
+vi.mock("sonner", () => ({ toast: { custom: mocks.toast, dismiss: vi.fn() } }));
 
 import {
   achievementRecordsUpdated,
@@ -200,10 +200,15 @@ describe("SplashMessages legendary discovery", () => {
 
     await waitFor(() =>
       expect(mocks.toast).toHaveBeenCalledWith(
-        "The Chosen One",
-        expect.objectContaining({ description: "Achievement unlocked" }),
+        expect.any(Function),
+        expect.objectContaining({ id: "achievement-unlocked:the-chosen-one" }),
       ),
     );
+    const [renderToast] = mocks.toast.mock.calls[0] as [() => { props: { announcement: unknown } }];
+    expect(renderToast().props.announcement).toMatchObject({
+      title: "The Chosen One",
+      variant: "secret",
+    });
     expect(mocks.unlockAchievements).toHaveBeenCalledWith(["the-chosen-one"]);
   });
 });

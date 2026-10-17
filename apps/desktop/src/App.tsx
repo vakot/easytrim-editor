@@ -37,7 +37,7 @@ import { persistor, store } from "@/app/store/store";
 import { loadQueueFinishActions } from "@/app/store/thunks/queue-finish-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ActivityToasts } from "@/features/activity";
-import { AchievementTracker } from "@/features/entertainment";
+import { AchievementToaster, AchievementTracker } from "@/features/entertainment";
 import { ExportDialog, QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider, SourceDropOverlay } from "@/features/source";
@@ -78,6 +78,7 @@ function EasyTrimEditorApp() {
 
                         <Toaster />
                         <ActivityToasts />
+                        <AchievementToaster />
                         <AchievementTracker />
                         <AppDiagnosticsRecoveryDialog />
                         <WorkspaceRecoveryNotice />

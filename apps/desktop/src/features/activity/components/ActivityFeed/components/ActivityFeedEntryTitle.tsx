@@ -1,6 +1,6 @@
 import { MarkerTitle } from "@/components/ui/marker";
-import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 
+import { RelativeTimestamp } from "@/components/relative-timestamp";
 import { cn } from "@/lib/class-names.utils";
 
 import type { ActivityEntry } from "../../../lib/activity-projection";

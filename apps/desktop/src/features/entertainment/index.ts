@@ -4,6 +4,7 @@ export {
   AchievementsCollection,
   AchievementsSummary,
 } from "./components/Achievements";
+export { AchievementToaster } from "./components/AchievementToaster";
 export { AchievementTracker } from "./components/AchievementTracker";
 export { SplashMessages } from "./components/SplashMessages";
 export {

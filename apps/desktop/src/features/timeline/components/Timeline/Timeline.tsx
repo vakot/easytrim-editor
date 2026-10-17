@@ -1,8 +1,8 @@
 import * as React from "react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useDragAwareDoubleClick } from "@/components/ui/useDragAwareDoubleClick";
 
+import { useDragAwareDoubleClick } from "@/components/useDragAwareDoubleClick";
 import { cn } from "@/lib/class-names.utils";
 
 import { TimelineContext, useTimeline } from "./contexts/timeline-context";

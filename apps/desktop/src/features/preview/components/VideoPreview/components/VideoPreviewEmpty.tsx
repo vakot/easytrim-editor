@@ -3,7 +3,6 @@ import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Confetti } from "@/components/ui/confetti";
 import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
 
 import {
@@ -14,6 +13,7 @@ import {
 } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { SupportLink } from "@/app/components/SupportLink";
+import { Confetti } from "@/components/confetti";
 import {
   AchievementsCategoryContent,
   SplashMessages,
