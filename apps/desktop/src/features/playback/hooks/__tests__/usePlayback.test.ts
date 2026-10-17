@@ -58,18 +58,25 @@ describe("Timeline playback", () => {
     const { result } = renderHook(() => useTimelinePlayback());
 
     controller.snapshot = { durationMicros: 1_467_000, positionMicros: 1_400_000 };
-    result.current.stepFrame(1);
+    expect(result.current.stepFrame(1)).toBe(true);
     expect(controller.pause).toHaveBeenCalled();
     expect(controller.seek).toHaveBeenLastCalledWith(1_450_000);
 
     controller.snapshot = { durationMicros: 1_467_000, positionMicros: 1_450_000 };
-    result.current.stepFrame(1);
+    expect(result.current.stepFrame(1)).toBe(true);
     expect(controller.seek).toHaveBeenLastCalledWith(1_467_000);
 
     controller.snapshot = { durationMicros: 1_467_000, positionMicros: 1_467_000 };
-    result.current.stepFrame(-1);
+    expect(result.current.stepFrame(-1)).toBe(true);
     expect(controller.seek).toHaveBeenLastCalledWith(1_450_000);
     expect(result.current.getPositionMicros()).toBe(1_467_000);
+  });
+
+  it("reports a failed step when the playhead is already at the requested edge", () => {
+    const { result } = renderHook(() => useTimelinePlayback());
+
+    expect(result.current.stepFrame(-1)).toBe(false);
+    expect(controller.seek).not.toHaveBeenCalled();
   });
 
   it("derives readouts from the position", () => {

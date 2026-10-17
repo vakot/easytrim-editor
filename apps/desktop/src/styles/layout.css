@@ -9,6 +9,7 @@
 @layer utilities {
   .segment-markers {
     --segments: 16;
+    /* Segment marks are intentional single physical-pixel details. */
     --marker-width: 1px;
     --marker-color: currentColor;
 

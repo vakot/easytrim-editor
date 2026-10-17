@@ -252,7 +252,7 @@ function Thumb({ className, ...props }: React.ComponentProps<typeof SliderPrimit
   return (
     <SliderPrimitive.Thumb
       className={cn(
-        "relative z-10 block shrink-0 ring-ring/50 select-none after:absolute hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50",
+        "relative z-10 block shrink-0 ring-ring/50 select-none after:absolute hover:ring-[0.1875rem] focus-visible:ring-[0.1875rem] focus-visible:outline-hidden active:ring-[0.1875rem] disabled:pointer-events-none disabled:opacity-50",
         className,
       )}
       {...props}

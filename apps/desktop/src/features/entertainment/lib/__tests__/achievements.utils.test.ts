@@ -82,7 +82,7 @@ describe("achievement registry", () => {
   });
 
   it("counts three tiers per series plus each standalone achievement", () => {
-    expect(totalUnlockableAchievements).toBe(25);
+    expect(totalUnlockableAchievements).toBe(31);
   });
 
   it("requires every legendary splash message for the secret The Chosen One", () => {
@@ -90,6 +90,27 @@ describe("achievement registry", () => {
 
     expect(chosenOne.secret).toBe(true);
     expect(chosenOne.condition).toEqual({ ids: legendaryIds, kind: "discovery" });
+  });
+
+  it("keeps onboarding achievements standalone, visible, and outside milestone series", () => {
+    const onboarding = achievementCollection.filter(
+      (entry) => entry.category === "getting-started",
+    );
+
+    expect(onboarding.map((entry) => entry.id)).toEqual([
+      "first-contact",
+      "cut-to-the-chase",
+      "frame-by-frame",
+      "fine-tuning",
+      "queued-up",
+      "shortcut-taken",
+    ]);
+    expect(onboarding.every((entry) => entry.kind === "standalone")).toBe(true);
+    expect(onboarding.some((entry) => "secret" in entry && entry.secret)).toBe(false);
+    expect(standalone("cut-to-the-chase").condition).toEqual({
+      event: "meaningful-trim",
+      kind: "event",
+    });
   });
 });
 
@@ -412,7 +433,7 @@ describe("collector evaluation", () => {
       }
     }
     expect(new Set(earned).size).toBe(earned.length);
-    expect(earned).toHaveLength(24);
+    expect(earned).toHaveLength(25);
   });
 
   it("earns the collector together with the final tier that completes it", () => {
@@ -427,7 +448,7 @@ describe("collector evaluation", () => {
           sourceBytes: 300 * MEGABYTE,
         },
       }),
-    ).toEqual(["storage-saver-bronze", "bronze-collector"]);
+    ).toEqual(["storage-saver-bronze", "first-contact", "bronze-collector"]);
   });
 
   it("retroactively unlocks collectors from tiers unlocked before they existed", () => {
@@ -650,7 +671,7 @@ describe("shared fixtures", () => {
     expect(getEarnedAchievementIds(partiallyUnlockedAchievementScenario)).toEqual([]);
   });
 
-  it("agree with the evaluation: the complete records are what the complete statistics earn", () => {
+  it("includes every retroactively provable achievement in the complete records", () => {
     const earned = getEarnedAchievementIds({
       records: {
         ...emptyAchievementRecords,
@@ -659,8 +680,9 @@ describe("shared fixtures", () => {
       statistics: completeAchievementStatistics,
     });
 
-    expect([...earned].sort()).toEqual(
-      Object.keys(completeAchievementRecords.unlockedAchievements).sort(),
+    expect(Object.keys(completeAchievementRecords.unlockedAchievements)).toEqual(
+      expect.arrayContaining(earned),
     );
+    expect(earned).toContain("first-contact");
   });
 });

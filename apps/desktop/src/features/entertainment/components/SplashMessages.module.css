@@ -31,8 +31,8 @@
 .corruptedSignal {
   color: #f3f4f6;
   text-shadow:
-    -2px 0 #ff354f,
-    2px 0 #27d8f2;
+    -0.125rem 0 #ff354f,
+    0.125rem 0 #27d8f2;
   animation: splash-signal-glitch 6s steps(1, end) infinite;
 }
 
@@ -56,13 +56,13 @@
 
 .chosenFrame svg {
   color: var(--primary);
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--primary) 60%, transparent));
+  filter: drop-shadow(0 0 0.25rem color-mix(in srgb, var(--primary) 60%, transparent));
 }
 
 .frameNotFound {
   position: relative;
   color: #ff4b55;
-  text-shadow: 0 0 7px rgb(255 49 61 / 45%);
+  text-shadow: 0 0 0.4375rem rgb(255 49 61 / 45%);
   animation: splash-error-flicker 8.7s steps(1, end) infinite;
 }
 
@@ -87,50 +87,50 @@
     opacity: 1;
     transform: translate(0, 0);
     text-shadow:
-      -2px 0 #ff354f,
-      2px 0 #27d8f2;
+      -0.125rem 0 #ff354f,
+      0.125rem 0 #27d8f2;
   }
 
   /* Primary glitch: left/up */
   28.5% {
     opacity: 0.9;
-    transform: translate(-3px, -1px) skewX(-4deg);
+    transform: translate(-0.1875rem, -0.0625rem) skewX(-4deg);
     text-shadow:
-      -5px 1px #ff354f,
-      5px -1px #27d8f2;
+      -0.3125rem 0.0625rem #ff354f,
+      0.3125rem -0.0625rem #27d8f2;
   }
 
   29.2% {
     opacity: 0.75;
-    transform: translate(-6px, -2px) skewX(-7deg);
+    transform: translate(-0.375rem, -0.125rem) skewX(-7deg);
     text-shadow:
-      -7px 2px #ff354f,
-      7px -2px #27d8f2;
+      -0.4375rem 0.125rem #ff354f,
+      0.4375rem -0.125rem #27d8f2;
   }
 
   /* Snap right/down */
   30% {
     opacity: 1;
-    transform: translate(5px, 2px) skewX(5deg);
+    transform: translate(0.3125rem, 0.125rem) skewX(5deg);
     text-shadow:
-      5px -2px #ff354f,
-      -5px 2px #27d8f2;
+      0.3125rem -0.125rem #ff354f,
+      -0.3125rem 0.125rem #27d8f2;
   }
 
   30.7% {
     opacity: 0.5;
-    transform: translate(2px, -1px);
+    transform: translate(0.125rem, -0.0625rem);
     text-shadow:
-      -3px 0 #ff354f,
-      4px 1px #27d8f2;
+      -0.1875rem 0 #ff354f,
+      0.25rem 0.0625rem #27d8f2;
   }
 
   31.5% {
     opacity: 0.9;
-    transform: translate(-2px, 1px);
+    transform: translate(-0.125rem, 0.0625rem);
     text-shadow:
-      3px 0 #ff354f,
-      -3px 0 #27d8f2;
+      0.1875rem 0 #ff354f,
+      -0.1875rem 0 #27d8f2;
   }
 
   /* Brief signal loss */
@@ -142,51 +142,51 @@
 
   32.8% {
     opacity: 1;
-    transform: translate(3px, -1px);
+    transform: translate(0.1875rem, -0.0625rem);
     text-shadow:
-      -4px 0 #ff354f,
-      4px 0 #27d8f2;
+      -0.25rem 0 #ff354f,
+      0.25rem 0 #27d8f2;
   }
 
   33.5% {
     opacity: 0.8;
-    transform: translate(-1px, 1px);
+    transform: translate(-0.0625rem, 0.0625rem);
     text-shadow:
-      -2px 0 #ff354f,
-      3px 0 #27d8f2;
+      -0.125rem 0 #ff354f,
+      0.1875rem 0 #27d8f2;
   }
 
   /* Secondary glitch: short burst */
   69.5% {
     opacity: 0.8;
-    transform: translate(3px, -2px) skewX(3deg);
+    transform: translate(0.1875rem, -0.125rem) skewX(3deg);
     text-shadow:
-      4px 1px #ff354f,
-      -4px -1px #27d8f2;
+      0.25rem 0.0625rem #ff354f,
+      -0.25rem -0.0625rem #27d8f2;
   }
 
   70.2% {
     opacity: 1;
-    transform: translate(-4px, 1px) skewX(-3deg);
+    transform: translate(-0.25rem, 0.0625rem) skewX(-3deg);
     text-shadow:
-      -5px 0 #ff354f,
-      5px 1px #27d8f2;
+      -0.3125rem 0 #ff354f,
+      0.3125rem 0.0625rem #27d8f2;
   }
 
   70.9% {
     opacity: 0.45;
-    transform: translate(1px, 2px);
+    transform: translate(0.0625rem, 0.125rem);
     text-shadow:
-      2px -1px #ff354f,
-      -3px 1px #27d8f2;
+      0.125rem -0.0625rem #ff354f,
+      -0.1875rem 0.0625rem #27d8f2;
   }
 
   71.5% {
     opacity: 1;
-    transform: translate(-2px, 0);
+    transform: translate(-0.125rem, 0);
     text-shadow:
-      -3px 0 #ff354f,
-      3px 0 #27d8f2;
+      -0.1875rem 0 #ff354f,
+      0.1875rem 0 #27d8f2;
   }
 }
 
@@ -213,7 +213,7 @@
     opacity: 1;
     transform: translate(0, 0);
     filter: brightness(1);
-    text-shadow: 0 0 7px rgb(255 49 61 / 45%);
+    text-shadow: 0 0 0.4375rem rgb(255 49 61 / 45%);
   }
 
   /* Horror flicker: unstable power */
@@ -229,7 +229,7 @@
   16.1% {
     opacity: 0.75;
     filter: brightness(1.35);
-    text-shadow: 0 0 13px rgb(255 49 61 / 70%);
+    text-shadow: 0 0 0.8125rem rgb(255 49 61 / 70%);
   }
 
   15.1% {
@@ -241,55 +241,55 @@
   18.4% {
     opacity: 0.95;
     filter: brightness(1.6);
-    text-shadow: 0 0 18px rgb(255 49 61 / 90%);
+    text-shadow: 0 0 1.125rem rgb(255 49 61 / 90%);
   }
 
   19.2% {
     opacity: 0.4;
     filter: brightness(0.8);
-    text-shadow: 0 0 3px rgb(255 49 61 / 30%);
+    text-shadow: 0 0 0.1875rem rgb(255 49 61 / 30%);
   }
 
   /* Signal glitch: left/up */
   39.4% {
     opacity: 0.9;
-    transform: translate(-3px, -1px) skewX(-4deg);
+    transform: translate(-0.1875rem, -0.0625rem) skewX(-4deg);
     text-shadow:
-      -5px 1px #ff354f,
-      5px -1px #27d8f2;
+      -0.3125rem 0.0625rem #ff354f,
+      0.3125rem -0.0625rem #27d8f2;
   }
 
   40.1% {
     opacity: 0.75;
-    transform: translate(-6px, -2px) skewX(-7deg);
+    transform: translate(-0.375rem, -0.125rem) skewX(-7deg);
     text-shadow:
-      -7px 2px #ff354f,
-      7px -2px #27d8f2;
+      -0.4375rem 0.125rem #ff354f,
+      0.4375rem -0.125rem #27d8f2;
   }
 
   /* Signal glitch: snap right/down */
   40.8% {
     opacity: 1;
-    transform: translate(5px, 2px) skewX(5deg);
+    transform: translate(0.3125rem, 0.125rem) skewX(5deg);
     text-shadow:
-      5px -2px #ff354f,
-      -5px 2px #27d8f2;
+      0.3125rem -0.125rem #ff354f,
+      -0.3125rem 0.125rem #27d8f2;
   }
 
   41.5% {
     opacity: 0.35;
-    transform: translate(2px, -1px);
+    transform: translate(0.125rem, -0.0625rem);
     text-shadow:
-      -3px 0 #ff354f,
-      4px 1px #27d8f2;
+      -0.1875rem 0 #ff354f,
+      0.25rem 0.0625rem #27d8f2;
   }
 
   42.2% {
     opacity: 0.9;
-    transform: translate(-2px, 1px);
+    transform: translate(-0.125rem, 0.0625rem);
     text-shadow:
-      3px 0 #ff354f,
-      -3px 0 #27d8f2;
+      0.1875rem 0 #ff354f,
+      -0.1875rem 0 #27d8f2;
   }
 
   43% {
@@ -300,24 +300,24 @@
 
   43.7% {
     opacity: 1;
-    text-shadow: 0 0 15px rgb(255 49 61 / 85%);
+    text-shadow: 0 0 0.9375rem rgb(255 49 61 / 85%);
   }
 
   /* Short secondary glitch */
   48% {
     opacity: 0.8;
-    transform: translate(2px, -2px);
+    transform: translate(0.125rem, -0.125rem);
     text-shadow:
-      4px 1px #ff354f,
-      -4px -1px #27d8f2;
+      0.25rem 0.0625rem #ff354f,
+      -0.25rem -0.0625rem #27d8f2;
   }
 
   48.5% {
     opacity: 1;
-    transform: translate(-2px, 1px);
+    transform: translate(-0.125rem, 0.0625rem);
     text-shadow:
-      -2px 0 #ff354f,
-      3px 0 #27d8f2;
+      -0.125rem 0 #ff354f,
+      0.1875rem 0 #27d8f2;
   }
 
   /* Voltage spike */
@@ -325,29 +325,29 @@
     opacity: 1;
     filter: brightness(2);
     text-shadow:
-      0 0 7px #ff354f,
-      0 0 20px rgb(255 49 61 / 95%),
-      0 0 35px rgb(255 49 61 / 65%);
+      0 0 0.4375rem #ff354f,
+      0 0 1.25rem rgb(255 49 61 / 95%),
+      0 0 2.1875rem rgb(255 49 61 / 65%);
   }
 
   68.2% {
     opacity: 0.5;
     filter: brightness(0.7);
-    text-shadow: 0 0 3px rgb(255 49 61 / 30%);
+    text-shadow: 0 0 0.1875rem rgb(255 49 61 / 30%);
   }
 
   68.8% {
     opacity: 1;
     filter: brightness(1.7);
     text-shadow:
-      0 0 12px rgb(255 49 61 / 90%),
-      0 0 25px rgb(255 49 61 / 50%);
+      0 0 0.75rem rgb(255 49 61 / 90%),
+      0 0 1.5625rem rgb(255 49 61 / 50%);
   }
 
   69.5% {
     opacity: 0.85;
     filter: brightness(0.9);
-    text-shadow: 0 0 5px rgb(255 49 61 / 40%);
+    text-shadow: 0 0 0.3125rem rgb(255 49 61 / 40%);
   }
 
   /* Final weak flicker */

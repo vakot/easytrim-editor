@@ -1,5 +1,6 @@
 export {
   Achievements,
+  AchievementsCategoryContent,
   AchievementsCollection,
   AchievementsSummary,
 } from "./components/Achievements";
@@ -10,4 +11,5 @@ export {
   UsageStatisticsContent,
   UsageStatisticsDashboard,
 } from "./components/UsageStatistics";
+export { useHasIncompleteAchievements } from "./hooks/useHasIncompleteAchievements";
 export { useHasNewAchievements } from "./hooks/useHasNewAchievements";

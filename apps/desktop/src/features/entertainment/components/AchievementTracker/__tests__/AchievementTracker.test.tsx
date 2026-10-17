@@ -21,6 +21,7 @@ vi.mock("@/lib/tauri/achievements", () => ({
 vi.mock("@/lib/tauri/statistics", () => ({ getUsageStatistics: mocks.getUsageStatistics }));
 vi.mock("sonner", () => ({ toast: mocks.toast }));
 
+import { achievementAnnouncementQueued } from "@/app/store/slices/achievements-slice";
 import { editingInstanceExportCompleted } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
 import { i18n } from "@/i18n/config";
@@ -92,6 +93,21 @@ describe("AchievementTracker", () => {
       "export-mastery-silver",
     ]);
     expect(mocks.toast).not.toHaveBeenCalled();
+  });
+
+  it("announces a newly unlocked onboarding achievement through the shared tracker", async () => {
+    fakeNativeAchievements();
+    mocks.getUsageStatistics.mockResolvedValue(emptyUsageStatistics);
+    const store = renderTracker();
+    await waitFor(() => expect(store.getState().achievements.initialized).toBe(true));
+
+    act(() => store.dispatch(achievementAnnouncementQueued({ ids: ["fine-tuning"] })));
+
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledTimes(1));
+    expect(mocks.toast).toHaveBeenCalledWith(
+      "Fine Tuning",
+      expect.objectContaining({ description: "Achievement unlocked" }),
+    );
   });
 
   it("gives every tier its own unlock time and keeps earlier unlock times", async () => {
@@ -223,11 +239,14 @@ describe("AchievementTracker", () => {
       expect(mocks.unlockAchievements).toHaveBeenCalledTimes(1);
       expect(mocks.unlockAchievements).toHaveBeenCalledWith([
         "storage-saver-bronze",
+        "first-contact",
         "bronze-collector",
       ]);
       expect(mocks.toast).toHaveBeenCalledWith(
-        "2 achievements unlocked",
-        expect.objectContaining({ description: "Storage Saver Bronze, Bronze Collector" }),
+        "3 achievements unlocked",
+        expect.objectContaining({
+          description: "Storage Saver Bronze, First Contact, Bronze Collector",
+        }),
       );
       expect(nativeRecords().unlockedAchievements["bronze-collector"]).toBeGreaterThan(500);
       expect(nativeRecords().unlockedAchievements["silver-collector"]).toBeUndefined();

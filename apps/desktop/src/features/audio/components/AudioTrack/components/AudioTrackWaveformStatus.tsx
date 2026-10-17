@@ -79,7 +79,7 @@ function AudioTrackWaveformOverlay({
     >
       <div
         className={cn(
-          "flex max-w-full items-center gap-1.5 rounded-full border border-border bg-background/85 px-2.5 py-0.5 text-[11px] shadow-sm",
+          "flex max-w-full items-center gap-1.5 rounded-full border border-border bg-background/85 px-2.5 py-0.5 text-[0.6875rem] shadow-sm",
           interactive && "pointer-events-auto",
         )}
       >

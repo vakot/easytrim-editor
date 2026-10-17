@@ -13,3 +13,14 @@
     display: none;
   }
 }
+
+.achievements {
+  display: none;
+}
+
+/* Fit six compact cards in one column beside the welcome content. */
+@container empty-preview (min-width: 56rem) and (min-height: 38rem) {
+  .achievements:not(:empty) {
+    display: flex;
+  }
+}

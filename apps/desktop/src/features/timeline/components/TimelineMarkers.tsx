@@ -81,7 +81,7 @@ function TimelineMarkersSceneActivity() {
       {scenes.map((micros) => (
         <MotionMarker
           {...MARKER_ANIMATION}
-          className="inset-y-0 border-l-2 border-destructive/70 bg-transparent"
+          className="inset-y-0 border-l-[0.125rem] border-destructive/70 bg-transparent"
           key={micros}
           micros={micros}
           transition={{ duration: shouldReduceMotion ? 0 : 0.25, ease: "easeOut" }}
@@ -123,7 +123,7 @@ function TimelineMarkersChapters() {
             {/* The triangle is centered in a larger hit area. */}
             <span
               aria-hidden="true"
-              className="absolute top-1/2 left-1/2 -translate-1/2 border-x-4 border-t-6 border-x-transparent border-t-primary"
+              className="absolute top-1/2 left-1/2 -translate-1/2 border-x-[0.25rem] border-t-[0.375rem] border-x-transparent border-t-primary"
             />
             <span
               aria-hidden="true"

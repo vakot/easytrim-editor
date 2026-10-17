@@ -1,1 +1,6 @@
-export { Achievements, AchievementsCollection, AchievementsSummary } from "./Achievements";
+export {
+  Achievements,
+  AchievementsCategoryContent,
+  AchievementsCollection,
+  AchievementsSummary,
+} from "./Achievements";

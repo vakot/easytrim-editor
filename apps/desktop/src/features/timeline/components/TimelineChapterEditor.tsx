@@ -20,11 +20,11 @@ const HANDLE_CLASS_NAME = "group top-0 bottom-auto z-30 h-3.5";
 // The grips light up with the bar between them, which they are siblings of.
 const GRIP_HANDLE_CLASS_NAME = cn(
   HANDLE_CLASS_NAME,
-  "peer-focus-visible/move:*:ring-3 peer-focus-visible/move:*:ring-ring/50",
+  "peer-focus-visible/move:*:ring-[0.1875rem] peer-focus-visible/move:*:ring-ring/50",
 );
 
 const FOCUS_CLASS_NAME =
-  "group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-data-snap-active:ring-3";
+  "group-focus-visible:ring-[0.1875rem] group-focus-visible:ring-ring/50 group-data-snap-active:ring-[0.1875rem]";
 
 /**
  * A compact editor for the position of the edited chapter, drawn along the top of the timeline:

@@ -63,12 +63,16 @@ function useTimelinePlayback() {
       getPositionMicros: position,
       /** Moves to the frame boundary nearest `micros`. */
       seekTime: (micros: number) => controller.seek(nearestBoundaryMicros(index, micros)),
-      stepFrame: (direction: -1 | 1) => {
+      stepFrame: (direction: -1 | 1): boolean => {
         controller.pause();
         const from = position();
-        controller.seek(
-          direction > 0 ? nextBoundaryMicros(index, from) : previousBoundaryMicros(index, from),
-        );
+        const next =
+          direction > 0 ? nextBoundaryMicros(index, from) : previousBoundaryMicros(index, from);
+
+        if (next === from) return false;
+
+        controller.seek(next);
+        return true;
       },
     };
   }, [controller, index]);

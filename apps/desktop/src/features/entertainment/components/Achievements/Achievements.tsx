@@ -160,23 +160,53 @@ function AchievementsList({
 
   return (
     <div className="flex flex-col gap-5 pb-4">
-      {achievementCategories.map((category) => {
-        const entries = visible.filter((entry) => entry.category === category);
-        if (entries.length === 0) return null;
-
-        return (
-          <AchievementsCategory key={category} title={achievementCategoryLabel(category, t)}>
-            {entries.map((entry) =>
-              entry.kind === "series" ? (
-                <AchievementSeriesItem key={entry.id} series={entry} />
-              ) : (
-                <AchievementStandaloneItem definition={entry} key={entry.id} />
-              ),
-            )}
-          </AchievementsCategory>
-        );
-      })}
+      {achievementCategories.map((category) => (
+        <AchievementsCategoryContent category={category} filter={filter} key={category} />
+      ))}
     </div>
+  );
+}
+
+/** A read-only category surface; mounting it does not mark the collection viewed. */
+function AchievementsCategoryContent({
+  category,
+  compact = false,
+  filter = "all",
+  presentation = "achievement",
+}: {
+  category: AchievementCategory;
+  compact?: boolean;
+  filter?: AchievementsFilter;
+  presentation?: "achievement" | "onboarding";
+}) {
+  const { t } = useTranslation();
+  const records = useAppSelector(selectAchievementRecords);
+  if (!records) return null;
+
+  const entries = achievementCollection.filter(
+    (entry) =>
+      entry.category === category &&
+      (filter === "all" ||
+        (filter === "unlocked" ? isEntryUnlocked(entry, records) : isEntryLocked(entry, records))),
+  );
+
+  if (entries.length === 0) return null;
+
+  return (
+    <AchievementsCategory compact={compact} title={achievementCategoryLabel(category, t)}>
+      {entries.map((entry) =>
+        entry.kind === "series" ? (
+          <AchievementSeriesItem key={entry.id} series={entry} />
+        ) : (
+          <AchievementStandaloneItem
+            compact={compact}
+            definition={entry}
+            key={entry.id}
+            presentation={presentation}
+          />
+        ),
+      )}
+    </AchievementsCategory>
   );
 }
 
@@ -195,6 +225,8 @@ function achievementCategoryLabel(category: AchievementCategory, t: TFunction): 
   switch (category) {
     case "export-milestones":
       return t("achievements.categories.exportMilestones");
+    case "getting-started":
+      return t("achievements.categories.gettingStarted");
     case "processing-milestones":
       return t("achievements.categories.processingMilestones");
     case "secret-discoveries":
@@ -202,4 +234,4 @@ function achievementCategoryLabel(category: AchievementCategory, t: TFunction): 
   }
 }
 
-export { Achievements, AchievementsCollection, AchievementsSummary };
+export { Achievements, AchievementsCategoryContent, AchievementsCollection, AchievementsSummary };

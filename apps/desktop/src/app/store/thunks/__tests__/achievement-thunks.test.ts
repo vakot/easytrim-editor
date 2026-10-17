@@ -8,7 +8,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/tauri/achievements", () => mocks);
 
-import { selectAchievementRecords } from "@/app/store/slices/achievements-slice";
+import {
+  selectAchievementAnnouncementQueue,
+  selectAchievementRecords,
+} from "@/app/store/slices/achievements-slice";
 import { createAppStore } from "@/app/store/store";
 import {
   discoverSplashMessage,
@@ -41,6 +44,19 @@ describe("achievement thunks", () => {
       store.dispatch(unlockAchievements(["first-export", "getting-started"])),
     ).resolves.toEqual(["first-export"]);
     expect(selectAchievementRecords(store.getState())).toEqual(records);
+  });
+
+  it("queues only newly unlocked interactive achievements for the shared notification tracker", async () => {
+    const store = createStore();
+    const records = { ...empty, unlockedAchievements: { "first-contact": 1_000 } };
+    mocks.unlockAchievements.mockResolvedValue({
+      records,
+      unlockedAchievementIds: ["first-contact"],
+    });
+
+    await store.dispatch(unlockAchievements(["first-contact"], { announce: true }));
+
+    expect(selectAchievementAnnouncementQueue(store.getState())).toEqual(["first-contact"]);
   });
 
   it("unlocks nothing when there is nothing to unlock and reports a native failure", async () => {

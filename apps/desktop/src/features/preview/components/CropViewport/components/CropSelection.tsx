@@ -56,7 +56,7 @@ function CropSelection({
   return (
     <motion.div
       animate={{ ...selectionRect(sourceCrop), opacity: 1 }}
-      className="absolute border-2 border-primary bg-primary/10"
+      className="absolute border-[0.125rem] border-primary bg-primary/10"
       data-crop-selection
       data-selection-geometry="normalized"
       data-source-crop-height={sourceCrop.height}
@@ -108,7 +108,7 @@ function CropSelection({
           <button
             aria-label={handleLabels[visualHandle]}
             className={cn(
-              "absolute z-10 size-4 rounded-full border-2 border-background bg-primary",
+              "absolute z-10 size-4 rounded-full border-[0.125rem] border-background bg-primary",
               className,
               resizeCursor(visualHandle),
             )}

@@ -115,6 +115,29 @@ export const Locked: Story = {
   args: { records: emptyAchievementRecords, statistics: emptyUsageStatistics },
 };
 
+/** All onboarding achievements are waiting for their corresponding first successful actions. */
+export const GettingStartedLocked: Story = {
+  args: { records: emptyAchievementRecords, statistics: emptyUsageStatistics },
+};
+
+/** Shows onboarding cards after each first action, with their persisted unlock timestamps. */
+export const GettingStartedUnlocked: Story = {
+  args: {
+    records: {
+      ...emptyAchievementRecords,
+      unlockedAchievements: {
+        "first-contact": Date.UTC(2026, 9, 12, 18, 30),
+        "cut-to-the-chase": Date.UTC(2026, 9, 12, 18, 31),
+        "frame-by-frame": Date.UTC(2026, 9, 12, 18, 32),
+        "fine-tuning": Date.UTC(2026, 9, 12, 18, 33),
+        "queued-up": Date.UTC(2026, 9, 12, 18, 34),
+        "shortcut-taken": Date.UTC(2026, 9, 12, 18, 35),
+      },
+    },
+    statistics: { ...emptyUsageStatistics, sourceBytes: 1 },
+  },
+};
+
 export const Bronze: Story = {
   args: {
     records: deriveAchievementRecords(statisticsByTier.bronze),
