@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Added a view selector to the Activity Feed dialog.
 - Added a Statistics dialog, opened from the workspace toolbar, that tracks your completed exports, processing time, data processed, and storage saved across sessions. Statistics are kept only on this device.
 - Added Achievements, opened from the workspace toolbar: Bronze, Silver, and Gold milestones for your exports, processing time, data processed, and storage saved, plus secret achievements to discover. Each card shows your current tier and progress toward the next, and new unlocks get a brief notification. Achievements you have already earned unlock automatically, and everything is kept only on this device.
+- Added Getting Started tasks that track your first editing actions and appear beside the empty preview until completed.
 - Audio filter changes play live while the Audio filters dialog is open, before you apply them, including loudness normalization, with a status line that shows when the preview is ready. Space and the arrow keys control playback while the dialog is open, and applying or changing filters during playback no longer interrupts the audio.
 
 ### Changed
@@ -25,6 +26,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- UI borders, focus rings, and decorative effects now scale consistently with UI Scaling.
 - Scroll fades at the edges of lists and panels now stay crisp and correctly sized at every UI scale.
 - Audio waveforms now line up with the sound on the Timeline instead of drifting later through longer videos or when the audio starts after the video.
 - The playback speed slider now shows the speed multiplier while dragging instead of an internal step number.
