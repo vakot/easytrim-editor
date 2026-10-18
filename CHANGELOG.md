@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Added global Workspace History with Undo/Redo, a customizable history panel, and history restoration after restart.
+- Added per-track Sync Offset controls and waveform-based alignment on the video timeline, with matching playback and export timing.
 
 ## [1.14.0]
 
