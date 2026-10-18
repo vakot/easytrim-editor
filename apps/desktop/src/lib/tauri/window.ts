@@ -1,7 +1,7 @@
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
-import { clearWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
+import { retainWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
 
 const WINDOW_SHUTDOWN_REQUESTED = "easytrim:window-shutdown-requested";
 
@@ -51,7 +51,7 @@ function requestWindowShutdown(continuation?: WindowShutdownContinuation): Promi
 }
 
 async function completeShutdown(continuation?: WindowShutdownContinuation) {
-  await clearWorkspaceRecoveryOnAcceptedShutdown();
+  await retainWorkspaceRecoveryOnAcceptedShutdown();
 
   if (continuation) {
     await continuation();

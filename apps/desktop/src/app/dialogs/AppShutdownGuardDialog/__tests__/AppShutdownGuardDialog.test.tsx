@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { clearWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
+import { retainWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
 
 import { AppShutdownGuardDialog } from "../AppShutdownGuardDialog";
 
@@ -43,7 +43,7 @@ describe("AppShutdownGuardDialog", () => {
     onShutdownRequested = undefined;
     windowActions.completeShutdown.mockImplementation(
       async (continuation?: () => void | Promise<void>) => {
-        await clearWorkspaceRecoveryOnAcceptedShutdown();
+        await retainWorkspaceRecoveryOnAcceptedShutdown();
 
         if (continuation) {
           await continuation();
@@ -66,7 +66,7 @@ describe("AppShutdownGuardDialog", () => {
     );
   });
 
-  it("clears recovery only after accepting a close request with no active exports", async () => {
+  it("leaves unrecognized current recovery data untouched after an accepted close", async () => {
     localStorage.setItem("easytrim:workspace-recovery:current", "current");
     localStorage.setItem("easytrim:workspace-recovery:candidate", "candidate");
     render(<AppShutdownGuardDialog />);
@@ -74,7 +74,7 @@ describe("AppShutdownGuardDialog", () => {
     await waitFor(() => expect(onCloseRequested).toBeDefined());
     onCloseRequested?.();
     await waitFor(() => expect(windowActions.destroyWindow).toHaveBeenCalledOnce());
-    expect(localStorage.getItem("easytrim:workspace-recovery:current")).toBeNull();
+    expect(localStorage.getItem("easytrim:workspace-recovery:current")).toBe("current");
     expect(localStorage.getItem("easytrim:workspace-recovery:candidate")).toBeNull();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });

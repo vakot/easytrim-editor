@@ -3,6 +3,7 @@ import {
   migrateAudioTrackProcessing,
   migrateAudioTrackSelection,
 } from "@/domain/legacy-audio-processing";
+import { WorkspaceHistory } from "@/domain/workspace-history";
 
 import type { WorkspaceRecoveryBackup } from "./workspace-recovery.types";
 
@@ -118,6 +119,17 @@ function migrateBackupAudio(value: unknown): unknown {
   };
 }
 
+function validateBackupHistory(value: unknown): unknown {
+  if (!isRecord(value) || !Object.hasOwn(value, "history")) return value;
+  try {
+    return { ...value, history: new WorkspaceHistory(value.history).snapshot() };
+  } catch {
+    const workspace = { ...value };
+    delete workspace.history;
+    return workspace;
+  }
+}
+
 /** Stored export requests are replayed natively, so their audio tracks are migrated as well. */
 function migrateRequestAudioTracks(request: unknown): unknown {
   if (!isRecord(request) || !Array.isArray(request.audioTracks)) return request;
@@ -227,7 +239,7 @@ function readBackup(key: string): WorkspaceRecoveryBackup | null {
   try {
     const serialized = localStorage.getItem(key);
     if (!serialized) return null;
-    const value: unknown = migrateBackupAudio(JSON.parse(serialized));
+    const value: unknown = validateBackupHistory(migrateBackupAudio(JSON.parse(serialized)));
     return isBackup(value) ? value : null;
   } catch {
     return null;
@@ -250,6 +262,12 @@ function readRecoveryCandidate(): WorkspaceRecoveryBackup | null {
   return readBackup(CANDIDATE_KEY);
 }
 
+function hasRecoverableWorkspace(
+  backup: WorkspaceRecoveryBackup | null,
+): backup is WorkspaceRecoveryBackup {
+  return Boolean(backup && (backup.instances.length > 0 || backup.history?.operations.length));
+}
+
 function writeCurrentBackup(backup: WorkspaceRecoveryBackup): void {
   writeBackup(CURRENT_KEY, backup);
 }
@@ -257,13 +275,14 @@ function writeCurrentBackup(backup: WorkspaceRecoveryBackup): void {
 function promoteCurrentBackupToCandidate(): WorkspaceRecoveryBackup | null {
   const current = readCurrentBackup();
   try {
-    if (current?.instances.length) localStorage.setItem(CANDIDATE_KEY, JSON.stringify(current));
+    if (hasRecoverableWorkspace(current))
+      localStorage.setItem(CANDIDATE_KEY, JSON.stringify(current));
     else localStorage.removeItem(CANDIDATE_KEY);
   } catch (error: unknown) {
     console.warn("[workspace-recovery] Previous session could not be retained", error);
     return null;
   }
-  return current?.instances.length ? current : null;
+  return hasRecoverableWorkspace(current) ? current : null;
 }
 
 function clearWorkspaceRecovery(): void {

@@ -1,5 +1,6 @@
 import { createEditorSnapshotFromState } from "@/app/store/integration/editor-snapshot";
 import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
+import { selectWorkspaceHistory } from "@/app/store/slices/workspace-history-slice";
 import type { AppStore, RootState } from "@/app/store/store";
 import type { EditingInstance, ExportAttempt } from "@/domain/editing-instance";
 import { EMPTY_EXPORT_METRICS } from "@/domain/editing-instance";
@@ -116,11 +117,13 @@ function createWorkspaceRecoveryBackup(
   previous?: Partial<Pick<WorkspaceRecoveryBackup, "createdAt" | "id" | "sessionId">> | null,
 ): WorkspaceRecoveryBackup {
   const now = new Date().toISOString();
+  const history = selectWorkspaceHistory(state);
   return {
     activeInstanceId: state.editingInstances.activeInstanceId,
     createdAt: previous?.createdAt ?? now,
     id: previous?.id ?? crypto.randomUUID(),
     instances: selectEditingInstances(state).map((instance) => toRecoveryInstance(instance, state)),
+    ...(history.operations.length > 0 ? { history } : {}),
     sessionId: previous?.sessionId ?? "",
     updatedAt: now,
     version: 2,
@@ -132,12 +135,11 @@ function initializeWorkspaceRecovery(
   sessionId: string,
   previousSessionWasAbnormal: boolean,
 ): void {
-  candidate = previousSessionWasAbnormal ? promoteCurrentBackupToCandidate() : null;
+  candidate = previousSessionWasAbnormal
+    ? promoteCurrentBackupToCandidate()
+    : readRecoveryCandidate();
   candidateDismissed = false;
-  if (!previousSessionWasAbnormal) {
-    // A stale candidate must never be presented after diagnostics reports a clean startup.
-    clearWorkspaceRecovery();
-  }
+  if (!previousSessionWasAbnormal && !candidate) clearWorkspaceRecovery();
   if (candidate) {
     diagnostics.event("workspace.recovery.available", {
       data: {
@@ -155,9 +157,12 @@ function initializeWorkspaceRecovery(
     // Until this session has work of its own, the stored current backup still belongs to the
     // previous crashed session. Overwriting it with an empty workspace would discard it if the
     // app crashes again before the user resumes.
-    if (!previousBackup && selectEditingInstances(store.getState()).length === 0) return;
+    const state = store.getState();
+    const history = selectWorkspaceHistory(state);
+    if (!previousBackup && selectEditingInstances(state).length === 0 && !history.operations.length)
+      return;
 
-    const backup = createWorkspaceRecoveryBackup(store.getState(), {
+    const backup = createWorkspaceRecoveryBackup(state, {
       createdAt: previousBackup?.createdAt,
       id: previousBackup?.id,
       sessionId,
@@ -173,10 +178,9 @@ function initializeWorkspaceRecovery(
   save();
 }
 
-async function clearWorkspaceRecoveryOnAcceptedShutdown(): Promise<void> {
-  clearWorkspaceRecovery();
-  candidate = null;
-  candidateDismissed = true;
+async function retainWorkspaceRecoveryOnAcceptedShutdown(): Promise<void> {
+  candidate = promoteCurrentBackupToCandidate();
+  candidateDismissed = false;
   notifyCandidateChanged();
 }
 
@@ -185,12 +189,12 @@ function getWorkspaceRecoveryCandidateSnapshot(): WorkspaceRecoveryBackup | null
 }
 
 export {
-  clearWorkspaceRecoveryOnAcceptedShutdown,
   createWorkspaceRecoveryBackup,
   dismissWorkspaceRecoveryNotice,
   getWorkspaceRecoveryCandidate,
   getWorkspaceRecoveryCandidateSnapshot,
   initializeWorkspaceRecovery,
   isWorkspaceRecoveryNoticeDismissed,
+  retainWorkspaceRecoveryOnAcceptedShutdown,
   subscribeToWorkspaceRecovery,
 };

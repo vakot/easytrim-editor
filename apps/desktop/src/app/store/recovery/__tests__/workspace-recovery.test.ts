@@ -13,6 +13,12 @@ import {
 } from "@/app/store/slices/editing-instances-slice";
 import { exportArgumentsChanged } from "@/app/store/slices/export-presets-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
+import {
+  historyOperationRecorded,
+  historyReplayFinished,
+  historyReplayStarted,
+  selectWorkspaceHistory,
+} from "@/app/store/slices/workspace-history-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt } from "@/domain/editing-instance";
 import { firstSource, mediaWithAudio, secondSource } from "@/test/source.fixtures";
@@ -22,6 +28,7 @@ import {
   dismissWorkspaceRecoveryNotice,
   getWorkspaceRecoveryCandidate,
   initializeWorkspaceRecovery,
+  retainWorkspaceRecoveryOnAcceptedShutdown,
 } from "../workspace-recovery";
 
 const CURRENT_KEY = "easytrim:workspace-recovery:current";
@@ -65,6 +72,83 @@ beforeEach(() => {
 });
 
 describe("workspace recovery contract", () => {
+  it("serializes history including its selected position and redo branch", () => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded([instance("history", firstSource)]));
+    store.dispatch(
+      historyOperationRecorded({
+        changes: [
+          {
+            after: { present: true, value: { endMicros: 4_000_000, startMicros: 500_000 } },
+            before: { present: true, value: { kind: "full-source" } },
+            field: "trim",
+            target: { instanceId: "history", kind: "instance", sourceId: firstSource.sourcePath },
+          },
+        ],
+        id: "persisted-trim",
+        kind: "state",
+        label: "Adjust trim",
+        role: "edit",
+        timestamp: 100,
+      }),
+    );
+    store.dispatch(historyReplayStarted());
+    store.dispatch(historyReplayFinished({ position: 0 }));
+    const history = selectWorkspaceHistory(store.getState());
+    const backup = createWorkspaceRecoveryBackup(store.getState(), { sessionId: "session" });
+    localStorage.setItem(CURRENT_KEY, JSON.stringify(JSON.parse(JSON.stringify(backup))));
+    initializeWorkspaceRecovery(createAppStore(), "next", true);
+
+    expect(getWorkspaceRecoveryCandidate()?.history).toEqual(history);
+  });
+
+  it("accepts existing recovery documents without a history field", () => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded([instance("legacy", firstSource)]));
+    const backup = createWorkspaceRecoveryBackup(store.getState(), { sessionId: "legacy" });
+    delete (backup as { history?: unknown }).history;
+    localStorage.setItem(CURRENT_KEY, JSON.stringify(backup));
+    initializeWorkspaceRecovery(createAppStore(), "next", true);
+
+    expect(getWorkspaceRecoveryCandidate()?.instances[0]?.id).toBe("legacy");
+    expect(getWorkspaceRecoveryCandidate()).not.toHaveProperty("history");
+  });
+
+  it.each([
+    { operations: [], position: 0, version: 99 },
+    { operations: [{ id: "broken" }], position: 1, version: 1 },
+  ])("ignores invalid history without discarding valid workspace data", (history) => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded([instance("valid", firstSource)]));
+    const backup = createWorkspaceRecoveryBackup(store.getState(), { sessionId: "session" });
+    localStorage.setItem(CURRENT_KEY, JSON.stringify({ ...backup, history }));
+    initializeWorkspaceRecovery(createAppStore(), "next", true);
+
+    expect(getWorkspaceRecoveryCandidate()?.instances.map(({ id }) => id)).toEqual(["valid"]);
+    expect(getWorkspaceRecoveryCandidate()).not.toHaveProperty("history");
+  });
+
+  it("retains the workspace and history across a normal restart", async () => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded([instance("restart", firstSource)]));
+    store.dispatch(
+      historyOperationRecorded({
+        affected: [{ instanceId: "restart", kind: "instance", sourceId: firstSource.sourcePath }],
+        id: "restart-event",
+        kind: "information",
+        label: "Imported source",
+        payload: {},
+        timestamp: 100,
+      }),
+    );
+    initializeWorkspaceRecovery(store, "session", false);
+    await retainWorkspaceRecoveryOnAcceptedShutdown();
+    initializeWorkspaceRecovery(createAppStore(), "next-session", false);
+
+    expect(getWorkspaceRecoveryCandidate()?.instances[0]?.id).toBe("restart");
+    expect(getWorkspaceRecoveryCandidate()?.history?.operations).toHaveLength(1);
+  });
+
   it("preserves source order, the active current draft, settings, and completed export history", () => {
     const store = createAppStore();
     const first = instance("first", firstSource);

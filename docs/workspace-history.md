@@ -100,11 +100,17 @@ Direct navigation can select every position, including positions containing only
 Recording a nonempty operation at a past position replaces the future branch; no-op recording
 preserves it. Ordinary Undo/Redo at an endpoint returns false.
 
-## Recovery boundary
+## Workspace Recovery
 
-`snapshot()` produces an isolated version-1 JSON document containing committed entries and the
-selected position, including the redo branch. `new WorkspaceHistory(parsedDocument)` validates
-and restores this document; it does not apply it to editor state. Recovery must separately restore
-a matching workspace baseline/current durable state and stable identities before enabling replay.
-Never persist an open group or in-flight transition as a committed workspace state. There are no
-persistence side effects, filesystem operations, or recovery integrations in this stage.
+Workspace Recovery stores the isolated version-1 history document alongside the existing Editing
+Instance snapshots and active identity. It includes committed entries, the current position, and the
+redo branch; open interaction groups and in-flight replay locks remain runtime-only. Recovery
+validates history independently from the workspace document, so missing, malformed, or unsupported
+history is ignored while otherwise valid instances and snapshots remain recoverable. Older recovery
+documents without a history field continue to load with an empty timeline.
+
+History is written through the existing recovery save boundary and retained at accepted shutdown so
+both normal restarts and crash recovery can restore the workspace and its timeline. Restore source
+availability and stable Editing Instance identities before hydrating the committed history. Replay
+continues through the normal editor and asynchronous lifecycle adapters, so unavailable sources or
+failed external operations reject transitions without advancing the restored cursor.

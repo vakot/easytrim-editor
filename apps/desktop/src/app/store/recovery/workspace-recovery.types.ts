@@ -5,6 +5,7 @@ import type {
   InstanceOrigin,
 } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
+import type { HistoryData } from "@/domain/workspace-history";
 
 export interface WorkspaceRecoveryInstance {
   exportAttempts: ExportAttempt[];
@@ -22,6 +23,7 @@ export interface WorkspaceRecoveryInstance {
 export interface WorkspaceRecoveryBackup {
   activeInstanceId: EditingInstanceId | null;
   createdAt: string;
+  history?: HistoryData;
   id: string;
   instances: WorkspaceRecoveryInstance[];
   sessionId: string;

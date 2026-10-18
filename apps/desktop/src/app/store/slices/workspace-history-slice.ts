@@ -38,6 +38,7 @@ const historyOperationRecorded = createAction<HistoryOperation>(
 
 const historyReplayStarted = createAction("workspaceHistory/replayStarted");
 const historyReplayFinished = createAction<{ position: number }>("workspaceHistory/replayFinished");
+const workspaceHistoryRestored = createAction<HistoryData>("workspaceHistory/restored");
 const workspaceHistorySlice = createSlice({
   name: "workspaceHistory",
   initialState,
@@ -150,6 +151,13 @@ const workspaceHistorySlice = createSlice({
       .addCase(historyReplayFinished, (state, action) => {
         state.position = action.payload.position;
         state.replaying = false;
+      })
+      .addCase(workspaceHistoryRestored, (state, action) => {
+        state.version = 1;
+        state.operations = action.payload.operations;
+        state.position = action.payload.position;
+        state.interaction = null;
+        state.replaying = false;
       }),
 });
 
@@ -169,4 +177,5 @@ export {
   historyReplayStarted,
   selectWorkspaceHistory,
   workspaceHistoryReducer,
+  workspaceHistoryRestored,
 };

@@ -61,7 +61,7 @@ unchanged. The relevant boundaries are:
 | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Activity history, diagnostics logs/reports, heartbeat and crash-recovery marker | Native diagnostics under the selected Tauri `app_data_dir`                                                |
 | Achievements, splash discoveries, viewed markers, usage statistics              | Existing native stores under `app_data_dir`; no disk reads/writes for fresh progress                      |
-| Workspace Recovery and its export-queue snapshots                               | Existing `localStorage` keys in the selected WebView store                                                |
+| Workspace Recovery, global Workspace History, and export-queue snapshots        | Existing `localStorage` keys in the selected WebView store                                                |
 | Preferences, Redux Persist, export presets, i18n preferences, panel layout      | Selected WebView store, including existing legacy local-storage readers                                   |
 | Window-state plugin                                                             | Selected identifier's `app_config_dir`                                                                    |
 | Thumbnail disk cache                                                            | Selected identifier's `app_cache_dir`                                                                     |
