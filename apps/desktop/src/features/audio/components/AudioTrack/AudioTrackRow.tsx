@@ -18,9 +18,9 @@ import {
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioFilterPreview } from "@/app/store/slices/audio-slice";
 import {
+  audioSyncOffsetRange,
   audioTimelineBoundaries,
   effectiveAudioOffsetMicros,
-  MAX_AUDIO_SYNC_OFFSET_MICROS,
 } from "@/domain/audio-processing";
 import { useTimelinePlayback } from "@/features/playback";
 
@@ -137,6 +137,12 @@ function AudioTrackRowWaveform({
     syncOffset ?? undefined,
   );
 
+  const syncOffsetRange = audioSyncOffsetRange(
+    durationMicros,
+    stream.startTimeMicros,
+    stream.durationMicros,
+  );
+
   const unavailableRanges = getUnavailableAudioRanges(audioBoundaries, durationMicros);
 
   return (
@@ -163,9 +169,9 @@ function AudioTrackRowWaveform({
 
           const currentOffsetMicros = effectiveAudioOffsetMicros(syncOffset ?? undefined);
           const offsetMicros = Math.max(
-            -MAX_AUDIO_SYNC_OFFSET_MICROS,
+            syncOffsetRange.minOffsetMicros,
             Math.min(
-              MAX_AUDIO_SYNC_OFFSET_MICROS,
+              syncOffsetRange.maxOffsetMicros,
               Math.round(getPositionMicros() + currentOffsetMicros - position.micros),
             ),
           );

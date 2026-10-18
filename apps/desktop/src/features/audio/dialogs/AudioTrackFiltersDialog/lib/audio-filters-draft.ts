@@ -3,10 +3,11 @@ import {
   type AudioFilter,
   type AudioFilterType,
   type AudioSyncOffset,
+  type AudioSyncOffsetRange,
   createAudioFilter,
   insertAudioFilter,
   MAX_AUDIO_FILTERS,
-  MAX_AUDIO_SYNC_OFFSET_MICROS,
+  isAudioSyncOffsetWithinRange,
   moveAudioFilter,
   removeAudioFilter,
   replaceAudioFilter,
@@ -119,12 +120,16 @@ function isAudioFiltersDraftDirty(draft: AudioFiltersDraft): boolean {
   );
 }
 
-function isAudioFiltersDraftValid(draft: AudioFiltersDraft): boolean {
+function isAudioFiltersDraftValid(
+  draft: AudioFiltersDraft,
+  syncOffsetRange?: AudioSyncOffsetRange,
+): boolean {
   return (
     areAudioFiltersValid(draft.filters) &&
     (draft.syncOffset === null ||
       (Number.isSafeInteger(draft.syncOffset.offsetMicros) &&
-        Math.abs(draft.syncOffset.offsetMicros) <= MAX_AUDIO_SYNC_OFFSET_MICROS))
+        (!syncOffsetRange ||
+          isAudioSyncOffsetWithinRange(draft.syncOffset.offsetMicros, syncOffsetRange))))
   );
 }
 

@@ -1,10 +1,13 @@
 import { createContext, type Dispatch, useContext } from "react";
 
+import type { AudioSyncOffsetRange } from "@/domain/audio-processing";
+
 import type { AudioFiltersDraft, AudioFiltersDraftAction } from "../lib/audio-filters-draft";
 
 interface AudioFiltersDraftContextValue {
   dispatch: Dispatch<AudioFiltersDraftAction>;
   draft: AudioFiltersDraft;
+  syncOffsetRange: AudioSyncOffsetRange;
 }
 
 const AudioFiltersDraftContext = createContext<AudioFiltersDraftContextValue | null>(null);

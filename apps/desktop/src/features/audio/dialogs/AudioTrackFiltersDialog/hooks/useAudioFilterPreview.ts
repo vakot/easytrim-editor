@@ -6,6 +6,7 @@ import {
   audioFilterPreviewEnded,
   audioFilterPreviewStarted,
 } from "@/app/store/slices/audio-slice";
+import type { AudioSyncOffsetRange } from "@/domain/audio-processing";
 
 import { type AudioFiltersDraft, isAudioFiltersDraftValid } from "../lib/audio-filters-draft";
 
@@ -19,7 +20,11 @@ const PREVIEW_PUBLISH_MAX_DELAY_MS = 300;
  * is published once edits settle, and at a bounded interval during continuous edits; an invalid
  * draft keeps the last valid one audible. Closing the dialog ends the preview.
  */
-function useAudioFilterPreview(streamIndex: number, draft: AudioFiltersDraft) {
+function useAudioFilterPreview(
+  streamIndex: number,
+  draft: AudioFiltersDraft,
+  syncOffsetRange: AudioSyncOffsetRange,
+) {
   const dispatch = useAppDispatch();
   const [id] = useState(() => crypto.randomUUID());
   const pendingSince = useRef<number | null>(null);
@@ -31,7 +36,7 @@ function useAudioFilterPreview(streamIndex: number, draft: AudioFiltersDraft) {
     };
   }, [dispatch, id, streamIndex]);
 
-  const valid = isAudioFiltersDraftValid(draft);
+  const valid = isAudioFiltersDraftValid(draft, syncOffsetRange);
   const { filters } = draft;
   useEffect(() => {
     if (!valid) return;
@@ -48,7 +53,7 @@ function useAudioFilterPreview(streamIndex: number, draft: AudioFiltersDraft) {
     }, delay);
 
     return () => window.clearTimeout(timer);
-  }, [dispatch, draft.syncOffset, filters, id, valid]);
+  }, [dispatch, draft.syncOffset, filters, id, syncOffsetRange, valid]);
 }
 
 export { useAudioFilterPreview };

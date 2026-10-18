@@ -141,7 +141,6 @@ const MAX_AUDIO_FILTER_ID_LENGTH = 64;
 const DEFAULT_TRACK_VOLUME = 1;
 const MAX_TRACK_VOLUME = 5;
 const TRACK_VOLUME_SLIDER_MAX = 2;
-const MAX_AUDIO_SYNC_OFFSET_MICROS = 10_000_000;
 
 /** Temporal placement on the video timeline, independent of the signal chain. */
 interface AudioSyncOffset {
@@ -157,12 +156,46 @@ interface AudioTimelineBoundaries {
   visibleStartMicros: number;
 }
 
+interface AudioSyncOffsetRange {
+  maxOffsetMicros: number;
+  minOffsetMicros: number;
+}
+
 function isAudioSyncOffsetValid(value: AudioSyncOffset): boolean {
   return typeof value.enabled === "boolean" && Number.isSafeInteger(value.offsetMicros);
 }
 
 function effectiveAudioOffsetMicros(offset?: AudioSyncOffset): number {
   return offset?.enabled ? offset.offsetMicros : 0;
+}
+
+/** Offsets that can place any part of the original stream on the video timeline. */
+function audioSyncOffsetRange(
+  timelineDurationMicros: number,
+  streamStartMicros: number | undefined,
+  streamDurationMicros: number | undefined,
+): AudioSyncOffsetRange {
+  const timelineEnd = Math.max(0, timelineDurationMicros);
+  if (timelineEnd === 0 || streamDurationMicros === 0) {
+    return { maxOffsetMicros: 0, minOffsetMicros: 0 };
+  }
+
+  const boundaries = audioTimelineBoundaries(timelineEnd, streamStartMicros, streamDurationMicros);
+  return {
+    maxOffsetMicros: Math.min(
+      Number.MAX_SAFE_INTEGER,
+      timelineEnd - boundaries.effectiveStartMicros,
+    ),
+    minOffsetMicros: Math.max(Number.MIN_SAFE_INTEGER, -boundaries.effectiveEndMicros),
+  };
+}
+
+function isAudioSyncOffsetWithinRange(offsetMicros: number, range: AudioSyncOffsetRange): boolean {
+  return (
+    Number.isSafeInteger(offsetMicros) &&
+    offsetMicros >= range.minOffsetMicros &&
+    offsetMicros <= range.maxOffsetMicros
+  );
 }
 
 /** The audible stream interval placed on the video timeline, clipped to its visible axis. */
@@ -176,8 +209,8 @@ function audioTimelineBoundaries(
   const start = streamStartMicros ?? 0;
   const sourceEnd =
     streamDurationMicros === undefined
-      ? timelineEnd
-      : Math.min(timelineEnd, start + Math.max(0, streamDurationMicros));
+      ? start + timelineEnd
+      : start + Math.max(0, streamDurationMicros);
 
   const offset = effectiveAudioOffsetMicros(syncOffset);
   const effectiveStartMicros = start + offset;
@@ -526,6 +559,7 @@ export type {
   AudioLoudnessAnalysis,
   AudioParameterRange,
   AudioSyncOffset,
+  AudioSyncOffsetRange,
   AudioTimelineBoundaries,
   AudioTrackMetadata,
   AudioTrackProcessing,
@@ -542,6 +576,7 @@ export {
   audioFilterParameterRange,
   audioFilterParameterValue,
   audioFiltersRequireLoudnessAnalysis,
+  audioSyncOffsetRange,
   audioTimelineBoundaries,
   audioTrackLoudnessInputsKey,
   clampTrackVolume,
@@ -553,10 +588,10 @@ export {
   insertAudioFilter,
   isAudioFilterParameterValid,
   isAudioSyncOffsetValid,
+  isAudioSyncOffsetWithinRange,
   isTrackVolumeValid,
   matchingAudioFilterPreset,
   MAX_AUDIO_FILTERS,
-  MAX_AUDIO_SYNC_OFFSET_MICROS,
   MAX_TRACK_VOLUME,
   moveAudioFilter,
   normalizeAudioTrackDefaults,

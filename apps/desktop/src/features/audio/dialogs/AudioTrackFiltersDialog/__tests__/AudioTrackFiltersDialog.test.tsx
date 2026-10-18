@@ -19,10 +19,26 @@ import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 import { AudioPlaybackProvider } from "../../../AudioPlaybackProvider";
 import { AudioTrackFiltersDialog, AudioTrackFiltersDialogTrigger } from "..";
 
-function renderDialog() {
+function renderDialog({
+  durationMicros,
+  streamDurationMicros,
+  streamStartTimeMicros,
+}: {
+  durationMicros?: number;
+  streamDurationMicros?: number;
+  streamStartTimeMicros?: number;
+} = {}) {
   const store = createAppStore();
   store.dispatch(sourceSelected({ loadToken: 1, source: firstSource }));
-  store.dispatch(sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath) }));
+  const media = mediaWithAudio(firstSource.sourcePath);
+  if (durationMicros !== undefined) media.durationMicros = durationMicros;
+  if (streamDurationMicros !== undefined) {
+    media.audioStreams[0]!.durationMicros = streamDurationMicros;
+  }
+  if (streamStartTimeMicros !== undefined) {
+    media.audioStreams[0]!.startTimeMicros = streamStartTimeMicros;
+  }
+  store.dispatch(sourceReady({ loadToken: 1, media }));
 
   render(
     <Provider store={store}>
@@ -328,9 +344,9 @@ describe("AudioTrackFiltersDialog", () => {
     await user.click(screen.getByRole("button", { name: "Open filters" }));
     await addFilter(user, "Sync Offset");
 
-    const input = screen.getByRole("textbox", { name: "Offset (MM:SS.mmm)" });
+    const input = await screen.findByRole("textbox", { name: "Offset (MM:SS.mmm)" });
     const slider = screen.getByRole("slider", {
-      name: "Sync offset from −10 seconds to +10 seconds",
+      name: "Sync offset from −00:05.000 to +00:05.000",
     });
 
     expect(input).toHaveValue("+00:00.000");
@@ -338,31 +354,59 @@ describe("AudioTrackFiltersDialog", () => {
 
     await user.clear(input);
     await user.type(input, "-00:02.500");
-    expect(slider).toHaveAttribute("aria-valuenow", "37.5");
+    expect(slider).toHaveAttribute("aria-valuenow", "25");
 
     slider.focus();
     await user.keyboard("{ArrowRight}");
-    expect(input).toHaveValue("−00:02.480");
+    expect(input).toHaveValue("−00:02.499");
 
     await user.clear(input);
-    await user.type(input, "+00:10.001");
+    await user.type(input, "+00:05.001");
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByRole("button", { name: "Apply" })).toBeDisabled();
 
     slider.focus();
     await user.keyboard("{ArrowLeft}");
-    expect(input).toHaveValue("+00:09.980");
+    expect(input).toHaveValue("+00:04.999");
     expect(input).toHaveAttribute("aria-invalid", "false");
     expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
 
     await user.clear(input);
-    await user.type(input, "+00:10.000");
+    await user.type(input, "+00:05.000");
     expect(input).toHaveAttribute("aria-invalid", "false");
     expect(slider).toHaveAttribute("aria-valuenow", "100");
     expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
 
     await user.click(screen.getByRole("button", { name: "Apply" }));
-    expect(committedSyncOffset()).toMatchObject({ enabled: true, offsetMicros: 10_000_000 });
+    expect(committedSyncOffset()).toMatchObject({ enabled: true, offsetMicros: 5_000_000 });
+  });
+
+  it("uses the full range supported by a long video and audio stream", async () => {
+    const user = userEvent.setup();
+    const { committedSyncOffset } = renderDialog({
+      durationMicros: 120_000_000,
+      streamDurationMicros: 200_000_000,
+      streamStartTimeMicros: 5_000_000,
+    });
+
+    await user.click(screen.getByRole("button", { name: "Open filters" }));
+    await addFilter(user, "Sync Offset");
+
+    const input = await screen.findByRole("textbox", { name: "Offset (MM:SS.mmm)" });
+    const slider = screen.getByRole("slider", {
+      name: "Sync offset from −03:25.000 to +01:55.000",
+    });
+
+    await user.clear(input);
+    await user.type(input, "+01:00.000");
+    expect(input).toHaveAttribute("aria-invalid", "false");
+    expect(slider).toHaveAttribute("aria-valuenow", "82.8125");
+
+    slider.focus();
+    await user.keyboard("{End}");
+    expect(input).toHaveValue("+01:55.000");
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    expect(committedSyncOffset()).toMatchObject({ enabled: true, offsetMicros: 115_000_000 });
   });
 
   it("commits the same signed offset value used by interactive synchronization", async () => {
@@ -371,7 +415,7 @@ describe("AudioTrackFiltersDialog", () => {
     await user.click(screen.getByRole("button", { name: "Open filters" }));
     await addFilter(user, "Sync Offset");
 
-    const input = screen.getByRole("textbox", { name: "Offset (MM:SS.mmm)" });
+    const input = await screen.findByRole("textbox", { name: "Offset (MM:SS.mmm)" });
     await user.clear(input);
     await user.type(input, "-00:01.500");
     await user.click(screen.getByRole("button", { name: "Apply" }));

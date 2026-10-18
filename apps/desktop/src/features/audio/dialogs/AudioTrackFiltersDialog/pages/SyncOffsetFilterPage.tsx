@@ -6,7 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
-import { type AudioSyncOffset, MAX_AUDIO_SYNC_OFFSET_MICROS } from "@/domain/audio-processing";
+import {
+  type AudioSyncOffset,
+  type AudioSyncOffsetRange,
+  isAudioSyncOffsetWithinRange,
+} from "@/domain/audio-processing";
 import { cn } from "@/lib/class-names.utils";
 
 import { useAudioFiltersDraft } from "../contexts/audio-filters-draft-context";
@@ -24,7 +28,7 @@ function formatOffset(offsetMicros: number): string {
 }
 
 function parseOffset(value: string): number | null {
-  const match = /^([+-]|−)?(\d{2}):(\d{2})\.(\d{3})$/.exec(value.trim());
+  const match = /^([+-]|−)?(\d{2,}):(\d{2})\.(\d{3})$/.exec(value.trim());
   if (!match) return null;
   const [, sign, minutesText, secondsText, millisecondsText] = match;
   const minutes = Number(minutesText);
@@ -34,7 +38,13 @@ function parseOffset(value: string): number | null {
   return sign === "-" || sign === "−" ? -magnitude : magnitude;
 }
 
-function SyncOffsetFilterPage({ offset }: { offset: AudioSyncOffset }) {
+function SyncOffsetFilterPage({
+  offset,
+  range,
+}: {
+  offset: AudioSyncOffset;
+  range: AudioSyncOffsetRange;
+}) {
   const { t } = useTranslation();
   const { dispatch } = useAudioFiltersDraft();
   const id = useId();
@@ -43,23 +53,21 @@ function SyncOffsetFilterPage({ offset }: { offset: AudioSyncOffset }) {
     text: formatOffset(offset.offsetMicros),
   }));
 
-  const inputValue =
-    input.offsetMicros === offset.offsetMicros ? input.text : formatOffset(offset.offsetMicros);
+  const inputValue = Object.is(input.offsetMicros, offset.offsetMicros)
+    ? input.text
+    : formatOffset(offset.offsetMicros);
 
   const parsedInput = parseOffset(input.text);
   const inputInvalid =
     parsedInput === null ||
-    Math.abs(parsedInput) > MAX_AUDIO_SYNC_OFFSET_MICROS ||
-    Math.abs(offset.offsetMicros) > MAX_AUDIO_SYNC_OFFSET_MICROS;
+    !isAudioSyncOffsetWithinRange(parsedInput, range) ||
+    !isAudioSyncOffsetWithinRange(offset.offsetMicros, range);
 
-  const percentage = Math.max(
-    0,
-    Math.min(
-      100,
-      ((offset.offsetMicros + MAX_AUDIO_SYNC_OFFSET_MICROS) / (2 * MAX_AUDIO_SYNC_OFFSET_MICROS)) *
-        100,
-    ),
-  );
+  const span = range.maxOffsetMicros - range.minOffsetMicros;
+  const percentage =
+    span <= 0 || !Number.isSafeInteger(offset.offsetMicros)
+      ? 50
+      : Math.max(0, Math.min(100, ((offset.offsetMicros - range.minOffsetMicros) / span) * 100));
 
   const updateOffset = (offsetMicros: number, syncInput = false) => {
     if (syncInput) setInput({ offsetMicros, text: formatOffset(offsetMicros) });
@@ -74,7 +82,7 @@ function SyncOffsetFilterPage({ offset }: { offset: AudioSyncOffset }) {
       return;
     }
 
-    const invalidOffsetMicros = MAX_AUDIO_SYNC_OFFSET_MICROS + 1_000;
+    const invalidOffsetMicros = Number.NaN;
     setInput({ offsetMicros: invalidOffsetMicros, text: value });
     updateOffset(invalidOffsetMicros);
   };
@@ -118,31 +126,45 @@ function SyncOffsetFilterPage({ offset }: { offset: AudioSyncOffset }) {
           className={cn("text-xs", inputInvalid ? "text-destructive" : "text-muted-foreground")}
           id={`${id}-format`}
         >
-          {t("audio.syncOffset.range", { max: "00:10.000" })}
+          {t("audio.syncOffset.range", {
+            max: formatOffset(range.maxOffsetMicros),
+            min: formatOffset(range.minOffsetMicros),
+          })}
         </p>
       </div>
 
       <div className="grid gap-3 border-t pt-4">
-        <Label htmlFor={`${id}-slider`}>{t("audio.syncOffset.sliderLabel")}</Label>
+        <Label htmlFor={`${id}-slider`}>
+          {t("audio.syncOffset.sliderLabel", {
+            max: formatOffset(range.maxOffsetMicros),
+            min: formatOffset(range.minOffsetMicros),
+          })}
+        </Label>
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-          <span className="text-xs text-muted-foreground">−00:10.000</span>
+          <span className="text-xs text-muted-foreground">
+            {formatOffset(range.minOffsetMicros)}
+          </span>
           <Slider
-            aria-label={t("audio.syncOffset.sliderLabel")}
+            aria-label={t("audio.syncOffset.sliderLabel", {
+              max: formatOffset(range.maxOffsetMicros),
+              min: formatOffset(range.minOffsetMicros),
+            })}
             aria-valuetext={formatOffset(offset.offsetMicros)}
+            disabled={span <= 0}
             id={`${id}-slider`}
             max={100}
             min={0}
             onValueChange={([value]) => {
-              const next = Math.round(
-                (((value ?? 50) / 100) * 2 - 1) * MAX_AUDIO_SYNC_OFFSET_MICROS,
-              );
+              const next = Math.round(range.minOffsetMicros + ((value ?? 50) / 100) * span);
 
               updateOffset(next, true);
             }}
-            step={0.1}
+            step={0.01}
             value={[percentage]}
           />
-          <span className="text-xs text-muted-foreground">+00:10.000</span>
+          <span className="text-xs text-muted-foreground">
+            {formatOffset(range.maxOffsetMicros)}
+          </span>
         </div>
       </div>
     </div>

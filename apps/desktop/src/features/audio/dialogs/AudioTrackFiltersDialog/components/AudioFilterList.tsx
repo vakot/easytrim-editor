@@ -41,8 +41,8 @@ import {
   AUDIO_FILTER_TYPES,
   type AudioFilter,
   type AudioSyncOffset,
+  isAudioSyncOffsetWithinRange,
   MAX_AUDIO_FILTERS,
-  MAX_AUDIO_SYNC_OFFSET_MICROS,
 } from "@/domain/audio-processing";
 import { cn } from "@/lib/class-names.utils";
 
@@ -244,14 +244,12 @@ function AudioFilterListItem({
 
 function AudioSyncOffsetListItem({ offset }: { offset: AudioSyncOffset }) {
   const { t } = useTranslation();
-  const { draft } = useAudioFiltersDraft();
+  const { draft, syncOffsetRange } = useAudioFiltersDraft();
   const changed =
     draft.initialSyncOffset?.enabled !== offset.enabled ||
     draft.initialSyncOffset?.offsetMicros !== offset.offsetMicros;
 
-  const valid =
-    Number.isSafeInteger(offset.offsetMicros) &&
-    Math.abs(offset.offsetMicros) <= MAX_AUDIO_SYNC_OFFSET_MICROS;
+  const valid = isAudioSyncOffsetWithinRange(offset.offsetMicros, syncOffsetRange);
 
   return (
     <div className="relative flex items-center gap-0.5" data-slot="audio-filter-list-item">

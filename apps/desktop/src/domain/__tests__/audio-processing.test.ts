@@ -5,6 +5,8 @@ import {
   AUDIO_FILTER_PRESETS,
   type AudioFilter,
   audioFiltersRequireLoudnessAnalysis,
+  audioSyncOffsetRange,
+  audioTimelineBoundaries,
   audioTrackLoudnessInputsKey,
   clampTrackVolume,
   cloneAudioTrackProcessing,
@@ -235,6 +237,36 @@ describe("track volume", () => {
 });
 
 describe("audio sync offset serialization", () => {
+  it("derives the editable range from the original stream and video boundaries", () => {
+    expect(audioSyncOffsetRange(30_000_000, 3_000_000, 20_000_000)).toEqual({
+      minOffsetMicros: -23_000_000,
+      maxOffsetMicros: 27_000_000,
+    });
+    expect(audioSyncOffsetRange(5_000_000, undefined, undefined)).toEqual({
+      minOffsetMicros: -5_000_000,
+      maxOffsetMicros: 5_000_000,
+    });
+    expect(audioSyncOffsetRange(5_000_000, 2_000_000, undefined)).toEqual({
+      minOffsetMicros: -7_000_000,
+      maxOffsetMicros: 3_000_000,
+    });
+  });
+
+  it("keeps long streams available when negative offsets move their tail into the video timeline", () => {
+    expect(
+      audioTimelineBoundaries(10_000_000, 0, 20_000_000, {
+        enabled: true,
+        offsetMicros: -15_000_000,
+      }),
+    ).toMatchObject({
+      effectiveEndMicros: 5_000_000,
+      effectiveStartMicros: -15_000_000,
+      hasVisibleAudio: true,
+      visibleEndMicros: 5_000_000,
+      visibleStartMicros: 0,
+    });
+  });
+
   it.each([true, false])("retains an enabled=%s offset independently of filters", (enabled) => {
     const processing = {
       filters: [gain("g", 3)],

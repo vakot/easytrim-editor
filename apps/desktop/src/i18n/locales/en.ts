@@ -416,8 +416,8 @@ export const en = {
       description: "Positive values delay this track; negative values move it earlier on the video timeline",
       inputPlaceholder: "+00:00.000",
       label: "Sync Offset",
-      range: "Enter a signed offset from −{{max}} to +{{max}} (MM:SS.mmm)",
-      sliderLabel: "Sync offset from −10 seconds to +10 seconds",
+      range: "Enter a signed offset from {{min}} to {{max}} (MM:SS.mmm)",
+      sliderLabel: "Sync offset from {{min}} to {{max}}",
       valueLabel: "Offset (MM:SS.mmm)",
     },
     tracks: {

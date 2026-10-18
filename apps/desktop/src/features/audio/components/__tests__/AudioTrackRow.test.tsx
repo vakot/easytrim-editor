@@ -81,9 +81,27 @@ function createAudioPlayback() {
   } satisfies AudioPlaybackAdapter;
 }
 
-function createStore(sourceLanguage: string | undefined = "eng") {
+function createStore(
+  sourceLanguage: string | undefined = "eng",
+  {
+    audioDurationMicros,
+    audioStartTimeMicros,
+    mediaDurationMicros,
+  }: {
+    audioDurationMicros?: number;
+    audioStartTimeMicros?: number;
+    mediaDurationMicros?: number;
+  } = {},
+) {
   const store = createAppStore();
   const media = mediaWithAudio(firstSource.sourcePath);
+  if (mediaDurationMicros !== undefined) media.durationMicros = mediaDurationMicros;
+  if (audioDurationMicros !== undefined) {
+    media.audioStreams[0]!.durationMicros = audioDurationMicros;
+  }
+  if (audioStartTimeMicros !== undefined) {
+    media.audioStreams[0]!.startTimeMicros = audioStartTimeMicros;
+  }
   media.audioStreams[0]!.language = sourceLanguage;
   store.dispatch(sourceSelected({ loadToken: 1, source: firstSource }));
   store.dispatch(sourceReady({ loadToken: 1, media }));
@@ -91,17 +109,28 @@ function createStore(sourceLanguage: string | undefined = "eng") {
 }
 
 function renderRow({
+  audioDurationMicros,
+  audioStartTimeMicros,
   enabled = true,
+  mediaDurationMicros,
   showColorPreview = false,
   sourceLanguage,
   streamIndex = 2,
 }: {
+  audioDurationMicros?: number;
+  audioStartTimeMicros?: number;
   enabled?: boolean;
+  mediaDurationMicros?: number;
   showColorPreview?: boolean;
   sourceLanguage?: string;
   streamIndex?: number;
 } = {}) {
-  const store = createStore(sourceLanguage);
+  const store = createStore(sourceLanguage, {
+    audioDurationMicros,
+    audioStartTimeMicros,
+    mediaDurationMicros,
+  });
+
   if (!enabled) store.dispatch(audioTrackToggled({ streamIndex }));
   const audioPlayback = createAudioPlayback();
 
@@ -298,6 +327,40 @@ describe("AudioTrackRow", () => {
       expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull(),
     );
     expect(timeline.positionMicros).toBe(1_000_000);
+  });
+
+  it("uses media-derived bounds for interactive offsets beyond ten seconds", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow({
+      audioDurationMicros: 100_000_000,
+      audioStartTimeMicros: 5_000_000,
+      mediaDurationMicros: 60_000_000,
+    });
+
+    timeline.positionMicros = 55_000_000;
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.click(interaction, { button: 0, clientX: 600 });
+    await user.keyboard("{Enter}");
+
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset).toEqual({
+      enabled: true,
+      offsetMicros: 25_000_000,
+    });
   });
 
   it("cancels interactive synchronization on Escape without changing an existing offset", async () => {
