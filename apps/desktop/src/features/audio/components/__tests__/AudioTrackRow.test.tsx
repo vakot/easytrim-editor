@@ -307,11 +307,7 @@ describe("AudioTrackRow", () => {
     expect(document.querySelector('[data-slot="audio-sync-ghost-playhead"]')).toHaveStyle({
       left: "50%",
     });
-    const syncMode = screen.getByRole("button", { name: "Sync mode" });
-    expect(syncMode).toHaveAttribute("aria-pressed", "false");
-    await user.click(syncMode);
-    expect(syncMode).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(interaction, { button: 0, clientX: 600 });
+    fireEvent.click(interaction.querySelector("canvas")!, { button: 0, clientX: 600 });
 
     const confirm = await screen.findByRole("button", { name: "Sync offset" });
     expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toHaveStyle({
@@ -358,8 +354,7 @@ describe("AudioTrackRow", () => {
       toJSON: () => ({}),
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Sync mode" }));
-    fireEvent.click(interaction, { button: 0, clientX: 600 });
+    fireEvent.click(interaction.querySelector("canvas")!, { button: 0, clientX: 600 });
     await user.keyboard("{Enter}");
 
     expect(store.getState().audio.tracks[0]?.processing.syncOffset).toEqual({
@@ -390,8 +385,7 @@ describe("AudioTrackRow", () => {
       width: 1_000,
       toJSON: () => ({}),
     } as DOMRect);
-    fireEvent.click(screen.getByRole("button", { name: "Sync mode" }));
-    fireEvent.click(interaction, { button: 0, clientX: 600 });
+    fireEvent.click(interaction.querySelector("canvas")!, { button: 0, clientX: 600 });
     await screen.findByRole("button", { name: "Sync offset" });
 
     await user.keyboard("{Escape}");
@@ -452,13 +446,12 @@ describe("AudioTrackRow", () => {
       width: 1_000,
       toJSON: () => ({}),
     } as DOMRect);
-    fireEvent.click(screen.getByRole("button", { name: "Sync mode" }));
-    fireEvent.click(interaction, { button: 0, clientX: 600 });
+    fireEvent.click(interaction.querySelector("canvas")!, { button: 0, clientX: 600 });
 
     expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull();
   });
 
-  it("keeps ordinary waveform clicks available without opening sync confirmation", () => {
+  it("leaves non-waveform row clicks available without opening sync confirmation", () => {
     const { store } = renderRow();
     const interaction = document.querySelector<HTMLElement>(
       '[data-slot="audio-sync-interaction"]',
