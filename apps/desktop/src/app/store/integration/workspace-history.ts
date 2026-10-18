@@ -40,7 +40,7 @@ import {
 } from "@/app/store/slices/workspace-history-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import { navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
-import type { AudioTrackSettings } from "@/domain/audio-processing";
+import { type AudioTrackSettings, serializeAudioTrackSettings } from "@/domain/audio-processing";
 import type { EditingInstance } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeSourceKey } from "@/domain/source";
@@ -152,8 +152,6 @@ function restoreActiveField(
     const track = previous.find((candidate) => candidate.streamIndex === streamIndex);
     if (!track || !desired) return;
     if (track.enabled !== desired.enabled) dispatch(audioTrackToggled({ streamIndex }));
-    if (track.metadata.isDefault !== desired.metadata.isDefault && desired.metadata.isDefault)
-      dispatch(audioTrackDefaultChanged({ streamIndex }));
     if (
       track.metadata.title !== desired.metadata.title ||
       track.metadata.language !== desired.metadata.language
@@ -218,6 +216,28 @@ class HistoryReplayRejected extends Error {
   }
 }
 
+function reconcileActiveAudioTracks(
+  dispatch: Dispatch,
+  getState: () => RootState,
+  id: string,
+  snapshot: EditorSnapshot,
+) {
+  if (selectActiveInstanceId(getState()) !== id) return;
+  // Selection reducers normalize defaults across tracks. Restore the saved default only after
+  // every track's enabled state has been restored, including tracks whose default was cleared.
+  const desiredDefault = snapshot.audio.tracks.find(
+    (track) => track.enabled && track.metadata.isDefault,
+  );
+
+  if (desiredDefault)
+    dispatch(audioTrackDefaultChanged({ streamIndex: desiredDefault.streamIndex }));
+  const settings = (tracks: AudioTrackSettings[]) =>
+    tracks.map(serializeAudioTrackSettings).sort((a, b) => a.streamIndex - b.streamIndex);
+
+  if (!equal(settings(getState().audio.tracks), settings(snapshot.audio.tracks)))
+    throw new HistoryReplayRejected();
+}
+
 function captureStateReplayCheckpoint(
   state: RootState,
   operation: StateHistoryOperation,
@@ -276,6 +296,15 @@ async function applyStateOperation(
     restoreActiveField(dispatch, getState, change.field, next, change.target);
   }
   for (const [id, snapshot] of snapshots) {
+    if (
+      operation.changes.some(
+        (change) =>
+          change.target.kind === "instance" &&
+          change.target.instanceId === id &&
+          change.field.startsWith("audio:"),
+      )
+    )
+      reconcileActiveAudioTracks(dispatch, getState, id, snapshot);
     dispatch(editingInstanceSnapshotUpdated({ id, snapshot }));
     const instance = getState().editingInstances.entities[id];
     const transformChanged = operation.changes.some(
@@ -336,6 +365,15 @@ async function restoreStateReplayCheckpoint(
       if (change.target.kind === "instance" && change.target.instanceId === previous.instance.id)
         restoreActiveField(dispatch, getState, change.field, previous.snapshot, change.target);
     }
+    if (
+      checkpoint.operation.changes.some(
+        (change) =>
+          change.target.kind === "instance" &&
+          change.target.instanceId === previous.instance.id &&
+          change.field.startsWith("audio:"),
+      )
+    )
+      reconcileActiveAudioTracks(dispatch, getState, previous.instance.id, previous.snapshot);
   }
   if (selectActiveInstanceId(getState()) !== checkpoint.activeInstanceId) {
     if (!(await dispatch(navigateToEditingInstance(checkpoint.activeInstanceId))))

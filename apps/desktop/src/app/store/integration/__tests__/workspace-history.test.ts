@@ -4,6 +4,7 @@ import { editingInstanceActivated } from "@/app/store/actions/editing-instance-a
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
+  applyHistoryPosition,
   redoWorkspaceHistory,
   undoWorkspaceHistory,
 } from "@/app/store/integration/workspace-history";
@@ -30,7 +31,7 @@ import {
 } from "@/app/store/slices/workspace-history-slice";
 import { createAppStore } from "@/app/store/store";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
-import { createAudioFilter } from "@/domain/audio-processing";
+import { createAudioFilter, serializeAudioTrackSettings } from "@/domain/audio-processing";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
@@ -160,6 +161,74 @@ describe("workspace history editor integration", () => {
       selectAudioTracks(store.getState()).find((track) => track.streamIndex === 2)?.processing
         .filters,
     ).toEqual([]);
+  });
+
+  it("restores complete active audio metadata when switching defaults backward and forward", async () => {
+    const store = setup();
+    const capture = () => selectAudioTracks(store.getState()).map(serializeAudioTrackSettings);
+    const initial = capture();
+    store.dispatch(audioTrackActivityVisibilityToggled({ streamIndex: 4 }));
+    store.dispatch(audioTrackDefaultChanged({ streamIndex: 4 }));
+    await flush();
+    const surroundDefault = capture();
+    store.dispatch(audioTrackDefaultChanged({ streamIndex: 2 }));
+    await flush();
+    const stereoDefault = capture();
+    const expectRestored = (expected: ReturnType<typeof capture>) => {
+      expect(capture()).toEqual(expected);
+      expect(
+        store.getState().editingInstances.entities["instance-1"]?.snapshot.audio.tracks,
+      ).toEqual(expected);
+      expect(selectAudioTracks(store.getState())[1]?.activityVisible).toBe(false);
+      store.dispatch(commitActiveEditingInstanceDraft());
+      expect(
+        store.getState().editingInstances.entities["instance-1"]?.snapshot.audio.tracks,
+      ).toEqual(expected);
+    };
+
+    expect(await store.dispatch(undoWorkspaceHistory())).toBe(true);
+    expectRestored(surroundDefault);
+    expect(await store.dispatch(undoWorkspaceHistory())).toBe(true);
+    expectRestored(initial);
+    expect(await store.dispatch(redoWorkspaceHistory())).toBe(true);
+    expectRestored(surroundDefault);
+    expect(await store.dispatch(redoWorkspaceHistory())).toBe(true);
+    expectRestored(stereoDefault);
+    expect(await store.dispatch(applyHistoryPosition(0))).toBe(true);
+    expectRestored(initial);
+    expect(await store.dispatch(applyHistoryPosition(2))).toBe(true);
+    expectRestored(stereoDefault);
+    expect(selectWorkspaceHistory(store.getState()).operations).toHaveLength(2);
+  });
+
+  it("restores grouped audio selection and cleared metadata alongside the saved default", async () => {
+    const store = setup();
+    const capture = () => selectAudioTracks(store.getState()).map(serializeAudioTrackSettings);
+    const initial = capture();
+    store.dispatch(
+      historyInteractionStarted({ id: "audio-selection", label: "Edit audio", timestamp: 1 }),
+    );
+    store.dispatch(audioTrackDefaultChanged({ streamIndex: 4 }));
+    store.dispatch(audioTrackToggled({ streamIndex: 2 }));
+    store.dispatch(
+      audioTrackMetadataChanged({ streamIndex: 4, title: undefined, language: "fra" }),
+    );
+    store.dispatch(historyInteractionEnded());
+    await flush();
+    const edited = capture();
+
+    for (let iteration = 0; iteration < 2; iteration++) {
+      expect(await store.dispatch(undoWorkspaceHistory())).toBe(true);
+      expect(capture()).toEqual(initial);
+      expect(
+        store.getState().editingInstances.entities["instance-1"]?.snapshot.audio.tracks,
+      ).toEqual(initial);
+      expect(await store.dispatch(redoWorkspaceHistory())).toBe(true);
+      expect(capture()).toEqual(edited);
+      expect(
+        store.getState().editingInstances.entities["instance-1"]?.snapshot.audio.tracks,
+      ).toEqual(edited);
+    }
   });
 
   it("records chapter add, edit, and delete and restores each transition", async () => {
