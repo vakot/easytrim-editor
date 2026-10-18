@@ -1,6 +1,7 @@
 import { useAppearanceCommandGroups } from "./appearance";
 import { useFileCommandGroups } from "./file";
 import { useHelpCommandGroups } from "./help";
+import { useHistoryCommandGroups } from "./history";
 import { useLayoutCommandGroups } from "./layout";
 import { usePreferencesCommandGroups } from "./preferences";
 import { usePreviewCommandGroups } from "./preview";
@@ -10,6 +11,7 @@ import { useWorkspaceViewCommandGroups } from "./workspace-views";
 
 function useApplicationCommandGroups() {
   const file = useFileCommandGroups();
+  const history = useHistoryCommandGroups();
   const help = useHelpCommandGroups();
   const appearance = useAppearanceCommandGroups();
   const preferences = usePreferencesCommandGroups();
@@ -20,6 +22,7 @@ function useApplicationCommandGroups() {
   const workspaceViews = useWorkspaceViewCommandGroups();
   return [
     ...file,
+    ...history,
     ...help,
     ...appearance,
     ...preferences,

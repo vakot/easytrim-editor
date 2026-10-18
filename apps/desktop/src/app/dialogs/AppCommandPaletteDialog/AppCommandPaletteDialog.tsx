@@ -6,6 +6,7 @@ import { createDialogScope, Dialog, DialogContent } from "@/components/ui/dialog
 import type { ApplicationCommandId } from "@/app/commands";
 import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
 import {
+  getApplicationCommandShortcuts,
   isApplicationCommandAvailableOnSurface,
   isShortcutEvent,
 } from "@/app/commands/core/application-command.utils";
@@ -44,8 +45,9 @@ const AppCommandPaletteDialog = Object.assign(
             isApplicationCommandAvailableOnSurface(command, "hotkey") &&
             command.enabled &&
             !command.pending &&
-            command.shortcut !== undefined &&
-            isShortcutEvent(event, command.shortcut),
+            getApplicationCommandShortcuts(command).some((shortcut) =>
+              isShortcutEvent(event, shortcut),
+            ),
         ),
       (event) => {
         const command = commands.find(
@@ -53,8 +55,9 @@ const AppCommandPaletteDialog = Object.assign(
             isApplicationCommandAvailableOnSurface(candidate, "hotkey") &&
             candidate.enabled &&
             !candidate.pending &&
-            candidate.shortcut !== undefined &&
-            isShortcutEvent(event, candidate.shortcut),
+            getApplicationCommandShortcuts(candidate).some((shortcut) =>
+              isShortcutEvent(event, shortcut),
+            ),
         );
 
         if (command) void executeApplicationCommand(command.id, "hotkey");

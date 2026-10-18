@@ -83,6 +83,12 @@ const state = {
   },
   sceneDetection: { markersVisible: true, operation: null },
   trim: { value: null },
+  workspaceHistory: {
+    operations: [] as unknown[],
+    position: 0,
+    interaction: null,
+    replaying: false,
+  },
 };
 
 vi.mock("@/app/store/redux-hooks", () => ({
@@ -174,6 +180,7 @@ function RuntimeProbe() {
       {commands.map((command) => (
         <button
           aria-label={command.id}
+          data-alternate-shortcuts={command.alternateShortcuts?.map(({ key }) => key).join(",")}
           data-checked={command.checked}
           data-group={command.group.label}
           data-has-icon={Boolean(command.icon)}
@@ -281,6 +288,10 @@ describe("ApplicationCommandsProvider", () => {
     state.preferences.mergeAudioEnabled = false;
     state.export.availableQueueFinishActions = ["exit", "nothing"];
     state.export.queueFinishAction = "nothing";
+    state.workspaceHistory.operations = [];
+    state.workspaceHistory.position = 0;
+    state.workspaceHistory.interaction = null;
+    state.workspaceHistory.replaying = false;
   });
 
   it("executes synchronous commands through the shared runtime and exposes semantic metadata", async () => {
@@ -289,7 +300,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(77);
+    ).toHaveLength(83);
     expect(
       screen
         .getAllByRole("button")
@@ -409,6 +420,49 @@ describe("ApplicationCommandsProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 
     expect(mocks.requestSourceDelete).toHaveBeenCalledWith({ sourceIds: ["source-1"] });
+  });
+
+  it("exposes history commands with state-aware labels, surfaces, and Windows redo alias", () => {
+    const previousUserAgent = navigator.userAgent;
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: "Windows NT",
+    });
+    state.workspaceHistory.operations = [
+      {
+        changes: [
+          {
+            after: { present: true, value: {} },
+            before: { present: true, value: null },
+            field: "crop",
+            target: { instanceId: "source-1", kind: "instance", sourceId: "C:/source.mp4" },
+          },
+        ],
+        id: "crop",
+        kind: "state",
+        label: "Change crop",
+        role: "edit",
+        timestamp: 1,
+      },
+    ];
+    state.workspaceHistory.position = 1;
+
+    try {
+      const view = renderRuntime();
+      const undo = screen.getByRole("button", { name: "undo" });
+      const redo = screen.getByRole("button", { name: "redo" });
+      expect(undo).toHaveAttribute("data-label", "Undo Crop");
+      expect(undo).toHaveAttribute("data-surfaces", "menu,palette,hotkey");
+      expect(undo).toBeEnabled();
+      expect(redo).toHaveAttribute("data-alternate-shortcuts", "Y");
+      expect(redo).toBeDisabled();
+      view.unmount();
+    } finally {
+      Object.defineProperty(navigator, "userAgent", {
+        configurable: true,
+        value: previousUserAgent,
+      });
+    }
   });
 
   it("routes Open and Docks through the shared workspace view commands", async () => {
@@ -587,13 +641,14 @@ describe("ApplicationCommandsProvider", () => {
     expect(mocks.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "preferences/layoutReset" }),
     );
-    expect(mocks.resetPanels).toHaveBeenCalledTimes(4);
+    expect(mocks.resetPanels).toHaveBeenCalledTimes(5);
     expect(mocks.panelCommandIds).toContain("workspace-left-sidebar");
     expect(mocks.panelCommandIds).toContain("workspace-right-sidebar");
     expect(mocks.panelCommandIds).toContain("editor-stage-timeline");
     expect(mocks.panelCommandIds).toContain("editor-source-imported-sources");
     expect(mocks.panelCommandIds).toContain("editor-source-activity-feed");
     expect(mocks.panelCommandIds).toContain("editor-source-export-queue");
+    expect(mocks.panelCommandIds).toContain("editor-source-workspace-history");
   });
 
   it("enables layout reset when density or activity-feed view differs from its default", () => {

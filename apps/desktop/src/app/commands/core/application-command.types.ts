@@ -21,6 +21,7 @@ interface ApplicationCommandGroupMetadata {
 }
 
 interface ApplicationCommand<Id extends string = string> {
+  alternateShortcuts?: readonly ApplicationShortcut[];
   /** Why the command asks for attention, such as unseen content; surfaces may mark it. */
   attention?: string;
   checked?: boolean;

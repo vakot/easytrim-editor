@@ -127,6 +127,7 @@ function materializeApplicationCommands<Id extends string>(
     searchTerms: definition.searchTerms,
     hint: definition.hint,
     shortcut: definition.shortcut,
+    alternateShortcuts: definition.alternateShortcuts,
     surfaces: definition.surfaces,
     variant: definition.variant,
   }));
@@ -150,11 +151,18 @@ function getShortcutPlatform(): ShortcutPlatform {
   return /Mac/i.test(navigator.userAgent) || /Mac/i.test(navigator.platform) ? "macos" : "other";
 }
 
+function getApplicationCommandShortcuts(
+  command: Pick<ApplicationCommand, "alternateShortcuts" | "shortcut">,
+): readonly ApplicationShortcut[] {
+  return [...(command.shortcut ? [command.shortcut] : []), ...(command.alternateShortcuts ?? [])];
+}
+
 export {
   assertUniqueCommandIds,
   commandsById,
   commandSearchTerms,
   defineApplicationCommandGroup,
+  getApplicationCommandShortcuts,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
   isApplicationCommandAvailableOnSurface,
