@@ -5,6 +5,7 @@ import type { AppStore, RootState } from "@/app/store/store";
 import type { EditingInstance, ExportAttempt } from "@/domain/editing-instance";
 import { EMPTY_EXPORT_METRICS } from "@/domain/editing-instance";
 import { normalizeSourceKey } from "@/domain/source";
+import { retainWorkspaceHistory } from "@/domain/workspace-history-retention";
 import { diagnostics } from "@/lib/diagnostics";
 
 import {
@@ -19,6 +20,9 @@ import type {
 } from "./workspace-recovery.types";
 
 let candidate: WorkspaceRecoveryBackup | null = null;
+// Two recovery slots share localStorage with preferences. Budget each JSON document to 2 MiB
+// in UTF-16, preserving mandatory workspace data even if that data alone exceeds the budget.
+export const RECOVERY_MAX_SERIALIZED_LENGTH = 1024 * 1024;
 const listeners = new Set<() => void>();
 let candidateDismissed = false;
 
@@ -118,16 +122,22 @@ function createWorkspaceRecoveryBackup(
 ): WorkspaceRecoveryBackup {
   const now = new Date().toISOString();
   const history = selectWorkspaceHistory(state);
-  return {
+  const backup: WorkspaceRecoveryBackup = {
     activeInstanceId: state.editingInstances.activeInstanceId,
     createdAt: previous?.createdAt ?? now,
     id: previous?.id ?? crypto.randomUUID(),
     instances: selectEditingInstances(state).map((instance) => toRecoveryInstance(instance, state)),
-    ...(history.operations.length > 0 ? { history } : {}),
     sessionId: previous?.sessionId ?? "",
     updatedAt: now,
     version: 2,
   };
+
+  const historyBudget =
+    RECOVERY_MAX_SERIALIZED_LENGTH - JSON.stringify(backup).length - ',"history":'.length;
+
+  const retained = retainWorkspaceHistory(history, Math.max(0, historyBudget));
+  if (retained.operations.length) backup.history = retained;
+  return backup;
 }
 
 function initializeWorkspaceRecovery(
@@ -153,6 +163,7 @@ function initializeWorkspaceRecovery(
   }
 
   let previousBackup: WorkspaceRecoveryBackup | null = null;
+  let previousContent: string | null = null;
   const save = () => {
     // Until this session has work of its own, the stored current backup still belongs to the
     // previous crashed session. Overwriting it with an empty workspace would discard it if the
@@ -169,7 +180,8 @@ function initializeWorkspaceRecovery(
     });
 
     const content = JSON.stringify({ ...backup, updatedAt: "" });
-    if (previousBackup && JSON.stringify({ ...previousBackup, updatedAt: "" }) === content) return;
+    if (previousContent === content) return;
+    previousContent = content;
     previousBackup = { ...backup, updatedAt: new Date().toISOString() };
     writeCurrentBackup(previousBackup);
   };

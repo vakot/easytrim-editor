@@ -1,4 +1,4 @@
-import { createAction, createSlice } from "@reduxjs/toolkit";
+import { createAction, createSlice, isAnyOf } from "@reduxjs/toolkit";
 
 import type {
   HistoryChange,
@@ -6,6 +6,7 @@ import type {
   HistoryMetadata,
   HistoryOperation,
 } from "@/domain/workspace-history";
+import { retainWorkspaceHistory } from "@/domain/workspace-history-retention";
 
 import type { RootState } from "../store";
 
@@ -161,7 +162,21 @@ const workspaceHistorySlice = createSlice({
         state.position = action.payload.position;
         state.interaction = null;
         state.replaying = false;
-      }),
+      })
+      .addMatcher(
+        isAnyOf(
+          historyChangesCaptured,
+          historyOperationRecorded,
+          historyInteractionEnded,
+          workspaceHistoryRestored,
+        ),
+        (state) => {
+          if (state.replaying || state.interaction) return;
+          const retained = retainWorkspaceHistory(state);
+          state.operations = retained.operations;
+          state.position = retained.position;
+        },
+      ),
 });
 
 const workspaceHistoryReducer = workspaceHistorySlice.reducer;

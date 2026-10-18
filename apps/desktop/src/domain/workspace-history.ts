@@ -1,3 +1,5 @@
+import { retainWorkspaceHistory } from "./workspace-history-retention";
+
 export type HistoryValue =
   null | boolean | number | string | HistoryValue[] | { [key: string]: HistoryValue };
 export type HistoryTarget =
@@ -176,7 +178,7 @@ export class WorkspaceHistory {
       ids.add(normalized.id);
       return normalized;
     });
-    this.data = data;
+    this.data = retainWorkspaceHistory(data);
   }
 
   snapshot(): HistoryData {
@@ -192,6 +194,7 @@ export class WorkspaceHistory {
       throw new Error("Duplicate history ID");
     this.data.operations = [...this.data.operations.slice(0, this.data.position), normalized];
     this.data.position = this.data.operations.length;
+    this.data = retainWorkspaceHistory(this.data);
     return true;
   }
 

@@ -18,9 +18,11 @@ import {
   historyReplayFinished,
   historyReplayStarted,
   selectWorkspaceHistory,
+  workspaceHistoryRestored,
 } from "@/app/store/slices/workspace-history-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt } from "@/domain/editing-instance";
+import { type HistoryData, WorkspaceHistory } from "@/domain/workspace-history";
 import { firstSource, mediaWithAudio, secondSource } from "@/test/source.fixtures";
 
 import {
@@ -28,6 +30,7 @@ import {
   dismissWorkspaceRecoveryNotice,
   getWorkspaceRecoveryCandidate,
   initializeWorkspaceRecovery,
+  RECOVERY_MAX_SERIALIZED_LENGTH,
   retainWorkspaceRecoveryOnAcceptedShutdown,
 } from "../workspace-recovery";
 
@@ -72,6 +75,52 @@ beforeEach(() => {
 });
 
 describe("workspace recovery contract", () => {
+  it.each([3, 1])("budgets lifecycle history against the workspace at cursor %i", (position) => {
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([{ ...instance("large"), optimizedArguments: "界".repeat(900_000) }]),
+    );
+    const history: HistoryData = {
+      version: 1,
+      position,
+      operations: Array.from({ length: 3 }, (_, index) => ({
+        id: `close-${index}`,
+        label: "Close instance",
+        timestamp: index,
+        kind: "external",
+        type: "instances.lifecycle",
+        affected: [],
+        payload: JSON.parse(
+          JSON.stringify({
+            before: [
+              {
+                index: 0,
+                instance: {
+                  ...instance(`closed-${index}`),
+                  optimizedArguments: "x".repeat(60_000),
+                },
+              },
+            ],
+            after: [],
+          }),
+        ),
+      })),
+    };
+
+    store.dispatch(workspaceHistoryRestored(history));
+    const originalHistory = selectWorkspaceHistory(store.getState());
+    const backup = createWorkspaceRecoveryBackup(store.getState(), { sessionId: "session" });
+    expect(JSON.stringify(backup).length).toBeLessThanOrEqual(RECOVERY_MAX_SERIALIZED_LENGTH);
+    expect(backup.instances[0]?.optimizedArguments).toHaveLength(900_000);
+    expect(backup.history?.operations.map(({ id }) => id)).toEqual(["close-1", "close-2"]);
+    expect(backup.history?.position).toBe(position - 1);
+    expect(selectWorkspaceHistory(store.getState())).toEqual(originalHistory);
+    localStorage.setItem(CURRENT_KEY, JSON.stringify(backup));
+    initializeWorkspaceRecovery(createAppStore(), "next", true);
+    expect(getWorkspaceRecoveryCandidate()?.history).toEqual(backup.history);
+    expect(new WorkspaceHistory(backup.history).snapshot()).toEqual(backup.history);
+  });
+
   it("serializes history including its selected position and redo branch", () => {
     const store = createAppStore();
     store.dispatch(editingInstancesAdded([instance("history", firstSource)]));
