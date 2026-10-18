@@ -94,7 +94,7 @@ function useUndoRedoCommands() {
       },
       searchTerms: commandSearchTerms(`${undoLabel}|undo|history|${undoAction ?? ""}`),
       shortcut: UNDO_SHORTCUT,
-      surfaces: ["menu", "palette", "hotkey"] as const,
+      surfaces: ["button", "menu", "palette", "hotkey"] as const,
       variant: "default" as const,
     },
     {
@@ -108,7 +108,7 @@ function useUndoRedoCommands() {
       },
       searchTerms: commandSearchTerms(`${redoLabel}|redo|history|${redoAction ?? ""}`),
       shortcut: REDO_SHORTCUT,
-      surfaces: ["menu", "palette", "hotkey"] as const,
+      surfaces: ["button", "menu", "palette", "hotkey"] as const,
       variant: "default" as const,
     },
   ] as const;

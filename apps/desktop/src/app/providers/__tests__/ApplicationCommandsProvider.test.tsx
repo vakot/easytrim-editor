@@ -452,7 +452,7 @@ describe("ApplicationCommandsProvider", () => {
       const undo = screen.getByRole("button", { name: "undo" });
       const redo = screen.getByRole("button", { name: "redo" });
       expect(undo).toHaveAttribute("data-label", "Undo Crop");
-      expect(undo).toHaveAttribute("data-surfaces", "menu,palette,hotkey");
+      expect(undo).toHaveAttribute("data-surfaces", "button,menu,palette,hotkey");
       expect(undo).toBeEnabled();
       expect(redo).toHaveAttribute("data-alternate-shortcuts", "Y");
       expect(redo).toBeDisabled();
