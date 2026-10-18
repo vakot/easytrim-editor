@@ -149,6 +149,50 @@ function AudioTrackRowWaveform({
     <div
       className="relative size-full h-12.5 min-w-0 overflow-hidden rounded-sm border border-border bg-muted/30 text-muted transition-opacity first-of-type:rounded-t-lg last-of-type:rounded-b-lg data-[enabled=false]:opacity-50"
       data-enabled={track.enabled}
+      data-slot="audio-sync-interaction"
+      onClick={(event) => {
+        if (event.button !== 0 || !event.altKey) return;
+        if (
+          event.target instanceof Element &&
+          event.target.closest("button, input, select, textarea, a, [role='button']")
+        ) {
+          return;
+        }
+
+        const position = waveformPosition(event.clientX, event.currentTarget, durationMicros);
+        if (!position || !isAudioPositionAvailable(position.micros, audioBoundaries)) return;
+
+        const currentOffsetMicros = effectiveAudioOffsetMicros(syncOffset ?? undefined);
+        const offsetMicros = Math.max(
+          syncOffsetRange.minOffsetMicros,
+          Math.min(
+            syncOffsetRange.maxOffsetMicros,
+            Math.round(getPositionMicros() + currentOffsetMicros - position.micros),
+          ),
+        );
+
+        setHoveredPosition(null);
+        setSyncMarker({ leftPercent: position.leftPercent, offsetMicros });
+      }}
+      onPointerLeave={() => setHoveredPosition(null)}
+      onPointerMove={(event) => {
+        if (event.pointerType === "touch") return;
+        if (
+          event.target instanceof Element &&
+          event.target.closest("button, input, select, textarea, a, [role='button']")
+        ) {
+          setHoveredPosition(null);
+          return;
+        }
+
+        const position = waveformPosition(event.clientX, event.currentTarget, durationMicros);
+        setHoveredPosition(
+          position && isAudioPositionAvailable(position.micros, audioBoundaries)
+            ? position.leftPercent
+            : null,
+        );
+      }}
+      title={t("audio.syncOffset.interactionHint")}
     >
       <AudioTrackWaveform
         displayMode={displayMode}
@@ -159,37 +203,7 @@ function AudioTrackRowWaveform({
         volume={volume}
       />
 
-      <div
-        className="absolute inset-0 z-1 cursor-crosshair"
-        data-slot="audio-sync-interaction"
-        onClick={(event) => {
-          if (event.button !== 0) return;
-          const position = waveformPosition(event.clientX, event.currentTarget, durationMicros);
-          if (!position || !isAudioPositionAvailable(position.micros, audioBoundaries)) return;
-
-          const currentOffsetMicros = effectiveAudioOffsetMicros(syncOffset ?? undefined);
-          const offsetMicros = Math.max(
-            syncOffsetRange.minOffsetMicros,
-            Math.min(
-              syncOffsetRange.maxOffsetMicros,
-              Math.round(getPositionMicros() + currentOffsetMicros - position.micros),
-            ),
-          );
-
-          setHoveredPosition(null);
-          setSyncMarker({ leftPercent: position.leftPercent, offsetMicros });
-        }}
-        onPointerLeave={() => setHoveredPosition(null)}
-        onPointerMove={(event) => {
-          if (event.pointerType === "touch") return;
-          const position = waveformPosition(event.clientX, event.currentTarget, durationMicros);
-          setHoveredPosition(
-            position && isAudioPositionAvailable(position.micros, audioBoundaries)
-              ? position.leftPercent
-              : null,
-          );
-        }}
-      >
+      <div className="pointer-events-none absolute inset-0">
         {hoveredPosition !== null && syncMarker === null ? (
           <div
             aria-hidden="true"
@@ -247,7 +261,6 @@ function AudioTrackRowWaveform({
           </PopoverContent>
         </Popover>
       </div>
-
       <div className="absolute top-1 right-1 z-4">
         <AudioTrackDisplaySelect streamIndex={streamIndex} />
       </div>

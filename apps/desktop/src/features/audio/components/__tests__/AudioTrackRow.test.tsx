@@ -307,7 +307,7 @@ describe("AudioTrackRow", () => {
     expect(document.querySelector('[data-slot="audio-sync-ghost-playhead"]')).toHaveStyle({
       left: "50%",
     });
-    fireEvent.click(interaction, { button: 0, clientX: 600 });
+    fireEvent.click(interaction, { altKey: true, button: 0, clientX: 600 });
 
     const confirm = await screen.findByRole("button", { name: "Sync offset" });
     expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toHaveStyle({
@@ -354,7 +354,7 @@ describe("AudioTrackRow", () => {
       toJSON: () => ({}),
     });
 
-    fireEvent.click(interaction, { button: 0, clientX: 600 });
+    fireEvent.click(interaction, { altKey: true, button: 0, clientX: 600 });
     await user.keyboard("{Enter}");
 
     expect(store.getState().audio.tracks[0]?.processing.syncOffset).toEqual({
@@ -385,7 +385,7 @@ describe("AudioTrackRow", () => {
       width: 1_000,
       toJSON: () => ({}),
     } as DOMRect);
-    fireEvent.click(interaction, { button: 0, clientX: 600 });
+    fireEvent.click(interaction, { altKey: true, button: 0, clientX: 600 });
     await screen.findByRole("button", { name: "Sync offset" });
 
     await user.keyboard("{Escape}");
@@ -446,9 +446,39 @@ describe("AudioTrackRow", () => {
       width: 1_000,
       toJSON: () => ({}),
     } as DOMRect);
+    fireEvent.click(interaction, { altKey: true, button: 0, clientX: 600 });
+
+    expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull();
+  });
+
+  it("keeps ordinary waveform clicks available without opening sync confirmation", () => {
+    const { store } = renderRow();
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.pointerMove(interaction, { clientX: 600, pointerType: "mouse" });
+    expect(document.querySelector('[data-slot="audio-sync-ghost-playhead"]')).toHaveStyle({
+      left: "50%",
+    });
+
     fireEvent.click(interaction, { button: 0, clientX: 600 });
 
     expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sync offset" })).not.toBeInTheDocument();
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset).toBeUndefined();
   });
 
   it("draws the waveform in the live PrimaryColor preview", async () => {
