@@ -417,6 +417,7 @@ export const en = {
       inputPlaceholder: "+00:00.000",
       label: "Sync Offset",
       range: "Enter a signed offset from {{min}} to {{max}} (MM:SS.mmm)",
+      reset: "Reset Sync Offset",
       valueLabel: "Offset (MM:SS.mmm)",
     },
     tracks: {

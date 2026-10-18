@@ -113,7 +113,9 @@ function AudioTrackRowWaveform({
   const { getPositionMicros } = useTimelinePlayback();
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const [hoveredPosition, setHoveredPosition] = useState<number | null>(null);
+  const [hoveredResetRangeKey, setHoveredResetRangeKey] = useState<string | null>(null);
   const [syncMarker, setSyncMarker] = useState<{
+    action: "reset" | "sync";
     leftPercent: number;
     offsetMicros: number;
   } | null>(null);
@@ -138,6 +140,12 @@ function AudioTrackRowWaveform({
     syncOffset ?? undefined,
   );
 
+  const originalAudioBoundaries = audioTimelineBoundaries(
+    durationMicros,
+    stream.startTimeMicros,
+    stream.durationMicros,
+  );
+
   const syncOffsetRange = audioSyncOffsetRange(
     durationMicros,
     stream.startTimeMicros,
@@ -145,6 +153,15 @@ function AudioTrackRowWaveform({
   );
 
   const unavailableRanges = getUnavailableAudioRanges(audioBoundaries, durationMicros);
+  const resetRanges =
+    syncOffset?.enabled && syncOffset.offsetMicros !== 0
+      ? getOffsetUnavailableAudioRanges(
+          originalAudioBoundaries,
+          audioBoundaries,
+          durationMicros,
+          syncOffset.offsetMicros,
+        )
+      : [];
 
   return (
     <div
@@ -162,7 +179,21 @@ function AudioTrackRowWaveform({
         if (!(event.target instanceof Element) || !event.target.closest("canvas")) return;
 
         const position = waveformPosition(event.clientX, event.currentTarget, durationMicros);
-        if (!position || !isAudioPositionAvailable(position.micros, audioBoundaries)) return;
+        if (!position) return;
+
+        const resetRange = resetRanges.find(
+          (range) => position.micros >= range.startMicros && position.micros < range.endMicros,
+        );
+
+        const isAvailable = isAudioPositionAvailable(position.micros, audioBoundaries);
+        if (!isAvailable && !resetRange) return;
+
+        if (resetRange) {
+          setHoveredPosition(null);
+          setHoveredResetRangeKey(null);
+          setSyncMarker({ action: "reset", leftPercent: position.leftPercent, offsetMicros: 0 });
+          return;
+        }
 
         const currentOffsetMicros = effectiveAudioOffsetMicros(syncOffset ?? undefined);
         const offsetMicros = Math.max(
@@ -174,9 +205,13 @@ function AudioTrackRowWaveform({
         );
 
         setHoveredPosition(null);
-        setSyncMarker({ leftPercent: position.leftPercent, offsetMicros });
+        setHoveredResetRangeKey(null);
+        setSyncMarker({ action: "sync", leftPercent: position.leftPercent, offsetMicros });
       }}
-      onPointerLeave={() => setHoveredPosition(null)}
+      onPointerLeave={() => {
+        setHoveredPosition(null);
+        setHoveredResetRangeKey(null);
+      }}
       onPointerMove={(event) => {
         if (event.pointerType === "touch") return;
         if (
@@ -184,15 +219,20 @@ function AudioTrackRowWaveform({
           event.target.closest("button, input, select, textarea, a, [role='button']")
         ) {
           setHoveredPosition(null);
+          setHoveredResetRangeKey(null);
           return;
         }
 
         const position = waveformPosition(event.clientX, event.currentTarget, durationMicros);
-        setHoveredPosition(
-          position && isAudioPositionAvailable(position.micros, audioBoundaries)
-            ? position.leftPercent
-            : null,
-        );
+        const resetRange = position
+          ? resetRanges.find(
+              (range) => position.micros >= range.startMicros && position.micros < range.endMicros,
+            )
+          : undefined;
+
+        const isAvailable = position && isAudioPositionAvailable(position.micros, audioBoundaries);
+        setHoveredPosition(isAvailable || resetRange ? (position?.leftPercent ?? null) : null);
+        setHoveredResetRangeKey(resetRange?.key ?? null);
       }}
     >
       <div className="absolute inset-0">
@@ -212,13 +252,13 @@ function AudioTrackRowWaveform({
             <TooltipTrigger asChild>
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 border-l border-dashed border-foreground/50 shadow-[0_0_3px_rgb(0_0_0/0.5)]"
+                className="pointer-events-none absolute inset-y-0 z-4 border-l border-dashed border-foreground/50 shadow-[0_0_3px_rgb(0_0_0/0.5)]"
                 data-slot="audio-sync-ghost-playhead"
                 style={{ left: `${hoveredPosition}%` }}
               />
             </TooltipTrigger>
             <TooltipContent className="pointer-events-none" side="top" sideOffset={6}>
-              {t("audio.syncOffset.label")}
+              {hoveredResetRangeKey ? t("audio.syncOffset.reset") : t("audio.syncOffset.label")}
             </TooltipContent>
           </Tooltip>
         ) : null}
@@ -255,14 +295,19 @@ function AudioTrackRowWaveform({
               <Button
                 onClick={() => {
                   if (!syncMarker) return;
-                  changeSyncOffset({ enabled: true, offsetMicros: syncMarker.offsetMicros });
+                  changeSyncOffset({
+                    enabled: true,
+                    offsetMicros: syncMarker.action === "reset" ? 0 : syncMarker.offsetMicros,
+                  });
                   setSyncMarker(null);
                 }}
                 ref={confirmButtonRef}
                 size="sm"
                 type="button"
               >
-                {t("audio.syncOffset.confirm")}
+                {syncMarker?.action === "reset"
+                  ? t("audio.syncOffset.reset")
+                  : t("audio.syncOffset.confirm")}
               </Button>
               <Button onClick={() => setSyncMarker(null)} size="sm" type="button" variant="ghost">
                 {t("common.actions.cancel")}
@@ -313,6 +358,18 @@ function AudioTrackRowWaveform({
         />
       ))}
 
+      {resetRanges.map(({ key, leftPercent, rightPercent }) =>
+        hoveredResetRangeKey === key && syncMarker === null ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 z-3 bg-destructive/20"
+            data-slot="audio-unavailable-reset-hover"
+            key={key}
+            style={{ left: `${leftPercent}%`, right: `${rightPercent}%` }}
+          />
+        ) : null,
+      )}
+
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 right-(--timeline-selection-end-inset) left-(--timeline-selection-start) border-x border-primary/70 bg-primary/5"
@@ -347,6 +404,37 @@ function getUnavailableAudioRanges(
   return [
     ...(start > 0 ? [{ key: "before", leftPercent: 0, rightPercent: 100 - start }] : []),
     ...(end < 100 ? [{ key: "after", leftPercent: end, rightPercent: 0 }] : []),
+  ];
+}
+
+function getOffsetUnavailableAudioRanges(
+  original: ReturnType<typeof audioTimelineBoundaries>,
+  effective: ReturnType<typeof audioTimelineBoundaries>,
+  durationMicros: number,
+  offsetMicros: number,
+) {
+  if (durationMicros <= 0 || offsetMicros === 0) return [];
+
+  const startMicros =
+    offsetMicros > 0
+      ? Math.max(0, original.effectiveStartMicros)
+      : Math.max(0, original.effectiveStartMicros, effective.effectiveEndMicros);
+
+  const endMicros =
+    offsetMicros > 0
+      ? Math.min(durationMicros, original.effectiveEndMicros, effective.effectiveStartMicros)
+      : Math.min(durationMicros, original.effectiveEndMicros);
+
+  if (endMicros <= startMicros) return [];
+
+  return [
+    {
+      endMicros,
+      key: offsetMicros > 0 ? "before" : "after",
+      leftPercent: percentOfDuration(startMicros, durationMicros),
+      rightPercent: 100 - percentOfDuration(endMicros, durationMicros),
+      startMicros,
+    },
   ];
 }
 

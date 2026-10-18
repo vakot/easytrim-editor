@@ -462,7 +462,7 @@ describe("AudioTrackRow", () => {
     );
   });
 
-  it("marks audio shifted outside the video timeline as unavailable and blocks sync clicks there", () => {
+  it("marks fully shifted audio unavailable and offers its reset action", async () => {
     const { store } = renderRow();
     act(() => {
       store.dispatch(
@@ -493,7 +493,153 @@ describe("AudioTrackRow", () => {
     } as DOMRect);
     fireEvent.click(interaction.querySelector("canvas")!, { button: 0, clientX: 600 });
 
+    expect(await screen.findByRole("button", { name: "Reset Sync Offset" })).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toHaveStyle({
+      left: "50%",
+    });
+  });
+
+  it("shows a reset action and confirms resetting an offset-created unavailable region", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    act(() => {
+      store.dispatch(
+        audioTrackSyncOffsetChanged({
+          streamIndex: 2,
+          syncOffset: { enabled: true, offsetMicros: 1_500_000 },
+        }),
+      );
+    });
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    const canvas = interaction.querySelector("canvas")!;
+    fireEvent.pointerMove(canvas, { clientX: 300, clientY: 25, pointerType: "mouse" });
+    const tooltip = await screen.findByRole("tooltip");
+    expect(tooltip).toHaveTextContent("Reset Sync Offset");
+    const stripedRegion = document.querySelector<HTMLElement>(
+      '[data-slot="audio-unavailable-region"]',
+    )!;
+
+    expect(stripedRegion).toHaveStyle({ left: "0%", right: "70%" });
+    expect(stripedRegion.style.backgroundImage).toContain("repeating-linear-gradient");
+    expect(
+      document.querySelector<HTMLElement>("[data-slot='audio-unavailable-reset-hover']"),
+    ).toHaveStyle({ left: "0%", right: "70%" });
+
+    fireEvent.click(canvas, { button: 0, clientX: 300 });
+    const confirm = await screen.findByRole("button", { name: "Reset Sync Offset" });
+    expect(document.activeElement).toBe(confirm);
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset?.offsetMicros).toBe(1_500_000);
+
+    await user.keyboard("{Enter}");
+    await waitFor(() =>
+      expect(store.getState().audio.tracks[0]?.processing.syncOffset).toEqual({
+        enabled: true,
+        offsetMicros: 0,
+      }),
+    );
     expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull();
+  });
+
+  it("leaves the offset unchanged when reset is canceled or dismissed with Escape", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    act(() => {
+      store.dispatch(
+        audioTrackSyncOffsetChanged({
+          streamIndex: 2,
+          syncOffset: { enabled: true, offsetMicros: -1_000_000 },
+        }),
+      );
+    });
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    const canvas = interaction.querySelector("canvas")!;
+
+    fireEvent.pointerMove(canvas, { clientX: 1_000, clientY: 25, pointerType: "mouse" });
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Reset Sync Offset");
+    fireEvent.click(canvas, { button: 0, clientX: 1_000 });
+    await user.click(await screen.findByRole("button", { name: "Cancel" }));
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset?.offsetMicros).toBe(-1_000_000);
+    expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull();
+
+    fireEvent.pointerMove(canvas, { clientX: 1_000, clientY: 25, pointerType: "mouse" });
+    fireEvent.click(canvas, { button: 0, clientX: 1_000 });
+    await screen.findByRole("button", { name: "Reset Sync Offset" });
+    await user.keyboard("{Escape}");
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset?.offsetMicros).toBe(-1_000_000);
+    expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull();
+  });
+
+  it("does not offer reset for natural gaps or a disabled nonzero offset", () => {
+    const { store } = renderRow({
+      audioDurationMicros: 3_000_000,
+      audioStartTimeMicros: 1_000_000,
+    });
+
+    act(() => {
+      store.dispatch(
+        audioTrackSyncOffsetChanged({
+          streamIndex: 2,
+          syncOffset: { enabled: false, offsetMicros: 1_000_000 },
+        }),
+      );
+    });
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    const canvas = interaction.querySelector("canvas")!;
+
+    fireEvent.pointerMove(canvas, { clientX: 200, clientY: 25, pointerType: "mouse" });
+    fireEvent.click(canvas, { button: 0, clientX: 200 });
+
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reset Sync Offset" })).not.toBeInTheDocument();
+    expect(document.querySelector('[data-slot="audio-unavailable-reset-hover"]')).toBeNull();
+    expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull();
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset).toEqual({
+      enabled: false,
+      offsetMicros: 1_000_000,
+    });
   });
 
   it("leaves non-waveform row clicks available without opening sync confirmation", () => {
