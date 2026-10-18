@@ -112,6 +112,7 @@ function AudioTrackRowWaveform({
   const { getPositionMicros } = useTimelinePlayback();
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const [hoveredPosition, setHoveredPosition] = useState<number | null>(null);
+  const [syncModeEnabled, setSyncModeEnabled] = useState(false);
   const [syncMarker, setSyncMarker] = useState<{
     leftPercent: number;
     offsetMicros: number;
@@ -151,7 +152,7 @@ function AudioTrackRowWaveform({
       data-enabled={track.enabled}
       data-slot="audio-sync-interaction"
       onClick={(event) => {
-        if (event.button !== 0 || !event.altKey) return;
+        if (event.button !== 0 || !syncModeEnabled) return;
         if (
           event.target instanceof Element &&
           event.target.closest("button, input, select, textarea, a, [role='button']")
@@ -215,7 +216,10 @@ function AudioTrackRowWaveform({
 
         <Popover
           onOpenChange={(open) => {
-            if (!open) setSyncMarker(null);
+            if (!open) {
+              setSyncMarker(null);
+              setSyncModeEnabled(false);
+            }
           }}
           open={syncMarker !== null}
         >
@@ -247,6 +251,7 @@ function AudioTrackRowWaveform({
                   if (!syncMarker) return;
                   changeSyncOffset({ enabled: true, offsetMicros: syncMarker.offsetMicros });
                   setSyncMarker(null);
+                  setSyncModeEnabled(false);
                 }}
                 ref={confirmButtonRef}
                 size="sm"
@@ -254,14 +259,35 @@ function AudioTrackRowWaveform({
               >
                 {t("audio.syncOffset.confirm")}
               </Button>
-              <Button onClick={() => setSyncMarker(null)} size="sm" type="button" variant="ghost">
+              <Button
+                onClick={() => {
+                  setSyncMarker(null);
+                  setSyncModeEnabled(false);
+                }}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
                 {t("common.actions.cancel")}
               </Button>
             </div>
           </PopoverContent>
         </Popover>
       </div>
-      <div className="absolute top-1 right-1 z-4">
+      <div className="absolute top-1 right-1 z-4 flex items-center gap-1">
+        <Button
+          aria-label={t("audio.syncOffset.modeLabel")}
+          aria-pressed={syncModeEnabled}
+          onClick={() => {
+            setSyncMarker(null);
+            setSyncModeEnabled((enabled) => !enabled);
+          }}
+          size="sm"
+          type="button"
+          variant={syncModeEnabled ? "secondary" : "outline"}
+        >
+          {t("audio.syncOffset.modeLabel")}
+        </Button>
         <AudioTrackDisplaySelect streamIndex={streamIndex} />
       </div>
 
