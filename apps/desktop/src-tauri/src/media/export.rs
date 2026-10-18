@@ -1314,11 +1314,26 @@ fn full_source_audio_graph(
         ((i128::from(micros) * 48_000 + if micros >= 0 { 500_000 } else { -500_000 }) / 1_000_000)
             as i64
     };
-    let source_frames = frames(source.duration_micros);
     let start = frames(trim.start_micros);
     let end = frames(trim.end_micros);
     let mut graph = Vec::new();
     for (index, track) in tracks.iter().enumerate() {
+        let audio_stream = source
+            .audio_streams
+            .iter()
+            .find(|stream| stream.stream_index == track.stream_index());
+        let source_end_micros = audio_stream
+            .and_then(|stream| {
+                stream.start_time_micros.unwrap_or_default().checked_add(
+                    stream
+                        .duration_micros
+                        .unwrap_or(source.duration_micros)
+                        .max(0),
+                )
+            })
+            .unwrap_or(source.duration_micros)
+            .max(source.duration_micros);
+        let source_frames = frames(source_end_micros);
         let offset = track
             .sync_offset
             .as_ref()
@@ -1495,8 +1510,8 @@ fn format_seconds_f64(seconds: f64) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
     use std::process::Command;
+    use std::{path::Path, sync::atomic::AtomicBool};
 
     use super::{
         AudioExportFormat, AudioExportRequest, AudioTrackMetadataSelection, AudioTrackSelection,
@@ -1507,8 +1522,14 @@ mod tests {
         full_source_audio_graph, gif_command_preview, optimized_command_preview,
     };
     use crate::error::AppErrorMessageId;
+    use crate::media::audio::{PlaybackChunkRole, decode_playback_chunk};
     use crate::media::audio_filters::model::{
-        AudioChainSelection, AudioFilter, AudioLoudnessAnalysis, FilterMeasurement, fixtures::*,
+        AudioChainSelection, AudioFilter, AudioLoudnessAnalysis, AudioSyncOffset,
+        FilterMeasurement, fixtures::*,
+    };
+    use crate::media::audio_filters::{
+        engine::{AudioProcessingEngine, EngineConfig},
+        test_fixtures::{decode_f32_stereo, fixture_source, max_difference},
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -2230,6 +2251,111 @@ mod tests {
                 );
             }
         }
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn negative_sync_offset_keeps_long_audio_tail_equal_in_preview_and_export() {
+        let directory =
+            std::env::temp_dir().join(format!("easytrim-long-sync-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let source_path = directory.join("source.wav");
+        let generated = Command::new("ffmpeg")
+            .args([
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "aevalsrc=0.2*sin(2*PI*440*t)+0.3*gte(t\\,60):s=48000:d=65:c=stereo",
+                "-c:a",
+                "pcm_f32le",
+                "-y",
+            ])
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            generated.status.success(),
+            "{}",
+            String::from_utf8_lossy(&generated.stderr)
+        );
+
+        let mut source = fixture_source(&source_path, 60_000_000);
+        let media = source.media.as_mut().unwrap();
+        media.audio_streams[0].duration_micros = Some(65_000_000);
+        let track = AudioTrackSelection {
+            sync_offset: Some(AudioSyncOffset {
+                enabled: true,
+                offset_micros: -5_000_000,
+            }),
+            chain: AudioChainSelection {
+                stream_index: 0,
+                filters: Vec::new(),
+                loudness_measurements: Vec::new(),
+            },
+            volume: 1.0,
+        };
+        let request = AudioExportRequest {
+            trim: TrimSelection {
+                start_micros: 55_000_000,
+                end_micros: 60_000_000,
+            },
+            audio_tracks: vec![track],
+            ..audio_request(AudioExportFormat::Wav, false)
+        };
+        let output_path = directory.join("out.wav");
+        let arguments = build_audio_arguments(
+            source.media.as_ref().unwrap(),
+            &request,
+            &source_path,
+            &output_path,
+        )
+        .unwrap();
+        let exported = Command::new("ffmpeg")
+            .args(["-v", "error"])
+            .args(arguments)
+            .output()
+            .unwrap();
+        assert!(
+            exported.status.success(),
+            "{}",
+            String::from_utf8_lossy(&exported.stderr)
+        );
+        let exported_samples = decode_f32_stereo(&[
+            std::ffi::OsString::from("-i"),
+            output_path.as_os_str().to_owned(),
+        ]);
+
+        let engine = AudioProcessingEngine::new(EngineConfig::default());
+        let mut preview_samples = Vec::new();
+        for start_micros in [60_000_000, 62_000_000, 64_000_000] {
+            let duration_micros = (65_000_000 - start_micros).min(2_000_000);
+            preview_samples.extend(
+                decode_playback_chunk(
+                    &engine,
+                    &source,
+                    &request.audio_tracks[0].chain,
+                    start_micros,
+                    duration_micros,
+                    PlaybackChunkRole::default(),
+                    &AtomicBool::new(false),
+                )
+                .unwrap()
+                .chunks_exact(4)
+                .map(|sample| f32::from_le_bytes(sample.try_into().unwrap())),
+            );
+        }
+        assert_eq!(exported_samples.len(), 5 * 48_000 * 2);
+        assert_eq!(preview_samples.len(), exported_samples.len());
+        let difference = max_difference(&preview_samples, &exported_samples);
+        assert!(
+            difference < 0.00002,
+            "preview and export differ on the shifted audio tail: max {difference}; preview {:?}; export {:?}",
+            &preview_samples[..10],
+            &exported_samples[..10]
+        );
+
         std::fs::remove_dir_all(directory).unwrap();
     }
 

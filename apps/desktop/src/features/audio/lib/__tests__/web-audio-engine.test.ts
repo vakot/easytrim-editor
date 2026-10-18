@@ -94,6 +94,39 @@ describe("WebAudioEngine", () => {
     },
   );
 
+  it("decodes the audio tail shifted into the end of the video timeline", async () => {
+    const { buffers, context } = createFakeAudioContext();
+    const decode = vi.fn(async (_track: AudioChainSelection, _start: number, duration: number) =>
+      chunk(duration),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(60_000_000);
+    engine.setTracks([
+      {
+        selection: selection(1),
+        streamIndex: 1,
+        volume: 1,
+        durationMicros: 65_000_000,
+        syncOffsetMicros: -5_000_000,
+      },
+    ]);
+
+    await engine.prepareAt(58);
+
+    expect(decode).toHaveBeenCalledWith(
+      selection(1),
+      63_000_000,
+      2_000_000,
+      expect.any(AbortSignal),
+      expect.any(Object),
+    );
+    expect(buffers[0]!.channels[0]).toHaveLength(96_000);
+    expect(buffers[0]!.channels[0]![0]).toBe(0.25);
+    expect(buffers[0]!.channels[0]![95_999]).toBe(0.25);
+    engine.close();
+  });
+
   it("ignores a queued source completion from an earlier playback generation", async () => {
     const { context, sources } = createFakeAudioContext();
     const onError = vi.fn();

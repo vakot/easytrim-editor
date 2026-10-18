@@ -254,8 +254,8 @@ class WebAudioEngine {
       const durationFrame =
         track.durationMicros === undefined
           ? this.durationFrames
-          : Math.min(
-              this.durationFrames,
+          : Math.max(
+              0,
               Math.round(
                 (((track.startTimeMicros ?? 0) + track.durationMicros) * SAMPLE_RATE) / 1_000_000,
               ),
@@ -601,8 +601,8 @@ class WebAudioEngine {
       durationFrame:
         track.durationMicros === undefined
           ? this.durationFrames
-          : Math.min(
-              this.durationFrames,
+          : Math.max(
+              0,
               Math.round(
                 (((track.startTimeMicros ?? 0) + track.durationMicros) * SAMPLE_RATE) / 1_000_000,
               ),
@@ -1283,7 +1283,7 @@ class WebAudioEngine {
   }
 
   private frameToMicros(frame: number): number {
-    return Math.min(this.durationMicros, Math.round((frame * 1_000_000) / SAMPLE_RATE));
+    return Math.round((frame * 1_000_000) / SAMPLE_RATE);
   }
 }
 

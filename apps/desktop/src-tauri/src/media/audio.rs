@@ -64,15 +64,14 @@ pub fn decode_playback_chunk(
     let end_micros = start_micros
         .checked_add(duration_micros)
         .ok_or_else(invalid_range)?;
-    let media_duration = u64::try_from(media.duration_micros).unwrap_or_default();
+    let range = processed_audio_range(media, track.stream_index)?;
     if duration_micros == 0
         || duration_micros > PLAYBACK_PCM_MAX_CHUNK_MICROS
-        || end_micros > media_duration
+        || end_micros > frames_to_micros(range.end)
     {
         return Err(invalid_range());
     }
 
-    let range = processed_timeline_range(media);
     let start = micros_to_frames(start_micros);
     let end = micros_to_frames(end_micros).min(range.end);
     if end <= start {
@@ -120,7 +119,7 @@ pub fn release_playback_preview(
                 load_token: source.load_token,
                 stream_index,
                 graph: chain.canonical_graph(),
-                range: processed_timeline_range(media),
+                range: processed_audio_range(media, stream_index)?,
                 channels: PLAYBACK_PCM_CHANNELS,
             })
         })
@@ -146,10 +145,37 @@ pub fn processed_timeline_range(media: &MediaInfo) -> FrameRange {
     }
 }
 
+/// Processed playback for one stream may read past video EOF when a negative Sync Offset moves
+/// its original tail into the video timeline. Keep that source audio available while the WebAudio
+/// scheduler itself remains bounded by `processed_timeline_range`.
+pub fn processed_audio_range(media: &MediaInfo, stream_index: u32) -> Result<FrameRange, AppError> {
+    let stream = media
+        .audio_streams
+        .iter()
+        .find(|stream| stream.stream_index == stream_index)
+        .ok_or_else(invalid_range)?;
+    let stream_end_micros = stream.start_time_micros.unwrap_or_default().saturating_add(
+        stream
+            .duration_micros
+            .unwrap_or(media.duration_micros)
+            .max(0),
+    );
+    let end_micros = media.duration_micros.max(stream_end_micros).max(0) as u64;
+    Ok(FrameRange {
+        start: 0,
+        end: micros_to_frames(end_micros),
+    })
+}
+
 fn invalid_range() -> AppError {
     AppError::invalid_request(AppErrorMessageId::ExportSelectedExportRangeIsInvalid)
 }
 
 fn micros_to_frames(micros: u64) -> u64 {
     ((u128::from(micros) * u128::from(CANONICAL_SAMPLE_RATE) + 500_000) / 1_000_000) as u64
+}
+
+fn frames_to_micros(frames: u64) -> u64 {
+    ((u128::from(frames) * 1_000_000 + u128::from(CANONICAL_SAMPLE_RATE) / 2)
+        / u128::from(CANONICAL_SAMPLE_RATE)) as u64
 }
