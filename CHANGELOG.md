@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.15.0]
+
 ### Added
 
 - Added global Workspace History with Undo/Redo, a customizable history panel, and history restoration after restart.
