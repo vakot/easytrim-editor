@@ -10,7 +10,7 @@ import type { HistoryTarget } from "@/domain/workspace-history";
 import { WorkspaceHistoryEmpty } from "./components/WorkspaceHistoryEmpty";
 import { WorkspaceHistoryList } from "./components/WorkspaceHistoryList";
 import {
-  getOperationInstanceId,
+  getOperationFocusInstanceId,
   getOperationTargets,
   getSourceFileName,
 } from "./lib/workspace-history-presentation";
@@ -54,8 +54,17 @@ function WorkspaceHistory() {
   const handleSelect = useCallback(
     (row: WorkspaceHistoryRow) => {
       if (row.position === position || interaction || replaying) return;
-      const instanceId = row.operation ? getOperationInstanceId(row.operation) : undefined;
-      void dispatch(applyHistoryPosition(row.position, true, instanceId));
+      const focusInstanceId = row.operation
+        ? getOperationFocusInstanceId(row.operation)
+        : undefined;
+
+      void dispatch(
+        applyHistoryPosition(
+          row.position,
+          true,
+          focusInstanceId ? { preferredInstanceId: focusInstanceId } : undefined,
+        ),
+      );
     },
     [dispatch, interaction, position, replaying],
   );

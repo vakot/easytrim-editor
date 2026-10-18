@@ -22,6 +22,10 @@ interface HistoryDestination {
   transformedInstanceIds: string[];
 }
 
+// A required activation is a navigation constraint. Panel focus is only a preference: affected
+// instances may be closed, deleted, or missing at the destination, without invalidating its state.
+type HistoryActivationTarget = string | { preferredInstanceId: string };
+
 function historyValuesEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (!a || !b || typeof a !== "object" || typeof b !== "object") return false;
@@ -88,7 +92,7 @@ function resolveHistoryDestination(
   state: RootState,
   position: number,
   includeNavigation: boolean,
-  activateInstanceId?: string,
+  activationTarget?: HistoryActivationTarget,
 ): HistoryDestination | null {
   const history = state.workspaceHistory;
   let activeInstanceId = state.editingInstances.activeInstanceId;
@@ -244,7 +248,12 @@ function resolveHistoryDestination(
       if (change.field === "rotation" || change.field === "crop") transformed.add(instance.id);
     }
   }
-  if (activateInstanceId) activeInstanceId = activateInstanceId;
+  if (typeof activationTarget === "string") activeInstanceId = activationTarget;
+  else if (activationTarget) {
+    const preferred = instances.get(activationTarget.preferredInstanceId);
+    if (preferred?.sourceAvailability === "available" && preferred.draftAvailable !== false)
+      activeInstanceId = preferred.id;
+  }
   const active = activeInstanceId ? instances.get(activeInstanceId) : null;
   if (activeInstanceId && (!active || active.draftAvailable === false)) return null;
   if (
@@ -263,4 +272,4 @@ function resolveHistoryDestination(
 }
 
 export { currentHistorySnapshot, historyValuesEqual, resolveHistoryDestination };
-export type { HistoryDestination, SourceEffect };
+export type { HistoryActivationTarget, HistoryDestination, SourceEffect };

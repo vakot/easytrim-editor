@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { HistoryActivationTarget } from "@/app/store/integration/workspace-history-resolution";
+
 const mocks = vi.hoisted(() => ({
   dispatch: vi.fn(),
   state: {
@@ -35,8 +37,12 @@ vi.mock("@/app/store/redux-hooks", () => ({
 }));
 
 vi.mock("@/app/store/integration/workspace-history", () => ({
-  applyHistoryPosition: (position: number, includeNavigation: boolean, instanceId?: string) => ({
-    payload: { includeNavigation, instanceId, position },
+  applyHistoryPosition: (
+    position: number,
+    includeNavigation: boolean,
+    activationTarget?: HistoryActivationTarget,
+  ) => ({
+    payload: { includeNavigation, activationTarget, position },
     type: "workspaceHistory/navigateRequested",
   }),
 }));
@@ -148,7 +154,11 @@ describe("WorkspaceHistory", () => {
 
     await user.click(screen.getByRole("button", { name: /Crop.*Available to redo/ }));
     expect(mocks.dispatch).toHaveBeenCalledWith({
-      payload: { includeNavigation: true, instanceId: "instanceB", position: 3 },
+      payload: {
+        includeNavigation: true,
+        activationTarget: { preferredInstanceId: "instanceB" },
+        position: 3,
+      },
       type: "workspaceHistory/navigateRequested",
     });
   });
@@ -166,7 +176,7 @@ describe("WorkspaceHistory", () => {
     const beginning = await screen.findByRole("button", { name: /Beginning.*Applied/ });
     await user.click(beginning);
     expect(mocks.dispatch).toHaveBeenCalledWith({
-      payload: { includeNavigation: true, instanceId: undefined, position: 0 },
+      payload: { includeNavigation: true, activationTarget: undefined, position: 0 },
       type: "workspaceHistory/navigateRequested",
     });
 

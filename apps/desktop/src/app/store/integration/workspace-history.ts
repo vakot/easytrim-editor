@@ -51,6 +51,7 @@ import { moveSourceToTrash, restoreSourceFromTrash } from "@/lib/tauri/media";
 
 import {
   currentHistorySnapshot,
+  type HistoryActivationTarget,
   type HistoryDestination,
   historyValuesEqual,
   resolveHistoryDestination,
@@ -404,7 +405,7 @@ async function prepareDestination(
 function applyHistoryPosition(
   position: number,
   includeNavigation = true,
-  activateInstanceId?: string,
+  activationTarget?: HistoryActivationTarget,
 ) {
   return async (dispatch: Dispatch, getState: () => RootState): Promise<boolean> => {
     const original = getState();
@@ -423,7 +424,7 @@ function applyHistoryPosition(
       original,
       position,
       includeNavigation,
-      activateInstanceId,
+      activationTarget,
     );
 
     if (!destination || !destinationIsSafe(original, destination)) return false;
