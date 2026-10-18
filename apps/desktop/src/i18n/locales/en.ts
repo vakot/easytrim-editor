@@ -201,7 +201,6 @@ export const en = {
       unexpected: "An unexpected application error occurred",
     },
     menu: {
-      edit: "Edit",
       file: "File",
       help: "Help",
     },

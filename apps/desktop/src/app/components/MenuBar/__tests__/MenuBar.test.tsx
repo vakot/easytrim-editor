@@ -366,7 +366,7 @@ describe("MenuBarTest", () => {
     );
   }
 
-  it("keeps the top-level menus in their expected order without an Edit menu", () => {
+  it("keeps the desktop top-level menus in their expected order", () => {
     renderMenus();
     const menuButtons = screen
       .getByRole("menubar", { name: "Application menus" })
@@ -374,6 +374,16 @@ describe("MenuBarTest", () => {
 
     const labels = [...menuButtons].map((button) => button.textContent);
     expect(labels).toEqual(["File", "View", "Settings", "Help"]);
+  });
+
+  it("omits Edit from the compact menu", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+
+    const compactMenubar = screen.getAllByRole("menubar")[1];
+    await user.click(within(compactMenubar).getByRole("menuitem", { name: "Application menus" }));
+
+    expect(screen.queryByRole("menuitem", { name: "Edit", exact: true })).not.toBeInTheDocument();
   });
 
   it("opens the Command Palette from View", async () => {
