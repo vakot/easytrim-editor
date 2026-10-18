@@ -481,7 +481,7 @@ function TimelinePanelContent() {
               micros={micros}
               style={{
                 background: "transparent",
-                borderLeft: "1px dashed rgb(148 163 184 / 0.75)",
+                borderLeft: "0.0625rem dashed rgb(148 163 184 / 0.75)",
               }}
             />
           ))}
