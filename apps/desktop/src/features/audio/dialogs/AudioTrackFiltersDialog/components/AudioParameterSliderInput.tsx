@@ -47,7 +47,7 @@ function AudioParameterSliderInput({
   const errorId = `${id}-error`;
 
   return (
-    <div className="grid gap-1" data-slot="audio-filter-parameter">
+    <div className="grid gap-3" data-slot="audio-filter-parameter">
       <Label htmlFor={id}>{label}</Label>
       <div className="flex items-center gap-3">
         <Slider
