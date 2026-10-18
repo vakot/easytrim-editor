@@ -32,6 +32,7 @@ import { selectWorkspaceHistory } from "@/app/store/slices/workspace-history-sli
 import { createAppStore } from "@/app/store/store";
 import {
   closeEditingInstancesRequested,
+  commitActiveEditingInstanceDraft,
   deleteActiveEditingInstanceSourceRequested,
   ingestSources,
   navigateToEditingInstance,
@@ -115,6 +116,48 @@ describe("workspace history source and instance lifecycle", () => {
       startMicros: 200_000,
       endMicros: 4_500_000,
     });
+  });
+
+  it("rolls history navigation back when the requested Editing Instance cannot activate", async () => {
+    const store = addInstances();
+    expect(await store.dispatch(navigateToEditingInstance("instance-a"))).toBe(true);
+    store.dispatch(
+      trimChanged({
+        trim: { startMicros: 200_000, endMicros: 4_500_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    await flush();
+    store.dispatch(commitActiveEditingInstanceDraft());
+    await flush();
+    const beforeSnapshot = store.getState().editingInstances.entities["instance-a"]!.snapshot;
+    const beforePosition = selectWorkspaceHistory(store.getState()).position;
+    const historyLength = selectWorkspaceHistory(store.getState()).operations.length;
+    native.activateSourcePath.mockRejectedValueOnce(new Error("source unavailable"));
+
+    expect(await store.dispatch(applyHistoryPosition(0, true, "instance-b"))).toBe(false);
+    expect(selectWorkspaceHistory(store.getState()).position).toBe(beforePosition);
+    expect(selectWorkspaceHistory(store.getState()).operations).toHaveLength(historyLength);
+    expect(selectActiveInstanceId(store.getState())).toBe("instance-a");
+    expect(store.getState().editingInstances.entities["instance-a"]?.snapshot).toEqual(
+      beforeSnapshot,
+    );
+  });
+
+  it("activates the operation's Editing Instance without recording navigation", async () => {
+    const store = addInstances();
+    expect(await store.dispatch(navigateToEditingInstance("instance-a"))).toBe(true);
+    store.dispatch(
+      trimChanged({
+        trim: { startMicros: 200_000, endMicros: 4_500_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    await flush();
+    const historyLength = selectWorkspaceHistory(store.getState()).operations.length;
+
+    expect(await store.dispatch(applyHistoryPosition(0, true, "instance-b"))).toBe(true);
+    expect(selectActiveInstanceId(store.getState())).toBe("instance-b");
+    expect(selectWorkspaceHistory(store.getState()).position).toBe(0);
+    expect(selectWorkspaceHistory(store.getState()).operations).toHaveLength(historyLength);
   });
 
   it("duplicates and closes instances reversibly without changing their identities", async () => {

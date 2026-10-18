@@ -7,6 +7,7 @@ interface WorkspaceViewDescriptor {
 const WORKSPACE_VIEWS: WorkspaceViewDescriptor[] = [
   { id: "sources" },
   { id: "activity" },
+  { id: "history" },
   { id: "exportQueue" },
 ];
 

@@ -31,6 +31,16 @@ describe("sidebar layout", () => {
     expect(normalizeSidebarLayout({ left: [], right: [] })).toEqual({ left: [], right: [] });
   });
 
+  it("preserves History when restoring and rearranging customizable views", () => {
+    const layout = normalizeSidebarLayout({ left: ["sources"], right: ["history", "activity"] });
+
+    expect(layout).toEqual({ left: ["sources"], right: ["history", "activity"] });
+    expect(moveSidebarView(layout, "history", "left", 1)).toEqual({
+      left: ["sources", "history"],
+      right: ["activity"],
+    });
+  });
+
   it("moves a view across sidebars at the requested insertion point", () => {
     expect(moveSidebarView(DEFAULT_SIDEBAR_LAYOUT, "activity", "right", 0)).toEqual({
       left: ["sources"],

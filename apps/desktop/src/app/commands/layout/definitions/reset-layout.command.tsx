@@ -26,6 +26,7 @@ function useResetLayoutCommand() {
   const importedSourcesPanel = usePanelCommand("editor-source-imported-sources");
   const activityFeedPanel = usePanelCommand("editor-source-activity-feed");
   const exportQueuePanel = usePanelCommand("editor-source-export-queue");
+  const workspaceHistoryPanel = usePanelCommand("editor-source-workspace-history");
 
   const panelCommands = [
     leftSidebarPanel,
@@ -34,6 +35,7 @@ function useResetLayoutCommand() {
     importedSourcesPanel,
     activityFeedPanel,
     exportQueuePanel,
+    workspaceHistoryPanel,
   ];
 
   const label = t("common.actions.resetToDefault");

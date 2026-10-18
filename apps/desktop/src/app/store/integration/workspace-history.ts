@@ -188,7 +188,11 @@ function restoreActiveField(
     }
   }
 }
-function applyHistoryPosition(position: number, includeNavigation = true) {
+function applyHistoryPosition(
+  position: number,
+  includeNavigation = true,
+  activateInstanceId?: string,
+) {
   return async (dispatch: Dispatch, getState: () => RootState): Promise<boolean> => {
     const state = getState();
     const history = selectWorkspaceHistory(state);
@@ -373,6 +377,21 @@ function applyHistoryPosition(position: number, includeNavigation = true) {
               return false;
             }
           }
+        }
+      }
+
+      if (
+        activateInstanceId &&
+        activateInstanceId !== selectActiveInstanceId(getState()) &&
+        getState().editingInstances.entities[activateInstanceId]?.sourceAvailability ===
+          "available" &&
+        getState().editingInstances.entities[activateInstanceId]?.draftAvailable !== false
+      ) {
+        const activated = await dispatch(navigateToEditingInstance(activateInstanceId));
+        if (!activated) {
+          dispatch(historyReplayFinished({ position }));
+          await dispatch(applyHistoryPosition(history.position, includeNavigation));
+          return false;
         }
       }
       dispatch(historyReplayFinished({ position }));

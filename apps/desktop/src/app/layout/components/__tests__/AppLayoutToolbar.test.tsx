@@ -19,6 +19,7 @@ const commands = vi.hoisted(
       "open-statistics": { label: "Statistics" },
       "open-workspace-view-activity": { label: "Activity Feed" },
       "open-workspace-view-exportQueue": { label: "Export Queue" },
+      "open-workspace-view-history": { label: "History" },
       "open-workspace-view-sources": { label: "Sources" },
     }) as Record<string, { attention?: string; label: string }>,
 );
@@ -52,6 +53,7 @@ describe("AppLayoutToolbar", () => {
     ["Sources", "open-workspace-view-sources"],
     ["Export Queue", "open-workspace-view-exportQueue"],
     ["Activity Feed", "open-workspace-view-activity"],
+    ["History", "open-workspace-view-history"],
     ["Manage chapters", "open-chapters"],
     ["Settings", "open-settings"],
   ])("runs the %s command from the sidebar surface", (name, commandId) => {

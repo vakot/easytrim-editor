@@ -71,6 +71,8 @@ vi.mock("@/app/layout/components/AppLayoutPanel", () => ({
 vi.mock("@/app/layout/components/SidebarViewPortal", () => ({
   createSidebarViewHosts: () => ({
     activity: document.createElement("div"),
+    exportQueue: document.createElement("div"),
+    history: document.createElement("div"),
     sources: document.createElement("div"),
   }),
   SidebarViewPortals: () => null,
@@ -436,14 +438,15 @@ function SidebarPanelRegistrationProbe() {
 
 function expectPanelStructure(
   sidebar: HTMLElement,
-  viewIds: Array<"activity" | "exportQueue" | "sources">,
+  viewIds: Array<"activity" | "exportQueue" | "history" | "sources">,
 ) {
   const group = sidebar.querySelector<HTMLElement>('[data-slot="resizable-panel-group"]');
   expect(group).not.toBeNull();
 
-  const panelIds: Record<"activity" | "exportQueue" | "sources", string> = {
+  const panelIds: Record<"activity" | "exportQueue" | "history" | "sources", string> = {
     activity: "editor-source-activity-feed",
     exportQueue: "editor-source-export-queue",
+    history: "editor-source-workspace-history",
     sources: "editor-source-imported-sources",
   };
 

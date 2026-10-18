@@ -36,12 +36,14 @@ interface AppLayoutSidebarProps {
 const VIEW_PANEL_IDS: Record<SidebarViewId, string> = {
   activity: "editor-source-activity-feed",
   exportQueue: "editor-source-export-queue",
+  history: "editor-source-workspace-history",
   sources: "editor-source-imported-sources",
 };
 
 const VIEW_PANEL_SIZES: Record<SidebarViewId, { defaultSize: string; minSize: string }> = {
   activity: { minSize: "12.5rem", defaultSize: "30" },
   exportQueue: { minSize: "18.75rem", defaultSize: "35" },
+  history: { minSize: "12.5rem", defaultSize: "30" },
   sources: { minSize: "18.75rem", defaultSize: "45" },
 };
 
@@ -271,7 +273,9 @@ function SidebarViewHeader({
       ? t("source.title")
       : viewId === "activity"
         ? t("activity.title")
-        : t("queue.title");
+        : viewId === "history"
+          ? t("history.title")
+          : t("queue.title");
 
   const panelId = VIEW_PANEL_IDS[viewId];
   const pointerStart = useRef<{ pointerId: number; x: number; y: number } | null>(null);
@@ -414,7 +418,9 @@ function SidebarDragPreview({
       ? t("source.title")
       : viewId === "activity"
         ? t("activity.title")
-        : t("queue.title");
+        : viewId === "history"
+          ? t("history.title")
+          : t("queue.title");
 
   return createPortal(
     <Card

@@ -9,7 +9,12 @@ function createSidebarViewHosts(): SidebarViewHosts {
     return host;
   };
 
-  return { activity: createHost(), exportQueue: createHost(), sources: createHost() };
+  return {
+    activity: createHost(),
+    exportQueue: createHost(),
+    history: createHost(),
+    sources: createHost(),
+  };
 }
 
 export { createSidebarViewHosts };
