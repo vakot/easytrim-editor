@@ -14,6 +14,7 @@ import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions"
 import { useAppSelector } from "@/app/store/redux-hooks";
 import {
   audioTrackFiltersApplied,
+  audioTrackSyncOffsetChanged,
   waveformDisplayFailed,
   waveformReady,
   waveformsFailed,
@@ -114,6 +115,7 @@ function Harness({ position = 0 }: { position?: number }) {
     <AudioTrackWaveform
       displayMode="peak"
       stream={stream}
+      timelineDurationMicros={5_000_000}
       track={track}
       volume={track.processing.volume}
     />
@@ -161,6 +163,31 @@ async function initialWaveform() {
 }
 
 describe("waveform replacement", () => {
+  it("animates the committed offset on the existing waveform without reloading its envelope", async () => {
+    const { context, fetchMock, store } = await initialWaveform();
+    const initialLeftEdge = Math.min(...context.moveTo.mock.calls.map(([x]) => x as number));
+
+    act(() => {
+      store.dispatch(
+        audioTrackSyncOffsetChanged({
+          streamIndex: 2,
+          syncOffset: { enabled: true, offsetMicros: 1_000_000 },
+        }),
+      );
+    });
+    expect(frames.size).toBe(1);
+    step(0);
+    step(100);
+
+    const shiftedLeftEdge = Math.min(
+      ...context.moveTo.mock.calls.slice(-32).map(([x]) => x as number),
+    );
+
+    expect(shiftedLeftEdge).toBeGreaterThan(initialLeftEdge);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(frames.size).toBeGreaterThan(0);
+  });
+
   it("retains the canvas through regeneration and waits for decoded data before a 250 ms crossfade", async () => {
     const { canvas, context, fetchMock, ready, store } = await initialWaveform();
     act(() =>

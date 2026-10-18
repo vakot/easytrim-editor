@@ -24,6 +24,76 @@ afterEach(() => {
 });
 
 describe("WebAudioEngine", () => {
+  it.each([500_000, -500_000, 5_000_000, -5_000_000])(
+    "places offset %i on video time and fills unavailable samples with silence",
+    async (syncOffsetMicros) => {
+      const { buffers, context } = createFakeAudioContext();
+      const decode = vi.fn(async (_track: AudioChainSelection, _start: number, duration: number) =>
+        chunk(duration),
+      );
+
+      const engine = new WebAudioEngine(context, decode, vi.fn());
+      engine.setDuration(2_000_000);
+      engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1, syncOffsetMicros }]);
+      await engine.prepareAt(0);
+      const samples = buffers[0]!.channels[0]!;
+      expect(samples).toHaveLength(96_000);
+      const shift = Math.round((syncOffsetMicros * 48_000) / 1_000_000);
+      for (const frame of [0, 23_999, 24_000, 71_999, 72_000, 95_999]) {
+        const sourceFrame = frame - shift;
+        expect(samples[frame]).toBe(sourceFrame >= 0 && sourceFrame < 96_000 ? 0.25 : 0);
+      }
+      if (Math.abs(syncOffsetMicros) >= 2_000_000) expect(decode).not.toHaveBeenCalled();
+      else
+        expect(decode).toHaveBeenCalledWith(
+          selection(1),
+          Math.max(0, -syncOffsetMicros),
+          1_500_000,
+          expect.any(AbortSignal),
+          expect.any(Object),
+        );
+      engine.close();
+    },
+  );
+
+  it.each([500_000, -500_000])(
+    "places a late, short stream with offset %i",
+    async (syncOffsetMicros) => {
+      const { buffers, context } = createFakeAudioContext();
+      const decode = vi.fn(async (_track: AudioChainSelection, _start: number, duration: number) =>
+        chunk(duration),
+      );
+
+      const engine = new WebAudioEngine(context, decode, vi.fn());
+      engine.setDuration(2_000_000);
+      engine.setTracks([
+        {
+          selection: selection(1),
+          streamIndex: 1,
+          volume: 1,
+          startTimeMicros: 500_000,
+          durationMicros: 500_000,
+          syncOffsetMicros,
+        },
+      ]);
+      await engine.prepareAt(0);
+      expect(decode).toHaveBeenCalledWith(
+        selection(1),
+        500_000,
+        500_000,
+        expect.any(AbortSignal),
+        expect.any(Object),
+      );
+      const samples = buffers[0]!.channels[0]!;
+      const first = ((500_000 + syncOffsetMicros) * 48_000) / 1_000_000;
+      expect(samples[first]).toBe(0.25);
+      expect(samples[first + 23_999]).toBe(0.25);
+      expect(samples[first + 24_000]).toBe(0);
+      if (first > 0) expect(samples[first - 1]).toBe(0);
+      engine.close();
+    },
+  );
+
   it("ignores a queued source completion from an earlier playback generation", async () => {
     const { context, sources } = createFakeAudioContext();
     const onError = vi.fn();

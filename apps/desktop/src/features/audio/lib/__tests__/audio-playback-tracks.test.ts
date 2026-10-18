@@ -9,6 +9,7 @@ import {
   audioTrackFiltersApplied,
   audioTrackLoudnessAnalysisFailed,
   audioTrackLoudnessAnalysisReady,
+  audioTrackSyncOffsetChanged,
   audioTrackToggled,
   initialAudioState,
 } from "@/app/store/slices/audio-slice";
@@ -73,6 +74,34 @@ const measure = (operationId: string) => [
 ];
 
 describe("resolveAudioPlaybackTracks", () => {
+  it("keeps stream placement while auditioning a signal-filter draft", () => {
+    const placed = audio(
+      audioTrackSyncOffsetChanged({
+        streamIndex: 2,
+        syncOffset: { enabled: true, offsetMicros: -250_000 },
+      }),
+      startPreview,
+      changePreview([gain(6)]),
+    );
+
+    const playback = resolve(placed).tracks[0]!;
+    expect(playback.syncOffsetMicros).toBe(-250_000);
+    expect(playback.selection).toEqual({ filters: [gain(6)], streamIndex: 2 });
+    expect(placed.tracks[0]?.processing.filters).toEqual([]);
+    const bypassed = resolve(
+      audioReducer(
+        placed,
+        audioTrackSyncOffsetChanged({
+          streamIndex: 2,
+          syncOffset: { enabled: false, offsetMicros: -250_000 },
+        }),
+      ),
+    );
+
+    expect(bypassed.tracks[0]?.syncOffsetMicros).toBe(0);
+    expect(bypassed.tracks[0]?.selection).toEqual(playback.selection);
+  });
+
   it("plays the previewed draft for its track and only its enabled filters", () => {
     const committed = resolve(
       audio(audioTrackFiltersApplied({ filters: [gain(3)], streamIndex: 2 })),

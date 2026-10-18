@@ -33,6 +33,7 @@ interface WebAudioTrack {
   selection: AudioChainSelection;
   startTimeMicros?: number;
   streamIndex: number;
+  syncOffsetMicros?: number;
   /** An opaque label passed back with this track's render status. */
   tag?: number;
   /** Post-filter Track Volume, applied by the track's GainNode. */
@@ -78,6 +79,7 @@ interface ProcessingChange {
 /** One processed chain of a track, as requested from the native renderer. */
 interface TrackRender {
   key: string;
+  offsetFrames: number;
   preview: boolean;
   selection: AudioChainSelection;
 }
@@ -127,6 +129,7 @@ interface ScheduledTrack {
   generation: number;
   input: GainNode;
   nodes: Set<AudioBufferSourceNode>;
+  offsetFrames: number;
   preview: boolean;
   retiredVoices: Set<TrackVoice>;
   scheduledThroughFrame: number;
@@ -238,7 +241,8 @@ class WebAudioEngine {
     let rangeChanged = false;
     const statusChanged: ScheduledTrack[] = [];
     for (const track of tracks) {
-      const key = JSON.stringify(track.selection);
+      const offsetFrames = Math.round(((track.syncOffsetMicros ?? 0) * SAMPLE_RATE) / 1_000_000);
+      const key = JSON.stringify([track.selection, offsetFrames]);
       const current = this.tracks.get(track.streamIndex);
       const startFrame = Math.max(
         0,
@@ -257,6 +261,7 @@ class WebAudioEngine {
 
       if (current && current.selectionKey !== key) {
         processingChanged = true;
+        current.offsetFrames = offsetFrames;
         current.selection = track.selection;
         current.selectionKey = key;
         if (current.failedKey !== key) current.failedKey = null;
@@ -579,6 +584,7 @@ class WebAudioEngine {
     const runtime = connectAudioTrackRuntime(this.context, this.audioMix);
     voice.connect(runtime.input);
     const scheduled: ScheduledTrack = {
+      offsetFrames: Math.round(((track.syncOffsetMicros ?? 0) * SAMPLE_RATE) / 1_000_000),
       abortController: null,
       audible: null,
       cursorFrame: this.anchorPositionFrame,
@@ -621,7 +627,12 @@ class WebAudioEngine {
     if (track.failedKey === track.selectionKey && track.preview && track.audible) {
       return { ...track.audible, preview: track.preview };
     }
-    return { key: track.selectionKey, preview: track.preview, selection: track.selection };
+    return {
+      offsetFrames: track.offsetFrames,
+      key: track.selectionKey,
+      preview: track.preview,
+      selection: track.selection,
+    };
   }
 
   private pendingStatus(track: ScheduledTrack): TrackRenderStatus {
@@ -914,8 +925,8 @@ class WebAudioEngine {
     endFrame: number,
     signal: AbortSignal,
   ): Promise<AudioBuffer> {
-    const decodeStartFrame = Math.max(startFrame, track.startFrame);
-    const decodeEndFrame = Math.min(endFrame, track.durationFrame);
+    const decodeStartFrame = Math.max(startFrame - render.offsetFrames, track.startFrame);
+    const decodeEndFrame = Math.min(endFrame - render.offsetFrames, track.durationFrame);
     const decodeFrameCount = Math.max(0, decodeEndFrame - decodeStartFrame);
     const chunk =
       decodeFrameCount > 0
@@ -942,7 +953,7 @@ class WebAudioEngine {
     const buffer = this.context.createBuffer(CHANNELS, endFrame - startFrame, SAMPLE_RATE);
     const left = buffer.getChannelData(0);
     const right = buffer.getChannelData(1);
-    const destinationStartFrame = decodeStartFrame - startFrame;
+    const destinationStartFrame = decodeStartFrame + render.offsetFrames - startFrame;
     for (let frame = 0; frame < decodedFrameCount; frame += 1) {
       left[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels]!;
       right[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels + 1]!;

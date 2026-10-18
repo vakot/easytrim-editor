@@ -17,11 +17,15 @@ import type { ApplicationShortcut } from "@/app/commands/core/application-comman
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import { timelineShortcutExecuted } from "@/app/store/actions/timeline-actions";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectVisibleAudioActivityMarkers } from "@/app/store/slices/audio-slice";
+import {
+  selectAudioTracks,
+  selectVisibleAudioActivityMarkers,
+} from "@/app/store/slices/audio-slice";
 import { selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import { selectVisibleSceneBoundariesMicros } from "@/app/store/slices/scene-detection-slice";
 import { selectSourceLoadToken, selectSourceMedia } from "@/app/store/slices/source-slice";
+import { audioTimelineBoundaries } from "@/domain/audio-processing";
 import type { FrameRate } from "@/domain/media";
 import {
   type PlaybackHoldRelease,
@@ -139,6 +143,7 @@ function TimelinePanelContent() {
   const media = useAppSelector(selectSourceMedia);
   const loadToken = useAppSelector(selectSourceLoadToken);
   const scenes = useAppSelector(selectVisibleSceneBoundariesMicros);
+  const audioTracks = useAppSelector(selectAudioTracks);
   const audioActivityMarkers = useAppSelector(selectVisibleAudioActivityMarkers);
   const chapters = useAppSelector(selectChapters);
   const editedChapterId = useChapterEditing().chapterId;
@@ -168,6 +173,29 @@ function TimelinePanelContent() {
   // Without an editable segment the trim parts still show, disabled, selecting the whole timeline.
   // An empty timeline gets a nominal axis so they sit at its opposite ends.
   const axisMicros = Math.max(durationMicros, 1);
+  const audioBoundariesMicros = media
+    ? [
+        ...new Set(
+          media.audioStreams.flatMap((stream) => {
+            const track = audioTracks.find(
+              (candidate) => candidate.streamIndex === stream.streamIndex,
+            );
+
+            if (!track) return [];
+            const boundaries = audioTimelineBoundaries(
+              durationMicros,
+              stream.startTimeMicros,
+              stream.durationMicros,
+              track.processing.syncOffset,
+            );
+
+            if (!boundaries.hasVisibleAudio) return [];
+            return [boundaries.visibleStartMicros, boundaries.visibleEndMicros];
+          }),
+        ),
+      ]
+    : [];
+
   const selection = trim.enabled
     ? { endMicros: trim.endMicros, startMicros: trim.startMicros }
     : { endMicros: axisMicros, startMicros: 0 };
@@ -186,6 +214,7 @@ function TimelinePanelContent() {
     { key: "playhead", micros: getPositionMicros() },
     ...scenes.map((micros) => ({ key: "scene", micros })),
     ...audioActivityMarkers.map(({ micros }) => ({ key: "audio-activity", micros })),
+    ...audioBoundariesMicros.map((micros) => ({ key: "audio-boundary", micros })),
     ...chapters.flatMap((chapter) => {
       const key = chapter.id === editedChapterId ? EDITED_CHAPTER_SNAP_KEY : "chapter";
       return [
@@ -444,6 +473,18 @@ function TimelinePanelContent() {
             endMicros={selection.endMicros}
             startMicros={selection.startMicros}
           />
+          {audioBoundariesMicros.map((micros) => (
+            <Timeline.Marker
+              aria-hidden="true"
+              data-audio-boundary=""
+              key={micros}
+              micros={micros}
+              style={{
+                background: "transparent",
+                borderLeft: "1px dashed rgb(148 163 184 / 0.75)",
+              }}
+            />
+          ))}
           <TimelinePlayhead disabled={empty} frameRate={frameRate} showValue={scrubbing} />
           <TimelineTrimHandles frameRate={frameRate} selection={selection} trim={trim} />
         </Timeline.Root>

@@ -4,6 +4,7 @@ import {
   type AudioChainSelection,
   type AudioFilter,
   audioFiltersRequireLoudnessAnalysis,
+  effectiveAudioOffsetMicros,
   sameAudioFilters,
 } from "@/domain/audio-processing";
 import type { AudioStream } from "@/domain/media";
@@ -49,6 +50,9 @@ function resolveAudioPlaybackTracks(
     const analysis = previewing ? preview.loudnessAnalysis : track.loudnessAnalysis;
     const timing = {
       durationMicros: stream?.durationMicros,
+      syncOffsetMicros: effectiveAudioOffsetMicros(
+        previewing ? (preview.syncOffset ?? undefined) : track.processing.syncOffset,
+      ),
       startTimeMicros: stream?.startTimeMicros ?? 0,
       streamIndex: track.streamIndex,
       volume: track.processing.volume,
