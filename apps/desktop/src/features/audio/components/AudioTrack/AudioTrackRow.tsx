@@ -113,7 +113,6 @@ function AudioTrackRowWaveform({
   const { getPositionMicros } = useTimelinePlayback();
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const [hoveredPosition, setHoveredPosition] = useState<number | null>(null);
-  const [syncTooltipOpen, setSyncTooltipOpen] = useState(false);
   const [syncMarker, setSyncMarker] = useState<{
     leftPercent: number;
     offsetMicros: number;
@@ -174,7 +173,6 @@ function AudioTrackRowWaveform({
           ),
         );
 
-        setSyncTooltipOpen(false);
         setHoveredPosition(null);
         setSyncMarker({ leftPercent: position.leftPercent, offsetMicros });
       }}
@@ -197,32 +195,32 @@ function AudioTrackRowWaveform({
         );
       }}
     >
-      <Tooltip onOpenChange={setSyncTooltipOpen} open={syncMarker === null && syncTooltipOpen}>
-        <TooltipTrigger asChild>
-          <div className="absolute inset-0" data-slot="audio-sync-tooltip">
-            <AudioTrackWaveform
-              displayMode={displayMode}
-              stream={stream}
-              syncOffset={hasOffsetPreview ? syncOffset : undefined}
-              timelineDurationMicros={durationMicros}
-              track={track}
-              volume={volume}
-            />
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" sideOffset={6}>
-          {t("audio.syncOffset.label")}
-        </TooltipContent>
-      </Tooltip>
+      <div className="absolute inset-0">
+        <AudioTrackWaveform
+          displayMode={displayMode}
+          stream={stream}
+          syncOffset={hasOffsetPreview ? syncOffset : undefined}
+          timelineDurationMicros={durationMicros}
+          track={track}
+          volume={volume}
+        />
+      </div>
 
       <div className="pointer-events-none absolute inset-0">
         {hoveredPosition !== null && syncMarker === null ? (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 border-l border-dashed border-foreground/50 shadow-[0_0_3px_rgb(0_0_0/0.5)]"
-            data-slot="audio-sync-ghost-playhead"
-            style={{ left: `${hoveredPosition}%` }}
-          />
+          <Tooltip open>
+            <TooltipTrigger asChild>
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 border-l border-dashed border-foreground/50 shadow-[0_0_3px_rgb(0_0_0/0.5)]"
+                data-slot="audio-sync-ghost-playhead"
+                style={{ left: `${hoveredPosition}%` }}
+              />
+            </TooltipTrigger>
+            <TooltipContent className="pointer-events-none" side="top" sideOffset={6}>
+              {t("audio.syncOffset.label")}
+            </TooltipContent>
+          </Tooltip>
         ) : null}
 
         <Popover

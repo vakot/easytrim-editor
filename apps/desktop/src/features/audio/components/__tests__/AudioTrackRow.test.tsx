@@ -330,14 +330,9 @@ describe("AudioTrackRow", () => {
   });
 
   it("shows the short sync tooltip and hides it when synchronization opens", async () => {
-    const user = userEvent.setup();
     renderRow();
     const interaction = document.querySelector<HTMLElement>(
       '[data-slot="audio-sync-interaction"]',
-    )!;
-
-    const tooltipTarget = interaction.querySelector<HTMLElement>(
-      '[data-slot="audio-sync-tooltip"]',
     )!;
 
     vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
@@ -351,36 +346,30 @@ describe("AudioTrackRow", () => {
       y: 0,
       toJSON: () => ({}),
     });
-    vi.spyOn(tooltipTarget, "getBoundingClientRect").mockReturnValue({
-      bottom: 50,
-      height: 50,
-      left: 100,
-      right: 1_100,
-      top: 0,
-      width: 1_000,
-      x: 100,
-      y: 0,
-      toJSON: () => ({}),
-    });
 
     expect(interaction).not.toHaveAttribute("title");
-    await user.hover(tooltipTarget);
-    fireEvent.pointerMove(tooltipTarget, { clientX: 620, clientY: 25, pointerType: "mouse" });
+    const canvas = interaction.querySelector("canvas")!;
+    fireEvent.pointerMove(canvas, { clientX: 620, clientY: 25, pointerType: "mouse" });
 
     const tooltip = await screen.findByRole("tooltip");
+    const ghost = document.querySelector<HTMLElement>('[data-slot="audio-sync-ghost-playhead"]')!;
     expect(tooltip).toHaveTextContent("Sync Offset");
     expect(tooltip).toHaveAttribute("data-side", "top");
     expect(tooltip).toHaveClass("rounded-md", "bg-foreground");
-    expect(document.querySelector('[data-slot="audio-sync-ghost-playhead"]')).toHaveStyle({
-      left: "52%",
-    });
+    expect(tooltip).toHaveClass("pointer-events-none");
+    expect(ghost).toHaveStyle({ left: "52%" });
+    expect(ghost).toHaveAttribute("aria-describedby", tooltip.id);
 
-    await user.unhover(tooltipTarget);
+    fireEvent.pointerMove(canvas, { clientX: 630, clientY: 30, pointerType: "mouse" });
+    expect(ghost).toHaveStyle({ left: "53%" });
+    expect(ghost).toHaveAttribute("aria-describedby", tooltip.id);
+
+    fireEvent.pointerLeave(interaction);
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
 
-    await user.hover(tooltipTarget);
+    fireEvent.pointerMove(canvas, { clientX: 630, clientY: 30, pointerType: "mouse" });
     await screen.findByRole("tooltip");
-    fireEvent.click(interaction.querySelector("canvas")!, { button: 0, clientX: 630 });
+    fireEvent.click(canvas, { button: 0, clientX: 630 });
     await screen.findByRole("button", { name: "Sync offset" });
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
