@@ -52,6 +52,12 @@ const menuState = vi.hoisted(() => ({
   crop: {
     value: { x: 0, y: 0, width: 1, height: 1 },
   },
+  workspaceHistory: {
+    operations: [] as unknown[],
+    position: 0,
+    interaction: null,
+    replaying: false,
+  },
   export: {
     queue: [] as Array<{ status: "queued" | "rendering" }>,
     queueStarted: false,
@@ -149,6 +155,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
         capabilities: { status: "checking" },
       },
       crop: menuState.crop,
+      workspaceHistory: menuState.workspaceHistory,
       sceneDetection: { markersVisible: true, operation: null },
       trim: { value: null },
       export: {
@@ -234,6 +241,10 @@ describe("MenuBarTest", () => {
       overrides.canSave === false
         ? { x: 0.1, y: 0, width: 0.9, height: 1 }
         : { x: 0, y: 0, width: 1, height: 1 };
+    menuState.workspaceHistory.operations = [];
+    menuState.workspaceHistory.position = 0;
+    menuState.workspaceHistory.interaction = null;
+    menuState.workspaceHistory.replaying = false;
     menuState.export.queue = [
       ...(overrides.hasQueuedItems ? [{ status: "queued" as const }] : []),
       ...(overrides.hasActiveItem ? [{ status: "rendering" as const }] : []),
@@ -362,7 +373,55 @@ describe("MenuBarTest", () => {
       .querySelectorAll("button");
 
     const labels = [...menuButtons].map((button) => button.textContent);
-    expect(labels).toEqual(["File", "View", "Settings", "Help"]);
+    expect(labels).toEqual(["File", "Edit", "View", "Settings", "Help"]);
+  });
+
+  it("shows available Undo and Redo entries with descriptive names and shortcut labels", async () => {
+    const user = userEvent.setup();
+    const target = { instanceId: "source", kind: "instance", sourceId: "C:/Media/source.mp4" };
+    menuState.workspaceHistory.operations = [
+      {
+        changes: [
+          {
+            field: "crop",
+            before: { present: true, value: null },
+            after: { present: true, value: {} },
+            target,
+          },
+        ],
+        id: "crop",
+        kind: "state",
+        label: "Change crop",
+        role: "edit",
+        timestamp: 1,
+      },
+      {
+        changes: [
+          {
+            field: "trim",
+            before: { present: true, value: {} },
+            after: { present: true, value: {} },
+            target,
+          },
+        ],
+        id: "trim",
+        kind: "state",
+        label: "Adjust trim",
+        role: "edit",
+        timestamp: 2,
+      },
+    ];
+    menuState.workspaceHistory.position = 1;
+    renderMenus({ hasSource: true });
+
+    await user.click(getMenuTrigger("Edit"));
+
+    const undoItem = screen.getByRole("menuitem", { name: /Undo/ });
+    const redoItem = screen.getByRole("menuitem", { name: /Redo/ });
+    expect(undoItem).toHaveTextContent("CtrlZ");
+    expect(undoItem).toBeEnabled();
+    expect(redoItem).toHaveTextContent("CtrlShiftZ");
+    expect(redoItem).toBeEnabled();
   });
 
   it("opens the Command Palette from View", async () => {

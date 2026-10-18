@@ -16,12 +16,13 @@ import {
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { diagnostics } from "@/lib/diagnostics";
 
+import { MenuBarEdit, MenuBarEditContent } from "./components/MenuBarEdit";
 import { MenuBarFile, MenuBarFileContent } from "./components/MenuBarFile";
 import { MenuBarHelp, MenuBarHelpContent } from "./components/MenuBarHelp";
 import { MenuBarSettings } from "./components/MenuBarSettings";
 import { MenuBarView, MenuBarViewContent } from "./components/MenuBarView";
 
-type MenuId = "file" | "view" | "queue" | "help";
+type MenuId = "edit" | "file" | "view" | "queue" | "help";
 
 function reportMenuChange(value: MenuId | "") {
   diagnostics.event(value ? "menu.opened.changed" : "menu.closed.changed", {
@@ -64,6 +65,7 @@ function MenuBar() {
           onValueChange={(value) => reportMenuChange(value as MenuId | "")}
         >
           <MenuBarFile />
+          <MenuBarEdit />
           <MenuBarView />
           <MenuBarSettings />
           <MenuBarHelp />
@@ -82,6 +84,10 @@ function MenuBar() {
             <MenubarContent align="start">
               <CompactMenuSub id="file" label={t("app.menu.file")}>
                 <MenuBarFileContent />
+              </CompactMenuSub>
+
+              <CompactMenuSub id="edit" label={t("app.menu.edit")}>
+                <MenuBarEditContent />
               </CompactMenuSub>
 
               <CompactMenuSub id="view" label={t("layout.view")}>

@@ -87,8 +87,12 @@ describe("source-bound lifecycle", () => {
     );
 
     const observedIds: string[][] = [];
+    let previousInstances = store.getState().editingInstances;
     const unsubscribe = store.subscribe(() => {
-      observedIds.push([...store.getState().editingInstances.ids]);
+      const instances = store.getState().editingInstances;
+      if (instances === previousInstances) return;
+      previousInstances = instances;
+      observedIds.push([...instances.ids]);
     });
 
     await store.dispatch(closeEditingInstancesRequested(["batch-1", "batch-2"]));

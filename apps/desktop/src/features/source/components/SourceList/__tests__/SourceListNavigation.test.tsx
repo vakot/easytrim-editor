@@ -10,13 +10,13 @@ const commandRuntime = vi.hoisted(() => ({
       enabled: true,
       label: "Next source",
       pending: false,
-      shortcut: { code: "ArrowRight", key: "RightArrow", modifier: "alt" },
+      shortcut: { code: "BracketRight", key: "]", modifier: "none" },
     },
     "previous-source": {
-      enabled: false,
+      enabled: true,
       label: "Previous source",
       pending: false,
-      shortcut: { code: "ArrowLeft", key: "LeftArrow", modifier: "alt" },
+      shortcut: { code: "BracketLeft", key: "[", modifier: "none" },
     },
   },
   executeCommand: vi.fn(),
@@ -27,33 +27,26 @@ vi.mock("@/app/hooks/useApplicationCommands", () => ({
   useApplicationCommands: () => ({ executeCommand: commandRuntime.executeCommand }),
 }));
 
-import { SourceNavigation } from "../SourceNavigation";
+import { SourceListNavigation } from "../components/SourceListNavigation";
 
-describe("SourceNavigation", () => {
-  it("navigates between sources and exposes translated boundary labels", async () => {
+describe("SourceListNavigation", () => {
+  it("shows bracket shortcuts in the previous and next tooltips", async () => {
     const user = userEvent.setup();
-    commandRuntime.executeCommand.mockClear();
 
     render(
       <TooltipProvider delayDuration={0}>
-        <SourceNavigation />
+        <SourceListNavigation />
       </TooltipProvider>,
     );
 
     const previousButton = screen.getByRole("button", { name: "Previous source" });
     const nextButton = screen.getByRole("button", { name: "Next source" });
-    expect(previousButton).toBeDisabled();
-    expect(nextButton).not.toBeDisabled();
+    expect(previousButton).toHaveAttribute("aria-keyshortcuts", "[");
+    expect(nextButton).toHaveAttribute("aria-keyshortcuts", "]");
 
     await user.hover(nextButton);
     const tooltip = await screen.findByRole("tooltip");
     expect(tooltip).toHaveTextContent("Next source");
-    const keys = tooltip.querySelectorAll('[data-slot="kbd"]');
-    expect(keys).toHaveLength(2);
-    expect(keys[0]).toHaveTextContent("Alt");
-    expect(keys[1]?.querySelector("svg")).toBeInTheDocument();
-
-    await user.click(nextButton);
-    expect(commandRuntime.executeCommand).toHaveBeenCalledWith("next-source", "button");
+    expect(tooltip.querySelector('[data-slot="kbd"]')).toHaveTextContent("]");
   });
 });

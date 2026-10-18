@@ -1,5 +1,5 @@
 const SIDEBAR_IDS = ["left", "right"] as const;
-const SIDEBAR_VIEW_IDS = ["sources", "activity", "exportQueue"] as const;
+const SIDEBAR_VIEW_IDS = ["sources", "activity", "exportQueue", "history"] as const;
 
 type SidebarId = (typeof SIDEBAR_IDS)[number];
 type SidebarViewId = (typeof SIDEBAR_VIEW_IDS)[number];

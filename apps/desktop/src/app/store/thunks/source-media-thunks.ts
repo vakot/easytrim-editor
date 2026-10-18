@@ -13,6 +13,12 @@ import {
   hasActiveExportForSource,
   withdrawPendingExport,
 } from "@/app/store/integration/export-queue-runtime";
+import {
+  lifecycleInstances,
+  recordInstanceLifecycle,
+  recordInstanceNavigation,
+  recordSourceAvailability,
+} from "@/app/store/integration/workspace-history-lifecycle";
 import { getReplacementEditingInstance } from "@/app/store/lib/editing-instances";
 import {
   selectAudioTracks,
@@ -150,7 +156,7 @@ const ingestSources =
     origin: DiagnosticOrigin = { type: "internal" },
     importOperation?: DiagnosticOperation,
   ): AppThunk =>
-  (dispatch) => {
+  (dispatch, getState) => {
     const result = normalizeSourceImportResult(input);
     const operation = importOperation ?? diagnostics.startOperation("source.import", { origin });
     operation.event("source.import.requested", {
@@ -175,7 +181,21 @@ const ingestSources =
     }));
 
     dispatch(dropListenerErrorCleared());
+    const previousState = getState();
+    const beforeActiveId = selectActiveInstanceId(previousState);
     dispatch(editingInstancesAdded(instances));
+    const nextState = getState();
+    recordInstanceLifecycle(
+      dispatch,
+      "Import sources",
+      [],
+      lifecycleInstances(
+        nextState,
+        instances.map(({ id }) => id),
+      ),
+      beforeActiveId,
+      instances[0]!.id,
+    );
     dispatch(navigateToEditingInstance(instances[0]!.id, origin));
     operation.complete(importResultData(result));
   };
@@ -386,6 +406,7 @@ function drainThumbnailQueue(dispatch: AppDispatch, getState: () => RootState) {
 function beginForegroundSourcePreparation(
   dispatch: AppDispatch,
   getState: () => RootState,
+  deferThumbnailQueue = false,
 ): () => void {
   foregroundSourcePreparationCount += 1;
   let isFinished = false;
@@ -396,7 +417,7 @@ function beginForegroundSourcePreparation(
     foregroundSourcePreparationCount = Math.max(0, foregroundSourcePreparationCount - 1);
     if (foregroundSourcePreparationCount > 0) return;
 
-    drainThumbnailQueue(dispatch, getState);
+    if (!deferThumbnailQueue) drainThumbnailQueue(dispatch, getState);
   };
 }
 
@@ -601,9 +622,19 @@ const leaveActiveEditingInstance = (): AppThunk => (dispatch) => {
 };
 
 const restoreActiveEditingInstanceRequested =
-  (id: string, loadToken: number, snapshot: EditorSnapshot): AppThunk<Promise<boolean>> =>
+  (
+    id: string,
+    loadToken: number,
+    snapshot: EditorSnapshot,
+    deferThumbnailQueue = false,
+  ): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
-    const finishForegroundPreparation = beginForegroundSourcePreparation(dispatch, getState);
+    const finishForegroundPreparation = beginForegroundSourcePreparation(
+      dispatch,
+      getState,
+      deferThumbnailQueue,
+    );
+
     try {
       const instance = selectEditingInstanceById(getState(), id);
 
@@ -678,7 +709,10 @@ const restoreActiveEditingInstanceRequested =
   };
 
 const activateEditingInstanceRequested =
-  (instance: EditingInstance): AppThunk<Promise<boolean>> =>
+  (
+    instance: EditingInstance,
+    options?: { deferThumbnailQueue: boolean },
+  ): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     if (selectEditingInstanceById(getState(), instance.id)?.draftAvailable === false) return false;
     if (instance.optimizedArguments !== undefined)
@@ -693,16 +727,30 @@ const activateEditingInstanceRequested =
         snapshot: instance.snapshot,
       }),
     );
+
     return dispatch(
-      restoreActiveEditingInstanceRequested(instance.id, loadToken, instance.snapshot),
+      restoreActiveEditingInstanceRequested(
+        instance.id,
+        loadToken,
+        instance.snapshot,
+        options?.deferThumbnailQueue,
+      ),
     );
   };
 
+const resumeSourceThumbnailPreparation = (): AppThunk<void> => (dispatch, getState) => {
+  drainThumbnailQueue(dispatch, getState);
+};
+
 const navigateToEditingInstance =
-  (id: string | null, origin: DiagnosticOrigin = { type: "internal" }): AppThunk<boolean> =>
-  (dispatch, getState) => {
+  (
+    id: string | null,
+    origin: DiagnosticOrigin = { type: "internal" },
+  ): AppThunk<Promise<boolean>> =>
+  async (dispatch, getState) => {
     diagnostics.action("snapshot.select.requested", origin, id ? { snapshotId: id } : undefined);
     const state = getState();
+    const previousInstance = selectActiveEditingInstance(state);
     const target = id ? selectEditingInstanceById(state, id) : null;
 
     if (id !== null && (!target || target.draftAvailable === false)) {
@@ -729,22 +777,44 @@ const navigateToEditingInstance =
     });
 
     if (target) {
-      void dispatch(activateEditingInstanceRequested(target)).then(
-        (restored) => {
-          if (restored) operation.complete({ itemId: target.id });
-          else
-            operation.fail(new Error("Snapshot restoration did not complete."), {
-              itemId: target.id,
-            });
-        },
-        (error: unknown) => operation.fail(error, { itemId: target.id }),
-      );
+      try {
+        const restored = await dispatch(activateEditingInstanceRequested(target));
+        if (!restored) {
+          operation.fail(new Error("Snapshot restoration did not complete."), {
+            itemId: target.id,
+          });
+          if (previousInstance && previousInstance.id !== target.id)
+            await dispatch(activateEditingInstanceRequested(previousInstance));
+          else if (!previousInstance) {
+            queueRestoreSequence += 1;
+            dispatch(sourceCleared());
+            dispatch(activeEditingInstanceChanged(null));
+          }
+          return false;
+        }
+        operation.complete({ itemId: target.id });
+      } catch (error: unknown) {
+        operation.fail(error, { itemId: target.id });
+        if (previousInstance && previousInstance.id !== target.id)
+          await dispatch(activateEditingInstanceRequested(previousInstance));
+        else if (!previousInstance) {
+          queueRestoreSequence += 1;
+          dispatch(sourceCleared());
+          dispatch(activeEditingInstanceChanged(null));
+        }
+        return false;
+      }
     } else {
       queueRestoreSequence += 1;
       dispatch(sourceCleared());
       dispatch(activeEditingInstanceChanged(null));
       operation.complete({ reason: "cleared" });
     }
+    recordInstanceNavigation(
+      dispatch,
+      state.editingInstances.activeInstanceId,
+      getState().editingInstances.activeInstanceId,
+    );
     return true;
   };
 
@@ -884,18 +954,40 @@ const closeActiveEditingInstanceRequested =
     }
 
     if (activeInstance.id !== selectActiveInstanceId(state)) {
+      const beforeInstances = lifecycleInstances(state, [activeInstance.id]);
+      const beforeActiveId = selectActiveInstanceId(state);
       reportClosedSources([activeInstance], origin);
       dispatch(editingInstanceClosed(activeInstance.id));
+      const afterState = getState();
+      recordInstanceLifecycle(
+        dispatch,
+        "Close editing instance",
+        beforeInstances,
+        lifecycleInstances(afterState, [activeInstance.id]),
+        beforeActiveId,
+        selectActiveInstanceId(afterState),
+      );
       return;
     }
 
     reportClosedSources([activeInstance], origin);
+    const beforeActiveId = selectActiveInstanceId(state);
     dispatch(commitActiveEditingInstanceDraft());
+    const beforeInstances = lifecycleInstances(getState(), [activeInstance.id]);
     const instances = selectImportedEditingInstances(getState());
     const activeIndex = instances.findIndex((instance) => instance.id === activeInstance.id);
     const replacement = getReplacementEditingInstance(instances, activeIndex);
 
     dispatch(editingInstanceClosed(activeInstance.id));
+    const afterCloseState = getState();
+    recordInstanceLifecycle(
+      dispatch,
+      "Close editing instance",
+      beforeInstances,
+      lifecycleInstances(afterCloseState, [activeInstance.id]),
+      beforeActiveId,
+      selectActiveInstanceId(afterCloseState),
+    );
     if (replacement) {
       // A replacement activation resets source-bound domains and keeps the
       // existing panel footprint alive while its metadata is restored. Do not
@@ -921,6 +1013,7 @@ const closeEditingInstancesRequested =
     );
 
     const closingIds = new Set(idsToClose);
+    const beforeActiveId = selectActiveInstanceId(state);
     const activeInstanceId = selectActiveInstanceId(state);
     const activeInstanceWillClose = activeInstanceId !== null && closingIds.has(activeInstanceId);
 
@@ -939,8 +1032,18 @@ const closeEditingInstancesRequested =
         : undefined;
 
     if (activeInstanceWillClose) dispatch(commitActiveEditingInstanceDraft());
+    const beforeInstances = lifecycleInstances(getState(), idsToClose);
 
     dispatch(editingInstancesClosed(idsToClose));
+    const afterCloseState = getState();
+    recordInstanceLifecycle(
+      dispatch,
+      idsToClose.length === 1 ? "Close editing instance" : "Close editing instances",
+      beforeInstances,
+      lifecycleInstances(afterCloseState, idsToClose),
+      beforeActiveId,
+      selectActiveInstanceId(afterCloseState),
+    );
 
     if (activeInstanceWillClose) {
       if (replacement) dispatch(navigateToEditingInstance(replacement.id));
@@ -1025,6 +1128,14 @@ const deleteActiveEditingInstanceSourceRequested =
     }
 
     dispatch(editingInstancesSourceAvailabilityChanged({ availability: "deleted", sourcePath }));
+    recordSourceAvailability(
+      dispatch,
+      sourcePath,
+      "available",
+      "deleted",
+      "Delete source file",
+      sourceInstanceIds,
+    );
     operation.complete({ itemId: item.id, sourcePath });
     return null;
   };
@@ -1035,7 +1146,7 @@ const restoreSourceFileRequested =
     origin?: DiagnosticOrigin;
     sourcePath: string;
   }): AppThunk<Promise<boolean>> =>
-  async (dispatch) => {
+  async (dispatch, getState) => {
     const {
       itemId,
       origin = { id: "activity.restore-source", type: "button" },
@@ -1052,6 +1163,17 @@ const restoreSourceFileRequested =
       await restoreSourceFromTrash(sourcePath);
       dispatch(
         editingInstancesSourceAvailabilityChanged({ availability: "available", sourcePath }),
+      );
+      const ids =
+        selectInstanceIdsBySourceKey(getState()).get(normalizeSourceKey(sourcePath)) ?? [];
+
+      recordSourceAvailability(
+        dispatch,
+        sourcePath,
+        "deleted",
+        "available",
+        "Restore source file",
+        ids,
       );
       operation.complete({ ...(itemId ? { itemId } : {}), sourcePath });
       return true;
@@ -1262,4 +1384,5 @@ export {
   restoreActiveEditingInstanceRequested,
   restoreExportAttemptRequested,
   restoreSourceFileRequested,
+  resumeSourceThumbnailPreparation,
 };

@@ -1,5 +1,6 @@
 import { AppActivityDialog } from "@/app/dialogs/AppActivityDialog";
 import { AppExportQueueDialog } from "@/app/dialogs/AppExportQueueDialog";
+import { AppHistoryDialog } from "@/app/dialogs/AppHistoryDialog";
 import { AppSourcesDialog } from "@/app/dialogs/AppSourcesDialog";
 import { lazyWithPreload } from "@/lib/lazy-component";
 
@@ -17,6 +18,12 @@ const ActivityWorkspaceView = lazyWithPreload<Record<string, never>>(() =>
   })),
 );
 
+const HistoryWorkspaceView = lazyWithPreload<Record<string, never>>(() =>
+  import("../components/workspace-views/HistoryWorkspaceView").then((module) => ({
+    default: module.HistoryWorkspaceView,
+  })),
+);
+
 const ExportQueueWorkspaceView = lazyWithPreload<Record<string, never>>(() =>
   import("../components/workspace-views/ExportQueueWorkspaceView").then((module) => ({
     default: module.ExportQueueWorkspaceView,
@@ -26,12 +33,14 @@ const ExportQueueWorkspaceView = lazyWithPreload<Record<string, never>>(() =>
 const WORKSPACE_VIEW_COMPONENTS = {
   activity: ActivityWorkspaceView,
   exportQueue: ExportQueueWorkspaceView,
+  history: HistoryWorkspaceView,
   sources: SourcesWorkspaceView,
 } satisfies Record<SidebarViewId, typeof SourcesWorkspaceView>;
 
 const WORKSPACE_DIALOG_COMPONENTS = {
   activity: AppActivityDialog,
   exportQueue: AppExportQueueDialog,
+  history: AppHistoryDialog,
   sources: AppSourcesDialog,
 } satisfies Record<
   SidebarViewId,

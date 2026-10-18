@@ -13,6 +13,11 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
+  applyHistoryPosition,
+  redoWorkspaceHistory,
+  undoWorkspaceHistory,
+} from "@/app/store/integration/workspace-history";
+import {
   createWorkspaceRecoveryBackup,
   getWorkspaceRecoveryCandidate,
   initializeWorkspaceRecovery,
@@ -25,6 +30,10 @@ import {
   selectEditingInstances,
   selectSourceListEntries,
 } from "@/app/store/slices/editing-instances-slice";
+import {
+  historyOperationRecorded,
+  selectWorkspaceHistory,
+} from "@/app/store/slices/workspace-history-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt } from "@/domain/editing-instance";
 import { firstSource, media, secondSource } from "@/test/source.fixtures";
@@ -128,6 +137,68 @@ describe("restorePreviousWorkspaceRequested", () => {
     expect(localStorage.getItem(CANDIDATE_KEY)).not.toBeNull();
   });
 
+  it("restores history after crash recovery so Undo and Redo work on the recovered draft", async () => {
+    native.activateSourcePath.mockImplementation(async (sourcePath: string) => ({
+      displayName: sourcePath.split("/").at(-1) ?? sourcePath,
+      sourcePath,
+    }));
+    const previousStore = createAppStore();
+    const saved = {
+      ...instance("second", secondSource),
+      snapshot: {
+        ...createDefaultEditorSnapshot(secondSource),
+        trim: { endMicros: 3_000_000, startMicros: 1_000_000 },
+      },
+    };
+
+    previousStore.dispatch(editingInstancesAdded([instance("first", firstSource), saved]));
+
+    previousStore.dispatch(activeEditingInstanceChanged("second"));
+    previousStore.dispatch(
+      historyOperationRecorded({
+        changes: [
+          {
+            after: { present: true, value: { startMicros: 1_000_000, endMicros: 3_000_000 } },
+            before: { present: true, value: { startMicros: 0, endMicros: 5_000_000 } },
+            field: "trim",
+            target: { instanceId: "second", kind: "instance", sourceId: secondSource.sourcePath },
+          },
+        ],
+        id: "recovered-trim",
+        kind: "state",
+        label: "Adjust trim",
+        role: "edit",
+        timestamp: 123,
+      }),
+    );
+    localStorage.setItem(
+      CURRENT_KEY,
+      JSON.stringify(
+        createWorkspaceRecoveryBackup(previousStore.getState(), { sessionId: "crash" }),
+      ),
+    );
+    const store = createAppStore();
+    initializeWorkspaceRecovery(store, "current", true);
+
+    expect(await store.dispatch(restorePreviousWorkspaceRequested())).toBe(true);
+    expect(selectWorkspaceHistory(store.getState())).toMatchObject({
+      position: 1,
+      operations: [{ id: "recovered-trim" }],
+    });
+    expect(await store.dispatch(undoWorkspaceHistory())).toBe(true);
+    expect(store.getState().trim.value).toEqual({
+      endMicros: 5_000_000,
+      sourceDurationMicros: 5_000_000,
+      startMicros: 0,
+    });
+    expect(await store.dispatch(redoWorkspaceHistory())).toBe(true);
+    expect(store.getState().trim.value).toEqual({
+      endMicros: 3_000_000,
+      sourceDurationMicros: 5_000_000,
+      startMicros: 1_000_000,
+    });
+  });
+
   it("keeps durations for inactive cards so restored trim indicators can render", async () => {
     native.activateSourcePath.mockImplementation(async (sourcePath: string) => ({
       displayName: sourcePath.split("/").at(-1) ?? sourcePath,
@@ -188,15 +259,89 @@ describe("restorePreviousWorkspaceRequested", () => {
     );
   });
 
-  it("restores remaining sources and falls back when the saved active source is unavailable", async () => {
+  it("retains an unavailable saved instance and falls back to an available source", async () => {
     const store = prepareCandidate("first");
 
     const result = await store.dispatch(restorePreviousWorkspaceRequested());
 
     expect(result).toBe(true);
-    expect(selectEditingInstances(store.getState()).map(({ id }) => id)).toEqual(["second"]);
+    expect(selectEditingInstances(store.getState()).map(({ id }) => id)).toEqual([
+      "first",
+      "second",
+    ]);
+    expect(store.getState().editingInstances.entities.first).toMatchObject({
+      id: "first",
+      snapshot: { source: firstSource, trim: { endMicros: 3_000_000, startMicros: 1_000_000 } },
+      sourceAvailability: "missing",
+    });
     expect(store.getState().editingInstances.activeInstanceId).toBe("second");
     expect(store.getState().source.status).toBe("ready");
     expect(getWorkspaceRecoveryCandidate()?.instances).toHaveLength(2);
+  });
+
+  it("restores history for a source that disappeared after saving and keeps unavailable activation graceful", async () => {
+    const previousStore = createAppStore();
+    const first = instance("first", firstSource);
+    previousStore.dispatch(
+      editingInstancesAdded([
+        first,
+        {
+          ...instance("second", secondSource),
+          snapshot: createDefaultEditorSnapshot(secondSource),
+        },
+      ]),
+    );
+    previousStore.dispatch(activeEditingInstanceChanged("second"));
+    previousStore.dispatch(
+      historyOperationRecorded({
+        changes: [
+          {
+            after: { present: true, value: { endMicros: 3_000_000, startMicros: 1_000_000 } },
+            before: { present: true, value: { endMicros: 5_000_000, startMicros: 0 } },
+            field: "trim",
+            target: { instanceId: "first", kind: "instance", sourceId: firstSource.sourcePath },
+          },
+        ],
+        id: "missing-source-trim",
+        kind: "state",
+        label: "Adjust trim",
+        role: "edit",
+        timestamp: 456,
+      }),
+    );
+    localStorage.setItem(
+      CURRENT_KEY,
+      JSON.stringify(
+        createWorkspaceRecoveryBackup(previousStore.getState(), { sessionId: "crash" }),
+      ),
+    );
+    const store = createAppStore();
+    initializeWorkspaceRecovery(store, "current", true);
+
+    expect(await store.dispatch(restorePreviousWorkspaceRequested())).toBe(true);
+    expect(selectWorkspaceHistory(store.getState())).toMatchObject({
+      position: 1,
+      operations: [{ id: "missing-source-trim" }],
+    });
+    expect(store.getState().editingInstances.entities.first).toMatchObject({
+      id: "first",
+      sourceAvailability: "missing",
+    });
+
+    expect(await store.dispatch(undoWorkspaceHistory())).toBe(true);
+    expect(store.getState().editingInstances.entities.first?.snapshot.trim).toEqual({
+      endMicros: 5_000_000,
+      startMicros: 0,
+    });
+    expect(await store.dispatch(redoWorkspaceHistory())).toBe(true);
+    expect(store.getState().editingInstances.entities.first?.snapshot.trim).toEqual({
+      endMicros: 3_000_000,
+      startMicros: 1_000_000,
+    });
+
+    const historyBeforeUnavailableActivation = selectWorkspaceHistory(store.getState());
+    expect(await store.dispatch(applyHistoryPosition(0, true, "first"))).toBe(false);
+    expect(selectWorkspaceHistory(store.getState())).toEqual(historyBeforeUnavailableActivation);
+    expect(store.getState().editingInstances.activeInstanceId).toBe("second");
   });
 });

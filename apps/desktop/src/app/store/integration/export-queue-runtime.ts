@@ -1,3 +1,4 @@
+import { recordSourceAvailability } from "@/app/store/integration/workspace-history-lifecycle";
 import {
   editingInstanceExportAttemptEdited,
   editingInstanceExportCanceled,
@@ -11,6 +12,7 @@ import {
   editingInstancesSourceAvailabilityChanged,
   selectEditingInstanceAttempts,
   selectEditingInstanceById,
+  selectInstanceIdsBySourceKey,
 } from "@/app/store/slices/editing-instances-slice";
 import {
   queuePaused,
@@ -708,7 +710,7 @@ async function finishQueueCycle(
   dispatch: AppDispatch,
   getState: () => RootState,
 ) {
-  await flushDeferredSourceDeletes(runtime, dispatch);
+  await flushDeferredSourceDeletes(runtime, dispatch, getState);
   if (runtime.pendingJobs.length > 0 || runtime.jobsByAttemptId.size > 0) {
     runtime.queueCycle = "running";
     return;
@@ -741,27 +743,43 @@ async function deleteSourceWhenUnused(job: RuntimeExportJob, sourcePath: string)
     return;
   }
   runtime.deferredSourceDeletes.delete(normalizeSourceKey(sourcePath));
-  await moveSourceToTrashAndMarkDeleted(job.dispatch, sourcePath, job.instanceId);
+  await moveSourceToTrashAndMarkDeleted(job.dispatch, job.getState, sourcePath, job.instanceId);
 }
 
-async function flushDeferredSourceDeletes(runtime: RuntimeState, dispatch: AppDispatch) {
+async function flushDeferredSourceDeletes(
+  runtime: RuntimeState,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+) {
   const sourcePaths = [...runtime.deferredSourceDeletes.values()];
   runtime.deferredSourceDeletes.clear();
   await Promise.all(
     sourcePaths
       .filter((sourcePath) => !runtime.jobsBySourceKey.has(normalizeSourceKey(sourcePath)))
-      .map((sourcePath) => moveSourceToTrashAndMarkDeleted(dispatch, sourcePath)),
+      .map((sourcePath) => moveSourceToTrashAndMarkDeleted(dispatch, getState, sourcePath)),
   );
 }
 
 async function moveSourceToTrashAndMarkDeleted(
   dispatch: AppDispatch,
+  getState: () => RootState,
   sourcePath: string,
   snapshotId?: string,
 ) {
   try {
     await moveSourceToTrash(sourcePath);
     dispatch(editingInstancesSourceAvailabilityChanged({ availability: "deleted", sourcePath }));
+    const instanceIds =
+      selectInstanceIdsBySourceKey(getState()).get(normalizeSourceKey(sourcePath)) ?? [];
+
+    recordSourceAvailability(
+      dispatch,
+      sourcePath,
+      "available",
+      "deleted",
+      "Delete source file after export",
+      instanceIds,
+    );
   } catch (error: unknown) {
     diagnostics.error("source.file-delete.failed", error, {
       origin: { type: "internal" },

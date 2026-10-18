@@ -201,6 +201,7 @@ export const en = {
       unexpected: "An unexpected application error occurred",
     },
     menu: {
+      edit: "Edit",
       file: "File",
       help: "Help",
     },
@@ -464,6 +465,20 @@ export const en = {
   commands: {
     description: "Search for an EasyTrim action to run",
     empty: "No commands found",
+    history: {
+      actions: {
+        audio: "Audio",
+        chapter: "Chapter",
+        crop: "Crop",
+        flip: "Flip",
+        rotation: "Rotation",
+        trim: "Trim",
+      },
+      redo: "Redo {{action}}",
+      redoGeneric: "Redo",
+      undo: "Undo {{action}}",
+      undoGeneric: "Undo",
+    },
     searchTerms: {
       audioExport: "audio export|audio|m4a|mp3|wav",
       closeFile: "remove|source",
@@ -480,6 +495,7 @@ export const en = {
       appearanceColor: "Appearance / Color",
       appearanceTheme: "Appearance / Theme",
       appearanceUiScaling: "UI Scaling",
+      edit: "Edit",
       export: "Export",
       file: "File",
       go: "Go",
@@ -735,6 +751,26 @@ export const en = {
       label: "Selected segment",
       startLabel: "Start",
     },
+  },
+  history: {
+    actions: {
+      audio: "Audio",
+      chapter: "Chapter",
+      crop: "Crop",
+      flip: "Flip",
+      rotation: "Rotation",
+      switchSource: "Switch source",
+      trim: "Trim",
+    },
+    applied: "Applied",
+    availableRedo: "Available to redo",
+    beginning: "Beginning",
+    currentState: "Current state",
+    description: "Select an operation to restore that workspace state",
+    empty: "Workspace operations will appear here",
+    entryAccessibility: "{{action}}{{sources}}. {{state}}",
+    sourceInstance: "{{source}} · instance {{instance}}",
+    title: "History",
   },
   layout: {
     accessibility: {

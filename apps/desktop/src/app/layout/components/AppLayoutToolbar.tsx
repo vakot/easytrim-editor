@@ -16,6 +16,7 @@ function AppLayoutToolbar() {
         <AppLayoutTool commandId="open-workspace-view-sources" />
         <AppLayoutTool commandId="open-workspace-view-exportQueue" />
         <AppLayoutTool commandId="open-workspace-view-activity" />
+        <AppLayoutTool commandId="open-workspace-view-history" />
         <AppLayoutTool commandId="open-chapters" />
       </section>
 

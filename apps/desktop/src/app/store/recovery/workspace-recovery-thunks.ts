@@ -5,6 +5,7 @@ import {
   editingInstancesSourceAvailabilityChanged,
   selectEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
+import { workspaceHistoryRestored } from "@/app/store/slices/workspace-history-slice";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { diagnostics } from "@/lib/diagnostics";
 import { activateSourcePath } from "@/lib/tauri/media";
@@ -86,12 +87,12 @@ const restorePreviousWorkspaceRequested =
             snapshot: { ...savedInstance.snapshot, source },
           });
         } catch {
-          if (savedInstance.sourceAvailability === "missing") {
-            restored.push(toEditingInstance(savedInstance));
-          } else {
-            missingSourceCount += 1;
-            missingSourceIds.push(savedInstance.id);
-          }
+          missingSourceCount += 1;
+          missingSourceIds.push(savedInstance.id);
+          restored.push({
+            ...toEditingInstance(savedInstance),
+            sourceAvailability: "missing",
+          });
         }
       }
 
@@ -139,6 +140,8 @@ const restorePreviousWorkspaceRequested =
           );
         }
       }
+
+      if (backup.history) dispatch(workspaceHistoryRestored(backup.history));
 
       const exportResultCount = backup.instances.reduce(
         (count, instance) =>

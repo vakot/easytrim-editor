@@ -81,6 +81,8 @@ vi.mock("@/app/layout/components/AppLayoutPanel", () => ({
 vi.mock("@/app/layout/components/SidebarViewPortal", () => ({
   createSidebarViewHosts: () => ({
     activity: document.createElement("div"),
+    exportQueue: document.createElement("div"),
+    history: document.createElement("div"),
     sources: document.createElement("div"),
   }),
   SidebarViewPortals: () => null,
@@ -123,11 +125,12 @@ function getSidebarPanelOrder(sidebar: HTMLElement) {
 
 function expectValidPanelLayout(
   sidebar: HTMLElement,
-  viewIds: Array<"activity" | "exportQueue" | "sources">,
+  viewIds: Array<"activity" | "exportQueue" | "history" | "sources">,
 ) {
   const panelIds = {
     activity: "editor-source-activity-feed",
     exportQueue: "editor-source-export-queue",
+    history: "editor-source-workspace-history",
     sources: "editor-source-imported-sources",
   };
 

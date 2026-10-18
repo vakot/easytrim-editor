@@ -45,7 +45,13 @@ function createCommand(
   options: Partial<
     Pick<
       ApplicationCommand,
-      "checked" | "enabled" | "keepOpen" | "pending" | "shortcut" | "surfaces"
+      | "alternateShortcuts"
+      | "checked"
+      | "enabled"
+      | "keepOpen"
+      | "pending"
+      | "shortcut"
+      | "surfaces"
     >
   > = {},
 ): ApplicationCommand {
@@ -235,6 +241,71 @@ describe("CommandPalette semantic icons", () => {
     expect(blockedEvent.defaultPrevented).toBe(false);
     expect(mocks.executeCommand).not.toHaveBeenCalled();
     blocker.remove();
+  });
+
+  it("routes Undo and Redo shortcuts while preserving native text input behavior", () => {
+    const undoShortcut = { code: "KeyZ", key: "Z", modifier: "primary" } as const;
+    const redoShortcut = { ...undoShortcut, shift: true } as const;
+    mocks.commands = [
+      createCommand("undo", "Undo Crop", "default", <CheckCircle2 />, {
+        shortcut: undoShortcut,
+      }),
+      createCommand("redo", "Redo Trim", "default", <CheckCircle2 />, {
+        alternateShortcuts: [{ code: "KeyY", key: "Y", modifier: "control" }],
+        shortcut: redoShortcut,
+      }),
+    ];
+    render(<CommandPalette />);
+
+    const undoEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      code: "KeyZ",
+      ctrlKey: true,
+    });
+
+    window.dispatchEvent(undoEvent);
+    expect(undoEvent.defaultPrevented).toBe(true);
+
+    const redoEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      code: "KeyZ",
+      ctrlKey: true,
+      shiftKey: true,
+    });
+
+    window.dispatchEvent(redoEvent);
+    expect(redoEvent.defaultPrevented).toBe(true);
+
+    const windowsRedoEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      code: "KeyY",
+      ctrlKey: true,
+    });
+
+    window.dispatchEvent(windowsRedoEvent);
+    expect(windowsRedoEvent.defaultPrevented).toBe(true);
+
+    const input = document.createElement("input");
+    document.body.append(input);
+    const nativeUndoEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      code: "KeyZ",
+      ctrlKey: true,
+    });
+
+    input.dispatchEvent(nativeUndoEvent);
+
+    expect(nativeUndoEvent.defaultPrevented).toBe(false);
+    expect(mocks.executeCommand.mock.calls).toEqual([
+      ["undo", "hotkey"],
+      ["redo", "hotkey"],
+      ["redo", "hotkey"],
+    ]);
+    input.remove();
   });
 
   it("shows Ctrl+Shift+G beside GIF Export in the Command Palette", async () => {

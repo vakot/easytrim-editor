@@ -206,6 +206,13 @@ describe("application command shortcuts", () => {
     ).toBe(4);
   });
 
+  it("formats primary command shortcuts for each platform", () => {
+    const primaryShortcut = { code: "KeyZ", key: "Z", modifier: "primary" } as const;
+
+    expect(getShortcutDisplayKeys(primaryShortcut, "macos")).toEqual(["Cmd", "Z"]);
+    expect(getShortcutDisplayKeys(primaryShortcut, "other")).toEqual(["Ctrl", "Z"]);
+  });
+
   it("matches slash with or without Shift and rejects other modifiers", () => {
     const slash = new KeyboardEvent("keydown", { code: "Slash", key: "/" });
     const shiftedSlash = new KeyboardEvent("keydown", {

@@ -1,5 +1,6 @@
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceCleared, sourceReady } from "@/app/store/actions/source-actions";
+import { workspaceHistoryTransitionCommitted } from "@/app/store/actions/workspace-history-actions";
 import { createEditorSnapshotFromState } from "@/app/store/integration/editor-snapshot";
 import { releaseQueuedExportEdit } from "@/app/store/integration/export-queue-runtime";
 import { chapterAdded, chapterDeleted, chapterUpdated } from "@/app/store/slices/chapters-slice";
@@ -58,13 +59,18 @@ listenerMiddleware.startListening({
 listenerMiddleware.startListening({
   matcher: (
     action,
-  ): action is ReturnType<typeof sourceCleared> | ReturnType<typeof editingInstanceActivated> =>
-    sourceCleared.match(action) || editingInstanceActivated.match(action),
-  effect: (action, listenerApi) => {
+  ): action is
+    | ReturnType<typeof sourceCleared>
+    | ReturnType<typeof editingInstanceActivated>
+    | ReturnType<typeof workspaceHistoryTransitionCommitted> =>
+    sourceCleared.match(action) ||
+    editingInstanceActivated.match(action) ||
+    (workspaceHistoryTransitionCommitted.match(action) && action.payload.sourceChanged),
+  effect: (_action, listenerApi) => {
     const queueEdit = selectQueueEdit(listenerApi.getState());
     if (
       !queueEdit ||
-      (editingInstanceActivated.match(action) && action.payload.id === queueEdit.instanceId)
+      selectActiveEditingInstance(listenerApi.getState())?.id === queueEdit.instanceId
     )
       return;
     listenerApi.dispatch(optimizedExportDialogClosed());

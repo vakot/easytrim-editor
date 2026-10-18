@@ -1,9 +1,11 @@
 import { createEditorSnapshotFromState } from "@/app/store/integration/editor-snapshot";
 import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
+import { selectWorkspaceHistory } from "@/app/store/slices/workspace-history-slice";
 import type { AppStore, RootState } from "@/app/store/store";
 import type { EditingInstance, ExportAttempt } from "@/domain/editing-instance";
 import { EMPTY_EXPORT_METRICS } from "@/domain/editing-instance";
 import { normalizeSourceKey } from "@/domain/source";
+import { retainWorkspaceHistory } from "@/domain/workspace-history-retention";
 import { diagnostics } from "@/lib/diagnostics";
 
 import {
@@ -18,6 +20,9 @@ import type {
 } from "./workspace-recovery.types";
 
 let candidate: WorkspaceRecoveryBackup | null = null;
+// Two recovery slots share localStorage with preferences. Budget each JSON document to 2 MiB
+// in UTF-16, preserving mandatory workspace data even if that data alone exceeds the budget.
+export const RECOVERY_MAX_SERIALIZED_LENGTH = 1024 * 1024;
 const listeners = new Set<() => void>();
 let candidateDismissed = false;
 
@@ -116,7 +121,8 @@ function createWorkspaceRecoveryBackup(
   previous?: Partial<Pick<WorkspaceRecoveryBackup, "createdAt" | "id" | "sessionId">> | null,
 ): WorkspaceRecoveryBackup {
   const now = new Date().toISOString();
-  return {
+  const history = selectWorkspaceHistory(state);
+  const backup: WorkspaceRecoveryBackup = {
     activeInstanceId: state.editingInstances.activeInstanceId,
     createdAt: previous?.createdAt ?? now,
     id: previous?.id ?? crypto.randomUUID(),
@@ -125,6 +131,13 @@ function createWorkspaceRecoveryBackup(
     updatedAt: now,
     version: 2,
   };
+
+  const historyBudget =
+    RECOVERY_MAX_SERIALIZED_LENGTH - JSON.stringify(backup).length - ',"history":'.length;
+
+  const retained = retainWorkspaceHistory(history, Math.max(0, historyBudget));
+  if (retained.operations.length) backup.history = retained;
+  return backup;
 }
 
 function initializeWorkspaceRecovery(
@@ -132,12 +145,11 @@ function initializeWorkspaceRecovery(
   sessionId: string,
   previousSessionWasAbnormal: boolean,
 ): void {
-  candidate = previousSessionWasAbnormal ? promoteCurrentBackupToCandidate() : null;
+  candidate = previousSessionWasAbnormal
+    ? promoteCurrentBackupToCandidate()
+    : readRecoveryCandidate();
   candidateDismissed = false;
-  if (!previousSessionWasAbnormal) {
-    // A stale candidate must never be presented after diagnostics reports a clean startup.
-    clearWorkspaceRecovery();
-  }
+  if (!previousSessionWasAbnormal && !candidate) clearWorkspaceRecovery();
   if (candidate) {
     diagnostics.event("workspace.recovery.available", {
       data: {
@@ -151,20 +163,25 @@ function initializeWorkspaceRecovery(
   }
 
   let previousBackup: WorkspaceRecoveryBackup | null = null;
+  let previousContent: string | null = null;
   const save = () => {
     // Until this session has work of its own, the stored current backup still belongs to the
     // previous crashed session. Overwriting it with an empty workspace would discard it if the
     // app crashes again before the user resumes.
-    if (!previousBackup && selectEditingInstances(store.getState()).length === 0) return;
+    const state = store.getState();
+    const history = selectWorkspaceHistory(state);
+    if (!previousBackup && selectEditingInstances(state).length === 0 && !history.operations.length)
+      return;
 
-    const backup = createWorkspaceRecoveryBackup(store.getState(), {
+    const backup = createWorkspaceRecoveryBackup(state, {
       createdAt: previousBackup?.createdAt,
       id: previousBackup?.id,
       sessionId,
     });
 
     const content = JSON.stringify({ ...backup, updatedAt: "" });
-    if (previousBackup && JSON.stringify({ ...previousBackup, updatedAt: "" }) === content) return;
+    if (previousContent === content) return;
+    previousContent = content;
     previousBackup = { ...backup, updatedAt: new Date().toISOString() };
     writeCurrentBackup(previousBackup);
   };
@@ -173,10 +190,9 @@ function initializeWorkspaceRecovery(
   save();
 }
 
-async function clearWorkspaceRecoveryOnAcceptedShutdown(): Promise<void> {
-  clearWorkspaceRecovery();
-  candidate = null;
-  candidateDismissed = true;
+async function retainWorkspaceRecoveryOnAcceptedShutdown(): Promise<void> {
+  candidate = promoteCurrentBackupToCandidate();
+  candidateDismissed = false;
   notifyCandidateChanged();
 }
 
@@ -185,12 +201,12 @@ function getWorkspaceRecoveryCandidateSnapshot(): WorkspaceRecoveryBackup | null
 }
 
 export {
-  clearWorkspaceRecoveryOnAcceptedShutdown,
   createWorkspaceRecoveryBackup,
   dismissWorkspaceRecoveryNotice,
   getWorkspaceRecoveryCandidate,
   getWorkspaceRecoveryCandidateSnapshot,
   initializeWorkspaceRecovery,
   isWorkspaceRecoveryNoticeDismissed,
+  retainWorkspaceRecoveryOnAcceptedShutdown,
   subscribeToWorkspaceRecovery,
 };

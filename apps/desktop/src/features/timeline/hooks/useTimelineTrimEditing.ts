@@ -9,10 +9,14 @@ function useTimelineTrimEditing() {
   const trim = useAppSelector(selectTrim);
   const dispatch = useAppDispatch();
 
-  return useTimelineRangeEditing(trim, (value) => {
-    dispatch(trimChanged({ trim: value }));
-    dispatch(commitActiveEditingInstanceDraft());
-  });
+  return useTimelineRangeEditing(
+    trim,
+    (value) => {
+      dispatch(trimChanged({ trim: value }));
+      dispatch(commitActiveEditingInstanceDraft());
+    },
+    "Adjust trim",
+  );
 }
 
 export { useTimelineTrimEditing };

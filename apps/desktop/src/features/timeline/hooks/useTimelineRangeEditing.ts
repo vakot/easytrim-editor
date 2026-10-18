@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { useAppSelector, useAppStore } from "@/app/store/redux-hooks";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import { selectFrameIndex, selectSourceLoadToken } from "@/app/store/slices/source-slice";
+import {
+  historyInteractionEnded,
+  historyInteractionStarted,
+} from "@/app/store/slices/workspace-history-slice";
 import { nearestBoundaryMicros } from "@/domain/frame-index";
 import type { TrimRange } from "@/domain/trim";
 import { createTrimFrameAdapter, type TrimFrames, type TrimHandle } from "@/domain/trim-frames";
@@ -13,7 +17,11 @@ import { type PlaybackHoldRelease, usePlaybackActions } from "@/features/playbac
  * source; the frame adapter keeps the minimum range length. A drag stays a local draft and reaches
  * `onCommit` when it ends; other edits commit at once. Edits never outlive their source.
  */
-function useTimelineRangeEditing(value: TrimRange | null, onCommit: (range: TrimRange) => void) {
+function useTimelineRangeEditing(
+  value: TrimRange | null,
+  onCommit: (range: TrimRange) => void,
+  operationLabel = "Adjust trim",
+) {
   const index = useAppSelector(selectFrameIndex);
   const instanceId = useAppSelector(selectActiveInstanceId);
   const loadToken = useAppSelector(selectSourceLoadToken);
@@ -36,8 +44,9 @@ function useTimelineRangeEditing(value: TrimRange | null, onCommit: (range: Trim
       // The drag is abandoned with its source; the next source must not start playing.
       interaction.current?.releasePlayback({ resume: false });
       interaction.current = null;
+      store.dispatch(historyInteractionEnded());
     },
-    [instanceId, loadToken],
+    [instanceId, loadToken, store],
   );
   const isCurrent = draft?.instanceId === instanceId && draft?.loadToken === loadToken;
   const range =
@@ -74,6 +83,13 @@ function useTimelineRangeEditing(value: TrimRange | null, onCommit: (range: Trim
       range,
       releasePlayback: holdPlayback(),
     };
+    store.dispatch(
+      historyInteractionStarted({
+        id: crypto.randomUUID(),
+        label: operationLabel,
+        timestamp: Date.now(),
+      }),
+    );
     setDraft(interaction.current);
   }
 
@@ -101,6 +117,7 @@ function useTimelineRangeEditing(value: TrimRange | null, onCommit: (range: Trim
       selectSourceLoadToken(state) === current.loadToken;
 
     if (currentSource) commit(current.range);
+    store.dispatch(historyInteractionEnded());
     current.releasePlayback({ resume: currentSource });
   }
 

@@ -1,4 +1,5 @@
-import { Activity, Files, List } from "lucide-react";
+import type { TFunction } from "i18next";
+import { Activity, Files, History, List } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -22,8 +23,16 @@ import {
 const viewIcons = {
   activity: <Activity aria-hidden="true" />,
   exportQueue: <List aria-hidden="true" />,
+  history: <History aria-hidden="true" />,
   sources: <Files aria-hidden="true" />,
 } satisfies Record<SidebarViewId, React.ReactNode>;
+
+function getViewLabel(viewId: SidebarViewId, t: TFunction) {
+  if (viewId === "sources") return t("source.title");
+  if (viewId === "activity") return t("activity.title");
+  if (viewId === "history") return t("history.title");
+  return t("queue.title");
+}
 
 function useWorkspaceViewCommandGroups() {
   const { t } = useTranslation();
@@ -32,12 +41,7 @@ function useWorkspaceViewCommandGroups() {
   const layout = useAppSelector(selectSidebarLayout);
 
   const openCommands = WORKSPACE_VIEWS.map((view) => {
-    const label =
-      view.id === "sources"
-        ? t("source.title")
-        : view.id === "activity"
-          ? t("activity.title")
-          : t("queue.title");
+    const label = getViewLabel(view.id, t);
 
     return {
       enabled: true,
@@ -62,12 +66,7 @@ function useWorkspaceViewCommandGroups() {
   const dockCommands = WORKSPACE_VIEWS.flatMap((view) =>
     ([undefined, "left", "right"] as const).map((contextSide) => {
       const side = getSidebarViewSide(layout, view.id);
-      const label =
-        view.id === "sources"
-          ? t("source.title")
-          : view.id === "activity"
-            ? t("activity.title")
-            : t("queue.title");
+      const label = getViewLabel(view.id, t);
 
       return {
         checked: side !== null,

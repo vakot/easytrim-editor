@@ -1,8 +1,9 @@
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import {
   type ApplicationCommandExecutionContext,
+  type ApplicationShortcut,
   commandOrigin,
 } from "@/app/commands/core/application-command.types";
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
@@ -30,22 +31,22 @@ function useSourceNavigationCommands() {
     createSourceNavigationCommand({
       activeIndex,
       dispatch,
-      icon: <ArrowLeft aria-hidden="true" />,
+      icon: <ArrowUp aria-hidden="true" />,
       id: "previous-source",
       instances,
       label: labels.previous,
       offset: -1,
-      shortcut: { code: "ArrowLeft", key: "LeftArrow", modifier: "alt" } as const,
+      shortcut: { code: "BracketLeft", key: "[", modifier: "none" } as const,
     }),
     createSourceNavigationCommand({
       activeIndex,
       dispatch,
-      icon: <ArrowRight aria-hidden="true" />,
+      icon: <ArrowDown aria-hidden="true" />,
       id: "next-source",
       instances,
       label: labels.next,
       offset: 1,
-      shortcut: { code: "ArrowRight", key: "RightArrow", modifier: "alt" } as const,
+      shortcut: { code: "BracketRight", key: "]", modifier: "none" } as const,
     }),
   ] as const;
 }
@@ -67,7 +68,7 @@ function createSourceNavigationCommand({
   instances: ReturnType<typeof selectImportedEditingInstances>;
   label: string;
   offset: -1 | 1;
-  shortcut: { code: string; key: string; modifier: "alt" };
+  shortcut: ApplicationShortcut;
 }) {
   const target = instances[activeIndex + offset];
   return {

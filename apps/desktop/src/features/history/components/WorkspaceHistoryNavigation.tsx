@@ -1,39 +1,37 @@
-import type { ComponentProps } from "react";
-
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
 import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { cn } from "@/lib/class-names.utils";
 
-function SourceNavigation({ className }: { className?: string }) {
+function WorkspaceHistoryNavigation({ className }: { className?: string }) {
   const { executeCommand } = useApplicationCommands();
-  const previousCommand = useApplicationCommand("previous-source");
-  const nextCommand = useApplicationCommand("next-source");
+  const undoCommand = useApplicationCommand("undo");
+  const redoCommand = useApplicationCommand("redo");
 
   return (
     <div className={cn("flex", className)}>
-      <SourceNavigationButton
-        command={previousCommand}
-        onClick={() => void executeCommand("previous-source", "button")}
+      <HistoryNavigationButton
+        command={undoCommand}
+        onClick={() => void executeCommand("undo", "button")}
       />
-
-      <SourceNavigationButton
-        command={nextCommand}
-        onClick={() => void executeCommand("next-source", "button")}
+      <HistoryNavigationButton
+        command={redoCommand}
+        onClick={() => void executeCommand("redo", "button")}
       />
     </div>
   );
 }
 
-function SourceNavigationButton({
+function HistoryNavigationButton({
   command,
   ...props
-}: Omit<ComponentProps<typeof Button>, "aria-label" | "disabled"> & {
-  command: NonNullable<ReturnType<typeof useApplicationCommand>>;
+}: Omit<React.ComponentProps<typeof Button>, "aria-label" | "disabled"> & {
+  command: ApplicationCommand;
 }) {
   const shortcut = command.shortcut ? getShortcutAriaValue(command.shortcut) : undefined;
 
@@ -61,4 +59,4 @@ function SourceNavigationButton({
   );
 }
 
-export { SourceNavigation };
+export { WorkspaceHistoryNavigation };
