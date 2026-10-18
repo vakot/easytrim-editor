@@ -1,4 +1,4 @@
-import { combineReducers, configureStore, type UnknownAction } from "@reduxjs/toolkit";
+import { configureStore } from "@reduxjs/toolkit";
 import {
   FLUSH,
   PAUSE,
@@ -10,67 +10,18 @@ import {
   REHYDRATE,
 } from "redux-persist";
 
-import { sourceFailed, sourceReady } from "@/app/store/actions/source-actions";
 import { appMiddleware } from "@/app/store/middleware";
 import { createPersistedReducer, type PersistStorage, reduxStorage } from "@/app/store/persistence";
-import { achievementsReducer } from "@/app/store/slices/achievements-slice";
-import { audioReducer } from "@/app/store/slices/audio-slice";
-import { chaptersReducer } from "@/app/store/slices/chapters-slice";
-import { cropReducer } from "@/app/store/slices/crop-slice";
-import { editingInstancesReducer } from "@/app/store/slices/editing-instances-slice";
-import { exportPresetsReducer } from "@/app/store/slices/export-presets-slice";
-import { exportReducer } from "@/app/store/slices/export-slice";
-import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
-import { playbackControlsReducer } from "@/app/store/slices/playback-controls-slice";
-import { preferencesReducer } from "@/app/store/slices/preferences-slice";
-import { previewReducer } from "@/app/store/slices/preview-slice";
-import { sceneDetectionReducer } from "@/app/store/slices/scene-detection-slice";
-import { sourceReducer } from "@/app/store/slices/source-slice";
-import { trimReducer } from "@/app/store/slices/trim-slice";
-import { usageStatisticsReducer } from "@/app/store/slices/usage-statistics-slice";
-import { workspaceHistoryReducer } from "@/app/store/slices/workspace-history-slice";
 
-const combinedReducer = combineReducers({
-  achievements: achievementsReducer,
-  audio: audioReducer,
-  chapters: chaptersReducer,
-  crop: cropReducer,
-  editingInstances: editingInstancesReducer,
-  export: exportReducer,
-  exportPresets: exportPresetsReducer,
-  importWorkflow: importWorkflowReducer,
-  playbackControls: playbackControlsReducer,
-  preferences: preferencesReducer,
-  preview: previewReducer,
-  sceneDetection: sceneDetectionReducer,
-  source: sourceReducer,
-  trim: trimReducer,
-  usageStatistics: usageStatisticsReducer,
-  workspaceHistory: workspaceHistoryReducer,
-});
+import { workspaceReducer } from "./reducer";
 
-export type RootState = ReturnType<typeof combinedReducer>;
+export type { RootState } from "./reducer";
 
-const rootReducer = (state: RootState | undefined, action: UnknownAction): RootState => {
-  if (state && sourceReady.match(action) && state.source.loadToken !== action.payload.loadToken) {
-    return state;
-  }
-  if (
-    state &&
-    sourceFailed.match(action) &&
-    action.payload.loadToken !== undefined &&
-    state.source.loadToken !== action.payload.loadToken
-  ) {
-    return state;
-  }
-  return combinedReducer(state, action);
-};
-
-const persistedReducer = createPersistedReducer(rootReducer);
+const persistedReducer = createPersistedReducer(workspaceReducer);
 
 function createAppStore(storage: PersistStorage = reduxStorage) {
   const reducer =
-    storage === reduxStorage ? persistedReducer : createPersistedReducer(rootReducer, storage);
+    storage === reduxStorage ? persistedReducer : createPersistedReducer(workspaceReducer, storage);
 
   return configureStore({
     reducer,

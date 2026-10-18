@@ -406,6 +406,7 @@ function drainThumbnailQueue(dispatch: AppDispatch, getState: () => RootState) {
 function beginForegroundSourcePreparation(
   dispatch: AppDispatch,
   getState: () => RootState,
+  deferThumbnailQueue = false,
 ): () => void {
   foregroundSourcePreparationCount += 1;
   let isFinished = false;
@@ -416,7 +417,7 @@ function beginForegroundSourcePreparation(
     foregroundSourcePreparationCount = Math.max(0, foregroundSourcePreparationCount - 1);
     if (foregroundSourcePreparationCount > 0) return;
 
-    drainThumbnailQueue(dispatch, getState);
+    if (!deferThumbnailQueue) drainThumbnailQueue(dispatch, getState);
   };
 }
 
@@ -621,9 +622,19 @@ const leaveActiveEditingInstance = (): AppThunk => (dispatch) => {
 };
 
 const restoreActiveEditingInstanceRequested =
-  (id: string, loadToken: number, snapshot: EditorSnapshot): AppThunk<Promise<boolean>> =>
+  (
+    id: string,
+    loadToken: number,
+    snapshot: EditorSnapshot,
+    deferThumbnailQueue = false,
+  ): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
-    const finishForegroundPreparation = beginForegroundSourcePreparation(dispatch, getState);
+    const finishForegroundPreparation = beginForegroundSourcePreparation(
+      dispatch,
+      getState,
+      deferThumbnailQueue,
+    );
+
     try {
       const instance = selectEditingInstanceById(getState(), id);
 
@@ -698,7 +709,10 @@ const restoreActiveEditingInstanceRequested =
   };
 
 const activateEditingInstanceRequested =
-  (instance: EditingInstance): AppThunk<Promise<boolean>> =>
+  (
+    instance: EditingInstance,
+    options?: { deferThumbnailQueue: boolean },
+  ): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     if (selectEditingInstanceById(getState(), instance.id)?.draftAvailable === false) return false;
     if (instance.optimizedArguments !== undefined)
@@ -715,9 +729,18 @@ const activateEditingInstanceRequested =
     );
 
     return dispatch(
-      restoreActiveEditingInstanceRequested(instance.id, loadToken, instance.snapshot),
+      restoreActiveEditingInstanceRequested(
+        instance.id,
+        loadToken,
+        instance.snapshot,
+        options?.deferThumbnailQueue,
+      ),
     );
   };
+
+const resumeSourceThumbnailPreparation = (): AppThunk<void> => (dispatch, getState) => {
+  drainThumbnailQueue(dispatch, getState);
+};
 
 const navigateToEditingInstance =
   (
@@ -1361,4 +1384,5 @@ export {
   restoreActiveEditingInstanceRequested,
   restoreExportAttemptRequested,
   restoreSourceFileRequested,
+  resumeSourceThumbnailPreparation,
 };

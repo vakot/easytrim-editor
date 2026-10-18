@@ -2,6 +2,7 @@ import { isAnyOf } from "@reduxjs/toolkit";
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { workspaceHistoryTransitionCommitted } from "@/app/store/actions/workspace-history-actions";
 import {
   audioFilterPreviewChanged,
   audioFilterPreviewEnded,
@@ -37,8 +38,11 @@ listenerMiddleware.startListening({
     editingInstanceActivated,
     sourceReady,
     trimChanged,
+    workspaceHistoryTransitionCommitted,
   ),
-  effect: async (_action, { cancelActiveListeners, delay, dispatch, getState }) => {
+  effect: async (action, { cancelActiveListeners, delay, dispatch, getState }) => {
+    if (workspaceHistoryTransitionCommitted.match(action) && !action.payload.analysisChanged)
+      return;
     cancelActiveListeners();
     await delay(ANALYSIS_DEBOUNCE_MS);
     for (const track of selectAudioTracks(getState())) {
@@ -60,8 +64,15 @@ listenerMiddleware.startListening({
  * measurement, so returning to earlier inputs does not measure them again.
  */
 listenerMiddleware.startListening({
-  matcher: isAnyOf(audioFilterPreviewStarted, audioFilterPreviewChanged, trimChanged),
-  effect: async (_action, { cancelActiveListeners, delay, dispatch, getState }) => {
+  matcher: isAnyOf(
+    audioFilterPreviewStarted,
+    audioFilterPreviewChanged,
+    trimChanged,
+    workspaceHistoryTransitionCommitted,
+  ),
+  effect: async (action, { cancelActiveListeners, delay, dispatch, getState }) => {
+    if (workspaceHistoryTransitionCommitted.match(action) && !action.payload.analysisChanged)
+      return;
     releaseUnawaitedPreviewLoudnessAnalyses(getState());
     cancelActiveListeners();
     await delay(ANALYSIS_DEBOUNCE_MS);
@@ -76,6 +87,7 @@ listenerMiddleware.startListening({
     editingInstanceActivated,
     sourceCleared,
     sourceSelected,
+    workspaceHistoryTransitionCommitted,
   ),
   effect: (_action, { getState }) => releaseUnawaitedPreviewLoudnessAnalyses(getState()),
 });

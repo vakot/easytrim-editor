@@ -86,6 +86,16 @@ removes the farthest Redo entries instead. The remaining operations always form 
 retention never replays edits or changes the current workspace. An atomic operation larger than the
 budget cannot remain undoable. Recording and restoring history use the same limits.
 
+History navigation resolves a destination from the current workspace and intervening operations
+without publishing intermediate state. It patches instance snapshots and lifecycle structure in
+memory, collapses source switches, and reduces each physical source's deletion/restoration to its
+net effect. Remaining filesystem effects retain their relative order and export/reservation guards;
+failures compensate completed effects in reverse order, reporting incomplete compensation explicitly.
+Only the final destination uses the existing activation pipeline, in an unpublished reducer context.
+A single Redux commit publishes its final instance structure, active editor, and history cursor;
+final analysis work runs once through the normal listeners. Failed preparation publishes no editor
+state, and concurrent semantic workspace changes reject a stale destination.
+
 Recovery budgets each backup to 1 Mi UTF-16 code units (2 MiB), including history, leaving room for
 both recovery slots and other stored preferences. History is reduced further when workspace data
 needs that space. Mandatory instances and editor snapshots are always preserved, even when those

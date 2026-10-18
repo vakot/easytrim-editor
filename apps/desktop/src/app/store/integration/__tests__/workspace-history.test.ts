@@ -58,6 +58,7 @@ function setup(ids = ["instance-1"]) {
       snapshot: instances[0]!.snapshot,
     }),
   );
+  store.dispatch(sourceReady({ loadToken: 1, media, snapshot: instances[0]!.snapshot }));
   return store;
 }
 const flush = async () => {
@@ -360,6 +361,13 @@ describe("workspace history editor integration", () => {
     store.dispatch(
       editingInstanceActivated({
         id: "instance-2",
+        loadToken: 2,
+        media: mediaWithAudio(firstSource.sourcePath),
+        snapshot: store.getState().editingInstances.entities["instance-2"]!.snapshot,
+      }),
+    );
+    store.dispatch(
+      sourceReady({
         loadToken: 2,
         media: mediaWithAudio(firstSource.sourcePath),
         snapshot: store.getState().editingInstances.entities["instance-2"]!.snapshot,

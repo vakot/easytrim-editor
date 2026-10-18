@@ -43,7 +43,7 @@ import { createExportAttempt } from "@/domain/editing-instance";
 import { firstSource, media, secondSource } from "@/test/source.fixtures";
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   native.activateSourcePath.mockImplementation(async (sourcePath: string) => ({
     displayName: sourcePath.split(/[\\/]/).at(-1) ?? sourcePath,
     sourcePath,
@@ -81,6 +81,19 @@ function addInstances(ids = ["instance-a", "instance-b"]): ReturnType<typeof cre
 
 async function prepareMixedReplay() {
   const store = addInstances();
+  const thirdSource = { displayName: "third.mp4", sourcePath: "C:/Media/third.mp4" };
+  store.dispatch(
+    editingInstancesAdded([
+      {
+        id: "instance-c",
+        origin: "source-import",
+        sourceAvailability: "deleted",
+        exportAttempts: [],
+        snapshot: createDefaultEditorSnapshot(thirdSource),
+        media: media(thirdSource.sourcePath),
+      },
+    ]),
+  );
   expect(await store.dispatch(navigateToEditingInstance("instance-b"))).toBe(true);
   const startingPosition = selectWorkspaceHistory(store.getState()).position;
   await store.dispatch(deleteActiveEditingInstanceSourceRequested("instance-a"));
@@ -91,7 +104,7 @@ async function prepareMixedReplay() {
   );
   await flush();
   expect(
-    await store.dispatch(restoreSourceFileRequested({ sourcePath: firstSource.sourcePath })),
+    await store.dispatch(restoreSourceFileRequested({ sourcePath: thirdSource.sourcePath })),
   ).toBe(true);
   const targetPosition = selectWorkspaceHistory(store.getState()).position;
 
@@ -214,9 +227,9 @@ describe("workspace history source and instance lifecycle", () => {
       beforeSnapshot,
     );
     expect(store.getState().editingInstances.entities["instance-a"]?.sourceAvailability).toBe(
-      "available",
+      "deleted",
     );
-    expect(native.moveSourceToTrash).toHaveBeenCalledExactlyOnceWith(firstSource.sourcePath);
+    expect(native.moveSourceToTrash).toHaveBeenCalledExactlyOnceWith("C:/Media/third.mp4");
     expect(native.restoreSourceFromTrash).toHaveBeenCalledTimes(2);
     expect(native.restoreSourceFromTrash).toHaveBeenCalledWith(firstSource.sourcePath);
   });
@@ -241,7 +254,7 @@ describe("workspace history source and instance lifecycle", () => {
       beforeSnapshot,
     );
     expect(store.getState().editingInstances.entities["instance-a"]?.sourceAvailability).toBe(
-      "deleted",
+      "available",
     );
   });
 
