@@ -6,6 +6,7 @@ import { applyHistoryPosition } from "@/app/store/integration/workspace-history"
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import type { RootState } from "@/app/store/store";
 import type { HistoryTarget } from "@/domain/workspace-history";
+import { cn } from "@/lib/class-names.utils";
 
 import { WorkspaceHistoryEmpty } from "./components/WorkspaceHistoryEmpty";
 import { WorkspaceHistoryList } from "./components/WorkspaceHistoryList";
@@ -16,7 +17,7 @@ import {
 } from "./lib/workspace-history-presentation";
 import type { WorkspaceHistoryRow } from "./types";
 
-function WorkspaceHistory() {
+function WorkspaceHistory({ className }: { className?: string }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const operations = useAppSelector((state) => state.workspaceHistory.operations);
@@ -70,13 +71,10 @@ function WorkspaceHistory() {
   );
 
   return (
-    <section aria-label={t("history.title")} className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="mb-1 flex shrink-0 items-center justify-between gap-2 px-1 text-xs text-muted-foreground">
-        <span>{t("history.description")}</span>
-        <span aria-live="polite" className="shrink-0 tabular-nums">
-          {position}/{operations.length}
-        </span>
-      </div>
+    <section
+      aria-label={t("history.title")}
+      className={cn("flex min-h-0 min-w-0 flex-1 flex-col", className)}
+    >
       {operations.length === 0 ? (
         <WorkspaceHistoryEmpty />
       ) : (

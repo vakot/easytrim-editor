@@ -53,7 +53,7 @@ function WorkspaceHistoryEntry({
       : t("history.availableRedo");
 
   return (
-    <div className="px-1 py-0.5" key={operation?.id ?? "beginning"} role="listitem">
+    <div key={operation?.id ?? "beginning"} role="listitem">
       <button
         aria-current={isCurrent ? "step" : undefined}
         aria-label={t("history.entryAccessibility", {
@@ -107,9 +107,7 @@ function WorkspaceHistoryEntry({
               {sources.join(", ")}
             </span>
           ) : null}
-          {isCurrent ? (
-            <span className="text-xs font-medium text-primary">{t("history.currentState")}</span>
-          ) : !isApplied ? (
+          {!isCurrent && !isApplied ? (
             <span className="text-xs">{t("history.availableRedo")}</span>
           ) : null}
         </span>

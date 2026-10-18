@@ -10,10 +10,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { WorkspaceHistory } from "@/features/history";
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { WorkspaceHistory, WorkspaceHistoryNavigation } from "@/features/history";
 
 function AppHistoryDialogContent({ __scopeDialog }: { __scopeDialog?: DialogScope }) {
   const { t } = useTranslation();
+
+  const operations = useAppSelector((state) => state.workspaceHistory.operations);
+  const position = useAppSelector((state) => state.workspaceHistory.position);
 
   return (
     <>
@@ -25,8 +29,16 @@ function AppHistoryDialogContent({ __scopeDialog }: { __scopeDialog?: DialogScop
           {t("history.description")}
         </DialogDescription>
       </DialogHeader>
+
       <WorkspaceHistory />
-      <DialogFooter __scopeDialog={__scopeDialog}>
+
+      <DialogFooter __scopeDialog={__scopeDialog} className="items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <WorkspaceHistoryNavigation />
+          <span className="truncate text-muted-foreground">
+            {position}/{operations.length}
+          </span>
+        </div>
         <DialogClose __scopeDialog={__scopeDialog} asChild>
           <Button variant="outline">{t("common.actions.close")}</Button>
         </DialogClose>

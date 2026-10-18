@@ -18,12 +18,22 @@ interface WorkspaceHistoryListProps {
 const HistoryVirtualizedList = forwardRef<HTMLDivElement, ListProps<HTMLDivElement>>(
   function HistoryVirtualizedList({ children, style }, ref) {
     return (
-      <div className="flex flex-col py-1" ref={ref} role="list" style={style}>
+      <div className="flex flex-col" ref={ref} role="list" style={style}>
         {children}
       </div>
     );
   },
 );
+
+function HistoryListEdgeSpacer() {
+  return <div aria-hidden="true" className="h-2" />;
+}
+
+const virtuosoComponents = {
+  Header: HistoryListEdgeSpacer,
+  Footer: HistoryListEdgeSpacer,
+  List: HistoryVirtualizedList,
+};
 
 function WorkspaceHistoryList({
   disabled,
@@ -42,7 +52,7 @@ function WorkspaceHistoryList({
       {scrollParent ? (
         <Virtuoso
           className="w-full"
-          components={{ List: HistoryVirtualizedList }}
+          components={virtuosoComponents}
           computeItemKey={(_, row) => row.operation?.id ?? "beginning"}
           customScrollParent={scrollParent}
           data={rows}

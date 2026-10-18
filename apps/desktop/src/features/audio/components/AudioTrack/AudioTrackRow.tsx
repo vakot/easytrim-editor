@@ -351,7 +351,7 @@ function AudioTrackRowWaveform({
           key={key}
           style={{
             backgroundImage:
-              "repeating-linear-gradient(135deg, rgb(15 23 42 / 82%) 0 4px, rgb(30 41 59 / 82%) 4px 8px)",
+              "repeating-linear-gradient(135deg, rgb(15 23 42 / 82%) 0 0.25rem, rgb(30 41 59 / 82%) 0.25rem 0.5rem)",
             left: `${leftPercent}%`,
             right: `${rightPercent}%`,
           }}
