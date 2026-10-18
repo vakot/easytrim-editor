@@ -26,17 +26,17 @@ import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import { AudioTrackWaveform } from "../AudioTrackWaveform";
 
-function envelope(amplitude: number) {
-  const buffer = new ArrayBuffer(20);
+function envelope(amplitude: number, width = 2) {
+  const buffer = new ArrayBuffer(12 + width * 4);
   const view = new DataView(buffer);
   [0x45, 0x54, 0x57, 0x46].forEach((value, index) => view.setUint8(index, value));
   view.setUint16(4, 2, true);
-  view.setUint32(8, 2, true);
+  view.setUint32(8, width, true);
   new Uint8Array(buffer, 12).fill(amplitude);
   return buffer;
 }
-function response(amplitude: number) {
-  return { ok: true, arrayBuffer: async () => envelope(amplitude) };
+function response(amplitude: number, width = 2) {
+  return { ok: true, arrayBuffer: async () => envelope(amplitude, width) };
 }
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -108,42 +108,66 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function Harness({ position = 0 }: { position?: number }) {
+function Harness({
+  position = 0,
+  timelineDurationMicros = 5_000_000,
+}: {
+  position?: number;
+  timelineDurationMicros?: number;
+}) {
   const track = useAppSelector((state) => state.audio.tracks[position]);
   const stream = useAppSelector((state) => state.source.media?.audioStreams[position]);
   return track && stream ? (
     <AudioTrackWaveform
       displayMode="peak"
       stream={stream}
-      timelineDurationMicros={5_000_000}
+      timelineDurationMicros={timelineDurationMicros}
       track={track}
       volume={track.processing.volume}
     />
   ) : null;
 }
-function setup(position = 0) {
+function setup(
+  position = 0,
+  {
+    streamDurationMicros,
+    streamStartTimeMicros,
+    timelineDurationMicros = 5_000_000,
+  }: {
+    streamDurationMicros?: number;
+    streamStartTimeMicros?: number;
+    timelineDurationMicros?: number;
+  } = {},
+) {
   const store = createAppStore();
   store.dispatch(sourceSelected({ source: firstSource, loadToken: 1 }));
-  store.dispatch(sourceReady({ media: mediaWithAudio(firstSource.sourcePath), loadToken: 1 }));
+  const media = mediaWithAudio(firstSource.sourcePath);
+  if (streamDurationMicros !== undefined) {
+    media.audioStreams[0]!.durationMicros = streamDurationMicros;
+  }
+  if (streamStartTimeMicros !== undefined) {
+    media.audioStreams[0]!.startTimeMicros = streamStartTimeMicros;
+  }
+  store.dispatch(sourceReady({ media, loadToken: 1 }));
   const view = render(
     <Provider store={store}>
       <ThemeProvider>
         <TooltipProvider>
-          <Harness position={position} />
+          <Harness position={position} timelineDurationMicros={timelineDurationMicros} />
         </TooltipProvider>
       </ThemeProvider>
     </Provider>,
   );
 
-  const ready = (jobId: string) =>
+  const ready = (jobId: string, width = 2) =>
     act(() => {
-      store.dispatch(waveformsLoading({ jobId, streamIndexes: [2], width: 2 }));
+      store.dispatch(waveformsLoading({ jobId, streamIndexes: [2], width }));
       store.dispatch(
         waveformReady({
           jobId,
           streamIndex: 2,
           status: "ready",
-          width: 2,
+          width,
           url: `media://${jobId}`,
         }),
       );
@@ -163,6 +187,42 @@ async function initialWaveform() {
 }
 
 describe("waveform replacement", () => {
+  it("maps the reused envelope to the stream's timeline interval and adds Sync Offset", async () => {
+    mocks.reducedMotion = true;
+    const fetchMock = vi.fn().mockResolvedValueOnce(response(64, 5));
+    vi.stubGlobal("fetch", fetchMock);
+    const view = setup(0, {
+      streamDurationMicros: 2_000_000,
+      streamStartTimeMicros: 1_000_000,
+      timelineDurationMicros: 5_000_000,
+    });
+
+    view.ready("timed-stream", 5);
+    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+
+    const canvas = document.querySelector("canvas")!;
+    const context = contexts.get(canvas)!;
+    const positions = () => context.moveTo.mock.calls.map(([x]) => x as number);
+    expect(Math.min(...positions())).toBe(7.5);
+    expect(Math.max(...positions())).toBe(19.5);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const initialPositionCount = positions().length;
+
+    act(() =>
+      view.store.dispatch(
+        audioTrackSyncOffsetChanged({
+          streamIndex: 2,
+          syncOffset: { enabled: true, offsetMicros: 500_000 },
+        }),
+      ),
+    );
+
+    const shiftedPositions = positions().slice(initialPositionCount);
+    expect(Math.min(...shiftedPositions)).toBe(10.5);
+    expect(Math.max(...shiftedPositions)).toBe(22.5);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it("animates the committed offset on the existing waveform without reloading its envelope", async () => {
     const { context, fetchMock, store } = await initialWaveform();
     const initialLeftEdge = Math.min(...context.moveTo.mock.calls.map(([x]) => x as number));

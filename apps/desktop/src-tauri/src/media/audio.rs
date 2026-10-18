@@ -137,9 +137,8 @@ fn playback_media(source: &ActiveSource) -> Result<&MediaInfo, AppError> {
     })
 }
 
-/// The continuous range every consumer of a stream's processed audio renders: the whole source
-/// timeline at the canonical rate. Sharing it keeps playback and waveforms on one render key, so
-/// they reuse each other's cached samples instead of superseding each other.
+/// The continuous range used for video-timeline playback at the canonical rate. Waveform passes
+/// use this as their minimum render range and extend it when a stream outlasts the video.
 pub fn processed_timeline_range(media: &MediaInfo) -> FrameRange {
     FrameRange {
         start: 0,

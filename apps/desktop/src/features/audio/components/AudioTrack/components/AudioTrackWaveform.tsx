@@ -64,6 +64,7 @@ interface WaveformVisualState {
   color: [number, number, number];
   gainDb: number;
   waveformStartPercent: number;
+  waveformWidthPercent: number;
 }
 
 function AudioTrackWaveformCanvas({
@@ -144,12 +145,15 @@ function AudioTrackWaveformCanvas({
     current.gainDb += (next.gainDb - current.gainDb) * progress;
     current.waveformStartPercent +=
       (next.waveformStartPercent - current.waveformStartPercent) * progress;
+    current.waveformWidthPercent +=
+      (next.waveformWidthPercent - current.waveformWidthPercent) * progress;
     current.color = current.color.map(
       (channel, index) => channel + ((next.color[index] ?? channel) - channel) * progress,
     ) as WaveformVisualState["color"];
     const settled =
       Math.abs(next.gainDb - current.gainDb) < 0.01 &&
       Math.abs(next.waveformStartPercent - current.waveformStartPercent) < 0.001 &&
+      Math.abs(next.waveformWidthPercent - current.waveformWidthPercent) < 0.001 &&
       current.color.every(
         (channel, index) => Math.abs(channel - (next.color[index] ?? channel)) < 1,
       );
@@ -199,7 +203,15 @@ function AudioTrackWaveformCanvas({
       color: parseHexColor(primaryColor),
       gainDb: 20 * Math.log10(Math.max(volume, MIN_DISPLAY_VOLUME)),
       waveformStartPercent:
-        timelineDurationMicros > 0 ? (syncOffsetMicros / timelineDurationMicros) * 100 : 0,
+        timelineDurationMicros > 0
+          ? (((stream.startTimeMicros ?? 0) + syncOffsetMicros) / timelineDurationMicros) * 100
+          : 0,
+      waveformWidthPercent:
+        timelineDurationMicros > 0
+          ? (Math.max(0, stream.durationMicros ?? timelineDurationMicros) /
+              timelineDurationMicros) *
+            100
+          : 0,
     };
     updateAnimation();
   }, [
@@ -207,6 +219,8 @@ function AudioTrackWaveformCanvas({
     primaryColor,
     reducedMotion,
     syncOffsetMicros,
+    stream.durationMicros,
+    stream.startTimeMicros,
     tick,
     timelineDurationMicros,
     updateAnimation,
@@ -344,15 +358,21 @@ function drawEnvelope(
   height: number,
 ) {
   const gain = 10 ** (visual.gainDb / 20);
-  const shiftPixels = (visual.waveformStartPercent / 100) * width;
+  const waveformStartPixels = (visual.waveformStartPercent / 100) * width;
+  const waveformWidthPixels = (visual.waveformWidthPercent / 100) * width;
+  if (waveformWidthPixels <= 0) return;
   context.strokeStyle = `rgb(${visual.color.map(Math.round).join(" ")})`;
   context.lineWidth = 1;
   context.beginPath();
   for (let x = 0; x < width; x += 1) {
-    const sourceX = x - shiftPixels;
-    if (sourceX < 0 || sourceX >= width) continue;
-    const start = Math.floor((sourceX * envelope.width) / width);
-    const end = Math.max(start + 1, Math.ceil(((sourceX + 1) * envelope.width) / width));
+    const sourceX = x - waveformStartPixels;
+    if (sourceX < 0 || sourceX >= waveformWidthPixels) continue;
+    const start = Math.floor((sourceX * envelope.width) / waveformWidthPixels);
+    const end = Math.max(
+      start + 1,
+      Math.ceil(((sourceX + 1) * envelope.width) / waveformWidthPixels),
+    );
+
     let peakLeft = 0;
     let peakRight = 0;
     let rmsLeft = 0;
