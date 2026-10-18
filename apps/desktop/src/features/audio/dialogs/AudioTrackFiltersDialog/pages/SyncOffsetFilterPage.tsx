@@ -14,6 +14,10 @@ import { useAudioFiltersDraft } from "../contexts/audio-filters-draft-context";
 
 const MICROS_PER_MILLISECOND = 1_000;
 
+function toMilliseconds(offsetMicros: number): number {
+  return Math.sign(offsetMicros) * Math.round(Math.abs(offsetMicros) / MICROS_PER_MILLISECOND);
+}
+
 function formatOffset(offsetMicros: number): string {
   const sign = offsetMicros < 0 ? "−" : "+";
   const absoluteMicros = Math.abs(offsetMicros);
@@ -44,30 +48,47 @@ function SyncOffsetFilterPage({
 }) {
   const { t } = useTranslation();
   const { dispatch } = useAudioFiltersDraft();
+  // The input and slider use millisecond precision, so keep their endpoints
+  // inside the exact media bounds on that representable millisecond grid.
+  const editableRange = {
+    minOffsetMicros:
+      Math.ceil(range.minOffsetMicros / MICROS_PER_MILLISECOND) * MICROS_PER_MILLISECOND,
+    maxOffsetMicros:
+      Math.floor(range.maxOffsetMicros / MICROS_PER_MILLISECOND) * MICROS_PER_MILLISECOND,
+  };
+
+  const displayOffsetMicros = Math.max(
+    editableRange.minOffsetMicros,
+    Math.min(
+      editableRange.maxOffsetMicros,
+      toMilliseconds(offset.offsetMicros) * MICROS_PER_MILLISECOND,
+    ),
+  );
+
   const [input, setInput] = useState(() => ({
     offsetMicros: offset.offsetMicros,
-    text: formatOffset(offset.offsetMicros),
+    text: formatOffset(displayOffsetMicros),
   }));
 
   const inputValue = Object.is(input.offsetMicros, offset.offsetMicros)
     ? input.text
-    : formatOffset(offset.offsetMicros);
+    : formatOffset(displayOffsetMicros);
 
-  const parsedInput = parseOffset(input.text);
+  const parsedInput = parseOffset(inputValue);
   const inputInvalid =
     parsedInput === null ||
-    !isAudioSyncOffsetWithinRange(parsedInput, range) ||
+    !isAudioSyncOffsetWithinRange(parsedInput, editableRange) ||
     !isAudioSyncOffsetWithinRange(offset.offsetMicros, range);
 
-  const span = range.maxOffsetMicros - range.minOffsetMicros;
-  const includesDefault = range.minOffsetMicros <= 0 && range.maxOffsetMicros >= 0;
+  const span = editableRange.maxOffsetMicros - editableRange.minOffsetMicros;
+  const includesDefault = editableRange.minOffsetMicros <= 0 && editableRange.maxOffsetMicros >= 0;
   const toPercentage = (offsetMicros: number) =>
     span <= 0
       ? 50
-      : Math.max(0, Math.min(100, ((offsetMicros - range.minOffsetMicros) / span) * 100));
+      : Math.max(0, Math.min(100, ((offsetMicros - editableRange.minOffsetMicros) / span) * 100));
 
   const percentage = Number.isSafeInteger(offset.offsetMicros)
-    ? toPercentage(offset.offsetMicros)
+    ? toPercentage(displayOffsetMicros)
     : 0;
 
   const updateOffset = (offsetMicros: number, syncInput = false) => {
@@ -109,8 +130,8 @@ function SyncOffsetFilterPage({
         error={
           inputInvalid
             ? t("audio.syncOffset.range", {
-                max: formatOffset(range.maxOffsetMicros),
-                min: formatOffset(range.minOffsetMicros),
+                max: formatOffset(editableRange.maxOffsetMicros),
+                min: formatOffset(editableRange.minOffsetMicros),
               })
             : undefined
         }
@@ -119,28 +140,37 @@ function SyncOffsetFilterPage({
         invalid={inputInvalid}
         label={t("audio.syncOffset.valueLabel")}
         markers={[
-          { label: formatOffset(range.minOffsetMicros), value: 0 },
+          { label: formatOffset(editableRange.minOffsetMicros), value: 0 },
           ...(includesDefault ? [{ label: formatOffset(0), value: toPercentage(0) }] : []),
-          { label: formatOffset(range.maxOffsetMicros), value: 100 },
+          { label: formatOffset(editableRange.maxOffsetMicros), value: 100 },
         ]}
         onDoubleClick={includesDefault ? () => updateOffset(0, true) : undefined}
         onInputBlur={() => {
           if (inputInvalid) return;
           setInput({
             offsetMicros: offset.offsetMicros,
-            text: formatOffset(offset.offsetMicros),
+            text: formatOffset(displayOffsetMicros),
           });
         }}
         onInputChange={updateInput}
         onSliderChange={(value) => {
-          updateOffset(Math.round(range.minOffsetMicros + (value / 100) * span), true);
+          const offsetMicros = editableRange.minOffsetMicros + (value / 100) * span;
+          const normalizedOffsetMicros = Math.max(
+            editableRange.minOffsetMicros,
+            Math.min(
+              editableRange.maxOffsetMicros,
+              toMilliseconds(offsetMicros) * MICROS_PER_MILLISECOND,
+            ),
+          );
+
+          updateOffset(normalizedOffsetMicros, true);
         }}
         placeholder={t("audio.syncOffset.inputPlaceholder")}
         sliderMax={100}
         sliderMin={0}
         sliderStep={0.01}
         sliderValue={percentage}
-        sliderValueText={formatOffset(offset.offsetMicros)}
+        sliderValueText={formatOffset(displayOffsetMicros)}
       />
     </div>
   );

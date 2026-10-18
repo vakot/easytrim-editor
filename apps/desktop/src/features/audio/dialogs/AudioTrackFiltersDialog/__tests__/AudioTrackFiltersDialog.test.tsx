@@ -442,6 +442,79 @@ describe("AudioTrackFiltersDialog", () => {
     expect(committedSyncOffset()).toMatchObject({ enabled: true, offsetMicros: 115_000_000 });
   });
 
+  it("keeps both slider extremes valid when media boundaries fall between milliseconds", async () => {
+    const user = userEvent.setup();
+    renderDialog({
+      durationMicros: 30_000_001,
+      streamDurationMicros: 29_322_501,
+    });
+    await user.click(screen.getByRole("button", { name: "Open filters" }));
+    await addFilter(user, "Sync Offset");
+
+    const input = await screen.findByRole("textbox", { name: "Offset (MM:SS.mmm)" });
+    const slider = screen.getByRole("slider", { name: "Offset (MM:SS.mmm)" });
+
+    slider.focus();
+    await user.keyboard("{Home}");
+    expect(input).toHaveValue("−00:29.322");
+    expect(input).toHaveAttribute("aria-invalid", "false");
+    expect(slider).toHaveAttribute("aria-valuenow", "0");
+
+    await user.keyboard("{End}");
+    expect(input).toHaveValue("+00:30.000");
+    expect(input).toHaveAttribute("aria-invalid", "false");
+    expect(slider).toHaveAttribute("aria-valuenow", "100");
+    expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
+  });
+
+  it("accepts the displayed millisecond values at both normalized boundaries", async () => {
+    const user = userEvent.setup();
+    renderDialog({
+      durationMicros: 30_000_001,
+      streamDurationMicros: 29_322_501,
+    });
+    await user.click(screen.getByRole("button", { name: "Open filters" }));
+    await addFilter(user, "Sync Offset");
+
+    const input = await screen.findByRole("textbox", { name: "Offset (MM:SS.mmm)" });
+    const slider = screen.getByRole("slider", { name: "Offset (MM:SS.mmm)" });
+
+    await user.clear(input);
+    await user.type(input, "−00:29.322");
+    expect(input).toHaveAttribute("aria-invalid", "false");
+    expect(slider).toHaveAttribute("aria-valuenow", "0");
+
+    await user.clear(input);
+    await user.type(input, "+00:30.000");
+    expect(input).toHaveAttribute("aria-invalid", "false");
+    expect(slider).toHaveAttribute("aria-valuenow", "100");
+  });
+
+  it("round trips a displayed timecode through the normalized slider position", async () => {
+    const user = userEvent.setup();
+    renderDialog({
+      durationMicros: 30_000_001,
+      streamDurationMicros: 29_322_501,
+    });
+    await user.click(screen.getByRole("button", { name: "Open filters" }));
+    await addFilter(user, "Sync Offset");
+
+    const input = await screen.findByRole("textbox", { name: "Offset (MM:SS.mmm)" });
+    const slider = screen.getByRole("slider", { name: "Offset (MM:SS.mmm)" });
+    await user.clear(input);
+    await user.type(input, "+00:00.500");
+
+    expect(input).toHaveAttribute("aria-invalid", "false");
+    expect(Number(slider.getAttribute("aria-valuenow"))).toBeCloseTo(
+      ((29_322 + 500) / (29_322 + 30_000)) * 100,
+    );
+
+    slider.focus();
+    await user.keyboard("{End}");
+    expect(input).toHaveValue("+00:30.000");
+    expect(input).toHaveAttribute("aria-invalid", "false");
+  });
+
   it("commits the same signed offset value used by interactive synchronization", async () => {
     const user = userEvent.setup();
     const { committedSyncOffset } = renderDialog();
