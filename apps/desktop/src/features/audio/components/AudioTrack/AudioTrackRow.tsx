@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import {
@@ -15,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioFilterPreview } from "@/app/store/slices/audio-slice";
@@ -113,6 +113,7 @@ function AudioTrackRowWaveform({
   const { getPositionMicros } = useTimelinePlayback();
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const [hoveredPosition, setHoveredPosition] = useState<number | null>(null);
+  const [syncTooltipOpen, setSyncTooltipOpen] = useState(false);
   const [syncMarker, setSyncMarker] = useState<{
     leftPercent: number;
     offsetMicros: number;
@@ -173,6 +174,7 @@ function AudioTrackRowWaveform({
           ),
         );
 
+        setSyncTooltipOpen(false);
         setHoveredPosition(null);
         setSyncMarker({ leftPercent: position.leftPercent, offsetMicros });
       }}
@@ -195,21 +197,23 @@ function AudioTrackRowWaveform({
         );
       }}
     >
-      <CursorTooltip
-        className="absolute inset-0"
-        data-slot="audio-sync-tooltip"
-        disabled={syncMarker !== null}
-        tooltipContent={t("audio.syncOffset.interactionHint")}
-      >
-        <AudioTrackWaveform
-          displayMode={displayMode}
-          stream={stream}
-          syncOffset={hasOffsetPreview ? syncOffset : undefined}
-          timelineDurationMicros={durationMicros}
-          track={track}
-          volume={volume}
-        />
-      </CursorTooltip>
+      <Tooltip onOpenChange={setSyncTooltipOpen} open={syncMarker === null && syncTooltipOpen}>
+        <TooltipTrigger asChild>
+          <div className="absolute inset-0" data-slot="audio-sync-tooltip">
+            <AudioTrackWaveform
+              displayMode={displayMode}
+              stream={stream}
+              syncOffset={hasOffsetPreview ? syncOffset : undefined}
+              timelineDurationMicros={durationMicros}
+              track={track}
+              volume={volume}
+            />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={6}>
+          {t("audio.syncOffset.label")}
+        </TooltipContent>
+      </Tooltip>
 
       <div className="pointer-events-none absolute inset-0">
         {hoveredPosition !== null && syncMarker === null ? (

@@ -329,7 +329,8 @@ describe("AudioTrackRow", () => {
     expect(timeline.positionMicros).toBe(1_000_000);
   });
 
-  it("shows a cursor-following sync hint and hides it when synchronization opens", async () => {
+  it("shows the short sync tooltip and hides it when synchronization opens", async () => {
+    const user = userEvent.setup();
     renderRow();
     const interaction = document.querySelector<HTMLElement>(
       '[data-slot="audio-sync-interaction"]',
@@ -363,30 +364,21 @@ describe("AudioTrackRow", () => {
     });
 
     expect(interaction).not.toHaveAttribute("title");
-    fireEvent.pointerEnter(tooltipTarget, { clientX: 600, clientY: 20, pointerType: "mouse" });
+    await user.hover(tooltipTarget);
     fireEvent.pointerMove(tooltipTarget, { clientX: 620, clientY: 25, pointerType: "mouse" });
 
     const tooltip = await screen.findByRole("tooltip");
-    expect(tooltip).toHaveTextContent(
-      "Hover over the waveform to preview the sync position; left-click to set it.",
-    );
-    expect(tooltip).toHaveStyle({ left: "532px", top: "37px" });
+    expect(tooltip).toHaveTextContent("Sync Offset");
+    expect(tooltip).toHaveAttribute("data-side", "top");
+    expect(tooltip).toHaveClass("rounded-md", "bg-foreground");
     expect(document.querySelector('[data-slot="audio-sync-ghost-playhead"]')).toHaveStyle({
       left: "52%",
     });
 
-    fireEvent.pointerMove(tooltipTarget, {
-      clientX: 630,
-      clientY: 30,
-      pointerType: "mouse",
-    });
-    expect(tooltip).toHaveStyle({ left: "542px", top: "42px" });
-
-    fireEvent.pointerLeave(tooltipTarget);
+    await user.unhover(tooltipTarget);
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
 
-    fireEvent.pointerEnter(tooltipTarget, { clientX: 630, clientY: 30, pointerType: "mouse" });
-    fireEvent.pointerMove(tooltipTarget, { clientX: 630, clientY: 30, pointerType: "mouse" });
+    await user.hover(tooltipTarget);
     await screen.findByRole("tooltip");
     fireEvent.click(interaction.querySelector("canvas")!, { button: 0, clientX: 630 });
     await screen.findByRole("button", { name: "Sync offset" });
