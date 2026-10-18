@@ -44,11 +44,11 @@ function useAudioFilterPreview(streamIndex: number, draft: AudioFiltersDraft) {
 
     const timer = window.setTimeout(() => {
       pendingSince.current = null;
-      dispatch(audioFilterPreviewChanged({ filters, id }));
+      dispatch(audioFilterPreviewChanged({ filters, id, syncOffset: draft.syncOffset }));
     }, delay);
 
     return () => window.clearTimeout(timer);
-  }, [dispatch, filters, id, valid]);
+  }, [dispatch, draft.syncOffset, filters, id, valid]);
 }
 
 export { useAudioFilterPreview };

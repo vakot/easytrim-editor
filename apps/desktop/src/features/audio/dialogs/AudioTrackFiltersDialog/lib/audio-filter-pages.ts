@@ -1,4 +1,4 @@
-import type { AudioFilter, AudioFilterType } from "@/domain/audio-processing";
+import type { AudioFilter, AudioFilterType, AudioSyncOffset } from "@/domain/audio-processing";
 import { lazyWithPreload } from "@/lib/lazy-component";
 
 type AudioFilterPageProps<T extends AudioFilterType> = {
@@ -36,8 +36,23 @@ const AUDIO_FILTER_PAGES = {
   ),
 } satisfies { [T in AudioFilterType]: unknown };
 
+const AUDIO_SYNC_OFFSET_PAGE = lazyWithPreload<{ offset: AudioSyncOffset }>(() =>
+  import("../pages/SyncOffsetFilterPage").then((module) => ({
+    default: module.SyncOffsetFilterPage,
+  })),
+);
+
 function preloadAudioFilterPage(type: AudioFilterType): void {
   void AUDIO_FILTER_PAGES[type].preload().catch(() => undefined);
 }
 
-export { AUDIO_FILTER_PAGES, preloadAudioFilterPage };
+function preloadAudioSyncOffsetPage(): void {
+  void AUDIO_SYNC_OFFSET_PAGE.preload().catch(() => undefined);
+}
+
+export {
+  AUDIO_FILTER_PAGES,
+  AUDIO_SYNC_OFFSET_PAGE,
+  preloadAudioFilterPage,
+  preloadAudioSyncOffsetPage,
+};

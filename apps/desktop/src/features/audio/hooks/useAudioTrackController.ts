@@ -6,6 +6,7 @@ import {
   audioTrackDefaultChanged,
   audioTrackFiltersApplied,
   audioTrackMetadataChanged,
+  audioTrackSyncOffsetChanged,
   audioTrackToggled,
   selectAudioTracks,
 } from "@/app/store/slices/audio-slice";
@@ -15,6 +16,8 @@ import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-medi
 import {
   areAudioFiltersValid,
   type AudioFilter,
+  type AudioSyncOffset,
+  isAudioSyncOffsetValid,
   sameAudioFilters,
 } from "@/domain/audio-processing";
 import {
@@ -84,15 +87,32 @@ function useAudioTrackController(streamIndex: number) {
 
   /** Commits a complete filter chain at once; an invalid chain changes nothing. */
   const applyFilters = useCallback(
-    (filters: AudioFilter[]) => {
+    (filters: AudioFilter[], syncOffset?: AudioSyncOffset | null) => {
       if (
         !track ||
         !areAudioFiltersValid(filters) ||
-        sameAudioFilters(track.processing.filters, filters)
+        (syncOffset !== undefined && syncOffset !== null && !isAudioSyncOffsetValid(syncOffset))
       ) {
         return;
       }
-      dispatch(audioTrackFiltersApplied({ filters, streamIndex }));
+      const filtersChanged = !sameAudioFilters(track.processing.filters, filters);
+      const currentOffset = track.processing.syncOffset ?? null;
+      const offsetChanged =
+        syncOffset !== undefined &&
+        (currentOffset?.enabled !== syncOffset?.enabled ||
+          currentOffset?.offsetMicros !== syncOffset?.offsetMicros);
+
+      if (!filtersChanged && !offsetChanged) return;
+      dispatch(audioTrackFiltersApplied({ filters, streamIndex, syncOffset }));
+      dispatch(commitActiveEditingInstanceDraft());
+    },
+    [dispatch, streamIndex, track],
+  );
+
+  const changeSyncOffset = useCallback(
+    (syncOffset: AudioSyncOffset | null) => {
+      if (!track || (syncOffset !== null && !isAudioSyncOffsetValid(syncOffset))) return;
+      dispatch(audioTrackSyncOffsetChanged({ streamIndex, syncOffset }));
       dispatch(commitActiveEditingInstanceDraft());
     },
     [dispatch, streamIndex, track],
@@ -108,6 +128,7 @@ function useAudioTrackController(streamIndex: number) {
 
   return {
     applyFilters,
+    changeSyncOffset,
     detectActivity,
     durationMicros: media?.durationMicros ?? 0,
     isEnabled: track?.enabled ?? false,

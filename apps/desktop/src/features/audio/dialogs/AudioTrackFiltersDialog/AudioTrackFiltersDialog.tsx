@@ -15,7 +15,7 @@ import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 import { AudioFiltersPreloadContext } from "./contexts/audio-filters-preload-context";
 import { useAudioTrackFiltersDialogScope } from "./hooks/useAudioTrackFiltersDialogScope";
-import { preloadAudioFilterPage } from "./lib/audio-filter-pages";
+import { preloadAudioFilterPage, preloadAudioSyncOffsetPage } from "./lib/audio-filter-pages";
 import type { AudioTrackFiltersDialogContent } from "./AudioTrackFiltersDialogContent";
 
 const LazyAudioTrackFiltersDialogContent = lazyWithPreload<
@@ -49,11 +49,14 @@ function AudioTrackFiltersDialog({
   // the dialog. The chain is read when the intent happens, so it needs no subscription.
   const preload = useCallback(() => {
     preloadAudioTrackFilters();
-    const firstFilter = selectAudioTracks(store.getState()).find(
+    const track = selectAudioTracks(store.getState()).find(
       (track) => track.streamIndex === streamIndex,
-    )?.processing.filters[0];
+    );
+
+    const firstFilter = track?.processing.filters[0];
 
     if (firstFilter) preloadAudioFilterPage(firstFilter.type);
+    if (track?.processing.syncOffset) preloadAudioSyncOffsetPage();
   }, [store, streamIndex]);
 
   return (

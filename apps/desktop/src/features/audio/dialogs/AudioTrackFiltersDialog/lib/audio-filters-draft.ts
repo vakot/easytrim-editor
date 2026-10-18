@@ -2,9 +2,11 @@ import {
   areAudioFiltersValid,
   type AudioFilter,
   type AudioFilterType,
+  type AudioSyncOffset,
   createAudioFilter,
   insertAudioFilter,
   MAX_AUDIO_FILTERS,
+  MAX_AUDIO_SYNC_OFFSET_MICROS,
   moveAudioFilter,
   removeAudioFilter,
   replaceAudioFilter,
@@ -18,22 +20,34 @@ import {
 interface AudioFiltersDraft {
   filters: AudioFilter[];
   initialFilters: AudioFilter[];
+  initialSyncOffset: AudioSyncOffset | null;
   selectedId: string | null;
+  syncOffset: AudioSyncOffset | null;
 }
+
+const AUDIO_SYNC_OFFSET_ID = "audio-sync-offset";
 
 type AudioFiltersDraftAction =
   | { filterType: AudioFilterType; id: string; type: "added" }
   | { filter: AudioFilter; type: "updated" }
+  | { syncOffset: AudioSyncOffset; type: "syncOffsetUpdated" }
+  | { type: "syncOffsetAdded" }
   | { id: string; toIndex: number; type: "moved" }
   | { id: string; type: "removed" }
   | { id: string; type: "selected" };
 
-function createAudioFiltersDraft(filters: readonly AudioFilter[]): AudioFiltersDraft {
+function createAudioFiltersDraft(
+  filters: readonly AudioFilter[],
+  syncOffset?: AudioSyncOffset,
+): AudioFiltersDraft {
   const copy = filters.map((filter) => ({ ...filter }));
+  const offsetCopy = syncOffset ? { ...syncOffset } : null;
   return {
     filters: copy,
     initialFilters: copy.map((filter) => ({ ...filter })),
-    selectedId: copy[0]?.id ?? null,
+    syncOffset: offsetCopy,
+    initialSyncOffset: offsetCopy ? { ...offsetCopy } : null,
+    selectedId: offsetCopy ? AUDIO_SYNC_OFFSET_ID : (copy[0]?.id ?? null),
   };
 }
 
@@ -54,9 +68,25 @@ function audioFiltersDraftReducer(
     }
     case "updated":
       return { ...draft, filters: replaceAudioFilter(draft.filters, action.filter) };
+    case "syncOffsetAdded":
+      if (draft.syncOffset) return draft;
+      return {
+        ...draft,
+        selectedId: AUDIO_SYNC_OFFSET_ID,
+        syncOffset: { enabled: true, offsetMicros: 0 },
+      };
+    case "syncOffsetUpdated":
+      return draft.syncOffset ? { ...draft, syncOffset: { ...action.syncOffset } } : draft;
     case "moved":
       return { ...draft, filters: moveAudioFilter(draft.filters, action.id, action.toIndex) };
     case "removed": {
+      if (action.id === AUDIO_SYNC_OFFSET_ID && draft.syncOffset) {
+        return {
+          ...draft,
+          selectedId: draft.filters[0]?.id ?? null,
+          syncOffset: null,
+        };
+      }
       const index = draft.filters.findIndex((filter) => filter.id === action.id);
       if (index === -1) return draft;
       const filters = removeAudioFilter(draft.filters, action.id);
@@ -68,7 +98,8 @@ function audioFiltersDraftReducer(
       return { ...draft, filters, selectedId };
     }
     case "selected":
-      return draft.filters.some((filter) => filter.id === action.id)
+      return (action.id === AUDIO_SYNC_OFFSET_ID && draft.syncOffset) ||
+        draft.filters.some((filter) => filter.id === action.id)
         ? { ...draft, selectedId: action.id }
         : draft;
   }
@@ -81,15 +112,25 @@ function isAudioFilterChanged(draft: AudioFiltersDraft, filter: AudioFilter): bo
 }
 
 function isAudioFiltersDraftDirty(draft: AudioFiltersDraft): boolean {
-  return !sameAudioFilters(draft.initialFilters, draft.filters);
+  return (
+    !sameAudioFilters(draft.initialFilters, draft.filters) ||
+    draft.initialSyncOffset?.enabled !== draft.syncOffset?.enabled ||
+    draft.initialSyncOffset?.offsetMicros !== draft.syncOffset?.offsetMicros
+  );
 }
 
 function isAudioFiltersDraftValid(draft: AudioFiltersDraft): boolean {
-  return areAudioFiltersValid(draft.filters);
+  return (
+    areAudioFiltersValid(draft.filters) &&
+    (draft.syncOffset === null ||
+      (Number.isSafeInteger(draft.syncOffset.offsetMicros) &&
+        Math.abs(draft.syncOffset.offsetMicros) <= MAX_AUDIO_SYNC_OFFSET_MICROS))
+  );
 }
 
 export type { AudioFiltersDraft, AudioFiltersDraftAction };
 export {
+  AUDIO_SYNC_OFFSET_ID,
   audioFiltersDraftReducer,
   createAudioFiltersDraft,
   isAudioFilterChanged,

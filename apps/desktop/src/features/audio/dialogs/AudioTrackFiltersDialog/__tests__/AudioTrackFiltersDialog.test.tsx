@@ -39,8 +39,9 @@ function renderDialog() {
   );
 
   const committedFilters = () => store.getState().audio.tracks[0]!.processing.filters;
+  const committedSyncOffset = () => store.getState().audio.tracks[0]!.processing.syncOffset;
   const previewedFilters = () => store.getState().audio.filterPreview?.filters;
-  return { committedFilters, previewedFilters, store };
+  return { committedFilters, committedSyncOffset, previewedFilters, store };
 }
 
 async function addFilter(user: ReturnType<typeof userEvent.setup>, name: string) {
@@ -287,5 +288,94 @@ describe("AudioTrackFiltersDialog", () => {
     expect(tabNames()).toEqual(["Loudness normalization 1", "Loudness normalization 2"]);
     expect(screen.getByRole("button", { name: "Move filter up" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Move filter down" })).toBeDisabled();
+  });
+
+  it("keeps Sync Offset first while the signal filters remain reorderable", async () => {
+    const user = userEvent.setup();
+    const { committedSyncOffset } = renderDialog();
+    await user.click(screen.getByRole("button", { name: "Open filters" }));
+
+    await addFilter(user, "Sync Offset");
+    await addFilter(user, "Gain");
+    await addFilter(user, "Limiter");
+    expect(tabNames()).toEqual(["Sync Offset", "Gain", "Limiter"]);
+    expect(screen.getByRole("img", { name: "This filter stays first in the list" })).toBeVisible();
+
+    await user.click(screen.getByRole("tab", { name: "Limiter" }));
+    await user.click(screen.getByRole("button", { name: "Move filter up" }));
+    expect(tabNames()).toEqual(["Sync Offset", "Limiter", "Gain"]);
+
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    expect(screen.getByRole("menuitem", { name: "Sync Offset" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("tab", { name: "Sync Offset" }));
+    const enabled = screen.getByRole("switch", { name: "Filter enabled" });
+    expect(enabled).toBeChecked();
+    await user.click(enabled);
+    expect(enabled).not.toBeChecked();
+    await removeSelectedFilter(user);
+    expect(tabNames()).toEqual(["Limiter", "Gain"]);
+    expect(committedSyncOffset()).toBeUndefined();
+  });
+
+  it("keeps signed offset input and slider aligned and blocks out-of-range values", async () => {
+    const user = userEvent.setup();
+    const { committedSyncOffset } = renderDialog();
+    await user.click(screen.getByRole("button", { name: "Open filters" }));
+    await addFilter(user, "Sync Offset");
+
+    const input = screen.getByRole("textbox", { name: "Offset (MM:SS.mmm)" });
+    const slider = screen.getByRole("slider", {
+      name: "Sync offset from −10 seconds to +10 seconds",
+    });
+
+    expect(input).toHaveValue("+00:00.000");
+    expect(slider).toHaveAttribute("aria-valuenow", "50");
+
+    await user.clear(input);
+    await user.type(input, "-00:02.500");
+    expect(slider).toHaveAttribute("aria-valuenow", "37.5");
+
+    slider.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(input).toHaveValue("−00:02.480");
+
+    await user.clear(input);
+    await user.type(input, "+00:10.001");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("button", { name: "Apply" })).toBeDisabled();
+
+    slider.focus();
+    await user.keyboard("{ArrowLeft}");
+    expect(input).toHaveValue("+00:09.980");
+    expect(input).toHaveAttribute("aria-invalid", "false");
+    expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
+
+    await user.clear(input);
+    await user.type(input, "+00:10.000");
+    expect(input).toHaveAttribute("aria-invalid", "false");
+    expect(slider).toHaveAttribute("aria-valuenow", "100");
+    expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    expect(committedSyncOffset()).toMatchObject({ enabled: true, offsetMicros: 10_000_000 });
+  });
+
+  it("commits the same signed offset value used by interactive synchronization", async () => {
+    const user = userEvent.setup();
+    const { committedSyncOffset } = renderDialog();
+    await user.click(screen.getByRole("button", { name: "Open filters" }));
+    await addFilter(user, "Sync Offset");
+
+    const input = screen.getByRole("textbox", { name: "Offset (MM:SS.mmm)" });
+    await user.clear(input);
+    await user.type(input, "-00:01.500");
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+
+    expect(committedSyncOffset()).toMatchObject({ enabled: true, offsetMicros: -1_500_000 });
   });
 });

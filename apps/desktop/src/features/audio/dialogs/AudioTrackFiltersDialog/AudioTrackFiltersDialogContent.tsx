@@ -45,8 +45,11 @@ function AudioTrackFiltersDialogContent({
   const { applyFilters, stream, track, trackNumber } = useAudioTrackController(streamIndex);
   const [draft, dispatch] = useReducer(
     audioFiltersDraftReducer,
-    track?.processing.filters ?? [],
-    createAudioFiltersDraft,
+    {
+      filters: track?.processing.filters ?? [],
+      syncOffset: track?.processing.syncOffset,
+    },
+    ({ filters, syncOffset }) => createAudioFiltersDraft(filters, syncOffset),
   );
 
   const draftContext = useMemo(() => ({ dispatch, draft }), [draft]);
@@ -62,7 +65,10 @@ function AudioTrackFiltersDialogContent({
 
   const valid = isAudioFiltersDraftValid(draft);
   const dirty = isAudioFiltersDraftDirty(draft);
-  const selected = draft.filters.find((filter) => filter.id === draft.selectedId);
+  const selected =
+    draft.selectedId === "audio-sync-offset" && draft.syncOffset
+      ? { ...draft.syncOffset, id: draft.selectedId }
+      : draft.filters.find((filter) => filter.id === draft.selectedId);
 
   return (
     <AudioFiltersDraftContext.Provider value={draftContext}>
@@ -116,7 +122,7 @@ function AudioTrackFiltersDialogContent({
           <Button
             disabled={!dirty || !valid}
             onClick={() => {
-              applyFilters(draft.filters);
+              applyFilters(draft.filters, draft.syncOffset);
               onClose();
             }}
             type="button"

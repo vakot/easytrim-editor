@@ -320,7 +320,7 @@ export const en = {
         remove: "Remove filter",
       },
       dialog: {
-        description: "Filters process this track from top to bottom; their order decides how they interact",
+        description: "Configure this track's placement and processing. Signal filters run from top to bottom",
         emptyPage: "Add a filter to configure it here",
         invalid: "Fix the highlighted values before applying",
         title: "{{title}} — Audio filters",
@@ -331,6 +331,7 @@ export const en = {
       instanceName: "{{name}} {{number}}",
       invalidFilter: "This filter has an invalid value",
       listLabel: "Filter chain",
+      lockedOrder: "This filter stays first in the list",
       parameterRange: "Enter a value from {{min}} to {{max}} {{unit}}",
       preset: {
         custom: "Custom",
@@ -409,6 +410,15 @@ export const en = {
       separate_one: "{{count}} selected track kept separately",
       separate_other: "{{count}} selected tracks kept separately",
       videoOnly: "Video-only output",
+    },
+    syncOffset: {
+      confirm: "Sync offset",
+      description: "Positive values delay this track; negative values move it earlier on the video timeline",
+      inputPlaceholder: "+00:00.000",
+      label: "Sync Offset",
+      range: "Enter a signed offset from −{{max}} to +{{max}} (MM:SS.mmm)",
+      sliderLabel: "Sync offset from −10 seconds to +10 seconds",
+      valueLabel: "Offset (MM:SS.mmm)",
     },
     tracks: {
       actionsLabel: "Audio {{number}} actions",
