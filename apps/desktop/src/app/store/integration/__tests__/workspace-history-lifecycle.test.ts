@@ -79,6 +79,33 @@ function addInstances(ids = ["instance-a", "instance-b"]): ReturnType<typeof cre
   return store;
 }
 
+async function prepareMixedReplay() {
+  const store = addInstances();
+  expect(await store.dispatch(navigateToEditingInstance("instance-b"))).toBe(true);
+  const startingPosition = selectWorkspaceHistory(store.getState()).position;
+  await store.dispatch(deleteActiveEditingInstanceSourceRequested("instance-a"));
+  store.dispatch(
+    trimChanged({
+      trim: { startMicros: 250_000, endMicros: 4_500_000, sourceDurationMicros: 5_000_000 },
+    }),
+  );
+  await flush();
+  expect(
+    await store.dispatch(restoreSourceFileRequested({ sourcePath: firstSource.sourcePath })),
+  ).toBe(true);
+  const targetPosition = selectWorkspaceHistory(store.getState()).position;
+
+  expect(await store.dispatch(applyHistoryPosition(startingPosition))).toBe(true);
+
+  return {
+    beforeSnapshot: store.getState().editingInstances.entities["instance-b"]!.snapshot,
+    beforeTrim: store.getState().trim.value,
+    startingPosition,
+    store,
+    targetPosition,
+  };
+}
+
 describe("workspace history source and instance lifecycle", () => {
   it("undoes and redoes imports with stable instance IDs across same-file instances", async () => {
     const store = createAppStore();
@@ -129,7 +156,9 @@ describe("workspace history source and instance lifecycle", () => {
     await flush();
     store.dispatch(commitActiveEditingInstanceDraft());
     await flush();
+    await store.dispatch(deleteActiveEditingInstanceSourceRequested("instance-a"));
     const beforeSnapshot = store.getState().editingInstances.entities["instance-a"]!.snapshot;
+    const beforeTrim = store.getState().trim.value;
     const beforePosition = selectWorkspaceHistory(store.getState()).position;
     const historyLength = selectWorkspaceHistory(store.getState()).operations.length;
     native.activateSourcePath.mockRejectedValueOnce(new Error("source unavailable"));
@@ -140,6 +169,79 @@ describe("workspace history source and instance lifecycle", () => {
     expect(selectActiveInstanceId(store.getState())).toBe("instance-a");
     expect(store.getState().editingInstances.entities["instance-a"]?.snapshot).toEqual(
       beforeSnapshot,
+    );
+    expect(store.getState().trim.value).toEqual(beforeTrim);
+    expect(store.getState().editingInstances.entities["instance-a"]?.sourceAvailability).toBe(
+      "deleted",
+    );
+  });
+
+  it("rolls back editor and filesystem steps when a later mixed replay step fails", async () => {
+    const { beforeSnapshot, beforeTrim, startingPosition, store, targetPosition } =
+      await prepareMixedReplay();
+
+    native.moveSourceToTrash.mockClear();
+    native.restoreSourceFromTrash.mockClear();
+    native.restoreSourceFromTrash.mockRejectedValueOnce(new Error("restore denied"));
+
+    expect(await store.dispatch(applyHistoryPosition(targetPosition))).toBe(false);
+    expect(selectWorkspaceHistory(store.getState()).position).toBe(startingPosition);
+    expect(store.getState().trim.value).toEqual(beforeTrim);
+    expect(store.getState().editingInstances.entities["instance-b"]?.snapshot).toEqual(
+      beforeSnapshot,
+    );
+    expect(store.getState().editingInstances.entities["instance-a"]?.sourceAvailability).toBe(
+      "available",
+    );
+    expect(native.moveSourceToTrash).toHaveBeenCalledExactlyOnceWith(firstSource.sourcePath);
+    expect(native.restoreSourceFromTrash).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the tip state when backward navigation fails after editor and file steps", async () => {
+    const { startingPosition, store, targetPosition } = await prepareMixedReplay();
+    expect(await store.dispatch(applyHistoryPosition(targetPosition))).toBe(true);
+    const beforeSnapshot = store.getState().editingInstances.entities["instance-b"]!.snapshot;
+    const beforeTrim = store.getState().trim.value;
+
+    native.moveSourceToTrash.mockClear();
+    native.restoreSourceFromTrash.mockClear();
+    native.restoreSourceFromTrash.mockRejectedValueOnce(new Error("restore denied"));
+
+    expect(await store.dispatch(applyHistoryPosition(startingPosition))).toBe(false);
+    expect(selectWorkspaceHistory(store.getState()).position).toBe(targetPosition);
+    expect(store.getState().trim.value).toEqual(beforeTrim);
+    expect(store.getState().editingInstances.entities["instance-b"]?.snapshot).toEqual(
+      beforeSnapshot,
+    );
+    expect(store.getState().editingInstances.entities["instance-a"]?.sourceAvailability).toBe(
+      "available",
+    );
+    expect(native.moveSourceToTrash).toHaveBeenCalledExactlyOnceWith(firstSource.sourcePath);
+    expect(native.restoreSourceFromTrash).toHaveBeenCalledTimes(2);
+    expect(native.restoreSourceFromTrash).toHaveBeenCalledWith(firstSource.sourcePath);
+  });
+
+  it("reports incomplete compensation after still restoring editor state and the cursor", async () => {
+    const { beforeSnapshot, beforeTrim, startingPosition, store, targetPosition } =
+      await prepareMixedReplay();
+
+    native.moveSourceToTrash.mockClear();
+    native.restoreSourceFromTrash.mockClear();
+    native.restoreSourceFromTrash
+      .mockRejectedValueOnce(new Error("restore denied"))
+      .mockRejectedValueOnce(new Error("rollback denied"));
+
+    await expect(store.dispatch(applyHistoryPosition(targetPosition))).rejects.toMatchObject({
+      message: "Workspace history replay failed and rollback was incomplete",
+      name: "AggregateError",
+    });
+    expect(selectWorkspaceHistory(store.getState()).position).toBe(startingPosition);
+    expect(store.getState().trim.value).toEqual(beforeTrim);
+    expect(store.getState().editingInstances.entities["instance-b"]?.snapshot).toEqual(
+      beforeSnapshot,
+    );
+    expect(store.getState().editingInstances.entities["instance-a"]?.sourceAvailability).toBe(
+      "deleted",
     );
   });
 

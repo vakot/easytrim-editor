@@ -188,6 +188,161 @@ function restoreActiveField(
     }
   }
 }
+
+type StateHistoryOperation = Extract<HistoryOperation, { kind: "state" }>;
+type ExternalHistoryOperation = Extract<HistoryOperation, { kind: "external" }>;
+
+interface StateReplayCheckpoint {
+  activeInstanceId: string | null;
+  instances: Array<{
+    index: number;
+    instance: EditingInstance;
+    snapshot: EditorSnapshot;
+  }>;
+  operation: StateHistoryOperation;
+  type: "state";
+}
+
+interface ExternalReplayCheckpoint {
+  direction: "undo" | "redo";
+  operation: ExternalHistoryOperation;
+  type: "external";
+}
+
+type ReplayCheckpoint = StateReplayCheckpoint | ExternalReplayCheckpoint;
+
+class HistoryReplayRejected extends Error {
+  constructor() {
+    super("Workspace history transition was rejected");
+    this.name = "HistoryReplayRejected";
+  }
+}
+
+function captureStateReplayCheckpoint(
+  state: RootState,
+  operation: StateHistoryOperation,
+): StateReplayCheckpoint {
+  const ids = new Set(
+    operation.changes.flatMap((change) =>
+      change.target.kind === "instance" ? [change.target.instanceId] : [],
+    ),
+  );
+
+  const instances = [...ids].map((id) => {
+    const instance = state.editingInstances.entities[id];
+    const snapshot = instance && currentSnapshot(state, id);
+    const index = state.editingInstances.ids.indexOf(id);
+    if (!instance || !snapshot || index < 0)
+      throw new Error(`Cannot checkpoint missing Editing Instance ${id}`);
+    return { index, instance: structuredClone({ ...instance, snapshot }), snapshot };
+  });
+
+  return {
+    activeInstanceId: selectActiveInstanceId(state),
+    instances,
+    operation,
+    type: "state",
+  };
+}
+
+async function applyStateOperation(
+  dispatch: Dispatch,
+  getState: () => RootState,
+  operation: StateHistoryOperation,
+  direction: "undo" | "redo",
+  includeNavigation: boolean,
+) {
+  if (!includeNavigation && operation.role === "navigation") return;
+  const orderedChanges = [...operation.changes].sort((a, b) => {
+    const priority = (change: HistoryChange) =>
+      change.field === "rotation" ? 0 : change.field === "crop" ? 1 : 2;
+
+    return priority(a) - priority(b);
+  });
+
+  const snapshots = new Map<string, EditorSnapshot>();
+  for (const change of orderedChanges) {
+    if (change.target.kind !== "instance") continue;
+    const instance = getState().editingInstances.entities[change.target.instanceId];
+    const snapshot =
+      snapshots.get(change.target.instanceId) ??
+      currentSnapshot(getState(), change.target.instanceId) ??
+      instance?.snapshot;
+
+    if (!snapshot)
+      throw new Error(`Cannot replay missing Editing Instance ${change.target.instanceId}`);
+    const next = applyChange(snapshot, change, direction);
+    snapshots.set(change.target.instanceId, next);
+    restoreActiveField(dispatch, getState, change.field, next, change.target);
+  }
+  for (const [id, snapshot] of snapshots) {
+    dispatch(editingInstanceSnapshotUpdated({ id, snapshot }));
+    const instance = getState().editingInstances.entities[id];
+    const transformChanged = operation.changes.some(
+      (change) =>
+        change.target.kind === "instance" &&
+        change.target.instanceId === id &&
+        (change.field === "crop" || change.field === "rotation"),
+    );
+
+    if (instance?.media && transformChanged && id !== selectActiveInstanceId(getState())) {
+      const resolution = cropResolutionFor(
+        instance.media.video ?? null,
+        snapshot.crop ?? { x: 0, y: 0, width: 1, height: 1 },
+        snapshot.rotation ?? 0,
+      );
+
+      dispatch(
+        editingInstanceOptimizedSettingsChanged({
+          id,
+          settings: { frameRate: instance.optimizedSettings?.frameRate, resolution },
+        }),
+      );
+      if (instance.gifSettings) {
+        dispatch(
+          editingInstanceGifSettingsChanged({
+            id,
+            settings: { ...instance.gifSettings, resolution },
+          }),
+        );
+      }
+    }
+  }
+  for (const change of operation.changes) {
+    if (change.target.kind !== "workspace" || change.field !== "activeInstanceId") continue;
+    const slot = direction === "undo" ? change.before : change.after;
+    const id = slot.present && typeof slot.value === "string" ? slot.value : null;
+    if (id === selectActiveInstanceId(getState())) continue;
+    if (!(await dispatch(navigateToEditingInstance(id)))) throw new HistoryReplayRejected();
+  }
+}
+
+async function restoreStateReplayCheckpoint(
+  dispatch: Dispatch,
+  getState: () => RootState,
+  checkpoint: StateReplayCheckpoint,
+) {
+  for (const previous of checkpoint.instances) {
+    const current = getState().editingInstances.entities[previous.instance.id];
+    if (!current)
+      throw new Error(`Cannot restore missing Editing Instance ${previous.instance.id}`);
+    dispatch(
+      editingInstancesLifecycleChanged({
+        instances: [{ index: previous.index, instance: previous.instance }],
+        removeIds: [],
+      }),
+    );
+    for (const change of checkpoint.operation.changes) {
+      if (change.target.kind === "instance" && change.target.instanceId === previous.instance.id)
+        restoreActiveField(dispatch, getState, change.field, previous.snapshot, change.target);
+    }
+  }
+  if (selectActiveInstanceId(getState()) !== checkpoint.activeInstanceId) {
+    if (!(await dispatch(navigateToEditingInstance(checkpoint.activeInstanceId))))
+      throw new Error("Active Editing Instance checkpoint restoration was rejected");
+  }
+}
+
 function applyHistoryPosition(
   position: number,
   includeNavigation = true,
@@ -279,105 +434,28 @@ function applyHistoryPosition(
         });
       }
     }
-    dispatch(historyReplayStarted());
+    const activeInstanceId = selectActiveInstanceId(state);
+    const applied: ReplayCheckpoint[] = [];
     try {
-      const appliedExternal: Array<{
-        direction: "undo" | "redo";
-        operation: Extract<HistoryOperation, { kind: "external" }>;
-      }> = [];
-
+      dispatch(historyReplayStarted());
       for (const { direction: stepDirection, operation } of steps) {
         if (operation.kind === "external") {
-          const applied = await applyExternalOperation(
+          const externalApplied = await applyExternalOperation(
             dispatch,
             getState,
             operation,
             stepDirection,
           );
 
-          if (!applied) {
-            for (const previous of appliedExternal.reverse()) {
-              await applyExternalOperation(
-                dispatch,
-                getState,
-                previous.operation,
-                previous.direction === "undo" ? "redo" : "undo",
-              );
-            }
-            dispatch(historyReplayFinished({ position: history.position }));
-            return false;
-          }
-          appliedExternal.push({ direction: stepDirection, operation });
+          if (!externalApplied) throw new HistoryReplayRejected();
+          applied.push({ direction: stepDirection, operation, type: "external" });
           continue;
         }
         if (operation.kind !== "state") continue;
         if (!includeNavigation && operation.role === "navigation") continue;
-        const orderedChanges = [...operation.changes].sort((a, b) => {
-          const priority = (change: HistoryChange) =>
-            change.field === "rotation" ? 0 : change.field === "crop" ? 1 : 2;
-
-          return priority(a) - priority(b);
-        });
-
-        const snapshots = new Map<string, EditorSnapshot>();
-        for (const change of orderedChanges) {
-          if (change.target.kind !== "instance") continue;
-          const instance = getState().editingInstances.entities[change.target.instanceId];
-          const snapshot =
-            snapshots.get(change.target.instanceId) ??
-            currentSnapshot(getState(), change.target.instanceId) ??
-            instance?.snapshot;
-
-          if (!snapshot) continue;
-          const next = applyChange(snapshot, change, stepDirection);
-          snapshots.set(change.target.instanceId, next);
-          restoreActiveField(dispatch, getState, change.field, next, change.target);
-        }
-        for (const [id, snapshot] of snapshots) {
-          dispatch(editingInstanceSnapshotUpdated({ id, snapshot }));
-          const instance = getState().editingInstances.entities[id];
-          const transformChanged = operation.changes.some(
-            (change) =>
-              change.target.kind === "instance" &&
-              change.target.instanceId === id &&
-              (change.field === "crop" || change.field === "rotation"),
-          );
-
-          if (instance?.media && transformChanged && id !== selectActiveInstanceId(getState())) {
-            const resolution = cropResolutionFor(
-              instance.media.video ?? null,
-              snapshot.crop ?? { x: 0, y: 0, width: 1, height: 1 },
-              snapshot.rotation ?? 0,
-            );
-
-            dispatch(
-              editingInstanceOptimizedSettingsChanged({
-                id,
-                settings: { frameRate: instance.optimizedSettings?.frameRate, resolution },
-              }),
-            );
-            if (instance.gifSettings) {
-              dispatch(
-                editingInstanceGifSettingsChanged({
-                  id,
-                  settings: { ...instance.gifSettings, resolution },
-                }),
-              );
-            }
-          }
-        }
-        for (const change of operation.changes) {
-          if (change.target.kind !== "workspace" || change.field !== "activeInstanceId") continue;
-          const slot = stepDirection === "undo" ? change.before : change.after;
-          const id = slot.present && typeof slot.value === "string" ? slot.value : null;
-          if (id !== selectActiveInstanceId(getState())) {
-            const restored = await dispatch(navigateToEditingInstance(id));
-            if (!restored) {
-              dispatch(historyReplayFinished({ position: history.position }));
-              return false;
-            }
-          }
-        }
+        const checkpoint = captureStateReplayCheckpoint(getState(), operation);
+        applied.push(checkpoint);
+        await applyStateOperation(dispatch, getState, operation, stepDirection, includeNavigation);
       }
 
       if (
@@ -388,16 +466,46 @@ function applyHistoryPosition(
         getState().editingInstances.entities[activateInstanceId]?.draftAvailable !== false
       ) {
         const activated = await dispatch(navigateToEditingInstance(activateInstanceId));
-        if (!activated) {
-          dispatch(historyReplayFinished({ position }));
-          await dispatch(applyHistoryPosition(history.position, includeNavigation));
-          return false;
-        }
+        if (!activated) throw new HistoryReplayRejected();
       }
       dispatch(historyReplayFinished({ position }));
       return true;
     } catch (error) {
+      const compensationErrors: unknown[] = [];
+      for (const checkpoint of applied.reverse()) {
+        try {
+          if (checkpoint.type === "state") {
+            await restoreStateReplayCheckpoint(dispatch, getState, checkpoint);
+          } else {
+            const restored = await applyExternalOperation(
+              dispatch,
+              getState,
+              checkpoint.operation,
+              checkpoint.direction === "undo" ? "redo" : "undo",
+            );
+
+            if (!restored) throw new Error("History operation compensation was rejected");
+          }
+        } catch (compensationError) {
+          compensationErrors.push(compensationError);
+        }
+      }
+      if (selectActiveInstanceId(getState()) !== activeInstanceId) {
+        try {
+          const restored = await dispatch(navigateToEditingInstance(activeInstanceId));
+          if (!restored) throw new Error("Active Editing Instance compensation was rejected");
+        } catch (compensationError) {
+          compensationErrors.push(compensationError);
+        }
+      }
       dispatch(historyReplayFinished({ position: history.position }));
+      if (compensationErrors.length)
+        throw new AggregateError(
+          [error, ...compensationErrors],
+          "Workspace history replay failed and rollback was incomplete",
+          { cause: error },
+        );
+      if (error instanceof HistoryReplayRejected) return false;
       throw error;
     }
   };
@@ -434,14 +542,35 @@ async function applyExternalOperation(
         instanceIds.some((id) => selectHasQueuedOrRenderingExportByInstanceId(state, id)))
     )
       return false;
+    let fileChanged = false;
     try {
       if (desired === "deleted") await moveSourceToTrash(sourcePath);
       else await restoreSourceFromTrash(sourcePath);
-    } catch {
-      return false;
+      fileChanged = true;
+      dispatch(editingInstancesSourceAvailabilityChanged({ availability: desired, sourcePath }));
+      return true;
+    } catch (error) {
+      if (!fileChanged) return false;
+      const compensationErrors: unknown[] = [];
+      try {
+        if (desired === "deleted") await restoreSourceFromTrash(sourcePath);
+        else await moveSourceToTrash(sourcePath);
+      } catch (compensationError) {
+        compensationErrors.push(compensationError);
+      }
+      try {
+        dispatch(editingInstancesSourceAvailabilityChanged({ availability: expected, sourcePath }));
+      } catch (compensationError) {
+        compensationErrors.push(compensationError);
+      }
+      if (compensationErrors.length)
+        throw new AggregateError(
+          [error, ...compensationErrors],
+          "Source availability replay failed and rollback was incomplete",
+          { cause: error },
+        );
+      throw error;
     }
-    dispatch(editingInstancesSourceAvailabilityChanged({ availability: desired, sourcePath }));
-    return true;
   }
   if (operation.type === "instances.lifecycle") {
     const before = payload.before as Array<{ index: number; instance: EditingInstance }>;
@@ -468,15 +597,21 @@ async function applyExternalOperation(
     });
 
     const previousActiveId = selectActiveInstanceId(getState());
-    dispatch(editingInstancesLifecycleChanged({ instances: desired, removeIds: removing }));
     const activeId = (direction === "undo" ? payload.beforeActiveId : payload.afterActiveId) as
       string | null;
 
-    if (activeId !== selectActiveInstanceId(getState())) {
-      if (activeId && !getState().editingInstances.entities[activeId]) return false;
-      const restored = await dispatch(navigateToEditingInstance(activeId));
-      if (!restored) {
-        const currentIds = new Set([...before, ...after].map(({ instance }) => instance.id));
+    try {
+      dispatch(editingInstancesLifecycleChanged({ instances: desired, removeIds: removing }));
+      if (activeId !== selectActiveInstanceId(getState())) {
+        if (activeId && !getState().editingInstances.entities[activeId])
+          throw new HistoryReplayRejected();
+        if (!(await dispatch(navigateToEditingInstance(activeId))))
+          throw new HistoryReplayRejected();
+      }
+      return true;
+    } catch (error) {
+      const compensationErrors: unknown[] = [];
+      try {
         dispatch(
           editingInstancesLifecycleChanged({
             instances: previous,
@@ -485,12 +620,26 @@ async function applyExternalOperation(
             ),
           }),
         );
-        if (previousActiveId !== selectActiveInstanceId(getState()))
-          await dispatch(navigateToEditingInstance(previousActiveId));
-        return false;
+      } catch (compensationError) {
+        compensationErrors.push(compensationError);
       }
+      if (previousActiveId !== selectActiveInstanceId(getState())) {
+        try {
+          if (!(await dispatch(navigateToEditingInstance(previousActiveId))))
+            throw new Error("Active Editing Instance compensation was rejected");
+        } catch (compensationError) {
+          compensationErrors.push(compensationError);
+        }
+      }
+      if (compensationErrors.length)
+        throw new AggregateError(
+          [error, ...compensationErrors],
+          "Editing Instance lifecycle replay failed and rollback was incomplete",
+          { cause: error },
+        );
+      if (error instanceof HistoryReplayRejected) return false;
+      throw error;
     }
-    return true;
   }
   return false;
 }
