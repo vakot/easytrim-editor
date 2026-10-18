@@ -17,21 +17,18 @@ const content = defineAudioFilterPageContent<"limiter">({
       label: (t) => t("audio.limiter.ceilingLabel"),
       unit: "dB",
       step: 0.1,
-      slider: { min: -24, max: 0 },
     },
     {
       parameter: "attackMs",
       label: (t) => t("audio.limiter.attackLabel"),
       unit: "ms",
       step: 0.1,
-      slider: { min: 0.1, max: 50 },
     },
     {
       parameter: "releaseMs",
       label: (t) => t("audio.limiter.releaseLabel"),
       unit: "ms",
       step: 1,
-      slider: { min: 1, max: 1_000 },
     },
   ],
 });

@@ -13,8 +13,8 @@ const content = defineAudioFilterPageContent<"gain">({
       parameter: "gainDb",
       label: (t) => t("audio.gain.gainLabel"),
       unit: "dB",
+      defaultValue: 0,
       step: 0.5,
-      slider: { min: -24, max: 24 },
     },
   ],
 });

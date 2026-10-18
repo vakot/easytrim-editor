@@ -338,6 +338,33 @@ describe("AudioTrackFiltersDialog", () => {
     expect(committedSyncOffset()).toBeUndefined();
   });
 
+  it("shows Gain boundary and default markers and resets the slider on double-click", async () => {
+    const user = userEvent.setup();
+    const { store } = renderDialog();
+    store.dispatch(
+      audioTrackFiltersApplied({
+        filters: [{ enabled: true, gainDb: 6, id: "gain", type: "gain" }],
+        streamIndex: 2,
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: "Open filters" }));
+
+    const slider = await screen.findByRole("slider", { name: "Gain" });
+    const sliderRoot = slider.closest('[data-slot="slider"]')!;
+    expect(
+      [...sliderRoot.querySelectorAll('[data-slot="slider-marker-label"]')].map(
+        (marker) => marker.textContent,
+      ),
+    ).toEqual(["-60 dB", "0 dB", "24 dB"]);
+
+    const input = screen.getByRole("textbox", { name: "Gain" });
+    expect(input).toHaveValue("6");
+    await user.dblClick(slider);
+
+    expect(input).toHaveValue("0");
+    expect(slider).toHaveAttribute("aria-valuenow", "0");
+  });
+
   it("keeps signed offset input and slider aligned and blocks out-of-range values", async () => {
     const user = userEvent.setup();
     const { committedSyncOffset } = renderDialog();
@@ -345,12 +372,16 @@ describe("AudioTrackFiltersDialog", () => {
     await addFilter(user, "Sync Offset");
 
     const input = await screen.findByRole("textbox", { name: "Offset (MM:SS.mmm)" });
-    const slider = screen.getByRole("slider", {
-      name: "Sync offset from −00:05.000 to +00:05.000",
-    });
+    const slider = screen.getByRole("slider", { name: "Offset (MM:SS.mmm)" });
 
     expect(input).toHaveValue("+00:00.000");
     expect(slider).toHaveAttribute("aria-valuenow", "50");
+    const sliderRoot = slider.closest('[data-slot="slider"]')!;
+    expect(
+      [...sliderRoot.querySelectorAll('[data-slot="slider-marker-label"]')].map(
+        (marker) => marker.textContent,
+      ),
+    ).toEqual(["−00:05.000", "+00:00.000", "+00:05.000"]);
 
     await user.clear(input);
     await user.type(input, "-00:02.500");
@@ -359,6 +390,10 @@ describe("AudioTrackFiltersDialog", () => {
     slider.focus();
     await user.keyboard("{ArrowRight}");
     expect(input).toHaveValue("−00:02.499");
+
+    await user.dblClick(slider);
+    expect(input).toHaveValue("+00:00.000");
+    expect(slider).toHaveAttribute("aria-valuenow", "50");
 
     await user.clear(input);
     await user.type(input, "+00:05.001");
@@ -393,9 +428,7 @@ describe("AudioTrackFiltersDialog", () => {
     await addFilter(user, "Sync Offset");
 
     const input = await screen.findByRole("textbox", { name: "Offset (MM:SS.mmm)" });
-    const slider = screen.getByRole("slider", {
-      name: "Sync offset from −03:25.000 to +01:55.000",
-    });
+    const slider = screen.getByRole("slider", { name: "Offset (MM:SS.mmm)" });
 
     await user.clear(input);
     await user.type(input, "+01:00.000");

@@ -418,7 +418,6 @@ export const en = {
       interactionHint: "Hover to preview sync position; Alt-click to set sync offset",
       label: "Sync Offset",
       range: "Enter a signed offset from {{min}} to {{max}} (MM:SS.mmm)",
-      sliderLabel: "Sync offset from {{min}} to {{max}}",
       valueLabel: "Offset (MM:SS.mmm)",
     },
     tracks: {

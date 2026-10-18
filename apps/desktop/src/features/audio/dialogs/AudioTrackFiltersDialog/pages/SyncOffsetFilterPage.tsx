@@ -1,9 +1,6 @@
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
 import {
@@ -11,8 +8,8 @@ import {
   type AudioSyncOffsetRange,
   isAudioSyncOffsetWithinRange,
 } from "@/domain/audio-processing";
-import { cn } from "@/lib/class-names.utils";
 
+import { AudioParameterSliderInput } from "../components/AudioParameterSliderInput";
 import { useAudioFiltersDraft } from "../contexts/audio-filters-draft-context";
 
 const MICROS_PER_MILLISECOND = 1_000;
@@ -47,7 +44,6 @@ function SyncOffsetFilterPage({
 }) {
   const { t } = useTranslation();
   const { dispatch } = useAudioFiltersDraft();
-  const id = useId();
   const [input, setInput] = useState(() => ({
     offsetMicros: offset.offsetMicros,
     text: formatOffset(offset.offsetMicros),
@@ -64,10 +60,15 @@ function SyncOffsetFilterPage({
     !isAudioSyncOffsetWithinRange(offset.offsetMicros, range);
 
   const span = range.maxOffsetMicros - range.minOffsetMicros;
-  const percentage =
-    span <= 0 || !Number.isSafeInteger(offset.offsetMicros)
+  const includesDefault = range.minOffsetMicros <= 0 && range.maxOffsetMicros >= 0;
+  const toPercentage = (offsetMicros: number) =>
+    span <= 0
       ? 50
-      : Math.max(0, Math.min(100, ((offset.offsetMicros - range.minOffsetMicros) / span) * 100));
+      : Math.max(0, Math.min(100, ((offsetMicros - range.minOffsetMicros) / span) * 100));
+
+  const percentage = Number.isSafeInteger(offset.offsetMicros)
+    ? toPercentage(offset.offsetMicros)
+    : 0;
 
   const updateOffset = (offsetMicros: number, syncInput = false) => {
     if (syncInput) setInput({ offsetMicros, text: formatOffset(offsetMicros) });
@@ -103,70 +104,44 @@ function SyncOffsetFilterPage({
         />
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor={id}>{t("audio.syncOffset.valueLabel")}</Label>
-        <Input
-          aria-describedby={`${id}-format`}
-          aria-invalid={inputInvalid}
-          id={id}
-          inputMode="text"
-          onBlur={() => {
-            if (inputInvalid) return;
-            setInput({
-              offsetMicros: offset.offsetMicros,
-              text: formatOffset(offset.offsetMicros),
-            });
-          }}
-          onChange={(event) => updateInput(event.target.value)}
-          placeholder={t("audio.syncOffset.inputPlaceholder")}
-          value={inputValue}
-        />
-        <p
-          aria-live={inputInvalid ? "polite" : undefined}
-          className={cn("text-xs", inputInvalid ? "text-destructive" : "text-muted-foreground")}
-          id={`${id}-format`}
-        >
-          {t("audio.syncOffset.range", {
-            max: formatOffset(range.maxOffsetMicros),
-            min: formatOffset(range.minOffsetMicros),
-          })}
-        </p>
-      </div>
-
-      <div className="grid gap-3 border-t pt-4">
-        <Label htmlFor={`${id}-slider`}>
-          {t("audio.syncOffset.sliderLabel", {
-            max: formatOffset(range.maxOffsetMicros),
-            min: formatOffset(range.minOffsetMicros),
-          })}
-        </Label>
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-          <span className="text-xs text-muted-foreground">
-            {formatOffset(range.minOffsetMicros)}
-          </span>
-          <Slider
-            aria-label={t("audio.syncOffset.sliderLabel", {
-              max: formatOffset(range.maxOffsetMicros),
-              min: formatOffset(range.minOffsetMicros),
-            })}
-            aria-valuetext={formatOffset(offset.offsetMicros)}
-            disabled={span <= 0}
-            id={`${id}-slider`}
-            max={100}
-            min={0}
-            onValueChange={([value]) => {
-              const next = Math.round(range.minOffsetMicros + ((value ?? 50) / 100) * span);
-
-              updateOffset(next, true);
-            }}
-            step={0.01}
-            value={[percentage]}
-          />
-          <span className="text-xs text-muted-foreground">
-            {formatOffset(range.maxOffsetMicros)}
-          </span>
-        </div>
-      </div>
+      <AudioParameterSliderInput
+        disabled={span <= 0}
+        error={
+          inputInvalid
+            ? t("audio.syncOffset.range", {
+                max: formatOffset(range.maxOffsetMicros),
+                min: formatOffset(range.minOffsetMicros),
+              })
+            : undefined
+        }
+        inputMode="text"
+        inputValue={inputValue}
+        invalid={inputInvalid}
+        label={t("audio.syncOffset.valueLabel")}
+        markers={[
+          { label: formatOffset(range.minOffsetMicros), value: 0 },
+          ...(includesDefault ? [{ label: formatOffset(0), value: toPercentage(0) }] : []),
+          { label: formatOffset(range.maxOffsetMicros), value: 100 },
+        ]}
+        onDoubleClick={includesDefault ? () => updateOffset(0, true) : undefined}
+        onInputBlur={() => {
+          if (inputInvalid) return;
+          setInput({
+            offsetMicros: offset.offsetMicros,
+            text: formatOffset(offset.offsetMicros),
+          });
+        }}
+        onInputChange={updateInput}
+        onSliderChange={(value) => {
+          updateOffset(Math.round(range.minOffsetMicros + (value / 100) * span), true);
+        }}
+        placeholder={t("audio.syncOffset.inputPlaceholder")}
+        sliderMax={100}
+        sliderMin={0}
+        sliderStep={0.01}
+        sliderValue={percentage}
+        sliderValueText={formatOffset(offset.offsetMicros)}
+      />
     </div>
   );
 }
