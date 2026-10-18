@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import {
@@ -193,16 +194,22 @@ function AudioTrackRowWaveform({
             : null,
         );
       }}
-      title={t("audio.syncOffset.interactionHint")}
     >
-      <AudioTrackWaveform
-        displayMode={displayMode}
-        stream={stream}
-        syncOffset={hasOffsetPreview ? syncOffset : undefined}
-        timelineDurationMicros={durationMicros}
-        track={track}
-        volume={volume}
-      />
+      <CursorTooltip
+        className="absolute inset-0"
+        data-slot="audio-sync-tooltip"
+        disabled={syncMarker !== null}
+        tooltipContent={t("audio.syncOffset.interactionHint")}
+      >
+        <AudioTrackWaveform
+          displayMode={displayMode}
+          stream={stream}
+          syncOffset={hasOffsetPreview ? syncOffset : undefined}
+          timelineDurationMicros={durationMicros}
+          track={track}
+          volume={volume}
+        />
+      </CursorTooltip>
 
       <div className="pointer-events-none absolute inset-0">
         {hoveredPosition !== null && syncMarker === null ? (
