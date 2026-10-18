@@ -14,6 +14,7 @@ import {
   SourceList,
   SourceListCloseAll,
   SourceListContent,
+  SourceListNavigation,
   SourceListSearch,
 } from "@/features/source/source-list";
 
@@ -30,8 +31,9 @@ function AppSourcesDialogContent({ __scopeDialog }: { __scopeDialog?: DialogScop
       </DialogHeader>
 
       <div className="flex min-h-0 flex-1 flex-col pt-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <SourceListSearch autoFocus />
+          <SourceListNavigation />
           <SourceListCloseAll />
         </div>
         <SourceListContent className="-mx-2 **:data-[slot=scroll-area-viewport]:px-2" />

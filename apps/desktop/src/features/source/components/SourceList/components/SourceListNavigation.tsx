@@ -9,19 +9,19 @@ import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent"
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { cn } from "@/lib/class-names.utils";
 
-function SourceNavigation({ className }: { className?: string }) {
+function SourceListNavigation({ className }: { className?: string }) {
   const { executeCommand } = useApplicationCommands();
   const previousCommand = useApplicationCommand("previous-source");
   const nextCommand = useApplicationCommand("next-source");
 
   return (
-    <div className={cn("flex", className)}>
-      <SourceNavigationButton
+    <div className={cn("flex gap-1", className)}>
+      <SourceListNavigationButton
         command={previousCommand}
         onClick={() => void executeCommand("previous-source", "button")}
       />
 
-      <SourceNavigationButton
+      <SourceListNavigationButton
         command={nextCommand}
         onClick={() => void executeCommand("next-source", "button")}
       />
@@ -29,7 +29,7 @@ function SourceNavigation({ className }: { className?: string }) {
   );
 }
 
-function SourceNavigationButton({
+function SourceListNavigationButton({
   command,
   ...props
 }: Omit<ComponentProps<typeof Button>, "aria-label" | "disabled"> & {
@@ -61,4 +61,4 @@ function SourceNavigationButton({
   );
 }
 
-export { SourceNavigation };
+export { SourceListNavigation };

@@ -12,6 +12,7 @@ import { createSourceSearcher } from "../../lib/source-search.utils";
 
 import { SourceListCloseAll } from "./components/SourceListCloseAll";
 import { SourceListContent } from "./components/SourceListContent";
+import { SourceListNavigation } from "./components/SourceListNavigation";
 import { SourceListSearch } from "./components/SourceListSearch";
 import {
   SOURCE_LIST_CLOSE_ANIMATION_DURATION_MS,
@@ -100,4 +101,10 @@ function SourceList({ children }: { children?: ReactNode }) {
   );
 }
 
-export { SourceList, SourceListCloseAll, SourceListContent, SourceListSearch };
+export {
+  SourceList,
+  SourceListCloseAll,
+  SourceListContent,
+  SourceListNavigation,
+  SourceListSearch,
+};

@@ -187,6 +187,7 @@ function RuntimeProbe() {
           data-keep-open={command.keepOpen}
           data-label={command.label}
           data-pending={command.pending}
+          data-shortcut={command.shortcut?.key}
           data-surfaces={command.surfaces?.join(",")}
           data-variant={command.variant}
           disabled={!command.enabled || command.pending}
@@ -463,6 +464,19 @@ describe("ApplicationCommandsProvider", () => {
         value: previousUserAgent,
       });
     }
+  });
+
+  it("exposes bracket shortcuts for previous and next source navigation", () => {
+    renderRuntime();
+
+    expect(screen.getByRole("button", { name: "previous-source" })).toHaveAttribute(
+      "data-shortcut",
+      "[",
+    );
+    expect(screen.getByRole("button", { name: "next-source" })).toHaveAttribute(
+      "data-shortcut",
+      "]",
+    );
   });
 
   it("routes Open and Docks through the shared workspace view commands", async () => {
