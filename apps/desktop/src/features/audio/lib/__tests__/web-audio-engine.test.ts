@@ -548,6 +548,95 @@ describe("WebAudioEngine", () => {
     engine.close();
   });
 
+  it("preserves prefetched samples across timing changes and reuses them if the offset returns", async () => {
+    const { context } = createFakeAudioContext();
+    const decode = vi.fn(
+      async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
+        chunk(durationMicros),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(4_000_000);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
+    await engine.prefetchAt(0);
+
+    engine.setTracks([
+      { selection: selection(1), streamIndex: 1, syncOffsetMicros: 500_000, volume: 1 },
+    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
+    decode.mockClear();
+    await engine.prepareAt(0);
+
+    expect(decode).not.toHaveBeenCalled();
+    engine.close();
+  });
+
+  it("does not use a prefetched timeline buffer at a different offset", async () => {
+    const { buffers, context } = createFakeAudioContext();
+    const decode = vi.fn(
+      async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
+        chunk(durationMicros),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(4_000_000);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
+    await engine.prefetchAt(0);
+    decode.mockClear();
+    engine.setTracks([
+      { selection: selection(1), streamIndex: 1, syncOffsetMicros: 500_000, volume: 1 },
+    ]);
+
+    await engine.prepareAt(0);
+
+    expect(decode).toHaveBeenCalledWith(selection(1), 0, 1_500_000, expect.any(AbortSignal), {
+      preview: false,
+      replacement: false,
+    });
+    expect(buffers.at(-1)?.channels[0]?.[24_000]).toBe(0.25);
+    engine.close();
+  });
+
+  it("reschedules an offset change without entering the processing replacement lifecycle", async () => {
+    const { buffers, context } = createFakeAudioContext();
+    const statuses: string[] = [];
+    const decode = vi.fn(
+      async (
+        _selection: AudioChainSelection,
+        _startMicros: number,
+        durationMicros: number,
+        signal: AbortSignal,
+        role: { preview: boolean; replacement: boolean },
+      ) => {
+        if (signal.aborted) throw new Error("Audio decode was aborted.");
+        if (role.replacement) throw new Error("Offset updates must not replace processing.");
+        return chunk(durationMicros);
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), vi.fn(), (_stream, _tag, status) =>
+      statuses.push(status),
+    );
+
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
+    await engine.startAt(0);
+    decode.mockClear();
+    statuses.length = 0;
+
+    engine.setTracks([
+      { selection: selection(1), streamIndex: 1, syncOffsetMicros: 500_000, volume: 1 },
+    ]);
+
+    await vi.waitFor(() => expect(decode).toHaveBeenCalled());
+    expect(decode.mock.calls[0]?.[4]).toEqual({ preview: false, replacement: false });
+    expect(statuses).not.toContain("updating");
+    await vi.waitFor(() =>
+      expect(buffers.some((buffer) => buffer.channels[0]?.[24_000] === 0.25)).toBe(true),
+    );
+    engine.close();
+  });
+
   it("discards a prefetched chunk when baked track processing changes", async () => {
     const { context } = createFakeAudioContext();
     const decode = vi.fn(

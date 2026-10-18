@@ -238,11 +238,13 @@ class WebAudioEngine {
     }
 
     let processingChanged = false;
+    let timingChanged = false;
     let rangeChanged = false;
     const statusChanged: ScheduledTrack[] = [];
     for (const track of tracks) {
       const offsetFrames = Math.round(((track.syncOffsetMicros ?? 0) * SAMPLE_RATE) / 1_000_000);
-      const key = JSON.stringify([track.selection, offsetFrames]);
+      // Offset moves processed samples on the timeline; only the selection identifies processing.
+      const key = JSON.stringify(track.selection);
       const current = this.tracks.get(track.streamIndex);
       const startFrame = Math.max(
         0,
@@ -261,11 +263,14 @@ class WebAudioEngine {
 
       if (current && current.selectionKey !== key) {
         processingChanged = true;
-        current.offsetFrames = offsetFrames;
         current.selection = track.selection;
         current.selectionKey = key;
         if (current.failedKey !== key) current.failedKey = null;
         statusChanged.push(current);
+      }
+      if (current && current.offsetFrames !== offsetFrames) {
+        timingChanged = true;
+        current.offsetFrames = offsetFrames;
       }
       if (current && current.tag !== track.tag) {
         current.tag = track.tag;
@@ -300,17 +305,21 @@ class WebAudioEngine {
       this.seek(playbackPositionFrame / SAMPLE_RATE);
     } else if (this.isPlaying && this.hasTracks && processingChanged) {
       this.changeProcessing();
+    } else if (this.isPlaying && this.hasTracks && timingChanged) {
+      this.preparedBatch = null;
+      if (this.processingChange !== null) this.changeProcessing();
+      else this.seek(playbackPositionFrame / SAMPLE_RATE);
     } else if (this.isPlaying && this.hasTracks) {
       this.requestPump();
     } else if (
       this.playbackRequested &&
       this.hasTracks &&
-      (membershipChanged || rangeChanged || processingChanged)
+      (membershipChanged || rangeChanged || processingChanged || timingChanged)
     ) {
-      // A start is still decoding the previous processing; start again with the new one.
+      // A start is still decoding the previous chain or placement; start again with the new one.
       this.seek(this.anchorPositionFrame / SAMPLE_RATE);
     } else {
-      if (membershipChanged || rangeChanged || processingChanged) {
+      if (membershipChanged || rangeChanged || processingChanged || timingChanged) {
         this.generation += 1;
         this.batchInFlight = false;
         this.preparedBatch = null;
@@ -499,6 +508,7 @@ class WebAudioEngine {
       const ranges = await Promise.all(
         tracks.map(async (track) => {
           const render = this.renderOf(track);
+          const key = this.prefetchKey(track);
           return {
             buffer: await this.decodeBuffer(
               track,
@@ -507,7 +517,7 @@ class WebAudioEngine {
               endFrame,
               request.controller.signal,
             ),
-            key: this.prefetchKey(track),
+            key,
             render,
             track,
           };
@@ -625,7 +635,7 @@ class WebAudioEngine {
    */
   private renderOf(track: ScheduledTrack): TrackRender {
     if (track.failedKey === track.selectionKey && track.preview && track.audible) {
-      return { ...track.audible, preview: track.preview };
+      return { ...track.audible, offsetFrames: track.offsetFrames, preview: track.preview };
     }
     return {
       offsetFrames: track.offsetFrames,
@@ -963,7 +973,7 @@ class WebAudioEngine {
 
   /** Everything a decoded chunk depends on; a change makes a prefetched chunk stale. */
   private prefetchKey(track: ScheduledTrack): string {
-    return `${this.renderOf(track).key}|${track.startFrame}|${track.durationFrame}`;
+    return `${this.renderOf(track).key}|${track.offsetFrames}|${track.startFrame}|${track.durationFrame}`;
   }
 
   private prefetchedRanges(startFrame: number): PrefetchedAudioChunk["ranges"] | null {
