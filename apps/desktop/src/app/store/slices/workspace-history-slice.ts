@@ -76,8 +76,11 @@ const workspaceHistorySlice = createSlice({
           };
 
           if (!operation.changes.length) return;
+          if (state.position < state.operations.length)
+            state.operations = state.operations.slice(0, state.position);
           const previous = state.operations[state.position - 1];
           const mayCoalesce =
+            state.position === state.operations.length &&
             previous?.kind === "state" &&
             previous.role === "edit" &&
             previous.label === operation.label &&

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
@@ -225,6 +225,58 @@ describe("workspace history editor integration", () => {
     await flush();
     expect(selectWorkspaceHistory(store.getState())).toMatchObject({ operations: [], position: 0 });
     expect(await store.dispatch(undoWorkspaceHistory())).toBe(false);
+  });
+
+  it("invalidates redo before coalescing a trim edit after undo", async () => {
+    const store = setup();
+    const clock = vi.spyOn(Date, "now").mockReturnValue(1_000);
+
+    try {
+      store.dispatch(
+        trimChanged({
+          trim: { startMicros: 10_000, endMicros: 4_000_000, sourceDurationMicros: 5_000_000 },
+        }),
+      );
+      await flush();
+
+      store.dispatch(
+        historyInteractionStarted({ id: "drag-2", label: "Adjust trim", timestamp: 1_250 }),
+      );
+      store.dispatch(
+        trimChanged({
+          trim: { startMicros: 20_000, endMicros: 4_000_000, sourceDurationMicros: 5_000_000 },
+        }),
+      );
+      store.dispatch(historyInteractionEnded());
+      expect(selectWorkspaceHistory(store.getState()).operations).toHaveLength(2);
+      expect(selectWorkspaceHistory(store.getState()).position).toBe(2);
+
+      expect(await store.dispatch(undoWorkspaceHistory())).toBe(true);
+      expect(selectWorkspaceHistory(store.getState()).position).toBe(1);
+      expect(store.getState().trim.value?.startMicros).toBe(10_000);
+
+      clock.mockReturnValue(1_300);
+      store.dispatch(
+        trimChanged({
+          trim: { startMicros: 30_000, endMicros: 4_000_000, sourceDurationMicros: 5_000_000 },
+        }),
+      );
+      await flush();
+
+      const history = selectWorkspaceHistory(store.getState());
+      expect(history).toMatchObject({ operations: [{ label: "Adjust trim" }], position: 1 });
+      expect(
+        history.operations[0]?.kind === "state" && history.operations[0].changes[0],
+      ).toMatchObject({
+        before: { present: true, value: { startMicros: 0, endMicros: 5_000_000 } },
+        after: { present: true, value: { startMicros: 30_000, endMicros: 4_000_000 } },
+      });
+      expect(await store.dispatch(redoWorkspaceHistory())).toBe(false);
+      expect(await store.dispatch(undoWorkspaceHistory())).toBe(true);
+      expect(store.getState().trim.value?.startMicros).toBe(0);
+    } finally {
+      clock.mockRestore();
+    }
   });
 
   it("uses one timeline across instances of the same source", async () => {
