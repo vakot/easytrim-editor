@@ -9,6 +9,7 @@ import {
   audioTrackDefaultChanged,
   audioTrackFiltersApplied,
   audioTrackMetadataChanged,
+  audioTrackSyncOffsetChanged,
   audioTrackToggled,
   audioTrackVolumeChanged,
 } from "@/app/store/slices/audio-slice";
@@ -33,6 +34,7 @@ const editActions = [
   audioTrackToggled,
   audioTrackDefaultChanged,
   audioTrackMetadataChanged,
+  audioTrackSyncOffsetChanged,
   audioTrackVolumeChanged,
   audioTrackFiltersApplied,
   chapterAdded,
@@ -48,6 +50,7 @@ const labels: Record<string, string> = {
   "audio/audioTrackToggled": "Change audio track",
   "audio/audioTrackDefaultChanged": "Set default audio track",
   "audio/audioTrackMetadataChanged": "Edit audio track metadata",
+  "audio/audioTrackSyncOffsetChanged": "Adjust audio sync",
   "audio/audioTrackVolumeChanged": "Adjust audio volume",
   "audio/audioTrackFiltersApplied": "Edit audio filters",
   "chapters/chapterAdded": "Add chapter",

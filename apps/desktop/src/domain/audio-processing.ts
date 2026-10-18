@@ -141,9 +141,66 @@ const MAX_AUDIO_FILTER_ID_LENGTH = 64;
 const DEFAULT_TRACK_VOLUME = 1;
 const MAX_TRACK_VOLUME = 5;
 const TRACK_VOLUME_SLIDER_MAX = 2;
+const MAX_AUDIO_SYNC_OFFSET_MICROS = 10_000_000;
+
+/** Temporal placement on the video timeline, independent of the signal chain. */
+interface AudioSyncOffset {
+  enabled: boolean;
+  offsetMicros: number;
+}
+
+interface AudioTimelineBoundaries {
+  effectiveEndMicros: number;
+  effectiveStartMicros: number;
+  hasVisibleAudio: boolean;
+  visibleEndMicros: number;
+  visibleStartMicros: number;
+}
+
+function isAudioSyncOffsetValid(value: AudioSyncOffset): boolean {
+  return typeof value.enabled === "boolean" && Number.isSafeInteger(value.offsetMicros);
+}
+
+function effectiveAudioOffsetMicros(offset?: AudioSyncOffset): number {
+  return offset?.enabled ? offset.offsetMicros : 0;
+}
+
+/** The audible stream interval placed on the video timeline, clipped to its visible axis. */
+function audioTimelineBoundaries(
+  timelineDurationMicros: number,
+  streamStartMicros: number | undefined,
+  streamDurationMicros: number | undefined,
+  syncOffset?: AudioSyncOffset,
+): AudioTimelineBoundaries {
+  const timelineEnd = Math.max(0, timelineDurationMicros);
+  const start = streamStartMicros ?? 0;
+  const sourceEnd =
+    streamDurationMicros === undefined
+      ? timelineEnd
+      : Math.min(timelineEnd, start + Math.max(0, streamDurationMicros));
+
+  const offset = effectiveAudioOffsetMicros(syncOffset);
+  const effectiveStartMicros = start + offset;
+  const effectiveEndMicros = sourceEnd + offset;
+  const visibleStartMicros = Math.max(0, Math.min(timelineEnd, effectiveStartMicros));
+  const visibleEndMicros = Math.max(0, Math.min(timelineEnd, effectiveEndMicros));
+
+  return {
+    effectiveEndMicros,
+    effectiveStartMicros,
+    hasVisibleAudio:
+      timelineEnd > 0 &&
+      effectiveStartMicros < timelineEnd &&
+      effectiveEndMicros > 0 &&
+      effectiveEndMicros > effectiveStartMicros,
+    visibleEndMicros,
+    visibleStartMicros,
+  };
+}
 
 interface AudioTrackProcessing {
   filters: AudioFilter[];
+  syncOffset?: AudioSyncOffset;
   volume: number;
 }
 
@@ -181,6 +238,7 @@ interface AudioChainSelection {
 
 /** An exported track: its filter chain followed by Track Volume. */
 interface AudioTrackSelection extends AudioChainSelection {
+  syncOffset?: AudioSyncOffset;
   volume: number;
 }
 
@@ -333,7 +391,16 @@ function parseAudioTrackProcessing(value: unknown): AudioTrackProcessing | undef
   if (!filters || typeof record.volume !== "number" || !isTrackVolumeValid(record.volume)) {
     return undefined;
   }
-  return { filters, volume: record.volume };
+  let syncOffset: AudioSyncOffset | undefined;
+  if (record.syncOffset !== undefined) {
+    const candidate = record.syncOffset;
+    if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate))
+      return undefined;
+    const offset = candidate as AudioSyncOffset;
+    if (!isAudioSyncOffsetValid(offset)) return undefined;
+    syncOffset = { enabled: offset.enabled, offsetMicros: offset.offsetMicros };
+  }
+  return { filters, volume: record.volume, ...(syncOffset ? { syncOffset } : {}) };
 }
 
 function isAudioFilterType(value: unknown): value is AudioFilterType {
@@ -411,6 +478,7 @@ function matchingAudioFilterPreset(filter: AudioFilter): string | undefined {
 
 function cloneAudioTrackProcessing(processing: AudioTrackProcessing): AudioTrackProcessing {
   return {
+    ...(processing.syncOffset ? { syncOffset: { ...processing.syncOffset } } : {}),
     filters: processing.filters.map((filter) => ({ ...filter })),
     volume: processing.volume,
   };
@@ -457,6 +525,8 @@ export type {
   AudioFilterType,
   AudioLoudnessAnalysis,
   AudioParameterRange,
+  AudioSyncOffset,
+  AudioTimelineBoundaries,
   AudioTrackMetadata,
   AudioTrackProcessing,
   AudioTrackSelection,
@@ -472,17 +542,21 @@ export {
   audioFilterParameterRange,
   audioFilterParameterValue,
   audioFiltersRequireLoudnessAnalysis,
+  audioTimelineBoundaries,
   audioTrackLoudnessInputsKey,
   clampTrackVolume,
   cloneAudioTrackProcessing,
   createAudioFilter,
   createDefaultAudioTrackProcessing,
   DEFAULT_TRACK_VOLUME,
+  effectiveAudioOffsetMicros,
   insertAudioFilter,
   isAudioFilterParameterValid,
+  isAudioSyncOffsetValid,
   isTrackVolumeValid,
   matchingAudioFilterPreset,
   MAX_AUDIO_FILTERS,
+  MAX_AUDIO_SYNC_OFFSET_MICROS,
   MAX_TRACK_VOLUME,
   moveAudioFilter,
   normalizeAudioTrackDefaults,

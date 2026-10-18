@@ -6,6 +6,7 @@ import {
   audioTrackDefaultChanged,
   audioTrackFiltersApplied,
   audioTrackMetadataChanged,
+  audioTrackSyncOffsetChanged,
   audioTrackToggled,
   audioTrackVolumeChanged,
 } from "@/app/store/slices/audio-slice";
@@ -124,6 +125,13 @@ function restoreActiveField(
           streamIndex,
           title: desired.metadata.title,
           language: desired.metadata.language,
+        }),
+      );
+    if (!historyValuesEqual(track.processing.syncOffset, desired.processing.syncOffset))
+      dispatch(
+        audioTrackSyncOffsetChanged({
+          streamIndex,
+          syncOffset: desired.processing.syncOffset ?? null,
         }),
       );
     if (track.processing.volume !== desired.processing.volume)

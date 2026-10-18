@@ -49,6 +49,7 @@ import {
 import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
 import { selectMergeAudioEnabled } from "@/app/store/slices/preferences-slice";
 import {
+  selectAudioProcessingRange,
   selectSourceMedia,
   selectSourceReady,
   selectSourceSelection,
@@ -753,9 +754,9 @@ function exportTransform(state: ReturnType<Parameters<AppThunk>[1]>) {
   );
 }
 
-// Loudness is measured on the timeline selection so exports apply the same gain as playback.
+// Playback and export share full-source measurements regardless of either trim selection.
 function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>): AudioTrackSelection[] {
-  const trim = selectTrim(state);
+  const trim = selectAudioProcessingRange(state);
   const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
   const tracks = selectAudioTracks(state);
   return selectedAudioTracks(tracks).map((selection) => {
@@ -768,13 +769,13 @@ function exportAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>): AudioTra
       selection.filters,
     );
 
-    return { ...audioChainSelection(track, loudnessCacheKey), volume: selection.volume };
+    return { ...selection, ...audioChainSelection(track, loudnessCacheKey) };
   });
 }
 
 /** Tracks whose chain needs measurements that are not ready for the current inputs. */
 function tracksMissingLoudnessAnalysis(state: ReturnType<Parameters<AppThunk>[1]>) {
-  const trim = selectTrim(state);
+  const trim = selectAudioProcessingRange(state);
   const sourcePath = selectSourceSelection(state)?.sourcePath ?? "";
   if (!trim) return [];
   return selectAudioTracks(state).flatMap((track) => {

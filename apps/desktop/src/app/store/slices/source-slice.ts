@@ -119,6 +119,9 @@ const selectFrameIndex: (state: RootState) => FrameIndex = createSelector(
   createFrameIndex,
 );
 
+const selectAudioProcessingRange = (state: RootState) =>
+  state.source.media ? { startMicros: 0, endMicros: state.source.media.durationMicros } : null;
+
 const selectAudioPanelStreamCount = (state: RootState): number =>
   state.source.audioPanelStreamCount;
 
@@ -133,6 +136,7 @@ export {
   capabilitiesFailed,
   capabilitiesReady,
   selectAudioPanelStreamCount,
+  selectAudioProcessingRange,
   selectCapabilities,
   selectFrameIndex,
   selectHasSource,

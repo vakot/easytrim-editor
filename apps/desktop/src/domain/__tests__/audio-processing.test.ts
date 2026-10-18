@@ -7,7 +7,9 @@ import {
   audioFiltersRequireLoudnessAnalysis,
   audioTrackLoudnessInputsKey,
   clampTrackVolume,
+  cloneAudioTrackProcessing,
   createAudioFilter,
+  effectiveAudioOffsetMicros,
   insertAudioFilter,
   matchingAudioFilterPreset,
   moveAudioFilter,
@@ -230,4 +232,32 @@ describe("track volume", () => {
       parseAudioTrackProcessing({ filters: [{ ...gain("g", 3), enabled: "no" }], volume: 1 }),
     ).toBeUndefined();
   });
+});
+
+describe("audio sync offset serialization", () => {
+  it.each([true, false])("retains an enabled=%s offset independently of filters", (enabled) => {
+    const processing = {
+      filters: [gain("g", 3)],
+      volume: 1,
+      syncOffset: { enabled, offsetMicros: -500_001 },
+    };
+
+    const restored = parseAudioTrackProcessing(JSON.parse(JSON.stringify(processing)));
+    expect(restored).toEqual(processing);
+    expect(cloneAudioTrackProcessing(processing)).toEqual(processing);
+    expect(cloneAudioTrackProcessing(processing).syncOffset).not.toBe(processing.syncOffset);
+    expect(effectiveAudioOffsetMicros(restored?.syncOffset)).toBe(enabled ? -500_001 : 0);
+  });
+  it.each([NaN, Infinity, 0.5, Number.MAX_SAFE_INTEGER + 1])(
+    "rejects invalid time %s",
+    (offsetMicros) => {
+      expect(
+        parseAudioTrackProcessing({
+          filters: [],
+          volume: 1,
+          syncOffset: { enabled: true, offsetMicros },
+        }),
+      ).toBeUndefined();
+    },
+  );
 });

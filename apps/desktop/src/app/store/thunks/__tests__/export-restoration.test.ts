@@ -389,7 +389,7 @@ describe("export snapshot restoration", () => {
     });
   });
 
-  it("re-analyzes when the committed trim changes during loudness analysis", async () => {
+  it("reuses full-stream analysis when the trim changes during loudness analysis", async () => {
     const { store } = setup(mediaWithAudio(firstSource.sourcePath));
     const firstAnalysis = createDeferred<unknown>();
     native.analyzeAudioLoudness
@@ -410,17 +410,17 @@ describe("export snapshot restoration", () => {
     );
     firstAnalysis.resolve(measured("norm-2", -18, -2));
 
-    await vi.waitFor(() => expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(2));
-    expect(native.analyzeAudioLoudness.mock.calls[1]?.[0].trim).toEqual({
-      startMicros: 300_000,
-      endMicros: 1_700_000,
+    expect(native.analyzeAudioLoudness).toHaveBeenCalledTimes(1);
+    expect(native.analyzeAudioLoudness.mock.calls[0]?.[0].trim).toEqual({
+      startMicros: 0,
+      endMicros: 5_000_000,
     });
     await vi.waitFor(() => {
       const attempt = store.getState().editingInstances.entities.original?.exportAttempts[0];
       expect(attempt?.state.status).toBe("queued");
       expect(attempt?.request.trim).toEqual({ startMicros: 300_000, endMicros: 1_700_000 });
       expect(attempt?.request.audioTracks[0]?.loudnessMeasurements).toEqual(
-        measured("norm-2", -20, -4),
+        measured("norm-2", -18, -2),
       );
       expect(attempt?.snapshot.trim).toEqual(attempt?.request.trim);
     });
@@ -495,7 +495,12 @@ describe("export snapshot restoration", () => {
 
   it("keeps queued per-track processing immutable and restores it with the export", async () => {
     const { snapshot, store } = setup(mediaWithAudio(firstSource.sourcePath));
-    const processing = { filters: [normalizationFilter("norm", -16)], volume: 0.6 };
+    const processing = {
+      filters: [normalizationFilter("norm", -16)],
+      volume: 0.6,
+      syncOffset: { enabled: false, offsetMicros: -500_000 },
+    };
+
     const audioTracks = [
       {
         enabled: true,

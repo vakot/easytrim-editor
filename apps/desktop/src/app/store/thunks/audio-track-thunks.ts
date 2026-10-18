@@ -10,8 +10,11 @@ import {
   selectAudioFilterPreview,
   selectAudioTracks,
 } from "@/app/store/slices/audio-slice";
-import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
+import {
+  selectAudioProcessingRange,
+  selectSourceMedia,
+  selectSourceSelection,
+} from "@/app/store/slices/source-slice";
 import type { AppThunk } from "@/app/store/thunks/source-media-thunks";
 import {
   type AudioChainSelection,
@@ -33,7 +36,7 @@ function analyzeTrackLoudness(streamIndex: number): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
     const state = getState();
     const source = selectSourceSelection(state);
-    const trim = selectTrim(state);
+    const trim = selectAudioProcessingRange(state);
     const track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
     if (!source || !trim || !track) return;
 
@@ -113,7 +116,7 @@ function detectTrackActivity(streamIndex: number): AppThunk<Promise<void>> {
     let track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
     if (!source || !media || !track) return;
 
-    let trim = selectTrim(state);
+    let trim = selectAudioProcessingRange(state);
     if (!trim) return;
     let cacheKey = audioTrackLoudnessInputsKey(
       source.sourcePath,
@@ -126,7 +129,7 @@ function detectTrackActivity(streamIndex: number): AppThunk<Promise<void>> {
       await dispatch(analyzeTrackLoudness(streamIndex));
       state = getState();
       track = selectAudioTracks(state).find((item) => item.streamIndex === streamIndex);
-      trim = selectTrim(state);
+      trim = selectAudioProcessingRange(state);
       if (!track || !trim) return;
       cacheKey = audioTrackLoudnessInputsKey(
         source.sourcePath,
@@ -191,7 +194,7 @@ function isCurrentTrack(
     (track) => track.streamIndex === audioTrack.streamIndex,
   );
 
-  const trim = selectTrim(state);
+  const trim = selectAudioProcessingRange(state);
   if (
     state.source.loadToken !== sourceLoadToken ||
     selectSourceSelection(state)?.sourcePath !== sourcePath ||
@@ -252,7 +255,7 @@ function analyzeFilterPreviewLoudness(): AppThunk<Promise<void>> {
     const state = getState();
     const preview = selectAudioFilterPreview(state);
     const source = selectSourceSelection(state);
-    const trim = selectTrim(state);
+    const trim = selectAudioProcessingRange(state);
     if (!preview || !source || !trim || preview.loudnessAnalysis.status !== "idle") return;
     const cacheKey = audioTrackLoudnessInputsKey(
       source.sourcePath,
